@@ -81,16 +81,12 @@ func _run() -> void:
 	cart.name = "Cart"
 	world.add_child(cart)
 	cart.position = Vector3(-3.0, 0, 0.5)
-	var lv := TownLife.Leaving.new()
+	var lv := Node3D.new()  # a levy marching out (town_scenes.gd: the director's march marks it so)
 	lv.name = "Leaving"
 	var marcher := Node3D.new()
 	town.add_child(marcher)
 	marcher.position = Vector3(0.5, 0, -0.5)
-	lv.walking = [[marcher, [Vector3(5, 0, -5)], 0.0]]
-	lv.root = town
-	lv.life = town.get_node("Life")
-	lv.ground = func(_q: Vector3) -> float: return 0.0
-	lv.most = 0
+	lv.set_meta("walking", [[marcher]])
 	town.add_child(lv)
 	# The camera over the square, at roof height.
 	var cam := Camera3D.new()

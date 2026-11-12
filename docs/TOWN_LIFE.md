@@ -44,6 +44,15 @@ stimulus within reach interrupts lower-priority scenes for its reaction scene.
 
 A new scene, mood or reaction is a row. A new kind of behaviour is a new LimboAI task, not a new branch.
 
-## Replaces
-town_life.gd's scene functions (_crowd, _trade, _market_day, _revels, _bonfire, _unrest, _square_life, _moods,
-_drill), crowd.json, moods.json and works.json's weights, as each moves into rows. Deleted as they move.
+## Replaced (2026-11-12)
+town_life.gd's scene functions are gone: _crowd, _revels, _trade's people, _market_day's people, _unrest, _crier,
+_moods with its _muster, _feast, _justice, _grant, _dole, _mourning and _leaving (the Leaving class), _square_life,
+_square_more, _beat, _crowd_count and SquareLife, and the people _dress posted (the war's watch, the well's mourners,
+the lute, the tax table's queue). Each is a `standing` row in realm/data/town_scenes.json, staged by the director
+(town_scenes.gd `stage`) when town_life.gd dresses the town; town_life keeps only the props (`dress_<name>`, each
+returning where the scene's people go) and the working buildings' own people. Posted people get their npc_mind.gd
+post; walkers (the watch's beat, carriers, the cart, dogs, children chasing, the funeral, the levy marching out) get
+LimboAI tasks in town_scenes.gd and walk only by the Mover. crowd.json and moods.json keep what isn't a scene's cast
+(the villagers' square agents, the market's switch, how the town looks). The passing scenes that duplicated a
+standing one (muster, mourners, feast dance, angry crowd, beggars, granary queue, crier) went from `scenes`.
+Guard: realm/tools/director_probe.gd.

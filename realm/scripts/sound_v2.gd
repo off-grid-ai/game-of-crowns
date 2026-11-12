@@ -244,7 +244,7 @@ func _find(top: Node, eye: Vector3, hear: float, want: Dictionary, calls: Array)
 			var every: Array = n.get_meta("toll", [9.0, 12.0])
 			calls.append(["toll#%d" % n.get_instance_id(), n3, {"sound": String((S.get("toll", {}) as Dictionary).get("sound", "toll")), "every": every}])  # a town in grief: the bell, slow
 		elif nm == "Leaving" and S.has("levy"):
-			var walking: Array = n.get("walking") if n.get("walking") != null else []
+			var walking: Array = n.get_meta("walking", [])  # [[man], ...] marching out now (town_scenes.gd _march)
 			if not walking.is_empty() and is_instance_valid(walking[0][0]) and near.call(walking[0][0]):
 				want["levy#%d" % n.get_instance_id()] = [walking[0][0], String(S["levy"]["sound"]), 1.0]
 		elif n3 and n.has_meta("fires") and S.has("bonfire"):

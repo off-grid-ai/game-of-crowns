@@ -117,28 +117,26 @@ func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 		_construction(root, life, center, building, progress, rng, int(c["size"]))
 	elif kind == "UnitType" and building != "" and not building in Awareness.civilian:  # a soldier's training, not a civilian's (bridge campaigns.js CIVILIAN)
 		_drill(root, life, center, progress, color, building)
-	# The town's health, readable at its door: beggars and the homeless when it
-	# starves (more in a bigger town), an angry crowd when it's in disorder.
+	var states := Works.states(c, _town_id)
 	if c.get("disorder", false):
-		_crowd(root, life, center, rng, 14, true)
-	elif hungry:
-		_crowd(root, life, center, rng, 4 + mini(int(c.get("size", 1)) / 2, 8), false)
-	if not c.get("disorder", false):
-		_buyers_more = Data.value("moods", "relief.buyers", []) if "relief" in _mood_states(c) else []
-		_trade(root, life, center, rng, not hungry, _mood_num(c, "stalls_open", 1.0))  # a hungry town's stalls are kept, bare: no buyers; war and hunger shut some
-		if not hungry and bool(root.get_meta("crown_seat", false)):
-			_market_day(root, life, center, rng)  # the crown's seat: the realm's busiest market
-	if c.get("celebrating", false):
-		_fire_at = _fire_spot(root)
-		_bonfire(life, center)
-		_revels(root, life, center, rng, 6 + mini(int(c.get("size", 1)), 8))
-	if c.get("disorder", false):
-		_unrest(life, center, rng)
+		states.append("riot")
+	if c.get("grasping", false):
+		states.append("grasping")
+	life.set_meta("states", states)
+	life.set_meta("size", int(c.get("size", 1)))
+	life.set_meta("town_id", _town_id)
+	life.set_meta("house", house)
+	life.set_meta("dress", [String(root.get_meta("rank", "town")), Color.from_string(String(house.get("color", "")), Color(0, 0, 0, 0)), bool(c.get("grief", false))])
+	root.set_meta("keepers", {})
 	_dress(root, life, center, c, rng, house)
 	_works(root, life, center, c, rng)
-	if not c.get("disorder", false):
-		_square_life(root, life, center, c, rng)  # before the moods: a funeral walks with the square's walkers
-	_moods(root, life, center, c, rng, house)
+	# What stands so far is the town's working life (its buildings' people, a site's builders, the drill); the
+	# director casts every scene's people, by the rows of realm/data/town_scenes.json.
+	for n in life.get_children():
+		if n.has_meta("role"):
+			n.set_meta("works", true)
+	if director:
+		director.stage(root, life, c, states, self)
 	_near_only(life)
 	_pin(life, center)
 
@@ -327,19 +325,6 @@ func _mind(p: Node3D, post: String, center: Vector3) -> bool:
 	return preload("res://scripts/npc_mind.gd").give(p, post, func(q: Vector3) -> float: return _y(center, q), int(p.get_instance_id()), [], _town_id)
 
 
-## A brawling pair on the switch: both scuffle for the same count of blows
-## (Fist_Fight_A against Fist_Fight_B), then each riots with the rest.
-func _mind_pair(a: Node3D, b: Node3D, center: Vector3) -> bool:
-	if not _town_on:
-		return false
-	var Mind := preload("res://scripts/npc_mind.gd")
-	var blows := randi_range(4, 5)
-	var ground := func(q: Vector3) -> float: return _y(center, q)
-	Mind.give(a, "riot", ground, int(a.get_instance_id()), [Mind.run(["Fist_Fight_A"], blows, blows)], _town_id)
-	Mind.give(b, "riot", ground, int(b.get_instance_id()), [Mind.run(["Fist_Fight_B"], blows, blows)], _town_id)
-	return true
-
-
 func _figure(parent: Node3D, pos: Vector3, mat: Material) -> Node3D:
 	var n := Node3D.new()
 	n.position = pos
@@ -461,122 +446,6 @@ func _drill(root: Node3D, life: Node3D, center: Vector3, progress: float, color:
 	life.set_meta("doing", doing_line("UnitType", unit, progress))
 
 
-## Outside the keep: the hungry beg and camp rough by a small fire, or, in
-## disorder, a crowd presses at the door with its grievances.
-func _crowd(root: Node3D, life: Node3D, center: Vector3, rng: RandomNumberGenerator, count: int, angry: bool) -> void:
-	var dir := Vector3(cos(rng.randf() * TAU), 0, sin(rng.randf() * TAU))
-	if angry:
-		# A riot is the town's news: on the side of the square the camera looks
-		# across as it comes down, give or take, never behind the lens.
-		dir = SEEN.rotated(Vector3.UP, rng.randf_range(-0.25, 0.25))
-	var side := Vector3(-dir.z, 0, dir.x)
-	var knots := maxi(1, ceili(count / 3.0))
-	for i in count:
-		var p := dir * rng.randf_range(0.55, 0.95) + side * rng.randf_range(-0.45, 0.45)
-		if not angry:
-			# The hungry and the grieving keep in knots of two or three spread
-			# round the town's edge, never one crowd at a door (Mac's call).
-			var ang := atan2(dir.z, dir.x) + TAU * float(i / 3) / knots + rng.randf_range(-0.15, 0.15)
-			var hub := Vector3(cos(ang), 0, sin(ang)) * rng.randf_range(1.0, 1.4)
-			p = hub + Vector3(rng.randf_range(-0.09, 0.09), 0, rng.randf_range(-0.09, 0.09))
-		var anim: String
-		if angry:
-			anim = ["Arguing", "Yelling", "Arguing", "Yelling"][i % 4]  # arguing, shouting at the door they all face
-		else:
-			anim = ["Defeated", "Crying", "Kneeling", "Idle", "Praying", "Looking_Around"][rng.randi() % 6]  # waiting, weeping, begging on their knees (none talking to the air)
-		var f := _stand(root, life, center, p, "peasant", anim, rng.randi(), Color(0.55, 0.5, 0.45) if not angry else Color(0.7, 0.66, 0.6))
-		if f == null:
-			continue  # no room left at the door: the crowd is what fits
-		var look := -f.position + Vector3(rng.randf_range(-0.3, 0.3), 0, rng.randf_range(-0.3, 0.3))
-		f.rotation.y = atan2(look.x, look.z) if angry or i % 2 == 0 else rng.randf() * TAU
-		# Rioters; and at the edge, beggars, mourners and refugees in turn.
-		_mind(f, "riot" if angry else ["beg", "mourn", "refugee"][i % 3], center)
-	if angry:
-		# The watch holds the door against them, and here and there it comes to blows.
-		for i in 3:
-			var g := _stand(root, life, center, dir * 0.32 + side * (i - 1) * 0.14, "soldier", "Sword_Idle", rng.randi(), Color(0.55, 0.5, 0.45), 0.2)
-			if g:
-				g.rotation.y = atan2(dir.x, dir.z)  # facing the crowd
-				_watch(g)
-				_mind(g, "guard", center)
-		# What the crowd has done to the square: a cart turned on its side, crates
-		# and a cask knocked over and rolled, in the press where a street camera sees it.
-		var tipped: Node3D = Real.make(Real.one("cart"))
-		var tip_at := _spot(center, dir * 0.8, _blocked(root, life), life.get_meta("standing"), 0.35)
-		if tipped and not is_nan(tip_at.x):
-			tipped.position = Vector3(tip_at.x, _y(center, tip_at) + 0.05, tip_at.z)
-			tipped.rotation = Vector3(0, atan2(side.x, side.z), PI * 0.5)  # over on its side
-			tipped.set_meta("dress", "overturned cart")
-			life.add_child(tipped)
-		elif tipped:
-			tipped.free()
-		for k in 4:
-			var spill := dir * rng.randf_range(0.5, 0.8) + side * rng.randf_range(-0.2, 0.2)
-			var thing := _prop(life, center, ["Crate_Wooden", "Barrel", "FarmCrate_Empty", "FarmCrate_Apple"][k], spill, rng.randf() * TAU, 1.0, 0.0)
-			if thing:
-				thing.rotation.x = PI * 0.5 if k == 1 else rng.randf_range(-0.6, 0.6)  # the cask on its side, the crates askew
-				thing.set_meta("dress", "wreckage")
-		for k in 2:
-			var at := dir * rng.randf_range(0.6, 0.8) + side * (0.4 if k == 0 else -0.4)  # in the press, not off at its rim
-			var a := _stand(root, life, center, at, "peasant", "Fist_Fight_A", rng.randi(), Color(0.7, 0.66, 0.6), 0.25)
-			if a == null:
-				continue
-			var b := _stand(root, life, center, a.position + side * 0.2, "peasant", "Fist_Fight_B", rng.randi(), Color(0.7, 0.66, 0.6), 0.1)
-			if b == null:
-				continue
-			a.rotation.y = atan2(b.position.x - a.position.x, b.position.z - a.position.z)
-			b.rotation.y = a.rotation.y + PI
-			# On the switch: the pair scuffle for the same while, then riot with the rest.
-			if _mind_pair(a, b, center):
-				continue
-			# A scuffle, not a fight without end: about 8 s, then they're back to shouting.
-			for f in [a, b]:
-				var stop := Timer.new()
-				stop.one_shot = true
-				f.add_child(stop)
-				stop.timeout.connect(func():
-					if is_instance_valid(f):
-						_people.play(f, "Arguing"))
-				stop.start(rng.randf_range(7.0, 9.0))
-	if not angry:
-		# Where they lie at night: dark bedrolls in a row against the wall, and a
-		# cooking fire that's a few embers and a thread of smoke, not a beacon.
-		var camp := dir * 1.35 + side * rng.randf_range(-0.3, 0.3)
-		var rag := StandardMaterial3D.new()
-		rag.albedo_color = Color(0.3, 0.26, 0.22)
-		rag.roughness = 1.0
-		var roll_mesh := CapsuleMesh.new()
-		roll_mesh.radius = 0.018
-		roll_mesh.height = 0.17
-		for i in mini(count / 2, 5):
-			var roll := MeshInstance3D.new()
-			roll.mesh = roll_mesh
-			roll.material_override = rag
-			var q := camp + side * (i - 2) * 0.06 + dir * rng.randf_range(-0.03, 0.03)
-			roll.position = Vector3(q.x, _y(center, q) + 0.012, q.z)
-			roll.rotation = Vector3(PI / 2, atan2(dir.x, dir.z) + rng.randf_range(-0.2, 0.2), 0)
-			life.add_child(roll)
-		var smoke := CPUParticles3D.new()
-		smoke.amount = 8
-		smoke.lifetime = 3.0
-		smoke.direction = Vector3.UP
-		smoke.spread = 6
-		smoke.initial_velocity_min = 0.04
-		smoke.initial_velocity_max = 0.08
-		smoke.scale_amount_min = 0.03
-		smoke.scale_amount_max = 0.07
-		smoke.color = Color(0.35, 0.33, 0.31, 0.25)
-		smoke.angle_min = -180.0
-		smoke.angle_max = 180.0
-		var q := QuadMesh.new()
-		q.size = Vector2(1, 1)
-		q.material = preload("res://scripts/towns.gd").smoke_material(true)
-		smoke.mesh = q
-		var fp := camp - dir * 0.12
-		smoke.position = Vector3(fp.x, _y(center, fp) + 0.03, fp.z)
-		life.add_child(Particles.to_gpu(smoke))
-
-
 ## A turned rectangle, town-local XZ, the way towns.gd records footprints.
 static func _rect(at: Vector3, size: Vector2, rot: float) -> PackedVector2Array:
 	var b := Basis(Vector3.UP, rot)
@@ -661,81 +530,6 @@ static func fire_reach() -> float:
 	return maxf(foot.x, foot.y) * RING_SCALE * 0.5 + HEAT if foot != Vector2.ZERO else 0.23
 
 
-## A feast: the town in a ring round the bonfire, dancing, cheering and
-## drinking, everyone turned to the fire: a ring of faces in its light, a
-## shoulder apart, each on their own place on it and none inside it.
-func _revels(root: Node3D, life: Node3D, center: Vector3, rng: RandomNumberGenerator, count: int) -> void:
-	var spin := rng.randf() * TAU
-	var inner := fire_reach() + 0.08  # the near edge of the ring: past the heat, and a step (the revel's own steps) more
-	for i in count:
-		var a := spin + TAU * i / count + rng.randf_range(-0.1, 0.1)
-		var want := _fire_at + Vector3(cos(a), 0, sin(a)) * rng.randf_range(inner, inner + 0.12)
-		var move: String = ["Dance", "Cheering", "Dance", "Drinking", "Cheering", "Dance"][i % 6]
-		var f := _stand(root, life, center, want, "townsfolk" if i % 3 else "peasant", move, rng.randi(), Color.WHITE, 0.06)
-		if f:
-			f.rotation.y = atan2(_fire_at.x - f.position.x, _fire_at.z - f.position.z)
-			_mind(f, "revel", center)
-
-
-## Trade at the market: a keeper behind each stall facing the square, and a
-## buyer or two at its front, haggling (none when there's nothing to buy).
-func _trade(root: Node3D, life: Node3D, center: Vector3, rng: RandomNumberGenerator, buyers := true, open := 1.0) -> void:
-	var keepers := {}  # stall index -> its keeper, for a shopper at its front to be served (npc_mind Serve)
-	root.set_meta("keepers", keepers)
-	var si := -1
-	for st in root.get_meta("stalls", []):
-		si += 1
-		var m: Vector3 = st[0]
-		if open < 1.0 and float(absi(hash(Vector2i(roundi(m.x * 100.0), roundi(m.z * 100.0)))) % 1000) / 1000.0 >= open:
-			continue  # shut for the war or the hunger (moods.json stalls_open): no keeper, no buyers, the same stalls each time
-		var out := Vector3(m.x, 0, m.z).normalized()  # from the square's heart to the stall
-		# The keeper's mark: behind the counter, on the stall's back side (the
-		# model faces the square), just clear of its footprint, facing the lane
-		# over the goods (the judge's spec). At the counter's end he stood in the
-		# heap of goods towns.gd _plaza piles there (and knelt, on Interact):
-		# Crowford's log had him inside the stall's footprint, unseen.
-		# Failing the mark (someone there), past either end of the goods.
-		var along := Vector3(-out.z, 0, out.x) * (1.0 if rng.randf() < 0.5 else -1.0)
-		var taken: PackedVector2Array = life.get_meta("standing")
-		var at := Vector3(NAN, 0, 0)
-		var marks: Array[Vector3] = [m + out * (float(st[1]) * 0.5 + KEEPER_BACK)]
-		for end in [1.0, -1.0]:
-			marks.append(m + along * end * (float(st[2]) * 0.5 + 0.22) - out * float(st[1]) * 0.25)
-		for try: Vector3 in marks:
-			var free := true
-			for q: Vector2 in taken:
-				if q.distance_to(Vector2(try.x, try.z)) < ROOM:
-					free = false
-					break
-			if free:
-				at = try
-				break
-		if is_nan(at.x):
-			continue  # this stall's keeper is the next one's: one keeps both
-		at.y = _y(center, at)
-		var keeper := _townsperson(life, at, "townsfolk", ["Idle_Talking", "Pointing_Forward", "Nodding"][rng.randi() % 3], rng.randi(), Color.WHITE, "stallholder")
-		keeper.rotation.y = atan2(-out.x, -out.z)
-		keepers[si] = keeper
-		if si > 0 and not keepers.has(si - 1):
-			keepers[si - 1] = keeper  # the stall before had no keeper of its own: this one keeps both
-		_pile(root, life, center, si, m, out, float(st[2]))
-		_mind(keeper, "trade", center)
-		taken.append(Vector2(at.x, at.z))
-		life.set_meta("standing", taken)
-		var many: Array = _market_knobs(root).get("buyers", [1, 2])  # the crown's market draws more to each stall
-		if not _buyers_more.is_empty() and int(_buyers_more[1]) > int(many[1]):
-			many = _buyers_more  # the tax remitted: the market fills (moods.json relief.buyers)
-		if square_agents_on():
-			many = Data.value("crowd", "square_agents.posted.buyers", many)  # the villagers come to the stalls themselves
-		for i in rng.randi_range(int(many[0]), int(many[1])) if buyers else 0:
-			var side := Vector3(-out.z, 0, out.x) * rng.randf_range(-0.12, 0.12)
-			var buyer := _stand(root, life, center, m - out * (float(st[1]) * 0.5 + 0.12) + side, "townsfolk" if rng.randf() < 0.7 else "peasant", ["Idle_Talking", "Arguing", "Nodding"][rng.randi() % 3], rng.randi(), Color.WHITE, 0.2)
-			if buyer:
-				var to := m - buyer.position
-				buyer.rotation.y = atan2(to.x, to.z)
-				_mind(buyer, "buy", center)
-
-
 ## A kept stall's stock beside it (crowd.json square_agents.pile; the routines spec: Stronghold's one load, one drop
 ## on a pile that grows; a sale takes one off): sacks and crates on the ground at the stall's end, the stall's
 ## pile in root meta piles by stall index. Only with the square's agents on.
@@ -797,98 +591,6 @@ static func crown_market() -> Dictionary:
 		m = m.duplicate()
 		m.merge(preload("res://scripts/data.gd").value("crowd", "off", {}), true)
 	return m
-
-
-## The crown's market at midday (art target 01-town: some twenty at work round the square): a
-## smith at his anvil, a carter selling from his cart, porters at the stalls' ends, all on the
-## half of the square a camera coming in sees. Each stands where there's room, or not at all.
-func _market_day(root: Node3D, life: Node3D, center: Vector3, rng: RandomNumberGenerator) -> void:
-	var k := _market_knobs(root)
-	var stalls: Array = root.get_meta("stalls", [])
-	var square_r := float(root.get_meta("square_r", 1.0))
-	var market := Vector3.ZERO
-	for st in stalls:
-		market += st[0]
-	var toward := (market / maxf(1.0, stalls.size())).normalized() if not stalls.is_empty() else SEEN
-	var side := Vector3(-toward.z, 0, toward.x)
-	if side.dot(SEEN) < 0.0:
-		side = -side  # the seen half
-	# The smith: an anvil on the square's edge, hammering; not when the town's smithy stands on the square (towns.gd
-	# _smithy, 01-town's forge): one smith, at his forge (crowd.json square_agents.smith_in_smithy).
-	var smithy := false
-	var wk: Dictionary = root.get_meta("works", {})
-	if wk.has("forge") and bool(Data.value("crowd", "square_agents.smith_in_smithy", true)) and square_agents_on():
-		smithy = (wk["forge"]["at"] as Vector3).length() < square_r * 1.8
-	if not smithy and bool(k.get("smith", true)) and preload("res://scripts/weapons.gd").can_play("Hammer_Swing"):
-		var at := side * square_r * 0.72
-		var anvil := _prop(life, center, "Anvil", at, atan2(-side.x, -side.z), 1.0, 0.0)
-		if anvil:
-			_prop(life, center, "Bucket_Metal", at + Vector3(-side.z, 0, side.x) * 0.12, 0.0, 1.0, 0.0)
-			var smith := _stand(root, life, center, at - side * 0.12, "townsfolk", "Hammer_Swing", rng.randi(), Color.WHITE, 0.2, "smith")
-			if smith:
-				smith.rotation.y = atan2(side.x, side.z)  # facing his anvil, his back to the houses
-				_mind(smith, "smith", center)
-	# The carter: a cart drawn up on the square across from the smith, selling from its bed.
-	for i in int(k.get("carts", 1)):
-		var cp := (-side * 0.62 + toward * (0.2 * i - 0.1)) * square_r
-		# Meshy's merchant cart in its place when it's judged and in (--landmarks=meshy; data/meshy.json square_cart).
-		var cart: Node3D = Real.meshy_piece("square_cart")
-		if cart:
-			cart.position = Vector3(cp.x, _y(center, cp), cp.z)
-			cart.rotation.y = atan2(toward.x, toward.z)
-			life.add_child(cart)
-		else:
-			cart = _prop(life, center, "Stall_Cart_Empty", cp, atan2(toward.x, toward.z), 1.0, 0.0)
-		if cart:
-			for g in 2:
-				_prop(life, center, ["FarmCrate_Apple", "Barrel_Apples", "FarmCrate_Carrot"][(i + g) % 3], cp + toward * (0.05 - 0.1 * g), rng.randf() * TAU, 1.0, 0.0)
-			var carter := _stand(root, life, center, cp + side * 0.16, "peasant", "Idle_Talking", rng.randi(), Color.WHITE, 0.2)
-			if carter:
-				carter.rotation.y = atan2(-side.x, -side.z)
-				_mind(carter, "trade", center)
-			var buyer := _stand(root, life, center, cp - side * 0.18, "townsfolk", "Arguing", rng.randi(), Color.WHITE, 0.2)
-			if buyer:
-				buyer.rotation.y = atan2(side.x, side.z)
-				_mind(buyer, "buy", center)
-	# Porters at the stalls' ends, a load in their arms.
-	var porters := int(k.get("porters", 3))
-	for i in porters:
-		if stalls.is_empty():
-			break
-		var st: Array = stalls[i % stalls.size()]
-		var m: Vector3 = st[0]
-		var out := Vector3(m.x, 0, m.z).normalized()
-		var along := Vector3(-out.z, 0, out.x) * (1.0 if i % 2 == 0 else -1.0)
-		var p := _stand(root, life, center, m + along * (float(st[2]) * 0.5 + 0.18) - out * 0.15, "peasant", "Carrying", rng.randi(), Color.WHITE, 0.25)
-		if p:
-			p.rotation.y = atan2(-out.x, -out.z) + rng.randf_range(-0.8, 0.8)
-			_mind(p, "porter", center)  # fetch, carry, set down
-
-
-func _unrest(life: Node3D, center: Vector3, rng: RandomNumberGenerator) -> void:
-	for i in 2:
-		var off := Vector3(rng.randf_range(-1.5, 1.5), 0, rng.randf_range(-1.5, 1.5))
-		var p := CPUParticles3D.new()
-		p.amount = 24
-		p.lifetime = 4.0
-		p.direction = Vector3.UP
-		p.spread = 10
-		p.initial_velocity_min = 0.2
-		p.initial_velocity_max = 0.35
-		p.scale_amount_min = 0.15
-		p.scale_amount_max = 0.35
-		var grad := Gradient.new()
-		grad.set_color(0, Color(0.15, 0.13, 0.12, 0.7))
-		grad.set_color(1, Color(0.2, 0.2, 0.2, 0.0))
-		p.color_ramp = grad
-		p.angle_min = -180.0
-		p.angle_max = 180.0
-		var q := QuadMesh.new()
-		q.size = Vector2(0.6, 0.6)
-		q.material = preload("res://scripts/towns.gd").smoke_material(true)
-		p.mesh = q
-		p.position = off + Vector3(0, _y(center, off) + 0.6, 0)
-		life.add_child(Particles.to_gpu(p))
 
 
 ## The town's life is street-level detail: drawn only within a short walk of the camera.
@@ -1076,7 +778,7 @@ func _dress(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, rng: Ran
 	var well: Vector3 = places.get("well", Vector3(0.4, 0, 0.4))
 	# At every stall's front: what it has to sell, or that it has nothing.
 	var goods: Array = []
-	if c.get("prosperity", false) or ("relief" in _mood_states(c) and bool(Data.value("moods", "relief.goods", false))):
+	if c.get("prosperity", false) or ("relief" in Works.states(c, _town_id) and bool(Data.value("moods", "relief.goods", false))):
 		goods = ["FarmCrate_Apple", "FarmCrate_Carrot", "Barrel_Apples", "Coin_Pile"]
 	elif c.get("famine", false) or c.get("atWar", false) or c.get("grief", false):
 		goods = ["FarmCrate_Empty", "Crate_Wooden"]  # shut or sold out
@@ -1093,6 +795,8 @@ func _dress(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, rng: Ran
 	if edge.dot(SEEN) < 0.0:
 		edge = -edge
 	var side := Vector3(-edge.z, 0, edge.x).normalized()
+	life.set_meta("anchors", {"barricade": {"at": edge * 0.95, "dir": edge}, "lute": {"at": well + side * 0.18, "dir": SEEN},
+		"tax": {"at": edge * 0.6, "dir": edge, "side": side}, "tax_queue": {"at": edge * 0.6, "dir": -edge.normalized()}})
 	if c.get("atWar", false):
 		# A barricade cart across the road in, weapons stacked, and more of the watch.
 		var cart: Node3D = Real.make(Real.one("cart"))
@@ -1119,37 +823,23 @@ func _dress(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, rng: Ran
 			life.add_child(flag)
 		_prop(life, center, "WeaponStand", edge * 1.05 + side * 0.2, atan2(-edge.x, -edge.z), 1.0, 0.0)
 		_prop(life, center, "Shield_Wooden", edge * 1.05 - side * 0.2, atan2(-edge.x, -edge.z))
-		for i in 3:
-			var g := _stand(root, life, center, edge * 0.95 + side * (i - 1) * 0.22, "soldier", "Sword_Idle", rng.randi(), Color.WHITE, 0.2)
-			if g:
-				g.rotation.y = atan2(edge.x, edge.z)  # facing the road out
-				_watch(g)
-				_mind(g, "guard", center)
 	if c.get("grief", false):
 		# Mourners gathered at the well, candles set down; at a fountain, round its rim, outside the basin
 		# (moods.json centre.mourners, centre.candles: past its real radius).
 		var basin := centre_reach(root)
-		var kneel := basin + float(Data.num("moods", "centre.mourners", 0.08)) if basin > 0.0 else 0.22
 		var set_down := basin + float(Data.num("moods", "centre.candles", 0.04)) if basin > 0.0 else 0.19
-		for i in 3:
-			var a := TAU * i / 3.0
-			var f := _stand(root, life, center, well + Vector3(cos(a), 0, sin(a)) * kneel, "peasant", "Kneeling", rng.randi(), Color(0.35, 0.33, 0.32), 0.1)
-			if f:
-				f.rotation.y = atan2(well.x - f.position.x, well.z - f.position.z)
-				_mind(f, "mourn", center)
 		for i in 3:
 			_prop(life, center, "Candle_1", well + Vector3(cos(i * 2.1), 0, sin(i * 2.1)) * set_down)  # round the well's curb (its winch reaches 0.16 out) or the basin's rim, not in it
 	if c.get("prosperity", false):
 		# One more stall in good times, by the well, heaped with produce.
 		var extra := _off_centre(root, well + side * 0.38, float(Data.num("moods", "centre.stall", 0.2)))  # the canopy clear of a fountain's rim
-		var stall := _prop(life, center, "Stall_Empty", extra, atan2(-extra.x, -extra.z), 1.0, 0.0)
+		var stall: Node3D = Real.make(Real.one("market_stall"))  # the market's own stall (assets.json market_stall), as towns.gd's
 		if stall:
+			stall.position = Vector3(extra.x, _y(center, extra), extra.z)
+			stall.rotation.y = atan2(-extra.x, -extra.z)
+			life.add_child(stall)
 			for i in 3:
 				_prop(life, center, ["FarmCrate_Apple", "FarmCrate_Carrot", "Barrel_Apples"][i], extra + Vector3(-extra.z, 0, extra.x).normalized() * (i - 1) * 0.06 - extra.normalized() * 0.08, atan2(-extra.x, -extra.z))
-		# A lute at the well and children at play.
-		var lute := _stand(root, life, center, well + side * 0.18, "townsfolk", "Lute_Playing" if preload("res://scripts/weapons.gd").can_play("Lute_Playing") else "Clapping", rng.randi(), Color.WHITE, 0.15)  # a lute only once there's a lute
-		if lute:
-			_mind(lute, "revel", center)
 	if c.get("grasping", false):
 		# The tax collector's table in the square, coin and ledger on it, a guard by him, a queue muttering.
 		var at := edge * 0.6
@@ -1158,19 +848,6 @@ func _dress(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, rng: Ran
 		_prop(life, center, "Coin_Pile", at + side * 0.04, 0.0, 1.0, TABLE_TOP)
 		_prop(life, center, "Scroll_1", at - side * 0.04, 0.0, 1.0, TABLE_TOP)
 		_prop(life, center, "Chest_Wood", at + edge.normalized() * 0.2, atan2(side.x, side.z), 1.0, 0.0)
-		var collector := _stand(root, life, center, at + edge.normalized() * 0.13, "townsfolk", "PickUp_Table", rng.randi(), Color(0.45, 0.4, 0.3), 0.1)
-		if collector:
-			collector.rotation.y = atan2(-edge.x, -edge.z)
-			_mind(collector, "trade", center)
-		var guard := _stand(root, life, center, at + side * 0.18, "soldier", "Sword_Idle", rng.randi(), Color.WHITE, 0.1)
-		if guard:
-			_watch(guard)
-			_mind(guard, "guard", center)
-		for i in 3:
-			var q := _stand(root, life, center, at - edge.normalized() * (0.18 + i * 0.1), "peasant", "Arguing", rng.randi(), Color(0.6, 0.55, 0.5), 0.08)
-			if q:
-				q.rotation.y = atan2(edge.x, edge.z)
-				_mind(q, "riot", center)
 
 
 # --- the working buildings (works.gd, realm/data/works.json) --------------------
@@ -1180,7 +857,6 @@ const Dressing := preload("res://scripts/dressing.gd")
 const Horse := preload("res://scripts/horse.gd")
 const Data := preload("res://scripts/data.gd")
 const NavGround := preload("res://scripts/nav_ground.gd")  # what stands in the town, read off what is set down
-const NEWS := ["feast", "levy", "war", "hunger", "low", "relief", "justice", "grant", "build"]  # states the crier cries in the square (the last four: a court ruling, the herald's news)
 
 
 ## The life at the town's working buildings, from the town agent's list of
@@ -1231,8 +907,6 @@ func _works(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, rng: Ran
 				_mind(t, "tanner", center)
 	if all.has("inn"):
 		_inn(root, life, center, all["inn"], tick, n, rng)
-	if NEWS.any(func(st): return st in active):
-		_crier(root, life, center, tick, n.call("listeners"), rng)
 
 
 func _face(p: Node3D, at: Vector3) -> void:
@@ -1600,156 +1274,17 @@ func _inn(root: Node3D, life: Node3D, center: Vector3, b: Dictionary, tick: Work
 		tick.lights.append(light)
 
 
-## The crier in the square with the news, and a ring of listeners.
-func _crier(root: Node3D, life: Node3D, center: Vector3, tick: Works.Tick, listeners: int, rng: RandomNumberGenerator) -> void:
-	var places: Dictionary = root.get_meta("places", {})
-	var well: Vector3 = places.get("well", Vector3(0.4, 0, 0.4))
-	var at := well + SEEN * Data.num("works", "crier.from_well", 0.35)
-	var crier := _stand(root, life, center, at, "townsfolk", "Yelling", rng.randi(), Color.WHITE, 0.3, "crier")
-	if crier == null:
-		return
-	var toward := SEEN  # he faces the seen half of the square, his listeners before him
-	crier.rotation.y = atan2(toward.x, toward.z)
-	_mind(crier, "crier", center)
-	tick.by_day.append(crier)
-	var ring: Array = Data.value("works", "crier.ring", [0.22, 0.38])
-	for i in listeners:
-		var ang := atan2(toward.x, toward.z) + lerpf(-1.6, 1.6, (i + 0.5) / maxf(1.0, listeners)) + rng.randf_range(-0.12, 0.12)
-		var r := rng.randf_range(float(ring[0]), float(ring[1]))
-		var p := _stand(root, life, center, crier.position + Vector3(sin(ang), 0, cos(ang)) * r, "townsfolk", "Nodding", rng.randi(), Color.WHITE, 0.12)
-		if p:
-			_face(p, crier.position)
-			_mind(p, "listener", center)
-			tick.by_day.append(p)
-
-
-# --- the realm's state in the streets (realm/data/moods.json) -------------------
-
-var _buyers_more: Array = []  # buyers at each stall while a ruling's relief stands (moods.json relief.buyers), else []
-
-## The town's states (works.gd: war, a levy, hunger, a feast...) that moods.json
-## dresses, [] with the switch off (--moods=off).
-func _mood_states(c: Dictionary) -> Array:
-	if not bool(Data.value("moods", "on", true)) or OS.get_cmdline_user_args().has("--moods=off"):
-		return []
-	return Works.states(c, _town_id).filter(func(st): return (Data.value("moods", st, {}) as Dictionary).size() > 0)
-
-
-## A mood's number for this town: the least over its states that set it (the
-## shut-most market, the slowest...), or with `most`, the greatest; `fallback` when none does.
-func _mood_num(c: Dictionary, key: String, fallback: float, most := false) -> float:
+## A mood's number for a town in these states (moods.json): the least over its states that set it (the shut-most
+## market, the slowest...), or with `most`, the greatest; `fallback` when none does.
+func _mood_num(states: Array, key: String, fallback: float, most := false) -> float:
 	var out := fallback
 	var any := false
-	for st in _mood_states(c):
-		var row: Dictionary = Data.value("moods", st, {})
-		if row.has(key) and row[key] is float:
+	for st in states:
+		var row: Variant = Data.value("moods", st, {})
+		if row is Dictionary and (row as Dictionary).has(key) and (row[key] is float or row[key] is int):
 			out = float(row[key]) if not any else (maxf(out, float(row[key])) if most else minf(out, float(row[key])))
 			any = true
 	return out
-
-
-## What the realm's state makes of the streets, over what the town already
-## shows (the barricade and the watch in war, bare stalls in hunger, the bonfire
-## at a feast): in war or a levy the forge hammers faster, swords fill the
-## armoury's rack and the levy gathers in the square before a sergeant.
-func _moods(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, rng: RandomNumberGenerator, house: Dictionary) -> void:
-	var states := _mood_states(c)
-	if states.is_empty():
-		return
-	var hot := "war" in states or "levy" in states
-	if hot:
-		var tick: Node = life.get_node_or_null("Works")
-		var pace := _mood_num(c, "hammer", 1.0, true)
-		if tick and pace != 1.0:
-			for sm in tick.smiths:
-				if is_instance_valid(sm):
-					(sm as Node).set_meta("work_pace", {"Hammer_Swing": pace})
-		var want := int(_mood_num(c, "rack", 0.0, true))
-		if Works.stock(root, "rack") < want:
-			Works.add_stock(root, "rack", want - Works.stock(root, "rack"))
-		_muster(root, life, center, Data.value("moods", "levy.muster" if "levy" in states else "war.muster", {}), rng)
-	if "grief" in states:
-		_mourning(root, life, center, Data.value("moods", "grief", {}), rng)
-	if "hunger" in states:
-		_dole(root, life, center, Data.value("moods", "hunger.dole", {}), rng)
-	if "justice" in states:
-		_justice(root, life, center, Data.value("moods", "justice", {}), rng)
-	if "grant" in states:
-		_grant(root, life, center, c, house, Data.value("moods", "grant", {}), rng)
-	if "build" in states:
-		var b: Dictionary = Data.value("moods", "build", {})
-		_construction(root, life, center, String(b.get("site", "Granary")), float(b.get("progress", 0.3)), rng, int(c.get("size", 1)))
-	if "levy" in states:
-		_leaving(root, life, center, Data.value("moods", "levy.leave", {}), rng)
-	if "feast" in states:
-		_feast(root, life, center, house, rng)
-
-
-## The levy gathered in the square: rows of men facing a sergeant who calls
-## them (npc_mind posts levy and crier), on the seen half of the square, turned
-## off the crier's line so the two crowds stand apart.
-func _muster(root: Node3D, life: Node3D, center: Vector3, m: Dictionary, rng: RandomNumberGenerator) -> void:
-	var men := int(m.get("men", 0))
-	if men <= 0:
-		return
-	var places: Dictionary = root.get_meta("places", {})
-	var well: Vector3 = places.get("well", Vector3(0.4, 0, 0.4))
-	var toward := Basis(Vector3.UP, 1.0) * SEEN
-	var front := well + toward * float(m.get("from_well", 0.45))
-	var side := Vector3(-toward.z, 0, toward.x)
-	var sergeant := _stand(root, life, center, front, "soldier", "Pointing_Forward", rng.randi(), Color.WHITE, 0.2)
-	if sergeant == null:
-		return
-	_face(sergeant, sergeant.position + toward)
-	_watch(sergeant)
-	_mind(sergeant, "crier", center)
-	var rows := maxi(1, int(m.get("rows", 2)))
-	var cols := ceili(float(men) / rows)
-	for i in men:
-		var r := i / cols
-		var k := i % cols
-		var at := sergeant.position + toward * (0.2 + r * ROOM * 1.25) + side * (k - (cols - 1) * 0.5) * ROOM * 1.15
-		var soldier := rng.randf() < float(m.get("soldiers", 0.2))
-		var p := _stand(root, life, center, at, "soldier" if soldier else "peasant", "Weight_Shift", rng.randi(), Color.WHITE, 0.1)
-		if p:
-			p.set_meta("levy_man", true)
-			_face(p, sergeant.position)
-			_mind(p, "levy", center)
-
-
-## A feast in the square, round the bonfire and its dancers (_revels): bunting
-## strung from a pole by the well out to poles round the seen half of the
-## square, in the house's colour and the feast's, and long tables set with
-## mugs and plates, the town sat at them drinking and talking, a minstrel by them.
-func _feast(root: Node3D, life: Node3D, center: Vector3, house: Dictionary, rng: RandomNumberGenerator) -> void:
-	var f: Dictionary = Data.value("moods", "feast", {})
-	_fire_at = _fire_spot(root)  # this town's fire, whichever town was dressed before
-	var places: Dictionary = root.get_meta("places", {})
-	var well: Vector3 = places.get("well", Vector3(0.4, 0, 0.4))
-	var col := Color.from_string(String(house.get("color", "#8a2a1e")), Color(0.55, 0.16, 0.12))
-	var colours: Array = [col]
-	for k in f.get("colours", []):
-		colours.append(Works.colour(k, Color.WHITE))
-	_bunting(root, life, center, well, f.get("bunting", {}), colours, rng)
-	# Long tables on the seen half, across the line from the fire, benches either side.
-	var reach := fire_reach() + 0.28
-	var taken: PackedVector2Array = life.get_meta("standing")
-	var sat := []
-	for t in int(f.get("tables", 2)):
-		var a := atan2(SEEN.x, SEEN.z) + (t - (int(f.get("tables", 2)) - 1) * 0.5) * 0.9
-		var at := _fire_at + Vector3(sin(a), 0, cos(a)) * reach
-		var out := (at - _fire_at).normalized()
-		for p in _long_table(life, center, at, out, int(f.get("seats", 3)), t, rng):
-			p.set_meta("feaster", true)
-			sat.append(p)
-
-	for p in sat:
-		_mind(p, "drinker", center)
-	if not sat.is_empty() and preload("res://scripts/weapons.gd").can_play("Lute_Playing"):
-		var m := _stand(root, life, center, (sat[0] as Node3D).position + SEEN * 0.16, "townsfolk", "Lute_Playing", rng.randi(), Color.WHITE, 0.15)
-		if m:
-			_face(m, Vector3.ZERO)
-			_mind(m, "minstrel", center)
 
 
 ## Lines of pennants from a tall pole by the well out to poles round the seen
@@ -1826,451 +1361,7 @@ func _bunting(root: Node3D, life: Node3D, center: Vector3, well: Vector3, b: Dic
 	life.add_child(mesh)
 
 
-## A levy marching out: kin at the square seeing them off, and every few
-## seconds one of the mustered men shoulders his bundle and walks out of the
-## town along the nearest road (moods.json levy.leave), until most have gone.
-func _leaving(root: Node3D, life: Node3D, center: Vector3, l: Dictionary, rng: RandomNumberGenerator) -> void:
-	if l.is_empty():
-		return
-	var places: Dictionary = root.get_meta("places", {})
-	var well: Vector3 = places.get("well", Vector3(0.4, 0, 0.4))
-	for i in int(l.get("kin", 3)):
-		var k := _stand(root, life, center, _off_centre(root, well + Basis(Vector3.UP, 1.0) * SEEN * 0.2 + Vector3(rng.randf_range(-0.15, 0.15), 0, rng.randf_range(-0.15, 0.15)), float(Data.num("moods", "centre.mourners", 0.08))), "peasant", "Waving", rng.randi(), Color.WHITE, 0.2)
-		if k:
-			_face(k, k.position + Basis(Vector3.UP, 1.0) * SEEN)
-			_mind(k, "listener", center)
-	var go := Leaving.new()
-	go.name = "Leaving"
-	go.file = int(l.get("file", 1))
-	go.spacing = float(l.get("spacing", 0.13))
-	go.root = root
-	go.life = life
-	go.ground = func(q: Vector3) -> float: return _y(center, q)
-	go.every = l.get("every", [7.0, 13.0])
-	go.most = int(l.get("most", 5))
-	go.pace = float(l.get("pace", 0.15))
-	go.rng.seed = rng.randi()
-	go.wait = go.rng.randf_range(2.0, float(go.every[0]))
-	life.add_child(go)
-
-
-## The levy's men walking out one by one (_leaving): each in turn leaves his
-## place in the muster (his mind put by), carries his bundle out along the road
-## nearest him (the town's main ways, heart outward) and is gone past its end.
-class Leaving extends Node:
-	const People := preload("res://scripts/people.gd")
-	var root: Node3D
-	var life: Node3D
-	var ground: Callable
-	var every: Array = [7.0, 13.0]
-	var most := 5
-	var pace := 0.15
-	var wait := 3.0
-	var gone := 0
-	var rng := RandomNumberGenerator.new()
-	var file := 1  # men who set off together, one behind the other
-	var spacing := 0.13  # world units between them in the column
-	var walking: Array = []  # [person, [points left], seconds before he steps off]
-
-	func _process(delta: float) -> void:
-		if not is_instance_valid(root) or not is_instance_valid(life):
-			return
-		wait -= delta
-		if wait <= 0.0 and gone < most:
-			wait = rng.randf_range(float(every[0]), float(every[1]))
-			_send()
-		for w in walking.duplicate():
-			var p: Node3D = w[0]
-			var left: Array = w[1]
-			if w.size() > 2 and float(w[2]) > 0.0:
-				w[2] = float(w[2]) - delta  # his place in the column: he steps off after the man in front
-				continue
-			if not is_instance_valid(p) or left.is_empty():
-				walking.erase(w)
-				if is_instance_valid(p):
-					p.queue_free()  # past the road's end: on his way to the host
-				continue
-			var to: Vector3 = left[0]
-			var flat := Vector2(to.x - p.position.x, to.z - p.position.z)
-			var step := pace * delta
-			if flat.length() <= step:
-				p.position = Vector3(to.x, p.position.y, to.z)
-				left.pop_front()
-			else:
-				var d := flat.normalized() * step
-				p.position += Vector3(d.x, 0, d.y)
-				p.rotation.y = lerp_angle(p.rotation.y, atan2(d.x, d.y), minf(1.0, delta * 6.0))
-			p.position.y = float(ground.call(p.position))
-			People.play(p, "Carrying")  # the bundle in his arms over his walking legs
-
-	## A file of men marches off together: the first picks the road out nearest him, the rest fall in
-	## behind him one by one, so the town sees a column on its road.
-	func _send() -> void:
-		var men := life.get_children().filter(func(n): return n.has_meta("levy_man") and not n.has_meta("leaving"))
-		if men.is_empty():
-			return
-		men.sort_custom(func(a, b): return int(a.get_meta("role", "") == "soldier") > int(b.get_meta("role", "") == "soldier"))  # a soldier leads
-		var lead: Node3D = men[0]
-		var path := _road_out(lead)
-		if path.is_empty():
-			return  # a town with no roads: they stay in the muster
-		for k in mini(file, men.size()):
-			if gone >= most:
-				break
-			var p: Node3D = men[k]
-			p.set_meta("leaving", true)
-			var mind := p.get_node_or_null("Mind")
-			if mind:
-				mind.queue_free()  # his post put by: he marches now
-			gone += 1
-			walking.append([p, [path[0]] + path.duplicate(), k * spacing / maxf(pace, 0.01)])
-
-
-	## The way out along the nearest main road, heart outward, from near `p`; [] with no roads.
-	func _road_out(p: Node3D) -> Array:
-		var ways: Array = root.get_meta("ways_main", [])
-		var best: Array = []
-		var near := INF
-		for w in ways:
-			var path := PackedVector2Array(w)
-			for i in path.size():
-				var dd := path[i].distance_to(Vector2(p.position.x, p.position.z))
-				if dd < near:
-					near = dd
-					best = Array(path.slice(i)).map(func(q: Vector2) -> Vector3: return Vector3(q.x, 0, q.y))
-		return best
-
-
-## Justice done (a court sentence standing at the town): an empty gallows at
-## the square's seen edge, the watch either side, and the town come to look in
-## silence (npc_mind post onlooker; a hanging itself is never shown).
-func _justice(root: Node3D, life: Node3D, center: Vector3, j: Dictionary, rng: RandomNumberGenerator) -> void:
-	var places: Dictionary = root.get_meta("places", {})
-	var well: Vector3 = places.get("well", Vector3(0.4, 0, 0.4))
-	var toward := Basis(Vector3.UP, -1.0) * SEEN  # the other side of the crier's line from the muster
-	var at := _spot(center, well + toward * float(j.get("from_well", 0.62)), _blocked(root, life), life.get_meta("standing"), 0.3)
-	if is_nan(at.x):
-		return
-	var g: Node3D = Real.make(Real.one("gallows")) if bool(j.get("gallows", true)) else null
-	if g:
-		g.position = Vector3(at.x, _y(center, at), at.z)
-		g.rotation.y = atan2(toward.x, toward.z)
-		g.set_meta("dress", "gallows")
-		life.add_child(g)
-	var side := Vector3(-toward.z, 0, toward.x)
-	for i in int(j.get("guards", 2)):
-		var w := _stand(root, life, center, at - toward * 0.12 + side * (0.18 if i % 2 else -0.18), "soldier", "Sword_Idle", rng.randi(), Color.WHITE, 0.15)
-		if w:
-			_face(w, w.position - toward)
-			_watch(w)
-			_mind(w, "guard", center)
-	for i in int(j.get("crowd", 7)):
-		var a := atan2(-toward.x, -toward.z) + lerpf(-0.9, 0.9, (i + 0.5) / maxf(1.0, int(j.get("crowd", 7))))
-		var p := _stand(root, life, center, at + Vector3(sin(a), 0, cos(a)) * rng.randf_range(0.3, 0.42), "peasant" if rng.randf() < 0.6 else "townsfolk", "Looking_Around", rng.randi(), Color.WHITE, 0.12)
-		if p:
-			p.set_meta("onlooker", true)
-			_face(p, at)
-			_mind(p, "onlooker", center)
-
-
-## A grant to the house that holds the town (CK3's granted holding): its
-## banners stand round the square, and the work the grant pays for rises.
-func _grant(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, house: Dictionary, g: Dictionary, rng: RandomNumberGenerator) -> void:
-	var col := Color.from_string(String(house.get("color", "#8a2a1e")), Color(0.55, 0.16, 0.12))
-	var n := int(g.get("banners", 4))
-	for i in n:
-		var a := atan2(SEEN.x, SEEN.z) + (i - (n - 1) * 0.5) * 0.7
-		var at := _spot(center, Vector3(sin(a), 0, cos(a)) * float(g.get("ring", 0.7)), _blocked(root, life), life.get_meta("standing"), 0.2)
-		if is_nan(at.x):
-			continue
-		var flag := Heraldry.standard(house, col, STANDARD_TALL)
-		flag.position = Vector3(at.x, _y(center, at), at.z)
-		flag.rotation.y = atan2(-at.x, -at.z)
-		flag.set_meta("dress", "grant_banner")
-		life.add_child(flag)
-	_construction(root, life, center, String(g.get("site", "Palace")), float(g.get("progress", 0.15)), rng, int(c.get("size", 1)))
-
-
-# --- the square's own life (realm/data/crowd.json; art target town-b) -----------------------------
-
-## The square on any day in a market town: a crier at the well, beggars at the church step, a pair
-## of guards walking its ring, town dogs trotting after people, children chasing each other, knots of
-## neighbours gossiping (who turn to look at news: npc_mind React). Each is there for a reason: their
-## post's mind (npc_mind.gd) or their walk here (SquareLife). How many by the town's state: crowd.json.
-func _square_life(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, rng: RandomNumberGenerator) -> void:
-	if not bool(Data.value("crowd", "on", true)) or OS.get_cmdline_user_args().has("--crowd=off"):
-		return
-	if int(c.get("size", 1)) < int(Data.num("crowd", "min_size", 6)) and not bool(root.get_meta("crown_seat", false)):
-		return
-	var active := Works.states(c, _town_id)
-	var n := func(what: String) -> int: return _crowd_count(what, active)
-	var places: Dictionary = root.get_meta("places", {})
-	var well: Vector3 = places.get("well", Vector3(0.4, 0, 0.4))
-	var r := float(root.get_meta("square_r", 1.0))
-	var go := SquareLife.new()
-	go.name = "SquareLife"
-	go.ground = func(q: Vector3) -> float: return _y(center, q)
-	go.blocks = func() -> Array: return _blocked(root, life)  # every building, stall, plinth and table (read once, after the square is set)
-	go.life = life
-	go.rng.seed = rng.randi()
-	life.add_child(go)
-	# The crier at the well (the news crier already stands there when there's news).
-	if not NEWS.any(func(st): return st in active) and n.call("crier") > 0:
-		var tick: Node = life.get_node_or_null("Works")
-		if tick:
-			_crier(root, life, center, tick, 3, rng)
-	# Beggars at the church step.
-	if places.has("sept"):
-		for i in n.call("beggars"):
-			var b := _stand(root, life, center, places["sept"] + Vector3(rng.randf_range(-0.15, 0.15), 0, rng.randf_range(-0.15, 0.15)), "peasant", "Sitting_Ground", rng.randi(), Color(0.45, 0.42, 0.38), 0.2)
-			if b:
-				_face(b, Vector3.ZERO)
-				_mind(b, "beg", center)
-	# Guards walking the square's ring in pairs.
-	var P: Dictionary = Data.value("crowd", "patrol", {})
-	for k in n.call("patrol"):
-		var ring: Array = []
-		var a0 := rng.randf() * TAU
-		for i in 8:
-			var a := a0 + TAU * i / 8.0 * (1.0 if k % 2 == 0 else -1.0)
-			ring.append(Vector3(cos(a), 0, sin(a)) * r * float(P.get("ring", 0.85)))
-		var route := _beat(root, life, center, r, k, rng) if square_agents_on() else []
-		if route.size() >= 2:
-			ring = route  # a beat between the square's mouths and the well, not a ring (round 6 clip: it read mechanical)
-		var pair: Array = []
-		for j in 2:
-			var g := _townsperson(life, Vector3(ring[0].x, _y(center, ring[0]), ring[0].z) + Vector3(0.07 * j, 0, 0), "soldier", "Sword_Idle", rng.randi(), _house_col)
-			_watch(g)
-			g.set_meta("patrol", true)
-			pair.append(g)
-		go.patrols.append({"men": pair, "ring": ring, "beat": ring == route, "leg": 1, "rest": 0.0, "pace": float(P.get("pace", 0.14)), "pause": P.get("pause", [3.0, 7.0])})
-	# Town dogs.
-	var D: Dictionary = Data.value("crowd", "dogs", {})
-	var tints: Array = D.get("tint", [])
-	for i in n.call("dogs"):
-		var dog := preload("res://scripts/animals.gd").make("dog", rng)
-		if dog == null:
-			break
-		if not tints.is_empty():
-			var col := Works.colour(tints[i % tints.size()], Color.WHITE)
-			for mi in dog.find_children("*", "MeshInstance3D", true, false):
-				var m := (mi as MeshInstance3D).get_active_material(0)
-				if m is StandardMaterial3D:
-					var copy: StandardMaterial3D = m.duplicate()
-					copy.albedo_color = col
-					(mi as MeshInstance3D).material_override = copy
-		var at := _off_centre(root, well + Vector3(rng.randf_range(-r, r), 0, rng.randf_range(-r, r)) * 0.6, float(Data.num("moods", "centre.mourners", 0.08)))
-		dog.position = Vector3(at.x, _y(center, at), at.z)
-		dog.rotation.y = rng.randf() * TAU
-		dog.set_meta("town_dog", true)
-		life.add_child(dog)
-		go.dogs.append({"dog": dog, "rest": rng.randf_range(2.0, 8.0), "after": null, "trot": float(D.get("trot", 0.2)), "follow": float(D.get("follow", 0.12))})
-	# Children chasing each other round the square.
-	var C: Dictionary = Data.value("crowd", "chase", {})
-	for k in n.call("chase"):
-		var kids: Array = []
-		for j in 2:
-			var at := _off_centre(root, well + Vector3(rng.randf_range(-r, r), 0, rng.randf_range(-r, r)) * 0.5, float(Data.num("moods", "centre.mourners", 0.08)))
-			var kid := _townsperson(life, Vector3(at.x, _y(center, at), at.z), "peasant", "Laughing", rng.randi(), Color.WHITE, "", "child")
-			kid.set_meta("chasing", true)
-			if rng.randf() < float(C.get("sticks", 0.0)):
-				preload("res://scripts/weapons.gd").arm(kid, String(C.get("stick", "dagger")))  # a stick for a sword (01-town)
-			_people.play(kid, "Running")  # their legs run while they're moved (motion.gd reads their pace)
-			kids.append(kid)
-		go.chases.append({"kids": kids, "goal": Vector3.INF, "r": r * 0.8, "pace": float(C.get("pace", 0.32)), "apart": float(C.get("apart", 0.35))})
-	# Knots of neighbours gossiping, on the seen half of the square.
-	var G: Dictionary = Data.value("crowd", "gossip", {})
-	var knot: Array = G.get("knot", [2, 4])
-	for k in n.call("gossip"):
-		# Spread round the square's open cobble, each knot in its own arc of it (crowd.json gossip.arc radians either side
-		# of the seen side, reach [nearest, furthest] in square radii; round 5: the knots met in one clump at the heart).
-		var arc := float(G.get("arc", 1.4))
-		var reach: Array = G.get("reach", [0.35, 0.75])
-		var share: float = (k + rng.randf_range(0.2, 0.8)) / maxf(float(n.call("gossip")), 1.0)
-		var a := atan2(SEEN.x, SEEN.z) + lerpf(-arc, arc, share)
-		var mid := Vector3(sin(a), 0, cos(a)) * r * rng.randf_range(float(reach[0]), float(reach[1]))
-		if k < int(G.get("at_well", 0)):
-			# 01-town's women talking at the well's rim, a step toward the square's heart (crowd.json gossip.at_well).
-			mid = well - well.normalized() * float(G.get("well_out", 0.22)) + Vector3(rng.randf_range(-0.06, 0.06), 0, rng.randf_range(-0.06, 0.06))
-		var m := rng.randi_range(int(knot[0]), int(knot[1]))
-		for j in m:
-			var b := TAU * j / m + rng.randf_range(-0.3, 0.3)
-			var p := _stand(root, life, center, mid + Vector3(cos(b), 0, sin(b)) * 0.085, "townsfolk" if rng.randf() < 0.6 else "peasant", "Idle_Talking", rng.randi(), Color.WHITE, 0.08)
-			if p:
-				p.set_meta("gossip", true)
-				_face(p, mid)
-				_mind(p, "gossip", center)
-	_square_more(root, life, center, n, go, rng)
-
-
-## The rest of 01-town's square (crowd.json): guards in the house's colour posted at the forge and at the
-## castle's steps, townsfolk carrying sacks and baskets between the square's places, a horse and cart crossing
-## it to the market and on, and the yards nearest it kept: hens and a pig about the beds, someone on their
-## knees weeding. Everyone there for a reason, doing it.
-func _square_more(root: Node3D, life: Node3D, center: Vector3, n: Callable, go: SquareLife, rng: RandomNumberGenerator) -> void:
-	var places: Dictionary = root.get_meta("places", {})
-	var r := float(root.get_meta("square_r", 1.0))
-	var guard_cloth := _house_col.lerp(Color.WHITE, float(Data.num("crowd", "posted.lighten", 0.2)))
-	# Guards posted at the forge, either side of its yard, watching the square.
-	var works: Dictionary = root.get_meta("works", {})
-	if works.has("forge"):
-		var fb: Dictionary = works["forge"]
-		var fat: Vector3 = fb["at"]
-		var ff := _front(fb)
-		var fside := Vector3(-ff.z, 0, ff.x)
-		var foot := float(Data.num("crowd", "posted.forge_out", 0.55))
-		for i in n.call("guards_forge"):
-			var want: Vector3 = fat + ff * foot + fside * (0.22 if i % 2 == 0 else -0.22) * (1 + i / 2)
-			var g := _stand(root, life, center, want, "soldier", "Sword_Idle", rng.randi(), guard_cloth, 0.2)
-			if g:
-				_watch(g)
-				_face(g, g.position + ff)
-				_mind(g, "guard", center)
-	# Guards at the castle's steps: along the castle's side that faces the square, a little out from it.
-	var poly: Variant = root.get_meta("castle_poly") if root.has_meta("castle_poly") else null  # a null default errors when unset (towns without a castle)
-	if poly is PackedVector2Array and (poly as PackedVector2Array).size() >= 3:
-		var cp := poly as PackedVector2Array
-		var best := Vector2.INF
-		var seg := [Vector2.ZERO, Vector2.ZERO]
-		for i in cp.size():
-			var q := Geometry2D.get_closest_point_to_segment(Vector2.ZERO, cp[i], cp[(i + 1) % cp.size()])
-			if q.length() < best.length():
-				best = q
-				seg = [cp[i], cp[(i + 1) % cp.size()]]
-		if best.length() < r * float(Data.num("crowd", "posted.castle_within", 4.0)):
-			var along := ((seg[1] as Vector2) - (seg[0] as Vector2)).normalized()
-			var out := -best.normalized()
-			var m := n.call("guards_castle") as int
-			for i in m:
-				var at2 := best + out * float(Data.num("crowd", "posted.castle_out", 0.14)) + along * (i - (m - 1) * 0.5) * 0.16
-				var g := _stand(root, life, center, Vector3(at2.x, 0, at2.y), "soldier", "Sword_Idle", rng.randi(), guard_cloth, 0.15)
-				if g:
-					_watch(g)
-					_face(g, Vector3.ZERO)
-					_mind(g, "guard", center)
-	# Errands across the square: a sack on the shoulder or a basket on the arm, from place to place.
-	var E: Dictionary = Data.value("crowd", "errands", {})
-	var stops: Array = []
-	for k in ["market", "well", "tavern", "sept"]:
-		if places.has(k):
-			stops.append(places[k])
-	if works.has("forge"):
-		stops.append((works["forge"]["at"] as Vector3) + _front(works["forge"]) * 0.45)
-	# And a way up each main street (crowd.json errands.streets, square radii out): the errands come in off the
-	# streets and go back up them, so the streets round the square are busy too (01-town).
-	var streets: Array = []
-	if float(E.get("streets", 0.0)) > 0.0:
-		for w in root.get_meta("ways_main", []):
-			var line := w as PackedVector2Array
-			for q in line:
-				if q.length() > r * float(E["streets"]):
-					streets.append(Vector3(q.x, 0, q.y))
-					break
-	if stops.size() >= 2:
-		var loads: Array = E.get("loads", [["Carrying", "townsfolk", "female"], ["Box_Walk", "peasant", "male"]])
-		for i in n.call("errands"):
-			var ld: Array = loads[i % loads.size()]
-			if i == 0:
-				# Each place's stop on open ground by it, never its middle: the well's middle is in the well (round 6 clip).
-				var walls := _blocked(root, life)
-				for si in stops.size():
-					var q := _spot(center, stops[si], walls, PackedVector2Array(), 0.4)
-					if not is_nan(q.x):
-						stops[si] = q
-			var first: Vector3 = stops[rng.randi() % stops.size()]
-			var p := _stand(root, life, center, first + Vector3(rng.randf_range(-0.2, 0.2), 0, rng.randf_range(-0.2, 0.2)), String(ld[1]), String(ld[0]), rng.randi(), Color.WHITE, 0.3)
-			if p == null:
-				continue
-			p.set_meta("errand", true)
-			if ld.size() > 3 and String(ld[3]) == "shoulder":
-				_shoulder_sack(p)  # a sack on his shoulder (01-town's porter), carried through every move
-			var order := stops.duplicate()
-			order.shuffle()
-			if not streets.is_empty() and rng.randf() < float(E.get("street_share", 0.6)):
-				# Up one street and back: between two places on the square, never street to street across the houses.
-				order.insert(1 + rng.randi() % (order.size() - 1), streets[i % streets.size()])
-			go.errands.append({"man": p, "stops": order, "leg": 0, "rest": rng.randf_range(0.0, 3.0), "pace": float(E.get("pace", 0.15)), "pause": E.get("pause", [2.0, 6.0]), "carry": String(ld[0]), "set_down": String(E.get("set_down", "PickUp_Table"))})
-	# A horse and cart crossing the square on its way through, stopping at the market.
-	var K: Dictionary = Data.value("crowd", "cart", {})
-	var ways: Array = root.get_meta("ways_main", [])
-	if n.call("cart") > 0 and ways.size() >= 2:
-		var ends: Array = []
-		var lanes: Array = []  # each street's own points from the square's edge out to its end: the cart keeps to them
-		for w in ways.slice(0, 2):
-			var line := w as PackedVector2Array
-			var far := line[line.size() - 1]
-			var lane: Array = []
-			for q in line:
-				if q.length() > r * 0.9:
-					lane.append(Vector3(q.x, 0, q.y))
-				if q.length() > r * float(K.get("from", 1.3)):
-					far = q
-					break
-			ends.append(Vector3(far.x, 0, far.y))
-			if lane.is_empty() or (lane[0] as Vector3).length() > (lane[lane.size() - 1] as Vector3).length():
-				lane.reverse()  # the square's end first
-			lanes.append(lane)
-		var rig := horse_cart(_people, rng)
-		if rig:
-			rig.position = Vector3(ends[0].x, _y(center, ends[0]), ends[0].z)
-			life.add_child(rig)
-			var mkt: Vector3 = places.get("market", Vector3.ZERO)
-			mkt = mkt * float(K.get("market_in", 0.7))
-			# Round 6: it crossed the cobbles on a straight line from a street's end, turned aside round the stalls, and read
-			# sideways. Now in along one street's own line, to the market, out along the other's, and back; it waits only
-			# at the market and at the streets' ends (crowd.json cart.by_street: off for the straight line as before).
-			var route: Array = [mkt, ends[1], mkt, ends[0]]
-			var waits: Array = [true, true, true, true]
-			if bool(K.get("by_street", true)):
-				var out_b: Array = (lanes[1] as Array).duplicate()
-				var in_b: Array = out_b.duplicate()
-				in_b.reverse()
-				var out_a: Array = (lanes[0] as Array).duplicate()
-				var in_a: Array = out_a.duplicate()
-				in_a.reverse()
-				route = in_a + [mkt] + out_b + [ends[1]] + in_b + [mkt] + out_a + [ends[0]]
-				waits = []
-				for q in route:
-					waits.append(q == mkt or q == ends[0] or q == ends[1])
-			go.carts.append({"rig": rig, "market": mkt, "stops": route, "waits": waits, "leg": 0, "rest": 0.0, "pace": float(K.get("pace", 0.16)), "stop": K.get("stop", [6.0, 12.0])})
-	# The yards nearest the square: hens and a pig about the beds, a gardener on their knees.
-	var gardens: Array = (root.get_meta("gardens", []) as Array).filter(func(g): return Vector3(g).length() < r * float(Data.num("crowd", "yards.within", 3.0)))
-	gardens.sort_custom(func(a, b): return Vector3(a).length() < Vector3(b).length())
-	var Y: Dictionary = Data.value("crowd", "yards", {})
-	var Animals := preload("res://scripts/animals.gd")
-	for gi in mini(gardens.size(), int(n.call("yards"))):
-		var g: Vector3 = gardens[gi]
-		var hens := rng.randi_range(int((Y.get("hens", [2, 4]) as Array)[0]), int((Y.get("hens", [2, 4]) as Array)[1]))
-		var beasts: Array = []
-		for h in hens:
-			beasts.append("chicken")
-		if rng.randf() < float(Y.get("pig", 0.5)):
-			beasts.append("pig")
-		for kind in beasts:
-			var b := Animals.make(String(kind), rng)
-			if b == null:
-				continue
-			var off := Vector3(rng.randf_range(-0.22, 0.22), 0, rng.randf_range(-0.22, 0.22))
-			var at3: Vector3 = g + off
-			b.position = Vector3(at3.x, _y(center, at3), at3.z)
-			b.rotation.y = rng.randf() * TAU
-			b.set_meta("yard_beast", true)
-			life.add_child(b)
-			Animals.live(b, String(kind), rng)
-		if rng.randf() < float(Y.get("gardener", 0.7)):
-			var w := _stand(root, life, center, g, "peasant", "Fixing_Kneeling", rng.randi(), Color.WHITE, 0.15)
-			if w:
-				_face(w, g)
-				_mind(w, "weeder", center)
-
-
 static var _wagon_mesh: Mesh
-
-
-## A sack slung on a porter's right shoulder (crowd.json cart.sack: [up, back] metres from the shoulder bone,
-## its size), on the bone itself so it goes with him through every step and stoop.
-func _shoulder_sack(p: Node3D) -> void:
-	shoulder_sack(p, true)
 
 
 ## A sack slung on `p`'s right shoulder (`on`), or taken off (a porter's load: npc_mind Sack).
@@ -2341,20 +1432,6 @@ static func horse_cart(people: Object, rng: RandomNumberGenerator) -> Node3D:
 	return holder
 
 
-## How many of `what` (crowd.json) stand in a town in these states: base, else the first state set.
-func _crowd_count(what: String, active: Array) -> int:
-	# With the square's agents on, the posted crowd is cut to crowd.json square_agents.posted (the villagers walk the
-	# square on errands instead: stall to street, well to door).
-	var cut: Dictionary = Data.value("crowd", "square_agents.posted", {}) if square_agents_on() else {}
-	if cut.has(what):
-		return int(cut[what])
-	var row: Dictionary = Data.value("crowd", what, {})
-	for st in Data.value("works", "priority", []):
-		if st in active and row.has(st):
-			return int(row[st])
-	return int(row.get("base", 0))
-
-
 ## Whether the square's people are agents on errands (villagers.gd _slot, npc_mind's shopper, water carrier and
 ## porter; crowd.json square_agents) rather than posted in place: --square-agents=on|off, else crowd.json.
 static func square_agents_on() -> bool:
@@ -2364,317 +1441,10 @@ static func square_agents_on() -> bool:
 	return args.has("--square-agents=on") or bool(preload("res://scripts/data.gd").value("crowd", "square_agents.on", false))
 
 
-## A guard pair's beat (crowd.json patrol.beat): from one main street's mouth across the square past the well to
-## another's, a stop at each to look about, then back; each pair starts from its own mouth.
-func _beat(root: Node3D, life: Node3D, center: Vector3, r: float, k: int, rng: RandomNumberGenerator) -> Array:
-	var mouths: Array = []
-	for w in root.get_meta("ways_main", []):
-		for q in w as PackedVector2Array:
-			if q.length() > r * float(Data.num("crowd", "patrol.mouth", 0.95)):
-				mouths.append(Vector3(q.x, 0, q.y))
-				break
-	if mouths.size() < 2:
-		return []
-	var places: Dictionary = root.get_meta("places", {})
-	var walls := _blocked(root, life)
-	var mid: Vector3 = places.get("well", Vector3.ZERO)
-	var by_well := _spot(center, mid + Vector3(rng.randf_range(-1, 1), 0, rng.randf_range(-1, 1)).normalized() * 0.3, walls, PackedVector2Array(), 0.4)
-	var a: Vector3 = mouths[k % mouths.size()]
-	var b: Vector3 = mouths[(k + 1) % mouths.size()]
-	# The castle's gate, when the castle stands by the square (towns.gd castle_frame): the beat starts and ends
-	# before it (01-town: the guards between the gate and the square's mouths).
-	var gate := Vector3.INF
-	var castle: Array = root.get_meta("castle_frame", [])
-	if castle.size() >= 3 and bool(Data.value("crowd", "patrol.gate", true)):
-		var cp: Vector3 = castle[0]
-		var cb := Basis(Vector3.UP, float(castle[1]))
-		var half := float((castle[2] as Vector2).y) * 0.5 + float(Data.num("crowd", "patrol.gate_out", 0.2))
-		var g1: Vector3 = cp + cb * Vector3(0, 0, half)
-		var g2: Vector3 = cp - cb * Vector3(0, 0, half)
-		var g := g1 if g1.length() < g2.length() else g2  # the castle's end toward the square
-		if g.length() < r * 3.0:
-			var q := _spot(center, g, walls, PackedVector2Array(), 0.4)
-			if not is_nan(q.x):
-				gate = q
-	var route: Array = []
-	if gate != Vector3.INF:
-		route.append(gate)
-	route.append(a)
-	if not is_nan(by_well.x):
-		route.append(by_well)
-	route.append(b)
-	if not is_nan(by_well.x) and gate == Vector3.INF:
-		route.append(by_well)
-	return route
-
-
-## The square's walkers, moved here (movement only; what they're for is said where they're placed):
-## guards walking its ring and stopping to look about, dogs trotting after someone then lying about,
-## children chasing each other.
-class SquareLife extends Node:
-	const People := preload("res://scripts/people.gd")
-	const Mover := preload("res://scripts/mover.gd")
-	static var READ: float = preload("res://scripts/data.gd").num("people", "readable", 1.0)
-	const Animals := preload("res://scripts/animals.gd")
-	var life: Node3D
-	var ground: Callable
-	var rng := RandomNumberGenerator.new()
-	var patrols: Array = []
-	var dogs: Array = []
-	var chases: Array = []
-	var processions: Array = []  # a funeral round the square: {walkers, bearers, bier, ring, leg, pace, spacing, trail}
-	var errands: Array = []  # {man, stops, leg, rest, pace, pause, carry, set_down}: a load carried place to place
-	var carts: Array = []  # {rig, stops, leg, rest, pace, stop}: a horse and cart crossing the square
-
-	func _process(delta: float) -> void:
-		if not is_instance_valid(life):
-			return
-		for f in processions:
-			_procession(f, delta)
-		for p in patrols:
-			_patrol(p, delta)
-		for d in dogs:
-			_dog(d, delta)
-		for c in chases:
-			_chase(c, delta)
-		for e in errands:
-			_errand(e, delta)
-		for k in carts:
-			_cart(k, delta)
-
-	## A load carried to the next place, set down a while, taken up again and on to the next.
-	func _errand(e: Dictionary, delta: float) -> void:
-		var man: Node3D = e["man"]
-		if not is_instance_valid(man):
-			return
-		if float(e["rest"]) > 0.0:
-			e["rest"] = float(e["rest"]) - delta
-			if float(e["rest"]) <= 0.0:
-				People.play(man, String(e["carry"]))  # up with it again: the arms keep it over the walking legs
-			return
-		var stops: Array = e["stops"]
-		var to: Vector3 = stops[int(e["leg"]) % stops.size()]
-		if not step(man, to, float(e["pace"]), delta, 0.06):
-			e["leg"] = int(e["leg"]) + 1
-			var span: Array = e["pause"]
-			e["rest"] = rng.randf_range(float(span[0]), float(span[1]))
-			People.play(man, String(e["set_down"]))
-
-	## The cart rolls to its next stop (the market, then out along the road and back), waits, rolls on.
-	func _cart(k: Dictionary, delta: float) -> void:
-		var rig: Node3D = k["rig"]
-		if not is_instance_valid(rig):
-			return
-		Mover.of(rig).turn_radius = float(preload("res://scripts/data.gd").num("crowd", "cart.turn_radius", 0.45))  # a cart steers round, never spins
-		var carter: Variant = rig.get_meta("carter", null)
-		if float(k["rest"]) > 0.0:
-			k["rest"] = float(k["rest"]) - delta
-			return
-		var stops: Array = k["stops"]
-		if step(rig, stops[int(k["leg"]) % stops.size()], float(k["pace"]), delta, 0.08, false):
-			if life.get_parent() and life.get_parent().has_meta("cart_tail"):
-				life.get_parent().remove_meta("cart_tail")  # rolling: nothing to unload
-			if carter is Node3D and is_instance_valid(carter) and not (carter as Node3D).has_meta("walking"):
-				(carter as Node3D).set_meta("walking", true)
-				People.play(carter, "Walk")
-			return
-		var waits: Array = k.get("waits", [])
-		var here := int(k["leg"]) % stops.size()
-		k["leg"] = int(k["leg"]) + 1
-		if not waits.is_empty() and not bool(waits[here]):
-			return  # a bend in the street: on without stopping
-		# Drawn up at the market: its tail is a porter's slot to unload from (villagers.gd _slot "cart") while it waits.
-		var town := life.get_parent()
-		if town and stops[here] == k.get("market", Vector3.INF):
-			var back := Vector3(sin(rig.rotation.y), 0, cos(rig.rotation.y))
-			town.set_meta("cart_tail", [rig.position - back * float(preload("res://scripts/data.gd").num("crowd", "cart.tail", 0.22)), rig.position])
-		var span: Array = k["stop"]
-		k["rest"] = rng.randf_range(float(span[0]), float(span[1]))
-		if carter is Node3D and is_instance_valid(carter):
-			(carter as Node3D).remove_meta("walking")
-			People.play(carter, ["Idle", "Looking_Around", "Idle_Talking"][rng.randi() % 3])
-
-	## One step of a walk toward `to` (town-local): the Mover walks it by the navigation's route (CLAUDE.md, one way
-	## to move), so the cart, the carriers, the watch, the dogs and the children all go round the well, the stalls
-	## and the plinth. False once there (within `near`, or as near as the route reaches). A goal that moves (a dog
-	## after its man, a child after another) is asked for again once it has moved a stride.
-	func step(n: Node3D, to: Vector3, pace: float, _delta: float, near := 0.02, _sidestep := true) -> bool:
-		var m: Node = Mover.of(n)
-		if Vector2(to.x - n.position.x, to.z - n.position.z).length() <= near:
-			m.stop()
-			return false
-		var parent := n.get_parent() as Node3D
-		var goal: Vector3 = parent.to_global(to)
-		var was: Vector3 = n.get_meta("walk_to", Vector3.INF)
-		if m.moving() and was.distance_to(goal) <= 0.05:
-			return true
-		if not m.moving() and was.distance_to(goal) <= 0.05:
-			return false  # walked as far as the route goes: there
-		m.speed = pace * READ  # drawn larger (people.json readable): they cover ground as their legs do
-		m.clip = ""  # the caller plays the walk, the carry or the trot
-		m.ground = func(w: Vector3) -> float: return float(ground.call(parent.to_local(w)))
-		n.set_meta("walk_to", goal)
-		m.go(goal)
-		return true
-
-	## Every building, stall, plinth and table on the square (where a child may run to: _open_cobble).
-	var blocks := Callable()
-	var _blocks: Array = []
-
-	func _patrol(p: Dictionary, delta: float) -> void:
-		var men: Array = (p["men"] as Array).filter(func(m): return is_instance_valid(m))
-		if men.is_empty():
-			return
-		if float(p["rest"]) > 0.0:
-			p["rest"] = float(p["rest"]) - delta
-			return
-		var ring: Array = p["ring"]
-		var to: Vector3 = ring[int(p["leg"]) % ring.size()]
-		var moving := false
-		for i in men.size():
-			var side := Basis(Vector3.UP, (men[0] as Node3D).rotation.y) * Vector3(0.07 * (i - 0.5), 0, 0)
-			moving = step(men[i], to + side, float(p["pace"]), delta) or moving
-		if not moving:
-			p["leg"] = int(p["leg"]) + 1
-			if bool(p.get("beat", false)) or int(p["leg"]) % 2 == 0:  # on a beat at every stop, on a ring every other corner, they stop and look about
-				var span: Array = p["pause"]
-				p["rest"] = rng.randf_range(float(span[0]), float(span[1]))
-				for m in men:
-					People.play(m, ["Looking_Around", "Sword_Idle", "SS_Idle_2", "Weight_Shift"][rng.randi() % 4])
-
-	func _dog(d: Dictionary, delta: float) -> void:
-		var dog: Node3D = d["dog"]
-		if not is_instance_valid(dog):
-			return
-		var after: Variant = d["after"]
-		if after == null or not is_instance_valid(after):
-			d["rest"] = float(d["rest"]) - delta
-			Animals.walk(dog, false)
-			if float(d["rest"]) > 0.0:
-				return
-			# Off after someone near: a child at play by choice, else anyone about the square.
-			var folk := life.get_children().filter(func(n): return n is Node3D and n.has_node("Anim") and (n as Node3D).position.distance_to(dog.position) < 1.2)
-			var kids := folk.filter(func(n): return n.has_meta("chasing"))
-			var pool := kids if not kids.is_empty() and rng.randf() < 0.6 else folk
-			if pool.is_empty():
-				d["rest"] = rng.randf_range(3.0, 8.0)
-				return
-			d["after"] = pool[rng.randi() % pool.size()]
-			d["for"] = rng.randf_range(6.0, 14.0)
-			return
-		d["for"] = float(d["for"]) - delta
-		var who: Node3D = after
-		var near := float(d["follow"])
-		if float(d["for"]) <= 0.0:
-			d["after"] = null
-			d["rest"] = rng.randf_range(4.0, 12.0)  # it lies about, sniffs, scratches (its idle life)
-			return
-		Animals.walk(dog, step(dog, who.position, float(d["trot"]), delta, near))
-
-	## The funeral: its head walks the ring; each behind follows the trail the head left, `spacing` back, so
-	## the column keeps its shape round the bends; the bier rides at the bearers' shoulders.
-	func _procession(f: Dictionary, delta: float) -> void:
-		var walkers: Array = (f["walkers"] as Array).filter(func(w): return is_instance_valid(w))
-		if walkers.is_empty():
-			return
-		var head: Node3D = walkers[0]
-		var ring: Array = f["ring"]
-		if not step(head, ring[int(f["leg"]) % ring.size()], float(f["pace"]), delta, 0.03):
-			f["leg"] = int(f["leg"]) + 1
-		var trail: Array = f["trail"]
-		trail.push_front(head.position)
-		var need := int(walkers.size() * float(f["spacing"]) / maxf(float(f["pace"]) * delta, 0.0005)) + 2
-		while trail.size() > need:
-			trail.pop_back()
-		for i in range(1, walkers.size()):
-			var back := float(f["spacing"]) * i
-			var gone := 0.0
-			var at: Vector3 = trail[trail.size() - 1]
-			for k in range(1, trail.size()):
-				gone += (trail[k] as Vector3).distance_to(trail[k - 1])
-				if gone >= back:
-					at = trail[k]
-					break
-			step(walkers[i], at, float(f["pace"]) * 1.4, delta, 0.005)
-		var bearers: Array = (f["bearers"] as Array).filter(func(w): return is_instance_valid(w))
-		var bier: Variant = f["bier"]
-		if bier != null and is_instance_valid(bier) and not bearers.is_empty():
-			var c := Vector3.ZERO
-			for b in bearers:
-				c += (b as Node3D).position
-			c /= bearers.size()
-			(bier as Node3D).position = c + Vector3(0, 0.15, 0)  # on their shoulders
-			(bier as Node3D).rotation.y = (bearers[0] as Node3D).rotation.y
-
-	func _chase(c: Dictionary, delta: float) -> void:
-		var kids: Array = c["kids"]
-		if kids.size() < 2 or not is_instance_valid(kids[0]) or not is_instance_valid(kids[1]):
-			return
-		var runner: Node3D = kids[0]
-		var chaser: Node3D = kids[1]
-		if float(c.get("rest", 0.0)) > 0.0:
-			c["rest"] = float(c["rest"]) - delta
-			if float(c["rest"]) <= 0.0:
-				for kd in kids:
-					People.play(kd, "Running")
-			return
-		if c["goal"] == Vector3.INF or not step(runner, c["goal"], float(c["pace"]), delta):
-			c["goal"] = _open_cobble(float(c["r"]))
-		if not step(chaser, runner.position, float(c["pace"]) * 0.97, delta, 0.06):
-			c["kids"] = [chaser, runner]  # caught: now the other one runs
-			var C: Dictionary = preload("res://scripts/data.gd").value("crowd", "chase", {})
-			if rng.randf() < float(C.get("stop", 0.5)):
-				# A breather after a catch: laughing, bent over, pointing off at something, then off again.
-				var span: Array = C.get("rest", [2.0, 4.0])
-				c["rest"] = rng.randf_range(float(span[0]), float(span[1]))
-				for kd in kids:
-					People.play(kd, ["Laughing", "Crouch_Idle", "Pointing_Forward", "Waving"][rng.randi() % 4])
-
-	## A point on the square's open cobble within `r` of its heart: off every stall, house and plinth.
-	func _open_cobble(r: float) -> Vector3:
-		if _blocks.is_empty() and blocks.is_valid():
-			_blocks = blocks.call()
-		var p := Vector3.ZERO
-		for t in 8:
-			var a := rng.randf() * TAU
-			p = Vector3(cos(a), 0, sin(a)) * r * rng.randf_range(0.3, 1.0)
-			var q := Vector2(p.x, p.z)
-			if not _blocks.any(func(fp): return (fp as PackedVector2Array).size() > 2 and q.distance_to(fp[0]) < 1.5 and Geometry2D.is_point_in_polygon(q, fp)):
-				return p
-		return p
-
-
-## A famine's dole (the hungry in a line for bread, readable from the square's camera in seconds):
-## a table at the market with a few sacks and a doler handing out, and the line out from it
-## (npc_mind posts trade and queue). The granary's own queue (works.gd) stands besides, where there is one.
-func _dole(root: Node3D, life: Node3D, center: Vector3, d: Dictionary, rng: RandomNumberGenerator) -> void:
-	var men := int(d.get("men", 0))
-	if men <= 0:
-		return
-	var places: Dictionary = root.get_meta("places", {})
-	var at: Vector3 = places.get(String(d.get("at", "market")), places.get("well", Vector3(0.4, 0, 0.4)))
-	at = _spot(center, at, _blocked(root, life), life.get_meta("standing"), 0.3)
-	if is_nan(at.x):
-		return
-	var out := Vector3(at.x, 0, at.z).normalized() if Vector2(at.x, at.z).length() > 0.05 else SEEN
-	var yaw := atan2(out.x, out.z) + PI / 2
-	_prop(life, center, "Table_Large", at, yaw, 1.0, 0.0)
-	_prop(life, center, "Bag", at + Vector3(-out.z, 0, out.x) * 0.05, rng.randf() * TAU, 1.0, 0.09)
-	_prop(life, center, "Bag", at - out * 0.12 + Vector3(-out.z, 0, out.x) * 0.1, rng.randf() * TAU)
-	var doler := _stand(root, life, center, at - out * 0.12, "townsfolk", "PickUp_Table", rng.randi(), Color(0.45, 0.4, 0.3), 0.1)
-	if doler:
-		_face(doler, at)
-		_mind(doler, "trade", center)
-	_line(root, life, center, at + out * 0.16, out, men, "peasant", "Weight_Shift", "queue", rng)
-	for p in life.get_children():
-		if p.get_meta("role", "") == "peasant" and p.position.distance_to(at) < 0.16 + ROOM * 1.15 * men:
-			p.set_meta("dole", true)
-
-
 ## A long table at `at` (town-local), its length across `out`, set with mugs and plates, a bench
 ## either side and `seats` a side sat drinking, facing across it (a feast's, the inn yard's). Returns
 ## who sits there; their minds are the caller's to give.
-func _long_table(life: Node3D, center: Vector3, at: Vector3, out: Vector3, seats: int, n: int, rng: RandomNumberGenerator, role := "") -> Array:
+func _long_table(life: Node3D, center: Vector3, at: Vector3, out: Vector3, seats: int, n: int, rng: RandomNumberGenerator, role := "", people := true) -> Array:
 	var along := Vector3(-out.z, 0, out.x)
 	var yaw := atan2(along.x, along.z)
 	if _prop(life, center, "Table_Large", at, yaw, 1.0, 0.0) == null:
@@ -2690,6 +1460,10 @@ func _long_table(life: Node3D, center: Vector3, at: Vector3, out: Vector3, seats
 		_prop(life, center, "Bench", bench, yaw, 1.0, 0.0)
 		for i in seats:
 			var seat: Vector3 = bench + along * (i - (seats - 1) * 0.5) * 0.08 * FURN
+			if not people:
+				taken.append(Vector2(seat.x, seat.z))
+				sat.append({"at": Vector3(seat.x, _y(center, seat), seat.z), "dir": -out * sgn})  # a seat for the director's feaster, facing across
+				continue
 			var who := role if role != "" else ("townsfolk" if rng.randf() < 0.6 else "peasant")
 			var p := _townsperson(life, Vector3(seat.x, _y(center, seat), seat.z), who, "Sitting_Drinking", rng.randi())
 			p.rotation.y = atan2(-out.x * sgn, -out.z * sgn)  # facing across the table
@@ -2699,13 +1473,411 @@ func _long_table(life: Node3D, center: Vector3, at: Vector3, out: Vector3, seats
 	return sat
 
 
-## A town in grief, unmistakable from the town camera (batch 8b centre-grief: it read as a market day):
-## candles and flowers in a ring at the centrepiece (or the well), black cloth over the doors of the houses
-## nearest the square, the bell tolling from the sept (sound_v2.gd hears the "Tolling" node), and a funeral
-## round the square: a priest, the bier on its bearers' shoulders, mourners behind (SquareLife walks it).
-## The thin dark crowd and the shut stalls are the crowd's and the market's own (people.json cloth.mourning,
-## moods.json grief.out, stalls_open). Numbers: moods.json grief.
-func _mourning(root: Node3D, life: Node3D, center: Vector3, g: Dictionary, rng: RandomNumberGenerator) -> void:
+# --- what the director asks of the town (town_scenes.gd: it casts every scene's people) -------------
+
+var director: Node  # town_scenes.gd, the one director (main.gd sets it): it stages each town's scenes as it is dressed
+
+
+## The nearest open spot to `want` (town-local) within `reach`, kept as taken; NAN in x when there's none.
+## inside: within a building's own footprint (only the others standing and the road's lanes keep them out).
+func place(root: Node3D, want: Vector3, reach: float, inside := false) -> Vector3:
+	var life: Node3D = root.get_node_or_null("Life")
+	if life == null:
+		return Vector3(NAN, 0, 0)
+	var taken: PackedVector2Array = life.get_meta("standing", PackedVector2Array())
+	var p := _spot(root.position, want, [] if inside else _blocked(root, life), taken, reach, root)
+	if not is_nan(p.x):
+		taken.append(Vector2(p.x, p.z))
+		life.set_meta("standing", taken)
+	return p
+
+
+## The ground's height at a town-local point, town-local.
+func ground_at(root: Node3D, p: Vector3) -> float:
+	return _y(root.position, p)
+
+
+## Whether a town-local point is open cobble: in no building's, stall's, plinth's or fire's outline, and nobody
+## standing there.
+func open_ground(root: Node3D, p: Vector3) -> bool:
+	var life: Node3D = root.get_node_or_null("Life")
+	if life == null:
+		return false
+	var q := Vector2(p.x, p.z)
+	for t in life.get_meta("standing", PackedVector2Array()):
+		if (t as Vector2).distance_to(q) < ROOM:
+			return false  # someone stands there
+	for fp in _blocked(root, life):
+		if (fp as PackedVector2Array).size() > 2 and q.distance_to(fp[0]) < 1.5 and Geometry2D.is_point_in_polygon(q, fp):
+			return false
+	return true
+
+
+## One of a scene's people, set down under the town's Life at `pos` (town-local), dressed as this town dresses its
+## people (its rank, its holder's colour, its grief). cast_post: the work they're there for (people.gd cast_for_post).
+func cast(root: Node3D, pos: Vector3, who: String, clip: String, seed: int, tint := Color.WHITE, cast_post := "", age := "", sex := "") -> Node3D:
+	var life: Node3D = root.get_node_or_null("Life")
+	if life == null:
+		return null
+	var d: Array = life.get_meta("dress", [])
+	if d.size() >= 3:
+		_people.dress_for(String(d[0]), d[1], bool(d[2]))
+	if age == "child" and who == "townsfolk":
+		who = "peasant"
+	return _townsperson(life, pos, who, clip, seed, tint, cast_post, age, sex)
+
+
+## A scene person's mind (npc_mind.gd, LimboAI) for their post, when the town's people have minds (minds_on).
+## opening: tasks done once first (a brawling pair's blows, in step).
+func mind(p: Node3D, post: String, root: Node3D, opening: Array = []) -> bool:
+	var life: Node3D = root.get_node_or_null("Life")
+	var town := int(life.get_meta("town_id", -1)) if life else -1
+	if p == null or not minds_on(town):
+		return false
+	var center := root.position
+	return preload("res://scripts/npc_mind.gd").give(p, post, func(q: Vector3) -> float: return _y(center, q), int(p.get_instance_id()), opening, town)
+
+
+## The watch stand guard armed (scenes' guards, the patrol).
+func watch(g: Node3D) -> void:
+	_watch(g)
+
+
+## The town's holder's colour as its posted guards wear it (crowd.json posted.lighten toward white).
+func house_colour(root: Node3D) -> Color:
+	var life: Node3D = root.get_node_or_null("Life")
+	var col: Color = (life.get_meta("dress", [null, _house_col])[1]) if life else _house_col
+	if col.a <= 0.0:
+		col = _house_col
+	return col.lerp(Color.WHITE, float(Data.num("crowd", "posted.lighten", 0.0)))
+
+
+func off_centre(root: Node3D, p: Vector3, clear: float) -> Vector3:
+	return _off_centre(root, p, clear)
+
+
+## A town beast for a scene (a town dog: the wolf shrunk, tinted a hound's colour by turn), set down at `pos`.
+func beast(root: Node3D, kind: String, pos: Vector3, tints: Array, i: int, rng: RandomNumberGenerator) -> Node3D:
+	var life: Node3D = root.get_node_or_null("Life")
+	var b := preload("res://scripts/animals.gd").make(kind, rng)
+	if b == null or life == null:
+		return null
+	if not tints.is_empty():
+		var col := Works.colour(tints[i % tints.size()], Color.WHITE)
+		for mi in b.find_children("*", "MeshInstance3D", true, false):
+			var m := (mi as MeshInstance3D).get_active_material(0)
+			if m is StandardMaterial3D:
+				var copy: StandardMaterial3D = m.duplicate()
+				copy.albedo_color = col
+				(mi as MeshInstance3D).material_override = copy
+	b.position = pos
+	b.rotation.y = rng.randf() * TAU
+	life.add_child(b)
+	return b
+
+
+# --- the scenes' props (town_scenes.json standing rows name them: dress) ------------------------------
+# Each lays what a scene needs standing in the town and says where its people go (anchors, town-local).
+
+## The riot's press at the keep's door, on the side of the square the camera looks across as it comes down, never
+## behind the lens: a cart turned on its side, crates and a cask knocked over, smoke off the roofs.
+func dress_riot(root: Node3D, life: Node3D, _row: Dictionary, rng: RandomNumberGenerator) -> Dictionary:
+	var center := root.position
+	var dir := SEEN.rotated(Vector3.UP, rng.randf_range(-0.25, 0.25))
+	var side := Vector3(-dir.z, 0, dir.x)
+	var tipped: Node3D = Real.make(Real.one("cart"))
+	var tip_at := _spot(center, dir * 0.8, _blocked(root, life), life.get_meta("standing"), 0.35)
+	if tipped and not is_nan(tip_at.x):
+		tipped.position = Vector3(tip_at.x, _y(center, tip_at) + 0.05, tip_at.z)
+		tipped.rotation = Vector3(0, atan2(side.x, side.z), PI * 0.5)  # over on its side
+		tipped.set_meta("dress", "overturned cart")
+		life.add_child(tipped)
+	elif tipped:
+		tipped.free()
+	for k in 4:
+		var spill := dir * rng.randf_range(0.5, 0.8) + side * rng.randf_range(-0.2, 0.2)
+		var thing := _prop(life, center, ["Crate_Wooden", "Barrel", "FarmCrate_Empty", "FarmCrate_Apple"][k], spill, rng.randf() * TAU, 1.0, 0.0)
+		if thing:
+			thing.rotation.x = PI * 0.5 if k == 1 else rng.randf_range(-0.6, 0.6)  # the cask on its side, the crates askew
+			thing.set_meta("dress", "wreckage")
+	for i in 2:
+		var off := Vector3(rng.randf_range(-1.5, 1.5), 0, rng.randf_range(-1.5, 1.5))
+		var p := CPUParticles3D.new()
+		p.amount = 24
+		p.lifetime = 4.0
+		p.direction = Vector3.UP
+		p.spread = 10
+		p.initial_velocity_min = 0.2
+		p.initial_velocity_max = 0.35
+		p.scale_amount_min = 0.15
+		p.scale_amount_max = 0.35
+		var grad := Gradient.new()
+		grad.set_color(0, Color(0.15, 0.13, 0.12, 0.7))
+		grad.set_color(1, Color(0.2, 0.2, 0.2, 0.0))
+		p.color_ramp = grad
+		p.angle_min = -180.0
+		p.angle_max = 180.0
+		var q := QuadMesh.new()
+		q.size = Vector2(0.6, 0.6)
+		q.material = preload("res://scripts/towns.gd").smoke_material(true)
+		p.mesh = q
+		p.position = off + Vector3(0, _y(center, off) + 0.6, 0)
+		life.add_child(Particles.to_gpu(p))
+	return {"riot": {"at": Vector3.ZERO, "dir": dir, "side": side}}
+
+
+## Where the hungry lie at night: dark bedrolls in a row against the wall, and a cooking fire that's a few
+## embers and a thread of smoke, not a beacon; they wait in knots round the town's edge (the hungry row).
+func dress_camp(root: Node3D, life: Node3D, _row: Dictionary, rng: RandomNumberGenerator) -> Dictionary:
+	var center := root.position
+	var a := rng.randf() * TAU
+	var dir := Vector3(cos(a), 0, sin(a))
+	var side := Vector3(-dir.z, 0, dir.x)
+	var camp := dir * 1.35 + side * rng.randf_range(-0.3, 0.3)
+	var rag := StandardMaterial3D.new()
+	rag.albedo_color = Color(0.3, 0.26, 0.22)
+	rag.roughness = 1.0
+	var roll_mesh := CapsuleMesh.new()
+	roll_mesh.radius = 0.018
+	roll_mesh.height = 0.17
+	var count := 4 + mini(int(life.get_meta("size", 1)) / 2, 8)
+	for i in mini(count / 2, 5):
+		var roll := MeshInstance3D.new()
+		roll.mesh = roll_mesh
+		roll.material_override = rag
+		var q := camp + side * (i - 2) * 0.06 + dir * rng.randf_range(-0.03, 0.03)
+		roll.position = Vector3(q.x, _y(center, q) + 0.012, q.z)
+		roll.rotation = Vector3(PI / 2, atan2(dir.x, dir.z) + rng.randf_range(-0.2, 0.2), 0)
+		life.add_child(roll)
+	var smoke := CPUParticles3D.new()
+	smoke.amount = 8
+	smoke.lifetime = 3.0
+	smoke.direction = Vector3.UP
+	smoke.spread = 6
+	smoke.initial_velocity_min = 0.04
+	smoke.initial_velocity_max = 0.08
+	smoke.scale_amount_min = 0.03
+	smoke.scale_amount_max = 0.07
+	smoke.color = Color(0.35, 0.33, 0.31, 0.25)
+	smoke.angle_min = -180.0
+	smoke.angle_max = 180.0
+	var qm := QuadMesh.new()
+	qm.size = Vector2(1, 1)
+	qm.material = preload("res://scripts/towns.gd").smoke_material(true)
+	smoke.mesh = qm
+	var fp := camp - dir * 0.12
+	smoke.position = Vector3(fp.x, _y(center, fp) + 0.03, fp.z)
+	life.add_child(Particles.to_gpu(smoke))
+	return {"camp": {"at": Vector3.ZERO, "dir": dir}}
+
+
+## The market's stalls: which are kept (war and hunger shut some, the same ones each time: moods.json
+## stalls_open), each kept stall's keeper's mark behind its counter on its back side facing the lane over the
+## goods (failing that, past either end of the goods: else the next stall's keeper keeps both), and its stock
+## piled at its end.
+func dress_stalls(root: Node3D, life: Node3D, _row: Dictionary, rng: RandomNumberGenerator) -> Dictionary:
+	var center := root.position
+	var open := _mood_num(life.get_meta("states", []), "stalls_open", 1.0)
+	var points: Array = []
+	var si := -1
+	for st in root.get_meta("stalls", []):
+		si += 1
+		var m: Vector3 = st[0]
+		if open < 1.0 and float(absi(hash(Vector2i(roundi(m.x * 100.0), roundi(m.z * 100.0)))) % 1000) / 1000.0 >= open:
+			continue  # shut: no keeper, no buyers
+		var out := Vector3(m.x, 0, m.z).normalized()  # from the square's heart to the stall
+		var along := Vector3(-out.z, 0, out.x) * (1.0 if rng.randf() < 0.5 else -1.0)
+		var taken: PackedVector2Array = life.get_meta("standing")
+		var at := Vector3(NAN, 0, 0)
+		var marks: Array[Vector3] = [m + out * (float(st[1]) * 0.5 + KEEPER_BACK)]
+		for end in [1.0, -1.0]:
+			marks.append(m + along * end * (float(st[2]) * 0.5 + 0.22) - out * float(st[1]) * 0.25)
+		for try: Vector3 in marks:
+			var free := true
+			for q: Vector2 in taken:
+				if q.distance_to(Vector2(try.x, try.z)) < ROOM:
+					free = false
+					break
+			if free:
+				at = try
+				break
+		if is_nan(at.x):
+			continue
+		at.y = _y(center, at)
+		taken.append(Vector2(at.x, at.z))
+		life.set_meta("standing", taken)
+		_pile(root, life, center, si, m, out, float(st[2]))
+		points.append({"at": at, "dir": -out, "si": si})
+	return {"stall_keep": {"at": Vector3.ZERO, "dir": SEEN, "points": points}}
+
+
+## The crown's market day (art target 01-town): an anvil on the square's edge (not when the town's smithy stands
+## on the square: one smith, at his forge), carts drawn up across from it selling from their beds, and the stalls'
+## ends where porters stand with a load, all on the half of the square a camera coming in sees.
+func dress_market_day(root: Node3D, life: Node3D, _row: Dictionary, rng: RandomNumberGenerator) -> Dictionary:
+	var center := root.position
+	var k := _market_knobs(root)
+	var stalls: Array = root.get_meta("stalls", [])
+	var square_r := float(root.get_meta("square_r", 1.0))
+	var market := Vector3.ZERO
+	for st in stalls:
+		market += st[0]
+	var toward := (market / maxf(1.0, stalls.size())).normalized() if not stalls.is_empty() else SEEN
+	var side := Vector3(-toward.z, 0, toward.x)
+	if side.dot(SEEN) < 0.0:
+		side = -side  # the seen half
+	var out := {}
+	var smithy := false
+	var wk: Dictionary = root.get_meta("works", {})
+	if wk.has("forge") and bool(Data.value("crowd", "square_agents.smith_in_smithy", true)) and square_agents_on():
+		smithy = (wk["forge"]["at"] as Vector3).length() < square_r * 1.8
+	if not smithy and bool(k.get("smith", true)) and preload("res://scripts/weapons.gd").can_play("Hammer_Swing"):
+		var at := side * square_r * 0.72
+		if _prop(life, center, "Anvil", at, atan2(-side.x, -side.z), 1.0, 0.0):
+			_prop(life, center, "Bucket_Metal", at + Vector3(-side.z, 0, side.x) * 0.12, 0.0, 1.0, 0.0)
+			out["anvil"] = {"points": [{"at": at, "dir": side}]}
+	var carts: Array = []
+	for i in int(k.get("carts", 1)):
+		var cp := (-side * 0.62 + toward * (0.2 * i - 0.1)) * square_r
+		var cart: Node3D = Real.meshy_piece("square_cart")  # Meshy's merchant cart
+		if cart:
+			cart.position = Vector3(cp.x, _y(center, cp), cp.z)
+			cart.rotation.y = atan2(toward.x, toward.z)
+			life.add_child(cart)
+			for g in 2:
+				_prop(life, center, ["FarmCrate_Apple", "Barrel_Apples", "FarmCrate_Carrot"][(i + g) % 3], cp + toward * (0.05 - 0.1 * g), rng.randf() * TAU, 1.0, 0.0)
+			carts.append({"at": cp, "dir": side})
+	out["carts"] = {"points": carts}
+	var ends: Array = []
+	for i in int(k.get("porters", 3)):
+		if stalls.is_empty():
+			break
+		var st: Array = stalls[i % stalls.size()]
+		var m: Vector3 = st[0]
+		var o := Vector3(m.x, 0, m.z).normalized()
+		var along := Vector3(-o.z, 0, o.x) * (1.0 if i % 2 == 0 else -1.0)
+		ends.append({"at": m + along * (float(st[2]) * 0.5 + 0.18) - o * 0.15, "dir": -o})
+	out["stall_end"] = {"points": ends}
+	return out
+
+
+## The feast's bonfire, at the square's heart or off a fountain standing there; its ring of revellers stands
+## past its heat (anchor r).
+func dress_bonfire(root: Node3D, life: Node3D, _row: Dictionary, _rng: RandomNumberGenerator) -> Dictionary:
+	_fire_at = _fire_spot(root)
+	_bonfire(life, root.position)
+	return {"fire": {"at": _fire_at, "dir": SEEN, "r": fire_reach() + 0.08}}
+
+
+## The feast in the square: bunting strung from a pole by the well out to poles round the seen half, in the
+## house's colour and the feast's; long tables across the line from the fire, set with mugs and plates, benches
+## either side (their seats the feasters'); the minstrel's place by them.
+func dress_feast(root: Node3D, life: Node3D, _row: Dictionary, rng: RandomNumberGenerator) -> Dictionary:
+	var center := root.position
+	var f: Dictionary = Data.value("moods", "feast", {})
+	_fire_at = _fire_spot(root)
+	var places: Dictionary = root.get_meta("places", {})
+	var well: Vector3 = places.get("well", Vector3(0.4, 0, 0.4))
+	var colours: Array = [house_colour(root)]
+	for k in f.get("colours", []):
+		colours.append(Works.colour(k, Color.WHITE))
+	_bunting(root, life, center, well, f.get("bunting", {}), colours, rng)
+	var reach := fire_reach() + 0.28
+	var seats: Array = []
+	for t in int(f.get("tables", 2)):
+		var a := atan2(SEEN.x, SEEN.z) + (t - (int(f.get("tables", 2)) - 1) * 0.5) * 0.9
+		var at := _fire_at + Vector3(sin(a), 0, cos(a)) * reach
+		seats.append_array(_long_table(life, center, at, (at - _fire_at).normalized(), int(f.get("seats", 3)), t, rng, "", false))
+	var out := {"seats": {"points": seats}, "minstrel": {"points": []}}
+	if not seats.is_empty():
+		out["minstrel"] = {"points": [{"at": (seats[0]["at"] as Vector3) + SEEN * 0.16, "dir": SEEN}]}
+	return out
+
+
+## War or a levy at the town: the forge hammers faster and swords fill the armoury's rack (moods.json hammer, rack).
+func dress_hot(root: Node3D, life: Node3D, _row: Dictionary, _rng: RandomNumberGenerator) -> Dictionary:
+	var states: Array = life.get_meta("states", [])
+	var tick: Node = life.get_node_or_null("Works")
+	var pace := _mood_num(states, "hammer", 1.0, true)
+	if tick and pace != 1.0:
+		for sm in tick.smiths:
+			if is_instance_valid(sm):
+				(sm as Node).set_meta("work_pace", {"Hammer_Swing": pace})
+	var want := int(_mood_num(states, "rack", 0.0, true))
+	if Works.stock(root, "rack") < want:
+		Works.add_stock(root, "rack", want - Works.stock(root, "rack"))
+	return {}
+
+
+## Justice done (a court sentence standing at the town): an empty gallows at the square's seen edge, the other side
+## of the crier's line from the muster (a hanging itself is never shown).
+func dress_gallows(root: Node3D, life: Node3D, _row: Dictionary, _rng: RandomNumberGenerator) -> Dictionary:
+	var center := root.position
+	var j: Dictionary = Data.value("moods", "justice", {})
+	var well: Vector3 = (root.get_meta("places", {}) as Dictionary).get("well", Vector3(0.4, 0, 0.4))
+	var toward := Basis(Vector3.UP, -1.0) * SEEN
+	var at := _spot(center, well + toward * float(j.get("from_well", 0.62)), _blocked(root, life), life.get_meta("standing"), 0.3)
+	if is_nan(at.x):
+		return {}
+	var g: Node3D = Real.make(Real.one("gallows")) if bool(j.get("gallows", true)) else null
+	if g:
+		g.position = Vector3(at.x, _y(center, at), at.z)
+		g.rotation.y = atan2(toward.x, toward.z)
+		g.set_meta("dress", "gallows")
+		life.add_child(g)
+	return {"gallows": {"at": at, "dir": toward}}
+
+
+## A grant to the house that holds the town (CK3's granted holding): its banners round the square, and the work
+## the grant pays for rising.
+func dress_grant(root: Node3D, life: Node3D, _row: Dictionary, rng: RandomNumberGenerator) -> Dictionary:
+	var center := root.position
+	var g: Dictionary = Data.value("moods", "grant", {})
+	var col := house_colour(root)
+	var n := int(g.get("banners", 4))
+	for i in n:
+		var a := atan2(SEEN.x, SEEN.z) + (i - (n - 1) * 0.5) * 0.7
+		var at := _spot(center, Vector3(sin(a), 0, cos(a)) * float(g.get("ring", 0.7)), _blocked(root, life), life.get_meta("standing"), 0.2)
+		if is_nan(at.x):
+			continue
+		var flag := Heraldry.standard(life.get_meta("house", {}), col, STANDARD_TALL)
+		flag.position = Vector3(at.x, _y(center, at), at.z)
+		flag.rotation.y = atan2(-at.x, -at.z)
+		flag.set_meta("dress", "grant_banner")
+		life.add_child(flag)
+	_construction(root, life, center, String(g.get("site", "Palace")), float(g.get("progress", 0.15)), rng, int(life.get_meta("size", 1)))
+	return {}
+
+
+## The ordered work's site with its builders (Manor Lords' works).
+func dress_build(root: Node3D, life: Node3D, _row: Dictionary, rng: RandomNumberGenerator) -> Dictionary:
+	var b: Dictionary = Data.value("moods", "build", {})
+	_construction(root, life, root.position, String(b.get("site", "Granary")), float(b.get("progress", 0.3)), rng, int(life.get_meta("size", 1)))
+	return {}
+
+
+## A famine's dole: a table at the market with a few sacks; the doler behind it and the line out from it.
+func dress_dole(root: Node3D, life: Node3D, _row: Dictionary, rng: RandomNumberGenerator) -> Dictionary:
+	var center := root.position
+	var places: Dictionary = root.get_meta("places", {})
+	var at: Vector3 = places.get(String(Data.value("moods", "hunger.dole.at", "market")), places.get("well", Vector3(0.4, 0, 0.4)))
+	at = _spot(center, at, _blocked(root, life), life.get_meta("standing"), 0.3)
+	if is_nan(at.x):
+		return {}
+	var out := Vector3(at.x, 0, at.z).normalized() if Vector2(at.x, at.z).length() > 0.05 else SEEN
+	var yaw := atan2(out.x, out.z) + PI / 2
+	_prop(life, center, "Table_Large", at, yaw, 1.0, 0.0)
+	_prop(life, center, "Bag", at + Vector3(-out.z, 0, out.x) * 0.05, rng.randf() * TAU, 1.0, 0.09)
+	_prop(life, center, "Bag", at - out * 0.12 + Vector3(-out.z, 0, out.x) * 0.1, rng.randf() * TAU)
+	return {"dole": {"at": at, "dir": out}}
+
+
+## A town in grief, unmistakable from the town camera: candles and flowers in a ring at the centrepiece (or the
+## well), black cloth over the doors of the houses nearest the square, the bell tolling from the sept (sound_v2.gd
+## hears the "Tolling" node). Numbers: moods.json grief.
+func dress_mourning(root: Node3D, life: Node3D, _row: Dictionary, rng: RandomNumberGenerator) -> Dictionary:
+	var center := root.position
+	var g: Dictionary = Data.value("moods", "grief", {})
 	var places: Dictionary = root.get_meta("places", {})
 	var well: Vector3 = places.get("well", Vector3(0.4, 0, 0.4))
 	var mid := Vector3.ZERO if centre_reach(root) > 0.0 else well
@@ -2727,7 +1899,6 @@ func _mourning(root: Node3D, life: Node3D, center: Vector3, g: Dictionary, rng: 
 			m.position = Vector3(at.x, _y(center, at) - float(flower[1]) * 0.072, at.z)
 			m.rotation.y = rng.randf() * TAU
 			life.add_child(m)
-	# Black cloth over the doors nearest the square.
 	var homes: Array = (root.get_meta("homes", []) as Array).duplicate()
 	homes.sort_custom(func(a, b): return Vector2(a[0].x, a[0].z).length() < Vector2(b[0].x, b[0].z).length())
 	var black := StandardMaterial3D.new()
@@ -2741,38 +1912,82 @@ func _mourning(root: Node3D, life: Node3D, center: Vector3, g: Dictionary, rng: 
 			cloth.set_meta("dress", "black_door")
 			for gi in cloth.find_children("*", "GeometryInstance3D", true, false):
 				(gi as GeometryInstance3D).material_override = black
-	# The bell tolling from the sept (or the square).
 	var toll := Node3D.new()
 	toll.name = "Tolling"
 	toll.set_meta("toll", g.get("toll", [9.0, 12.0]))
 	var sept: Vector3 = places.get("sept", well)
 	toll.position = Vector3(sept.x, _y(center, sept) + 0.3, sept.z)
 	life.add_child(toll)
-	# The funeral, walked round the square.
-	var P: Dictionary = g.get("procession", {})
-	var go: Node = life.get_node_or_null("SquareLife")
-	if go == null or P.is_empty():
-		return
-	var r := float(root.get_meta("square_r", 1.0)) * float(P.get("ring", 0.72))
-	var ring: Array = []
+	return {"kneel": {"at": well, "dir": SEEN, "r": centre_reach(root) + float(Data.num("moods", "centre.mourners", 0.08)) if centre_reach(root) > 0.0 else 0.22}}
+
+
+## The funeral's round of the square (the funeral row walks it): twelve points on a ring from the sept, and the
+## bier the bearers carry.
+func dress_funeral(root: Node3D, life: Node3D, row: Dictionary, _rng: RandomNumberGenerator) -> Dictionary:
+	var center := root.position
+	var places: Dictionary = root.get_meta("places", {})
+	var well: Vector3 = places.get("well", Vector3(0.4, 0, 0.4))
+	var sept: Vector3 = places.get("sept", well)
+	var rim := (centre_reach(root) if centre_reach(root) > 0.0 else 0.16) + 0.06
 	var a0 := atan2(sept.x, sept.z)
-	for i in 12:
-		var a := a0 + TAU * i / 12.0
-		ring.append(Vector3(sin(a), 0, cos(a)) * maxf(r, rim + 0.25))
-	var walkers: Array = []
-	if bool(P.get("priest", true)):
-		walkers.append(_townsperson(life, ring[0], "clergy", "Walk", rng.randi()))
-	var bearers: Array = []
-	for i in int(P.get("bearers", 4)):
-		var b := _townsperson(life, ring[0], "peasant", "Walk", rng.randi())
-		bearers.append(b)
-		walkers.append(b)
-	for i in int(P.get("mourners", 8)):
-		walkers.append(_townsperson(life, ring[0], "townsfolk" if i % 2 else "peasant", "Walk", rng.randi()))
+	var walls := _blocked(root, life)
+	var taken: PackedVector2Array = life.get_meta("standing", PackedVector2Array())
+	# The round at the first of these shares of the square's radius whose every leg keeps a shoulder off anyone
+	# standing (a stall's keeper, the crier): a funeral walks round the living, not through them.
+	var ring: Array = []
+	for share in row.get("rings", [0.72]):
+		var r := float(root.get_meta("square_r", 1.0)) * float(share)
+		var try: Array = []
+		for i in 12:
+			var a := a0 + TAU * i / 12.0
+			var p := _spot(center, Vector3(sin(a), 0, cos(a)) * maxf(r, rim + 0.25), walls, taken, 0.25)  # open cobble
+			if not is_nan(p.x):
+				try.append(p)
+		var clear := try.size() >= 3
+		for i in try.size():
+			var a2 := Vector2(try[i].x, try[i].z)
+			var b2 := Vector2(try[(i + 1) % try.size()].x, try[(i + 1) % try.size()].z)
+			for t in taken:
+				if (t as Vector2).distance_to(Geometry2D.get_closest_point_to_segment(t, a2, b2)) < ROOM:
+					clear = false
+		if clear or ring.is_empty():
+			ring = try
+		if clear:
+			break
+	if ring.size() < 3:
+		return {}
 	var bier := _prop(life, center, "Chest_Wood", ring[0], 0.0, 1.0)
 	if bier:
 		bier.scale = Vector3(0.7, 0.5, 1.5) * PROP_SCALE
-	for w in walkers:
-		w.set_meta("procession", true)
-		_people.play(w, "Walk", 0.7)
-	go.processions.append({"walkers": walkers, "bearers": bearers, "bier": bier, "ring": ring, "leg": 1, "pace": float(P.get("pace", 0.07)), "spacing": float(P.get("spacing", 0.11)), "trail": []})
+	return {"funeral": {"at": ring[0], "dir": SEEN, "route": ring, "bier": bier}}
+
+
+## The yards nearest the square kept (crowd.json yards): hens and by chance a pig about the beds, each living its
+## idle life (animals.gd); their beds are where a gardener kneels (the yards row).
+func dress_yards(root: Node3D, life: Node3D, row: Dictionary, rng: RandomNumberGenerator) -> Dictionary:
+	var center := root.position
+	var r := float(root.get_meta("square_r", 1.0))
+	var gardens: Array = (root.get_meta("gardens", []) as Array).filter(func(g): return Vector3(g).length() < r * float(row.get("within", 3.0)))
+	gardens.sort_custom(func(a, b): return Vector3(a).length() < Vector3(b).length())
+	var Animals := preload("res://scripts/animals.gd")
+	var hens_n: Array = row.get("hens", [2, 4])
+	var points: Array = []
+	for gi in mini(gardens.size(), int(row.get("yards", 4))):
+		var g: Vector3 = gardens[gi]
+		points.append({"at": g, "dir": SEEN})
+		var beasts: Array = []
+		for h in rng.randi_range(int(hens_n[0]), int(hens_n[1])):
+			beasts.append("chicken")
+		if rng.randf() < float(row.get("pig", 0.5)):
+			beasts.append("pig")
+		for kind in beasts:
+			var b := Animals.make(String(kind), rng)
+			if b == null:
+				continue
+			var at3: Vector3 = g + Vector3(rng.randf_range(-0.22, 0.22), 0, rng.randf_range(-0.22, 0.22))
+			b.position = Vector3(at3.x, _y(center, at3), at3.z)
+			b.rotation.y = rng.randf() * TAU
+			b.set_meta("yard_beast", true)
+			life.add_child(b)
+			Animals.live(b, String(kind), rng)
+	return {"gardens": {"points": points}}

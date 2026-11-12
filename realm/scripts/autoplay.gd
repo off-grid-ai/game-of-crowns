@@ -395,10 +395,11 @@ func _step(w: PackedStringArray) -> void:
 							bodies.append([p, "person"])
 						for h in load("res://scripts/works.gd").horses(oroot):
 							bodies.append([h, "horse"])
-						var sq: Node = oroot.get_node_or_null("Life/SquareLife")
-						if sq:
-							for k in sq.carts:
-								bodies.append([k["rig"], "cart"])
+						var olife: Node = oroot.get_node_or_null("Life")
+						if olife:
+							for k in olife.get_children():
+								if k.has_meta("cart"):
+									bodies.append([k, "cart"])
 						for b in bodies:
 							var n := b[0] as Node3D
 							if n == null or not is_instance_valid(n) or not n.is_visible_in_tree():

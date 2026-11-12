@@ -317,6 +317,10 @@ func _ready() -> void:
 	awareness.towns = towns
 	awareness.villagers = villagers
 	add_child(awareness)
+	# Town life's one director (town_scenes.gd): it casts every town scene's people from realm/data/town_scenes.json.
+	var town_scenes := preload("res://scripts/town_scenes.gd").new(self)
+	add_child(town_scenes)
+	towns.life.director = town_scenes
 	# The townsfolk's talk with each other, overheard up close (chatter.gd).
 	var chatter := preload("res://scripts/chatter.gd").new()
 	chatter.name = "Chatter"
