@@ -362,6 +362,12 @@ for spec in UNIT.get("props", []):
     piece.matrix_world = m
     with active(piece):
         bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+    if spec.get("centre", False):
+        # Its geometry about its own middle (a kit's shield keeps its old place on its first owner as an offset).
+        lo_, hi_ = bounds([piece])
+        mid_ = (Vector(lo_) + Vector(hi_)) * 0.5
+        for v in piece.data.vertices:
+            v.co -= mid_
     if spec.get("repaint", True):
         _repaint(piece)
     pb = arm.pose.bones[spec["bone"]]

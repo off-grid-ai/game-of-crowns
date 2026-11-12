@@ -39,6 +39,12 @@
       "roles": {"idle": "Sword_Idle", "walk": "SS_Walk", "run": "Running", "ready": "SS_Block_Idle", "block": "SS_Block_1", "attack": ["SS_Slash_5", "SS_Attack_4", "SS_Slash_2"], "hit": ["SS_Impact_1", "SS_Impact_2"], "death": ["SS_Death_2", "SS_Death_1"], "cheer": "Battlecry"},
       "mask": {"hue": [0.55, 0.7], "sat": 0.3, "val": [0.08, 1.0]},
       "cape": {"box": [[0.22, 0.52, 0.1], [0.78, 1.0, 0.84]], "clear": 0.07},
-      "props": [{"file": "~/Downloads/Aldmere/armies/kaykit-adventurers/Knight.glb", "mesh": "1H_Sword", "bone": "mixamorig:RightHand", "at": [0.0, 0.08, 0.02], "turn": [0, 0, -90], "scale": 0.73}, {"file": "~/Downloads/Aldmere/armies/kaykit-adventurers/Knight.glb", "mesh": "Round_Shield", "bone": "mixamorig:LeftForeArm", "at": [0.0, 0.12, -0.06], "turn": [0, 90, 0], "scale": 0.73}] }
+      "props": [{"file": "~/Downloads/Aldmere/armies/kaykit-adventurers/Knight.glb", "mesh": "1H_Sword", "bone": "mixamorig:RightHand", "at": [0.0, 0.08, 0.02], "turn": [0, 0, -90], "scale": 0.73}, {"file": "~/Downloads/Aldmere/armies/kaykit-adventurers/Knight.glb", "mesh": "Round_Shield", "bone": "mixamorig:LeftForeArm", "at": [0.0, 0.12, -0.07], "turn": [0, 90, 0], "scale": 0.73, "centre": true}] },
+    "try3_retex": {
+      "clips": [["Sword_Idle", true], ["SS_Walk", true], ["Running", true], ["SS_Slash_5", false], ["SS_Attack_4", false], ["SS_Slash_2", false], ["SS_Block_1", false], ["SS_Block_Idle", true], ["SS_Impact_1", false], ["SS_Impact_2", false], ["SS_Death_2", false], ["SS_Death_1", false], ["Battlecry", false]],
+      "roles": {"idle": "Sword_Idle", "walk": "SS_Walk", "run": "Running", "ready": "SS_Block_Idle", "block": "SS_Block_1", "attack": ["SS_Slash_5", "SS_Attack_4", "SS_Slash_2"], "hit": ["SS_Impact_1", "SS_Impact_2"], "death": ["SS_Death_2", "SS_Death_1"], "cheer": "Battlecry"},
+      "mask": {"hue": [0.55, 0.7], "sat": 0.3, "val": [0.08, 1.0]},
+      "cape": {"box": [[0.22, 0.52, 0.1], [0.78, 1.0, 0.84]], "clear": 0.07},
+      "props": [{"file": "~/Downloads/Aldmere/armies/kaykit-adventurers/Knight.glb", "mesh": "1H_Sword", "bone": "mixamorig:RightHand", "at": [0.0, 0.08, 0.02], "turn": [0, 0, -90], "scale": 0.73}, {"file": "~/Downloads/Aldmere/armies/kaykit-adventurers/Knight.glb", "mesh": "Round_Shield", "bone": "mixamorig:LeftForeArm", "at": [0.0, 0.12, -0.07], "turn": [0, 90, 0], "scale": 0.73, "centre": true}] }
   }
 }
