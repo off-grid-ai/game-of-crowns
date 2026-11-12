@@ -57,7 +57,19 @@ peasant (green hood, leather jerkin).
 - He reads very clearly from roof height.
 - The same clips are clean, with the same watch items: Sitting_Drinking, Waving, and the kneels' float in the proxy.
 
-Neither is rejected. Neither has a female body, a child or an elder: those wait for the 14 concepts in `docs/art/cast/`.
+**Farmer (m)** (ours, Meshy 7.1 from `docs/art/cast/farmer_m_front.png`; 8.4k triangles; green jerkin mask, hue
+0.15-0.33, 9.6%): **pass**, as a peasant (fields, flocks: the farmer, fieldhand, gleaner and shepherd), beside the
+ranger. Strips: `/tmp/goc-models/farmer_m_clips_a.jpg` and `_b.jpg` (21 clips; Walking isn't in our library under
+that name).
+- The straw hat stays on the head through every bend (PickUp_Table, Digging, Planting, Milking, Praying).
+- Clean in Idle, Running, Carrying, PickUp_Table, Hammer_Swing, Digging, Pick_Fruit, Planting, Watering, Kneeling,
+  Talking, Cheering, Praying, Pushing, Dance, Yelling, Axe_Down, Milking and Drinking.
+- Watch: the same as the first two. Sitting_Drinking leaves the frame in the proxy, Waving is weak, and the kneels
+  float a little. A wide straw brim may clip a low doorway or a neighbour in a tight crowd.
+- Imported (`cast_import.py`, `realm/assets/people/mixamo/cast_farmer_m/`). Its Godot import and
+  `feet_check -- --cast=meshy` wait for the next bundled Godot pass.
+
+Neither of the first two is rejected. Neither has a female body, a child or an elder: those wait for the 14 concepts in `docs/art/cast/`.
 
 ## Roles to fill as the cast lands (for the Meshy agent)
 

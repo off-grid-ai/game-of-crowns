@@ -3,6 +3,7 @@
   "on": false,
   "members": {
     "cast_town_guard": { "sex": "m", "roles": ["soldier"], "mask": "res://assets/people/mixamo/cast_town_guard/cast_town_guard_mask.png" },
-    "cast_young_ranger": { "sex": "m", "roles": ["townsfolk", "peasant"], "mask": "res://assets/people/mixamo/cast_young_ranger/cast_young_ranger_mask.png" }
+    "cast_young_ranger": { "sex": "m", "roles": ["townsfolk", "peasant"], "mask": "res://assets/people/mixamo/cast_young_ranger/cast_young_ranger_mask.png" },
+    "cast_farmer_m": { "sex": "m", "roles": ["peasant"], "mask": "res://assets/people/mixamo/cast_farmer_m/cast_farmer_m_mask.png" }
   }
 }
