@@ -1,12 +1,11 @@
 // The Lua the bridge sends Freeciv, written once (consolidation-plan B2).
 const n = (v) => Number(v);
 
-// Give (or take, with a negative amount) gold to a player: booked as the house's dealings this season
-// (realmrules/script.lua realm_gold, the "income" report).
-export const gold = (pid, amount) => `realm_gold(${n(pid)}, ${Math.round(n(amount))})`;
+// Give (or take, with a negative amount) gold to a player.
+export const gold = (pid, amount) => `for p in players_iterate() do if p.id == ${n(pid)} then edit.change_gold(p, ${n(amount)}) end end`;
 
 // Gold from one house to another (a debt paid, a tribute, a tithe returned): from's purse to to's.
-export const pay = (from, to, amount) => `${gold(from, -n(amount))}; ${gold(to, n(amount))}`;
+export const pay = (from, to, amount) => `for p in players_iterate() do if p.id == ${n(from)} then edit.change_gold(p, ${-n(amount)}) elseif p.id == ${n(to)} then edit.change_gold(p, ${n(amount)}) end end`;
 
 // Men raised in a town for its house, homed there (realmrules/script.lua realm_levy): kinds, one company each,
 // "A|B" for the first of those the ruleset has; vet, their veteran level.

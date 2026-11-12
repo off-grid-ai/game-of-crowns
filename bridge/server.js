@@ -539,7 +539,6 @@ function onEvent(line) {
   if (ev.kind === "seam_spent") Mines.spent(meta, ev);  // the old workings stay where the gold ran out (mines.js)
   if (ev.kind === "seams_worked") return Mines.worked(meta, ev);  // which town works each seam (mines.js)
   if (ev.kind === "purse") return Treasury.purse(realmCtx(), ev);  // the season's tithe and the Royal Court's upkeep (treasury.js)
-  if (ev.kind === "income") return Treasury.income(realmCtx(), ev);  // every house's season by source (treasury.js)
   // The land keeps its scars (state/marks.json): where men died, a town was stormed, a town was razed.
   // The view burns the ground there, fading with the mark's age, and a razed town leaves a ruin.
   const scar = ev.kind === "unit_killed" ? ["battle", Number(ev.x), Number(ev.y)] : ev.kind === "city_transferred" && ev.reason === "conquest" && town ? ["sack", town.x, town.y] : ev.kind === "city_destroyed" && town ? ["razed", town.x, town.y] : null;
@@ -772,7 +771,7 @@ function goalNow() { return Reign.goalNow(realmCtx()); }
 
 // Each turn the crown takes its tithe (season.js); what it keeps between turns stays here.
 const tally = { total: 0, upkeep: 0 };  // the tithe since the last reckoning
-const lastSeason = { net: 0 };  // the crown's season by its books (treasury.js income), for the top bar
+const lastSeason = { net: 0 };  // the tithe less upkeep, this season, for the top bar
 const favourPast = {};  // turn -> {house id: favour}, the last two years
 // The King's own works rise over two seasons, then stand and pay (treasury.js).
 function royalWorks(turn) { return Treasury.royalWorks(realmCtx(), turn); }
