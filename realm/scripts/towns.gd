@@ -393,6 +393,7 @@ func _bailey_ground(root: Node3D, cp: Vector3, cy: float, yaw: float, rng: Rando
 			var hi := maxf(_ground_y(center, gate), _ground_y(center, to))
 			var fc: Decal = terrain.paint(root, terrain.tiled(stone, clampi(roundi(fw / tile), 1, 12), clampi(roundi((long + fw) / tile), 1, 24), "paved"), Vector3(mid.x, (lo + hi) * 0.5, mid.z), Vector2(fw, long + fw * 0.5), atan2(gate.x - to.x, gate.z - to.z), _rgb(pave.get("tint"), Color.WHITE), hi - lo + 1.5)
 			fc.sorting_offset = 0.5  # as a street's setts: over the roads' earth, under the square's
+			_note_paved(root, Vector2(gate.x, gate.z), Vector2.ZERO, fw * 0.5)
 
 
 ## Who's in the yard: role, place (castle frame), move, facing.
@@ -900,6 +901,7 @@ func _keep_ways(root: Node3D, center: Vector3, ways: Array, main := false, back 
 			if gone < paved_to:
 				var b: Vector2 = way[i] if gone + seg <= paved_to else (way[i - 1] as Vector2).lerp(way[i], (paved_to - gone) / maxf(seg, 0.001))
 				_paint_way(root, center, way[i - 1], b, TownPlots.ROAD_HALF * 2.0 * float(pave.get("width", 1.1)), "paved")
+				_note_paved(root, way[i - 1], b, TownPlots.ROAD_HALF * float(pave.get("width", 1.1)))
 			gone += seg
 	root.set_meta("lanes", kept)
 
@@ -926,6 +928,7 @@ func _back_lane(root: Node3D, center: Vector3, way: PackedVector2Array) -> void:
 			var lo2 := minf(_ground_y(center, Vector3(a2.x, 0, a2.y)), _ground_y(center, Vector3(b2.x, 0, b2.y)))
 			var hi2 := maxf(_ground_y(center, Vector3(a2.x, 0, a2.y)), _ground_y(center, Vector3(b2.x, 0, b2.y)))
 			var reps := maxi(1, roundi((run + width) / float(pave.get("tile", 0.3))))
+			_note_paved(root, a2, b2, width * 0.5)
 			terrain.paint(root, terrain.tiled(stone, maxi(1, roundi(width / float(pave.get("tile", 0.3)))), reps, "paved"), Vector3(mid2.x, (lo2 + hi2) / 2.0, mid2.y), Vector2(width, run + width), atan2(b2.x - a2.x, b2.y - a2.y), _rgb(pave.get("tint"), Color.WHITE), hi2 - lo2 + 1.0)
 		return
 	if bool(k.get("ground", true)) and terrain.land3d and terrain.land3d.land:
@@ -2469,6 +2472,7 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 	root.position = center
 	var size := int(c["size"])
 	root.set_meta("title", String(c.get("title", c.get("name", ""))))  # for the CHECK lines
+	root.add_to_group("town_roots")  # wear.gd reads each town's paved ground (meta paved)
 	root.set_meta("size", size)
 	var buildings: Array = c["buildings"]
 	root.set_meta("buildings", buildings)  # what the square shows of them (a market's extra stalls)
@@ -2509,6 +2513,7 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 	# Laid to the house fronts (towns.json paving: the stone, its tint, how far it reaches; art target town-b).
 	var pave: Dictionary = _paving()
 	var pave_span := square_r * float(pave.get("square", 2.0))
+	_note_paved(root, Vector2.ZERO, Vector2.ZERO, pave_span * 0.5 * 0.9)  # the plaza edge holds whole to about there
 	var pave_reps := clampi(roundi(pave_span / float(pave.get("tile", 0.25))), 2, 12)
 	var setts: Decal = terrain.paint(root, terrain.tiled(String(pave.get("texture", SQUARE_TEX)), pave_reps, pave_reps, String(pave.get("square_edge", "setts"))), Vector3(0, _ground_y(center, Vector3.ZERO), 0), Vector2(pave_span, pave_span * float(pave.get("square_aspect", 0.9))), rng.randf() * TAU, _rgb(pave.get("tint"), Color.WHITE))
 	setts.sorting_offset = 1.0  # the paving over the roads that come into the square: a road ends at its setts, never a dirt stripe across them
@@ -3022,3 +3027,11 @@ static func _castle_knobs() -> Dictionary:
 		var d = JSON.parse_string(f.get_as_text()) if f else null
 		_town_knobs = d if d is Dictionary else {}
 	return (_town_knobs as Dictionary).get("castle", {})
+
+
+## A stretch of laid stone, town-local (a disc where a == b): wear.gd wears no earth into it (round 6: a band of
+## foot-worn mud across the square's setts from the statue to the well).
+func _note_paved(root: Node3D, a: Vector2, b: Vector2, half: float) -> void:
+	var all: Array = root.get_meta("paved", [])
+	all.append([a, b, half])
+	root.set_meta("paved", all)

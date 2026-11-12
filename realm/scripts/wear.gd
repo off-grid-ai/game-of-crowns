@@ -29,7 +29,10 @@ var _tiles := {}  # Vector2i -> {img, tex, decal, dirty}
 var _stamp_t := 0.0
 var _up_t := 0.0
 var _was := {}  # a person (instance id) -> where they stood at the last stamp
-var WALK: float = Data.num("ground", "wear.walkMin", 0.01)  # moved at least this far (units) since the last stamp to wear the ground
+var WALK: float = Data.num("ground", "wear.walkMin", 0.01)
+var STONE: bool = bool(Data.value("ground", "wear.onStone", false))  # wear earth into laid stone too (it read as a mud band across the square)
+var _stone: Array = []  # [a, b, half] in the world: each town's paved square, streets and forecourt (towns.gd meta paved)
+var _stone_t := -1  # when the list was last read (msec)  # moved at least this far (units) since the last stamp to wear the ground
 
 
 func _process(delta: float) -> void:
@@ -47,7 +50,7 @@ func _process(delta: float) -> void:
 				var id := p.get_instance_id()
 				var at := p.global_position
 				seen[id] = at
-				if _was.has(id) and Vector2(at.x - (_was[id] as Vector3).x, at.z - (_was[id] as Vector3).z).length() >= WALK:
+				if _was.has(id) and Vector2(at.x - (_was[id] as Vector3).x, at.z - (_was[id] as Vector3).z).length() >= WALK and not _on_stone(at):
 					_stamp(at)
 		_was = seen
 	if _up_t >= UPLOAD:
@@ -125,3 +128,23 @@ func _upload() -> void:
 		if t["dirty"]:
 			(t["tex"] as ImageTexture).update(t["img"])
 			t["dirty"] = false
+
+
+## Whether a world point lies on a town's laid stone (towns.gd _note_paved): no earth is worn into setts. The list is
+## read again every few seconds, as towns are built.
+func _on_stone(at: Vector3) -> bool:
+	if STONE:
+		return false
+	var now := Time.get_ticks_msec()
+	if _stone_t < 0 or now - _stone_t > 5000:
+		_stone_t = now
+		_stone = []
+		for t in get_tree().get_nodes_in_group("town_roots"):
+			var o := Vector2((t as Node3D).global_position.x, (t as Node3D).global_position.z)
+			for p in (t as Node3D).get_meta("paved", []):
+				_stone.append([o + (p[0] as Vector2), o + (p[1] as Vector2), float(p[2])])
+	var q := Vector2(at.x, at.z)
+	for p in _stone:
+		if q.distance_to(Geometry2D.get_closest_point_to_segment(q, p[0], p[1])) <= float(p[2]):
+			return true
+	return false
