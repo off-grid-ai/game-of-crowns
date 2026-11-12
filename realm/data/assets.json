@@ -33,7 +33,7 @@
     "roof_tints": { "thatch": [1.08, 0.9, 0.55], "tile": [1.02, 0.84, 0.78], "slate": [0.5, 0.56, 0.68], "shingle": [0.68, 0.54, 0.42], "house": [1.0, 1.0, 1.0] },
     "pitch": { "thatch": 1.12, "tile": 0.9, "slate": 1.0, "shingle": 0.95, "house": 0.92 },
     "scale": 0.85, "scale_kinds": ["house", "inn", "guild"], "jetty_m": 0.45,
-    "banner_scale": 0.7,
+    "banner_scale": 0.7, "window_flowers": ["res://assets/nature/Flower_3_Group.gltf", [0.6, 0.16, 0.18]],
     "tiers": {
       "hovel": { "w": 2, "d": 2, "floors": 1, "ridge": { "along": 1 }, "roofs": { "thatch": 0.8, "tile": 0.2 }, "walls": { "timber": 0.45, "plaster": 0.3, "stone": 0.25 }, "washes": [5, 0, 2], "chimney": 0.4, "pitch": [1.0, 1.1], "round_windows": 0.2,
         "windows": { "front_ground": 0.3, "front": 0, "back": 0.1, "sides": 0.15 }, "shutters": 0.7, "extras": { "lean_to": 0.55, "vines": 0.15 } },

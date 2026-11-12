@@ -225,7 +225,11 @@ func build(spec: Dictionary) -> ArrayMesh:
 					# A window box under an upper window on the street side (art target 01-town).
 					if side == 0 and f > 0 and _chance("window_boxes"):
 						_add("Prop_Crate", Transform3D(basis.scaled_local(Vector3(0.85, 0.2, 0.26)), pos + basis * Vector3(0, 0.82, 0.24)))
-						_add("Prop_Vine4", Transform3D(basis.scaled_local(Vector3(0.9, 0.35, 0.6)), pos + basis * Vector3(0.2, 1.08, 0.3)))
+						# Flowers in the box (01-town: red flower boxes under the windows), the nature kit's flower group
+						# cut down to the box's size (house_kit.window_flowers: its file and scale), sitting on its top.
+						var wf: Array = _k.get("window_flowers", ["res://assets/nature/Flower_3_Group.gltf", [0.6, 0.16, 0.18]])
+						var fs: Array = wf[1]
+						_add(String(wf[0]), Transform3D(basis.scaled_local(Vector3(float(fs[0]), float(fs[1]), float(fs[2]))), pos + basis * Vector3(0.1, 1.02, 0.24)))
 					continue
 				if stone:
 					piece = "Wall_UnevenBrick_Straight"
