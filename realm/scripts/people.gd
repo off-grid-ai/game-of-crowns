@@ -123,6 +123,21 @@ static func cloth_pick(role: String, rng: RandomNumberGenerator) -> Color:
 		pal = cloth_of("townsfolk")
 	return pal[rng.randi() % pal.size()]
 
+## A cast member's cloth by who they are (cast.json member palette; people.json cloth.palettes; the supervisor's
+## dress code, 12 Nov): a child in plain undyed linen and browns, a merchant or a gentlewoman in the rich dyes (deep
+## green, blue, burgundy), anyone else the town's cloth (cloth_pick: the house's colour only now and then).
+static func cloth_for(body: String, role: String, rng: RandomNumberGenerator) -> Color:
+	if role in SOLDIERLY and _town_house.a > 0.0 and not _town_mourning:
+		return _town_house  # the watch and the castle's men: always the house's livery
+	var pal_name := String((Data.value("cast", "members", {}) as Dictionary).get(body, {}).get("palette", ""))
+	var pals: Dictionary = Data.value("people", "cloth.palettes", {})
+	if pal_name != "" and pals.has(pal_name) and not _town_mourning:
+		var pal: Array = pals[pal_name]
+		if not pal.is_empty():
+			var c: Array = pal[rng.randi() % pal.size()]
+			return Color(float(c[0]), float(c[1]), float(c[2]))
+	return cloth_pick(role, rng)
+
 const HEAD_ONLY := preload("res://scripts/head_only.gdshader")
 
 const ANIMS := "res://assets/anims/mixamo/"
@@ -657,7 +672,7 @@ func make_body(rng: RandomNumberGenerator, body: String, tint := Color.WHITE, ag
 			elif String(info.get("mask", "")) != "":
 				# A cast member's cloth by its mask (cast_import.py): the house's colour or a dye of the town's on
 				# the masked cloth only, its skin, leather and steel kept as painted.
-				_mask_dye(mi, String(info["mask"]), tint if tint != Color.WHITE else cloth_pick(role if role != "" else String(info["roles"][0]), rng), (role if role != "" else String(info["roles"][0])) in SOLDIERLY)
+				_mask_dye(mi, String(info["mask"]), tint if tint != Color.WHITE else cloth_for(body, role if role != "" else String(info["roles"][0]), rng), (role if role != "" else String(info["roles"][0])) in SOLDIERLY)
 	if role == "":
 		role = info["roles"][0]
 	person.set_meta("body", body)
