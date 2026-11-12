@@ -980,7 +980,7 @@ Tundra are broad, cold regions, fit for some agriculture and little\
 [resource_gold]
 extra       = "Gold"
 identifier  = "$"
-trade       = 6
+; No trade: a worked seam pays its house in gold (luadata.txt [mines] gold_per_season, script.lua realm_mines).
 # glacier, hills, mountains.
 
 [resource_iron]

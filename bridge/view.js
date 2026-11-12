@@ -103,6 +103,8 @@ export function worldView(ctx) {
     p.turning = Math.min(1, (meta.turning?.[p.id]?.seasons ?? 0) / TURNING);
     // Where the house stands with the King, in one word (the goal's bar and the banners' 35).
     p.band = p.favour == null ? null : band(p.favour);  // loyal, sworn, steady, cooling or angry (favour.js, data/favour.json)
+    // Its last season's gold by source, as Freeciv's books say (treasury.js income): towns, mines, tithe, court, dealings.
+    p.income = meta.income?.[p.id] ?? null;
   }
   // Each house's measures as the ledger keeps them (one reckoning, recordTurn).
   // The Crown's own row reads like the houses' (the ledger keeps only theirs).
