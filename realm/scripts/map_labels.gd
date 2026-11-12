@@ -163,6 +163,12 @@ func _make(_id: int) -> Dictionary:
 	thought.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	thought.add_theme_font_size_override("font_size", T.SIZE_LABEL)
 	thought.add_theme_color_override("font_color", Color(0.95, 0.92, 0.85, 0.82))
+	# A quiet line, never a banner across the realm (batch 8b: one rumour ran the screen's width under the name):
+	# wrapped to data/thoughts.json width, at most `lines` lines, the rest an ellipsis.
+	thought.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	thought.custom_minimum_size.x = float(_thought_cfg().get("width", 300.0))
+	thought.max_lines_visible = int(_thought_cfg().get("lines", 2))
+	thought.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	_shadow(thought)
 	thought.visible = false
 	box.add_child(thought)
@@ -173,16 +179,21 @@ func _make(_id: int) -> Dictionary:
 ## (--thoughts; the words are the bridge's, /world cities[].thoughts; distances in data/thoughts.json).
 var _thoughts_on := not OS.get_cmdline_user_args().has("--thoughts=off")  # on by default (the Kingsmere slice: the town reacts)
 var _thinking := {}
+func _thought_cfg() -> Dictionary:
+	if _thinking.is_empty():
+		var f := FileAccess.open("res://data/thoughts.json", FileAccess.READ)
+		var j = JSON.parse_string(f.get_as_text()) if f else null
+		_thinking = j if j is Dictionary else {"near": 30.0, "cycle_sec": 6.0}
+	return _thinking
+
+
 func _think(tag: Dictionary, data: Dictionary, d: float) -> void:
 	var l: Label = tag["thought"]
 	var said: Array = data.get("thoughts", []) if _thoughts_on else []
 	if said.is_empty():
 		l.visible = false
 		return
-	if _thinking.is_empty():
-		var f := FileAccess.open("res://data/thoughts.json", FileAccess.READ)
-		var j = JSON.parse_string(f.get_as_text()) if f else null
-		_thinking = j if j is Dictionary else {"near": 30.0, "cycle_sec": 6.0}
+	_thought_cfg()
 	l.visible = d < float(_thinking.get("near", 30.0))
 	var i := int(Time.get_ticks_msec() / 1000.0 / float(_thinking.get("cycle_sec", 6.0))) % said.size()
 	l.text = "\u201c%s\u201d" % String(said[i])
