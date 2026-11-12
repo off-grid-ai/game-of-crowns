@@ -203,3 +203,19 @@ All seven steps landed, each with a headless probe in `bridge/tools/*_probe.mjs`
 - The server console cuts long lines: long Lua goes in a file (`lua file`).
 
 **The one diplomacy writer:** `server.js` `setDiplomacy` (a truce or a war) rewrites the save and resumes. Measured reload cost: 874 ms and 995 ms [2 samples, bridge.log]. Freeciv 3.3's `Player:cancel_pact` and `Player:add_love` replace it once 3.3 is released.
+
+## Hand edits of Freeciv state still in the bridge (12 November 2026, after 2585c496)
+
+The four "send them home" decrees no longer kill (2585c496: a homeward march and Disband Unit Recover). What is left, by kind:
+
+| Hand edit | Where | Freeciv's own way | Call |
+|---|---|---|---|
+| Raids: half a town's men killed by dice, gold taken | `arcs.js:746`, `characters.js:598`, `characters.js:1134` (three copies) | Barbarians: `Tile:unleash_barbarians()` beside the town; Freeciv's barbarian AI raids, pillages and plunders | **Do next, needs a call:** 3.2's unleash does nothing before `onsetbarbarian` (default turn 60) or with raiders off, and wipes units on the tile. Either set `onsetbarbarian 1` in `realm.serv` (more early barbarians realm-wide) or keep raids off until turn 60 |
+| Gold moved between players (tithe, gifts, debts, decree costs, story gold, plunder) | `crown.js` (`Lua.gold`), `treasury.js`, `campaigns.js:138`, `characters.js`, `arcs.js:723`, `events.js:137`, `court.js:57`, `reign.js:264` | Only a treaty's gold clause (a client connection); 3.3 adds none | Keep. Freeciv has no tribute between players |
+| Units raised by decree, story, petition or reward (levy, sellswords, garrison, hunt, rebels, reign reward, barracks yearly) | `crown.js:135,174,183`, `garrison.js:25`, `petitions.js:132-133`, `characters.js:614,1115`, `arcs.js:740`, `reign.js:261`, `treasury.js:109` | Bought in a town's production (no Lua for production or buying in 3.2) | Keep. All are homed to a town, so Freeciv charges their upkeep |
+| Hosts raised for stories, threats, pretenders, allies | `realm_host`: `stakes.js:58`, `director.js:152,181`, `campaigns.js:67`, `arcs.js:754`, `characters.js:1142`, `crown.js:377` | The house's own units, ordered (no Lua orders in 3.2) | Keep. Homed since d58878d4 |
+| Banners: a house's men taken off and raised again for the crown | `crown.js:132` | Unit ownership change (none in 3.2's Lua) | Keep, a transfer (commented) |
+| Towns handed over (grants, cession, story seizures, a threat's capture) | `Lua.transferCity`: `crown.js:319,325,363`, `director.js:180`, `petitions.js:46`, `characters.js:568`, `arcs.js:765` | `edit.transfer_city` is Freeciv's own call | Keep |
+| Royal works finished | `treasury.js:98` (`edit.create_building`) | City production and buying (no Lua in 3.2) | Keep (paid for, built over two seasons) |
+| A famine takes the granary | `director.js:189` (`edit.remove_building`) | A disaster with `DestroyBuilding` hits a random building, not the granary | Keep |
+| Reign-start options (house wealth, the King's purse, a strong or small royal host) | `server.js:389,426,428,431`, `chronicles.js:220` | Scenario setup, like `world_setup.lua` | Keep |
