@@ -904,7 +904,7 @@ func _finish(person: Node3D, skeleton: Skeleton3D, rng: RandomNumberGenerator, r
 			mi.visibility_range_end_margin = 3.0
 			mi.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_DISABLED
 	_shape(skeleton, build, "" if person.has_meta("body") and body_info(String(person.get_meta("body"))).get("cast", false) else age)  # a cast child is drawn a child already
-	var height: float = rng.randf_range(0.96, 1.04) * {"child": 0.72, "young": 0.98, "adult": 1.0, "elder": 0.96}[age]
+	var height: float = rng.randf_range(0.96, 1.04) * float((Data.value("people", "build.ages", {}) as Dictionary).get(age, 1.0))  # a child's height and the rest by age (people.json build.ages; tools/proportion_probe.gd)
 	# people.json build (Mac 2026-11-12: "the NPCs look like they are on steroids"): a woman a little shorter than a
 	# man, and a Meshy cast body slimmed across the shoulders and chest (its upper arms stood 26% of its height apart,
 	# a man's about 20%): the skeleton narrowed in x and z, the person's own scale left even for everything that reads it.
