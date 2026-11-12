@@ -71,3 +71,19 @@ the lower third at d4.5-6.
 (2) The charred house resets to whole within 90 s (fire.gd charring vs bridge/damage.js burnt). (3) No smoke column
 (fire.gd smoke; fire.json columns). (4) Flat flame cards (the GDQuest shader's look). (5) The folk don't react
 (fire.gd folk lines).
+
+## fixes (6 frames, 0 errors)
+
+| Shot | Verdict | Defects |
+|---|---|---|
+| bailey | FAIL | The framing shows the new Meshy gatehouse, not the bailey. The gatehouse's chunky hand-painted style and scale clash with the kit's flat curtain walls: two building languages side by side. A black, unlit shed box stands behind it. A fire glow sits on the gate's wall top. The bailey is empty grass. |
+| mountains | FAIL | No mountains in frame (a d30 view of Kingsmere). A **pale square sky panel** hangs over the sea (a fog or sky volume's edge), as in batch 9's goldrock-30. |
+| hedges | FAIL | A mostly forest frame. The hedges barely read. |
+| goldrock-mill | FAIL | A giant pine fills the left third at the lens. The wheat is a flat ochre slab. The mill's sails can't be seen. |
+| dry-mill | FAIL (closest) | The Mooncrag windmill stands among wheat fields on open grass with the town behind. Clear and calm. The wheat reads as flat slabs from this height, and nobody works there. |
+| feast-bonfire | FAIL | The square's statue now reads as a stone knight on the fountain (a gain), with bunting and a dancing crowd. **The bonfire can't be seen**: a black-shaded tree crown sits dead centre and a big roof fills the lower-left quarter. |
+
+**fixes defects:** (1) the Meshy gatehouse doesn't match the kit's walls (meshy.json judged pieces; castle_builder.gd
+placement and scale). (2) The sky or fog panel edge (look.gd volumetric fog bounds or sky3d). (3) Tree crowns and roofs at
+the lens still (camera_rig.gd sight check counts buildings, not trees). (4) Wheat as flat slabs from roof height (d2cc3c1d's
+stalks don't read past d5).
