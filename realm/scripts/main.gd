@@ -94,6 +94,16 @@ func season_settle(world: Dictionary) -> float:
 
 var _snowed := -1  # town count when the season was last laid on them
 var _film_season := ""  # the season a film holds (look_season)
+var _film_snap := false  # a film's new shot: its season laid at once, not settled over a quarter season
+
+
+## A film framing a new shot (autoplay's framing steps): the land takes the realm's season as it is now and holds
+## it through the shot, laid at once. Held for the whole run, as it was, the land kept the first season a launch
+## saw: batch 8b painted-melee stood in deep snow under "Spring of 314 AC" (the test reign had turned during its
+## 82 s wait).
+func film_reseason() -> void:
+	_film_season = ""
+	_film_snap = true
 
 
 func _ready() -> void:
@@ -916,7 +926,8 @@ func _on_world(world: Dictionary) -> void:
 	var season := look_season(world)
 	if season != terrain.season or towns.towns.size() != _snowed:
 		_snowed = towns.towns.size()
-		terrain.set_season(season, towns.towns.values().map(func(t): return t["node"]), season_settle(world))
+		terrain.set_season(season, towns.towns.values().map(func(t): return t["node"]), 0.1 if _film_snap else season_settle(world))
+	_film_snap = false
 	# Roads and the countryside each in a frame of their own, so laying them
 	# out never holds the window for seconds at once.
 	if not _laying:

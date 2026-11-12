@@ -86,6 +86,8 @@ func _play(quit_after: bool) -> void:
 		# A framing step: the next snap waits for the camera to settle (batch 7: frames taken mid-move), and the
 		# log says where it stood (the distance ladder, checkable from play.log).
 		if w[0] in FRAMING:
+			if main.has_method("film_reseason") and not w[0] in ["field"]:  # (field holds the fields' year itself)
+				main.film_reseason()  # each shot in the realm's season as it stands now: the date shown and the land agree
 			await _settle()
 	Engine.time_scale = 1.0
 	_burst = false
