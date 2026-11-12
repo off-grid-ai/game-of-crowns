@@ -10,6 +10,7 @@ extends SceneTree
 
 const TownLife := preload("res://scripts/town_life.gd")
 const Works := preload("res://scripts/works.gd")
+const Mover := preload("res://scripts/mover.gd")
 
 
 class FlatLand extends Node3D:
@@ -330,6 +331,34 @@ func _run() -> void:
 			if moved == 0:
 				fails += 1
 				print("FAIL no horse moved")
+			# A loose horse whose way another horse stands on gives way by the Mover's one rule (mover.gd standing_on:
+			# the paddock's horses are bodies), never walking into it; the works keep no check of their own (the 15:25
+			# ruling: no per-caller copies of the yield).
+			if horses.size() >= 2:
+				var a: Node3D = horses[0]
+				var b: Node3D = horses[1]
+				for h: Node3D in horses:
+					Mover.of(h).stop()
+					h.set_meta("goal", Vector3.INF)
+					h.set_meta("rest", 1000.0)
+				var across := Vector3(tick.roam * 0.8, 0, 0)
+				b.position = tick.paddock
+				a.position = tick.paddock - across
+				a.rotation.y = atan2(across.x, across.z)
+				a.set_meta("goal", tick.paddock + across)
+				a.set_meta("rest", 0.0)
+				var closest := INF
+				for i in 80:
+					await process_frame
+					_step(tick, horses)
+					closest = minf(closest, Vector2(a.position.x - b.position.x, a.position.z - b.position.z).length())
+				print("WORKS a loose horse's way across another: came within %.3f of it" % closest)
+				if closest < 0.1:
+					print("FAIL a paddock horse walked into another standing on its way (%.3f apart)" % closest)
+					fails += 1
+			if (Works as GDScript).source_code.contains("func _horse_ahead"):
+				print("FAIL works.gd keeps its own horse-ahead check (the Mover's yield is the one rule)")
+				fails += 1
 			# A groom leads one: it follows.
 			var groom := Node3D.new()
 			world.add_child(groom)

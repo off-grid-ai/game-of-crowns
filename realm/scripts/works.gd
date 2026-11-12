@@ -448,24 +448,12 @@ class Tick extends Node:
 				return false
 		return true
 
-	## Whether another horse stands within `gap` in front of `h` as it heads along `flat`.
-	func _horse_ahead(h: Node3D, flat: Vector2, gap: float) -> bool:
-		if flat.length() < 0.001:
-			return false
-		var dir := flat.normalized()
-		for o: Node3D in Works.horses(root):
-			if o == h:
-				continue
-			var off := Vector2(o.position.x - h.position.x, o.position.z - h.position.z)
-			if off.length() < gap and off.dot(dir) > 0.0:
-				return true
-		return false
-
 	func _horses(delta: float) -> void:
 		var gap := Data.num("works", "paddock.gap", 0.45)
 		var follow := Data.num("works", "paddock.follow", 0.16)
 		var amble := Data.num("works", "paddock.amble", 0.07)
 		for h: Node3D in Works.horses(root):
+			h.add_to_group("bodies")  # a standing body: another's Mover gives way to it (mover.gd standing_on, the one rule)
 			var to := Vector3.INF
 			var pace := amble
 			var by: Variant = h.get_meta("led_by") if h.has_meta("led_by") else null  # (a null default to get_meta is no default)
@@ -507,12 +495,6 @@ class Tick extends Node:
 			if to == Vector3.INF:
 				if h.has_node("Mover") and by != null:
 					Mover.of(h).stop()  # at its groom's back: it stands
-				continue
-			var flat := Vector2(to.x - h.position.x, to.z - h.position.z)
-			if by == null and _horse_ahead(h, flat, gap * 0.75):
-				h.set_meta("goal", Vector3.INF)  # another horse in its way: it stands a moment, then makes for somewhere else
-				h.set_meta("rest", _rng.randf_range(1.0, 3.0))
-				Mover.of(h).stop()
 				continue
 			_walk_horse(h, to, pace, by == null)
 
