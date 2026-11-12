@@ -188,18 +188,23 @@ class Step extends BTAction:
 	## town's, its life's included: a bonfire's ring is one).
 	func _room_at(to: Vector3) -> bool:
 		var at := (agent.get_parent() as Node3D).to_global(to) if agent.get_parent() is Node3D else to
-		if in_the_way(agent, blackboard, at):
-			return false
-		for p in agent.get_tree().get_nodes_in_group("people"):
-			var n := p as Node3D
-			if n == agent or not n.is_visible_in_tree():
-				continue
-			if Vector2(n.global_position.x - at.x, n.global_position.z - at.z).length() < 0.11:
-				return false
-			if n.has_meta("step_to"):  # where they're stepping to is theirs too
-				var s: Vector3 = n.get_meta("step_to")
-				if Vector2(s.x - at.x, s.z - at.z).length() < 0.11:
+		return not in_the_way(agent, blackboard, at) and room(agent, at)
+
+	## The one rule for where a body may stop (every mind that stands someone somewhere asks it): nobody else, person
+	## or beast (groups people and beasts), stands within `r` of `at` (world), and nobody is stepping there (their
+	## step_to: where they're going is theirs too). `but`: the one they're with (a dog at its man's heel).
+	static func room(agent: Node, at: Vector3, r := 0.11, but: Node = null) -> bool:
+		for g in ["people", "beasts"]:
+			for p in agent.get_tree().get_nodes_in_group(g):
+				var n := p as Node3D
+				if n == agent or n == but or not n.is_visible_in_tree():
+					continue
+				if Vector2(n.global_position.x - at.x, n.global_position.z - at.z).length() < r:
 					return false
+				if n.has_meta("step_to"):
+					var s: Vector3 = n.get_meta("step_to")
+					if Vector2(s.x - at.x, s.z - at.z).length() < r:
+						return false
 		return true
 
 	## Whether `at` (world) is inside something standing in a town: a building,

@@ -427,6 +427,8 @@ func _stage_role(k: Dictionary, role: Dictionary, anchors: Dictionary) -> void:
 		var body: Node3D
 		if role.has("beast"):
 			body = tl.beast(root, String(role["beast"]), pos, role.get("tints", []), i, rng)
+			if body:
+				body.add_to_group("beasts")  # stands on the ground like anyone: the stopping rule (npc_mind Step.room) sees it
 		else:
 			var tint := Color.WHITE
 			var tv: Variant = role.get("tint", null)
@@ -1102,8 +1104,28 @@ func _on_stimulus(kind: String, pos: Vector3, radius: float, _house: String, _st
 
 # --- the tasks: one tree each, the person's only decider ----------------------------------------
 
-## What every task does the same way: play clips in turn, face a point.
+## What every task does the same way: play clips in turn, face a point, stop only where there's room.
 class Kit:
+	static var CLEAR: float = Data.num("town_scenes", "director.clear", 0.08)  # world units: two bodies' radii and a hand
+
+	## The nearest spot to `want` (world) a walker may stop on: room there by the one stopping rule (npc_mind
+	## Step.room: nobody standing or stepping within CLEAR, `but` the one they're with) and nothing built there
+	## (Step.in_the_way). Rings widening out a body at a time; none: `want`.
+	static func free_near(agent: Node3D, bb: Blackboard, want: Vector3, but: Node = null) -> Vector3:
+		for ring in 6:
+			var n := 1 if ring == 0 else 6 * ring
+			for i in n:
+				var a := TAU * i / n
+				var p := want + Vector3(cos(a), 0, sin(a)) * CLEAR * 0.75 * ring
+				if Mind.Step.room(agent, p, CLEAR, but) and not Mind.Step.in_the_way(agent, bb, p):
+					return p
+		return want
+
+	## Goes to a spot it has spoken for (its step_to, which the stopping rule reads), so nobody else stops there.
+	static func go_to(agent: Node3D, to: Vector3) -> void:
+		agent.set_meta("step_to", to)
+		Mover.of(agent).go(to)
+
 	## Plays a person's clips in turn, never the same twice running, a new one every few seconds.
 	static func _cycle(agent: Node, bb: Blackboard, clips: Array, delta: float) -> void:
 		var left := float(bb.get_var(&"clip_left")) - delta
@@ -1234,7 +1256,10 @@ class Round extends BTAction:
 			_goal = goal
 			_set_tail(false)
 			_carter(true)
-			m.go(goal + off)
+			if blackboard.get_var(&"town") == null:
+				Kit.go_to(me, Kit.free_near(me, blackboard, goal + off))  # a stop with room: never on a beggar at the step
+			else:
+				m.go(goal + off)
 			if lead:
 				plan["goal"] = goal
 			return RUNNING
@@ -1331,27 +1356,39 @@ class Dog extends BTAction:
 			if not is_instance_valid(life):
 				return RUNNING
 			var folk := life.get_children().filter(func(n): return n is Node3D and n != dog and n.has_node("Anim") and (n as Node3D).position.distance_to(dog.position) < 1.2)
+			folk = folk.filter(func(n): return not n.has_meta("dogged"))  # one dog at anyone's heels, never a pack round a child
 			var kids := folk.filter(func(n): return n.has_meta("chasing"))
 			var pool := kids if not kids.is_empty() and randf() < 0.6 else folk
 			if pool.is_empty():
 				_rest = randf_range(3.0, 8.0)
 				return RUNNING
 			_after = pool[randi() % pool.size()]
+			_after.set_meta("dogged", dog.get_instance_id())
 			_for = randf_range(6.0, 14.0)
 			return RUNNING
 		_for -= delta
 		if _for <= 0.0:
+			_after.remove_meta("dogged")
 			_after = null
 			m.stop()
+			dog.remove_meta("step_to")
 			_rest = randf_range(4.0, 12.0)  # it lies about, sniffs, scratches (its idle life)
 			Animals.walk(dog, false)
 			return RUNNING
 		var to := _after.global_position
-		if dog.global_position.distance_to(to) <= float(blackboard.get_var(&"follow")):
-			m.stop()
+		var gap := dog.global_position.distance_to(to)
+		var heel := gap <= float(blackboard.get_var(&"follow")) and gap >= Kit.CLEAR
+		if heel and Mind.Step.room(dog, dog.global_position, Kit.CLEAR, _after):
+			if m.moving():
+				m.stop()  # at its man's heel, with room to stand
+			dog.remove_meta("step_to")
 		elif _asked == Vector3.INF or _asked.distance_to(to) > 0.05 or not m.moving():
+			# A free spot at his heel (never on someone else standing by him), on the dog's side of him.
+			var back := dog.global_position - to
+			back.y = 0
+			var want := to + (back.normalized() if back.length() > 0.01 else Vector3.BACK) * float(blackboard.get_var(&"follow")) * 0.8
 			_asked = to
-			m.go(to)
+			Kit.go_to(dog, Kit.free_near(dog, blackboard, want, _after))
 		Animals.walk(dog, m.moving())
 		return RUNNING
 
@@ -1386,7 +1423,7 @@ class Chase extends BTAction:
 					return RUNNING
 			if _asked != pair["goal"]:
 				_asked = pair["goal"]
-				m.go(root.to_global(pair["goal"]))
+				Kit.go_to(me, root.to_global(pair["goal"]))
 			return RUNNING
 		if now < int(pair.get("count", 0)):
 			return RUNNING  # the chaser counts while the runner makes off
@@ -1394,11 +1431,18 @@ class Chase extends BTAction:
 		if me.global_position.distance_to(runner.global_position) <= float(W.get("catch", 0.06)):
 			m.stop()
 			Mover.of(runner).stop()
+			me.remove_meta("step_to")
+			runner.remove_meta("step_to")
+			for kd: Node3D in [runner, me]:
+				# Tagged on the run, they stand where it happened: each steps a pace to room if someone's there (the
+				# other child, a gossip by the well), never standing in them for the breather.
+				if not Mind.Step.room(kd, kd.global_position, Kit.CLEAR):
+					Kit.go_to(kd, Kit.free_near(kd, blackboard, kd.global_position))
 			pair["kids"] = [me, runner]  # caught: now the other one runs
 			pair["goal"] = Vector3.INF
 			pair["from"] = runner  # he makes off away from the one who caught him
 			pair["count"] = now + int(float(W.get("count", 1.0)) * 1000.0)  # the new chaser counts a beat while the other runs
-			if randf() < float(W.get("stop", 0.5)):
+			if randf() < float(W.get("stop", 0.5)) and _alone(pair, root.to_local(runner.global_position)):
 				var span: Array = W.get("rest", [2.0, 4.0])
 				pair["until"] = now + int(randf_range(float(span[0]), float(span[1])) * 1000.0)
 				pair["count"] = int(pair["until"]) + int(float(W.get("count", 1.0)) * 1000.0)
@@ -1409,8 +1453,23 @@ class Chase extends BTAction:
 		var short := runner.global_position + (me.global_position - runner.global_position).normalized() * float(W.get("catch", 0.1)) * 0.9
 		if _asked == Vector3.INF or _asked.distance_to(short) > 0.05 or not m.moving():
 			_asked = short  # a hand's reach short of him: a catch, not one child inside the other
-			m.go(_asked)
+			Kit.go_to(me, Kit.free_near(me, blackboard, short, runner))
 		return RUNNING
+
+	## Whether nobody but the two children (and the dogs at their heels) stands within the chase's `clear` of a
+	## town-local point: they stop for breath off on their own, never in among the crier's listeners or a knot of gossips.
+	static func _alone(pair: Dictionary, p: Vector3) -> bool:
+		var life: Node3D = (pair["root"] as Node3D).get_node_or_null("Life")
+		if life == null:
+			return true
+		var ours: Array = (pair["kids"] as Array).duplicate()
+		for kd in pair["kids"]:
+			if is_instance_valid(kd) and (kd as Node).has_meta("dogged"):
+				ours.append(instance_from_id(int((kd as Node).get_meta("dogged"))))
+		for n in life.get_children():
+			if n is Node3D and not n in ours and (n.has_meta("role") or n.has_meta("town_dog")) and Vector2((n as Node3D).position.x - p.x, (n as Node3D).position.z - p.z).length() < W_clear(pair):
+				return false
+		return true
 
 	static func W_clear(pair: Dictionary) -> float:
 		return float((pair["W"] as Dictionary).get("clear", 0.2))

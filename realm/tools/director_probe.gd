@@ -14,7 +14,7 @@ extends SceneTree
 ## - nobody placed on top of another (a shoulder apart) or in the well; on the square's ordinary day (peace) nobody stands
 ##   inside another for over STUCK seconds and no knot is bigger than KNOT_MOST (other states: shown as WARN, their
 ##   walkers among posted people need the town crowd's RVO, which headless Godot can't run).
-##   arch -arm64 godot --headless --path realm --script res://tools/director_probe.gd
+##   arch -arm64 godot --headless --path realm --script res://tools/director_probe.gd [-- --only=peace]
 
 const TownLife := preload("res://scripts/town_life.gd")
 const Mover := preload("res://scripts/mover.gd")
@@ -147,7 +147,13 @@ func _run() -> void:
 		"riot": {"disorder": true},
 		"justice": {"ruling": {"kind": "justice", "left": 2}},
 	}
+	var only := ""  # -- --only=peace: one state alone (a flake's many runs)
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--only="):
+			only = arg.substr(7)
 	for name in states:
+		if only != "" and name != only:
+			continue
 		(main.awareness as Aware).town(7).set_var(&"levy", name == "levy")
 		var town := _town(world)
 		var life := TownLife.new()
