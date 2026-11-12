@@ -121,6 +121,15 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- 11:50 (11-12) Mac on a man looping gestures alone mid-square: "there is no real routine", "group routine", "town
+  setting etc that governs people's behaviour... it all needs to flow from the top". Direction given to works-life:
+  four layers, each reading only the one above: (1) the town's state from the bridge (size, food, prosperity,
+  unrest, season, weather, time of day, market day, events), (2) one town director per town turning it into a day
+  schedule and a mood, (3) group scenes with roles, beats and an end (family shops, cart unload, crier and crowd,
+  guard change, gossip circle, smithy with customer), staggered by a scheduler, (4) people taking roles from scenes
+  or walking with a destination; nobody acts alone in open space. Design first: docs/research/town-behaviour-
+  architecture.md, then build behind --town-director=on. An independent read-only audit of today's NPC code is running.
+  Pending Mac: Meshy credits for a concept-matched set of the square's pieces.
 - 11:15 (11-12) Mac: "overall quality is still poor. look at the trees, the statue, there is no finesse"; "the NPCs
   look like they are on steroids"; "there isn't gradual smooth actions, the routine for the NPCs isn't figured out".
   Routed: works-life readable 1.5 -> ~1.1-1.15, held items 1.0, slimmer bodies; then smooth motion (crossfades,
