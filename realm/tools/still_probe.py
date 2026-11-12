@@ -9,6 +9,11 @@ the numbers each square round is judged by, beside 01-town's, with PASS or FAIL 
   p5     the darkest twentieth's luma (shadows not crushed)                                   0.06 or more
   p95    the brightest twentieth's luma
   white  share of pale, colourless pixels (luma over 0.75, chroma under 0.12: snow, bleached paving)
+  setts  do the square's stones read as stones (supervisor, round 15: since 6a7746cf the setts read as sand from
+         the c01 camera): in the frame's lower middle (where the town view puts the square), on its paving-coloured
+         pixels (low saturation, mid light, red at least blue), the median local contrast of the light, the 9x9
+         standard deviation over the 9x9 mean at 1920 px wide: stones with joints vary, sand is flat. 01-town 0.15,
+         round 11 0.21, round 14 0.19, round 15 (sand) 0.09                                          0.12 or more
 
 Needs only ImageMagick (`magick`) and Python's standard library. The HUD's corners are masked (--hud, on by default: top bar 6% and the minimap's corner) so the panels don't count.
 
@@ -22,7 +27,7 @@ import sys
 
 R = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..")
 TARGET = os.path.join(R, "docs", "art", "target", "01-town.jpg")
-GOAL = {"mean": (0.42, 0.45), "clip": (0.0, 0.01), "sat": (0.45, 1.0), "p5": (0.06, 1.0)}
+GOAL = {"mean": (0.42, 0.45), "clip": (0.0, 0.01), "sat": (0.45, 1.0), "p5": (0.06, 1.0), "setts": (0.12, 1.0)}
 ROW = re.compile(r"^\s*(\d+):\s*\(\s*([\d.]+),\s*([\d.]+),\s*([\d.]+)")
 
 
@@ -88,6 +93,41 @@ def measure(path, hud=True):
             "p5": percentile(pairs, total, 5), "p95": percentile(pairs, total, 95), "white": white / total}
 
 
+def setts(path):
+    """The square's paving texture as the frame shows it: the median local contrast (9x9 sd / 9x9 mean of the luma,
+    at 1920 px wide) over the paving-coloured pixels of the frame's lower middle (x 20-80%, y 45-95%), and the share
+    of that box they fill. ImageMagick does the image work; its histogram carries contrast (red, x4) and the paving
+    mask (green)."""
+    w, h = (int(x) for x in subprocess.run(["magick", path + "[0]", "-resize", "1920x", "-format", "%w %h", "info:"],
+                                            capture_output=True, text=True, check=True).stdout.split())
+    box = "%dx%d+%d+%d" % (int(w * 0.6), int(h * 0.5), int(w * 0.2), int(h * 0.45))
+    cmd = ["magick", path + "[0]", "-alpha", "off", "-colorspace", "sRGB", "-resize", "1920x", "-crop", box, "+repage",
+           "-write", "mpr:c", "+delete",
+           "(", "mpr:c", "-grayscale", "Rec709Luma", "-write", "mpr:l", "-statistic", "StandardDeviation", "9x9", ")",
+           "(", "mpr:l", "-statistic", "Mean", "9x9", ")", "-compose", "DivideDst", "-composite",
+           "-evaluate", "multiply", "4", "-write", "mpr:rel", "+delete",
+           "(", "mpr:c", "-colorspace", "HSB", "-channel", "G", "-separate", "+channel", "-threshold", "38%", "-negate", ")",
+           "(", "mpr:l", "-threshold", "30%", ")", "-compose", "multiply", "-composite",
+           "(", "mpr:l", "-threshold", "92%", "-negate", ")", "-compose", "multiply", "-composite",
+           "(", "mpr:c", "-channel", "R", "-separate", "+channel", "(", "mpr:c", "-channel", "B", "-separate", "+channel", ")",
+           "-compose", "minus_dst", "-composite", "-threshold", "0", "-negate", ")", "-compose", "multiply", "-composite",
+           "-write", "mpr:m", "+delete",
+           "mpr:rel", "mpr:m", "mpr:m", "-combine", "-depth", "8", "-format", "%c", "histogram:info:-"]
+    out = subprocess.run(cmd, capture_output=True, text=True, check=True).stdout
+    vals, n, n_all = {}, 0, 0
+    for line in out.splitlines():
+        m = ROW.match(line)
+        if m:
+            c, r, g = int(m.group(1)), float(m.group(2)) / 255.0 / 4.0, float(m.group(3))
+            n_all += c
+            if g > 127:
+                vals[r] = vals.get(r, 0) + c
+                n += c
+    if n == 0:
+        return 0.0, 0.0
+    return percentile(sorted(vals.items()), n, 50), n / n_all
+
+
 def verdict(k, v):
     if k not in GOAL:
         return ""
@@ -114,6 +154,11 @@ def main(args):
             f = (lambda x: f"{x * 100:5.1f}%") if pct else (lambda x: f"{x:6.3f}")
             print(f"  {k:5s} {f(m[k])}   01-town {f(t[k])}   {v}")
         print("  LIGHT", "PASS" if bad == was else f"FAIL ({bad - was})")
+        st, share = setts(path)
+        v = verdict("setts", st)
+        bad += v == "FAIL"
+        print(f"  setts {st:6.3f}   01-town {setts(TARGET)[0]:6.3f}   {v}   (paving {share * 100:.0f}% of the square's box)")
+        print("  SETTS", v)
     return 0 if bad == 0 else 1
 
 

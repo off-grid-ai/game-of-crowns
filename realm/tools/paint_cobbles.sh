@@ -1,26 +1,37 @@
 #!/usr/bin/env bash
-# The square's and streets' setts painted to 01-town's (supervisor, 2026-11-12: warmer and rounder setts; checked by
-# realm/tools/cobble_probe.py against 01-town's own cobbles: hue, saturation, value, joints, stone size). Paints Poly
-# Haven's cobblestone_02 (CC0; small rounded pebbles in sandy joints, about 0.19 m each at towns.json paving.tile 0.8)
-# the kit_paint way: the stones lifted, turned a little pinker and less saturated toward 01-town's warm grey-beige, a
-# warm wash over them; the joints kept as the set has them (JOINT_DARK 1: 01-town's joints are soft), no crown highlight.
-#   realm/tools/paint_cobbles.sh [source folder]   (default ~/Downloads/Aldmere/polyhaven/textures/cobblestone_02)
+# The square's and streets' setts painted so they read as stones from the town view (round 15: 6a7746cf's real-size
+# pebbles, cobblestone_02 at 0.19 m, landed at 2-3 px a stone from the c01 camera and the square read as sand; judged on
+# the rendered frame by realm/tools/still_probe.py's setts line, the albedo by realm/tools/cobble_probe.py). Paints Poly
+# Haven's cobblestone_floor_08 (CC0; light, warm-grey rounded setts, about ten across the sheet, so at towns.json
+# paving.tile 0.45 a stone is about 18 px from the c01 camera, as round 11's setts that read) the kit_paint way: the
+# stones lifted and warmed toward 01-town's beige-grey, the joints darkened from the set's own height map (its local
+# lows, so they stay pixel-aligned and tile, and a broad dip in the sheet doesn't blotch), a soft highlight on each crown.
+#   realm/tools/paint_cobbles.sh [source folder]   (default ~/Downloads/Aldmere/polyhaven/textures/cobblestone_floor_08)
 # Writes realm/assets/ground/cobbles-painted.jpg (or $OUT); the game reads it through realm/data/towns.json paving.texture.
-# Knobs (env): LIFT (stones' brightness %, 140), SAT (saturation %, 72), HUE (hue turn, 100 none, below warmer/pinker; 92),
-# WARM (warm tint over the stones, #e6cbbb), WARM_MIX (%, 25), JOINT_LO/JOINT_HI (saturation % where stones end and joints
-# start, 14/30), JOINT_DARK (joints' value, 1.0: as the set has them), CROWN (crown highlight strength, 0), CROP (% of the
-# sheet kept, 100; a crop shows mirror seams where terrain.gd tiled() flips every other repeat).
+# Knobs (env): LIFT (stones' brightness %, 122), SAT (saturation %, 100), HUE (hue turn, 100 none, below warmer/pinker; 95),
+# WARM (warm tint over the stones, #e6cbbb), WARM_MIX (%, 35), JOINTS (height: the set's height map finds the joints;
+# sat: their saturation, for a set with tan joints between grey stones), JOINT_LO/JOINT_HI (where joints end and stones
+# start: % of local height for height, of saturation for sat; 42/54), JOINT_DARK (joints' value, 0.25), CROWN (crown
+# highlight strength, 0.15), CROP (% of the sheet kept, 100; a crop shows mirror seams where terrain.gd tiled() flips
+# every other repeat).
 set -euo pipefail
-SRC="${1:-$HOME/Downloads/Aldmere/polyhaven/textures/cobblestone_02}"
+SRC="${1:-$HOME/Downloads/Aldmere/polyhaven/textures/cobblestone_floor_08}"
 OUT="${OUT:-$(cd "$(dirname "$0")/.." && pwd)/assets/ground/cobbles-painted.jpg}"
 N="$(basename "$SRC")"
-LIFT="${LIFT:-140}"; SAT="${SAT:-72}"; HUE="${HUE:-92}"; WARM="${WARM:-#e6cbbb}"; WARM_MIX="${WARM_MIX:-25}"
-JOINT_LO="${JOINT_LO:-14}"; JOINT_HI="${JOINT_HI:-30}"; JOINT_DARK="${JOINT_DARK:-1.0}"; CROWN="${CROWN:-0}"; CROP="${CROP:-100}"
+LIFT="${LIFT:-122}"; SAT="${SAT:-100}"; HUE="${HUE:-95}"; WARM="${WARM:-#e6cbbb}"; WARM_MIX="${WARM_MIX:-35}"
+JOINTS="${JOINTS:-height}"; JOINT_LO="${JOINT_LO:-42}"; JOINT_HI="${JOINT_HI:-54}"; JOINT_DARK="${JOINT_DARK:-0.25}"; CROWN="${CROWN:-0.15}"; CROP="${CROP:-100}"
 T="$(mktemp -d)"
 magick "$SRC/${N}_diff_1k.jpg" -modulate "$LIFT,$SAT,$HUE" \( +clone -fill "$WARM" -colorize 100 \) -compose blend -define compose:args="$WARM_MIX" -composite "$T/stone.png"
-# the joints: this set's are tan earth between grey stones, so its saturation finds them (its height map doesn't
-# isolate them); a median clears the speckle inside the warmer stones
-magick "$SRC/${N}_diff_1k.jpg" -colorspace HSL -channel G -separate +channel -level "${JOINT_LO}%,${JOINT_HI}%" -negate -statistic median 5x5 -blur 0x1 "$T/mask.png"
+# the joints: by the set's height map (JOINTS=height: the low ground between stones, pixel-aligned, so it tiles) or,
+# for a set whose joints are tan earth between grey stones and whose height map doesn't isolate them, by saturation
+# (JOINTS=sat); a median clears the speckle inside the warmer stones
+if [ "$JOINTS" = height ]; then
+  # the height over its local mean (a blurred copy, tiled), so a broad dip in the sheet doesn't darken a patch of stones
+  magick "$SRC/${N}_disp_1k.jpg" -colorspace gray \( +clone -virtual-pixel tile -blur 0x12 \) -compose minus_src -composite \
+    -evaluate add 50% -level "${JOINT_LO}%,${JOINT_HI}%" -blur 0x1 "$T/mask.png"
+else
+  magick "$SRC/${N}_diff_1k.jpg" -colorspace HSL -channel G -separate +channel -level "${JOINT_LO}%,${JOINT_HI}%" -negate -statistic median 5x5 -blur 0x1 "$T/mask.png"
+fi
 # joints: stone * (JOINT_DARK + (1 - JOINT_DARK) * mask)
 magick "$T/mask.png" -fx "$JOINT_DARK + (1 - $JOINT_DARK) * u" "$T/shade.png"
 # crowns: the height above its local mean (a blurred copy), as a soft highlight
