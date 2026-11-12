@@ -6,7 +6,7 @@ Updated 2026-11-12 ~19:45.
 - Nothing.
 
 ## Mode (Mac, 20:15)
-Code first. No Godot windows or renders until every coding change is done and every new asset is wired. Headless probes only. Then one off-screen render pass.
+Code first. No Godot windows or renders until every coding change is done and every new asset is wired. Headless probes only. Then one off-screen render pass. Before it: restart the game bridge (launchctl kickstart -k gui/$(id -u)/com.realm.bridge) so /world carries units' men (a1e42ae0). hosts.js order: fire-siege's siege-hold commit, then One store's per-host orders.
 
 ## Threads (4 + 1 closing)
 | Thread | Session | Doing now | Next |
