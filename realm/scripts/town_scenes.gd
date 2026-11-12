@@ -26,6 +26,19 @@ const Mind := preload("res://scripts/npc_mind.gd")
 const Animals := preload("res://scripts/animals.gd")
 const SEEN := Vector3(-0.5736, 0, -0.8192)  # the side of a square the town camera looks across as it comes down
 static var READ: float = Data.num("people", "readable", 1.0)  # drawn larger: they cover ground as their legs do
+## Every var a town mind's tasks read, with its default: LimboAI's own declaration (a BlackboardPlan, mind_plan()),
+## carried by every tree the director makes, so no read can miss and none carries its own default
+## (rounds 13-14: `Blackboard: Variable "clip" not found`). tools/mind_plan_probe.gd holds the tasks to it.
+const MIND_VARS := {
+	# a passing scene's person (_cast): their spot, where they face, their clips, the way off, the end call
+	"slot": Vector3.ZERO, "face": Vector3.ZERO, "clips": ["Idle"], "leaving": false, "exit": Vector3.ZERO,
+	"done": Callable(), "react": {}, "clip": "", "clip_left": 0.0,
+	# a walker (_walker): Round's route and stops, Follow's leader, Dog's yard, Chase's pair, MarchOut's road
+	"route": [], "plan": {}, "lead": true, "side": 0.0, "waits": [], "pause": [0.0, 0.0], "rest": [],
+	"market": null, "town": null, "tail": 0.22, "carter": null,
+	"after": null, "with": false, "gap": 0.11, "life": null, "follow": 0.12, "pair": {},
+}
+static var _plan: BlackboardPlan
 
 var main: Node
 var _d: Dictionary
@@ -333,6 +346,17 @@ func _spots(role: Dictionary, a: Dictionary, n: int, k: Dictionary) -> Array:
 	return out
 
 
+## The one BlackboardPlan of every town mind (MIND_VARS), made once; a var set as a mind is made keeps its value.
+static func mind_plan() -> BlackboardPlan:
+	if _plan == null:
+		_plan = BlackboardPlan.new()
+		for n in MIND_VARS:
+			_plan.set("var/%s/name" % n, StringName(n))  # a plan's vars as its resource stores them (no add_var in GDScript)
+			_plan.set("var/%s/type" % n, typeof(MIND_VARS[n]))
+			_plan.set("var/%s/value" % n, MIND_VARS[n])
+	return _plan
+
+
 ## Shorthand for town_life's constants without a cycle in the preloads.
 static func TownLife() -> GDScript:
 	return load("res://scripts/town_life.gd")
@@ -532,6 +556,7 @@ func _walker(body: Node3D, task: BTTask, vars: Dictionary, clip: String, pace :=
 	rootseq.add_child(forever)
 	var bt := BehaviorTree.new()
 	bt.root_task = rootseq
+	bt.blackboard_plan = mind_plan()
 	var player := BTPlayer.new()
 	player.name = "Mind"
 	player.set_scene_root_hint(body)
@@ -970,6 +995,7 @@ func _cast(s: Dictionary, role: Dictionary, spot: Vector3, face: Vector3) -> Nod
 	mover.speed = float(D.get("pace", 0.17))
 	var bt := BehaviorTree.new()
 	bt.root_task = _tree()
+	bt.blackboard_plan = mind_plan()
 	var player := BTPlayer.new()
 	player.name = "Mind"
 	player.set_scene_root_hint(person)
@@ -978,11 +1004,7 @@ func _cast(s: Dictionary, role: Dictionary, spot: Vector3, face: Vector3) -> Nod
 	bb.set_var(&"slot", spot)
 	bb.set_var(&"face", face)
 	bb.set_var(&"clips", role.get("clips", ["Idle"]))
-	bb.set_var(&"leaving", false)
 	bb.set_var(&"exit", person.global_position)
-	bb.set_var(&"react", {})
-	bb.set_var(&"clip", "")  # every var a task reads, declared as the person is made: no read misses
-	bb.set_var(&"clip_left", 0.0)
 	bb.set_var(&"done", _done.bind(s, person))
 	person.add_child(player)
 	(s["cast"] as Array).append(person)
@@ -1063,11 +1085,11 @@ func _on_stimulus(kind: String, pos: Vector3, radius: float, _house: String, _st
 class Kit:
 	## Plays a person's clips in turn, never the same twice running, a new one every few seconds.
 	static func _cycle(agent: Node, bb: Blackboard, clips: Array, delta: float) -> void:
-		var left := float(bb.get_var(&"clip_left", 0.0, false)) - delta
+		var left := float(bb.get_var(&"clip_left")) - delta
 		if left > 0.0:
 			bb.set_var(&"clip_left", left)
 			return
-		var last := String(bb.get_var(&"clip", "", false))
+		var last := String(bb.get_var(&"clip"))
 		var pool := clips.filter(func(c): return c != last)
 		if pool.is_empty():
 			pool = clips
@@ -1085,7 +1107,7 @@ class Kit:
 
 class HasReact extends BTCondition:
 	func _tick(_delta: float) -> Status:
-		var r: Dictionary = blackboard.get_var(&"react", {})
+		var r: Dictionary = blackboard.get_var(&"react")
 		if r.is_empty():
 			return FAILURE
 		if Time.get_ticks_msec() > int(r.get("until", 0)):
@@ -1096,7 +1118,7 @@ class HasReact extends BTCondition:
 
 class DoReact extends BTAction:
 	func _enter() -> void:
-		var r: Dictionary = blackboard.get_var(&"react", {})
+		var r: Dictionary = blackboard.get_var(&"react")
 		var me := agent as Node3D
 		var at: Vector3 = r.get("at", me.global_position)
 		var mover: Node = Mover.of(me)
@@ -1113,7 +1135,7 @@ class DoReact extends BTAction:
 		blackboard.set_var(&"clip_left", 0.0)
 
 	func _tick(delta: float) -> Status:
-		var r: Dictionary = blackboard.get_var(&"react", {})
+		var r: Dictionary = blackboard.get_var(&"react")
 		if r.is_empty() or Time.get_ticks_msec() > int(r.get("until", 0)):
 			blackboard.set_var(&"react", {})
 			return SUCCESS
@@ -1128,12 +1150,12 @@ class DoReact extends BTAction:
 
 class GoTo extends BTAction:
 	func _enter() -> void:
-		Mover.of(agent as Node3D).go(blackboard.get_var(&"slot", (agent as Node3D).global_position))
+		Mover.of(agent as Node3D).go(blackboard.get_var(&"slot"))
 
 	func _tick(_delta: float) -> Status:
 		if Mover.of(agent as Node3D).moving():
 			return RUNNING
-		Kit._face(agent as Node3D, blackboard.get_var(&"face", Vector3.ZERO))
+		Kit._face(agent as Node3D, blackboard.get_var(&"face"))
 		blackboard.set_var(&"clip_left", 0.0)
 		return SUCCESS
 
@@ -1143,20 +1165,20 @@ class GoTo extends BTAction:
 
 class Act extends BTAction:
 	func _tick(delta: float) -> Status:
-		if bool(blackboard.get_var(&"leaving", false)):
+		if bool(blackboard.get_var(&"leaving")):
 			return SUCCESS
-		Kit._cycle(agent, blackboard, blackboard.get_var(&"clips", ["Idle"]), delta)
+		Kit._cycle(agent, blackboard, blackboard.get_var(&"clips"), delta)
 		return RUNNING
 
 
 class Leave extends BTAction:
 	func _enter() -> void:
-		Mover.of(agent as Node3D).go(blackboard.get_var(&"exit", (agent as Node3D).global_position))
+		Mover.of(agent as Node3D).go(blackboard.get_var(&"exit"))
 
 	func _tick(_delta: float) -> Status:
 		if Mover.of(agent as Node3D).moving():
 			return RUNNING
-		var done: Callable = blackboard.get_var(&"done", Callable())
+		var done: Callable = blackboard.get_var(&"done")
 		if done.is_valid():
 			done.call()
 		return SUCCESS
@@ -1172,13 +1194,13 @@ class Round extends BTAction:
 	func _tick(_delta: float) -> Status:
 		var me := agent as Node3D
 		var m: Node = Mover.of(me)
-		var plan: Dictionary = blackboard.get_var(&"plan", {}, false)
-		var route: Array = blackboard.get_var(&"route", [], false)
+		var plan: Dictionary = blackboard.get_var(&"plan")
+		var route: Array = blackboard.get_var(&"route")
 		if route.is_empty():
 			return RUNNING
 		var now := Time.get_ticks_msec()
-		var lead := bool(blackboard.get_var(&"lead", true, false))
-		var side := float(blackboard.get_var(&"side", 0.0, false))
+		var lead := bool(blackboard.get_var(&"lead"))
+		var side := float(blackboard.get_var(&"side"))
 		if now < int(plan.get("until", 0)):
 			return RUNNING  # resting at a stop
 		var goal: Vector3 = route[int(plan["leg"]) % route.size()]
@@ -1200,24 +1222,23 @@ class Round extends BTAction:
 		# There: on to the next, after a rest where this stop is one.
 		var here := int(plan["leg"]) % route.size()
 		plan["leg"] = int(plan["leg"]) + 1
-		var waits: Array = blackboard.get_var(&"waits", [], false)
+		var waits: Array = blackboard.get_var(&"waits")
 		if not waits.is_empty() and not bool(waits[here]):
 			return RUNNING  # a bend in the street: on without stopping
-		var pause: Array = blackboard.get_var(&"pause", [0.0, 0.0], false)
+		var pause: Array = blackboard.get_var(&"pause")
 		var secs := randf_range(float(pause[0]), float(pause[1]))
 		if secs > 0.0:
 			plan["until"] = now + int(secs * 1000.0)
-			var rest: Array = blackboard.get_var(&"rest", [], false)
+			var rest: Array = blackboard.get_var(&"rest")
 			if not rest.is_empty():
 				People.play(me, String(rest[randi() % rest.size()]))
-			if blackboard.has_var(&"market") and (blackboard.get_var(&"market") as Vector3).distance_to(goal) < 0.02:
+			var mk: Variant = blackboard.get_var(&"market")
+			if mk is Vector3 and (mk as Vector3).distance_to(goal) < 0.02:
 				_set_tail(true)
 			_carter(false)
 		return RUNNING
 
 	func _set_tail(on: bool) -> void:
-		if not blackboard.has_var(&"town"):
-			return
 		var town: Node3D = blackboard.get_var(&"town")
 		if not is_instance_valid(town):
 			return
@@ -1225,12 +1246,12 @@ class Round extends BTAction:
 		if on:
 			var back := Vector3(sin(me.rotation.y), 0, cos(me.rotation.y))
 			var at := town.to_local(me.global_position)
-			town.set_meta("cart_tail", [at - back * float(blackboard.get_var(&"tail", 0.22, false)), at])
+			town.set_meta("cart_tail", [at - back * float(blackboard.get_var(&"tail")), at])
 		elif town.has_meta("cart_tail"):
 			town.remove_meta("cart_tail")  # rolling: nothing to unload
 
 	func _carter(walking: bool) -> void:
-		var c: Variant = blackboard.get_var(&"carter", null, false) if blackboard.has_var(&"carter") else null
+		var c: Variant = blackboard.get_var(&"carter")
 		if c is Node3D and is_instance_valid(c):
 			People.play(c, "Walk" if walking else ["Idle", "Looking_Around", "Idle_Talking"][randi() % 3])
 
@@ -1243,19 +1264,19 @@ class Follow extends BTAction:
 	var _rested := false
 
 	func _tick(_delta: float) -> Status:
-		var who: Variant = blackboard.get_var(&"after", null, false)
+		var who: Variant = blackboard.get_var(&"after")
 		if not (who is Node3D) or not is_instance_valid(who) or (who as Node).is_queued_for_deletion():
-			if bool(blackboard.get_var(&"with", false, false)):
+			if bool(blackboard.get_var(&"with")):
 				agent.queue_free()  # the column's head is gone up the road: so is he
 			return RUNNING
 		var them := who as Node3D
 		var back := Vector3(sin(them.rotation.y), 0, cos(them.rotation.y))
 		var right := Vector3(back.z, 0, -back.x)
-		var to := them.global_position - back * float(blackboard.get_var(&"gap", 0.11, false)) + right * float(blackboard.get_var(&"side", 0.0, false))
+		var to := them.global_position - back * float(blackboard.get_var(&"gap")) + right * float(blackboard.get_var(&"side"))
 		var me := agent as Node3D
 		var m: Node = Mover.of(me)
 		if Vector2(to.x - me.global_position.x, to.z - me.global_position.z).length() < 0.02:
-			var rest: Array = blackboard.get_var(&"rest", [], false)
+			var rest: Array = blackboard.get_var(&"rest")
 			if not _rested and not rest.is_empty() and not Mover.of(them).moving():
 				_rested = true
 				People.play(me, String(rest[randi() % rest.size()]))
@@ -1305,7 +1326,7 @@ class Dog extends BTAction:
 			Animals.walk(dog, false)
 			return RUNNING
 		var to := _after.global_position
-		if dog.global_position.distance_to(to) <= float(blackboard.get_var(&"follow", 0.12, false)):
+		if dog.global_position.distance_to(to) <= float(blackboard.get_var(&"follow")):
 			m.stop()
 		elif _asked == Vector3.INF or _asked.distance_to(to) > 0.05 or not m.moving():
 			_asked = to
@@ -1417,7 +1438,7 @@ class MarchOut extends BTAction:
 		var m: Node = Mover.of(me)
 		if m.moving():
 			return RUNNING
-		var route: Array = blackboard.get_var(&"route", [], false)
+		var route: Array = blackboard.get_var(&"route")
 		_i += 1
 		if _i >= route.size():
 			me.queue_free()  # past the road's end: on his way to the host
