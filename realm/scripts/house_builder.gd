@@ -38,6 +38,25 @@ static func _shutter(mat: Material, name := "MI_Shutter") -> Material:
 	return _shutter_of[key]
 
 
+## A kit material that glTF left fully metal (no metallicFactor: the default is 1), drawn matte instead:
+## the chimney's capstone MI_RockTrim shone as untextured grey steel up close (batch 9 goldrock-6).
+## The list is data/assets.json matte.
+static var _matte_of := {}
+
+
+static func _matte(mat: Material) -> Material:
+	if not mat is BaseMaterial3D or (mat as BaseMaterial3D).metallic <= 0.0:
+		return mat
+	if not (preload("res://scripts/data.gd").value("assets", "matte", []) as Array).has(String(mat.resource_name)):
+		return mat
+	if not _matte_of.has(mat):
+		var m: BaseMaterial3D = mat.duplicate()
+		m.metallic = 0.0
+		m.metallic_texture = null
+		_matte_of[mat] = m
+	return _matte_of[mat]
+
+
 ## Adds every mesh surface under `node` into per-material SurfaceTools. `remap`: a kit material's
 ## name -> the material this house wears in its place (its plaster's wash, its roof's covering).
 func _collect(node: Node, xf: Transform3D, tools: Dictionary, shutter := "", remap := {}) -> void:
@@ -55,6 +74,7 @@ func _collect(node: Node, xf: Transform3D, tools: Dictionary, shutter := "", rem
 			# one surface per copy cost a draw call each (30-50 a house); one per look is ten or so.
 			var key: Variant = (mat.resource_name if mat.resource_name != "" else str(mat.get_instance_id())) if mat else "-"
 			if not tools.has(key):
+				mat = _matte(mat)
 				var st := SurfaceTool.new()
 				st.begin(Mesh.PRIMITIVE_TRIANGLES)
 				tools[key] = {"st": st, "mat": mat}
