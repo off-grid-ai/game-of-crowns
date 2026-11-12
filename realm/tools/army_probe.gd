@@ -454,6 +454,7 @@ func _the_right_banner() -> void:
 		_check((bm.get_shader_parameter("field_color") as Color).is_equal_approx(colour), "%s: the canton and pips in its house colour" % k)
 		_check(bool(lv.get_shader_parameter("emblem_on")) and lv.get_shader_parameter("emblem_texture") == want and (lv.get_shader_parameter("team_color") as Color).is_equal_approx(colour),
 			"%s: its men wear Ashby's arms on shield and tabard, in its colour" % k)
+	_check(a.is_in_group(&"host_views") and a.has_method("select_host"), "the command card finds this host view (group host_views, select_host)")
 	var plain: Dictionary = a.call("_regiment", {"id": 2, "unit": "spearmen", "men": 150}, colour, none)
 	if not plain.is_empty():
 		_check((plain["banner_mat"] as ShaderMaterial).get_shader_parameter("use_arms") != true, "a house with no arms drawn flies its colour with the glyph")

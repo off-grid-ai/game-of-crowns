@@ -82,6 +82,7 @@ func _init(owner: Node, count: int, side: Dictionary = {}) -> void:
 	men = count
 	battle = side
 	name = "ArmySpike" if side.is_empty() else "ArmySide%d" % int(side.get("side", 0))
+	add_to_group(&"host_views")  # the command card (host_command.gd) finds host views here: regiments(), select_host()
 
 
 func _ready() -> void:
@@ -211,6 +212,15 @@ func deselect() -> void:
 	for r in _regiments:
 		_mark(r, false)
 	selection_changed.emit([])
+
+
+## The command card's selected host changed (host_command.gd select): this host is marked whole when it is the one,
+## let go otherwise ({} for none).
+func select_host(h: Dictionary) -> void:
+	if not h.is_empty() and int(h.get("id", -1)) == host_id:
+		select_all()
+	else:
+		deselect()
 
 
 ## A regiment's strength (0..1: its men left over its full muster), shown as its banner's pips.
