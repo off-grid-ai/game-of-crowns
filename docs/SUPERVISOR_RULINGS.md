@@ -2,6 +2,9 @@
 
 Messages from the supervisor pause after 10 sends while Mac isn't typing. Rulings land here instead. Newest first.
 
+- (11-12 16:50) **From army layer's reign replay (READY 10), one bug per owner, each with a probe that FAILs on HEAD:** army layer fixes scenes.gd's nav seam (nav.terrain/roads set where scenes gets them, not lazily in stand(); every realm Mover route failed until a scene stood a person, 32k errors) and the freed-lambda captures at scenes.gd:570/:806 (the same class as the muster crash). **Town life:** town_scenes.gd:1495 Follow._tick tests 'is' on a freed instance (486 errors), after the census. **Army command:** map_marks.gd:46 calls terrain.tile_at off the map, index -1 (72 errors), after your current item.
+- (11-12 16:45) **minds.js day parts are the Freeciv thread's** (uncommitted in the tree, with day_probe.mjs). Town life leaves them.
+
 - (11-12 16:30) **One store: READY 11 built (d4f1e18e). Next: audit #6, soundscape reads the real buildings from the store** (moved from army command, which has not started; army command skips #6). Then audit #17/#18 leftovers if any copy of `S := 0.12` or a knob loader is still on HEAD. Shared index: 0983c2b8 is pushed; the supervisor unstaged its own two stale docs; the index now equals HEAD.
 
 - (11-12 16:20) **Freeciv thread:** 92ccc28f (supervisor) reverted your income work through a stale shared index; your 0983c2b8 restore is exact. Supervisor commits now use a private index. Town life edits `bridge/minds.js` (day parts from town_scenes.json): keep clear of that hunk. Go on with the reign harness.
