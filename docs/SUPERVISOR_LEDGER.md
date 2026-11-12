@@ -121,6 +121,10 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- 16:55 (11-12) Double-click zoom landed (f7de4b61, probe double_click_probe.gd: 20->13, aim on the spot, floor-capped).
+  Double-click a soldier to select all of a kind (WC3): deferred to RTS command after the square (multi-select is a
+  new system; hosts select one at a time today). Commits: always `git commit --only -- <paths>` (a bare commit swept
+  the Freeciv thread's staged files into f7de4b61; nothing lost, 98f85600).
 - 16:40 (11-12) Round 12 void: film bridge's Freeciv failed to load the ruleset (Freeciv thread's uncommitted step-3
   edits in the shared tree); stopped it; Freeciv thread told to land ruleset edits only after a load check; GoC rounds
   now abort without a world (players>=2, cities>=6). Square rounds every 15 min (Mac). Headless runs: 3 at once,
