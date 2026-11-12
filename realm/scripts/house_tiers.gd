@@ -236,6 +236,12 @@ func build(spec: Dictionary) -> ArrayMesh:
 					piece = "Wall_%s_Door_%s" % [fam, "Round" if round_win else "Flat"]
 					_add(piece, xf)
 					_add("Door_%d_%s" % [[1, 2][_rng.randi() % 2], "Round" if round_win else "Flat"], xf)
+					# The front door framed (the kit's door frame: dark timber, or stone on a stone front; Mac
+					# 2026-11-12, "no finesse"; 01-town's framed doors). extras.door_frame; --house-finesse=off.
+					if not OS.get_cmdline_user_args().has("--house-finesse=off") and _chance("door_frame"):
+						var frame_kind := "DoorFrame_%s_%s" % ["Round" if round_win else "Flat", "Brick" if fam == "UnevenBrick" else "WoodDark"]
+						if _has(frame_kind):
+							_add(frame_kind, xf)
 					continue
 				if side == 0 and f == 0 and arcade:
 					_add("Wall_Arch", xf)

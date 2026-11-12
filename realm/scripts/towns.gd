@@ -1623,6 +1623,32 @@ func _trade_of(component: String) -> Dictionary:
 	return {}
 
 
+## The house's arms carved on the front of the King's monument's plinth (assets.json square_statue: the plinth
+## 1.4 m square, its face 1.0-2.5 m up): the house's painted banner, else a panel in its colour.
+func _plinth_arms(root: Node3D, center: Vector3, p: Vector3, yaw: float, foot: Vector2) -> void:
+	var m := StandardMaterial3D.new()
+	m.roughness = 0.9
+	var slug := preload("res://scripts/heraldry.gd").slug(_house)
+	var path := "res://assets/heraldry/banner-%s.png" % slug
+	if slug != "" and ResourceLoader.exists(path):
+		m.albedo_texture = load(path)
+		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
+		m.alpha_scissor_threshold = 0.5
+	else:
+		m.albedo_color = _house_colour
+	var q := QuadMesh.new()
+	q.size = Vector2(0.8, 1.2) * S
+	var mi := MeshInstance3D.new()
+	mi.mesh = q
+	mi.material_override = m
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	root.add_child(mi)
+	var face := Vector3(sin(yaw), 0, cos(yaw))
+	var y := _foot_y(center, p, foot, yaw)
+	mi.position = p + face * (0.7 + 0.015) * S + Vector3(0, y + 1.75 * S, 0)
+	mi.rotation.y = yaw
+
+
 ## The planned trade a model draws, not yet standing ({} for a house).
 func _trade_by_model(kind: String) -> Dictionary:
 	for tr in _trades:
@@ -2073,7 +2099,15 @@ func _plaza(root: Node3D, center: Vector3, square_r: float, size: int, seat: boo
 		# Turned aside off the castle's way in (towns.json market.<rank>.beside_turn, degrees): the statue flanks the
 		# approach to the gate rather than standing in it.
 		draw_well = Basis(Vector3.UP, deg_to_rad(float(_market_knobs().get("beside_turn", 0.0)))) * draw_well
-		var stood: bool = drop.call(draw_kind, draw_well, rng.randf() * TAU)
+		var beside_yaw := rng.randf() * TAU
+		# The King's monument faces the square's heart, the house's arms on its plinth (Mac 2026-11-12: a live
+		# figure on a lumpy rock, "no finesse"; 01-town's monument). --house-finesse=off as before.
+		var monument := draw_kind == Real.one("square_statue") and not OS.get_cmdline_user_args().has("--house-finesse=off")
+		if monument:
+			beside_yaw = atan2(-draw_well.x, -draw_well.z)
+		var stood: bool = drop.call(draw_kind, draw_well, beside_yaw)
+		if stood and monument:
+			_plinth_arms(root, center, draw_well, beside_yaw, Real.footprint(draw_kind))
 		if stood:
 			lots.append([draw_well, maxf(Real.footprint(draw_kind).x, Real.footprint(draw_kind).y) * 0.5])
 		if stood and (beside == "" or beside == Real.one("well")):  # the water is drawn there, not at a statue beside
