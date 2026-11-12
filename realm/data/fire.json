@@ -244,5 +244,6 @@
     "far": 30.0,
     "far_share": 0.3
   },
-  "particles_far": 40.0
+  "particles_far": 40.0,
+  "far": 45.0
 }

@@ -19,7 +19,7 @@ const WeatherFx := preload("res://scripts/weather_fx.gd")
 const SceneKinds := preload("res://scripts/scene_kinds.gd")
 const DIR := "res://assets/fx/fire/"
 const SMOKE_LAYER := 1 << 10  # smoke is lit by the sun, never by the fire's own light (it glowed orange)
-const FAR := 45.0  # game units: beyond this a fire isn't drawn
+static var FAR: float = preload("res://scripts/data.gd").num("fire", "far", 45.0)  # game units: beyond this a fire isn't drawn (fire.json far)
 
 static var live: Node3D  # the one fire (main.gd adds it): scenes.gd's sacks and razings reach it here
 static var _knobs = null

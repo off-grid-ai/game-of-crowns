@@ -4,9 +4,9 @@
 # render constants stay in code (named in ENGINE below, each with why). Counts what is left; exits 1 if any.
 #   zsh realm/tools/fire_siege_consts_probe.sh
 cd "${0:A:h}/.."
-files=(scripts/towns.gd scripts/town_layout.gd scripts/town_fields.gd scripts/town_banners.gd scripts/walls.gd scripts/stone_wall.gd scripts/fire.gd scripts/siege_camp.gd scripts/scene_kinds/siege.gd scripts/scene_kinds/sack.gd)
-# BUILD_BUDGET_MS: a frame's time budget for building (performance); SMOKE_LAYER: a render layer bit; FAR: a fire's draw distance (render).
-ENGINE='^(BUILD_BUDGET_MS|SMOKE_LAYER|FAR)$'
+files=(scripts/towns.gd scripts/town_layout.gd scripts/town_plots.gd scripts/town_fields.gd scripts/town_banners.gd scripts/walls.gd scripts/stone_wall.gd scripts/fire.gd scripts/siege_camp.gd scripts/scene_kinds/siege.gd scripts/scene_kinds/sack.gd)
+# BUILD_BUDGET_MS: a frame's time budget for building (performance); SMOKE_LAYER: a render layer bit; CELL and ROAD_HALF: town_plots.gd's grid cell and a street's half width (geometry the walk map shares).
+ENGINE='^(BUILD_BUDGET_MS|SMOKE_LAYER|CELL|ROAD_HALF)$'
 left=()
 for f in $files; do
   for n in $(grep -hoE '^(static )?const [A-Z_][A-Z0-9_]* *(: *[A-Za-z0-9]+)? *:?= *(-?[0-9.]+|Vector[23]i?\(|Color\(|\[ *-?[0-9])' $f | sed -E 's/^(static )?const ([A-Z0-9_]+).*/\2/'); do

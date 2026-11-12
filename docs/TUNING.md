@@ -373,6 +373,8 @@ Switches (`--name`) go after `--` on the game's command line.
 - How far off smoke and fire are still drawn: `realm/data/fire.json` `particles_far`.
 - How far off a burning house's flames, embers and scorch are still drawn (game units): `realm/data/fire.json` `far`.
 - How much a town's streets shun a slope (a rise of one unit per unit costs this many times level ground when town_plots.gd lays its ways): `realm/data/towns.json` `plots.slope_cost`.
+- How far off a burning house's flames, embers and scorch are still drawn (game units): `realm/data/fire.json` `far`.
+- How much a town's streets shun a slope (a rise of one unit per unit costs this many times level ground when town_plots.gd lays its ways): `realm/data/towns.json` `plots.slope_cost`.
 - A storming party at the wall: seconds between rushes, the chance a blow from above kills outright, their walk and run: `realm/data/siege.json` `assault` (`wave`, `fall`, `walk`, `run`).
 - How near the camera a fight's crowd of onlookers gathers: `realm/data/battle.json` `crowd_seen`; how many bloodstains stay on the ground: `blood_stains`.
 - A fight in the street: a sword's reach, the strike's arc (cos of its half-angle), the follow-through, a dodge's carry, how long a man limps after a knock-down and the health below which he limps for good: `realm/data/battle.json` `combat` (`reach`, `arc`, `follow`, `dodge`, `hurt_for`, `weak`).

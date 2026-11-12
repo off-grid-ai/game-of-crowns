@@ -20,7 +20,7 @@ extends RefCounted
 ##     street, snap to a street met on the way, stop at water or a cliff).
 
 const CELL := 0.15  # world units per grid cell: about a metre and a quarter
-const SLOPE_COST := 40.0  # how much a rise of one unit per unit costs, against level ground
+static var SLOPE_COST: float = preload("res://scripts/data.gd").num("towns", "plots.slope_cost", 40.0)  # how much a rise of one unit per unit costs a street, against level ground (towns.json plots.slope_cost)
 const ROAD_HALF := 0.17  # half a street's width (town_nav reads a lane as 0.34 wide)
 # The plots' knobs (realm/data/towns.json plots, and plots.crown for the crown's seat; tune() sets
 # them per town before its layout is cut).
