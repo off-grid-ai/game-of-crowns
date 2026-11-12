@@ -22,6 +22,8 @@ const LAUNCHES := {
 	"settled": [["work", "Kingsmere", 4.5, -5, "forge"]],
 	"clarity": [["city", "Kingsmere", 6, -25], ["city", "Goldrock", 6, -25], ["work", "Kingsmere", 4.5, -5, "forge"]],
 	"focus": [["home", "Kingsmere", 0, 1.0], ["home", "Kingsmere", 15, 1.0], ["home", "Kingsmere", -15, 1.0], ["home", "Kingsmere", 0, 0.7]],
+	"sweep": [["home", "Kingsmere", 0, 0.8], ["home", "Kingsmere", 0, 1.25], ["home", "Kingsmere", 0, 1.6], ["home", "Kingsmere", 0, 2.0],
+		["home", "Kingsmere", 0, 2.5], ["home", "Kingsmere", 0, 3.2]],  # town_view's distance swept by scale (one run, no edits)
 	"fixes": [["city", "Kingsmere", 30], ["work", "Goldrock", 5, -25, "mill"], ["city", "Kingsmere", 3.5, -5]],
 }
 
@@ -76,7 +78,7 @@ func _frame(s: Array) -> void:
 	if s[0] == "home":  # autoplay's home step (camera_rig.town_view; docs/review/focus.sh)
 		var root := _town(s[1])
 		var v: Array = main.rig.town_view(root, float(s[2]), float(s[3]))
-		main.rig.step_floor = 0.0
+		main.rig.step_floor = maxf(1.5, float(v[2])) if float(v[2]) < main.rig.min_distance else 0.0  # as autoplay._frame_home
 		main.rig.snap(v[0], float(v[2]), float(v[1]))
 		main.rig.tilt = clampf(float(v[3]), -40.0, 30.0)
 		main.rig.goal_tilt = main.rig.tilt
@@ -155,7 +157,10 @@ func _composition(name: String, root: Node3D, castle: Node3D) -> void:
 		var z := maxf(c.dot(fwd), 0.001)
 		return Vector2(0.5 + 0.5 * c.dot(right) / z / (tv * aspect), 0.5 - 0.5 * c.dot(up) / z / tv)
 	var sq: Vector2 = at.call(root.global_position)
-	var line := "FRAME %s: square at %.2f, %.2f" % [name, sq.x, sq.y]
+	var r := float(root.get_meta("square_r", 1.6))  # the square's width on the film (its paved half-width either side)
+	var wide: float = (at.call(root.global_position + right * r) as Vector2).x - (at.call(root.global_position - right * r) as Vector2).x
+	var line := "FRAME %s: rig %.1f, lens %.1f; square at %.2f, %.2f, %.0f%% of the width" % [name, float(rig.distance),
+		eye.distance_to(root.global_position), sq.x, sq.y, wide * 100.0]
 	if castle:
 		var top := castle.global_position
 		for g in castle.find_children("*", "GeometryInstance3D", true, false):

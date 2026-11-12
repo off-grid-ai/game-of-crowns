@@ -2,7 +2,7 @@
 # Focus: Kingsmere's square at the default town view against art target 01-town (docs/art/target/01-town.jpg).
 # One short film (about 5 minutes [estimate]) of that one view with the current default switches: the hero frame
 # (the view you start with: camera_rig.town_view, camera.json town_view), the same frame turned 15 degrees left and
-# right, and one closer (0.7 of it). The hero sits about 40 degrees down at distance 19 (camera.json town_view;
+# right, and one closer (0.7 of it). The hero sits about 40 degrees down at distance 6, the player's floor (camera.json town_view;
 # docs/research/quality-deep-dive.md #1: 01-town reads 40-45). Every frame is framed by autoplay's "home" step
 # (camera_rig.town_view: the castle behind the square), never "city" (its heading ignores the castle, so the wall
 # stands in the foreground: round 1's ladder). Each frame is framed twice, the second time straight before its snap:

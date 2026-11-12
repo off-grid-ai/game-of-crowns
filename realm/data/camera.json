@@ -16,9 +16,10 @@
   "dist_vary": 0.15
  },
  "town_view": {
-  "_": "The town view you start with (main._home_view, the Z key; autoplay's home step; docs/review/focus.sh; camera_rig.town_view; art target 01-town): the square in the middle, the castle behind it to the upper right, houses all round, the wall and fields beyond. dist (camera units), pitch (degrees down; docs/research/quality-deep-dive.md #1: RTS town cameras sit at 40-60 degrees and 01-town reads 40-45, so 40 at d19 and at the film's closer frame; camera_rig.town_view sets it as the view's tilt over the rig's own pitch for that distance, so zooming in from it keeps the tilt: about 35-37 down at the floor, under clarity.maxPitch), castle_x (where the castle stands: 0 the middle, 1 the right edge), castle_turn_most (radians the heading may turn from the side away from the castle to put it there).",
-  "dist": 19.0,
+  "_": "The town view you start with (focus round 2: d19 showed the whole town, the lake and Eaglehaven, the square 12% of the frame's width; 01-town is close: the square about 40% across, six to eight houses, the castle's gate and keep filling the upper right. dist 6 is the floor (the closest the player's lens comes): the square 37% across, the castle's foot upper right, its top past the frame's top, as 01-town; frame probe --frame-probe=sweep) (main._home_view, the Z key; autoplay's home step; docs/review/focus.sh; camera_rig.town_view; art target 01-town): the square in the middle, the castle behind it to the upper right, houses all round, the wall and fields beyond. dist (camera units), pitch (degrees down; docs/research/quality-deep-dive.md #1: RTS town cameras sit at 40-60 degrees and 01-town reads 40-45, so 40 here and at the film's closer frame; camera_rig.town_view sets it as the view's tilt over the rig's own pitch for that distance, so zooming in from it keeps the tilt: about 35-37 down at the floor, under clarity.maxPitch), ahead (the aim this share of the distance past the square, away from the lens, so the square stands in the lower middle as in 01-town: frame probe, the square at 0.62 down), castle_x (where the castle stands: 0 the middle, 1 the right edge), castle_turn_most (radians the heading may turn from the side away from the castle to put it there).",
+  "dist": 6.0,
   "pitch": 40.0,
+  "ahead": 0.12,
   "castle_x": 0.45,
   "castle_turn_most": 1.2
  },
