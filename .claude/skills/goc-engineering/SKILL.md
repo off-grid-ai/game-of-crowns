@@ -90,6 +90,7 @@ Several sessions commit to `main` from the same folder. Never `git add` and leav
   git apply --cached /tmp/mine.patch && git commit -m "…"; unset GIT_INDEX_FILE
   git reset -q -- <your paths>        # refresh the shared index to the new HEAD for those paths only
   ```
+  Build the private index from HEAD **at commit time**: run `read-tree HEAD` right before `apply`, in the same command, never earlier. Make your patch with `git diff HEAD -- <file>` at that moment. Before pushing, read `git show --stat HEAD`: every file listed must be one you meant to change, with your line counts. (12 Nov: 404a533d's index was read before 620e8baf landed and put the old code back in 21 of the store thread's files.)
   Without that last line the shared index still holds the old blob, so every other session sees a staged revert of
   your change and its next commit undoes it (GoC). It touches the index only, never the files.
   The shared index is never touched. If the file is yours alone, `git commit --only -m "…" -- <paths>` (new files: `git add <paths> && git commit --only … -- <paths>` in the same command). Never a bare `git commit` in the shared folder. Then `git push`; if the push is rejected because another session just pushed, `git pull --rebase -q && git push`. Check the compile output is clean before committing, never after.
