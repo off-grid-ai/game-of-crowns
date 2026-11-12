@@ -72,6 +72,7 @@ var _rng := RandomNumberGenerator.new()
 ## colour, house, shape, ground: the battle's one ground (army_ground.gd)}. Empty for the muster by the seat.
 var battle := {}
 var mustered := false
+var _order_face := NAN  # the way its order says its front looks (/world hosts[i].order.face), NAN for its own
 var _out := false  # marching out (march_out): halted at the road's end, it is gone after march.linger
 var _gone_in := 0.0
 var ground: RefCounted  # army_ground.gd: where its regiments may stand
@@ -144,6 +145,9 @@ func _ready() -> void:
 		push_error("ARMY no open ground by the seat")
 		_regiments.clear()
 		return
+	if not is_nan(_order_face):  # its order's facing (the card's drag): the line turns to it where it stands
+		_face = _order_face
+		_take_field(extent)
 	if ground == null:
 		ground = Ground.around(main, _field, maxf(extent.x, extent.y) * 0.5 + Data.num("army", "march.lead", 5.0) + 3.0)
 	for r in _regiments:
@@ -353,12 +357,21 @@ func waver(r: Dictionary, w: float) -> void:
 # --- Raising the host -------------------------------------------------------------------------------------
 
 ## The crown's largest host from /world (bridge/hosts.js), a regiment per company: [{id, unit, men, strength}].
+## The way a host's order says its line should face (READY.md line 8: the command card's drag to face; /world
+## hosts[i].order.face, a yaw like node.rotation.y), or NAN when its order gives none.
+static func order_face(h: Dictionary) -> float:
+	var o: Variant = h.get("order")
+	var f: Variant = (o as Dictionary).get("face") if o is Dictionary else null
+	return float(f) if f is float or f is int else NAN
+
+
 func _from_world() -> Array:
 	var hosts: Array = main.awareness.rec("hosts", [])
 	if hosts.is_empty():
 		return []
 	var h: Dictionary = hosts[0]  # the bridge sorts them largest first
 	host_id = int(h.get("id", 0))
+	_order_face = order_face(h)
 	var types := {}
 	for u in main.awareness.rec("units", []):
 		types[int(u.get("id", -1))] = u

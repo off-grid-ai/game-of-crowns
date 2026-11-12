@@ -460,6 +460,9 @@ func _the_right_banner() -> void:
 		_check(bool(lv.get_shader_parameter("emblem_on")) and lv.get_shader_parameter("emblem_texture") == want and (lv.get_shader_parameter("team_color") as Color).is_equal_approx(colour),
 			"%s: its men wear Ashby's arms on shield and tabard, in its colour" % k)
 	_check(a.is_in_group(&"host_views") and a.has_method("select_host"), "the command card finds this host view (group host_views, select_host)")
+	var of_face := func(h: Dictionary) -> float: return float(ArmyS.call("order_face", h)) if ArmyS.get_script_method_list().any(func(m): return m["name"] == "order_face") else INF
+	_check(is_equal_approx(float(of_face.call({"order": {"kind": "march", "face": 1.25}})), 1.25) and is_nan(float(of_face.call({"order": {"kind": "march", "face": null}}))) and is_nan(float(of_face.call({"order": null}))),
+		"a host's line faces the way its order says (order.face), its own way when none")
 	var plain: Dictionary = a.call("_regiment", {"id": 2, "unit": "spearmen", "men": 150}, colour, none)
 	if not plain.is_empty():
 		_check((plain["banner_mat"] as ShaderMaterial).get_shader_parameter("use_arms") != true, "a house with no arms drawn flies its colour with the glyph")
