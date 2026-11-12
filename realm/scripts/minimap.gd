@@ -21,7 +21,7 @@ var _base_rect: TextureRect  # the painted map, under everything
 var _wash: TextureRect  # the houses' colours over it, drawn by WASH
 var _flood_t := -1.0
 var _flood_reach := 0.0
-const FLOOD_S := 1.5
+static var FLOOD_S: float = preload("res://scripts/data.gd").num("map", "flood_seconds", 1.5)  # the same flood as the land's (land3d.gd)
 ## Each house's land washed in its colour, softly, with a fine line where two
 ## houses meet; when land changes hands the new colour floods out over it from
 ## where it changed.

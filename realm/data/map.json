@@ -32,5 +32,7 @@
     "match": true,
     "match_most": 7.0,
     "ease_to": 2.6
-  }
+  },
+  "flood_seconds": 1.5,
+  "razed_burn": 16.0
 }

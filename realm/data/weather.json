@@ -10,5 +10,6 @@
   "home": {"rain": 0.5, "storm": 0.8},
   "fire": {"slow": 1.2},
   "drops": {"rain": 12000, "snow": 1600},
-  "prevailing_from": -70.0
+  "prevailing_from": -70.0,
+  "day_seconds": 240.0
 }

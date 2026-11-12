@@ -589,7 +589,7 @@ func set_realm_mix(v: float) -> void:
 		land.material.set_shader_param("realm_mix", v)
 
 
-const FLOOD_S := 1.5  # how long new land takes to fill with its new colour
+static var FLOOD_S: float = preload("res://scripts/data.gd").num("map", "flood_seconds", 1.5)  # how long new land takes to fill with its new colour
 
 
 ## Each frame, timed for the frame-cost probe (perf_tools.gd, GOC_PERF_PROBE=1; off in play).

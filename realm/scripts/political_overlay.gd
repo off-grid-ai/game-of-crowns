@@ -206,7 +206,7 @@ func set_realm(owners: Array, players: Array, intrigue: Array = []) -> void:
 ## ruin stands until the bridge drops it, and the scorched ring round it heals
 ## in RAZED_BURN seasons. SCAR keeps only the look: [how hard, how far].
 const SCAR := {"battle": [0.75, 0], "sack": [1.0, 1], "razed": [1.0, 1]}
-const RAZED_BURN := 16.0
+static var RAZED_BURN: float = preload("res://scripts/data.gd").num("map", "razed_burn", 16.0)
 
 
 ## The seasons a mark's burn takes to heal: the bridge's for a battle or a sack,

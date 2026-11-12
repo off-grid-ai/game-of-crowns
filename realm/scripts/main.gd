@@ -5,7 +5,7 @@ extends Node3D
 ## Screenshot mode, for checking the look without a person at the screen:
 ##   godot --path realm -- --shot=out.png [--wait=8] [--cam=x,z,distance,yaw] [--town]
 
-const DAY_SECONDS := 240.0
+static var DAY_SECONDS: float = preload("res://scripts/data.gd").num("weather", "day_seconds", 240.0)  # a day, dawn to dawn (TUNING.md)
 
 var awareness: Node  # awareness.gd: the realm and town scopes, and the news bus
 var bridge: Node
@@ -552,8 +552,8 @@ func _apply_icon() -> void:
 ## Cmd+ / Cmd- / Cmd0 adjust that on top, remembered between sessions.
 const UI_SCALE_FILE := "user://ui_size.txt"  # your adjustment, 1.0 = in step with the window
 const UI_BASE := Vector2(1600, 900)
-const UI_MIN := 0.75  # never smaller than this, however small the window
-const UI_MAX := 2.2   # never larger, however big the screen
+static var UI_MIN: float = preload("res://scripts/data.gd").num("ui", "scale.min", 0.75)  # never smaller than this, however small the window
+static var UI_MAX: float = preload("res://scripts/data.gd").num("ui", "scale.max", 2.2)  # never larger, however big the screen
 var ui_scale := 1.0
 
 

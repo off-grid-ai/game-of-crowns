@@ -24,7 +24,7 @@ func _scatter(mesh: Mesh, transforms: Array) -> MultiMeshInstance3D:
 ## Nature MegaKit trees, bushes and rocks, at the same scale as the towns.
 const VEG_SCALE := Units.M
 const VEG_PATCH := 12.0  # game units: grass and bushes are batched by patch of the map
-const VEG_REACH := 24.0  # and drawn only within this of the camera
+static var VEG_REACH: float = preload("res://scripts/data.gd").num("ground", "wild.reach", 24.0)  # and drawn only within this of the camera
 var batches: Array[MultiMeshInstance3D] = []
 
 
