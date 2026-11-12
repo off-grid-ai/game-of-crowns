@@ -9,7 +9,11 @@ extends SceneTree
 ##      lays none, while still going round the benches' ends;
 ##   2. a cart whose way a man stands on never comes within a body of him (it waits), and goes on once he's gone;
 ##   3. a villager walking the town's crowd avoidance (an RVO agent, as villagers.gd's) through a cart standing in the
-##      town steps round it, never inside its half-width.
+##      town steps round it, never inside its half-width;
+##   4. the Mover's yield (SUPERVISOR_RULINGS 14:55, 15:25), one rule for any body in the way: a cart turning on its arc
+##      never drives into a soldier standing on the arc (not straight ahead); a led horse whose groom stands where it
+##      is bound comes up to him and stops (never waits forever); a cart whose way a man never leaves goes round him
+##      or gives up and reports, and its walk ends either way.
 ## Prints "MOVER PROBE …" lines and "MOVER PROBE PASS" or "MOVER PROBE FAIL n"; quits with 0 or 1.
 
 const Mover := preload("res://scripts/mover.gd")
@@ -45,6 +49,7 @@ func _run() -> void:
 		_main.scenes.nav.map_for(id, _main.towns.towns[id]["node"])  # each town in view: its walk map asked for
 	await _benches()
 	await _man_in_the_way()
+	await _yield_rule()
 	for id in _main.towns.towns:
 		_main.scenes.nav.forget(id)
 	Engine.remove_meta("awareness")
@@ -174,6 +179,98 @@ func _man_in_the_way() -> void:
 	_check(closest[0] > CART_HALF, "a villager walking through a cart standing in town steps round it (came within %.3f)" % closest[0])
 	man.queue_free()
 	c.queue_free()
+
+
+## 4. The Mover's yield: the arc, the led horse, the man who never moves.
+func _yield_rule() -> void:
+	var o := Vector3(40.0, 0, 0)
+	var goal := o + Vector3(0.25, 0, 0.9)  # bound up and to its left: it drives a tight arc
+	# The arc it drives with nobody about.
+	var c := _cart(o, PI / 2)
+	var arc: Array[Vector3] = []
+	var done := [false]
+	Mover.of(c).go(goal, func(): done[0] = true)
+	await _until(func(): return done[0], 10.0, func(): arc.append(c.global_position))
+	c.queue_free()
+	await process_frame
+	# A soldier at his post on that arc, well off the line it first heads along.
+	var post := arc[0]
+	for p in arc:
+		if absf(p.z - o.z) > 0.2:
+			post = p
+			break
+	var soldier := Node3D.new()
+	soldier.name = "Soldier"
+	soldier.add_to_group("people")
+	_main.add_child(soldier)
+	soldier.global_position = post
+	c = _cart(o, PI / 2)
+	var nearest := [INF]
+	done[0] = false
+	Mover.of(c).go(goal, func(): done[0] = true)
+	await _until(func(): return done[0], 14.0, func():
+		nearest[0] = minf(nearest[0], Vector2(c.global_position.x - post.x, c.global_position.z - post.z).length()))
+	_check(nearest[0] > CART_HALF, "a cart turning on its arc never drives into a soldier standing on it (came within %.3f)" % nearest[0])
+	c.queue_free()
+	soldier.queue_free()
+	await process_frame
+	# A beast standing on the cart's way (a standing body, group "bodies", not one of the people).
+	o = Vector3(45.0, 0, 0)
+	var ox := Node3D.new()
+	ox.name = "Ox"
+	ox.add_to_group("bodies")
+	_main.add_child(ox)
+	ox.global_position = o
+	c = _cart(o + Vector3(-0.8, 0, 0), PI / 2)
+	nearest[0] = INF
+	done[0] = false
+	Mover.of(c).go(o + Vector3(0.8, 0, 0), func(): done[0] = true)
+	await _until(func(): return done[0], 3.0, func():
+		nearest[0] = minf(nearest[0], Vector2(c.global_position.x - o.x, c.global_position.z - o.z).length()))
+	_check(nearest[0] > CART_HALF, "a cart never drives into a beast standing on its way (came within %.3f)" % nearest[0])
+	c.queue_free()
+	ox.queue_free()
+	await process_frame
+	# A led horse: its groom stands where it is bound.
+	o = Vector3(50.0, 0, 0)
+	var groom := Node3D.new()
+	groom.name = "Groom"
+	groom.add_to_group("people")
+	_main.add_child(groom)
+	groom.global_position = o + Vector3(0.7, 0, 0)
+	var h := _cart(o, PI / 2)
+	h.name = "Horse"
+	Mover.of(h).turn_radius = 0.4
+	done[0] = false
+	Mover.of(h).go(groom.global_position, func(): done[0] = true)
+	var closest := [INF]
+	await _until(func(): return done[0], 8.0, func():
+		closest[0] = minf(closest[0], h.global_position.distance_to(groom.global_position)))
+	_check(done[0], "a led horse comes up to its groom standing where it is bound, and stops (never waits forever)")
+	_check(closest[0] > CART_HALF and closest[0] < 0.5, "it stops beside him, not in him (%.3f)" % closest[0])
+	h.queue_free()
+	groom.queue_free()
+	# A man who never leaves the cart's way: it goes round him, or gives up and reports; its walk ends either way.
+	o = Vector3(60.0, 0, 0)
+	var man := Node3D.new()
+	man.name = "Man"
+	man.add_to_group("people")
+	_main.add_child(man)
+	man.global_position = o
+	c = _cart(o + Vector3(-0.8, 0, 0), PI / 2)
+	var m: Node = Mover.of(c)
+	var gave := [false]
+	if m.has_signal("gave_up"):
+		m.gave_up.connect(func(_by): gave[0] = true)
+	done[0] = false
+	nearest[0] = INF
+	m.go(o + Vector3(0.8, 0, 0), func(): done[0] = true)
+	await _until(func(): return done[0], 25.0, func():
+		nearest[0] = minf(nearest[0], Vector2(c.global_position.x - o.x, c.global_position.z - o.z).length()))
+	_check(done[0], "a cart held by a man who never moves goes round him or gives up (%s); its walk ends" % ("gave up" if gave[0] else "went round"))
+	_check(nearest[0] > CART_HALF, "and never drives into him (came within %.3f)" % nearest[0])
+	c.queue_free()
+	man.queue_free()
 
 
 ## A stand-in for main: two towns on flat dry land (the first with two benches a man's gap apart across its middle,

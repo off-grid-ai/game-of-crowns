@@ -18,13 +18,18 @@ extends Node
 ## A horse or a cart (a body that steers on an arc, turn_radius > 0) walks a town's wide map (town_nav map_for wide:
 ## kept a wagon's half-width off everything standing, so it never squeezes between benches a man can pass), stands in
 ## its town's crowd avoidance as an agent the villagers step round (Godot's RVO, high priority), and never dodges
-## itself: it waits while someone stands on its way just ahead (towns.json nav.yield), as carts do in a crowd.
+## itself: it waits while any body stands on the arc it is about to drive (towns.json nav.yield), as carts do in a
+## crowd; held WAIT_MAX it re-routes round the one in its way, and held again it gives up and reports (`gave_up`).
+## A body standing where it is bound (a led horse's groom) is not in its way: it has come as near as it can.
 
 const People := preload("res://scripts/people.gd")
 const TownNav := preload("res://scripts/town_nav.gd")
 const Data := preload("res://scripts/data.gd")
 
 signal arrived
+signal gave_up(by: Node3D)  # held WAIT_MAX twice (once more after going round): it stops there, then arrives
+
+const WAIT_MAX := 4.0  # seconds a mover (and a road's head) waits on a body in its way before it goes on
 
 var speed := 0.17  # world units a second: a person's walk (npc_mind.gd Step's pace)
 var clip := "Walk"  # what the body plays while it travels ("" for a cart or beast that animates itself)
@@ -138,6 +143,10 @@ func _begin(way: PackedVector3Array, then: Callable, face: bool, keep_y: bool) -
 	_keep_y = keep_y
 	_steer = false
 	_ask_got = Callable()
+	_waited = 0.0
+	_went_round = false
+	_blocked = null
+	_peek = 0.0
 	if clip != "" and body:
 		People.play(body, clip, clampf(speed / People.WALK_PACE, 0.6, 1.5) if stride else 1.0)
 	set_process(true)
@@ -245,7 +254,9 @@ var _town_agent := RID()  # its agent in the town's crowd avoidance (the village
 var _town_map := RID()
 var _town_ask := 0.0  # seconds to the next look for the town it is in
 var _peek := 0.0  # seconds to the next look for anyone in its way
-var _blocked := false
+var _blocked: Node3D = null
+var _waited := 0.0  # seconds held by a body in its way
+var _went_round := false  # it has re-routed round a body once on this way
 var _was := Vector3.INF  # where it stood last frame (its velocity, told to the crowd)
 
 
@@ -286,29 +297,99 @@ func _tell_crowd(body: Node3D, vel: Vector3) -> void:
 	NavigationServer2D.agent_set_velocity_forced(_town_agent, Vector2(vel.x, vel.z))
 
 
-## Whether someone stands on the horse's or cart's way just ahead (towns.json nav.yield: how far ahead it looks, how
-## wide past its own half-width): anyone of the people, not its own carter or rider. Looked at a few times a second.
-func _in_the_way(body: Node3D, delta: float) -> bool:
+## The body standing on the horse's or cart's way (towns.json nav.yield: how far along it looks, how wide past its own
+## half-width), or null: the arc it is about to drive, not only the line straight ahead. Looked at a few times a second.
+func _in_the_way(body: Node3D, delta: float) -> Node3D:
 	_peek -= delta
 	if _peek > 0.0:
-		return _blocked
+		return _blocked if is_instance_valid(_blocked) else null
 	_peek = 0.1
-	_blocked = false
-	var ahead := float(Data.num("towns", "nav.yield.ahead", 0.3))
 	var side := float(Data.num("towns", "nav.wide", 0.1)) + float(Data.num("towns", "nav.yield.side", 0.04))
-	var at := Vector2(body.global_position.x, body.global_position.z)
-	var fwd := Vector2(sin(body.rotation.y), cos(body.rotation.y))
-	for p in body.get_tree().get_nodes_in_group("people"):
-		var n := p as Node3D
-		if n == null or n == body or body.is_ancestor_of(n) or not n.is_visible_in_tree():
-			continue
-		var q := Vector2(n.global_position.x, n.global_position.z)
-		if q.distance_squared_to(at) > (ahead + side) * (ahead + side):
-			continue
-		if Geometry2D.get_closest_point_to_segment(q, at, at + fwd * ahead).distance_to(q) < side:
-			_blocked = true
-			break
+	_blocked = standing_on(body.get_tree(), _sweep(body, float(Data.num("towns", "nav.yield.ahead", 0.3))), side, body)
 	return _blocked
+
+
+## The arc the body will drive over the next `ahead` (flat world points from where it stands): its heading turned
+## toward the way as _drive turns it, at most one turn_radius's bend.
+func _sweep(body: Node3D, ahead: float) -> PackedVector2Array:
+	var at := Vector2(body.global_position.x, body.global_position.z)
+	var yaw := body.rotation.y
+	var i := _i
+	var out := PackedVector2Array([at])
+	var ds := ahead / 8.0
+	for k in 8:
+		if i >= _way.size():
+			break
+		var aim := Vector2(_way[i].x, _way[i].z)
+		var turn := angle_difference(yaw, atan2(aim.x - at.x, aim.y - at.y))
+		yaw += clampf(turn, -ds / turn_radius, ds / turn_radius)
+		at += Vector2(sin(yaw), cos(yaw)) * ds
+		out.append(at)
+		if at.distance_to(aim) <= maxf(ds, 0.02):
+			i += 1
+	return out
+
+
+## Who stands on a way: the first body (one of the people, or a standing body: a cart, a horse, a soldier at his post)
+## within `side` of the flat polyline `way`, not `skip` nor anything it carries or is carried by. The one rule for
+## everything that waits on a body in its way: a steering mover and a road's head.
+static func standing_on(tree: SceneTree, way: PackedVector2Array, side: float, skip: Node) -> Node3D:
+	if way.is_empty():
+		return null
+	var box := Rect2(way[0], Vector2.ZERO)
+	for w in way:
+		box = box.expand(w)
+	box = box.grow(side)
+	for g in ["people", "bodies"]:
+		for p in tree.get_nodes_in_group(g):
+			var n := p as Node3D
+			if n == null or n == skip or not n.is_visible_in_tree() or (skip and (skip.is_ancestor_of(n) or n.is_ancestor_of(skip))):
+				continue
+			var q := Vector2(n.global_position.x, n.global_position.z)
+			if not box.has_point(q):
+				continue
+			if way.size() == 1:
+				if q.distance_to(way[0]) < side:
+					return n
+				continue
+			for k in way.size() - 1:
+				if Geometry2D.get_closest_point_to_segment(q, way[k], way[k + 1]).distance_to(q) < side:
+					return n
+	return null
+
+
+## Held by `by`: wait WAIT_MAX, then re-route round it once (a way to a point beside it, then on to where it is bound,
+## both from the navigation), then wait WAIT_MAX again and give up (report, stop there, arrive). A body standing where
+## it is bound means it has come as near as it can: it arrives.
+func _held_by(body: Node3D, by: Node3D, delta: float) -> void:
+	var end := _way[_way.size() - 1]
+	var side := float(Data.num("towns", "nav.wide", 0.1)) + float(Data.num("towns", "nav.yield.side", 0.04))
+	if Vector2(by.global_position.x - end.x, by.global_position.z - end.z).length() < side * 1.5:
+		_finish()
+		return
+	_waited += delta
+	if _waited < WAIT_MAX:
+		return
+	_waited = 0.0
+	if not _went_round:
+		_went_round = true
+		var at := body.global_position
+		var q := by.global_position
+		var across := Vector3(q.z - at.z, 0, at.x - q.x).normalized()
+		if across.dot(Vector3(end.x - q.x, 0, end.z - q.z)) < 0.0:
+			across = -across  # round the side nearer where it is bound
+		var beside := q + across * (side * 2.5 + turn_radius * 0.5)
+		var first := _route(at, beside)
+		var rest := _route(beside, end)
+		if first.size() >= 2 and rest.size() >= 2:
+			first.append_array(rest.slice(1))
+			_way = first
+			_i = 1
+			_peek = 0.0
+			return
+	print("CHECK mover gave up: %s held by %s" % [body.name, by.name])
+	gave_up.emit(by)
+	_finish()
 
 
 ## One frame of steering: along the way toward the mark, the crowd's safe velocity taken where it is live, eased.
@@ -391,8 +472,11 @@ func _process(delta: float) -> void:
 	var flat := Vector2(aim.x - at.x, aim.z - at.z)
 	var step := speed * delta
 	if turn_radius > 0.0 and _face:
-		if _in_the_way(body, delta):
-			return  # someone stands on its way: it waits for them
+		var by := _in_the_way(body, delta)
+		if by != null:
+			_held_by(body, by, delta)  # a body stands on its way: it waits, goes round, or gives up
+			return
+		_waited = 0.0
 		_drive(body, at, aim, flat, step)
 		return
 	if flat.length() <= step:
@@ -451,10 +535,9 @@ static func _main() -> Node:
 ## PathFollow3D carries each member along it, `offset` behind the head (and `side` across). One place for all
 ## road travel. members: [[node, offset, side], ...] (nodes face +z; turned to the follower's -z here).
 ## opts: name (the road's node, so a party can be found on it), start (how far along they begin) or start_share (as a share of the road), min/max (seconds for the whole road), yields (the head waits up to
-## WAIT_MAX for anyone standing in the road just ahead, ahead: how far it looks). `then` runs when they're gone.
+## WAIT_MAX for any body standing in the road just ahead (standing_on, the one rule), ahead: how far it looks, then goes on and reports). `then` runs when they're gone.
 ## Null when no road can be laid (no navigation, or a way of fewer than two points): the members it was handed
 ## are freed then, and the caller says nobody set out.
-const WAIT_MAX := 4.0
 
 static func road(holder: Node, way: PackedVector3Array, members: Array, pace: float, opts := {}, then := Callable()) -> Path3D:
 	var main := _main()
@@ -503,13 +586,10 @@ static func road(holder: Node, way: PackedVector3Array, members: Array, pace: fl
 			if not is_instance_valid(head) or not tw.is_valid():
 				return
 			var ahead := path.to_global(path.curve.sample_baked(minf(length, head.progress + ahead_d)))
-			var blocked := false
-			for p in path.get_tree().get_nodes_in_group("people"):
-				var p3 := p as Node3D
-				if p3 and p3.is_visible_in_tree() and not head.is_ancestor_of(p3) and Vector2(p3.global_position.x - ahead.x, p3.global_position.z - ahead.z).length() < 0.07:
-					blocked = true
-					break
-			held[0] = held[0] + look.wait_time if blocked else 0.0
-			tw.set_speed_scale(0.0 if blocked and held[0] < WAIT_MAX else 1.0))
+			var by := standing_on(path.get_tree(), PackedVector2Array([Vector2(ahead.x, ahead.z)]), 0.07, head)
+			held[0] = held[0] + look.wait_time if by != null else 0.0
+			if by != null and held[0] >= WAIT_MAX and held[0] - look.wait_time < WAIT_MAX:
+				print("CHECK road gave up waiting: %s held by %s" % [path.name, by.name])
+			tw.set_speed_scale(0.0 if by != null and held[0] < WAIT_MAX else 1.0))
 		look.start()
 	return path
