@@ -121,6 +121,10 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- 10:45 (11-12) Round 6: the castle in light warm stone and terracotta roofs, a clear step. Still: the ring's final
+  pass 3 fronts (narrow townhouses didn't help; next lever fronts before the tavern and/or a bigger square_r), houses
+  at random angles -> fire-siege; no gardens read, square edge grass -> army-ui; sprawled oversized horses at the
+  square's south edge, square now sparse -> works-life. Also: a dark roof clips the hero's lower right.
 - 10:40 (11-12) Round 5 (composites work): gate in the wall, terracotta house roofs, striped stalls read. Still: ring
   laid twice (7 fronts then 3); castle a flat grey slab with orange courses, castle roofs bright red -> fire-siege;
   grass lime under exposure 1.35, bare yards, empty counters, bare forecourt -> army-ui; crowd knot by the statue,
