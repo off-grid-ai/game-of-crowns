@@ -13,5 +13,8 @@ export const transferCity = (cityId, pid) => `local c = find.city(nil, ${n(cityI
 // A decree building set down in a town for its seasons (realmrules/script.lua realm_decree): "feast", "relief".
 export const decree = (cityId, kind) => `realm_decree(${n(cityId)}, "${kind === "relief" ? "relief" : "feast"}")`;
 
-// The houses (player ids) that bear the heavy tithe in every town; every other town is free of it.
-export const heavyTithe = (pids) => `realm_heavy_tithe("${pids.map(n).join(",")}")`;
+// A mark the houses (player ids) bear in their seat, felt in all their towns, lifted everywhere else
+// (realmrules/script.lua realm_bear).
+const bear = (name, pids) => `realm_bear("${name}", "${pids.map(n).join(",")}")`;
+export const heavyTithe = (pids) => bear("Heavy Tithe", pids);
+export const grievance = (pids) => bear("Grievance", pids);

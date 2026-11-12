@@ -1,7 +1,7 @@
 extends Node3D
 ## Strategy camera: top-down over the whole realm, tilting toward the horizon as
 ## you zoom into a town.
-## Zoom: wheel or pinch, toward whatever is under the cursor. Pan: drag (the
+## Zoom: wheel or pinch, toward whatever is under the cursor; a double-click comes closer onto the spot. Pan: drag (the
 ## ground sticks to the cursor and glides on when flicked), WASD (Shift for
 ## faster), two-finger swipe. Rotate and tilt: Option+drag, right-drag,
 ## Shift+swipe, Q/E (rotate), R/F (tilt). All motion eases at the same rate
@@ -295,6 +295,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN and event.pressed:
 			_zoom_at(event.position, 1.0 / 0.86 if event.factor == 0.0 else pow(1.0 / 0.86, event.factor))
 		elif event.button_index in [MOUSE_BUTTON_LEFT, MOUSE_BUTTON_RIGHT, MOUSE_BUTTON_MIDDLE]:
+			if event.pressed and event.double_click and event.button_index == MOUSE_BUTTON_LEFT:
+				double_click(event.position)
 			if event.pressed:
 				_dragging = event.button_index
 				_drag_moved = 0.0
@@ -828,6 +830,18 @@ func _pan(d: Vector2) -> void:
 	var right := Vector3(cos(goal_yaw), 0, -sin(goal_yaw))
 	var fwd := Vector3(sin(goal_yaw), 0, cos(goal_yaw))
 	goal_target += right * d.x + fwd * d.y
+
+
+## A left double-click (Godot's double_click, so a single click waits for nothing): the view eases its aim onto the
+## ground there and comes one step closer, camera.json doubleClick.step of the distance (Total War's campaign map,
+## CK3, Google Maps), never under the floor: at the floor it only re-centres. The rig's own easing carries it.
+func double_click(screen: Vector2) -> void:
+	var p := _ground_under(screen)
+	if p == Vector3.INF:
+		return
+	_fling = Vector3.ZERO
+	goal_target = Vector3(p.x, goal_target.y, p.z)
+	goal_distance = maxf(goal_distance * (1.0 - knob("doubleClick.step", 0.35)), floor_now())
 
 
 func _click(screen: Vector2) -> void:

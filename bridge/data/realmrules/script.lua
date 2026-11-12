@@ -604,14 +604,16 @@ function realm_decrees_lapse()
   GOC_DECREES = table.concat(kept, ";")
 end
 
--- The heavy tithe: houses ("3,5,6", player ids) bear it in every town; every other town is free of it.
-function realm_heavy_tithe(houses)
+-- A mark a house bears ("Heavy Tithe", "Grievance", small wonders felt in all its towns): the houses
+-- ("3,5,6", player ids) bear it in their seat, every other town is free of it.
+function realm_bear(name, houses)
   local bearing = {}
   for id in tostring(houses or ""):gmatch("%d+") do bearing[tonumber(id)] = true end
-  local b = find.building_type("Heavy Tithe")
+  local b = find.building_type(name)
+  if not b then log.normal("BEAR no building %s", tostring(name)); return end
   for p in players_iterate() do
     for c in p:cities_iterate() do
-      local want = bearing[p.id]
+      local want = bearing[p.id] and c:is_primary_capital()
       if want and not c:has_building(b) then edit.create_building(c, b)
       elseif not want and c:has_building(b) then edit.remove_building(c, b) end
     end

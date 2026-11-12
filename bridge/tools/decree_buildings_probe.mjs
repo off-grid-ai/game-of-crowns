@@ -1,6 +1,6 @@
 // Guards step 3 (docs/research/freeciv-leverage-2026-11-12.md): a decree is a building in Freeciv. A feast or
 // relief sets one down in a town (realm_decree), it stands its seasons (luadata.txt [decrees]) and is taken up,
-// the heavy tithe stands in the bearing houses' towns only, and a save keeps all of it. The bridge's own Lua
+// the heavy tithe stands in the bearing houses' seats only (a small wonder, felt in all their towns), and a save keeps all of it. The bridge's own Lua
 // strings (lua.js) are what is sent. Bare Freeciv on 5571, our ruleset, no bridge. Exits 1 on a failure.
 //   node tools/decree_buildings_probe.mjs        (from bridge/)
 import fs from "node:fs";
@@ -32,9 +32,9 @@ b.send(`lua cmd ${Lua.decree(y.city, "relief")}`);
 b.send(`lua cmd ${Lua.heavyTithe([x.owner])}`);
 check(await has(x.city, "Royal Feast"), "the feast decree set no Royal Feast");
 check(await has(y.city, "Royal Relief"), "the relief decree set no Royal Relief");
-const seatX = ids.find((c) => c.owner === x.owner);
-const otherSeat = ids.find((c) => c.owner !== x.owner);
-if (seatX) check(await has(seatX.city, "Heavy Tithe"), "the bearing house's town has no Heavy Tithe");
+const seatX = ids.find((c) => c.owner === x.owner && c.seat);
+const otherSeat = ids.find((c) => c.owner !== x.owner && c.seat);
+if (seatX) check(await has(seatX.city, "Heavy Tithe"), "the bearing house's seat has no Heavy Tithe");
 if (otherSeat) check(!(await has(otherSeat.city, "Heavy Tithe")), "a house not bearing the tithe has it");
 b.send(`lua cmd ${Lua.heavyTithe([])}`);
 if (seatX) check(!(await has(seatX.city, "Heavy Tithe")), "a lifted tithe still stands");

@@ -127,7 +127,7 @@ export function tithe(ctx, turn) {
     if (king) for (const c of from) scene("tribute", { x: c.x, y: c.y, tx: king.x, ty: king.y, city: king.id, tithe: true });
   }
   if (turn % 4 === 0 && (meta.tithe >= TITHE_HIGH || meta.tithe <= ECONOMY.tithe.low)) deed(kingDeeds.tagsFor("realm", meta.tithe >= TITHE_HIGH ? "tithe_high" : "tithe_low"), { act: false });
-  // A heavy tithe is felt in Freeciv: every great house's towns bear a Heavy Tithe (one more unhappy each).
+  // A heavy tithe is felt in Freeciv: every great house bears a Heavy Tithe (one townsman fewer content in each of its towns).
   const bearing = meta.tithe >= TITHE_HIGH ? world.players.filter((p) => !houseFor(p).crown && !houseFor(p).wild).map((p) => p.id) : [];
   send(`lua cmd ${Lua.heavyTithe(bearing)}`);
   const t = titheLua(world, meta.tithe * (0.4 + 0.6 * peaceNow));

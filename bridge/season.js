@@ -19,6 +19,7 @@ import * as Reword from "./reword.js";
 import * as Seals from "./seals.js";
 import * as Next from "./next.js";
 import * as Director from "./director.js";
+import * as Lua from "./lua.js";
 import fs from "node:fs";
 import path from "node:path";
 import { houseFor, cityName } from "./narrator.js";
@@ -84,17 +85,22 @@ export async function runSeason(ctx) {
 // A house turning against the King: each season it stays under 25 its anger
 // fills; after TURNING seasons its lord sends the crown an ultimatum (a crisis
 // at court). Only an ultimatum refused, or left to burn down, lets him raise
-// his banners; won back above 25, the anger drains away.
+// his banners; won back above 25, the anger drains away. While it stays under 25
+// its seat raises a Grievance (realmrules: three townsmen fewer content in each of
+// its towns), so Freeciv's AI has to calm its people (minstrels, luxury) at the
+// cost of their work. Freeciv's AI never lets a town riot, so riots can't be the clock.
 export const TURNING = 2;
 export const RISE_IN = 2;  // seasons from a refused ultimatum to the host marching
 export function turnHouses(ctx, turn) {
   const { world, meta, stakes, send, record, favourOf } = ctx;
   const turning = (meta.turning ??= {});
+  const aggrieved = [];
   for (const p of world?.players ?? []) {
     if (houseFor(p).wild || houseFor(p).crown || !world.cities.some((c) => c.owner === p.id)) continue;
     // A house whose heir is the King's ward neither threatens nor rises while the ward lives at court
     // (the ward's promise, kept: gameplay review #2); its anger waits for the child to go home.
     if (warded(ctx, p.id)) continue;
+    if (favourOf(p.id) < BANDS.cooling) aggrieved.push(p.id);
     // A realm from before ultimatums: a house already under 25 is one season from sending its own.
     const t = (turning[p.id] ??= { seasons: favourOf(p.id) < BANDS.cooling ? TURNING - 1 : 0, state: null });
     if (favourOf(p.id) < BANDS.cooling) t.seasons = Math.min(TURNING, t.seasons + 1);
@@ -134,6 +140,7 @@ export function turnHouses(ctx, turn) {
       record({ turn, kind: "unrest", text: `${houseFor(p).name} sends a rider to Kingsmere with an ultimatum for the King.` });
     }
   }
+  send(`lua cmd ${Lua.grievance(aggrieved)}`);  // the cold houses' towns bear their Grievance; the rest are free of it
 }
 // A story that would march a house on Kingsmere: if its ultimatum has been
 // refused (or gone two seasons unanswered) the host marches now; otherwise

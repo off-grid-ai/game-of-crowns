@@ -2262,7 +2262,8 @@ This is not a normal improvement. Instead, setting a city's\
  converted to tax output (money, coins!).\
 ")
 
-; Decree buildings (Game of Crowns): never built by a town (they need Forbidden Lore, which no one
+; Decree buildings (Game of Crowns; Heavy Tithe and Grievance are small wonders, one in a house's seat,
+; because only wonders may reach every town of a house): never built by a town (they need Forbidden Lore, which no one
 ; can learn); the King's decrees set them down and take them up through the ruleset's Lua
 ; (script.lua realm_decree / realm_heavy_tithe). What they do is in effects.ruleset, so the houses'
 ; AI weighs them like any building, and a save keeps them.
@@ -2315,7 +2316,7 @@ The King's grain wagons: the town's food half again as much, and one more townsm
 
 [building_heavy_tithe]
 name		= _("Heavy Tithe")
-genus		= "Improvement"
+genus		= "SmallWonder"
 reqs	=
     { "type", "name", "range"
       "Tech", "Forbidden Lore", "Player"
@@ -2333,5 +2334,28 @@ sound		= "b_generic"
 sound_alt	= "b_generic"
 sound_alt2      = "-"
 helptext	= _("\
-The crown's tithe weighs on this town: one more townsman unhappy.\
+Raised in the house's seat while the crown's tithe weighs on it: in every town of the house one townsman fewer is content.\
+")
+
+[building_grievance]
+name		= _("Grievance")
+genus		= "SmallWonder"
+reqs	=
+    { "type", "name", "range"
+      "Tech", "Forbidden Lore", "Player"
+    }
+graphic         = "b.temple"
+graphic_alt     = "-"
+graphic_alt2    = "-"
+obsolete_by	=
+    { "type", "name", "range"
+    }
+build_cost	= 1
+upkeep		= 0
+sabotage	= 0
+sound		= "b_generic"
+sound_alt	= "b_generic"
+sound_alt2      = "-"
+helptext	= _("\
+Raised in the house's seat while its lord has turned from the King: in every town of the house three townsmen fewer are content.\
 ")

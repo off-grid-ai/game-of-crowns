@@ -4190,7 +4190,7 @@ reqs    =
     }
 
 [effect_policy_levy_unrest]
-type    = "Make_Content"
+type    = "City_Unhappy_Size"
 value   = -1
 multiplier = "Levy Muster"
 
@@ -4226,7 +4226,9 @@ reqs    =
       "OutputType", "Shield", "Local"
     }
 
-; Decree buildings (buildings.ruleset, set down by script.lua).
+; Decree buildings (buildings.ruleset, set down by script.lua). A negative Make_Content makes no one
+; unhappy (Freeciv common/city.c citizen_content_buildings), so unrest lowers City_Unhappy_Size, the
+; house's naturally content citizens, through a small wonder in its seat.
 [effect_royal_feast]
 type    = "Make_Content"
 value   = 2
@@ -4253,9 +4255,17 @@ reqs    =
     }
 
 [effect_heavy_tithe]
-type    = "Make_Content"
+type    = "City_Unhappy_Size"
 value   = -1
 reqs    =
     { "type", "name", "range"
-      "Building", "Heavy Tithe", "City"
+      "Building", "Heavy Tithe", "Player"
+    }
+
+[effect_grievance]
+type    = "City_Unhappy_Size"
+value   = -3
+reqs    =
+    { "type", "name", "range"
+      "Building", "Grievance", "Player"
     }
