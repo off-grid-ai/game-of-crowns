@@ -83,6 +83,7 @@ func stage(root: Node3D, life: Node3D, c: Dictionary, states: Array, tl: Object)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = int(c.get("id", 0)) * 7919 + 17
 	var size := int(c.get("size", 1))
+	var tally := {"cast": 0, "no_room": {}, "no_place": []}  # said in the play log: an empty walk map shows as a number
 	for row in _d.get("standing", []):
 		if not _meets(row, root, states, size):
 			continue
@@ -91,11 +92,12 @@ func stage(root: Node3D, life: Node3D, c: Dictionary, states: Array, tl: Object)
 			var got: Variant = tl.call("dress_" + String(dress), root, life, row, rng)
 			if got is Dictionary:
 				anchors.merge(got, true)
-		var k := {"root": root, "life": life, "tl": tl, "states": states, "size": size, "rng": rng, "row": row, "lead": null, "cast": []}
+		var k := {"root": root, "life": life, "tl": tl, "states": states, "size": size, "rng": rng, "row": row, "lead": null, "cast": [], "tally": tally}
 		for role in row.get("roles", []):
 			_stage_role(k, role, anchors)
 		if row.has("march") and _meets(row["march"], root, states, size):
 			_begin_march(root, life, row["march"], rng)
+	print("CHECK town scenes: %s: %d cast; no room for %s; rows whose place wasn't there: %s" % [String(root.get_meta("title", root.name)), int(tally["cast"]), str(tally["no_room"]), str(tally["no_place"])])
 
 
 ## Whether a row's conditions hold: any of `needs`, none of `not`, the square's own life (`square`: a market
@@ -155,6 +157,8 @@ func _anchor(name: String, k: Dictionary, anchors: Dictionary) -> Dictionary:
 	match name:
 		"heart":
 			return {"at": Vector3.ZERO, "dir": SEEN, "r": r}
+		"market":
+			return {"at": places["market"], "dir": SEEN, "r": 0.5} if places.has("market") else {}
 		"well":
 			return {"at": well, "dir": SEEN, "r": r}
 		"seen":
@@ -363,6 +367,7 @@ func _pick(list: Variant, i: int, k: Dictionary, random := false) -> String:
 func _stage_role(k: Dictionary, role: Dictionary, anchors: Dictionary) -> void:
 	var a := _anchor(String(role.get("at", "heart")), k, anchors)
 	if a.is_empty():
+		(k["tally"]["no_place"] as Array).append("%s.%s" % [k["row"]["id"], role.get("at", "heart")])
 		return
 	var does := String(role.get("does", "post"))
 	if does == "errand" or does == "cart" or does == "beat":
@@ -389,6 +394,8 @@ func _stage_role(k: Dictionary, role: Dictionary, anchors: Dictionary) -> void:
 		if not bool(role.get("exact", false)):
 			pos = tl.place(root, want, float(role.get("reach", 0.2)), bool(role.get("inside", false)))
 			if is_nan(pos.x):
+				var nr: Dictionary = k["tally"]["no_room"]
+				nr[k["row"]["id"]] = int(nr.get(k["row"]["id"], 0)) + 1
 				continue  # no room: the scene is what fits
 		else:
 			pos.y = tl.ground_at(root, pos)
@@ -411,6 +418,7 @@ func _stage_role(k: Dictionary, role: Dictionary, anchors: Dictionary) -> void:
 		if body == null:
 			continue
 		body.set_meta("scene", String((k["row"] as Dictionary)["id"]))
+		k["tally"]["cast"] = int(k["tally"]["cast"]) + 1
 		if not bool(role.get("exact", false)):
 			body.set_meta("spot", true)
 		for m in role.get("meta", []):
@@ -461,6 +469,8 @@ func _stage_role(k: Dictionary, role: Dictionary, anchors: Dictionary) -> void:
 						_walker(kid, Chase.new(), {"pair": pair, "root": root}, "Running", float(W.get("pace", 0.32)))
 				elif pi == placed.size() - 1:
 					body.queue_free()  # no one found room to chase him: he isn't there
+			"live":
+				Animals.live(body, String(role.get("beast", "")), rng)  # its own idle life (a hen pecking about)
 			"procession":
 				pass
 	if does == "procession":
@@ -971,6 +981,8 @@ func _cast(s: Dictionary, role: Dictionary, spot: Vector3, face: Vector3) -> Nod
 	bb.set_var(&"leaving", false)
 	bb.set_var(&"exit", person.global_position)
 	bb.set_var(&"react", {})
+	bb.set_var(&"clip", "")  # every var a task reads, declared as the person is made: no read misses
+	bb.set_var(&"clip_left", 0.0)
 	bb.set_var(&"done", _done.bind(s, person))
 	person.add_child(player)
 	(s["cast"] as Array).append(person)
@@ -1051,11 +1063,11 @@ func _on_stimulus(kind: String, pos: Vector3, radius: float, _house: String, _st
 class Kit:
 	## Plays a person's clips in turn, never the same twice running, a new one every few seconds.
 	static func _cycle(agent: Node, bb: Blackboard, clips: Array, delta: float) -> void:
-		var left := float(bb.get_var(&"clip_left", 0.0)) - delta
+		var left := float(bb.get_var(&"clip_left", 0.0, false)) - delta
 		if left > 0.0:
 			bb.set_var(&"clip_left", left)
 			return
-		var last := String(bb.get_var(&"clip", ""))
+		var last := String(bb.get_var(&"clip", "", false))
 		var pool := clips.filter(func(c): return c != last)
 		if pool.is_empty():
 			pool = clips

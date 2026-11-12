@@ -1673,12 +1673,13 @@ func dress_camp(root: Node3D, life: Node3D, _row: Dictionary, rng: RandomNumberG
 
 ## The market's stalls: which are kept (war and hunger shut some, the same ones each time: moods.json
 ## stalls_open), each kept stall's keeper's mark behind its counter on its back side facing the lane over the
-## goods (failing that, past either end of the goods: else the next stall's keeper keeps both), and its stock
-## piled at its end.
-func dress_stalls(root: Node3D, life: Node3D, _row: Dictionary, rng: RandomNumberGenerator) -> Dictionary:
+## goods (failing that, past either end of the goods: else the next stall's keeper keeps both), its front on the lane
+## (row front: game units out from the counter) where shoppers stand, and its stock piled at its end.
+func dress_stalls(root: Node3D, life: Node3D, row: Dictionary, rng: RandomNumberGenerator) -> Dictionary:
 	var center := root.position
 	var open := _mood_num(life.get_meta("states", []), "stalls_open", 1.0)
 	var points: Array = []
+	var fronts: Array = []  # each kept stall's front, on the lane, where its shoppers stand
 	var si := -1
 	for st in root.get_meta("stalls", []):
 		si += 1
@@ -1708,7 +1709,8 @@ func dress_stalls(root: Node3D, life: Node3D, _row: Dictionary, rng: RandomNumbe
 		life.set_meta("standing", taken)
 		_pile(root, life, center, si, m, out, float(st[2]))
 		points.append({"at": at, "dir": -out, "si": si})
-	return {"stall_keep": {"at": Vector3.ZERO, "dir": SEEN, "points": points}}
+		fronts.append({"at": m - out * (float(st[1]) * 0.5 + float(row.get("front", 0.12))), "dir": out, "si": si})
+	return {"stall_keep": {"at": Vector3.ZERO, "dir": SEEN, "points": points}, "stall_front": {"at": Vector3.ZERO, "dir": SEEN, "points": fronts}}
 
 
 ## The crown's market day (art target 01-town): an anvil on the square's edge (not when the town's smithy stands

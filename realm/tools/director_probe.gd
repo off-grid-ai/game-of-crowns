@@ -21,6 +21,8 @@ const Mover := preload("res://scripts/mover.gd")
 const OVERLAP := 0.06  # world units: two bodies' radii at their drawn size; closer is one inside the other
 const STUCK := 2.0  # game seconds two bodies may brush in passing (a funeral's slow walk past a shoulder takes 1.7); longer, one stands inside the other
 const KNOT := 0.13  # world units: within a step of each other, they stand together
+const BUSY := 32  # people on a market square on an ordinary day (01-town: dozens), the posted and the walkers
+const ORIGIN := 0.06  # world units (half a metre): nobody stands at a town's very middle, its well or statue
 const KNOT_MOST := 5  # the biggest group a peaceful square's day shows (a crier and his few, a knot of gossips)
 
 
@@ -190,6 +192,22 @@ func _run() -> void:
 			var got: int = by.call(meta).size()
 			if got < int(need[name][meta]):
 				fail.call("%s: %d %s, want at least %d" % [name, got, meta, need[name][meta]])
+		if name == "peace":
+			# A market's day (01-town): dozens on the square, a small group at every kept stall.
+			var sq := float(town.get_meta("square_r", 1.0)) * 1.1
+			var on_square: int = cast.filter(func(n): return Vector2((n as Node3D).position.x, (n as Node3D).position.z).length() < sq).size()
+			var unserved := 0
+			for st in town.get_meta("stalls", []):
+				var m: Vector3 = st[0]
+				var front := m - Vector3(m.x, 0, m.z).normalized() * (float(st[1]) * 0.5 + 0.12)
+				if not cast.any(func(n): return n.has_meta("shopper") and (n as Node3D).position.distance_to(front) < 0.3):
+					unserved += 1
+			print("DIRECTOR peace   market day: %d on the square, %d of %d stalls with nobody at their front" % [on_square, unserved, (town.get_meta("stalls", []) as Array).size()])
+			if on_square < BUSY or unserved > 0:
+				fail.call("peace: the square reads empty (%d on it, want %d; %d stalls with nobody at the front)" % [on_square, BUSY, unserved])
+		var hens := l.get_children().filter(func(n): return n.has_meta("stall_hen"))
+		if name == "peace" and (hens.size() < 2 or hens.any(func(h): return (h as Node).find_children("Life", "Timer", true, false).is_empty())):
+			fail.call("peace: %d hens by the stalls, or one without its idle life" % hens.size())
 		if name == "riot" and not by.call("patrol").is_empty():
 			fail.call("riot: the square's patrol walks through the riot")
 		# A shoulder apart: nobody placed on another.
@@ -217,6 +235,7 @@ func _run() -> void:
 		var overlaps := {}
 		var knot := 0
 		var knot_of: Array = []
+		var parked := {}
 		Engine.time_scale = 4.0  # fine enough steps that a catch or a brush is seen as it happens (10x skips 0.05 a frame)
 		var until := Time.get_ticks_msec() + 2500
 		var was_us := Time.get_ticks_usec()
@@ -227,6 +246,10 @@ func _run() -> void:
 			var dt := float(Time.get_ticks_usec() - was_us) / 1000000.0 * Engine.time_scale  # game seconds this frame
 			was_us = Time.get_ticks_usec()
 			var live: Array = cast.filter(func(n): return is_instance_valid(n) and not (n as Node).is_queued_for_deletion())
+			for n in live:
+				if Vector2((n as Node3D).position.x, (n as Node3D).position.z).length() < ORIGIN:
+					parked[n] = float(parked.get(n, 0.0)) + dt  # at the square's very middle (its well or statue in a real town)
+			var still: Array = live.filter(func(n): return not Mover.of(n as Node3D).moving())  # standing about (the census of a knot)
 			var pts: Array = live.map(func(n): return Vector2((n as Node3D).global_position.x, (n as Node3D).global_position.z))
 			var group := range(pts.size())
 			var top := func(i: int) -> int:
@@ -243,16 +266,20 @@ func _run() -> void:
 						was[2] = maxf(float(was[2]), float(was[3]))  # the longest time
 						was[4] = frame
 						overlaps[key] = was
-					if d < KNOT:
-						group[top.call(i)] = top.call(j)
+					if d < KNOT and live[i] in still and live[j] in still:
+						group[top.call(i)] = top.call(j)  # a knot is of people standing together; a walker passing by isn't in it
 			var sizes := {}
 			for i in pts.size():
-				sizes[top.call(i)] = int(sizes.get(top.call(i), 0)) + 1
+				if live[i] in still:
+					sizes[top.call(i)] = int(sizes.get(top.call(i), 0)) + 1
 			for g in sizes:
 				if int(sizes[g]) > knot:
 					knot = int(sizes[g])
 					knot_of = range(pts.size()).filter(func(i): return top.call(i) == g).map(func(i): return String(live[i].get_meta("scene", "?")))
 		Engine.time_scale = 1.0
+		var long_parked: Array = parked.keys().filter(func(n): return is_instance_valid(n) and float(parked[n]) > 1.0)
+		if not long_parked.is_empty():
+			fail.call("%s: %d stood at the square's very middle over a second (first: %s %s)" % [name, long_parked.size(), long_parked[0].get_meta("scene", "?"), long_parked[0].get_meta("role", "")])
 		# Two walking past each other may brush for a moment; standing inside each other (over STUCK) is the fault.
 		var stuck: Array = overlaps.values().filter(func(o): return float(o[2]) > STUCK)
 		print("DIRECTOR %-7s %d pairs brushed, %d stood inside each other, biggest knot %d" % [name, overlaps.size(), stuck.size(), knot])
@@ -287,6 +314,20 @@ func _run() -> void:
 			print("DIRECTOR levy    %d mustered, %d still in the square" % [mustered, still])
 			if still >= mustered:
 				fail.call("levy: nobody marched out")
+		if name == "peace" and director:
+			# Every passing scene started once in this town and ticked (their people walk in and act): the run log shows
+			# no blackboard read that misses (the probe's shell line greps "Blackboard: Variable").
+			main.towns.towns[7] = {"node": town, "data": c}
+			var started := 0
+			for row in director._d.get("scenes", []):
+				if not director._start(7, town, row).is_empty():
+					started += 1
+			var t_end := Time.get_ticks_msec() + 500
+			while Time.get_ticks_msec() < t_end:
+				await process_frame
+			print("DIRECTOR peace   %d passing scenes started and ticked" % started)
+			director._end_town(7)
+			main.towns.towns.erase(7)
 		if name == "peace":
 			# The town dressed again as its state turns (a good year): its Life is rebuilt, the director still casts it.
 			c["prosperity"] = true
