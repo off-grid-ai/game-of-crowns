@@ -1,0 +1,23 @@
+{
+ "name": "nt_pine_a",
+ "source": "/Users/user/code/goc-kits/meshy/nature/pine_a/pine_a.glb",
+ "tris_before": 4175,
+ "tris_after": 3000,
+ "scale": 6.312232120252048,
+ "size_m": [
+  7.93,
+  7.65,
+  12.0
+ ],
+ "house_share": 0.0,
+ "leaves_share": 0.981,
+ "mask_png": true,
+ "materials": [
+  "Material_0",
+  "MI_Leaves"
+ ],
+ "cut_faces": 0,
+ "arm": false,
+ "repainted": 0,
+ "flattened": 0
+}
