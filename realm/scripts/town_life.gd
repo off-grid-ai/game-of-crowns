@@ -684,7 +684,11 @@ func _revels(root: Node3D, life: Node3D, center: Vector3, rng: RandomNumberGener
 ## Trade at the market: a keeper behind each stall facing the square, and a
 ## buyer or two at its front, haggling (none when there's nothing to buy).
 func _trade(root: Node3D, life: Node3D, center: Vector3, rng: RandomNumberGenerator, buyers := true, open := 1.0) -> void:
+	var keepers := {}  # stall index -> its keeper, for a shopper at its front to be served (npc_mind Serve)
+	root.set_meta("keepers", keepers)
+	var si := -1
 	for st in root.get_meta("stalls", []):
+		si += 1
 		var m: Vector3 = st[0]
 		if open < 1.0 and float(absi(hash(Vector2i(roundi(m.x * 100.0), roundi(m.z * 100.0)))) % 1000) / 1000.0 >= open:
 			continue  # shut for the war or the hunger (moods.json stalls_open): no keeper, no buyers, the same stalls each time
@@ -715,6 +719,9 @@ func _trade(root: Node3D, life: Node3D, center: Vector3, rng: RandomNumberGenera
 		at.y = _y(center, at)
 		var keeper := _townsperson(life, at, "townsfolk", ["Idle_Talking", "Pointing_Forward", "Nodding"][rng.randi() % 3], rng.randi(), Color.WHITE, "stallholder")
 		keeper.rotation.y = atan2(-out.x, -out.z)
+		keepers[si] = keeper
+		if si > 0 and not keepers.has(si - 1):
+			keepers[si - 1] = keeper  # the stall before had no keeper of its own: this one keeps both
 		_mind(keeper, "trade", center)
 		taken.append(Vector2(at.x, at.z))
 		life.set_meta("standing", taken)

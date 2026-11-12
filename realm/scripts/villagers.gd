@@ -899,6 +899,7 @@ const KNOT := 0.26  # a gathering keeps this clear round its middle: knots of tw
 ## people mostly are.
 func place(a: Dictionary, key: String, knot := false) -> Vector3:
 	a["face_at"] = Vector3.INF
+	a["slot_stall"] = -1
 	if key in SLOTS:
 		# A smart object's slot (a stall's front, the well's rim, a street's mouth): claimed, faced, never stacked.
 		var sp := _slot(a, key)
@@ -992,6 +993,19 @@ func _claim(a: Dictionary, key: String, clear: float) -> Vector3:
 	return Vector3(NAN, 0, 0)
 
 
+## A shopper standing at stall `stall`'s front: its keeper (town_life _trade's keepers) is told, to turn and serve
+## them (npc_mind Serve). Nothing when the stall has no keeper.
+func at_stall(a: Dictionary, who: Node3D) -> void:
+	var stall := int(a.get("slot_stall", -1))
+	var town_node: Node3D = towns.towns.get(a["town"], {}).get("node")
+	if stall < 0 or not is_instance_valid(town_node):
+		return
+	var keeper: Variant = (town_node.get_meta("keepers", {}) as Dictionary).get(stall)
+	if keeper is Node3D and is_instance_valid(keeper) and not (keeper as Node3D).has_meta("customer"):
+		(keeper as Node3D).set_meta("customer", who)
+		(keeper as Node3D).set_meta("customer_at", Time.get_ticks_msec())
+
+
 ## The square's smart objects (crowd.json square_agents, the switch --square-agents=on|off; supervisor 2026-11-12,
 ## Mac: "the people behaviour is poor"): each stall's front, the well's rim and the main streets' mouths offer a
 ## few slots, each with the way to face (the counter, the well, out along the street). A villager sent there
@@ -1014,13 +1028,15 @@ func _slot(a: Dictionary, key: String) -> Vector3:
 	match key:
 		"stall":
 			var off := float(K.get("stall_out", 0.13))
+			var sti := -1
 			for st in town_node.get_meta("stalls", []):
+				sti += 1
 				var m: Vector3 = st[0]
 				var out := Vector3(m.x, 0, m.z).normalized()
 				var along := Vector3(-out.z, 0, out.x)
 				var front := m - out * (float(st[1]) * 0.5 + off)
 				for k in [0.0, -0.32, 0.32]:
-					offers.append([front + along * float(st[2]) * k, m])
+					offers.append([front + along * float(st[2]) * k, m, sti])
 		"draw":
 			var places: Dictionary = town_node.get_meta("places", {})
 			if places.has("well"):
@@ -1062,6 +1078,7 @@ func _slot(a: Dictionary, key: String) -> Vector3:
 			continue  # someone there, or on their way
 		var f: Vector3 = o[1]
 		a["face_at"] = Vector3(c.x + f.x, 0, c.z + f.z)
+		a["slot_stall"] = int(o[2]) if o.size() > 2 else -1
 		return Vector3(c.x + q.x, terrain.height_at(c.x + q.x, c.z + q.y), c.z + q.y)
 	return Vector3(NAN, 0, 0)
 

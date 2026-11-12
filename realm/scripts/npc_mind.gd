@@ -591,6 +591,8 @@ static func give(person: Node3D, post: String, ground: Callable, seed: int, open
 	danger.add_child(calm)
 	life.add_child(danger)
 	life.add_child(react())
+	if post == "trade":
+		life.add_child(serve())  # a shopper at the counter: turn to them, talk it over, hand it across
 	# Posted: the post's activities, one at a time, weighed by the town's state.
 	life.add_child(weighed(acts))
 	var root := BTSequence.new()
@@ -698,6 +700,50 @@ class React extends BTAction:
 				return ["Looking_Around", "Bored"]
 			return ["Waving", "Bow", "Looking_Around"]
 		return ["Looking_Around", "Pointing_Forward", "Nodding"]
+
+
+## A stall keeper's customer (villagers.at_stall set meta customer on them): there, close, and not long gone.
+class HasCustomer extends BTCondition:
+	func _tick(_delta: float) -> Status:
+		var c: Variant = agent.get_meta("customer", null)
+		var K: Dictionary = preload("res://scripts/data.gd").value("crowd", "square_agents.serve", {})
+		if c is Node3D and is_instance_valid(c) and (c as Node3D).global_position.distance_to((agent as Node3D).global_position) < float(K.get("reach", 0.4)) \
+				and Time.get_ticks_msec() - int(agent.get_meta("customer_at", 0)) < int(float(K.get("within", 20.0)) * 1000.0):
+			return SUCCESS
+		agent.remove_meta("customer")
+		return FAILURE
+
+
+## Turns on the spot to face the customer, over a beat.
+class FaceCustomer extends BTAction:
+	var _left := 0.0
+
+	func _enter() -> void:
+		var c: Variant = agent.get_meta("customer", null)
+		_left = 0.0
+		if c is Node3D and is_instance_valid(c):
+			var me := (agent as Node3D).global_position
+			var to := (c as Node3D).global_position - me
+			_left = Turn.toward(agent as Node3D, atan2(to.x, to.z))
+
+	func _tick(delta: float) -> Status:
+		_left -= delta
+		return RUNNING if _left > 0.0 else SUCCESS
+
+
+## Done serving: the customer is let go and the keeper faces their counter again.
+class Served extends BTAction:
+	func _tick(_delta: float) -> Status:
+		agent.remove_meta("customer")
+		Turn.toward(agent as Node3D, float(blackboard.get_var(&"face", (agent as Node3D).rotation.y, false)))
+		return SUCCESS
+
+
+## The keeper serves (the research's pair at the counter, The Sims' paired object): turns to the shopper, talks it
+## over, bends to the goods and holds one out (the hand-over the shopper takes with their own PickUp_Table), nods,
+## and turns back to the counter.
+static func serve() -> BTTask:
+	return plain([HasCustomer.new(), FaceCustomer.new(), run(["Talking", "Idle_Talking", "Talking_Hands"], 2, 3), once("PickUp_Table"), once("Nodding"), Served.new()])
 
 
 static func react() -> BTTask:
@@ -874,6 +920,10 @@ class GoTo extends BTAction:
 			if _turn_left > 0.0:
 				return RUNNING
 		_turn_left = -1.0
+		if where == "stall":
+			var vv: Node = blackboard.get_var(&"vill")
+			if vv.has_method("at_stall"):
+				vv.at_stall(a, agent as Node3D)  # the keeper turns to serve them
 		blackboard.set_var(&"post", agent.position)
 		blackboard.set_var(&"face", agent.rotation.y)
 		blackboard.set_var(&"at_post", true)
@@ -1408,7 +1458,7 @@ static func villager_activities(role: String) -> Array:
 			return [
 				# Waits a beat at the counter, points out what they want and talks it over, weighs it up, takes it
 				# (the hand-over), nods it's done, and leaves carrying it.
-				seq("shop", [go("street"), go("stall"), brk(["Weight_Shift", "Looking_Around"]), run(["Pointing_Forward", "Idle_Talking", "Talking_Hands"], 2, 3), run(["Thinking", "Shake_No", "Arguing"], 1, 1), once("PickUp_Table"), once("Nod_Yes"), go("street", "Carrying"), brk(LOOK)]),
+				seq("shop", [go("street"), go("stall"), brk(["Weight_Shift", "Looking_Around"]), run(["Pointing_Forward", "Idle_Talking", "Talking_Hands"], 2, 3), run(["Thinking", "Shake_No", "Arguing"], 1, 1), once("PickUp_Table"), once("Nod_Yes"), brk(["Holding_Idle", "Weight_Shift"]), go("street", "Carrying"), brk(LOOK)]),
 				seq("browse", [go("stall"), once("Looking_Around"), run(["Thinking", "Doubtful"], 1, 1), go("stall"), once("PickUp_Table"), run(["Nod_Yes", "Nodding"], 1, 1), brk(LOOK)]),
 				seq("gossip", [partner(), go("meet"), Talk.new(), brk(LOOK)]),
 				seq("errand", [go("stall"), run(["Idle_Talking", "Nodding"], 1, 2), once("PickUp_Table"), go("home", "Carrying"), once("PickUp_Table"), brk(REST)]),
@@ -1416,13 +1466,13 @@ static func villager_activities(role: String) -> Array:
 		"water":  # the square's water carrier: to the well's rim, draws, carries it home or up a street
 			return [
 				# The bucket set down on the rim, the windlass wound a few turns, the bucket lifted off, a breath, and home with it.
-				seq("draw", [go("draw"), once("PickUp_Table"), run(["Pushing"], 2, 3), once("PickUp_Table"), brk(["Wiping_Sweat", "Relieved_Sigh"]), go("home", "Carrying"), once("PickUp_Table"), brk(REST)]),
+				seq("draw", [go("draw"), once("PickUp_Table"), run(["Pull_Plant"] if Weapons.can_play("Pull_Plant") else ["Pushing"], 2, 3), once("PickUp_Table"), brk(["Wiping_Sweat", "Relieved_Sigh"]), go("home", "Carrying"), once("PickUp_Table"), brk(REST)]),
 				seq("sell", [go("draw"), once("PickUp_Table"), run(["Pushing"], 1, 1), go("stall", "Carrying"), once("PickUp_Table"), run(["Idle_Talking", "Nodding"], 1, 1), brk(LOOK)]),
 				seq("chat", [go("draw"), run(["Idle_Talking", "Laughing", "Nodding"], 2, 3), brk(LOOK)]),
 			]
 		"porter":  # the square's porter: a load in off the street to a stall, and back for the next
 			return [
-				seq("haul", [go("street"), once("PickUp_Table"), go("stall", "Carrying"), once("PickUp_Table"), run(["Wiping_Sweat", "Idle_Talking"], 1, 1), brk(REST)]),
+				seq("haul", [go("street"), once("PickUp_Table"), go("stall", "Carrying"), brk(["Box_Idle", "Weight_Shift"]), once("PickUp_Table"), run(["Wiping_Sweat", "Idle_Talking"], 1, 1), brk(REST)]),
 				seq("box", [go("stall"), once("PickUp_Table"), go("street", "Box_Walk" if Weapons.can_play("Box_Walk") else "Carrying"), once("PickUp_Table"), brk(["Wiping_Sweat", "Weight_Shift"])]),
 				seq("rest", [go("draw"), run(["Wiping_Sweat", "Idle_Talking"], 1, 2), brk(REST)]),
 			]
@@ -1443,7 +1493,7 @@ static func villager_activities(role: String) -> Array:
 		"tavern":  # a drinker
 			return [
 				seq("drink", [go("tavern"), run(["Drinking"], 2, 3), run(["Laughing", "Telling_Secret", "Idle_Talking"], 2, 3), brk(["Drunk_Idle", "Weight_Shift"])]),
-				seq("sit", [go("tavern"), step(0.3), run(["Sitting_Drinking"], 2, 3), brk(["Laughing"])]),
+				seq("sit", [go("tavern"), step(0.3), once("Stand_To_Sit"), run(["Sitting_Drinking"], 2, 3), brk(["Laughing"])]),
 				seq("song", [go("tavern"), run(["Clapping", "Cheering"], 2, 3), run(["Dance"], 1, 2), brk(["Laughing"])]),
 				seq("home", [go("tavern"), run(["Drinking"], 1, 2), go("home", "Injured_Walk"), brk(["Drunk_Idle", "Weight_Shift"])]),
 			]
