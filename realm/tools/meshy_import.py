@@ -167,15 +167,26 @@ def base_colour(mat):
     return (c[0], c[1], c[2])
 
 
-def is_house(rgb, mask):
+def _rule_house(rgb, mask):
     h, s, v = colorsys.rgb_to_hsv(*[min(max(x, 0.0), 1.0) for x in rgb])
     if s < float(mask.get("sat_min", 0.35)) or v < float(mask.get("val_min", 0.2)):
+        return False
+    if s > float(mask.get("sat_max", 1.0)):  # a cream cloth beside gold trim or thatch of the same hue (docs/art)
         return False
     deg = h * 360.0
     for a, b in mask.get("hues", []):
         if (a <= b and a <= deg <= b) or (a > b and (deg >= a or deg <= b)):
             return True
     return False
+
+
+def _rules(mask):
+    """A mask's rules: itself, and any in its "also" list (say, red roof tiles facing up, and cream banners any way)."""
+    return [mask] + list(mask.get("also", []))
+
+
+def is_house(rgb, mask):
+    return any(_rule_house(rgb, r) for r in _rules(mask))
 
 
 class Pixels:
@@ -197,7 +208,7 @@ class Pixels:
 def split_house(obj, mask):
     """The house-colour faces into their own material (a copy of theirs, renamed), by their texture's colour at
     the face's middle (or their material's colour when untextured). Returns the share of faces moved."""
-    if not mask.get("hues"):
+    if not any(r.get("hues") for r in _rules(mask)):
         return 0.0
     bm = bmesh.new()
     bm.from_mesh(obj.data)
@@ -208,7 +219,8 @@ def split_house(obj, mask):
     moved = 0
     for f in bm.faces:
         src = mats[f.material_index] if f.material_index < len(mats) else None
-        if f.normal.z < float(mask.get("up_min", -1.0)):
+        rules = [r for r in _rules(mask) if f.normal.z >= float(r.get("up_min", -1.0))]
+        if not rules:
             continue
         img = base_image(src)
         if img is not None and uv is not None:
@@ -221,7 +233,7 @@ def split_house(obj, mask):
             rgb = (px[0] * tint[0], px[1] * tint[1], px[2] * tint[2])
         else:
             rgb = base_colour(src)
-        if not is_house(rgb, mask):
+        if not any(_rule_house(rgb, r) for r in rules):
             continue
         if f.material_index not in house_of:
             m = src.copy() if src else bpy.data.materials.new(HOUSE)

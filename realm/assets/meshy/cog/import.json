@@ -1,0 +1,22 @@
+{
+ "name": "cog",
+ "source": "/Users/user/code/goc-kits/meshy/ships/cog/cog.glb",
+ "tris_before": 15104,
+ "tris_after": 12000,
+ "scale": 7.247598357672819,
+ "size_m": [
+  13.78,
+  5.97,
+  12.0
+ ],
+ "house_share": 0.101,
+ "mask_png": true,
+ "materials": [
+  "Material_0",
+  "MI_RoundTiles_house"
+ ],
+ "cut_faces": 0,
+ "arm": false,
+ "repainted": 0,
+ "flattened": 0
+}
