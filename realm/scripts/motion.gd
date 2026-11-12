@@ -32,7 +32,7 @@ const ONCE := ["Sword_Attack", "SS_Slash", "SS_Attack", "SS_Kick", "SS_Block_1",
 	"Punch_", "Kick_Front", "Shield_Block", "Spear_Thrust", "Bow_Shoot", "Bow_Draw", "Hit",
 	"React_", "Head_Light", "Head_Big", "Body_Light", "Body_Big", "Side_", "Kidney_", "Groin_", "Legs_",
 	"Stunned", "Dodge_", "Battlecry", "Salute", "Getting_Up", "Knocked_Down", "Back_Hit", "Back_Head",
-	"Sit_To_Stand", "Stand_To_Sit", "Quick_Formal_Bow"]
+	"Sit_To_Stand", "Stand_To_Sit", "Quick_Formal_Bow", "Left_Turn", "Right_Turn"]
 const DEATHS := ["Death", "SS_Death", "GS_Death", "Sword_Death", "Fall_Back_Death"]
 # Moves that are a way of going, played by the legs' blend space, not as a move.
 const RUNS := ["Running", "Sprint"]

@@ -224,6 +224,17 @@ class Turn:
 			n.rotation.y = yaw
 			return 0.0
 		var secs := maxf(off / maxf(float(K.get("turn", 5.0)), 0.1), float(K.get("turn_min", 0.25)))
+		# A big turn on the spot steps round with the feet (people.json steer.turn_clips, yaw taken out at load):
+		# Left_Turn for a turn to their left (yaw up), Right_Turn for the other way, the turn taking the clip's length.
+		if rad_to_deg(off) > float(K.get("turn_clip_over", 60.0)):
+			var signed := angle_difference(n.rotation.y, yaw)
+			for clip in K.get("turn_clips", []):
+				var turned := float(People.TURNED.get(String(clip), 0.0))
+				var ap: AnimationPlayer = n.get_node_or_null("Anim")
+				if turned * signed > 0.0 and ap and ap.has_animation(String(clip)):
+					People.play(n, String(clip))
+					secs = maxf(secs, ap.get_animation(String(clip)).length * float(K.get("turn_clip_share", 0.85)))
+					break
 		var from := n.rotation.y
 		var tw := n.create_tween()
 		tw.tween_method(func(t: float): n.rotation.y = lerp_angle(from, yaw, t), 0.0, 1.0, secs).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
@@ -1108,7 +1119,7 @@ class Talk extends PlayRun:
 	const EVERYDAY := ["Idle_Talking", "Talking", "Talking_2", "Telling_Secret", "Whispering", "Laughing"]
 
 	## Listening while the other has the floor (a caption over their head).
-	const LISTEN := ["Nodding", "Thinking", "Idle", "Nodding"]
+	const LISTEN := ["Nodding", "Thinking", "Idle", "Nodding", "Laughing", "Slow_Nod"]
 	const WAIT_SECS := 8.0  # the other not here by then: they aren't coming
 	const LINE_CAP := 25.0  # a talk held past its moves for lines still being read, at most this
 	var _talking := []  # the talking moves chosen for this talk
@@ -1268,6 +1279,17 @@ class Talk extends PlayRun:
 		return v.floor_of(int(me["town"]), int(blackboard.get_var(&"talk_key")))
 
 	func _face() -> void:
+		# Others have joined: the ring faces in, to its centre (villagers.talk_centre), not the two face to face.
+		var v: Node = blackboard.get_var(&"vill", null, false)
+		var me: Dictionary = blackboard.get_var(&"va", {}, false)
+		if v != null and v.has_method("talk_centre") and blackboard.has_var(&"talk_key") and not me.is_empty():
+			var ctr: Vector3 = v.talk_centre(int(me["town"]), int(blackboard.get_var(&"talk_key")))
+			if ctr != Vector3.INF:
+				var here0: Vector3 = (agent as Node3D).global_position
+				var f0 := Vector2(ctr.x - here0.x, ctr.z - here0.z)
+				if f0.length() > 0.001:
+					agent.rotation.y = lerp_angle(agent.rotation.y, atan2(f0.x, f0.y), 0.15)
+				return
 		var them = blackboard.get_var(&"partner", null, false)
 		if them is Node3D and is_instance_valid(them):
 			var here: Vector3 = (agent as Node3D).global_position
@@ -1292,6 +1314,78 @@ class Talk extends PlayRun:
 		if v != null and not a.is_empty() and v.has_method("close_talk"):
 			v.close_talk(int(a["town"]), int(bb.get_var(&"talk_key")))
 		bb.erase_var(&"talk_key")
+
+
+## Joining a talk under way (the square's gossip: circles of 2-4, FFXV's conversation spots): to a free spot on its
+## ring, a turn in to its centre, then listening, nodding, a laugh, and their own turn to talk when chatter.gd
+## gives them the floor; they leave when the talk ends or after a while (crowd.json square_agents.circle).
+class JoinCircle extends BTAction:
+	const TALKING := ["Talking", "Talking_2", "Idle_Talking", "Talking_Hands", "Telling_Secret", "Happy_Gesture"]
+	const HEARING := ["Nodding", "Laughing", "Thinking", "Slow_Nod", "Weight_Shift", "Sarcastic_Nod"]
+	var _key := -1
+	var _ctr := Vector3.ZERO
+	var _left := 0.0
+	var _clip_left := 0.0
+	var _turned := false
+	var _floor := -2
+
+	func _enter() -> void:
+		_key = -1
+		var v: Node = blackboard.get_var(&"vill", null, false)
+		var a: Dictionary = blackboard.get_var(&"va", {}, false)
+		if v == null or a.is_empty() or not v.has_method("join_talk"):
+			return
+		var got: Array = v.join_talk(a)
+		if got.is_empty():
+			return
+		_key = int(got[0])
+		_ctr = got[2]
+		var span: Array = preload("res://scripts/data.gd").value("crowd", "square_agents.circle.secs", [10.0, 20.0])
+		_left = randf_range(float(span[0]), float(span[1]))
+		_turned = false
+		_clip_left = 0.0
+		_floor = -2
+		a["gait"] = "Walk"
+		v.route_to(a, got[1])
+
+	func _tick(delta: float) -> Status:
+		if _key < 0:
+			return FAILURE  # no talk with room nearby: something else
+		var v: Node = blackboard.get_var(&"vill", null, false)
+		var a: Dictionary = blackboard.get_var(&"va", {}, false)
+		if not (a.get("route", PackedVector2Array()) as PackedVector2Array).is_empty():
+			return RUNNING
+		if not _turned:
+			var here := (agent as Node3D).global_position
+			_clip_left = Turn.toward(agent as Node3D, atan2(_ctr.x - here.x, _ctr.z - here.z))
+			_turned = true
+			return RUNNING
+		_left -= delta
+		var f: int = v.floor_of(int(a["town"]), _key) if v.has_method("floor_of") else -1
+		var open := false
+		for g in v._talks.get(a["town"], []):
+			if int(g["key"]) == _key:
+				open = true
+		if _left <= 0.0 or not open:
+			return SUCCESS
+		_clip_left -= delta
+		if f != _floor or _clip_left <= 0.0:
+			_floor = f
+			var pool := TALKING if f == int(a.get("i", -1)) else HEARING
+			var last := String(blackboard.get_var(&"last_clip", "", false))
+			var choices := pool.filter(func(c): return c != last)
+			var clip: String = choices[randi() % choices.size()]
+			blackboard.set_var(&"last_clip", clip)
+			People.play(agent, clip)
+			_clip_left = randf_range(2.5, 4.5)
+		return RUNNING
+
+	func _exit() -> void:
+		var v: Node = blackboard.get_var(&"vill", null, false)
+		var a: Dictionary = blackboard.get_var(&"va", {}, false)
+		if _key >= 0 and v != null and v.has_method("leave_talk") and not a.is_empty():
+			v.leave_talk(a, _key)
+		_key = -1
 
 
 ## The gesture that shows what a talk is about, by the news's tone.
@@ -1524,11 +1618,13 @@ static func villager_activities(role: String) -> Array:
 				seq("shop", [go("street"), to_stall(), brk(["Weight_Shift", "Looking_Around"]), run(["Pointing_Forward", "Idle_Talking", "Talking_Hands"], 2, 3), run(["Thinking", "Shake_No", "Arguing"], 1, 1), once("PickUp_Table"), once("Nod_Yes"), brk(["Holding_Idle", "Weight_Shift"]), go("street", "Carrying"), brk(LOOK)]),
 				seq("browse", [go("stall"), once("Looking_Around"), run(["Thinking", "Doubtful"], 1, 1), go("stall"), once("PickUp_Table"), run(["Nod_Yes", "Nodding"], 1, 1), brk(LOOK)]),
 				seq("gossip", [partner(), go("meet"), Talk.new(), brk(LOOK)]),
+				seq("join", [JoinCircle.new(), once("Nod_Yes"), go("stall"), brk(LOOK)]),  # a neighbour's talk joined on the way, then on to the stalls
 				seq("errand", [go("stall"), run(["Idle_Talking", "Nodding"], 1, 2), once("PickUp_Table"), go("home", "Carrying"), once("PickUp_Table"), brk(REST)]),
 			]
 		"gossip":  # the square's gossip: meets a neighbour and talks it over, strolls by the stalls, waves at the well
 			return [
-				seq("chat", [partner(), go("meet"), Talk.new(), brk(LOOK)]),
+				seq("chat", [partner(), go("meet"), Talk.new(), once("Waving"), go("street"), brk(LOOK)]),  # the talk done, a wave, and off up a street
+				seq("join", [JoinCircle.new(), once("Waving"), go("street"), brk(["Weight_Shift", "Looking_Around"])]),  # into a talk under way, a third or a fourth
 				seq("stroll", [go("stall"), once("Pointing_Forward"), run(["Thinking", "Doubtful"], 1, 1), go("street"), brk(["Weight_Shift", "Arm_Stretching"])]),
 				seq("well", [go("draw"), once("Waving"), run(["Idle_Talking", "Laughing", "Nodding"], 1, 2), brk(["Weight_Shift", "Bored"])]),
 			]

@@ -2371,6 +2371,57 @@ func close_talk(town: int, key: int) -> void:
 			return
 
 
+## A minds' talk close to `a` with room for one more (crowd.json square_agents.circle: most, reach): its key and
+## the spot round its ring `a` takes, [key, world spot, world centre], or [] for none. The joiner is a member of
+## the gathering from now (they get the floor in turn: chatter.gd); the ring's spots sit evenly round its centre,
+## the pair's line across it, joiners on either side of that line, all facing in (FFXV's conversation spots).
+func join_talk(a: Dictionary) -> Array:
+	var K: Dictionary = preload("res://scripts/data.gd").value("crowd", "square_agents.circle", {})
+	var c: Vector3 = a["center"]
+	var here := Vector2(a["node"].position.x - c.x, a["node"].position.z - c.z)
+	var now := Time.get_ticks_msec() * 0.001
+	for g in _talks.get(a["town"], []):
+		if not g.get("mind", false) or float(g["until"]) < now or _index(g["members"], a) >= 0:
+			continue
+		var members: Array = g["members"]
+		if members.size() >= int(K.get("most", 4)) or Vector2(g["centre"]).distance_to(here) > float(K.get("reach", 1.2)):
+			continue
+		var p0: Vector3 = members[0]["node"].position
+		var p1: Vector3 = members[1]["node"].position
+		var ctr := Vector2((p0.x + p1.x) * 0.5 - c.x, (p0.z + p1.z) * 0.5 - c.z)
+		var axis := Vector2(p1.x - p0.x, p1.z - p0.z).normalized()
+		var side := Vector2(-axis.y, axis.x) * (1.0 if members.size() == 2 else -1.0)
+		var rr := float(K.get("radius", 0.08))
+		var spot := nav.closest(a["map"], ctr + side * rr)
+		if spot.distance_to(ctr + side * rr) > 0.04 or _body_at(a, spot):
+			continue
+		members.append(a)
+		g["until"] = maxf(float(g["until"]), now + float(K.get("stay", 16.0)))
+		return [int(g["key"]), Vector3(c.x + spot.x, terrain.height_at(c.x + spot.x, c.z + spot.y), c.z + spot.y), Vector3(c.x + ctr.x, 0, c.z + ctr.y)]
+	return []
+
+
+## `a` leaves talk `key`'s ring (the talk goes on for the rest).
+func leave_talk(a: Dictionary, key: int) -> void:
+	for g in _talks.get(a["town"], []):
+		if int(g["key"]) == key:
+			var k := _index(g["members"], a)
+			if k >= 2:
+				(g["members"] as Array).remove_at(k)
+			return
+
+
+## The world centre of talk `key`'s ring when more than two stand in it (each faces it), else INF.
+func talk_centre(town: int, key: int) -> Vector3:
+	for g in _talks.get(town, []):
+		if int(g["key"]) == key and (g["members"] as Array).size() > 2:
+			var c: Vector3 = g["members"][0]["center"]
+			var p0: Vector3 = g["members"][0]["node"].position
+			var p1: Vector3 = g["members"][1]["node"].position
+			return Vector3((p0.x + p1.x) * 0.5, 0, (p0.z + p1.z) * 0.5)
+	return Vector3.INF
+
+
 ## Who has the floor in talk `key` now (chatter.gd is showing their line):
 ## their villager index, or -1 between lines or when the talk is gone.
 func floor_of(town: int, key: int) -> int:

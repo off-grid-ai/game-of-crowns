@@ -214,6 +214,35 @@ func _init() -> void:
 					break
 		src.free()
 	_plant(_lib)
+	_unturn(_lib)
+
+
+## The turn-in-place clips (people.json steer.turn_clips: Mixamo's Left Turn and Right Turn) with their hips' own
+## yaw taken out: the feet step round on the spot while the person's node is turned (npc_mind Turn.toward), so the
+## body never turns twice over and snaps back at the clip's end. Their measured turn is kept in TURNED (degrees).
+static var TURNED := {}
+static func _unturn(lib: AnimationLibrary) -> void:
+	for clip in Data.value("people", "steer.turn_clips", []):
+		if not lib.has_animation(String(clip)):
+			continue
+		var a: Animation = lib.get_animation(String(clip))
+		for t in a.get_track_count():
+			if a.track_get_type(t) != Animation.TYPE_ROTATION_3D or not String(a.track_get_path(t)).ends_with(":Hips"):
+				continue
+			var n := a.track_get_key_count(t)
+			if n < 2:
+				continue
+			var q0: Quaternion = a.track_get_key_value(t, 0)
+			var f0 := q0 * Vector3(0, 0, 1)
+			var y0 := atan2(f0.x, f0.z)
+			var last := 0.0
+			for k in n:
+				var q: Quaternion = a.track_get_key_value(t, k)
+				var f := q * Vector3(0, 0, 1)
+				var dy := angle_difference(y0, atan2(f.x, f.z))
+				a.track_set_key_value(t, k, Quaternion(Vector3.UP, -dy) * q)
+				last = dy
+			TURNED[String(clip)] = rad_to_deg(last)
 
 
 ## Every move stands on its feet (Unity Mecanim's "root height based upon feet"):
