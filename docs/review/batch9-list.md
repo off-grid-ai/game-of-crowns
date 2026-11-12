@@ -199,3 +199,10 @@ beside the frames. Reference: Anno 1800's town at street height (close detail, f
     6d135651, `--dressing=on`): `city Goldrock 6 -25` and `city Kingsmere 6 -25`, without and with the switch.
     Judge: benches facing the heart, barrels, crates, potted shrubs and flower tubs along the inside of the rim, none
     on a stall's front, a door, a road mouth or the fountain's basin.
+55. **The fields launch again** (batch 8b #2: every field shot a house; a372a2a4): `field spring 0.15`, `field autumn
+    0.15`, `field autumn 0.6`. Judge: an open field outside the town with its hands at work, never a town plot.
+56. **Crowd on and off** (batch 8b #15; 43412fa8): the square at `city Kingsmere 6 -25` with `--crowd=off` and
+    without. Judge: off is the thin old square (1-2 buyers a stall, no square life); on is full. No cows in the square:
+    herds stop at the town's edge.
+57. **Season in a film** (batch 8b painted-melee: snow under "Spring"; b4259715): any launch with a long wait
+    (painted-melee again). Judge: the land's season matches the date shown at every shot.
