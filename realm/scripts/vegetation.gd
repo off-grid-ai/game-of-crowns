@@ -24,6 +24,7 @@ func _scatter(mesh: Mesh, transforms: Array) -> MultiMeshInstance3D:
 
 ## Nature MegaKit trees, bushes and rocks, at the same scale as the towns.
 const VEG_SCALE := Units.M
+static var SHORE: float = preload("res://scripts/data.gd").num("ground", "beach.top", 0.035)  # where the beach ends: the woods stand above it
 const VEG_PATCH := 12.0  # game units: grass and bushes are batched by patch of the map
 static var VEG_REACH: float = preload("res://scripts/data.gd").num("ground", "wild.reach", 24.0)  # and drawn only within this of the camera
 var batches: Array[MultiMeshInstance3D] = []
@@ -136,7 +137,7 @@ func _clump(Forest: Variant, broad: bool, k: Dictionary, r: Dictionary, biome: S
 		if land.biome_at(wx, wz) != biome or not land.is_land(wx, wz):
 			continue
 		var y: float = land.height_at(wx, wz)
-		if y < float(k.get("y_min", 0.15)):
+		if y < SHORE + float(k.get("shore_gap", 0.02)):  # no tree on the beach (ground.json beach.top)
 			continue
 		var ps := rng.randf_range(float(size[0]), float(size[1]))
 		var pine := not broad or rng.randf() < float(r.get("pine", 0.3)) + (0.4 if y > float(k.get("pine_above", 2.2)) else 0.0)

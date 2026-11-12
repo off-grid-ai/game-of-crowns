@@ -6,6 +6,7 @@ extends SceneTree
 ##   2. the forest tiles are wooded: most dry forest tiles hold trees;
 ##   3. the open country is never bare lawn: a copse every 60-100 m, so nearly every 3x3 block of tiles holds trees;
 ##   4. in clumps: almost every tree has another within a few metres;
+##   5. in a wood the crowns touch: 3-4 trees per 100 m2 of forest (the look audit's spec);
 ## and the ground cover's scatter (vegetation.gd) plants no trees of its own (forest.json cover: bush, grass, rock).
 ## Prints CHECK lines; exits 1 on a fail.   arch -arm64 godot --headless --path realm -s res://tools/woods_probe.gd
 
@@ -32,6 +33,7 @@ func _run() -> void:
 	var terrain: Node3D = load("res://scripts/terrain.gd").new()
 	root.add_child(terrain)
 	await terrain.build(map)
+	_check(terrain.land != null, "the realm's own eroded land is loaded (the fixture's heightmap, bridge/data; without it the woods stand on the old tile mesh)")
 	var woods: Node3D = terrain.forest
 	_check(woods != null, "the woods were planted")
 	if woods == null:
@@ -78,6 +80,11 @@ func _run() -> void:
 				if block == 0:
 					bare += 1
 	var f_mean := float(forest_trees) / maxf(forest, 1)
+	# A wood's density: the look audit's 3-4 trees per 100 m2, crowns touching (over every dry forest tile, its edges
+	# among them: the fixture's woods are narrow, few tiles have forest all round).
+	var tile_m2 := pow(terrain.TILE / preload("res://scripts/world_units.gd").M, 2.0)
+	var dens := 100.0 * f_mean / tile_m2
+	_check(dens >= 2.8 and dens <= 4.5, "in a wood the crowns touch: %.1f trees per 100 m2 of forest (3-4 wanted)" % dens)
 	var o_mean := float(open_trees) / maxf(open_n, 1)
 	_check(f_mean >= o_mean * 5.0, "the woods follow Freeciv's forest: %.1f trees a forest tile, %.1f a grassland one" % [f_mean, o_mean])
 	_check(open_n > 0 and bare <= open_n / 10, "the open country is never bare: %d of %d grassland tiles have no tree within a tile (copses 60-100 m apart)" % [bare, open_n])
