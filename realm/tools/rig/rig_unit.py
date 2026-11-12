@@ -670,6 +670,70 @@ for name, loop in CLIPS:
         strip.action_slot = act.slots[0]
     clips.append([name, bool(loop)])
 REPORT["clips"] = [c[0] for c in clips]
+
+# Held gear turned in its hand to a clip's grip (rig.json units.<name>.align: [{bone, clip, frame}]): a rigid piece
+# is fixed to its hand as the model was made (a bow hanging at the side), but the clips were made for gear held their
+# own way (Mixamo's bow clips raise it upright to aim); at that clip's frame the piece's long axis is turned upright
+# about the grip, in the rest pose, so every clip holds it as they were made to (docs/art/army: the archer's bow lay
+# flat over his head to aim).
+def align_gear(spec):
+    bone = spec["bone"]
+    act = bpy.data.actions.get(spec["clip"])
+    if bone not in arm.pose.bones or act is None:
+        return None
+    gi = {g.name: g.index for g in unit.vertex_groups}.get(bone)
+    if gi is None:
+        return None
+    rest_head = arm.matrix_world @ arm.data.bones[bone].head_local
+    to_w = unit.matrix_world
+    idx = [v.index for v in unit.data.vertices if any(ge.group == gi and ge.weight > 0.99 for ge in v.groups)
+           and (to_w @ v.co - rest_head).length > float(spec.get("beyond", 0.07)) * REPORT["align"]["height"] / 100.0]
+    if len(idx) < 8:
+        return None
+    pts = np.array([list(to_w @ unit.data.vertices[i].co) for i in idx])
+    c = pts.mean(0)
+    axis = Vector(np.linalg.svd(pts - c)[2][0])  # the piece's long axis (world, rest)
+    for t in arm.animation_data.nla_tracks:
+        t.mute = True
+    arm.animation_data.action = act
+    if hasattr(arm.animation_data, "action_slot") and getattr(act, "slots", None):
+        arm.animation_data.action_slot = act.slots[0]
+    pb = arm.pose.bones[bone]
+    frame = spec.get("frame", act.frame_range[0])
+    if frame == "reach":  # the frame the hand is furthest from the hips across the ground (a thrust's full reach)
+        hips = arm.pose.bones.get("mixamorig:Hips")
+        best = None
+        for f in range(int(act.frame_range[0]), int(act.frame_range[1]) + 1):
+            bpy.context.scene.frame_set(f)
+            d = ((arm.matrix_world @ pb.head) - (arm.matrix_world @ hips.head)).xy.length
+            if best is None or d > best[0]:
+                best = (d, f)
+        frame = best[1]
+    bpy.context.scene.frame_set(int(frame))
+    T = arm.matrix_world @ pb.matrix @ arm.data.bones[bone].matrix_local.inverted() @ arm.matrix_world.inverted()  # rest -> pose, world
+    posed = (T.to_3x3() @ axis).normalized()
+    if spec.get("to") == "level":  # laid flat along its own heading (a spear at the thrust)
+        up = Vector((posed.x, posed.y, 0.0)).normalized()
+    else:
+        up = Vector((0, 0, 1)) if posed.z >= 0 else Vector((0, 0, -1))
+    Q = posed.rotation_difference(up).to_matrix().to_4x4()
+    grip = T @ rest_head
+    M = T.inverted() @ Matrix.Translation(grip) @ Q @ Matrix.Translation(-grip) @ T  # world rest -> world rest
+    inv = to_w.inverted()
+    for i in idx:
+        v = unit.data.vertices[i]
+        v.co = inv @ (M @ (to_w @ v.co))
+    unit.data.update()
+    arm.animation_data.action = None
+    for t in arm.animation_data.nla_tracks:
+        t.mute = False
+    for pb2 in arm.pose.bones:
+        pb2.matrix_basis = Matrix.Identity(4)
+    bpy.context.view_layer.update()
+    return {"bone": bone, "verts": len(idx), "frame": int(frame), "turned_deg": round(math.degrees(posed.angle(up)), 1)}
+
+
+REPORT["align_gear"] = [align_gear(a) for a in UNIT.get("align", [])]
 REPORT["roles"] = UNIT.get("roles")  # for data/army.json meshes.<dir>.tracks
 
 # --- 5 the house-colour mask: the white cloth, not the steel's shine -------------------------------
