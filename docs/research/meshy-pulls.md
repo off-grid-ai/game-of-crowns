@@ -86,6 +86,26 @@ Try 3 has the cape but brings smears and hides the face. Three tries used (the c
 wants it: re-texture try 3's mesh with Meshy 7 using the front image only (texture stage is 10 credits), or take
 try 2 and add the cape as a separate cloth piece.
 
+### Try 3 re-textured (Supervisor's follow-up, 10 credits)
+
+Same 10,339-tri mesh, Meshy Retexture with the concept's front body (`input/front_body.png`, the concept without
+sword and shield, so the shield's colours don't land on the body) as image input, Meshy 7, PBR on, 2K. File:
+`~/code/goc-kits/meshy/man_at_arms/try3_retex/try3_retex.glb`. Sheet:
+`/tmp/goc-models/meshy/man_at_arms_try3_retex/man_at_arms_try3_retex_sheet.jpg`; 100% crops `crop_cape_row.png`
+(side, back, 3/4) and `crop_front_row.png` (helmet and chest, tabard) in the same folder.
+
+Defects first (SEEN):
+1. **Cape still blotched on its sides**: several dark navy patches along the right edge in side and 3/4 views
+   (rule 3 still fails there). The back of the cape is now clean, an even blue with soft folds.
+2. **Face still hidden** behind the visor: only a cheek and nose show (rule 7). This is the mesh, so re-texture can't
+   fix it.
+3. Gauntlets are flat brown leather with no gold cuff, unlike the concept.
+Passes: lion on the tabard crisp and well drawn, gold trim crisp against steel everywhere, steel light from every
+side, no seam specks or holes, belt and buckle clean.
+
+Verdict: better than try 3 at the back, still **does not clear the concept** (cape sides, face). Best of the four
+for the cape; try 2 still best for the face. Credits now 1,155; own-model downloads 4 of 20 used.
+
 ## Next
 
 - Re-render the three towns pieces in the batched Godot render (house-colour mask on roofs and awnings) beside
