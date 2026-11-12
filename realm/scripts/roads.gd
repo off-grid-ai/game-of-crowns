@@ -5,7 +5,7 @@ extends Node3D
 
 const Awareness := preload("res://scripts/awareness.gd")  # the view's one store: the realm's records (rec)
 const Units := preload("res://scripts/world_units.gd")  # the world's one scale (Units.M): the verge plants' size
-var TEX: String = preload("res://scripts/terrain.gd").art("res://assets/ground/road-dirt.jpg", "res://assets/ground/dirt-albedo.jpg")
+var TEX: String = "res://assets/ground/painted_v2/dirt_road.png"  # the painted ground's road (assets/ground/painted_v2)
 static var WIDTH: float = preload("res://scripts/data.gd").num("ground", "roads.width", 0.26)
 static var BUSH: String = "res://assets/" + String((preload("res://scripts/data.gd").value("forest", "cover.bush", [""]) as Array)[0])  # the verge's bush: the woods' own (data/forest.json cover.bush)
 
@@ -21,7 +21,7 @@ static func earth(kings := false) -> Color:
 	var k := Data.num("ground", "roads.kingsShade", 0.92) if kings else 1.0
 	return Color(float(t[0]) * k, float(t[1]) * k, float(t[2]) * k)
 const Data := preload("res://scripts/data.gd")
-var GRASS: String = "res://assets/ground/grass-albedo.jpg"  # a verge's grass
+var GRASS: String = "res://assets/ground/painted_v2/grass.png"  # a verge's grass: the painted ground's
 
 var terrain: Node3D
 var _signature := ""

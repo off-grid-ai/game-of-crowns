@@ -210,7 +210,7 @@ func _crops(kind: String) -> Array:
 ## nothing, a pasture's grass is its own).
 func _field(rec: Dictionary, node: Node3D, c: Vector3, fsize: Vector2, yaw: float, crop: Array, kind: String, rng: RandomNumberGenerator) -> void:
 	var terrain: Node3D = main.terrain
-	var tex: String = terrain.art("res://assets/ground/%s.jpg" % crop[0], "res://assets/ground/dirt-albedo.jpg")
+	var tex: String = terrain.art("res://assets/ground/%s.jpg" % crop[0], "res://assets/ground/painted_v2/earth.png")
 	var reps := Vector2i(roundi(fsize.x * 1.5), roundi(fsize.y * 1.5))
 	var decal: Decal = terrain.paint(node, terrain.tiled(tex, reps.x, reps.y), node.to_local(c), fsize, yaw, Color.WHITE, 1.5, float(Data.num("land_use", "fields.fade", 60.0)))
 	decal.set_meta("reps", reps)

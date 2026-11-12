@@ -467,9 +467,9 @@ func _color_at(wx: float, wz: float, h: float) -> Color:
 ## The ground's layers at a point of the land by Freeciv's terrain (realm/data/ground.json terrain): the four tiles
 ## round it blended smoothly (their edges frayed by _warp), a river tile taking its terrain's, and worn earth through
 ## the grass in ragged patches (terrain.patches). Weights in land3d.gd's LAYERS order: grass, dirt, sand, snow, rock,
-## forest, mud. The one reader of the terrain's ground: land3d.gd's control map and _layers_at both ask here.
+## forest, mud, field, dry grass, stony. The one reader of the terrain's ground: land3d.gd's control map and _layers_at both ask here.
 static var GROUND: Dictionary = preload("res://scripts/data.gd").value("ground", "terrain", {})
-const MIX_N := 7
+const MIX_N := 10
 var _mix := PackedFloat32Array()  # per tile, its terrain's weights (MIX_N each)
 func tile_mix(wx: float, wz: float) -> Array:
 	if _mix.is_empty():
@@ -485,7 +485,9 @@ func tile_mix(wx: float, wz: float) -> Array:
 	var z0 := floori(fz)
 	var tx := smoothstep(0.0, 1.0, fx - x0)
 	var tz := smoothstep(0.0, 1.0, fz - z0)
-	var out := [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+	var out := []
+	out.resize(MIX_N)
+	out.fill(0.0)
 	for dz in 2:
 		for dx in 2:
 			var w := (tx if dx == 1 else 1.0 - tx) * (tz if dz == 1 else 1.0 - tz)
@@ -818,7 +820,7 @@ func tiled(path: String, fx: float, fy: float, edge := "") -> Texture2D:
 		return _tiled[key]
 	# Made once ever, then kept on disk: building these pixel by pixel is what
 	# stalled a town's first appearance.
-	# The source's own date in the kept copy's name: a repainted texture (paint_cobbles.sh) is made again, never served stale.
+	# The source's own date in the kept copy's name: a repainted texture is made again, never served stale.
 	var cached := "user://tiled/%s.png" % (key + TILED_VERSION + str(FileAccess.get_modified_time(path))).md5_text()
 	if FileAccess.file_exists(cached):
 		var kept := Image.load_from_file(cached)

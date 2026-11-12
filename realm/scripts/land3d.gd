@@ -4,13 +4,10 @@ extends Node3D
 ## close and far. The heights are the same ones the rest of the game asks for
 ## through terrain.height_at(), so towns, roads and people stay on the ground.
 
-const LAYERS := ["grass", "dirt", "sand", "snow", "rock", "forest", "mud", "field"]  # the order of terrain._layers_at(), then the town's trodden mud and ploughed soil
+const LAYERS := ["grass", "dirt", "sand", "snow", "rock", "forest", "mud", "field", "dry_grass", "stony"]  # the order of terrain.tile_mix(): the town's trodden mud and ploughed soil among them; plains' dry grass and the hills' stony ground
 const Awareness := preload("res://scripts/awareness.gd")  # the realm's rules as the bridge sends them (season length, bands)
 const MUD := 6
 const FIELD := 7
-const UV_SCALE := [0.8, 0.6, 0.6, 0.32, 1.0, 0.8, 0.72, 0.72]  # each layer's repeats per game unit unless ground.json layers.<layer>.scale gives one
-# Each layer's tint unless ground.json layers.<layer>.tint gives one.
-const TINT := [Color(0.95, 1.0, 0.9), Color.WHITE, Color.WHITE, Color(0.92, 0.94, 0.97), Color(0.9, 0.9, 0.88), Color.WHITE, Color(0.74, 0.71, 0.66), Color.WHITE]  # the trodden earth a dry grey-brown, a little darker than a beach (warmer and the grade turns it orange)
 
 var land: Terrain3D
 var _grass_tint := Color.WHITE  # the painted grass's own tint (ground.json layers.grass.tint), under the season's
@@ -45,13 +42,13 @@ func build(terrain: Node3D, ground_layer: int) -> void:
 		ta.albedo_texture = load(tex[0])
 		ta.normal_texture = load(tex[1])
 		# Each layer's tint and scale (realm/data/ground.json layers: the painted ground).
-		ta.albedo_color = TINT[i]
+		ta.albedo_color = Color.WHITE  # the paint is final; a tint only where ground.json layers.<layer>.tint gives one
 		var tint: Array = Data.value("ground", "layers.%s.tint" % LAYERS[i], [])
 		if tint.size() == 3:
 			ta.albedo_color = Color(float(tint[0]), float(tint[1]), float(tint[2]))
 			if i == 0:
 				_grass_tint = ta.albedo_color  # the season's colour goes over it (set_grass), never in its place
-		ta.uv_scale = Data.num("ground", "layers.%s.scale" % LAYERS[i], UV_SCALE[i])
+		ta.uv_scale = Data.num("ground", "layers.%s.scale" % LAYERS[i], 2.0)
 		# Terrain3D's detiling turns and shifts each tile so the repeat never shows.
 		if "detiling_rotation" in ta:
 			ta.set("detiling_rotation", 0.3)
@@ -136,8 +133,8 @@ func build(terrain: Node3D, ground_layer: int) -> void:
 ## A ground layer's two textures (albedo with height, normal with roughness), the one
 ## place their paths are decided: the game's ground and tools/ground_check.gd both ask here.
 static func layer_textures(i: int) -> Array:
-	# The painted set (tools/pack_painted_ground.gd, realm/data/ground.json layers.<layer>.painting).
-	var d := "res://assets/ground/painted/%s" % LAYERS[i]
+	# The painted ground (assets/ground/painted_v2), packed for Terrain3D (tools/pack_painted_ground.gd, ground.json layers.<layer>.painting).
+	var d := "res://assets/ground/terrain3d/%s" % LAYERS[i]
 	return [d + "-albedo-height.png", d + "-normal-rough.png"]
 
 

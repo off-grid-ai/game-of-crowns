@@ -52,8 +52,7 @@ func _init() -> void:
 	plane.size = Vector2(20, 20)
 	ground.mesh = plane
 	var gm := StandardMaterial3D.new()
-	gm.albedo_texture = load("res://assets/ground/grass-albedo.jpg")
-	gm.albedo_color = Color(0.62, 0.86, 0.38)
+	gm.albedo_texture = load("res://assets/ground/painted_v2/grass.png")  # the painted ground's grass
 	gm.uv1_scale = Vector3(8, 8, 8)
 	ground.material_override = gm
 	root.add_child(ground)

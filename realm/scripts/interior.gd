@@ -248,9 +248,8 @@ func _lay_floor(box: AABB) -> void:
 	var stone := StandardMaterial3D.new()
 	stone.albedo_color = Color(0.36, 0.33, 0.3)
 	stone.roughness = 0.9
-	if ResourceLoader.exists("res://assets/ground/square-cobbles.jpg"):
-		stone.albedo_texture = load("res://assets/ground/square-cobbles.jpg")
-		stone.uv1_scale = Vector3(box.size.x / 3.0, box.size.z / 3.0, 1)
+	stone.albedo_texture = load("res://assets/ground/painted_v2/setts.png")  # the painted ground's setts, about 2.5 m a tile (0.3 game units)
+	stone.uv1_scale = Vector3(box.size.x / 0.3, box.size.z / 0.3, 1)
 	plane.material = stone
 	floor_mesh.mesh = plane
 	floor_mesh.position = Vector3(box.get_center().x, box.position.y + 0.02, box.get_center().z)

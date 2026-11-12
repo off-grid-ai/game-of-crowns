@@ -325,7 +325,7 @@ func _farmstead(node: Node3D, at: Vector3, rng: RandomNumberGenerator, hedges: A
 		var kind := rng.randi() % _field_tex.size()
 		var tex: String = _field_tex[kind]
 		if not ResourceLoader.exists(tex):
-			tex = "res://assets/ground/dirt-albedo.jpg"
+			tex = "res://assets/ground/painted_v2/earth.png"
 		c = on_furrows(terrain, c, size)
 		var crop: Decal = terrain.paint(node, terrain.tiled(tex, roundi(size.x * 1.5), roundi(size.y * 1.5)), Vector3(c.x, terrain.height_at(c.x, c.z), c.z), size, fyaw)  # its paint 1.5 deep: wider than any rise a field may have (FIELD_RISE)
 		if terrain.land3d and terrain.land3d.land:

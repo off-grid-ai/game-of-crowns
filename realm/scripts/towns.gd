@@ -13,10 +13,10 @@ var terrain: Node3D
 var towns := {}  # city id -> {node, signature, data}
 
 var _builder = preload("res://scripts/house_builder.gd").new()
-const DIRT := "res://assets/ground/dirt-albedo.jpg"
-var ROAD_TEX: String = preload("res://scripts/terrain.gd").art("res://assets/ground/road-dirt.jpg", DIRT)
+const DIRT := "res://assets/ground/painted_v2/earth.png"  # the painted ground's bare earth (yards, worn ground)
+const ROAD_TEX := "res://assets/ground/painted_v2/dirt_road.png"  # the painted ground's road (streets, lanes, tracks)
 ## Field crops by kind, each tinted dirt until its own texture is delivered.
-var SQUARE_TEX: String = preload("res://scripts/terrain.gd").art("res://assets/ground/square-cobbles.jpg", "res://assets/village/T_UnevenBrick_BaseColor.png")
+const SQUARE_TEX := "res://assets/ground/painted_v2/setts.png"  # the painted ground's setts (the squares and paved streets; towns.json paving.texture)
 static var ROAD_TINT: Color = preload("res://scripts/roads.gd").earth()  # the realm's one road earth (roads.gd earth)
 var life = preload("res://scripts/town_life.gd").new()
 
