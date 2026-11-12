@@ -84,7 +84,11 @@ extends SceneTree
 ## 26. a marcher is never pinned by the push off buildings (the reign replay: a Worker 'moving' and 17 units off for
 ##     three seasons, a ship falling one Freeciv move further behind each season): units.gd's keep pushes a figure off
 ##     a building only where its town has no walk map (a straight line through it); a ship, and a figure on a town's
-##     walk map (its route already keeps off every building), go as their route says.
+##     walk map (its route already keeps off every building), go as their route says;
+## 27. the push off a building never pins a mover (the reign replay: a Worker 17 units off, five seasons, on a straight
+##     line through a town out of sight): with a place's keep pushing it off a building on its way, a mover's progress
+##     along its way carries on (only the body is pushed), so it goes round the building's edge and arrives, and it
+##     never stands inside the building.
 ## Prints "ARMY PROBE …" lines and "ARMY PROBE PASS" or "ARMY PROBE FAIL n"; quits with 0 or 1.
 
 const Data := preload("res://scripts/data.gd")
@@ -135,8 +139,39 @@ func _run() -> void:
 	_regiments_read_as_blocks()
 	_ship_is_the_cog()
 	_marchers_not_pinned()
+	await _push_never_pins()
 	print("ARMY PROBE PASS" if _fails == 0 else "ARMY PROBE FAIL %d" % _fails)
 	quit(0 if _fails == 0 else 1)
+
+
+## 27. The push never pins: a straight way of points 0.05 apart from x 0 to 2, a round building of radius 0.3 at x 1.
+func _push_never_pins() -> void:
+	var man := Node3D.new()
+	root.add_child(man)
+	var mo: Node = Mover.of(man)
+	var hub := Vector3(1, 0, 0)
+	var inside := [0]
+	mo.keep = func(p: Vector3) -> Vector3:
+		var d := Vector2(p.x - hub.x, p.z - hub.z)
+		if d.length() >= 0.3:
+			return p
+		var out := d.normalized() if d.length() > 0.001 else Vector2(0, 1)
+		return Vector3(hub.x + out.x * 0.3, p.y, hub.z + out.y * 0.3)
+	var way := PackedVector3Array()
+	for i in 41:
+		way.append(Vector3(i * 0.05, 0, 0.01))
+	mo.speed = 0.5
+	mo.clip = ""
+	mo.follow(way)
+	for k in 400:
+		mo.call("_process", 0.05)
+		if Vector2(man.global_position.x - hub.x, man.global_position.z - hub.z).length() < 0.299:
+			inside[0] += 1
+		if not mo.moving():
+			break
+	_check(man.global_position.x > 1.9, "a mover pushed off a building on its way goes round it and arrives (x %.2f)" % man.global_position.x)
+	_check(inside[0] == 0, "and never stands inside the building (%d frames inside)" % inside[0])
+	man.queue_free()
 
 
 ## 26. Never pinned: units.gd's keep on a ship and on a town with a walk map.

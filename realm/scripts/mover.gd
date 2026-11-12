@@ -40,6 +40,7 @@ var turn_radius := 0.0  # a horse, a cart: it turns only by moving forward on an
 var ground := Callable()  # (world point) -> height, where a place keeps its own ground (a town's square); else the land's
 var stride := false  # the walk clip's playback follows the pace (a marcher's legs match the ground he covers)
 var keep := Callable()  # (world point) -> world point: a place's own rule for where a body may stand, each step
+var _walk_at := Vector3.INF  # where its walk along the way has come to: keep moves the body, never this progress
 var field: RefCounted = null  # the fight's ground (army_ground.gd) this body stands on; else the realm's navigation
 var _face := true  # turns into its way (off for a step back from a blow, or a dodge)
 var _keep_y := false  # a given way keeps its own heights (a wall walk): no ground under it
@@ -140,6 +141,7 @@ func _begin(way: PackedVector3Array, then: Callable, face: bool, keep_y: bool) -
 	var body := get_parent() as Node3D
 	_way = way
 	_i = 0
+	_walk_at = Vector3.INF
 	_then = then
 	_face = face
 	_keep_y = keep_y
@@ -471,7 +473,9 @@ func _process(delta: float) -> void:
 	if body == null or _i >= _way.size():
 		_finish()
 		return
-	var at := body.global_position
+	# The walk goes on from where it had come to, not from where a place's keep put the body (pushed off a building
+	# on the way, a step from the pushed spot went straight back in: pinned while it walked).
+	var at := body.global_position if _walk_at == Vector3.INF or not keep.is_valid() else Vector3(_walk_at.x, body.global_position.y, _walk_at.z)
 	var aim := _way[_i]
 	var flat := Vector2(aim.x - at.x, aim.z - at.z)
 	var step := speed * delta
@@ -501,6 +505,7 @@ func _process(delta: float) -> void:
 			at.y = lerpf(from_y, aim.y, clampf(step / flat.length(), 0.0, 1.0))
 		if _face:
 			body.rotation.y = lerp_angle(body.rotation.y, atan2(flat.x, flat.y), clampf(turn_rate * delta, 0.0, 1.0))
+	_walk_at = at
 	_put(body, at)
 	if _i >= _way.size():
 		_finish()
