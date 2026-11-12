@@ -293,10 +293,15 @@ static func march_pace(length: float, season: float) -> Dictionary:
 	return {"speed": need, "run": need > MARCH_SPEED}
 
 
-## Through a town with no walk map the way is a straight line: a marcher keeps off its buildings as he goes.
+## Through a town with no walk map the way is a straight line: a marcher keeps off its buildings as he goes. A ship
+## keeps to its water, and a figure in a town with a walk map follows the route it gave, which already keeps off
+## every building: pushing it off again set it back where it stepped from each frame, pinned while it walked.
 func _keep(at: Vector3, figures: Dictionary, id: int) -> Vector3:
 	var f: Dictionary = figures.get(id, {})
-	if f.is_empty() or f["wild"] or TownNav.towns_at(towns, at).is_empty():
+	if f.is_empty() or f["wild"] or f.get("ship", false):
+		return at
+	var ts: Array = TownNav.towns_at(towns, at)
+	if ts.is_empty() or ts.any(func(t): return TownNav.baked(int(t[0]))):
 		return at
 	return _stood(f, at)
 

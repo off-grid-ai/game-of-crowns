@@ -80,7 +80,11 @@ extends SceneTree
 ##     host stays under figureBudget (from the fps bar); and its losses fell figures in step with its men;
 ## 25. a ship is the transport cog (look-audit's cbc97f6f; Mac: ships only carry armies): units.gd builds a ship's
 ##     body as assets/meshy/cog at the realm's scale (Units.M, metres), sunk to its waterline, its sail and pennant
-##     in the house's colour by the one rule (team_colour.house_colour), never a soldier.
+##     in the house's colour by the one rule (team_colour.house_colour), never a soldier;
+## 26. a marcher is never pinned by the push off buildings (the reign replay: a Worker 'moving' and 17 units off for
+##     three seasons, a ship falling one Freeciv move further behind each season): units.gd's keep pushes a figure off
+##     a building only where its town has no walk map (a straight line through it); a ship, and a figure on a town's
+##     walk map (its route already keeps off every building), go as their route says.
 ## Prints "ARMY PROBE …" lines and "ARMY PROBE PASS" or "ARMY PROBE FAIL n"; quits with 0 or 1.
 
 const Data := preload("res://scripts/data.gd")
@@ -130,8 +134,17 @@ func _run() -> void:
 	_muster_takes_the_road()
 	_regiments_read_as_blocks()
 	_ship_is_the_cog()
+	_marchers_not_pinned()
 	print("ARMY PROBE PASS" if _fails == 0 else "ARMY PROBE FAIL %d" % _fails)
 	quit(0 if _fails == 0 else 1)
+
+
+## 26. Never pinned: units.gd's keep on a ship and on a town with a walk map.
+func _marchers_not_pinned() -> void:
+	var src := FileAccess.get_file_as_string("res://scripts/units.gd")
+	var at := src.find("func _keep(")
+	var body := src.substr(at, src.find("\nfunc ", at + 1) - at)
+	_check(body.contains("\"ship\"") and body.contains("baked("), "units.gd's keep leaves a ship and a figure on a town's walk map to their route (%s)" % ("ship" if body.contains("\"ship\"") else "no ship rule"))
 
 
 ## 25. A ship is the cog.
