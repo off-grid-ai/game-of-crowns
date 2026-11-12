@@ -698,7 +698,7 @@ static func _ripen(crop: GeometryInstance3D, season: String, t: float) -> void:
 	crop.scale = Vector3(1.0, float(st[1]), 1.0)
 	if kind in STANDING:
 		crop.material_override = _tint(kind, st[0])
-		var shells: Variant = crop.get_meta("shells", null)
+		var shells: Variant = crop.get_meta("shells") if crop.has_meta("shells") else null  # get_meta with a null default errors when unset (fields without shells)
 		if shells is GeometryInstance3D and is_instance_valid(shells):
 			var tint: Color = (FLAX_TINTS if kind == "flax" else TINTS)[st[0]]
 			(shells as GeometryInstance3D).set_instance_shader_parameter("tint", tint * (Color(1.05, 1.0, 0.92) if kind == "barley" else Color.WHITE))
