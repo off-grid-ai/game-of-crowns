@@ -13,6 +13,8 @@ uniform float char_amount : hint_range(0.0, 1.0) = 0.82;
 uniform float hole = 0.42;  // above the cut, this share of the roof is gone
 uniform float noise_scale = 4.0;  // per mesh unit
 uniform vec3 ember : source_color = vec3(1.0, 0.36, 0.06);
+uniform float ember_power = 1.4;  // how hot the glowing cracks are (fire.json char.ember: batch 9, at 2.5 in broad
+                                  // patches they read as flames painted on the walls)
 
 instance uniform float glow = 0.0;  // embers in the char: 1 while it burns, out after
 instance uniform float cut = 1.0;  // the share of its height above which the roof has fallen in (1: whole)
@@ -41,5 +43,7 @@ void fragment() {
 	ALBEDO = mix(base.rgb, soot, sooty);
 	ROUGHNESS = 1.0;
 	SPECULAR = 0.1;
-	EMISSION = ember * smoothstep(0.6, 0.78, n) * glow * 2.5;
+	// Glowing cracks in the char, fine and broken (a second, finer noise inside the coarse patches), never sheets.
+	float fine = texture(noise_texture, local.xz * noise_scale * 3.3 + vec2(local.y * 5.1, 0.37)).r;
+	EMISSION = ember * smoothstep(0.7, 0.8, fine) * smoothstep(0.55, 0.75, n) * glow * ember_power;
 }

@@ -28,6 +28,7 @@ var _burning := {}  # "town:home" -> its fire node, while it burns (meta stage: 
 var _spreads := {}  # town id -> {left: [homes still to catch], lit: [homes caught], root, pace, pick, at}: a fire travelling
 var _orders := {}  # town id -> the order its houses burn in, set by the sack that burnt them (nearest the eye first)
 var _kindled := {}  # "town:home" -> true: a house a fire arrow set alight, kept charred for the session
+var _shares := {}  # town id -> its burnt share last seen: a drop is the realm rebuilding
 var _lines := {}  # town id -> {key: the house it works at, folk: [their minds]}: the town's bucket line
 var _tick := 0.0
 var _clock := 0.0
@@ -155,7 +156,8 @@ func _ignite(at: Vector3, seconds: float, razed: bool) -> bool:
 	_orders[best] = _nearest_first(root, homes)
 	var order := _order(best, homes.size())
 	var left := []
-	for i in mini(homes.size(), maxi(1, ceili(share * homes.size()))):
+	var least := int((d.get("spread", {}) as Dictionary).get("least", 4))  # a sack is seen to spread: a few houses at least
+	for i in mini(homes.size(), maxi(mini(least, homes.size()), ceili(share * homes.size()))):
 		if not _burning.has("%d:%d" % [best, order[i]]):
 			left.append(order[i])
 	if left.is_empty():
@@ -440,16 +442,38 @@ func _process(delta: float) -> void:
 		var homes: Array = root.get_meta("homes", [])
 		if homes.is_empty():
 			continue
-		var n := roundi(_burnt_share(id) * homes.size())
+		var share := _burnt_share(id)
+		if share < float(_shares.get(id, 0.0)) - 0.001:
+			# The realm rebuilt some of it: the ruins past what it still counts burnt stand whole again.
+			var keep := roundi(share * homes.size())
+			var ord := _order(id, homes.size())
+			for i in range(keep, homes.size()):
+				_kindled.erase("%d:%d" % [id, ord[i]])
+		_shares[id] = share
+		var n := roundi(share * homes.size())
 		var order := _order(id, homes.size())
 		for i in homes.size():
 			var key := "%d:%d" % [id, order[i]]
 			if _waiting(id, order[i]):
 				continue  # its turn to catch hasn't come: it stands whole till then
-			if i < n:
-				_char(root, key, homes[order[i]])
+			if i < n or (_kindled.has(key) and not _burning.has(key)):
+				_char(root, key, homes[order[i]])  # charred while the fact says so, and a house that burnt here stays a ruin
 			elif _burnt.has(key) and not _burning.has(key) and not _kindled.has(key):
 				_mend(key)
+	# Fewer flames and embers on the far fires (data fire.json lod: full to near, down to far_share by far):
+	# many houses can burn at once. The smoke keeps whole: it's what's seen across the town.
+	var lk: Dictionary = knobs().get("lod", {})
+	var cam := get_viewport().get_camera_3d()
+	for key in _burning:
+		var f: Node3D = _burning[key]
+		if not is_instance_valid(f) or cam == null:
+			continue
+		var dd := cam.global_position.distance_to(f.global_position)
+		var lod := lerpf(1.0, float(lk.get("far_share", 0.3)), smoothstep(float(lk.get("near", 8.0)), float(lk.get("far", 30.0)), dd))
+		for p in f.get_children():
+			if p is GPUParticles3D and p.has_meta("want") and p.get_meta("kind", "") != "smoke":
+				p.set_meta("lod", lod)
+				_ratio(p, float(p.get_meta("want")))
 	var g := _drift()
 	for key in _burning:
 		var f: Node3D = _burning[key]
@@ -481,13 +505,17 @@ func _alight(root: Node3D, key: String, h: Array, town: int) -> void:
 	fire.name = "Burning"
 	root.add_child(fire)
 	_burning[key] = fire
+	_kindled[key] = true  # a ruin stays a ruin until the realm rebuilds it (batch 9: it stood whole again by 90 s)
+	if OS.get_cmdline_user_args().has("--probe"):
+		print("FIRE lit %s (burning %d in town %d)" % [key, _columns(town), town])
 	var thin := _columns(town) >= int(d.get("columns", 6))  # past the town's full columns: a thin one
 	var fk: Dictionary = d.get("flames", {})
-	var roof := _flames(int(fk.get("amount", 26)), float(fk.get("life", 0.9)), fk.get("size", [0.2, 0.34]), _v2(fk.get("rise", [0.08, 0.18])), Vector3(box.size.x * 0.3, box.size.y * 0.1, box.size.z * 0.3), _flame_material(false), float(fk.get("aspect", 1.6)), float(fk.get("lift", 0.35)))
+	var soft := String(fk.get("look", "soft")) == "soft"  # flipbook flames, a soft body and a hot core (else GDQuest's toon bands)
+	var roof := _flames(int(fk.get("amount", 26)), float(fk.get("life", 0.9)), fk.get("size", [0.2, 0.34]), _v2(fk.get("rise", [0.08, 0.18])), Vector3(box.size.x * 0.3, box.size.y * 0.1, box.size.z * 0.3), _flame_material(false), float(fk.get("aspect", 1.6)), float(fk.get("lift", 0.35)), soft)
 	roof.position = Vector3(c.x, top - box.size.y * 0.3, c.z)
 	fire.add_child(roof)
 	var fr: Dictionary = d.get("front", {})
-	var front := _flames(int(fr.get("amount", 10)), float(fk.get("life", 0.9)) * 0.8, fr.get("size", [0.09, 0.15]), _v2(fk.get("rise", [0.08, 0.18])) * 0.7, Vector3(box.size.x * 0.25, 0.01, box.size.z * 0.25), _flame_material(false), float(fk.get("aspect", 1.6)), float(fk.get("lift", 0.35)) * 0.5)
+	var front := _flames(int(fr.get("amount", 10)), float(fk.get("life", 0.9)) * 0.8, fr.get("size", [0.09, 0.15]), _v2(fk.get("rise", [0.08, 0.18])) * 0.7, Vector3(box.size.x * 0.25, 0.01, box.size.z * 0.25), _flame_material(false), float(fk.get("aspect", 1.6)), float(fk.get("lift", 0.35)) * 0.5, soft)
 	var lateral := Vector3(box.size.x, 0, box.size.z).length() * 0.3
 	front.position = Vector3(c.x, box.position.y + box.size.y * float(fr.get("height", 0.35)), c.z) + Vector3(face.x, 0, face.z).normalized() * lateral
 	fire.add_child(front)
@@ -495,7 +523,7 @@ func _alight(root: Node3D, key: String, h: Array, town: int) -> void:
 	# and Manor Lords' burning houses: the walls burn, not only the roof).
 	var wk: Dictionary = d.get("walls", {})
 	if int(wk.get("amount", 0)) > 0:
-		var walls := _flames(int(wk.get("amount", 18)), float(fk.get("life", 0.9)), wk.get("size", [0.14, 0.26]), _v2(fk.get("rise", [0.08, 0.18])), Vector3(box.size.x * 0.5, box.size.y * 0.2, box.size.z * 0.5), _flame_material(false), float(fk.get("aspect", 1.6)), float(fk.get("lift", 0.35)))
+		var walls := _flames(int(wk.get("amount", 18)), float(fk.get("life", 0.9)), wk.get("size", [0.14, 0.26]), _v2(fk.get("rise", [0.08, 0.18])), Vector3(box.size.x * 0.5, box.size.y * 0.2, box.size.z * 0.5), _flame_material(false), float(fk.get("aspect", 1.6)), float(fk.get("lift", 0.35)), soft)
 		walls.position = Vector3(c.x, box.position.y + box.size.y * float(wk.get("height", 0.55)), c.z)
 		fire.add_child(walls)
 	var ek: Dictionary = d.get("embers", {})
@@ -503,6 +531,7 @@ func _alight(root: Node3D, key: String, h: Array, town: int) -> void:
 	embers.position = Vector3(c.x, top, c.z)
 	fire.add_child(embers)
 	var smoke := _smoke(d.get("smoke", {}))
+	smoke.set_meta("kind", "smoke")
 	smoke.position = Vector3(c.x, top + 0.05, c.z)
 	fire.add_child(smoke)
 	var light := OmniLight3D.new()
@@ -522,6 +551,11 @@ func _alight(root: Node3D, key: String, h: Array, town: int) -> void:
 	var smoulder_s := float(st.get("smoulder_s", 25.0))
 	var column := 0.35 if thin else 1.0
 	var energy := light.light_energy
+	# The fire's light flickers on the walls and the ground round it (never steady), at the stage's strength.
+	light.set_meta("e", energy)
+	var flick := light.create_tween().set_loops()
+	flick.tween_method(func(t: float):
+		light.light_energy = float(light.get_meta("e", energy)) * (0.84 + 0.1 * sin(t * 21.0) + 0.06 * sin(t * 47.0 + 1.3)), 0.0, TAU, 2.9)
 	var flames := fire.get_children().filter(func(n): return n is GPUParticles3D and n != embers and n != smoke)
 	var shell: Array = (b["shell"] as Node).get_children().filter(func(n): return n is GeometryInstance3D)
 	var roof_in := func(v: float):  # 0 whole .. 1 fallen in as far as it will
@@ -535,10 +569,10 @@ func _alight(root: Node3D, key: String, h: Array, town: int) -> void:
 	# Catching: smoke first, a few small flames on the roof, the house not yet black.
 	fire.set_meta("stage", "catch")
 	for p in flames:
-		(p as GPUParticles3D).amount_ratio = float(st.get("catch_flames", 0.25)) if p == roof else 0.0
-	embers.amount_ratio = 0.2
-	smoke.amount_ratio = column * 0.7
-	light.light_energy = energy * 0.3
+		_ratio(p, float(st.get("catch_flames", 0.25)) if p == roof else 0.0)
+	_ratio(embers, 0.2)
+	_ratio(smoke, column * 0.7)
+	light.set_meta("e", energy * 0.3)
 	roof_in.call(0.0)
 	shade.call("sooted", 0.0)
 	shade.call("glow", 0.0)
@@ -549,10 +583,10 @@ func _alight(root: Node3D, key: String, h: Array, town: int) -> void:
 	tw.tween_callback(func():
 		fire.set_meta("stage", "burn")
 		for p in flames:
-			(p as GPUParticles3D).amount_ratio = 1.0
-		embers.amount_ratio = 1.0
-		smoke.amount_ratio = column
-		light.light_energy = energy
+			_ratio(p, 1.0)
+		_ratio(embers, 1.0)
+		_ratio(smoke, column)
+		light.set_meta("e", energy)
 		shade.call("glow", 1.0))
 	tw.tween_method(func(v: float):
 		shade.call("sooted", lerpf(0.4, 1.0, v))
@@ -567,8 +601,8 @@ func _alight(root: Node3D, key: String, h: Array, town: int) -> void:
 		fire.add_child(burst)
 		burst.emitting = true
 		for p in flames:
-			(p as GPUParticles3D).amount_ratio = float(st.get("collapse_flames", 0.35))
-		light.light_energy = energy * 0.5
+			_ratio(p, float(st.get("collapse_flames", 0.35)))
+		light.set_meta("e", energy * 0.5)
 		_release(town, key))
 	tw.tween_method(func(v: float): roof_in.call(lerpf(0.4, 1.0, v)), 0.0, 1.0, collapse_s)
 	# Smouldering: the flames out, a thin grey wisp, the char's embers glowing out.
@@ -578,7 +612,7 @@ func _alight(root: Node3D, key: String, h: Array, town: int) -> void:
 			(p as GPUParticles3D).emitting = false
 		embers.emitting = false
 		light.queue_free()
-		smoke.amount_ratio = float(st.get("smoulder_smoke", 0.3))
+		_ratio(smoke, float(st.get("smoulder_smoke", 0.3)))
 		var pm := smoke.process_material as ParticleProcessMaterial
 		pm.scale_min *= 0.5
 		pm.scale_max *= 0.5
@@ -669,7 +703,7 @@ static func _v2(a: Array) -> Vector2:
 
 ## Flames: tall billboards of the flame shader, born small, swelling, then eaten away from the edges as
 ## they rise (alpha erosion), each a random frame of the tongues.
-static func _flames(amount: int, life: float, size: Array, rise: Vector2, box: Vector3, mat: Material, aspect := 1.6, lift := 0.35) -> GPUParticles3D:
+static func _flames(amount: int, life: float, size: Array, rise: Vector2, box: Vector3, mat: Material, aspect := 1.6, lift := 0.35, soft := false) -> GPUParticles3D:
 	var pm := ParticleProcessMaterial.new()
 	pm.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
 	pm.emission_box_extents = box
@@ -695,6 +729,14 @@ static func _flames(amount: int, life: float, size: Array, rise: Vector2, box: V
 	pm.color_ramp = gt
 	pm.anim_offset_min = 0.0
 	pm.anim_offset_max = 1.0
+	if soft:
+		# Each flame plays through the tongues as it rises (a flipbook), white-yellow at its foot, orange, then
+		# deep red as it thins away; HDR, so the hot part glows under the grade.
+		pm.anim_offset_max = 0.3
+		pm.anim_speed_min = 1.0
+		pm.anim_speed_max = 1.0
+		pm.color_ramp = _ramp(knobs().get("soft", {}).get("body", []), [[1.0, 0.8, 0.4, 0.0], [1.6, 0.85, 0.3, 0.9], [1.3, 0.42, 0.08, 0.75], [0.5, 0.1, 0.03, 0.0]])
+		mat = _soft_material(false, aspect)
 	var p := GPUParticles3D.new()
 	p.amount = amount
 	p.lifetime = life
@@ -708,7 +750,79 @@ static func _flames(amount: int, life: float, size: Array, rise: Vector2, box: V
 	p.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	p.visibility_aabb = AABB(-box - Vector3(0.6, 0.2, 0.6), box * 2.0 + Vector3(1.2, 1.6, 1.2))
 	p.visibility_range_end = FAR
+	if soft:
+		# The hot core: smaller, brighter, added on (light adds to light), inside the body.
+		var core := GPUParticles3D.new()
+		var cm: ParticleProcessMaterial = pm.duplicate()
+		var ck: Dictionary = knobs().get("soft", {})
+		cm.scale_min = pm.scale_min * float(ck.get("core_size", 0.55))
+		cm.scale_max = pm.scale_max * float(ck.get("core_size", 0.55))
+		cm.color_ramp = _ramp(ck.get("core", []), [[1.0, 0.9, 0.6, 0.0], [1.5, 1.15, 0.6, 0.8], [1.2, 0.55, 0.15, 0.4], [0.6, 0.15, 0.02, 0.0]])
+		core.amount = maxi(1, int(amount * float(ck.get("core_share", 0.6))))
+		core.lifetime = life * 0.8
+		core.randomness = 0.5
+		core.process_material = cm
+		var cq := QuadMesh.new()
+		cq.size = Vector2(1.0, aspect)
+		cq.center_offset = Vector3(0, aspect * 0.35, 0)
+		cq.material = _soft_material(true, aspect)
+		core.draw_pass_1 = cq
+		core.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		core.visibility_aabb = p.visibility_aabb
+		core.visibility_range_end = FAR
+		core.name = "Core"
+		p.add_child(core)
 	return p
+
+
+## A colour ramp from rows of [r, g, b, a] spread evenly over a particle's life (data, else `fallback`).
+static func _ramp(rows: Array, fallback: Array) -> GradientTexture1D:
+	var use: Array = rows if rows.size() >= 2 else fallback
+	var g := Gradient.new()
+	var offs := PackedFloat32Array()
+	var cols := PackedColorArray()
+	for i in use.size():
+		var c: Array = use[i]
+		offs.append(i / float(use.size() - 1))
+		cols.append(Color(float(c[0]), float(c[1]), float(c[2]), float(c[3])))
+	g.offsets = offs
+	g.colors = cols
+	var t := GradientTexture1D.new()
+	t.gradient = g
+	t.use_hdr = true
+	return t
+
+
+## The soft flames' material: Kenney's six flame tongues as one flipbook, soft-edged where they meet a wall or
+## a roof (proximity fade), unshaded (they give light, they don't take it); the core added on.
+static func _soft_material(core: bool, aspect: float) -> StandardMaterial3D:
+	var key := "soft_core" if core else "soft_body"
+	if _cache.has(key):
+		return _cache[key]
+	var m := StandardMaterial3D.new()
+	m.albedo_texture = _strip(["flame_01", "flame_02", "flame_03", "flame_04", "flame_05", "flame_06"], 96, int(96 * aspect), false)
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.blend_mode = BaseMaterial3D.BLEND_MODE_ADD if core else BaseMaterial3D.BLEND_MODE_MIX
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.vertex_color_use_as_albedo = true
+	m.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	m.particles_anim_h_frames = 6
+	m.particles_anim_v_frames = 1
+	m.particles_anim_loop = false
+	m.proximity_fade_enabled = true
+	m.proximity_fade_distance = float((knobs().get("soft", {}) as Dictionary).get("soft_edge", 0.08))
+	m.disable_receive_shadows = true
+	_cache[key] = m
+	return m
+
+
+## A burning house's emitter at `v` of its stage's strength, times its distance's share (the LOD), and its core.
+static func _ratio(p: GPUParticles3D, v: float) -> void:
+	p.set_meta("want", v)
+	p.amount_ratio = v * float(p.get_meta("lod", 1.0))
+	for c in p.get_children():
+		if c is GPUParticles3D:
+			(c as GPUParticles3D).amount_ratio = p.amount_ratio
 
 
 static func _embers(k: Dictionary, box: Vector3) -> GPUParticles3D:
@@ -857,6 +971,7 @@ static func _char_material(src: Material) -> ShaderMaterial:
 	var m := ShaderMaterial.new()
 	m.shader = CHAR_SHADER
 	m.set_shader_parameter("noise_texture", _noise())
+	m.set_shader_parameter("ember_power", float((knobs().get("char", {}) as Dictionary).get("ember", 1.4)))
 	var tex: Texture2D = null
 	var col := Color.WHITE
 	if src is BaseMaterial3D:

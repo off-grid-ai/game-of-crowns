@@ -1,5 +1,5 @@
 {
-  "_": "Fire, v2 (judged beside docs/art/target/04-siege.jpg: tall shaped flames off the roofs, a dark smoke column leaning in the wind, the house left a charred shell). fire.gd reads it. on: the switch (or --fire=v2; --fire=v1 forces the old puffs). Flames: GDQuest's stylized fire shader (MIT) on Kenney's flame tongues (CC0), in three toon bands. A burning house: flames on its roof and at its front, embers, smoke, a scorch, and it chars (roof falling in) as it burns. Which houses stay burnt is the bridge's damage fact (cities[].damage.burnt, bridge/damage.js), never a timer; share_sack/share_razed only pick how many burn when a sack plays before the damage is known. Sizes are in game units (a house is about 0.3 tall). walls: tongues from each burning house's upper walls (fire.gd _alight). v3 (docs/research/world-and-siege-rules.md, fire rules 1-6): spread: the raiders torch a few at once (spread.torched, never two within torch_apart of each other), the houses nearest where the camera looks (a sack must be seen); then houses catch one at a time, 3-12 s apart, the next the one most exposed to those already burning (nearer, downwind, thatch before timber before stone; Stronghold's travelling fire, Manor Lords' house to house); the bridge's fact still decides which houses burn, the spread only decides the order. stages: catching (smoke first, small flames), burning, collapse (the roof falls in with a burst of sparks), smouldering (a thin grey wisp, glowing char), then out (Age of Empires' stepped fire). columns: at most this many full smoke columns a town, the rest thin (Total War's far read). folk: the townsfolk near a catching house run from it; up to folk.line of the rest stand in a line from the well and pass pails until the roof falls in (Manor Lords), and while a line works the next house catches folk.slow times later.",
+  "_": "Fire, v2 (judged beside docs/art/target/04-siege.jpg: tall shaped flames off the roofs, a dark smoke column leaning in the wind, the house left a charred shell). fire.gd reads it. on: the switch (or --fire=v2; --fire=v1 forces the old puffs). Flames: GDQuest's stylized fire shader (MIT) on Kenney's flame tongues (CC0), in three toon bands. A burning house: flames on its roof and at its front, embers, smoke, a scorch, and it chars (roof falling in) as it burns. Which houses stay burnt is the bridge's damage fact (cities[].damage.burnt, bridge/damage.js), never a timer; share_sack/share_razed only pick how many burn when a sack plays before the damage is known. Sizes are in game units (a house is about 0.3 tall). walls: tongues from each burning house's upper walls (fire.gd _alight). v3 (docs/research/world-and-siege-rules.md, fire rules 1-6): spread: the raiders torch a few at once (spread.torched, never two within torch_apart of each other), the houses nearest where the camera looks (a sack must be seen); then houses catch one at a time, 3-12 s apart, the next the one most exposed to those already burning (nearer, downwind, thatch before timber before stone; Stronghold's travelling fire, Manor Lords' house to house); the bridge's fact still decides which houses burn, the spread only decides the order. stages: catching (smoke first, small flames), burning, collapse (the roof falls in with a burst of sparks), smouldering (a thin grey wisp, glowing char), then out (Age of Empires' stepped fire). columns: at most this many full smoke columns a town, the rest thin (Total War's far read). folk: the townsfolk near a catching house run from it; up to folk.line of the rest stand in a line from the well and pass pails until the roof falls in (Manor Lords), and while a line works the next house catches folk.slow times later. Batch 9 (soft flames): the flames as a flipbook of Kenney's tongues, a soft body and an additive core (soft); the light flickers; the char's glow in fine cracks (char.ember), not broad sheets; a house that burnt stays a ruin until the realm's burnt share drops (it rebuilds); a sack spreads to spread.least houses at least; lod thins far fires.",
   "on": false,
   "share_sack": 0.4,
   "share_razed": 1.0,
@@ -18,7 +18,8 @@
     ],
     "lift": 0.35,
     "lean": 0.7,
-    "noise_scale": 7.0
+    "noise_scale": 7.0,
+    "look": "soft"
   },
   "front": {
     "amount": 10,
@@ -56,28 +57,28 @@
     ]
   },
   "smoke": {
-    "amount": 26,
-    "life": 12.0,
+    "amount": 40,
+    "life": 14.0,
     "size": [
-      0.35,
-      0.8
+      0.55,
+      1.3
     ],
     "grow": 3.0,
     "rise": [
-      0.2,
-      0.32
+      0.25,
+      0.4
     ],
     "drift": 0.18,
     "colour": [
-      0.12,
-      0.11,
       0.1,
-      0.85
+      0.09,
+      0.085,
+      0.9
     ],
     "far": 140.0
   },
   "light_energy": 1.4,
-  "light_range": 1.1,
+  "light_range": 1.6,
   "char": {
     "collapse": [
       0.55,
@@ -88,11 +89,17 @@
     "roofless": [
       0.22,
       0.38
-    ]
+    ],
+    "ember": 1.4
   },
   "scorch_size": 1.7,
   "hearth": {
-    "light": {"energy": 0.3, "range": 0.45, "falloff": 1.6, "height": 0.3},
+    "light": {
+      "energy": 0.3,
+      "range": 0.45,
+      "falloff": 1.6,
+      "height": 0.3
+    },
     "amount": 8,
     "size": [
       0.05,
@@ -141,7 +148,8 @@
         "brick",
         "hall"
       ]
-    }
+    },
+    "least": 4
   },
   "stages": {
     "catch_s": 5.0,
@@ -171,5 +179,69 @@
     "pick_within": 4.0,
     "clear": 0.3,
     "slow": 1.6
+  },
+  "soft": {
+    "_": "The soft flames (flames.look soft; else stylized, GDQuest's toon bands): Kenney's six flame tongues as a flipbook, each flame playing through them as it rises; body: its colour over its life, rows of [r, g, b, a], HDR (above 1 glows); core: the hot inner flames added on, core_size of the body's size, core_share as many; soft_edge: how softly they fade where they meet a wall or roof (world units).",
+    "body": [
+      [
+        1.0,
+        0.8,
+        0.4,
+        0.0
+      ],
+      [
+        1.6,
+        0.85,
+        0.3,
+        0.9
+      ],
+      [
+        1.3,
+        0.42,
+        0.08,
+        0.75
+      ],
+      [
+        0.5,
+        0.1,
+        0.03,
+        0.0
+      ]
+    ],
+    "core": [
+      [
+        1.0,
+        0.9,
+        0.6,
+        0.0
+      ],
+      [
+        1.5,
+        1.15,
+        0.6,
+        0.8
+      ],
+      [
+        1.2,
+        0.55,
+        0.15,
+        0.4
+      ],
+      [
+        0.6,
+        0.15,
+        0.02,
+        0.0
+      ]
+    ],
+    "core_size": 0.55,
+    "core_share": 0.6,
+    "soft_edge": 0.08
+  },
+  "lod": {
+    "_": "Fewer flames and embers on far fires so many houses can burn at once: full out to near (world units from the camera), down to far_share of them by far; the smoke stays whole.",
+    "near": 8.0,
+    "far": 30.0,
+    "far_share": 0.3
   }
 }
