@@ -5,8 +5,8 @@ const PerfTools := preload("res://scripts/perf_tools.gd")  # the frame-cost prob
 ## road), it takes him there and lingers on it, then moves on. It never takes
 ## the camera by itself. Any click, key or scroll hands it straight back.
 
-const IDLE_SECONDS := 90.0  # truly left alone: never while the King reads or moves the mouse
-const SHOT_SECONDS := 18.0
+static var IDLE_SECONDS: float = preload("res://scripts/data.gd").num("camera", "director.idle_seconds", 90.0)  # truly left alone: never while the King reads or moves the mouse (camera.json director.idle_seconds)
+static var SHOT_SECONDS: float = preload("res://scripts/data.gd").num("camera", "director.shot_seconds", 18.0)  # camera.json director.shot_seconds
 # Each scene kind's interest, camera distance and caption: scene_kinds.gd. Anything
 # that moves along a road is filmed from well above the trees (9), never from
 # inside a forest canopy.

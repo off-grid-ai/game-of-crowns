@@ -12,7 +12,7 @@ const STAINS := [
 	[preload("res://assets/props/blood/stain_a.png"), preload("res://assets/props/blood/stain_a_normal.png")],
 	[preload("res://assets/props/blood/stain_b.png"), preload("res://assets/props/blood/stain_b_normal.png")],
 ]
-const MAX_STAINS := 40  # oldest marks fade from the ground past this many
+static var MAX_STAINS: int = int(preload("res://scripts/data.gd").num("battle", "blood_stains", 40))  # oldest marks fade from the ground past this many (battle.json blood_stains)
 
 static var _stains: Array = []
 static var _drop_mat: StandardMaterial3D

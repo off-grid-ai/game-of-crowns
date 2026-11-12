@@ -30,8 +30,8 @@ var SNOW_NEAR := Vector2(_fall_knob("snow_near", [10.0, 28.0])[0], _fall_knob("s
 
 static func _fall_knob(key: String, fallback: Array) -> Array:
 	return preload("res://scripts/data.gd").value("weather", "fall." + key, fallback)
-const RAIN_DROPS := 12000  # at full rain: dense, fine and close (Manor Lords), never a few long sticks
-const SNOW_FLAKES := 1600
+static var RAIN_DROPS: int = int(preload("res://scripts/data.gd").num("weather", "drops.rain", 12000))  # at full rain: dense, fine and close (Manor Lords), never a few long sticks (weather.json drops.rain)
+static var SNOW_FLAKES: int = int(preload("res://scripts/data.gd").num("weather", "drops.snow", 1600))  # weather.json drops.snow
 const NEAR_GONE := 0.5  # game units (about 4 m): a drop or flake this near the lens is not drawn
 const NEAR_FULL := 1.5  # about 12 m: from here out it is drawn whole
 const CLEAR_OF_LENS := 0.25  # no drop or flake falls within this of the camera (game units, about 2 m)
@@ -48,7 +48,7 @@ var _base := {}  # the clear day's light, as look.gd left it: weather scales it,
 # weather sets it. Owned here; shaders read the global `wind` (project.godot shader_globals: x, z the
 # direction it blows toward, w its strength 0..1), CPU-side effects (smoke, embers: fire.gd) read this.
 const WIND_FULL := 9.0  # m/s (a storm): strength 1
-const PREVAILING_FROM := -70.0  # degrees: the realm's wind comes off the western sea (Sky3D: 0 north, -90 west)
+static var PREVAILING_FROM: float = preload("res://scripts/data.gd").num("weather", "prevailing_from", -70.0)  # degrees: the realm's wind comes off the western sea (Sky3D: 0 north, -90 west) (weather.json prevailing_from)
 static var wind := Vector4(0.8, 0.0, 0.6, 0.15)
 # The one wetness (the finesse catalogue's second shared fact): 0 dry .. 1 soaked, settling with the weather's
 # `wet` as the land's sheen does. Shaders read the global `wet`; CPU-side readers (fire spread) read this.

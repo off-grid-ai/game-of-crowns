@@ -96,5 +96,7 @@
    "great": 170.0,
    "castle": 220.0
   }
- }
+ },
+  "director": {"idle_seconds": 90.0, "shot_seconds": 18.0},
+  "rig": {"overview": 60.0, "ease": 9.0, "nearest": 0.35, "steepest": 58.0, "guard": 4.5, "lens_speed": 2.5, "lens_reach": 0.05, "lens_ease": 10.0}
 }

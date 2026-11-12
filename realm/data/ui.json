@@ -3,5 +3,8 @@
  "top": { "maxWidth": 520 },
  "chronicle": { "width": 280, "height": 0.45 },
  "townCard": { "width": 400 },
- "toast": { "width": 400 }
+ "toast": { "width": 400 },
+  "reign_cards": {"act_seconds": 5.0},
+  "folk_tip": {"near": 12.0, "marks_near": 60.0},
+  "mic": {"speech": 0.02, "quiet_for": 0.9, "shortest": 0.35}
 }

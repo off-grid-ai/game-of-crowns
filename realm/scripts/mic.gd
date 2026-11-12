@@ -9,9 +9,9 @@ extends Node
 signal utterance(wav: PackedByteArray)  # you said something and stopped
 signal state_changed(state: String)  # "listening" | "hearing" | "waiting" | "off"
 
-const SPEECH := 0.02  # level (RMS) above which it's you talking
-const QUIET_FOR := 0.9  # seconds of quiet that end what you're saying
-const SHORTEST := 0.35  # anything briefer is a cough, not words
+static var SPEECH: float = preload("res://scripts/data.gd").num("ui", "mic.speech", 0.02)  # level (RMS) above which it's you talking (ui.json mic.speech)
+static var QUIET_FOR: float = preload("res://scripts/data.gd").num("ui", "mic.quiet_for", 0.9)  # seconds of quiet that end what you're saying (ui.json mic.quiet_for)
+static var SHORTEST: float = preload("res://scripts/data.gd").num("ui", "mic.shortest", 0.35)  # anything briefer is a cough, not words (ui.json mic.shortest)
 
 var state := "off"
 var _rec: AudioEffectRecord

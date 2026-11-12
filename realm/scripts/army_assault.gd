@@ -25,11 +25,11 @@ extends "res://scripts/army_melee.gd"
 ## back to the camp, and the storm is over. Behind them, the massed storm of regiments (army_field.gd's storm,
 ## raised with every siege) follows this breach.
 
-const WAVE := 15.0  # seconds between one party's rushes
+static var WAVE: float = preload("res://scripts/data.gd").num("siege", "assault.wave", 15.0)  # seconds between one party's rushes (siege.json assault.wave)
 const AT_WALL := [3.0, 4.6]  # how long a man fights at the foot of the wall
-const FALL := 0.06  # the chance a blow from above, landing, kills him outright
-const WALK_S := 0.17  # a man's walk at the wall, units a second
-const RUN_S := 0.45
+static var FALL: float = preload("res://scripts/data.gd").num("siege", "assault.fall", 0.06)  # the chance a blow from above, landing, kills him outright (siege.json assault.fall)
+static var WALK_S: float = preload("res://scripts/data.gd").num("siege", "assault.walk", 0.17)  # a man's walk at the wall, units a second (siege.json assault.walk)
+static var RUN_S: float = preload("res://scripts/data.gd").num("siege", "assault.run", 0.45)  # siege.json assault.run
 const Fire := preload("res://scripts/fire.gd")
 const Field := preload("res://scripts/army_field.gd")
 

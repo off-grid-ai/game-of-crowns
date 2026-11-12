@@ -13,7 +13,7 @@ signal overview  # drawn back past OVERVIEW: the painted map takes over from her
 ## Past this the land can't be read (towns are smudges), so zooming out hands
 ## over to the realm's painted map (main._overview) instead of going higher.
 const Data := preload("res://scripts/data.gd")  # the one loader of realm/data (data.gd)
-const OVERVIEW := 60.0
+static var OVERVIEW: float = preload("res://scripts/data.gd").num("camera", "rig.overview", 60.0)  # camera.json rig.overview
 const NavGround := preload("res://scripts/nav_ground.gd")  # what a town's life has set down
 
 var terrain: Node3D
@@ -61,7 +61,7 @@ var _grab := Vector3.INF  # the ground point held under the cursor while draggin
 var _fling := Vector3.ZERO  # pan velocity carried on after a flick, units per second
 var _keys_v := Vector2.ZERO  # keyboard pan velocity, eased in and out
 var _look_y := 0.0  # the ground height looked at, smoothed so hills don't bob the view
-const EASE := 9.0  # how quickly the view settles on its goal (per second)
+static var EASE: float = preload("res://scripts/data.gd").num("camera", "rig.ease", 9.0)  # how quickly the view settles on its goal (per second) (camera.json rig.ease)
 @onready var cam := Camera3D.new()
 
 
@@ -444,9 +444,9 @@ var _bodies_check := 0.0
 var _hit := -1.0  # set by a cut (snap, focus): the lens's corrections start afresh, not eased in
 var _lag := 0.0  # how far the lens's correction still has to go (the zoom waits on it)
 var _fix := Vector3.ZERO  # the lens's own correction (roofs, crowns), eased toward what is needed
-const NEAREST := 0.35  # the lens comes in no closer than this share of its distance to what it looks at
-const STEEPEST := 58.0  # degrees below the horizon the lens may ever look
-const GUARD := 4.5  # camera distance under which the lens looks out for buildings
+static var NEAREST: float = preload("res://scripts/data.gd").num("camera", "rig.nearest", 0.35)  # the lens comes in no closer than this share of its distance to what it looks at (camera.json rig.nearest)
+static var STEEPEST: float = preload("res://scripts/data.gd").num("camera", "rig.steepest", 58.0)  # degrees below the horizon the lens may ever look (camera.json rig.steepest)
+static var GUARD: float = preload("res://scripts/data.gd").num("camera", "rig.guard", 4.5)  # camera distance under which the lens looks out for buildings (camera.json rig.guard)
 static var CLEAR: bool = clarity()  # read once: the lens keeps its sight over the roofs
 var _lift := 0.0  # radians the lens is tipped up to see over the roofs (eased; a last resort, a few degrees)
 var _swing := 0.0  # radians the view is swung about what it looks at to find a clear line (eased)
@@ -679,9 +679,9 @@ func _tipped(look: Vector3, pos: Vector3, up: float) -> Vector3:
 	var dir := flat.normalized() if flat.length() > 0.0001 else Vector2(0, 1)
 	var l := arm.length()
 	return look + Vector3(dir.x * cos(pitch) * l, sin(pitch) * l, dir.y * cos(pitch) * l)
-const LENS_SPEED := 2.5  # the most the lens's correction moves, in camera distances a second
-const LENS_REACH := 0.05  # the lens's sweep, as a share of its arm: how early a roof is felt
-const LENS_EASE := 10.0  # how quickly the lens's own corrections (roofs, crowns, the ground's rise) settle, per second
+static var LENS_SPEED: float = preload("res://scripts/data.gd").num("camera", "rig.lens_speed", 2.5)  # the most the lens's correction moves, in camera distances a second (camera.json rig.lens_speed)
+static var LENS_REACH: float = preload("res://scripts/data.gd").num("camera", "rig.lens_reach", 0.05)  # the lens's sweep, as a share of its arm: how early a roof is felt (camera.json rig.lens_reach)
+static var LENS_EASE: float = preload("res://scripts/data.gd").num("camera", "rig.lens_ease", 10.0)  # how quickly the lens's own corrections (roofs, crowns, the ground's rise) settle, per second (camera.json rig.lens_ease)
 
 
 func _lens_bodies() -> void:

@@ -14,18 +14,18 @@ const Mover := preload("res://scripts/mover.gd")  # the one way to move (CLAUDE.
 const Weapons := preload("res://scripts/weapons.gd")
 const Blood := preload("res://scripts/blood.gd")
 
-const REACH := 0.16  # town units: about 1.3 m, a sword's length (the AI's closing distance)
-const ARC := 0.75  # cos of the half-angle a strike covers (about 40 degrees each side)
-const FOLLOW := 0.4  # seconds a move runs on past its blow before the fighter is ready again
-const DODGE := 0.6  # metres a dodge carries you
+static var REACH: float = preload("res://scripts/data.gd").num("battle", "combat.reach", 0.16)  # town units: about 1.3 m, a sword's length (the AI's closing distance) (battle.json combat.reach)
+static var ARC: float = preload("res://scripts/data.gd").num("battle", "combat.arc", 0.75)  # cos of the half-angle a strike covers (about 40 degrees each side) (battle.json combat.arc)
+static var FOLLOW: float = preload("res://scripts/data.gd").num("battle", "combat.follow", 0.4)  # seconds a move runs on past its blow before the fighter is ready again (battle.json combat.follow)
+static var DODGE: float = preload("res://scripts/data.gd").num("battle", "combat.dodge", 0.6)  # metres a dodge carries you (battle.json combat.dodge)
 static var FLOORED := preload("res://scripts/data.gd").num("battle", "floored", 0.3)  # chance a heavy blow that doesn't kill knocks you down (realm/data/battle.json)
 # Moves heavy enough to floor someone: the big two-handed and spinning cuts.
 const HEAVY := ["GS_Attack", "GS_Slash_1", "GS_Slash_3", "GS_Spin", "Axe_Down", "Axe_Spin"]
 # Cuts that come down from above land on the head; the rest are a body blow
 # more often than not, now and then the head or the legs.
 const OVERHEAD := ["GS_Attack", "Axe_Down", "SS_Attack_3", "Sword_Attack_2"]
-const HURT_FOR := 12.0  # seconds someone limps after being knocked down
-const WEAK := 35.0  # health below which they limp for good
+static var HURT_FOR: float = preload("res://scripts/data.gd").num("battle", "combat.hurt_for", 12.0)  # seconds someone limps after being knocked down (battle.json combat.hurt_for)
+static var WEAK: float = preload("res://scripts/data.gd").num("battle", "combat.weak", 35.0)  # health below which they limp for good (battle.json combat.weak)
 # Reactions by where the blow lands and how hard. Taken head-on unless named.
 const REELS := {
 	"head": ["Head_Light_1", "Head_Light_2", "Head_Light_3"],

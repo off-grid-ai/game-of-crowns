@@ -248,7 +248,7 @@ func _play(m: Dictionary, anim: String, speed := -1.0) -> float:
 ## A fight too far off to make out its men (past people.gd's SEEN_TO, where they aren't drawn) needs no
 ## avoidance: its map stops, and each man walks his own way until the camera comes near again. Its every agent
 ## answering every physics tick was what froze the frame when a battle began across the realm.
-const CROWD_SEEN := 24.0  # world units, a little past where men are drawn
+static var CROWD_SEEN: float = preload("res://scripts/data.gd").num("battle", "crowd_seen", 24.0)  # world units, a little past where men are drawn (battle.json crowd_seen)
 var _crowd_on := true
 var _crowd_check := 0.0
 

@@ -16,10 +16,10 @@ const PerfTools := preload("res://scripts/perf_tools.gd")  # the frame-cost prob
 ## out of sight every MIND_UNSEEN frames, each time with the time owed, so its
 ## waits and holds keep the clock; and never more than MIND_LAG behind.
 
-const NEAR := 6.0  # world units: closer than this, every frame
-const STRIDE := 3  # further off, one frame in this many
-const MIND_UNSEEN := 10  # a mind out of sight thinks one frame in this many
-const MIND_LAG := 0.25  # game seconds: a mind is never further behind than this (a person's reaction time)
+static var NEAR: float = preload("res://scripts/data.gd").num("people", "lod.near", 6.0)  # world units: closer than this, every frame (people.json lod.near)
+static var STRIDE: int = int(preload("res://scripts/data.gd").num("people", "lod.stride", 3))  # further off, one frame in this many (people.json lod.stride)
+static var MIND_UNSEEN: int = int(preload("res://scripts/data.gd").num("people", "lod.mind_unseen", 10))  # a mind out of sight thinks one frame in this many (people.json lod.mind_unseen)
+static var MIND_LAG: float = preload("res://scripts/data.gd").num("people", "lod.mind_lag", 0.25)  # game seconds: a mind is never further behind than this (a person's reaction time) (people.json lod.mind_lag)
 const People = preload("res://scripts/people.gd")
 
 static var _players: Array[WeakRef] = []

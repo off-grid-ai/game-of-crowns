@@ -9,7 +9,7 @@ const T := preload("res://scripts/theme.gd")
 # A calling (villagers.gd) as the street would name it.
 const TRADES := {"farmer": "Farmer", "crafter": "Artisan", "tavern": "Tavern keeper", "pious": "Of the Faith",
 	"market": "Market trader", "gentry": "Gentry", "idler": "Idler", "child": "Child"}
-const NEAR := 12.0  # camera distance (camera_rig.gd) where faces can be seen
+static var NEAR: float = preload("res://scripts/data.gd").num("ui", "folk_tip.near", 12.0)  # camera distance (camera_rig.gd) where faces can be seen (ui.json folk_tip.near)
 const EVERY := 0.12  # seconds between looks under the cursor
 const FIGURE := 0.21  # a person's height in game units (about 1.75 m)
 
@@ -18,7 +18,7 @@ var _trade: Label
 var _mind: Label
 var _wait := 0.0
 var _scar: Label  # what war left on the ground under the cursor (the bridge's mark line)
-const MARKS_NEAR := 60.0  # camera distance under which the land's scars are read on hover
+static var MARKS_NEAR: float = preload("res://scripts/data.gd").num("ui", "folk_tip.marks_near", 60.0)  # camera distance under which the land's scars are read on hover (ui.json folk_tip.marks_near)
 var _who: Node3D  # the person shown now
 var _said := {}  # their trade and line, from chatter.mind_line (asked once per person)
 

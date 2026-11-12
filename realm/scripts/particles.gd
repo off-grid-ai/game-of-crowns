@@ -5,7 +5,7 @@ extends RefCounted
 ## the same effect as GPU particles: the frame no longer simulates hundreds of
 ## chimney plumes and fires on the CPU. Far away it isn't drawn at all.
 
-const FAR := 40.0  # world units: beyond this, smoke and fire are out of sight
+static var FAR: float = preload("res://scripts/data.gd").num("fire", "particles_far", 40.0)  # world units: beyond this, smoke and fire are out of sight (fire.json particles_far)
 
 
 ## The GPU copy of a configured CPU effect (the CPU one is freed), placed where

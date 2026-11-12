@@ -90,7 +90,7 @@ func _tell_interlude(il: Dictionary) -> void:
 ## King's weightiest deed of the act, standing at its place on the map if it is in
 ## view (else at the top), for a few seconds; the realm plays on under it. The
 ## camera stays where he put it; the full flight is the reign's end.
-const ACT_SECONDS := 5.0
+static var ACT_SECONDS: float = preload("res://scripts/data.gd").num("ui", "reign_cards.act_seconds", 5.0)  # ui.json reign_cards.act_seconds
 func _act_moment(il: Dictionary, deed: Dictionary) -> void:
 	var main: Node = ui.get_parent()
 	var sound: Node = main.get("sound") if main else null
