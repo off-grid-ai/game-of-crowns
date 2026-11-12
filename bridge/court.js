@@ -85,6 +85,7 @@ export function rule(ctx, id, option) {
 // carried by a royal rider to the petitioner's seat.
 export function rulingScene(ctx, id, option, out) {
   const { world, court, scene } = ctx;
+  for (const m of out.musters ?? []) scene("muster", m);  // war declared by the ruling: the attacker's host marches out (characters.js warMuster)
   const p = court.petitions.find((x) => x.id === id);
   const who = p && court.people[p.from];
   const seat = who && (world.cities.find((c) => c.id === who.seat) ?? world.cities.find((c) => c.owner === who.playerId && c.capital) ?? world.cities.find((c) => c.owner === who.playerId));

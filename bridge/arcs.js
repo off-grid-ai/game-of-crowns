@@ -23,6 +23,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { cityName, houseFor } from "./narrator.js";
 import { arcLine } from "./claude.js";
+import { warMuster } from "./characters.js";
 
 const DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "arcs");
 // The player's own stories (generated or written) live with their realms, not
@@ -752,6 +753,8 @@ export class Arcs {
       const prey = (d.war[2] && R(d.war[2])?.town && R(d.war[2])) || ctx.world.cities.find((x) => x.owner === def.playerId && !x.capital) || ctx.world.cities.find((x) => x.owner === def.playerId);
       if (prey && atk.playerId !== def.playerId) {
         send(`realm_host(realm_find_player(${atk.playerId}), ${prey.x}, ${prey.y}, {"Pikemen","Archers","Knights","Catapult"}, ${Math.round(Number(d.warSize ?? 6) * dials(arc.tags).hosts)})`);
+        const muster = warMuster(ctx.world, atk.playerId, prey);
+        if (muster) ctx.scene("muster", muster);  // the attacker's host marches out from its seat
         court.shift(def.id, atk.id, -50);
         if (court.truces) delete court.truces[[atk.id, def.id].sort().join(":")];
       }

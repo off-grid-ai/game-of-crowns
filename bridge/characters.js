@@ -17,6 +17,15 @@ import { ANSWERS } from "./petitions.js";
 import { BANDS } from "./favour.js";
 import * as names from "./names.js";
 
+
+// War seen (READY.md line 3; casebook, War and sieges: "The march feeds the battle"): the attacker's host musters
+// at its seat and marches out toward the town it goes for (the view's muster scene: army.gd march_out). The
+// muster scene's fields, or null when the attacker holds no town or the prey is unknown.
+export function warMuster(world, pid, prey) {
+  const seat = world.cities.find((c) => c.owner === pid && c.capital) ?? world.cities.find((c) => c.owner === pid);
+  return seat && prey?.x !== undefined ? { x: seat.x, y: seat.y, tx: prey.x, ty: prey.y, city: seat.id, owner: pid } : null;
+}
+
 // The court's deck of dilemmas: data, so new ones are written, not coded.
 const DECK_FILE = new URL("./data/dilemmas.json", import.meta.url);
 function loadDeck() {
@@ -1142,6 +1151,8 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
       const [atk, def] = [roles[e.war[0]], roles[e.war[1]]];
       const prey = (def === roles.rival && roles.rivalTown) || world.cities.find((x) => x.owner === def.playerId && !x.capital) || world.cities.find((x) => x.owner === def.playerId);
       if (prey?.x !== undefined) out.lua.push(`realm_host(realm_find_player(${atk.playerId}), ${prey.x}, ${prey.y}, {"Pikemen","Archers","Knights","Catapult"}, ${Number(e.warSize ?? 8)})`);
+      const muster = warMuster(world, atk.playerId, prey);
+      if (muster) (out.musters ??= []).push(muster);  // court.js rulingScene shows it
       this.shift(def.id, atk.id, -60);
       this.shift(atk.id, def.id, -30);
       if (this.truces) delete this.truces[[atk.id, def.id].sort().join(":")];

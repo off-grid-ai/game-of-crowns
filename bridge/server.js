@@ -711,7 +711,7 @@ function storyForForm(t) {
 function arcCtx() {
   const d = detail();
   return {
-    world, minds, favour: favourOf, shift: shiftFavour, send: (l) => send(`lua cmd ${l}`),
+    world, minds, favour: favourOf, shift: shiftFavour, send: (l) => send(`lua cmd ${l}`), scene,
     atWar: (a, b) => (d?.players?.[a]?.atWarWith ?? []).includes(b),
     town: (id) => {
       const c = world.cities.find((t) => t.id === id);
