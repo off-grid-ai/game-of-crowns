@@ -51,20 +51,8 @@ const BODIES := {
 	"knight": {"sex": "m", "roles": ["noble", "knight"], "cloth": ["Lower_Armor"], "crowd": true},  # mail and a surcoat: knights and lords, never the common soldier
 	"paladin": {"sex": "m", "roles": ["knight"], "cloth": [], "crowd": false},  # ornate plate and great pauldrons: a knight at court, never a face in the street
 	"paladin_prop": {"sex": "m", "roles": ["noble", "knight"], "cloth": [], "crowd": false},
-	"heraklios": {"sex": "m", "roles": ["soldier"], "cloth": [], "crowd": true},
-	# Plain townsfolk in tunics and hose (Leonardo Carvalho's Fuse civilians, CC BY, by way of Sketchfab).
-	# Their tunic ("material") and breeches ("Bottom") take a homespun dye each, so no two dress alike.
-	"fuse_civilian_1": {"sex": "m", "roles": ["townsfolk"], "cloth": [], "crowd": true, "dyed": ["Object_12", "Object_13"]},
-	"fuse_civilian_2": {"sex": "m", "roles": ["townsfolk"], "cloth": [], "crowd": true, "dyed": ["Object_78", "Object_74"]},
-	# A townsman in a wool tunic (ChamberSu's Svend, CC BY), his Unreal bones renamed to Mixamo's (tools/ue_to_mixamo.py).
-	"svend": {"sex": "m", "roles": ["peasant"], "cloth": [], "crowd": true, "dyed": ["SvendWoolTunicLOD1"]},
-	# A peasant in a belted jerkin and boots (EmanuelP's Medieval Man, CC BY), rigged by Mixamo.
-	"medieval_man": {"sex": "m", "roles": ["peasant"], "cloth": [], "crowd": true},
-	# A mendicant friar in a hooded habit (Götz von Berlichingen's monk, CC BY), rigged by Mixamo.
-	"monk": {"sex": "m", "roles": ["clergy"], "cloth": [], "crowd": true},
-	# Gowned and veiled. Her gown shares a material with her hands and shoes, so it keeps its own colour.
-	# Light enough (19k triangles) for the few gentlewomen about a town's market and sept.
-	"noble_lady": {"sex": "f", "roles": ["noble"], "cloth": [], "crowd": true},
+	# The cast (realm/data/cast.json, Meshy) plays the watch, the townsfolk, the peasants, the clergy and the gentlewomen;
+	# these Mixamo bodies stay for the roles it has no one for: knights, and lords in mail.
 }
 ## Never cast, whatever a list elsewhere says (asset-audit.md's never-use
 ## list, plain medieval: Mac, 2026-11-10): modern dress, fantasy armour and
@@ -457,7 +445,7 @@ func make(rng: RandomNumberGenerator, role := "peasant", tint := Color.WHITE, ag
 	# With the cast on, its children and old folk play their age (cast.json age); never the twin of the one
 	# beside them when there's another.
 	var aged: Array = []
-	if CAST_ON and age in ["child", "elder"] and look == "":
+	if age in ["child", "elder"] and look == "":
 		var aged_sex := sex if sex != "" else ("male" if rng.randf() < 0.5 else "female")  # rolled first: the cast on hand never decides it
 		aged = cast_of_age(role, age, aged_sex)
 	if not aged.is_empty():
@@ -474,14 +462,14 @@ func make(rng: RandomNumberGenerator, role := "peasant", tint := Color.WHITE, ag
 	if (age not in ["child", "elder"] or (role in STATION_DRESS and age != "child")) and (roll < share or look != ""):  # an old friar is still robed, an old knight in his surcoat
 		# A named person is known by their body, so only a crowd needs one that shows its colour.
 		# A crowd's sex is rolled first, so the mix of bodies on hand doesn't decide it.
-		var want := sex if sex != "" or look != "" else ("male" if rng.randf() < 0.5 or role in ["clergy", "knight"] else "female")  # friars and knights (no nun's habit or woman's mail yet)
+		var want := sex if sex != "" or look != "" else ("male" if rng.randf() < 0.5 or role in ["clergy"] + SOLDIERLY else "female")  # friars and knights (no nun's habit or woman's mail yet)
 		var pool := _bodies(role, want, tint != Color.WHITE and look == "", look == "")
 		if look == "":
 			# Never the twin of whoever they'll stand beside: another body when there is one.
 			var fresh := pool.filter(func(b): return not ("body:" + String(b)) in _recent)
 			if not fresh.is_empty():
 				pool = fresh
-			elif not role in STATION_DRESS and not _recent.is_empty() and pool.size() == 1 and ("body:" + String(pool[0])) == _recent[-1]:
+			elif not role in STATION_DRESS and not role in SOLDIERLY and not _recent.is_empty() and pool.size() == 1 and ("body:" + String(pool[0])) == _recent[-1]:  # (the watch is one livery: twins are a uniform)
 				pool = []  # the only body there is would stand beside itself: they wear an outfit this once
 		if not pool.is_empty():
 			var body: String = pool[(abs(hash(look)) if look != "" else rng.randi()) % pool.size()]
@@ -553,22 +541,17 @@ static func station(person: Dictionary) -> String:
 ## any are, able to wear a house's colour if one is asked, and light enough
 ## for a crowd unless they stand alone.
 func _bodies(role: String, sex: String, coloured: bool, crowd: bool) -> Array:
-	# The cast (--cast=meshy; realm/data/cast.json): a role the cast covers is played by the cast alone.
-	if CAST_ON:
-		var cast := cast_of_age(role, "", sex)
-		if not cast.is_empty():
-			return cast
+	# The cast (realm/data/cast.json): a role the cast covers is played by the cast alone.
+	var cast := cast_of_age(role, "", sex)
+	if not cast.is_empty():
+		return cast
 	var pool := BODIES.keys().filter(func(b): return not b in NEVER and role in BODIES[b]["roles"] and (not crowd or BODIES[b]["crowd"]) and (not coloured or not BODIES[b]["cloth"].is_empty()) and _usable(b))
 	# Never the other sex: with no body of theirs, they wear an outfit instead.
 	return pool.filter(func(b): return sex == "" or BODIES[b]["sex"] == sex.left(1))
 
 
 ## The cast: Meshy characters brought in by tools/cast_import.py (realm/assets/people/mixamo/cast_*), each a body
-## like the Mixamo ones, listed with its roles in realm/data/cast.json; with cast.json on they play every role they
-## cover.
-static var CAST_ON: bool = bool(Data.value("cast", "on", false))
-
-
+## like the Mixamo ones, listed with its roles in realm/data/cast.json: they play every role they cover.
 static func cast_members() -> Array:
 	return (Data.value("cast", "members", {}) as Dictionary).keys()
 
@@ -586,8 +569,6 @@ static func body_info(body: String) -> Dictionary:
 ## The cast members of an age (cast.json age: "child" or "elder"; "" for the grown) who play a role, of a sex if
 ## one is asked: the cast's children play in the square and its old folk sit on the benches.
 func cast_of_age(role: String, age: String, sex := "") -> Array:
-	if not CAST_ON:
-		return []
 	var want := age if age in ["child", "elder"] else ""
 	return cast_members().filter(func(b): return role in body_info(b)["roles"] and String(body_info(b)["age"]) == want and _usable(b) and (sex == "" or body_info(b)["sex"] == sex.left(1)))
 
@@ -595,7 +576,7 @@ func cast_of_age(role: String, age: String, sex := "") -> Array:
 ## The cast member who works a post (cast.json posts: the smith at the forge, the miller at the mill, the crier at
 ## the square's heart), or "" when the cast has none for it (then whoever the role draws works it).
 func cast_for_post(post: String) -> String:
-	if not CAST_ON or post == "":
+	if post == "":
 		return ""
 	# Never the twin of whoever stands beside them: with one stallholder in the cast, one stall has him.
 	for b in cast_members():
@@ -605,9 +586,9 @@ func cast_for_post(post: String) -> String:
 	return ""
 
 
-## Every body there is to dress the crowd in: the Mixamo bodies and, with the cast on, the cast.
+## Every body there is to dress the crowd in: the Mixamo bodies and the cast.
 static func all_bodies() -> Array:
-	return BODIES.keys() + (cast_members() if CAST_ON else [])
+	return BODIES.keys() + cast_members()
 
 
 ## A body whose file is on disk and imported with the shared skeleton: one
