@@ -772,12 +772,13 @@ class React extends BTAction:
 ## A stall keeper's customer (villagers.at_stall set meta customer on them): there, close, and not long gone.
 class HasCustomer extends BTCondition:
 	func _tick(_delta: float) -> Status:
-		var c: Variant = agent.get_meta("customer", null)
+		var c: Variant = agent.get_meta("customer") if agent.has_meta("customer") else null
 		var K: Dictionary = preload("res://scripts/data.gd").value("crowd", "square_agents.serve", {})
 		if c is Node3D and is_instance_valid(c) and (c as Node3D).global_position.distance_to((agent as Node3D).global_position) < float(K.get("reach", 0.4)) \
 				and Time.get_ticks_msec() - int(agent.get_meta("customer_at", 0)) < int(float(K.get("within", 20.0)) * 1000.0):
 			return SUCCESS
-		agent.remove_meta("customer")
+		if agent.has_meta("customer"):
+			agent.remove_meta("customer")
 		return FAILURE
 
 
@@ -786,7 +787,7 @@ class FaceCustomer extends BTAction:
 	var _left := 0.0
 
 	func _enter() -> void:
-		var c: Variant = agent.get_meta("customer", null)
+		var c: Variant = agent.get_meta("customer") if agent.has_meta("customer") else null
 		_left = 0.0
 		if c is Node3D and is_instance_valid(c):
 			var me := (agent as Node3D).global_position
@@ -805,7 +806,8 @@ class Served extends BTAction:
 		if life and life.get_parent() is Node3D and agent.has_meta("customer_stall"):
 			load("res://scripts/town_life.gd").pile(life.get_parent(), int(agent.get_meta("customer_stall")), -1)  # one off the stall's pile: sold
 		agent.remove_meta("customer")
-		agent.remove_meta("customer_stall")
+		if agent.has_meta("customer_stall"):
+			agent.remove_meta("customer_stall")
 		Turn.toward(agent as Node3D, float(blackboard.get_var(&"face", (agent as Node3D).rotation.y, false)))
 		return SUCCESS
 
