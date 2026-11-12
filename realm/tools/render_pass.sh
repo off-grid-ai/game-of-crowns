@@ -219,8 +219,8 @@ fi
 if want crossing; then
   new_reign  # its own season of orders
   # The King's host takes ship (One store's crossing, d70ca994: a march with no road over land walks to the nearest crown
-  # port, boards the crown's hulls, sails, lands near the goal). The pass orders a host on the towns farthest first until
-  # one order goes by sea, then waits (CROSS_WAIT, 600 s of the reign) until it is aboard, and frames its lead company on
+  # port, boards the crown's hulls, sails, lands near the goal). The pass asks each march dry first (d94c3c83: by land or
+  # by sea, nothing given), farthest town first, orders the first that goes by sea, then waits (CROSS_WAIT, 600 s of the reign) until it is aboard, and frames its lead company on
   # the hull: the cog.
   CROSS=$(curl -s -m 10 "$API/world?peek=1" | python3 -I -c "
 import json,sys,urllib.request
@@ -228,16 +228,21 @@ d=json.load(sys.stdin); hs=d.get('hosts',[]); cs=d.get('cities',[])
 if not hs: sys.exit()
 h=hs[0]
 cs=sorted(cs, key=lambda c: -((c['x']-h['x'])**2+(c['y']-h['y'])**2))
-for c in cs[:12]:
-    req=urllib.request.Request('http://$API/host/order', data=json.dumps({'host':h['id'],'order':'march','city':c['id']}).encode(), method='POST')
+def ask(body):
+    req=urllib.request.Request('http://$API/host/order', data=json.dumps(body).encode(), method='POST')
     try:
-        r=json.load(urllib.request.urlopen(req, timeout=20))
+        return json.load(urllib.request.urlopen(req, timeout=20))
     except Exception:
+        return {}
+for c in cs:
+    # dry first (One store, d94c3c83): by land or by sea, nothing given and the season's order not spent
+    d=ask({'host':h['id'],'order':'march','city':c['id'],'dry':True})
+    if d.get('by')!='sea':
         continue
-    w=json.load(urllib.request.urlopen('http://$API/world?peek=1', timeout=20))
-    me=[x for x in w.get('hosts',[]) if x.get('id')==h['id']]
-    if me and (me[0].get('order') or {}).get('sea'):
-        print(h['id'], c.get('title', c.get('name','')), r.get('text','')[:120]); break
+    r=ask({'host':h['id'],'order':'march','city':c['id']})
+    if r.get('ok'):
+        print(h['id'], c.get('title', c.get('name','')), r.get('text','')[:120])
+    break
 " 2>/dev/null)
   set -- ${=CROSS}
   HID=${1:-}
