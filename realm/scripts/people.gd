@@ -675,8 +675,146 @@ func make_body(rng: RandomNumberGenerator, body: String, tint := Color.WHITE, ag
 				_mask_dye(mi, String(info["mask"]), tint if tint != Color.WHITE else cloth_for(body, role if role != "" else String(info["roles"][0]), rng), (role if role != "" else String(info["roles"][0])) in SOLDIERLY)
 	if role == "":
 		role = info["roles"][0]
+	if bool(info.get("cast", false)):
+		var colour := tint if tint != Color.WHITE else _town_house
+		if role == "soldier" and colour.a > 0.0:
+			_tabard(skeleton, colour)
+		if String((Data.value("cast", "members", {}) as Dictionary).get(body, {}).get("palette", "")) == "rich":
+			_gold_belt(skeleton)
 	person.set_meta("body", body)
 	return _finish(person, skeleton, rng, role, age, build, "male" if info["sex"] == "m" else "female", _height(body, skeleton, info["sex"]))
+
+
+## A cast body's front at `bone`'s height (skeleton space): [the bone's rest, the chest's front z, its half width],
+## read off the body's own vertices (Meshy bodies are bound at rest), or [] when the bone isn't there.
+static func _front_at(skeleton: Skeleton3D, bone_name: String, band: float, across := 0.22) -> Array:
+	var bone := skeleton.find_bone(bone_name)
+	if bone < 0:
+		return []
+	var rest := skeleton.get_bone_global_rest(bone)
+	var y := rest.origin.y
+	var front := -INF
+	var half := 0.0
+	for mi in skeleton.get_children():
+		if not (mi is MeshInstance3D) or (mi as MeshInstance3D).mesh == null:
+			continue
+		var mesh: Mesh = (mi as MeshInstance3D).mesh
+		var xf: Transform3D = (mi as MeshInstance3D).transform
+		for sfc in mesh.get_surface_count():
+			var verts: PackedVector3Array = mesh.surface_get_arrays(sfc)[Mesh.ARRAY_VERTEX]
+			for v in verts:
+				var w := xf * v
+				if absf(w.y - y) < band and absf(w.x - rest.origin.x) < across:  # (across: inside the arms)
+					front = maxf(front, w.z)
+					half = maxf(half, absf(w.x - rest.origin.x))
+	if front == -INF:
+		return []
+	return [rest, front, half]
+
+
+## A quad on `skeleton`'s bone `bone_name`, at skeleton-space `xf` as the body stands at rest: it follows the bone.
+static func _on_bone(skeleton: Skeleton3D, bone_name: String, node: Node3D, xf: Transform3D) -> void:
+	var at := BoneAttachment3D.new()
+	at.name = "Dress_" + node.name
+	at.bone_name = bone_name
+	skeleton.add_child(at)
+	at.add_child(node)
+	node.transform = skeleton.get_bone_global_rest(skeleton.find_bone(bone_name)).affine_inverse() * xf
+
+
+## The watch's livery (the supervisor's dress code: a tunic in the house's colour with the white panel and the arms
+## on the chest; people.json dress.tabard): a cream panel down the chest, the house's sigil on it in the house's
+## colour. The house is the realm's house of that colour (awareness's realm scope), its sigil heraldry.gd's.
+static var _panel_mats := {}
+static func _tabard(skeleton: Skeleton3D, colour: Color) -> void:
+	var K: Dictionary = Data.value("people", "dress.tabard", {})
+	if not bool(K.get("on", true)):
+		return
+	var chest := "UpperChest" if skeleton.find_bone("UpperChest") >= 0 else "Chest"
+	var f := _front_at(skeleton, chest, float(K.get("band", 0.08)))
+	if f.is_empty():
+		return
+	var rest: Transform3D = f[0]
+	var w := float(f[2]) * 2.0 * float(K.get("width", 0.75))
+	var h := w * float(K.get("tall", 1.5))
+	var key := colour.to_html()
+	if not _panel_mats.has(key):
+		var cream := StandardMaterial3D.new()
+		var c: Array = K.get("panel", [0.95, 0.92, 0.84])
+		cream.albedo_color = Color(float(c[0]), float(c[1]), float(c[2]))
+		cream.cull_mode = BaseMaterial3D.CULL_DISABLED
+		var arms: StandardMaterial3D = null
+		var tex := _sigil_of(colour)
+		if tex:
+			arms = StandardMaterial3D.new()
+			arms.albedo_texture = tex
+			arms.albedo_color = colour
+			arms.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
+			arms.cull_mode = BaseMaterial3D.CULL_DISABLED
+		_panel_mats[key] = [cream, arms]
+	var mats: Array = _panel_mats[key]
+	var at := Vector3(rest.origin.x, rest.origin.y - h * float(K.get("drop", 0.2)), float(f[1]) + float(K.get("out", 0.012)))
+	var panel := MeshInstance3D.new()
+	panel.name = "Tabard"
+	var q := QuadMesh.new()
+	q.size = Vector2(w, h)
+	panel.mesh = q
+	panel.material_override = mats[0]
+	_on_bone(skeleton, chest, panel, Transform3D(Basis.IDENTITY, at))
+	if mats[1]:
+		var sig := MeshInstance3D.new()
+		sig.name = "Arms"
+		var sq := QuadMesh.new()
+		sq.size = Vector2(w, w) * float(K.get("arms", 0.8))
+		sig.mesh = sq
+		sig.material_override = mats[1]
+		_on_bone(skeleton, chest, sig, Transform3D(Basis.IDENTITY, at + Vector3(0, h * 0.12, 0.004)))
+
+
+## The house of the realm whose colour this is (awareness's realm scope: houses), its sigil; null when none.
+static func _sigil_of(colour: Color) -> Texture2D:
+	if not Engine.has_meta("awareness"):
+		return null
+	var H := preload("res://scripts/heraldry.gd")
+	var best: Texture2D = null
+	var best_d := 0.08
+	for p in Engine.get_meta("awareness").realm.get_var(&"houses", [], false):
+		var house: Dictionary = (p as Dictionary).get("house", {})
+		var c := H.colour(house)
+		var d := absf(c.r - colour.r) + absf(c.g - colour.g) + absf(c.b - colour.b)
+		if d < best_d and H.sigil(house):
+			best_d = d
+			best = H.sigil(house)
+	return best
+
+
+## A merchant's or a gentlewoman's gold: a belt of gold at the waist (people.json dress.gold).
+static var _gold_mat: StandardMaterial3D
+static func _gold_belt(skeleton: Skeleton3D) -> void:
+	var K: Dictionary = Data.value("people", "dress.gold", {})
+	if not bool(K.get("on", true)):
+		return
+	var f := _front_at(skeleton, "Hips", float(K.get("band", 0.06)), float(K.get("across", 0.3)))
+	if f.is_empty():
+		return
+	var rest: Transform3D = f[0]
+	if _gold_mat == null:
+		_gold_mat = StandardMaterial3D.new()
+		var g: Array = K.get("colour", [0.95, 0.74, 0.25])
+		_gold_mat.albedo_color = Color(float(g[0]), float(g[1]), float(g[2]))
+		_gold_mat.metallic = 0.8
+		_gold_mat.roughness = 0.35
+	var deep := maxf(float(f[1]) - rest.origin.z, 0.05)
+	var r := deep * float(K.get("fit", 1.04))
+	var belt := MeshInstance3D.new()
+	belt.name = "Gold"
+	var t := TorusMesh.new()
+	t.inner_radius = r
+	t.outer_radius = r + float(K.get("thick", 0.035))
+	belt.mesh = t
+	belt.material_override = _gold_mat
+	# An ellipse round the waist: as wide as the body is across, as deep as it is to its front.
+	_on_bone(skeleton, "Hips", belt, Transform3D(Basis.from_scale(Vector3(maxf(float(f[2]), 0.05) / deep, 1, 1)), Vector3(rest.origin.x, rest.origin.y + float(K.get("up", 0.08)), rest.origin.z)))
 
 
 ## Homespun colours for clothes that come undyed.
