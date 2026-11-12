@@ -15,6 +15,7 @@ extends Node
 ##   snap name           save <dir>/name.png (open cards and drawers put away first; "snap name ui" keeps them)
 ##   look note           log what the game says now, with a note
 ##   city Kingsmere 6    frame a town by name, at a camera distance
+##   home Kingsmere 15 0.7  the town view you start with (camera_rig.town_view), turned 15 degrees, at 0.7 of its distance
 ##   button Continue     press the visible button whose words begin so
 ##   town Kingsmere      open a town's card
 ##   site inn 0 6        frame the n-th roadside site of a kind (from the seat outward), at a distance
@@ -116,7 +117,7 @@ func _advance(gap: float) -> void:
 
 
 ## Steps that frame the camera (each waits for it to settle before the next step).
-const FRAMING := ["city", "road", "site", "work", "field", "flock", "breach", "castle", "camp", "engine", "burn", "host", "town", "unit", "tile", "life"]
+const FRAMING := ["home", "city", "road", "site", "work", "field", "flock", "breach", "castle", "camp", "engine", "burn", "host", "town", "unit", "tile", "life"]
 
 
 ## The camera settled: it has moved less than SETTLE_EPS a frame for SETTLE_FRAMES frames running (its eases and
@@ -347,6 +348,11 @@ func _step(w: PackedStringArray) -> void:
 			"life":
 				# life Town [kind] [dist]: frames the town's scene folk (kind: soldier for a drill, else everyone).
 				_frame_life(w[1], w[2] if w.size() > 2 else "", float(w[3]) if w.size() > 3 else 1.6)
+				if main.rig.is_processing_input() == false:
+					main.rig.apply()
+				await get_tree().create_timer(3.0).timeout
+			"home":
+				_frame_home(w[1] if w.size() > 1 else "Kingsmere", float(w[2]) if w.size() > 2 else 0.0, float(w[3]) if w.size() > 3 else 1.0)
 				if main.rig.is_processing_input() == false:
 					main.rig.apply()
 				await get_tree().create_timer(3.0).timeout
@@ -602,6 +608,25 @@ func _frame_city(title: String, dist: float) -> void:
 			main.rig.step_floor = maxf(1.5, dist) if dist < main.rig.min_distance else 0.0
 			main.rig.snap(at, dist, main.rig.sight_yaw(at, maxf(dist, main.rig.floor_now()), 0.6))
 			return
+
+
+## The town view you start with (camera_rig.town_view), turned `turn` degrees, at `scale` of its distance.
+func _frame_home(title: String, turn: float, scale: float) -> void:
+	for c in main.bridge.world.get("cities", []):
+		if String(c.get("title", c.get("name", ""))) == title:
+			var t: Dictionary = main.towns.towns.get(int(c["id"]), {})
+			var root: Node3D = t.get("node") if not t.is_empty() else null
+			if root == null:
+				_note("  home %s: no town built" % title)
+				return
+			var v: Array = main.rig.town_view(root, turn, scale)
+			main.rig.step_floor = maxf(1.5, float(v[2])) if float(v[2]) < main.rig.min_distance else 0.0
+			main.rig.snap(v[0], float(v[2]), float(v[1]))
+			main.rig.tilt = clampf(float(v[3]), -40.0, 30.0)
+			main.rig.goal_tilt = main.rig.tilt
+			_note("  home %s: yaw %.2f, distance %.1f, tilt %.1f" % [title, float(v[1]), float(v[2]), float(v[3])])
+			return
+	_note("  home %s: no such town" % title)
 
 
 ## The camera low and oblique on a siege's piece from outside the town (`town`: its heart), looking in

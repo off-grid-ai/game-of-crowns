@@ -141,6 +141,40 @@ func square_view(root: Node3D, dist: float) -> Array:
 	return [look, sight_yaw(look, dist, yaw)]
 
 
+## The town view you start with (camera.json town_view; art target 01-town): the square in the middle of the frame,
+## the castle standing behind it to the upper right (the heading turned until the castle sits castle_x of the way from
+## the middle to the right edge, searched from the side away from it up to castle_turn_most radians), houses all
+## round, the wall and the fields beyond, a band of sky at the top (pitch about pitch degrees down: the tilt that
+## gives it at that distance). `turn` degrees and `scale` of the distance on top (a film's turned and closer frames).
+## Returns [where to look, yaw, distance, tilt]. The clarity frame still keeps its foreground clear.
+func town_view(root: Node3D, turn := 0.0, scale := 1.0) -> Array:
+	var at := root.global_position
+	var dist := knob("town_view.dist", 12.0) * scale
+	var t := clampf((dist - min_distance) / (max_distance - min_distance), 0.0, 1.0)
+	var tilt := knob("town_view.pitch", 22.0) - lerpf(30.0, 55.0, pow(t, 0.7))  # apply()'s own pitch, moved to the view's
+	var yaw := 0.6
+	var castle: Node3D = root.get_node_or_null("Castle")
+	if castle:
+		var to := castle.global_position - at
+		if Vector2(to.x, to.z).length() > 0.01:
+			var away := atan2(-to.x, -to.z)  # the lens on the far side of the square from the castle
+			var want := knob("town_view.castle_x", 0.45)
+			var tv := tan(deg_to_rad(cam.fov * 0.5)) * knob("clarity.frame.aspect", 1.74)
+			var best := INF
+			var most := knob("town_view.castle_turn_most", 1.2)
+			for k in 25:
+				var y := away + most * k / 24.0
+				var eye := eye_at(at, y, tilt, dist)
+				var fwd := (at - eye).normalized()
+				var right := fwd.cross(Vector3.UP).normalized()
+				var c := castle.global_position - eye
+				var x := c.dot(right) / maxf(c.dot(fwd), 0.01) / tv  # -1 the left edge, 1 the right
+				if absf(x - want) < best:
+					best = absf(x - want)
+					yaw = y
+	return [at, yaw + deg_to_rad(turn), dist, tilt]
+
+
 ## The one framing rule for every "go to X" (a town, a castle, a host, a matter),
 ## as Anno 1800's notification jump and Manor Lords' jump to a building do it: the
 ## target centred at the distance its kind wants, from the heading the King already

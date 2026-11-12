@@ -1026,7 +1026,15 @@ func _mark_seen(entries: Array) -> void:
 func _home_view(world: Dictionary) -> void:
 	for c in world.get("cities", []):
 		if String(c.get("title", "")) == "Kingsmere" or (c.get("capital", false) and _houses.get(int(c["owner"]), {}).get("crown", false)):
-			rig.frame_town(terrain.world_pos(float(c["x"]), float(c["y"])), int(c.get("size", 4)))
+			# Once the town stands: the composed town view (camera_rig.town_view; art target 01-town).
+			var root: Node3D = towns.towns.get(int(c["id"]), {}).get("node") if towns else null
+			if is_instance_valid(root) and root.is_inside_tree():
+				var v: Array = rig.town_view(root)
+				rig.go_to(v[0], float(v[2]))
+				rig.goal_yaw = float(v[1])
+				rig.goal_tilt = float(v[3])
+			else:
+				rig.frame_town(terrain.world_pos(float(c["x"]), float(c["y"])), int(c.get("size", 4)))
 			return
 
 

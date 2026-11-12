@@ -21,6 +21,7 @@ const LAUNCHES := {
 		["city", "Goldrock", 10], ["city", "Goldrock", 16], ["city", "Goldrock", 30]],
 	"settled": [["work", "Kingsmere", 4.5, -5, "forge"]],
 	"clarity": [["city", "Kingsmere", 6, -25], ["city", "Goldrock", 6, -25], ["work", "Kingsmere", 4.5, -5, "forge"]],
+	"focus": [["home", "Kingsmere", 0, 1.0], ["home", "Kingsmere", 15, 1.0], ["home", "Kingsmere", -15, 1.0], ["home", "Kingsmere", 0, 0.7]],
 	"fixes": [["city", "Kingsmere", 30], ["work", "Goldrock", 5, -25, "mill"], ["city", "Kingsmere", 3.5, -5]],
 }
 
@@ -72,6 +73,19 @@ func _town(title: String) -> Node3D:
 
 ## The step framed as autoplay.gd frames it (_frame_city, _frame_work and _oblique).
 func _frame(s: Array) -> void:
+	if s[0] == "home":  # autoplay's home step (camera_rig.town_view; docs/review/focus.sh)
+		var root := _town(s[1])
+		var v: Array = main.rig.town_view(root, float(s[2]), float(s[3]))
+		main.rig.step_floor = 0.0
+		main.rig.snap(v[0], float(v[2]), float(v[1]))
+		main.rig.tilt = clampf(float(v[3]), -40.0, 30.0)
+		main.rig.goal_tilt = main.rig.tilt
+		var castle: Node3D = root.get_node_or_null("Castle")
+		await get_tree().create_timer(3.0).timeout
+		if castle:
+			var px: Vector2 = main.rig.cam.unproject_position(castle.global_position) / get_viewport().get_visible_rect().size
+			print("FRAME home %s %s: castle at %.2f, %.2f of the frame (x from the left, y from the top)" % [str(s[2]), str(s[3]), px.x, px.y])
+		return
 	var dist := float(s[2])
 	main.rig.step_floor = maxf(1.5, dist) if dist < main.rig.min_distance else 0.0
 	if s[0] == "city":

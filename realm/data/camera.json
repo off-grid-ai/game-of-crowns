@@ -15,6 +15,13 @@
   "turns": [0.8, -0.8, 1.6, -1.6, 2.4, -2.4],
   "dist_vary": 0.15
  },
+ "town_view": {
+  "_": "The town view you start with (main._home_view, the Z key; autoplay's home step; docs/review/focus.sh; camera_rig.town_view; art target 01-town): the square in the middle, the castle behind it to the upper right, houses all round, the wall and fields beyond, a band of sky. dist (camera units), pitch (degrees down), castle_x (where the castle stands: 0 the middle, 1 the right edge), castle_turn_most (radians the heading may turn from the side away from the castle to put it there).",
+  "dist": 12.0,
+  "pitch": 22.0,
+  "castle_x": 0.45,
+  "castle_turn_most": 1.2
+ },
  "town_shot": {
   "_": "A town's square framed for a still (the shot harness's --city; camera_rig.square_view; art target 01-town): away_from_castle (1: the lens on the far side of the square from the castle, so the castle stands behind it; 0: the old fixed heading), turn (radians off that line, so the castle sits to one side), card_shift (the square set right of the middle by this share of the distance, clear of the town card on the left).",
   "away_from_castle": 1,
