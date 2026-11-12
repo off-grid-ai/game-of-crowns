@@ -75,7 +75,13 @@ Every change follows these. A plan that breaks one isn't approved.
 
 ## Sessions share one checkout and one git index
 
-Several sessions commit to `main` from the same folder. Never `git add` and leave files staged: another session's commit will take them. Commit only your own changes, in one step. A path commit takes the whole file, so if `git diff <file>` shows any lines that aren't yours (another session is editing it too), stage just your hunks (`git diff <file> > /tmp/mine.patch`, trim it to your hunks, `git apply --cached /tmp/mine.patch`) and run a plain `git commit -m "…"`. If the file is yours alone, `git commit -m "…" -- <paths>` is fine (new files: `git add <paths> && git commit … -- <paths>` in the same command). Then `git push`; if the push is rejected because another session just pushed, `git pull --rebase -q && git push`. Check the compile output is clean before committing, never after.
+Several sessions commit to `main` from the same folder. Never `git add` and leave files staged: another session's commit will take them. Commit only your own changes, in one step. A path commit takes the whole file, so if `git diff <file>` shows any lines that aren't yours (another session is editing it too), commit your hunks from a private index, so nobody else's staged or unstaged work can ride along (army-ui, 12 Nov: a path commit took three sessions' TUNING.md lines, and a plain commit swept the Freeciv thread's staged files):
+  ```
+  git diff <file> > /tmp/mine.patch   # trim to your hunks
+  export GIT_INDEX_FILE=$(mktemp -u); git read-tree HEAD
+  git apply --cached /tmp/mine.patch && git commit -m "…"; unset GIT_INDEX_FILE
+  ```
+  The shared index is never touched. If the file is yours alone, `git commit --only -m "…" -- <paths>` (new files: `git add <paths> && git commit --only … -- <paths>` in the same command). Never a bare `git commit` in the shared folder. Then `git push`; if the push is rejected because another session just pushed, `git pull --rebase -q && git push`. Check the compile output is clean before committing, never after.
 
 ## Production grade
 
