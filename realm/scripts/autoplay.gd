@@ -658,9 +658,26 @@ func _frame_field(fallow: bool, n: int, dist: float, tilt: float) -> void:
 	if fallow:
 		all = main.countryside.fallow_near(Vector2(seat.x, seat.z), 60.0).map(func(f): return f[0])
 	else:
+		# A field out in the countryside with work on it now (batch 8b fields: "field 0 of 778" was a garden plot
+		# inside Kingsmere and every field shot filmed a house): never a town's own plots or gardens, and only a
+		# crop whose stage calls for hands in the season held (field_work.gd job_for).
+		const Countryside := preload("res://scripts/countryside.gd")
+		const FieldWork := preload("res://scripts/field_work.gd")
+		var towns: Array = []
+		for t in main.towns.towns.values():
+			var r: Node3D = t["node"]
+			if is_instance_valid(r):
+				towns.append([r.global_position, float(r.get_meta("trodden", 3.0)) + 0.6])
 		for crop in get_tree().get_nodes_in_group("crops"):
-			if crop.has_meta("field"):
-				all.append(crop.get_meta("field")[0])
+			if not crop.has_meta("field"):
+				continue
+			var c: Vector3 = crop.get_meta("field")[0]
+			var size: Vector2 = crop.get_meta("field")[1]
+			if size.x < 1.0 or towns.any(func(t): return Vector2(c.x - t[0].x, c.z - t[0].z).length() < float(t[1])):
+				continue  # a kitchen garden, or inside a town
+			if FieldWork.job_for(String(crop.get_meta("kind", "")), Countryside._season_name, Countryside._through(), float(crop.get_meta("lag", 0.5))) == "":
+				continue  # nobody at work in it this time of year
+			all.append(c)
 	all.sort_custom(func(a: Vector3, b: Vector3) -> bool: return a.distance_squared_to(seat) < b.distance_squared_to(seat))
 	var what := "fallow field" if fallow else "field"
 	if n < 0 or n >= all.size():
