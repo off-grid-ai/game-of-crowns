@@ -14,6 +14,8 @@
   "fallbackUnit": "men_at_arms",
   "_drawPerMan": "drawPerMan: one drawn soldier for this many men (0.1: one for ten; army.gd figures, Mac 12 Nov: 'reduce the soldiers to 1/10th'). Every regiment's figures come from it (the muster, field battles, the storm); its men, the number the player reads, stay its full strength; losses drop a figure for each 1/drawPerMan men fallen (army_field.gd _fell).",
   "drawPerMan": 0.1,
+  "_morale": "Panic spreads (army_morale.gd; the casebook's War and sieges, Bannerlord's morale after Towton): a regiment's nerve on its mind's blackboard, 1 steady .. 0 gone. start: its nerve at the start. own: how hard its own fallen shake it, by the share of it they were (losing a quarter takes 0.35). near: men of its side falling within reach (game units) shake it per_man each, less with distance. rout: a regiment of its side breaking within seen shakes it by shock, less with distance. flight: each running regiment of its side within near.reach shakes it this much a second. steady: its side's commander within reach steadies it rate a second; with nothing shaking it for after seconds it calms by rally a second. break: below this a regiment of the beaten side breaks. floor_victor: the victors' nerve never falls below it (Freeciv decided the day). waver_from: its banner starts to waver below this.",
+  "morale": { "start": 1.0, "own": 1.4, "near": { "reach": 1.0, "per_man": 0.002 }, "rout": { "seen": 1.6, "shock": 0.3 }, "flight": 0.12, "steady": { "reach": 1.2, "rate": 0.08, "after": 2.0 }, "rally": 0.02, "break": 0.35, "floor_victor": 0.4, "waver_from": 0.75 },
   "hpFull": 10,
   "meshes": {
     "armies/knight": {

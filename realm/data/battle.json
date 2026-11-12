@@ -14,7 +14,7 @@
     "volley": { "every": [2.5, 3.6], "arrows": 70, "flight": 1.7, "arc": 0.45, "kills": [1, 4], "until": 3.0 },
     "fight": { "loss": { "beaten": 2.4, "victors": 0.9 }, "swing": [0.7, 1.8], "hitOdds": 0.2, "blockOdds": 0.25, "ranks": 2, "surge": 0.02, "flanked": 1.6 },
     "cavalry": { "ride": 0.45, "charge": 0.55, "wide": 2.2, "behind": 1.0 },
-    "waver": 0.7, "rout": 0.45, "run": 0.42, "scatter": 0.05, "fade": 7.0,
+    "run": 0.42, "scatter": 0.05, "fade": 7.0,
     "camera": { "quarter": 0.9, "follow": 1.2 },
     "play": { "on": false, "gap": 5.0, "perCompany": 150, "companies": 12, "most": 1, "linger": 60.0 }
   }

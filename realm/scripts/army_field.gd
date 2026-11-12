@@ -26,6 +26,7 @@ extends Node3D
 const Army := preload("res://scripts/army.gd")
 const Mover := preload("res://scripts/mover.gd")  # the one way to move (CLAUDE.md)
 const Mind := preload("res://scripts/army_mind.gd")
+const Morale := preload("res://scripts/army_morale.gd")  # panic spreads: a regiment's nerve, on its mind's blackboard
 const Ground := preload("res://scripts/army_ground.gd")
 const Data := preload("res://scripts/data.gd")
 const Heraldry := preload("res://scripts/heraldry.gd")
@@ -245,6 +246,7 @@ func _enlist(r: Dictionary, side: int, kind: String) -> void:
 	var mo: Node = Mover.of(r["node"])
 	mo.turn_rate = 1.8
 	Mind.make(kind, r, r["node"], self)
+	Morale.start(r)
 
 
 func _send(r: Dictionary, ev: StringName) -> void:
@@ -275,7 +277,7 @@ func _process(delta: float) -> void:
 	clock += delta
 	_fly()
 	_keep_up()
-	_morale()
+	_morale(delta)
 	if not play.is_empty():
 		# In play: the field held a while, then the battle is gone (its dead too); the camera is never moved.
 		if _over and _over_at < 0.0:
@@ -311,18 +313,22 @@ func _keep_up() -> void:
 				r["moved"] = false
 
 
-## The beaten side's banners waver as their strength falls, and each breaks below field.rout, or all of them after
-## field.longest; when none of the beaten stands, the victors hold the field.
-func _morale() -> void:
-	var waver := Data.num(F, "field.waver", 0.7)
-	var rout := Data.num(F, "field.rout", 0.45)
+## Panic spreads (army_morale.gd): every regiment's nerve moves with what happens about it, its banner wavers with
+## it, and a beaten regiment whose nerve goes breaks; the rest of the beaten break after field.longest (Freeciv
+## decided the day). When none of the beaten stands, the victors hold the field.
+func _morale(dt: float) -> void:
+	var gone := Morale.step(_rows(), dt, loser, [(sides[0] as Army).commander(), (sides[1] as Army).commander()])
+	for a in sides:
+		for r in (a as Army).rows():
+			if r.has("alive") and r["state_name"] != "rout":
+				(r["army"] as Army).waver(r, Morale.waver(r))
+	for r in gone:
+		_send(r, &"break")
 	var standing := 0
 	for r in (sides[loser] as Army).rows():
 		if r["state_name"] == "rout":
 			continue
-		var st: float = r["strength"]
-		(r["army"] as Army).waver(r, (waver - st) / maxf(waver - rout, 0.01))
-		if st < rout or clock > Data.num(F, "field.longest", 45.0):
+		if clock > Data.num(F, "field.longest", 45.0):
 			_send(r, &"break")
 		else:
 			standing += 1
@@ -368,6 +374,11 @@ func _walk_in(r: Dictionary) -> void:
 
 func _run_in(r: Dictionary) -> void:
 	_play(r, "run")
+
+
+## Both hosts' regiments, [side 0's, side 1's] (what army_morale.gd reads).
+func _rows() -> Array:
+	return [(sides[0] as Army).rows(), (sides[1] as Army).rows()]
 
 
 func _may_break(r: Dictionary) -> bool:
@@ -536,6 +547,7 @@ func _charge(r: Dictionary, _dt: float) -> void:
 func _break(r: Dictionary) -> void:
 	var army: Army = r["army"]
 	army.waver(r, 1.0)
+	Morale.broke(_rows(), r)  # those beside it are shaken: the chain
 	army.turn(r, float(r["yaw"]) + PI)
 	# The dead lie where they fell; the living face the other way in their places.
 	var local: PackedVector3Array = r["local"]
@@ -622,6 +634,11 @@ func _fell(r: Dictionary, men: int, front: bool) -> void:
 		(r["back"] as Dictionary).erase(s)
 	r["alive"] = alive
 	army.set_strength(int(r["id"]), float(r["living"]) / maxf(float(r["figures"]), 1.0))
+	# Its men falling shake it, and those of its side near where they fell (panic spreads, army_morale.gd).
+	var at: Vector3 = node.global_position  # under arrows, anywhere in it
+	if front:
+		at = node.to_global(Vector3(0.0, 0.0, float(r["d"]) * 0.5))  # at blows, its front rank (+Z its front)
+	Morale.fell(_rows(), r, men, at)
 
 
 ## The fallen stay where they fell while their regiment moves on: their places are put back under them.

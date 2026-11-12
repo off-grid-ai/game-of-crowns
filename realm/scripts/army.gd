@@ -242,6 +242,11 @@ func rows() -> Array:
 	return _regiments
 
 
+## The regiment the host's commander rides with (his presence steadies those about him: army_morale.gd); {} if none.
+func commander() -> Dictionary:
+	return _commander
+
+
 func field() -> Vector3:
 	return _field
 

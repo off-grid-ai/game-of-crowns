@@ -14,7 +14,11 @@ extends SceneTree
 ##     walk through its well;
 ##  6. one figure for ten (Mac, 12 Nov): every kind's regiment draws ceil(men x drawPerMan) figures and keeps its
 ##     men; in line and in march column no two figures stand closer than LEAST (about 0.8 m, shoulder room), and a
-##     line stays a block (more than one rank).
+##     line stays a block (more than one rank);
+##  7. panic spreads (the casebook's War and sieges: Bannerlord): on the beaten side, a flanked regiment bleeding
+##     hard breaks first; its neighbour breaks sooner than an equal regiment far off (the chain); a fresh regiment
+##     beside the rout holds; the commander beside the neighbour steadies it (it breaks later or not at all); the
+##     victors never break. Nerve kept on each mind's LimboAI blackboard (army_morale.gd).
 ## Prints "ARMY PROBE …" lines and "ARMY PROBE PASS" or "ARMY PROBE FAIL n"; quits with 0 or 1.
 
 const Data := preload("res://scripts/data.gd")
@@ -46,6 +50,7 @@ func _run() -> void:
 	await _ground_and_mover()
 	await _no_straight_line_while_baking()
 	_figures_and_room()
+	_panic_spreads()
 	print("ARMY PROBE PASS" if _fails == 0 else "ARMY PROBE FAIL %d" % _fails)
 	quit(0 if _fails == 0 else 1)
 
@@ -192,7 +197,70 @@ func _no_straight_line_while_baking() -> void:
 
 
 const WELL_R := 0.2
-const LEAST := 0.1  # game units: about 0.8 m between any two men's middles, at rest and on the march (a man is 0.22)
+const LEAST := 0.09  # game units: about 0.7 m, the nominal file (0.12) less both men's jitter (jitter.place) between any two men's middles, at rest and on the march (a man is 0.22)
+
+
+## 7. Panic spreads. A made-up field, 60 seconds in tenths: the beaten side (1) bleeds as army_field's fight does
+## (men a second), the flanked one hardest; the broken run off at field.run.
+func _panic_spreads() -> void:
+	var M: GDScript = load("res://scripts/army_morale.gd") if ResourceLoader.exists("res://scripts/army_morale.gd") else null
+	_check(M != null, "a regiment's nerve has one decider (army_morale.gd)")
+	if M == null:
+		return
+	var plain := _panic_run(M, false)
+	var steadied := _panic_run(M, true)
+	var t: Dictionary = plain["broke"]
+	print("ARMY PROBE panic: broke at %s; with the commander by the neighbour: %s" % [str(t), str(steadied["broke"])])
+	_check(t.has("flanked") and t.values().min() == t["flanked"], "the flanked regiment breaks first")
+	_check(t.has("neighbour") and float(t["neighbour"]) < float(t.get("far", INF)), "its neighbour breaks sooner than an equal regiment far off (the chain)")
+	_check(not t.has("fresh"), "a fresh regiment beside the rout holds")
+	_check(float((steadied["broke"] as Dictionary).get("neighbour", INF)) > float(t.get("neighbour", INF)), "the commander beside the neighbour steadies it")
+	_check(not t.has("victor") and float(plain["victor_low"]) >= Data.num("army", "morale.floor_victor", 0.4) - 0.001, "the victors never break (lowest nerve %.2f)" % float(plain["victor_low"]))
+
+
+func _panic_run(M: GDScript, commander: bool) -> Dictionary:
+	var holder := Node3D.new()
+	root.add_child(holder)
+	var make := func(nm: String, side: int, at: Vector3) -> Dictionary:
+		var n := Node3D.new()
+		holder.add_child(n)
+		n.global_position = at
+		var hsm := LimboHSM.new()
+		n.add_child(hsm)
+		var r := {"name": nm, "node": n, "side": side, "men": 150, "state_name": "fight", "hsm": hsm}
+		M.start(r)
+		return r
+	var rows := {"flanked": make.call("flanked", 1, Vector3(0, 0, 0)), "neighbour": make.call("neighbour", 1, Vector3(0.7, 0, 0)),
+		"far": make.call("far", 1, Vector3(5, 0, 0)), "fresh": make.call("fresh", 1, Vector3(-0.7, 0, 0)),
+		"victor": make.call("victor", 0, Vector3(0, 0, 1.0))}
+	var bleed := {"flanked": 4.0, "neighbour": 2.0, "far": 2.0, "fresh": 0.0, "victor": 2.0}
+	var lord := {}
+	if commander:
+		lord = make.call("lord", 1, Vector3(0.7, 0, -0.5))
+	var sides := [[rows["victor"]], [rows["flanked"], rows["neighbour"], rows["far"], rows["fresh"]] + ([lord] if commander else [])]
+	var broke := {}
+	var owed := {}
+	var low := 1.0
+	var dt := 0.1
+	var run := Data.num("battle", "field.run", 0.42)
+	for k in 600:
+		for nm in rows:
+			var r: Dictionary = rows[nm]
+			if r["state_name"] == "rout":
+				(r["node"] as Node3D).global_position += Vector3(0, 0, -run * dt)  # running off the field
+				continue
+			owed[nm] = float(owed.get(nm, 0.0)) + float(bleed[nm]) * dt
+			if float(owed[nm]) >= 1.0:
+				var men := int(owed[nm])
+				owed[nm] = float(owed[nm]) - men
+				M.fell(sides, r, men, (r["node"] as Node3D).global_position + Vector3(0, 0, 0.1))
+		for r in M.step(sides, dt, 1, [{}, lord]):
+			r["state_name"] = "rout"
+			broke[r["name"]] = k * dt
+			M.broke(sides, r)
+		low = minf(low, M.of(rows["victor"]))
+	holder.free()
+	return {"broke": broke, "victor_low": low}
 
 
 ## 6. One figure for ten, each with room about him.
