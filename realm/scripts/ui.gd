@@ -1164,16 +1164,17 @@ func set_sigil(rect: TextureRect, house: Dictionary) -> void:
 
 
 
-func set_world(world: Dictionary, houses: Dictionary) -> void:
-	_tell_effects(world.get("effects", []))
-	houses_drawer._read_standing(world)
-	purse = int(world.get("crown", {}).get("treasury", 0))  # the court's orders check the purse
-	_rank_houses(world.get("players", []), world.get("fallen", []))
-	omens.read(float(world.get("peace", 1.0)), float((world.get("crown", {}) as Dictionary).get("treasury", -1)) if world.has("crown") else -1.0)
+func set_world(houses: Dictionary) -> void:
+	var st: Node = Awareness.store()
+	_tell_effects(st.rec("effects", []))
+	houses_drawer._read_standing()
+	purse = int(st.rec("crown", {}).get("treasury", 0))  # the court's orders check the purse
+	_rank_houses(st.rec("players", []), st.rec("fallen", []))
+	omens.read(float(st.rec("peace", 1.0)), float((st.rec("crown", {}) as Dictionary).get("treasury", -1)) if st.rec("crown") != null else -1.0)
 	for pid in houses:
 		house_by_name[String(houses[pid].get("name", ""))] = houses[pid]
-	set_reign(world.get("reign", {}))
-	var c: Dictionary = world.get("crown", {})
+	set_reign(st.rec("reign", {}))
+	var c: Dictionary = st.rec("crown", {})
 	purse = int(c.get("treasury", 0))
 	# The realm's report can be older than the King's last word: until it
 	# carries the tithe just set, the screen keeps showing that one.
@@ -1184,8 +1185,8 @@ func set_world(world: Dictionary, houses: Dictionary) -> void:
 		_tithe_asked = -1.0
 	town_card._decrees = c.get("decrees", {})
 	town_card._favour_wait = c.get("favourWait", {})
-	top_bar._show_world(world, c)  # the bar's numbers and the reign's line (top_bar.gd)
-	houses_drawer._fill_houses(world)
+	top_bar._show_world(c)  # the bar's numbers and the reign's line (top_bar.gd)
+	houses_drawer._fill_houses()
 
 
 # --- the town card -----------------------------------------------------------------------

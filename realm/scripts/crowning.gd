@@ -37,8 +37,8 @@ func play() -> void:
 
 ## The crown's seat (/world seatId).
 func _seat() -> Dictionary:
-	var want := int(main.bridge.world.get("seatId", -1)) if main.bridge.world.get("seatId") != null else -1
-	for c in main.bridge.world.get("cities", []):
+	var want := int(main.awareness.rec("seatId", -1)) if main.awareness.rec("seatId") != null else -1
+	for c in main.awareness.rec("cities", []):
 		if int(c.get("id", -2)) == want:
 			return c
 	return {}

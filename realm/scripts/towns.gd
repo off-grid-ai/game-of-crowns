@@ -5,6 +5,7 @@ extends Node3D
 ## Towns grow street by street with their Freeciv size, and are only rebuilt
 ## when size, owner or buildings change.
 
+const Awareness := preload("res://scripts/awareness.gd")  # the view's one store: the realm's records (rec)
 const S := 0.12  # world units per metre: a 6 m house is 0.72 units, a tile is 4
 
 var terrain: Node3D
@@ -52,16 +53,17 @@ func _ready() -> void:
 ## life; new or grown ones are queued and built a few per frame, nearest the
 ## camera first, so a new realm fills in before your eyes instead of freezing
 ## the screen, and a season's growth never stalls the game.
-func sync(world: Dictionary, houses: Dictionary) -> void:
-	_raise_banners(world)
+func sync(houses: Dictionary) -> void:
+	var st: Node = Awareness.store()
+	_raise_banners()
 	_road_tiles.clear()
-	_cities = world.get("cities", [])
-	for r in world.get("roads", []):
+	_cities = st.rec("cities", [])
+	for r in st.rec("roads", []):
 		_road_tiles[Vector2i(int(r[0]), int(r[1]))] = true
-	for c0 in world.get("cities", []):
+	for c0 in st.rec("cities", []):
 		_road_tiles[Vector2i(int(c0["x"]), int(c0["y"]))] = true
 	var seen := {}
-	for c in world.get("cities", []):
+	for c in st.rec("cities", []):
 		var id := int(c["id"])
 		seen[id] = true
 		var house: Dictionary = houses.get(int(c["owner"]), {})
@@ -602,6 +604,13 @@ func _real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds
 ## The house fronts' line round a square of radius `square_r` (town-local game units): on its edge, a little out.
 static func front_ring(square_r: float) -> float:
 	return square_r + 0.25
+
+
+## A house's stable id in its town (fire.gd and the realm's damage fact, bridge/damage.js kindled): where it stands,
+## town-local, in decimetres, "x_z". The same house keeps it however the town's houses happen to be laid in order;
+## a house moved by a new layout is a new house, and an old ruin's id then finds none (integration audit #16).
+static func home_id(p: Vector3) -> String:
+	return "%d_%d" % [roundi(p.x / S * 10.0), roundi(p.z / S * 10.0)]
 
 
 ## --towns=plots: the square enclosed (art target 01-town): a ring of houses on its edge
@@ -2109,7 +2118,7 @@ func _put(root: Node3D, center: Vector3, kind: String, p: Vector3, f: Vector2, l
 	if dress:
 		_door(root, p, f, "cottage", "house", face)
 		var homes: Array = root.get_meta("homes", [])
-		homes.append([p + face * (f.y * 0.5 + 0.12), face, p, kind, _batch[kind].size() - 1])  # its doorstep, which way it looks, where it stands, and its kit batch and place in it (fire.gd chars it)
+		homes.append([p + face * (f.y * 0.5 + 0.12), face, p, kind, _batch[kind].size() - 1, home_id(p)])  # its doorstep, which way it looks, where it stands, its kit batch and place in it (fire.gd chars it), and its stable id
 		root.set_meta("homes", homes)
 		_footpath(root, center, p + face * (f.y * 0.5 + 0.12))
 		_dress(root, center, p, face, Vector3(-face.z, 0, face.x), f.x, f.y, rng, tight)
@@ -3035,10 +3044,11 @@ func _hoist(flag: Node3D, frac: float, slide := true) -> void:
 		flag.position.y = y
 
 
-func _raise_banners(world: Dictionary) -> void:
+func _raise_banners() -> void:
+	var st: Node = Awareness.store()
 	var by_owner := {}
 	var sworn := {}
-	for p in world.get("players", []):
+	for p in st.rec("players", []):
 		by_owner[int(p.get("id", -1))] = banner_height(p.get("favour"))
 		sworn[int(p.get("id", -1))] = p.get("sworn") != null
 	_banner_at = by_owner

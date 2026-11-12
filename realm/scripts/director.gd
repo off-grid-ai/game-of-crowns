@@ -20,7 +20,7 @@ var rig: Node3D
 var terrain: Node3D
 var towns: Node3D
 var ui: CanvasLayer
-var world := {}
+const Awareness := preload("res://scripts/awareness.gd")  # the view's one store: the realm's records (rec)
 var active := false
 var _idle := 0.0
 var _shot_left := 0.0
@@ -75,7 +75,7 @@ func _process(delta: float) -> void:
 
 
 func _process_timed(delta: float) -> void:
-	if world.is_empty() or rig == null:
+	if Awareness.store() == null or Awareness.store().rec("turn") == null or rig == null:
 		return
 	# The camera is the King's. The director never takes it on its own: what's
 	# worth seeing is offered (Watch, on the screen's edge) and it goes only when
@@ -102,8 +102,8 @@ func _next_shot() -> void:
 	_shot_left = SHOT_SECONDS
 	var best := {}
 	var best_score := -1.0
-	var turn := int(world.get("turn", 0))
-	for s in world.get("scenes", []):
+	var turn := int(Awareness.store().rec("turn", 0))
+	for s in Awareness.store().rec("scenes", []):
 		var kind := String(s.get("kind", ""))
 		if not SceneKinds.KINDS.has(kind) or int(SceneKinds.of(kind)["interest"]) <= 0:
 			continue
@@ -221,7 +221,7 @@ func _frame(s: Dictionary, follow: Node3D) -> void:
 ## Nothing stirring: visit a town, the bigger the likelier.
 func _tour() -> void:
 	_follow = null
-	var cities: Array = world.get("cities", [])
+	var cities: Array = Awareness.store().rec("cities", [])
 	if cities.is_empty():
 		return
 	var total := 0.0
@@ -239,7 +239,7 @@ func _tour() -> void:
 
 func _town_near(s: Dictionary, at: Vector3) -> String:
 	var id := int(s.get("city", -1))
-	for c in world.get("cities", []):
+	for c in Awareness.store().rec("cities", []):
 		if int(c["id"]) == id:
 			return String(c.get("title", c["name"]))
 	var near: Dictionary = towns.nearest(at)
@@ -248,7 +248,7 @@ func _town_near(s: Dictionary, at: Vector3) -> String:
 	# No town drawn near: the nearest the realm knows by its tiles.
 	var best := ""
 	var d := INF
-	for c in world.get("cities", []):
+	for c in Awareness.store().rec("cities", []):
 		var dd := Vector2(float(c["x"]), float(c["y"])).distance_to(Vector2(float(s.get("x", 0)), float(s.get("y", 0))))
 		if dd < d:
 			d = dd
