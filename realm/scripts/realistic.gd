@@ -206,6 +206,14 @@ static func variants(component: String) -> Array:
 	return _component.get(component, [])
 
 
+## The component a model name belongs to (the first that lists it), "" for none.
+static func component_of(name: String) -> String:
+	for c in _component:
+		if (_component[c] as Array).has(name):
+			return String(c)
+	return ""
+
+
 ## A component's file (its first variant's, or the i-th), "" when the catalogue has none.
 static func path_of(component: String, i := 0) -> String:
 	var v := variants(component)

@@ -10,24 +10,7 @@ const DIR := "res://assets/village/%s.gltf"
 var _cache := {}
 
 
-## "box": a unit block of dressed stone (a BoxMesh, sides and all; its material named MI_UnevenBrick so a piece's dye
-## lays the kit's stone on it world-free). The kit's floor tiles are flat planes: stretched up they drew no sides,
-## and the King's plinth read as squares floating in the air (round 9).
-static var _box_mat: StandardMaterial3D
-
-
 func _piece(name: String) -> Node3D:
-	if name == "box":
-		if _box_mat == null:
-			_box_mat = StandardMaterial3D.new()
-			_box_mat.resource_name = "MI_UnevenBrick"
-		var bm := BoxMesh.new()
-		bm.material = _box_mat
-		var holder := Node3D.new()
-		var mi := MeshInstance3D.new()
-		mi.mesh = bm
-		holder.add_child(mi)
-		return holder
 	var path := name if name.begins_with("res://") else DIR % name
 	if not _cache.has(path):
 		_cache[path] = load(path)

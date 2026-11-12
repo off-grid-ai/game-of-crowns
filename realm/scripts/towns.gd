@@ -640,7 +640,7 @@ func _square_ring(root: Node3D, center: Vector3, square_r: float, ways: Array, k
 		# frontage (a townhouse or a cottage), as a real square's fronts mix.
 		for attempt in 2:
 			if attempt == 1:
-				var smaller := _tier_pick(rr, fronts, "lane", 0.0, "square")
+				var smaller := TownTiers.front_set(_rank, "square", _tier_pick(rr, fronts, "lane", 0.0, "square"))  # still the square's set
 				if Real.footprint(smaller).x > kf.x or smaller == k:
 					break
 				k = smaller
@@ -1649,7 +1649,7 @@ func _tier_pick(rng: RandomNumberGenerator, pool: Array, zone: String, t: float,
 	if _tiers and _tiers.any():
 		var kind: String = _tiers.pick(rng, zone, t, key, corner)
 		if kind != "":
-			return kind
+			return TownTiers.front_set(_rank, zone, kind)  # the crown's square and main streets: the Meshy square set
 	return String(pool[rng.randi() % pool.size()])
 
 
@@ -1682,14 +1682,6 @@ func _smithy(root: Node3D, center: Vector3, p: Vector3, face: Vector3, f: Vector
 			continue
 		var q := front + along * float(at2[0]) * S + face * float(at2[1]) * S
 		_place(root, kind, q + Vector3(0, _ground_y(center, q) - 0.005, 0), yaw + rng.randf_range(-0.2, 0.2))
-
-
-## The house's arms carved on the front of the King's monument's plinth (assets.json square_statue: the plinth
-## 1.6 m square, its face 1.15-3.55 m up): the house's painted banner, else a panel in its colour.
-func _plinth_arms(root: Node3D, center: Vector3, p: Vector3, yaw: float, foot: Vector2) -> void:
-	var face := Vector3(sin(yaw), 0, cos(yaw))
-	var y := _foot_y(center, p, foot, yaw)
-	_arms_quad(root, p + face * (0.8 + 0.015) * S + Vector3(0, y + 2.35 * S, 0), yaw, Vector2(1.0, 1.6) * S)
 
 
 ## The house's arms as a flat panel (its painted banner, else its colour) centred on `at`, facing along `yaw`.
@@ -2157,14 +2149,11 @@ func _plaza(root: Node3D, center: Vector3, square_r: float, size: int, seat: boo
 		# approach to the gate rather than standing in it.
 		draw_well = Basis(Vector3.UP, deg_to_rad(float(_market_knobs().get("beside_turn", 0.0)))) * draw_well
 		var beside_yaw := rng.randf() * TAU
-		# The King's monument faces the square's heart, the house's arms on its plinth (Mac 2026-11-12: a live
-		# figure on a lumpy rock, "no finesse"; 01-town's monument).
+		# The King's monument faces the square's heart (01-town's monument; the Meshy square set's statue).
 		var monument := draw_kind == Real.one("square_statue")
 		if monument:
 			beside_yaw = atan2(-draw_well.x, -draw_well.z)
 		var stood: bool = drop.call(draw_kind, draw_well, beside_yaw)
-		if stood and monument:
-			_plinth_arms(root, center, draw_well, beside_yaw, Real.footprint(draw_kind))
 		if stood:
 			lots.append([draw_well, maxf(Real.footprint(draw_kind).x, Real.footprint(draw_kind).y) * 0.5])
 		if stood and (beside == "" or beside == Real.one("well")):  # the water is drawn there, not at a statue beside

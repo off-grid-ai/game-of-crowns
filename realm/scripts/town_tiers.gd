@@ -35,6 +35,19 @@ func _init(size: int, seat: bool) -> void:
 						_rungs[i] = _rungs[j]
 
 
+## The house that stands in a kit tier's place for this rank and zone (towns.json fronts: the crown's square and
+## main streets take the Meshy square set, by the tier's wealth); else `kind` itself.
+static func front_set(rank: String, zone: String, kind: String) -> String:
+	var r: Dictionary = (Data.value("towns", "fronts", {}) as Dictionary).get(rank, {})
+	if not zone in (r.get("zones", []) as Array):
+		return kind
+	var to := String((r.get("map", {}) as Dictionary).get(Real.component_of(kind), ""))
+	if to == "":
+		return kind
+	var vs: Array = _built(to)
+	return String(vs[absi(kind.hash()) % vs.size()]) if not vs.is_empty() else kind
+
+
 static func _built(comp: String) -> Array:
 	return Real.variants(comp).filter(func(n): return Real.footprint(String(n)) != Vector2.ZERO)
 
