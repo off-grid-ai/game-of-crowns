@@ -53,6 +53,7 @@ func _run() -> void:
 	for id in _main.towns.towns:
 		_main.scenes.nav.forget(id)
 	Engine.remove_meta("awareness")
+	await _no_realm()
 	print("MOVER PROBE PASS" if _fails == 0 else "MOVER PROBE FAIL %d" % _fails)
 	quit(0 if _fails == 0 else 1)
 
@@ -271,6 +272,25 @@ func _yield_rule() -> void:
 	_check(nearest[0] > CART_HALF, "and never drives into him (came within %.3f)" % nearest[0])
 	c.queue_free()
 	man.queue_free()
+
+
+## 5. A store whose parent is no realm (a headless probe's store under the Window, GoC: ~48k "Invalid access to
+## 'scenes' on Window" lines in town_build_probe): the Mover finds no navigation, reads nothing off the Window, and a
+## body sent somewhere stands where it is.
+func _no_realm() -> void:
+	var aw := Node.new()
+	root.add_child(aw)
+	Engine.set_meta("awareness", aw)
+	_check(Mover._main() == null, "a store under the Window is no realm: the Mover has no navigation (got %s)" % Mover._main())
+	var b := Node3D.new()
+	root.add_child(b)
+	b.global_position = Vector3(1, 0, 1)
+	Mover.of(b).go(Vector3(2, 0, 2))
+	await _until(func(): return false, 0.3)
+	_check(b.global_position == Vector3(1, 0, 1), "a body sent with no navigation stands where it is")
+	b.queue_free()
+	Engine.remove_meta("awareness")
+	aw.queue_free()
 
 
 ## A stand-in for main: two towns on flat dry land (the first with two benches a man's gap apart across its middle,

@@ -27,6 +27,8 @@ class FakeScenes extends Node3D:
 		for i in 6:
 			out.append(a.lerp(b, i / 5.0))
 		return out
+	func route(a: Vector3, b: Vector3) -> PackedVector3Array:  # scenes.route, as traffic.party asks it (0cac3083)
+		return _route(a, b)
 	func _on_ground(c: Curve3D) -> Curve3D:
 		return c
 	static func arm(_p: Node3D, _kit: String) -> void:

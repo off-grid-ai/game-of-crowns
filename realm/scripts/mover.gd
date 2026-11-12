@@ -106,11 +106,11 @@ func _route(from: Vector3, to: Vector3) -> PackedVector3Array:
 	if field != null:
 		return field.route(from, to) if field.built else PackedVector3Array()
 	var main := _main()
-	if main == null or main.scenes == null or main.scenes.nav == null or main.towns == null:
+	if main == null or main.scenes == null or main.scenes.get("nav") == null or main.get("towns") == null:
 		return PackedVector3Array()
-	if main.scenes.nav.waits(main.towns, from, to, turn_radius > 0.0):
+	if main.scenes.get("nav").waits(main.get("towns"), from, to, turn_radius > 0.0):
 		return PackedVector3Array()
-	return main.scenes.nav.route(main.towns, from, to, turn_radius > 0.0)
+	return main.scenes.get("nav").route(main.get("towns"), from, to, turn_radius > 0.0)
 
 
 ## A short shift in `secs` without turning (a step back from a blow, a dodge, a shuffle in the ranks), still
@@ -268,10 +268,10 @@ func _tell_crowd(body: Node3D, vel: Vector3) -> void:
 		_town_ask = 0.5
 		var map := RID()
 		var main := _main()
-		if main and main.towns and main.scenes and main.scenes.nav:
-			var ts: Array = TownNav.towns_at(main.towns, body.global_position)
+		if main and main.get("towns") and main.scenes and main.scenes.get("nav"):
+			var ts: Array = TownNav.towns_at(main.get("towns"), body.global_position)
 			if not ts.is_empty() and TownNav.baked(ts[0][0]):
-				map = main.scenes.nav.map_for(ts[0][0], ts[0][1])
+				map = main.scenes.get("nav").map_for(ts[0][0], ts[0][1])
 		if map != _town_map:
 			_town_map = map
 			if not map.is_valid() and _town_agent.is_valid():
@@ -290,7 +290,7 @@ func _tell_crowd(body: Node3D, vel: Vector3) -> void:
 		return
 	var main := _main()
 	var c: Vector3 = body.global_position
-	for t in TownNav.towns_at(main.towns, c) if main and main.towns else []:
+	for t in TownNav.towns_at(main.get("towns"), c) if main and main.get("towns") else []:
 		c = (t[1] as Node3D).global_position  # the walk map is in the town's own space
 		break
 	NavigationServer2D.agent_set_position(_town_agent, Vector2(body.global_position.x - c.x, body.global_position.z - c.z))
@@ -525,9 +525,15 @@ func _finish() -> void:
 		then.call()
 
 
+## The realm the store stands in (main.gd: its scenes and terrain; towns read by `get`), or null where the store's parent is no
+## realm (a headless probe's store under the Window): the Mover then has no navigation, and says so by its route
+## being empty, never by reading a member the parent lacks.
 static func _main() -> Node:
 	var aw: Object = Engine.get_meta("awareness") if Engine.has_meta("awareness") else null
-	return (aw as Node).get_parent() if aw is Node else null
+	var main: Node = (aw as Node).get_parent() if aw is Node else null
+	if main == null or not ("scenes" in main and "terrain" in main):
+		return null
+	return main
 
 
 ## A party on a road, in file (a traveller, a cart, a herd behind its herder, a patrol): the way is the one the
