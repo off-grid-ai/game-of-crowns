@@ -45,3 +45,15 @@ sprite or a flower prop). (5) The name label is cut by roofs (towns.gd site labe
 **army defects:** (1) regiments placed over buildings, trees and fields (army_spike.gd placement; scenes.gd clearing).
 (2) No unit variety or house colours on the men (army.json units and colours). (3) Seasonless hedges and trees (forest.gd,
 countryside hedges).
+
+## clarity-old / clarity-new (3 + 3 frames, 0 errors; side by side: `review/sheets/clarity-old-new.jpg`)
+
+| Pair | Verdict | Notes |
+|---|---|---|
+| kingsmere | FAIL (new better, not clean) | Old: a blurred, orange, ghosted thatch house in the middle. New: crisp true colours, the square with its column and crowd at the centre, the horizon. But **a ghosted, dithered house front still fills the right quarter** of the new frame: the clarity fade still lets a near building ghost at the frame edge. |
+| goldrock | FAIL (new clearly better) | Old: ghosted houses in the foreground, near blur, the gate half hidden. New: the gate, banners, square and rider are clear. A shiny chimney pot and drifting smoke still fill the bottom middle (the same as ladder goldrock-6). |
+| forge | FAIL (new better) | Old: a ghosted roof at the bottom, orange cast. New: clean and true. The forge reads, but a big thatch house in the left foreground takes about a third of the frame, and the inn's label ("...n Wheel") sits over the roofs. |
+
+**Clarity verdict:** keep it on. It removes the near blur and the orange cast and most ghosting. Left: near buildings at the
+frame edge still ghost (camera_rig.gd sight check / clarity.fade), and foreground roofs and chimney pots still crowd
+the lower third at d4.5-6.
