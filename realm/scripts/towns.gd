@@ -5,6 +5,7 @@ extends Node3D
 ## Towns grow street by street with their Freeciv size, and are only rebuilt
 ## when size, owner or buildings change.
 
+const Awareness := preload("res://scripts/awareness.gd")  # the view's one store: the realm's records (rec)
 const S := 0.12  # world units per metre: a 6 m house is 0.72 units, a tile is 4
 
 var terrain: Node3D
@@ -52,16 +53,17 @@ func _ready() -> void:
 ## life; new or grown ones are queued and built a few per frame, nearest the
 ## camera first, so a new realm fills in before your eyes instead of freezing
 ## the screen, and a season's growth never stalls the game.
-func sync(world: Dictionary, houses: Dictionary) -> void:
-	_raise_banners(world)
+func sync(houses: Dictionary) -> void:
+	var st: Node = Awareness.store()
+	_raise_banners()
 	_road_tiles.clear()
-	_cities = world.get("cities", [])
-	for r in world.get("roads", []):
+	_cities = st.rec("cities", [])
+	for r in st.rec("roads", []):
 		_road_tiles[Vector2i(int(r[0]), int(r[1]))] = true
-	for c0 in world.get("cities", []):
+	for c0 in st.rec("cities", []):
 		_road_tiles[Vector2i(int(c0["x"]), int(c0["y"]))] = true
 	var seen := {}
-	for c in world.get("cities", []):
+	for c in st.rec("cities", []):
 		var id := int(c["id"])
 		seen[id] = true
 		var house: Dictionary = houses.get(int(c["owner"]), {})
@@ -3042,10 +3044,11 @@ func _hoist(flag: Node3D, frac: float, slide := true) -> void:
 		flag.position.y = y
 
 
-func _raise_banners(world: Dictionary) -> void:
+func _raise_banners() -> void:
+	var st: Node = Awareness.store()
 	var by_owner := {}
 	var sworn := {}
-	for p in world.get("players", []):
+	for p in st.rec("players", []):
 		by_owner[int(p.get("id", -1))] = banner_height(p.get("favour"))
 		sworn[int(p.get("id", -1))] = p.get("sworn") != null
 	_banner_at = by_owner

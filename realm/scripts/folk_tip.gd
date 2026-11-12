@@ -106,7 +106,7 @@ func _scar_under_cursor() -> String:
 	if p == Vector3.INF:
 		return ""
 	var tile := Vector2(p.x, p.z) / float(main.terrain.TILE)
-	for m in main.bridge.world.get("marks", []):
+	for m in main.awareness.rec("marks", []):
 		var reach := 0.7 if String(m.get("kind", "")) == "battle" else 1.6  # a town's burn rings it
 		if tile.distance_to(Vector2(float(m.get("x", -99)) + 0.5, float(m.get("y", -99)) + 0.5)) <= reach and String(m.get("line", "")) != "":
 			return String(m["line"])

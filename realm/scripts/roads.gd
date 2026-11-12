@@ -3,6 +3,7 @@ extends Node3D
 ## (and every town) joins its road-bearing neighbours with a dirt track that
 ## follows the land. Rebuilt only when the network changes.
 
+const Awareness := preload("res://scripts/awareness.gd")  # the view's one store: the realm's records (rec)
 var TEX: String = preload("res://scripts/terrain.gd").art("res://assets/ground/road-dirt.jpg", "res://assets/ground/dirt-albedo.jpg")
 const WIDTH := 0.26
 
@@ -27,17 +28,18 @@ var _kings: Node3D
 var _roads: Node3D  # the network Freeciv's workers built, redrawn when it changes
 
 
-func sync(world: Dictionary) -> void:
+func sync() -> void:
+	var st: Node = Awareness.store()
 	var nodes := {}
-	for r in world.get("roads", []):
+	for r in st.rec("roads", []):
 		nodes["%d,%d" % [int(r[0]), int(r[1])]] = Vector2i(int(r[0]), int(r[1]))
-	for c in world.get("cities", []):
+	for c in st.rec("cities", []):
 		nodes["%d,%d" % [int(c["x"]), int(c["y"])]] = Vector2i(int(c["x"]), int(c["y"]))
 	var sig := str(nodes.size()) + ":" + str(hash(nodes.keys()))
 	if sig == _signature:
 		return
 	_signature = sig
-	terrain.set_roads(world.get("roads", []))
+	terrain.set_roads(st.rec("roads", []))
 	if _roads:
 		_roads.queue_free()
 	_roads = Node3D.new()
@@ -73,8 +75,9 @@ func sync(world: Dictionary) -> void:
 ## look ruled with a straightedge, painted onto the land in two runs.
 ## The King's Road: a broad rutted way from Kingsmere to the seat of every
 ## great house, following the land (around lakes, over the passes).
-func kings_road(world: Dictionary) -> void:
-	var cities: Array = world.get("cities", [])
+func kings_road() -> void:
+	var st: Node = Awareness.store()
+	var cities: Array = st.rec("cities", [])
 	var sig := str(cities.map(func(c): return "%d:%d" % [int(c["id"]), int(c["owner"])]))
 	if sig == _kings_sig:
 		return

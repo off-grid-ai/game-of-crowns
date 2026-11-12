@@ -2,7 +2,6 @@ scripts/army.gd:raw-world
 scripts/army_field.gd:raw-world
 scripts/castle_life.gd:raw-world
 scripts/chatter.gd:view-fetch
-scripts/field_work.gd:cross-mind-write
 scripts/fire.gd:cross-mind-write
 scripts/main.gd:raw-world
 scripts/npc_mind.gd:cross-mind-write

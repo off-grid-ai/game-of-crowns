@@ -1,4 +1,5 @@
 extends Control
+const Awareness := preload("res://scripts/awareness.gd")  # the view's one store: the realm's records (rec)
 const PerfTools := preload("res://scripts/perf_tools.gd")  # the frame-cost probe
 ## The minimap: the whole realm in the corner, land and water, each house's
 ## territory in its colour, its seat under its sigil, pulsing rings wherever
@@ -118,18 +119,19 @@ func _ready() -> void:
 	_wash.material.shader = sh
 
 
-func refresh(world: Dictionary, houses: Dictionary) -> void:
+func refresh(houses: Dictionary) -> void:
+	var st: Node = Awareness.store()
 	# The houses' standing (war, truce, sworn) as the ground last drew it: the same seams here.
 	if _wash and terrain and terrain.get("standing_tex") != null:
 		(_wash.material as ShaderMaterial).set_shader_parameter("war_tex", terrain.standing_tex)
 		(_wash.material as ShaderMaterial).set_shader_parameter("has_war", true)
 	if terrain == null or terrain.width == 0:
 		return
-	var owners: Array = world.get("owners", [])
+	var owners: Array = st.realm.get_var(&"owners", [], false)
 	_houses_now = houses
-	_activity(world)
+	_activity()
 	_primed = true
-	var sig := str(terrain.width) + str(hash(owners)) + str(world.get("cities", []).size())
+	var sig := str(terrain.width) + str(hash(owners)) + str(st.rec("cities", []).size())
 	if sig == _sig:
 		return
 	_sig = sig
@@ -162,12 +164,12 @@ func refresh(world: Dictionary, houses: Dictionary) -> void:
 	(_wash.material as ShaderMaterial).set_shader_parameter("realm_size", Vector2(w, h))
 	if stages.is_empty():
 		_wash_show(_tint, _tint, {})
-	for st in stages:
-		_wash_show(st[0], st[1], st[2])
+	for stage in stages:
+		_wash_show(stage[0], stage[1], stage[2])
 	var img := Image.create(1, 1, false, Image.FORMAT_RGBA8)
 	_tex = ImageTexture.create_from_image(img)
 	_seats.clear()
-	for c in world.get("cities", []):
+	for c in st.rec("cities", []):
 		var house: Dictionary = houses.get(int(c["owner"]), {})
 		_seats.append([Vector2(float(c["x"]) + 0.5, float(c["y"]) + 0.5), preload("res://scripts/heraldry.gd").colour(house, Color.WHITE, "#ddd"), c.get("capital", false), String(c.get("title", c["name"])), Heraldry.sigil(house) if c.get("capital", false) else null])
 	queue_redraw()
@@ -175,9 +177,10 @@ func refresh(world: Dictionary, houses: Dictionary) -> void:
 
 ## The realm's news on the map: recent scenes (battles, sieges, famine, the
 ## crown's riders) and towns starving or in disorder right now.
-func _activity(world: Dictionary) -> void:
+func _activity() -> void:
+	var st: Node = Awareness.store()
 	_pings.clear()
-	for sc in world.get("scenes", []):
+	for sc in st.rec("scenes", []):
 		var kind := String(sc.get("kind", ""))
 		if SceneKinds.ping(kind).a > 0.0:
 			var col: Color = LORDS if sc.get("lord", false) and kind != "sack" and kind != "handover" else SceneKinds.ping(kind)
@@ -191,12 +194,12 @@ func _activity(world: Dictionary) -> void:
 					continue  # what was already happening when the game opened doesn't burst
 				var owner := int(sc.get("to", -1))
 				if owner < 0:
-					for c in world.get("cities", []):
+					for c in st.rec("cities", []):
 						if int(c["id"]) == int(sc.get("city", -1)):
 							owner = int(c["owner"])
 				var hc := Color.from_string(String(_houses_now.get(owner, {}).get("color", "")), col)
 				_bursts.append([at, hc, Time.get_ticks_msec()])
-	for c in world.get("cities", []):
+	for c in st.rec("cities", []):
 		var at := Vector2(float(c["x"]) + 0.5, float(c["y"]) + 0.5)
 		if c.get("disorder", false):
 			_pings.append([at, WAR, "disorder"])

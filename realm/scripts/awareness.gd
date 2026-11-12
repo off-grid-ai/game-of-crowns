@@ -21,6 +21,8 @@ const ASSIGN := &"assign"  # {mind, vars}: a decider hands a mind its part (a ta
 
 ## The store has taken a /world: every view redraws from it (main.gd's _on_synced, the overview, the title).
 signal synced
+## A new chronicle: the records are cleared; every view lets the old realm go (main.gd's _on_realm_changed).
+signal cleared
 signal stimulus(kind: String, pos: Vector3, radius: float, house: String, strength: float)
 ## A new season in the realm (a Freeciv turn): sites rise a step, and so on.
 signal season_turned(turn: int)
@@ -73,6 +75,7 @@ func dispatch(action: StringName, p: Dictionary) -> void:
 			var world: Dictionary = p.get("world", {})
 			_reduce_records(world)
 			if world.is_empty():
+				cleared.emit()
 				return  # a new chronicle: the records clear, the scopes wait for its first /world
 			_reduce_realm(world)
 			_reduce_towns(world)

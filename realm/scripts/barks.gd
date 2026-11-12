@@ -28,7 +28,7 @@ func _ready() -> void:
 
 ## A house's sigil clicked: its lord answers, by their favour band.
 func lord(pid: int) -> void:
-	for p in main.bridge.world.get("players", []):
+	for p in main.awareness.rec("players", []):
 		if int(p["id"]) != pid:
 			continue
 		var house := String((p.get("house", {}) as Dictionary).get("name", "The lord"))

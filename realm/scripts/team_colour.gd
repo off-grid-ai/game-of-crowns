@@ -176,7 +176,7 @@ func _process(delta: float) -> void:
 	var dt := _tick
 	_tick = 0.0
 	var owner_of := {}
-	for c in main.bridge.world.get("cities", []):
+	for c in main.awareness.rec("cities", []):
 		owner_of[int(c.get("id", -1))] = int(c.get("owner", -1))
 	var secs: float = preload("res://scripts/awareness.gd").season_seconds
 	var season := maxf(5.0, secs if secs > 0.0 else 40.0)

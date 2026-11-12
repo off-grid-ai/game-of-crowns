@@ -3,7 +3,7 @@ extends Node
 ## Copies Against the Storm's envoy: a voice inside the world teaches, a few lines, each once, at the
 ## moment it matters, and never again after the first reign (Eremite: veterans skip the basics).
 ## The lines, their order and their moments are data (realm/data/opening.json): this only decides
-## when each moment has come. It reads the realm (bridge.world) and the court's signals; it decides
+## when each moment has come. It reads the realm (the store, awareness.gd) and the court's signals; it decides
 ## nothing about the realm itself.
 
 const DATA := "res://data/opening.json"
@@ -45,7 +45,7 @@ func _ready() -> void:
 ## The King has landed in his realm (the intro's end): the clock for the first prompts starts.
 func landed() -> void:
 	_landed = true
-	for p in main.bridge.world.get("players", []):
+	for p in main.awareness.rec("players", []):
 		_turning_seen[int(p["id"])] = int(p.get("turning", 0))
 	_moment("landed")
 
@@ -73,10 +73,9 @@ func _process(delta: float) -> void:
 
 ## The realm's own moments: a house turning against the crown, the first winter.
 func _watch_realm() -> void:
-	var w: Dictionary = main.bridge.world
-	if String(w.get("date", {}).get("season", "")) == "winter":
+	if String(main.awareness.rec("date", {}).get("season", "")) == "winter":
 		_moment("winter")
-	for p in w.get("players", []):
+	for p in main.awareness.rec("players", []):
 		if int(p.get("turning", 0)) > int(_turning_seen.get(int(p["id"]), 0)):
 			_moment("house_turns")
 

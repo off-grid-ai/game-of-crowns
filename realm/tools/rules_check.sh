@@ -5,7 +5,7 @@
 #   one-way-to-move: nothing but mover.gd tweens or path-follows a body's position to travel.
 #   One store (docs/TOWN_LIFE.md, goc-cpto): Freeciv -> bridge -> /world -> awareness.gd; everything else reads it.
 #   raw-world: no script but the store (awareness.gd) and the bridge's client (bridge.gd) takes /world itself:
-#     no world_updated connection, no `world: Dictionary` parameter, no read of bridge.world.
+#     no world_updated connection, no `world: Dictionary` parameter, no read of bridge.world, no copy of its own.
 #   view-fetch: no script but bridge.gd asks the bridge itself (an HTTPRequest of its own, or the bridge's address).
 #   cross-mind-write: no script but the store writes into another mind's blackboard (x.blackboard.set_var,
 #     get("blackboard"), or a blackboard taken from another node); a mind writes only its own `blackboard`.
@@ -26,7 +26,7 @@ check() {  # rule, pattern, files exempt (regex on the path)
 }
 check "one-way-to-move" 'tween_property\([^,]*, *"(global_)?position"|PathFollow3D\.new\(\)' \
   'scripts/(mover|intro|news_chips)\.gd'  # intro and news chips: screen-space UI slides, not travel
-check "raw-world" 'world_updated\.connect|func [A-Za-z0-9_]+\([^)]*\bworld: Dictionary|bridge\.world\b' \
+check "raw-world" 'world_updated\.connect|func [A-Za-z0-9_]+\([^)]*\bworld: Dictionary|bridge\.world\b|^var world\b|\.world = ' \
   'scripts/(awareness|bridge)\.gd'
 check "view-fetch" 'HTTPRequest\.new\(\)|bridge\.BASE|bridge\.gd"\)\.BASE|127\.0\.0\.1:8787' \
   'scripts/(bridge|app_services)\.gd'  # app_services starts the packaged bridge; it asks it nothing
