@@ -121,6 +121,14 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- 10:30 (11-12) Usage limit; agents stopped. Focus round 1 (/tmp/goc-focus/r1/ladder) FAILED its framing:
+  km-18_-3 shows countryside and a hamlet, not Kingsmere's square (check the other km-* frames and play.log;
+  the camera code changed mid-run). On resume: run docs/review/focus.sh (camera agent's, db3e41a6; ROUND=r2,
+  8789 free) with --look=v3 --cast=meshy, judge vs 01-town. Open in the layers: camera hero view to ~40 deg
+  d18-20 (research #1; camera agent stopped before doing it), look v3 light (#2, #10) and the terrain.gd:1293
+  errors (look agent stopped), the kit's 8 colour sheets repaint (fire-siege), ground layering + Anno fill +
+  bailey ground (army-ui), bailey life (works-life), bailey buildings (fire-siege). Mac: "the emptiness looks
+  kinda weird" (castle bailey). King's-loop agent stopped mid after-run; 12 commits on main.
 - 09:40 (11-12) Mac: "focus on getting one component right first… extreme focus; then go wide." Batch 9 stopped.
   The component: Kingsmere's square at the default town view vs docs/art/target/01-town.jpg at 100%. Layers:
   fire-siege = buildings, castle, statue, banners (one painted style); army-ui = ground, paving, stalls, gardens,
