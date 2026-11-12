@@ -324,6 +324,30 @@ func _step(w: PackedStringArray) -> void:
 							if not rects.any(func(rc): return (rc as Rect2).grow(0.001).has_point(lp)):
 								missed += 1
 					_note("  wet: the walk map's shore at (%.1f, %.1f) misses %d of %d water spots is_land sees now" % [at.x, at.z, missed, cells])
+			"navprobe":
+				# navprobe Town [n]: n walks across the town's square on its walk map, each segment tested against all
+				# that stands there (town_nav.probe; target 0 crossing).
+				var title := String(w[1]) if w.size() > 1 else "Kingsmere"
+				var nn := int(w[2]) if w.size() > 2 else 200
+				for c in main.bridge.world.get("cities", []):
+					if String(c.get("title", c.get("name", ""))) != title:
+						continue
+					var t: Dictionary = main.towns.towns.get(int(c["id"]), {})
+					var root: Node3D = t.get("node") if not t.is_empty() else null
+					if root == null:
+						break
+					var nav = load("res://scripts/town_nav.gd").new()
+					nav.terrain = main.terrain
+					nav.map_for(int(c["id"]), root)
+					for i in 120:
+						if nav.ready(nav.map_for(int(c["id"]), root)):
+							break
+						await get_tree().process_frame
+					var rng := RandomNumberGenerator.new()
+					rng.seed = 11
+					var r: Dictionary = nav.probe(int(c["id"]), root, nn, rng)
+					_note("CHECK nav probe: %s: %d walks, %d segments, %d crossing something (%d walks), straight lines would cross %d; %d outlines; crossed near %s" % [title, r["paths"], r["segments"], r["crossing"], r["paths_crossing"], r["straight"], load("res://scripts/town_nav.gd").footprints(root).size(), str(r["what"])])
+					break
 			"town":
 				# Open a town's card, as clicking the town would.
 				for c in main.bridge.world.get("cities", []):

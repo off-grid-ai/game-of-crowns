@@ -1,10 +1,14 @@
 extends RefCounted
 ## Walkable paths for a town, using Godot's built-in navigation: a 2D navmesh
-## over the town's ground with every building footprint and all water cut out.
+## over the town's ground with everything standing in it and all water cut out,
+## read off the town's own geometry (nav_ground.gd: every mesh and batched
+## instance at the feet; Mac: "the cart just moved through the well"), not lists.
 ## People ask it for a path and walk the streets around houses instead of
 ## through them, and keep to the shore instead of wading into the sea.
 
 const WATER_STEP := 0.1  # how finely the shore is traced, in game units (about 0.8 m)
+const NavGround := preload("res://scripts/nav_ground.gd")  # what stands in the way, from the town's geometry
+static var _land: Node3D  # the terrain, for the static helpers' ground heights (set by any walker's map_for)
 
 var terrain: Node3D  # set by whoever walks: what is land and what is water
 var roads: Node  # the realm's roads (roads.gd): between towns, the way keeps to them
@@ -35,7 +39,11 @@ func map_for(id: int, root: Node3D) -> RID:
 	# town whose life changed (town_life.gd): a building site going up, recruits
 	# drilling, a crowd at the keep are in the way too.
 	var life: Node3D = root.get_node_or_null("Life")
-	var made := [root.get_instance_id(), life.get_instance_id() if life else 0, int(root.get_meta("stone_walls_rev", 0))]  # a stone wall breached (walls.gd): baked afresh
+	if terrain:
+		_land = terrain
+	# Baked afresh when the town's layout changes: rebuilt, its life changed, a building or a stall added, a stone
+	# wall breached (walls.gd).
+	var made := [root.get_instance_id(), life.get_instance_id() if life else 0] + NavGround.layout(root)
 	if _maps.has(id) and _built_from.get(id, []) == made:
 		return _maps[id]
 	forget(id)
@@ -45,14 +53,8 @@ func map_for(id: int, root: Node3D) -> RID:
 	for i in 24:
 		var a := TAU * i / 24
 		outline.append(Vector2(cos(a), sin(a)) * reach)
-	var standing: Array = []
-	if life:
-		standing = life.get_meta("footprints", []).duplicate()
-		for p: Vector2 in life.get_meta("standing", PackedVector2Array()):
-			var o := 0.045  # a person standing, about 0.4 m across
-			standing.append(PackedVector2Array([p + Vector2(-o, -o), p + Vector2(o, -o), p + Vector2(o, o), p + Vector2(-o, o)]))
 	var blocks: Array = []
-	for fp in root.get_meta("footprints", []) + standing + root.get_meta("stone_walls", []):  # stone walls' standing foot (walls.gd)
+	for fp in NavGround.all(root, terrain):  # everything standing in the town, its walls included
 		# Slightly enlarged so people pass alongside walls, not inside them.
 		var c: Vector2 = (fp[0] + fp[1] + fp[2] + fp[3]) / 4.0
 		var grown := PackedVector2Array()
@@ -281,9 +283,9 @@ func walk(id: int, root: Node3D, from: Vector3, to: Vector3) -> PackedVector3Arr
 # --- where a person may stand ---------------------------------------------------
 
 ## One answer, for everyone who puts a person on the ground (villagers, armies,
-## battles, sieges, feasts): never inside a building. Built from the footprints
-## every town records (its houses, walls and fences, and what its life puts up:
-## a building site, a drill, a crowd), the same ones the walk maps are cut from.
+## battles, sieges, feasts): never inside a building. Read off the town's own
+## geometry (nav_ground.gd: its houses, walls, fences, props, and what its life
+## puts up), the same outlines the walk maps are cut from.
 
 const CLEAR := 0.03  # how far outside a footprint a person is set: half a shoulder, about 0.25 m
 
@@ -318,11 +320,10 @@ static func towns_at(towns: Node3D, p: Vector3) -> Array:
 	return out
 
 
-## Every footprint in a town, in its own space: the buildings and its life's.
+## Everything standing in a town, in its own space: what its builders set down and what its life puts up, read off
+## its geometry (nav_ground.gd).
 static func footprints(root: Node3D) -> Array:
-	var all: Array = root.get_meta("footprints", [])
-	var life: Node3D = root.get_node_or_null("Life")
-	return all + life.get_meta("footprints", []) if life else all
+	return NavGround.all(root, _land)
 
 
 ## The footprint `p` (world) stands in, or an empty one.
@@ -398,7 +399,7 @@ static func in_building(towns: Node3D, p: Vector3, body := 0.0) -> bool:
 		var c := root.global_position
 		for o in _reach_of(body):
 			var q := Vector2(p.x + o.x - c.x, p.z + o.z - c.z)
-			for fp: PackedVector2Array in root.get_meta("footprints", []):
+			for fp: PackedVector2Array in NavGround.outlines(root, _land)["town"]:
 				if Geometry2D.is_point_in_polygon(q, fp):
 					return true
 	return false
@@ -488,3 +489,58 @@ func forget(id: int) -> void:
 		NavigationServer2D.free_rid(_maps[id])
 		_regions.erase(id)
 		_maps.erase(id)
+
+
+## A check of the walk map (play command `navprobe`): `n` walks between random points across the town's square and a
+## ring past it, each path's segments tested against every outline standing in the town (nav_ground.gd). Returns
+## {paths, segments, crossing (segments through something), paths_crossing, straight (straight lines between the same
+## points that would cross something), what (a few of the crossed outlines' middles)}. The target is crossing 0.
+func probe(id: int, root: Node3D, n: int, rng: RandomNumberGenerator) -> Dictionary:
+	var map := map_for(id, root)
+	var out := {"paths": 0, "segments": 0, "crossing": 0, "paths_crossing": 0, "straight": 0, "what": []}
+	if not ready(map):
+		return out
+	var outlines: Array = footprints(root)
+	var reach := float(root.get_meta("square_r", 1.0)) * 1.4
+	for i in n:
+		var a := Vector2.from_angle(rng.randf() * TAU) * reach * sqrt(rng.randf())
+		var b := Vector2.from_angle(rng.randf() * TAU) * reach * sqrt(rng.randf())
+		var pa := closest(map, a)
+		var pb := closest(map, b)
+		var way := path(map, pa, pb)
+		if way.size() < 2:
+			continue
+		out["paths"] = int(out["paths"]) + 1
+		if _crosses(pa, pb, outlines) != Vector2.INF:
+			out["straight"] = int(out["straight"]) + 1
+		var hit := false
+		for k in range(1, way.size()):
+			out["segments"] = int(out["segments"]) + 1
+			var at := _crosses(way[k - 1], way[k], outlines)
+			if at != Vector2.INF:
+				out["crossing"] = int(out["crossing"]) + 1
+				hit = true
+				if (out["what"] as Array).size() < 5:
+					(out["what"] as Array).append(at)
+		if hit:
+			out["paths_crossing"] = int(out["paths_crossing"]) + 1
+	return out
+
+
+## The middle of the first outline the segment a-b passes through (an edge crossed, or its middle inside one), else INF.
+static func _crosses(a: Vector2, b: Vector2, outlines: Array) -> Vector2:
+	var mid := (a + b) * 0.5
+	for fp: PackedVector2Array in outlines:
+		if Geometry2D.is_point_in_polygon(mid, fp):
+			return _middle(fp)
+		for i in fp.size():
+			if Geometry2D.segment_intersects_segment(a, b, fp[i], fp[(i + 1) % fp.size()]) != null:
+				return _middle(fp)
+	return Vector2.INF
+
+
+static func _middle(fp: PackedVector2Array) -> Vector2:
+	var m := Vector2.ZERO
+	for p in fp:
+		m += p / fp.size()
+	return m
