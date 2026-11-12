@@ -84,3 +84,20 @@ Against batch 9's breach launch frames (`/tmp/goc-batch9`), the same steps. Obli
    doomed one. Nothing sunk into the wall or floating off the ground.
 3. **The tower against the wall:** the same frame, or `camp 9 -20` turned to the tower's side. Judge: the
    siege tower rolled up to stand against the wall, its men cheering at it.
+
+## The host in the field (018db615, 70552f7f; batch 9 army-line-d12 defects)
+
+Before filming: the cavalry and the Meshy bodies live outside git (realm/assets/armies/cavalry etc., imported on
+this Mac). Read the log's `ARMY` lines: `triangles by level`, `muster: n moved`, and the 2 s perf line (fps,
+process ms, draws, prims).
+
+11. **The same frame as batch 9** (`--dist=12 --wait=90 --army-spike=6000 --army-shape=line`), then again with
+    `--units=kit --army-look=kit --army-lod=off` (the before). Judge: no regiment through a house, orchard,
+    haystack or hedged field (the log says how many moved); five looks (guard spearmen, men-at-arms, rangers with
+    bows behind, knights, a horse wing on each flank); the crown's red on the men's cloth, not only the flags.
+    Perf: the ARMY line's fps and prims against batch 9's 3 fps / 143,492k prims.
+12. **Cavalry up close** (`--army-spike=1500 --army-shape=auto --dist=6`): a 4 s clip at 0.2 s as the column
+    marches in. Judge: riders sit their horses at every gait (no rider sliding off the back, no legs through the
+    flank), the horses' legs move with their walk, no stretching between horse and rider.
+13. **At the far zoom** (`--army-spike=6000 --army-shape=line --dist=30`): the lighter levels in. Judge: no
+    popping or melting silhouettes as the camera moves (a 3 s clip at 0.2 s while zooming from 20 to 30).
