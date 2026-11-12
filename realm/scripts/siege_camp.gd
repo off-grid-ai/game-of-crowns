@@ -32,6 +32,7 @@ var engines := []  # {node, arm, kind, crew: [marks], from, built}
 var _crews := []  # every crewman as the walls' archers see him: {node, alive, rank, kit}
 var _stone_mesh: SphereMesh
 var _stone_mat: StandardMaterial3D
+var _wood: Material
 
 
 ## On for this run? --camp=on/off, on with the wall demo, else siege.json on.
@@ -109,6 +110,8 @@ func _palisade() -> void:
 			if scenes._footing(p):
 				var piece: Node3D = load(Real.path_of("palisade", i % maxi(models.size(), 1))).instantiate()
 				piece.scale = Vector3.ONE * w
+				for mi in piece.find_children("*", "MeshInstance3D", true, false):
+					(mi as MeshInstance3D).material_override = _timber()  # the kit's palette read as flat salmon (batch 8b)
 				piece.position = p
 				var t := Vector3(-sin(base + a), 0, cos(base + a))  # along the line
 				piece.rotation.y = atan2(-t.z, t.x) + r.randf_range(-0.05, 0.05)
@@ -122,12 +125,10 @@ func _tents() -> void:
 	var k: Dictionary = Data.value("siege", "tents", {})
 	var sz: Array = k.get("size", [0.26, 0.2, 0.36])
 	var span := float(k.get("span", 0.85))
-	var canvas := StandardMaterial3D.new()
-	canvas.albedo_color = col.lerp(Color(0.9, 0.85, 0.72), float(k.get("canvas", 0.5)))
-	canvas.roughness = 1.0
-	var plain := StandardMaterial3D.new()
-	plain.albedo_color = Color(0.86, 0.81, 0.68)
-	plain.roughness = 1.0
+	# Woven canvas (the props kit's banner cloth, laid on in triplanar): the house's own colour, only a little
+	# toward linen (half toward cream read as salmon pink beside a red house, batch 8b), and plain linen.
+	var canvas := _cloth(col.lerp(Color(0.9, 0.85, 0.72), float(k.get("canvas", 0.15))))
+	var plain := _cloth(Color(0.82, 0.76, 0.62))
 	var mesh := PrismMesh.new()
 	mesh.size = Vector3(float(sz[0]), float(sz[1]), float(sz[2]))
 	for row in k.get("rows", [0.75]):
@@ -146,6 +147,36 @@ func _tents() -> void:
 				root.add_child(t)
 			a += step
 			n += 1
+
+
+## The village kit's timber (its fence's wood), laid on in triplanar: the palisade's stakes and planks.
+func _timber() -> Material:
+	if _wood == null:
+		_wood = Real.dyed(null, {"like": "Prop_WoodenFence_Single", "triplanar": 0.9})
+	return _wood
+
+
+## The props kit's banner cloth in `c`, in triplanar (a woven canvas, not a flat colour).
+func _cloth(c: Color) -> StandardMaterial3D:
+	var m: StandardMaterial3D = null
+	var path := "res://assets/props/Banner_1.gltf"
+	if ResourceLoader.exists(path):
+		var n: Node = (load(path) as PackedScene).instantiate()
+		for mi in n.find_children("*", "MeshInstance3D", true, false):
+			var msh: Mesh = (mi as MeshInstance3D).mesh
+			for s in (msh.get_surface_count() if msh else 0):
+				var src := (mi as MeshInstance3D).get_active_material(s)
+				if src is StandardMaterial3D and String(src.resource_name) == "MI_Banner":
+					m = (src as StandardMaterial3D).duplicate()
+		n.free()
+	if m == null:
+		m = StandardMaterial3D.new()
+	m.albedo_color = c
+	m.uv1_triplanar = true
+	m.uv1_scale = Vector3.ONE * 4.0
+	m.roughness = 1.0
+	m.cull_mode = BaseMaterial3D.CULL_DISABLED
+	return m
 
 
 ## Cook fires among the tents, flames and a pit, men sat round them.
