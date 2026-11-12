@@ -13,3 +13,5 @@ scripts/roads.gd:one-colour
 scripts/terrain.gd:one-colour
 scripts/wear.gd:one-colour
 scripts/weather_fx.gd:one-colour
+scripts/scene_kinds/convoy.gd:one-way-to-move-tween
+scripts/scene_kinds/rider.gd:one-way-to-move-tween
