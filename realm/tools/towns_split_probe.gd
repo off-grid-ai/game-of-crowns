@@ -12,6 +12,9 @@ const SEAMS := [
 	["a house's banners, raised as high as its favour", "res://scripts/town_banners.gd",
 		["_banner", "banner_height", "_hoist", "_raise_banners", "_fringe"],
 		["stand", "height_for", "hoist", "raise", "fringe"]],
+	["the town's layout: its ways, lanes, square ring and plots, and the houses on them", "res://scripts/town_layout.gd",
+		["_real_lots", "_square_ring", "_lay_ways", "_great_ways", "_lay_lanes", "_keep_ways", "_back_lane", "_paint_way", "_plot_lots", "_probe_dump", "_plot_one", "_buildings_standing", "_area", "_plot_body", "_body_on_road"],
+		["real_lots", "square_ring", "lay_ways", "great_ways", "lay_lanes", "keep_ways", "back_lane", "paint_way", "plot_lots", "probe_dump", "plot_one", "buildings_standing", "area", "plot_body", "body_on_road"]],
 ]
 
 
