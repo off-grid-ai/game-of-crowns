@@ -14,6 +14,7 @@ const UV_SCALE := [0.8, 0.6, 0.6, 0.32, 1.0, 0.8, 0.72, 0.72]  # a game unit is 
 const TINT := [Color(0.95, 1.0, 0.9), Color.WHITE, Color.WHITE, Color(0.92, 0.94, 0.97), Color(0.9, 0.9, 0.88), Color.WHITE, Color(0.74, 0.71, 0.66), Color.WHITE]  # the trodden earth a dry grey-brown, a little darker than a beach (warmer and the grade turns it orange)
 
 var land: Terrain3D
+var _grass_tint := Color.WHITE  # the painted grass's own tint (ground.json layers.grass.tint), under the season's
 const Data := preload("res://scripts/data.gd")
 ## The painted ground (realm/data/ground.json painted, or --ground=painted): each
 ## layer's tint and scale from data, a wider beach, no surf. Off, today's ground.
@@ -53,6 +54,8 @@ func build(terrain: Node3D, ground_layer: int) -> void:
 			var tint: Array = Data.value("ground", "layers.%s.tint" % LAYERS[i], [])
 			if tint.size() == 3:
 				ta.albedo_color = Color(float(tint[0]), float(tint[1]), float(tint[2]))
+				if i == 0:
+					_grass_tint = ta.albedo_color  # the season's colour goes over it (set_grass), never in its place
 			ta.uv_scale = Data.num("ground", "layers.%s.scale" % LAYERS[i], UV_SCALE[i])
 		# Terrain3D's detiling turns and shifts each tile so the repeat never shows.
 		if "detiling_rotation" in ta:
@@ -217,6 +220,7 @@ func _control(weights: Array) -> float:
 ## over the land (SNOW_COVER, in Terrain3D's shader) in the first quarter of
 ## the winter and holds; it melts in the first quarter of the spring.
 func set_grass(tint: Color, snow := false, settle := -1.0) -> void:
+	tint *= _grass_tint  # the season over the painted grass's own tint (it replaced it: layers.grass.tint never showed)
 	if settle < 0.0:
 		settle = _settle()
 	var ta: Terrain3DTextureAsset = land.assets.get_texture_asset(0)
