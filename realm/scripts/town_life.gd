@@ -2029,6 +2029,9 @@ func _square_life(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, rn
 	for k in n.call("gossip"):
 		var a := atan2(SEEN.x, SEEN.z) + rng.randf_range(-1.4, 1.4)
 		var mid := Vector3(sin(a), 0, cos(a)) * r * rng.randf_range(0.35, 0.75)
+		if k < int(G.get("at_well", 0)):
+			# 01-town's women talking at the well's rim, a step toward the square's heart (crowd.json gossip.at_well).
+			mid = well - well.normalized() * float(G.get("well_out", 0.22)) + Vector3(rng.randf_range(-0.06, 0.06), 0, rng.randf_range(-0.06, 0.06))
 		var m := rng.randi_range(int(knot[0]), int(knot[1]))
 		for j in m:
 			var b := TAU * j / m + rng.randf_range(-0.3, 0.3)
@@ -2093,6 +2096,16 @@ func _square_more(root: Node3D, life: Node3D, center: Vector3, n: Callable, go: 
 			stops.append(places[k])
 	if works.has("forge"):
 		stops.append((works["forge"]["at"] as Vector3) + _front(works["forge"]) * 0.45)
+	# And a way up each main street (crowd.json errands.streets, square radii out): the errands come in off the
+	# streets and go back up them, so the streets round the square are busy too (01-town).
+	var streets: Array = []
+	if float(E.get("streets", 0.0)) > 0.0:
+		for w in root.get_meta("ways_main", []):
+			var line := w as PackedVector2Array
+			for q in line:
+				if q.length() > r * float(E["streets"]):
+					streets.append(Vector3(q.x, 0, q.y))
+					break
 	if stops.size() >= 2:
 		var loads: Array = E.get("loads", [["Carrying", "townsfolk", "female"], ["Box_Walk", "peasant", "male"]])
 		for i in n.call("errands"):
@@ -2106,6 +2119,9 @@ func _square_more(root: Node3D, life: Node3D, center: Vector3, n: Callable, go: 
 				_shoulder_sack(p)  # a sack on his shoulder (01-town's porter), carried through every move
 			var order := stops.duplicate()
 			order.shuffle()
+			if not streets.is_empty() and rng.randf() < float(E.get("street_share", 0.6)):
+				# Up one street and back: between two places on the square, never street to street across the houses.
+				order.insert(1 + rng.randi() % (order.size() - 1), streets[i % streets.size()])
 			go.errands.append({"man": p, "stops": order, "leg": 0, "rest": rng.randf_range(0.0, 3.0), "pace": float(E.get("pace", 0.15)), "pause": E.get("pause", [2.0, 6.0]), "carry": String(ld[0]), "set_down": String(E.get("set_down", "PickUp_Table"))})
 	# A horse and cart crossing the square on its way through, stopping at the market.
 	var K: Dictionary = Data.value("crowd", "cart", {})
