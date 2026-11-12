@@ -194,8 +194,12 @@ def main():
         return
     if "--rivers" in sys.argv:
         # Only the river tiles, refreshed in the setup the realm runs (its towns and coast were tuned there by hand).
+        # Land is judged on that setup's own rows, not freshly made ones: a tile tuned from water to land there
+        # still needs its river (realm/tools/ground_truth_probe.gd).
         path = sys.argv[sys.argv.index("--rivers") + 1]
         lines = open(path).read().split("\n")
+        start = lines.index("local ROWS = {") + 1
+        river = rivers([l.strip().rstrip(",").strip('"') for l in lines[start:lines.index("}", start)]])
         lines = [f"local RIVERS = {{{', '.join('{%d,%d}' % t for t in river)}}}" if l.startswith("local RIVERS") else l for l in lines]
         open(path, "w").write("\n".join(lines))
         return

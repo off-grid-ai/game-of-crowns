@@ -388,6 +388,22 @@ func _release(id: int, key: String) -> void:
 			return
 
 
+## Which of a town's houses stand burnt (home number -> true): those the fact names (`named`, damage.kindled) and
+## those just told it (`told`), then, in the town's fixed `order`, as many more as its burnt `share` counts past
+## them. Nothing else: no session memory, so a reload shows the same ruins (tools/ground_truth_probe.gd).
+static func burnt_homes(named: Array, told: Array, share: float, order: Array) -> Dictionary:
+	var burnt := {}
+	for h in named + told:
+		if int(h) >= 0 and int(h) < order.size():
+			burnt[int(h)] = true
+	var n := roundi(share * order.size())
+	for h in order:
+		if burnt.size() >= n:
+			break
+		burnt[int(h)] = true
+	return burnt
+
+
 ## The houses the fact names burnt in a town (fire arrows, a sack's spread: damage.kindled), as the mirror holds it.
 func _kindled_of(id: int) -> Array:
 	if main.awareness == null:
@@ -444,21 +460,14 @@ func _process(delta: float) -> void:
 		# Burnt: the houses the fact names (kindled, and those just told it), then, by the town's own order, as
 		# many more as its burnt share counts past them. The rest stand whole (the realm rebuilt them).
 		var named: Array = _kindled_of(id)
-		var burnt := {}
-		for h in named:
-			if int(h) < homes.size():
-				burnt[int(h)] = true
+		var told: Array = []
 		for key in _told.keys():
 			if String(key).begins_with("%d:" % id):
 				if named.has(int(String(key).get_slice(":", 1))):
 					_told.erase(key)  # the mirror has it now
 				else:
-					burnt[int(String(key).get_slice(":", 1))] = true
-		var n := roundi(_burnt_share(id) * homes.size())
-		for h in _order(id, homes.size()):
-			if burnt.size() >= n:
-				break
-			burnt[int(h)] = true
+					told.append(int(String(key).get_slice(":", 1)))
+		var burnt := burnt_homes(named, told, _burnt_share(id), _order(id, homes.size()))
 		for h in homes.size():
 			var key := "%d:%d" % [id, h]
 			if _waiting(id, h) or _burning.has(key):
