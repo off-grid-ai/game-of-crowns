@@ -70,7 +70,7 @@ func map_for(id: int, root: Node3D, wide := false) -> RID:
 	_live[map] = true
 	if not ways.is_empty():
 		_layer(map, k, ways, blocks + water, 1.0, radius)
-	_layer(map, k, [outline], blocks + ways + water, OPEN_COST, radius)
+	_layer(map, k, [outline], blocks + ways + water, preload("res://scripts/data.gd").num("towns", "nav.open_cost", 6.0), radius)  # open ground costs this many times a street
 	return map
 
 
@@ -99,7 +99,6 @@ static func blocks_of(root: Node3D, land: Node3D) -> Array:
 			grown.append(c + (p - c) * 1.08)
 		blocks.append(grown)
 	return blocks
-const OPEN_COST := 6.0  # open ground: six times a street, so people keep to the streets but cross a green between two neighbouring lanes rather than all funnelling through the square
 
 
 ## How a walk map is baked (round 13: Kingsmere's 3,530 outlines baked an empty map, "convex partition failed", so
