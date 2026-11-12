@@ -1796,14 +1796,12 @@ static func flag(name: StringName) -> BTTask:
 	return check
 
 
-const DAY := ["work", "work2", "meal", "evening"]
-
-
 ## What the town's mood does to a villager's day, ahead of their calling: a
 ## feast pulls everyone to the bonfire; in a riot the angry ones shout in the
 ## square and the rest bar their doors and watch; hunger slumps the frail at
 ## their doors and the empty stalls.
 static func villager_moods() -> Array:
+	var DAY: Array = load("res://scripts/town_scenes.gd").daytime()  # the working day's parts: the director's rows (load: town_scenes preloads this file)
 	# Round the feast's fire, on a place of their own in its ring (villagers "feast"; the square if it's full).
 	var feast := plain([mood_is("feast"), block_is(DAY), go("feast"), run(["Dance", "Cheering", "Clapping", "Drinking"], 2, 3), brk(["Laughing"])])
 	var angry := BTSelector.new()

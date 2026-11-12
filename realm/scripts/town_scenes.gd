@@ -437,6 +437,23 @@ static func mind_plan() -> BlackboardPlan:
 	return _plan
 
 
+## The part of the day at `hour` (town_scenes.json `day` rows), for someone whose own clock runs `early` hours
+## ahead (an early riser, a late one). The director owns the day; villagers and minds ask it here.
+static func block(hour: float, early := 0.0) -> String:
+	var h := fposmod(hour + early, 24.0)
+	for r in Data.value("town_scenes", "day", []):
+		var from := float(r["from"])
+		var to := float(r["to"])
+		if (h >= from and h < to) if from <= to else (h >= from or h < to):
+			return String(r["part"])
+	return "night"
+
+
+## The working day's parts (the `day` rows marked day): the ones a town's mood bends (feast, riot, hunger).
+static func daytime() -> Array:
+	return Data.value("town_scenes", "day", []).filter(func(r): return r.get("day", false)).map(func(r): return String(r["part"]))
+
+
 ## Shorthand for town_life's constants without a cycle in the preloads.
 static func TownLife() -> GDScript:
 	return load("res://scripts/town_life.gd")

@@ -26,6 +26,7 @@ var _skin := StandardMaterial3D.new()
 var _check := 0.0
 var people = preload("res://scripts/people.gd").new()
 const TownLife := preload("res://scripts/town_life.gd")
+const TownScenes := preload("res://scripts/town_scenes.gd")  # the director: the day's parts (block)
 const Works := preload("res://scripts/works.gd")  # the working buildings and their hands
 const Weapons := preload("res://scripts/weapons.gd")  # what a move needs in hand (can_play)
 const TownNav := preload("res://scripts/town_nav.gd")
@@ -542,22 +543,6 @@ func _random_spot(center: Vector3, rng: RandomNumberGenerator, rmin: float, rmax
 	return center
 
 
-## Where the day is for this person: their own hour, shifted by habit.
-func _block(a: Dictionary) -> String:
-	var h := fposmod(hour + float(a.get("early", 0.0)), 24.0)
-	if h < 5.5 or h >= 21.5:
-		return "night"
-	if h < 7.0:
-		return "dawn"
-	if h < 12.0:
-		return "work"
-	if h < 13.0:
-		return "meal"
-	if h < 18.0:
-		return "work2"
-	return "evening"
-
-
 ## Sets a new villager down at the nearest walkable spot to their home, and
 ## their bench beside it, once the walk map can say where that is.
 func _set_down(a: Dictionary) -> bool:
@@ -635,7 +620,7 @@ func _step(a: Dictionary, delta: float, _t: float) -> void:
 			a.erase("flee_from")
 			return
 	# A new part of the day: drop what you're doing and go.
-	var block := _block(a)
+	var block := TownScenes.block(hour, float(a.get("early", 0.0)))  # the director's day, on their own clock
 	if block != a["block"]:
 		a["block"] = block
 		a["wait"] = minf(a["wait"], a["rng"].randf_range(0.0, 3.0))
@@ -1382,7 +1367,7 @@ func _choose_next(a: Dictionary) -> void:
 	var role: String = a["role"]
 	var block := String(a["block"])
 	var mood := town_mood(a) if block != "night" and block != "dawn" else ""
-	var day := block in ["work", "work2", "meal", "evening"]
+	var day := block in TownScenes.daytime()
 	if mood == "feast" and day and roll < (0.6 if block == "evening" else 0.3):
 		# A feast: the square fills round the bonfire, dancing, toasting, drinking.
 		target = place(a, "well")
