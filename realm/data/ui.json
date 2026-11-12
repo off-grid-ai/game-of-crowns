@@ -1,6 +1,5 @@
 {
- "_": "The interface's finesse pass (docs/review/ui-pass.md; ui.gd reads it through data.gd). version: v1 (as before) or v2 (the pass), or --ui=v1 / --ui=v2. v2: the camera pad shows only when the player picks 'always' in Settings (else the camera moves by mouse, trackpad and keys) and the minimap sits flush to the right edge; the date card is capped at top.maxWidth points, its long lines ending in an ellipsis; the chronicle drawer is chronicle.width points wide and at most chronicle.height of the screen tall; a town card not pinned by its town stands on the left, townCard.width points wide; a toast is toast.width points wide.",
- "version": "v2",
+ "_": "The interface's finesse pass (docs/review/ui-pass.md; ui.gd reads it through data.gd). The camera pad shows only when the player picks 'always' in Settings (else the camera moves by mouse, trackpad and keys) and the minimap sits flush to the right edge; the date card is capped at top.maxWidth points, its long lines ending in an ellipsis; the chronicle drawer is chronicle.width points wide and at most chronicle.height of the screen tall; a town card not pinned by its town stands on the left, townCard.width points wide; a toast is toast.width points wide.",
  "top": { "maxWidth": 520 },
  "chronicle": { "width": 280, "height": 0.45 },
  "townCard": { "width": 400 },

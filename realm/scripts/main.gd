@@ -396,10 +396,6 @@ func _ready() -> void:
 	hero.name_changed.connect(lore.refresh)
 	add_child(title)
 	title.began.connect(func(): story._intro_due = true)
-	# The launch screens play over the menu (in renders only with --splash).
-	var Splash := preload("res://scripts/splash.gd")
-	if (not _shot.has("path") or _shot.has("splash")) and Splash.any() and not preload("res://scripts/opening.gd").v2():  # v2: no launch screens before play
-		add_child(Splash.new())
 	# The menu stands alone: the game's interface hides behind it until a
 	# chronicle is open (and again whenever the menu is brought back).
 	title.visibility_changed.connect(func():
@@ -515,21 +511,20 @@ func _ready() -> void:
 	# The opening's clock (a test aid, GOC_OPENING_CLOCK=<file>): the first ten minutes, timed.
 	if OS.get_environment("GOC_OPENING_CLOCK") != "":
 		add_child(load("res://tools/opening_clock.gd").new(self))
-	# The v2 opening: the Hand's prompts in a first reign (hand_prompts.gd; texts and moments in data/opening.json).
-	if preload("res://scripts/opening.gd").v2():
-		hand_prompts = load("res://scripts/hand_prompts.gd").new(self)
-		add_child(hand_prompts)
-		# Item 3: a ruling is seen where it lands. Its result becomes the latest news at the
-		# matter's town, with the edge arrow and Space to go and look (news.point_at; Warcraft's
-		# jump-to-event, Frostpunk's consequence on the map). The camera is never taken.
-		var ruled_at := [Vector3.INF]
-		ui.petition_answered.connect(func(id, _o):
-			var m: Dictionary = ui.court.matter(String(id))
-			ruled_at[0] = ui.place_of.call(m) if not m.is_empty() else Vector3.INF)
-		bridge.command_done.connect(func(ok, text):
-			if ok and ruled_at[0] != Vector3.INF and String(text) != "":
-				news.point_at(ruled_at[0], String(text), func(): pass)
-			ruled_at[0] = Vector3.INF)
+	# The opening: the Hand's prompts in a first reign (hand_prompts.gd; texts and moments in data/opening.json).
+	hand_prompts = load("res://scripts/hand_prompts.gd").new(self)
+	add_child(hand_prompts)
+	# Item 3: a ruling is seen where it lands. Its result becomes the latest news at the
+	# matter's town, with the edge arrow and Space to go and look (news.point_at; Warcraft's
+	# jump-to-event, Frostpunk's consequence on the map). The camera is never taken.
+	var ruled_at := [Vector3.INF]
+	ui.petition_answered.connect(func(id, _o):
+		var m: Dictionary = ui.court.matter(String(id))
+		ruled_at[0] = ui.place_of.call(m) if not m.is_empty() else Vector3.INF)
+	bridge.command_done.connect(func(ok, text):
+		if ok and ruled_at[0] != Vector3.INF and String(text) != "":
+			news.point_at(ruled_at[0], String(text), func(): pass)
+		ruled_at[0] = Vector3.INF)
 	# The motion probe (tools/motion_probe.gd): test runs only, headless on a private bridge.
 	if Array(OS.get_cmdline_user_args()).any(func(a): return a.begins_with("--motion-probe=")): add_child(load("res://tools/motion_probe.gd").new())
 	# The frame probe (tools/frame_probe.gd): test runs only, headless on a private bridge.

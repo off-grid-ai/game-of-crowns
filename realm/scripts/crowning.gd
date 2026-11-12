@@ -14,7 +14,7 @@ var main: Node
 
 
 static func on() -> bool:
-	return preload("res://scripts/opening.gd").v2() and bool(Data.value(F, "crowning.on", true))
+	return bool(Data.value(F, "crowning.on", true))
 
 
 func _init(owner: Node) -> void:

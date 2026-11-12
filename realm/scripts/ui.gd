@@ -41,10 +41,6 @@ signal counsel_answered(key: String)  # the King answered the Hand's matter  # a
 
 ## The finesse pass (docs/review/ui-pass.md; data/ui.json version): the world the hero,
 ## panels compact and in the corners, no camera buttons on screen unless asked for.
-static func v2() -> bool:
-	return String(preload("res://scripts/data.gd").value("ui", "version", "v1")) == "v2"
-
-
 static func ui_num(path: String, fallback: float) -> float:
 	return preload("res://scripts/data.gd").num("ui", path, fallback)
 
@@ -544,21 +540,9 @@ var _pad: Control:
 ## The realm in the bottom-right corner, left of the camera pad and as tall:
 ## territory, seats, and where you're looking (the realm's own shape, 224 × 352).
 const MINIMAP_SIZE := Vector2(180, 284)  # the realm's own shape; small at rest (UI.md 1: under a tenth of the screen)
-const PAD_WIDTH := CameraPad.PAD_WIDTH  # the camera pad's width (camera_pad.gd)
 
 
 var _minimap_frame: Control  # the minimap's card: panels keep clear of it (the professional audit)
-
-
-## A bottom-centred card (half its width: half_w) slides left just enough to end 12 px short of the
-## minimap, on a narrow screen, instead of sitting over it; centred again when there's room.
-func _clear_of_minimap(p: Control, half_w: float) -> void:
-	if p == null or not is_instance_valid(p) or not p.visible or _minimap_frame == null or not _minimap_frame.visible:
-		return
-	var centre := get_viewport().get_visible_rect().size.x * 0.5
-	var shift := maxf(0.0, centre + half_w - (_minimap_frame.get_global_rect().position.x - 12.0))
-	p.offset_left = -half_w - shift
-	p.offset_right = half_w - shift
 
 
 func _build_minimap() -> void:
@@ -568,7 +552,7 @@ func _build_minimap() -> void:
 	frame.anchor_right = 1.0
 	frame.anchor_top = 1.0
 	frame.anchor_bottom = 1.0
-	frame.offset_right = -12 if v2() else -(12 + PAD_WIDTH + 8)  # v2: flush to the edge, no camera pad beside it
+	frame.offset_right = -12  # flush to the edge, no camera pad beside it
 	frame.offset_bottom = -12
 	frame.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	frame.grow_vertical = Control.GROW_DIRECTION_BEGIN
@@ -695,8 +679,6 @@ func _process_timed(delta: float) -> void:
 		if _chron_panel:
 			_chron_panel.offset_top = maxf(84.0, _bar_pill.get_global_rect().end.y + 10.0)
 	_arrange_top()  # the date line grows (a usurper marches…), so keep the bar from overlapping
-	if not v2():
-		_clear_of_minimap(_town_panel, 290.0)  # v2's card stands on the left, clear of the minimap
 	fit_centre(_digest_panel, 620.0)
 	fit_centre(_house_panel, 640.0)
 	fit_centre(_ledger_panel, 820.0)

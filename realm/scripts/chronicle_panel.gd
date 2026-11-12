@@ -24,17 +24,13 @@ func _build_chronicle() -> void:
 	_chron_panel = ui.glass_panel()
 	_chron_panel.anchor_left = 1.0
 	_chron_panel.anchor_right = 1.0
-	_chron_panel.anchor_bottom = 1.0
-	_chron_panel.offset_left = -340
 	_chron_panel.offset_right = -10
 	_chron_panel.offset_top = 84  # under the named toolbar keys
-	_chron_panel.offset_bottom = -(12 + UI.MINIMAP_SIZE.y + 8 + 10)  # above the minimap and camera pad
 	_chron_panel.visible = false
-	if UI.v2():
-		# Compact, from the top right, never floor to ceiling (CK3's message log, Anno's feed).
-		_chron_panel.offset_left = -10 - UI.ui_num("chronicle.width", 280.0)
-		_chron_panel.anchor_bottom = UI.ui_num("chronicle.height", 0.45)
-		_chron_panel.offset_bottom = 0
+	# Compact, from the top right, never floor to ceiling (CK3's message log, Anno's feed).
+	_chron_panel.offset_left = -10 - UI.ui_num("chronicle.width", 280.0)
+	_chron_panel.anchor_bottom = UI.ui_num("chronicle.height", 0.45)
+	_chron_panel.offset_bottom = 0
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 10)
 	_chron_panel.add_child(v)

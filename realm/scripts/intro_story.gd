@@ -63,8 +63,8 @@ func _tell_the_story() -> void:
 		_back_to_menu = false
 		main.ui.visible = not main.title.visible and not main._shot.has("clean")
 		main.labels.visible = main.ui.visible
-		# The v2 opening: the King is in his realm now; the first court may sit (Reigns' first card).
-		if main.ui.visible and preload("res://scripts/opening.gd").v2():
+		# The King is in his realm now; the first court may sit (Reigns' first card).
+		if main.ui.visible:
 			main.bridge.opening("realm")
 			# The crowning: the castle, the royal standard rising, the bells, his name (crowning.gd).
 			var Crowning := preload("res://scripts/crowning.gd")

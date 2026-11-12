@@ -87,7 +87,7 @@ func _reveal_pad(delta: float) -> void:
 		_pad.visible = false
 		return
 	var mode := String(preload("res://scripts/settings.gd").get_value("camera_pad"))
-	if UI.v2() and mode != "always":
+	if mode != "always":
 		mode = "never"  # the finesse pass: no camera buttons on screen unless the player asks for them in Settings
 	var near := mode == "always" or (mode == "near" and _pad.get_global_rect().grow(140).has_point(ui.get_viewport().get_mouse_position()))
 	_pad.modulate.a = move_toward(_pad.modulate.a, 1.0 if near else 0.0, delta * (6.0 if near else 2.5))

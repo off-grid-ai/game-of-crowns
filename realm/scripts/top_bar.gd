@@ -41,8 +41,7 @@ func _arrange_top() -> void:
 	var when: Control = _top[0]
 	var state: Control = _top[1]
 	var act: Control = _top[2]
-	if UI.v2():
-		_cap_when(when)
+	_cap_when(when)
 	var w := ui.get_viewport().get_visible_rect().size.x
 	var sw := state.get_combined_minimum_size().x
 	var left := when.position.x + when.get_combined_minimum_size().x + 12.0
@@ -527,11 +526,9 @@ var _winter_seen := false  # the reign's first winter has come (the first ten mi
 
 ## The first ten minutes (docs/review/first-ten-minutes.md; Frostpunk's one goal with its pressure on screen): until
 ## the first winter, the date card's aim is one goal with its countdown, "Hold the realm whole · winter in N seasons";
-## and with UI v2, the keys that don't matter yet (data/opening.json hideUntilWinter) rest hidden, their keys still
-## working, each back with the winter. The v2 opening only; words in data/opening.json tracker.
+## and the keys that don't matter yet (data/opening.json hideUntilWinter) rest hidden, their keys still
+## working, each back with the winter. Words in data/opening.json tracker.
 func _first_ten() -> void:
-	if not preload("res://scripts/opening.gd").v2():
-		return
 	if _season == "winter":
 		_winter_seen = true
 	var cfg: Dictionary = preload("res://scripts/data.gd").value("opening", "tracker", {})
@@ -541,11 +538,10 @@ func _first_ten() -> void:
 		_aim.text = "◆ %s" % (String(cfg.get("text", "Hold the realm whole · winter in %d seasons")) % n if n > 1 else String(cfg.get("one", "Hold the realm whole · winter next season")))
 		_aim.tooltip_text = "Hold the realm whole to the first winter"
 		_aim_at = -1
-	if UI.v2():
-		var hide: Array = preload("res://scripts/data.gd").value("opening", "hideUntilWinter", [])
-		for pair in [["Lore", _lore_btn], ["Ledger", _ledger_btn]]:
-			if pair[1] and String(pair[0]) in hide:
-				(pair[1] as Button).visible = _winter_seen
+	var hide: Array = preload("res://scripts/data.gd").value("opening", "hideUntilWinter", [])
+	for pair in [["Lore", _lore_btn], ["Ledger", _ledger_btn]]:
+		if pair[1] and String(pair[0]) in hide:
+			(pair[1] as Button).visible = _winter_seen
 var _aim_at := -1  # the town where the aim is acted on, opened by a click
 var _aim_how: HBoxContainer  # how far along the aim is: a fill and a count
 var _aim_fill: ColorRect
