@@ -1160,7 +1160,7 @@ func _yard_green(root: Node3D, center: Vector3, pl: Array, p: Vector3, face: Vec
 	var drop := func(comp: String, q2: Vector2, r: float, scale: float) -> void:
 		var kind := _green_kind(comp, rng)
 		var q := Vector3(q2.x, 0, q2.y)
-		if kind == "" or not terrain.is_land(center.x + q.x, center.z + q.z) or _crowded(lots, q, r) or _on_road(q, 0.05):
+		if kind == "" or not terrain.is_land(center.x + q.x, center.z + q.z) or _crowded(lots, q, r) or _on_road(q, 0.05) or _paved_at(root, q, r):
 			return
 		if (comp == tree_comp or comp == "town_cypress") and Real.height(kind) > 0.0:
 			scale = minf(scale, float(green.get("tree_most", 99.0)) * S / Real.height(kind))  # no taller than tree_most metres (research #6: about 1.2x a two-storey house)
@@ -1220,7 +1220,7 @@ func _square_trees(root: Node3D, center: Vector3, square_r: float, ways: Array, 
 		var a := rng.randf() * TAU
 		var q2 := Vector2.from_angle(a) * square_r * rng.randf_range(0.97, 1.05)
 		var q := Vector3(q2.x, 0, q2.y)
-		if TownPlots.near_ways(q2, ways, TownPlots.ROAD_HALF + 0.12) or _crowded(lots.slice(1), q, 0.06) or not terrain.is_land(center.x + q.x, center.z + q.z):
+		if TownPlots.near_ways(q2, ways, TownPlots.ROAD_HALF + 0.12) or _crowded(lots.slice(1), q, 0.06) or not terrain.is_land(center.x + q.x, center.z + q.z) or _paved_at(root, q, 0.08):
 			continue  # lots[0] is the square's own ground, which a tree at its rim may stand on
 		var kind := _green_kind(_pick_tree(rng), rng)
 		if kind == "":
@@ -1264,7 +1264,7 @@ func _edge_trees(root: Node3D, center: Vector3, edge: PackedVector2Array, ways: 
 				continue  # a gap, a field gate
 			var q2 := a.lerp(b, (k + rng.randf()) / maxf(n, 1)) + a.lerp(b, 0.5).normalized() * rng.randf_range(0.15, 0.6)
 			var q := Vector3(q2.x, 0, q2.y)
-			if TownPlots.near_ways(q2, ways, 0.4) or not terrain.is_land(center.x + q.x, center.z + q.z) or _crowded(lots, q, 0.14) or not _flat_enough(center, q, 0.3):
+			if TownPlots.near_ways(q2, ways, 0.4) or not terrain.is_land(center.x + q.x, center.z + q.z) or _crowded(lots, q, 0.14) or not _flat_enough(center, q, 0.3) or _paved_at(root, q, 0.14):
 				continue
 			var kind := _green_kind(_pick_tree(rng), rng)
 			if kind == "":
@@ -2604,7 +2604,10 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 	if realm_roads and realm_roads.has_method("clear_in"):
 		realm_roads.clear_in(Vector2(center.x, center.z), pave_span * 0.5 * 0.9)  # the realm's roads end at the setts
 	var pave_reps := clampi(roundi(pave_span / float(pave.get("tile", 0.25))), 2, 12)
-	var setts: Decal = terrain.paint(root, terrain.tiled(String(pave.get("texture", SQUARE_TEX)), pave_reps, pave_reps, String(pave.get("square_edge", "setts"))), Vector3(0, _ground_y(center, Vector3.ZERO), 0), Vector2(pave_span, pave_span * float(pave.get("square_aspect", 0.9))), rng.randf() * TAU, _rgb(pave.get("tint"), Color.WHITE))
+	var setts_size := Vector2(pave_span, pave_span * float(pave.get("square_aspect", 0.9)))
+	var setts_yaw := rng.randf() * TAU
+	var setts: Decal = terrain.paint(root, terrain.tiled(String(pave.get("texture", SQUARE_TEX)), pave_reps, pave_reps, String(pave.get("square_edge", "setts"))), Vector3(0, _ground_y(center, Vector3.ZERO), 0), setts_size, setts_yaw, _rgb(pave.get("tint"), Color.WHITE))
+	_note_setts(root, setts_size, setts_yaw)
 	setts.sorting_offset = 1.0  # the paving over the roads that come into the square: a road ends at its setts, never a dirt stripe across them
 
 	var per_variant := {}
@@ -3084,6 +3087,28 @@ func _note_paved(root: Node3D, a: Vector2, b: Vector2, half: float) -> void:
 	root.set_meta("paved", all)
 
 
+## The square's setts as laid (towns.json paving: `size` across and deep, turned `yaw`, town-local about the heart), for
+## _paved_at; the "paved" stretches hold only the disc inside it (wear.gd's), and its corners reach further.
+func _note_setts(root: Node3D, size: Vector2, yaw: float) -> void:
+	root.set_meta("setts", [size * 0.5, yaw])
+
+
+## Whether a town-local spot (with `margin` round it) is on laid stone: the square's setts or a paved street. Nothing
+## green grows there (Mac on round 11's Kingsmere square, "SUPER weird": trees planted in the paving, one in the crowd).
+func _paved_at(root: Node3D, p: Vector3, margin := 0.0) -> bool:
+	var setts: Array = root.get_meta("setts", [])
+	if setts.size() == 2:
+		var l := Basis(Vector3.UP, -float(setts[1])) * Vector3(p.x, 0, p.z)
+		var half: Vector2 = setts[0]
+		if absf(l.x) <= half.x + margin and absf(l.z) <= half.y + margin:
+			return true
+	var q := Vector2(p.x, p.z)
+	for w in root.get_meta("paved", []):
+		if q.distance_to(Geometry2D.get_closest_point_to_segment(q, w[0], w[1])) <= float(w[2]) + margin:
+			return true
+	return false
+
+
 ## The town trees' component (towns.json plots.green.tree_comp, now the nature kit's town_tree again: Mac turned KayKit's
 ## round crowns down; --town-trees=kaykit for them, town_tree_round; --town-trees=kit for the kit's whatever the data).
 static func _tree_comp() -> String:
@@ -3107,7 +3132,7 @@ func _tree_feet(root: Node3D, center: Vector3, q: Vector3, lots: Array, rng: Ran
 	for i in rng.randi_range(int(n[0]), int(n[1])):
 		var a := rng.randf() * TAU
 		var p := q + Vector3(cos(a), 0, sin(a)) * rng.randf_range(float(reach[0]), float(reach[1]))
-		if not terrain.is_land(center.x + p.x, center.z + p.z) or _on_road(p, 0.04) or _built_on(root, p):
+		if not terrain.is_land(center.x + p.x, center.z + p.z) or _on_road(p, 0.04) or _built_on(root, p) or _paved_at(root, p, 0.03):
 			continue
 		var comp := _shrub_comp() if rng.randf() < float(k.get("shrubs", 0.6)) else "garden_flowers"
 		var kind := _green_kind(comp, rng)
@@ -3127,7 +3152,7 @@ func _hedgerow(root: Node3D, center: Vector3, off: Vector3, fsize: Vector2, yaw:
 	while z <= fsize.y * 0.5:
 		var p := off + b * Vector3(side * (fsize.x * 0.5 + 0.03), 0, z + rng.randf_range(-0.2, 0.2) * every)
 		z += every
-		if not terrain.is_land(center.x + p.x, center.z + p.z) or _on_road(p, 0.05) or _built_on(root, p):
+		if not terrain.is_land(center.x + p.x, center.z + p.z) or _on_road(p, 0.05) or _built_on(root, p) or _paved_at(root, p, 0.04):
 			continue
 		var tree := rng.randf() < float(knobs.get("hedge_tree", 0.0))
 		var kind := _green_kind(_pick_tree(rng) if tree else _shrub_comp(), rng)
