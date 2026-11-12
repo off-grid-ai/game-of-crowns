@@ -40,12 +40,19 @@
 #   crossing the King's host at sea in the cog (08-reinforce): ordered over water (One store's crossing, d70ca994), then
 #            framed once aboard (CROSS_WAIT, 900 s of the reign); skipped and said when no march goes by sea
 set -u
-R=$(cd "$(dirname "$0")/../.." && pwd)
+R=${RENDER_PASS_R:-$(cd "$(dirname "$0")/../.." && pwd)}  # the shared tree (its copy in $OUT inherits it)
 STAMP=$(date +%H%M)
 OUT=${OUT:-/tmp/goc-pass/$STAMP}
 PORT=${PORT:-8789}; FC=${FC:-5558}
 API=localhost:$PORT
 ONLY=${ONLY:-"town landuse realm muster cavalry battle siege command face walls breach seasons host5 castle street crossing"}
+# The pass runs from its own copy of this script: zsh reads a script as it runs, so a commit to it mid-pass broke the
+# first full pass (2159: 'parse error near fi' at line 229, ten lines added above it at 22:00 while it ran).
+if [ -z "${RENDER_PASS_SELF:-}" ]; then
+  mkdir -p $OUT
+  cp "$0" $OUT/render_pass.sh
+  RENDER_PASS_SELF=1 RENDER_PASS_R=$R OUT=$OUT exec zsh $OUT/render_pass.sh "$@"
+fi
 TARGETS=$R/docs/art/target
 say() { echo "$(date +%T) $*" | tee -a $OUT/pass.log; }
 

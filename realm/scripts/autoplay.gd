@@ -732,7 +732,7 @@ func _step(w: PackedStringArray) -> void:
 				# from inside the camp's side, where the storm is fought; the siege's front if none is open yet.
 				var at := Vector3.INF
 				var town := Vector3.INF
-				var sieges: Dictionary = main.scenes.get("_sieges")
+				var sieges: Dictionary = main.scenes.kind("siege").sieges  # the siege is its own scene kind (8419d7d3); _sieges is gone
 				for id in sieges:
 					if sieges[id].get("front") is Vector3:
 						at = sieges[id]["front"]
@@ -1262,7 +1262,10 @@ func _frame_field(fallow: bool, n: int, dist: float, tilt: float) -> void:
 		_note("  %s %d: none (%d stand)" % [what, n, all.size()])
 		return
 	_note("  %s %d of %d at %s" % [what, n, all.size(), all[n]])
-	_oblique(all[n], dist, tilt)
+	# From the field's far side, looking back over it toward the seat (_from_outside: the line of sight kept clear),
+	# never from inside the town: the render pass's summer frame (2159) stood the lens behind Kingsmere's wall and roofs.
+	main.rig.step_floor = maxf(1.5, dist) if dist < main.rig.min_distance else 0.0
+	_from_outside(all[n], seat, dist, tilt)
 
 
 ## Frames a trade's building in a town, from the town root's works (works.gd; any mill for "mill").
