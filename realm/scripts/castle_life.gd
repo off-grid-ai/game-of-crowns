@@ -123,7 +123,7 @@ func _dress(id: int, root: Node3D, castle: Node3D) -> void:
 			d["nodes"].append(_guard(a, b, colour, gk, scale))
 	# Torches either side of the gate's arch, lit at dusk.
 	var tk: Dictionary = Data.value("castle", "torches", {})
-	var front := int(sp.get("d", 16)) * Builder.CELL / 2.0 + 3.0 + 0.25  # the gatehouse's front face, a hand proud
+	var front := Builder.gate_front(sp) + 0.25  # the gatehouse's front face, a hand proud
 	for sx in [-1.0, 1.0]:
 		var local := Vector3(sx * float(tk.get("out", 1.7)), float(tk.get("height", 3.0)), front)
 		var torch: Node3D = _torch(xf * local, xf.basis.get_rotation_quaternion(), tk, scale)
@@ -231,7 +231,7 @@ func _arms(xf: Transform3D, sp: Dictionary, house: Dictionary, colour: Color, d:
 	var keep_z := -hz + kh - 1.0 + kh + 0.12
 	var keep_top := (int(sp.get("keep_storeys", 5)) + Builder.podium()) * Builder.STOREY - 1.0
 	var gate_top := (int(sp.get("wall_storeys", 2)) + 1) * Builder.STOREY - 0.4
-	var gate_z := hz + (3.6 if Builder.meshy_gatehouse() != "" else 3.0) + 0.12
+	var gate_z := Builder.gate_front(sp) + 0.12
 	var gh := 4 * cell / 2.0
 	var mat := _arms_material(house, colour)
 	var hangs := [[Vector3(0, keep_top, keep_z), Vector2(1.2, 3.0) * size]]

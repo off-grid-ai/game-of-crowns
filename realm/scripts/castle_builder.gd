@@ -66,7 +66,13 @@ func build_castle(spec: Dictionary) -> ArrayMesh:
 	# gatehouse imported (data/meshy.json gatehouse: castle), that piece in its place instead, in metres.
 	var meshy_gate := meshy_gatehouse()
 	if meshy_gate != "":
-		parts.append([meshy_gate, Transform3D(Basis(), gate_at + Vector3(0, 0, 1.0))])
+		# Set into the curtain, a little proud of it, between two cone towers (castle.json meshy_gate; round 4:
+		# 3.5 m proud with nothing either side, it stood out on its own in front of the wall).
+		var mg := _meshy_gate()
+		parts.append([meshy_gate, Transform3D(Basis(), gate_at + Vector3(0, 0, float(mg.get("z", 1.0))))])
+		if bool(mg.get("towers", false)):
+			for sx in [-1, 1]:
+				_block(parts, gate_at + Vector3(sx * gate_tower_x(), 0, 1.0), 2, 2, wall_st + 2, rng, {"cone": true, "windows": 0.5})
 	else:
 		_block(parts, gate_at, gate_w, 3, wall_st + 1, rng, {"gate": true, "crenel": true, "windows": 0.5, "portcullis": float(spec.get("gate_portcullis", 2.4))})
 		for sx in [-1, 1]:
@@ -87,7 +93,9 @@ func build_castle(spec: Dictionary) -> ArrayMesh:
 				for j in int(y):
 					parts.append(["Stairs_Exterior_Sides", Transform3D(Basis(), Vector3(sx, float(j), z))])
 	var lift := Vector3(0, up * STOREY, 0)
-	_block(parts, keep_at + lift, keep, keep, keep_st, rng, {"door": true, "crenel": true, "windows": 0.45, "roof": true})
+	# Its face windowed (castle.json keep_roof.windows; round 4: at 0.45 the keep read as a flat grey wall).
+	var kwin := float((preload("res://scripts/data.gd").value("castle", "keep_roof", {}) as Dictionary).get("windows", 0.45))
+	_block(parts, keep_at + lift, keep, keep, keep_st, rng, {"door": true, "crenel": true, "windows": kwin, "roof": true})
 	for k in 4:
 		var c := Vector3((-1 if k in [0, 3] else 1) * (kh + 0.3), 0, (-1 if k < 2 else 1) * (kh + 0.3))
 		_block(parts, keep_at + c, 2, 2, keep_st + up + (1 if k % 2 == 0 else 0), rng, {"cone": true, "windows": 0.4})
@@ -163,10 +171,35 @@ static func towers(spec: Dictionary) -> Array:
 	if spec.get("side_towers", false):
 		for c in [Vector3(-hx, 0, 0), Vector3(hx, 0, 0)]:
 			out.append({"at": c, "top": tower_st * STOREY + 0.12})
-	var gh := 4 * CELL / 2.0
-	for sx in [-1, 1]:
-		out.append({"at": Vector3(sx * (gh + 1.0), 0, hz + 1.0), "top": (wall_st + 2) * STOREY + 0.12, "gate": true})
+	if meshy_gatehouse() == "" or bool(_meshy_gate().get("towers", false)):
+		for sx in [-1, 1]:
+			out.append({"at": Vector3(sx * gate_tower_x(), 0, hz + 1.0), "top": (wall_st + 2) * STOREY + 0.12, "gate": true})
 	return out
+
+
+## Meshy's gatehouse in the curtain (data/castle.json meshy_gate): z, metres its middle stands out from the
+## wall's line; half_w and half_d, its half width and depth (its import's size); towers, the kit's cone towers
+## either side of it.
+static func _meshy_gate() -> Dictionary:
+	return preload("res://scripts/data.gd").value("castle", "meshy_gate", {})
+
+
+## How far either side of the middle the gate's two towers stand (metres): beside the kit's gatehouse, or
+## beside Meshy's, which is wider.
+static func gate_tower_x() -> float:
+	if meshy_gatehouse() != "":
+		return float(_meshy_gate().get("half_w", 7.35)) + 1.0
+	return 4 * CELL / 2.0 + 1.0
+
+
+## The gatehouse's front face, the castle's frame (metres, +z the town): torches, the arms and the gate's
+## walkers stand by it (castle_life.gd).
+static func gate_front(spec: Dictionary) -> float:
+	var hz := int(spec.get("d", 16)) * CELL / 2.0
+	if meshy_gatehouse() != "":
+		var mg := _meshy_gate()
+		return hz + float(mg.get("z", 1.0)) + float(mg.get("half_d", 2.53))
+	return hz + 3.0
 
 
 ## Meshy's gatehouse, if it stands in for the kit's (--landmarks=meshy, meshy.json pieces.gatehouse.replaces
