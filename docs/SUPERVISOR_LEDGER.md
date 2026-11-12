@@ -121,6 +121,12 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- 16:45 (11-12) Round 12 (/tmp/goc-focus/r12, autumn, 0 script errors), sent to Mac. Big step: clean Meshy roofs,
+  statue, well, 7 stalls at the edge, no planks/trees on paving. Light: mean 0.417 / clipped 0.04% / sat 0.42 vs 01-town
+  0.431 / 0.5% / 0.47 (pass but for colour; r11 was winter 0.50/7%). Wrong: square thin, 16 people inside things
+  (town-life); shadow blob right of the statue + brown smears (army-ui); dclick zooms OUT (army-ui); navprobe found
+  no path, "ready after 0.0 s" (army-ui/ground-truth). Tree pick (delegated): no. 4, the current tree; bake-off retired
+  (fire-siege). Rules: Mac "follow goc-cpto/goc-engineering", edit real files, private-index commits (17b74a57).
 - 17:15 (11-12) RULING (pending delivery, message cap): Freeciv step 5 stays with the Freeciv thread (built, uncommitted:
   campaigns.js dice gone, Lua.assault, Royal Siege decree). Ground truth takes only D (breach removes City Walls, from
   damage.js). Reverses 16:40's B: in the baseline the King is at war with only Norwegian (0 towns) and the Orca, so B
