@@ -320,7 +320,7 @@ func _frame_for_shot() -> void:
 					if _shot["stage"] == "feast":
 						main.scenes.kind("feast").stage_feast(at, owner)
 					else:
-						main.scenes._handover(at, owner, other, String(c.get("title", c["name"])))
+						main.scenes.kind("handover").hand_over(at, owner, other, String(c.get("title", c["name"])))
 					main.rig.snap(at, float(_shot.get("dist", 3.0)), main.rig.clear_yaw(at, float(_shot.get("dist", 3.0)), 0.6))
 					# The scene under test holds the camera, as test battles do.
 					main._framed_at = at

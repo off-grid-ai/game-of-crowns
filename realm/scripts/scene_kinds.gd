@@ -25,7 +25,7 @@ const KINDS := {
 	"raid": {"tone": HOSTILE, "reach": 4.0, "power": 0.9, "interest": 6, "dist": 7.0, "caption": "Raiders at %s"},
 	"struck": {"tone": HOSTILE, "reach": 1.2, "power": 0.8, "interest": 0, "dist": 4.0, "caption": ""},
 	"fire": {"tone": HOSTILE, "reach": 1.8, "power": 0.9, "interest": 0, "dist": 5.0, "caption": ""},  # a house catching (fire.gd): the near run (batch 9: at 1.0 the square carried on beside it), the rest come to the bucket line
-	"handover": {"tone": HOSTILE, "reach": 3.0, "power": 0.6, "interest": 3, "dist": 8.0, "caption": "%s changes hands"},
+	"handover": {"tone": HOSTILE, "reach": 3.0, "power": 0.6, "interest": 3, "dist": 8.0, "caption": "%s changes hands", "play": "res://scripts/scene_kinds/handover.gd"},
 	"famine": {"tone": TROUBLE, "reach": 3.0, "power": 0.6, "interest": 5, "dist": 6.0, "caption": "Famine in %s", "fleeing": 5, "play": "res://scripts/scene_kinds/refugees.gd"},
 	"plague": {"tone": TROUBLE, "reach": 3.0, "power": 0.6, "interest": 5, "dist": 6.0, "caption": "Plague in %s", "fleeing": 3, "play": "res://scripts/scene_kinds/refugees.gd"},
 	"vigil": {"tone": GRIEF, "reach": 2.5, "power": 0.9, "interest": 4, "dist": 5.0, "caption": "A vigil at %s"},

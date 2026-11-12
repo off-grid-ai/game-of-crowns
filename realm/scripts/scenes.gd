@@ -123,12 +123,6 @@ func sync(houses: Dictionary) -> void:
 						town_size = int(c.get("size", 4))
 				_siege(stormed, at, terrain.world_pos(float(s.get("ax", s["x"])), float(s.get("ay", s["y"]))), town_size, int(s.get("engines", 0)), houses.get(int(s.get("owner", -1)), {}), houses.get(int(s.get("defender", -1)), {}), Awareness.season_seconds)
 				storm(stormed, bool(s.get("taken", false)))
-			"handover":
-				var town := "The town"
-				for c in store.rec("cities", []):
-					if int(c["id"]) == int(s.get("city", -1)):
-						town = String(c.get("title", c["name"]))
-				_handover(at, houses.get(int(s.get("from", -1)), {}), houses.get(int(s.get("to", -1)), {}), town)
 		staged.emit(s, follow)
 
 
@@ -647,7 +641,7 @@ func standard(root: Node3D, p: Vector3, color: Color, face: Vector3, house := {}
 
 ## A standard goes over: it sways, then topples backward from the line and
 ## lies on the field. `face` is the way its line faced.
-func _drop_banner(b: Node3D, face := Vector3.ZERO) -> void:
+func drop_banner(b: Node3D, face := Vector3.ZERO) -> void:
 	# The cloth turns to face you about its pole while it stands; once it falls
 	# it must go down with the pole, so it gets a cloth of its own that doesn't.
 	var cloth: MeshInstance3D = b.get_node_or_null("Banner")
@@ -1043,67 +1037,6 @@ func puffs(color: Color, amount: int, life: float, smin: float, smax: float, add
 	q.material = m
 	p.mesh = q
 	return p
-
-
-# --- feasts and handovers ----------------------------------------------------------
-
-## A town changing hands by treaty or by its own will: the old lord's banner
-## comes down, a file of the new lord's men marches in, and his goes up.
-func _handover(at: Vector3, old_house: Dictionary, new_house: Dictionary, town: String) -> void:
-	var r := rng(at)
-	# Only the latest hand a town passes into is told: an older ceremony there goes.
-	for old in get_children():
-		if old.has_meta("handover") and String(old.get_meta("handover")) == town:
-			old.queue_free()
-	var root := Node3D.new()
-	root.name = "Handover"
-	root.set_meta("handover", town)
-	add_child(root)
-	var old_col := Color.from_string(String(old_house.get("color", "#777")), Color.GRAY)
-	var new_col := Color.from_string(String(new_house.get("color", "#ccc")), Color.WHITE)
-	var spot := stand(at + Vector3(0.35, 0, -0.35))  # on dry ground, clear of the houses (a riverside town's diagonal can be the river)
-	var old_b := standard(root, spot, old_col, Vector3(0, 0, 1), old_house)
-	var tw := create_tween()
-	tw.tween_interval(3.0)
-	tw.tween_callback(_drop_banner.bind(old_b))
-	# The new lord's men come up the road from outside the walls.
-	var ang := r.randf() * TAU
-	for tries in 12:
-		var probe := at + Vector3(cos(ang), 0, sin(ang)) * 4.0
-		if terrain.is_land(probe.x, probe.z):
-			break
-		ang += TAU / 12.0
-	var dir := Vector3(cos(ang), 0, sin(ang))
-	var side := Vector3(-dir.z, 0, dir.x)
-	var escort := []
-	for i in 6:
-		var s: Node3D = people.make(r, "soldier", new_col.lerp(Color.WHITE, 0.3), "adult")
-		root.add_child(s)
-		escort.append(s)
-		var start := at + dir * (4.0 + (i / 2) * 0.22) + side * ((i % 2) * 0.16 - 0.08)
-		var goal := spot + dir * (0.35 + (i / 2) * 0.16) + side * ((i % 2) * 0.16 - 0.08)
-		s.position = stand(start)
-		s.rotation.y = atan2(-dir.x, -dir.z)
-		# Up the realm's own way in by the Mover (it asks town_nav: streets, roads, over dry land, never a straight line
-		# over a river), at a pace that brings them in as the new banner goes up (about 14 s); then they stand to it.
-		var m: Node = Mover.of(s)
-		m.speed = maxf(0.12, s.position.distance_to(goal) * 1.2 / 14.0)
-		m.clip = "Walk"
-		m.go(goal, people.play.bind(s, "Sword_Idle", 1.0))
-	tw.tween_interval(13.0)
-	tw.tween_callback(func():
-		var b := standard(root, spot + Vector3(0.12, 0, 0), new_col, Vector3(0, 0, 1), new_house)
-		b.scale = Vector3(1, 0.05, 1)
-		b.create_tween().tween_property(b, "scale", Vector3.ONE, 2.5).set_ease(Tween.EASE_OUT)
-		# As it goes up the new lord's men salute it and cheer, each in his own
-		# time and way.
-		for s in escort:
-			var st: Tween = s.create_tween()
-			st.tween_interval(r.randf_range(0.8, 2.2))
-			st.tween_callback(func(): people.play(s, ["Salute", "Cheering", "Battlecry", "Cheering"][r.randi() % 4], r.randf_range(0.9, 1.1))))
-	# Out on the road the new lord's men came in by, not over the town in the middle of the view.
-	var tag := caption(root, "%s passes to %s" % [town, String(new_house.get("name", "a new lord"))], ground(spot + dir * 2.2) + Vector3(0, 0.5, 0))
-	fade_out(root, 60.0, tag)
 
 
 ## Captions in the world now, oldest first: a new one near an older one goes a

@@ -16,10 +16,10 @@ const OLD := {"feast": "_feast", "handover": "_handover", "grain": "_convoy", "t
 	"sack": "_burn", "razed": "_burn", "famine": "_refugees", "plague": "_refugees"}
 
 ## The kinds that are their own class by now (grows a kind a commit, till scenes.gd stages none itself).
-const CLASSED := ["feast", "grain", "tribute", "ward", "rider", "muster", "famine", "plague", "sack", "razed"]
+const CLASSED := ["feast", "grain", "tribute", "ward", "rider", "muster", "famine", "plague", "sack", "razed", "handover"]
 
 ## What each kind, staged on the stand-in, must set down: [the node's name under the stage, the least of its children].
-const STAGED := {"feast": ["Feast", 10], "grain": ["Convoy", 4], "tribute": ["Convoy", 4], "ward": ["Convoy", 4], "rider": ["Rider", 1], "famine": ["Refugees", 5], "plague": ["Refugees", 3], "sack": ["Burn", 15], "razed": ["Burn", 30]}
+const STAGED := {"feast": ["Feast", 10], "grain": ["Convoy", 4], "tribute": ["Convoy", 4], "ward": ["Convoy", 4], "rider": ["Rider", 1], "famine": ["Refugees", 5], "plague": ["Refugees", 3], "sack": ["Burn", 15], "razed": ["Burn", 30], "handover": ["Handover", 7]}
 
 
 class Land extends Node3D:
@@ -51,8 +51,16 @@ class Paths extends RefCounted:
 		return way[0].lerp(way[way.size() - 1], t)
 
 
+## The store's stand-in (awareness.gd): the realm's one town, Ashford.
+class Store extends Node:
+	var realm := Blackboard.new()
+	func rec(key: String, none: Variant) -> Variant:
+		return [{"id": 3, "name": "Ashford", "size": 4, "owner": 1, "x": 10, "y": 10}] if key == "cities" else none
+
+
 class Main extends Node:
 	var towns = null
+	var scenes = null  # the Movers find the realm's navigation through it: none here, so they stand where set down
 	var roads = null
 
 
@@ -86,6 +94,9 @@ func _run() -> void:
 	# Staged once each, through scenes.gd's own dispatch.
 	var main := Main.new()
 	root.add_child(main)
+	var store := Store.new()
+	main.add_child(store)
+	Engine.set_meta("awareness", store)
 	var land := Land.new()
 	main.add_child(land)
 	for k in moved:
@@ -94,7 +105,7 @@ func _run() -> void:
 		var stage: Node3D = Scenes.new()  # a stage of its own each, so what a kind sets down is its own
 		stage.terrain = land
 		main.add_child(stage)
-		stage.kind(k).play({"kind": k, "owner": 1, "x": 10, "y": 10, "tx": 16, "ty": 12}, Vector3(10, 0, 10), {1: {"name": "Ashby", "color": "#884422"}})
+		stage.kind(k).play({"kind": k, "owner": 1, "x": 10, "y": 10, "tx": 16, "ty": 12, "city": 3, "from": 2, "to": 1}, Vector3(10, 0, 10), {1: {"name": "Ashby", "color": "#884422"}, 2: {"name": "Thornvale", "color": "#2244aa"}})
 		await process_frame
 		var want: Array = STAGED[k]
 		var n: Node = stage.get_node_or_null(String(want[0]))

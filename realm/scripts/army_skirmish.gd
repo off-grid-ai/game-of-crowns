@@ -462,7 +462,7 @@ func _morale() -> void:
 	if bearers.size() > 0 and is_instance_valid(bearers[0]["node"]):
 		Mover.of(bearers[0]["node"]).stop()
 		scenes.die(bearers[0]["node"], "Death_Back", r)
-		scenes._drop_banner(bearers[0]["flag"], bearers[0]["face"])
+		scenes.drop_banner(bearers[0]["flag"], bearers[0]["face"])
 	for m in men:
 		if not m["alive"]:
 			continue
