@@ -33,7 +33,11 @@ extends SceneTree
 ## 11. war: the host marches out (READY line 3): a host formed in line at its seat, told to march out, takes the
 ##     road the realm's roads give (roads.route), leaves regiment by regiment in column order, each only once the
 ##     one ahead has gone its length, and halts in column along the road's end, no two regiments in one place; then
-##     it is gone (march.linger).
+##     it is gone (march.linger);
+## 12. a click picks a host by its own body (READY line 8; the milestone's command take selected nothing): a
+##     standard-bearer (scaled as the map's people are) and a regiment carry pick proxies, and a physics ray from
+##     the camera through the standard picks that company, through the regiment picks it with its view, and through
+##     open land picks nothing; host_command.gd takes the pick at the press, with no screen-distance guess.
 ## Prints "ARMY PROBE …" lines and "ARMY PROBE PASS" or "ARMY PROBE FAIL n"; quits with 0 or 1.
 
 const Data := preload("res://scripts/data.gd")
@@ -70,6 +74,7 @@ func _run() -> void:
 	_lens_on_the_rout()
 	_the_right_banner()
 	await _march_out()
+	await _pick_by_body()
 	print("ARMY PROBE PASS" if _fails == 0 else "ARMY PROBE FAIL %d" % _fails)
 	quit(0 if _fails == 0 else 1)
 
@@ -573,6 +578,43 @@ func build(road: PackedVector3Array) -> void:
 	_check(not is_instance_valid(a) or a.is_queued_for_deletion(), "then the host is gone (march.linger)")
 	Engine.time_scale = 1.0
 	main.queue_free()
+
+
+## 12. A click picks a host by its own body: a bearer (scale 0.5) at the origin, a regiment's node at x 1.2,
+## the lens at an oblique, as host 0 6 -25 frames one.
+func _pick_by_body() -> void:
+	var P: GDScript = load("res://scripts/host_pick.gd") if ResourceLoader.exists("res://scripts/host_pick.gd") else null
+	_check(P != null, "a host is picked by its own body (host_pick.gd)")
+	var hc_src := FileAccess.get_file_as_string("res://scripts/host_command.gd")
+	_check(hc_src.contains("HostPick.pick(") and not hc_src.contains("pick_px") and not hc_src.contains("func _pick_regiment("),
+		"host_command.gd takes the pick at the press, with no screen-distance guess")
+	if P == null:
+		return
+	var holder := Node3D.new()
+	root.add_child(holder)
+	var cam := Camera3D.new()
+	holder.add_child(cam)
+	cam.look_at_from_position(Vector3(0.6, 2.2, 4.0), Vector3(0.6, 0.2, 0.0))
+	cam.current = true
+	var bearer := Node3D.new()
+	holder.add_child(bearer)
+	bearer.scale = Vector3.ONE * 0.5
+	P.call("proxy", bearer, 42, Vector3(0.22, 0.62, 0.22))
+	var reg := Node3D.new()
+	holder.add_child(reg)
+	reg.position = Vector3(1.2, 0, 0)
+	var view := Node.new()
+	holder.add_child(view)
+	P.call("proxy", reg, 7, Vector3(0.6, 0.57, 0.5), view)
+	for i in 3:
+		await physics_frame
+	var standard: Dictionary = P.call("pick", cam, cam.unproject_position(Vector3(0.0, 0.5, 0.0)))
+	_check(int(standard.get("unit", -1)) == 42, "a click on the standard picks its company (%s)" % str(standard))
+	var regiment: Dictionary = P.call("pick", cam, cam.unproject_position(Vector3(1.2, 0.2, 0.0)))
+	_check(int(regiment.get("unit", -1)) == 7 and regiment.get("view") == view, "a click on a regiment's men picks it, with its view (%s)" % str(regiment))
+	var land: Dictionary = P.call("pick", cam, cam.unproject_position(Vector3(-2.0, 0.0, -1.0)))
+	_check(land.is_empty(), "a click on open land picks no host")
+	holder.free()
 
 
 ## 6. One figure for ten, each with room about him.

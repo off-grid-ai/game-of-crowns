@@ -19,6 +19,7 @@ extends Node3D
 ## Numbers, the card and the switch: realm/data/host_command.json (--hosts=on / --hosts=off).
 
 const Data := preload("res://scripts/data.gd")
+const HostPick := preload("res://scripts/host_pick.gd")  # a click on a host picks it by its own body
 const T := preload("res://scripts/theme.gd")
 const Keys := preload("res://scripts/keys.gd")
 const FILE := "host_command"
@@ -123,65 +124,31 @@ func take_click(ground: Vector3) -> bool:
 		_set_aim("")
 		_order_at(kind, ground)
 		return true
-	# Where the click fell on the screen: the ground it hit, seen again (a played click doesn't move the pointer).
-	var cam := get_viewport().get_camera_3d()
-	var at := cam.unproject_position(ground) if cam and not cam.is_position_behind(ground) else get_viewport().get_mouse_position()
-	var id := _pick(at)
-	if id >= 0:
-		select(id)
-		return true
-	var reg := _pick_regiment(at)
-	if not reg.is_empty():
-		select(int(reg["host"]))
-		(reg["view"] as Node).select(int(reg["id"]))  # army.gd: that regiment's rectangle and banner
+	var got := _pressed
+	_pressed = {}
+	var h := _host_of(int(got.get("unit", -1))) if not got.is_empty() else {}
+	if not h.is_empty():
+		select(int(h["id"]))
+		var view: Variant = got.get("view")
+		if view is Node and (view as Node).has_method("select"):
+			(view as Node).select(int(got["unit"]))  # army.gd: that regiment's rectangle and banner
 		return true
 	if selected >= 0:
 		select(-1)  # the land elsewhere: the host is let go, and the click picks a town as before
 	return false
 
 
-## The host whose standard is under the pointer (nearest within pick_px on screen), or -1.
-func _pick(screen: Vector2) -> int:
-	var cam := get_viewport().get_camera_3d()
-	if cam == null:
-		return -1
-	var best := -1
-	var best_d := Data.num(FILE, "pick_px", 30.0)
+## What the press under a left click met (host_pick.gd: the physics ray at the press, the camera as it was then):
+## {unit, view}, or {} for the land. take_click uses it once.
+var _pressed := {}
+
+
+## The host a company belongs to ({} when it is in none of the King's).
+func _host_of(unit: int) -> Dictionary:
 	for h in hosts():
-		var b := _banner(h)
-		var points: Array[Vector3] = [_ground(h)]
-		if b:
-			points.append(b.global_position)
-		for p in points:
-			if cam.is_position_behind(p):
-				continue
-			var d := cam.unproject_position(p).distance_to(screen)
-			if d < best_d:
-				best_d = d
-				best = int(h.get("id", -1))
-	return best
-
-
-## The regiment under the pointer (nearest within pick_px on screen) of any host view that lists its regiments
-## (army.gd regiments(): {id, host, at}), as {id, host, view}, or {} when none is near.
-func _pick_regiment(screen: Vector2) -> Dictionary:
-	var cam := get_viewport().get_camera_3d()
-	if cam == null:
-		return {}
-	var best := {}
-	var best_d := Data.num(FILE, "pick_px", 30.0)
-	for n in get_tree().get_nodes_in_group(&"host_views"):
-		if not n.has_method("regiments"):
-			continue
-		for r: Dictionary in n.regiments():
-			var p: Vector3 = r.get("at", Vector3.INF)
-			if p == Vector3.INF or cam.is_position_behind(p) or host(int(r.get("host", -1))).is_empty():
-				continue
-			var d := cam.unproject_position(p).distance_to(screen)
-			if d < best_d:
-				best_d = d
-				best = {"id": int(r["id"]), "host": int(r["host"]), "view": n}
-	return best
+		if (h.get("units", []) as Array).has(unit) or int(h.get("id", -2)) == unit:
+			return h
+	return {}
 
 
 ## Selects a host (or none, -1): the ring, the glow and the card follow it.
@@ -197,10 +164,13 @@ func select(id: int) -> void:
 	_refresh()
 
 
-## The right button while a host is selected, ahead of the camera (whose right-drag turns the view): a click marches
+## A left press: what it met is kept for take_click (host_pick.gd). The right button while a host is selected,
+## ahead of the camera (whose right-drag turns the view): a click marches
 ## there (or lets a waiting order go, Warcraft III), a drag draws the line the host forms on (Total War). Over the
 ## interface it is the interface's.
 func _input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+		_pressed = HostPick.pick(get_viewport().get_camera_3d(), event.position)  # the click is resolved at its press
 	if selected < 0:
 		return
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT:

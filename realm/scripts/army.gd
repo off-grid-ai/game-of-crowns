@@ -29,7 +29,8 @@ extends Node3D
 ## data/army.json (docs/TUNING.md); units, their roles, meshes and clips are rows there (tools/rig/README.md's hook).
 
 const Formation := preload("res://scripts/army_formation.gd")  # its shapes: line, column, places, order
-const Visual := preload("res://scripts/army_visual.gd")  # its baked soldiers, their look and lighter levels
+const Visual := preload("res://scripts/army_visual.gd")
+const HostPick := preload("res://scripts/host_pick.gd")  # a click on a regiment picks it by its own body  # its baked soldiers, their look and lighter levels
 const KNIGHT := Visual.KNIGHT
 const Data := preload("res://scripts/data.gd")
 const Mover := preload("res://scripts/mover.gd")  # the one way to move (CLAUDE.md)
@@ -650,6 +651,11 @@ func _fit(r: Dictionary) -> void:
 	d.size = Vector3(float(r["w"]) + margin * 2.0, 1.2, float(r["d"]) + margin * 2.0)
 	var block: MeshInstance3D = r["block"]
 	(block.mesh as BoxMesh).size = Vector3(float(r["w"]), man, float(r["d"]))
+	var tall := man * Data.num("army", "banner.height", 2.6)  # its men and its banner, to click (host_command.gd)
+	if r.has("pick"):
+		HostPick.fit(r["pick"], Vector3(float(r["w"]), tall, float(r["d"])))
+	else:
+		r["pick"] = HostPick.proxy(r["node"], int(r["id"]), Vector3(float(r["w"]), tall, float(r["d"])), self)
 	block.position = Vector3(0.0, man * 0.5, 0.0)
 	if banners.rides_with(r):
 		banners.place()

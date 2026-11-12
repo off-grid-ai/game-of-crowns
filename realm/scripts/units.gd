@@ -41,6 +41,7 @@ var _mats := {}
 var _people = preload("res://scripts/people.gd").new()
 const Scenes = preload("res://scripts/scenes.gd")
 const Mover := preload("res://scripts/mover.gd")  # the one way to move (CLAUDE.md)
+const HostPick := preload("res://scripts/host_pick.gd")  # a click on a host picks it by its own body
 const Horse = preload("res://scripts/horse.gd")
 
 const MOUNTED := ["Horsemen", "Chariot", "Elephants", "Crusaders", "Knights", "Dragoons", "Cavalry"]
@@ -148,6 +149,7 @@ func sync(houses: Dictionary) -> void:
 			if not wild and slot == 0:
 				# Carried by the rider when the company is mounted.
 				_banner(node.rider if node.get("rider") else node, Color.from_string(String(house.get("color", "#888")), Color.GRAY), house)
+				HostPick.proxy(node, int(id), Vector3(0.22, 0.62, 0.22))  # the bearer and his standard, to click (host_command.gd)
 			_figures[id] = {"node": node, "target": target, "wild": wild, "bow": String(u["type"]) in BOWS, "horse": node.has_method("mount")}
 		if _figures[id]["target"].distance_to(target) > 0.01:
 			var moved: Vector3 = target - _figures[id]["node"].position
