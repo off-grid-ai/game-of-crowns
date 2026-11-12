@@ -33,7 +33,8 @@
 #   face     the same host given a line by a right drag (its own reign: one order a season a host; READY 8)
 #   castle   Kingsmere's castle close from its gate side (01-town; the Meshy castle set)
 #   street   the smallest town's street of houses at its town view (01-town; the Meshy house set)
-#   crossing a ship at sea carrying a host, the cog (08-reinforce); skipped, and said, when no ship is at sea
+#   crossing a hull at sea with a company aboard, the cog (08-reinforce): a house's own crossing, waited for (CROSS_WAIT,
+#            600 s); the King can't order one (hosts.js), so skipped and said when none sails in that time
 set -u
 R=$(cd "$(dirname "$0")/../.." && pwd)
 STAMP=$(date +%H%M)
@@ -206,7 +207,10 @@ if want=='village':
     cs=sorted(d.get('cities',[]), key=lambda c: c.get('size',0)); print(cs[0].get('title', cs[0].get('name','')) if cs else '')
 else:
     ships={'Trireme','Caravel','Galleon','Frigate','Transport'}
-    us=[u for u in d.get('units',[]) if u.get('type') in ships]; print(us[0]['id'] if us else '')" "$1" 2>/dev/null
+    us=d.get('units',[]); at={(u['x'],u['y']) for u in us if u.get('type') not in ships}
+    hull=[u for u in us if u.get('type') in ships]
+    full=[u for u in hull if (u['x'],u['y']) in at]  # a hull with a company aboard (on its tile)
+    print((full or [{'id':''}])[0]['id'])" "$1" 2>/dev/null
 }
 if want castle; then
   { print "wait 30"; print "castle Kingsmere 4 -20 gate"; print "wait 4"; print "snap castle"; print "look end"; } > $OUT/castle.play
@@ -220,9 +224,13 @@ if want street; then
   side street $OUT/frames/street/street.png $TARGETS/01-town.jpg "a village street: ${V:-none found, Kingsmere}"
 fi
 if want crossing; then
-  SHIP=$(world_pick ship)
+  # The King can't order a host over water (bridge hosts.js: "the sea lies between"); Freeciv's houses ship their own
+  # companies in Triremes and Galleons. So the pass waits, at most CROSS_WAIT seconds of the reign, for a hull with a
+  # company aboard, and frames that.
+  SHIP=""; waited=0
+  while [ -z "$SHIP" ] && [ $waited -lt ${CROSS_WAIT:-600} ]; do SHIP=$(world_pick ship); [ -z "$SHIP" ] && { sleep 15; waited=$((waited + 15)); }; done
   if [ -z "$SHIP" ]; then
-    say "crossing: no ship at sea in this reign; no frame (the crossing needs a host ordered over water)"
+    say "crossing: no hull with a company aboard in ${CROSS_WAIT:-600} s of the reign; no frame (the King can't order a crossing: hosts.js)"
   else
     { print "wait 30"; print "unit $SHIP 3"; print "wait 4"; print "snap crossing"; print "look end"; } > $OUT/crossing.play
     shot crossing 1500 film $SW
