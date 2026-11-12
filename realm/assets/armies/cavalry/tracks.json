@@ -1,0 +1,42 @@
+[
+ {
+  "name": "idle",
+  "startFrame": 0,
+  "endFrame": 48,
+  "isLooping": true,
+  "isBlended": true,
+  "framerate": 24
+ },
+ {
+  "name": "walk",
+  "startFrame": 49,
+  "endFrame": 89,
+  "isLooping": true,
+  "isBlended": true,
+  "framerate": 24
+ },
+ {
+  "name": "trot",
+  "startFrame": 90,
+  "endFrame": 110,
+  "isLooping": true,
+  "isBlended": true,
+  "framerate": 24
+ },
+ {
+  "name": "canter",
+  "startFrame": 111,
+  "endFrame": 127,
+  "isLooping": true,
+  "isBlended": true,
+  "framerate": 24
+ },
+ {
+  "name": "gallop",
+  "startFrame": 128,
+  "endFrame": 138,
+  "isLooping": true,
+  "isBlended": true,
+  "framerate": 24
+ }
+]

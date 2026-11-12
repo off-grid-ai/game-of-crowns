@@ -1,0 +1,21 @@
+{
+ "_": "The cavalry (army.json units.horse): the CC0 horse (realm/assets/cavalry/horse, Quaternius-style rig, five gaits) with the KayKit knight seated on it, baked as one VAT soldier into realm/assets/armies/cavalry. Blender -b --python realm/tools/vat_bake.py -- realm/assets/cavalry/horse/horse.glb realm/assets/armies/cavalry realm/tools/rig/cavalry.json (vat_bake.py's rider block says what each key does).",
+ "meshes": ["Horse"],
+ "weld": true,
+ "clips": [["idle", true], ["walk", true], ["trot", true], ["canter", true], ["gallop", true]],
+ "actions_from": ["~/code/goc-kits/kaykit-anims/pack_1.1/KayKit_Character_Animations_1.1/Animations/gltf/Rig_Medium/Rig_Medium_Simulation.glb"],
+ "rider": {
+  "glb": "~/Downloads/Aldmere/armies/kaykit-adventurers/Knight.glb",
+  "meshes": ["Knight_Body", "Knight_ArmLeft", "Knight_ArmRight", "Knight_LegLeft", "Knight_LegRight", "Knight_Head", "Knight_Helmet", "1H_Sword", "Round_Shield"],
+  "pose": "Sit_Chair_Idle",
+  "spread": 32,
+  "drop": 35,
+  "seat": "DEF-spine.004",
+  "hips": "hips",
+  "lift": -0.12,
+  "mount_scale": 1.9,
+  "mount_verts": 3000,
+  "atlas": 1024,
+  "team_rects": [[0.0, 0.25, 0.125, 0.5], [0.125, 0.0, 0.25, 0.25, 0.5], [0.375, 0.125, 0.5, 0.25, 0.65]]
+ }
+}

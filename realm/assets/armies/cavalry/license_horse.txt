@@ -1,0 +1,12 @@
+Model Information:
+* title:	Horse Rigged All Gaits
+* source:	https://blendswap.com/blend/28627
+* author:	fdoss001, on the Horse by Tarnyloo (https://blendswap.com/blend/17172)
+
+Model License:
+* license type:	CC0 (All Gaits) and CC BY (base Horse, Tarnyloo)
+* requirements:	Credit Tarnyloo for the base horse. The All Gaits contribution is CC0 (full text in CC0_1.0_LEGALCODE.txt).
+
+Credit:
+Horse based on "Horse Rigged All Gaits" by fdoss001 (https://blendswap.com/blend/28627), using the base "Horse" by Tarnyloo (https://blendswap.com/blend/17172). Source labels: CC0 for the All Gaits contribution and CC BY for the base model.
+Modified for Game of Crowns: reduced to 38,942 triangles, skin and rig baked, mane and tail as skinned ribbons, textures baked to 2K, gaits resampled to 30 fps loops (idle, walk, trot, canter, gallop).

@@ -476,7 +476,7 @@ func _layout(r: Dictionary, shape: String) -> Dictionary:
 ## Lays every man of a regiment at its current positions (its `local`), with his own turn and size.
 func _dress(r: Dictionary) -> void:
 	var vat: VATMultiMeshInstance3D = r["vat"]
-	var tall: float = Data.num("army", "man", 0.22) / float(r["kit"]["height"])
+	var tall: float = float(r["kit"].get("tall", Data.num("army", "man", 0.22))) / float(r["kit"]["height"])  # a body's own height (meshes.<dir>.tall: a horse and rider stand taller than a man)
 	var at: PackedVector3Array = r["local"]
 	var yaws: PackedFloat32Array = r["yaws"]
 	var sizes: PackedFloat32Array = r["sizes"]
@@ -1398,7 +1398,7 @@ func _asset(asset: String, row: Dictionary) -> Dictionary:
 		mat.set_shader_parameter("emblem_%s_up" % "ab"[k], v3.call("up", [0, 1, 0]))
 	for i in mesh.get_surface_count():
 		mesh.surface_set_material(i, mat)
-	_assets[asset] = {"asset": asset, "mesh": mesh, "mat": mat, "tracks": tracks, "index": index, "height": maxf(mesh.get_aabb().size.y, 0.01),
+	_assets[asset] = {"asset": asset, "mesh": mesh, "mat": mat, "tracks": tracks, "index": index, "height": maxf(mesh.get_aabb().size.y, 0.01), "tall": float(row.get("tall", Data.num("army", "man", 0.22))),
 		"roles": row.get("tracks", {})}
 	return _assets[asset]
 
