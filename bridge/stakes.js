@@ -5,6 +5,7 @@
 // Hostile hosts are raised as units of Freeciv's barbarian player, which is
 // at war with everyone, so Freeciv itself fights the battles.
 
+import * as Lua from "./lua.js";
 import fs from "node:fs";
 import path from "node:path";
 import { houseFor, cityName } from "./narrator.js";
@@ -58,16 +59,17 @@ export class Stakes {
   // Raises a host through realm_host() in realmrules/script.lua; Freeciv's AI then
   // fights with it. `who` is a Lua expression for the owning player.
   host(ctx, who, x, y, units, count) {
-    ctx.send(`realm_host(${who}, ${x}, ${y}, {${units.map((u) => `"${u}"`).join(",")}}, ${count})`);
+    ctx.send(Lua.host(who, x, y, units, count));
   }
 
+  // Who a host is raised for: a player id (Lua.host finds it), or "dead".
   playerById(id) {
-    return `realm_find_player(${Number(id)})`;
+    return Number(id);
   }
 
   // The dead are a Freeciv player of their own: never met, so at war with all.
   theDead() {
-    return "realm_the_dead()";
+    return "dead";
   }
 
   // A story declares for the throne: the house marches on Kingsmere now, and

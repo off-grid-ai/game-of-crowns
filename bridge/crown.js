@@ -129,10 +129,10 @@ const HANDLERS = {
         men += n;
         // A transfer, not a loss: these men leave the house and as many join the royal host at Kingsmere
         // below. Freeciv 3.2's Lua can't give a unit to another player, so they are taken off and raised again.
-        lua.push(`for p in players_iterate() do if p.id == ${p.id} then local i = 0; for u in p:units_iterate() do local r = u.utype:rule_name(); if i < ${n} and r ~= "Workers" and r ~= "Settlers" and r ~= "Explorer" then edit.unit_kill(u, "killed", nil); i = i + 1 end end end end`);
+        lua.push(Lua.takeMen(p.id, n));
       }
     }
-    if (men) lua.push(`local c = find.city(nil, ${seat.id}); if c then for i = 1, ${men} do edit.create_unit(c.owner, c.tile, find.unit_type(i % 2 == 0 and "Knights" or "Pikemen"), 1, c, -1) end end`);
+    if (men) lua.push(Lua.levy(seat.id, Array.from({ length: men }, (_, i) => (i % 2 ? "Knights" : "Pikemen"))));
     const list = (xs) => xs.length > 1 ? `${xs.slice(0, -1).join(", ")} and ${xs.at(-1)}` : xs[0];
     const parts = [];
     const verb = (xs, one, many) => (xs.length > 1 ? many : one);
@@ -171,7 +171,7 @@ const HANDLERS = {
     const seat = world.cities.find((x) => x.owner === crown.id && x.capital);
     if (!seat) return { error: "the crown has no seat" };
     return { cost, favour: {}, text: "The King hires sellswords: a thousand men of the free companies march into Kingsmere, loyal to his gold.",
-      lua: [pay, `local c = find.city(nil, ${seat.id}); if c then for i = 1, 5 do edit.create_unit(c.owner, c.tile, find.unit_type(i % 2 == 0 and "Knights" or "Pikemen"), 1, c, -1) end end`] };
+      lua: [pay, Lua.levy(seat.id, ["Pikemen", "Knights", "Pikemen", "Knights", "Pikemen"])] };
   },
   levy(x) {
     const { world, crown, cost, pay } = x;
@@ -180,7 +180,7 @@ const HANDLERS = {
     return {
       cost, favour: {},
       text: "The King raises a levy: 600 men, pikemen and knights, muster at Kingsmere.",
-      lua: [pay, `local c = find.city(nil, ${seat.id}); if c then for _, n in ipairs({"Pikemen", "Pikemen", "Knights"}) do edit.create_unit(c.owner, c.tile, find.unit_type(n), 1, c, -1) end end`],
+      lua: [pay, Lua.levy(seat.id, ["Pikemen", "Pikemen", "Knights"])],
     };
   },
   build(x) {
@@ -205,7 +205,7 @@ const HANDLERS = {
     return {
       cost, favour: own ? {} : { [owner.id]: 8 },
       text: own ? `The King raises ${thing} in ${town} at the crown's cost.` : `The crown pays for ${thing} in ${town}. ${lord} is grateful.`,
-      lua: [pay, inCity(`local b = find.building_type("${b}"); if b and not c:has_building(b) then edit.create_building(c, b) end`)],
+      lua: [pay, Lua.building(c.id, b)],
     };
   },
   feast(x) {
@@ -393,7 +393,7 @@ const HANDLERS = {
     const others = greatHouses(world).filter((p) => p.id !== owner.id);
     const favour = { [owner.id]: d.favour ?? -25, ...Object.fromEntries(others.map((p) => [p.id, d.others ?? -2])) };
     // A ruling that sends the host (a siege plea answered) raises one at the town, as it always did.
-    if (cmd.spawn) return { cost, lua: [pay, `realm_host(realm_find_player(${crown.id}), ${c.x}, ${c.y}, {"Pikemen","Knights","Archers","Catapult"}, 8)`], favour, march: { city: c.id, house: owner.id },
+    if (cmd.spawn) return { cost, lua: [pay, Lua.host(crown.id, c.x, c.y, ["Pikemen", "Knights", "Archers", "Catapult"], 8)], favour, march: { city: c.id, house: owner.id },
       text: `The royal host marches on ${town}. ${lord} calls every man to its walls, and every house in the realm watches.` };
     const h = cmd.host;
     if (!h) return { error: "the crown has no host to march" };

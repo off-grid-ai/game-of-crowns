@@ -8,10 +8,13 @@ import path from "node:path";
 import { bareFreeciv, checker } from "./fc_probe_lib.mjs";
 
 const { check, done } = checker("REAL MOVES");
+// The step's Lua lives in the port (lua.js walk and step, integration audit #2); hosts.js sends those.
 const hosts = fs.readFileSync(new URL("../hosts.js", import.meta.url), "utf8");
-check(!/unit_teleport/.test(hosts), "hosts.js still teleports its companies");
-const MOVE = hosts.match(/const MOVE = "([^"]+)"/)?.[1];
-check(MOVE && MOVE.startsWith("edit.unit_move, u, t,"), "hosts.js has no edit.unit_move step");
+const port = fs.readFileSync(new URL("../lua.js", import.meta.url), "utf8");
+check(!/unit_teleport/.test(hosts + port), "the hosts' moves teleport their companies");
+check(/Lua\.walk\(/.test(hosts) && /Lua\.step\(/.test(hosts), "hosts.js doesn't walk its companies through the port (Lua.walk, Lua.step)");
+const MOVE = port.match(/const MOVE = "([^"]+)"/)?.[1];
+check(MOVE && MOVE.startsWith("edit.unit_move, u, t,"), "lua.js has no edit.unit_move step");
 
 const a = await bareFreeciv({ serv: ["set aifill 2", "set minplayers 0", "set timeout -1", "set saveturns 1", 'set autosaves "TURN|GAMEOVER"', 'set savename "probe"', "set endturn 4", "start"] });
 check(await a.until(/Game ended as the turn limit/, 90000), "the game didn't run");
@@ -23,7 +26,7 @@ await b.until(/Now accepting new client connections/, 30000);
 const raised = await b.cmd('lua cmd for p in players_iterate() do for c in p:cities_iterate() do realm_host(p, c.tile.x, c.tile.y, {"Pikemen"}, 2); local n, homed = 0, 0; for u in p:units_iterate() do if u.utype:rule_name() == "Pikemen" then n = n + 1; if u:get_homecity() then homed = homed + 1 end end end; log.normal("RAISED %d %d", n, homed) return end end', /RAISED /);
 const [, n, homed] = (raised ?? "").match(/RAISED (\d+) (\d+)/) ?? [];
 check(Number(n) >= 1 && n === homed, `a raised host isn't homed to a town (${raised})`);
-// One step on land is made, one onto water refused (the same call hosts.js sends, MOVE), by a company set on
+// One step on land is made, one onto water refused (the same call the port sends, MOVE), by a company set on
 // open land beside both (the Lua goes in a file: the console cuts long lines).
 const stepFile = path.join(a.dir, "step.lua");
 fs.writeFileSync(stepFile, `

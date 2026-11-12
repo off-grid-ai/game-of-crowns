@@ -91,11 +91,11 @@ export function royalWorks(ctx, turn) {
     const c = world.cities.find((x) => x.id === Number(cid));
     delete meta.works[cid];
     if (!c || c.owner !== crown.id) {
-      if (w.paid) send(`lua cmd for p in players_iterate() do if p.id == ${crown.id} then edit.change_gold(p, ${w.paid}) end end`);
+      if (w.paid) send(`lua cmd ${Lua.gold(crown.id, w.paid)}`);
       record({ turn, kind: "works", text: `The King's masons leave their half-built ${w.building.toLowerCase()} in ${cityName(Number(cid))}: the town is no longer the Crown's. The coin comes home.` });
       continue;
     }
-    send(`lua cmd local c = find.city(nil, ${c.id}); local b = find.building_type("${w.building}"); if c and b and not c:has_building(b) then edit.create_building(c, b) end`);
+    send(`lua cmd ${Lua.building(c.id, w.building)}`);
     record({ turn, kind: "works", text: `The King's ${w.building.toLowerCase()} stands finished in ${cityName(c.id)}.`, city: c.id });
     scene("feast", { x: c.x, y: c.y, city: c.id, owner: c.owner });
   }
@@ -104,9 +104,9 @@ export function royalWorks(ctx, turn) {
   const markets = mine.filter((x) => (x.buildings ?? []).includes("Marketplace")).length;
   // A market's gold beyond Freeciv's own tax (data/economy.json marketGold; 0: the crown earns only what its towns yield).
   const marketGold = ECONOMY.marketGold ?? 0;
-  if (markets && marketGold) send(`lua cmd for p in players_iterate() do if p.id == ${crown.id} then edit.change_gold(p, ${markets * marketGold}) end end`);
+  if (markets && marketGold) send(`lua cmd ${Lua.gold(crown.id, markets * marketGold)}`);
   if (turn % 4 === 0) for (const x of mine.filter((y) => (y.buildings ?? []).includes("Barracks"))) {
-    send(`lua cmd local c = find.city(nil, ${x.id}); if c then edit.create_unit(c.owner, c.tile, find.unit_type("Pikemen"), 1, c, -1) end`);
+    send(`lua cmd ${Lua.levy(x.id, ["Pikemen"])}`);
   }
   chron.saveMeta(meta);
 }

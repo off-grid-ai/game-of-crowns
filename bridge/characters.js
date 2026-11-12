@@ -6,6 +6,7 @@
 // here; pivotal ones go to Claude in the character's own voice. Results land
 // in Freeciv (towns change hands, rebellions, gold) and at the King's court.
 
+import * as Lua from "./lua.js";
 import { pick as wording } from "./say.js";  // one of a result's wordings (data/dilemmas.json text lists)
 import fs from "node:fs";
 import path from "node:path";
@@ -574,7 +575,7 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
           this.record({ turn, kind: "scheme", text: `${c.name} of ${cityName(c.seat)} sends ${houseFor(m.to).name}'s envoys home empty-handed.${line}`, city: c.seat, with: world.cities.find((x) => x.owner === m.to.id && x.capital)?.id });
           return;
         }
-        ctx.send(`local c = find.city(nil, ${town.id}); local to; for p in players_iterate() do if p.id == ${m.to.id} then to = p end end; if c and to then edit.transfer_city(c, to) end`);
+        ctx.send(Lua.transferCity(town.id, m.to.id));
         this.unscheme("envoy", m.to.id, c.playerId);  // the gold did its work: the gates are open
         this.claims ??= [];
         this.claims.push({ city: town.id, from: c.playerId, to: m.to.id, turn });
@@ -604,7 +605,7 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
         if (choice === "raid") {
           const prey = world.cities.find((x) => x.owner === m.target.playerId && !x.capital);
           if (prey) {
-            ctx.send(`realm_raid(${prey.id})`);
+            ctx.send(Lua.raid(prey.id));
             this.shift(m.target.id, c.id, -40, `${c.name}'s men raided ${cityName(prey.id)}.`);
             this.record({ turn, kind: "raid", text: `Men without banners raid ${cityName(prey.id)}. Everyone knows who paid them: ${c.house}.${line}`, city: prey.id });
           }
@@ -620,7 +621,7 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
         const d = await this.ask(c, `Your house has lost faith in the King. You could raise your banners against the crown, or swallow your pride.`, ["rebel", "endure"]);
         if (d && d.choice !== "rebel") return;
         const seat = world.cities.find((x) => x.id === c.seat);
-        if (seat) ctx.send(`local c = find.city(nil, ${seat.id}); if c then for i = 1, 3 do edit.create_unit(c.owner, c.tile, find.unit_type("Knights") or find.unit_type("Horsemen"), 1, c, -1) end end`);
+        if (seat) ctx.send(Lua.levy(seat.id, Array(3).fill("Knights|Horsemen")));
         const why = ctx.cause?.(c.playerId);
         this.record({ turn, kind: "rebellion", text: `${c.name} raises the banners of ${c.house} against the crown!${why ? ` ${c.house} has not forgotten ${why}.` : ""}${d?.line ? ` "${d.line}"` : ""}`, city: c.seat ?? undefined });
         ctx.rose?.(c.playerId);
@@ -686,7 +687,7 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
       // one gravely wronged comes to court to demand amends.
       if (owed.d > 0 && !owed.setback && Math.random() < 0.5) {
         owed.raised = turn;
-        ctx.send?.(`for p in players_iterate() do if p.id == ${world.players.find((x) => houseFor(x).crown)?.id ?? -1} then edit.change_gold(p, 40) end end`);
+        ctx.send?.(Lua.gold(world.players.find((x) => houseFor(x).crown)?.id ?? -1, 40));
         this.record({ turn, kind: "loyalty", text: `${c.name} of ${c.house} has not forgotten the King's ruling: a chest of 40 gold comes to Kingsmere, "for the crown's kindness".`, city: c.seat ?? undefined });
         continue;
       }
@@ -1121,7 +1122,7 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
     each(e.goal, (_, v, who) => { if (who?.goals) { who.goals.unshift({ kind: v.kind, text: this.fill(v.text, roles) }); who.goals = who.goals.slice(0, 3); this.save(who); } });
     each(e.units, (pid, v) => {
       const seat = world.cities.find((x) => x.owner === pid && x.capital) ?? world.cities.find((x) => x.owner === pid);
-      if (seat) out.lua.push(`local c = find.city(nil, ${seat.id}); if c then local t = find.unit_type("${v.type ?? "Pikemen"}") or find.unit_type("Warriors"); for i = 1, ${Number(v.count ?? v) || 1} do edit.create_unit(c.owner, c.tile, t, 1, c, -1) end end`);
+      if (seat) out.lua.push(Lua.levy(seat.id, Array(Number(v.count ?? v) || 1).fill(`${v.type ?? "Pikemen"}|Warriors`)));
     });
     for (const [a, b, d] of e.opinion ?? []) if (roles[a] && roles[b]) { this.shift(roles[a].id, roles[b].id, d); this.save(roles[a]); }
     // The crown borrows: repaid with interest in loan.seasons, or the King's word is broken (collect).
@@ -1140,7 +1141,7 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
     // Men without banners fall on a town of the victim's: Freeciv's barbarians, raised beside it (realm_raid).
     if (e.raid && roles[e.raid[1]]) {
       const prey = roles.rivalTown && roles[e.raid[1]] === roles.rival ? roles.rivalTown : world.cities.find((x) => x.owner === roles[e.raid[1]].playerId && !x.capital);
-      if (prey?.x !== undefined) out.lua.push(`realm_raid(${prey.id})`);
+      if (prey?.x !== undefined) out.lua.push(Lua.raid(prey.id));
       if (roles[e.raid[0]]) this.shift(roles[e.raid[1]].id, roles[e.raid[0]].id, -40);
     }
     // War: a host is raised for the attacker beside the victim's town, and
@@ -1150,7 +1151,7 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
       const prey = (def === roles.rival && roles.rivalTown) || world.cities.find((x) => x.owner === def.playerId && !x.capital) || world.cities.find((x) => x.owner === def.playerId);
       if (prey?.x !== undefined) {
         this.onWar?.([atk.playerId, def.playerId]);  // the war itself, in Freeciv (the one diplomacy writer), so the host fights
-        out.lua.push(`realm_host(realm_find_player(${atk.playerId}), ${prey.x}, ${prey.y}, {"Pikemen","Archers","Knights","Catapult"}, ${Number(e.warSize ?? 8)})`);
+        out.lua.push(Lua.host(atk.playerId, prey.x, prey.y, ["Pikemen", "Archers", "Knights", "Catapult"], Number(e.warSize ?? 8)));
       }
       const muster = warMuster(world, atk.playerId, prey);
       if (muster) (out.musters ??= []).push(muster);  // court.js rulingScene shows it
@@ -1173,7 +1174,7 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
       if (debt.owed) {
         const crown = world.players.find((x) => houseFor(x).crown);
         if (p && crown && crown.gold >= debt.amount) {
-          ctx.send(`for p in players_iterate() do if p.id == ${crown.id} then edit.change_gold(p, -${debt.amount}) elseif p.id == ${debt.pid} then edit.change_gold(p, ${debt.amount}) end end`);
+          ctx.send(Lua.pay(crown.id, debt.pid, debt.amount));
           this.record({ turn, kind: "court", text: `The crown repays ${houseFor(p).name} the ${debt.amount} gold it borrowed, with interest.` });
         } else if (p) {
           ctx.shift({ [debt.pid]: -15 }, "the crown's unpaid debt");
@@ -1184,7 +1185,7 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
         continue;
       }
       if (p && p.gold >= debt.amount) {
-        ctx.send(`for p in players_iterate() do if p.id == ${debt.pid} then edit.change_gold(p, -${debt.amount}) elseif p.id == ${world.players.find((x) => houseFor(x).crown)?.id ?? -1} then edit.change_gold(p, ${debt.amount}) end end`);
+        ctx.send(Lua.pay(debt.pid, world.players.find((x) => houseFor(x).crown)?.id ?? -1, debt.amount));
         this.record({ turn, kind: "court", text: `${houseFor(p).name} repays the crown ${debt.amount} gold, with interest.` });
       } else if (lord) {
         ctx.shift({ [debt.pid]: -15 }, "shamed over the crown's loan");
@@ -1244,7 +1245,7 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
     if (!opt) return { error: "no such answer" };
     p.answered = option;
     const out = { cost: opt.cost ?? 0, favour: {}, lua: [], text: "" };
-    const gold = (pid2, amount) => out.lua.push(`for p in players_iterate() do if p.id == ${pid2} then edit.change_gold(p, ${amount}) end end`);
+    const gold = (pid2, amount) => out.lua.push(Lua.gold(pid2, amount));
     const handler = ANSWERS[p.kind];
     if (handler) {
       handler.call(this, { p, c, opt, option, out, gold, world });

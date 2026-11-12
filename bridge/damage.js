@@ -42,7 +42,7 @@ export function season(ctx, turn) {
   for (const c of world.cities) {
     const d = all[c.id];
     if (d && (c.buildings ?? []).includes("City Walls") && d.walls.some((w) => stageOf(w) === "breached")) {
-      ctx.send?.(`lua cmd ${Lua.inCity(c.id, 'local b = find.building_type("City Walls"); if b and c:has_building(b) then edit.remove_building(c, b) end')}`);
+      ctx.send?.(`lua cmd ${Lua.building(c.id, "City Walls", false)}`);
     }
   }
   for (const id of Object.keys(all)) if (!world.cities.some((c) => c.id === Number(id))) delete all[id];

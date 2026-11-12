@@ -9,6 +9,7 @@
 // (getters for what it reassigns, setPaused for the clock's hold); server.js
 // keeps wrappers of the same names.
 
+import * as Lua from "./lua.js";
 import * as Opening from "./opening.js";
 import { say } from "./say.js";
 import * as Events from "./events.js";
@@ -258,10 +259,10 @@ export function ladder(ctx) {
   const seat = crownSeat();
   if (aim.reward === "feast" && seat) scene("feast", { x: seat.x, y: seat.y, city: seat.id, owner: seat.owner });
   if (aim.reward === "knights" && seat) {
-    send(`lua cmd local c = find.city(nil, ${seat.id}); if c then for i = 1, 2 do edit.create_unit(c.owner, c.tile, find.unit_type("Knights"), 1, c, -1) end end`);
+    send(`lua cmd ${Lua.levy(seat.id, ["Knights", "Knights"])}`);
     scene("muster", { x: seat.x, y: seat.y, tx: seat.x + 2, ty: seat.y + 1, city: seat.id });
   }
-  if (aim.reward === "gold") send(`lua cmd for p in players_iterate() do if p.id == ${crownOf().id} then edit.change_gold(p, 250) end end`);
+  if (aim.reward === "gold") send(`lua cmd ${Lua.gold(crownOf().id, 250)}`);
   record({ turn: world.turn, kind: "aim", text: aim.says });
   if (l.i < LADDER.length) l.i++;
   else { l.dyn = null; l.n = (l.n ?? 0) + 1; }

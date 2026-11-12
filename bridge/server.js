@@ -5,6 +5,7 @@
 //   times and scores reigns.
 // - Exposes a small HTTP API on 127.0.0.1:8787 for the view.
 
+import * as Lua from "./lua.js";
 import * as Damage from "./damage.js";
 import * as Mines from "./mines.js";
 import * as Events from "./events.js";
@@ -389,10 +390,9 @@ function applyStartOptions() {
   meta.crownedAt ??= world.turn;  // the reign's chronicle begins here (routes_realm.js chronicle)
   chron.saveMeta(meta);
   const lua = [];
-  const who = (id) => `for q in players_iterate() do if q.id == ${id} then`;
   for (const p of world.players.filter((x) => !houseFor(x).wild && !houseFor(x).crown)) {
     const gold = { poor: -Math.floor((p.gold ?? 0) * 0.7), asis: 0, rich: 400 }[o.houseWealth] ?? 0;
-    if (gold) lua.push(`${who(p.id)} edit.change_gold(q, ${gold}) end end`);
+    if (gold) lua.push(Lua.gold(p.id, gold));
     // The reign's mood sets the level; each house's own history with the crown
     // (the world bible) sets where it stands within it, so the table starts
     // with friends, doubters and an obvious problem, not seven equal numbers.
@@ -429,12 +429,12 @@ function applyStartOptions() {
   // The King's purse at his crowning (economy.json start, by the reign's wealth): the
   // shared Aldmere baseline's heap would carry him through a whole reign unfelt.
   const purse = Treasury.ECONOMY.start[meta.wealth] ?? Treasury.ECONOMY.start.comfortable;
-  if (crown && crown.gold !== purse) { lua.push(`${who(crown.id)} edit.change_gold(q, ${purse - crown.gold}) end end`); crown.gold = purse; }
+  if (crown && crown.gold !== purse) { lua.push(Lua.gold(crown.id, purse - crown.gold)); crown.gold = purse; }
   if (crown && o.host === "strong") {
-    lua.push(`local k = find.city(nil, ${world.cities.find((c) => c.owner === crown.id && c.capital)?.id ?? -1}); if k then for _, n in ipairs({"Knights", "Knights", "Knights", "Pikemen", "Pikemen", "Pikemen", "Pikemen", "Archers", "Archers", "Catapult"}) do edit.create_unit(k.owner, k.tile, find.unit_type(n), 1, k, -1) end end`);
+    lua.push(Lua.levy(world.cities.find((c) => c.owner === crown.id && c.capital)?.id ?? -1, ["Knights", "Knights", "Knights", "Pikemen", "Pikemen", "Pikemen", "Pikemen", "Archers", "Archers", "Catapult"]));
   } else if (crown && o.host === "small") {
     // Half the royal garrison was never raised.
-    lua.push(`${who(crown.id)} local i = 0; for u in q:units_iterate() do if u.utype:rule_name() ~= "Workers" then i = i + 1; if i % 2 == 0 then edit.unit_kill(u, "disbanded", nil) end end end end end`);
+    lua.push(Lua.takeMen(crown.id, Math.floor((world.units ?? []).filter((u) => u.owner === crown.id && SOLDIER(u)).length / 2)));
   }
   lua.forEach((l) => send(`lua cmd ${l}`));
   record({ turn: world.turn, kind: "decree", text: `The realm as the King found it: the great houses ${{ loyal: "loyal to the crown", wary: "wary of the crown", resentful: "resentful of the crown" }[o.trust]}, ${{ peaceful: "slow to war", mixed: "of mixed temper", warlike: "spoiling for war" }[o.temper]}.` });

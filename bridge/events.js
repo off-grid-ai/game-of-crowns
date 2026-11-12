@@ -9,6 +9,7 @@
 // only a flavour line may be rephrased elsewhere. Behind a switch (options.events,
 // else data on), the same way as the seals.
 
+import * as Lua from "./lua.js";
 import fs from "node:fs";
 import { houseFor, cityName } from "./narrator.js";
 import { calendar } from "./stakes.js";
@@ -134,7 +135,7 @@ function apply(ctx, fx = {}, sub = {}, turn) {
   if (Object.keys(shift).length) ctx.shiftFavour?.(shift, fx.why ?? "the King's answer to an event");
   const crown = crownOf(world);
   if (fx.gold && crown) {
-    ctx.send?.(`lua cmd for p in players_iterate() do if p.id == ${crown.id} then edit.change_gold(p, ${Math.round(fx.gold)}) end end`);
+    ctx.send?.(`lua cmd ${Lua.gold(crown.id, Math.round(fx.gold))}`);
     crown.gold = (crown.gold ?? 0) + Math.round(fx.gold);  // now, as the decree route does, so a second payment can't overdraw before the next reading
   }
   if (fx.ease && ctx.meta.director?.threat) ctx.meta.director.threat.level = Math.max(0, ctx.meta.director.threat.level - fx.ease);

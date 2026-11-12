@@ -722,7 +722,7 @@ export class Arcs {
     const send = (l) => { lua.push(l); ctx.send(l); };
     const R = (k) => roles[k];
     const court = this.court;
-    const gold = (pid, n) => send(`for p in players_iterate() do if p.id == ${pid} then edit.change_gold(p, ${Math.round(n)}) end end`);
+    const gold = (pid, n) => send(Lua.gold(pid, Math.round(n)));
     for (const [a, b, n] of d.opinion ?? []) {
       if (!R(a) || !R(b) || R(a).town) continue;
       if (court.people[R(a).id]) court.shift(R(a).id, R(b).id, n);
@@ -739,13 +739,13 @@ export class Arcs {
       const who = R(k);
       const h = this.house(who, ctx);
       const at = who?.town ? who : ctx.world.cities.find((x) => x.id === who?.seat) ?? ctx.world.cities.find((x) => x.owner === h?.id && x.capital) ?? ctx.world.cities.find((x) => x.owner === h?.id);
-      if (at) send(`local c = find.city(nil, ${at.id}); if c then local t = find.unit_type("${v.type ?? "Pikemen"}") or find.unit_type("Warriors"); for i = 1, ${Number(v.count ?? v) || 1} do edit.create_unit(c.owner, c.tile, t, 1, c, -1) end end`);
+      if (at) send(Lua.levy(at.id, Array(Number(v.count ?? v) || 1).fill(`${v.type ?? "Pikemen"}|Warriors`)));
     }
     // Men without banners: Freeciv's barbarians raised beside the victim's town (realm_raid); its AI raids.
     if (d.raid && R(d.raid[0]) && R(d.raid[1])) {
       const [atk, def] = [R(d.raid[0]), R(d.raid[1])];
       const prey = d.raid[2] && R(d.raid[2])?.town ? R(d.raid[2]) : ctx.world.cities.find((x) => x.owner === def.playerId && !x.capital) ?? ctx.world.cities.find((x) => x.owner === def.playerId);
-      if (prey) send(`realm_raid(${prey.id})`);
+      if (prey) send(Lua.raid(prey.id));
       if (court.people[def.id]) court.shift(def.id, atk.id, -35);
     }
     // War: a host raised beside the victim's town; Freeciv's AI fights it out.
@@ -761,7 +761,7 @@ export class Arcs {
       const prey = (d.war[2] && R(d.war[2])?.town && R(d.war[2])) || ctx.world.cities.find((x) => x.owner === def.playerId && !x.capital) || ctx.world.cities.find((x) => x.owner === def.playerId);
       if (prey && atk.playerId !== def.playerId) {
         court.onWar?.([atk.playerId, def.playerId]);  // the war itself, in Freeciv (the one diplomacy writer), so the host fights
-        send(`realm_host(realm_find_player(${atk.playerId}), ${prey.x}, ${prey.y}, {"Pikemen","Archers","Knights","Catapult"}, ${Math.round(Number(d.warSize ?? 6) * dials(arc.tags).hosts)})`);
+        send(Lua.host(atk.playerId, prey.x, prey.y, ["Pikemen", "Archers", "Knights", "Catapult"], Math.round(Number(d.warSize ?? 6) * dials(arc.tags).hosts)));
         const muster = warMuster(ctx.world, atk.playerId, prey);
         if (muster) ctx.scene("muster", muster);  // the attacker's host marches out from its seat
         court.shift(def.id, atk.id, -50);
@@ -774,7 +774,7 @@ export class Arcs {
       const [town, to] = [R(d.transfer[0]), R(d.transfer[1])];
       const toPid = to.town ? to.owner : to.playerId;
       if (!town.gone && town.owner !== toPid) {
-        send(`local c = find.city(nil, ${town.id}); local to; for p in players_iterate() do if p.id == ${toPid} then to = p end end; if c and to then edit.transfer_city(c, to) end`);
+        send(Lua.transferCity(town.id, toPid));
         (court.claims ??= []).push({ city: town.id, from: town.owner, to: toPid, turn: ctx.world.turn });
         court.saveCourt();
       }

@@ -81,7 +81,7 @@ export function startCampaign(ctx, { city, house }) {
     record({ turn, kind: "betrayal", text: `The King marches on a house sworn to him. Every lord who ever knelt to the crown takes note.`, city });
   }
   const allies = greatHouses().filter((p) => p.id !== house && sworn(ctx, p.id) && world.cities.some((c) => c.owner === p.id));
-  for (const a of allies) send(`lua cmd realm_host(realm_find_player(${a.id}), ${at.x}, ${at.y}, {"Pikemen","Knights"}, 3)`);
+  for (const a of allies) send(`lua cmd ${Lua.host(a.id, at.x, at.y, ["Pikemen", "Knights"], 3)}`);
   if (allies.length) record({ turn, kind: "decree", text: `${allies.map((p) => houseFor(p).name).join(" and ")} ${allies.length > 1 ? "answer their oaths" : "answers its oath"} and ${allies.length > 1 ? "send" : "sends"} men to march with the King.`, city });
   (meta.campaigns ??= []).push({ city, house, turn, allies: allies.map((p) => p.id) });
   chron.saveMeta(meta);
@@ -152,7 +152,7 @@ export function siegeRuled(ctx, beat, option) {
   if (option === "tribute") {
     meta.campaigns = meta.campaigns.filter((x) => x !== c);
     const paid = c.tribute ?? 150;
-    if (crown) send(`lua cmd for p in players_iterate() do if p.id == ${crown.id} then edit.change_gold(p, ${paid}) end; if p.id == ${c.house} then edit.change_gold(p, -${paid}) end end`);
+    if (crown) send(`lua cmd ${Lua.pay(c.house, crown.id, paid)}`);
   }
   chron.saveMeta(meta);
 }

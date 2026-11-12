@@ -36,6 +36,8 @@ const town = async () => {
   const foe = [...(l ?? "").matchAll(/(\d+):(\d+):(\d+):(\d+)/g)].map((m) => ({ city: +m[1], owner: +m[2], crown: +m[3], units: +m[4] }));
   return foe;
 };
+// The house's town, founded here when its AI hasn't settled yet (a probe never waits on where the AI goes).
+await b.cmd('lua cmd local foe = find.player(1); if foe:num_cities() == 0 then for t in whole_map_iterate() do if foe:num_cities() == 0 and not t:city() and t.terrain:class_name() == "Land" and t:num_units() == 0 then pcall(edit.create_city, foe, t, "Probeford") end end end; log.normal("FOUNDED %d", foe:num_cities())', /FOUNDED/);
 const towns = await town();
 const crownId = towns[0]?.crown;
 const target = towns.find((t) => t.owner !== crownId);

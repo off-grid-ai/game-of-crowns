@@ -3,6 +3,7 @@
 // characters.js's own chain. Each runs as the court (`this`), with the
 // petition, the petitioner, the option chosen, the result being built, a
 // gold() helper and the world.
+import * as Lua from "./lua.js";
 import { cityName, houseFor } from "./narrator.js";
 import { say } from "./say.js";
 
@@ -43,7 +44,7 @@ export const ANSWERS = {
     const k = p.claim;
     k.settled = true;
     const town = cityName(k.city);
-    const move = (to) => out.lua.push(`local c = find.city(nil, ${k.city}); local to; for p in players_iterate() do if p.id == ${to} then to = p end end; if c and to then edit.transfer_city(c, to) end`);
+    const move = (to) => out.lua.push(Lua.transferCity(k.city, to));
     if (option === "return") { move(k.from); out.favour[k.from] = 20; out.favour[k.to] = -30; out.text = `By the King's judgment, ${town} is returned to ${c.house}.`; }
     if (option === "confirm") { out.favour[k.to] = 15; out.favour[k.from] = -30; for (const b of this.alive().filter((x) => x.rank === "bannerman")) b.loyalty = Math.max(0, b.loyalty - 5); out.text = `The King confirms ${town} to its new masters. Bannermen across the realm take note.`; }
     if (option === "seize") { const crown = world.players.find((x) => houseFor(x).crown); if (crown) move(crown.id); out.favour[k.from] = -20; out.favour[k.to] = -20; out.text = `The King takes ${town} for the crown. Neither house is pleased.`; }
@@ -129,8 +130,8 @@ export const ANSWERS = {
   },
   outlaws({ p, c, opt, option, out, gold, world }) {
     const town = cityName(p.city);
-    if (option === "hunt") { out.favour[c.playerId] = 15; out.lua.push(`local c = find.city(nil, ${p.city}); if c then local t = find.unit_type("Knights") or find.unit_type("Horsemen"); for i = 1, 3 do edit.create_unit(c.owner, c.tile, t, 1, c, -1) end end`); out.text = `The King's riders clear the forest road outside ${town}. The oaks bear different fruit now.`; }
-    if (option === "pardon") { out.favour[c.playerId] = -15; const crown = world.players.find((x) => houseFor(x).crown); const seat = crown && world.cities.find((x) => x.owner === crown.id); if (seat) out.lua.push(`local c = find.city(nil, ${seat.id}); if c then for i = 1, 2 do edit.create_unit(c.owner, c.tile, find.unit_type("Archers") or find.unit_type("Warriors"), 0, c, -1) end end`); this.remember(c.id, `The King pardoned the outlaws who hanged my men outside ${town}, and put them in royal colours.`); out.text = `The outlaws of ${town} kneel and are pardoned. They march to Kingsmere in the King's colours. ${c.house} does not forgive it.`; }
+    if (option === "hunt") { out.favour[c.playerId] = 15; out.lua.push(Lua.levy(p.city, Array(3).fill("Knights|Horsemen"))); out.text = `The King's riders clear the forest road outside ${town}. The oaks bear different fruit now.`; }
+    if (option === "pardon") { out.favour[c.playerId] = -15; const crown = world.players.find((x) => houseFor(x).crown); const seat = crown && world.cities.find((x) => x.owner === crown.id); if (seat) out.lua.push(Lua.levy(seat.id, Array(2).fill("Archers|Warriors"), 0)); this.remember(c.id, `The King pardoned the outlaws who hanged my men outside ${town}, and put them in royal colours.`); out.text = `The outlaws of ${town} kneel and are pardoned. They march to Kingsmere in the King's colours. ${c.house} does not forgive it.`; }
     if (option === "theirs") { out.favour[c.playerId] = -5; gold(c.playerId, -60); out.text = `The King tells ${c.name} to keep his own roads. The outlaws keep the road, and the taxes of ${town} keep going into the forest.`; }
   },
   informer({ p, c, opt, option, out, gold, world }) {

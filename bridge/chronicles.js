@@ -220,9 +220,9 @@ export function create({ name, scenario = "aldmere", minutes = 0, pace, fate = "
   }
   const [, mapW, mapH] = fs.readFileSync(p.setup, "utf8").match(/local W, H = (\d+), (\d+)/);
   writeNations(path.join(p.data, "nation"), random, opt.temper);
-  // The crown's starting treasury.
+  // The crown's starting treasury: the founding file's own 500 becomes the reign's (the file is copied, not sent).
   const gold = ECONOMY.start[wealth] ?? ECONOMY.start.comfortable;
-  fs.writeFileSync(p.setup, fs.readFileSync(p.setup, "utf8").replace("edit.change_gold(p, 500)", `edit.change_gold(p, ${gold})`));
+  fs.writeFileSync(p.setup, fs.readFileSync(p.setup, "utf8").replace(/(change_gold\(p, )500\)/, `$1${Number(gold)})`));
   let serv = fs.readFileSync(path.join(DIR, "realm.serv"), "utf8")
     .replace("lua file lua/world_setup.lua", `lua file ${p.setup}`)
     .replace(/^set xsize \d+$/m, `set xsize ${mapW}`)

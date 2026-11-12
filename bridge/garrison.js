@@ -4,6 +4,7 @@
 // (meta.garrisons, so it survives a restart), its men join the town's defence in Freeciv, and it goes
 // home after its seasons. The view only draws it (cities[].garrison in /world; decisions_world.gd).
 // Numbers: data/garrison.json.
+import * as Lua from "./lua.js";
 import fs from "node:fs";
 import * as chron from "./chronicles.js";
 
@@ -21,8 +22,7 @@ export function post(meta, action, city, turn, send) {
   meta.garrisons = [...list, g];
   chron.saveMeta(meta);
   if (GARRISON.units > 0 && send) {
-    const type = GARRISON.types.map((t) => `find.unit_type("${t}")`).join(" or ");
-    send(`lua cmd local c = find.city(nil, ${Number(city.id)}); if c then for i = 1, ${Number(GARRISON.units)} do edit.create_unit(c.owner, c.tile, ${type}, 0, c, -1) end end`);
+    send(`lua cmd ${Lua.levy(city.id, Array(Number(GARRISON.units)).fill(GARRISON.types.join("|")), 0)}`);
   }
   return g;
 }

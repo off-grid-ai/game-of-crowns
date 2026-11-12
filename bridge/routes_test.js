@@ -187,7 +187,7 @@ export async function grow(ctx, req, res, url) {
   if (req.headers["x-test"] !== "1" || !/test|film|check|proof/i.test(String(ctx.meta?.name ?? ""))) return json(res, 403, { error: "test reigns only" });
   const b = await body(req);
   const name = String(b.building ?? "Granary").replace(/[^A-Za-z ]/g, "");
-  send(`lua cmd local c = find.city(nil, ${Number(b.city)}); local t = find.building_type("${name}"); if c and t and not c:has_building(t) then edit.create_building(c, t) end`);
+  send(`lua cmd ${Lua.building(b.city, name)}`);
   return json(res, 200, { ok: true });
 }
 

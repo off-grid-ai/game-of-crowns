@@ -149,7 +149,7 @@ function grow(ctx, d, turn) {
   if (th.kind === "host") {
     // Men gather at the town: a company or two more each season, by Freeciv's own units.
     th.n += 2;
-    send(`lua cmd realm_host(realm_find_player(${th.house}), ${at.x}, ${at.y}, {"Pikemen","Archers","Knights"}, 2)`);
+    send(`lua cmd ${Lua.host(th.house, at.x, at.y, ["Pikemen", "Archers", "Knights"], 2)}`);
     scene("muster", { x: at.x, y: at.y, tx: at.x, ty: at.y, city: at.id });
   } else if (th.kind === "famine") {
     // The fields round the town fail: a Blight in Freeciv (half its food) for 12 seasons, so it really starves.
@@ -178,7 +178,7 @@ function breaks(ctx, d, turn) {
     const target = near.find((c) => !c.capital) ?? near[0];
     if (target) {
       if (!target.capital) send(`lua cmd ${Lua.transferCity(target.id, th.house)}`);
-      send(`lua cmd realm_host(realm_find_player(${th.house}), ${target.x}, ${target.y}, {"Pikemen","Archers","Knights"}, ${3 + Math.floor(th.n / 2)})`);
+      send(`lua cmd ${Lua.host(th.house, target.x, target.y, ["Pikemen", "Archers", "Knights"], 3 + Math.floor(th.n / 2))}`);
       addMark?.("sack", target.x, target.y, turn);
       scene("sack", { x: target.x, y: target.y, city: target.id, owner: th.house });
       cost = target.capital ? `${cityName(target.id)} is sacked under the King's own walls` : `${cityName(target.id)} is stormed and taken; it flies ${th.houseName}'s banner now`;
@@ -186,7 +186,7 @@ function breaks(ctx, d, turn) {
   } else if (at && th.kind === "famine") {
     // The town's own fields waste and its granary is lost: Freeciv starves it, and it shrinks.
     send(`lua cmd ${Lua.decree(at.id, "blight", 16)}`);
-    send(`lua cmd local c = find.city(nil, ${at.id}); local g = find.building_type("Granary"); if c and g and c:has_building(g) then edit.remove_building(c, g) end`);
+    send(`lua cmd ${Lua.building(at.id, "Granary", false)}`);
     for (const c of world.cities.filter((x) => x.owner === at.owner && x.id !== at.id).sort((a, b) => dist(a, at) - dist(b, at)).slice(0, 2)) send(`lua cmd ${Lua.decree(c.id, "blight", 12)}`);
     scene("famine", { x: at.x, y: at.y, city: at.id });
     shiftFavour({ [th.house]: -8 }, "the famine the crown let spread");

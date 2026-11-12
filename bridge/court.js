@@ -10,6 +10,7 @@
 // reassigns, which the sitting reads again after each await; setSitting for the
 // hold); server.js keeps wrappers of the same names.
 
+import * as Lua from "./lua.js";
 import * as Opening from "./opening.js";
 import fs from "node:fs";
 import * as Treasury from "./treasury.js";
@@ -54,7 +55,7 @@ export function rule(ctx, id, option) {
   const crownNow = world.players.find((p) => houseFor(p).crown);
   if (out.cost && (crownNow?.gold ?? 0) < out.cost) return { error: crowns(`the treasury holds ${crownNow?.gold ?? 0} gold`) };
   if (out.cost) {
-    send(`lua cmd for p in players_iterate() do if p.id == ${crownNow.id} then edit.change_gold(p, -${out.cost}) end end`);
+    send(`lua cmd ${Lua.gold(crownNow.id, -out.cost)}`);
     crownNow.gold -= out.cost;
     Treasury.spend(meta, wearKey, out.cost, world.turn ?? 0);
   }

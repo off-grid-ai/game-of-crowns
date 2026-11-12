@@ -903,6 +903,37 @@ function realm_risings_phase(rebel)
   end
 end
 
+-- Men raised in a town for its house, homed there so Freeciv charges their upkeep (a levy, sellswords, a garrison,
+-- a story's or a petition's men). kinds: "Knights,Pikemen|Warriors": one company each, the first type of each
+-- "|" list that the ruleset has. vet: their veteran level. The bridge's one call for it is Lua.levy (lua.js).
+function realm_levy(city_id, kinds, vet)
+  local c = find.city(nil, city_id)
+  if not c then return end
+  for alts in tostring(kinds):gmatch("[^,]+") do
+    local t = nil
+    for a in alts:gmatch("[^|]+") do t = t or find.unit_type(a) end
+    if t then edit.create_unit(c.owner, c.tile, t, vet or 1, c, -1) end
+  end
+end
+
+-- A building set down in a town or taken up (a royal work finished, a famine's granary, a breach's walls, a test).
+function realm_building(city_id, name, on)
+  local c, b = find.city(nil, city_id), find.building_type(name)
+  if not (c and b) then return end
+  if on and not c:has_building(b) then edit.create_building(c, b) end
+  if not on and c:has_building(b) then edit.remove_building(c, b) end
+end
+
+-- A house's fighting men taken off (banners raised again for the crown elsewhere; a small royal host never raised):
+-- n of them, never its workers, settlers or scouts.
+function realm_take_men(pid, n)
+  local p = realm_find_player(pid)
+  if not p then return end
+  local men = {}
+  for u in p:units_iterate() do if not u.utype:has_flag("NonMil") and #men < n then men[#men + 1] = u end end
+  for _, u in ipairs(men) do edit.unit_kill(u, "disbanded", nil) end
+end
+
 -- Decree buildings (buildings.ruleset "Royal Feast", "Royal Relief", "Blight", "Heavy Tithe"; their effects in
 -- effects.ruleset). The King's decree sets one down in a town for a number of seasons (luadata.txt
 -- [decrees]); each turn the lapsed ones are taken up. Kept as a plain string ("city,building,until;..."),
