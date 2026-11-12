@@ -14,7 +14,7 @@ const CROWN := "crown"  # the King's own doing on the roads
 const NEUTRAL := "neutral"
 
 ## kind -> {tone, reach (world units), power (0-1), interest (director), dist
-## (camera distance), caption (with %s for the town)}.
+## (camera distance), caption (with %s for the town), play (the class that stages it: scene_kind.gd's, one a kind)}.
 const KINDS := {
 	"siege": {"tone": HOSTILE, "reach": 5.0, "power": 0.9, "interest": 10, "dist": 7.0, "caption": "The siege of %s"},
 	"storm": {"tone": HOSTILE, "reach": 6.0, "power": 1.0, "interest": 10, "dist": 7.0, "caption": "%s is stormed"},  # Freeciv's assault on a siege (campaigns.js stormScene)
@@ -29,7 +29,7 @@ const KINDS := {
 	"plague": {"tone": TROUBLE, "reach": 3.0, "power": 0.6, "interest": 5, "dist": 6.0, "caption": "Plague in %s"},
 	"vigil": {"tone": GRIEF, "reach": 2.5, "power": 0.9, "interest": 4, "dist": 5.0, "caption": "A vigil at %s"},
 	"death": {"tone": GRIEF, "reach": 2.5, "power": 0.8, "interest": 4, "dist": 5.0, "caption": "Mourning at %s"},
-	"feast": {"tone": JOY, "reach": 2.5, "power": 0.7, "interest": 3, "dist": 6.0, "caption": "A feast at %s"},
+	"feast": {"tone": JOY, "reach": 2.5, "power": 0.7, "interest": 3, "dist": 6.0, "caption": "A feast at %s", "play": "res://scripts/scene_kinds/feast.gd"},
 	"grain": {"tone": CROWN, "reach": 1.5, "power": 0.4, "interest": 4, "dist": 9.0, "caption": "The King's grain on the road to %s"},
 	"tribute": {"tone": CROWN, "reach": 1.2, "power": 0.3, "interest": 3, "dist": 9.0, "caption": "The King's gold on the road to %s"},
 	"wagon": {"tone": CROWN, "reach": 1.2, "power": 0.3, "interest": 2, "dist": 9.0, "caption": "Wagons on the road to %s"},

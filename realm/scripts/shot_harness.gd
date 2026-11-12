@@ -318,7 +318,7 @@ func _frame_for_shot() -> void:
 						other = main._houses[id]
 				main.get_tree().create_timer(maxf(1.0, float(_shot.get("wait", 8.0)) - float(_shot.get("lead", 6.0)))).timeout.connect(func():
 					if _shot["stage"] == "feast":
-						main.scenes._feast(at, owner)
+						main.scenes.kind("feast").stage_feast(at, owner)
 					else:
 						main.scenes._handover(at, owner, other, String(c.get("title", c["name"])))
 					main.rig.snap(at, float(_shot.get("dist", 3.0)), main.rig.clear_yaw(at, float(_shot.get("dist", 3.0)), 0.6))

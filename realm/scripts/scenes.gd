@@ -24,7 +24,17 @@ const Realistic = preload("res://scripts/realistic.gd")
 const TownLife := preload("res://scripts/town_life.gd")  # a feast's fire, its reach, and footprints
 const TownNav := preload("res://scripts/town_nav.gd")
 const Data := preload("res://scripts/data.gd")
+const SceneKinds := preload("res://scripts/scene_kinds.gd")
 var _seen := {}  # scene key -> true, so each event plays once
+var _kinds := {}  # scene kind -> its class (scene_kind.gd), one of each, made on first ask
+
+
+## The class that stages a kind of scene (scene_kinds.gd KINDS row "play"), or null for a kind still played here.
+func kind(name_: String) -> RefCounted:
+	if not _kinds.has(name_):
+		var path := String(SceneKinds.of(name_).get("play", ""))
+		_kinds[name_] = load(path).new(self) if path != "" else null
+	return _kinds[name_]
 var _wagon: Mesh
 var _sieges := {}  # city id -> {root, until}: one camp per besieged town, kept while the host stays
 var _timber: StandardMaterial3D
@@ -78,6 +88,9 @@ func sync(houses: Dictionary) -> void:
 		_seen[key] = true
 		var at: Vector3 = terrain.world_pos(float(s.get("x", 0)), float(s.get("y", 0)))
 		var follow: Node3D = null
+		var player = kind(String(s["kind"]))
+		if player:
+			follow = player.play(s, at, houses)  # its own class (scene_kinds.gd "play")
 		match String(s["kind"]):
 			"battle":
 				# Many deaths on one tile in one turn are one battle.
@@ -130,8 +143,6 @@ func sync(houses: Dictionary) -> void:
 				follow = _convoy(at, terrain.world_pos(float(s["tx"]), float(s["ty"])), false, "A ward for the King's court", s)
 			"rider":
 				follow = _rider(at, terrain.world_pos(float(s["tx"]), float(s["ty"])), String(s.get("label", "The King's word")), s)
-			"feast":
-				_feast(at, houses.get(int(s.get("owner", -1)), {}))
 			"handover":
 				var town := "The town"
 				for c in store.rec("cities", []):
@@ -178,7 +189,7 @@ func rider_on_road(from: Vector3, to: Vector3, on_done := Callable()) -> Node3D:
 func traveller(from: Vector3, to: Vector3, kind := "walker", on_done := Callable()) -> bool:
 	if kind == "rider":
 		return rider_on_road(from, to, on_done) != null
-	var r := _rng(from + Vector3(randf(), 0, randf()))
+	var r := rng(from + Vector3(randf(), 0, randf()))
 	# Only where there's a way: a straight line between two towns means no road
 	# and no land joins them (it would cross the water).
 	var way := _route(from, to)
@@ -227,7 +238,7 @@ func _cart_rig(r: RandomNumberGenerator, carter: Node3D) -> Node3D:
 	return rig
 
 
-func _rng(at: Vector3) -> RandomNumberGenerator:
+func rng(at: Vector3) -> RandomNumberGenerator:
 	var r := RandomNumberGenerator.new()
 	r.seed = hash(at) + Time.get_ticks_msec()
 	return r
@@ -433,7 +444,7 @@ func _battle(at: Vector3, loser: Dictionary, victor := {}) -> void:
 	var root := Node3D.new()
 	root.name = "Battle"
 	add_child(root)
-	var r := _rng(at)
+	var r := rng(at)
 	var lost := Color.from_string(String(loser.get("color", "#777")), Color.GRAY)
 	var won := Color.from_string(String(victor.get("color", "#7f2b26")), Color(0.5, 0.17, 0.15))
 	# Two houses in like colours (or victors unknown, in blood red, against a red
@@ -506,7 +517,7 @@ func _battle(at: Vector3, loser: Dictionary, victor := {}) -> void:
 		people.play(bearer, "Sword_Idle")
 		var house: Dictionary = loser if team == 0 else victor
 		# A standard needs its house's arms; men of no known house fight without one.
-		var flag: Node3D = _standard(root, p + side * 0.06, cols[team], face, house)
+		var flag: Node3D = standard(root, p + side * 0.06, cols[team], face, house)
 		bearers.append({"node": bearer, "flag": flag, "face": face})
 	var knights := _flank_company(root, at, dir, side, cols[1], r)
 	root.set_meta("fallen", [])
@@ -648,7 +659,7 @@ func _flank_company(root: Node3D, at: Vector3, dir: Vector3, side: Vector3, col:
 const PLANTED := 0.45
 
 
-func _standard(root: Node3D, p: Vector3, color: Color, face: Vector3, house := {}) -> Node3D:
+func standard(root: Node3D, p: Vector3, color: Color, face: Vector3, house := {}) -> Node3D:
 	var b: Node3D = Heraldry.standard(house, color, PLANTED)
 	b.position = ground(p)
 	b.rotation.y = atan2(face.x, face.z)
@@ -685,7 +696,7 @@ func _drop_banner(b: Node3D, face := Vector3.ZERO) -> void:
 
 func dust(root: Node3D, p: Vector3, along: Vector3, width: float) -> void:
 	# A thin haze kicked up along the line where the ranks meet, low and faint.
-	var d := _puffs(Color(0.58, 0.52, 0.42, 0.07), 8, 1.6, 0.04, 0.09)
+	var d := puffs(Color(0.58, 0.52, 0.42, 0.07), 8, 1.6, 0.04, 0.09)
 	d.direction = Vector3(0, 0.2, 0)
 	d.spread = 70
 	d.initial_velocity_min = 0.02
@@ -736,7 +747,7 @@ func _siege(id: int, at: Vector3, approach: Vector3, size: int, engines: int, fo
 				elif now - int(n.get_meta("dead_ms")) > 60000:
 					n.queue_free())
 	sweep.start()
-	var r := _rng(at)
+	var r := rng(at)
 	var foe_col := Color.from_string(String(foe.get("color", "#7a2222")), Color.DARK_RED).lerp(Color.WHITE, 0.2)
 	var held_col := Color.from_string(String(held.get("color", "#888")), Color.GRAY).lerp(Color.WHITE, 0.3)
 	# The siege stands outside where the town really stands: its houses' outermost corner (round 2's
@@ -760,7 +771,7 @@ func _siege(id: int, at: Vector3, approach: Vector3, size: int, engines: int, fo
 		var c: Vector3 = arc.call(a, camp_r)
 		var inward := (at - c).normalized()
 		inward.y = 0
-		_standard(root, c - inward * 0.45, foe_col, inward, foe)
+		standard(root, c - inward * 0.45, foe_col, inward, foe)
 		for i in 5:
 			var p := c + Vector3(r.randf_range(-0.35, 0.35), 0, r.randf_range(-0.35, 0.35))
 			if not _footing(p):
@@ -1022,7 +1033,7 @@ func _siege_watch(id: int) -> void:
 
 # --- fire, smoke and flight ---------------------------------------------------------
 
-func _puffs(color: Color, amount: int, life: float, smin: float, smax: float, additive := false) -> CPUParticles3D:
+func puffs(color: Color, amount: int, life: float, smin: float, smax: float, additive := false) -> CPUParticles3D:
 	var p := CPUParticles3D.new()
 	p.amount = amount
 	p.lifetime = life
@@ -1062,7 +1073,7 @@ func _burn(at: Vector3, seconds: float, scale := 1.0) -> void:
 	var root := Node3D.new()
 	root.name = "Burn"
 	add_child(root)
-	var r := _rng(at)
+	var r := rng(at)
 	for i in int(5 * scale):
 		var off := Vector3(r.randf_range(-1.2, 1.2), 0, r.randf_range(-1.2, 1.2)) * scale
 		var p := ground(at + off)
@@ -1070,13 +1081,13 @@ func _burn(at: Vector3, seconds: float, scale := 1.0) -> void:
 		# take it. Shaded, the big smoke puffs inside the fire's own light were lit
 		# bright orange and read as glowing balls over a stormed town (review v14,
 		# Stormwatch); additive fire blooms into white orbs at this scale.
-		var fire := _puffs(Color(1.0, 0.45, 0.1, 0.85), 18, 0.7, 0.05, 0.12)
+		var fire := puffs(Color(1.0, 0.45, 0.1, 0.85), 18, 0.7, 0.05, 0.12)
 		fire.initial_velocity_min = 0.15
 		fire.initial_velocity_max = 0.35
 		fire.position = p + Vector3(0, 0.2, 0)
 		(fire.mesh.material as StandardMaterial3D).shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 		root.add_child(Particles.to_gpu(fire))
-		var smoke := _puffs(Color(0.12, 0.11, 0.1, 0.75), 30, 6.0, 0.3, 0.8)
+		var smoke := puffs(Color(0.12, 0.11, 0.1, 0.75), 30, 6.0, 0.3, 0.8)
 		smoke.position = p + Vector3(0, 0.6, 0)
 		(smoke.mesh.material as StandardMaterial3D).shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 		root.add_child(Particles.to_gpu(smoke))
@@ -1099,7 +1110,7 @@ func _burn(at: Vector3, seconds: float, scale := 1.0) -> void:
 
 
 func _refugees(at: Vector3, count: int) -> void:
-	var r := _rng(at)
+	var r := rng(at)
 	# Flee toward land: try directions until one leads somewhere walkable.
 	var ang := r.randf() * TAU
 	for tries in 12:
@@ -1156,14 +1167,14 @@ func _muster(s: Dictionary, at: Vector3, houses: Dictionary) -> Node3D:
 ## him. He sets off at a walk, rides the road at a gallop and draws up at a walk.
 ## Returns the horse, to follow. `s`: the scene, reported back on arrival.
 func _rider(from: Vector3, to: Vector3, label: String, s := {}) -> Node3D:
-	var r := _rng(to)
+	var r := rng(to)
 	var horse: Node3D = Horse.new(r.randi() % Horse.COATS.size())
 	add_child(horse)
 	horse.position = stand(from, HORSE_BODY)
 	var rider: Node3D = people.make(r, "soldier", Color(0.72, 0.13, 0.16).lerp(Color.WHITE, 0.3), "adult")
 	horse.mount(rider)
 	carried_standard(rider, {"name": "The Crown", "crown": true}, Color(0.72, 0.13, 0.16))
-	var tag := _caption(self, label, ground(from) + Vector3(0, 0.45, 0))
+	var tag := caption(self, label, ground(from) + Vector3(0, 0.45, 0))
 	var road: Curve3D = terrain.paths.smooth_road(_route(from, to))
 	var length: float = maxf(road.get_baked_length(), 0.01)
 	# Eased in and out, the pace peaks at about pi/2 the average: a gallop
@@ -1203,7 +1214,7 @@ func _rider(from: Vector3, to: Vector3, label: String, s := {}) -> Node3D:
 
 ## Returns the wagon, to follow. `scene`: the bridge's scene, reported back on arrival.
 func _convoy(from: Vector3, to: Vector3, grain: bool, label := "", scene := {}) -> Node3D:
-	var r := _rng(from)
+	var r := rng(from)
 	var root := Node3D.new()
 	root.name = "Convoy"
 	add_child(root)
@@ -1228,7 +1239,7 @@ func _convoy(from: Vector3, to: Vector3, grain: bool, label := "", scene := {}) 
 	while along < length:
 		terrain.clear_around(road.sample_baked(along), 0.85)  # a crown reaches about 0.8 from its trunk (main.gd LANE_MARGIN)
 		along += 0.4
-	var tag := _caption(root, label if label != "" else ("The King's grain" if grain else "The King's gold"), ground(from) + Vector3(0, 0.45, 0))
+	var tag := caption(root, label if label != "" else ("The King's grain" if grain else "The King's gold"), ground(from) + Vector3(0, 0.45, 0))
 	var heading := [INF]  # eased, so the wagon rounds a bend instead of snapping to it
 	var tw := create_tween()
 	tw.tween_method(func(t: float):
@@ -1264,114 +1275,10 @@ func _convoy(from: Vector3, to: Vector3, grain: bool, label := "", scene := {}) 
 
 # --- feasts and handovers ----------------------------------------------------------
 
-## A wedding feast in the town square: a fire, barrels broached, the town
-## dancing in a ring around it and talking in knots at the edges.
-func _feast(at: Vector3, house: Dictionary) -> void:
-	var r := _rng(at)
-	var root := Node3D.new()
-	root.name = "Feast"
-	add_child(root)
-	var centre := ground(at)
-	# One feast, one fire, one ring of faces round it. When the town already
-	# keeps a feast (town_life.gd's bonfire and revels), that's this feast's
-	# fire and ring; the wedding brings its standard, casks and talk. Otherwise
-	# its fire is the town's, put on the town's Life like town_life's, so the
-	# town's people claim their places round it (villagers "feast") and keep
-	# out of it, and its dancers stand outside its reach.
-	var town: Array = TownNav.towns_at(towns, at)
-	var town_root: Node3D = town[0][1] if not town.is_empty() else null
-	var life: Node3D = town_root.get_node_or_null("Life") if town_root else null
-	var lit: bool = life != null and not life.get_meta("fires", []).is_empty()
-	var keep := TownLife.fire_reach()
-	var added := {"fires": [], "standing": PackedVector2Array()}
-	var local := func(p: Vector3) -> Vector2:
-		return Vector2(p.x - town_root.global_position.x, p.z - town_root.global_position.z) if town_root else Vector2(p.x, p.z)
-	# What the feast sets down on the ground (its fire pit, its casks) stands on the town's Life, so it is in the
-	# town's way like any stall (nav_ground.gd reads it off); placed in world space, gone with the feast.
-	var stands := Node3D.new()
-	stands.name = "FeastStands"
-	stands.top_level = true
-	(life if life else root).add_child(stands)
-	if not lit:
-		var fire: Node3D = Realistic.make(Realistic.one("fire_pit"))
-		if fire:
-			fire.position = centre
-			fire.scale = Vector3.ONE * TownLife.RING_SCALE  # the same stones as a town's own feast, and the same reach
-			stands.add_child(fire)
-		# A roasting fire: seen by day as its smoke, a thin grey column.
-		# Thin and see-through, and drifting off on the air, so it never hides the
-		# dancers round the fire.
-		var flame := _puffs(Color(0.5, 0.48, 0.46, 0.22), 10, 3.5, 0.04, 0.09)
-		flame.gravity = Vector3(0.12, 0.06, 0.05)
-		flame.position = centre + Vector3(0, 0.08, 0)
-		root.add_child(Particles.to_gpu(flame))
-		var mid: Vector2 = local.call(centre)
-		added["fires"].append([mid, keep])
-	for i in 3:
-		var cask: Node3D = Realistic.make(Realistic.one("cask"))
-		if cask:
-			var a := TAU * (0.1 + i * 0.07)
-			cask.position = ground(at + Vector3(cos(a), 0, sin(a)) * 0.95)
-			cask.rotation.y = r.randf() * TAU
-			stands.add_child(cask)
-	var col := Color.from_string(String(house.get("color", "#b08a4a")), Color(0.7, 0.55, 0.3))
-	if not house.is_empty():
-		_standard(root, at + Vector3(0.0, 0, -0.9), col, Vector3(0, 0, 1), house)
-	# The ring of dancers, turning slowly about the fire, in their own village
-	# clothes: the house shows in its standard, not on the dancers (in its
-	# colours they read as two companies brawling).
-	var ring := Node3D.new()
-	ring.position = centre
-	root.add_child(ring)
-	var n := 0 if lit else 12  # the town's own revellers are this feast's ring when it keeps one
-	for i in n:
-		var a := TAU * i / n
-		var f: Node3D = people.make(r, "peasant")
-		ring.add_child(f)
-		var p := Vector3(cos(a), 0, sin(a)) * (keep + 0.14)  # outside the fire's reach, and a step more
-		f.position = stand(centre + p) - centre
-		f.rotation.y = a + PI * 0.5
-		# Most dance; between them some clap, laugh and wave the others on.
-		var joy := ["Cheering", "Happy_Gesture", "Laughing", "Waving"]
-		people.play(f, "Dance" if i % 3 != 0 else joy[r.randi() % joy.size()], r.randf_range(0.9, 1.1))
-	var spin := ring.create_tween().set_loops()
-	spin.tween_property(ring, "rotation:y", TAU, 40.0).as_relative()
-	# Knots of talkers at the edge of the square.
-	for k in 3:
-		var a := TAU * (0.35 + k * 0.22)
-		var spot := at + Vector3(cos(a), 0, sin(a)) * 1.05
-		for j in 3:
-			var f: Node3D = people.make(r, "townsfolk")  # wedding guests in their village best, never a stranger's armour
-			root.add_child(f)
-			var off := Vector3(cos(j * 2.1), 0, sin(j * 2.1)) * 0.09
-			f.position = stand(spot + off)
-			f.rotation.y = atan2(-off.x, -off.z)
-			people.play(f, "Idle_Talking")
-			added["standing"].append(local.call(f.position))  # their places are taken
-	# The town's Life holds what this feast put in its way, until the feast ends.
-	if life:
-		for k in added:
-			life.set_meta(k, life.get_meta(k, [] if k != "standing" else PackedVector2Array()) + added[k])
-		root.tree_exiting.connect(func():
-			if is_instance_valid(stands):
-				stands.queue_free()
-			if not is_instance_valid(life):
-				return
-			for k in added:
-				var kept = life.get_meta(k, [])
-				var out = PackedVector2Array() if k == "standing" else []
-				for e in kept:
-					if not (k == "standing" and (added[k] as PackedVector2Array).has(e)) and not (k != "standing" and (added[k] as Array).has(e)):
-						out.append(e)
-				life.set_meta(k, out))
-	var tag := _caption(root, "A wedding feast", centre + Vector3(0, 1.3, 0))
-	_fade_out(root, 75.0, tag)
-
-
 ## A town changing hands by treaty or by its own will: the old lord's banner
 ## comes down, a file of the new lord's men marches in, and his goes up.
 func _handover(at: Vector3, old_house: Dictionary, new_house: Dictionary, town: String) -> void:
-	var r := _rng(at)
+	var r := rng(at)
 	# Only the latest hand a town passes into is told: an older ceremony there goes.
 	for old in get_children():
 		if old.has_meta("handover") and String(old.get_meta("handover")) == town:
@@ -1383,7 +1290,7 @@ func _handover(at: Vector3, old_house: Dictionary, new_house: Dictionary, town: 
 	var old_col := Color.from_string(String(old_house.get("color", "#777")), Color.GRAY)
 	var new_col := Color.from_string(String(new_house.get("color", "#ccc")), Color.WHITE)
 	var spot := stand(at + Vector3(0.35, 0, -0.35))  # on dry ground, clear of the houses (a riverside town's diagonal can be the river)
-	var old_b := _standard(root, spot, old_col, Vector3(0, 0, 1), old_house)
+	var old_b := standard(root, spot, old_col, Vector3(0, 0, 1), old_house)
 	var tw := create_tween()
 	tw.tween_interval(3.0)
 	tw.tween_callback(_drop_banner.bind(old_b))
@@ -1413,7 +1320,7 @@ func _handover(at: Vector3, old_house: Dictionary, new_house: Dictionary, town: 
 		m.go(goal, people.play.bind(s, "Sword_Idle", 1.0))
 	tw.tween_interval(13.0)
 	tw.tween_callback(func():
-		var b := _standard(root, spot + Vector3(0.12, 0, 0), new_col, Vector3(0, 0, 1), new_house)
+		var b := standard(root, spot + Vector3(0.12, 0, 0), new_col, Vector3(0, 0, 1), new_house)
 		b.scale = Vector3(1, 0.05, 1)
 		b.create_tween().tween_property(b, "scale", Vector3.ONE, 2.5).set_ease(Tween.EASE_OUT)
 		# As it goes up the new lord's men salute it and cheer, each in his own
@@ -1423,8 +1330,8 @@ func _handover(at: Vector3, old_house: Dictionary, new_house: Dictionary, town: 
 			st.tween_interval(r.randf_range(0.8, 2.2))
 			st.tween_callback(func(): people.play(s, ["Salute", "Cheering", "Battlecry", "Cheering"][r.randi() % 4], r.randf_range(0.9, 1.1))))
 	# Out on the road the new lord's men came in by, not over the town in the middle of the view.
-	var tag := _caption(root, "%s passes to %s" % [town, String(new_house.get("name", "a new lord"))], ground(spot + dir * 2.2) + Vector3(0, 0.5, 0))
-	_fade_out(root, 60.0, tag)
+	var tag := caption(root, "%s passes to %s" % [town, String(new_house.get("name", "a new lord"))], ground(spot + dir * 2.2) + Vector3(0, 0.5, 0))
+	fade_out(root, 60.0, tag)
 
 
 ## Captions in the world now, oldest first: a new one near an older one goes a
@@ -1436,7 +1343,7 @@ const NEAR := 0.8  # captions closer than this (across the ground) share a place
 
 ## A caption over the world: what a scene is, or what a rider carries. `root`
 ## must sit at the world's origin (the scene roots and this node do).
-func _caption(root: Node3D, text: String, at: Vector3) -> Label3D:
+func caption(root: Node3D, text: String, at: Vector3) -> Label3D:
 	var tag := Label3D.new()
 	tag.visibility_range_begin = 1.6  # gone when you're walking right past it
 	tag.text = text
@@ -1483,7 +1390,7 @@ func _place_tag(tag: Label3D, at: Vector3) -> void:
 
 ## The caption fades after `seconds`, and the scene it names ends with it: the
 ## whole of `root` (the feast's tables, the handover's standards) is freed.
-func _fade_out(root: Node3D, seconds: float, tag: Label3D) -> void:
+func fade_out(root: Node3D, seconds: float, tag: Label3D) -> void:
 	var tw := root.create_tween()
 	tw.tween_interval(seconds)
 	tw.tween_property(tag, "modulate:a", 0.0, 2.0)

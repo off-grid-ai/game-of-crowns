@@ -164,7 +164,7 @@ func _stage() -> void:
 			main.scenes._siege(int(city["id"]), _at, main.terrain.world_pos(float(city["x"]) + 1.0, float(city["y"]) + 0.4), int(city["size"]), 2, foe, main._houses.get(int(city["owner"]), {}), 600.0)
 			_at = main.scenes._sieges[int(city["id"])]["front"]
 		"feast":
-			main.scenes._feast(_at, main._houses.get(int(city["owner"]), {}))
+			main.scenes.kind("feast").stage_feast(_at, main._houses.get(int(city["owner"]), {}))
 		"duel", "walk", "hall":
 			_take_lord()
 		"hero":

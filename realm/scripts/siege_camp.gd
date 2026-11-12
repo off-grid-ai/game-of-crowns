@@ -482,7 +482,7 @@ func _loose(e: Dictionary, stone: MeshInstance3D) -> void:
 	var top := maxf(from.y, land.y) + from.distance_to(land) * float(k.get("arc", 0.45))
 	var flight := float(k.get("flight_s", 1.6)) * clampf(from.distance_to(land) / 2.5, 0.7, 1.6)
 	# Its trail: a thin smear of dust behind it, so the arc reads from the camera (04-siege's flying stones).
-	var trail: CPUParticles3D = scenes._puffs(Color(0.62, 0.58, 0.52, float(k.get("trail_alpha", 0.28))), int(k.get("trail", 24)), 0.9, 0.025, 0.06)
+	var trail: CPUParticles3D = scenes.puffs(Color(0.62, 0.58, 0.52, float(k.get("trail_alpha", 0.28))), int(k.get("trail", 24)), 0.9, 0.025, 0.06)
 	trail.local_coords = false
 	var tg: GPUParticles3D = Particles.to_gpu(trail)
 	stone.add_child(tg)
@@ -537,7 +537,7 @@ func _process(_delta: float) -> void:
 
 
 func _puff(p: Vector3, c: Color, big := 1.0) -> void:
-	var d: CPUParticles3D = scenes._puffs(c, int(6 * big * 2.0), 1.0 + 0.4 * big, 0.04 * big, 0.1 * big)
+	var d: CPUParticles3D = scenes.puffs(c, int(6 * big * 2.0), 1.0 + 0.4 * big, 0.04 * big, 0.1 * big)
 	d.one_shot = true
 	d.explosiveness = 0.9
 	d.position = p
