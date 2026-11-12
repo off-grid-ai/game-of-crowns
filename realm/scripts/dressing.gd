@@ -13,6 +13,7 @@ extends RefCounted
 
 const Data := preload("res://scripts/data.gd")
 const Works := preload("res://scripts/works.gd")
+const Batch := preload("res://scripts/batch.gd")
 
 static var _meshes := {}  # "kit/model" -> [ArrayMesh, its lowest y in metres] (or [] when it doesn't load)
 static var _builder = null
@@ -204,24 +205,24 @@ static func dress(root: Node3D, ground: Callable, land: Callable, seed: int) -> 
 	node.name = "Dressing"
 	root.add_child(node)
 	for model in placed:
-		var mm := MultiMesh.new()
-		mm.transform_format = MultiMesh.TRANSFORM_3D
-		mm.mesh = mesh_of(model)[0]
-		var xfs: Array = placed[model]
-		mm.instance_count = xfs.size()
-		for i in xfs.size():
-			mm.set_instance_transform(i, xfs[i])
-		var mmi := MultiMeshInstance3D.new()
-		mmi.name = model.replace("/", "_")
-		mmi.multimesh = mm
-		mmi.set_meta("xfs", xfs)  # where each copy stands, read by the walk map (nav_ground.instances; headless keeps none)
+		var mmi := Batch.make(batch_name(model), mesh_of(model)[0], placed[model])  # the batch owns where its copies stand
 		mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF if model.begins_with("nature/") else GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 		mmi.visibility_range_end = 30.0  # small things: drawn near the camera only
 		node.add_child(mmi)
-	node.set_meta("placed", placed)
 	node.set_meta("counts", counts)
 	node.set_meta("fronts", fronts)
 	return counts
+
+
+## A model's batch under the Dressing node is named for it ("kit/model" -> "kit_model": a node name holds no "/").
+static func batch_name(model: String) -> String:
+	return model.replace("/", "_")
+
+
+## The model a batch under the Dressing node stands for (batch_name's inverse: kits have no "_" in their name).
+static func model_of(batch: Node) -> String:
+	var parts := String(batch.name).split("_", true, 1)
+	return parts[0] + "/" + parts[1]
 
 
 ## Whether a thing may stand at `at` (town-local): off every footprint (building, wall, stall), clear

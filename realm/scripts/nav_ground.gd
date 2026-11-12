@@ -10,6 +10,7 @@ extends RefCounted
 ## pebbles walked over). Knobs: realm/data/towns.json nav.
 
 const Data := preload("res://scripts/data.gd")
+const Batch := preload("res://scripts/batch.gd")
 
 static var _cache := {}  # town root instance id -> [signature, {"town": [...], "life": [...]}]
 static var _foot := {}  # [mesh instance id, slice] -> [the mesh-local foot box (Rect2, XZ), its lowest y, its height]
@@ -98,13 +99,12 @@ static func _walk(n: Node, root: Node3D, life: Node3D, to_town: Transform3D, ter
 		_walk(c, root, life, to_town, terrain, K, out)
 
 
-## Where a batch's copies stand, in its own frame. A batcher that sets one down in a town keeps them on the node
-## (meta "xfs", Array of Transform3D): Godot's headless renderer drops a MultiMesh's instance data, so read back there
-## every copy stands at the batch's origin, and the headless probes saw a town's dressing piled on its square's middle
-## (works_probe: no room for the muster, the dole or the bunting). Without the meta, the renderer's own copy.
+## Where a batch's copies stand, in its own frame: a Batch (batch.gd) owns them; any other MultiMesh is read back from
+## the renderer, which keeps none headless (every copy there reads as standing at the batch's origin). The town's
+## other batchers move to Batch with their owners (towns.gd, stone_wall.gd).
 static func instances(mmi: MultiMeshInstance3D) -> Array:
-	if mmi.has_meta("xfs"):
-		return mmi.get_meta("xfs")
+	if mmi.get_script() == Batch:
+		return mmi.get("xfs")
 	var mm := mmi.multimesh
 	var out: Array = []
 	for i in mm.visible_instance_count if mm.visible_instance_count >= 0 else mm.instance_count:
