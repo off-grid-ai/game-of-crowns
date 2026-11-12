@@ -170,6 +170,14 @@ func _tonemap_and_bounce(env: Environment) -> void:
 		env.tonemap_agx_white = float(tm["agx_white"])
 	if tm.has("agx_contrast"):
 		env.tonemap_agx_contrast = float(tm["agx_contrast"])
+	# The glow (look.json glow; main.gd's 0.5 / 0.08 otherwise): its bloom glowed every pixel, a veil over the square.
+	var gl: Dictionary = LOOK.get("glow", {})
+	if gl.has("intensity"):
+		env.glow_intensity = float(gl["intensity"])
+	if gl.has("bloom"):
+		env.glow_bloom = float(gl["bloom"])
+	if gl.has("hdr_threshold"):
+		env.glow_hdr_threshold = float(gl["hdr_threshold"])
 	var gi: Dictionary = LOOK.get("gi", {})
 	if gi.has("on") and not bool(gi["on"]):
 		env.sdfgi_enabled = false
