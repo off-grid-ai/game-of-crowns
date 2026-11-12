@@ -1521,7 +1521,8 @@ class Follow extends BTAction:
 
 	func _tick(_delta: float) -> Status:
 		var who: Variant = blackboard.get_var(&"after")
-		if not (who is Node3D) or not is_instance_valid(who) or (who as Node).is_queued_for_deletion():
+		# Alive first: a type test on a freed leader is itself an error (a town rebuilt frees its people at once).
+		if not is_instance_valid(who) or not (who is Node3D) or (who as Node).is_queued_for_deletion():
 			if bool(blackboard.get_var(&"with")):
 				agent.queue_free()  # the column's head is gone up the road: so is he
 			return RUNNING
