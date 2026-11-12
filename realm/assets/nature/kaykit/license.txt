@@ -65,4 +65,4 @@
 	http://twitter.com/KayLousberg
 	https://mastodon.gamedev.place/@Kay
 	http://twitter.com/KayLousberg
-Source: https://kaylousberg.itch.io/kaykit-forest (KayKit_Forest_Nature_Pack_1.0_FREE, downloaded 2026-11-12). Only the round trees (Tree_1) and round bushes (Bush_2, Bush_3) are copied here. forest_painted.png is made from forest_texture.png by realm/tools/paint_kaykit.sh.
+Source: https://kaylousberg.itch.io/kaykit-forest (KayKit_Forest_Nature_Pack_1.0_FREE, downloaded 2026-11-12). Only the round trees (Tree_1), the narrow cone trees used as cypresses (Tree_4 A, B) and round bushes (Bush_2, Bush_3) are copied here. forest_painted.png is made from forest_texture.png by realm/tools/paint_kaykit.sh.

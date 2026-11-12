@@ -339,6 +339,11 @@ static func dyed(src: Material, rgb) -> Material:
 				tex = load(tp)
 			sm.set_shader_parameter("albedo_tex", tex)
 			sm.set_shader_parameter("sway", float(rgb["sway"]))
+			for k in rgb:  # anything else the dye names: the shader's own knobs (a cypress's darker greens)
+				if String(k) in ["sway", "texture"]:
+					continue
+				var v = rgb[k]
+				sm.set_shader_parameter(String(k), Color(float(v[0]), float(v[1]), float(v[2])) if v is Array else v)
 			sm.set_shader_parameter("near_gone", NEAR_GONE)  # the lens's near fade, as fade_near gives the kit's materials
 			sm.set_shader_parameter("near_solid", NEAR_SOLID)
 			sm.resource_name = "Sway_%s_%d" % [src.resource_name, hash(key2)]

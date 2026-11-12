@@ -1258,13 +1258,13 @@ func _yard_green(root: Node3D, center: Vector3, pl: Array, p: Vector3, face: Vec
 		var q := Vector3(q2.x, 0, q2.y)
 		if kind == "" or not terrain.is_land(center.x + q.x, center.z + q.z) or _crowded(lots, q, r) or _on_road(q, 0.05):
 			return
-		if comp == tree_comp and Real.height(kind) > 0.0:
+		if (comp == tree_comp or comp == "town_cypress") and Real.height(kind) > 0.0:
 			scale = minf(scale, float(green.get("tree_most", 99.0)) * S / Real.height(kind))  # no taller than tree_most metres (research #6: about 1.2x a two-storey house)
 		_place(root, kind, q + Vector3(0, _ground_y(center, q) - 0.01, 0), rng.randf() * TAU, Vector3.ONE * scale, Vector2(r, r))
 		lots.append([q, r])
 		placed["kind"] = kind
 		placed["scale"] = scale
-		if comp == tree_comp:
+		if comp == tree_comp or comp == "town_cypress":
 			_crown(center, q, kind, scale)  # a yard tree: the camera reads its crown as a roof
 			_tree_feet(root, center, q, lots, rng)
 	if rng.randf() < float(green.get("tree", 0.0)):
@@ -1272,8 +1272,9 @@ func _yard_green(root: Node3D, center: Vector3, pl: Array, p: Vector3, face: Vec
 		var at2: Vector2 = corners[3].lerp(corners[2], t) + f2 * 0.1
 		var grown := rng.randf_range(0.8, 1.1)
 		var before: int = lots.size()
-		drop.call(tree_comp, at2, float(green.get("tree_ground", 0.12)), grown)
-		if lots.size() > before and rng.randf() < float(green.get("apples", 0.0)):
+		var this_tree := _pick_tree(rng)
+		drop.call(this_tree, at2, float(green.get("tree_ground", 0.12)), grown)
+		if lots.size() > before and this_tree == tree_comp and rng.randf() < float(green.get("apples", 0.0)):
 			_apples(root, center, Vector3(at2.x, 0, at2.y), Real.height(String(placed["kind"])) * float(placed["scale"]), green, rng, tree_comp)
 	if rng.randf() < float(green.get("hedge", 0.0)):
 		for k in 2:
@@ -1317,7 +1318,7 @@ func _square_trees(root: Node3D, center: Vector3, square_r: float, ways: Array, 
 		var q := Vector3(q2.x, 0, q2.y)
 		if TownPlots.near_ways(q2, ways, TownPlots.ROAD_HALF + 0.12) or _crowded(lots.slice(1), q, 0.06) or not terrain.is_land(center.x + q.x, center.z + q.z):
 			continue  # lots[0] is the square's own ground, which a tree at its rim may stand on
-		var kind := _green_kind(_tree_comp(), rng)
+		var kind := _green_kind(_pick_tree(rng), rng)
 		if kind == "":
 			return
 		var sc := rng.randf_range(0.7, 0.85)
@@ -1361,7 +1362,7 @@ func _edge_trees(root: Node3D, center: Vector3, edge: PackedVector2Array, ways: 
 			var q := Vector3(q2.x, 0, q2.y)
 			if TownPlots.near_ways(q2, ways, 0.4) or not terrain.is_land(center.x + q.x, center.z + q.z) or _crowded(lots, q, 0.14) or not _flat_enough(center, q, 0.3):
 				continue
-			var kind := _green_kind(_tree_comp(), rng)
+			var kind := _green_kind(_pick_tree(rng), rng)
 			if kind == "":
 				return
 			var sc := rng.randf_range(0.85, 1.25)
@@ -2341,7 +2342,9 @@ func _plaza(root: Node3D, center: Vector3, square_r: float, size: int, seat: boo
 				k = stall_kinds[(stall_kinds.find(k) + 1 + rng.randi() % (stall_kinds.size() - 1)) % stall_kinds.size()]
 			last_kind = k
 			var w := Real.footprint(k).x * 1.08 / arc
-			if (width + w) * 0.5 > span:
+			# A row's own span (rows [radius, share, span degrees]; round 8: a ring of stalls round the well too).
+			var row_span: float = deg_to_rad(float(rows[ri][2])) if (rows[ri] as Array).size() > 2 else span
+			if (width + w) * 0.5 > row_span:
 				break  # the row is full
 			row.append([k, w])
 			width += w
@@ -2391,9 +2394,13 @@ func _plaza(root: Node3D, center: Vector3, square_r: float, size: int, seat: boo
 	# barrels, crates and sacks, set down about the square beyond the stalls, before the house fronts.
 	if int(mk.get("piles", 0)) > 0:
 		var span_half := outer_end + 0.6 / maxf(outer_arc, 0.1)
+		var pr: Array = mk.get("piles_r", [0.62, 0.86])  # how far out (shares of the square's radius; round 8: through the middle too)
+		var clear := deg_to_rad(float(mk.get("approach_clear", 0.0)))  # either side of the way to the castle gate, kept open
 		for i in int(mk.get("piles", 0)):
 			var a := market_ang + span_half + rng.randf() * (TAU - 2.0 * span_half)
-			var at := Vector3(cos(a), 0, sin(a)) * square_r * rng.randf_range(0.62, 0.86)
+			if clear > 0.0 and absf(angle_difference(a, market_ang + PI)) < clear:
+				continue
+			var at := Vector3(cos(a), 0, sin(a)) * square_r * rng.randf_range(float(pr[0]), float(pr[1]))
 			if at.distance_to(well) < square_r * 0.3:
 				continue  # the well's ground stays open
 			for k in rng.randi_range(2, 4):
@@ -3310,10 +3317,19 @@ func _hedgerow(root: Node3D, center: Vector3, off: Vector3, fsize: Vector2, yaw:
 		if not terrain.is_land(center.x + p.x, center.z + p.z) or _on_road(p, 0.05) or _built_on(root, p):
 			continue
 		var tree := rng.randf() < float(knobs.get("hedge_tree", 0.0))
-		var kind := _green_kind(_tree_comp() if tree else "tree_shrub", rng)
+		var kind := _green_kind(_pick_tree(rng) if tree else "tree_shrub", rng)
 		if kind == "":
 			continue
 		var sc := rng.randf_range(0.75, 0.95) if tree else rng.randf_range(0.9, 1.3)
 		_place(root, kind, p + Vector3(0, _ground_y(center, p) - 0.01, 0), rng.randf() * TAU, Vector3.ONE * sc, Vector2(0.04, 0.04))
 		if tree:
 			_crown(center, p, kind, sc)
+
+
+## A town tree's component, now and then a dark cypress among the round crowns (towns.json plots.green.cypress: the
+## chance; assets.json town_cypress; round 8, 01-town's cypress accents). None with --town-trees=kit.
+func _pick_tree(rng: RandomNumberGenerator) -> String:
+	var comp := _tree_comp()
+	if comp != "town_tree" and rng.randf() < float((_plot_knobs().get("green", {}) as Dictionary).get("cypress", 0.0)) and not Real.variants("town_cypress").is_empty():
+		return "town_cypress"
+	return comp
