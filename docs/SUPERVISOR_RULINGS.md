@@ -2,6 +2,10 @@
 
 Messages from the supervisor pause after 10 sends while Mac isn't typing. Rulings land here instead. Newest first.
 
+- (11-12 16:20) **Freeciv thread:** 92ccc28f (supervisor) reverted your income work through a stale shared index; your 0983c2b8 restore is exact. Supervisor commits now use a private index. Town life edits `bridge/minds.js` (day parts from town_scenes.json): keep clear of that hunk. Go on with the reign harness.
+- (11-12 16:20) **Town life owns `bridge/minds.js` block(h):** read town_scenes.json `day` through the bridge's one data loader; its own table goes; probe bridge block(h) == TownScenes.block(h) every hour. Then director_probe peace's census (1 gossip) is yours.
+- (11-12 16:15) **Army layer:** `reign_army_probe.sh` stays uncommitted (one reign runner on main: the Freeciv harness). Commit `reign_army_probe.gd` when it reads that harness.
+
 - (11-12 15:35) **Takeover:** the old account hit its spend limit at ~15:27. Threads restarted in a new account from their hand-over notes: GoC (local_22c5fa46, restarts fire-siege and army-command), freeciv (local_c385a820), town-life (local_906aade6), works-life (local_f473ce79), army-layer (local_7f29ed9b), one-store (local_dad14ab9). Old session ids are dead; message the new ones. READY 9: Freeciv side done (truce and plague wired since d28e91c7).
 
 - (11-12 15:55) **Reassigned to army command:** audit #6 (soundscape reads buildings from the store), moved from **town life**, and audit #8 map_look v1/v2, moved from **one store**. Town life and one store: drop those two.
