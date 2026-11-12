@@ -42,7 +42,12 @@ extends SceneTree
 ## 13. one body set, one finish (CLAUDE.md: no fallbacks): every kind wears its own baked soldier by its own asset
 ##     (the Meshy men-at-arms, town guard as spearmen, ranger as archers, the cavalry horse), with no kit/meshy
 ##     switch (units_set, meshy.<unit>, --units=); every soldier wears the painted finish, with no switch
-##     (look.on, --army-look=) and no off branch in army_vat.gdshader.
+##     (look.on, --army-look=) and no off branch in army_vat.gdshader;
+## 14. a route before any scene stands anyone (READY line 10, the reign replay: 32k route errors, companies that never
+##     set out): the real scenes.gd, set up as main sets it up (terrain, roads), gives the Mover a route at once;
+##     scenes.gd sets its nav's terrain and roads where it gets them, not lazily in stand();
+## 15. an arrow at a fallen man (the reign replay: scenes.gd's volley read a freed mark's position): an archer draws
+##     on a mark that is freed before he looses; the shot finds another mark or none, and no freed node is read.
 ## Prints "ARMY PROBE …" lines and "ARMY PROBE PASS" or "ARMY PROBE FAIL n"; quits with 0 or 1.
 
 const Data := preload("res://scripts/data.gd")
@@ -81,8 +86,82 @@ func _run() -> void:
 	await _march_out()
 	await _pick_by_body()
 	_one_body_one_finish()
+	await _route_before_any_scene()
 	print("ARMY PROBE PASS" if _fails == 0 else "ARMY PROBE FAIL %d" % _fails)
 	quit(0 if _fails == 0 else 1)
+
+
+## Counts the engine's errors about a freed object (a lambda or tween reading a node already gone).
+class Freed extends Logger:
+	var freed := 0
+	func _log_error(_f: String, _file: String, _line: int, code: String, rationale: String, _n: bool, _t: int, _bt: Array[ScriptBacktrace]) -> void:
+		if (code + " " + rationale).contains("freed"):
+			freed += 1
+
+
+## 14. A route before any scene stands anyone: a stand-in main (flat land everywhere, no towns, no roads) with the
+## real scenes.gd added as main.gd adds it, and a Mover asked for a route straight away.
+func _route_before_any_scene() -> void:
+	var t := GDScript.new()
+	t.source_code = '''extends Node3D
+var terrain: Node3D
+var towns: Node3D
+var roads = null
+var scenes: Node
+func build() -> void:
+	terrain = Node3D.new()
+	var ts := GDScript.new()
+	ts.source_code = "extends Node3D\\nvar built := true\\nvar width := 64\\nvar paths = self\\nfunc height_at(_x: float, _z: float) -> float:\\n\\treturn 0.0\\nfunc is_land(_x: float, _z: float) -> bool:\\n\\treturn true\\nfunc walkable(_x: float, _z: float) -> bool:\\n\\treturn true\\nfunc land_path(a: Vector3, b: Vector3) -> PackedVector3Array:\\n\\treturn PackedVector3Array([a, b])\\nfunc bowed(p: PackedVector3Array) -> PackedVector3Array:\\n\\treturn p\\n"
+	ts.reload()
+	terrain.set_script(ts)
+	add_child(terrain)
+	towns = Node3D.new()
+	var tw := GDScript.new()
+	tw.source_code = "extends Node3D\\nvar towns := {}\\n"
+	tw.reload()
+	towns.set_script(tw)
+	add_child(towns)
+'''
+	t.reload()
+	var main := Node3D.new()
+	main.set_script(t)
+	main.build()
+	root.add_child(main)
+	var aw := Node.new()
+	main.add_child(aw)
+	Engine.set_meta("awareness", aw)
+	var sc: Node = load("res://scripts/scenes.gd").new()
+	sc.set("terrain", main.terrain)  # as main.gd: scenes.terrain = terrain, then add_child
+	main.scenes = sc
+	main.add_child(sc)
+	await process_frame
+	_check(sc.nav.terrain == main.terrain, "scenes.gd's nav has the realm's terrain before any scene stands anyone (%s)" % sc.nav.terrain)
+	var body := Node3D.new()
+	main.add_child(body)
+	var got := [null]
+	Mover.of(body).route_to(Vector3(2, 0, 0), func(way: PackedVector3Array): got[0] = way)
+	_check(got[0] is PackedVector3Array and (got[0] as PackedVector3Array).size() >= 2, "a Mover asked for a route before any scene stands anyone gets one at once (%s)" % str(got[0]))
+	var src := FileAccess.get_file_as_string("res://scripts/scenes.gd")
+	var at := src.find("func stand(")
+	var stand_src := src.substr(at, src.find("\nfunc ", at + 1) - at) if at >= 0 else ""
+	_check(not stand_src.contains("nav.terrain =") and not stand_src.contains("nav.roads ="), "stand() sets no nav terrain or roads (one place, where scenes gets them)")
+	# 15. A volley at a mark freed between the draw and the loose.
+	var log := Freed.new()
+	OS.add_logger(log)
+	var archer := Node3D.new()
+	main.add_child(archer)
+	var mark := Node3D.new()
+	main.add_child(mark)
+	var rng := RandomNumberGenerator.new()
+	sc.call("_arrows", main, [{"alive": true, "kit": "bow", "node": archer, "engaged": false}], [{"node": mark, "alive": true, "rank": 1}], rng)
+	mark.free()  # he falls and is gone before the arrow is loosed (0.6 s after the draw)
+	var t0 := Time.get_ticks_msec()
+	while Time.get_ticks_msec() - t0 < 1800:
+		await process_frame
+	OS.remove_logger(log)
+	_check(log.freed == 0, "a volley at a man gone before it is loosed reads no freed node (%d errors)" % log.freed)
+	Engine.remove_meta("awareness")
+	main.queue_free()
 
 
 ## 13. One body set, one finish: the data, the scripts and the shader carry no old path, and a raised regiment
@@ -520,9 +599,10 @@ func _march_out() -> void:
 	var ArmyS: GDScript = load("res://scripts/army.gd")
 	var has := ArmyS.get_script_method_list().any(func(m): return m["name"] == "march_out")
 	_check(has, "a host can march out (army.gd march_out)")
-	var scenes_src := FileAccess.get_file_as_string("res://scripts/scenes.gd")
-	var muster_at := scenes_src.find("func _muster(")
-	var muster_src := scenes_src.substr(muster_at, scenes_src.find("\nfunc ", muster_at + 1) - muster_at) if muster_at >= 0 else ""
+	var scenes_src := FileAccess.get_file_as_string("res://scripts/scenes.gd") + FileAccess.get_file_as_string("res://scripts/scene_kinds/muster.gd")
+	var muster_at := scenes_src.find("func raise(") if scenes_src.find("func _muster(") < 0 else scenes_src.find("func _muster(")
+	var muster_end := scenes_src.find("\nfunc ", muster_at + 1)
+	var muster_src := scenes_src.substr(muster_at, (muster_end - muster_at) if muster_end > 0 else -1) if muster_at >= 0 else ""
 	_check(muster_src.contains("Army.new(") and muster_src.contains("\"out_to\"") and not scenes_src.contains("func _on_route("),
 		"the muster scene raises the army layer's host to march out (army.gd out_to); no marcher is tweened along a route")
 	if not has:

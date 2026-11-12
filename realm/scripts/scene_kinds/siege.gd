@@ -135,6 +135,7 @@ func besiege(id: int, at: Vector3, approach: Vector3, size: int, engines: int, f
 			marks.append_array(men.filter(func(m): return m.get("out", false) and m["alive"]))
 		if is_instance_valid(camp):
 			marks.append_array(camp.marks())  # the engines' crews
+		marks = marks.filter(func(m): return is_instance_valid(m["node"]))  # a man fallen and gone is no mark
 		if not marks.is_empty():
 			stage._arrows(root, archers, marks, r)
 		# The spearmen above thrust down at the men at the foot of the wall,
