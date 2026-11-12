@@ -204,6 +204,185 @@ with active(unit):
     bpy.ops.object.vertex_group_normalize_all(group_select_mode="ALL", lock_active=False)
     bpy.ops.object.vertex_group_clean(group_select_mode="ALL", limit=0.0, keep_single=True)
 
+# The cape (rig.json units.<stem>.cape): an image-made cape is welded to the body, and the weight copy gives the
+# cloth behind the legs the legs' weights, so a stride tears it between them. Inside cape.box (shares of the mesh's
+# bounds: across, front to back, up) and further than cape.clear (share of its height) from either leg's bones,
+# a vertex is cape: its weights are replaced by the spine chain's (cape.bones: [bone, height share]), blended by
+# its height, so it swings with the body as one cloth.
+def _seg(p, a, b):
+    ab = b - a
+    t = max(0.0, min(1.0, (p - a).dot(ab) / max(ab.length_squared, 1e-9)))
+    return (a + ab * t - p).length
+
+
+CAPE = UNIT.get("cape")
+if CAPE and KIND == "man":
+    c_lo, c_hi = bounds([unit])
+    c_size = c_hi - c_lo
+    box0, box1 = CAPE["box"]
+    legs = []
+    for side in ("Left", "Right"):
+        bs = [arm.pose.bones.get("mixamorig:%s%s" % (side, n)) for n in ("UpLeg", "Leg", "Foot", "ToeBase")]
+        if all(bs):
+            legs.append([arm.matrix_world @ b.head for b in bs])
+    clear = float(CAPE.get("clear", 0.07)) * float(c_size[2])
+    chain = sorted(CAPE.get("bones", [["mixamorig:Hips", 0.0], ["mixamorig:Spine", 0.4], ["mixamorig:Spine1", 0.62], ["mixamorig:Spine2", 0.82]]), key=lambda c: c[1])
+    groups = {n: (unit.vertex_groups.get(n) or unit.vertex_groups.new(name=n)) for n, _ in chain}
+    caped = 0
+    mw = unit.matrix_world
+    for v in unit.data.vertices:
+        p = mw @ v.co
+        sh = [(p[i] - c_lo[i]) / max(float(c_size[i]), 1e-6) for i in range(3)]
+        if not all(box0[i] <= sh[i] <= box1[i] for i in range(3)):
+            continue
+        if any(_seg(p, l[k], l[k + 1]) < clear for l in legs for k in range(len(l) - 1)):
+            continue
+        for g in list(v.groups):
+            unit.vertex_groups[g.group].remove([v.index])
+        h = sh[2]
+        if h <= chain[0][1]:
+            groups[chain[0][0]].add([v.index], 1.0, "REPLACE")
+        elif h >= chain[-1][1]:
+            groups[chain[-1][0]].add([v.index], 1.0, "REPLACE")
+        else:
+            for k in range(len(chain) - 1):
+                if chain[k][1] <= h <= chain[k + 1][1]:
+                    t = (h - chain[k][1]) / max(chain[k + 1][1] - chain[k][1], 1e-6)
+                    groups[chain[k][0]].add([v.index], 1.0 - t, "REPLACE")
+                    groups[chain[k + 1][0]].add([v.index], t, "ADD")
+                    break
+        caped += 1
+    REPORT["cape"] = {"verts": caped, "of": len(unit.data.vertices)}
+
+def _image_of(o):
+    best = None
+    for mat in o.data.materials:
+        if mat and mat.use_nodes:
+            for node in mat.node_tree.nodes:
+                if node.type == "TEX_IMAGE" and node.image and node.image.size[0] and (best is None or node.image.size[0] > best.size[0]):
+                    best = node.image
+    return best
+
+
+def _hsv(c):
+    hi, lo = float(max(c)), float(min(c))
+    d = hi - lo
+    if d < 1e-6:
+        h = 0.0
+    elif hi == c[0]:
+        h = ((c[1] - c[2]) / d) % 6.0
+    elif hi == c[1]:
+        h = (c[2] - c[0]) / d + 2.0
+    else:
+        h = (c[0] - c[1]) / d + 4.0
+    return h / 6.0, (d / hi if hi > 1e-6 else 0.0), hi
+
+
+def _repaint(piece):
+    """A prop painted from another palette (KayKit's) takes the soldier's own paint, so the army's one-texture
+    material draws it: a few clean swatches are read off the soldier's texture (steel, gold, leather, wood, and his
+    cloth), each the texel nearest its kind's median; each face of the prop takes the swatch of its old colour's kind.
+    (Nearest colour face by face picked up the texture's shading and the cloth: a patchwork.)"""
+    dst = _image_of(unit)
+    src = _image_of(piece)
+    if dst is None or src is None:
+        REPORT.setdefault("props_unpainted", []).append(piece.name)
+        return
+    dw, dh = dst.size
+    D = np.array(dst.pixels[:], dtype=np.float32).reshape(dh, dw, -1)[:, :, :3]
+    step = max(1, dw // 256)
+    small = D[::step, ::step].reshape(-1, 3)
+    hi, lo = small.max(1), small.min(1)
+    sat = np.where(hi > 1e-4, (hi - lo) / np.maximum(hi, 1e-4), 0.0)
+    r, g, b = small[:, 0], small[:, 1], small[:, 2]
+    dd = np.maximum(hi - lo, 1e-6)
+    hue = np.where(hi == r, ((g - b) / dd) % 6.0, np.where(hi == g, (b - r) / dd + 2.0, (r - g) / dd + 4.0)) / 6.0
+    kinds = {
+        "steel": (sat < 0.12) & (hi > 0.4) & (hi < 0.85),
+        "gold": (hue > 0.09) & (hue < 0.17) & (sat > 0.5) & (hi > 0.55),
+        "leather": (hue > 0.02) & (hue < 0.11) & (sat > 0.3) & (hi > 0.15) & (hi < 0.45),
+        "wood": (hue > 0.04) & (hue < 0.12) & (sat > 0.35) & (hi >= 0.45) & (hi < 0.75),
+    }
+    swatch = {}
+    for name, m in kinds.items():
+        if m.sum() < 8:
+            continue
+        med = np.median(small[m], axis=0)
+        idx = np.where(m)[0][int(np.argmin(((small[m] - med) ** 2).sum(1)))]
+        y, x = divmod(int(idx), dw // step if dw % step == 0 else (dw + step - 1) // step)
+        swatch[name] = (med, ((x * step + step * 0.5) / dw, (y * step + step * 0.5) / dh))
+    if "steel" not in swatch:
+        REPORT.setdefault("props_unpainted", []).append(piece.name)
+        return
+    REPORT.setdefault("swatches", {k: [round(float(c), 3) for c in v[0]] for k, v in swatch.items()})
+    sw, sh = src.size
+    S = np.array(src.pixels[:], dtype=np.float32).reshape(sh, sw, -1)[:, :, :3]
+    uv = piece.data.uv_layers.active
+    for poly in piece.data.polygons:
+        u = sum(uv.data[i].uv[0] for i in poly.loop_indices) / len(poly.loop_indices)
+        v = sum(uv.data[i].uv[1] for i in poly.loop_indices) / len(poly.loop_indices)
+        c = S[min(sh - 1, max(0, int(v % 1.0 * sh))), min(sw - 1, max(0, int(u % 1.0 * sw)))]
+        h, s_, val = _hsv(c)
+        if s_ < 0.2:
+            kind = "steel"
+        elif 0.09 < h < 0.17 and val > 0.5:
+            kind = "gold"
+        elif h < 0.12 or h > 0.95:
+            kind = "wood" if val >= 0.45 else "leather"
+        else:
+            kind = "steel"
+        kind = kind if kind in swatch else "steel"
+        for i in poly.loop_indices:
+            uv.data[i].uv = swatch[kind][1]
+    piece.data.materials.clear()
+    for mat in unit.data.materials:
+        piece.data.materials.append(mat)
+    for poly in piece.data.polygons:
+        poly.material_index = 0
+
+
+# Props (rig.json units.<stem>.props): a sword, a shield, carried whole by a bone (the source's hand as it stands
+# now, arms lowered), placed by an offset (metres in the bone's frame), a turn (degrees) and a scale, joined to the
+# mesh with all their weight on that bone: rigid, never bending.
+for spec in UNIT.get("props", []):
+    path = os.path.expanduser(spec["file"])
+    before = set(bpy.data.objects)
+    bpy.ops.import_scene.gltf(filepath=path)
+    got = [o for o in bpy.data.objects if o not in before]
+    keep = [o for o in got if o.type == "MESH" and (not spec.get("mesh") or o.name.startswith(spec["mesh"]))]
+    for o in got:
+        if o not in keep:
+            bpy.data.objects.remove(o, do_unlink=True)
+    if not keep:
+        REPORT.setdefault("props_missing", []).append(spec.get("mesh", path))
+        continue
+    piece = join(keep) if len(keep) > 1 else keep[0]
+    m = piece.matrix_world.copy()
+    piece.parent = None
+    piece.matrix_world = m
+    with active(piece):
+        bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+    if spec.get("repaint", True):
+        _repaint(piece)
+    pb = arm.pose.bones[spec["bone"]]
+    full = arm.matrix_world @ pb.matrix
+    bone_w = Matrix.Translation(full.to_translation()) @ full.to_quaternion().to_matrix().to_4x4()  # the bone's place and turn, not its scale
+    upm = REPORT["source"]["height"] / 1.8  # scene units to a metre (the source man stands 1.8 m)
+    rot = spec.get("turn", [0, 0, 0])
+    local = Matrix.Translation(Vector(spec.get("at", [0, 0, 0])) * upm) @ Matrix.Rotation(math.radians(rot[2]), 4, "Z") @ Matrix.Rotation(math.radians(rot[1]), 4, "Y") @ Matrix.Rotation(math.radians(rot[0]), 4, "X") @ Matrix.Scale(float(spec.get("scale", 1.0)) * upm, 4)
+    piece.matrix_world = bone_w @ local
+    with active(piece):
+        bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+    g = piece.vertex_groups.new(name=spec["bone"])
+    g.add(list(range(len(piece.data.vertices))), 1.0, "REPLACE")
+    for vg in unit.vertex_groups:
+        if piece.vertex_groups.get(vg.name) is None:
+            piece.vertex_groups.new(name=vg.name)
+    ptris = tris(piece)
+    unit = join([unit, piece])
+    unit.name = NAME
+    REPORT.setdefault("props", []).append({"mesh": spec.get("mesh", ""), "bone": spec["bone"], "tris": ptris})
+
 # Rigid gear: a sword, a spear or a shield must not bend with the arm. In the lower arm's share of the
 # mesh (forearm, hand, fingers), whatever stands further from the arm's own line (elbow, wrist,
 # fingertip) than flesh does is gear: each connected piece of it goes whole to one bone, the hand
