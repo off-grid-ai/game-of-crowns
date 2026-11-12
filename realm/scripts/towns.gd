@@ -2205,23 +2205,18 @@ func _tree_feet(root: Node3D, center: Vector3, q: Vector3, lots: Array, rng: Ran
 		var p := q + Vector3(cos(a), 0, sin(a)) * rng.randf_range(float(reach[0]), float(reach[1]))
 		if not terrain.is_land(center.x + p.x, center.z + p.z) or _on_road(p, 0.04) or _built_on(root, p) or _paved_at(root, p, 0.03):
 			continue
-		var comp := _shrub_comp() if rng.randf() < float(k.get("shrubs", 0.6)) else "garden_flowers"
+		var comp := "garden_hedge" if rng.randf() < float(k.get("shrubs", 0.6)) else "garden_flowers"
 		var kind := _green_kind(comp, rng)
 		if kind == "":
 			continue
 		_place(root, kind, p + Vector3(0, _ground_y(center, p) - 0.01, 0), rng.randf() * TAU, Vector3.ONE * rng.randf_range(0.8, 1.15), Vector2(0.03, 0.03))
 
 
-## A town tree's component, now and then a dark cypress among the round crowns (towns.json plots.green.cypress: the
-## chance; assets.json town_cypress; round 8, 01-town's cypress accents). None with --town-trees=kit.
+## A town tree's component, now and then a dark cypress among the oaks (towns.json plots.green.cypress: the chance;
+## assets.json town_cypress, the nature set's cypress; round 8, 01-town's cypress accents).
 func _pick_tree(rng: RandomNumberGenerator) -> String:
 	var comp := _tree_comp()
-	if comp != "town_tree" and rng.randf() < float((_plot_knobs().get("green", {}) as Dictionary).get("cypress", 0.0)) and not Real.variants("town_cypress").is_empty():
+	if rng.randf() < float((_plot_knobs().get("green", {}) as Dictionary).get("cypress", 0.0)) and not Real.variants("town_cypress").is_empty():
 		return "town_cypress"
 	return comp
 
-
-## The shrubs round a tree's foot and in the hedgerows: KayKit's round bushes with its trees (tree_shrub), the nature
-## kit's flowering bush (garden_hedge) with the kit's.
-static func _shrub_comp() -> String:
-	return "tree_shrub" if _tree_comp() == "town_tree_round" else "garden_hedge"

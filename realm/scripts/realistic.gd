@@ -317,29 +317,6 @@ static func dyed(src: Material, rgb) -> Material:
 			p.roughness = float(rgb.get("roughness", 0.35))
 		p.resource_name = "Painted_%s_%s" % [src.resource_name, p.albedo_color.to_html(false)]
 		return p
-	# {"sway": lean, "texture": path}: a tree's crown in the wind (tree_sway.gdshader; KayKit's round trees, round 7: the
-	# town trees had no finesse), drawn from a repainted atlas (tools/paint_kaykit.sh) when `texture` names one.
-	if src is BaseMaterial3D and rgb is Dictionary and (rgb as Dictionary).has("sway"):
-		var key2 := "sway:%s:%s" % [src.resource_name, str(rgb)]
-		if not _cache.has(key2):
-			var sm := ShaderMaterial.new()
-			sm.shader = preload("res://scripts/tree_sway.gdshader")
-			var tex: Texture2D = (src as BaseMaterial3D).albedo_texture
-			var tp := String((rgb as Dictionary).get("texture", ""))
-			if tp != "" and ResourceLoader.exists(tp):
-				tex = load(tp)
-			sm.set_shader_parameter("albedo_tex", tex)
-			sm.set_shader_parameter("sway", float(rgb["sway"]))
-			for k in rgb:  # anything else the dye names: the shader's own knobs (a cypress's darker greens)
-				if String(k) in ["sway", "texture"]:
-					continue
-				var v = rgb[k]
-				sm.set_shader_parameter(String(k), Color(float(v[0]), float(v[1]), float(v[2])) if v is Array else v)
-			sm.set_shader_parameter("near_gone", NEAR_GONE)  # the lens's near fade, as fade_near gives the kit's materials
-			sm.set_shader_parameter("near_solid", NEAR_SOLID)
-			sm.resource_name = "Sway_%s_%d" % [src.resource_name, hash(key2)]
-			_cache[key2] = sm
-		return _cache[key2]
 	# {"stripes": [[r, g, b], [r, g, b], count, across]}: the cloth woven in two-colour stripes (art target 01-town: the
 	# stalls' red-and-white and yellow-and-white awnings; the kit cloth has none), `count` stripes over its texture's
 	# width, or its height when `across`; its weave kept in the normal map.
