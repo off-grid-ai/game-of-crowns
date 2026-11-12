@@ -14,6 +14,7 @@ signal arrived
 var speed := 0.17  # world units a second: a person's walk (npc_mind.gd Step's pace)
 var clip := "Walk"  # what the body plays while it travels ("" for a cart or beast that animates itself)
 var turn_rate := 6.0  # how fast it turns into its way (radians a second)
+var ground := Callable()  # (world point) -> height, where a place keeps its own ground (a town's square); else the land's
 var _way := PackedVector3Array()
 var _i := 0
 var _then := Callable()
@@ -80,7 +81,9 @@ func _process(delta: float) -> void:
 		at += Vector3(dir.x, 0, dir.y)
 		body.rotation.y = lerp_angle(body.rotation.y, atan2(flat.x, flat.y), clampf(turn_rate * delta, 0.0, 1.0))
 	var main := _main()
-	if main and main.terrain:
+	if ground.is_valid():
+		at.y = float(ground.call(at))
+	elif main and main.terrain:
 		at.y = main.terrain.height_at(at.x, at.z)
 	body.global_position = at
 	if _i >= _way.size():

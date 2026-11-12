@@ -2430,6 +2430,7 @@ func _beat(root: Node3D, life: Node3D, center: Vector3, r: float, k: int, rng: R
 ## children chasing each other.
 class SquareLife extends Node:
 	const People := preload("res://scripts/people.gd")
+	const Mover := preload("res://scripts/mover.gd")
 	static var READ: float = preload("res://scripts/data.gd").num("people", "readable", 1.0)
 	const Animals := preload("res://scripts/animals.gd")
 	var life: Node3D
@@ -2509,41 +2510,32 @@ class SquareLife extends Node:
 			(carter as Node3D).remove_meta("walking")
 			People.play(carter, ["Idle", "Looking_Around", "Idle_Talking"][rng.randi() % 3])
 
-	## One step toward `to` at `pace`; false once there (within `near`).
-	func step(n: Node3D, to: Vector3, pace: float, delta: float, near := 0.02, sidestep := true) -> bool:
-		pace *= READ  # drawn larger (people.json readable): they cover ground as their legs do
-		var flat := Vector2(to.x - n.position.x, to.z - n.position.z)
-		if flat.length() <= near:
+	## One step of a walk toward `to` (town-local): the Mover walks it by the navigation's route (CLAUDE.md, one way
+	## to move), so the cart, the carriers, the watch, the dogs and the children all go round the well, the stalls
+	## and the plinth. False once there (within `near`, or as near as the route reaches). A goal that moves (a dog
+	## after its man, a child after another) is asked for again once it has moved a stride.
+	func step(n: Node3D, to: Vector3, pace: float, _delta: float, near := 0.02, _sidestep := true) -> bool:
+		var m: Node = Mover.of(n)
+		if Vector2(to.x - n.position.x, to.z - n.position.z).length() <= near:
+			m.stop()
 			return false
-		var d := flat.normalized() * minf(pace * delta, flat.length() - near * 0.5)
-		if sidestep:
-			d = _round(n.position, d)  # a cart keeps its street and is never shoved sideways
-		n.position += Vector3(d.x, 0, d.y)
-		n.position.y = float(ground.call(n.position))
-		n.rotation.y = lerp_angle(n.rotation.y, atan2(d.x, d.y), minf(1.0, delta * 8.0))
+		var parent := n.get_parent() as Node3D
+		var goal: Vector3 = parent.to_global(to)
+		var was: Vector3 = n.get_meta("walk_to", Vector3.INF)
+		if m.moving() and was.distance_to(goal) <= 0.05:
+			return true
+		if not m.moving() and was.distance_to(goal) <= 0.05:
+			return false  # walked as far as the route goes: there
+		m.speed = pace * READ  # drawn larger (people.json readable): they cover ground as their legs do
+		m.clip = ""  # the caller plays the walk, the carry or the trot
+		m.ground = func(w: Vector3) -> float: return float(ground.call(parent.to_local(w)))
+		n.set_meta("walk_to", goal)
+		m.go(goal)
 		return true
 
-	## The step `d` turned aside (up to WIDE either way) so it doesn't walk into a footprint: a stall, a
-	## house, the statue's plinth (round 5: a walker hung half inside it). Already inside one, it walks out.
-	## crowd.json walk_round: off walks straight through, as before.
+	## Every building, stall, plinth and table on the square (where a child may run to: _open_cobble).
 	var blocks := Callable()
 	var _blocks: Array = []
-	const WIDE := [0.0, 0.6, -0.6, 1.1, -1.1, 1.6, -1.6]
-	func _round(at: Vector3, d: Vector2) -> Vector2:
-		if not bool(preload("res://scripts/data.gd").value("crowd", "walk_round", true)) or not blocks.is_valid():
-			return d
-		if _blocks.is_empty():
-			_blocks = blocks.call()
-		var here := Vector2(at.x, at.z)
-		var near: Array = _blocks.filter(func(fp): return (fp as PackedVector2Array).size() > 2 and here.distance_to(fp[0]) < 1.5)
-		if near.is_empty() or near.any(func(fp): return Geometry2D.is_point_in_polygon(here, fp)):
-			return d
-		for turn: float in WIDE:
-			var t := d.rotated(turn)
-			var ahead := here + t.normalized() * maxf(t.length(), 0.03)  # a stride's look ahead
-			if not near.any(func(fp): return Geometry2D.is_point_in_polygon(ahead, fp)):
-				return t
-		return Vector2.ZERO  # boxed in: wait a beat
 
 	func _patrol(p: Dictionary, delta: float) -> void:
 		var men: Array = (p["men"] as Array).filter(func(m): return is_instance_valid(m))
