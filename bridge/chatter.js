@@ -28,8 +28,8 @@ const MOODS = { fear: "afraid", anger: "angry", joy: "glad", grief: "grieving", 
 // Played conversations stay on offer this long; a gathering's own talk is kept for its life.
 const FRESH_MS = 120000;
 const GROUP_MS = 90000;
-// Seasons a rumour keeps travelling after someone heard it.
-const STALE = 6;
+// Seasons a rumour keeps travelling after someone heard it (data/thoughts.json rumourSeasons).
+const STALE = THOUGHTS.rumourSeasons;
 
 // Which villager of the town they are, or -1 for a visitor (no body there to speak from).
 const villagerOf = (m, city) => (m.town === city ? m.i ?? Number(String(m.id).split(":")[2]) : -1);

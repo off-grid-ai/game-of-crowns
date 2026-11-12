@@ -1,5 +1,5 @@
 {
- "_": "Which of the King's deeds move which axis (ledger.js): word, mercy, give, peace; ±1 a deed, ±2 a grave one; {} for none. says: the deed in the realm's words, for 'After <says>, people call you <name>.'",
+ "_": "Which of the King's deeds move which axis (ledger.js): word, mercy, give, peace; ±1 a deed, ±2 a grave one; {} for none. says: the deed in the realm's words, for 'After <says>, people call you <name>.' strong: how much an axis must add up to, either way, before it names the King.",
  "decree": {
   "banners": {
    "axes": {
@@ -2093,5 +2093,6 @@
     "says": "the petitioner sent away"
    }
   }
- }
+ },
+  "strong": 3
 }

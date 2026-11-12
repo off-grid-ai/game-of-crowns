@@ -1,0 +1,8 @@
+{
+ "_": "The realm's stories, one place (arcs.js, intrigue.js, view.js). maxActive: stories running at once; startChance: a season's chance a new one begins; maxEach: stories one person can be caught up in at once; schemeSeasons: a scheme stays on the map this long after its last news; plagueSeasons: a town is still sick this many seasons after Freeciv's plague strikes it.",
+ "maxActive": 5,
+ "startChance": 0.4,
+ "maxEach": 2,
+ "schemeSeasons": 6,
+ "plagueSeasons": 4
+}

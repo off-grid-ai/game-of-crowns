@@ -38,6 +38,7 @@ Switches (`--name`) go after `--` on the game's command line.
 - How often the court sits and how many it hears, by stage of the reign: `bridge/data/court.json`: `stages`, `noClock`.
 - What the reign's petitions setting (rare, often) shifts: `bridge/data/court.json`: `petitions`, `wantMin`, `wantMax`.
 - How often the Hand may call the King in for a crisis between sittings: `bridge/data/court.json`: `handYear`.
+- How many seasons until a lord comes back about a weighty ruling: `bridge/data/court.json` `rulingDue`.
 
 ## Event cards (Builder 2)
 - On or off for reigns that don't say: `bridge/data/events.json`: `settings.on` (a reign can set `options.events`).
@@ -50,7 +51,12 @@ Switches (`--name`) go after `--` on the game's command line.
 - How long a season lasts, in every realm: `bridge/data/pace.json`: `season`. The view reads it from /world (`turnSeconds`); crops, snow, sieges and the recruits' drill follow it.
 - How fast or slow the speed buttons may set a season: `bridge/data/pace.json`: `fastest`, `slowest`.
 - What a house's favour means (loyal, sworn, steady, cooling): `bridge/data/favour.json`. The houses panel's words, the court, counsel, the reign's goal and the townsfolk's mood all follow it.
+- How long a cold house sits before its lord sends the King an ultimatum, and from a refused ultimatum to its host marching: `bridge/data/favour.json` `turning` (`seasons`, `riseIn`).
 - When the treasury counts as thin (the Hand says so, the court may hear of it): `bridge/data/economy.json`: `thin`.
+- How many seasons the King's own works take to rise: `bridge/data/economy.json` `workSeasons`.
+- How much the King's deeds must add up to on an axis before the realm names him by it: `bridge/data/ledger.json` `strong`.
+- The realm's stories: how many run at once, a season's chance one begins, how many one person carries, how long a scheme stays on the map after its last news, how long a town stays sick after Freeciv's plague: `bridge/data/stories.json` `maxActive`, `startChance`, `maxEach`, `schemeSeasons`, `plagueSeasons`.
+- How many seasons a rumour keeps travelling: `bridge/data/thoughts.json` `rumourSeasons`. Probe for all of these: `bridge/tools/tunables_probe.mjs`.
 
 ## Measuring (NPC perf)
 - A frame-time run drawn as the game is played, not at film quality: `--perf` with `--shot`'s framing (`--perf=smooth` or `--perf=beautiful` to pick).

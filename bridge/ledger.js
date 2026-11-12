@@ -17,7 +17,7 @@ const NAMES = {
   give: ["the Generous", "the Grasping"],
   peace: ["the Peacemaker", "the Conqueror"],
 };
-const STRONG = 3;  // an axis names the King once its deeds add up to this much, either way
+const STRONG = TAGS.strong;  // an axis names the King once its deeds add up to this much, either way (data/ledger.json)
 
 function book(meta) {
   meta.ledger ??= { sum: { word: 0, mercy: 0, give: 0, peace: 0 }, acts: 0, unheard: 0, favour: {}, deeds: [], name: null };

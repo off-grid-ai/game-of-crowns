@@ -12,6 +12,7 @@ import { DECREES, TITHE_HIGH } from "./crown.js";
 import { shortOf, titheWait } from "./treasury.js";
 import { BANDS, band } from "./favour.js";
 import { calendar } from "./calendar.js";
+import { readJson } from "./chronicles.js";
 import * as names from "./names.js";
 import { situation, scarLine } from "./situation.js";
 
@@ -136,7 +137,7 @@ return { ...world, spentSeams: meta.spentSeams ?? [], players, cities, units, tu
 // town in the bridge's world from Freeciv's own fields, at load, each reckoning
 // and on every /world. The court, the deck, the arcs, counsel, the minds and
 // the view all read these fields; none works them out again.
-const PLAGUE_SEASONS = 4;  // a town is still sick this many seasons after plague strikes
+const PLAGUE_SEASONS = readJson(new URL("./data/stories.json", import.meta.url)).plagueSeasons;  // a town is still sick this many seasons after plague strikes
 export function townStates(ctx) {
   const { world, meta, scenes, detail, besiegers, favourOf } = ctx;  // and marksNow, for the situation line
   if (!world?.cities) return;

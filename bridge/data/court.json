@@ -1,5 +1,5 @@
 {
- "_": "The court's pace (court.js). stages: by the share of the reign's clock gone (until), the seasons between full sittings (every) and how many matters a sitting hears, as [count, chance] pairs (want). noClock: a reign without a clock. petitions: the reign's petitions setting shifts every and want (rare: fewer, more seldom; often: more, sooner), within wantMin..wantMax. handYear: seasons between the Hand calling the King in for a crisis between sittings (an ultimatum always comes). favourWords: how a ruling's result names a house's change, in words and never numbers (the direction-not-arithmetic rule): a move of at least big points is 'much'. one: one matter at a time (PLAN.md Phase 1; Frostpunk's one law at a time): with it on (or a reign's options.oneAtATime) the court sits for one matter a season, never more, with chance by the stage of the reign (until, as stages); a crisis or ultimatum goes first and the rest wait for the next season, so matters are spread through the reign, never in clumps.",
+ "_": "The court's pace (court.js). stages: by the share of the reign's clock gone (until), the seasons between full sittings (every) and how many matters a sitting hears, as [count, chance] pairs (want). noClock: a reign without a clock. petitions: the reign's petitions setting shifts every and want (rare: fewer, more seldom; often: more, sooner), within wantMin..wantMax. handYear: seasons between the Hand calling the King in for a crisis between sittings (an ultimatum always comes). favourWords: how a ruling's result names a house's change, in words and never numbers (the direction-not-arithmetic rule): a move of at least big points is 'much'. one: one matter at a time (PLAN.md Phase 1; Frostpunk's one law at a time): with it on (or a reign's options.oneAtATime) the court sits for one matter a season, never more, with chance by the stage of the reign (until, as stages); a crisis or ultimatum goes first and the rest wait for the next season, so matters are spread through the reign, never in clumps. rulingDue: seasons until a lord comes back about a ruling (favourbook.js).",
  "stages": [
   {
    "until": 0.5,
@@ -90,5 +90,6 @@
    }
   ],
   "noClock": 0.6
- }
+ },
+  "rulingDue": 2
 }

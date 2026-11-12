@@ -8,6 +8,8 @@ export const BANDS = { loyal: _bands.loyal, sworn: _bands.sworn, steady: _bands.
 // and what an idle King costs (data/favour.json startFloor, startFloorResentful, idle).
 export const START = { floor: _bands.startFloor ?? 35, resentful: _bands.startFloorResentful ?? 26 };
 export const IDLE = { seasons: _bands.idle?.seasons ?? 3, cool: _bands.idle?.cool ?? 2 };
+// How a cold house turns against the King (data/favour.json turning: seasons to its ultimatum, riseIn to its host).
+export const TURN = _bands.turning;
 
 // The band a favour falls in: "loyal", "sworn", "steady", "cooling" or "angry".
 export function band(f) {

@@ -4,8 +4,9 @@
 // them out for /world as `intrigue`, each from one seat to the other, with one
 // line for the hover. Builder 2's view draws them (riders, seams, markers).
 import { houseFor } from "./narrator.js";
+import { readJson } from "./chronicles.js";
 
-export const INTRIGUE_SEASONS = 6;  // a scheme stays on the map this long after its last news
+export const INTRIGUE_SEASONS = readJson(new URL("./data/stories.json", import.meta.url)).schemeSeasons;  // a scheme stays on the map this long after its last news
 
 export function intrigueNow(ctx) {
   const { world, court } = ctx;

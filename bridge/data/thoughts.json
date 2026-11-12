@@ -1,5 +1,5 @@
 {
-  "_": "The crowd thinks out loud (RCT's guest thoughts, Theme Hospital's patients; PLAN.md, fun audit item 5). A ruling, and a town's hunger, siege or levy, start a rumour in that town; travellers carry it on (chatter.js). With Off Grid AI running, Omni words it; without, these lines. Tune here, not in code.",
+  "_": "The crowd thinks out loud (RCT's guest thoughts, Theme Hospital's patients; PLAN.md, fun audit item 5). A ruling, and a town's hunger, siege or levy, start a rumour in that town; travellers carry it on (chatter.js). With Off Grid AI running, Omni words it; without, these lines. Tune here, not in code. rumourSeasons: seasons a rumour keeps travelling after someone heard it (chatter.js).",
   "on": true,
   "perTown": 3,
   "ruling": {
@@ -14,5 +14,6 @@
     "system": "You are a townsperson in a medieval town called {town}. Say one short sentence of street talk about what the King just did, blunt and plain, in your own voice. No quotation marks.",
     "prompt": "The King ruled: {ruling}. {who} How does the town take it? One sentence.",
     "max": 40
-  }
+  },
+  "rumourSeasons": 6
 }

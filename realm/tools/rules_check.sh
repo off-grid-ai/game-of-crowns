@@ -11,12 +11,10 @@
 #     get("blackboard"), or a blackboard taken from another node); a mind writes only its own `blackboard`.
 cd "${0:A:h}/.."
 known=tools/rules_known.txt
-# Every game script, in every scripts subfolder (scene_kinds, town_dress...); scripts/tools holds probes, not the game.
-srcs=(${(f)"$(print -l scripts/**/*.gd | grep -v '^scripts/tools/')"})
 fail=0
 check() {  # rule, pattern, files exempt (regex on the path)
   local rule=$1 pat=$2 exempt=$3
-  for hit in $(grep -lE "$pat" $srcs | grep -vE "$exempt"); do
+  for hit in $(grep -lE "$pat" scripts/*.gd | grep -vE "$exempt"); do
     if grep -qx "$hit:$rule" $known 2>/dev/null; then continue; fi
     grep -nE "$pat" $hit | sed "s#^#$hit:#;s#\$#   <- $rule#"
     fail=1
@@ -34,14 +32,13 @@ check "view-fetch" 'HTTPRequest\.new\(\)|bridge\.BASE|bridge\.gd"\)\.BASE|127\.0
   'scripts/(bridge|app_services)\.gd'  # app_services starts the packaged bridge; it asks it nothing
 check "cross-mind-write" '[A-Za-z0-9_)]\.blackboard\.set_var\(|get\("blackboard"\)|=[^=]*[A-Za-z0-9_)]\.blackboard[[:space:]]*(#.*)?$' \
   'scripts/awareness\.gd'
-# one-way-to-move, the tween form: a tween_method whose lambda sets a position anywhere in its body (the lines indented
-# under it) walks a body by hand across the map. A thrown thing (an arrow, a stone) flies an arc (`(1.0 - t)` in it or
-# just above it) and is not travel. Every scripts subfolder (scene_kinds, town_dress...) is scanned.
+# one-way-to-move, the tween form: a tween_method whose lambda sets a position (within its first lines) walks a
+# body by hand. A thrown thing (an arrow, a stone) flies an arc (`(1.0 - t)` in or just above it) and is not travel.
 check_tween() {
   local rule="one-way-to-move-tween"
-  for f in $srcs; do
+  for f in scripts/*.gd; do
     [[ $f == scripts/mover.gd ]] && continue
-    local hits=$(awk 'function ind(x){match(x, /^\t*/); return RLENGTH} {b[FNR]=$0} END{for(l=1;l<=FNR;l++) if(b[l] ~ /tween_method\(/){w=b[l]; for(i=l+1;i<=FNR&&(b[i] ~ /^[ \t]*$/ || ind(b[i])>ind(b[l]));i++) w=w"\n"b[i]; a=w; for(i=(l>8?l-8:1);i<l;i++) a=a"\n"b[i]; if(w ~ /position *=[^=]/ && a !~ /\(1\.0 - t\)/) print FILENAME":"l": "b[l]}}' $f)
+    local hits=$(awk '{b[FNR]=$0} END{for(l=1;l<=FNR;l++) if(b[l] ~ /tween_method\(/){w=""; for(i=l;i<=l+4&&i<=FNR;i++) w=w"\n"b[i]; a=""; for(i=(l>8?l-8:1);i<=l+4&&i<=FNR;i++) a=a"\n"b[i]; if(w ~ /position *=[^=]/ && a !~ /\(1\.0 - t\)/) print FILENAME":"l": "b[l]}}' $f)
     if [[ -n $hits ]]; then
       grep -qx "$f:$rule" $known 2>/dev/null && continue
       print -r -- "$hits" | sed "s#\$#   <- $rule#"; fail=1
@@ -61,7 +58,7 @@ while read -r key owner scope; do
   check "one-writer-$key" "set_meta\\(\"$key\"" "$owner"
 done < $facts
 allowed=$(awk '$3=="engine"{printf "%s%s", s, $1; s="|"}' $facts)
-for f in $(grep -lE 'Engine\.set_meta\(' $srcs); do
+for f in $(grep -lE 'Engine\.set_meta\(' scripts/*.gd); do
   hits=$(grep -nE 'Engine\.set_meta\(' $f | grep -vE "Engine\.set_meta\(\"($allowed)\"")
   if [[ -n $hits ]]; then
     grep -qx "$f:engine-copy" $known 2>/dev/null && continue

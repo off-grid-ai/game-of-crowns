@@ -19,6 +19,7 @@
 // State lives in the chronicle folder: <chronicle>/arcs.json.
 
 import { seasonsIn } from "./calendar.js";
+import { readJson } from "./chronicles.js";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -34,9 +35,9 @@ let OWN = null;
 export function ownStories(dir) { OWN = dir; fs.mkdirSync(dir, { recursive: true }); }
 // A story just written or generated is read at the next ask, not in five seconds.
 export function storiesChanged() { cache = null; }
-const MAX_ACTIVE = 5;      // stories running at once
-const START_CHANCE = 0.4;  // a season's chance that a new one begins
-const MAX_ARCS_EACH = 2;   // stories one person can be caught up in at once
+// How many stories run, how often one begins, how many one person carries (data/stories.json).
+const STORIES = readJson(new URL("./data/stories.json", import.meta.url));
+const MAX_ACTIVE = STORIES.maxActive, START_CHANCE = STORIES.startChance, MAX_ARCS_EACH = STORIES.maxEach;
 const PERSON_RANKS = ["lord", "bannerman", "heir", "child", "spouse", "ward", "sworn", "exile"];
 // How a beat moves those in it, when the file doesn't say.
 const STAGE_MOOD = { rising: { fear: 0.05 }, crisis: { fear: 0.15, anger: 0.15 }, resolved: { joy: 0.1, fear: -0.1 }, failed: { grief: 0.2 }, faded: {} };

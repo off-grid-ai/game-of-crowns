@@ -22,7 +22,7 @@ import * as Director from "./director.js";
 import * as Lua from "./lua.js";
 import { houseFor, cityName } from "./narrator.js";
 import { decree, clampFavour } from "./crown.js";
-import { BANDS, IDLE } from "./favour.js";
+import { BANDS, IDLE, TURN } from "./favour.js";
 import { calendar, isYearEnd, isYearStart } from "./calendar.js";
 import { isWatched } from "./claude.js";
 import * as Weather from "./weather.js";
@@ -85,8 +85,8 @@ export async function runSeason(ctx) {
 // its seat raises a Grievance (realmrules: three townsmen fewer content in each of
 // its towns), so Freeciv's AI has to calm its people (minstrels, luxury) at the
 // cost of their work. Freeciv's AI never lets a town riot, so riots can't be the clock.
-export const TURNING = 2;
-export const RISE_IN = 2;  // seasons from a refused ultimatum to the host marching
+export const TURNING = TURN.seasons;  // data/favour.json turning
+export const RISE_IN = TURN.riseIn;  // seasons from a refused ultimatum to the host marching
 export function turnHouses(ctx, turn) {
   const { world, meta, stakes, send, record, favourOf } = ctx;
   const turning = (meta.turning ??= {});
