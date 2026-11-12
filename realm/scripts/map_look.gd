@@ -48,7 +48,11 @@ static func armies(aw: Object) -> Array:
 	return out
 
 
-## The crown's hosts on the march: [from tile, to tile] for each with a road to walk.
+const SHIPS := ["Trireme", "Caravel", "Galleon", "Frigate", "Transport"]  # Freeciv's hulls (as awareness's armies)
+
+
+## The hosts on the march: [from tile, to tile] for each of the crown's hosts with an order to walk, and each house's
+## soldiers Freeciv sends somewhere (their goto), by house and goal.
 static func marches(aw: Object) -> Array:
 	var out := []
 	if aw == null:
@@ -70,6 +74,28 @@ static func marches(aw: Object) -> Array:
 		var from := Vector2(float(h.get("x", 0)), float(h.get("y", 0)))
 		if from.distance_to(to) >= 0.5:
 			out.append([from, to])
+	# Every house's host bound somewhere (Freeciv's goto): its soldiers grouped by house and goal, the line from
+	# where they stand on average. Not one dug in where it stands, the crown's (its orders, above), a civilian or a
+	# ship (ships only carry armies: Mac).
+	if not aw.has_method("rec"):
+		return out
+	var crown := int(aw.rec("crownId", -1))
+	var civ: Array = preload("res://scripts/awareness.gd").civilian
+	var groups := {}  # Vector3i(owner, goal x, goal y) -> [sum of tiles, count]
+	for u in aw.rec("units", []):
+		var g: Variant = u.get("goto")
+		var kind := String(u.get("type", ""))
+		if not (g is Dictionary) or int(u.get("owner", -1)) == crown or kind in civ or kind in SHIPS:
+			continue
+		var at := Vector2(float(u.get("x", 0)), float(u.get("y", 0)))
+		var goal := Vector2(float(g.get("x", at.x)), float(g.get("y", at.y)))
+		if at.distance_to(goal) < 0.5:
+			continue
+		var key := Vector3i(int(u.get("owner", -1)), int(goal.x), int(goal.y))
+		var gr: Array = groups.get(key, [Vector2.ZERO, 0])
+		groups[key] = [gr[0] + at, gr[1] + 1]
+	for key in groups:
+		out.append([groups[key][0] / float(groups[key][1]), Vector2(key.y, key.z)])
 	return out
 
 

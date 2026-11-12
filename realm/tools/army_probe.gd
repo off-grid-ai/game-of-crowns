@@ -56,7 +56,11 @@ extends SceneTree
 ##     step that waits on it, as `rout` waits on the first break;
 ## 18. a company's figure keeps up with its company (READY line 10, the reign replay: 310 off-tile faults in 20
 ##     seasons, the lag growing): sent any distance, it arrives within the season, at its steady march when that
-##     does, running (a forced march) when it must go faster (units.gd march_pace).
+##     does, running (a forced march) when it must go faster (units.gd march_pace);
+## 19. a house's host marching on a town shows on the map (docs/research/engine-visual-map-2026-11-12.md gap 3: 40 of
+##     52 companies carry a Freeciv goto, and only the crown's orders were drawn): map_look.marches gives a line from
+##     each house's companies in the field to where Freeciv sends them; not for one dug in where it stands, the
+##     crown's (its orders draw those), a civilian or a ship.
 ## Prints "ARMY PROBE …" lines and "ARMY PROBE PASS" or "ARMY PROBE FAIL n"; quits with 0 or 1.
 
 const Data := preload("res://scripts/data.gd")
@@ -99,8 +103,42 @@ func _run() -> void:
 	await _marks_wait_for_land()
 	_film_waits_for_the_clash()
 	_figure_keeps_up()
+	_house_marches_show()
 	print("ARMY PROBE PASS" if _fails == 0 else "ARMY PROBE FAIL %d" % _fails)
 	quit(0 if _fails == 0 else 1)
+
+
+## 19. A house's march on the map: a stand-in store with five companies.
+func _house_marches_show() -> void:
+	var t := GDScript.new()
+	t.source_code = '''extends RefCounted
+class Realm extends RefCounted:
+	func get_var(_n: StringName, d = null, _c := true):
+		return d
+var realm := Realm.new()
+func rec(key: String, d = null):
+	match key:
+		"crownId":
+			return 7
+		"cities":
+			return [{"id": 1, "x": 20, "y": 20}]
+		"units":
+			return [
+				{"id": 1, "owner": 3, "type": "Pikemen", "x": 10, "y": 10, "goto": {"x": 15, "y": 10}},
+				{"id": 2, "owner": 3, "type": "Pikemen", "x": 11, "y": 10, "goto": {"x": 11, "y": 10}},
+				{"id": 3, "owner": 7, "type": "Knights", "x": 4, "y": 4, "goto": {"x": 9, "y": 4}},
+				{"id": 4, "owner": 3, "type": "Settlers", "x": 2, "y": 2, "goto": {"x": 6, "y": 2}},
+				{"id": 5, "owner": 3, "type": "Trireme", "x": 30, "y": 30, "goto": {"x": 34, "y": 30}}]
+	return d
+'''
+	t.reload()
+	var aw: Object = t.new()
+	var aw_civ: Array = (load("res://scripts/awareness.gd") as GDScript).get("civilian")
+	(load("res://scripts/awareness.gd") as GDScript).set("civilian", ["Settlers", "Workers"])
+	var m: Array = (load("res://scripts/map_look.gd") as GDScript).call("marches", aw)
+	(load("res://scripts/awareness.gd") as GDScript).set("civilian", aw_civ)
+	var ok: bool = m.size() == 1 and (m[0][0] as Vector2).distance_to(Vector2(10, 10)) < 0.01 and (m[0][1] as Vector2) == Vector2(15, 10)
+	_check(ok, "a house's company in the field bound elsewhere draws one march line, the rest none (%s)" % str(m))
 
 
 ## 18. A figure keeps up: the pace units.gd marches a company's figure at, for a short move and a long one.
