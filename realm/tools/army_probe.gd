@@ -11,7 +11,10 @@ extends SceneTree
 ##  5. never a straight line while a map is still being made (Mac's clip4: a horse and cart through Kingsmere's
 ##     well): a man steered on a fight's ground not yet laid stands rather than wade the lake, and a man sent across
 ##     a town whose walk map is still baking (headless Godot never syncs one, so it stays baking) waits rather than
-##     walk through its well.
+##     walk through its well;
+##  6. one figure for ten (Mac, 12 Nov): every kind's regiment draws ceil(men x drawPerMan) figures and keeps its
+##     men; in line and in march column no two figures stand closer than LEAST (about 0.8 m, shoulder room), and a
+##     line stays a block (more than one rank).
 ## Prints "ARMY PROBE …" lines and "ARMY PROBE PASS" or "ARMY PROBE FAIL n"; quits with 0 or 1.
 
 const Data := preload("res://scripts/data.gd")
@@ -42,6 +45,7 @@ func _run() -> void:
 	_minds()
 	await _ground_and_mover()
 	await _no_straight_line_while_baking()
+	_figures_and_room()
 	print("ARMY PROBE PASS" if _fails == 0 else "ARMY PROBE FAIL %d" % _fails)
 	quit(0 if _fails == 0 else 1)
 
@@ -188,6 +192,37 @@ func _no_straight_line_while_baking() -> void:
 
 
 const WELL_R := 0.2
+const LEAST := 0.1  # game units: about 0.8 m between any two men's middles, at rest and on the march (a man is 0.22)
+
+
+## 6. One figure for ten, each with room about him.
+func _figures_and_room() -> void:
+	var ArmyS: GDScript = load("res://scripts/army.gd")
+	var a: Object = ArmyS.new(Node.new(), 0, {})
+	var has: bool = a.has_method("figures")
+	_check(has, "a regiment's figures come from one place (army.gd figures)")
+	var ratio := Data.num("army", "drawPerMan", 1.0)
+	var units: Dictionary = Data.value("army", "units", {})
+	for k in units:
+		var row: Dictionary = units[k]
+		var men := int(row.get("men", 150))
+		var want := maxi(1, ceili(men * ratio - 0.0001))
+		var got: int = int(a.call("figures", men)) if has else men
+		_check(got == want, "%s: %d men draw %d figures (want %d)" % [k, men, got, want])
+		var sp: Dictionary = row.get("spacing", {})
+		var r := {"men": men, "figures": got, "role": String(row.get("role", "melee")),
+			"sf": float(sp.get("file", Data.num("army", "spacing.file", 0.1))), "sr": float(sp.get("rank", Data.num("army", "spacing.rank", 0.12)))}
+		for shape in ["line", "column"]:
+			var l: Dictionary = a.call("_layout", r, shape)
+			var at: PackedVector3Array = l["at"]
+			var near := INF
+			for i in at.size():
+				for j in range(i + 1, at.size()):
+					near = minf(near, Vector2(at[i].x - at[j].x, at[i].z - at[j].z).length())
+			_check(near >= LEAST, "%s in %s: the closest two of %d stand %.3f apart (least %.2f)" % [k, shape, at.size(), near, LEAST])
+			if shape == "line":
+				_check(at.size() < 4 or int(l["files"]) < at.size(), "%s in line stays a block (%d files of %d)" % [k, int(l["files"]), at.size()])
+	a.free()
 
 
 ## A stand-in for main with one town (a well at its middle) on flat dry land, and the realm's navigation.

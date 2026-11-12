@@ -373,6 +373,18 @@ func _unit_for(kind: String) -> String:
 
 ## The knight the army wears (data/army.json knight; --knight=v1 / --knight=v2): armies/knight_v2, its 27 clips
 ## several to a role (docs/research/knight-clips.md), once it is baked and imported; else the first knight.
+## One drawn soldier stands for this many men (data/army.json drawPerMan: 0.1, one figure for ten; Mac: fewer and
+## further apart). Every regiment's figures come from here (_regiment); its men, the number the player reads, stay
+## its full strength.
+static func ratio() -> float:
+	return clampf(Data.num("army", "drawPerMan", 0.1), 0.001, 1.0)
+
+
+## How many figures a regiment of `men` draws: one for every 1 / ratio() men, at least one.
+static func figures(men: int) -> int:
+	return maxi(1, ceili(men * ratio() - 0.0001))
+
+
 static func knight() -> String:
 	var args := OS.get_cmdline_user_args()
 	var want := "v1" if args.has("--knight=v1") else ("v2" if args.has("--knight=v2") else String(Data.value("army", "knight", "v2")))
@@ -423,7 +435,7 @@ func _regiment(spec: Dictionary, colour: Color, house: Dictionary = {}) -> Dicti
 	var kit := _asset(String(row["asset"]), row)
 	if kit.is_empty():
 		return {}
-	var count := int(spec["men"])
+	var count := figures(int(spec["men"]))  # drawn: one figure for every 1 / ratio() men
 	var node := Node3D.new()
 	add_child(node)
 	var vat: VATMultiMeshInstance3D = VAT.new()
@@ -447,7 +459,7 @@ func _regiment(spec: Dictionary, colour: Color, house: Dictionary = {}) -> Dicti
 		sizes.append(_rng.randf_range(1.0 - size, 1.0 + size))
 	var spacing: Dictionary = row.get("spacing", {})
 	var r := {"id": int(spec["id"]), "unit": String(spec["unit"]), "role": String(row.get("role", "melee")), "glyph": String(row.get("glyph", "sword")),
-		"men": count, "strength": float(spec.get("strength", 1.0)), "colour": colour, "node": node, "vat": vat, "kit": kit,
+		"men": int(spec["men"]), "figures": count, "strength": float(spec.get("strength", 1.0)), "colour": colour, "node": node, "vat": vat, "kit": kit,
 		"tracks": row.get("tracks", {}) if kit["asset"] == row["asset"] else kit["roles"],
 		"sf": float(spacing.get("file", Data.num("army", "spacing.file", 0.1))), "sr": float(spacing.get("rank", Data.num("army", "spacing.rank", 0.12))),
 		"speed": Data.num("army", "march.speed", 0.16) * float(row.get("speed", 1.0)),
@@ -462,10 +474,11 @@ func _regiment(spec: Dictionary, colour: Color, house: Dictionary = {}) -> Dicti
 
 
 ## The men of a regiment in a shape, in its own frame (+Z its front): {at: positions, w, d}. A line stands
-## line.frontage men abreast, a column 4-6 (column.files); each rank bows a little along its length and each
+## line.frontage men abreast at full strength, its files cut by the root of the figures' share so a regiment drawn
+## one figure for ten keeps its block's shape; a column 4-6 (column.files); each rank bows a little along its length and each
 ## man stands a little off his mark, so the ranks read as men, not a printed grid. A short last rank is centred.
 func _layout(r: Dictionary, shape: String) -> Dictionary:
-	var count := int(r["men"])
+	var count := int(r["figures"])
 	var files: int
 	var sf: float = r["sf"]
 	var sr: float = r["sr"]
@@ -475,7 +488,7 @@ func _layout(r: Dictionary, shape: String) -> Dictionary:
 		sr = maxf(sr, Data.num("army", "column.rank", 0.14))
 	else:
 		var lf: Array = battle["frontage"] if battle.has("frontage") else (Data.value("army", "line.frontage", {}) as Dictionary).get(r["role"], [18, 25])  # a battle's regiments stand deeper
-		files = _rng.randi_range(int(lf[0]), int(lf[1]))
+		files = roundi(_rng.randi_range(int(lf[0]), int(lf[1])) * sqrt(float(count) / maxf(float(r["men"]), 1.0)))
 	files = clampi(files, 1, count)
 	var ranks := int(ceil(float(count) / files))
 	var place := Data.num("army", "jitter.place", 0.014)
@@ -1186,7 +1199,7 @@ func _at_ease(r: Dictionary, delta: float) -> void:
 	var yaws: PackedFloat32Array = r["yaws"]
 	var tracks: Array = r["kit"]["tracks"]
 	for n in _rng.randi_range(int(some[0]), int(some[1])):
-		var s := _rng.randi() % int(r["men"])
+		var s := _rng.randi() % int(r["figures"])
 		var t := _track(r, "rest")
 		vat.update_instance_track(s, t)
 		vat.update_instance_animation_offset(s, _rng.randf())

@@ -3,15 +3,17 @@
   "units": {
     "spearmen": { "role": "melee", "glyph": "spear", "share": 0.3, "men": 160, "asset": "armies/knight", "freeciv": ["Phalanx", "Pikemen", "Musketeers", "Riflemen", "Alpine Troops"] },
     "men_at_arms": { "role": "melee", "glyph": "sword", "share": 0.25, "men": 150, "asset": "armies/man_at_arms", "freeciv": ["Warriors", "Fanatics", "Partisan", "Mech. Inf."] },
-    "archers": { "role": "ranged", "glyph": "bow", "share": 0.2, "men": 150, "asset": "armies/knight", "freeciv": ["Archers"] },
+    "archers": { "role": "ranged", "glyph": "bow", "share": 0.2, "men": 150, "asset": "armies/knight", "spacing": { "file": 0.18, "rank": 0.26 }, "freeciv": ["Archers"] },
     "knights": { "role": "melee", "glyph": "sword", "share": 0.1, "men": 120, "asset": "armies/knight", "freeciv": ["Legion"] },
-    "horse": { "role": "cavalry", "glyph": "horse", "share": 0.15, "men": 100, "asset": "armies/knight", "spacing": { "file": 0.2, "rank": 0.5 }, "freeciv": ["Horsemen", "Chariot", "Knights", "Crusaders", "Elephants", "Dragoons", "Cavalry"] },
-    "engines": { "role": "ranged", "glyph": "engine", "share": 0.0, "men": 100, "asset": "armies/knight", "freeciv": ["Catapult", "Cannon", "Artillery", "Howitzer"] }
+    "horse": { "role": "cavalry", "glyph": "horse", "share": 0.15, "men": 100, "asset": "armies/knight", "spacing": { "file": 0.19, "rank": 0.5 }, "freeciv": ["Horsemen", "Chariot", "Knights", "Crusaders", "Elephants", "Dragoons", "Cavalry"] },
+    "engines": { "role": "ranged", "glyph": "engine", "share": 0.0, "men": 100, "asset": "armies/knight", "spacing": { "file": 0.25, "rank": 0.3 }, "freeciv": ["Catapult", "Cannon", "Artillery", "Howitzer"] }
   },
   "knight": "v2",
   "units_set": "meshy",
   "meshy": { "men_at_arms": "armies/meshy_man_at_arms", "spearmen": "armies/meshy_town_guard", "archers": "armies/meshy_ranger", "horse": "armies/cavalry" },
   "fallbackUnit": "men_at_arms",
+  "_drawPerMan": "drawPerMan: one drawn soldier for this many men (0.1: one for ten; army.gd figures, Mac 12 Nov: 'reduce the soldiers to 1/10th'). Every regiment's figures come from it (the muster, field battles, the storm); its men, the number the player reads, stay its full strength; losses drop a figure for each 1/drawPerMan men fallen (army_field.gd _fell).",
+  "drawPerMan": 0.1,
   "hpFull": 10,
   "meshes": {
     "armies/knight": {
@@ -72,10 +74,11 @@
     }
   },
   "man": 0.22,
-  "spacing": { "file": 0.1, "rank": 0.12 },
+  "_spacing": "spacing: game units between men (a man stands man 0.22, about 1.75 m): file, centre to centre along a rank (0.12, about 0.95 m: shoulder room); rank, between ranks (0.22, a step, about 1.75 m). A kind's own in units.<kind>.spacing: archers looser (0.18 / 0.26, about 1.4 / 2 m), horse 0.19 (1.5 m) by 0.5, engines 0.25 / 0.3. tools/army_probe.gd asserts no two men of a formation stand closer than 0.8 of their file.",
+  "spacing": { "file": 0.12, "rank": 0.22 },
   "jitter": { "place": 0.014, "turn": 0.18, "size": 0.06, "rank": 0.03, "step": 0.06 },
   "gap": 0.35,
-  "column": { "files": [4, 6], "rank": 0.14, "gap": 0.3, "order": ["cavalry", "melee", "ranged"] },
+  "column": { "files": [4, 6], "rank": 0.22, "gap": 0.3, "order": ["cavalry", "melee", "ranged"] },
   "line": { "frontage": { "melee": [18, 25], "ranged": [22, 30], "cavalry": [12, 16] }, "maxFront": 8, "rowGap": 0.7, "wingGap": 0.6, "reform": 5.0 },
   "march": { "speed": 0.16, "lead": 5.0, "roadTries": 6 },
   "rest": { "every": [1.5, 4.0], "men": [3, 9], "turn": 0.35 },

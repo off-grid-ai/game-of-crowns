@@ -230,10 +230,11 @@ func _enlist(r: Dictionary, side: int, kind: String) -> void:
 	r["side"] = side
 	r["army"] = sides[side]
 	var alive := PackedByteArray()
-	alive.resize(int(r["men"]))
+	alive.resize(int(r["figures"]))
 	alive.fill(1)
 	r["alive"] = alive
-	r["living"] = int(r["men"])
+	r["living"] = int(r["figures"])  # figures standing (one for every 1 / Army.ratio() men)
+	r["lost"] = 0  # men fallen
 	r["dead_at"] = {}
 	r["bleed"] = 0.0
 	r["volley_t"] = _rng.randf_range(0.5, 2.0)
@@ -587,9 +588,12 @@ func _hold(r: Dictionary) -> void:
 
 # --- Men falling and the fallen ---------------------------------------------------------------------------
 
-## n men of a regiment fall: from its front at blows, anywhere under arrows. Each plays his death and stays where
-## he fell; the regiment's strength (its banner's pips) is its living over its muster.
-func _fell(r: Dictionary, n: int, front: bool) -> void:
+## n men of a regiment fall: from its front at blows, anywhere under arrows. A figure stands for 1 / Army.ratio()
+## men, so one goes down for each that many fallen: it plays his death and stays where he fell; the regiment's
+## strength (its banner's pips) is its figures standing over its figures.
+func _fell(r: Dictionary, men: int, front: bool) -> void:
+	r["lost"] = int(r.get("lost", 0)) + men
+	var n := int(floor(float(r["lost"]) * Army.ratio() + 0.0001)) - (int(r["figures"]) - int(r["living"]))  # figures now due to fall
 	var alive: PackedByteArray = r["alive"]
 	var vat: VATMultiMeshInstance3D = r["vat"]
 	var army: Army = r["army"]
@@ -617,7 +621,7 @@ func _fell(r: Dictionary, n: int, front: bool) -> void:
 		(r["swing"] as Dictionary).erase(s)
 		(r["back"] as Dictionary).erase(s)
 	r["alive"] = alive
-	army.set_strength(int(r["id"]), float(r["living"]) / maxf(float(r["men"]), 1.0))
+	army.set_strength(int(r["id"]), float(r["living"]) / maxf(float(r["figures"]), 1.0))
 
 
 ## The fallen stay where they fell while their regiment moves on: their places are put back under them.
