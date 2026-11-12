@@ -342,7 +342,7 @@ func _step(w: PackedStringArray) -> void:
 				# that stands there (town_nav.probe; target 0 crossing).
 				var title := String(w[1]) if w.size() > 1 else "Kingsmere"
 				var nn := int(w[2]) if w.size() > 2 else 200
-				for c in main.bridge.world.get("cities", []):
+				for c in main.awareness.rec("cities", []):
 					if String(c.get("title", c.get("name", ""))) != title:
 						continue
 					var t: Dictionary = main.towns.towns.get(int(c["id"]), {})
@@ -382,7 +382,7 @@ func _step(w: PackedStringArray) -> void:
 				var otitle := String(w[1]) if w.size() > 1 else "Kingsmere"
 				var secs := float(w[2]) if w.size() > 2 else 60.0
 				var oroot: Node3D = null
-				for c in main.bridge.world.get("cities", []):
+				for c in main.awareness.rec("cities", []):
 					if String(c.get("title", c.get("name", ""))) == otitle:
 						var tt: Dictionary = main.towns.towns.get(int(c["id"]), {})
 						oroot = tt.get("node") if not tt.is_empty() else null
@@ -456,7 +456,7 @@ func _step(w: PackedStringArray) -> void:
 				var stitle := String(w[1]) if w.size() > 1 else "Kingsmere"
 				var ssecs := float(w[2]) if w.size() > 2 else 60.0
 				var sroot: Node3D = null
-				for c in main.bridge.world.get("cities", []):
+				for c in main.awareness.rec("cities", []):
 					if String(c.get("title", c.get("name", ""))) == stitle:
 						var st: Dictionary = main.towns.towns.get(int(c["id"]), {})
 						sroot = st.get("node") if not st.is_empty() else null
@@ -649,7 +649,7 @@ func _step(w: PackedStringArray) -> void:
 					_note("CHECK square life: %s: %d samples over %.0f s, %.0f m2 of open setts: %s" % [stitle, samples, ssecs, open_m2, ", ".join(parts)])
 			"town":
 				# Open a town's card, as clicking the town would.
-				for c in main.bridge.world.get("cities", []):
+				for c in main.awareness.rec("cities", []):
 					if String(c.get("title", c.get("name", ""))) == w[1]:
 						main._focus_city(int(c["id"]))
 				await get_tree().create_timer(1.0).timeout
@@ -735,7 +735,7 @@ func _step(w: PackedStringArray) -> void:
 				for id in sieges:
 					if sieges[id].get("front") is Vector3:
 						at = sieges[id]["front"]
-						for c in main.bridge.world.get("cities", []):
+						for c in main.awareness.rec("cities", []):
 							if int(c["id"]) == int(id):
 								town = main.terrain.world_pos(float(c["x"]), float(c["y"]))
 						break
@@ -754,7 +754,7 @@ func _step(w: PackedStringArray) -> void:
 				# (gate: on the gatehouse itself), for its towers, banners, walks and bailey.
 				var at := Vector3.INF
 				var gate_side := Vector3.ZERO
-				for c in main.bridge.world.get("cities", []):
+				for c in main.awareness.rec("cities", []):
 					if String(c.get("title", c.get("name", ""))) == w[1] and main.towns.towns.has(int(c["id"])):
 						var root: Node3D = main.towns.towns[int(c["id"])].get("node")
 						var castle: Node3D = root.get_node_or_null("Castle") if root else null
@@ -804,7 +804,7 @@ func _step(w: PackedStringArray) -> void:
 				# burn Town [seconds] [razed]: the town is put to the torch (fire.gd, --fire=v2): its houses
 				# catch one after another downwind, the townsfolk run or form a bucket line, the roofs fall in.
 				var lit := false
-				for c in main.bridge.world.get("cities", []):
+				for c in main.awareness.rec("cities", []):
 					if String(c.get("title", c.get("name", ""))) == w[1]:
 						lit = preload("res://scripts/fire.gd").ignite(main.terrain.world_pos(float(c["x"]), float(c["y"])), float(w[2]) if w.size() > 2 else 60.0, w.size() > 3 and w[3] == "razed")
 				_note("  burn %s: %s" % [w[1], "alight" if lit else "no town there, or fire is off (fire.json on)"])
@@ -1003,7 +1003,7 @@ func _click(frac: Vector2, button := MOUSE_BUTTON_LEFT, double := false) -> void
 
 
 func _frame_city(title: String, dist: float) -> void:
-	for c in main.bridge.world.get("cities", []):
+	for c in main.awareness.rec("cities", []):
 		if String(c.get("title", c.get("name", ""))) == title:
 			# A cut, from the side the one framing rule picks (camera_rig.go_to): nothing tall in front.
 			var at: Vector3 = main.terrain.world_pos(float(c["x"]), float(c["y"]))
@@ -1015,7 +1015,7 @@ func _frame_city(title: String, dist: float) -> void:
 
 ## The town view you start with (camera_rig.town_view), turned `turn` degrees, at `scale` of its distance.
 func _frame_home(title: String, turn: float, scale: float) -> void:
-	for c in main.bridge.world.get("cities", []):
+	for c in main.awareness.rec("cities", []):
 		if String(c.get("title", c.get("name", ""))) == title:
 			var t: Dictionary = main.towns.towns.get(int(c["id"]), {})
 			var root: Node3D = t.get("node") if not t.is_empty() else null
@@ -1069,12 +1069,12 @@ func _order(kind: String) -> void:
 	var here := Vector2(float(h.get("x", 0)), float(h.get("y", 0)))
 	var near := func(a, b): return here.distance_to(Vector2(float(a["x"]), float(a["y"]))) < here.distance_to(Vector2(float(b["x"]), float(b["y"])))
 	var ours := -1
-	for u in main.bridge.world.get("units", []):
+	for u in main.awareness.rec("units", []):
 		if int(u.get("id", -1)) == id:
 			ours = int(u.get("owner", -1))
 	if kind == "attack":
 		# The nearest foe's men, one tile each (the bridge says whether they are at war with the crown).
-		var foes: Array = (main.bridge.world.get("units", []) as Array).filter(func(u): return int(u.get("owner", -1)) != ours)
+		var foes: Array = (main.awareness.rec("units", []) as Array).filter(func(u): return int(u.get("owner", -1)) != ours)
 		foes.sort_custom(near)
 		var tiles := {}
 		for u in foes:
@@ -1083,12 +1083,12 @@ func _order(kind: String) -> void:
 				tiles[t] = true
 				bodies.append({"host": id, "order": kind, "x": t.x, "y": t.y})
 	elif kind == "besiege":
-		var theirs: Array = (main.bridge.world.get("cities", []) as Array).filter(func(c): return int(c.get("owner", -1)) != ours)
+		var theirs: Array = (main.awareness.rec("cities", []) as Array).filter(func(c): return int(c.get("owner", -1)) != ours)
 		theirs.sort_custom(near)
 		for c in theirs.slice(0, 8):
 			bodies.append({"host": id, "order": kind, "city": int(c["id"])})
 	elif kind in ["march", "garrison"]:
-		var towns: Array = (main.bridge.world.get("cities", []) as Array).duplicate()
+		var towns: Array = (main.awareness.rec("cities", []) as Array).duplicate()
 		towns = towns.filter(func(c): return Vector2(float(c["x"]), float(c["y"])) != here)
 		towns.sort_custom(func(a, b): return here.distance_to(Vector2(float(a["x"]), float(a["y"]))) < here.distance_to(Vector2(float(b["x"]), float(b["y"]))))
 		for c in towns.slice(0, 8):
@@ -1144,8 +1144,8 @@ func _frame_site(kind: String, n: int, dist: float, tilt: float) -> void:
 		return
 	var all: Array = roadside.sites(kind)
 	var seat := Vector3.ZERO
-	for c in main.bridge.world.get("cities", []):
-		if int(c["id"]) == int(main.bridge.world.get("seatId", -1)):
+	for c in main.awareness.rec("cities", []):
+		if int(c["id"]) == int(main.awareness.rec("seatId", -1)):
 			seat = main.terrain.world_pos(float(c["x"]), float(c["y"]))
 	all.sort_custom(func(a: Vector3, b: Vector3) -> bool: return a.distance_squared_to(seat) < b.distance_squared_to(seat))
 	if n < 0 or n >= all.size():
@@ -1159,8 +1159,8 @@ func _frame_site(kind: String, n: int, dist: float, tilt: float) -> void:
 ## countryside.gd sow) or, for a flock, a fallow one (countryside.gd fallow_near).
 func _frame_field(fallow: bool, n: int, dist: float, tilt: float) -> void:
 	var seat := Vector3.ZERO
-	for c in main.bridge.world.get("cities", []):
-		if int(c["id"]) == int(main.bridge.world.get("seatId", -1)):
+	for c in main.awareness.rec("cities", []):
+		if int(c["id"]) == int(main.awareness.rec("seatId", -1)):
 			seat = main.terrain.world_pos(float(c["x"]), float(c["y"]))
 	var all: Array = []
 	if fallow:
@@ -1197,7 +1197,7 @@ func _frame_field(fallow: bool, n: int, dist: float, tilt: float) -> void:
 
 ## Frames a trade's building in a town, from the town root's works (works.gd; any mill for "mill").
 func _frame_work(title: String, trade: String, dist: float, tilt: float) -> void:
-	for c in main.bridge.world.get("cities", []):
+	for c in main.awareness.rec("cities", []):
 		if title != "*" and String(c.get("title", c.get("name", ""))) != title:
 			continue
 		var t: Dictionary = main.towns.towns.get(int(c["id"]), {})
@@ -1218,7 +1218,7 @@ func _frame_work(title: String, trade: String, dist: float, tilt: float) -> void
 ## Frames the middle of the road from a town to its nearest neighbour (roads.route,
 ## the way travellers take): the place to watch the realm's traffic.
 func _frame_road(title: String, dist: float) -> void:
-	var cities: Array = main.bridge.world.get("cities", [])
+	var cities: Array = main.awareness.rec("cities", [])
 	var from: Dictionary = {}
 	for c in cities:
 		if String(c.get("title", c.get("name", ""))) == title:
@@ -1246,7 +1246,7 @@ func _frame_road(title: String, dist: float) -> void:
 ## Frames where a town's scene folk stand (town_life's Life node): the middle
 ## of its soldiers for a drill, or of everyone in the scene.
 func _frame_life(title: String, kind: String, dist: float) -> void:
-	for c in main.bridge.world.get("cities", []):
+	for c in main.awareness.rec("cities", []):
 		if String(c.get("title", c.get("name", ""))) != title:
 			continue
 		var t: Dictionary = main.towns.towns.get(int(c["id"]), {})
