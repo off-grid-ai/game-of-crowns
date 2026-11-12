@@ -27,6 +27,7 @@ class FlatLand extends Node3D:
 
 
 func _init() -> void:
+	preload("res://tools/watchdog.gd").arm(self)
 	_run.call_deferred()
 
 

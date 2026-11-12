@@ -11,6 +11,7 @@ const Land3D := preload("res://scripts/land3d.gd")
 
 
 func _init() -> void:
+	preload("res://tools/watchdog.gd").arm(self)
 	var bad := 0
 	for once in [true]:
 		var name := "painted"

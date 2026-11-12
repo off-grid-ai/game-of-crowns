@@ -16,6 +16,7 @@ const BOXY := ["Bench", "Crate_Wooden", "FarmCrate_Apple", "FarmCrate_Carrot", "
 
 
 func _init() -> void:
+	preload("res://tools/watchdog.gd").arm(self)
 	_run.call_deferred()
 
 

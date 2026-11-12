@@ -44,6 +44,7 @@ var fails: Array[String] = []
 func _process(_d: float) -> bool:
 	frame += 1
 	if frame == 1:
+		preload("res://tools/watchdog.gd").arm(self)
 		land = FlatLand.new()
 		get_root().add_child(land)
 		roads = Roads.new()

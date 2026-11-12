@@ -15,6 +15,7 @@ const KIT := ["Stall_Empty", "Stall_Cart_Empty"]
 
 
 func _init() -> void:
+	preload("res://tools/watchdog.gd").arm(self)
 	var bad := 0
 	var vs: Array = Real.variants("market_stall")
 	var meshy := vs.filter(func(n): return String(n).begins_with("meshy_"))

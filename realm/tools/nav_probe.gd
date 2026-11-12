@@ -36,6 +36,7 @@ var fails: Array[String] = []
 func _process(_delta: float) -> bool:
 	frame += 1
 	if frame == 1:
+		preload("res://tools/watchdog.gd").arm(self)
 		_build()
 		return false
 	_check()
