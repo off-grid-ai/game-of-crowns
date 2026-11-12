@@ -121,6 +121,14 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- 16:40 (11-12) Round 12 void: film bridge's Freeciv failed to load the ruleset (Freeciv thread's uncommitted step-3
+  edits in the shared tree); stopped it; Freeciv thread told to land ruleset edits only after a load check; GoC rounds
+  now abort without a world (players>=2, cities>=6). Square rounds every 15 min (Mac). Headless runs: 3 at once,
+  bounded by perl alarm + watchdog.gd (2eeae236). Double-click (Mac, "whatever is the norm"): ground/building -> glide
+  there, 35% closer, floor-capped (Total War, CK3); person -> select all of that kind on screen (WC3, AoE II); army-ui.
+  Siege call (Claude's, reviewable): no war setter in Freeciv 3.2 Lua, so the breach removes City Walls in Freeciv, and
+  the King's march is fought by Freeciv only on houses already at war (else refused with a clear line); dice deleted;
+  no save rewrite; native war declaration is the open question (3.3 not stable; client-side pact cancel to look at).
 - 16:05 (11-12) Freeciv move steps 1-2 landed (20c2ee09 ruleset Lua in realmrules/script.lua; c56a5f0d medieval
   ruleset, policies Levy Muster / Market Tolls / Granary Stores), main bridge restarted. Per Mac (via that thread): no
   private-bridge runs for it; probe, commit, reload. Route past 3.2's Lua limit: decree buildings now, favour as AI
