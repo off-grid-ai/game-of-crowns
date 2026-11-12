@@ -653,20 +653,29 @@ func probe(id: int, root: Node3D, n: int, rng: RandomNumberGenerator) -> Diction
 					(out["what"] as Array).append(at)
 		if hit:
 			out["paths_crossing"] = int(out["paths_crossing"]) + 1
-	# The square's cart as town_life lays its route today (straight legs: from each of the first two main streets' ends
-	# inside the square to the market, 0.7 of the way out, crowd.json cart.market_in), and how many of those legs pass
-	# through something; 0 once the cart walks the map.
+	# The square's cart (town_scenes.gd: a round from each of the first two main streets' ends inside the square to the
+	# market, 0.7 of the way out, crowd.json cart.market_in), each leg as it walks it: the Mover asks the town's wide
+	# walk map (a horse's and a cart's) for the route; how many of those routes pass through something. Not yet baked:
+	# no legs counted.
 	var mkt_v: Vector3 = (root.get_meta("places", {}) as Dictionary).get("market", Vector3.ZERO) * float(preload("res://scripts/data.gd").num("crowd", "cart.market_in", 0.7))
 	var mkt := Vector2(mkt_v.x, mkt_v.z)
 	var r := float(root.get_meta("square_r", 1.0))
 	out["cart_legs"] = 0
 	out["cart_crossing"] = 0
+	var wide := map_for(id, root, true)
+	if not ready(wide):
+		return out
 	for w in (root.get_meta("ways_main", []) as Array).slice(0, 2):
 		for q: Vector2 in (w as PackedVector2Array):
 			if q.length() > r * 0.9:
+				var leg := path(wide, closest(wide, q), closest(wide, mkt))
+				if leg.size() < 2:
+					break
 				out["cart_legs"] = int(out["cart_legs"]) + 1
-				if _crosses(q, mkt, outlines) != Vector2.INF:
-					out["cart_crossing"] = int(out["cart_crossing"]) + 1
+				for k in range(1, leg.size()):
+					if _crosses(leg[k - 1], leg[k], outlines) != Vector2.INF:
+						out["cart_crossing"] = int(out["cart_crossing"]) + 1
+						break
 				break
 	return out
 

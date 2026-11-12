@@ -373,7 +373,7 @@ func _step(w: PackedStringArray) -> void:
 					if int(r["paths"]) == 0:
 						_note("CHECK nav probe: FAIL %s: the walk map was ready after %.1f s (%d rebakes) but no walk found a path" % [title, waited, rebakes])
 						_nav_why(nav, root)
-					_note("CHECK nav probe: %s: ready after %.1f s, %d rebakes; %d walks, %d segments, %d crossing something (%d walks), straight lines would cross %d; the cart's straight legs into the market: %d of %d through something; %d outlines; crossed near %s" % [title, waited, rebakes, r["paths"], r["segments"], r["crossing"], r["paths_crossing"], r["straight"], r.get("cart_crossing", 0), r.get("cart_legs", 0), load("res://scripts/town_nav.gd").footprints(root).size(), str(r["what"])])
+					_note("CHECK nav probe: %s: ready after %.1f s, %d rebakes; %d walks, %d segments, %d crossing something (%d walks), straight lines would cross %d; the cart's routed legs into the market: %d of %d through something; %d outlines; crossed near %s" % [title, waited, rebakes, r["paths"], r["segments"], r["crossing"], r["paths_crossing"], r["straight"], r.get("cart_crossing", 0), r.get("cart_legs", 0), load("res://scripts/town_nav.gd").footprints(root).size(), str(r["what"])])
 					break
 			"overlapprobe":
 				# overlapprobe Town [secs]: every person, horse and cart in the town's square sampled twice a second for
