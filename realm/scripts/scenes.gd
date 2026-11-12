@@ -65,12 +65,13 @@ const ArmySkirmish := preload("res://scripts/army_skirmish.gd")
 const ArmyAssault := preload("res://scripts/army_assault.gd")
 
 
-func sync(world: Dictionary, houses: Dictionary) -> void:
+func sync(houses: Dictionary) -> void:
+	var store: Node = Awareness.store()
 	if not _towns_up():
-		get_tree().create_timer(1.0).timeout.connect(sync.bind(world, houses))
+		get_tree().create_timer(1.0).timeout.connect(sync.bind(houses))
 		return
 	var played_battle := {}
-	for s in world.get("scenes", []):
+	for s in store.rec("scenes", []):
 		var key := "%s:%d:%d:%d:%d" % [s["kind"], int(s.get("x", 0)), int(s.get("y", 0)), int(s.get("turn", 0)), int(s.get("city", -1))]
 		if _seen.has(key):
 			continue
@@ -88,7 +89,7 @@ func sync(world: Dictionary, houses: Dictionary) -> void:
 				# (army_field.gd, field.play.on), else the small skirmish.
 				var victor := int(s["victor"]) if s.get("victor") != null else -1
 				if victor < 0:
-					victor = _victor(world, s)  # the bridge didn't see who: whoever stands beside it
+					victor = _victor(s)  # the bridge didn't see who: whoever stands beside it
 				var staged_field: Node = null
 				if s.get("kinds") != null and ArmyField.in_play():
 					staged_field = ArmyField.stage(get_parent(), s, houses, battlefield(at))
@@ -106,7 +107,7 @@ func sync(world: Dictionary, houses: Dictionary) -> void:
 				_refugees(at, 3)
 			"siege":
 				var city: Dictionary = {}
-				for c in world.get("cities", []):
+				for c in store.rec("cities", []):
 					if int(c["id"]) == int(s["city"]):
 						city = c
 				var approach: Vector3 = terrain.world_pos(float(s.get("ax", s["x"])), float(s.get("ay", s["y"])))
@@ -116,7 +117,7 @@ func sync(world: Dictionary, houses: Dictionary) -> void:
 				# storms and ends as Freeciv decided; pitched first when the view has none there yet.
 				var stormed := int(s["city"])
 				var town_size := 4
-				for c in world.get("cities", []):
+				for c in store.rec("cities", []):
 					if int(c["id"]) == stormed:
 						town_size = int(c.get("size", 4))
 				_siege(stormed, at, terrain.world_pos(float(s.get("ax", s["x"])), float(s.get("ay", s["y"]))), town_size, int(s.get("engines", 0)), houses.get(int(s.get("owner", -1)), {}), houses.get(int(s.get("defender", -1)), {}), Awareness.season_seconds)
@@ -133,7 +134,7 @@ func sync(world: Dictionary, houses: Dictionary) -> void:
 				_feast(at, houses.get(int(s.get("owner", -1)), {}))
 			"handover":
 				var town := "The town"
-				for c in world.get("cities", []):
+				for c in store.rec("cities", []):
 					if int(c["id"]) == int(s.get("city", -1)):
 						town = String(c.get("title", c["name"]))
 				_handover(at, houses.get(int(s.get("from", -1)), {}), houses.get(int(s.get("to", -1)), {}), town)
@@ -142,10 +143,11 @@ func sync(world: Dictionary, houses: Dictionary) -> void:
 
 ## Who won a fight: the house with men standing on or next to the tile where
 ## the loser's died. -1 if no one is there.
-func _victor(world: Dictionary, s: Dictionary) -> int:
+func _victor(s: Dictionary) -> int:
+	var store: Node = Awareness.store()
 	var best := -1
 	var near := INF
-	for u in world.get("units", []):
+	for u in store.rec("units", []):
 		if int(u["owner"]) == int(s.get("owner", -1)):
 			continue
 		var d := Vector2(float(u["x"]) - float(s["x"]), float(u["y"]) - float(s["y"])).length()

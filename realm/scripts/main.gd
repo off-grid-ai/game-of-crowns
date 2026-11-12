@@ -955,7 +955,7 @@ func _on_synced() -> void:
 			print_verbose("BUILD roads+countryside %d ms" % (Time.get_ticks_msec() - tt))
 		_laying = false
 	Engine.set_meta("stage", "scenes.sync")
-	scenes.sync(bridge.world, _houses)
+	scenes.sync(_houses)
 	Engine.set_meta("stage", "units.sync")
 	units.sync(_houses)
 	Engine.set_meta("stage", "ui.set_world")
@@ -976,7 +976,7 @@ func _on_synced() -> void:
 		apply_graphics.call_deferred()  # the woods are planted by now: they take the graphics choice too
 		if not _shot.has("path"):
 			_home_view()
-		shots._frame_for_shot(bridge.world)
+		shots._frame_for_shot()
 		# The realm opens with the houses and the chronicle in view; a test shot
 		# stays clear of them unless it asks (--panels).
 		ui.side_panels(_shot.get("panels", false))  # closed: the world first, the ledger and chronicle a click away

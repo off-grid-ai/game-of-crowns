@@ -4,6 +4,7 @@ extends RefCounted
 ## saved and the game closed. Owned by main.gd, which reads _shot through a
 ## getter (main._shot) and forwards _take_shot. Off in play.
 
+const Awareness := preload("res://scripts/awareness.gd")  # the view's one store: the realm's records (rec)
 const Main := preload("res://scripts/main.gd")
 
 var main: Main  # the realm that owns the harness: its systems, its camera, its towns
@@ -226,11 +227,12 @@ func _take_shot(backstop := false) -> void:
 	quit_clean(main.get_tree())
 
 
-func _frame_for_shot(world: Dictionary) -> void:
+func _frame_for_shot() -> void:
+	var store: Node = Awareness.store()
 	if _shot.has("play"):
 		_autoplay()
 	if _shot.has("tour"):
-		_tour(world)
+		_tour()
 		return
 	if _shot.has("house"):
 		main.ui.house_opened.emit(int(_shot["house"]))
@@ -306,7 +308,7 @@ func _frame_for_shot(world: Dictionary) -> void:
 		return
 	if _shot.has("stage"):
 		# Stage a feast or a handover in the named town, timed for the shot.
-		for c in world.get("cities", []):
+		for c in store.rec("cities", []):
 			if String(c.get("title", c["name"])) == String(_shot.get("city", "Kingsmere")) or String(c["name"]) == String(_shot.get("city", "")):
 				var at: Vector3 = main.terrain.world_pos(float(c["x"]), float(c["y"]))
 				var owner: Dictionary = main._houses.get(int(c["owner"]), {})
@@ -327,7 +329,7 @@ func _frame_for_shot(world: Dictionary) -> void:
 		return
 	if _shot.has("rider"):
 		# Stage a royal rider leaving the capital, timed to be on the road for the shot.
-		var cities: Array = world.get("cities", [])
+		var cities: Array = store.rec("cities", [])
 		var king: Dictionary = {}
 		for c in cities:
 			if String(c.get("title", "")) == "Kingsmere":
@@ -370,7 +372,7 @@ func _frame_for_shot(world: Dictionary) -> void:
 				main._framed_until = int(main._game_ms) + 600000)
 		return
 	if _shot.has("scene"):
-		for sc in world.get("scenes", []):
+		for sc in store.rec("scenes", []):
 			if String(sc["kind"]) == _shot["scene"]:
 				main.rig.snap(main.terrain.world_pos(float(sc.get("x", 0)), float(sc.get("y", 0))), float(_shot.get("dist", 5.0)), 0.6)
 				return
@@ -379,7 +381,7 @@ func _frame_for_shot(world: Dictionary) -> void:
 		main.rig.snap(Vector3(float(p[0]), 0, float(p[1])), float(p[2]), float(p[3]) if p.size() > 3 else 0.0)
 	elif _shot.get("town", false):
 		var best: Dictionary = {}
-		for c in world.get("cities", []):
+		for c in store.rec("cities", []):
 			if _shot.has("city"):
 				if String(c.get("title", c["name"])) == _shot["city"]:
 					best = c
@@ -422,7 +424,7 @@ func _frame_for_shot(world: Dictionary) -> void:
 							_shot["castle_framed"] = true
 							main.rig.snap(castle.global_position, float(_shot.get("dist", 1.8)), castle.rotation.y))  # from the square side, over the gate
 			if _shot.get("battle", false):
-				_stage_test_battle(world, best)
+				_stage_test_battle(best)
 			if _shot.get("siege", false):
 				# Stage a siege of the town by another house, for testing.
 				var center: Vector3 = main.terrain.world_pos(float(best["x"]), float(best["y"]))
@@ -442,13 +444,14 @@ func _frame_for_shot(world: Dictionary) -> void:
 ## For testing: a battle on open ground beside a town, staged once the towns
 ## stand (their fields and gardens decide what ground is open), at the first
 ## town that has a field, with the camera held on it.
-func _stage_test_battle(world: Dictionary, best: Dictionary) -> void:
+func _stage_test_battle(best: Dictionary) -> void:
+	var store: Node = Awareness.store()
 	if not main.scenes._towns_up():
-		main.get_tree().create_timer(0.5).timeout.connect(_stage_test_battle.bind(world, best))
+		main.get_tree().create_timer(0.5).timeout.connect(_stage_test_battle.bind(best))
 		return
 	var field: Vector3 = main.terrain.world_pos(float(best["x"]) + 1.5, float(best["y"]))
 	if main.scenes.battlefield(field) == Vector3.INF:
-		for c in world.get("cities", []):
+		for c in store.rec("cities", []):
 			var f: Vector3 = main.terrain.world_pos(float(c["x"]) + 1.5, float(c["y"]))
 			if main.scenes.battlefield(f) != Vector3.INF:
 				field = f
@@ -479,10 +482,11 @@ func _autoplay() -> void:
 ## A test aid for checking every screen (--tour=<folder>): waits for the realm
 ## to build, then opens each screen in turn and saves a frame of it, so one run
 ## replaces a render per screen. Off in play.
-func _tour(world: Dictionary) -> void:
+func _tour() -> void:
+	var store: Node = Awareness.store()
 	var dir := String(_shot["tour"])
 	var kingsmere: Dictionary = {}
-	for c in world.get("cities", []):
+	for c in store.rec("cities", []):
 		if String(c.get("title", "")) == "Kingsmere":
 			kingsmere = c
 	var snap := func(name: String) -> void:
