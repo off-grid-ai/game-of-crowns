@@ -1,6 +1,6 @@
 extends SceneTree
 ## Headless check of the life at the working buildings (works.gd, town_life._works), no GPU:
-## a made-up town on flat ground with a forge, armoury, stables, windmill, granary, tannery and
+## a made-up town on flat ground with a forge, armoury, stables, windmill, granary, tannery, dyer, alehouse and
 ## an inn, dressed in each of the realm's states. Prints, per state, who stands at each building,
 ## the horses, the stacks and the lights, then lets the horses graze a few seconds and checks they
 ## moved and stayed in their paddock, the barn's yard holds its beasts each living its idle life
@@ -78,12 +78,14 @@ func _town(world: Node3D) -> Node3D:
 	root.set_meta("works", {
 		"forge": {"at": Vector3(1.6, 0, 0.0)},
 		"armoury": {"at": Vector3(1.6, 0, 1.4)},
-		"stables": {"at": Vector3(-1.8, 0, 0.0)},
+		"stables": {"at": Vector3(-1.8, 0, 0.0), "spots": {"heap": Vector3(-1.45, 0, 0.35)}},
 		"paddock": {"at": Vector3(-2.6, 0, 1.4), "radius": 0.45},
 		"windmill": {"at": Vector3(-2.0, 0, -2.4), "node": _rotor(root, Vector3(-2.0, 0.6, -2.1))},
 		"granary": {"at": Vector3(0.0, 0, -2.2)},
 		"tannery": {"at": Vector3(2.4, 0, -1.6)},
 		"barn": {"at": Vector3(-0.6, 0, 2.6)},
+		"dyer": {"at": Vector3(2.6, 0, 2.8), "spots": {"vats": Vector3(2.35, 0, 2.5)}},
+		"alehouse": {"at": Vector3(-3.2, 0, -1.0), "spots": {"barrels": Vector3(-2.85, 0, -0.75)}},
 	})
 	return root
 
@@ -188,6 +190,21 @@ func _run() -> void:
 		var horses := Works.horses(town)
 		print("WORKS %-7s people=%d smiths=%d horses=%d lights=%d stacks=%d sparks=%s glow=%s anchors=%s" % [name, l.find_children("*", "Node3D", false, false).filter(func(n): return n.has_meta("role")).size(),
 			tick.smiths.size(), horses.size(), tick.lights.size(), tick.stacks.size(), tick.sparks != null, tick.glow != null, str(Works.anchors(town).keys())])
+		# Each trade's crew at its work front (works.json crews; casebook, Living towns: "A world with its own clock"):
+		# the tanner and the dyer at the vats, the brewer at the alehouse's barrels, the stable hand at the heap.
+		var crews: Dictionary = load("res://scripts/data.gd").value("works", "crews", {})
+		var at_work := {}
+		for trade in ["tannery", "dyer", "alehouse", "stables"]:
+			var want_n := 0
+			for row: Dictionary in crews.get(trade, []):
+				want_n += Works.count(String(row.get("n", "")), Works.states(c, 7), 6) if row.get("n") is String else int(row.get("n", 1))
+			var spot: Vector3 = Works.anchors(town)[trade]["spots"].values()[0] if Works.anchors(town).has(trade) else Vector3.INF
+			var crew := l.get_children().filter(func(n): return n.get_meta("crew", "") == trade and n.has_node("Mind") and (n as Node3D).position.distance_to(spot) < 0.35)
+			at_work[trade] = "%d/%d" % [crew.size(), want_n]
+			if want_n == 0 and name == "peace" or crew.size() != want_n:
+				print("FAIL %s: %s has %d at its work front with a mind, works.json crews say %d" % [name, trade, crew.size(), want_n])
+				fails += 1
+		print("WORKS %-7s crews at their fronts: %s" % [name, str(at_work)])
 		if tick.smiths.is_empty() or horses.is_empty() or tick.glow == null:
 			print("FAIL %s: the forge or the paddock is empty" % name)
 			fails += 1

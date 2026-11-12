@@ -31,9 +31,19 @@
     "listeners": { "base": 0, "feast": 6, "levy": 7, "war": 6, "hunger": 6, "low": 5, "relief": 8, "justice": 6, "grant": 5, "build": 4 },
     "millers": { "base": 1 },
     "tanners": { "base": 1, "hunger": 0 },
+    "dyers": { "base": 1, "hunger": 0, "grief": 0 },
+    "brewers": { "base": 1, "feast": 2 },
+    "stablehands": { "base": 1, "war": 2, "levy": 2 },
     "beasts": { "base": 4, "size_per": 3, "most": 8, "prosperity": 8, "feast": 6, "war": 3, "hunger": 2 },
     "yardhands": { "base": 1, "size_per": 8, "most": 2, "hunger": 1 },
     "inn_soldiers": { "base": 0, "levy": 3, "war": 2, "hunger": 0 }
+  },
+  "_crews": "Who works at each trade's front (town_life._works lays them; casebook, Living towns: 'A world with its own clock'): trade -> rows of spot (the building's work spot, works.gd anchors), who (people.gd station), clip (what they are first seen doing), post (npc_mind.gd post_activities: their day at it), n (a counts row).",
+  "crews": {
+    "tannery": [{ "spot": "vats", "who": "peasant", "clip": "Fixing_Kneeling", "post": "tanner", "n": "tanners" }],
+    "dyer": [{ "spot": "vats", "who": "peasant", "clip": "Pushing", "post": "dyer", "n": "dyers" }],
+    "alehouse": [{ "spot": "barrels", "who": "townsfolk", "clip": "PickUp_Table", "post": "brewer", "n": "brewers" }],
+    "stables": [{ "spot": "heap", "who": "peasant", "clip": "PickUp_Table", "post": "stablehand", "n": "stablehands" }]
   },
   "_jobs": "Townsfolk out and about given a trade when their town has its building (villagers.gd): how many of each. apprentice (forge: bellows, quench, coal, arms to the armoury), groom (stables: horses led to the inn and the gate, fodder, mucking out), carter (the grain chain: field to mill, mill to granary, bread to the market).",
   "jobs": { "apprentice": { "needs": "forge", "count": 1 }, "groom": { "needs": "stables", "count": 1 }, "carter": { "needs": "mill", "count": 2 } },

@@ -429,6 +429,24 @@ static func post_activities(post: String) -> Array:
 				seq("soak", [once("PickUp_Table"), step(0.2), run(["Pushing"], 1, 2), step(0.0), brk(["Wiping_Sweat", "Weight_Shift"])]),
 				seq("hang", [once("PickUp_Table"), run(["Pick_Fruit"], 1, 2), brk(LOOK)]),
 			]
+		"dyer":  # at the vats: cloth stirred in the dye, lifted out, hung on the line to dry
+			return [
+				seq("stir", [run(["Pushing"], 2, 3), once("Looking_Around"), brk(["Wiping_Sweat", "Weight_Shift"])]),
+				seq("lift", [once("PickUp_Table"), step(0.2), run(["Pick_Fruit"], 1, 2), step(0.0), brk(REST)]),
+				seq("check", [once("PickUp_Table"), run(["Thinking"], 1, 1), once("Slow_Nod"), brk(LOOK)]),
+			]
+		"brewer":  # at the alehouse's barrels: rolled out, filled, the ale tasted
+			return [
+				seq("roll", [step(0.15), run(["Push_Heavy"], 1, 2), step(0.0), brk(REST)]),
+				seq("fill", [once("PickUp_Table"), run(["Pushing"], 1, 2), once("PickUp_Table"), brk(["Wiping_Sweat", "Weight_Shift"])]),
+				seq("taste", [run(["Drinking"], 1, 1), once("Firm_Nod"), brk(["Laughing", "Weight_Shift"])]),
+			]
+		"miner":  # at a gold mine's mouth: the rock cut, the barrow shoved, ore carried to the heap
+			return [
+				seq("cut", [run(["Axe_Down", "Axe_Horizontal"], 3, 5), brk(["Wiping_Sweat", "Arm_Stretching"])]),
+				seq("barrow", [step(0.2), run(["Push_Heavy"], 1, 2), step(0.0), brk(REST)]),
+				seq("carry", [once("PickUp_Table"), step(0.25), run(["Carrying"], 1, 1), step(0.0), brk(["Wiping_Sweat", "Weight_Shift"])]),
+			]
 		"queue":  # a line at the granary's door when it runs low
 			return [
 				seq("wait", [run(["Weight_Shift", "Bored", "Looking_Around"], 1, 2), brk(["Thinking", "Breathing_Idle"])]),
@@ -538,11 +556,12 @@ static func post_activities(post: String) -> Array:
 				seq("drink", [run(["Drinking"], 1, 2), brk(["Laughing", "Looking_Around"])]),
 				seq("bow", [once("Bow"), run(["Laughing", "Waving"], 1, 1), brk(REST)]),
 			]
-		"stablehand":  # at an inn's or a mill's horses
+		"stablehand":  # at the horses: an inn's, a mill's, the stables' heap
 			return [
 				seq("fodder", [once("PickUp_Table"), step(0.3), once("PickUp_Table"), step(0.0), brk(REST)]),
 				seq("groom", [run(["PickUp_Table", "Pushing"], 2, 3), brk(["Wiping_Sweat", "Weight_Shift"])]),
 				seq("carry", [run(["Carrying"], 1, 1), once("PickUp_Table"), brk(LOOK)]),
+				seq("water", [step(0.25), once("Watering"), step(0.0), brk(["Wiping_Sweat", "Arm_Stretching"])]),  # the trough filled
 			]
 		"fieldhand":  # a hamlet's fields
 			return [

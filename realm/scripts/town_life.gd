@@ -899,15 +899,28 @@ func _works(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, rng: Ran
 			_mill(root, life, center, all[kind], kind, tick, n.call("millers"), rng)
 	if all.has("granary"):
 		_granary(root, life, center, all["granary"], c, tick, n.call("granary_queue"), rng)
-	if all.has("tannery"):
-		for i in n.call("tanners"):
-			var sp: Dictionary = all["tannery"]["spots"]
-			var t := _stand(root, life, center, sp.get("vats", all["tannery"]["at"]), "peasant", "Fixing_Kneeling", rng.randi(), Color.WHITE, 0.2)
-			if t:
-				_face(t, all["tannery"]["at"])
-				_mind(t, "tanner", center)
+	_crews(root, life, center, all, n, rng)
 	if all.has("inn"):
 		_inn(root, life, center, all["inn"], tick, n, rng)
+
+
+## Each trade's crew at its work front, as works.json crews lists them (the tanner and the dyer at the vats, the
+## brewer at the alehouse's barrels, the stable hand at the heap; casebook, Living towns: "A world with its own
+## clock"): set down at the building's spot facing it, each with their post's day (npc_mind post_activities).
+func _crews(root: Node3D, life: Node3D, center: Vector3, all: Dictionary, n: Callable, rng: RandomNumberGenerator) -> void:
+	var crews: Dictionary = Data.value("works", "crews", {})
+	for trade in crews:
+		if not all.has(trade):
+			continue
+		var b: Dictionary = all[trade]
+		var sp: Dictionary = b["spots"]
+		for row: Dictionary in crews[trade]:
+			for i in int(n.call(String(row["n"]))):
+				var t := _stand(root, life, center, sp.get(String(row["spot"]), b["at"]), String(row["who"]), String(row["clip"]), rng.randi(), Color.WHITE, 0.2)
+				if t:
+					t.set_meta("crew", trade)
+					_face(t, b["at"])
+					_mind(t, String(row["post"]), center)
 
 
 func _face(p: Node3D, at: Vector3) -> void:
