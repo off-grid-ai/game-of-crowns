@@ -2473,6 +2473,10 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 	if realistic_towns.has("*") or realistic_towns.has(String(c.get("title", c["name"]))):
 		square_r = 1.25 if bool(c.get("capital", false)) or size >= 12 else 1.0  # a market square, room for stalls and a crowd
 		square_r = float(_market_knobs().get("square_r", square_r))  # by the town's rank: the realm's great market square at the crown's seat (art target town-b)
+		# Grown (market.<rank>.square_r_grown; round 6: the castle front, the landmarks and three roads left the
+		# crown's 1.6 rim room for 3 fronts): --square-size=old for square_r.
+		if not OS.get_cmdline_user_args().has("--square-size=old"):
+			square_r = float(_market_knobs().get("square_r_grown", square_r))
 		reach = maxf(reach, square_r + 3.6)  # the town reaches out to its palisade
 	var reps := roundi(square_r * 4.0)
 	# The square: a cobbled heart laid whole to its edge, and trodden earth

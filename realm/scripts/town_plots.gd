@@ -29,6 +29,7 @@ static var YARD := 0.55  # a yard's depth behind a house (about 4.5 m): room for
 static var GAP := 0.03  # between two plots' houses
 static var LANE_EVERY := 2.4  # along a road, how far between branch lanes
 static var LANE_LENGTH := 1.9  # how far a lane runs from its road
+static var RING_WOBBLE := 0.35  # how far a ring street wanders in and out of its circle (game units)
 static var WANDER := 0.0  # how much a street wanders on level ground (a share of a cell's cost, from a gentle noise)
 
 
@@ -36,12 +37,17 @@ static var WANDER := 0.0  # how much a street wanders on level ground (a share o
 static func tune(base: Dictionary, over: Dictionary = {}) -> void:
 	var k := base.duplicate()
 	k.merge(over, true)
+	# A town's straighter streets (towns.json plots.<rank>.straight; round 6: houses at every angle where 01-town's
+	# stand in rows along their street): laid over its knobs unless --streets=winding.
+	if k.get("straight") is Dictionary and not OS.get_cmdline_user_args().has("--streets=winding"):
+		k.merge(k["straight"], true)
 	SET_BACK = float(k.get("set_back", 0.04))
 	YARD = float(k.get("yard", 0.55))
 	GAP = float(k.get("gap", 0.03))
 	LANE_EVERY = float(k.get("lane_every", 2.4))
 	LANE_LENGTH = float(k.get("lane_length", 1.9))
 	WANDER = float(k.get("wander", 0.0))
+	RING_WOBBLE = float(k.get("ring_wobble", 0.35))
 
 
 ## The town's main roads (town-local polylines), from the square's edge out
@@ -145,7 +151,7 @@ static func rings(radii: Array, square_r: float, g: AStarGrid2D, land: Callable,
 
 static func _ring_at(r: float, i: int, n: int, noise: FastNoiseLite) -> Vector2:
 	var a := TAU * i / n
-	return Vector2.from_angle(a) * (r + noise.get_noise_1d(i * 7.0) * 0.35)  # a ring street wanders in and out a little
+	return Vector2.from_angle(a) * (r + noise.get_noise_1d(i * 7.0) * RING_WOBBLE)  # a ring street wanders in and out a little
 
 
 static func _open(g: AStarGrid2D, land: Callable, q: Vector2) -> bool:
