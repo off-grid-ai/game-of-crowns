@@ -7,6 +7,7 @@ render_mode blend_mix, depth_draw_opaque, cull_back, diffuse_burley, specular_sc
 
 uniform sampler2D albedo_tex : source_color, filter_linear_mipmap, repeat_enable;
 uniform bool has_albedo_tex = false;
+uniform vec2 uv_scale = vec2(1.0);  // the material's own uv1_scale (a roof's finer tiles: house_kit.roof_uv)
 uniform vec4 albedo : source_color = vec4(1.0);
 uniform sampler2D normal_tex : hint_normal, filter_linear_mipmap, repeat_enable;
 uniform bool has_normal = false;
@@ -68,7 +69,7 @@ void vertex() {
 
 void fragment() {
 	vec4 c = albedo;
-	if (has_albedo_tex) c *= texture(albedo_tex, UV);
+	if (has_albedo_tex) c *= texture(albedo_tex, UV * uv_scale);
 	// The house's colour at the material's own brightness: the tiles' shading stays, the hue is the house's.
 	float lum = dot(c.rgb, vec3(0.299, 0.587, 0.114));
 	float tl = max(dot(team_color.rgb, vec3(0.299, 0.587, 0.114)), 0.05);
@@ -123,7 +124,7 @@ void fragment() {
 		// sway across the slope taken out), so no tile ridges show through the thatch.
 		vec3 n = abs(v_mnormal.z) > abs(v_mnormal.x) ? vec3(0.0, v_mnormal.y, v_mnormal.z) : vec3(v_mnormal.x, v_mnormal.y, 0.0);
 		if (length(n) > 0.05) NORMAL = normalize((VIEW_MATRIX * MODEL_MATRIX * vec4(normalize(n), 0.0)).xyz);
-	} else if (has_normal) NORMAL_MAP = texture(normal_tex, UV).rgb;
+	} else if (has_normal) NORMAL_MAP = texture(normal_tex, UV * uv_scale).rgb;
 	// Dissolve right in front of the lens (Godot's pixel dither, as the other buildings do).
 	float d = length(VERTEX);
 	if (d < fade_solid) {

@@ -65,6 +65,7 @@ func _team_mat(src: BaseMaterial3D, amount: float) -> ShaderMaterial:
 	if src.normal_texture:
 		m.set_shader_parameter("normal_tex", src.normal_texture)
 	m.set_shader_parameter("roughness", src.roughness)
+	m.set_shader_parameter("uv_scale", Vector2(src.uv1_scale.x, src.uv1_scale.y))
 	m.set_shader_parameter("team_amount", amount)
 	# The roofs' mix and the colour's tone (data/look.json team.roofs, team.paint; art target 01-town).
 	var roofs: Dictionary = cfg().get("roofs", {})
