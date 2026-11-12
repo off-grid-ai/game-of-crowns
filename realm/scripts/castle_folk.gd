@@ -11,6 +11,7 @@ extends RefCounted
 
 const Data := preload("res://scripts/data.gd")
 const People := preload("res://scripts/people.gd")
+const Mover := preload("res://scripts/mover.gd")  # the one way to move (CLAUDE.md)
 const PROPS := "res://assets/props/%s.gltf"
 
 
@@ -201,22 +202,15 @@ static func _prop(name: String, size: float) -> Node3D:
 
 
 ## Back and forth between a and b, carrying `clip`'s load (the arms keep it over the walking legs), setting it
-## down at each end a while. `led`: a horse led at their side.
+## down at each end a while. `led`: a horse led at their side. Walked with the Mover, as every round in the castle is
+## (castle_life.rounds; CLAUDE.md, one way to move): the body's holder is the castle's life.
 static func _shuttle(f: Node3D, a: Vector3, b: Vector3, clip: String, rng: RandomNumberGenerator, pace: float, delay: float, led: Node3D = null) -> void:
-	var speed := maxf(pace * float(Data.num("people", "readable", 1.0)), 0.01)
-	var tw := f.create_tween().set_loops()
-	tw.tween_interval(delay + rng.randf_range(0.0, 2.0))
-	for to in [b, a]:
-		tw.tween_callback(func():
-			var dir: Vector3 = to - f.global_position
-			f.rotation.y = atan2(dir.x, dir.z)
-			People.play(f, clip))
-		tw.tween_method(func(t: float):
-			var from: Vector3 = (a if to == b else b)
-			f.global_position = from.lerp(to, t)
-			if led and is_instance_valid(led):
-				var side := Basis(Vector3.UP, f.rotation.y) * Vector3(0.12, 0, -0.05)
-				led.global_position = f.global_position + side * float(Data.num("people", "readable", 1.0))
-				led.rotation.y = f.rotation.y, 0.0, 1.0, maxf(a.distance_to(b) / speed, 0.5))
-		tw.tween_callback(func(): People.play(f, "PickUp_Table" if clip != "Walk" else "Idle"))
-		tw.tween_interval(rng.randf_range(2.0, 5.0))
+	var m: Node = Mover.of(f)
+	m.speed = maxf(pace * float(Data.num("people", "readable", 1.0)), 0.01)
+	m.clip = clip
+	var rest := ["PickUp_Table"] if clip != "Walk" else ["Idle"]
+	if led:  # stood at their side to begin with (castle_life.LED_SIDE), facing the way they first go
+		var way := b - f.global_position
+		led.global_position = f.global_position + Basis(Vector3.UP, atan2(way.x, way.z)) * preload("res://scripts/castle_life.gd").LED_SIDE * float(Data.num("people", "readable", 1.0))
+		led.rotation.y = atan2(way.x, way.z)
+	(f.get_parent() as Object).rounds(f, [PackedVector3Array([b]), PackedVector3Array([a])], [[2.0, 5.0]], delay + rng.randf_range(0.0, 2.0), 0, rest, led)

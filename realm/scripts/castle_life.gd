@@ -359,7 +359,7 @@ func _guard(a: Vector3, b: Vector3, colour: Color, k: Dictionary, scale: float) 
 	var m: Node = Mover.of(f)
 	m.speed = maxf(float(k.get("pace", 0.9)) * S * scale, 0.001)
 	var look := float(k.get("look_s", 3.0))
-	_rounds(f, [PackedVector3Array([b]), PackedVector3Array([a])], [look, look], _rng.randf_range(0.0, look * 2.0))  # each on his own beat
+	rounds(f, [PackedVector3Array([b]), PackedVector3Array([a])], [look, look], _rng.randf_range(0.0, look * 2.0))  # each on his own beat
 	return f
 
 
@@ -429,24 +429,39 @@ func _walker(path: Array, colour: Color, k: Dictionary, scale: float, i: int) ->
 	Mover.of(f).speed = pace
 	var back: Array = pts.duplicate()
 	back.reverse()
-	_rounds(f, [PackedVector3Array(pts.slice(1)), PackedVector3Array(back.slice(1))], [wait, wait], _rng.randf_range(0.0, float(wait[1])) + i * 2.0)  # in, then out; each on his own beat
+	rounds(f, [PackedVector3Array(pts.slice(1)), PackedVector3Array(back.slice(1))], [wait, wait], _rng.randf_range(0.0, float(wait[1])) + i * 2.0)  # in, then out; each on his own beat
 	return f
 
 
 ## A round walked for ever with the Mover (CLAUDE.md, one way to move): each leg in turn (a way the castle lays,
-## a wall walk or the gate's road, followed as given), then a look about for its wait ([least, most] or seconds),
-## then the next; the first start held back `first` seconds so nobody keeps step with anyone.
-func _rounds(f: Node3D, legs: Array, waits: Array, first: float, at := 0) -> void:
+## a wall walk, the gate's road or a carrier's trip across the bailey, followed as given), then a pause for its wait
+## ([least, most] or seconds) playing one of `rest` (a look about by default; a carrier sets his load down), then the
+## next; the first start held back `first` seconds so nobody keeps step with anyone. `led`: a beast led at the
+## walker's side (a groom's horse), walking each leg beside him at his pace with its own Mover. The castle's folk
+## (castle_folk.gd) walk their rounds here too: one round for the bailey.
+func rounds(f: Node3D, legs: Array, waits: Array, first: float, at := 0, rest: Array = REST, led: Node3D = null) -> void:
 	get_tree().create_timer(first).timeout.connect(func():
 		if not is_instance_valid(f):
 			return
-		Mover.of(f).walk(legs[at % legs.size()], func():
+		var leg: PackedVector3Array = legs[at % legs.size()]
+		if led and is_instance_valid(led) and not leg.is_empty():
+			var way := leg[leg.size() - 1] - f.global_position
+			var side := Basis(Vector3.UP, atan2(way.x, way.z)) * LED_SIDE * float(Data.num("people", "readable", 1.0))
+			var lm: Node = Mover.of(led)
+			lm.speed = Mover.of(f).speed
+			lm.clip = ""  # a beast animates itself
+			lm.walk(PackedVector3Array(Array(leg).map(func(p: Vector3): return p + side)))
+		Mover.of(f).walk(leg, func():
 			if not is_instance_valid(f):
 				return
-			main.scenes.people.play(f, ["Looking_Around", "Weight_Shift", "Idle"][_rng.randi() % 3], 1.0)
+			main.scenes.people.play(f, String(rest[_rng.randi() % rest.size()]), 1.0)
 			var w: Variant = waits[at % waits.size()]
 			var secs: float = _rng.randf_range(float(w[0]), float(w[1])) if w is Array else float(w)
-			_rounds(f, legs, waits, secs, at + 1)))
+			rounds(f, legs, waits, secs, at + 1, rest, led)))
+
+
+const REST := ["Looking_Around", "Weight_Shift", "Idle"]  # a look about at the end of a leg
+const LED_SIDE := Vector3(0.12, 0, -0.05)  # where a led beast walks beside its walker (his right, half a step back), game units at readable 1
 
 
 ## A torch on the gate: the kit's iron torch, a small flame (fire.gd's), a warm short light.
