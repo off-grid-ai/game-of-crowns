@@ -14,9 +14,9 @@ extends RefCounted
 ##   - once the day is spent (the field's field.longest) the beaten side's nerve drains (spent a second): the most
 ##     shaken goes first and its break carries the rest, never all of them at once;
 ##   - below `break` a regiment of the beaten side breaks (Freeciv decided who lost: the victors waver but never run,
-##     their nerve kept above floor_victor).
-## Every reach is open ground between regiments' edges (their widths along the line), so a neighbour is a neighbour
-## however wide a battle's regiments stand.
+##     their nerve kept above floor_victor), one at a time: after a break the rest hold `between` seconds;
+## Every reach is open ground between regiments' edges (their widths along the line and depths front to back), so a
+## neighbour is a neighbour however wide or deep a battle's regiments stand.
 
 const Mind := preload("res://scripts/army_mind.gd")
 const Data := preload("res://scripts/data.gd")
@@ -67,14 +67,30 @@ static func _flat(a: Vector3, b: Vector3) -> float:
 	return Vector2(a.x - b.x, a.z - b.z).length()
 
 
-## Open ground between two regiments' edges (their widths along the line), 0 when they touch.
+## Open ground between two regiments' edges, 0 when they touch: in `a`'s own frame, the gap along its line past both
+## widths (w) and the gap front to back past both depths (d), so a deeper block isn't farther from the men behind it.
 static func _apart(a: Dictionary, b: Dictionary) -> float:
-	return maxf(0.0, _flat(_where(a), _where(b)) - (float(a.get("w", 0.0)) + float(b.get("w", 0.0))) * 0.5)
+	var delta := _where(b) - _where(a)
+	var fwd := (a["node"] as Node3D).global_basis.z
+	fwd.y = 0.0
+	fwd = fwd.normalized() if fwd.length() > 0.001 else Vector3(0, 0, 1)
+	var side := Vector3(fwd.z, 0.0, -fwd.x)
+	var along := maxf(0.0, absf(delta.dot(side)) - (float(a.get("w", 0.0)) + float(b.get("w", 0.0))) * 0.5)
+	var deep := maxf(0.0, absf(delta.dot(fwd)) - (float(a.get("d", 0.0)) + float(b.get("d", 0.0))) * 0.5)
+	return Vector2(along, deep).length()
 
 
-## Open ground between a regiment's edge and a spot.
+## Open ground between a regiment's edge and a spot, in its own frame (past its width along the line, its depth
+## front to back).
 static func _apart_from(a: Dictionary, at: Vector3) -> float:
-	return maxf(0.0, _flat(_where(a), at) - float(a.get("w", 0.0)) * 0.5)
+	var delta := at - _where(a)
+	var fwd := (a["node"] as Node3D).global_basis.z
+	fwd.y = 0.0
+	fwd = fwd.normalized() if fwd.length() > 0.001 else Vector3(0, 0, 1)
+	var side := Vector3(fwd.z, 0.0, -fwd.x)
+	var along := maxf(0.0, absf(delta.dot(side)) - float(a.get("w", 0.0)) * 0.5)
+	var deep := maxf(0.0, absf(delta.dot(fwd)) - float(a.get("d", 0.0)) * 0.5)
+	return Vector2(along, deep).length()
 
 
 static func _standing(r: Dictionary) -> bool:
@@ -141,8 +157,21 @@ static func step(sides: Array, dt: float, loser: int, commanders: Array, spent: 
 			if side != loser:
 				m = maxf(m, _m("floor_victor", 0.4))
 			_put_nerve(q, minf(m, _m("start", 1.0)), shaken)
-			if side == loser and m < _m("break", 0.35):
+			var held: float = float(bb.get_var(&"held", 0.0)) if bb else 0.0
+			if bb and held > 0.0:
+				bb.set_var(&"held", held - dt)
+			if side == loser and m < _m("break", 0.35) and held <= 0.0:
 				gone.append(q)
+	# One break a moment (Mac, round 15: three broke in one tick): of those due, the shakiest goes; the rest of its
+	# side hold morale.between seconds before the next can, so the rout reads as a chain however close they stood.
+	if gone.size() > 1:
+		gone.sort_custom(func(x, y): return of(x) < of(y))
+		gone = [gone[0]]
+	for q in gone:
+		for p in sides[loser]:
+			var pb := _bb(p)
+			if not is_same(p, q) and _standing(p) and pb:
+				pb.set_var(&"held", _m("between", 1.25))
 	return gone
 
 

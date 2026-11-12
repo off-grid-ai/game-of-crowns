@@ -452,9 +452,11 @@ static func ratio() -> float:
 	return clampf(Data.num("army", "drawPerMan", 0.1), 0.001, 1.0)
 
 
-## How many figures a regiment of `men` draws: one for every 1 / ratio() men, at least one.
+## How many figures a regiment of `men` draws: army.json figureFloor, so every regiment reads as a formed block, and
+## one for every 1 / ratio() men above it (drawPerMan, Mac's), so a bigger regiment still looks bigger. The plate and
+## the card show its real men.
 static func figures(men: int) -> int:
-	return maxi(1, ceili(men * ratio() - 0.0001))
+	return int(Data.num("army", "figureFloor", 0.0)) + maxi(1, ceili(men * ratio() - 0.0001))
 
 
 ## crown (every regiment in the crown's colour and arms) or houses (each its house's): data/army.json colours, or

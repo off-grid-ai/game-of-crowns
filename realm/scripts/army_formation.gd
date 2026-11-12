@@ -9,8 +9,8 @@ const Data := preload("res://scripts/data.gd")
 
 
 ## The men of a regiment in a shape, in its own frame (+Z its front): {at: positions, w, d}. A line stands
-## line.frontage men abreast at full strength, its files cut by the root of the figures' share so a regiment drawn
-## one figure for ten keeps its block's shape; a column 4-6 (column.files); each rank bows a little along its length and each
+## line.frontage men abreast at full strength, its files cut by the root of drawPerMan so a regiment drawn one figure
+## for ten keeps its block's shape, the floor's figures (figureFloor) as more ranks behind; a column 4-6 (column.files); each rank bows a little along its length and each
 ## man stands a little off his mark, so the ranks read as men, not a printed grid. A short last rank is centred.
 static func layout(r: Dictionary, shape: String, frontage: Variant, rng: RandomNumberGenerator) -> Dictionary:
 	var count := int(r["figures"])
@@ -23,7 +23,9 @@ static func layout(r: Dictionary, shape: String, frontage: Variant, rng: RandomN
 		sr = maxf(sr, Data.num("army", "column.rank", 0.14))
 	else:
 		var lf: Array = frontage if frontage is Array else (Data.value("army", "line.frontage", {}) as Dictionary).get(r["role"], [18, 25])  # a battle's regiments stand deeper
-		files = roundi(rng.randi_range(int(lf[0]), int(lf[1])) * sqrt(float(count) / maxf(float(r["men"]), 1.0)))
+		# As wide as one figure for ten men stands (drawPerMan); the regiment's floor of figures (figureFloor) stands as
+		# more ranks behind, so a small regiment reads as a deep block, not a long thin line.
+		files = roundi(rng.randi_range(int(lf[0]), int(lf[1])) * sqrt(clampf(Data.num("army", "drawPerMan", 0.1), 0.001, 1.0)))
 	files = clampi(files, 1, count)
 	var ranks := int(ceil(float(count) / files))
 	var place := Data.num("army", "jitter.place", 0.014)

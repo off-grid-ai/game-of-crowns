@@ -610,12 +610,13 @@ func _hold(r: Dictionary) -> void:
 
 # --- Men falling and the fallen ---------------------------------------------------------------------------
 
-## n men of a regiment fall: from its front at blows, anywhere under arrows. A figure stands for 1 / Army.ratio()
-## men, so one goes down for each that many fallen: it plays his death and stays where he fell; the regiment's
-## strength (its banner's pips) is its figures standing over its figures.
+## n men of a regiment fall: from its front at blows, anywhere under arrows. Its figures fall in step with its men
+## (its figures over its men each: a floor of figures stands for a small regiment, army.json figureFloor): each plays
+## his death and stays where he fell; the regiment's strength (its banner's pips) is its figures standing over its
+## figures.
 func _fell(r: Dictionary, men: int, front: bool) -> void:
 	r["lost"] = int(r.get("lost", 0)) + men
-	var n := int(floor(float(r["lost"]) * Army.ratio() + 0.0001)) - (int(r["figures"]) - int(r["living"]))  # figures now due to fall
+	var n := int(floor(float(r["lost"]) / maxf(float(r["men"]), 1.0) * int(r["figures"]) + 0.0001)) - (int(r["figures"]) - int(r["living"]))  # figures now due to fall
 	var alive: PackedByteArray = r["alive"]
 	var vat: VATMultiMeshInstance3D = r["vat"]
 	var army: Army = r["army"]

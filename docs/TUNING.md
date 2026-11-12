@@ -337,6 +337,7 @@ Switches (`--name`) go after `--` on the game's command line.
 - The cavalry: how tall horse and rider stand and how loosely they rank: `meshes.armies/cavalry.tall`, `units.horse.spacing`; the seat, the horse's size and weight, the leg spread: `realm/tools/rig/cavalry.json` (`rider.*`, rebaked with vat_bake.py).
 - Where the standard bearer (the front rank's middle man) holds his regiment's colours: `banner.bearer`.
 - The bodies the host wears: `units.<kind>.asset` (the Meshy men-at-arms, the town guard as spearmen, the ranger as archers, the cavalry horse); the painted finish that carries the house colour onto the men: `look`.
+- How many figures every regiment draws before its one for ten men (so each reads as a formed block; the plate and card keep its real men), and the most the realm's biggest host may draw (from the fps bar): `realm/data/army.json` `figureFloor`, `figureBudget`. Seconds a beaten side holds after one of its regiments breaks before the next can (a rout reads as a chain, one at a time): `morale.between`.
 - How far off the road a muster's field may lie and its host still march out along the road (it walks onto it first): `realm/data/army.json` `march.roadReach`.
 - How standing grain reads from roof height and beyond (`--wheat=shells`, or `shells.on`): the stacked stalk layers' count, spacing, stalk width, thinning, lean in the wind, the sheen's waves and when it turns into one stand far off: `realm/data/fieldwork.json` `shells` (`realm/scripts/wheat_shell.gdshader`).
 

@@ -73,7 +73,11 @@ extends SceneTree
 ##     and where it is bound (map_look.host_line, the hover's words);
 ## 23. the muster's column takes the road (GoC's muster frames: it marched on the grass): the realm's roads join a
 ##     road only within roads.reach of each end, and a muster's field keeps off roads, so march_out asks with its
-##     own reach (army.json march.roadReach) and its way runs along the road.
+##     own reach (army.json march.roadReach) and its way runs along the road;
+## 24. every regiment reads as a formed block (GoC's muster frames: 10-14 figures a regiment, a speck where 03-army is
+##     a wall): a regiment draws army.json figureFloor figures and one for ten men above it (drawPerMan, Mac's), so a
+##     160-man host draws at least the floor a regiment and a 600-man host more than a 160-man one; the realm's biggest
+##     host stays under figureBudget (from the fps bar); and its losses fell figures in step with its men.
 ## Prints "ARMY PROBE …" lines and "ARMY PROBE PASS" or "ARMY PROBE FAIL n"; quits with 0 or 1.
 
 const Data := preload("res://scripts/data.gd")
@@ -121,8 +125,30 @@ func _run() -> void:
 	_mover_keeps_its_speed()
 	_standards_read()
 	_muster_takes_the_road()
+	_regiments_read_as_blocks()
 	print("ARMY PROBE PASS" if _fails == 0 else "ARMY PROBE FAIL %d" % _fails)
 	quit(0 if _fails == 0 else 1)
+
+
+## 24. Every regiment a formed block: hosts made up as a muster raises them (army.gd _made_up).
+func _regiments_read_as_blocks() -> void:
+	var ArmyS: GDScript = load("res://scripts/army.gd")
+	var a: Object = ArmyS.new(Node.new(), 0, {})
+	var floor_n := int(Data.num("army", "figureFloor", 0.0))
+	_check(floor_n >= 40, "army.json sets a floor of figures a regiment (figureFloor %d)" % floor_n)
+	var drawn := func(men: int) -> Array: return (a.call("_made_up", men) as Array).map(func(sp): return int(ArmyS.call("figures", int(sp["men"]))))
+	var small: Array = drawn.call(160)
+	var big: Array = drawn.call(600)
+	var sum := func(arr: Array) -> int: return arr.reduce(func(x, y): return x + y, 0)
+	_check(small.all(func(n): return n >= 40), "a 160-man host draws at least 40 a regiment (%s)" % str(small))
+	_check(int(sum.call(big)) > int(sum.call(small)), "a 600-man host draws more than a 160-man host (%d, %d)" % [sum.call(big), sum.call(small)])
+	var budget := int(Data.num("army", "figureBudget", 0.0))
+	var biggest: Array = drawn.call(17 * 160)  # the reign's biggest house: 17 companies (Freeciv's run2, T38-T78)
+	_check(budget > 0 and int(sum.call(biggest)) <= budget, "the realm's biggest host draws %d figures, within the budget %d" % [sum.call(biggest), budget])
+	var src := FileAccess.get_file_as_string("res://scripts/army_field.gd")
+	var at := src.find("func _fell(")
+	_check(src.substr(at, 600).contains("r[\"figures\"]") and not src.substr(at, 600).contains("Army.ratio()"), "a regiment's losses fell figures in step with its men (figures over men, not one per ten)")
+	a.free()
 
 
 ## 23. The muster takes the road: the stand-in realm of section 11, its road starting 6 units from the field.
@@ -877,7 +903,7 @@ func build(road: PackedVector3Array) -> void:
 	var main := Node3D.new()
 	main.set_script(stub)
 	root.add_child(main)
-	var road := PackedVector3Array([Vector3(1, 0, 0), Vector3(3, 0, 0), Vector3(3, 0, 3)])
+	var road := PackedVector3Array([Vector3(1, 0, 0), Vector3(3, 0, 0), Vector3(3, 0, 12)])  # long enough for a column of regiments drawn to their floor (figureFloor)
 	main.call("build", road)
 	var a: Node3D = ArmyS.new(main, 0, {"side": 0, "colour": Color(0.6, 0.15, 0.15), "house": {"name": "House Ashby"}, "quiet": true, "out_to": road[road.size() - 1]})
 	var rows: Array = []
@@ -994,7 +1020,7 @@ func _figures_and_room() -> void:
 	for k in units:
 		var row: Dictionary = units[k]
 		var men := int(row.get("men", 150))
-		var want := maxi(1, ceili(men * ratio - 0.0001))
+		var want := int(Data.num("army", "figureFloor", 0.0)) + maxi(1, ceili(men * ratio - 0.0001))
 		var got: int = int(a.call("figures", men)) if has else men
 		_check(got == want, "%s: %d men draw %d figures (want %d)" % [k, men, got, want])
 		var sp: Dictionary = row.get("spacing", {})
