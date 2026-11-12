@@ -5,7 +5,7 @@
   "_judged": "Each piece judged in a Blender CPU turntable (realm/tools/meshy_turntable.py) before wiring: judged says why. Passed and wired: forge, lumber mill, catapult, guard tower, gatehouse (castle_gate: castle_builder.gd), market cart (square_cart: the crown's market carter, town_life.gd), tavern (30,000 tris, its smoke cut). Held: market stalls (a shed welded on). Rejected: treasury, house, well.",
   "defaults": {"tris": 6000, "height_m": 8.0, "yaw": 0.0, "mask": {"hues": [[340, 20]], "sat_min": 0.35, "val_min": 0.2, "up_min": -1.0}},
   "pieces": {
-    "forge": {"src": "forge", "replaces": "forge", "height_m": 7.5, "tris": 6000},
+    "forge": {"src": "forge", "replaces": "forge", "height_m": 7.5, "tris": 6000, "work_front": {"anvil": [2.65, -1.57], "smith": [2.65, -2.3], "trough": [1.0, -1.77], "hearth": [-0.95, -2.6], "bellows": [-0.3, -2.2], "store": [-2.9, -1.67]}},
     "lumber_mill": {"src": "lumber_mill", "replaces": "town_watermill", "height_m": 8.0, "tris": 6000},
     "market": {"src": "marketplace", "replaces": "", "height_m": 4.0, "tris": 4000},
     "mine": {"src": "mine", "replaces": "", "height_m": 6.0, "tris": 6000},

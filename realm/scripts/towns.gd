@@ -1440,7 +1440,7 @@ func _trade_by_model(kind: String) -> Dictionary:
 func _trade_record(root: Node3D, center: Vector3, tr: Dictionary, p: Vector3, face: Vector3, f: Vector2) -> void:
 	tr["stood"] = p
 	var comp := String(tr["component"])
-	var spots: Dictionary = TownTrades.work_spots(comp, p, face, f)
+	var spots: Dictionary = TownTrades.work_spots(comp, p, face, f, String(tr["model"]))
 	var all: Array = root.get_meta("trades", [])
 	all.append({"component": comp, "model": String(tr["model"]), "at": p, "face": face})
 	root.set_meta("trades", all)

@@ -39,12 +39,18 @@ static func plan(size: int, buildings: Array, seat: bool, seed: int) -> Array:
 ## Where its people work, town-local: the component's work spots (assets.json
 ## components.<id>.work_front: {name: [across, out] or [across, out, up]} metres, `out` from its front
 ## wall's line, negative inside) turned with the building standing at `at` (town-local), its front
-## looking along `face`, `foot` its footprint (game units). Named as works.gd's spots are.
-static func work_spots(component: String, at: Vector3, face: Vector3, foot: Vector2) -> Dictionary:
+## looking along `face`, `foot` its footprint (game units). Named as works.gd's spots are. A Meshy piece standing
+## in for it (model "meshy_<piece>") has its own layout: meshy.json pieces.<piece>.work_front, when given (the
+## Meshy forge's anvil stands out on its paved yard, not inside the front wall).
+static func work_spots(component: String, at: Vector3, face: Vector3, foot: Vector2, model := "") -> Dictionary:
 	var spots := {}
 	var c: Dictionary = Data.value("assets", "components", {}).get(component, {})
 	var along := Vector3(-face.z, 0, face.x)
 	var given: Dictionary = c.get("work_front", {})
+	if model.begins_with("meshy_"):
+		var piece: Dictionary = Data.value("meshy", "pieces", {}).get(model.substr(6), {})
+		if piece.has("work_front"):
+			given = piece["work_front"]
 	for k in given:
 		var m: Array = given[k]
 		if m.size() < 2:

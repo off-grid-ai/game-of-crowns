@@ -225,14 +225,16 @@ func _spot(center: Vector3, want: Vector3, walls: Array, taken: PackedVector2Arr
 
 ## Places a townsperson at the nearest open spot to `want` and keeps them in
 ## the life's list of who stands where; null when there's no room.
-func _stand(root: Node3D, life: Node3D, center: Vector3, want: Vector3, role: String, anim: String, seed: int, tint := Color.WHITE, reach := 0.4) -> Node3D:
+## inside: they work inside a building's own footprint (the smiths at the forge's anvil and bellows, on its
+## paved yard): no building's walls keep them out, only the others standing and the road's lanes.
+func _stand(root: Node3D, life: Node3D, center: Vector3, want: Vector3, role: String, anim: String, seed: int, tint := Color.WHITE, reach := 0.4, post := "", inside := false) -> Node3D:
 	var taken: PackedVector2Array = life.get_meta("standing")
-	var p := _spot(center, want, _blocked(root, life), taken, reach, root)  # a person: never on a road's lane
+	var p := _spot(center, want, [] if inside else _blocked(root, life), taken, reach, root)  # a person: never on a road's lane
 	if is_nan(p.x):
 		return null
 	taken.append(Vector2(p.x, p.z))
 	life.set_meta("standing", taken)
-	return _townsperson(life, p, role, anim, seed, tint)
+	return _townsperson(life, p, role, anim, seed, tint, post)
 
 
 ## Remembers how high each thing stands above the ground under it, so it can
@@ -294,10 +296,13 @@ func _drill_routine(s: Node3D, bow: bool, seed: int) -> void:
 	out.start(maxf(Awareness.season_seconds, 1.0) + rng.randf_range(0.0, 4.0))  # one season of the realm's, then the recruits fall out
 
 
-func _townsperson(parent: Node3D, pos: Vector3, role: String, anim: String, seed: int, tint := Color.WHITE) -> Node3D:
+## post: the work they're there for (the cast's smith works the forge: people.gd cast_for_post); age: "child" or
+## "elder" when the scene wants one (the children's chase), else the role's own mix.
+func _townsperson(parent: Node3D, pos: Vector3, role: String, anim: String, seed: int, tint := Color.WHITE, post := "", age := "") -> Node3D:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed
-	var p: Node3D = _people.make(rng, role, tint, "adult" if role == "soldier" else "")
+	var cast_body: String = _people.cast_for_post(post)
+	var p: Node3D = _people.make_body(rng, cast_body, tint, "adult", "average", role) if cast_body != "" else _people.make(rng, role, tint, age if age != "" else ("adult" if role == "soldier" else ""))
 	p.set_meta("role", role)  # who they are in the scene (a film can find a drill's soldiers)
 	p.position = pos
 	parent.add_child(p)
@@ -706,7 +711,7 @@ func _trade(root: Node3D, life: Node3D, center: Vector3, rng: RandomNumberGenera
 		if is_nan(at.x):
 			continue  # this stall's keeper is the next one's: one keeps both
 		at.y = _y(center, at)
-		var keeper := _townsperson(life, at, "townsfolk", ["Idle_Talking", "Pointing_Forward", "Nodding"][rng.randi() % 3], rng.randi())
+		var keeper := _townsperson(life, at, "townsfolk", ["Idle_Talking", "Pointing_Forward", "Nodding"][rng.randi() % 3], rng.randi(), Color.WHITE, "stallholder")
 		keeper.rotation.y = atan2(-out.x, -out.z)
 		_mind(keeper, "trade", center)
 		taken.append(Vector2(at.x, at.z))
@@ -762,7 +767,7 @@ func _market_day(root: Node3D, life: Node3D, center: Vector3, rng: RandomNumberG
 		var anvil := _prop(life, center, "Anvil", at, atan2(-side.x, -side.z), 1.0, 0.0, 0.1)
 		if anvil:
 			_prop(life, center, "Bucket_Metal", at + Vector3(-side.z, 0, side.x) * 0.12, 0.0, 1.0, 0.0, 0.05)
-			var smith := _stand(root, life, center, at - side * 0.12, "townsfolk", "Hammer_Swing", rng.randi(), Color.WHITE, 0.2)
+			var smith := _stand(root, life, center, at - side * 0.12, "townsfolk", "Hammer_Swing", rng.randi(), Color.WHITE, 0.2, "smith")
 			if smith:
 				smith.rotation.y = atan2(side.x, side.z)  # facing his anvil, his back to the houses
 				_mind(smith, "smith", center)
@@ -1205,12 +1210,15 @@ func _forge(root: Node3D, life: Node3D, center: Vector3, b: Dictionary, tick: Wo
 		_prop(life, center, "Anvil", anvil, float(b["yaw"]), 1.0, 0.0, 0.1)
 		if sp.has("trough"):
 			_prop(life, center, "Bucket_Metal", sp["trough"], 0.0, 1.0, 0.0, 0.05)
-	var posts: Array = [sp.get("smith", anvil + _front(b) * 0.08), sp.get("second", hearth + _front(b) * 0.1)]
+	# The smith at the anvil, the second at the bellows by the hearth (batch 9: both stood out by the door, the
+	# building's own footprint keeping them off its yard): they work inside it.
+	var bellows: Vector3 = sp.get("bellows", sp.get("second", hearth + _front(b) * 0.1))
+	var posts: Array = [sp.get("smith", anvil + _front(b) * 0.08), bellows]
 	for i in mini(smiths, posts.size()):
-		var s := _stand(root, life, center, posts[i], "townsfolk", "Hammer_Swing", rng.randi(), Color.WHITE, 0.2)
+		var s := _stand(root, life, center, posts[i], "townsfolk", "Hammer_Swing" if i == 0 else "Pushing", rng.randi(), Color.WHITE, 0.12, "smith" if i == 0 else "", true)
 		if s:
 			_face(s, anvil if i == 0 else hearth)
-			_mind(s, "smith", center)
+			_mind(s, "smith" if i == 0 else "bellows", center)
 			tick.smiths.append(s)
 	# The forge's glow, brighter in war, banked at night (works.Tick sets it each second).
 	var g: Dictionary = Data.value("works", "forge.glow", {})
@@ -1358,7 +1366,7 @@ func _mill(root: Node3D, life: Node3D, center: Vector3, b: Dictionary, kind: Str
 	var sp: Dictionary = b["spots"]
 	var door: Vector3 = sp.get("door", b["at"] + _front(b) * 0.25)
 	for i in millers:
-		var m := _stand(root, life, center, door, "peasant", "PickUp_Table", rng.randi(), Color.WHITE, 0.2)
+		var m := _stand(root, life, center, door, "peasant", "PickUp_Table", rng.randi(), Color.WHITE, 0.2, "miller" if i == 0 else "")
 		if m:
 			_face(m, b["at"])
 			_mind(m, "miller", center)
@@ -1526,7 +1534,7 @@ func _crier(root: Node3D, life: Node3D, center: Vector3, tick: Works.Tick, liste
 	var places: Dictionary = root.get_meta("places", {})
 	var well: Vector3 = places.get("well", Vector3(0.4, 0, 0.4))
 	var at := well + SEEN * Data.num("works", "crier.from_well", 0.35)
-	var crier := _stand(root, life, center, at, "townsfolk", "Yelling", rng.randi(), Color.WHITE, 0.3)
+	var crier := _stand(root, life, center, at, "townsfolk", "Yelling", rng.randi(), Color.WHITE, 0.3, "crier")
 	if crier == null:
 		return
 	var toward := SEEN  # he faces the seen half of the square, his listeners before him
@@ -1991,7 +1999,7 @@ func _square_life(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, rn
 		var kids: Array = []
 		for j in 2:
 			var at := _off_centre(root, well + Vector3(rng.randf_range(-r, r), 0, rng.randf_range(-r, r)) * 0.5, float(Data.num("moods", "centre.mourners", 0.08)))
-			var kid := _townsperson(life, Vector3(at.x, _y(center, at), at.z), "peasant", "Laughing", rng.randi())
+			var kid := _townsperson(life, Vector3(at.x, _y(center, at), at.z), "peasant", "Laughing", rng.randi(), Color.WHITE, "", "child")
 			kid.set_meta("chasing", true)
 			_people.play(kid, "Running")  # their legs run while they're moved (motion.gd reads their pace)
 			kids.append(kid)

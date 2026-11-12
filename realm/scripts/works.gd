@@ -352,6 +352,7 @@ class Tick extends Node:
 	var roam := 0.4
 	var _slow := 0.0
 	var _rng := RandomNumberGenerator.new()
+	var _swing := {}  # smith -> where in his Hammer_Swing he was last frame (0-1)
 
 	func _ready() -> void:
 		_rng.randomize()
@@ -360,6 +361,7 @@ class Tick extends Node:
 		if root == null or not is_instance_valid(root):
 			return
 		_horses(delta)
+		_strikes()
 		var h := Works.hour()
 		var working := Works.within(h, "work")
 		for m: Dictionary in mills:
@@ -376,15 +378,30 @@ class Tick extends Node:
 		_slow = 1.0
 		_each_second(h, working)
 
-	func _each_second(h: float, working: bool) -> void:
-		var hammering := false
+	## Sparks off the anvil at the hammer's strike, on the frame the head meets the iron: the same moments its
+	## sound rings (sounds.json clips.Hammer_Swing.at, fractions of the swing), so a burst, a ring and a blow are
+	## one (batch 9: sparks once a second, whatever the hammer was doing).
+	func _strikes() -> void:
+		if sparks == null:
+			return
+		var at: Array = Data.value("sounds", "clips.Hammer_Swing.at", [0.5])
 		for s in smiths:
-			if is_instance_valid(s):
-				var ap: AnimationPlayer = (s as Node).get_node_or_null("Anim")
-				if ap and ap.current_animation == "Hammer_Swing":
-					hammering = true
-		if sparks and hammering:
-			sparks.restart()  # a burst off the anvil for the stroke (one_shot: never a steady stream)
+			if not is_instance_valid(s):
+				continue
+			var ap: AnimationPlayer = (s as Node).get_node_or_null("Anim")
+			if ap == null or ap.current_animation != "Hammer_Swing" or ap.current_animation_length <= 0.0:
+				_swing.erase(s)
+				continue
+			var now: float = ap.current_animation_position / ap.current_animation_length
+			var was: float = float(_swing.get(s, now))
+			_swing[s] = now
+			for t in at:
+				var f := float(t)
+				if (was < f and f <= now) or (now < was and (f > was or f <= now)):  # passed it, or round the loop past it
+					sparks.restart()  # a burst off the anvil for the stroke (one_shot: never a steady stream)
+					return
+
+	func _each_second(h: float, working: bool) -> void:
 		if glow:
 			glow.light_energy = Data.num("works", ("forge.glow.war" if hot else "forge.glow.day") if working else "forge.glow.night", 1.0)
 		var lit := Works.within(h, "lit") and Works.dark()

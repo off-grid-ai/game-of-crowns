@@ -303,6 +303,11 @@ static func post_activities(post: String) -> Array:
 				seq("quench", [once("PickUp_Table"), step(0.15), once("Watering"), step(0.0), run(["Hammer_Swing"], 1, 2), brk(["Wiping_Sweat", "Arm_Stretching"])]),  # the hot iron into the trough, back to the anvil
 				seq("judge", [once("PickUp_Table"), run(["Thinking"], 1, 1), once("Firm_Nod"), run(["Hammer_Swing"], 1, 2), brk(["Weight_Shift", "Slow_Nod"])]),  # the blade held up to the light, a nod, back to it
 			]
+		"bellows":  # the second smith at the hearth: pumps the bellows, turns the iron in the coals, wipes his brow
+			return [
+				seq("blow", [run(["Pushing"], 3, 5), brk(["Wiping_Sweat", "Weight_Shift"])]),
+				seq("stoke", [once("PickUp_Table"), run(["Pushing"], 2, 3), once("Looking_Around"), brk(REST)]),
+			]
 		# --- at the working buildings (town_life._works, works.json) ---
 		"miller":  # at the mill's door: sacks in, flour out
 			return [
