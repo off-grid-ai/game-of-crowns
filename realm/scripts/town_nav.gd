@@ -33,7 +33,11 @@ static func forget_shore(area: Rect2) -> void:
 			_shore.erase(key)
 
 
-func map_for(id: int, root: Node3D) -> RID:
+## The town's walk map: a person's (`wide` false), or a horse's and a cart's (`wide`: baked keeping WIDE clear of
+## everything standing, Godot's way for a bigger body: a navigation map per agent size), so a cart's route never
+## squeezes between two benches a man can pass. Each is baked when first asked for.
+func map_for(id: int, root: Node3D, wide := false) -> RID:
+	var k := _k(id, wide)
 	# A town rebuilt as it grows is a new node with new houses: its old map
 	# would walk people straight through them, so it is baked afresh. So is a
 	# town whose life changed (town_life.gd): a building site going up, recruits
@@ -44,10 +48,10 @@ func map_for(id: int, root: Node3D) -> RID:
 	# Baked afresh when the town's layout changes: rebuilt, its life changed, a building or a stall added, a stone
 	# wall breached (walls.gd).
 	var made := [root.get_instance_id(), life.get_instance_id() if life else 0] + NavGround.layout(root)
-	if _maps.has(id) and _built_from.get(id, []) == made:
-		return _maps[id]
-	forget(id)
-	_built_from[id] = made
+	if _maps.has(k) and _built_from.get(k, []) == made:
+		return _maps[k]
+	_free(k)
+	_built_from[k] = made
 	var reach: float = root.get_meta("reach", 6.0)
 	var outline := PackedVector2Array()
 	for i in 24:
@@ -63,13 +67,24 @@ func map_for(id: int, root: Node3D) -> RID:
 	NavigationServer2D.map_set_edge_connection_margin(map, 0.12)
 	NavigationServer2D.map_set_active(map, true)
 	var regions: Array = []
+	var radius := _wide_r() if wide else AGENT
 	if not ways.is_empty():
-		regions.append(_region(map, root, reach, ways, blocks, 1.0))
-	regions.append(_region(map, root, reach, [outline], blocks, OPEN_COST, ways))
-	_maps[id] = map
-	_regions[id] = regions
+		regions.append(_region(map, root, reach, ways, blocks, 1.0, radius))
+	regions.append(_region(map, root, reach, [outline], blocks, OPEN_COST, radius, ways))
+	_maps[k] = map
+	_regions[k] = regions
 	_live[map] = true
 	return map
+
+
+## The key a town's map is kept under: its id for a person's, the id's complement for the wide one (ids are >= 0).
+static func _k(id: int, wide: bool) -> int:
+	return ~id if wide else id
+
+
+## How far a horse's or a cart's map keeps from anything standing (towns.json nav.wide, game units).
+static func _wide_r() -> float:
+	return float(preload("res://scripts/data.gd").num("towns", "nav.wide", 0.1))
 
 
 const CELL := 0.01
@@ -93,17 +108,17 @@ const OPEN_COST := 6.0  # open ground: six times a street, so people keep to the
 ## One walkable region of the town's map: `walk` outlines, less `blocks` and water.
 ## Baked on a worker thread (Godot's async bake; in one frame it held the window
 ## 60-210 ms): the map isn't ready() until every region's bake has landed.
-func _region(map: RID, root: Node3D, reach: float, walk: Array, blocks: Array, cost: float, cut := []) -> RID:
+func _region(map: RID, root: Node3D, reach: float, walk: Array, blocks: Array, cost: float, radius: float, cut := []) -> RID:
 	var region := NavigationServer2D.region_create()
 	NavigationServer2D.region_set_map(region, map)
 	NavigationServer2D.region_set_travel_cost(region, cost)
-	_bake_into(region, map, root, reach, walk, blocks, cut)
+	_bake_into(region, map, root, reach, walk, blocks, cut, radius)
 	return region
 
 
-func _bake_into(region: RID, map: RID, root: Node3D, reach: float, walk: Array, blocks: Array, cut: Array) -> void:
+func _bake_into(region: RID, map: RID, root: Node3D, reach: float, walk: Array, blocks: Array, cut: Array, radius: float) -> void:
 	var poly := NavigationPolygon.new()
-	poly.agent_radius = AGENT
+	poly.agent_radius = radius
 	poly.cell_size = CELL
 	var src := NavigationMeshSourceGeometryData2D.new()
 	for o in walk:
@@ -114,12 +129,12 @@ func _bake_into(region: RID, map: RID, root: Node3D, reach: float, walk: Array, 
 		src.add_obstruction_outline(w)
 	_baking[map] = int(_baking.get(map, 0)) + 1
 	NavigationServer2D.bake_from_source_geometry_data_async(poly, src, func() -> void:
-		_landed.call_deferred(region, map, poly, root, reach, walk, blocks, cut))
+		_landed.call_deferred(region, map, poly, root, reach, walk, blocks, cut, radius))
 
 
 ## A region's bake is back (on the main thread): it goes on the map, unless the
 ## map was freed meanwhile (the town rebuilt again).
-func _landed(region: RID, map: RID, poly: NavigationPolygon, root: Node3D, reach: float, walk: Array, blocks: Array, cut: Array) -> void:
+func _landed(region: RID, map: RID, poly: NavigationPolygon, root: Node3D, reach: float, walk: Array, blocks: Array, cut: Array, radius: float) -> void:
 	if not _live.has(map):
 		_baking.erase(map)
 		return
@@ -127,7 +142,7 @@ func _landed(region: RID, map: RID, poly: NavigationPolygon, root: Node3D, reach
 		# Streets crossing each other can't all be cut out of the open ground
 		# in one bake: bake it with only the buildings cut out. The streets
 		# overlap it but stay far cheaper, so people still keep to them.
-		_bake_into(region, map, root, reach, walk, blocks, [])
+		_bake_into(region, map, root, reach, walk, blocks, [], radius)
 	else:
 		NavigationServer2D.region_set_navigation_polygon(region, poly)
 	var left := int(_baking.get(map, 1)) - 1
@@ -265,8 +280,8 @@ static func baked(id: int) -> bool:
 
 ## Where someone can stand nearest `want` (world), on the town's walk map:
 ## clear of every house, wall, fence, stall and cart.
-func spot(id: int, root: Node3D, want: Vector3) -> Vector3:
-	var map := map_for(id, root)
+func spot(id: int, root: Node3D, want: Vector3, wide := false) -> Vector3:
+	var map := map_for(id, root, wide)
 	var c := root.global_position
 	var p := closest(map, Vector2(want.x - c.x, want.z - c.z))
 	return Vector3(c.x + p.x, terrain.height_at(c.x + p.x, c.z + p.y) if terrain else want.y, c.z + p.y)
@@ -274,8 +289,8 @@ func spot(id: int, root: Node3D, want: Vector3) -> Vector3:
 
 ## A walk through the town's streets between two world points, as world
 ## points; just the two ends until the map has synced (a frame after baking).
-func walk(id: int, root: Node3D, from: Vector3, to: Vector3) -> PackedVector3Array:
-	var map := map_for(id, root)
+func walk(id: int, root: Node3D, from: Vector3, to: Vector3, wide := false) -> PackedVector3Array:
+	var map := map_for(id, root, wide)
 	var c := root.global_position
 	var out := PackedVector3Array()
 	var way := path(map, closest(map, Vector2(from.x - c.x, from.z - c.z)), closest(map, Vector2(to.x - c.x, to.z - c.z)))
@@ -435,28 +450,28 @@ static func _reach_of(body: float) -> Array:
 ## The way between two world points: through the streets of a town with a
 ## walk map at either end (towns out of sight have none, and are crossed as
 ## open land), across the land between.
-func route(towns: Node3D, from: Vector3, to: Vector3) -> PackedVector3Array:
+func route(towns: Node3D, from: Vector3, to: Vector3, wide := false) -> PackedVector3Array:
 	var a := _walked(towns, from)
 	var b := _walked(towns, to)
 	if a.is_empty() and b.is_empty():
 		var on_road: PackedVector3Array = roads.route(from, to) if roads and roads.has_method("route") else PackedVector3Array()
 		return on_road if not on_road.is_empty() else terrain.bowed(terrain.land_path(from, to))
 	if not a.is_empty() and not b.is_empty() and a[0] == b[0]:
-		return walk(a[0], a[1], from, to)
+		return walk(a[0], a[1], from, to, wide)
 	var out := PackedVector3Array()
 	var head := from
 	var tail := to
 	if not a.is_empty():
 		# Out through the streets to the town's edge nearest the way ahead.
-		head = spot(a[0], a[1], to)
-		out.append_array(walk(a[0], a[1], from, head))
+		head = spot(a[0], a[1], to, wide)
+		out.append_array(walk(a[0], a[1], from, head, wide))
 	if not b.is_empty():
-		tail = spot(b[0], b[1], head)
+		tail = spot(b[0], b[1], head, wide)
 	# Between towns, along the drawn roads where they join the two; over the land where they don't.
 	var on_road: PackedVector3Array = roads.route(head, tail) if roads and roads.has_method("route") else PackedVector3Array()
 	out.append_array(on_road if not on_road.is_empty() else terrain.bowed(terrain.land_path(head, tail)))
 	if not b.is_empty():
-		out.append_array(walk(b[0], b[1], tail, to))
+		out.append_array(walk(b[0], b[1], tail, to, wide))
 	return out
 
 
@@ -464,12 +479,12 @@ func route(towns: Node3D, from: Vector3, to: Vector3) -> PackedVector3Array:
 ## baking, or synced but not yet giving paths (the first frame after a bake lands): its route would be just the two
 ## ends (walk), straight through the well. A Mover asking waits for it (mover.gd route_to) rather than cross in a
 ## straight line.
-func waits(towns: Node3D, from: Vector3, to: Vector3) -> bool:
+func waits(towns: Node3D, from: Vector3, to: Vector3, wide := false) -> bool:
 	for p: Vector3 in [from, to]:
 		var t := _walked(towns, p)
 		if t.is_empty():
 			continue
-		var map := map_for(t[0], t[1])
+		var map := map_for(t[0], t[1], wide)
 		if not ready(map):
 			return true
 		var c := (t[1] as Node3D).global_position
@@ -509,15 +524,21 @@ static func _out_of(root: Node3D, fp: PackedVector2Array, p: Vector3) -> Vector3
 	return Vector3(c.x + best.x, p.y, c.z + best.y)
 
 
+## The town's walk maps are freed (it is rebuilt, razed or out of sight): a person's and a horse's and cart's.
 func forget(id: int) -> void:
-	if _maps.has(id):
-		_live.erase(_maps[id])
-		_baked_at.erase(_maps[id])  # a bake still out finds the map gone and is dropped (_landed)
-		for r in _regions[id]:
+	_free(_k(id, false))
+	_free(_k(id, true))
+
+
+func _free(k: int) -> void:
+	if _maps.has(k):
+		_live.erase(_maps[k])
+		_baked_at.erase(_maps[k])  # a bake still out finds the map gone and is dropped (_landed)
+		for r in _regions[k]:
 			NavigationServer2D.free_rid(r)
-		NavigationServer2D.free_rid(_maps[id])
-		_regions.erase(id)
-		_maps.erase(id)
+		NavigationServer2D.free_rid(_maps[k])
+		_regions.erase(k)
+		_maps.erase(k)
 
 
 ## A check of the walk map (play command `navprobe`): `n` walks between random points across the town's square and a

@@ -14,8 +14,15 @@ extends Node
 ## (`on(ground)`, army_ground.gd: Godot's AStarGrid2D over the field, water, houses and walls shut, a breach open),
 ## so every route it asks for goes round them; a fighter chasing a moving foe asks `toward()` each frame, and
 ## Godot's avoidance (RVO, `join(crowd)`) turns where he wants to go into a way through the men about him.
+##
+## A horse or a cart (a body that steers on an arc, turn_radius > 0) walks a town's wide map (town_nav map_for wide:
+## kept a wagon's half-width off everything standing, so it never squeezes between benches a man can pass), stands in
+## its town's crowd avoidance as an agent the villagers step round (Godot's RVO, high priority), and never dodges
+## itself: it waits while someone stands on its way just ahead (towns.json nav.yield), as carts do in a crowd.
 
 const People := preload("res://scripts/people.gd")
+const TownNav := preload("res://scripts/town_nav.gd")
+const Data := preload("res://scripts/data.gd")
 
 signal arrived
 
@@ -96,9 +103,9 @@ func _route(from: Vector3, to: Vector3) -> PackedVector3Array:
 	var main := _main()
 	if main == null or main.scenes == null or main.scenes.nav == null or main.towns == null:
 		return PackedVector3Array()
-	if main.scenes.nav.waits(main.towns, from, to):
+	if main.scenes.nav.waits(main.towns, from, to, turn_radius > 0.0):
 		return PackedVector3Array()
-	return main.scenes.nav.route(main.towns, from, to)
+	return main.scenes.nav.route(main.towns, from, to, turn_radius > 0.0)
 
 
 ## A short shift in `secs` without turning (a step back from a blow, a dodge, a shuffle in the ranks), still
@@ -227,6 +234,81 @@ func leave() -> void:
 
 func _exit_tree() -> void:
 	leave()
+	if _town_agent.is_valid():
+		NavigationServer2D.free_rid(_town_agent)
+		_town_agent = RID()
+
+
+# --- A horse or a cart in a town's crowd ---------------------------------------------------------------------
+
+var _town_agent := RID()  # its agent in the town's crowd avoidance (the villagers' RVO, on the town's walk map)
+var _town_map := RID()
+var _town_ask := 0.0  # seconds to the next look for the town it is in
+var _peek := 0.0  # seconds to the next look for anyone in its way
+var _blocked := false
+var _was := Vector3.INF  # where it stood last frame (its velocity, told to the crowd)
+
+
+## Tells the town's crowd where the horse or cart is and where it goes, so the villagers' avoidance (Godot's RVO)
+## steps round it: an agent on the town's walk map, at top priority, seeing nobody itself (it never dodges; it waits).
+func _tell_crowd(body: Node3D, vel: Vector3) -> void:
+	_town_ask -= get_process_delta_time()
+	if _town_ask <= 0.0:
+		_town_ask = 0.5
+		var map := RID()
+		var main := _main()
+		if main and main.towns and main.scenes and main.scenes.nav:
+			var ts: Array = TownNav.towns_at(main.towns, body.global_position)
+			if not ts.is_empty() and TownNav.baked(ts[0][0]):
+				map = main.scenes.nav.map_for(ts[0][0], ts[0][1])
+		if map != _town_map:
+			_town_map = map
+			if not map.is_valid() and _town_agent.is_valid():
+				NavigationServer2D.free_rid(_town_agent)
+				_town_agent = RID()
+			elif map.is_valid():
+				if not _town_agent.is_valid():
+					_town_agent = NavigationServer2D.agent_create()
+					NavigationServer2D.agent_set_radius(_town_agent, float(Data.num("towns", "nav.wide", 0.1)))
+					NavigationServer2D.agent_set_avoidance_layers(_town_agent, 1)  # seen by the villagers (their mask)
+					NavigationServer2D.agent_set_avoidance_mask(_town_agent, 0)  # sees nobody: it waits, never dodges
+					NavigationServer2D.agent_set_avoidance_priority(_town_agent, 1.0)
+					NavigationServer2D.agent_set_avoidance_enabled(_town_agent, true)
+				NavigationServer2D.agent_set_map(_town_agent, map)
+	if not _town_agent.is_valid():
+		return
+	var main := _main()
+	var c: Vector3 = body.global_position
+	for t in TownNav.towns_at(main.towns, c) if main and main.towns else []:
+		c = (t[1] as Node3D).global_position  # the walk map is in the town's own space
+		break
+	NavigationServer2D.agent_set_position(_town_agent, Vector2(body.global_position.x - c.x, body.global_position.z - c.z))
+	NavigationServer2D.agent_set_velocity_forced(_town_agent, Vector2(vel.x, vel.z))
+
+
+## Whether someone stands on the horse's or cart's way just ahead (towns.json nav.yield: how far ahead it looks, how
+## wide past its own half-width): anyone of the people, not its own carter or rider. Looked at a few times a second.
+func _in_the_way(body: Node3D, delta: float) -> bool:
+	_peek -= delta
+	if _peek > 0.0:
+		return _blocked
+	_peek = 0.1
+	_blocked = false
+	var ahead := float(Data.num("towns", "nav.yield.ahead", 0.3))
+	var side := float(Data.num("towns", "nav.wide", 0.1)) + float(Data.num("towns", "nav.yield.side", 0.04))
+	var at := Vector2(body.global_position.x, body.global_position.z)
+	var fwd := Vector2(sin(body.rotation.y), cos(body.rotation.y))
+	for p in body.get_tree().get_nodes_in_group("people"):
+		var n := p as Node3D
+		if n == null or n == body or body.is_ancestor_of(n) or not n.is_visible_in_tree():
+			continue
+		var q := Vector2(n.global_position.x, n.global_position.z)
+		if q.distance_squared_to(at) > (ahead + side) * (ahead + side):
+			continue
+		if Geometry2D.get_closest_point_to_segment(q, at, at + fwd * ahead).distance_to(q) < side:
+			_blocked = true
+			break
+	return _blocked
 
 
 ## One frame of steering: along the way toward the mark, the crowd's safe velocity taken where it is live, eased.
@@ -287,6 +369,9 @@ func moving() -> bool:
 
 func _process(delta: float) -> void:
 	var body := get_parent() as Node3D
+	if body != null and turn_radius > 0.0:
+		_tell_crowd(body, (body.global_position - _was) / maxf(delta, 0.001) if _was != Vector3.INF else Vector3.ZERO)
+		_was = body.global_position
 	if body != null and _ask_got.is_valid():
 		var way := _route(body.global_position, _ask_to)
 		if way.is_empty():
@@ -306,6 +391,8 @@ func _process(delta: float) -> void:
 	var flat := Vector2(aim.x - at.x, aim.z - at.z)
 	var step := speed * delta
 	if turn_radius > 0.0 and _face:
+		if _in_the_way(body, delta):
+			return  # someone stands on its way: it waits for them
 		_drive(body, at, aim, flat, step)
 		return
 	if flat.length() <= step:
