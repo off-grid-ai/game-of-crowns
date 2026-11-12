@@ -60,7 +60,10 @@ extends SceneTree
 ## 19. a house's host marching on a town shows on the map (docs/research/engine-visual-map-2026-11-12.md gap 3: 40 of
 ##     52 companies carry a Freeciv goto, and only the crown's orders were drawn): map_look.marches gives a line from
 ##     each house's companies in the field to where Freeciv sends them; not for one dug in where it stands, the
-##     crown's (its orders draw those), a civilian or a ship.
+##     crown's (its orders draw those), a civilian or a ship;
+## 20. a ship sails the water (the reign replay: Triremes 46 units from their tiles, never set out, as no land route
+##     crosses the sea): the realm's paths give a sea route (land_paths.sea_path) that keeps to water round an island,
+##     and units.gd sends a ship by it.
 ## Prints "ARMY PROBE …" lines and "ARMY PROBE PASS" or "ARMY PROBE FAIL n"; quits with 0 or 1.
 
 const Data := preload("res://scripts/data.gd")
@@ -104,8 +107,44 @@ func _run() -> void:
 	_film_waits_for_the_clash()
 	_figure_keeps_up()
 	_house_marches_show()
+	_ship_sails_the_water()
 	print("ARMY PROBE PASS" if _fails == 0 else "ARMY PROBE FAIL %d" % _fails)
 	quit(0 if _fails == 0 else 1)
+
+
+## 20. A ship sails the water: a stand-in tile map 12 x 9 of ocean with an island (land) in the middle, 4 x 3 tiles.
+func _ship_sails_the_water() -> void:
+	var LP: GDScript = load("res://scripts/land_paths.gd")
+	var has := LP.get_script_method_list().any(func(m): return m["name"] == "sea_path")
+	_check(has, "the realm's paths give a sea route (land_paths.sea_path)")
+	_check(FileAccess.get_file_as_string("res://scripts/units.gd").contains("sea_path("), "units.gd sends a ship by the sea route")
+	if not has:
+		return
+	var t := GDScript.new()
+	t.source_code = '''extends Node3D
+const TILE := 4.0
+var width := 12
+var height := 9
+func tile_at(x: int, y: int) -> String:
+	return "Grassland" if x >= 4 and x <= 7 and y >= 3 and y <= 5 else "Ocean"
+func world_pos(tx: float, ty: float) -> Vector3:
+	return Vector3((tx + 0.5) * TILE, 0, (ty + 0.5) * TILE)
+'''
+	t.reload()
+	var land := Node3D.new()
+	land.set_script(t)
+	var lp: Object = LP.new(land)
+	lp.call("build")
+	var from: Vector3 = land.world_pos(1, 4)
+	var to: Vector3 = land.world_pos(10, 4)
+	var way: PackedVector3Array = lp.call("sea_path", from, to)
+	var wet := true
+	for i in way.size() - 1:
+		for k in 5:
+			var p: Vector3 = way[i].lerp(way[i + 1], k / 4.0)
+			wet = wet and land.tile_at(floori(p.x / 4.0), floori(p.z / 4.0)) == "Ocean"
+	_check(way.size() >= 3 and wet, "a route across goes round the island on water (%d points, all wet: %s)" % [way.size(), wet])
+	land.free()
 
 
 ## 19. A house's march on the map: a stand-in store with five companies.

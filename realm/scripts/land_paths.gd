@@ -4,6 +4,7 @@ extends RefCounted
 ## terrain.gd builds it with the land (terrain.paths); everything that goes overland asks it.
 
 var _astar: AStarGrid2D
+var _sea: AStarGrid2D  # the same tile map for ships: water open, land solid
 var _t: Node3D  # terrain.gd: the tile map, its size and its ground
 
 
@@ -28,6 +29,14 @@ func build() -> void:
 				_astar.set_point_weight_scale(Vector2i(x, y), 4.0)
 			elif n == "Hills" or n == "Forest" or n == "Jungle" or n == "Swamp":
 				_astar.set_point_weight_scale(Vector2i(x, y), 2.0)
+	_sea = AStarGrid2D.new()
+	_sea.region = Rect2i(0, 0, width, height)
+	_sea.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_ONLY_IF_NO_OBSTACLES
+	_sea.update()
+	for y in height:
+		for x in width:
+			var n: String = _t.tile_at(x, y)
+			_sea.set_point_solid(Vector2i(x, y), not (n.contains("Ocean") or n == "Lake"))
 
 
 ## Roads the houses have built make travel cheap; called when the network changes.
@@ -60,6 +69,26 @@ func land_path(from: Vector3, to: Vector3) -> PackedVector3Array:
 	out.append(from)
 	for i in range(1, ids.size() - 1):
 		out.append(_t.world_pos(ids[i].x, ids[i].y))
+	out.append(to)
+	return out
+
+
+## A ship's route over water between two world points (ships only carry armies: Mac), as world points. Its ends may
+## stand on land (a ship in a coastal town's harbour): they are opened for this one route. The straight line when
+## the sea gives none.
+func sea_path(from: Vector3, to: Vector3) -> PackedVector3Array:
+	var out := PackedVector3Array([from])
+	if _sea != null:
+		var a := tile_of(from)
+		var b := tile_of(to)
+		var shut := [a, b].filter(func(p): return _sea.is_point_solid(p))
+		for p in shut:
+			_sea.set_point_solid(p, false)
+		var ids := _sea.get_id_path(a, b)
+		for p in shut:
+			_sea.set_point_solid(p, true)
+		for i in range(1, ids.size() - 1):
+			out.append(_t.world_pos(ids[i].x, ids[i].y))
 	out.append(to)
 	return out
 

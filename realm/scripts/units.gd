@@ -43,6 +43,7 @@ const Scenes = preload("res://scripts/scenes.gd")
 const Mover := preload("res://scripts/mover.gd")  # the one way to move (CLAUDE.md)
 const HostPick := preload("res://scripts/host_pick.gd")  # a click on a host picks it by its own body
 const Horse = preload("res://scripts/horse.gd")
+const MapLook := preload("res://scripts/map_look.gd")  # Freeciv's hulls (SHIPS), one list
 
 const MOUNTED := ["Horsemen", "Chariot", "Elephants", "Crusaders", "Knights", "Dragoons", "Cavalry"]
 const LANCES := ["Knights", "Crusaders"]
@@ -109,8 +110,10 @@ func sync(houses: Dictionary) -> void:
 			target = centre - fwd * (int(slot / 2) * 0.16) + across * ((slot % 2) * 0.14 - 0.07 if slot > 0 else 0.0)
 		target.y = terrain.height_at(target.x, target.z)
 		# Never in a building: on the town's walk map where it has one, and
-		# off every footprint (town_nav.gd).
-		target = _nav.stand(towns, target, 0.17 if String(u["type"]) in MOUNTED and String(u["type"]) != "Elephants" else 0.0)
+		# off every footprint (town_nav.gd). A ship keeps to its water.
+		var ship := String(u["type"]) in MapLook.SHIPS
+		if not ship:
+			target = _nav.stand(towns, target, 0.17 if String(u["type"]) in MOUNTED and String(u["type"]) != "Elephants" else 0.0)
 		if not _figures.has(id):
 			var node: Node3D
 			if wild:
@@ -150,7 +153,7 @@ func sync(houses: Dictionary) -> void:
 				# Carried by the rider when the company is mounted.
 				_banner(node.rider if node.get("rider") else node, Color.from_string(String(house.get("color", "#888")), Color.GRAY), house)
 				HostPick.proxy(node, int(id), Vector3(0.22, 0.62, 0.22))  # the bearer and his standard, to click (host_command.gd)
-			_figures[id] = {"node": node, "target": target, "wild": wild, "bow": String(u["type"]) in BOWS, "horse": node.has_method("mount")}
+			_figures[id] = {"node": node, "target": target, "wild": wild, "bow": String(u["type"]) in BOWS, "horse": node.has_method("mount"), "ship": ship}
 		if _figures[id]["target"].distance_to(target) > 0.01:
 			var moved: Vector3 = target - _figures[id]["node"].position
 			if slot == 0 and Vector2(moved.x, moved.z).length() > 0.3:
@@ -191,8 +194,8 @@ static func stance(f: Dictionary) -> String:
 func _settle() -> void:
 	for id in _figures:
 		var f: Dictionary = _figures[id]
-		if f["wild"]:
-			continue
+		if f["wild"] or f.get("ship", false):
+			continue  # a beast keeps its own ground, a ship its water
 		var body := 0.17 if f.get("horse", false) else 0.0
 		var n: Node3D = f["node"]
 		if not _nav.clear(towns, f["target"], body):
@@ -227,6 +230,18 @@ func _march(f: Dictionary) -> void:
 	var mo: Node = Mover.of(n)
 	if f["wild"]:
 		mo.go(f["target"])
+		return
+	if f.get("ship", false):
+		# Over the water by the sea's route (land_paths.sea_path), at the pace that gets it there within the season.
+		var sea: PackedVector3Array = terrain.paths.sea_path(n.position, f["target"])
+		var length := 0.0
+		for i in sea.size() - 1:
+			length += sea[i].distance_to(sea[i + 1])
+		if length < 0.01:
+			return
+		mo.speed = float(march_pace(length, Awareness.season_seconds)["speed"])
+		mo.clip = ""
+		mo.follow(sea)
 		return
 	mo.route_to(f["target"], func(way: PackedVector3Array):
 		if way[0].distance_to(n.position) > 0.01:
