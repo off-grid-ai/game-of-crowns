@@ -18,7 +18,15 @@ extends SceneTree
 ##  7. panic spreads (the casebook's War and sieges: Bannerlord): on the beaten side, a flanked regiment bleeding
 ##     hard breaks first; its neighbour breaks sooner than an equal regiment far off (the chain); a fresh regiment
 ##     beside the rout holds; the commander beside the neighbour steadies it (it breaks later or not at all); the
-##     victors never break. Nerve kept on each mind's LimboAI blackboard (army_morale.gd).
+##     victors never break. Nerve kept on each mind's LimboAI blackboard (army_morale.gd);
+##  8. the rout runs along a real line (round 15: one regiment broke at t=29, then three in one tick at t=49): the
+##     beaten side drawn up as a field battle draws it (army.gd's own line layout, battle.json field.frontage, its
+##     gaps and rows), bleeding at field.fight.loss, its commander in the middle; its first break shakes the next so
+##     the breaks run along the line one after another from the flanked end, a second or more apart and no more
+##     than SPREAD apart, the far end last; never two in one moment;
+##  9. the battle's lens frames the rout (round 15: the camera sat far back over open grass and nothing read): it
+##     stands at the town view's distance (camera.json town_view.dist, the square's), and at blows it looks at the
+##     beaten regiment that breaks next, then at the next as the rout runs along the line, and stays where it ended.
 ## Prints "ARMY PROBE …" lines and "ARMY PROBE PASS" or "ARMY PROBE FAIL n"; quits with 0 or 1.
 
 const Data := preload("res://scripts/data.gd")
@@ -51,6 +59,8 @@ func _run() -> void:
 	await _no_straight_line_while_baking()
 	_figures_and_room()
 	_panic_spreads()
+	_rout_runs_along_the_line()
+	_lens_on_the_rout()
 	print("ARMY PROBE PASS" if _fails == 0 else "ARMY PROBE FAIL %d" % _fails)
 	quit(0 if _fails == 0 else 1)
 
@@ -227,7 +237,7 @@ func _panic_run(M: GDScript, commander: bool) -> Dictionary:
 		n.global_position = at
 		var hsm := LimboHSM.new()
 		n.add_child(hsm)
-		var r := {"name": nm, "node": n, "side": side, "men": 150, "state_name": "fight", "hsm": hsm}
+		var r := {"name": nm, "node": n, "side": side, "men": 150, "state_name": "fight", "hsm": hsm, "w": 0.36}
 		M.start(r)
 		return r
 	var rows := {"flanked": make.call("flanked", 1, Vector3(0, 0, 0)), "neighbour": make.call("neighbour", 1, Vector3(0.7, 0, 0)),
@@ -254,13 +264,162 @@ func _panic_run(M: GDScript, commander: bool) -> Dictionary:
 				var men := int(owed[nm])
 				owed[nm] = float(owed[nm]) - men
 				M.fell(sides, r, men, (r["node"] as Node3D).global_position + Vector3(0, 0, 0.1))
-		for r in M.step(sides, dt, 1, [{}, lord]):
+		for r in M.step(sides, dt, 1, [{}, lord], false):
 			r["state_name"] = "rout"
 			broke[r["name"]] = k * dt
 			M.broke(sides, r)
 		low = minf(low, M.of(rows["victor"]))
 	holder.free()
 	return {"broke": broke, "victor_low": low}
+
+
+const SPREAD := 8.0  # seconds: the most between one regiment's break and the next along the line
+const SEED := 3118  # the line's layout (its regiments' frontage)
+
+
+## 8. The rout runs along a real line. The beaten side (1): three foot regiments abreast and archers a row behind,
+## each as army.gd lays a battle's regiment out (its width from field.frontage and its kind's spacing), army.gap
+## between them; the victors (0) at sword's length. Steps of a slow frame (0.25 s); the end regiment is flanked.
+func _rout_runs_along_the_line() -> void:
+	var M: GDScript = load("res://scripts/army_morale.gd")
+	var ArmyS: GDScript = load("res://scripts/army.gd")
+	var deep: Array = Data.value("battle", "field.frontage", [10, 14])
+	var a: Object = ArmyS.new(Node.new(), 0, {"side": 1, "frontage": deep})
+	(a.get("_rng") as RandomNumberGenerator).seed = SEED
+	var units: Dictionary = Data.value("army", "units", {})
+	var kind_of := func(role: String) -> String:
+		for k in units:
+			if String((units[k] as Dictionary).get("role", "")) == role:
+				return k
+		return ""
+	var holder := Node3D.new()
+	root.add_child(holder)
+	var make := func(nm: String, side: int, kind: String) -> Dictionary:
+		var row: Dictionary = units.get(kind, {})
+		var sp: Dictionary = row.get("spacing", {})
+		var r := {"name": nm, "side": side, "men": 150, "figures": int(a.call("figures", 150)), "role": String(row.get("role", "melee")),
+			"sf": float(sp.get("file", Data.num("army", "spacing.file", 0.1))), "sr": float(sp.get("rank", Data.num("army", "spacing.rank", 0.12))),
+			"state_name": "fight"}
+		var l: Dictionary = a.call("_layout", r, "line")
+		r["w"] = float(l["w"])
+		r["d"] = float(l["d"])
+		var n := Node3D.new()
+		holder.add_child(n)
+		var hsm := LimboHSM.new()
+		n.add_child(hsm)
+		r["node"] = n
+		r["hsm"] = hsm
+		M.start(r)
+		return r
+	var gap := Data.num("army", "gap", 0.35)
+	var beaten: Array = []
+	for i in 3:
+		beaten.append(make.call("foot%d" % i, 1, kind_of.call("melee")))
+	var span := -gap
+	for r in beaten:
+		span += float(r["w"]) + gap
+	var x := -span * 0.5
+	for r in beaten:  # the front row, facing -Z (the victors stand at -Z)
+		(r["node"] as Node3D).global_position = Vector3(x + float(r["w"]) * 0.5, 0, 0)
+		x += float(r["w"]) + gap
+	var bows: Dictionary = make.call("archers", 1, kind_of.call("ranged"))
+	(bows["node"] as Node3D).global_position = Vector3(0, 0, float(beaten[1]["d"]) * 0.5 + Data.num("army", "line.rowGap", 0.7) + float(bows["d"]) * 0.5)
+	beaten.append(bows)
+	var victor: Dictionary = make.call("victors", 0, kind_of.call("melee"))
+	(victor["node"] as Node3D).global_position = Vector3(0, 0, -float(beaten[1]["d"]) - Data.num("battle", "field.fight.contact", 0.12))
+	var sides := [[victor], beaten]
+	var loss: Dictionary = Data.value("battle", "field.fight.loss", {"beaten": 2.4, "victors": 0.9})
+	var vol: Dictionary = Data.value("battle", "field.volley", {})
+	var kills: Array = vol.get("kills", [1, 4])
+	var every: Array = vol.get("every", [2.5, 3.6])
+	var shot := (float(kills[0]) + float(kills[1])) / (float(every[0]) + float(every[1]))  # the victors' archers on ours: men a second (beaten fall twice as often)
+	var bleed := {"foot0": float(loss["beaten"]) * Data.num("battle", "field.fight.flanked", 1.6), "foot1": float(loss["beaten"]), "foot2": float(loss["beaten"]),
+		"archers": shot * 2.0, "victors": float(loss["victors"])}
+	var longest := Data.num("battle", "field.longest", 45.0)
+	var run := Data.num("battle", "field.run", 0.42)
+	var spent_aware: bool = M.get_script_method_list().any(func(m): return m["name"] == "step" and (m["args"] as Array).size() >= 5)
+	var broke := {}
+	var owed := {}
+	var dt := 0.25
+	var clock := 0.0
+	while clock < longest + 30.0 and broke.size() < beaten.size():
+		clock += dt
+		for r in beaten + [victor]:
+			if r["state_name"] == "rout":
+				(r["node"] as Node3D).global_position += Vector3(0, 0, run * dt)  # running off, away from the victors
+				continue
+			owed[r["name"]] = float(owed.get(r["name"], 0.0)) + float(bleed[r["name"]]) * dt
+			if float(owed[r["name"]]) >= 1.0:
+				var men := int(owed[r["name"]])
+				owed[r["name"]] = float(owed[r["name"]]) - men
+				var front: Vector3 = (r["node"] as Node3D).global_position + Vector3(0, 0, (-1.0 if int(r["side"]) == 1 else 1.0) * float(r["d"]) * 0.5)
+				M.fell(sides, r, men, front if r["role"] != "ranged" else (r["node"] as Node3D).global_position)
+		var gone: Array = M.step(sides, dt, 1, [victor, beaten[1]], clock > longest) if spent_aware else M.step(sides, dt, 1, [victor, beaten[1]])
+		if not spent_aware and clock > longest:  # HEAD's field: past field.longest every beaten regiment standing breaks
+			for r in beaten:
+				if r["state_name"] != "rout" and not gone.has(r):
+					gone.append(r)
+		for r in gone:
+			r["state_name"] = "rout"
+			broke[r["name"]] = clock
+			M.broke(sides, r)
+	holder.free()
+	a.free()
+	var order := broke.keys()
+	order.sort_custom(func(p, q): return float(broke[p]) < float(broke[q]))
+	var at := PackedStringArray()
+	for nm in order:
+		at.append("%s %.2f" % [nm, float(broke[nm])])
+	print("ARMY PROBE rout along the line (widths %.2f, gap %.2f): %s" % [float(beaten[0]["w"]), gap, ", ".join(at)])
+	_check(broke.size() == beaten.size(), "every beaten regiment breaks (%d of %d)" % [broke.size(), beaten.size()])
+	_check(order.size() > 0 and order[0] == "foot0", "the flanked end breaks first")
+	_check(order.size() > 1 and order[1] != "foot2", "the second break is beside the first (along the line or the archers behind), not the far end")
+	_check(order.size() > 2 and order.find("foot2") > order.find("foot1"), "the far end breaks after the middle: the rout runs along the line")
+	var worst := 0.0
+	var least := INF
+	for i in range(1, order.size()):
+		var step := float(broke[order[i]]) - float(broke[order[i - 1]])
+		worst = maxf(worst, step)
+		least = minf(least, step)
+	_check(order.size() > 1 and worst <= SPREAD, "each break follows the one before within %.0f s (longest wait %.2f s)" % [SPREAD, worst])
+	_check(order.size() > 1 and least >= 1.0, "never two in one moment: a second or more between breaks (closest %.2f s)" % least)
+
+
+## 9. The lens on the rout: a beaten line of three (nerve 0.9, 0.5, 0.7) and a victor; lens_aim at blows, then as
+## they break one by one.
+func _lens_on_the_rout() -> void:
+	var M: GDScript = load("res://scripts/army_morale.gd")
+	var FieldS: GDScript = load("res://scripts/army_field.gd")
+	var has := FieldS.get_script_method_list().any(func(m): return m["name"] == "lens_aim") and FieldS.get_script_method_list().any(func(m): return m["name"] == "lens_distance")
+	_check(has, "the battle's lens has one rule (army_field.gd lens_aim, lens_distance)")
+	if not has:
+		return
+	var want := Data.num("camera", "town_view.dist", 6.0)
+	_check(absf(float(FieldS.call("lens_distance")) - want) < 0.01, "the lens stands at the square's distance (%.1f, want %.1f)" % [float(FieldS.call("lens_distance")), want])
+	var holder := Node3D.new()
+	root.add_child(holder)
+	var make := func(nm: String, side: int, at: Vector3, nerve: float) -> Dictionary:
+		var n := Node3D.new()
+		holder.add_child(n)
+		n.global_position = at
+		var hsm := LimboHSM.new()
+		n.add_child(hsm)
+		var r := {"name": nm, "node": n, "side": side, "men": 150, "state_name": "fight", "hsm": hsm, "w": 0.48}
+		hsm.get_blackboard().set_var(&"morale", nerve)
+		return r
+	var line := [make.call("left", 1, Vector3(-0.85, 0, 0), 0.9), make.call("mid", 1, Vector3(0, 0, 0), 0.5), make.call("right", 1, Vector3(0.85, 0, 0), 0.7)]
+	var rows := [[make.call("victor", 0, Vector3(0, 0, -0.5), 1.0)], line]
+	var start := Vector3(0, 0, -4.5)  # the middle of the field, where the lines formed
+	var aim: Vector3 = FieldS.call("lens_aim", rows, 1, true, start)
+	_check(aim.distance_to(Vector3.ZERO) < 0.01, "at blows the lens looks at the regiment that breaks next (%s)" % str(aim))
+	line[1]["state_name"] = "rout"
+	aim = FieldS.call("lens_aim", rows, 1, true, aim)
+	_check(aim.distance_to(Vector3(0.85, 0, 0)) < 0.01, "as it breaks, the lens moves along the line to the next (%s)" % str(aim))
+	line[2]["state_name"] = "rout"
+	line[0]["state_name"] = "rout"
+	var after: Vector3 = FieldS.call("lens_aim", rows, 1, true, aim)
+	_check(after.distance_to(aim) < 0.01, "once none stands, the lens stays where the rout ended")
+	holder.free()
 
 
 ## 6. One figure for ten, each with room about him.

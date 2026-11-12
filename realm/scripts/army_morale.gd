@@ -8,10 +8,15 @@ extends RefCounted
 ##   - men of its side falling within near of it shake it a little each (near, fading with distance);
 ##   - a regiment of its side breaking within seen shakes it hard (rout, fading with distance);
 ##   - each running regiment of its side within near shakes it every second (flight): the chain;
-##   - its side's commander within steady.reach steadies it every second (steady.rate), and with nothing shaking it
-##     for steady.after seconds it calms (rally);
+##   - its side's commander within steady.reach takes the edge off every shake (steady.share of it), so men beside
+##     him break later but still break when they bleed; with nothing shaking it for steady.after seconds it calms
+##     (rally);
+##   - once the day is spent (the field's field.longest) the beaten side's nerve drains (spent a second): the most
+##     shaken goes first and its break carries the rest, never all of them at once;
 ##   - below `break` a regiment of the beaten side breaks (Freeciv decided who lost: the victors waver but never run,
 ##     their nerve kept above floor_victor).
+## Every reach is open ground between regiments' edges (their widths along the line), so a neighbour is a neighbour
+## however wide a battle's regiments stand.
 
 const Mind := preload("res://scripts/army_mind.gd")
 const Data := preload("res://scripts/data.gd")
@@ -32,6 +37,12 @@ static func _bb(r: Dictionary) -> Blackboard:
 	if hsm == null or not is_instance_valid(hsm):
 		return null
 	return (hsm as LimboHSM).get_blackboard()
+
+
+## How much of a shake reaches r: all of it, or less steady.share with its commander close (step marks it).
+static func _felt(r: Dictionary) -> float:
+	var bb := _bb(r)
+	return 1.0 - _m("steady.share", 0.5) if bb and bool(bb.get_var(&"steadied", false)) else 1.0
 
 
 static func _put_nerve(r: Dictionary, v: float, shaken: bool) -> void:
@@ -56,6 +67,16 @@ static func _flat(a: Vector3, b: Vector3) -> float:
 	return Vector2(a.x - b.x, a.z - b.z).length()
 
 
+## Open ground between two regiments' edges (their widths along the line), 0 when they touch.
+static func _apart(a: Dictionary, b: Dictionary) -> float:
+	return maxf(0.0, _flat(_where(a), _where(b)) - (float(a.get("w", 0.0)) + float(b.get("w", 0.0))) * 0.5)
+
+
+## Open ground between a regiment's edge and a spot.
+static func _apart_from(a: Dictionary, at: Vector3) -> float:
+	return maxf(0.0, _flat(_where(a), at) - float(a.get("w", 0.0)) * 0.5)
+
+
 static func _standing(r: Dictionary) -> bool:
 	return String(r.get("state_name", "")) != "rout" and not r.get("gone", false)
 
@@ -63,14 +84,14 @@ static func _standing(r: Dictionary) -> bool:
 ## `men` of regiment r fell at `at` (world): r shaken by the share of it they were; its side's regiments near the
 ## spot, a little each. sides: [rows of side 0, rows of side 1].
 static func fell(sides: Array, r: Dictionary, men: int, at: Vector3) -> void:
-	_put_nerve(r, of(r) - _m("own", 1.4) * float(men) / maxf(float(r["men"]), 1.0), true)
+	_put_nerve(r, of(r) - _m("own", 1.4) * float(men) / maxf(float(r["men"]), 1.0) * _felt(r), true)
 	var near := _m("near.reach", 1.0)
 	for q in sides[int(r["side"])]:
 		if is_same(q, r) or not _standing(q):
 			continue
-		var d := _flat(_where(q), at)
+		var d := _apart_from(q, at)
 		if d < near:
-			_put_nerve(q, of(q) - _m("near.per_man", 0.002) * men * (1.0 - d / near), true)
+			_put_nerve(q, of(q) - _m("near.per_man", 0.002) * men * (1.0 - d / near) * _felt(q), true)
 
 
 ## Regiment r broke: its side's regiments within morale.rout.seen are shaken hard, the nearest most.
@@ -79,15 +100,16 @@ static func broke(sides: Array, r: Dictionary) -> void:
 	for q in sides[int(r["side"])]:
 		if is_same(q, r) or not _standing(q):
 			continue
-		var d := _flat(_where(q), _where(r))
+		var d := _apart(q, r)
 		if d < seen:
-			_put_nerve(q, of(q) - _m("rout.shock", 0.3) * (1.0 - d / seen), true)
+			_put_nerve(q, of(q) - _m("rout.shock", 0.3) * (1.0 - d / seen) * _felt(q), true)
 
 
-## One step of `dt` seconds: the running shake those near them, the commander steadies those about him, the
-## unshaken calm. Returns the regiments of the beaten side `loser` whose nerve has gone (below morale.break): the
+## One step of `dt` seconds: the commander steadies those about him (marks them, so every shake reaches them
+## softened), the running shake those near them, the unshaken calm, and once the day is `spent` the beaten side's
+## nerve drains. Returns the regiments of the beaten side `loser` whose nerve has gone (below morale.break): the
 ## field breaks them. Victors' nerve is kept above morale.floor_victor.
-static func step(sides: Array, dt: float, loser: int, commanders: Array) -> Array:
+static func step(sides: Array, dt: float, loser: int, commanders: Array, spent: bool) -> Array:
 	var near := _m("near.reach", 1.0)
 	var reach := _m("steady.reach", 1.2)
 	var gone: Array = []
@@ -95,19 +117,22 @@ static func step(sides: Array, dt: float, loser: int, commanders: Array) -> Arra
 		for q in sides[side]:
 			if not _standing(q):
 				continue
+			var bb := _bb(q)
+			var c = commanders[side] if side < commanders.size() else null
+			if bb:
+				bb.set_var(&"steadied", c is Dictionary and not (c as Dictionary).is_empty() and _standing(c) and _apart(c, q) < reach)
 			var m := of(q)
 			var shaken := false
 			for p in sides[side]:
 				if is_same(p, q) or String(p.get("state_name", "")) != "rout" or p.get("gone", false):
 					continue
-				var d := _flat(_where(p), _where(q))
+				var d := _apart(p, q)
 				if d < near:
-					m -= _m("flight", 0.12) * (1.0 - d / near) * dt
+					m -= _m("flight", 0.12) * (1.0 - d / near) * dt * _felt(q)
 					shaken = true
-			var c = commanders[side] if side < commanders.size() else null
-			if c is Dictionary and not (c as Dictionary).is_empty() and _standing(c) and _flat(_where(c), _where(q)) < reach:
-				m += _m("steady.rate", 0.08) * dt
-			var bb := _bb(q)
+			if spent and side == loser:
+				m -= _m("spent", 0.1) * dt * _felt(q)
+				shaken = true
 			var calm: float = float(bb.get_var(&"calm_for", 0.0)) + dt if bb else 0.0
 			if bb and not shaken:
 				bb.set_var(&"calm_for", calm)
@@ -119,6 +144,17 @@ static func step(sides: Array, dt: float, loser: int, commanders: Array) -> Arra
 			if side == loser and m < _m("break", 0.35):
 				gone.append(q)
 	return gone
+
+
+## The beaten side's regiment still standing whose nerve is lowest: where the line breaks next. {} when none stands.
+static func shakiest(sides: Array, loser: int) -> Dictionary:
+	var low := INF
+	var best := {}
+	for q in sides[loser]:
+		if _standing(q) and of(q) < low:
+			low = of(q)
+			best = q
+	return best
 
 
 ## How far its banner wavers (0 steady .. 1 about to break) for a nerve: from morale.waver_from down to break.

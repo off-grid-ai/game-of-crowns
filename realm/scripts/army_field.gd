@@ -42,7 +42,7 @@ var ground: RefCounted  # army_ground.gd: the battle's one field
 var _arrows: MultiMeshInstance3D
 var _flights: Array = []  # [from, to, start, flight, arc, on_land (Callable), light (Node3D or null)]
 var _rng := RandomNumberGenerator.new()
-var _dist := 12.0
+var _dist := 0.0  # the test aid's lens distance: the town view's (camera.json town_view.dist), or --dist
 var _focus := Vector3.ZERO
 var _report := 0.0
 var _over := false
@@ -124,9 +124,7 @@ func _ready() -> void:
 	if not play.is_empty():
 		_raise_in_play()
 		return
-	for a in OS.get_cmdline_user_args():
-		if a.begins_with("--dist="):
-			_dist = float(a.substr(7))
+	_dist = lens_distance()
 	while main.terrain.width == 0 or not main.terrain.built or (main.bridge.world.get("cities", []) as Array).is_empty():
 		await get_tree().create_timer(0.5).timeout
 	var deep: Array = Data.value(F, "field.frontage", [10, 14])
@@ -314,10 +312,11 @@ func _keep_up() -> void:
 
 
 ## Panic spreads (army_morale.gd): every regiment's nerve moves with what happens about it, its banner wavers with
-## it, and a beaten regiment whose nerve goes breaks; the rest of the beaten break after field.longest (Freeciv
-## decided the day). When none of the beaten stands, the victors hold the field.
+## it, and a beaten regiment whose nerve goes breaks; after field.longest the beaten side's nerve drains (Freeciv
+## decided the day), so the rest go one after another from the most shaken. When none of the beaten stands, the
+## victors hold the field.
 func _morale(dt: float) -> void:
-	var gone := Morale.step(_rows(), dt, loser, [(sides[0] as Army).commander(), (sides[1] as Army).commander()])
+	var gone := Morale.step(_rows(), dt, loser, [(sides[0] as Army).commander(), (sides[1] as Army).commander()], clock > Data.num(F, "field.longest", 45.0))
 	for a in sides:
 		for r in (a as Army).rows():
 			if r.has("alive") and r["state_name"] != "rout":
@@ -326,11 +325,7 @@ func _morale(dt: float) -> void:
 		_send(r, &"break")
 	var standing := 0
 	for r in (sides[loser] as Army).rows():
-		if r["state_name"] == "rout":
-			continue
-		if clock > Data.num(F, "field.longest", 45.0):
-			_send(r, &"break")
-		else:
+		if r["state_name"] != "rout":
 			standing += 1
 	if standing == 0 and not _over:
 		_over = true
@@ -339,22 +334,12 @@ func _morale(dt: float) -> void:
 			_send(r, &"won")
 
 
-## The lens on the thick of it (the test aid only): the middle of every regiment still in the field, low and
-## oblique, off the lines' quarter.
+## The lens on where it is decided (the test aid only), low and oblique off the lines' quarter at the square's
+## distance: while the lines close, the middle of every regiment in the field; at blows, the line where it breaks.
 func _frame(delta: float) -> void:
 	if main.rig == null:
 		return
-	var sum := Vector3.ZERO
-	var n := 0
-	var at_blows := _lines_met()
-	for a in sides:
-		for r in (a as Army).rows():
-			var st := String(r.get("state_name", ""))
-			if st != "rout" and (not at_blows or st == "fight"):
-				sum += (r["node"] as Node3D).global_position
-				n += 1
-	if n > 0:
-		_focus = _focus.lerp(sum / n, minf(1.0, delta * Data.num(F, "field.camera.follow", 1.2)))
+	_focus = _focus.lerp(lens_aim(_rows(), loser, _lines_met(), _focus), minf(1.0, delta * Data.num(F, "field.camera.follow", 1.2)))
 	var crown: Army = sides[0]
 	main.rig.step_floor = _dist if _dist < main.rig.min_distance else 0.0  # the shot's own distance (d4 is d4)
 	main.rig.snap(_focus, _dist, crown.facing() + Data.num(F, "field.camera.quarter", 0.9))
@@ -374,6 +359,33 @@ func _walk_in(r: Dictionary) -> void:
 
 func _run_in(r: Dictionary) -> void:
 	_play(r, "run")
+
+
+## How far the battle's lens stands (the test aid): the town view's distance (camera.json town_view.dist), so a
+## rout reads as a crowd in the square does; --dist=<units> for another.
+static func lens_distance() -> float:
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--dist="):
+			return float(a.substr(7))
+	return Data.num("camera", "town_view.dist", 6.0)
+
+
+## Where the battle's lens looks (rows: [side 0's, side 1's]): before the lines meet, the middle of every regiment
+## not running; at blows, the beaten regiment whose nerve is lowest (army_morale.gd: where the line breaks next), so
+## the rout is framed as it starts and as it runs along the line; once none of the beaten stands, `last` (the lens
+## stays where the rout ended).
+static func lens_aim(rows: Array, loser: int, met: bool, last: Vector3) -> Vector3:
+	if met:
+		var next := Morale.shakiest(rows, loser)
+		return (next["node"] as Node3D).global_position if not next.is_empty() else last
+	var sum := Vector3.ZERO
+	var n := 0
+	for side in rows:
+		for r in side:
+			if String(r.get("state_name", "")) != "rout":
+				sum += (r["node"] as Node3D).global_position
+				n += 1
+	return sum / n if n > 0 else last
 
 
 ## Both hosts' regiments, [side 0's, side 1's] (what army_morale.gd reads).
