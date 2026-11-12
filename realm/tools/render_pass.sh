@@ -30,14 +30,17 @@
 #   battle   two hosts meet, then the rout runs along the line (03-army; READY 5)
 #   siege    the siege taken: breach, storm, the town changing hands (04-siege; READY 6, 7)
 #   command  a host in open ground clicked by its standard, then Besiege (03-army for the field; READY 8)
-#   face     the same host given a line by a right drag (its own reign: one order a season; READY 8)
+#   face     the same host given a line by a right drag (its own reign: one order a season a host; READY 8)
+#   castle   Kingsmere's castle close from its gate side (01-town; the Meshy castle set)
+#   street   the smallest town's street of houses at its town view (01-town; the Meshy house set)
+#   crossing a ship at sea carrying a host, the cog (08-reinforce); skipped, and said, when no ship is at sea
 set -u
 R=$(cd "$(dirname "$0")/../.." && pwd)
 STAMP=$(date +%H%M)
 OUT=${OUT:-/tmp/goc-pass/$STAMP}
 PORT=${PORT:-8789}; FC=${FC:-5558}
 API=localhost:$PORT
-ONLY=${ONLY:-"town landuse realm muster cavalry battle siege command face"}
+ONLY=${ONLY:-"town landuse realm muster cavalry battle siege command face castle street crossing"}
 TARGETS=$R/docs/art/target
 say() { echo "$(date +%T) $*" | tee -a $OUT/pass.log; }
 
@@ -186,11 +189,42 @@ if want command; then
   side command $OUT/frames/command/ordered.png $TARGETS/03-army.jpg "READY 8: $(grep -hE 'host selected|order besiege' $OUT/frames/command/play.log 2>/dev/null | head -2 | tr '\n' ' ')"
 fi
 if want face; then
-  new_reign  # a new season of orders: Besiege above spent this one's (bridge/data/hosts.json ordersPerSeason)
+  new_reign  # a new season of orders: Besiege above spent this host's one (bridge/data/hosts.json ordersPerHost)
   N=$(open_host)
   { print "wait 30"; print "host $N 6 -25"; print "wait 3"; print "rdrag 0.40 0.62 0.70 0.62"; print "snap faced ui"; print "wait 6"; print "snap formed ui"; print "look end"; } > $OUT/face.play
   shot face 1500 film $SW
   side face $OUT/frames/face/faced.png $TARGETS/03-army.jpg "READY 8: $(grep -hE 'host selected' $OUT/frames/face/play.log 2>/dev/null | head -1)"
+fi
+# The rest of the look, each beside its target: the castle from its gate, a village street, a host crossing the sea.
+world_pick() {  # world_pick village|ship: the smallest town's name, or a ship's unit id (MapLook.SHIPS), from /world
+  curl -s -m 10 "$API/world?peek=1" | python3 -I -c "
+import json,sys; d=json.load(sys.stdin); want=sys.argv[1]
+if want=='village':
+    cs=sorted(d.get('cities',[]), key=lambda c: c.get('size',0)); print(cs[0].get('title', cs[0].get('name','')) if cs else '')
+else:
+    ships={'Trireme','Caravel','Galleon','Frigate','Transport'}
+    us=[u for u in d.get('units',[]) if u.get('type') in ships]; print(us[0]['id'] if us else '')" "$1" 2>/dev/null
+}
+if want castle; then
+  { print "wait 30"; print "castle Kingsmere 4 -20 gate"; print "wait 4"; print "snap castle"; print "look end"; } > $OUT/castle.play
+  shot castle 1500 film $SW
+  side castle $OUT/frames/castle/castle.png $TARGETS/01-town.jpg "the castle from its gate (the Meshy castle set)"
+fi
+if want street; then
+  V=$(world_pick village)
+  { print "wait 30"; print "home ${V:-Kingsmere} 0 1"; print "wait 6"; print "home ${V:-Kingsmere} 0 1"; print "wait 3"; print "snap street"; print "look end"; } > $OUT/street.play
+  shot street 1500 film $SW
+  side street $OUT/frames/street/street.png $TARGETS/01-town.jpg "a village street: ${V:-none found, Kingsmere}"
+fi
+if want crossing; then
+  SHIP=$(world_pick ship)
+  if [ -z "$SHIP" ]; then
+    say "crossing: no ship at sea in this reign; no frame (the crossing needs a host ordered over water)"
+  else
+    { print "wait 30"; print "unit $SHIP 3"; print "wait 4"; print "snap crossing"; print "look end"; } > $OUT/crossing.play
+    shot crossing 1500 film $SW
+    side crossing $OUT/frames/crossing/crossing.png $TARGETS/08-reinforce.jpg "a host at sea in its cog (unit $SHIP)"
+  fi
 fi
 say "render pass done: $OUT/side/INDEX.md"
 exit 0
