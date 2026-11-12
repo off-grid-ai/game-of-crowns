@@ -184,6 +184,11 @@ func _step(w: PackedStringArray) -> void:
 				await get_tree().process_frame
 				var c := get_viewport().gui_get_hovered_control()
 				_note("  probe %s: %s" % [at, (str(c.get_path()) + " (" + c.get_class() + ", layer " + str(_layer_of(c)) + ")") if c else "nothing: the world takes it"])
+			"pick":
+				# pick fx fy: what is drawn at that point of the screen (for finding a stray: a blob in mid-air, a
+				# see-through plane): every drawn thing whose box covers the point, nearest first, with how high
+				# it stands over the ground under it.
+				_pick(get_viewport().get_visible_rect().size * Vector2(float(w[1]), float(w[2])))
 			"fill":
 				# fill <text>: the first visible multi-line box takes this text (a test aid for forms).
 				var said := " ".join(w.slice(1))
@@ -888,3 +893,50 @@ static func _layer_of(n: Node) -> int:
 			return (n as CanvasLayer).layer
 		n = n.get_parent()
 	return 0
+
+
+func _pick(at: Vector2) -> void:
+	var cam := get_viewport().get_camera_3d()
+	if cam == null:
+		return
+	var hits: Array = []
+	for g in get_tree().root.find_children("*", "GeometryInstance3D", true, false):
+		var gi := g as GeometryInstance3D
+		if not gi.is_visible_in_tree():
+			continue
+		var box: AABB = gi.global_transform * gi.get_aabb()
+		if box.size.length() > 40.0:
+			continue  # the land, the sea, the sky: under everything
+		var lo := Vector2(INF, INF)
+		var hi := Vector2(-INF, -INF)
+		var behind := false
+		for i in 8:
+			var c := box.get_endpoint(i)
+			if cam.is_position_behind(c):
+				behind = true
+				break
+			var q := cam.unproject_position(c)
+			lo = lo.min(q)
+			hi = hi.max(q)
+		if behind or not Rect2(lo, hi - lo).has_point(at):
+			continue
+		hits.append([cam.global_position.distance_to(box.get_center()), gi, box])
+	hits.sort_custom(func(a, b): return a[0] < b[0])
+	_note("  pick %s: %d drawn there" % [at, hits.size()])
+	for h in hits.slice(0, 8):
+		var gi: GeometryInstance3D = h[1]
+		var box: AABB = h[2]
+		var what := gi.get_class()
+		var colour := ""
+		if gi is MeshInstance3D and (gi as MeshInstance3D).mesh:
+			var mi := gi as MeshInstance3D
+			what += " " + (mi.mesh.resource_path if mi.mesh.resource_path != "" else mi.mesh.get_class())
+			var m: Material = mi.get_active_material(0)
+			if m is BaseMaterial3D:
+				colour = " albedo %s%s" % [(m as BaseMaterial3D).albedo_color.to_html(false), " see-through" if (m as BaseMaterial3D).transparency != BaseMaterial3D.TRANSPARENCY_DISABLED else ""]
+			elif m:
+				colour = " " + m.get_class() + (" " + m.resource_path if m.resource_path != "" else "")
+		elif gi is Label3D:
+			what += " '%s'" % (gi as Label3D).text
+		var ground: float = main.terrain.height_at(box.get_center().x, box.get_center().z) if main and main.terrain else 0.0
+		_note("    %.1f away: %s%s size %s, %.3f over the ground at %s" % [h[0], what, colour, box.size.snapped(Vector3.ONE * 0.01), box.position.y - ground, gi.get_path()])
