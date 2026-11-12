@@ -232,6 +232,7 @@ func _ask(body: Dictionary) -> void:
 		if said != "" and main.ui:
 			main.ui.toast(said)
 		if code == 200:
+			main.sound.ordered(String(body.get("order", "")))  # heard as it sets off (sounds.json orders)
 			main.bridge._poll())
 
 

@@ -109,6 +109,9 @@ const STINGS := {
 	"vigil": [["sfx/war_drums.ogg", -12.0, 0.0]],  # a slow drum while the town gathers in silence (a hanging, never shown)
 	"rider": [["sfx/gallop.ogg", -8.0, 0.0]],  # the King's rider sets out
 	"muster": [["sfx/march.ogg", -6.0, 0.0], ["sfx/charge_yell.ogg", -14.0, 1.5]],  # men gather and march out
+	"grain": [["sfx2/cart_wheels_1.ogg|sfx2/cart_wheels_2.ogg|sfx2/cart_wheels_3.ogg", -8.0, 0.0]],  # the King's grain wagons roll out
+	"tribute": [["sfx/coins.wav|sfx/coins_1.ogg|sfx/coins_2.ogg", -8.0, 0.0], ["sfx/gallop.ogg", -12.0, 0.6]],  # the crown's purse, and the rider who carries it
+	"ward": [["sfx/gallop.ogg", -10.0, 0.0]],  # the ward's party on the road
 }
 const ALIASES := {"succession": "crown", "coronation": "crown", "reign_end": "death", "civil_war": "rebellion",
 	"raid": "rebellion", "city_destroyed": "sack", "razed": "sack", "city_transferred": "handover"}
@@ -214,12 +217,25 @@ func set_interior(room: String) -> void:
 
 
 ## A scene the bridge staged (scenes.gd), heard where it happens: the kinds
-## that have a sound of their own (a rider's gallop, a muster's march, a vigil's
-## drum). War and the chronicle's news sound through event() as before.
-const STAGED := ["vigil", "rider", "muster"]
-func staged(kind: String, at := Vector3.INF) -> void:
-	if kind in STAGED:
-		event(kind, at)
+## that have a sound of their own (data/sounds.json staged: a rider's gallop, a muster's march, a vigil's
+## drum), and the King's own scenes as they land (staged_king: his feast cheered, his grain wagons rolling,
+## his purse, a ward's party); a lord's scene keeps its own cue (news.gd), never both. War and the
+## chronicle's news sound through event() as before.
+const Data := preload("res://scripts/data.gd")
+const STAGED := {"vigil": "vigil", "rider": "rider", "muster": "muster"}
+func staged(kind: String, at := Vector3.INF, lord := false) -> void:
+	var cue := String((Data.value("sounds", "staged", STAGED) as Dictionary).get(kind, ""))
+	if cue == "" and not lord:
+		cue = String((Data.value("sounds", "staged_king", {}) as Dictionary).get(kind, ""))
+	if cue != "":
+		event(cue, at)
+
+
+## A host given an order (host_command.gd): heard as it sets off (data/sounds.json orders: march -> the drum).
+func ordered(order: String) -> void:
+	var cue := String((Data.value("sounds", "orders", {}) as Dictionary).get(order, ""))
+	if cue != "":
+		event(cue)
 
 
 func event(kind: String, at := Vector3.INF) -> void:

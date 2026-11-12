@@ -67,6 +67,8 @@ an answer shows only its text on the card: no scene, ruling or sound. Not worked
 
 ## Fixes, in order (each behind data, each committed)
 
+Done 2026-11-12: 1 and 2 (1b0d2b35), 3 and 4 (the commit after). The gaps marked 1-7 above are closed in code; not yet heard or seen in a run.
+
 1. Decrees leave their ruling in the town (relief, grant, build): `bridge/data/rulings.json` `decrees` maps a
    decree to a ruling kind; `routes_decree.js` posts it at the town (Rulings.post), so the town dresses and the
    herald cries it, at the seat as anywhere.
