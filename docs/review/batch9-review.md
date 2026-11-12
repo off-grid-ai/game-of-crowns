@@ -87,3 +87,34 @@ the lower third at d4.5-6.
 placement and scale). (2) The sky or fog panel edge (look.gd volumetric fog bounds or sky3d). (3) Tree crowns and roofs at
 the lens still (camera_rig.gd sight check counts buildings, not trees). (4) Wheat as flat slabs from roof height (d2cc3c1d's
 stalks don't read past d5).
+
+## Status
+
+The supervisor stopped batch 9 during meshy-kit at about 09:20, when the run switched to focus rounds on one view.
+Judged: ladder, settled, army d12, clarity old/new, fire, fixes. Not filmed: meshy-kit (no frames), village, fountain,
+look8b, rim, grief, season, castle, night, ui, decisions, breach, hosts, battle, sound. 8b's storm, fields,
+battles, hosts and night defects are therefore **unproven either way**.
+
+## Batch 9 top 15, ranked by how much they hurt what the player sees
+
+1. **Foreground roofs, chimney pots and tree crowns still take a quarter to a third of close frames** (goldrock-6, forge-new, feast-bonfire, goldrock-mill, kingsmere-6). camera_rig.gd sight check (46aefe45 clears buildings, not trees or chimneys).
+2. **A sack burns one house, with no spread, no smoke column and no one reacting**, and the house stands whole again by 90 s. fire.gd sack, spread, smoke and folk; fire.json; bridge/damage.js burnt fact.
+3. **The army stands through houses, trees and fields**, and every man looks alike, with no house colour on the men. army_spike.gd placement, army.json units and colours.
+4. **Wet glare blows out to white** on roofs and the ground in rain (kingsmere-6/10/16). weather_fx.gd wetness, weather.json, look.gd glow.
+5. **Winter is half done**: snow on the trees is flat white cross-quads, summer grass and red flowers poke through the snow, hedges and trees stay green. forest.gd snow on foliage, grass.gd and countryside props seasons.
+6. **Near buildings still ghost at the frame edge** (kingsmere-new, right quarter). camera_rig.gd clarity fade bounds.
+7. **The Meshy gatehouse clashes with the kit's walls** (two art styles and scales side by side). meshy.json judged pieces, castle_builder.gd scale and placement.
+8. **A pale square sky or fog panel hangs over the sea** in wide views (goldrock-30, mountains). look.gd volumetric fog bounds or sky3d.
+9. **Flames are flat paper-cut cards** with a mottled fill, not 04-siege's shaped fire. fire.gd flames (the GDQuest shader's toon bands).
+10. **The smiths don't work the anvil**: they stand by the door; no hammering in the forge clip. works.gd smith anchors, works.json.
+11. **Wheat reads as flat ochre slabs** past d5. Field crop meshes (d2cc3c1d's stalks don't carry to roof height).
+12. **Rain is long white streaks** across close frames. weather_fx.gd rain particles.
+13. **Labels cut by roofs and loud road borders**: the inn label "...en Wheel" over roofs; a salmon-red territory line along the roads at d30-50. towns.gd site labels; the border line's draw (politics overlay).
+14. **Stray props**: a red blob floating in mid-air, a grey see-through rectangle on the snow, a black unlit shed box behind the gatehouse. The prop scatter (countryside.gd / dressing.gd) and a missing material on the shed.
+15. **3 fps with the 6,000-man army** (not a gate now, Mac: above 10 later). army_vat.gdshader and anim_lod.gd draw budget.
+
+**Gains confirmed on film:** the camera ladder (every distance distinct and settled, 17-39 degrees, no regression); clarity
+(no near blur, true colours); the army shown at density; a house burning and charring in frame; snow on the roofs; the
+stone statue on the fountain; colourful crowds; house arms on the banners.
+
+**Best frames (batch 9):** `/tmp/goc-batch9/review/best/`: 01-goldrock-6, 02-army-line-d12, 03-fire-20s.
