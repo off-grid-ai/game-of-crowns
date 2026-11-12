@@ -159,7 +159,7 @@ func _y(center: Vector3, off: Vector3) -> float:
 	return terrain.height_at(center.x + off.x, center.z + off.z) - center.y
 
 
-const ROOM := 0.11  # world units between two people standing (about 0.9 m): shoulders never meet
+static var ROOM: float = 0.11 * preload("res://scripts/data.gd").num("people", "readable", 1.0)  # world units between two people standing (about 0.9 m, at their drawn size): shoulders never meet
 const KEEPER_BACK := 0.07  # a stall keeper stands this far behind the counter's back edge (about half a metre)
 const LANE := 0.06  # past a road's verge, ground the travellers on it keep: nobody stands there
 const HEART := 0.2  # about 1.7 m round a town's heart, where every road's travellers come through and wait
@@ -180,7 +180,7 @@ static func on_lane(root: Node3D, world: Vector3) -> bool:
 ## stands it at yaw 35 degrees, looking back at the heart): the half of the
 ## square it sees first. Dressing that tells the town's news goes there.
 const SEEN := Vector3(-0.5736, 0, -0.8192)
-const CLEAR := 0.05  # how far a person keeps off a wall or a fence
+static var CLEAR: float = 0.05 * preload("res://scripts/data.gd").num("people", "readable", 1.0)  # how far a person keeps off a wall or a fence
 
 
 ## Everything that stands in the town, town-local: its buildings, walls, fences
@@ -2158,18 +2158,19 @@ func _horse_cart(rng: RandomNumberGenerator) -> Node3D:
 	holder.add_child(rig)
 	var wagon := MeshInstance3D.new()
 	wagon.mesh = _wagon_mesh
-	wagon.scale = Vector3.ONE * 0.1
+	var big := float(Data.num("people", "readable", 1.0))
+	wagon.scale = Vector3.ONE * 0.1 * big
 	wagon.rotation.y = PI
 	rig.add_child(wagon)
 	var hitch := Marker3D.new()
-	hitch.position = Vector3(0, 0, -0.08)
+	hitch.position = Vector3(0, 0, -0.08 * big)
 	rig.add_child(hitch)
 	var Horse := preload("res://scripts/horse.gd")
 	var horse: Node3D = Horse.new(rng.randi() % Horse.COATS.size())
 	horse.rotation.y = PI
 	hitch.add_child(horse)
 	var carter := _people.make(rng, "peasant", Color.WHITE, "adult", "", "male")
-	carter.position = Vector3(0.09, 0, -0.16)
+	carter.position = Vector3(0.09, 0, -0.16) * big
 	carter.rotation.y = PI
 	rig.add_child(carter)
 	holder.set_meta("carter", carter)
@@ -2190,6 +2191,7 @@ func _crowd_count(what: String, active: Array) -> int:
 ## children chasing each other.
 class SquareLife extends Node:
 	const People := preload("res://scripts/people.gd")
+	static var READ: float = preload("res://scripts/data.gd").num("people", "readable", 1.0)
 	const Animals := preload("res://scripts/animals.gd")
 	var life: Node3D
 	var ground: Callable
@@ -2259,6 +2261,7 @@ class SquareLife extends Node:
 
 	## One step toward `to` at `pace`; false once there (within `near`).
 	func step(n: Node3D, to: Vector3, pace: float, delta: float, near := 0.02) -> bool:
+		pace *= READ  # drawn larger (people.json readable): they cover ground as their legs do
 		var flat := Vector2(to.x - n.position.x, to.z - n.position.z)
 		if flat.length() <= near:
 			return false

@@ -15,6 +15,7 @@ extends Node3D
 
 const S := 0.12  # town scale, as people.gd: metres to world units
 const SIZE := 1.1  # the export stands 1.38 m at the withers; a warhorse is 1.5
+static var READ: float = preload("res://scripts/data.gd").num("people", "readable", 1.0)  # drawn larger, as its riders are (people.json readable)
 static var MODEL := preload("res://scripts/realistic.gd").path_of("horse")  # by component (realm/data/assets.json)
 const SEAT := "res://assets/anims/mixamo/Ride_Grasp.fbx"
 static var LANCE := preload("res://scripts/realistic.gd").path_of("lance")
@@ -80,7 +81,7 @@ var _idle_life: Array = []  # standing about, the moves of its idle life (animal
 func _init(coat := -1) -> void:
 	_model = (load(MODEL) as PackedScene).instantiate()
 	add_child(_model)
-	_model.scale = Vector3.ONE * S * SIZE
+	_model.scale = Vector3.ONE * S * SIZE * READ
 	_skel = _model.find_children("*", "Skeleton3D", true, false)[0]
 	_anim = _model.find_children("*", "AnimationPlayer", true, false)[0]
 	_unit = _model.scale.x * (_skel.get_parent() as Node3D).scale.x
@@ -291,7 +292,7 @@ func fall() -> void:
 func _tilt(axis: Vector3, angle: float, pivot: Vector3) -> void:
 	var p := pivot * _unit
 	var b := Basis(axis, angle)
-	_model.transform = Transform3D(b.scaled(Vector3.ONE * S * SIZE), p - b * p)
+	_model.transform = Transform3D(b.scaled(Vector3.ONE * S * SIZE * READ), p - b * p)
 
 
 ## A horse standing about lives a small idle life of its own (animals.gd,
@@ -316,7 +317,7 @@ func _process(delta: float) -> void:
 	_last = global_position
 	if _down:
 		return
-	var g := _gait_for(speed)
+	var g := _gait_for(speed / READ)  # its gaits by its own size: a horse drawn larger walks faster over the ground
 	gait = String(GAITS[g][0])
 	# Each loop is played at the pace it was made for, a little faster or
 	# slower to keep the hooves on the ground between gaits.
@@ -324,7 +325,7 @@ func _process(delta: float) -> void:
 	if g == 0 and rider == null and String(_anim.current_animation) in _idle_life:
 		_anim.speed_scale = 1.0
 		return  # standing about: its idle life (animals.gd) plays its own moves
-	_play(gait, 1.0 if pace <= 0.0 else clampf(speed / pace, 0.75, 1.3))
+	_play(gait, 1.0 if pace <= 0.0 else clampf(speed / READ / pace, 0.75, 1.3))
 	if rider == null or not _seen():
 		return
 	_couch = move_toward(_couch, 1.0 if g >= 3 else 0.0, delta * 1.5)

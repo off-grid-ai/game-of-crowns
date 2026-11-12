@@ -72,6 +72,7 @@ const ADULT := 0.118  # an adult's body scale (people.gd: height * k * S, measur
 ## a planted foot travels back under the hips; realm/tools/stride_probe.gd). The
 ## legs' walk and run points sit at their clip's own pace, so a foot on the
 ## ground stays put at any pace between them.
+static var READ: float = preload("res://scripts/data.gd").num("people", "readable", 1.0)  # people drawn larger (people.json readable): their stride with them
 const STRIDE := {"Walk": 0.218, "Running": 0.661, "Sprint": 0.500, "Sneak": 0.229, "Injured_Walk": 0.061,
 	"SS_Walk": 0.164, "GS_Walk": 0.121, "Axe_Walk": 0.114}
 const TURN_RATE := deg_to_rad(300.0)  # how fast a person turns on the spot or mid-stride (about a full turn in 1.2 s)
@@ -494,7 +495,7 @@ func _assign(n: AnimationNodeAnimation, clip: String, loop: int, phase: float) -
 func _leg_pace(leg: String) -> float:
 	if not v2:
 		return WALK_PACE if leg == "walk" else RUN_PACE
-	return float(STRIDE.get(String(_legs[leg].animation), STRIDE["Walk"] if leg == "walk" else STRIDE["Running"]))
+	return float(STRIDE.get(String(_legs[leg].animation), STRIDE["Walk"] if leg == "walk" else STRIDE["Running"])) * READ
 
 
 ## v2: a gesture (a nod, a wave, a bow of the head) over whatever the legs are

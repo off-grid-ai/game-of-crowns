@@ -240,17 +240,18 @@ func _cart_rig(r: RandomNumberGenerator, carter: Node3D) -> Node3D:
 	rig.name = "Cart"
 	var wagon := MeshInstance3D.new()
 	wagon.mesh = _wagon
-	wagon.scale = Vector3.ONE * 0.1
+	var big := float(Data.num("people", "readable", 1.0))  # drawn larger, as the people and horses are
+	wagon.scale = Vector3.ONE * 0.1 * big
 	wagon.rotation.y = PI  # the wagon's shafts are its +z end: turned to point forward
 	rig.add_child(wagon)
 	var hitch := Marker3D.new()
 	hitch.name = "Hitch"
-	hitch.position = Vector3(0, 0, -0.08)  # between the shafts, just ahead of the box
+	hitch.position = Vector3(0, 0, -0.08 * big)  # between the shafts, just ahead of the box
 	rig.add_child(hitch)
 	var horse: Node3D = Horse.new(r.randi() % Horse.COATS.size())
 	horse.rotation.y = PI  # horses face +z
 	hitch.add_child(horse)
-	carter.position = Vector3(0.09, 0, -0.16)  # walking at the horse's head
+	carter.position = Vector3(0.09, 0, -0.16) * big  # walking at the horse's head
 	carter.rotation.y = PI
 	rig.add_child(carter)
 	return rig

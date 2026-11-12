@@ -4,6 +4,9 @@ extends RefCounted
 ## beard, hair colour, cloth tint and build all vary, so no two look alike.
 
 const S := 0.12  # same scale as the towns: a 1.8 m person is ~0.22 units
+## Drawn larger than life, as 01-town draws its people against the houses (people.json readable; look-gap.md:
+## ours were 1.5-1.7x too small to read): every person, beast, horse and cart, with their stride, pace and room.
+static var READ: float = preload("res://scripts/data.gd").num("people", "readable", 1.0)
 ## The moves that carry a body across the ground, legs in step. A person who
 ## is moving plays one of these, whatever was asked (anim_lod.gd sees to it):
 ## "Carrying" and "Wheelbarrow" are standing moves, the legs barely swing.
@@ -739,7 +742,7 @@ func _finish(person: Node3D, skeleton: Skeleton3D, rng: RandomNumberGenerator, r
 			mi.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_DISABLED
 	_shape(skeleton, build, "" if person.has_meta("body") and body_info(String(person.get_meta("body"))).get("cast", false) else age)  # a cast child is drawn a child already
 	var height: float = rng.randf_range(0.96, 1.04) * {"child": 0.72, "young": 0.98, "adult": 1.0, "elder": 0.96}[age]
-	person.scale = Vector3.ONE * height * k * S
+	person.scale = Vector3.ONE * height * k * S * READ
 	person.set_meta("age", age)
 	if role in ["peasant", "townsfolk", "clergy", "noble"]:
 		person.set_meta("idle", IDLES[randi() % IDLES.size()])

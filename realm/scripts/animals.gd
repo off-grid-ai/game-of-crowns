@@ -102,7 +102,7 @@ static func make(kind: String, rng: RandomNumberGenerator, walking := false) -> 
 	var root := Node3D.new()
 	root.name = kind.capitalize()
 	root.set_meta("beast", kind)
-	model.scale = Vector3.ONE * float(fit[0])
+	model.scale = Vector3.ONE * float(fit[0]) * float(Data.num("people", "readable", 1.0))  # drawn larger, as the people are
 	model.position.y = float(fit[1])
 	model.rotation.y = rng.randf_range(-0.3, 0.3)
 	root.add_child(model)

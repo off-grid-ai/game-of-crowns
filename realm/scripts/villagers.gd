@@ -30,6 +30,7 @@ const Weapons := preload("res://scripts/weapons.gd")  # what a move needs in han
 const TownNav := preload("res://scripts/town_nav.gd")
 var nav = preload("res://scripts/town_nav.gd").new()
 const WALK_SPEED := 0.17  # world units per second: an unhurried 1.4 m/s at town scale
+static var READ: float = preload("res://scripts/data.gd").num("people", "readable", 1.0)  # drawn larger (people.json readable): they walk as fast as their legs carry them
 ## Moves that are walks (a load carried, a barrow pushed): played on the way,
 ## never on the spot. At the far end the load is set down instead.
 const GAITS := {"Carrying": "PickUp_Table", "Wheelbarrow": "PickUp_Table"}
@@ -669,7 +670,7 @@ func _step(a: Dictionary, delta: float, _t: float) -> void:
 				a["gait"] = "Walk"  # v3: the load is set down with the walk's end (as the minds' GoTo does)
 			_set_off(a)  # arrived: straight into what they came for (a talk waits for the others)
 		return
-	var want := to.normalized() * WALK_SPEED * float(a.get("pace", 1.0)) * _mood_pace(a) * _for_the_child(a) * (2.4 if a.get("catch_up", false) else 1.0)
+	var want := to.normalized() * WALK_SPEED * READ * float(a.get("pace", 1.0)) * _mood_pace(a) * _for_the_child(a) * (2.4 if a.get("catch_up", false) else 1.0)
 	var vel: Vector2 = want
 	if a.has("agent"):
 		NavigationServer2D.agent_set_velocity(a["agent"], want)
