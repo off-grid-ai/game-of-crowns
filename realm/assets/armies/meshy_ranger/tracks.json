@@ -1,0 +1,74 @@
+[
+ {
+  "name": "Bow_Idle",
+  "startFrame": 0,
+  "endFrame": 122,
+  "isLooping": true,
+  "isBlended": true,
+  "framerate": 24
+ },
+ {
+  "name": "Walk",
+  "startFrame": 123,
+  "endFrame": 147,
+  "isLooping": true,
+  "isBlended": true,
+  "framerate": 24
+ },
+ {
+  "name": "Running",
+  "startFrame": 148,
+  "endFrame": 163,
+  "isLooping": true,
+  "isBlended": true,
+  "framerate": 24
+ },
+ {
+  "name": "Bow_Draw",
+  "startFrame": 164,
+  "endFrame": 188,
+  "isLooping": false,
+  "isBlended": true,
+  "framerate": 24
+ },
+ {
+  "name": "Bow_Shoot",
+  "startFrame": 189,
+  "endFrame": 205,
+  "isLooping": false,
+  "isBlended": true,
+  "framerate": 24
+ },
+ {
+  "name": "Bow_Aim",
+  "startFrame": 206,
+  "endFrame": 296,
+  "isLooping": true,
+  "isBlended": true,
+  "framerate": 24
+ },
+ {
+  "name": "Hit",
+  "startFrame": 297,
+  "endFrame": 307,
+  "isLooping": false,
+  "isBlended": true,
+  "framerate": 24
+ },
+ {
+  "name": "Death_Back",
+  "startFrame": 308,
+  "endFrame": 379,
+  "isLooping": false,
+  "isBlended": true,
+  "framerate": 24
+ },
+ {
+  "name": "Death_Front",
+  "startFrame": 380,
+  "endFrame": 462,
+  "isLooping": false,
+  "isBlended": true,
+  "framerate": 24
+ }
+]

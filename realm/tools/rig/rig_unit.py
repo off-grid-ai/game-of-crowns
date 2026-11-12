@@ -683,8 +683,13 @@ def cloth_mask():
     if img is None or img.size[0] == 0:
         return None
     w, h = img.size
-    try:  # the unit's paint, beside its mask (the army's material reads both)
+    try:  # the unit's paint, beside its mask (the army's material reads both), written as a PNG whatever the source
+        # was: a Meshy paint is a JPEG, and saved as is under albedo.png Godot's importer refuses it (GoC round 12;
+        # tools/army_assets_probe.gd guards it)
+        was = img.file_format
+        img.file_format = "PNG"
         img.save(filepath=os.path.join(out, "albedo.png"), save_copy=True)
+        img.file_format = was
     except Exception as e:
         REPORT["albedo_error"] = str(e)[:200]
     px = np.array(img.pixels[:], dtype=np.float32).reshape(h, w, -1)[:, :, :3]

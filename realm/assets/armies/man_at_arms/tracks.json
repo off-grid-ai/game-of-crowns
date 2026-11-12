@@ -1,0 +1,74 @@
+[
+ {
+  "name": "Sword_Idle",
+  "startFrame": 0,
+  "endFrame": 60,
+  "isLooping": true,
+  "isBlended": true,
+  "framerate": 24
+ },
+ {
+  "name": "SS_Walk",
+  "startFrame": 61,
+  "endFrame": 87,
+  "isLooping": true,
+  "isBlended": true,
+  "framerate": 24
+ },
+ {
+  "name": "Running",
+  "startFrame": 88,
+  "endFrame": 103,
+  "isLooping": true,
+  "isBlended": true,
+  "framerate": 24
+ },
+ {
+  "name": "SS_Slash_5",
+  "startFrame": 104,
+  "endFrame": 136,
+  "isLooping": false,
+  "isBlended": true,
+  "framerate": 24
+ },
+ {
+  "name": "SS_Attack_4",
+  "startFrame": 137,
+  "endFrame": 160,
+  "isLooping": false,
+  "isBlended": true,
+  "framerate": 24
+ },
+ {
+  "name": "SS_Block_1",
+  "startFrame": 161,
+  "endFrame": 174,
+  "isLooping": false,
+  "isBlended": true,
+  "framerate": 24
+ },
+ {
+  "name": "SS_Block_Idle",
+  "startFrame": 175,
+  "endFrame": 208,
+  "isLooping": true,
+  "isBlended": true,
+  "framerate": 24
+ },
+ {
+  "name": "SS_Impact_1",
+  "startFrame": 209,
+  "endFrame": 227,
+  "isLooping": false,
+  "isBlended": true,
+  "framerate": 24
+ },
+ {
+  "name": "SS_Death_2",
+  "startFrame": 228,
+  "endFrame": 321,
+  "isLooping": false,
+  "isBlended": true,
+  "framerate": 24
+ }
+]
