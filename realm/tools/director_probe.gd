@@ -38,8 +38,14 @@ class FlatLand extends Node3D:
 ## town's walk map baked to nothing (round 13's Kingsmere): no route anywhere, so a Mover asking waits for ever.
 class Nav extends RefCounted:
 	var empty := false
+	var baking := false  # the town's walk map still baking (Recast on a worker thread): no route yet, not ready
+	var map := RID()  # a real 2D map while a bake is staged, so the engine's map_changed fires as town_nav's does
 	func waits(_towns: Variant, from: Vector3, to: Vector3, _wide := false) -> bool:
-		return empty and from.distance_to(to) > 0.01  # town_nav.waits: two ends on one point are no walk to wait for
+		return baking or (empty and from.distance_to(to) > 0.01)  # town_nav.waits: two ends on one point are no walk to wait for
+	func map_for(_id: int, _root: Node3D, _wide := false) -> RID:
+		return map
+	func ready(m: RID) -> bool:
+		return m.is_valid() and not baking
 	func route(_towns: Variant, from: Vector3, to: Vector3, _wide := false) -> PackedVector3Array:
 		return PackedVector3Array([from, to])
 
@@ -386,6 +392,30 @@ func _run() -> void:
 			director._end_town(7)
 			main.scenes.nav.empty = false
 			main.scenes.middle = Vector3.INF
+			# Army-ui, r16: a scene that starts while the town's walk map bakes (0.1-0.2 s) waits for it, then casts; it
+			# isn't dropped for some other scene on a later tick. Started mid-bake, it must be playing within a few
+			# frames of the map landing (the engine's map_changed), with nobody cast before.
+			var nav: RefCounted = main.scenes.nav
+			nav.map = NavigationServer2D.map_create()
+			NavigationServer2D.map_set_active(nav.map, true)
+			nav.baking = true
+			var row: Dictionary = director._d.get("scenes", [])[0]
+			var early: Dictionary = director._start(7, town, row)
+			var region := NavigationServer2D.region_create()
+			nav.baking = false
+			NavigationServer2D.region_set_map(region, nav.map)  # the bake lands: the map changes, and syncs
+			NavigationServer2D.region_set_navigation_polygon(region, NavigationPolygon.new())
+			for _f in 4:
+				await physics_frame
+				await process_frame
+			var playing: bool = (director._live.get(7, []) as Array).any(func(sc): return String(sc["row"]["id"]) == String(row["id"]) and not (sc["cast"] as Array).is_empty())
+			print("DIRECTOR peace   mid-bake: %s started at once with %d cast; after the map landed it is %s" % [row["id"], (early.get("cast", []) as Array).size(), "playing" if playing else "not playing"])
+			if not early.is_empty() or not playing:
+				fail.call("peace, mid-bake: %s %s" % [row["id"], "cast before the map could route" if not early.is_empty() else "dropped, not played once the map landed"])
+			director._end_town(7)
+			NavigationServer2D.free_rid(region)
+			NavigationServer2D.free_rid(nav.map)
+			nav.map = RID()
 			main.towns.towns.erase(7)
 		if name == "peace":
 			# The town dressed again as its state turns (a good year): its Life is rebuilt, the director still casts it.

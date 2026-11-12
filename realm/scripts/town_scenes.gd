@@ -47,6 +47,7 @@ var _rng := RandomNumberGenerator.new()
 var _live := {}  # town id -> Array of running passing scenes {row, key, at, ends, cast: Array[Node3D], ending}
 var _seq := 0
 var _no_walk := {}  # town id -> {n: passing people not cast for want of a way in, rows: {id: n}, said: msec}
+var _held := {}  # town id -> {row, map}: a passing scene waiting on the town's walk map, still baking
 var _marches: Array = []  # levies marching out: {root, life, every, wait, file, spacing, most, gone, pace, rng}
 
 
@@ -60,6 +61,7 @@ func _ready() -> void:
 	_rng.randomize()
 	if main and main.awareness:
 		main.awareness.stimulus.connect(_on_stimulus)
+	NavigationServer2D.map_changed.connect(_on_map_changed)  # a town's walk map synced: a held scene can start
 
 
 func _process(delta: float) -> void:
@@ -959,7 +961,7 @@ func _direct(id: int, root: Node3D, c: Dictionary) -> void:
 	var cap := mini(int(D.get("cap", 9)), int(float(D.get("base", 3)) + float(D.get("per_size", 0.5)) * float(c.get("size", 1))))
 	var active := running.filter(func(s): return not bool(s["ending"])).size()
 	var tries := 4
-	while active < cap and tries > 0:
+	while active < cap and tries > 0 and not _held.has(id):  # a scene held for the walk map comes first
 		tries -= 1
 		var row := _choose(states, running, root)
 		if row.is_empty():
@@ -970,8 +972,43 @@ func _direct(id: int, root: Node3D, c: Dictionary) -> void:
 		running.append(s)
 		active += 1
 	_live[id] = running
+	_publish(id)
+
+
+## The store learns a town's running scenes and the places they claim (the mirror's town scope).
+func _publish(id: int) -> void:
+	var running: Array = _live.get(id, [])
+	var bb: Blackboard = main.awareness.town(id)
 	bb.set_var(&"scenes", running.map(func(s): return {"id": s["row"]["id"], "at": s["at"], "ending": s["ending"]}))
 	bb.set_var(&"claims", running.filter(func(s): return not bool(s["ending"])).map(func(s): return s["key"]))
+
+
+## The town's walk map, if it is still baking (Recast on a worker thread, 0.1-0.2 s after it is asked for); else none.
+func _baking(id: int, root: Node3D) -> RID:
+	var nav: Object = main.scenes.nav
+	if not nav.has_method("map_for"):
+		return RID()
+	var map: RID = nav.map_for(id, root)
+	return map if map.is_valid() and not nav.ready(map) else RID()
+
+
+## A walk map synced: the scene held for it starts now (town_nav ready: its bake landed and the map has synced since).
+func _on_map_changed(map: RID) -> void:
+	for id in _held.keys():
+		var h: Dictionary = _held[id]
+		if h["map"] != map or not main.scenes.nav.ready(map):
+			continue
+		_held.erase(id)
+		var t: Dictionary = main.towns.towns.get(id, {})
+		var root: Node3D = t.get("node") if not t.is_empty() else null
+		if root == null or not is_instance_valid(root):
+			continue
+		var s := _start(id, root, h["row"])
+		if not s.is_empty():
+			var running: Array = _live.get(id, [])
+			running.append(s)
+			_live[id] = running
+			_publish(id)
 
 
 ## A passing scene the town may play now, drawn by weight: in its hours, its needs met, under its own cap.
@@ -1038,6 +1075,10 @@ func _start(id: int, root: Node3D, row: Dictionary) -> Dictionary:
 		return {}
 	var last: Array = row.get("last", [30, 60])
 	var enter: Array = _d.get("director", {}).get("enter", [1.2, 2.0])
+	var map := _baking(id, root)
+	if map.is_valid():
+		_held[id] = {"row": row, "map": map}  # its people walk in once the map can route them (_on_map_changed)
+		return {}
 	_seq += 1
 	var s := {"row": row, "key": "%s:%d" % [row["id"], _seq], "at": at, "cast": [], "ending": false,
 		"ends": Time.get_ticks_msec() + int(_rng.randf_range(float(last[0]), float(last[1])) * 1000.0), "town": id}
@@ -1057,12 +1098,7 @@ func _start(id: int, root: Node3D, row: Dictionary) -> Dictionary:
 			# middle (town_nav closest() on no polygons: (0, 0)) and both ends are that one point, which waits() lets by.
 			var stood := _flat(slot - want) <= reach and _flat(door - asked) <= reach and _flat(door - slot) > 0.05
 			if not stood or main.scenes.nav.waits(main.towns, door, slot):
-				# No way in: nobody parked. A map still baking (Recast, a worker thread, 0.1-0.2 s) is waited for: the
-				# scene, cast by nobody, doesn't start and is chosen again next tick. A baked map with no route is said.
-				var nav: Object = main.scenes.nav
-				var map: RID = nav.map_for(id, root) if nav.has_method("map_for") else RID()
-				if not (map.is_valid() and not nav.ready(map)):
-					_unwalkable(id, root, String(row["id"]))
+				_unwalkable(id, root, String(row["id"]))  # a baked map with no way in (a baking one held the scene above)
 				continue
 			var face := at
 			if bool(role.get("face", false)) and first != Vector3.INF:
@@ -1182,6 +1218,7 @@ func _done(s: Dictionary, person: Node3D) -> void:
 
 ## Out of range: the town's passing scenes are put away at once (nobody watches them go).
 func _end_town(id: int) -> void:
+	_held.erase(id)
 	if not _live.has(id):
 		return
 	for s in _live[id]:
