@@ -10,6 +10,7 @@
 // reassigns, which the sitting reads again after each await; setSitting for the
 // hold); server.js keeps wrappers of the same names.
 
+import { crownOf } from "./realm.js";
 import * as Lua from "./lua.js";
 import * as Opening from "./opening.js";
 import fs from "node:fs";
@@ -34,7 +35,7 @@ export function rule(ctx, id, option) {
   // The price as the docket showed it: worn with use (treasury.js), like a decree's.
   const wearKey = petition ? `court:${petition.kind}:${option}` : null;
   const price = asked?.cost ? Treasury.worn(meta, wearKey, asked.cost, world.turn ?? 0) : 0;
-  const purse = world.players.find((p) => houseFor(p).crown)?.gold ?? 0;
+  const purse = crownOf(world)?.gold ?? 0;
   if (price && purse < price) return { error: crowns(`the treasury holds ${purse} gold`) };
   if (petition?.arc === "siege" && !(meta.campaigns ?? []).some((k) => `siege-${k.city}-${k.turn}` === petition.beat)) {
     petition.answered = true;
@@ -52,7 +53,7 @@ export function rule(ctx, id, option) {
   }
   // The one who asked remembers what the King answered, in their own words.
   if (petition && asked) court.remember(petition.from, `I went before the King, and he ruled: ${String(asked.label ?? asked.id).toLowerCase()}.`);
-  const crownNow = world.players.find((p) => houseFor(p).crown);
+  const crownNow = crownOf(world);
   if (out.cost && (crownNow?.gold ?? 0) < out.cost) return { error: crowns(`the treasury holds ${crownNow?.gold ?? 0} gold`) };
   if (out.cost) {
     send(`lua cmd ${Lua.gold(crownNow.id, -out.cost)}`);
@@ -90,7 +91,7 @@ export function rulingScene(ctx, id, option, out) {
   const p = court.petitions.find((x) => x.id === id);
   const who = p && court.people[p.from];
   const seat = who && (world.cities.find((c) => c.id === who.seat) ?? world.cities.find((c) => c.owner === who.playerId && c.capital) ?? world.cities.find((c) => c.owner === who.playerId));
-  const crown = world.players.find((x) => houseFor(x).crown);
+  const crown = crownOf(world);
   const king = world.cities.find((c) => c.owner === crown?.id && c.capital) ?? world.cities.find((c) => c.title === "Kingsmere");
   const words = `${option} ${out.text}`.toLowerCase();
   // A hanging or a burning is never shown: the town gathers in silence, then goes home (awareness.gd).
@@ -350,7 +351,7 @@ function handLine(ctx, p) {
   const h = String(p.house ?? "").replace(/^House /, "");
   if (!lord || !h) return "";
   const f = Math.round(favourOf(lord.playerId));
-  const purse = world?.players?.find((x) => houseFor(x).crown)?.gold ?? 0;
+  const purse = crownOf(world)?.gold ?? 0;
   const paid = (p.options ?? []).filter((o) => o.cost);
   if (f < BANDS.cooling) return `${h} is near rising against you, Sire. Send them home empty and they may march.`;
   if (f < 35) return `${h} will remember this, Sire. They are cold to you already.`;
@@ -371,7 +372,7 @@ export function placeOf(ctx, item) {
   if (item.place?.x != null) return item.place;
   const town = (id) => (id == null ? null : world?.cities?.find((x) => x.id === Number(id)));
   const seat = (cid) => town(court.people?.[cid]?.seat);
-  const crown = world?.players?.find((p) => houseFor(p).crown);
+  const crown = crownOf(world);
   const c = town(item.city) ?? town(item.roles?.town?.id ?? item.roles?.town) ?? town((item.acts ?? []).find((a) => a.city != null)?.city)
     ?? seat(item.from) ?? world?.cities?.find((x) => crown && x.owner === crown.id && x.capital);
   return c ? { city: c.id, x: c.x, y: c.y, name: c.title ?? c.name } : null;
@@ -394,7 +395,7 @@ export function docket(ctx) {
   }).filter(Boolean).sort((a, b) => Number(b.crisis) - Number(a.crisis));
   // No fuse at court: the realm holds while it sits, so no timer would tell true.
   // Each option's price as it stands (worn with use), and one line of why when the treasury can't pay it.
-  const purse = world?.players?.find((p) => houseFor(p).crown)?.gold ?? 0;
+  const purse = crownOf(world)?.gold ?? 0;
   const priced = (p) => (p.options ?? []).map((o) => {
     if (!o.cost) return o;
     const cost = Treasury.worn(ctx.meta, `court:${p.kind}:${o.id}`, o.cost, world?.turn ?? 0);

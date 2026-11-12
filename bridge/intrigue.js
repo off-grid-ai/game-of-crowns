@@ -24,4 +24,3 @@ export function intrigueNow(ctx) {
 }
 
 // "Varn's envoy rides to Thornvale" in the house names the realm uses.
-export const houseName = (world, pid) => houseFor(world?.players?.find((p) => p.id === Number(pid)) ?? {}).name ?? "A house";

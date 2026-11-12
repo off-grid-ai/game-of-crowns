@@ -13,6 +13,7 @@
 //   split     half its companies become a host of their own
 // A host is the crown's fighting companies standing together (data/hosts.json near), or the
 // companies under one order. Orders are kept with the reign (meta.hostOrders). Numbers: data/hosts.json.
+import { crownOf } from "./realm.js";
 import fs from "node:fs";
 import path from "node:path";
 import * as chron from "./chronicles.js";
@@ -24,7 +25,6 @@ export const HOSTS = JSON.parse(fs.readFileSync(new URL("./data/hosts.json", imp
 const SHIPS = new Set(HOSTS.ships);
 const cheb = (a, b) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
 
-const crownOf = (world) => world?.players?.find((p) => houseFor(p).crown);
 const soldiersOf = (world, pid) => (world?.units ?? []).filter((u) => u.owner === pid && !CIVILIAN.has(u.type) && !SHIPS.has(u.type));
 
 // The crown's hosts as they stand: [{id, x, y, companies, men, at, units, order}]. id: its lowest

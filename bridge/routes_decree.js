@@ -8,6 +8,7 @@
 // ctx.meta...) at the moment it is used, as the handlers read it before, so a
 // snapshot or a switch of chronicle during an await is seen.
 
+import { crownOf } from "./realm.js";
 import * as Seals from "./seals.js";
 import * as Hosts from "./hosts.js";
 import * as Sittings from "./court.js";
@@ -127,7 +128,7 @@ export async function issueDecree(ctx, req, res, url) {
   for (const h of result.homeward ?? []) Hosts.homeward({ world: ctx.world, meta: ctx.meta }, h, send);
   if (result.work) (ctx.meta.works ??= {})[result.work.city] = { building: result.work.building, seasons: WORK_SEASONS, left: WORK_SEASONS, since: Date.now(), paid: result.cost ?? 0 };
   // Spend now, so a second decree before the next snapshot can't overdraw the treasury.
-  const crownNow = ctx.world.players.find((p) => houseFor(p).crown);
+  const crownNow = crownOf(ctx.world);
   if (crownNow) crownNow.gold -= result.cost;
   // The result card says what the order cost and whose favour moved, so the
   // King learns the price of his word.

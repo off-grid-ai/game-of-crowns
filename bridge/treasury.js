@@ -6,6 +6,7 @@
 // one context argument, built fresh by server.js on each call (server.js keeps
 // wrappers of the same names, and the tally and lastSeason objects).
 
+import { crownOf } from "./realm.js";
 import { SEASONS_PER_YEAR, isYearEnd } from "./calendar.js";
 import { houseFor, cityName } from "./narrator.js";
 import { DECREES, titheLua, TITHE_HIGH, ECONOMY } from "./crown.js";
@@ -72,7 +73,7 @@ export function seasonsLeft(ctx, key) {
 export function priceOf(ctx, action) {
   const { world, meta } = ctx;
   const base = DECREES[action]?.cost ?? 0;
-  const purse = world?.players?.find((p) => houseFor(p).crown)?.gold ?? 0;
+  const purse = crownOf(world)?.gold ?? 0;
   return worn(meta, `decree:${action}`, Math.max(base, Math.round(purse * (SHARE[action] ?? 0))), world?.turn ?? 0);
 }
 
@@ -121,7 +122,7 @@ export function tithe(ctx, turn) {
   // The tithe, seen: at the year's turn wagons roll to Kingsmere from the realm's
   // biggest towns, more of them the higher the tithe.
   if (isYearEnd(turn) && meta.tithe > 0) {
-    const crownId = world.players.find((p) => houseFor(p).crown)?.id;
+    const crownId = crownOf(world)?.id;
     const king = world.cities.find((c) => c.owner === crownId && c.capital);
     const from = world.cities.filter((c) => c.owner !== crownId && !houseFor(world.players.find((p) => p.id === c.owner) ?? {}).wild).sort((x, y) => y.size - x.size).slice(0, Math.max(1, Math.round(meta.tithe * 20)));
     if (king) for (const c of from) scene("tribute", { x: c.x, y: c.y, tx: king.x, ty: king.y, city: king.id, tithe: true });
@@ -136,7 +137,7 @@ export function tithe(ctx, turn) {
   // The season's true income, as the top bar shows it: what came in besides the
   // tithe (the crown's own towns, its markets) is the purse's rise since last
   // season plus what the King spent, and the tithe less the upkeep on top.
-  const gold = world.players.find((p) => houseFor(p).crown)?.gold ?? 0;
+  const gold = crownOf(world)?.gold ?? 0;
   const econ = (meta.econ ??= {});
   const besides = econ.base == null ? 0 : gold - econ.base + (econ.spentSince ?? 0);
   lastSeason.net = besides + t.total - t.upkeep;

@@ -6,6 +6,7 @@
 // bridge's own helpers come in as one context argument, built fresh by
 // server.js on each call (server.js keeps wrappers of the same names).
 
+import { crownOf } from "./realm.js";
 import { houseFor, cityName } from "./narrator.js";
 import { DECREES, bannersReady, ECONOMY, peaceScale } from "./crown.js";  // ECONOMY.thin: below it the treasury is thin (data/economy.json)
 import { BANDS } from "./favour.js";
@@ -257,7 +258,7 @@ export function counsel(ctx, players, cities, threat) {
     // The price the crown will really pay (a share of a full treasury), never the base.
     if (DECREES[a.action]?.cost) {
       a.cost = Math.round(priceOf(a.action) * (a.scale ?? 1));  // "Make them stop" is dearer the colder the two houses (crown.js peaceScale)
-      const short = shortOf(world?.players?.find((p) => houseFor(p).crown)?.gold ?? 0, a.cost);
+      const short = shortOf(crownOf(world)?.gold ?? 0, a.cost);
       if (short) a.short = short;
       a.label += `  ${a.cost >= 10000 ? `${Math.round(a.cost / 1000) / 10}m` : `${Math.round(a.cost / 10)}k`} cr`;  // gold ×100 crowns
     }

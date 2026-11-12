@@ -4,6 +4,7 @@
 // own helpers come in as one context argument, built fresh by server.js on
 // each call (server.js keeps wrappers of the same names).
 
+import { crownOf } from "./realm.js";
 import * as Risings from "./risings.js";
 import { houseFor, cityName, HOUSES } from "./narrator.js";
 import { BUILD_COST, granarySize } from "./rules.js";

@@ -9,6 +9,12 @@ export function greatHouses(world, anyTown = true) {
   return (world?.players ?? []).filter((p) => !houseFor(p).wild && !houseFor(p).crown && (!anyTown || (world.cities ?? []).some((c) => c.owner === p.id)));
 }
 
+// A house's name by its player id, or the fallback when no player has it (a house since fallen, raiders).
+export function houseName(world, pid, fallback = "A house") {
+  const p = (world?.players ?? []).find((x) => x.id === Number(pid));
+  return p ? houseFor(p).name : fallback;  // (houseFor names any player, even none, so the fallback is decided here)
+}
+
 // The crown's player, or undefined.
 export function crownOf(world) {
   return (world?.players ?? []).find((p) => houseFor(p).crown);

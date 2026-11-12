@@ -3,6 +3,7 @@
 // characters.js's own chain. Each runs as the court (`this`), with the
 // petition, the petitioner, the option chosen, the result being built, a
 // gold() helper and the world.
+import { crownOf } from "./realm.js";
 import * as Lua from "./lua.js";
 import { cityName, houseFor } from "./narrator.js";
 import { say } from "./say.js";
@@ -47,7 +48,7 @@ export const ANSWERS = {
     const move = (to) => out.lua.push(Lua.transferCity(k.city, to));
     if (option === "return") { move(k.from); out.favour[k.from] = 20; out.favour[k.to] = -30; out.text = `By the King's judgment, ${town} is returned to ${c.house}.`; }
     if (option === "confirm") { out.favour[k.to] = 15; out.favour[k.from] = -30; for (const b of this.alive().filter((x) => x.rank === "bannerman")) b.loyalty = Math.max(0, b.loyalty - 5); out.text = `The King confirms ${town} to its new masters. Bannermen across the realm take note.`; }
-    if (option === "seize") { const crown = world.players.find((x) => houseFor(x).crown); if (crown) move(crown.id); out.favour[k.from] = -20; out.favour[k.to] = -20; out.text = `The King takes ${town} for the crown. Neither house is pleased.`; }
+    if (option === "seize") { const crown = crownOf(world); if (crown) move(crown.id); out.favour[k.from] = -20; out.favour[k.to] = -20; out.text = `The King takes ${town} for the crown. Neither house is pleased.`; }
   },
   justice({ p, c, opt, option, out, gold, world }) {
     const enemy = this.people[p.enemy];
@@ -96,7 +97,7 @@ export const ANSWERS = {
     }
     if (option === "firm") { out.favour[c.playerId] = -8; this.remember(c.id, "I reminded the King what he did to my house. He said the crown did what it must."); if (this.warlike(c)) c.goals.unshift({ kind: "revenge", text: "make the crown answer for what it did to my house" }); out.text = say("remembers.firm", { name: c.name, house: c.house }, `"The crown did what it must." ${c.name} bows, and adds it to the account.`); }
     if (option === "oath") { Object.assign(out.favour, opt.favour ?? { [c.playerId]: 6 }); c.loyalty = Math.min(100, c.loyalty + 10); out.text = `${c.name} kneels and swears ${c.house} to the crown before the whole court.`; }
-    if (option === "purse") { out.favour[c.playerId] = -4; gold(c.playerId, -60); const crown = world.players.find((x) => houseFor(x).crown); if (crown) gold(crown.id, 60); out.text = say("remembers.purse", { name: c.name, house: c.house, gold: 60 }, `${c.house} sends 60 gold to Kingsmere. ${c.name} had hoped for thanks, not a bill.`); }
+    if (option === "purse") { out.favour[c.playerId] = -4; gold(c.playerId, -60); const crown = crownOf(world); if (crown) gold(crown.id, 60); out.text = say("remembers.purse", { name: c.name, house: c.house, gold: 60 }, `${c.house} sends 60 gold to Kingsmere. ${c.name} had hoped for thanks, not a bill.`); }
     this.save(c);
   },
   match({ p, c, opt, option, out, gold, world }) {
@@ -131,7 +132,7 @@ export const ANSWERS = {
   outlaws({ p, c, opt, option, out, gold, world }) {
     const town = cityName(p.city);
     if (option === "hunt") { out.favour[c.playerId] = 15; out.lua.push(Lua.levy(p.city, Array(3).fill("Knights|Horsemen"))); out.text = `The King's riders clear the forest road outside ${town}. The oaks bear different fruit now.`; }
-    if (option === "pardon") { out.favour[c.playerId] = -15; const crown = world.players.find((x) => houseFor(x).crown); const seat = crown && world.cities.find((x) => x.owner === crown.id); if (seat) out.lua.push(Lua.levy(seat.id, Array(2).fill("Archers|Warriors"), 0)); this.remember(c.id, `The King pardoned the outlaws who hanged my men outside ${town}, and put them in royal colours.`); out.text = `The outlaws of ${town} kneel and are pardoned. They march to Kingsmere in the King's colours. ${c.house} does not forgive it.`; }
+    if (option === "pardon") { out.favour[c.playerId] = -15; const crown = crownOf(world); const seat = crown && world.cities.find((x) => x.owner === crown.id); if (seat) out.lua.push(Lua.levy(seat.id, Array(2).fill("Archers|Warriors"), 0)); this.remember(c.id, `The King pardoned the outlaws who hanged my men outside ${town}, and put them in royal colours.`); out.text = `The outlaws of ${town} kneel and are pardoned. They march to Kingsmere in the King's colours. ${c.house} does not forgive it.`; }
     if (option === "theirs") { out.favour[c.playerId] = -5; gold(c.playerId, -60); out.text = `The King tells ${c.name} to keep his own roads. The outlaws keep the road, and the taxes of ${town} keep going into the forest.`; }
   },
   informer({ p, c, opt, option, out, gold, world }) {
@@ -146,7 +147,7 @@ export const ANSWERS = {
   regency({ p, c, opt, option, out, gold, world }) {
     const regent = this.people[p.regent];
     if (option === "regent") { regent.loyalty = 100; regent.goals = [{ kind: "favour", text: "repay the King who raised me" }]; out.favour[c.playerId] = -10; this.remember(regent.id, "The King named me to govern my house. I owe him everything."); out.text = `${regent.name} is named to govern ${c.house} by the King's word. ${c.house}'s kin bow, and whisper.`; }
-    if (option === "crown") { const me = world.players.find((x) => x.id === c.playerId); const take = Math.floor((me?.gold ?? 0) / 4); gold(c.playerId, -take); const crown = world.players.find((x) => houseFor(x).crown); if (crown) gold(crown.id, take); out.favour[c.playerId] = -15; out.text = `The crown governs ${c.house} until the matter is settled, and its stewards take ${take} gold for the trouble.`; }
+    if (option === "crown") { const me = world.players.find((x) => x.id === c.playerId); const take = Math.floor((me?.gold ?? 0) / 4); gold(c.playerId, -take); const crown = crownOf(world); if (crown) gold(crown.id, take); out.favour[c.playerId] = -15; out.text = `The crown governs ${c.house} until the matter is settled, and its stewards take ${take} gold for the trouble.`; }
     if (option === "leave") { regent.goals.unshift({ kind: "crown", text: `take ${c.house} for myself` }); regent.loyalty = Math.max(0, regent.loyalty - 25); out.text = `The King leaves ${c.house} to settle its own succession. ${regent.name} smiles.`; }
     this.save(regent);
   },

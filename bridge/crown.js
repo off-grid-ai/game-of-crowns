@@ -4,7 +4,7 @@
 
 import { SEASONS_PER_YEAR } from "./calendar.js";
 import { cityName, houseFor } from "./narrator.js";
-import { greatHouses } from "./realm.js";
+import { greatHouses, crownOf } from "./realm.js";
 import { BANDS } from "./favour.js";
 import * as Lua from "./lua.js";
 import fs from "node:fs";
@@ -24,9 +24,6 @@ const BUILDABLE = { temple: "Temple", granary: "Granary", walls: "City Walls", m
 // The build decree's key for a building's own name ("Marketplace" -> "market"), or null.
 export const buildKey = (name) => Object.keys(BUILDABLE).find((k) => BUILDABLE[k] === name) ?? null;
 
-function crownOf(world) {
-  return world?.players?.find((p) => houseFor(p).crown);
-}
 
 export function clampFavour(v) {
   return Math.max(0, Math.min(100, Math.round(v)));

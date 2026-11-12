@@ -9,6 +9,7 @@
 // (getters for what it reassigns, setPaused for the clock's hold); server.js
 // keeps wrappers of the same names.
 
+import { crownOf, houseName } from "./realm.js";
 import * as Lua from "./lua.js";
 import * as Opening from "./opening.js";
 import { say } from "./say.js";
@@ -118,7 +119,6 @@ const atWar = ({ detail, court }, a, b) => {
   const la = court?.lordOfHouse(a), lb = court?.lordOfHouse(b);
   return (d?.players?.[a]?.atWarWith ?? []).includes(b) && !(la && lb && court.truce(la.id, lb.id));
 };
-const houseName = (world, pid) => houseFor(world?.players?.find((p) => p.id === pid) ?? {}).name ?? "a house";
 export const AMBITIONS = [
   { key: "endwar", draw: (ctx) => {
       const { world, detail } = ctx;
@@ -126,7 +126,7 @@ export const AMBITIONS = [
       const power = (p) => world.cities.filter((c) => c.owner === p.id).length * 2 + (p.units ?? 0);
       let pair = null;
       for (const a of great) for (const b of great) if (a.id < b.id && atWar(ctx, a.id, b.id) && (!pair || power(a) + power(b) > power(pair[0]) + power(pair[1]))) pair = [a, b];
-      return pair ? { a: pair[0].id, b: pair[1].id, text: `End the war between ${houseName(world, pair[0].id).replace(/^House /, "")} and ${houseName(world, pair[1].id).replace(/^House /, "")}` } : null;
+      return pair ? { a: pair[0].id, b: pair[1].id, text: `End the war between ${houseName(world, pair[0].id, "a house").replace(/^House /, "")} and ${houseName(world, pair[1].id, "a house").replace(/^House /, "")}` } : null;
     },
     met: (ctx, a) => a.a != null && !atWar(ctx, a.a, a.b) },
   { key: "seat", text: "Keep Kingsmere unbesieged to the last act",

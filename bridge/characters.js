@@ -6,6 +6,7 @@
 // here; pivotal ones go to Claude in the character's own voice. Results land
 // in Freeciv (towns change hands, rebellions, gold) and at the King's court.
 
+import { crownOf } from "./realm.js";
 import * as Lua from "./lua.js";
 import { pick as wording } from "./say.js";  // one of a result's wordings (data/dilemmas.json text lists)
 import fs from "node:fs";
@@ -686,7 +687,7 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
       // one gravely wronged comes to court to demand amends.
       if (owed.d > 0 && !owed.setback && Math.random() < 0.5) {
         owed.raised = turn;
-        ctx.send?.(Lua.gold(world.players.find((x) => houseFor(x).crown)?.id ?? -1, 40));
+        ctx.send?.(Lua.gold(crownOf(world)?.id ?? -1, 40));
         this.record({ turn, kind: "loyalty", text: `${c.name} of ${c.house} has not forgotten the King's ruling: a chest of 40 gold comes to Kingsmere, "for the crown's kindness".`, city: c.seat ?? undefined });
         continue;
       }
@@ -790,7 +791,7 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
 
     // A town under siege by another house: its lord begs the King to break it.
     // (A siege by the King's own host is the herald's to bring, not his.)
-    const crownPid = world.players.find((x) => houseFor(x).crown)?.id;
+    const crownPid = crownOf(world)?.id;
     const ringed = myTowns.find((x) => x.besieged);
     const foe = ringed ? Object.entries((world.units ?? []).filter((u) => u.owner !== c.playerId && Math.max(Math.abs(u.x - ringed.x), Math.abs(u.y - ringed.y)) === 1)
       .reduce((n, u) => ({ ...n, [u.owner]: (n[u.owner] ?? 0) + 1 }), {})).sort((a, b) => b[1] - a[1])[0] : null;
@@ -1089,7 +1090,7 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
       const e = card?.options.find((x) => x.id === o.id)?.effects;
       if (!e) return null;
       const houses = world.players.filter((x) => !houseFor(x).crown && !houseFor(x).wild);
-      const crown = world.players.find((x) => houseFor(x).crown);
+      const crown = crownOf(world);
       const pidOf = (role) => role === "crown" ? crown?.id : (role === "town" || role === "rivalTown" ? world.cities.find((x) => x.id === p.roles?.[role])?.owner : this.people[p.roles?.[role]]?.playerId);
       map = {};
       for (const [role, v] of Object.entries(e.favour ?? {})) {
@@ -1111,7 +1112,7 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
     for (const [k, id] of Object.entries(p.roles ?? {})) roles[k] = k === "town" || k === "rivalTown" ? world.cities.find((x) => x.id === id) ?? { id } : this.people[id];
     const e = o.effects ?? {};
     const houses = world.players.filter((x) => !houseFor(x).crown && !houseFor(x).wild);
-    const crown = world.players.find((x) => houseFor(x).crown);
+    const crown = crownOf(world);
     const pidOf = (role) => role === "crown" ? crown?.id : roles[role]?.playerId;
     const each = (map, fn) => { for (const [role, v] of Object.entries(map ?? {})) { if (role === "all") houses.forEach((h) => fn(h.id, v, null)); else if (roles[role] || role === "crown") fn(pidOf(role), v, roles[role]); } };
     each(e.favour, (pid, v) => { if (pid !== undefined) out.favour[pid] = (out.favour[pid] ?? 0) + v; });
@@ -1171,7 +1172,7 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
       const lord = this.lordOfHouse(debt.pid);
       // What the crown owes a house: paid back if the treasury can, else the King's word is broken.
       if (debt.owed) {
-        const crown = world.players.find((x) => houseFor(x).crown);
+        const crown = crownOf(world);
         if (p && crown && crown.gold >= debt.amount) {
           ctx.send(Lua.pay(crown.id, debt.pid, debt.amount));
           this.record({ turn, kind: "court", text: `The crown repays ${houseFor(p).name} the ${debt.amount} gold it borrowed, with interest.` });
@@ -1184,7 +1185,7 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
         continue;
       }
       if (p && p.gold >= debt.amount) {
-        ctx.send(Lua.pay(debt.pid, world.players.find((x) => houseFor(x).crown)?.id ?? -1, debt.amount));
+        ctx.send(Lua.pay(debt.pid, crownOf(world)?.id ?? -1, debt.amount));
         this.record({ turn, kind: "court", text: `${houseFor(p).name} repays the crown ${debt.amount} gold, with interest.` });
       } else if (lord) {
         ctx.shift({ [debt.pid]: -15 }, "shamed over the crown's loan");

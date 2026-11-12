@@ -9,7 +9,7 @@ import * as Lua from "./lua.js";
 import fs from "node:fs";
 import path from "node:path";
 import { houseFor, cityName } from "./narrator.js";
-import { greatHouses } from "./realm.js";
+import { greatHouses, crownOf } from "./realm.js";
 import { BANDS } from "./favour.js";
 
 
@@ -87,7 +87,7 @@ export class Stakes {
       this.save();
       return;
     }
-    const crown = world.players.find((p) => houseFor(p).crown);
+    const crown = crownOf(world);
     const seat = world.cities.find((c) => c.owner === crown?.id && c.capital) ?? world.cities.find((c) => c.title === "Kingsmere");
     if (seat) this.s.seat = { id: seat.id, x: seat.x, y: seat.y };
 

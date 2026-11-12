@@ -8,6 +8,7 @@
 // ctx.meta...) at the moment it is used, as the handlers read it before, so a
 // snapshot or a switch of chronicle during an await is seen.
 
+import { crownOf } from "./realm.js";
 import fs from "node:fs";
 import path from "node:path";
 import { BANDS } from "./favour.js";
@@ -41,7 +42,7 @@ export async function house(ctx, req, res, url) {
     ...(() => {
       const me = ctx.court.lordOfHouse(pid);
       const stilled = (q) => { const o = ctx.court.lordOfHouse(q); return !!(me && o && ctx.court.truce(me.id, o.id)); };
-      const crownId = ctx.world.players.find((x) => houseFor(x).crown)?.id;
+      const crownId = crownOf(ctx.world)?.id;
       const loyal = (id) => id !== crownId && favourOf(id) >= BANDS.steady;
       const foes = (d?.atWarWith ?? []).filter(great).filter((q) => !((q === crownId && loyal(pid)) || (pid === crownId && loyal(q))));
       return { wars: foes.filter((q) => !stilled(q)).map(nameOf), truces: foes.filter(stilled).map(nameOf) };

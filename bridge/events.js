@@ -9,6 +9,7 @@
 // only a flavour line may be rephrased elsewhere. Behind a switch (options.events,
 // else data on), the same way as the seals.
 
+import { crownOf } from "./realm.js";
 import * as Lua from "./lua.js";
 import fs from "node:fs";
 import { houseFor, cityName } from "./narrator.js";
@@ -22,7 +23,6 @@ export const on = (meta) => Boolean(meta?.options?.events ?? S.on);
 const state = (meta) => (meta.events ??= { up: null, rested: {}, later: [], decks: [], wintered: false, lapsed: null });
 
 const great = (world) => (world?.players ?? []).filter((p) => !houseFor(p).wild && !houseFor(p).crown && world.cities.some((c) => c.owner === p.id));
-const crownOf = (world) => (world?.players ?? []).find((p) => houseFor(p).crown);
 const pick = (xs) => xs[Math.floor(Math.random() * xs.length)];
 
 // The card's subject, from the realm as it is: a town, a house, two houses at war, or the realm.

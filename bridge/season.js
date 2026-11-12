@@ -12,6 +12,7 @@
 // turn's timers), and server.js keeps wrappers of the
 // same names where its own code still calls them.
 
+import { crownOf } from "./realm.js";
 import * as Damage from "./damage.js";
 import * as Opening from "./opening.js";
 import * as Reword from "./reword.js";
@@ -65,7 +66,7 @@ export async function runSeason(ctx) {
   try {
     await court.season(world, { wetHarvest: () => Weather.wetHarvest(meta.weather),
       // The crown's purse below one big thing's worth: the court may hear of it (economy.json thin).
-      thinTreasury: () => (ctx.world?.players?.find((p) => houseFor(p).crown)?.gold ?? 0) < Treasury.ECONOMY.thin,
+      thinTreasury: () => (crownOf(ctx.world)?.gold ?? 0) < Treasury.ECONOMY.thin,
       deed: (key, pid) => ctx.treasuryCtx().deed(kingDeeds.tagsFor("realm", key), { act: false, place: houseFor(ctx.world?.players?.find((p) => p.id === pid) ?? {}).name ?? "" }),
       favour: ctx.favourOf, cause: ctx.causeOf, warded: (pid) => (stakes?.s.wards?.[pid] ?? -1) > (ctx.world?.turn ?? 0) || ctx.sworn(pid), send: (l) => send(`lua cmd ${l}`), shift: ctx.shiftFavour, watched: isWatched(), options: meta.options ?? {}, ...ctx.heardCtx(), mayRise: (pid) => mayRise(ctx, pid), rose: (pid) => rose(ctx, pid) });
   } catch (err) {

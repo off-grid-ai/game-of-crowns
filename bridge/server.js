@@ -126,7 +126,7 @@ function picture(e) {
 // it's the crown's own doing (its owner is the crown).
 let sceneSeq = 0;
 function scene(kind, fields) {
-  const crownId = world?.players?.find((p) => houseFor(p).crown)?.id;
+  const crownId = Realm.crownOf(world)?.id;
   scenes.push({ id: `${meta?.id ?? ""}:${++sceneSeq}:${Date.now()}`, kind, turn: world?.turn ?? 0, at: Date.now(), ...fields, royal: fields?.owner != null && fields.owner === crownId });
   if (scenes.length > 120) scenes = scenes.slice(-120);
 }
@@ -426,7 +426,7 @@ function applyStartOptions() {
   const floor = o.trust === "resentful" ? START.resentful : START.floor;
   for (const p of world.players.filter((x) => !houseFor(x).wild && !houseFor(x).crown)) if (favourOf(p.id) < floor) favour[p.id] = floor;
   saveFavour();
-  const crown = world.players.find((x) => houseFor(x).crown);
+  const crown = Realm.crownOf(world);
   // The King's purse at his crowning (economy.json start, by the reign's wealth): the
   // shared Aldmere baseline's heap would carry him through a whole reign unfelt.
   const purse = Treasury.ECONOMY.start[meta.wealth] ?? Treasury.ECONOMY.start.comfortable;
@@ -442,7 +442,7 @@ function applyStartOptions() {
 }
 
 // What view.js needs to build the /world answer, read fresh on every call.
-const viewCtx = () => ({ markSeasons: MARK_SEASONS, world, meta, history, court, stakes, turnSeconds, counselNow, scenes, effects, favourWhy, favourPast, lastSeason, detail, favourOf, marchOdds, greatHouses, sworn, priceOf, seasonsLeft, crownOf, crownSeat, reignInfo, storyNow, marksNow, goalNow, CIVILIAN, TURNING, GOAL_FAVOUR, soulsOf });
+const viewCtx = () => ({ markSeasons: MARK_SEASONS, world, meta, history, court, stakes, turnSeconds, counselNow, scenes, effects, favourWhy, favourPast, lastSeason, detail, favourOf, marchOdds, greatHouses, sworn, priceOf, seasonsLeft, crownOf: crownNow, crownSeat, reignInfo, storyNow, marksNow, goalNow, CIVILIAN, TURNING, GOAL_FAVOUR, soulsOf });
 // The realm as the view sees it (GET /world): built in view.js.
 function worldView() {
   return { ...View.worldView(viewCtx()), hosts: Hosts.list({ world, meta }), hostOrdersLeft: Hosts.ordersLeft({ world, meta }) };  // the King's hosts and their orders, and how many more orders this season (hosts.js)
@@ -537,7 +537,7 @@ function rule(id, option) { return Sittings.rule(sittingCtx(), id, option); }
 // read fresh on every call; scenes is read live, as scene() may replace it.
 // Risings (risings.js): the realm's side of a house split by Freeciv's civil war.
 const risingsCtx = () => ({ world, meta, send, record, scene, diplomacy: diplomacyNow });
-const campCtx = () => ({ world, meta, court, get scenes() { return scenes; }, send, record, scene, deed, shiftFavour, greatHouses, crownOf, favourOf, causeOf, SOLDIER, detail, diplomacy: diplomacyNow });
+const campCtx = () => ({ world, meta, court, get scenes() { return scenes; }, send, record, scene, deed, shiftFavour, greatHouses, crownOf: crownNow, favourOf, causeOf, SOLDIER, detail, diplomacy: diplomacyNow });
 // The fighting companies of other houses on the tiles around a town (campaigns.js).
 function besiegers(c) { return Camp.besiegers(campCtx(), c); }
 // A town besieged is seen, once a turn (campaigns.js).
@@ -580,7 +580,7 @@ function onEvent(line) {
   if (ev.kind === "turn") return Season.turn(seasonCtx(), ev);  // the turn's sequence (season.js)
   if (ev.kind === "attack") return Battles.struck(ev, world?.turn ?? 0);  // who struck where (battles.js)
   // Freeciv fought the King's assault (realm_assault): the view storms the siege and ends it as Freeciv did (campaigns.js).
-  if (ev.kind === "assault") { const storm = Camp.stormScene(world, ev, crownOf()?.id); if (storm) scene("storm", storm); return; }
+  if (ev.kind === "assault") { const storm = Camp.stormScene(world, ev, crownNow()?.id); if (storm) scene("storm", storm); return; }
   const town = ev.city !== undefined ? world?.cities?.find((c) => c.id === Number(ev.city)) : null;
   if (ev.kind === "unit_killed") {
     const loser = world?.players?.find((p) => p.id === Number(ev.owner));
@@ -607,14 +607,14 @@ function onEvent(line) {
 // and ambitions, its goal, its readings and how it ends. Its context, read fresh
 // on every call (getters for what the bridge reassigns; endReign pauses through setPaused).
 const reignCtx = () => ({ meta, world, court, stakes, arcs, favour, favourPast, turnSeconds, get paused() { return paused; }, setPaused: (v) => { paused = v; },
-  get history() { return history; }, get chronicle() { return chronicle; }, get counselNow() { return counselNow; }, record, send, scene, detail, favourOf, saveFavour, crownOf, crownSeat, SOLDIER, soulsOf, theirs, canDecree });
+  get history() { return history; }, get chronicle() { return chronicle; }, get counselNow() { return counselNow; }, record, send, scene, detail, favourOf, saveFavour, crownOf: crownNow, crownSeat, SOLDIER, soulsOf, theirs, canDecree });
 // Whether the realm would take this order now, by the decree route's own once-a-year and price rules (next.js offers only these).
 // purse: the gold to judge the price against (Infinity: by the yearly rules only, for what he'd want if he could pay).
 function canDecree(cmd, purse = null) {
   if (DECREES[cmd.action]?.off) return false;  // cut from the King's orders (data/decrees.json off)
   const y = yearlyKey(cmd);
   if (y && seasonsLeft(y) > 0) return false;
-  const crown = crownOf();
+  const crown = crownNow();
   return !!crown && (purse ?? crown.gold ?? 0) >= priceOf(cmd.action);
 }
 // The King's ledger and the name the realm gives him (reign.js).
@@ -815,7 +815,7 @@ function storyNow() {
 
 // The crown's great occasions come once a year, and a decree's price grows with
 // the treasury (treasury.js). Its context, read fresh on every call.
-const treasuryCtx = () => ({ world, meta, history, tally, lastSeason, send, record, scene, deed, crownOf });
+const treasuryCtx = () => ({ world, meta, history, tally, lastSeason, send, record, scene, deed, crownOf: crownNow });
 function yearlyKey(cmd) { return Treasury.yearlyKey(treasuryCtx(), cmd); }
 function seasonsLeft(key) { return Treasury.seasonsLeft(treasuryCtx(), key); }
 function priceOf(action) { return Treasury.priceOf(treasuryCtx(), action); }
@@ -886,7 +886,7 @@ function ledger() {
   }
   const n = ids.size;
   const pairs = (n * (n - 1)) / 2 || 1;
-  const crown = (world.players ?? []).find((p) => houseFor(p).crown);
+  const crown = Realm.crownOf(world);
   const row = {
     // A host marching on the throne is war at the realm's heart: it halves the peace.
     turn: world.turn, at: Date.now(), peace: Math.max(0, 1 - wars / 2 / pairs) * (stakes?.s.usurper.stage === "march" ? 0.5 : 1), pop, souls: soulsAll, food,
@@ -897,8 +897,8 @@ function ledger() {
 }
 
 // The crown, its seat, and a soldier (the ladder in reign.js and the campaigns use them).
-const crownOf = () => world?.players?.find((p) => houseFor(p).crown);
-const crownSeat = () => { const c = crownOf(); return c ? world.cities.find((x) => x.owner === c.id && x.capital) ?? world.cities.find((x) => x.owner === c.id) : null; };
+const crownNow = () => Realm.crownOf(world);
+const crownSeat = () => { const c = crownNow(); return c ? world.cities.find((x) => x.owner === c.id && x.capital) ?? world.cities.find((x) => x.owner === c.id) : null; };
 const SOLDIER = (u) => !CIVILIAN.has(u.type);
 // The royal ladder of aims and the King's three ambitions (reign.js).
 function ladder() { return Reign.ladder(reignCtx()); }

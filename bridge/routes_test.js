@@ -7,6 +7,7 @@
 // ctx.meta...) at the moment it is used, as the handlers read it before, so a
 // snapshot or a switch of chronicle during an await is seen.
 
+import { crownOf } from "./realm.js";
 import * as Damage from "./damage.js";
 import * as Rulings from "./rulings.js";
 import * as Director from "./director.js";
@@ -81,7 +82,7 @@ export async function stage(ctx, req, res, url) {
   // granted in play), so a film can have two royal towns, one of them starving ({city, mood: "hunger"}).
   if (b.crown != null) {
     const town = ctx.world.cities.find((c) => c.id === Number(b.crown));
-    const crown = ctx.world.players.find((p) => houseFor(p).crown);
+    const crown = crownOf(ctx.world);
     if (!town || !crown) return json(res, 400, { error: "{crown: <city id>} of a town that stands" });
     ctx.send(`lua cmd ${Lua.transferCity(town.id, crown.id)}`);
     setTimeout(ctx.snapshot ?? (() => {}), 1500);

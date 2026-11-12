@@ -7,6 +7,7 @@
 // numbers and words are data (data/director.json); this is the one decider.
 // Nothing here reads server.js: what it needs comes in as one context argument.
 
+import { crownOf } from "./realm.js";
 import * as Opening from "./opening.js";
 import * as Events from "./events.js";
 import fs from "node:fs";
@@ -20,7 +21,6 @@ import * as kingDeeds from "./ledger.js";
 export const DIRECTOR = JSON.parse(fs.readFileSync(new URL("./data/director.json", import.meta.url), "utf8"));
 
 const great = (world) => (world?.players ?? []).filter((p) => !houseFor(p).wild && !houseFor(p).crown && world.cities.some((c) => c.owner === p.id));
-const crownOf = (world) => (world?.players ?? []).find((p) => houseFor(p).crown);
 const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 const fill = (s, t) => String(s ?? "").replace(/\{house\}/g, t.houseName ?? "").replace(/\{town\}/g, t.townName ?? "").replace(/\{n\}/g, String(t.n ?? 0));
 

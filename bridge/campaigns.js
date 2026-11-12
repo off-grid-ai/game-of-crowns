@@ -7,6 +7,7 @@
 // argument, built fresh by server.js on each call (server.js keeps wrappers of
 // the same names).
 
+import { crownOf } from "./realm.js";
 import { houseFor, cityName } from "./narrator.js";
 import fs from "node:fs";
 import { decree } from "./crown.js";
@@ -87,10 +88,10 @@ export function startCampaign(ctx, { city, house }) {
   chron.saveMeta(meta);
   // In Freeciv the crown is at war with the house (the bridge's one diplomacy writer), so Freeciv fights
   // every blow of the assault (resolveCampaigns, realm_assault).
-  const crown = world.players.find((p) => houseFor(p).crown);
+  const crown = crownOf(world);
   const atWar = ctx.detail?.()?.players?.find((p) => p.slot === crown?.id)?.atWarWith?.includes(house);
   if (crown && !atWar) ctx.diplomacy?.([crown.id, house, 0, "War"]);
-  scene("siege", { x: at.x, y: at.y, city, owner: world.players.find((p) => houseFor(p).crown)?.id, defender: house });
+  scene("siege", { x: at.x, y: at.y, city, owner: crownOf(world)?.id, defender: house });
 }
 
 // The royal host's chance against a house's town, the same reckoning the
@@ -98,7 +99,7 @@ export function startCampaign(ctx, { city, house }) {
 // what the house can bring to one town; winter favours whoever holds the walls.
 export function marchOdds(ctx, house, allies = [], { extra = 0, turn = ctx.world?.turn ?? 0 } = {}) {
   const { world, SOLDIER } = ctx;
-  const crown = world?.players?.find((p) => houseFor(p).crown);
+  const crown = crownOf(world);
   const foe = world?.players?.find((p) => p.id === house);
   if (!crown || !foe) return 0;
   const soldiers = (pid) => (world.units ?? []).filter((u) => u.owner === pid && SOLDIER(u)).length;
@@ -169,7 +170,7 @@ export function resolveCampaigns(ctx, turn) {
     // seasons at most, then the captains decide without him.
     if (c.asked && !c.ruled && court?.petitions.some((p) => !p.answered && p.beat === `siege-${c.city}-${c.turn}`) && (c.hold = (c.hold ?? 0) + 1) <= 2) continue;
     const town = world.cities.find((x) => x.id === c.city);
-    const crown = world.players.find((p) => houseFor(p).crown);
+    const crown = crownOf(world);
     const foe = world.players.find((p) => p.id === c.house);
     const end = () => { meta.campaigns = meta.campaigns.filter((x) => x !== c); };
     if (!crown || !foe) { end(); continue; }
