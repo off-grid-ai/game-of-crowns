@@ -1,3 +1,0 @@
-scripts/roadside.gd:one-way-to-move
-scripts/scenes.gd:one-way-to-move
-scripts/traffic.gd:one-way-to-move

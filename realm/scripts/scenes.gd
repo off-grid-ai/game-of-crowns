@@ -175,61 +175,21 @@ func traveller(from: Vector3, to: Vector3, kind := "walker", on_done := Callable
 	var way := _route(from, to)
 	if way.size() <= 2:
 		return false
-	# The road is a Path3D and the traveller rides it on Godot's PathFollow3D,
-	# which keeps them on the curve and facing along it: nothing placed by hand.
-	var path := Path3D.new()
-	path.name = "Traveller"
-	path.curve = _on_ground(terrain.smooth_road(way))
-	add_child(path)
-	var follow := PathFollow3D.new()
-	follow.rotation_mode = PathFollow3D.ROTATION_Y
-	follow.loop = false
-	path.add_child(follow)
 	var carter := kind in ["cart", "wagon"]
 	var cloth: Color = [Color(0.55, 0.47, 0.36), Color(0.42, 0.45, 0.38), Color(0.5, 0.36, 0.3), Color(0.38, 0.4, 0.47), Color(0.6, 0.55, 0.45)][r.randi() % 5]
 	var station: String = {"soldier": "soldier", "refugee": "peasant"}.get(kind, ["townsfolk", "peasant", "peasant", "townsfolk"][r.randi() % 4])
 	var who: Node3D = people.make(r, station, cloth.darkened(0.25) if kind == "refugee" else cloth, "adult" if kind == "soldier" else ["adult", "adult", "elder"][r.randi() % 3])
+	var body: Node3D = who
 	if carter:
-		follow.add_child(_cart_rig(r, who))
-	else:
-		who.rotation.y = PI  # people face +z; the follower carries -z forward
-		follow.add_child(who)
+		body = _cart_rig(r, who)
+		body.rotation.y = PI  # the rig is built facing -z: turned to face +z like everyone else
 	# A soldier marches, a refugee trudges, everyone else walks.
 	var gait: String = {"soldier": "SS_Walk", "refugee": "Injured_Walk"}.get(kind, "Walk")
 	people.play(who, gait, r.randf_range(0.9, 1.1))
 	var pace: float = {"cart": 0.22, "wagon": 0.18, "soldier": 0.3, "refugee": 0.2}.get(kind, 0.26)
-	var length: float = maxf(path.curve.get_baked_length(), 0.01)
-	var tw := create_tween()
-	tw.tween_property(follow, "progress", length, clampf(length / pace, 15.0, 90.0)).from(0.0)
-	tw.tween_callback(func():
-		path.queue_free()
-		if on_done.is_valid():
-			on_done.call())
-	# Giving way: someone standing just ahead on the road, and the traveller waits
-	# (the tween held) until they've passed, never walking or driving through them.
-	# Held no longer than WAIT_MAX at a time, so a crowd that never parts can't stop the road.
-	var look := Timer.new()
-	look.wait_time = 0.15
-	path.add_child(look)
-	var held := [0.0]
-	look.timeout.connect(func():
-		if not is_instance_valid(follow) or not tw.is_valid():
-			return
-		var ahead := path.to_global(path.curve.sample_baked(minf(length, follow.progress + (0.16 if carter else 0.1))))
-		var blocked := false
-		for n in get_tree().get_nodes_in_group("people"):
-			var p3 := n as Node3D
-			if p3 and p3.is_visible_in_tree() and not follow.is_ancestor_of(p3) and Vector2(p3.global_position.x - ahead.x, p3.global_position.z - ahead.z).length() < 0.07:
-				blocked = true
-				break
-		held[0] = held[0] + look.wait_time if blocked else 0.0
-		tw.set_speed_scale(0.0 if blocked and held[0] < WAIT_MAX else 1.0))
-	look.start()
+	# Along the road the navigation gave, giving way to anyone standing in it (Mover.road).
+	Mover.road(self, way, [[body, 0.0]], pace, {"min": 15.0, "max": 90.0, "yields": true, "ahead": 0.16 if carter else 0.1}, on_done)
 	return true
-
-
-## How long a traveller waits at a time for someone in the road to pass.
-const WAIT_MAX := 4.0
 
 
 ## One horse and cart, built as a single piece so its parts can never come

@@ -8,6 +8,7 @@ extends Node3D
 ## from them. Reads roads.gd's drawn paths and the towns as they stand; edits neither.
 ## Every number is realm/data/roadside.json's (docs/TUNING.md). On with `on: true` there.
 
+const Mover := preload("res://scripts/mover.gd")  # the one way to move (CLAUDE.md)
 const Data := preload("res://scripts/data.gd")
 const Real := preload("res://scripts/realistic.gd")
 const Plan := preload("res://scripts/roadside_plan.gd")
@@ -735,11 +736,6 @@ func _herd(from: Vector3, to: Vector3) -> bool:
 	var way: PackedVector3Array = main.roads.route(from, to)
 	if way.size() <= 2:
 		return false
-	var path := Path3D.new()
-	path.name = "Herd"
-	path.curve = main.scenes._on_ground(main.terrain.smooth_road(way))
-	add_child(path)
-	var length: float = maxf(path.curve.get_baked_length(), 0.01)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = Time.get_ticks_msec()
 	var kinds: Array = H.get("beasts", ["cow"])
@@ -747,36 +743,15 @@ func _herd(from: Vector3, to: Vector3) -> bool:
 	var n := rng.randi_range(int(H.get("count", [3, 6])[0]), int(H.get("count", [3, 6])[1]))
 	var gap := float(H.get("gap", 0.1))
 	var lead := gap * (n + 1)
-	var follows: Array = []
 	var herder: Node3D = main.scenes.people.make(rng, "peasant", Color(0.5, 0.44, 0.36))
-	var f := PathFollow3D.new()
-	f.rotation_mode = PathFollow3D.ROTATION_Y
-	f.loop = false
-	path.add_child(f)
-	herder.rotation.y = PI  # people face +z; the follower carries -z forward
-	f.add_child(herder)
 	preload("res://scripts/people.gd").play(herder, "Walk", rng.randf_range(0.85, 0.95))
-	follows.append([f, lead])
+	var members: Array = [[herder, lead]]
 	for i in n:
 		var a := _animal(beast, rng, true)
 		if a == null:
 			break
-		var fa := PathFollow3D.new()
-		fa.rotation_mode = PathFollow3D.ROTATION_Y
-		fa.loop = false
-		fa.h_offset = rng.randf_range(-0.05, 0.05)
-		path.add_child(fa)
-		a.rotation.y = PI
-		fa.add_child(a)
-		follows.append([fa, gap * (n - i) + rng.randf_range(-0.03, 0.03)])
+		members.append([a, gap * (n - i) + rng.randf_range(-0.03, 0.03), rng.randf_range(-0.05, 0.05)])
 	_out += 1
-	var pace := float(H.get("pace", 0.16))
-	var tw := create_tween()
-	tw.tween_method(func(v: float):
-		for fl in follows:
-			if is_instance_valid(fl[0]):
-				(fl[0] as PathFollow3D).progress = clampf(v - lead + float(fl[1]), 0.0, length), 0.0, length + lead, clampf((length + lead) / pace, 15.0, 120.0))
-	tw.tween_callback(func():
-		path.queue_free()
-		_out -= 1)
+	# The herd in file behind its herder, along the road the navigation gave (Mover.road).
+	Mover.road(self, way, members, float(H.get("pace", 0.16)), {"min": 15.0, "max": 120.0}, func(): _out -= 1)
 	return true

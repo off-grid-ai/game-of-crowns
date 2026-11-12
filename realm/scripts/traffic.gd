@@ -28,6 +28,7 @@ func _ready() -> void:
 	_rng.randomize()
 
 
+const Mover := preload("res://scripts/mover.gd")  # the one way to move (CLAUDE.md)
 const PerfTools := preload("res://scripts/perf_tools.gd")
 const Data := preload("res://scripts/data.gd")
 const Works := preload("res://scripts/works.gd")
@@ -182,11 +183,6 @@ func party(from: Vector3, to: Vector3, kind: String, on_done := Callable()) -> b
 	var way: PackedVector3Array = scenes._route(from, to)
 	if way.size() <= 2 or P.is_empty():
 		return false
-	var path := Path3D.new()
-	path.name = "Party_" + kind
-	path.curve = scenes._on_ground(terrain.smooth_road(way))
-	scenes.add_child(path)
-	var length: float = maxf(path.curve.get_baked_length(), 0.01)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = Time.get_ticks_usec()
 	var who: Array = P.get("who", ["peasant"])
@@ -196,21 +192,14 @@ func party(from: Vector3, to: Vector3, kind: String, on_done := Callable()) -> b
 	var gait := String(P.get("gait", "Walk"))
 	var rate := float(P.get("rate", 1.0))
 	var cloth: Color = Works.colour(P.get("cloth"), Color.WHITE)
-	var follows: Array = []
+	var file: Array = []  # [person, how far behind the head, how far across]
 	var members: Array = []
 	for i in n:
 		var p: Node3D = scenes.people.make(rng, String(who[i % who.size()]), cloth, String(P.get("age", "")) if rng.randf() < 0.5 else "")
 		if P.has("kit"):
 			scenes.arm(p, String(P["kit"]))
-		var f := PathFollow3D.new()
-		f.rotation_mode = PathFollow3D.ROTATION_Y
-		f.loop = false
-		f.h_offset = rng.randf_range(-0.02, 0.02)
-		path.add_child(f)
-		p.rotation.y = PI  # people face +z; the follower carries -z forward
-		f.add_child(p)
 		People.play(p, gait, rate)
-		follows.append([f, gap * (n - 1 - i)])
+		file.append([p, gap * (n - 1 - i), rng.randf_range(-0.02, 0.02)])
 		members.append(p)
 	if bool(P.get("torch", false)) and _dark(Data.value("roadside", "traffic.night", {})) and not members.is_empty():
 		var light := OmniLight3D.new()  # a torch held up at the head of the patrol
@@ -227,19 +216,11 @@ func party(from: Vector3, to: Vector3, kind: String, on_done := Callable()) -> b
 			for p in members:
 				if is_instance_valid(p):
 					People.play(p, gait, rate))
-	var lead := gap * n
 	var pace := float(P.get("pace", 0.2))
 	# Some are already on their way when the road comes into view: they start part way along it.
-	var start := length * rng.randf_range(0.0, 0.6) if rng.randf() < Data.num("roadside", "traffic.towns.mid", 0.5) else 0.0
-	var tw := create_tween()
-	tw.tween_method(func(v: float):
-		for fl in follows:
-			if is_instance_valid(fl[0]):
-				(fl[0] as PathFollow3D).progress = clampf(v - lead + float(fl[1]), 0.0, length), start, length + lead, clampf((length + lead - start) / pace, 8.0, 120.0))
-	tw.tween_callback(func():
-		path.queue_free()
-		if on_done.is_valid():
-			on_done.call())
+	var share := rng.randf_range(0.0, 0.6) if rng.randf() < Data.num("roadside", "traffic.towns.mid", 0.5) else 0.0
+	# In file along the road the navigation gave (Mover.road).
+	Mover.road(scenes, way, file, pace, {"min": 8.0, "max": 120.0, "start_share": share}, on_done)
 	return true
 
 

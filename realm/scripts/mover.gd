@@ -140,3 +140,67 @@ func _finish() -> void:
 static func _main() -> Node:
 	var aw: Object = Engine.get_meta("awareness") if Engine.has_meta("awareness") else null
 	return (aw as Node).get_parent() if aw is Node else null
+
+
+## A party on a road, in file (a traveller, a cart, a herd behind its herder, a patrol): the way is the one the
+## navigation gave (town_nav.route or roads.route), smoothed and laid on the ground as a Path3D, and Godot's
+## PathFollow3D carries each member along it, `offset` behind the head (and `side` across). One place for all
+## road travel. members: [[node, offset, side], ...] (nodes face +z; turned to the follower's -z here).
+## opts: start (how far along they begin) or start_share (as a share of the road), min/max (seconds for the whole road), yields (the head waits up to
+## WAIT_MAX for anyone standing in the road just ahead, ahead: how far it looks). `then` runs when they're gone.
+const WAIT_MAX := 4.0
+
+static func road(holder: Node, way: PackedVector3Array, members: Array, pace: float, opts := {}, then := Callable()) -> Path3D:
+	var main := _main()
+	if main == null or way.size() < 2:
+		return null
+	var path := Path3D.new()
+	path.name = "Road"
+	path.curve = main.scenes._on_ground(main.terrain.smooth_road(way))
+	holder.add_child(path)
+	var length: float = maxf(path.curve.get_baked_length(), 0.01)
+	var lead := 0.0
+	var follows: Array = []
+	for m in members:
+		var f := PathFollow3D.new()
+		f.rotation_mode = PathFollow3D.ROTATION_Y
+		f.loop = false
+		f.h_offset = float(m[2]) if (m as Array).size() > 2 else 0.0
+		path.add_child(f)
+		var n: Node3D = m[0]
+		n.rotation.y += PI  # the follower carries -z forward
+		f.add_child(n)
+		lead = maxf(lead, float(m[1]))
+		follows.append([f, float(m[1])])
+	var start := float(opts.get("start", length * float(opts.get("start_share", 0.0))))
+	var secs := clampf((length + lead - start) / maxf(pace, 0.001), float(opts.get("min", 15.0)), float(opts.get("max", 120.0)))
+	var tw := path.create_tween()
+	tw.tween_method(func(v: float):
+		for fl in follows:
+			if is_instance_valid(fl[0]):
+				(fl[0] as PathFollow3D).progress = clampf(v - lead + float(fl[1]), 0.0, length), start, length + lead, secs)
+	tw.tween_callback(func():
+		path.queue_free()
+		if then.is_valid():
+			then.call())
+	if bool(opts.get("yields", false)) and not follows.is_empty():
+		var head: PathFollow3D = follows[0][0]
+		var look := Timer.new()
+		look.wait_time = 0.15
+		path.add_child(look)
+		var held := [0.0]
+		var ahead_d := float(opts.get("ahead", 0.1))
+		look.timeout.connect(func():
+			if not is_instance_valid(head) or not tw.is_valid():
+				return
+			var ahead := path.to_global(path.curve.sample_baked(minf(length, head.progress + ahead_d)))
+			var blocked := false
+			for p in path.get_tree().get_nodes_in_group("people"):
+				var p3 := p as Node3D
+				if p3 and p3.is_visible_in_tree() and not head.is_ancestor_of(p3) and Vector2(p3.global_position.x - ahead.x, p3.global_position.z - ahead.z).length() < 0.07:
+					blocked = true
+					break
+			held[0] = held[0] + look.wait_time if blocked else 0.0
+			tw.set_speed_scale(0.0 if blocked and held[0] < WAIT_MAX else 1.0))
+		look.start()
+	return path
