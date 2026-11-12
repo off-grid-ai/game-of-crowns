@@ -310,7 +310,7 @@ func _order_at(kind: String, ground: Vector3) -> void:
 
 
 func _place_body(kind: String, ground: Vector3) -> Dictionary:
-	var body := {"host": selected, "order": kind}
+	var body := {"host": selected, "order": String(_row(kind).get("send", kind))}  # the bridge's name for it
 	var town: Dictionary = {} if kind == "attack" else main.towns.nearest(ground, Data.num(FILE, "town_reach", 3.0))
 	if not town.is_empty():
 		body["city"] = int(town.get("id", -1))

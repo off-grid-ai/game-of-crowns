@@ -149,8 +149,9 @@ const MOVE = "edit.unit_move, u, t, 0, nil, false, false, false, false, false";
 // where the way is shut (another's men stand there).
 const walkLua = (id, tiles) => `local u = find.unit(nil, ${id}); if u then for _, p in ipairs({${tiles.map(([x, y]) => `{${x},${y}}`).join(",")}}) do local t = find.tile(p[1], p[2]); if not t then break end; pcall(${MOVE}); if u.tile ~= t then break end end end`;
 
-// With no way over land known: up to n steps, each to the neighbouring land tile nearest the goal.
-const stepLua = (id, x, y, n) => `local u = find.unit(nil, ${id}); if u then for i = 1, ${n} do local c = u.tile; local t, bd = nil, math.max(math.abs(c.x - ${x}), math.abs(c.y - ${y})); for a in c:square_iterate(1) do local nm = a.terrain:rule_name(); local d = math.max(math.abs(a.x - ${x}), math.abs(a.y - ${y})); if d < bd and not nm:find("Ocean") and nm ~= "Lake" then t, bd = a, d end end; if not t then break end; pcall(${MOVE}); if u.tile ~= t then break end end end`;
+// With no way over land known: up to n steps, each to the neighbouring land tile nearest the goal, stopping `stop`
+// tiles short of it (1 before another's walls).
+const stepLua = (id, x, y, n, stop = 0) => `local u = find.unit(nil, ${id}); if u then for i = 1, ${n} do local c = u.tile; local t, bd = nil, math.max(math.abs(c.x - ${x}), math.abs(c.y - ${y})); if bd <= ${stop} then break end; for a in c:square_iterate(1) do local nm = a.terrain:rule_name(); local d = math.max(math.abs(a.x - ${x}), math.abs(a.y - ${y})); if d < bd and not nm:find("Ocean") and nm ~= "Lake" then t, bd = a, d end end; if not t then break end; pcall(${MOVE}); if u.tile ~= t then break end end end`;
 
 // The land as Freeciv wrote it for the reign (snapshot.lua's map.json): which tiles a host can walk.
 let land = { file: null };
@@ -188,11 +189,11 @@ function stepsTo(goal, shut = null) {
 }
 
 // The next n tiles of a company's way down the steps, or [] when it can't reach the goal over land.
-function wayOn(steps, from, n) {
+function wayOn(steps, from, n, stop = 0) {
   const out = [];
   let p = { x: from.x, y: from.y }, here = steps.at(p);
   if (here < 0) return out;
-  while (out.length < n && here > 0) {
+  while (out.length < n && here > stop) {
     let best = null;
     for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
       const q = { x: p.x + dx, y: p.y + dy };
@@ -280,8 +281,10 @@ export function season(ctx, turn) {
       continue;
     }
     for (const id of units) {
-      const way = steps ? wayOn(steps, byId.get(id), HOSTS.speed) : [];
-      send(`lua cmd ${way.length ? walkLua(id, way) : stepLua(id, o.x, o.y, HOSTS.speed)}`);
+      // A march on another's town halts at its walls (reach0): the walk never steps onto the town's own tile, where
+      // Freeciv's edit move would put the King's men inside an empty town without taking it (besiege_order_probe).
+      const way = steps ? wayOn(steps, byId.get(id), HOSTS.speed, reach0) : [];
+      send(`lua cmd ${way.length ? walkLua(id, way) : stepLua(id, o.x, o.y, HOSTS.speed, reach0)}`);
     }
     next.push({ ...o, units, far });
   }

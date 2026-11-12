@@ -5,7 +5,8 @@ extends SceneTree
 ## click through the viewport (push_input), as a player's. Asserts:
 ##   - the card has march, attack, besiege, hold and go home, each with its key;
 ##   - Attack waits for a click, then asks the bridge {order attack, host, x, y} where the foe stands (never a town);
-##   - Besiege waits for a click, then asks {order besiege, host, city} for the town clicked;
+##   - Besiege waits for a click, then asks the bridge's {order march, host, city} for the town clicked (a march on a
+##     foe's town lays siege on arrival: bridge/hosts.js, campaigns.js; tools/besiege_order_probe.mjs takes it on);
 ##   - Hold and Go home are asked at once;
 ##   - a right-drag asks {order march, x, y, face}: the line's middle, facing up the screen for a left-to-right drag;
 ##     a right-click still marches, with no face;
@@ -176,7 +177,7 @@ func _run() -> void:
 	_check(hc._aim == "besiege", "Besiege waits for a click")
 	hc.take_click(Vector3(4.3, 0, 0.2))
 	var b: Dictionary = asked.back()
-	_check(b.get("order") == "besiege" and int(b.get("city", -1)) == int(TOWN["id"]), "Besiege asks for the town: %s" % b)
+	_check(b.get("order") == "march" and int(b.get("city", -1)) == int(TOWN["id"]), "Besiege asks the bridge's march on the town (it lays siege on arrival): %s" % b)
 
 	# Hold and Go home at once.
 	for k in ["hold", "return"]:
