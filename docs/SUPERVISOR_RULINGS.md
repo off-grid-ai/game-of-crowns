@@ -2,6 +2,8 @@
 
 Messages from the supervisor pause after 10 sends while Mac isn't typing. Rulings land here instead. Newest first.
 
+- (11-12 17:25) **Commit messages are private too.** A take-back message from one thread landed on another thread's commit (b4263e5b). Write each message to your own `mktemp` file and `git commit -F` that file; never use .git/COMMIT_EDITMSG or a fixed /tmp path. Commit = private index + private message + HEAD == base check.
+
 - (11-12 17:00) **sound_probe fails 3 checks on HEAD (bonfire, siege, muster)**, from before c81900fe. One store owns it after rules_check: bisect, then fix at the owner or send the owner the cause.
 
 - (11-12 16:55) **Town life, next in order:** (1) town_scenes.gd:1495 Follow._tick on a freed instance (ruling 16:50); (2) yes, the rest of #15: town_scenes.gd's 7 match chains (anchors, forms) into data tables, one commit per chain, square_probe and director_probe passing.
