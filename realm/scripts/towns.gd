@@ -55,7 +55,7 @@ func _ready() -> void:
 ## the screen, and a season's growth never stalls the game.
 func sync(houses: Dictionary) -> void:
 	var st: Node = Awareness.store()
-	_raise_banners()
+	banners.raise()
 	_road_tiles.clear()
 	_cities = st.rec("cities", [])
 	for r in st.rec("roads", []):
@@ -255,6 +255,8 @@ var _trades: Array = []  # the town being built's trades (town_trades.gd plan), 
 const Fields = preload("res://scripts/countryside.gd")  # crops, and fields that line up with their soil
 const TownPlots = preload("res://scripts/town_plots.gd")  # roads, burgage plots and lanes (--towns=plots)
 const TownFields = preload("res://scripts/town_fields.gd")  # the fields and orchards out past the plots
+const TownBanners = preload("res://scripts/town_banners.gd")  # a house's banners, raised as high as its favour
+var banners: RefCounted = TownBanners.new(self)  # that job, over this builder's towns
 var fields: RefCounted = TownFields.new(self)  # that job, given this builder's placing and ground
 var _ways_grid: AStarGrid2D  # the cost grid the town's roads were laid on, kept for its lanes (laid after the castle)
 
@@ -520,7 +522,7 @@ func _real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds
 					terrain.clear_around(center + cp, f.length() * 0.5 + 0.8)
 					lots.append([cp, maxf(f.x, f.y) * 0.55])
 					# The castle's standard, to the castle's scale: over the keep, not taller than its towers.
-					_banner(root, cp + Vector3(0, cy + 0.9 * scale, 0), _house_colour, _house, 0.6 * scale)
+					banners.stand(root, cp + Vector3(0, cy + 0.9 * scale, 0), _house_colour, _house, 0.6 * scale)
 					_door(root, cp, f, "great_hall", "great hall")
 					root.set_meta("castle_frame", [cp, castle.rotation.y, f, cy])  # the bailey's dressing reads it (dressing.gd bailey)
 					_bailey(root, cp, cy, castle.rotation.y, rng)
@@ -2759,10 +2761,10 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 	if c.get("family") is String and not c["capital"] and not house.get("crown", false):
 		family = preload("res://scripts/heraldry.gd").family(String(c["family"]))
 	if not stone:
-		_banner(root, keep_off + Vector3(0, _ground_y(center, keep_off) + (2.0 if c["capital"] else 1.75), 0), color, house if family.is_empty() else family, 1.1)  # big enough to read its favour from afar
+		banners.stand(root, keep_off + Vector3(0, _ground_y(center, keep_off) + (2.0 if c["capital"] else 1.75), 0), color, house if family.is_empty() else family, 1.1)  # big enough to read its favour from afar
 	if not family.is_empty():
 		var sq := -keep_off.normalized() * (square_r + 0.15)
-		_banner(root, sq + Vector3(0, _ground_y(center, sq), 0), color, family if stone else house, 0.85)
+		banners.stand(root, sq + Vector3(0, _ground_y(center, sq), 0), color, family if stone else house, 0.85)
 
 	# Great buildings take their places around the square. A realistic town's
 	# church, hall and tavern are already on its square, from the kit.
@@ -2902,74 +2904,6 @@ func _built_on(root: Node3D, p: Vector3) -> bool:
 		if Geometry2D.is_point_in_polygon(Vector2(p.x, p.z), fp):
 			return true
 	return false
-
-func _banner(root: Node3D, pos: Vector3, color: Color, house: Dictionary, height := 0.65) -> void:
-	var b: Node3D = preload("res://scripts/heraldry.gd").standard(house, color, height)
-	b.position = pos
-	root.add_child(b)
-	# The house's banners show its favour: kept for raising and lowering.
-	var flag := b.get_node_or_null("Banner")
-	if flag:
-		var all: Array = root.get_meta("banners", [])
-		all.append(flag)
-		root.set_meta("banners", all)
-		flag.set_meta("top", flag.position.y)
-		_hoist(flag, _banner_at.get(int(root.get_meta("owner", -1)), 1.0), false)
-		_fringe(flag, _sworn.get(int(root.get_meta("owner", -1)), false))
-
-
-## Every decision is seen (GAME_DESIGN pillar 3): a house's banners stand as
-## high as its favour toward the crown. Full height when loyal, half-mast when
-## cooling, near the ground when it may rise; the cloth slides when it changes.
-var _banner_at := {}  # house id -> 0..1 of the pole
-var _sworn := {}  # house id -> true while sworn to the crown (its banners' gold fringe)
-
-
-static func banner_height(favour) -> float:
-	if favour == null:
-		return 1.0  # the crown's own towns, and houses with no favour
-	var f := float(favour)
-	return 1.0 if f >= 60.0 else (0.8 if f >= 35.0 else (0.5 if f >= 25.0 else 0.18))
-
-
-func _hoist(flag: Node3D, frac: float, slide := true) -> void:
-	var top: float = flag.get_meta("top", flag.position.y)
-	var y := lerpf(0.04, top, frac)
-	if is_equal_approx(float(flag.get_meta("at", -1.0)), frac):
-		return
-	flag.set_meta("at", frac)
-	if slide and flag.is_inside_tree():
-		flag.create_tween().tween_property(flag, "position:y", y, 3.0).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	else:
-		flag.position.y = y
-
-
-func _raise_banners() -> void:
-	var st: Node = Awareness.store()
-	var by_owner := {}
-	var sworn := {}
-	for p in st.rec("players", []):
-		by_owner[int(p.get("id", -1))] = banner_height(p.get("favour"))
-		sworn[int(p.get("id", -1))] = p.get("sworn") != null
-	_banner_at = by_owner
-	_sworn = sworn
-	for id in towns:
-		var root: Node3D = towns[id]["node"]
-		if not is_instance_valid(root):
-			continue
-		var frac: float = by_owner.get(int(root.get_meta("owner", -1)), 1.0)
-		var oath: bool = sworn.get(int(root.get_meta("owner", -1)), false)
-		for flag in root.get_meta("banners", []):
-			if is_instance_valid(flag):
-				_hoist(flag, frac)
-				_fringe(flag, oath)
-
-
-## A sworn house's banners carry a gold fringe (banner_cloth.gdshader).
-func _fringe(flag: Node, on: bool) -> void:
-	for g in ([flag] if flag is GeometryInstance3D else flag.find_children("*", "GeometryInstance3D", true, false)):
-		(g as GeometryInstance3D).set_instance_shader_parameter("fringe", 1.0 if on else 0.0)
-
 
 static var _dot: Texture2D
 

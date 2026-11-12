@@ -100,7 +100,7 @@ func _dress(id: int, root: Node3D, castle: Node3D) -> void:
 	for t in Builder.towers(sp):
 		var top: Vector3 = xf * (t["at"] + Vector3(0, float(t["top"]) + float(bk.get("lift", 2.6)), 0))
 		if main.towns.has_method("_banner"):
-			main.towns._banner(root, root.to_local(top), colour, house, float(bk.get("size", 0.32)) * scale)
+			main.towns.banners.stand(root, root.to_local(top), colour, house, float(bk.get("size", 0.32)) * scale)
 	# The house's painted arms where the kit hung plain cloth: down the keep's face, either side of the gate.
 	_arms(xf, sp, house, colour, d)
 	# A guard on each curtain's walk.
