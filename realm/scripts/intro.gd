@@ -100,6 +100,15 @@ func play(houses: Array, seats: Dictionary) -> void:
 		page.call("walk", "Then step down from the throne", "Take any lord's place. Walk the streets, talk to anyone, push into the tavern, and draw steel when talking fails.", {}, "Every control is in Settings", home, 3.0)
 	for tip in TIPS:
 		page.call("tip_" + tip[0], tip[1], tip[2], {}, tip[3], Vector2(0.3 + randf() * 0.4, 0.2 + randf() * 0.6), 2.0)
+	# The v2 opening: a short storybook (data/opening.json storybook: the land, Kingsmere is yours, the court), and no
+	# key strips on its pages (the game decides; no key help on screen).
+	if preload("res://scripts/opening.gd").v2():
+		var keep: Array = preload("res://scripts/data.gd").value("opening", "storybook", [])
+		if not keep.is_empty():
+			_pages = _pages.filter(func(p): return String(p[0]) in keep)
+		if not bool(preload("res://scripts/data.gd").value("opening", "storyKeys", false)):
+			for p in _pages:
+				p[4] = ""
 	_build()
 	visible = true
 	# The intro covers the screen: the realm behind it need not be drawn while

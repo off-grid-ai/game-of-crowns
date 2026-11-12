@@ -66,6 +66,12 @@ func _tell_the_story() -> void:
 		# The v2 opening: the King is in his realm now; the first court may sit (Reigns' first card).
 		if main.ui.visible and preload("res://scripts/opening.gd").v2():
 			main.bridge.opening("realm")
+			# The crowning: the castle, the royal standard rising, the bells, his name (crowning.gd).
+			var Crowning := preload("res://scripts/crowning.gd")
+			if Crowning.on():
+				var c = Crowning.new(main)
+				main.add_child(c)
+				c.play()
 			if main.hand_prompts:
 				main.hand_prompts.landed(), CONNECT_ONE_SHOT)
 	main.intro.watching = _back_to_menu

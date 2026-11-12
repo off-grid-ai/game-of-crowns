@@ -487,7 +487,8 @@ func _build_top_bar() -> void:
 	_chron_btn = ui.icon_btn("scroll", ui.with_key("Chronicle of the realm", "chronicle"), func(): ui._chron_panel.visible = _chron_btn.button_pressed)
 	_chron_btn.toggle_mode = true
 	act.add_child(ui.named(_chron_btn, "Chronicle"))
-	act.add_child(ui.named(ui.icon_btn("book-open-text", ui.with_key("The Lore of Aldmere: its houses and people", "lore"), func(): ui.lore_opened.emit(-1)), "Lore"))
+	_lore_btn = ui.icon_btn("book-open-text", ui.with_key("The Lore of Aldmere: its houses and people", "lore"), func(): ui.lore_opened.emit(-1))
+	act.add_child(ui.named(_lore_btn, "Lore"))
 	_ledger_btn = ui.icon_btn("chart-line", ui.with_key("The ledger: the realm over time", "ledger"), ui._toggle_ledger)
 	_ledger_btn.toggle_mode = true
 	act.add_child(ui.named(_ledger_btn, "Ledger"))
@@ -519,6 +520,32 @@ var _ways := {}  # reading -> its arrow
 var _earning: Label
 var _last_act: Label  # the last act's threat, named at three quarters of the reign
 var _aim: Label  # the royal ladder's current aim
+var _lore_btn: Button
+var _season := ""  # the realm's season, as last read
+var _winter_seen := false  # the reign's first winter has come (the first ten minutes end)
+
+
+## The first ten minutes (docs/review/first-ten-minutes.md; Frostpunk's one goal with its pressure on screen): until
+## the first winter, the date card's aim is one goal with its countdown, "Hold the realm whole · winter in N seasons";
+## and with UI v2, the keys that don't matter yet (data/opening.json hideUntilWinter) rest hidden, their keys still
+## working, each back with the winter. The v2 opening only; words in data/opening.json tracker.
+func _first_ten() -> void:
+	if not preload("res://scripts/opening.gd").v2():
+		return
+	if _season == "winter":
+		_winter_seen = true
+	var cfg: Dictionary = preload("res://scripts/data.gd").value("opening", "tracker", {})
+	if not _winter_seen and bool(cfg.get("on", false)) and _season != "":
+		var n: int = {"spring": 3, "summer": 2, "autumn": 1}.get(_season, 0)
+		_aim.visible = true
+		_aim.text = "◆ %s" % (String(cfg.get("text", "Hold the realm whole · winter in %d seasons")) % n if n > 1 else String(cfg.get("one", "Hold the realm whole · winter next season")))
+		_aim.tooltip_text = "Hold the realm whole to the first winter"
+		_aim_at = -1
+	if UI.v2():
+		var hide: Array = preload("res://scripts/data.gd").value("opening", "hideUntilWinter", [])
+		for pair in [["Lore", _lore_btn], ["Ledger", _ledger_btn]]:
+			if pair[1] and String(pair[0]) in hide:
+				(pair[1] as Button).visible = _winter_seen
 var _aim_at := -1  # the town where the aim is acted on, opened by a click
 var _aim_how: HBoxContainer  # how far along the aim is: a fill and a count
 var _aim_fill: ColorRect
@@ -596,6 +623,7 @@ func _show_heading(r: Dictionary) -> void:
 		_aim_at = int(aim["at"]) if aim.get("at") != null else -1
 		if _aim_at >= 0:
 			_aim.tooltip_text += "\nClick to go there"
+	_first_ten()
 	var prog = aim.get("progress") if aim is Dictionary else null
 	_aim_how.visible = prog is Dictionary
 	if prog is Dictionary:
@@ -632,6 +660,10 @@ func _show_heading(r: Dictionary) -> void:
 ## The realm's numbers in the bar and the reign's line under the date, from the
 ## world as the realm reports it (ui.set_world hands over the crown's report).
 func _show_world(world: Dictionary, c: Dictionary) -> void:
+	var date = world.get("date")
+	if date is Dictionary:
+		_season = String(date.get("season", ""))
+		_first_ten()
 	# What the crown takes in each season, net of the court and castles: where money comes from.
 	var net := int(c.get("perSeason", 0)) * UI.CROWNS
 	var sum := int(c.get("treasury", 0)) * UI.CROWNS

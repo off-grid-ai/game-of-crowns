@@ -219,3 +219,13 @@ retarget at import), then `arch -arm64 godot --headless --path realm -s res://to
     hands meeting the hammer, the basket and the seed.
 60. **The inn's benches in war** (`{"city": id, "mood": "war"}`, `work Kingsmere inn`): the guard's Sitting_Drinking
     (the clip the CPU proxy couldn't hold).
+
+## The first ten minutes (docs/review/first-ten-minutes.md; --opening=v1 before)
+
+14. **A new reign from the title** (`--new`, then Begin; a play file that waits through the storybook and snaps at
+    +2, +5, +8 s after it ends, `snap name ui`): three storybook pages, no key strips; the camera on Kingsmere's
+    castle, the royal standard rising on the keep, "Long live <name>, King of Aldmere" over the realm, then the
+    Hand. Judge: the King feels crowned in the first minute; one line, not a pop-up.
+15. **The date card's goal** (`snap name ui` at +20 s): "Hold the realm whole · winter in N seasons", counting down;
+    with `--ui=v2` the lore and ledger keys hidden until the winter (their keys still work).
+16. **The first card** (+60 s): the Hand's "A lord asks for you. Follow the gold arrow." with the edge arrow on.
