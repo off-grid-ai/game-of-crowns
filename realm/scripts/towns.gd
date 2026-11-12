@@ -763,11 +763,13 @@ func _lay_ways(root: Node3D, center: Vector3, c: Dictionary, size: int, square_r
 			headings.append(atan2(to.z, to.x))
 	# The King's road and the lords' roads (roads.gd kings_road) come in too: the town's streets
 	# run where they leave, so they come in along a street instead of cutting through the plots.
+	var great: Array = []  # the headings the realm's great roads come in by: the first to reach the square
 	for t: Vector2i in _great_ways(c):
 		var to: Vector3 = terrain.world_pos(float(t.x), float(t.y)) - center
 		var ang := atan2(to.z, to.x)
 		if headings.all(func(h): return absf(angle_difference(float(h), ang)) > 0.35):
 			headings.append(ang)
+		great.append(ang)
 	for ang in streets:  # the town's own ways out (to its fields, its water), where the realm's are few
 		if headings.size() >= maxi(2, streets.size() - 1):
 			break
@@ -782,7 +784,22 @@ func _lay_ways(root: Node3D, center: Vector3, c: Dictionary, size: int, square_r
 	var height := func(p: Vector2) -> float: return _ground_y(center, Vector3(p.x, 0, p.y))
 	var land := func(p: Vector2) -> bool: return terrain.is_land(center.x + p.x, center.z + p.y)
 	_ways_grid = TownPlots.grid(edge + 1.2, height, land, rng.seed + 13)
-	var main: Array = TownPlots.roads(headings, square_r, edge, _ways_grid, land)
+	var main: Array = []
+	# 01-town: the main street and one or two lanes into the square, no more (round 4: eleven ways met at
+	# Kingsmere's square and left its fronts no room). At most plots.square_roads.most roads run into the
+	# square, the realm's great roads first; the rest start at the first ring street (plots.rings), which
+	# carries them round to it. --square-roads=all: every road to the square, as before.
+	var sr: Dictionary = pk.get("square_roads", {})
+	var radii: Array = pk.get("rings", [])
+	var most := int(sr.get("most", 0))
+	if most > 0 and headings.size() > most and not radii.is_empty() and not OS.get_cmdline_user_args().has("--square-roads=all"):
+		var ranked: Array = headings.duplicate()
+		ranked.sort_custom(func(a, b): return great.any(func(g): return absf(angle_difference(float(g), float(a))) < 0.35) and not great.any(func(g): return absf(angle_difference(float(g), float(b))) < 0.35))
+		var start := square_r + float(radii[0]) - float(sr.get("into_ring", 0.15))
+		main = TownPlots.roads(ranked.slice(0, most), square_r, edge, _ways_grid, land)
+		main += TownPlots.roads(ranked.slice(most), start / 0.9, edge, _ways_grid, land)  # roads() starts a road at 0.9 of the radius it's given
+	else:
+		main = TownPlots.roads(headings, square_r, edge, _ways_grid, land)
 	root.set_meta("ways_main", main)
 	root.set_meta("crown_seat", crown_town)
 	root.set_meta("seat", bool(c.get("capital", false)))
