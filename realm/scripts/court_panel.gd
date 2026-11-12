@@ -23,12 +23,12 @@ var _opened_at := Vector3.INF  # the place of the matter the King opened from it
 ## in (the court sits) / decide (who asks, what they want, the Hand's view, the answers
 ## with what each costs and whom it moves) / see it (the card turns over to what the
 ## ruling did) / out (the next, or the doors close once).
-## On by default now (the professional audit: the card shrinks after a ruling, painted faces); --court=old brings back the old flow.
-static var ONE: bool = not OS.get_cmdline_user_args().has("--court=old")
+## The one court flow (the professional audit: the card shrinks after a ruling, painted faces); the old flow is gone
+## (integration audit #8).
 const HAND_FACE := {"id": "the-hand-of-the-king", "gender": "male", "age": 62}  # the Hand's own painted face, the same every reign
 const FACE_SIZE := Vector2(96, 128)  # a painted face the eye goes to first (CK3's event portrait), not a 40 px figure
 const PaintedFaces := preload("res://scripts/painted_faces.gd")
-var _seeing: Dictionary = {}  # the matter just ruled, while the card shows what it did (ONE)
+var _seeing: Dictionary = {}  # the matter just ruled, while the card shows what it did
 var _doors_shut := false  # the doors-close word said once a sitting
 var _FAVOUR_RE := RegEx.create_from_string("((?:House|The) [A-Z][a-z]+)\\s*([+−-]\\d+)")  # "House Thornvale +15" in an answer's hint
 
@@ -281,7 +281,7 @@ func _show_audience() -> void:
 	var here: Vector3 = ui.place_of.call(p)
 	# One court flow: a matter with a place is decided at it, on the map (CK3/KoDP's card in
 	# the world): the King's own press (the court, Next) frames its town, and the card stands by it.
-	if ONE and pressed and here != Vector3.INF and _opened_at != here:
+	if pressed and here != Vector3.INF and _opened_at != here:
 		_opened_at = here
 		ui.matter_opened.emit(here)
 	if _opened_at != Vector3.INF and here == _opened_at:
@@ -313,7 +313,7 @@ func _show_audience() -> void:
 	head.add_theme_constant_override("separation", T.GAP_WIDE)
 	v.add_child(head)
 	# The court's own sitting, or the Hand calling the King in between for a crisis.
-	var where := ("The Hand calls you" if p.get("push", false) and not ONE else "The court sits") + "  ·  the realm holds still"
+	var where := "The court sits  ·  the realm holds still"
 	var who := T.label(where + ("  ·  %s" % p["house"] if String(p.get("house", "")) != "" else ""))
 	who.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	head.add_child(who)
@@ -570,14 +570,12 @@ func _realm_matter(v: VBoxContainer, it: Dictionary) -> void:
 	var answers: Array[Button] = []  # its answers: choosing one settles it
 	# Weighed by the bridge (the same order run dry): each answer on a row of its own,
 	# who it helps and hurts under it, so the choice is a dilemma, not a menu.
-	var weighed: bool = ONE or (it.get("acts", []) as Array).any(func(x): return x is Dictionary and x.get("weighs") is Dictionary)
-	if weighed:
-		var rows := VBoxContainer.new()
-		rows.add_theme_constant_override("separation", T.GAP)
-		v.remove_child(acts)
-		acts.queue_free()
-		acts = rows
-		v.add_child(rows)
+	var rows := VBoxContainer.new()
+	rows.add_theme_constant_override("separation", T.GAP)
+	v.remove_child(acts)
+	acts.queue_free()
+	acts = rows
+	v.add_child(rows)
 	for a in it.get("acts", []):
 		var act: Dictionary = a
 		var w = act.get("weighs")
@@ -708,15 +706,7 @@ func _settled(it: Dictionary) -> void:
 	_petitions = _petitions.filter(func(p): return String(p["id"]) != String(it["id"]))
 	ui._court_badge.text = str(_petitions.size())
 	ui._court_waiting_shown(_petitions.size())
-	if ONE:
-		_see_it(it)
-		return
-	await ui.get_tree().create_timer(0.8).timeout
-	if _petitions.is_empty():
-		_court_panel.visible = false
-		_close_doors()
-	elif _court_panel.visible:
-		_show_audience()
+	_see_it(it)
 
 
 var _spoken := ""
@@ -791,7 +781,7 @@ func _answer(id: String, option: String) -> void:
 	_petitions = _petitions.filter(func(x): return String(x["id"]) != id)
 	ui._court_badge.text = str(_petitions.size())
 	ui._court_waiting_shown(_petitions.size())
-	if ONE and not it.is_empty():
+	if not it.is_empty():
 		_see_it(it)
 		return
 	_kings_press = true  # his own answer: on to the next matter, at its place
@@ -808,7 +798,7 @@ func _close_doors() -> void:
 	ui.court_closed.emit()
 
 
-## See it (ONE): the card turns over to what the ruling did, in the realm's words as
+## See it: the card turns over to what the ruling did, in the realm's words as
 ## the bridge tells it (result_here). It stays until the King moves on (the player owns
 ## the clock): one press, a click or Enter, brings the next matter or closes the doors.
 func _see_it(it: Dictionary) -> void:
@@ -847,7 +837,7 @@ func _see_it(it: Dictionary) -> void:
 	_court_panel.reset_size.call_deferred()
 
 
-## What the bridge said the ruling did, put on the card that's showing it (ONE).
+## What the bridge said the ruling did, put on the card that's showing it.
 ## True when the card took it, so it isn't also a toast.
 func result_here(ok: bool, text: String) -> bool:
 	if _seeing.is_empty() or not _court_panel.visible:
