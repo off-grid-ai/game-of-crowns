@@ -14,7 +14,7 @@ extends Node3D
 ## Made of blocks: Kenney's Castle Kit (CC0: the engines with their own arm nodes, the ram, the tower, the
 ## palisade), the realistic kit's wagons, barrels, crates and fire pits, fire.gd's flames. The tents are
 ## Godot's PrismMesh in the house's canvas: no tent model is on disk (Kenney's Survival Kit, CC0, has them).
-## Knobs: data/siege.json. Switch: --camp=on|off, on with --wall-demo, or siege.json on.
+## Knobs: data/siege.json. Pitched with every siege (scenes.gd _siege).
 
 const Data := preload("res://scripts/data.gd")
 const Real := preload("res://scripts/realistic.gd")
@@ -34,16 +34,6 @@ var _stone_mesh: SphereMesh
 var _stone_mat: StandardMaterial3D
 var _wood: Material
 var _rolling := []  # the ram and the tower on their way to the wall: {node, kind, crew, to, from, t, dur, beat}
-
-
-## On for this run? --camp=on/off, on with the wall demo, else siege.json on.
-static func on() -> bool:
-	var args := OS.get_cmdline_user_args()
-	if args.has("--camp=off"):
-		return false
-	if args.has("--camp=on") or args.has("--wall-demo"):
-		return true
-	return bool(Data.value("siege", "on", false))
 
 
 ## The camp pitched for a siege of the town at `town`: `middle` the angle its middle stands at, `line` where

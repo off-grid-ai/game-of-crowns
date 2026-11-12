@@ -25,6 +25,10 @@ export function besiegers(ctx, c) {
   return (world?.units ?? []).filter((u) => u.owner !== c.owner && !CIVILIAN.has(u.type) && Math.max(Math.abs(u.x - c.x), Math.abs(u.y - c.y)) === 1);
 }
 
+// The siege engines among a host's companies (Freeciv's catapults and trebuchets): the camp builds as many.
+const ENGINE = /Catapult|Trebuchet|Cannon|Artillery/;
+export const engines = (units) => units.filter((u) => ENGINE.test(u.type)).length;
+
 export function sieges(ctx) {
   const { world, scene, record } = ctx;
   if (!world?.units || !world?.cities) return;
@@ -35,11 +39,24 @@ export function sieges(ctx) {
     for (const u of near) counts[u.owner] = (counts[u.owner] ?? 0) + 1;
     const owner = Number(Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0]);
     if (ctx.scenes.some((x) => x.kind === "siege" && x.city === c.id && x.turn === world.turn)) continue;
-    const engines = near.filter((u) => /Catapult|Trebuchet|Cannon|Artillery/.test(u.type)).length;
-    scene("siege", { x: c.x, y: c.y, city: c.id, owner, defender: c.owner, size: near.length, engines, ax: near[0].x, ay: near[0].y });
+    scene("siege", { x: c.x, y: c.y, city: c.id, owner, defender: c.owner, size: near.length, engines: engines(near), ax: near[0].x, ay: near[0].y });
     const first = !ctx.scenes.some((x) => x.kind === "siege" && x.city === c.id && x.turn === world.turn - 1);
     if (first) record({ turn: world.turn, kind: "battle", text: `${houseFor(world.players.find((p) => p.id === owner)).name} lays siege to ${cityName(c.id)} with ${near.length} companies.`, city: c.id });
   }
+}
+
+// Freeciv's assault on a town (realmrules/script.lua realm_assault's "assault" EVENT: the men at the walls, the blows
+// Freeciv let land, the town's owner after) as the view's storm scene (scenes.gd storm): who stormed and who held,
+// and whether Freeciv gave the stormers the town (or razed it). The view storms the siege it shows and ends it so;
+// it decides nothing. null for a town that isn't there.
+export function stormScene(world, ev, crownId) {
+  const town = (world?.cities ?? []).find((c) => c.id === Number(ev.city));
+  if (!town) return null;
+  const after = Number(ev.owner);
+  const near = besiegers({ world }, town).filter((u) => u.owner === crownId);
+  return { x: town.x, y: town.y, city: town.id, owner: crownId, defender: town.owner, men: Number(ev.men), blows: Number(ev.blows),
+    taken: after === crownId || after < 0, engines: engines(near),
+    ax: near[0]?.x ?? town.x + 1, ay: near[0]?.y ?? town.y };
 }
 
 // --- Oaths and the royal host ------------------------------------------------------

@@ -1,7 +1,7 @@
 extends Node3D
 const Mover := preload("res://scripts/mover.gd")  # the one way to move (CLAUDE.md)
 const Particles := preload("res://scripts/particles.gd")  # smoke and fire on the GPU
-const SiegeCamp := preload("res://scripts/siege_camp.gd")  # the besiegers' camp and engines (--camp=on)
+const SiegeCamp := preload("res://scripts/siege_camp.gd")  # the besiegers' camp and engines
 const Fire := preload("res://scripts/fire.gd")  # fire v2: shaped flames, smoke and burnt houses
 ## The scene director: turns what just happened in Freeciv into something you
 ## can watch where it happened. Battles clash and leave the fallen; sacked
@@ -28,7 +28,6 @@ var _seen := {}  # scene key -> true, so each event plays once
 var _wagon: Mesh
 var _sieges := {}  # city id -> {root, until}: one camp per besieged town, kept while the host stays
 var _timber: StandardMaterial3D
-var _engines := [load(Realistic.path_of("catapult")), load(Realistic.path_of("trebuchet"))]  # by component (realm/data/assets.json)
 
 
 func _ready() -> void:
@@ -111,6 +110,16 @@ func sync(world: Dictionary, houses: Dictionary) -> void:
 						city = c
 				var approach: Vector3 = terrain.world_pos(float(s.get("ax", s["x"])), float(s.get("ay", s["y"])))
 				_siege(int(s["city"]), at, approach, int(city.get("size", 4)), int(s.get("engines", 0)), houses.get(int(s.get("owner", -1)), {}), houses.get(int(s.get("defender", -1)), {}), Awareness.season_seconds)
+			"storm":
+				# Freeciv's assault on a town (the bridge's storm scene, campaigns.js stormScene): the siege shown there
+				# storms and ends as Freeciv decided; pitched first when the view has none there yet.
+				var stormed := int(s["city"])
+				var town_size := 4
+				for c in world.get("cities", []):
+					if int(c["id"]) == stormed:
+						town_size = int(c.get("size", 4))
+				_siege(stormed, at, terrain.world_pos(float(s.get("ax", s["x"])), float(s.get("ay", s["y"]))), town_size, int(s.get("engines", 0)), houses.get(int(s.get("owner", -1)), {}), houses.get(int(s.get("defender", -1)), {}), Awareness.season_seconds)
+				storm(stormed, bool(s.get("taken", false)))
 			"grain", "tribute":
 				follow = _convoy(at, terrain.world_pos(float(s["tx"]), float(s["ty"])), s["kind"] == "grain", "", s)
 			"muster":
@@ -760,23 +769,10 @@ func _siege(id: int, at: Vector3, approach: Vector3, size: int, engines: int, fo
 			root.add_child(f)
 			arm(f, "spear" if i % 2 == 0 else "sword")
 			people.play(f, "Sword_Idle" if r.randf() < 0.6 else "Idle", r.randf_range(0.8, 1.1))
-	# The camp and its engines (siege_camp.gd, --camp=on): tents, palisade, fires, wagons, and engines built on
-	# the spot and worked by their crews, their stones driving the wall's fall. Else the engines as before.
-	var camp: Node3D = null
-	if SiegeCamp.on():
-		camp = SiegeCamp.new()
-		camp.pitch(self, root, at, base, camp_r, foe_col, engines, r)
-	for e in (0 if camp else clampi(maxi(engines, 1), 1, 3)):
-		var a := (e - 1) * 0.45 + r.randf_range(-0.05, 0.05)
-		var ep: Vector3 = arc.call(a, camp_r + 0.75)
-		var engine: Node3D = _engines[e % 2].instantiate()
-		root.add_child(engine)
-		_fit(engine, 0.7)
-		_weather(engine)
-		engine.position = ep
-		var to_town := at - ep
-		engine.rotation.y = atan2(to_town.x, to_town.z) + PI
-		_volley(root, ep + Vector3(0, 0.35, 0), at, reach * 0.8, r, 4.0 + e * 1.3)
+	# The camp and its engines (siege_camp.gd): tents, palisade, fires, wagons, and the bridge's engines (Freeciv's
+	# catapults and trebuchets at the walls) built on the spot and worked by their crews.
+	var camp: Node3D = SiegeCamp.new()
+	camp.pitch(self, root, at, base, camp_r, foe_col, engines, r)
 	# The defenders on the walls, facing out toward the host: archers and
 	# spearmen turn about.
 	var archers := []
@@ -805,7 +801,9 @@ func _siege(id: int, at: Vector3, approach: Vector3, size: int, engines: int, fo
 		print("SIEGE staged: parties=%d" % 2)
 	for party in 2:
 		parties.append(_assault(arc, (party - 0.5) * 0.5, camp_r, wall))
-	ArmyAssault.new().start(self, root, r, foe_col, parties, [3.0, 9.0], held_col, at)  # held_col: the block behind a breach; at: the town the storm torches
+	var assault := ArmyAssault.new()
+	assault.start(self, root, r, foe_col, parties, [3.0, 9.0], held_col, at)  # held_col: the block behind a breach; at: the town the storm torches
+	_sieges[id]["assault"] = assault
 	var loose := Timer.new()
 	loose.wait_time = 2.6
 	loose.autostart = true
@@ -950,52 +948,6 @@ func _field_cost(c: Vector3, roads) -> float:
 	return cost
 
 
-## Stones in flight on a loop: each arcs from the engine to a point inside the
-## walls, lands with a puff of dust, and now and then sets a roof alight.
-func _volley(root: Node3D, from: Vector3, at: Vector3, spread: float, r: RandomNumberGenerator, every: float) -> void:
-	var stone := MeshInstance3D.new()
-	var sm := SphereMesh.new()
-	sm.radius = 0.035
-	sm.height = 0.07
-	stone.mesh = sm
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(0.35, 0.33, 0.3)
-	stone.material_override = mat
-	stone.visible = false
-	root.add_child(stone)
-	var shoot := func():
-		var land := ground(at + Vector3(r.randf_range(-spread, spread), 0, r.randf_range(-spread, spread)))
-		# Stone walls (walls.gd, --walls=stone): a stone aimed at a wall's doomed stones strikes it.
-		var walls: Node = Engine.get_meta("stone_walls") if Engine.has_meta("stone_walls") else null
-		var on_wall: Vector3 = walls.aim(from) if walls else Vector3.INF
-		if on_wall != Vector3.INF:
-			land = on_wall
-		var top := maxf(from.y, land.y) + from.distance_to(land) * 0.45
-		stone.visible = true
-		var tw := stone.create_tween()
-		tw.tween_method(func(t: float):
-			var p := from.lerp(land, t)
-			p.y = lerpf(from.y, land.y, t) + (top - maxf(from.y, land.y)) * 4.0 * t * (1.0 - t)
-			stone.position = p, 0.0, 1.0, 1.6)
-		tw.tween_callback(func():
-			stone.visible = false
-			if on_wall != Vector3.INF and is_instance_valid(walls):
-				walls.strike(land, (land - from).normalized())  # its own dust and falling stones
-				return
-			var d := _puffs(Color(0.5, 0.45, 0.38, 0.22), 6, 1.0, 0.04, 0.1)
-			d.one_shot = true
-			d.explosiveness = 0.9
-			d.position = land + Vector3(0, 0.05, 0)
-			var gd := Particles.to_gpu(d)
-			root.add_child(gd)
-			gd.emitting = true)
-	var t := Timer.new()
-	t.wait_time = every
-	t.autostart = true
-	t.timeout.connect(shoot)
-	root.add_child(t)
-
-
 ## Six men leave the camp behind their raised shields, run the last stretch,
 ## fight at the foot of the walls and fall back, leaving a man or two there.
 ## The camp sends a fresh man in each one's place before the next rush.
@@ -1037,6 +989,20 @@ func _fit(n: Node3D, height: float) -> void:
 
 
 ## Breaks a camp up once the host has moved on.
+## Freeciv's assault on the siege of town `id` (the storm scene; the shot harness's --siege=taken|held): its parties
+## and massed host storm, and it ends as Freeciv decided (army_assault.gd storm). A siege still being pitched (its
+## town not up yet) storms once it stands.
+func storm(id: int, taken: bool) -> void:
+	var s: Dictionary = _sieges.get(id, {})
+	if s.is_empty():
+		return
+	var a = s.get("assault")
+	if a != null and is_instance_valid(a):
+		a.storm(taken)
+	else:
+		get_tree().create_timer(1.0).timeout.connect(storm.bind(id, taken))
+
+
 func _siege_watch(id: int) -> void:
 	var t := Timer.new()
 	t.wait_time = 2.0

@@ -141,9 +141,13 @@ func _parse_args() -> void:
 			main._framed = true
 		elif a.begins_with("--digest="):
 			_shot["digest"] = int(a.substr(9))
-		elif a == "--siege":
+		elif a == "--siege" or a.begins_with("--siege="):
 			_shot["siege"] = true
 			_shot["town"] = true
+			# --siege=taken|held: Freeciv's assault on the staged siege, as the bridge's storm scene carries it (taken: the
+			# town falls to the storm; held: the storm is thrown back). Plain --siege: the siege with no assault yet.
+			if a.begins_with("--siege="):
+				_shot["storm"] = a.substr(8)
 		elif a.begins_with("--play="):
 			_shot["play"] = a.substr(7)  # a scenario of player inputs (autoplay.gd); frames and a log go to --out
 			_shot["wait"] = "9999"
@@ -427,6 +431,8 @@ func _frame_for_shot(world: Dictionary) -> void:
 					if int(pid) != int(best["owner"]) and not main._houses[pid].get("wild", false):
 						foe = main._houses[pid]
 				main.scenes._siege(int(best["id"]), center, main.terrain.world_pos(float(best["x"]) + 1.0, float(best["y"]) + 0.4), int(best["size"]), 2, foe, main._houses.get(int(best["owner"]), {}), 600.0)
+				if _shot.has("storm"):
+					main.scenes.storm(int(best["id"]), String(_shot["storm"]) == "taken")
 				main.rig.snap(main.scenes._sieges[int(best["id"])]["front"], float(_shot.get("dist", 6.0)), 0.6)
 				# The siege under test holds the camera, as a test battle does.
 				main._framed_at = main.scenes._sieges[int(best["id"])]["front"]

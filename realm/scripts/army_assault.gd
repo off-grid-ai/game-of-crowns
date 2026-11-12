@@ -13,13 +13,17 @@ extends "res://scripts/army_melee.gd"
 ## men form a block behind it, facing out (minds.gap_holder), cutting and guarding at whoever comes through.
 ## Knobs: data/walls.json assault.
 ##
-## The storm (switch: --storm=on, on with --wall-demo, or walls.json assault.storm; Stronghold's and Total War's
-## assault through the gap): the fight happens in the gap. Each man pairs off with a man of the other side and
+## The storm is Freeciv's assault (READY.md line 6; casebook "A siege is a season"): Freeciv fights it (realmrules
+## realm_assault), the bridge reports it as a storm scene (campaigns.js stormScene), and scenes.gd calls storm(taken)
+## on the siege it shows. Until then the siege is a siege: the parties go at the wall, the massed host stands ready
+## and looses fire arrows, a breach is braced but not stormed (breach() hands out no gap). Stronghold's and Total
+## War's assault through the gap: the fight happens in the gap. Each man pairs off with a man of the other side and
 ## fights him in the close fight's duel until one falls; the holder's back row steps up as the front falls, and a
-## few fresh men come up from the town. A party that loses half of its men in the gap walks back to the camp and
-## the next wave comes; a block worn down to a few with none left to come breaks and runs into the town. Then the
-## besiegers pour in over the rubble, cheer, and put the town to the torch (fire.gd). Behind them, the massed
-## storm of regiments (army_field.gd's storm) follows this breach.
+## few fresh men come up from the town. It ends as Freeciv decided: a town Freeciv took has no fresh men left to send,
+## so its block, worn down to a few, breaks and runs into the town, and the besiegers pour in over the rubble, cheer,
+## and put the town to the torch (fire.gd); a town that held keeps filling the gap until every party has been beaten
+## back to the camp, and the storm is over. Behind them, the massed storm of regiments (army_field.gd's storm,
+## raised with every siege) follows this breach.
 
 const WAVE := 15.0  # seconds between one party's rushes
 const AT_WALL := [3.0, 4.6]  # how long a man fights at the foot of the wall
@@ -35,18 +39,11 @@ var held := Color(0.6, 0.6, 0.6)  # the holder's colours: the block behind a bre
 var town_at := Vector3.INF  # the besieged town (world): where the torch goes once it falls
 var _held_at := {}  # breach key -> {gap, inward, across, men: [defenders], reserve, phase, at}
 var _look := 0.0
-var _storm := false
-
-
-## The storm through the breach on for this run? --storm=on/off, on with the wall demo, else walls.json
-## assault.storm.
-static func storm_on() -> bool:
-	var args := OS.get_cmdline_user_args()
-	if args.has("--storm=off"):
-		return false
-	if args.has("--storm=on") or args.has("--wall-demo"):
-		return true
-	return bool(Data.value("walls", "assault.storm", false))
+var _storm := false  # Freeciv's assault is on (storm())
+var _taken := false  # and Freeciv gave the besiegers the town
+var _camp := Vector3.ZERO  # the parties' camp and wall foot (world), for the massed host
+var _wall := Vector3.ZERO
+var _heart := Vector3.ZERO
 
 
 func start(s: Node, siege: Node3D, rng: RandomNumberGenerator, colour: Color, groups: Array, first: Array, holder := Color(0.6, 0.6, 0.6), town := Vector3.INF) -> void:
@@ -57,7 +54,6 @@ func start(s: Node, siege: Node3D, rng: RandomNumberGenerator, colour: Color, gr
 	held = holder
 	town_at = town
 	reach = Combat.REACH
-	_storm = storm_on()
 	parties = groups
 	root.add_child(self)
 	var camp := Vector3.ZERO
@@ -71,6 +67,9 @@ func start(s: Node, siege: Node3D, rng: RandomNumberGenerator, colour: Color, gr
 	camp /= maxf(n, 1)
 	wall /= maxf(n, 1)
 	var heart: Vector3 = town_at if town_at != Vector3.INF else wall + (wall - camp)
+	_camp = camp
+	_wall = wall
+	_heart = heart
 	_field(heart, Vector2(camp.x - heart.x, camp.z - heart.z).length() + 1.5)
 	for p in parties.size():
 		for m in parties[p]:
@@ -84,11 +83,34 @@ func start(s: Node, siege: Node3D, rng: RandomNumberGenerator, colour: Color, gr
 			if is_instance_valid(t):
 				_send_party(p)
 				t.start())
-	# The storm as a mass: hundreds in their houses' colours behind these men (army_field.gd), driven by this
-	# one's breach.
-	if _storm and Field.storm_host_on() and not parties.is_empty():
+	# The storm as a mass: hundreds in their houses' colours behind these men (army_field.gd), standing ready with the
+	# siege and driven by this one's breach once Freeciv storms.
+	if not parties.is_empty():
 		var out := Vector3(camp.x - heart.x, 0, camp.z - heart.z).normalized()
 		Field.storm(self, camp + out * Data.num("siege", "storm_host.camp_back", 0.3), wall, heart, col, held)
+
+
+## Freeciv's assault on this siege (scenes.gd, on the bridge's storm scene): every party goes at once, through the
+## gap where the wall is open, and the storm ends as Freeciv decided. `taken`: Freeciv gave the besiegers the town
+## (or razed it), so the holder sends no fresh men; else the town holds and keeps filling the gap.
+func storm(taken: bool) -> void:
+	_storm = true
+	_taken = taken
+	var k: Dictionary = Data.value("walls", "assault", {})
+	for key in _held_at:
+		_held_at[key]["reserve"] = _reserve(k)
+	for p in parties.size():
+		for m in parties[p]:
+			m["beaten"] = false
+		_send_party(p)
+
+
+## The fresh men a holder has behind a gap: none once Freeciv has given the town away, more than any storm can
+## spend while it holds (assault.reserve before the storm).
+func _reserve(k: Dictionary) -> int:
+	if not _storm:
+		return int(k.get("reserve", 4))
+	return 0 if _taken else 1 << 20
 
 
 ## A fresh man in the camp, and his mind (the fallen man's stops: his body stays where it fell).
@@ -342,7 +364,7 @@ func _watch_breaches() -> void:
 			m["gap"] = key
 		if not _held_at.has(key):
 			ground.open(gap, float(k.get("spread", 0.16)) + 0.15)  # the gap stands open on the ground
-			_held_at[key] = {"gap": gap, "inward": inward, "across": across, "men": [], "reserve": int(k.get("reserve", 4)), "phase": "hold", "at": 0.0}
+			_held_at[key] = {"gap": gap, "inward": inward, "across": across, "men": [], "reserve": _reserve(k), "phase": "hold", "at": 0.0}
 			_block(_held_at[key], k)
 		if fresh:
 			_send_party(p)  # the gap is open: the party goes now, not at its next turn
@@ -521,10 +543,15 @@ func _morale() -> void:
 				if m["alive"] and m.get("in_gap", false):
 					m["beaten"] = true
 					_send(m, &"back")
+	# A town that held: once every party has been beaten back, Freeciv's assault is over and the siege goes on.
+	if not _taken and parties.all(func(p): return p.any(func(m): return m.get("beaten", false))):
+		_storm = false
 
 
-## The gap the storm is fought at (the first breach opened), or {} while the wall stands.
+## The gap the storm is fought at (the first breach opened), or {} while the wall stands or Freeciv hasn't stormed.
 func breach() -> Dictionary:
+	if not _storm:
+		return {}
 	for key in _held_at:
 		return _held_at[key]
 	return {}

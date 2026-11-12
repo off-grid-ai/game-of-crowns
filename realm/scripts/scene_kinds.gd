@@ -17,6 +17,7 @@ const NEUTRAL := "neutral"
 ## (camera distance), caption (with %s for the town)}.
 const KINDS := {
 	"siege": {"tone": HOSTILE, "reach": 5.0, "power": 0.9, "interest": 10, "dist": 7.0, "caption": "The siege of %s"},
+	"storm": {"tone": HOSTILE, "reach": 6.0, "power": 1.0, "interest": 10, "dist": 7.0, "caption": "%s is stormed"},  # Freeciv's assault on a siege (campaigns.js stormScene)
 	"battle": {"tone": HOSTILE, "reach": 5.0, "power": 0.9, "interest": 9, "dist": 8.0, "caption": "Battle near %s"},
 	"sack": {"tone": HOSTILE, "reach": 6.0, "power": 1.0, "interest": 9, "dist": 8.0, "caption": "%s is sacked"},
 	"razed": {"tone": HOSTILE, "reach": 7.0, "power": 1.0, "interest": 9, "dist": 9.0, "caption": "%s burns"},

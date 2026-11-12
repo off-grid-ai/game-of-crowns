@@ -571,6 +571,8 @@ function onEvent(line) {
   }
   if (ev.kind === "turn") return Season.turn(seasonCtx(), ev);  // the turn's sequence (season.js)
   if (ev.kind === "attack") return Battles.struck(ev, world?.turn ?? 0);  // who struck where (battles.js)
+  // Freeciv fought the King's assault (realm_assault): the view storms the siege and ends it as Freeciv did (campaigns.js).
+  if (ev.kind === "assault") { const storm = Camp.stormScene(world, ev, crownOf()?.id); if (storm) scene("storm", storm); return; }
   const town = ev.city !== undefined ? world?.cities?.find((c) => c.id === Number(ev.city)) : null;
   if (ev.kind === "unit_killed") {
     const loser = world?.players?.find((p) => p.id === Number(ev.owner));
