@@ -474,21 +474,21 @@ func _stage_test_battle(best: Dictionary) -> void:
 		main.get_tree().create_timer(0.5).timeout.connect(_stage_test_battle.bind(best))
 		return
 	var field: Vector3 = main.terrain.world_pos(float(best["x"]) + 1.5, float(best["y"]))
-	if main.scenes.battlefield(field) == Vector3.INF:
+	if main.scenes.kind("battle").battlefield(field) == Vector3.INF:
 		for c in store.rec("cities", []):
 			var f: Vector3 = main.terrain.world_pos(float(c["x"]) + 1.5, float(c["y"]))
-			if main.scenes.battlefield(f) != Vector3.INF:
+			if main.scenes.kind("battle").battlefield(f) != Vector3.INF:
 				field = f
 				best = c
 				break
-	var ground: Vector3 = main.scenes.battlefield(field)
+	var ground: Vector3 = main.scenes.kind("battle").battlefield(field)
 	print("SHOT battle town=%s ground=%s" % [best.get("title", "?"), ground])
 	if ground == Vector3.INF:
 		return
 	main.rig.snap(ground, float(_shot.get("dist", 4.0)), 0.6)
 	main._framed_at = ground
 	main._framed_until = int(main._game_ms) + 600000
-	main.scenes._battle(field, main._houses.get(int(best["owner"]), {}))
+	main.scenes.kind("battle").fight(field, main._houses.get(int(best["owner"]), {}))
 
 
 ## A test aid for playing as a player would (--play=<scenario> --out=<dir>):

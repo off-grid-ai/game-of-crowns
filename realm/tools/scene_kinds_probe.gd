@@ -16,10 +16,10 @@ const OLD := {"feast": "_feast", "handover": "_handover", "grain": "_convoy", "t
 	"sack": "_burn", "razed": "_burn", "famine": "_refugees", "plague": "_refugees"}
 
 ## The kinds that are their own class by now (grows a kind a commit, till scenes.gd stages none itself).
-const CLASSED := ["feast", "grain", "tribute", "ward", "rider", "muster", "famine", "plague", "sack", "razed", "handover"]
+const CLASSED := ["feast", "grain", "tribute", "ward", "rider", "muster", "famine", "plague", "sack", "razed", "handover", "battle"]
 
 ## What each kind, staged on the stand-in, must set down: [the node's name under the stage, the least of its children].
-const STAGED := {"feast": ["Feast", 10], "grain": ["Convoy", 4], "tribute": ["Convoy", 4], "ward": ["Convoy", 4], "rider": ["Rider", 1], "famine": ["Refugees", 5], "plague": ["Refugees", 3], "sack": ["Burn", 15], "razed": ["Burn", 30], "handover": ["Handover", 7]}
+const STAGED := {"feast": ["Feast", 10], "grain": ["Convoy", 4], "tribute": ["Convoy", 4], "ward": ["Convoy", 4], "rider": ["Rider", 1], "famine": ["Refugees", 5], "plague": ["Refugees", 3], "sack": ["Burn", 15], "razed": ["Burn", 30], "handover": ["Handover", 7], "battle": ["Battle", 60]}
 
 
 class Land extends Node3D:
@@ -33,6 +33,8 @@ class Land extends Node3D:
 		return true
 	func clear_around(_p: Vector3, _r: float) -> void:
 		pass
+	func tile_at(_x: int, _y: int) -> String:
+		return "Grassland"
 	var paths := Paths.new()
 
 
@@ -43,6 +45,8 @@ class Paths extends RefCounted:
 		for p in way:
 			c.add_point(p)
 		return c
+	func tile_of(p: Vector3) -> Vector2i:
+		return Vector2i(int(p.x), int(p.z))
 	func land_path(from: Vector3, to: Vector3) -> PackedVector3Array:
 		return PackedVector3Array([from, from.lerp(to, 0.5), to])
 	func bowed(way: PackedVector3Array) -> PackedVector3Array:
@@ -105,7 +109,7 @@ func _run() -> void:
 		var stage: Node3D = Scenes.new()  # a stage of its own each, so what a kind sets down is its own
 		stage.terrain = land
 		main.add_child(stage)
-		stage.kind(k).play({"kind": k, "owner": 1, "x": 10, "y": 10, "tx": 16, "ty": 12, "city": 3, "from": 2, "to": 1}, Vector3(10, 0, 10), {1: {"name": "Ashby", "color": "#884422"}, 2: {"name": "Thornvale", "color": "#2244aa"}})
+		stage.kind(k).play({"kind": k, "owner": 1, "x": 10, "y": 10, "tx": 16, "ty": 12, "city": 3, "from": 2, "to": 1, "turn": 1, "victor": 2}, Vector3(10, 0, 10), {1: {"name": "Ashby", "color": "#884422"}, 2: {"name": "Thornvale", "color": "#2244aa"}})
 		await process_frame
 		var want: Array = STAGED[k]
 		var n: Node = stage.get_node_or_null(String(want[0]))

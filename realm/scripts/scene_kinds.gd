@@ -19,7 +19,7 @@ const NEUTRAL := "neutral"
 const KINDS := {
 	"siege": {"tone": HOSTILE, "reach": 5.0, "power": 0.9, "interest": 10, "dist": 7.0, "caption": "The siege of %s"},
 	"storm": {"tone": HOSTILE, "reach": 6.0, "power": 1.0, "interest": 10, "dist": 7.0, "caption": "%s is stormed"},  # Freeciv's assault on a siege (campaigns.js stormScene)
-	"battle": {"tone": HOSTILE, "reach": 5.0, "power": 0.9, "interest": 9, "dist": 8.0, "caption": "Battle near %s"},
+	"battle": {"tone": HOSTILE, "reach": 5.0, "power": 0.9, "interest": 9, "dist": 8.0, "caption": "Battle near %s", "play": "res://scripts/scene_kinds/battle.gd"},
 	"sack": {"tone": HOSTILE, "reach": 6.0, "power": 1.0, "interest": 9, "dist": 8.0, "caption": "%s is sacked", "fleeing": 7, "burn": [45.0, 1.0], "play": "res://scripts/scene_kinds/sack.gd"},
 	"razed": {"tone": HOSTILE, "reach": 7.0, "power": 1.0, "interest": 9, "dist": 9.0, "caption": "%s burns", "fleeing": 10, "burn": [70.0, 2.0], "play": "res://scripts/scene_kinds/sack.gd"},
 	"raid": {"tone": HOSTILE, "reach": 4.0, "power": 0.9, "interest": 6, "dist": 7.0, "caption": "Raiders at %s"},
