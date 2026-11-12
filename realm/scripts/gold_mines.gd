@@ -108,10 +108,13 @@ func _raise(t: Vector2i, spent: bool, owner := -1) -> void:
 	dress.name = "Dressing"
 	add_child(dress)
 	_rocks(dress, at, hash(t))
+	var g: Dictionary = _d.get("gold", {})
+	var goff: Array = g.get("at", [0.3, 0.95])
+	var mouth := at + Vector3(float(goff[0]), 0, float(goff[1])).rotated(Vector3.UP, n.rotation.y)
 	if not spent:
 		_banner(dress, at, owner)
 		_gold(dress, at, n.rotation.y)
-	_sites[t] = {"node": n, "dress": dress, "spent": spent, "at": at}
+	_sites[t] = {"node": n, "dress": dress, "spent": spent, "at": at, "mouth": mouth}
 
 
 ## A stony outcrop round the mine, so it sits in broken ground and not on a lawn.
@@ -208,20 +211,25 @@ func _people_in(s: Dictionary) -> void:
 	holder.name = "Miners"
 	add_child(holder)
 	var life: Array = []
-	var ring: Array = _d.get("ring", [0.9, 1.5])
+	var ring: Array = _d.get("ring", [0.2, 0.45])
 	var cloth: Array = People.cloth_of("peasant")
+	var jobs: Array = _d.get("jobs", [])
+	var mouth: Vector3 = s["mouth"]
 	for i in int(_d.get("miners", 4)):
+		var job: Dictionary = jobs[i % jobs.size()] if not jobs.is_empty() else {}
 		var a := _rng.randf() * TAU
 		var r := _rng.randf_range(float(ring[0]), float(ring[1]))
-		var p: Vector3 = scenes.stand(s["at"] + Vector3(cos(a) * r, 0, sin(a) * r))
+		var p: Vector3 = scenes.stand(mouth + Vector3(cos(a), 0, sin(a)) * r)
 		var n: Node3D = scenes.people.make(_rng, "peasant", cloth[_rng.randi() % cloth.size()] if not cloth.is_empty() else Color.WHITE)
 		if n == null:
 			continue
-		_hold(n, "axe")
+		if String(job.get("hold", "")) != "":
+			_hold(n, String(job["hold"]))
 		holder.add_child(n)
 		n.global_position = p
-		n.rotation.y = atan2((s["at"] as Vector3).x - p.x, (s["at"] as Vector3).z - p.z)
-		var m := {"node": n, "left": _rng.randf_range(0.3, 2.0), "last": ""}
+		var face: Vector3 = s["at"] if String(job.get("face", "rock")) == "rock" else mouth
+		n.rotation.y = atan2(face.x - p.x, face.z - p.z)
+		var m := {"node": n, "left": _rng.randf_range(0.3, 2.0), "last": "", "clips": job.get("clips", _d.get("clips", ["Idle"]))}
 		life.append(m)
 	s["holder"] = holder
 	s["life"] = life
@@ -235,7 +243,7 @@ func _unpeople(s: Dictionary) -> void:
 
 
 func _next_clip(m: Dictionary) -> void:
-	var clips: Array = _d.get("clips", ["Idle"])
+	var clips: Array = m.get("clips", _d.get("clips", ["Idle"]))
 	var pool: Array = clips.filter(func(c): return c != m["last"])
 	if pool.is_empty():
 		pool = clips
