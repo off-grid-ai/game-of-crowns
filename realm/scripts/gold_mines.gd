@@ -13,8 +13,8 @@ const Real := preload("res://scripts/realistic.gd")
 const Scenes := preload("res://scripts/scenes.gd")
 const Heraldry := preload("res://scripts/heraldry.gd")
 const Mind := preload("res://scripts/npc_mind.gd")
-const ROCKS := ["res://assets/nature/Rock_Medium_1.gltf", "res://assets/nature/Rock_Medium_2.gltf", "res://assets/nature/Rock_Medium_3.gltf"]
-const PEBBLE := "res://assets/nature/Pebble_Round_1.gltf"
+const ROCKS := ["res://assets/meshy/nt_rock_b/nt_rock_b.glb"]  # the nature set's boulder (2.5 m at scale 1)
+const PEBBLE := "res://assets/meshy/nt_rock_b/nt_rock_b.glb"  # the gold ore: the boulder, small (gold_mines.json gold.size)
 const MODEL := "res://assets/meshy/mine/mine.glb"
 
 var main: Node

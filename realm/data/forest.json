@@ -1,5 +1,5 @@
 {
- "_": "The woods (forest.gd; docs/TUNING.md). near: within this distance of the camera (world units) trees are drawn in full, with shadows (a block of woods switches as one); mid: out to this distance the middle batch, without shadows; the far batch beyond. woods: where trees stand, by Freeciv's tile under the land's warped biome line (vegetation.gd _woodland): jitter (a clump's wander off its terrain's grid, a share of its gap), size [least, most] (a tree's scale on its kind's height), y_min (no tree below this height: the shore), pine_above (pine likelier above this height); tiles.<Freeciv terrain>: gap (game units between clumps), clump [least, most] trees, r (a clump's reach), pine (the share of pine), undergrowth (the chance of a bush under a clump). cover: the ground cover's files by role (bush, grass, rock; under assets/; bush and grass from the nature set, nt_bush 1.6 m and nt_grass_clump 0.5 m at scale 1, their leaves turning with the season). cover_per_tile: how many of each role a tile of that terrain holds. Densities from the look audit's spec (2026-11-12, read off 01-town and 03-army, estimates): inside a wood trunks 5-6 m apart, 3-4 trees per 100 m2; copses of 3-7 25-40 m apart outside woods. Grassland and plains hold copses 60-100 m apart (the look audit: never a screen of plain grass away from towns; a town's own land is its fields and hedges).",
+ "_": "The woods (forest.gd; docs/TUNING.md). near: within this distance of the camera (world units) trees are drawn in full, with shadows (a block of woods switches as one); mid: out to this distance the middle batch, without shadows; the far batch beyond. woods: where trees stand, by Freeciv's tile under the land's warped biome line (vegetation.gd _woodland): jitter (a clump's wander off its terrain's grid, a share of its gap), size [least, most] (a tree's scale on its kind's height), y_min (no tree below this height: the shore), pine_above (pine likelier above this height); tiles.<Freeciv terrain>: gap (game units between clumps), clump [least, most] trees, r (a clump's reach), pine (the share of pine), undergrowth (the chance of a bush under a clump). cover: the ground cover's files by role (bush, grass, rock; under assets/; bush, grass and rock from the nature set (nt_rock_b a 2.5 m boulder), nt_bush 1.6 m and nt_grass_clump 0.5 m at scale 1, their leaves turning with the season). cover_per_tile: how many of each role a tile of that terrain holds. Densities from the look audit's spec (2026-11-12, read off 01-town and 03-army, estimates): inside a wood trunks 5-6 m apart, 3-4 trees per 100 m2; copses of 3-7 25-40 m apart outside woods. Grassland and plains hold copses 60-100 m apart (the look audit: never a screen of plain grass away from towns; a town's own land is its fields and hedges).",
  "near": 6.0,
  "mid": 24.0,
  "woods": {
@@ -91,9 +91,7 @@
    "meshy/nt_grass_clump/nt_grass_clump.glb"
   ],
   "rock": [
-   "nature/Rock_Medium_1.gltf",
-   "nature/Rock_Medium_2.gltf",
-   "nature/Rock_Medium_3.gltf"
+   "meshy/nt_rock_b/nt_rock_b.glb"
   ]
  },
  "cover_per_tile": {
