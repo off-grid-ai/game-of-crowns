@@ -26,18 +26,20 @@ const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 check(stubbed !== src, "damage.js no longer imports chronicles.js as this probe expects: update the probe");
 const world = { cities: [{ id: 7, x: 3, y: 4 }] };
 const meta = {};
-check(same(D.kindle(meta, world, 7, 2)?.kindled, [2]), "a lit house isn't in the town's damage");
-D.kindle(meta, world, 7, 5);
-D.kindle(meta, world, 7, 2);
-check(same(meta.damage[7].kindled, [2, 5]), `a house lit twice is kept twice (${JSON.stringify(meta.damage[7].kindled)})`);
+// Houses by their stable id in the town (realm towns.gd home_id: where each stands, "x_z" in decimetres; audit #16).
+const A = "31_-42", B = "-55_18";
+check(same(D.kindle(meta, world, 7, A)?.kindled, [A]), "a lit house isn't in the town's damage");
+D.kindle(meta, world, 7, B);
+D.kindle(meta, world, 7, A);
+check(same(meta.damage[7].kindled, [A, B]), `a house lit twice is kept twice (${JSON.stringify(meta.damage[7].kindled)})`);
 check(globalThis.saves === 2, `kept houses aren't saved once each (${globalThis.saves} saves)`);
-check(D.kindle(meta, world, 9, 1) === null && D.kindle(meta, world, 7, -1) === null, "a house of no town, or no house, is kept");
+check(D.kindle(meta, world, 9, A) === null && D.kindle(meta, world, 7, 3) === null && D.kindle(meta, world, 7, "") === null, "a house of no town, or one named by its place in the view's laying order (a number) or by nothing, is kept");
 const loaded = JSON.parse(JSON.stringify(meta));  // the realm saved and opened again
-check(same(D.view(loaded, world.cities[0])?.kindled, [2, 5]), "burnt houses are lost on a reload");
+check(same(D.view(loaded, world.cities[0])?.kindled, [A, B]), "burnt houses are lost on a reload");
 const per = D.DAMAGE.kindledRebuiltPerSeason;
 check(Number.isInteger(per) && per > 0, "damage.json kindledRebuiltPerSeason missing");
 D.season({ world, meta: loaded, marksNow: () => [] }, 10);
-check(same(loaded.damage[7].kindled, [2, 5].slice(per)), `a season on, the first lit isn't rebuilt first (${JSON.stringify(loaded.damage[7].kindled)})`);
+check(same(loaded.damage[7].kindled, [A, B].slice(per)), `a season on, the first lit isn't rebuilt first (${JSON.stringify(loaded.damage[7].kindled)})`);
 fs.rmSync(tmp, { recursive: true, force: true });
 console.log(`DAMAGE ${bad ? "FAIL" : "PASS"}: ${bad} problems`);
 process.exit(bad ? 1 : 0);

@@ -61,9 +61,10 @@ func _process(delta: float) -> void:
 	_t = 0.0
 	if main.awareness == null or main.towns == null or main.terrain == null or main.scenes == null:
 		return
+	var world: Dictionary = main.bridge.world
 	var want := {}  # "town:kind" -> [town id, kind, level]
 	var bands: Dictionary = Awareness.bands
-	for c in main.awareness.rec("cities", []):
+	for c in world.get("cities", []):
 		var id := int(c.get("id", -1))
 		if not (main.towns.towns as Dictionary).has(id):
 			continue  # not raised yet
@@ -86,8 +87,8 @@ func _process(delta: float) -> void:
 	for a in OS.get_cmdline_user_args():
 		if not String(a).begins_with("--decisions-demo="):
 			continue
-		var at_id := int(main.awareness.rec("seatId", -1))
-		for c in main.awareness.rec("cities", []):
+		var at_id := int(world.get("seatId", -1))
+		for c in world.get("cities", []):
 			if String(c.get("name", "")) == String(main._shot.get("city", "")) or String(c.get("title", "")) == String(main._shot.get("city", "")):
 				at_id = int(c.get("id", -1))
 		for kind in String(a).trim_prefix("--decisions-demo=").split(","):
@@ -316,7 +317,7 @@ func _garrison(root: Node3D, node: Node3D, centre: Vector3, id: int, rng: Random
 func _gate(node: Node3D, centre: Vector3, id: int) -> Vector3:
 	var toward := centre + Vector3.FORWARD
 	var best := INF
-	var seat_id := int(main.awareness.rec("seatId", -1))
+	var seat_id := int(main.bridge.world.get("seatId", -1))
 	for other_id in main.towns.towns:
 		var o = main.towns.towns[other_id].get("node")
 		if int(other_id) == id or not (o is Node3D) or not is_instance_valid(o):

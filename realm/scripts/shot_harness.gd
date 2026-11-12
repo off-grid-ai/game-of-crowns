@@ -387,7 +387,7 @@ func _frame_for_shot(world: Dictionary) -> void:
 				best = c
 		if not best.is_empty():
 			main._selected = int(best["id"])
-			main._show_selected()
+			main._show_selected(world)
 			main.rig.snap(main.terrain.world_pos(float(best["x"]), float(best["y"])), float(_shot.get("dist", 16.0)), 0.6)
 			if not _shot.get("castle", false) and not _shot.get("battle", false) and not _shot.get("siege", false):
 				# Once the town stands: its square from the side away from its castle, clear of the

@@ -5,7 +5,6 @@ extends RefCounted
 ## story so far that opens from the date. Owned by ui.gd, which builds it in
 ## _ready and forwards its calls here (ui._show_heading, ui._toggle_pause and the rest).
 
-const Awareness := preload("res://scripts/awareness.gd")  # the view's one store: the realm's records (rec)
 const Features := preload("res://scripts/features.gd")
 const T := preload("res://scripts/theme.gd")
 const UI := preload("res://scripts/ui.gd")
@@ -656,9 +655,8 @@ func _show_heading(r: Dictionary) -> void:
 
 ## The realm's numbers in the bar and the reign's line under the date, from the
 ## world as the realm reports it (ui.set_world hands over the crown's report).
-func _show_world(c: Dictionary) -> void:
-	var st: Node = Awareness.store()
-	var date = st.rec("date")
+func _show_world(world: Dictionary, c: Dictionary) -> void:
+	var date = world.get("date")
 	if date is Dictionary:
 		_season = String(date.get("season", ""))
 		_first_ten()
@@ -678,10 +676,10 @@ func _show_world(c: Dictionary) -> void:
 		_gold_to = sum
 	_gold_net = net
 	_gold.text = _gold_line(_gold_shown, net)
-	_peace.text = "%d%%" % int(float(st.rec("peace", 1)) * 100)
+	_peace.text = "%d%%" % int(float(world.get("peace", 1)) * 100)
 	# Why the peace is what it is, and what raises it.
 	var feuds := PackedStringArray()
-	for p in st.rec("players", []):
+	for p in world.get("players", []):
 		for foe in p.get("wars", []):
 			var a := String(p["house"].get("name", "")).replace("House ", "")
 			var pair := "%s and %s" % ([a, String(foe)] if a < String(foe) else [String(foe), a])
@@ -689,11 +687,11 @@ func _show_world(c: Dictionary) -> void:
 				feuds.append(pair)
 	_peace.get_parent().tooltip_text = "Peace: how much of the realm is free of war between the great houses. A host marching on the throne halves it.\n\n" + \
 		(("At war: " + ", ".join(feuds) + ".\nCommand peace, or wed two warring houses, to raise it.") if not feuds.is_empty() else "No great houses are at war.")
-	_souls.text = ui.heads(int(st.rec("souls", 0)))
+	_souls.text = ui.heads(int(world.get("souls", 0)))
 	_tithe_l.text = "%d%%" % int(ui.tithe * 100) + ("  ·  again in %d season%s" % [ui.tithe_wait, "" if ui.tithe_wait == 1 else "s"] if ui.tithe_wait > 0 else "")
-	_year.text = String(st.rec("date", {}).get("text", "The realm is forming"))
+	_year.text = String(world.get("date", {}).get("text", "The realm is forming"))
 	# Danger to the crown shows in the reign line, in red, only while it lasts.
-	var th: Dictionary = st.rec("threat", {})
+	var th: Dictionary = world.get("threat", {})
 	var danger := []
 	if th.get("usurper", "none") == "rumour":
 		danger.append("a usurper stirs")
@@ -703,7 +701,7 @@ func _show_world(c: Dictionary) -> void:
 		danger.append("the dead march on the North")
 	# The reign's story leads the line while it runs: its name, the act, and how
 	# near it is to the throne (the bar turns red past two-thirds).
-	var story: Dictionary = st.rec("story", {}) if st.rec("story") is Dictionary else {}
+	var story: Dictionary = world.get("story", {}) if world.get("story") is Dictionary else {}
 	_story = story
 	if _story_panel and _story_panel.visible:
 		_fill_story()  # rebuilt only when a beat lands or the act turns

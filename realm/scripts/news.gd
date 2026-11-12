@@ -34,7 +34,7 @@ func _on_staged(s: Dictionary, follow: Node3D) -> void:
 		# Whose news: the house of the town it happened in (the house it went to, for a handover).
 		var owner := int(s.get("to", -1))
 		if owner < 0:
-			for c in main.awareness.rec("cities", []):
+			for c in main.bridge.world.get("cities", []):
 				if int(c["id"]) == int(s.get("city", -1)):
 					owner = int(c["owner"])
 		var col := Color.from_string(String(main._houses.get(owner, {}).get("color", "#c9a95a")), Color(0.79, 0.66, 0.35))

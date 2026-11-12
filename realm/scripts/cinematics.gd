@@ -174,7 +174,7 @@ func _stage() -> void:
 		"descent":
 			var king := _city("Kingsmere")
 			if king.is_empty():
-				for c in main.awareness.rec("cities", []):
+				for c in main.bridge.world.get("cities", []):
 					if c.get("capital", false) and main._houses.get(int(c["owner"]), {}).get("crown", false):
 						king = c
 			if not king.is_empty():
@@ -333,7 +333,7 @@ func _hide_huds() -> void:
 
 
 func _city(title: String) -> Dictionary:
-	for c in main.awareness.rec("cities", []):
+	for c in main.bridge.world.get("cities", []):
 		if String(c.get("title", c["name"])) == title or String(c["name"]) == title:
 			return c
 	return {}

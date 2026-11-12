@@ -49,12 +49,11 @@ func _build_houses() -> void:
 	v.add_child(_decree_box)
 
 
-func _read_standing() -> void:
-	var st: Node = Awareness.store()
+func _read_standing(world: Dictionary) -> void:
 	if _standing:
 		# The reign's goal, as the bridge reckons it: every great house firmly
 		# the King's (50 and up) and none at war with another.
-		var goal: Dictionary = st.rec("goal", {})
+		var goal: Dictionary = world.get("goal", {})
 		var of := int(goal.get("of", 0))
 		var firm := int(goal.get("firm", 0))
 		var fighting := int(goal.get("fighting", 0))
@@ -72,14 +71,13 @@ func _read_standing() -> void:
 			else left + " Win them all and end their wars, and the realm is yours in truth."
 
 
-func _fill_houses() -> void:
-	var st: Node = Awareness.store()
+func _fill_houses(world: Dictionary) -> void:
 	var popup := ui._grant_menu.get_popup()
 	popup.clear()
 	ui._house_ids.clear()
 	for child in _houses.get_children():
 		child.queue_free()
-	var players: Array = st.rec("players", []).duplicate()
+	var players: Array = world.get("players", []).duplicate()
 	# A fixed order, so a row stays where the eye left it: the houses by name,
 	# the crown last. Trouble shows in the favour's colour and its trend, not by moving.
 	players.sort_custom(func(a, b):

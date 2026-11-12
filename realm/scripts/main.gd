@@ -73,11 +73,11 @@ var _world_turn := 0
 ## The season the land shows: the realm's own (the mirror's), the same one the
 ## date and the court speak of. Each change settles over a quarter of a season
 ## (SEASON_SETTLE), then holds, so the land turns without flickering.
-func look_season() -> String:
+func look_season(world: Dictionary) -> String:
 	if _shot.has("season"):
 		return String(_shot["season"])
 	var mirror := String(awareness.realm.get_var(&"season", "", false)) if awareness else ""
-	var now := mirror if mirror != "" else String(awareness.rec("date", {}).get("season", "summer"))
+	var now := mirror if mirror != "" else String(world.get("date", {}).get("season", "summer"))
 	# A film keeps the first season it sees for the whole run: a test reign's seasons turn in a minute, and
 	# batch 7's fire launch flipped winter, spring and summer mid-shot, the snow gone at a stroke.
 	if _film():
@@ -88,7 +88,7 @@ func look_season() -> String:
 
 
 ## How long the land takes to settle into a new season: a quarter of the realm's season.
-func season_settle() -> float:
+func season_settle(world: Dictionary) -> float:
 	return maxf(2.0, Awareness.season_seconds / 4.0)
 
 
@@ -198,7 +198,7 @@ func _ready() -> void:
 	tip.main = self
 	ui.add_child(tip)
 	ui.focus_house.connect(_focus_house)
-	ui.home_view.connect(func(): _home_view())
+	ui.home_view.connect(func(): _home_view(bridge.world))
 	ui.camera_nudge.connect(rig.nudge)
 	ui.ledger_opened.connect(func(): bridge.ledger(func(rows):
 		var by_name := {}
@@ -226,7 +226,7 @@ func _ready() -> void:
 		_open_person(id, house, "the Lore")
 		hero.closed.connect(func(): lore.visible = true, CONNECT_ONE_SHOT))
 	lore.town_opened.connect(func(title):
-		for c in awareness.rec("cities", []):
+		for c in bridge.world.get("cities", []):
 			if String(c.get("title", c.get("name", ""))) == title:
 				_focus_city(int(c["id"]))
 				return
@@ -264,7 +264,7 @@ func _ready() -> void:
 		return terrain.world_pos(float(c["x"]), float(c["y"])) if c.has("x") and terrain.width > 0 else Vector3.INF
 	ui.place_of = _place_of
 	ui.town_of = func(id: int) -> Dictionary:
-		for c in awareness.rec("cities", []):
+		for c in bridge.world.get("cities", []):
 			if int(c["id"]) == id:
 				return c
 		return {}
@@ -317,7 +317,6 @@ func _ready() -> void:
 	awareness.bridge = bridge  # the store takes /world itself; the view redraws when it has (synced)
 	add_child(awareness)
 	awareness.synced.connect(_on_synced)
-	awareness.cleared.connect(_on_realm_changed)
 	over._overview_setup()  # its map redraws on the store's synced
 	# Town life's one director (town_scenes.gd): it casts every town scene's people from realm/data/town_scenes.json.
 	var town_scenes := preload("res://scripts/town_scenes.gd").new(self)
@@ -337,6 +336,7 @@ func _ready() -> void:
 	interior.opened.connect(func(room): sound.set_interior(room))
 	interior.closed.connect(func(): sound.set_interior(""))
 	bridge.chronicle_added.connect(_on_chronicle)
+	bridge.realm_changed.connect(_on_realm_changed)
 	ui.pause_toggled.connect(func(p): bridge.set_paused(p); ui.toast("The realm holds its breath." if p else "The realm stirs again."))
 	ui.open_menu.connect(func(): title.open())
 	ui.counsel_answered.connect(func(key): bridge.counsel_answered(key))
@@ -418,7 +418,7 @@ func _ready() -> void:
 		story._opened_in_intro = true
 		if not bridge.active:
 			bridge.wake()
-			if awareness.rec("turn") == null:
+			if bridge.world.is_empty():
 				story._intro_due = true
 			else:
 				story._tell_the_story())
@@ -428,7 +428,7 @@ func _ready() -> void:
 		# The realm stays asleep: its houses and seats come from the world report
 		# the bridge sends every second anyway. Waking it here built the whole
 		# realm (land, rivers, woods, towns) behind the story: the lag.
-		if awareness.rec("turn") == null:
+		if bridge.world.is_empty():
 			story._intro_due = true
 		else:
 			story._tell_the_story())
@@ -457,7 +457,7 @@ func _ready() -> void:
 		sound.ui("seal")
 		order_at[0] = Vector3.INF
 		if matter == "" and terrain != null and terrain.width > 0:
-			for c in awareness.rec("cities", []):
+			for c in bridge.world.get("cities", []):
 				if int(c.get("id", -1)) == city_id:
 					order_at[0] = terrain.world_pos(float(c.get("x", 0)), float(c.get("y", 0)))
 	)
@@ -742,13 +742,13 @@ func _listen() -> void:
 		near = {"size": int(c.get("size", 1)), "market": b.contains("Marketplace") or int(c.get("size", 1)) >= 4,
 			"church": b.contains("Temple") or b.contains("Cathedral"), "forge": b.contains("Barracks") or b.contains("Blacksmith"),
 			"tavern": int(c.get("size", 1)) >= 3, "siege": c.get("besieged", false), "north": float(c.get("y", 999)) < 25.0}
-	var season := look_season()
+	var season := look_season(bridge.world)
 	sound.set_view(rig.distance, near, season, sky3d != null and sky3d.is_night(), String(awareness.realm.get_var(&"weather", "clear", false)) if awareness else "clear")
-	var th: Dictionary = awareness.rec("threat", {})
+	var th: Dictionary = bridge.world.get("threat", {})
 	var dark := String(th.get("usurper", "none")) != "none"
 	# Juice (juice.json; Kingdom Two Crowns): the music follows the realm's tension, turning dark above one mark and
 	# settling below a lower one (no flicker between the two).
-	var rg = awareness.rec("reign")
+	var rg = bridge.world.get("reign")
 	var t = rg.get("tension") if rg is Dictionary else null
 	if Juice.on() and t != null:
 		_music_dark = float(t) >= Juice.knob("music_tension_above", 0.55) or (_music_dark and float(t) > Juice.knob("music_calm_below", 0.35))
@@ -864,7 +864,7 @@ func _on_realm_changed() -> void:
 		towns.towns[id]["node"].queue_free()
 	towns.towns.clear()
 	units.sync({"units": []}, {})
-	roads.sync()  # the store's records are clear: no roads
+	roads.sync({"roads": [], "cities": []})
 	ui.clear_chronicle()
 	_selected = -1
 	_framed = false
@@ -881,28 +881,31 @@ func _on_map(map: Dictionary) -> void:
 const LANE_MARGIN := 0.8  # a pine's crown reaches about this far from its trunk
 var _laying := false  # roads and countryside are being laid out, a frame at a time
 func _on_synced() -> void:
-	if awareness.rec("seatId") != null:
-		Engine.set_meta("crown_seat", int(awareness.rec("seatId")))  # the King's seat: its townsfolk have minds (town_life.minds_on)
+	var world: Dictionary = bridge.world
+	if world.get("seatId") != null:
+		Engine.set_meta("crown_seat", int(world["seatId"]))  # the King's seat: its townsfolk have minds (town_life.minds_on)
 	# The story needs only the houses and seats, not the land: it can begin
 	# before the map has come.
-	if story._intro_due:
+	if story._intro_due and not world.is_empty():
 		story._intro_due = false
 		story._tell_the_story.call_deferred()
 	if terrain.width == 0:
 		return
+	director.world = world
 	director.set_process(not _shot.has("path") or _shot.get("director", false))
 	if _shot.get("director", false) and not director.active:
 		director.start()
-	_reign_id = String((awareness.rec("reign", {}) as Dictionary).get("id", ""))
-	_world_turn = int(awareness.rec("turn", 0))
+	_reign_id = String(world.get("reign", {}).get("id", ""))
+	_world_turn = int(world.get("turn", 0))
 	_try_digest()
 	_houses.clear()
-	_houses.merge(awareness.houses_by_id())  # in place: the views hold this one
+	for p in world.get("players", []):
+		_houses[int(p["id"])] = p["house"]
 	if not terrain.built:
 		return  # the land is still forming; the next report raises the towns on it
 	var tt := Time.get_ticks_msec()
 	Engine.set_meta("stage", "towns.sync")
-	towns.sync(_houses)
+	towns.sync(world, _houses)
 	if Time.get_ticks_msec() - tt > 500:
 		print_verbose("BUILD towns %d ms" % (Time.get_ticks_msec() - tt))
 	# The land's borders, scars and ruins, from the mirror (awareness.gd), not from /world.
@@ -923,24 +926,24 @@ func _on_synced() -> void:
 		weather_fx.land3d = terrain.land3d
 		add_child(weather_fx)
 	if weather_fx and awareness:
-		weather_fx.show_weather(String(awareness.realm.get_var(&"weather", "clear", false)), season_settle())
+		weather_fx.show_weather(String(awareness.realm.get_var(&"weather", "clear", false)), season_settle(world))
 	if sound:
-		sound.weather_settle = season_settle()  # the weather's sound comes and goes with its sky
-	var season := look_season()
+		sound.weather_settle = season_settle(world)  # the weather's sound comes and goes with its sky
+	var season := look_season(world)
 	if season != terrain.season or towns.towns.size() != _snowed:
 		_snowed = towns.towns.size()
-		terrain.set_season(season, towns.towns.values().map(func(t): return t["node"]), 0.1 if _film_snap else season_settle())
+		terrain.set_season(season, towns.towns.values().map(func(t): return t["node"]), 0.1 if _film_snap else season_settle(world))
 	_film_snap = false
 	# Roads and the countryside each in a frame of their own, so laying them
 	# out never holds the window for seconds at once.
 	if not _laying:
 		_laying = true
 		Engine.set_meta("stage", "roads.sync")
-		roads.sync()
+		roads.sync(world)
 		await get_tree().process_frame
 		tt = Time.get_ticks_msec()
 		Engine.set_meta("stage", "kings_road")
-		roads.kings_road()
+		roads.kings_road(world)
 		await get_tree().process_frame
 		# A road through the woods runs down a lane cut through them, wide enough
 		# that no crown closes over it: what travels it can be watched from above.
@@ -952,33 +955,33 @@ func _on_synced() -> void:
 			print("LANES %d trees, %d ms" % [n, Time.get_ticks_msec() - t0])
 			await get_tree().process_frame
 		Engine.set_meta("stage", "countryside")
-		countryside.build(awareness.rec("cities", []))
+		countryside.build(world.get("cities", []))
 		if Time.get_ticks_msec() - tt > 500:
 			print_verbose("BUILD roads+countryside %d ms" % (Time.get_ticks_msec() - tt))
 		_laying = false
 	Engine.set_meta("stage", "scenes.sync")
-	scenes.sync(bridge.world, _houses)
+	scenes.sync(world, _houses)
 	Engine.set_meta("stage", "units.sync")
-	units.sync(bridge.world, _houses)
+	units.sync(world, _houses)
 	Engine.set_meta("stage", "ui.set_world")
-	ui.set_world(_houses)
+	ui.set_world(world, _houses)
 	if ui.minimap.terrain == null:
 		ui.minimap.terrain = terrain
 		ui.minimap.rig = rig
-	ui.minimap.refresh(_houses)
+	ui.minimap.refresh(world, _houses)
 	# Each season, and every reading while the court sits (the realm holds its
 	# turn then, so a sitting that opened after this season's fetch still comes in).
-	if int(awareness.rec("turn", 0)) != _court_turn or awareness.rec("sitting") != null:
-		_court_turn = int(awareness.rec("turn", 0))
+	if int(world.get("turn", 0)) != _court_turn or world.get("sitting") != null:
+		_court_turn = int(world.get("turn", 0))
 		bridge.court(ui.set_court)
 	if _selected >= 0:
-		_show_selected()
+		_show_selected(world)
 	if not _framed:
 		_framed = true
 		apply_graphics.call_deferred()  # the woods are planted by now: they take the graphics choice too
 		if not _shot.has("path"):
-			_home_view()
-		shots._frame_for_shot(bridge.world)
+			_home_view(world)
+		shots._frame_for_shot(world)
 		# The realm opens with the houses and the chronicle in view; a test shot
 		# stays clear of them unless it asks (--panels).
 		ui.side_panels(_shot.get("panels", false))  # closed: the world first, the ledger and chronicle a click away
@@ -1023,8 +1026,8 @@ func _mark_seen(entries: Array) -> void:
 ## The view you start with (and return to with Z): Kingsmere and its country,
 ## close enough to see the town and its people, far enough to see the roads
 ## running out to the realm.
-func _home_view() -> void:
-	for c in awareness.rec("cities", []):
+func _home_view(world: Dictionary) -> void:
+	for c in world.get("cities", []):
 		if String(c.get("title", "")) == "Kingsmere" or (c.get("capital", false) and _houses.get(int(c["owner"]), {}).get("crown", false)):
 			# Once the town stands: the composed town view (camera_rig.town_view; art target 01-town).
 			var root: Node3D = towns.towns.get(int(c["id"]), {}).get("node") if towns else null
@@ -1076,7 +1079,7 @@ func _follow_story(e: Dictionary) -> void:
 				director.watch_at(n.global_position, 2.2, title, n)
 				return
 	var city := int(e.get("city", -1)) if e.get("city") != null else -1
-	for c in awareness.rec("cities", []):
+	for c in bridge.world.get("cities", []):
 		if int(c["id"]) == city:
 			towns.ensure(city)
 			director.watch_at(terrain.world_pos(float(c["x"]), float(c["y"])), 7.0, title)
@@ -1091,16 +1094,16 @@ func _on_ground_clicked(p: Vector3) -> void:
 	# (A villager is looked at on hover, folk_tip.gd; a click on the ground picks a town.)
 	var c: Dictionary = towns.nearest(p)
 	_selected = int(c["id"]) if not c.is_empty() else -1
-	_show_selected()
+	_show_selected(bridge.world)
 	if not c.is_empty():
 		rig.frame_town(terrain.world_pos(float(c["x"]), float(c["y"])), int(c.get("size", 4)))
 
 
-func _show_selected() -> void:
-	for c in awareness.rec("cities", []):
+func _show_selected(world: Dictionary) -> void:
+	for c in world.get("cities", []):
 		if int(c["id"]) == _selected:
 			var player := {}
-			for p in awareness.rec("players", []):
+			for p in world.get("players", []):
 				if int(p["id"]) == int(c["owner"]):
 					player = p
 			ui.show_town(c, _houses.get(int(c["owner"]), {}), player)
@@ -1115,11 +1118,11 @@ func _show_selected() -> void:
 var _house_seen := -1  # the house whose seat the last sigil click framed
 func _follow_house(pid: int) -> void:
 	var name := "The house"
-	for p in awareness.rec("players", []):
+	for p in bridge.world.get("players", []):
 		if int(p["id"]) == pid:
 			name = String((p.get("house", {}) as Dictionary).get("name", name))
 	var seat := -1
-	for c in awareness.rec("cities", []):
+	for c in bridge.world.get("cities", []):
 		if int(c["owner"]) == pid and (c.get("capital", false) or seat < 0):
 			seat = int(c["id"])
 	# The first click frames the castle and opens nothing over it (Anno 1800's notification
@@ -1127,7 +1130,7 @@ func _follow_house(pid: int) -> void:
 	if seat >= 0 and _house_seen != pid:
 		_house_seen = pid
 		director.stop()  # a host followed before must not pull the view back off the seat
-		for c in awareness.rec("cities", []):
+		for c in bridge.world.get("cities", []):
 			if int(c["id"]) == seat:
 				rig.frame_town(terrain.world_pos(float(c["x"]), float(c["y"])), int(c.get("size", 4)))
 		_frame_castle(seat)
@@ -1137,11 +1140,11 @@ func _follow_house(pid: int) -> void:
 	if host:
 		director.watch_at(host.global_position, rig.knob("go_to.host", 12.0), "%s's host" % name, host)  # from above the canopy, not through it
 		return
-	for c in awareness.rec("cities", []):
+	for c in bridge.world.get("cities", []):
 		if int(c["owner"]) == pid and c.get("capital", false):
 			_focus_city(int(c["id"]))
 			return
-	for c in awareness.rec("cities", []):
+	for c in bridge.world.get("cities", []):
 		if int(c["owner"]) == pid:
 			_focus_city(int(c["id"]))
 			return
@@ -1158,20 +1161,20 @@ func _frame_castle(city_id: int) -> void:
 
 
 func _focus_city(city_id: int) -> void:
-	for c in awareness.rec("cities", []):
+	for c in bridge.world.get("cities", []):
 		if int(c["id"]) == city_id:
 			_selected = city_id
-			_show_selected()
+			_show_selected(bridge.world)
 			rig.frame_town(terrain.world_pos(float(c["x"]), float(c["y"])), int(c.get("size", 4)))
 			return
 	ui.toast("That town is no more.")
 
 
 func _focus_house(owner: int) -> void:
-	for c in awareness.rec("cities", []):
+	for c in bridge.world.get("cities", []):
 		if int(c["owner"]) == owner and c.get("capital", false):
 			_selected = int(c["id"])
-			_show_selected()
+			_show_selected(bridge.world)
 			rig.frame_town(terrain.world_pos(float(c["x"]), float(c["y"])), int(c.get("size", 4)))
 			return
 

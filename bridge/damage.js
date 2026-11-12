@@ -2,7 +2,7 @@
 // (0 whole .. 1 gone; section 0 faces north, then clockwise), each battered by the besiegers facing it
 // until it cracks and breaches, mended season by season once the siege lifts (Stronghold, Total War);
 // and the share of its houses burnt by a sack or a razing, rebuilt season by season (Manor Lords), and the houses a
-// siege's fire arrows set alight (kindled: the view's home numbers, as its towns lay them), rebuilt one a season.
+// siege's fire arrows set alight (kindled: each house's stable id in its town, realm towns.gd home_id), rebuilt one a season.
 // Read by /world (cities[].damage) for the view's cracks, breaches, burnt shells and rubble; the view
 // decides nothing. Tunables: data/damage.json. Saved in the realm's meta (meta.damage).
 import fs from "node:fs";
@@ -57,12 +57,13 @@ export function view(meta, c) {
 }
 
 // A siege's fire arrow set one of a town's houses alight (the view's fire.gd, as it lands): that house stands
-// burnt from now on, through a reload, until the realm rebuilds it. `home` is the town's house number as the view
-// lays its homes. Returns the town's damage, or null for no such town.
+// burnt from now on, through a reload, until the realm rebuilds it. `home` is the house's stable id in its town
+// (realm towns.gd home_id: where it stands, "x_z" in decimetres), never its place in the view's laying order.
+// Returns the town's damage, or null for no such town or no such id.
 export function kindle(meta, world, city, home) {
   const c = world?.cities?.find((x) => x.id === Number(city));
-  const h = Number(home);
-  if (!c || !Number.isInteger(h) || h < 0) return null;
+  const h = String(home ?? "");
+  if (!c || !/^-?\d+_-?\d+$/.test(h)) return null;
   const d = ((meta.damage ??= {})[c.id] ??= fresh());
   d.kindled ??= [];
   if (!d.kindled.includes(h)) {

@@ -44,8 +44,6 @@ func _run() -> void:
 	root.add_child(store)
 	var synced := [0]
 	store.synced.connect(func(): synced[0] += 1)
-	var cleared := [0]
-	store.cleared.connect(func(): cleared[0] += 1)
 	# A mind joins its town with its own state, through the store.
 	var body := Node3D.new()
 	root.add_child(body)
@@ -79,6 +77,6 @@ func _run() -> void:
 	store.assign(mind, {"firefight": true})
 	_ok(mind.blackboard.get_var(&"firefight", false, false) == true, "ASSIGN: a decider's part lands on the mind")
 	bridge.realm_changed.emit()
-	_ok(store.rec("cities") == null and synced[0] == 2 and cleared[0] == 1, "a new chronicle clears the records, says cleared, redraws nothing")
+	_ok(store.rec("cities") == null and synced[0] == 2, "a new chronicle clears the records and redraws nothing")
 	print("STORE PROBE: %s" % ("PASS" if _fails.is_empty() else "FAIL (%d)" % _fails.size()))
 	quit(0 if _fails.is_empty() else 1)

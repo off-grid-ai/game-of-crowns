@@ -55,7 +55,7 @@ func _setup() -> void:
 	main.control.spoke.connect(func(wav): main.bridge.hear(wav, main.control.understood))
 	main.control.enter.connect(func(room, town, p):
 		var name := ""
-		for c in main.awareness.rec("cities", []):
+		for c in main.bridge.world.get("cities", []):
 			if int(c["id"]) == town:
 				name = String(c.get("title", c["name"]))
 		if main.interior.open(room, p, main._houses.get(int(p.get("house_id", -1)), {}), name):
@@ -78,7 +78,7 @@ func _walk_as_king() -> void:
 	if main.control.active:
 		main.control.stop()
 		return
-	for p in main.awareness.rec("players", []):
+	for p in main.bridge.world.get("players", []):
 		var h: Dictionary = p.get("house", {})
 		if h.get("crown", false):
 			var house: Dictionary = main._houses.get(int(p["id"]), h)
@@ -101,7 +101,7 @@ func _take_control(p: Dictionary, h: Dictionary) -> void:
 		return
 	var town := -1
 	var owner := int(h.get("id", -1))
-	for c in main.awareness.rec("cities", []):
+	for c in main.bridge.world.get("cities", []):
 		if p.get("seat") and String(c.get("title", c["name"])) == String(p["seat"]):
 			town = int(c["id"])
 		elif town < 0 and int(c["owner"]) == owner and c.get("capital", false):

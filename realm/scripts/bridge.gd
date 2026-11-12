@@ -361,7 +361,7 @@ func scene_arrived(s: Dictionary) -> void:
 
 ## A fire arrow or a sack's spread set one of a town's houses alight (fire.gd): the town's damage fact keeps it
 ## burnt (bridge damage.js kindled), through a reload, till the realm rebuilds it.
-func kindled(city: int, home: int) -> void:
+func kindled(city: int, home: String) -> void:
 	_post("/scene/kindled", {"city": city, "home": home}, func(_c, _d): pass)
 
 

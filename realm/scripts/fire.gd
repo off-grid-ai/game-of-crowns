@@ -404,7 +404,23 @@ static func burnt_homes(named: Array, told: Array, share: float, order: Array) -
 	return burnt
 
 
-## The houses the fact names burnt in a town (fire arrows, a sack's spread: damage.kindled), as the mirror holds it.
+## A house's stable id (towns.gd home_id: where it stands in its town), "" for a record without one.
+static func _id_of(h: Array) -> String:
+	return String(h[5]) if h.size() > 5 else ""
+
+
+## Which of a town's laid houses (`homes`, towns.gd's meta) the damage fact's ids name (damage.kindled): their places
+## in this laying. An id no house has (a house a new layout moved) finds none.
+static func named_homes(ids: Array, homes: Array) -> Array:
+	var out := []
+	for i in homes.size():
+		if ids.has(_id_of(homes[i])):
+			out.append(i)
+	return out
+
+
+## The houses the fact names burnt in a town (fire arrows, a sack's spread: damage.kindled: stable ids), as the mirror
+## holds it.
 func _kindled_of(id: int) -> Array:
 	if main.awareness == null:
 		return []
@@ -420,12 +436,14 @@ func _burnt_share(id: int) -> float:
 	return float(main.awareness.town(id).get_var(&"burnt", 0.0, false))
 
 
-## The houses the fact's burnt share means past those it names (kindled): the same every time (by its id).
-func _order(id: int, count: int) -> Array:
+## The houses the fact's burnt share means past those it names (kindled): the same every time, by the town's id and
+## its houses' stable ids, however the houses were laid in order. Their places in this laying.
+static func share_order(town: int, homes: Array) -> Array:
+	var order := range(homes.size())
+	order.sort_custom(func(a, b): return _id_of(homes[a]) < _id_of(homes[b]))
 	var r := RandomNumberGenerator.new()
-	r.seed = hash(id)
-	var order := range(count)
-	for i in range(count - 1, 0, -1):
+	r.seed = hash(town)
+	for i in range(order.size() - 1, 0, -1):
 		var j := r.randi_range(0, i)
 		var t = order[i]
 		order[i] = order[j]
@@ -459,7 +477,7 @@ func _process(delta: float) -> void:
 			continue
 		# Burnt: the houses the fact names (kindled, and those just told it), then, by the town's own order, as
 		# many more as its burnt share counts past them. The rest stand whole (the realm rebuilt them).
-		var named: Array = _kindled_of(id)
+		var named: Array = named_homes(_kindled_of(id), homes)
 		var told: Array = []
 		for key in _told.keys():
 			if String(key).begins_with("%d:" % id):
@@ -467,7 +485,7 @@ func _process(delta: float) -> void:
 					_told.erase(key)  # the mirror has it now
 				else:
 					told.append(int(String(key).get_slice(":", 1)))
-		var burnt := burnt_homes(named, told, _burnt_share(id), _order(id, homes.size()))
+		var burnt := burnt_homes(named, told, _burnt_share(id), share_order(id, homes))
 		for h in homes.size():
 			var key := "%d:%d" % [id, h]
 			if _waiting(id, h) or _burning.has(key):
@@ -522,10 +540,10 @@ func _alight(root: Node3D, key: String, h: Array, town: int) -> void:
 	root.add_child(fire)
 	_burning[key] = fire
 	# A ruin stays a ruin until the realm rebuilds it (batch 9: it stood whole again by 90 s): the bridge keeps it.
-	if not _kindled_of(town).has(int(key.get_slice(":", 1))) and not _told.has(key):
+	if not _kindled_of(town).has(_id_of(h)) and not _told.has(key):
 		_told[key] = true
-		if main.bridge and main.bridge.has_method("kindled"):
-			main.bridge.kindled(town, int(key.get_slice(":", 1)))
+		if main.bridge and main.bridge.has_method("kindled") and _id_of(h) != "":
+			main.bridge.kindled(town, _id_of(h))
 	if OS.get_cmdline_user_args().has("--probe"):
 		print("FIRE lit %s (burning %d in town %d)" % [key, _columns(town), town])
 	var thin := _columns(town) >= int(d.get("columns", 6))  # past the town's full columns: a thin one

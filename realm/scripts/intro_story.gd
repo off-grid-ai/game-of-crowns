@@ -21,13 +21,14 @@ func _init(owner: Main) -> void:
 ## The realm's story as it stands: each house with its seat, told over stills,
 ## then a flight over the seats themselves.
 func _tell_the_story() -> void:
+	var w: Dictionary = main.bridge.world
 	var houses: Array = []
 	var seats := {}
-	for p in main.awareness.rec("players", []):
+	for p in w.get("players", []):
 		houses.append(p["house"])
-	for c in main.awareness.rec("cities", []):
+	for c in w.get("cities", []):
 		if c.get("capital", false):
-			for p in main.awareness.rec("players", []):
+			for p in w.get("players", []):
 				if int(p["id"]) == int(c["owner"]):
 					seats[String(p["house"].get("name", ""))] = [String(c.get("title", c["name"])), Vector2(float(c["x"]), float(c["y"]))]
 	Settings.set_value("seen_intro", true)
