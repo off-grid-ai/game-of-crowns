@@ -1,9 +1,8 @@
 #!/bin/zsh
 # Batch 9: every shot on docs/review/batch9-list.md (all four sessions'), rendered once by the supervisor
 # (CLAUDE.md: build everything, then render everything once), right after batch 8b. One Godot at a time through
-# realm/tools/render.sh's queue. Every launch runs with the round's switches on (--ui=v2, the dressing, the
-# landmarks: --landmarks=meshy unless a before shot sets LM=--landmarks=kit) and silent (no audio device), but
-# the sound launch, which records. It starts with the import step: Meshy's pieces through Blender, then one
+# realm/tools/render.sh's queue. Every launch runs with the round's switches on (--ui=v2) and silent (no audio
+# device), but the sound launch, which records. It starts with the import step: Meshy's pieces through Blender, then one
 # headless Godot import pass. Close town shots stop at roof height (Mac: no close-up realism; at least 3.5 out,
 # tilt -5). The shots and their references are in docs/review/v17.json; v17_apply.py puts them
 # on the review page. Generated from the list (the fire-siege session); edit the launches here, not the list.
@@ -20,9 +19,7 @@ OUT=${OUT:-/tmp/goc-batch9}
 PORT=${PORT:-8788}; FC=${FC:-5557}
 API=localhost:$PORT
 ONLY=${ONLY:-ladder settled clarity fire fixes meshy village fountain look8b rim grief season castle night ui decisions breach hosts battle sound}
-SW=(--look=one --trees=kit --ground=painted --wear=on --team=on --politics=on --castles=kit --houses=kit --towns=plots --fire=v2 --roadside=on --ui=v2 --dressing=on --castle-life=on --weather=v2)
-# The landmarks (--landmarks=meshy) ride on every launch through LM; a before shot sets LM=--landmarks=kit for its run.
-LM=${LM:---landmarks=meshy}
+SW=(--ui=v2)
 # Films run silent (no audio device: faster, and no sound to wait on); the sound launch sets its own.
 GODOT_ARGS_FILM=${GODOT_ARGS_FILM:---audio-driver Dummy}
 B=(--bridge=http://127.0.0.1:$PORT)
@@ -40,7 +37,7 @@ play() {
   say "launch $name: $*"
   curl -s -m 5 -o /dev/null -X POST $API/court/close
   rm -rf $OUT/$name
-  LIMIT=$limit GODOT_ARGS="${GODOT_ARGS-$GODOT_ARGS_FILM}" $R/realm/tools/render.sh $OUT/$name.png $B $SW ${=LM} "$@" --play=$OUT/$name.play --out=$OUT/$name >> $OUT/render.out 2>&1
+  LIMIT=$limit GODOT_ARGS="${GODOT_ARGS-$GODOT_ARGS_FILM}" $R/realm/tools/render.sh $OUT/$name.png $B $SW "$@" --play=$OUT/$name.play --out=$OUT/$name >> $OUT/render.out 2>&1
   grep "^ *[0-9.]* *  \(site\|work\) " $OUT/$name/play.log 2>/dev/null | tee -a $LOG
   say "launch $name done: $(/bin/ls $OUT/$name 2>/dev/null | grep -c png) frames; script errors: $(grep -c 'SCRIPT ERROR\|SHADER ERROR' $OUT/$name.log 2>/dev/null)"
 }
@@ -127,7 +124,7 @@ if want settled; then
   play settled 360
   clip $OUT/settled forge-clip 5
   say "launch army line d12"
-  LIMIT=420 GODOT_ARGS="$GODOT_ARGS_FILM" $R/realm/tools/render.sh $OUT/army-line-d12.png $B $SW ${=LM} --dist=12 --wait=90 --army-spike=6000 --army-shape=line >> $OUT/render.out 2>&1
+  LIMIT=420 GODOT_ARGS="$GODOT_ARGS_FILM" $R/realm/tools/render.sh $OUT/army-line-d12.png $B $SW --dist=12 --wait=90 --army-spike=6000 --army-shape=line >> $OUT/render.out 2>&1
   grep "^ARMY\|SHOT waiting" $OUT/army-line-d12.log | tail -3 >> $LOG
 fi
 
@@ -184,9 +181,9 @@ if want fixes; then
   stage "{\"city\":$SEATID,\"mood\":\"calm\"}" > /dev/null
 fi
 
-# 19-24. Meshy's pieces in place, before (--landmarks=kit) and after (--landmarks=meshy): the forge, the lumber mill, the treasury, the whole town. The catapult and guard tower show in the breach launch.
+# 19-24. Meshy's pieces in place: the forge, the lumber mill, the treasury, the whole town. The catapult and guard tower show in the breach launch.
 if want meshy; then
-  for v in kit meshy; do
+  for v in meshy; do
     {
       print "wait 30"
       print "work Kingsmere forge 4.5 -5"; print "wait 6"; print "snap forge-$v"
@@ -195,7 +192,7 @@ if want meshy; then
       print "city Kingsmere 14"; print "wait 6"; print "snap town-$v"
       print "look meshy-$v-end"
     } > $OUT/meshy-$v.play
-    LM=--landmarks=$v play meshy-$v 360
+    play meshy-$v 360
   done
 fi
 
@@ -297,7 +294,7 @@ if want breach; then
     print "snap storm-fire"
     print "look breach-end"
   } > $OUT/breach.play
-  play breach 720 --walls=stone --siege --wall-demo
+  play breach 720 --siege --wall-demo
   for c in engine-clip stone-clip breach-clip storm-clip; do clip $OUT/breach $c 5; done
 fi
 
@@ -353,7 +350,7 @@ if want look8b; then
   for c in wheat-clip smoke-clip; do clip $OUT/look8b $c 5; done
 fi
 
-# 54, 56. The square's rim (--dressing) and its crowd (--crowd), each without and with.
+# 54, 56. The square's crowd (--crowd), without and with.
 if want rim; then
   for v in off on; do
     {
@@ -362,7 +359,7 @@ if want rim; then
       print "city Kingsmere 6 -25"; print "wait 8"; print "snap rim-kingsmere-$v"
       print "look rim-$v-end"
     } > $OUT/rim-$v.play
-    if [ $v = off ]; then play rim-$v 300 --dressing=off --crowd=off; else play rim-$v 300; fi
+    if [ $v = off ]; then play rim-$v 300 --crowd=off; else play rim-$v 300; fi
   done
 fi
 
@@ -393,7 +390,7 @@ if want castle; then
     print "look castle-end"
   } > $OUT/castle.play
   stage_on castle castle-breach "{\"damage\":{\"city\":$SEATID,\"section\":0,\"wear\":0.85}}" "{\"damage\":{\"city\":$SEATID,\"section\":1,\"wear\":0.85}}" "{\"damage\":{\"city\":$SEATID,\"section\":2,\"wear\":0.85}}" "{\"damage\":{\"city\":$SEATID,\"section\":3,\"wear\":0.85}}" "{\"damage\":{\"city\":$SEATID,\"section\":4,\"wear\":0.85}}" "{\"damage\":{\"city\":$SEATID,\"section\":5,\"wear\":0.85}}" "{\"damage\":{\"city\":$SEATID,\"section\":6,\"wear\":0.85}}" "{\"damage\":{\"city\":$SEATID,\"section\":7,\"wear\":0.85}}"
-  play castle 420 --walls=stone
+  play castle 420
   settle_stagers
   clip $OUT/castle guards-clip 5
   for sec in 0 1 2 3 4 5 6 7; do stage "{\"damage\":{\"city\":$SEATID,\"section\":$sec,\"wear\":0}}" > /dev/null; done

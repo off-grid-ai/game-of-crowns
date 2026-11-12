@@ -23,7 +23,7 @@ OUT=${OUT:-/tmp/goc-batch8}
 PORT=${PORT:-8788}; FC=${FC:-5557}
 API=localhost:$PORT
 ONLY=${ONLY:-look2 centre square castle breach fields arms painted battle hosts weather night knight2}
-SW=(--look=one --trees=kit --ground=painted --wear=on --team=on --politics=on --castles=kit --houses=kit --towns=plots --fire=v2 --roadside=on)
+SW=()
 B=(--bridge=http://127.0.0.1:$PORT)
 FF=${FF:-/opt/homebrew/bin/ffmpeg}
 mkdir -p $OUT; LOG=$OUT/batch.log
@@ -221,7 +221,7 @@ if want castle; then
       grep -q "castle-end" $OUT/castle/play.log 2>/dev/null && break; sleep 1
     done ) &
   STAGER=$!
-  play castle 480 --castle-life=on --walls=stone
+  play castle 480
   wait $STAGER  # the stager only: the bridge runs in the background too
   clip $OUT/castle guards-clip 5
   for sec in 0 1 2 3 4 5 6 7; do stage "{\"damage\":{\"city\":$SEATID,\"section\":$sec,\"wear\":0}}" > /dev/null; done
@@ -318,7 +318,7 @@ if want breach; then
     print "snap storm-fire"
     print "look breach-end"
   } > $OUT/breach.play
-  play breach 600 --walls=stone --siege --wall-demo
+  play breach 600 --siege --wall-demo
   for c in engine-clip stone-clip breach-clip storm-clip; do clip $OUT/breach $c 5; done
 fi
 
@@ -466,7 +466,7 @@ if want weather; then
     print "city $SEAT 14 -3"; print "wait 6"; print "snap rain-town"
     print "look rain-end"
   } > $OUT/rain.play
-  play rain 420 --weather=v2
+  play rain 420
   clip $OUT/rain rain-clip 5
   say "snow: $(stage '{"weather":"snow"}')"
   {
@@ -475,7 +475,7 @@ if want weather; then
     print "city $SEAT 14 -3"; print "wait 6"; print "snap snow-town"
     print "look snow-end"
   } > $OUT/snow.play
-  play snow 420 --weather=v2 --season=winter
+  play snow 420 --season=winter
   stage '{"weather":"clear"}' > /dev/null
 fi
 
@@ -490,7 +490,7 @@ if want night; then
     if has_step castle; then print "castle Kingsmere 3 -3 gate"; print "wait 6"; print "snap night-castle-gate"; fi
     print "look night-end"
   } > $OUT/night.play
-  play night 420 --hour=21 --castle-life=on
+  play night 420 --hour=21
 fi
 
 # 7b. works-life's knight_v2 set goes here (launch name: knight2; on by default once it lands).

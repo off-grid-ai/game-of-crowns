@@ -14,7 +14,7 @@
 #   docs/review/focus.sh                 # ROUND defaults to the time (HHMM)
 #   ROUND=r3 docs/review/focus.sh        # frames, logs and composites in /tmp/goc-focus/r3/
 #   CLOSER=0.7                           # the closer frame's share of the hero distance
-#   LOOK=--look=v3 EXTRA=--cast=meshy    # the look switch (default --look=one) and any more switches
+#   EXTRA=--cast=meshy                   # any more switches
 #
 # Its own private bridge (8789, Freeciv 5558; PORT, FC to change) with a fresh reign named "Film focus", so Mac's
 # realm on 8787 is never touched. It stops that bridge when it ends. Nothing here edits the repo.
@@ -24,8 +24,7 @@ OUT=${OUT:-/tmp/goc-focus/$ROUND}
 PORT=${PORT:-8789}; FC=${FC:-5558}
 API=localhost:$PORT
 CLOSER=${CLOSER:-0.7}
-LOOK=${LOOK:---look=one}
-SW=($LOOK ${=EXTRA} --trees=kit --ground=painted --wear=on --team=on --politics=on --castles=kit --houses=kit --towns=plots --fire=v2 --roadside=on --ui=v2 --dressing=on --castle-life=on --weather=v2 --landmarks=meshy)
+SW=(${=EXTRA} --ui=v2)
 B=(--bridge=http://127.0.0.1:$PORT)
 TARGET=$R/docs/art/target/01-town.jpg
 mkdir -p $OUT; LOG=$OUT/focus.log

@@ -137,8 +137,10 @@ func _run() -> void:
 	var why: Array = v2.heard.map(func(h): return String(h[1]).get_slice("#", 0))
 	for need in ["loop:forge", "loop:windmill", "loop:market", "loop:inn", "loop:fire", "loop:cart", "loop:levy", "loop:bonfire", "event:ui_decree", "event:siege", "event:muster"]:
 		if not why.any(func(w): return String(w).begins_with(need)):
-			print("SOUND FAIL nothing heard from %s" % need)
-			if need != "loop:bonfire" and need != "loop:windmill":  # (no feast fire here; the probe mill has no rpm until the day's work starts)
+			if need == "loop:bonfire" or need == "loop:windmill":  # (no feast fire here; the probe mill has no rpm until the day's work starts)
+				print("SOUND NOTE nothing heard from %s (not judged here)" % need)
+			else:
+				print("SOUND FAIL nothing heard from %s" % need)
 				fails += 1
 	var calls: int = why.filter(func(w): return String(w).begins_with("call:")).size()
 	var clips: Array = v2.heard.filter(func(h): return String(h[1]) == "clip:Hammer_Swing")

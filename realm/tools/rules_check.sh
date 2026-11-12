@@ -76,4 +76,14 @@ check "one-scale" '^const [A-Z_]*(S|SCALE) := 0\.12\b' 'scripts/world_units\.gd'
 #   Color only through Data.colour (audit #18).
 check "one-loader" 'FileAccess\.(open|get_file_as_string)\(("res://data/|DATA\b)|"res://data/[a-z_]+\.json"' 'scripts/data\.gd'
 check "one-colour" 'func _rgb|Color\(float\([A-Za-z_]+\[0\]\), *float\([A-Za-z_]+\[1\]\), *float\([A-Za-z_]+\[2\]\)' 'scripts/data\.gd'
+#   unread-switch: every switch a launch script hands the game (realm/tools render/play/stills/media.sh, the rounds in
+#   docs/review/*.sh) is read by some script (its "--name in a .gd), so a switch that does nothing can't ride a launch
+#   line (the look audit, a65fa3c3). Godot's, git's and the apply scripts' own flags are not the game's.
+not_game='path|headless|resolution|fixed-fps|audio-driver|import|check|oneline'
+launch=(tools/render.sh tools/play.sh tools/stills.sh tools/media.sh ../docs/review/*.sh)
+for sw in $(grep -hv '^[[:space:]]*#' $launch | grep -oE -- '--[a-z][a-z0-9-]*' | sort -u); do
+  [[ ${sw#--} =~ "^($not_game)\$" ]] && continue
+  grep -qF -- "\"$sw" scripts/**/*.gd tools/*.gd 2>/dev/null && continue
+  echo "$sw   <- unread-switch: passed by $(grep -lv '^[[:space:]]*#' $launch | xargs grep -l -- "$sw" | tr '\n' ' ')but read by no script"; fail=1
+done
 exit $fail
