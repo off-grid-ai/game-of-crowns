@@ -1,8 +1,8 @@
 extends Node3D
 ## Builds the 3D land from Freeciv's tile map: a smooth heightfield coloured by
-## terrain, a sea plane, and forests/rocks scattered on the right tiles.
+## terrain, a sea plane, the wild plants and woods (vegetation.gd, forest.gd), the realm map
+## (political_overlay.gd) and the overland paths (land_paths.gd).
 
-const Units := preload("res://scripts/world_units.gd")  # the world's one scale (Units.M)
 const TILE := 4.0
 const Awareness := preload("res://scripts/awareness.gd")  # the realm's rules as the bridge sends them (season length, bands)
 const SUB := 4  # mesh vertices per tile edge
@@ -27,9 +27,6 @@ var width := 0
 var height := 0
 var terrain: Array = []  # terrain name per tile, row-major
 var _noise := FastNoiseLite.new()
-var _forest_mm: MultiMeshInstance3D
-var _pine_mm: MultiMeshInstance3D
-var _rock_mm: MultiMeshInstance3D
 
 
 func build(map: Dictionary) -> void:
@@ -60,7 +57,7 @@ func build(map: Dictionary) -> void:
 	rivers.build(self)
 	await get_tree().process_frame
 	Engine.set_meta("stage", "vegetation")
-	_build_vegetation()
+	_plant()
 	await get_tree().process_frame
 	var t2 := Time.get_ticks_msec()
 	paths.build()
@@ -82,8 +79,6 @@ var built := false  # the land, sea, rivers and woods are all in place
 func refresh_terrain(map: Dictionary) -> void:
 	for c in get_children():
 		c.queue_free()
-	_veg.clear()
-	_veg_cells.clear()
 	await build(map)
 
 
@@ -160,7 +155,8 @@ func set_season(name: String, towns: Array = [], settle := 10.0) -> void:
 	if name == season:
 		return
 	season = name
-	for mmi in _veg + (forest.leafy() if forest and forest.has_method("leafy") else []):  # the kit woods turn with the season too
+	var wild: Array = vegetation.batches if vegetation else []
+	for mmi in wild + (forest.leafy() if forest and forest.has_method("leafy") else []):  # the kit woods turn with the season too
 		var mesh: Mesh = mmi.multimesh.mesh
 		for i in mesh.get_surface_count():
 			var mat := mesh.surface_get_material(i) as StandardMaterial3D
@@ -177,7 +173,7 @@ func set_season(name: String, towns: Array = [], settle := 10.0) -> void:
 			var tint: Color = (mat.get_meta("seasons", {}) as Dictionary).get(name, s[key])
 			create_tween().tween_property(mat, "albedo_color", _leaf_mats[mat] * tint, settle)
 			_leaf_snow(mat, key != "grass" and s["snow"] > 0.0)
-		if s["snow"] > 0.0 and OVERLAY_SNOW and mmi in _veg:  # (the kit woods' batches are tinted through one per mesh: no overlay there)
+		if s["snow"] > 0.0 and OVERLAY_SNOW and mmi in wild:  # (the kit woods' batches are tinted through one per mesh: no overlay there)
 			mmi.material_overlay = _snow  # left on as it melts; the fade takes it to nothing
 	if land3d:
 		land3d.set_grass(s["ground"], s["snow"] > 0.0, settle)
@@ -681,578 +677,46 @@ func _drape_sea(mat: ShaderMaterial) -> void:
 	mat.set_shader_parameter("atlas_size", Vector2(width * TILE, height * TILE))
 
 
-func _mesh_from(path: String) -> Mesh:
-	var scene: Node = load(path).instantiate()
-	var found: Mesh = null
-	var stack := [scene]
-	while stack.size() > 0 and found == null:
-		var n: Node = stack.pop_back()
-		if n is MeshInstance3D:
-			found = n.mesh
-		stack.append_array(n.get_children())
-	scene.free()
-	return found
-
-
-func _scatter(mesh: Mesh, transforms: Array) -> MultiMeshInstance3D:
-	var mm := MultiMesh.new()
-	mm.transform_format = MultiMesh.TRANSFORM_3D
-	mm.mesh = mesh
-	mm.instance_count = transforms.size()
-	for i in transforms.size():
-		mm.set_instance_transform(i, transforms[i])
-	var mmi := MultiMeshInstance3D.new()
-	mmi.multimesh = mm
-	add_child(mmi)
-	return mmi
-
-
-## Nature MegaKit trees, bushes and rocks, at the same scale as the towns.
-const VEG_SCALE := Units.M
-const VEG_PATCH := 12.0  # game units: grass and bushes are batched by patch of the map
-const VEG_REACH := 24.0  # and drawn only within this of the camera
-var _veg: Array[MultiMeshInstance3D] = []
-
-
-func _build_vegetation() -> void:
-	var builder = preload("res://scripts/house_builder.gd").new()
-	var kinds := {
-		"broad": ["CommonTree_1", "CommonTree_2", "CommonTree_3", "CommonTree_4", "CommonTree_5"],
-		"pine": ["Pine_1", "Pine_2", "Pine_3", "Pine_4", "Pine_5"],
-		"dead": ["DeadTree_1", "DeadTree_2", "DeadTree_3"],
-		"bush": ["Fern_1", "Plant_1", "Plant_7"],
-		"grass": ["Grass_Common_Short", "Grass_Wispy_Short"],
-		"rock": ["Rock_Medium_1", "Rock_Medium_2", "Rock_Medium_3"],
-	}
-	var meshes := {}
-	var placed := {}
-	for k in kinds:
-		meshes[k] = []
-		for name in kinds[k]:
-			var baked: Mesh = builder.bake_path("res://assets/nature/%s.gltf" % name)
-			if baked and k in ["broad", "pine", "dead"]:
-				# A crown right in front of the lens dissolves (realistic.gd's fade).
-				for si in baked.get_surface_count():
-					var m := baked.surface_get_material(si) as BaseMaterial3D
-					if m:
-						m = m.duplicate()
-						preload("res://scripts/realistic.gd").fade_near(m, preload("res://scripts/realistic.gd").TREE_GONE, preload("res://scripts/realistic.gd").TREE_SOLID)
-						baked.surface_set_material(si, m)
-			meshes[k].append(baked)
-			placed["%s:%d" % [k, meshes[k].size() - 1]] = []
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 42
-	for ty in height:
-		for tx in width:
-			var name: String = terrain[ty * width + tx]
-			var mix := {}  # kind -> count per tile
-			match name:
-				"Forest": mix = {"bush": 6, "grass": 6}
-				"Jungle": mix = {"broad": 22, "bush": 8}
-				"Swamp": mix = {"dead": 5, "bush": 6}
-				"Grassland": mix = {"bush": 1, "grass": 18}
-				"Plains": mix = {"bush": 1, "grass": 12}
-				"Hills": mix = {"pine": 6, "rock": 1, "bush": 2}
-				"Tundra": mix = {"pine": 4, "dead": 1, "rock": 1}
-				"Mountains": mix = {"rock": 2, "pine": 2}
-				"Desert": mix = {"rock": 1, "dead": 1 if rng.randf() < 0.3 else 0}
-			for kind in mix:
-				for i in int(mix[kind]):
-					var wx := (tx + rng.randf()) * TILE
-					var wz := (ty + rng.randf()) * TILE
-					if not is_land(wx, wz):
-						continue
-					var s := VEG_SCALE * rng.randf_range(0.8, 1.3)
-					if kind == "grass":
-						s *= rng.randf_range(0.5, 0.9)
-					if kind == "rock":
-						s *= rng.randf_range(0.6, 1.2) if name == "Mountains" else rng.randf_range(0.4, 0.8)  # a man high at most, never the size of a house
-					var b := Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(s, s * rng.randf_range(0.9, 1.15), s))
-					var v: int = rng.randi() % meshes[kind].size()
-					placed["%s:%d" % [kind, v]].append(Transform3D(b, Vector3(wx, height_at(wx, wz) - 0.03, wz)))
-	_woodland(meshes, placed, rng)
-	if _pines_ok and not _pines.is_empty():
-		forest = preload("res://scripts/forest.gd").new()
-		forest.name = "Forest"
-		add_child(forest)
-		forest.plant(_pines)
-		print_verbose("FOREST %d pines" % _pines.size())
-	for key in placed:
-		var parts: PackedStringArray = key.split(":")
-		if not parts[0] in ["grass", "bush"]:
-			_veg.append(_scatter(meshes[parts[0]][int(parts[1])], placed[key]))
-			continue
-		# Grass and bushes in patches of the map, each drawn only near the
-		# camera: one batch for the whole realm was drawn everywhere at once,
-		# eight million triangles of grass nobody could see.
-		var patches := {}
-		for t: Transform3D in placed[key]:
-			var c := Vector2i(floori(t.origin.x / VEG_PATCH), floori(t.origin.z / VEG_PATCH))
-			if not patches.has(c):
-				patches[c] = []
-			patches[c].append(t)
-		for c in patches:
-			var mmi := _scatter(meshes[parts[0]][int(parts[1])], patches[c])
-			mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-			mmi.visibility_range_end = VEG_REACH if parts[0] == "grass" else VEG_REACH * 1.5
-			mmi.visibility_range_end_margin = 3.0
-			_veg.append(mmi)
-
-
-## The open country isn't evenly dotted with trees: woods gather where the
-## land lets them (a slow noise decides where), thick in the middle and
-## thinning at the edges into copses and the odd lone oak, with open pasture
-## between. Broadleaf in the lowlands, pine creeping in as the ground rises.
-var _pines: Array = []
-var _pines_ok := false
+## The wild plants (vegetation.gd) and the kit woods (forest.gd) planted where it lays them.
+const Vegetation := preload("res://scripts/vegetation.gd")
+var vegetation: Node3D
 var forest: Node3D
 
 
-func _woodland(meshes: Dictionary, placed: Dictionary, rng: RandomNumberGenerator) -> void:
-	_pines.clear()
-	var Forest = preload("res://scripts/forest.gd")
-	_pines_ok = Forest.available()
-	var broad: bool = Forest.broadleaf()
-	var wood := FastNoiseLite.new()
-	wood.seed = 911
-	wood.frequency = 0.045
-	wood.fractal_octaves = 3
-	var step := 0.36  # one chance of a tree every third of a unit (about 3 m)
-	for zi in int(height * TILE / step):
-		for xi in int(width * TILE / step):
-			var wx := xi * step + rng.randf_range(-0.25, 0.25)
-			var wz := zi * step + rng.randf_range(-0.25, 0.25)
-			var name := tile_at(int(wx / TILE), int(wz / TILE))
-			if not (name in ["Grassland", "Plains", "Forest", "Hills"]):
-				continue
-			var n := wood.get_noise_2d(wx, wz)
-			var chance := 0.0
-			if name == "Forest":
-				chance = 0.75 if n > -0.25 else 0.35
-			elif n > 0.1:
-				chance = 0.9  # deep in a wood
-			elif n > 0.0:
-				chance = 0.4  # its fringe
-			elif n > -0.35:
-				chance = 0.008  # a lone tree in the fields
-			if rng.randf() > chance or not is_land(wx, wz):
-				continue
-			var y := height_at(wx, wz)
-			if y < 0.15:
-				continue
-			if _pines_ok:
-				# The game-ready trees (forest.gd): pine on the hills, in the
-				# great forests and the cold north; oak in the lowland woods.
-				# Size varies a little, as trees do.
-				var ps := rng.randf_range(0.7, 1.25)
-				var fringe := chance < 0.5
-				var kind := Forest.pine_kind(rng, fringe)
-				var north := wz / (height * TILE)  # 0 at the top of the map
-				if broad and name != "Forest" and y < 2.2 and rng.randf() > 0.15 + (0.6 if north < 0.3 else 0.0):
-					kind = Forest.oak_kind(rng, fringe)
-					ps *= 0.85
-				_pines.append([kind, Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(ps, ps * rng.randf_range(0.9, 1.15), ps)), Vector3(wx, y - 0.03, wz))])
-			else:
-				var kind := "pine" if y > 2.2 or rng.randf() < 0.18 else "broad"
-				var s := VEG_SCALE * rng.randf_range(1.0, 1.8)
-				var b := Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(s, s * rng.randf_range(0.85, 1.2), s))
-				var v: int = rng.randi() % meshes[kind].size()
-				placed["%s:%d" % [kind, v]].append(Transform3D(b, Vector3(wx, y - 0.03, wz)))
-			# Undergrowth under the canopy (and thickets at the wood's edge).
-			if broad and rng.randf() < (0.3 if chance > 0.5 else 0.6):
-				var bu := Vector3(wx + rng.randf_range(-0.3, 0.3), 0, wz + rng.randf_range(-0.3, 0.3))
-				var bsz := rng.randf_range(0.6, 1.1)
-				_pines.append([Forest.bush_kind(rng), Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3.ONE * bsz), Vector3(bu.x, height_at(bu.x, bu.z) - 0.02, bu.z))])
-			elif chance > 0.5 and rng.randf() < 0.5:
-				var u := Vector3(wx + rng.randf_range(-0.3, 0.3), 0, wz + rng.randf_range(-0.3, 0.3))
-				var bs := VEG_SCALE * rng.randf_range(0.6, 1.1)
-				var bv: int = rng.randi() % meshes["bush"].size()
-				placed["bush:%d" % bv].append(Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3.ONE * bs), Vector3(u.x, height_at(u.x, u.z) - 0.03, u.z)))
+func _plant() -> void:
+	vegetation = Vegetation.new()
+	vegetation.name = "Vegetation"
+	vegetation.land = self
+	add_child(vegetation)
+	forest = null
+	var woods: Array = vegetation.build()
+	if not woods.is_empty():
+		forest = preload("res://scripts/forest.gd").new()
+		forest.name = "Forest"
+		add_child(forest)
+		forest.plant(woods)
+		print_verbose("FOREST %d pines" % woods.size())
 
 
 ## Fells trees and clears rocks where a town stands.
 func clear_around(center: Vector3, radius: float) -> void:
 	if forest:
 		forest.clear(center, radius)
-	# Only the grid cells the circle touches, not every plant in the realm.
-	var lo := Vector2i(floori((center.x - radius) / VEG_CELL), floori((center.z - radius) / VEG_CELL))
-	var hi := Vector2i(floori((center.x + radius) / VEG_CELL), floori((center.z + radius) / VEG_CELL))
-	for mmi in _veg:
-		var mm: MultiMesh = mmi.multimesh
-		var cells := _veg_cells_of(mmi)
-		for cy in range(lo.y, hi.y + 1):
-			for cx in range(lo.x, hi.x + 1):
-				for i in cells.get(Vector2i(cx, cy), []):
-					var t := mm.get_instance_transform(i)
-					if Vector2(t.origin.x - center.x, t.origin.z - center.z).length() < radius:
-						mm.set_instance_transform(i, Transform3D(Basis.from_scale(Vector3.ZERO), t.origin))
+	if vegetation:
+		vegetation.clear(center, radius)
 
 
-## The order a realm is built in: the land is shaped, then towns grade their
-## plots and roads settle, and only then does what stands on the ground take its
-## height from it. The woods and the wild plants are scattered while the land
-## forms, before any town levels its ground, so once the towns are up they are
-## settled onto the finished ground: none buried in a levelled plot, none
-## floating over a cut. A few thousand at a time, so the window stays live.
+## Once the towns have graded their ground, the woods and the wild plants are set on it (vegetation.gd settle).
 func settle_scatter() -> void:
-	var batches: Array = _veg.duplicate()
-	if forest:
-		batches.append_array(forest.find_children("*", "MultiMeshInstance3D", true, false))
-	var done := 0
-	for mmi in batches:
-		if not is_instance_valid(mmi):
-			continue
-		var mm: MultiMesh = mmi.multimesh
-		for i in mm.instance_count:
-			var t := mm.get_instance_transform(i)
-			if t.basis.determinant() == 0.0:
-				continue  # cleared for a town
-			var y := height_at(t.origin.x, t.origin.z) - 0.03
-			if absf(y - t.origin.y) > 0.005:
-				t.origin.y = y
-				mm.set_instance_transform(i, t)
-			done += 1
-			if done % 4000 == 0:
-				await get_tree().process_frame
-	print_verbose("SETTLED %d plants and trees on the finished ground" % done)
+	if vegetation:
+		await vegetation.settle(forest.find_children("*", "MultiMeshInstance3D", true, false) if forest else [])
 
 
-const VEG_CELL := 4.0
-var _veg_cells := {}  # multimesh instance -> {cell: instance indices}
+# --- the realm map: who holds what (political_overlay.gd) ---------------------------
 
-
-func _veg_cells_of(mmi: MultiMeshInstance3D) -> Dictionary:
-	if _veg_cells.has(mmi):
-		return _veg_cells[mmi]
-	var cells := {}
-	var mm: MultiMesh = mmi.multimesh
-	for i in mm.instance_count:
-		var o := mm.get_instance_transform(i).origin
-		var key := Vector2i(floori(o.x / VEG_CELL), floori(o.z / VEG_CELL))
-		if not cells.has(key):
-			cells[key] = []
-		cells[key].append(i)
-	_veg_cells[mmi] = cells
-	return cells
-
-
-# --- the realm map: who holds what, and where they're at war ----------------
-
-var _land_mat: ShaderMaterial
-var _realm_sig := ""
-var _realm_rows: Array = []  # the owners' rows as last read: a row is parsed again only when its text changes
-var _war_img: Image  # the standing per tile, kept and repainted where it changed
-var _war_live: ImageTexture  # standing_tex, updated in place
-var _borders := {}  # tiles on a border between two houses (what a change of standing repaints)
-var _look_sig := ""  # the houses' colours and oaths: a change repaints everything
-var _rel_sig := ""  # wars, truces, schemes: a change repaints the borders
-
-
-## Repaints territory from Freeciv's owner layer (one "-,0,3,…" row per map
-## line) and the houses' wars. players: world players with house and wars (the
-## bridge's one reading of who is at war: a truce the King commanded, or a loyal
-## house's old diplomacy with the crown, isn't one; Freeciv's raw atWarWith is).
-## intrigue: the houses' schemes among themselves (the mirror's intrigue): an
-## envoy, a pact the King's spies have revealed, a marriage, drawn on the seam
-## between the two houses (a = 0.75 envoy, 0.5 pact, 0.25 marriage; 1 none).
-const SCHEME := {"envoy": 0.75, "pact": 0.5, "marriage": 0.25}
-## The political map (realm/data/look.json politics): each house's hold from its favour band (the bridge's
-## reading) and, for a house slipping away, the colour of the first house it's at war with; to the ground's
-## shader as two uniform arrays by owner id, so a change of mood repaints nothing.
-func _set_politics(players: Array, colour: Dictionary, by_name: Dictionary) -> void:
-	if land3d == null:
-		return
-	var pol: Dictionary = preload("res://scripts/look.gd").LOOK.get("politics", {})
-	var on := bool(pol.get("on", false))
-	if preload("res://scripts/map_look.gd").politics():
-		on = true  # the realm at map zoom reads who holds it (data/map.json politics)
-	var hold := PackedFloat32Array()
-	hold.resize(64)
-	hold.fill(1.0)
-	var lean := PackedVector3Array()
-	lean.resize(64)
-	var bands: Dictionary = pol.get("hold", {})
-	for p in players:
-		var id := int(p.get("id", -1))
-		if id < 0 or id >= 64:
-			continue
-		hold[id] = float(bands.get(str(p.get("band", "")), 1.0))
-		var foes: Array = p.get("atWarWith", [])
-		if not foes.is_empty() and colour.has(int(foes[0])):
-			var c: Color = colour[int(foes[0])]
-			lean[id] = Vector3(c.r, c.g, c.b)
-	land3d.set_politics(on, hold, lean,
-		Vector4(float(pol.get("wash_near", 0.3)), float(pol.get("wash_far", 0.8)), float(pol.get("own_mix", 0.45)), float(pol.get("stripes_below", 0.4))),
-		Vector4(float(pol.get("border_bright", 1.35)), float(pol.get("border_px", 3.0)), float(pol.get("stripe_width", 1.4)), 0.0),
-		Vector2(float(pol.get("map_from", 12.0)), float(pol.get("map_to", 30.0))),
-		Vector4(float(pol.get("line_from", 9.0)), float(pol.get("line_to", 22.0)), float(pol.get("line_soft", 0.22)), float(pol.get("line_crisp", 0.55))))
-
-
-func set_realm(owners: Array, players: Array, intrigue: Array = []) -> void:
-	if _land_mat == null or owners.size() != height or (USE_TERRAIN3D and (land3d == null or land3d.land == null)):
-		return  # (the 3D land is still being raised: the next reading paints it)
-	var wars := {}
-	var truces := {}
-	var sworn := {}
-	var colour := {}
-	for p in players:
-		wars[int(p["id"])] = []
-		truces[int(p["id"])] = []
-		sworn[int(p["id"])] = p.get("sworn") != null
-		var h: Dictionary = p.get("house", {})
-		colour[int(p["id"])] = Color(0, 0, 0, 0) if h.get("wild", false) else preload("res://scripts/heraldry.gd").colour(h, Color.GRAY, "#888")
-	# The bridge names the foes ("Wolfholt", "the Crown"); the map wants their ids.
-	var by_name := {}
-	for p in players:
-		var h: Dictionary = p.get("house", {})
-		by_name["the Crown" if h.get("crown", false) else String(h.get("name", "")).trim_prefix("House ")] = int(p["id"])
-	for p in players:
-		for foe in p.get("wars", []):
-			if by_name.has(String(foe)):
-				wars[int(p["id"])].append(by_name[String(foe)])
-		for held in p.get("truces", []):
-			if by_name.has(String(held)):
-				truces[int(p["id"])].append(by_name[String(held)])
-	var schemes := {}  # "a:b" (lower id first) -> its seam's code
-	for it in intrigue:
-		var k := String(it.get("kind", ""))
-		if not SCHEME.has(k) or (k == "pact" and it.get("secret", false)):
-			continue  # a pact the spies haven't found is not drawn
-		var a := int(it.get("from", -1))
-		var b := int(it.get("to", -1))
-		schemes["%d:%d" % [mini(a, b), maxi(a, b)]] = SCHEME[k]
-	_set_politics(players, colour, by_name)
-	var sig := str(hash(owners)) + str(hash(wars)) + str(hash(truces)) + str(hash(sworn)) + str(hash(schemes))
-	if sig == _realm_sig:
-		return
-	_realm_sig = sig
-	var pt := Time.get_ticks_usec()
-	# Only what changed is read and repainted (npc-perf: the whole map redrawn on
-	# every change held a frame over a second): a row of the owners is parsed again
-	# only if its text changed; a tile is repainted only if its owner changed, it
-	# borders one that did, or (when the houses' standing changed) it lies on a border.
-	# A change of a house's colour or oath repaints the whole map, as before.
-	var look_sig := str(hash(sworn)) + str(hash(colour))
-	var rel_sig := str(hash(wars)) + str(hash(truces)) + str(hash(schemes))
-	var full := _realm_img == null or _war_img == null or _realm_ids.size() != height or look_sig != _look_sig
-	var ids: Array = [] if full else _realm_ids.duplicate()
-	if full:
-		ids.resize(height)
-	var moved: Array[Vector2i] = []
-	for y in height:
-		var row := String(owners[y])
-		if not full and y < _realm_rows.size() and _realm_rows[y] == row:
-			continue
-		var cells := []
-		for v in row.split(","):
-			cells.append(-1 if v == "-" or v == "" else int(v))
-		if not full:
-			var old: Array = ids[y]
-			for x in maxi(old.size(), cells.size()):
-				if (old[x] if x < old.size() else -1) != (cells[x] if x < cells.size() else -1):
-					moved.append(Vector2i(x, y))
-		ids[y] = cells
-	_realm_rows = owners.duplicate()
-	var was_ids := _realm_ids
-	_realm_ids = ids
-	var owner_at := func(x: int, y: int) -> int:
-		return ids[y][x] if y >= 0 and y < height and x >= 0 and x < (ids[y] as Array).size() else -1
-	# The houses' standing, per tile: r = at war with a neighbour across the border,
-	# g = under a truce with one, b = the owner is sworn to the crown, a = a scheme
-	# with that neighbour (SCHEME; 1 for none).
-	var paint := func(realm: Image, war: Image, x: int, y: int) -> void:
-		var o: int = owner_at.call(x, y)
-		var col: Color = colour.get(o, Color(0, 0, 0, 0))
-		realm.set_pixel(x, y, Color(col.r, col.g, col.b, (o + 1) / 64.0) if o >= 0 and col.a > 0.0 else Color(0, 0, 0, 0))
-		var st := Color(0, 0, 1.0 if o >= 0 and sworn.get(o, false) else 0.0, 1)
-		var edge := false
-		for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
-			var n: int = owner_at.call(x + d.x, y + d.y)
-			if o < 0 or n < 0 or n == o:
-				continue
-			edge = true
-			if n in wars.get(o, []):
-				st.r = 1.0
-			elif n in truces.get(o, []):
-				st.g = 1.0
-			if schemes.has("%d:%d" % [mini(o, n), maxi(o, n)]):
-				st.a = schemes["%d:%d" % [mini(o, n), maxi(o, n)]]
-		war.set_pixel(x, y, st)
-		if edge:
-			_borders[Vector2i(x, y)] = true
-		else:
-			_borders.erase(Vector2i(x, y))
-	var realm: Image
-	if full:
-		realm = Image.create(width, height, false, Image.FORMAT_RGBA8)
-		_war_img = Image.create(width, height, false, Image.FORMAT_RGBA8)
-		_borders = {}
-		for y in height:
-			for x in width:
-				paint.call(realm, _war_img, x, y)
-	else:
-		realm = _realm_img.duplicate() as Image  # the flood below needs the one before
-		var todo := {}
-		for t in moved:
-			for d in [Vector2i.ZERO, Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
-				var q: Vector2i = t + d
-				if q.x >= 0 and q.y >= 0 and q.x < width and q.y < height:
-					todo[q] = true
-		if rel_sig != _rel_sig:
-			for t in _borders.keys():
-				todo[t] = true
-		for t in todo:
-			paint.call(realm, _war_img, t.x, t.y)
-	_look_sig = look_sig
-	_rel_sig = rel_sig
-	var realm_tex := ImageTexture.create_from_image(realm)
-	if full or _war_live == null:
-		_war_live = ImageTexture.create_from_image(_war_img)
-	else:
-		_war_live.update(_war_img)
-	var war_tex := _war_live
-	standing_tex = war_tex  # the minimap draws the same seams from this one texture
-	_land_mat.set_shader_parameter("realm_tex", realm_tex)
-	_land_mat.set_shader_parameter("war_tex", war_tex)
-	if land3d:
-		var stages := flood_stages(was_ids, ids, _realm_img, realm)
-		if stages.is_empty():
-			land3d.set_realm(realm_tex, realm_tex, war_tex, {})
-		for st in stages:
-			land3d.set_realm(st[0], st[1], war_tex, st[2])
-	_realm_img = realm
-	preload("res://scripts/perf_tools.gd").add("borders", Time.get_ticks_usec() - pt)
-
-
-## The land's scars (the bridge's marks: where men died, a town was stormed
-## or razed) as one texel per tile for Terrain3D's shader (land3d.set_scars):
-## r = how hard it burned, g = the season it happened, b = the seasons it
-## takes to heal. The shader fades each by its age, so nothing is repainted
-## as they heal. A battle burns its own tile; a town its tile and the ring
-## round it, fainter out. How long a battle's or a sack's scar shows is the
-## bridge's (each mark's `seasons`, server.js MARK_SEASONS); a razed town's
-## ruin stands until the bridge drops it, and the scorched ring round it heals
-## in RAZED_BURN seasons. SCAR keeps only the look: [how hard, how far].
-const SCAR := {"battle": [0.75, 0], "sack": [1.0, 1], "razed": [1.0, 1]}
-const RAZED_BURN := 16.0
-
-
-## The seasons a mark's burn takes to heal: the bridge's for a battle or a sack,
-## RAZED_BURN for the ground round a ruin.
-static func scar_heals(m: Dictionary) -> float:
-	if String(m.get("kind", "")) == "razed" or m.get("seasons") == null:
-		return RAZED_BURN
-	return float(m["seasons"])
-var _scar_sig := ""
-
-
-func set_marks(marks: Array, turn: int) -> void:
-	if land3d == null or land3d.land == null or width == 0:
-		return
-	var sig := str(hash(marks)) + str(turn)
-	if sig == _scar_sig:
-		return
-	_scar_sig = sig
-	var img := Image.create(width, height, false, Image.FORMAT_RGBAF)
-	var left := func(c: Color) -> float:  # what still shows of a scar
-		return c.r * clampf(1.0 - (turn - c.g) / maxf(c.b, 1.0), 0.0, 1.0) if c.b > 0.0 else 0.0
-	for m in marks:
-		var kind := String(m.get("kind", ""))
-		if not SCAR.has(kind):
-			continue
-		var sc: Array = SCAR[kind]
-		var x0 := int(m.get("x", -1))
-		var y0 := int(m.get("y", -1))
-		var reach: int = sc[1]
-		for dy in range(-reach, reach + 1):
-			for dx in range(-reach, reach + 1):
-				var x := x0 + dx
-				var y := y0 + dy
-				if x < 0 or y < 0 or x >= width or y >= height:
-					continue
-				var k := 1.0 if dx == 0 and dy == 0 else 0.55
-				var c := Color(float(sc[0]) * k, float(m.get("turn", turn)), scar_heals(m), 1.0)
-				if left.call(c) > left.call(img.get_pixel(x, y)):
-					img.set_pixel(x, y, c)
-	land3d.set_scars(ImageTexture.create_from_image(img), turn)
-
-
-var _realm_ids := []  # the owner of every tile, as last shown
-## The houses' standing per tile (r war, g truce, b sworn), as set_realm last drew it:
-## the ground and the minimap both draw their border seams from it.
-var standing_tex: Texture2D
-var _realm_img: Image  # the house colours as last shown, for a flood to cross
-
-
-## Where land changed hands since the last reading, flooded in stages: each
-## patch of changed land (a town's fields, usually) floods from its own middle,
-## FLOODS patches at a time; more wait for the next stage, so none pops. Each
-## stage is [the colours after it, the colours before it, {at, reach}]. None
-## (shown at once) on the first reading or when much of the realm changed.
-const FLOODS := 8
-static func flood_stages(was: Array, now: Array, was_img: Image, now_img: Image) -> Array:
-	if was.size() != now.size() or was.is_empty() or was_img == null or was_img.get_size() != now_img.get_size():
-		return []
-	var changed := {}
-	for y in now.size():
-		var a: Array = was[y]
-		var b: Array = now[y]
-		for x in mini(a.size(), b.size()):
-			if a[x] != b[x]:
-				changed[Vector2i(x, y)] = true
-	if changed.is_empty() or changed.size() > 400:
-		return []
-	# Patches: changed tiles that touch, corners included.
-	var patches: Array = []
-	var seen := {}
-	for start in changed:
-		if seen.has(start):
-			continue
-		var patch: Array[Vector2i] = []
-		var todo: Array[Vector2i] = [start]
-		seen[start] = true
-		while not todo.is_empty():
-			var t: Vector2i = todo.pop_back()
-			patch.append(t)
-			for dy in [-1, 0, 1]:
-				for dx in [-1, 0, 1]:
-					var n := t + Vector2i(dx, dy)
-					if changed.has(n) and not seen.has(n):
-						seen[n] = true
-						todo.append(n)
-		patches.append(patch)
-	patches.sort_custom(func(p, q): return p.size() > q.size())
-	var out: Array = []
-	var work := was_img.duplicate() as Image
-	var before: Texture2D = ImageTexture.create_from_image(work)
-	for k in range(0, patches.size(), FLOODS):
-		var at := PackedVector2Array()
-		var reach := 0.0
-		for patch in patches.slice(k, k + FLOODS):
-			var mid := Vector2.ZERO
-			for t in patch:
-				mid += Vector2(t) + Vector2(0.5, 0.5)
-				work.set_pixelv(t, now_img.get_pixelv(t))
-			mid /= patch.size()
-			at.append(mid)
-			for t in patch:
-				reach = maxf(reach, (Vector2(t) + Vector2(0.5, 0.5)).distance_to(mid))
-		var after: Texture2D = ImageTexture.create_from_image(work)
-		out.append([after, before, {"at": at, "reach": reach}])
-		before = after
-	return out
-
-
-## 0 down among the streets, 1 looking at the whole realm.
-var _realm_mix := -1.0
-func set_realm_mix(v: float) -> void:
-	if absf(v - _realm_mix) <= 0.002:
-		return
-	_realm_mix = v
-	if _land_mat:
-		_land_mat.set_shader_parameter("realm_mix", v)
-	if land3d:
-		land3d.set_realm_mix(v)
+const PoliticalOverlay := preload("res://scripts/political_overlay.gd")
+var politics := PoliticalOverlay.new(self)  # the realm map drawn on the ground (political_overlay.gd)
+var _land_mat: ShaderMaterial  # the hand-built land's material (the realm map draws into it too)
 
 
 ## How much of the atlas shows over the 3D ground (0 up close, most of it far out).

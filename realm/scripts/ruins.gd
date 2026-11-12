@@ -1,11 +1,12 @@
 extends Node3D
 ## What war leaves standing on the land, from the bridge's marks (the ground's
-## burn is terrain.set_marks): round a stormed or razed town, the trees that
+## burn is terrain.politics.set_marks): round a stormed or razed town, the trees that
 ## stood there are burnt stumps until the ground heals; where a town was razed,
 ## its ruin stands until a town is raised on the spot again.
 ## Models: the realistic kit (realistic.gd), stumps from Poly Haven, charred.
 
 const Real := preload("res://scripts/realistic.gd")  # the asset catalogue (realm/data/assets.json)
+const PoliticalOverlay := preload("res://scripts/political_overlay.gd")  # how long a scar shows
 static var STUMPS: Array = Real.variants("stump")
 const CHAR := Color(0.22, 0.19, 0.17)  # the stump's own wood, blackened
 static var RUINS: Array = Real.variants("ruin_wall") + Real.variants("ruin_abbey")  # the razed town's walls, when the kit holds them
@@ -65,7 +66,7 @@ func show_marks(marks: Array, turn: int) -> void:
 		if kind != "sack" and kind != "razed":
 			continue
 		var age := turn - int(m.get("turn", turn))
-		var life: float = terrain.scar_heals(m)
+		var life: float = PoliticalOverlay.scar_heals(m)
 		var key := "%s:%d:%d" % [kind, int(m["x"]), int(m["y"])]
 		if kind == "sack" and age >= life * 0.85:
 			continue  # the burn has all but healed: the stumps are gone with it
@@ -85,7 +86,7 @@ func show_marks(marks: Array, turn: int) -> void:
 			if is_instance_valid(_shown[key]):
 				_shown[key].queue_free()
 			_shown.erase(key)
-		elif is_instance_valid(_shown[key]) and turn - int(_shown[key].get_meta("turn", turn)) >= terrain.RAZED_BURN * 0.85:
+		elif is_instance_valid(_shown[key]) and turn - int(_shown[key].get_meta("turn", turn)) >= PoliticalOverlay.RAZED_BURN * 0.85:
 			var stumps: Node = _shown[key].get_node_or_null("Stumps")  # the ruin stays; the burn round it has healed
 			if stumps:
 				stumps.queue_free()

@@ -1,6 +1,7 @@
 extends Control
 const Awareness := preload("res://scripts/awareness.gd")  # the view's one store: the realm's records (rec)
 const PerfTools := preload("res://scripts/perf_tools.gd")  # the frame-cost probe
+const PoliticalOverlay := preload("res://scripts/political_overlay.gd")  # the realm map's flood of land changing hands
 ## The minimap: the whole realm in the corner, land and water, each house's
 ## territory in its colour, its seat under its sigil, pulsing rings wherever
 ## something is happening, and the patch of land the camera is looking at.
@@ -32,7 +33,7 @@ uniform vec2 realm_size = vec2(1.0);
 uniform vec2 flood_at[8];
 uniform int flood_n = 0;
 uniform float flood_r = 100000.0;
-uniform sampler2D war_tex : filter_nearest, repeat_disable;  // terrain.standing_tex: r war, g truce, b sworn
+uniform sampler2D war_tex : filter_nearest, repeat_disable;  // terrain.politics.standing_tex: r war, g truce, b sworn
 uniform bool has_war = false;
 float flood_d(vec2 t) {
 	float d = 100000.0;
@@ -122,8 +123,8 @@ func _ready() -> void:
 func refresh(houses: Dictionary) -> void:
 	var st: Node = Awareness.store()
 	# The houses' standing (war, truce, sworn) as the ground last drew it: the same seams here.
-	if _wash and terrain and terrain.get("standing_tex") != null:
-		(_wash.material as ShaderMaterial).set_shader_parameter("war_tex", terrain.standing_tex)
+	if _wash and terrain and terrain.get("politics") and terrain.politics.standing_tex != null:
+		(_wash.material as ShaderMaterial).set_shader_parameter("war_tex", terrain.politics.standing_tex)
 		(_wash.material as ShaderMaterial).set_shader_parameter("has_war", true)
 	if terrain == null or terrain.width == 0:
 		return
@@ -155,7 +156,7 @@ func refresh(houses: Dictionary) -> void:
 				var hc := Color.from_string(String(houses[o].get("color", "#888")), Color.GRAY)
 				tint.set_pixel(x, y, Color(hc.r, hc.g, hc.b, (o + 1) / 64.0))
 		ids.append(cells)
-	var stages: Array = terrain.flood_stages(_ids, ids, _tint_img, tint)
+	var stages: Array = PoliticalOverlay.flood_stages(_ids, ids, _tint_img, tint)
 	_ids = ids
 	_tint_img = tint
 	_tint = ImageTexture.create_from_image(tint)

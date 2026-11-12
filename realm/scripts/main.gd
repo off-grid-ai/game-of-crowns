@@ -839,7 +839,7 @@ static var ATLAS_MOST: float = preload("res://scripts/camera_rig.gd").knob("map.
 
 func _update_labels() -> void:
 	var d: float = rig.distance
-	terrain.set_realm_mix(smoothstep(60.0, 110.0, d))
+	terrain.politics.set_realm_mix(smoothstep(60.0, 110.0, d))
 	# Shadows reach only as far as they can be seen: every cascade draws its
 	# casters again, so a realm-wide reach was most of the frame.
 	if sun:
@@ -905,10 +905,10 @@ func _on_synced() -> void:
 	# The land's borders, scars and ruins, from the mirror (awareness.gd), not from /world.
 	var realm_bb: Blackboard = awareness.realm
 	var pt := Time.get_ticks_usec()
-	terrain.set_realm(realm_bb.get_var(&"owners", []), realm_bb.get_var(&"houses", []), realm_bb.get_var(&"intrigue", [], false))
+	terrain.politics.set_realm(realm_bb.get_var(&"owners", []), realm_bb.get_var(&"houses", []), realm_bb.get_var(&"intrigue", [], false))
 	PerfTools.add("borders", Time.get_ticks_usec() - pt)
 	pt = Time.get_ticks_usec()
-	terrain.set_marks(realm_bb.get_var(&"marks", []), int(realm_bb.get_var(&"turn", 0)))
+	terrain.politics.set_marks(realm_bb.get_var(&"marks", []), int(realm_bb.get_var(&"turn", 0)))
 	PerfTools.add("scars", Time.get_ticks_usec() - pt)
 	pt = Time.get_ticks_usec()
 	ruins.show_marks(realm_bb.get_var(&"marks", []), int(realm_bb.get_var(&"turn", 0)))

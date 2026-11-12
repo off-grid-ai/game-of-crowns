@@ -310,7 +310,7 @@ const SNOW_COVER := """
 		mat.normal_map_depth *= 1.0 - 0.55 * snow_k;
 	}
 """ % [MUD, FIELD, MUD, FIELD]
-## The land's scars (terrain.set_marks) in the same shader: burnt earth where
+## The land's scars (terrain.politics.set_marks) in the same shader: burnt earth where
 ## men died or a town burned, ash grey-brown and charred darker at its frayed
 ## edge, broken up by the ground's own texture (its height), fading with the
 ## scar's age. Snow, laid after, covers it.
@@ -406,7 +406,7 @@ uniform vec2 flood_at[8];
 uniform int flood_n = 0;
 uniform float flood_r = 100000.0;
 uniform float realm_on = 0.0;
-// The political map (data/look.json politics; terrain.set_realm): per owner id, how firm its hold (0..1)
+// The political map (data/look.json politics; terrain.politics.set_realm): per owner id, how firm its hold (0..1)
 // and the colour of the house it is slipping toward (black: none).
 uniform float politics = 0.0;
 uniform float hold[64];
@@ -459,14 +459,14 @@ const REALM_WASH := """
 		if (politics > 0.5 && other >= 0) edge = 1.0 - smoothstep(px * pol_b.y * 0.5, px * pol_b.y + 0.01, gap);  // a crisp, bolder line
 		// A band of stronger colour just inside it, as a map would draw a realm's edge.
 		float band = other >= 0 ? 1.0 - smoothstep(0.0, 0.4, gap) : 0.0;
-		// The two houses' standing across this border (terrain.set_realm): r war, g truce, b sworn.
+		// The two houses' standing across this border (terrain.politics.set_realm): r war, g truce, b sworn.
 		vec4 sa = texelFetch(war_tex, clamp(cs[best], ivec2(0), ivec2(realm_size) - 1), 0);
 		vec4 sb = other >= 0 ? texelFetch(war_tex, clamp(cs[other], ivec2(0), ivec2(realm_size) - 1), 0) : vec4(0.0);
 		bool both = other >= 0 && own.a > 0.0 && o[other].a > 0.0;
 		bool at_war = both && sa.r > 0.5 && sb.r > 0.5;
 		bool truce = both && !at_war && sa.g > 0.5 && sb.g > 0.5;
 		bool sworn = other >= 0 && own.a > 0.0 && sa.b > 0.5;
-		// The houses' schemes on the same seam (terrain.set_realm SCHEME, in alpha): an
+		// The houses' schemes on the same seam (terrain.politics.set_realm SCHEME, in alpha): an
 		// envoy's road (a silver dash moving along it), a revealed pact (a faint dark
 		// line), a marriage (the two houses' colours in turn).
 		bool envoy = both && !at_war && abs(sa.a - 0.75) < 0.1 && abs(sb.a - 0.75) < 0.1;
@@ -558,7 +558,7 @@ func _show_realm(realm: Texture2D, prev: Texture2D, war: Texture2D, flood: Dicti
 		_flood_t = 0.0
 
 
-## The political map's per-house numbers (terrain.set_realm): hold and lean by owner id, and the knobs.
+## The political map's per-house numbers (terrain.politics.set_realm): hold and lean by owner id, and the knobs.
 func set_politics(on: bool, hold: PackedFloat32Array, lean: PackedVector3Array, k: Vector4, b: Vector4, z := Vector2(12.0, 30.0), l := Vector4(9.0, 22.0, 0.22, 0.55)) -> void:
 	if land == null:
 		return
@@ -572,7 +572,7 @@ func set_politics(on: bool, hold: PackedFloat32Array, lean: PackedVector3Array, 
 	mat.set_shader_param("pol_l", l)
 
 
-## The scars as terrain.set_marks drew them, and the season it is now.
+## The scars as terrain.politics.set_marks drew them, and the season it is now.
 func set_scars(tex: Texture2D, turn: int) -> void:
 	if land == null:
 		return
