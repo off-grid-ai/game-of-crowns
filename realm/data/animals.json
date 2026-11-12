@@ -6,7 +6,7 @@
   "change": 0.7,
   "busyRetry": 2.0,
   "mostTurn": 85,
-  "set": { "_": "The farm's beasts drawn from one painted set (Mac 2026-11-12: one Meshy look across people, animals and props; docs/art/animals/STYLE.md, realm/tools/beast_rig.py): kinds, every one under dir; walks, the kinds that are driven or led and must step (hens keep to their yards) (animals.gd make/walk play Walk). tools/animals_check.gd fails a kind outside the set or without a walk; next: the kinds still on their kit models, listed until they join (square first: the hen and the dog, judged before the rest).", "kinds": ["chicken", "dog"], "next": ["cow", "sheep", "pig", "goat"], "dir": "res://assets/meshy/beasts/", "walks": ["dog"] },
+  "set": { "_": "The farm's beasts drawn from one painted set (Mac 2026-11-12: one Meshy look across people, animals and props; docs/art/animals/STYLE.md, realm/tools/beast_rig.py): kinds, every one under dir; walks, the kinds that are driven or led and must step (hens keep to their yards) (animals.gd make/walk play Walk). tools/animals_check.gd fails a kind outside the set or without a walk.", "kinds": ["cow", "sheep", "pig", "goat", "chicken", "dog"], "dir": "res://assets/meshy/beasts/", "walks": ["cow", "sheep", "pig", "goat", "dog"] },
   "kinds": {
     "cow": {
       "life": [["Idle", 3, [1, 1]], ["Graze", 5, [1, 3]]],
@@ -20,7 +20,7 @@
       "life": [["Idle", 2, [1, 1]], ["Root", 5, [1, 3]]],
       "derive": {"Root": {"from": "Idle", "bones": ["Neck", "Head"], "head": "Head", "to": 0.08, "bob": [7, 0.7], "ease": 0.6, "muzzle": 1.0}}
     },
-    "goat": {
+    "goat": { "length": 1.3,
       "life": [["Idle", 3, [1, 1]], ["Graze", 4, [1, 2]]],
       "derive": {"Graze": {"from": "Idle", "bones": ["Neck", "Head"], "head": "Head", "to": 0.15, "bob": [5, 0.9], "ease": 0.6, "muzzle": 1.0}}
     },

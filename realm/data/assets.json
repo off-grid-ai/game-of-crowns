@@ -195,9 +195,10 @@
     "shield": { "kind": "gear", "variants": [ { "model": "props/Shield_Wooden.gltf" } ] },
     "horse": { "kind": "mount", "variants": [ { "model": "cavalry/horse/horse.glb" } ] },
     "axe": { "kind": "gear", "variants": [ { "model": "props/Axe_Bronze.gltf" } ] },
-    "cow": { "kind": "animal", "variants": [ { "model": "q/cow-0.glb" } ] },
-    "sheep": { "kind": "animal", "variants": [ { "model": "q/sheep-0.glb" } ] },
-    "pig": { "kind": "animal", "variants": [ { "model": "q/pig-0.glb" } ] },
+    "cow": { "kind": "animal", "variants": [ { "model": "meshy/beasts/cow/cow.glb" } ] },
+    "sheep": { "kind": "animal", "variants": [ { "model": "meshy/beasts/sheep/sheep.glb" } ] },
+    "pig": { "kind": "animal", "variants": [ { "model": "meshy/beasts/pig/pig.glb" } ] },
+    "goat": { "kind": "animal", "variants": [ { "model": "meshy/beasts/goat/goat.glb" } ] },
     "lance": { "kind": "gear", "variants": [ { "model": "weapons/lance" } ] }
   }
 }

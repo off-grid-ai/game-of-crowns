@@ -85,7 +85,5 @@ func _initialize() -> void:
 		if bad == fails:
 			print("ANIMALS SET ok %s: %s" % [kind, path])
 		model.free()
-	for kind in S.get("next", []):
-		print("ANIMALS SET next %s: still its kit model, joins the set next" % kind)
 	print("ANIMALS %s: %d problems" % ["PASS" if bad == 0 else "FAIL", bad])
 	quit(1 if bad > 0 else 0)
