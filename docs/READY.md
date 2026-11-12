@@ -22,6 +22,9 @@ shot or clip that shows it. The status column is updated by the supervisor only.
 | 9 | Politics you can see | A house's mood shows in the world (unrest in its towns, its land tinted in its colours); supporting a house sends your army to reinforce it; decrees have a cost you see; the story arcs are the politics (Mac: "our stories should be enough… they just need to be wired in"): every arc effect reaches Freeciv (a rising beat calls Freeciv's civil war; the usurper's and rebels' hosts march and fight) | Freeciv (state), Town life (unrest in the streets) | built: reinforce 687f170b; risings from stories b5bbac66; story war and defect d28e91c7; streets 5f1b558c, 070e8ddd, warning 1510732c; truce and plague wired since d28e91c7, story_gaps PASS |
 | 10 | The world makes sense | A full reign plays end to end: no crash, no frozen screen, no unit vanishing, every action gets a reaction | Supervisor (playtest) | open |
 
+## The rule under every line (Mac, 11-12): engines and visuals are one
+Every thing drawn reads an engine fact; every engine fact a player cares about shows; what the engine lacks isn't drawn. A line isn't built while its visuals are decoration over the engine. Map: docs/research/engine-visual-map-2026-11-12.md.
+
 ## The foundations (Mac: "I want to see all of that in one shot… that's what I mean when I say everything in")
 
 Audit 2026-11-12 (supervisor): what the design homework planned against what landed. These lines pass like the ones above.
