@@ -2183,16 +2183,9 @@ func _paved_at(root: Node3D, p: Vector3, margin := 0.0) -> bool:
 	return false
 
 
-## The town trees' component (towns.json plots.green.tree_comp, now the nature kit's town_tree again: Mac turned KayKit's
-## round crowns down; --town-trees=kaykit for them, town_tree_round; --town-trees=kit for the kit's whatever the data).
+## The town trees' component (towns.json plots.green.tree_comp: the nature kit's town_tree).
 static func _tree_comp() -> String:
-	var args := OS.get_cmdline_user_args()
-	if args.has("--town-trees=kit"):
-		return "town_tree"
-	if args.has("--town-trees=kaykit") and not Real.variants("town_tree_round").is_empty():
-		return "town_tree_round"
-	var c := String(preload("res://scripts/data.gd").value("towns", "plots.green.tree_comp", "town_tree"))
-	return c if not Real.variants(c).is_empty() else "town_tree"
+	return String(preload("res://scripts/data.gd").value("towns", "plots.green.tree_comp", "town_tree"))
 
 
 ## Round shrubs and flowers at a town tree's foot (towns.json plots.green.feet: [least, most] pieces, [nearest, furthest]

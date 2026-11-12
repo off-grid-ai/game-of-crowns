@@ -2,9 +2,9 @@
 
 Blender, headless, CPU only (no GPU, no Godot):
 
-  /Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup -P realm/tools/meshy_import.py -- <name> [--test]
+  /Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup -P realm/tools/meshy_import.py -- <name>
 
-<name> is a key of meshy.json pieces (or of test with --test). For each: the source GLB (its folder's first .glb, or
+<name> is a key of meshy.json pieces. For each: the source GLB (its folder's first .glb, or
 the file named), joined into one mesh, turned by yaw so its front faces +Z (our street side), stood on the ground and
 centred, scaled to height_m (metres, our scale), decimated to its triangle budget, and its house-colour faces (roofs,
 awnings) split into their own material MI_RoundTiles_house (team_colour.gd tints that with the holder's colour, as it
@@ -30,15 +30,15 @@ HOUSE = "MI_RoundTiles_house"
 def args():
     a = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     if not a:
-        sys.exit("usage: ... -- <name> [--test]")
-    return a[0], "--test" in a
+        sys.exit("usage: ... -- <name>")
+    return a[0]
 
 
-def spec_of(name, test):
+def spec_of(name):
     data = json.load(open(os.path.join(REALM, "data", "meshy.json")))
-    pieces = data["test" if test else "pieces"]
+    pieces = data["pieces"]
     if name not in pieces:
-        sys.exit("MESHY no piece %s in meshy.json %s" % (name, "test" if test else "pieces"))
+        sys.exit("MESHY no piece %s in meshy.json pieces" % name)
     spec = dict(data.get("defaults", {}))
     spec.update(pieces[name])
     mask = dict(data.get("defaults", {}).get("mask", {}))
@@ -500,10 +500,10 @@ def passage(obj, spec):
 
 
 def main():
-    name, test = args()
-    spec = spec_of(name, test)
+    name = args()
+    spec = spec_of(name)
     src = source(spec)
-    out = os.path.join(os.environ.get("MESHY_OUT") or os.path.join(REALM, "assets", "meshy"), name)  # MESHY_OUT: a test's own folder
+    out = os.path.join(os.environ.get("MESHY_OUT") or os.path.join(REALM, "assets", "meshy"), name)  # MESHY_OUT: another folder (a trial import)
     os.makedirs(out, exist_ok=True)
     bpy.ops.wm.read_factory_settings(use_empty=True)
     bpy.ops.import_scene.gltf(filepath=src)

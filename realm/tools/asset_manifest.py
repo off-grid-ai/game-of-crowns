@@ -1,5 +1,7 @@
 #!/usr/bin/env python3 -I
-"""Every asset file the game loads, generated from what names it (Mac, 2026-11-12: "standardise all of this").
+"""Every asset file the game needs, generated from what names it (Mac, 2026-11-12: "standardise all of this"): what
+the game loads at run time and what the build tools read (the rig's source skeleton, the Meshy imports, the animation
+library: a file a tool reads is needed even when the game never loads it).
 
 Run from anywhere:  python3 -I realm/tools/asset_manifest.py [--write] [--unloaded]
   (no flag)    prints the counts and sizes;
@@ -7,13 +9,16 @@ Run from anywhere:  python3 -I realm/tools/asset_manifest.py [--write] [--unload
   --unloaded   prints every file under realm/assets that nothing loads (the candidates to take out), by folder.
 
 What counts as loaded, read from the game's own sources (realm/scripts, realm/main.tscn and every .tscn/.tres, realm/data,
-realm/project.godot; realm/tools are test aids, not the game):
+realm/project.godot; and every tool in realm/tools, .py, .sh, .mjs, .gd and .json, rig/rig.json among them):
   1. a literal "res://assets/..." path;
   2. a path built from a pattern ("res://assets/props/%s.gltf", "res://assets/fx/fire/smoke_0%d.png"): every file the
      pattern matches (a family is kept whole: which member a row names is the data's business);
   3. a string in a script or a data file naming a file or a folder under assets/ ("village/House_1",
      "armies/meshy_knight", "meshy/forge"), as the catalogues resolve them (realistic.gd: "<m>", "<m>.gltf",
      "<m>.glb", "<m>/scene.gltf"); a folder named is kept whole (a baked army's soldier.glb, offsets.exr, normals.png...);
+  3b. a path a tool writes out ("realm/assets/hero/medieval_civilian_3/scene.gltf", "$R/realm/assets/armies",
+     f"realm/assets/meshy/{name}/"): whatever follows "assets/", a template ({x}, $x, %s) as a pattern, a folder
+     kept whole;
   4. what a kept file needs: a .gltf's buffers and images (its "uri"s), a .tscn/.tres's ext_resources, an .fbx's
      .fbm folder, what Godot's import made it need (ResourceLoader.get_dependencies, through realm/tools/asset_deps.gd:
      a .glb's extracted textures), and every kept file's .import beside it.
@@ -27,8 +32,8 @@ import json, os, re, sys, fnmatch
 REALM = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 ASSETS = os.path.join(REALM, "assets")
 ROOT = os.path.dirname(REALM)
-SOURCES = [os.path.join(REALM, d) for d in ("scripts", "data")] + [os.path.join(REALM, "main.tscn"), os.path.join(REALM, "project.godot")]
-TEXT = (".gd", ".gdshader", ".tscn", ".tres", ".json", ".godot", ".cfg")
+SOURCES = [os.path.join(REALM, d) for d in ("scripts", "data", "tools")] + [os.path.join(REALM, "main.tscn"), os.path.join(REALM, "project.godot")]
+TEXT = (".gd", ".gdshader", ".tscn", ".tres", ".json", ".godot", ".cfg", ".py", ".sh", ".mjs", ".js", ".txt")
 
 
 def walk(top):
@@ -50,7 +55,7 @@ def rel(p):
 
 
 def source_texts():
-    files = [p for top in SOURCES for p in walk(top) if p.endswith(TEXT)]
+    files = [p for top in SOURCES for p in walk(top) if p.endswith(TEXT) and "/fixtures/" not in p and os.path.basename(p) != "asset_manifest.py"]
     files += [p for p in walk(ASSETS) if p.endswith((".tscn", ".tres"))]
     for p in files:
         try:
@@ -84,7 +89,20 @@ def manifest():
     strings = []
     roots = [""]
     listed = []
+    whole = []  # folders a tool names: kept whole
     for path, text in source_texts():
+        for m in re.finditer(r'assets/([A-Za-z0-9_./{}$*%-]+)', text):  # a tool's path, in any of its forms (3b)
+            s = m.group(1).rstrip(".")
+            if re.search(r'[{}$*%]', s):
+                pat = re.sub(r'\{[^}]*\}|\$\{?[A-Za-z_]+\}?|%[0-9]*[sd]|\*+', '*', s)
+                patterns.append(pat)
+                head = pat.split("*")[0].rstrip("/")
+                if head and "/" not in head.rstrip("/") and pat.endswith("/*"):
+                    whole.append(head + "/")
+            elif s.rstrip("/") in dirs:
+                whole.append(s.rstrip("/") + "/")
+            else:
+                strings.append(s)
         for m in re.finditer(r'res://assets/([^"\'\s)\]]*)', text):
             s = m.group(1)
             if s.endswith("/") and "%" not in s:
@@ -133,7 +151,7 @@ def manifest():
             continue  # a pattern with no name of its own ("%s.%s", "%s/") names nothing by itself
         for root in under:
             kept.update(r for r in names if fnmatch.fnmatchcase(r, root + pat))
-    for d in listed:
+    for d in listed + whole:
         kept.update(r for r in names if r.startswith(d))
     # 4: what a kept file needs, until nothing new; first what Godot's import made each scene need.
     kept |= godot_deps(names, [r for r in kept if r.endswith((".glb", ".gltf", ".fbx", ".tscn", ".tres", ".res", ".blend"))])

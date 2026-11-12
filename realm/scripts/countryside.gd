@@ -571,75 +571,8 @@ static func sow(parent: Node3D, land: Node3D, origin: Vector3, kind: String, c: 
 	mmi.set_meta("lag", rng.randf())  # each field ripens and is reaped on a day of its own
 	mmi.set_meta("field", [c, size, yaw])  # where it lies, for the work in it (field_work.gd)
 	mmi.add_to_group("crops")
-	if kind in STANDING:
-		_shells(mmi, land, at, kind, c, size, yaw)
 	_ripen(mmi, _season_name if _season_name != "" else String(land.season), _through() if _season_name != "" else 0.0)
 	parent.add_child(mmi)
-
-
-## Standing grain as it reads from roof height and beyond (fieldwork.json shells; batch 9: from d6 to d30 the
-## wheat was a flat ochre slab): the field drawn again as a stack of see-through layers over its own ground
-## (wheat_shell.gdshader: rows of stalks, their ears, a sheen running across in the wind), a child of the crop,
-## so it grows, ripens, is reaped and is hidden with it. Drawn much further than the stalks' models.
-const SHELL := preload("res://scripts/wheat_shell.gdshader")
-static var _shell_mat: ShaderMaterial
-static func _shells(crop: Node3D, land: Node3D, at: Vector3, kind: String, c: Vector3, size: Vector2, yaw: float) -> void:
-	var k: Dictionary = preload("res://scripts/data.gd").value("fieldwork", "shells", {})
-	var args := OS.get_cmdline_user_args()
-	if args.has("--wheat=flat") or not (bool(k.get("on", false)) or args.has("--wheat=shells")):
-		return
-	var layers := maxi(2, int(k.get("layers", 8)))
-	var cell := float(k.get("cell", 0.12))
-	var tall: float = CROP_SIZE[kind] * float(k.get("height", 0.9))
-	var b := Basis(Vector3.UP, yaw)
-	var nx := maxi(1, int(ceil(size.x / cell)))
-	var nz := maxi(1, int(ceil(size.y / cell)))
-	# The field's ground under each grid point, relative to where the crop stands.
-	var ground := PackedVector3Array()
-	var uvs := PackedVector2Array()
-	for j in nz + 1:
-		for i in nx + 1:
-			var lx := -size.x * 0.5 + size.x * i / nx
-			var lz := -size.y * 0.5 + size.y * j / nz
-			var w: Vector3 = c + b * Vector3(lx, 0, lz)
-			var y: float = land.height_at(w.x, w.z) if land.is_land(w.x, w.z) else at.y
-			ground.append(Vector3(w.x - at.x, y - at.y, w.z - at.z))
-			uvs.append(Vector2(lx, lz))
-	var st := SurfaceTool.new()
-	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	for l in layers:
-		var f := float(l) / float(layers - 1)
-		for v in ground.size():
-			st.set_color(Color(1, 1, 1, f))
-			st.set_uv(uvs[v])
-			st.set_normal(Vector3.UP)
-			st.add_vertex(ground[v] + Vector3(0, 0.004 + f * tall, 0))
-		var o := l * ground.size()
-		for j in nz:
-			for i in nx:
-				var a := o + j * (nx + 1) + i
-				st.add_index(a)
-				st.add_index(a + 1)
-				st.add_index(a + nx + 1)
-				st.add_index(a + 1)
-				st.add_index(a + nx + 2)
-				st.add_index(a + nx + 1)
-	if _shell_mat == null:
-		_shell_mat = ShaderMaterial.new()
-		_shell_mat.shader = SHELL
-		for p in ["row_gap", "step_along", "stalk", "thin", "lean", "wave_len", "wave_speed", "sheen", "far_px"]:
-			if k.has(p):
-				_shell_mat.set_shader_parameter(p, float(k[p]))
-	var mi := MeshInstance3D.new()
-	mi.name = "Shells"
-	mi.mesh = st.commit()
-	mi.material_override = _shell_mat
-	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	mi.visibility_range_end = float(k.get("reach", 90.0))
-	mi.visibility_range_end_margin = 8.0
-	mi.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_DISABLED
-	crop.add_child(mi)
-	crop.set_meta("shells", mi)
 
 
 ## The farming year, field by field. Spring: green shoots rising. Summer: the
@@ -700,10 +633,6 @@ static func _ripen(crop: GeometryInstance3D, season: String, t: float) -> void:
 	crop.scale = Vector3(1.0, float(st[1]), 1.0)
 	if kind in STANDING:
 		crop.material_override = _tint(kind, st[0])
-		var shells: Variant = crop.get_meta("shells") if crop.has_meta("shells") else null  # get_meta with a null default errors when unset (fields without shells)
-		if shells is GeometryInstance3D and is_instance_valid(shells):
-			var tint: Color = (FLAX_TINTS if kind == "flax" else TINTS)[st[0]]
-			(shells as GeometryInstance3D).set_instance_shader_parameter("tint", tint * (Color(1.05, 1.0, 0.92) if kind == "barley" else Color.WHITE))
 
 
 static func _tint(kind: String, stage: String) -> Material:

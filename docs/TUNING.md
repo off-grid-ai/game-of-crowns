@@ -340,7 +340,6 @@ Switches (`--name`) go after `--` on the game's command line.
 - The bodies the host wears: `units.<kind>.asset` (the Meshy men-at-arms, the town guard as spearmen, the ranger as archers, the cavalry horse); the painted finish that carries the house colour onto the men: `look`.
 - How many figures every regiment draws before its one for ten men (so each reads as a formed block; the plate and card keep its real men), and the most the realm's biggest host may draw (from the fps bar): `realm/data/army.json` `figureFloor`, `figureBudget`. Seconds a beaten side holds after one of its regiments breaks before the next can (a rout reads as a chain, one at a time): `morale.between`.
 - How far off the road a muster's field may lie and its host still march out along the road (it walks onto it first): `realm/data/army.json` `march.roadReach`.
-- How standing grain reads from roof height and beyond (`--wheat=shells`, or `shells.on`): the stacked stalk layers' count, spacing, stalk width, thinning, lean in the wind, the sheen's waves and when it turns into one stand far off: `realm/data/fieldwork.json` `shells` (`realm/scripts/wheat_shell.gdshader`).
 
 ## Kingsmere's square, the ground layer (art target 01-town)
 - The square's and streets' stone (Poly Haven cobblestone_floor_01, CC0), its tint and size: `realm/data/towns.json` `paving.texture`, `tint`, `tile`; how far the main streets are paved by rank: `paving.streets`; the back lanes paved too: `lanes.paved`.
