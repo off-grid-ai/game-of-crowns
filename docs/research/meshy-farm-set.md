@@ -35,6 +35,6 @@ Size is width x depth x height in metres as imported; the kit's is its footprint
 | Armoury | fs_armoury | armoury | 6.9 x 8.9 x 8.0 | 6.8 x 8.0 | 30,000 | Back is plain stone and plaster with the chimney (clean, as drawn); the spear racks are thin at roof height | Good: shields with the eagle, banner, armour stand and arched door read at a glance |
 | Barn | fs_barn | barn | 11.8 x 8.0 x 7.2 | 11.8 x 8.8 | 30,000 | One door leaf hangs a little skew (as drawn); the pitchfork from the concept is lost | Good: open doors with hay inside, hoist beam, bales |
 | Granary | fs_granary | granary | 5.5 x 8.0 x 7.0 | 6.8 x 7.9 | 20,000 | Depth includes the steps and sacks; the thatch's back is a touch flatter than its front | Good: staddle stones, steps and sacks |
-| Pen | fs_pen | yard_pen | 3.3 x 3.9 x 1.8 | 2.0 x 2.0 | 11,568 | The concept's log trough came out missing (bucket and lean-to are there); bigger than the kit's pen | Usable; watch it in a yard on film |
+| Pen | fs_pen | yard_pen | 2.4 x 2.8 x 1.3 | 2.0 x 2.0 | 11,568 | The concept's log trough came out missing (bucket and lean-to are there). First imported at 1.8 m tall (3.3 x 3.9 m), too deep for a crown yard: now 1.3 m, and a yard's thing only stands where it fits (f0ed7cc8, yard_fit_probe.gd) | Good |
 
 **SEEN** for every defect. Turntable light is flat studio light; the real judge is the batched Godot render.
