@@ -22,7 +22,7 @@
     "sq_townhouse": {"src": "square/townhouse", "replaces": "square_townhouse", "height_m": 9.0, "tris": 30000, "mask": {"hues": [], "sat_min": 1.1, "val_min": 1.1, "up_min": -1.0}},
     "sq_cottage": {"src": "square/cottage", "replaces": "square_cottage", "height_m": 6.5, "tris": 30000, "mask": {"hues": [], "sat_min": 1.1, "val_min": 1.1, "up_min": -1.0}},
     "sq_merchant_house": {"src": "square/merchant_house", "replaces": "square_merchant", "height_m": 12.0, "tris": 30000, "mask": {"hues": [], "sat_min": 1.1, "val_min": 1.1, "up_min": -1.0}},
-    "sq_smithy": {"src": "square/smithy", "replaces": "forge", "height_m": 7.5, "tris": 30000, "mask": {"hues": [], "sat_min": 1.1, "val_min": 1.1, "up_min": -1.0}},
+    "sq_smithy": {"src": "square/smithy", "replaces": "forge", "height_m": 7.5, "tris": 30000, "mask": {"hues": [], "sat_min": 1.1, "val_min": 1.1, "up_min": -1.0}, "work_front": {"smith": [-0.08, 0.35], "anvil": [-0.08, -0.5], "hearth": [-0.6, -2.4], "bellows": [-1.6, 0.3], "trough": [1.4, 0.4], "store": [2.3, 0.6]}},
     "sq_market_stall": {"src": "square/market_stall", "replaces": "market_stall", "height_m": 3.6, "tris": 15000, "mask": {"hues": [], "sat_min": 1.1, "val_min": 1.1, "up_min": -1.0}},
     "sq_well": {"src": "square/well", "replaces": "well", "height_m": 3.6, "tris": 12000, "mask": {"hues": [], "sat_min": 1.1, "val_min": 1.1, "up_min": -1.0}},
     "sq_statue": {"src": "square/statue", "replaces": "square_statue", "height_m": 7.0, "tris": 12000},
