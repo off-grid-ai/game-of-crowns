@@ -101,3 +101,22 @@ process ms, draws, prims).
     flank), the horses' legs move with their walk, no stretching between horse and rider.
 13. **At the far zoom** (`--army-spike=6000 --army-shape=line --dist=30`): the lighter levels in. Judge: no
     popping or melting silhouettes as the camera moves (a 3 s clip at 0.2 s while zooming from 20 to 30).
+
+## Fire as fire (1cfe662f; `--fire=v2`, batch 9's fire launch: `stage {"sack": <id>}`, `city <town> 6 -25`)
+
+Against batch 9's `/tmp/goc-batch9/fire` frames, the same steps (+6, +20, +45, +90 s and the clip from +8 s).
+Add `--probe` and keep the log: its FIRE lit lines say how many houses caught.
+
+1. **The flames up close** (+20 s, then a 5 s clip at 0.2 s): soft flickering tongues off the roof and out of
+   the front, white-yellow at their feet, orange, then red as they thin; a hot core inside; no hard-edged
+   painted shapes, no orange sheets on the walls (the char glows in fine cracks only).
+2. **The smoke column** (+45 s, then `city <town> 20` and `city <town> 40`): a thick dark column leaning with
+   the wind, seen from across the town and from the realm's zoom.
+3. **The light** (+45 s, `--hour=21` too): the fire's light flickering on the walls and the ground near it.
+4. **The spread** (+20, +45, +90 s): at least four houses alight over the 90 s, one catching after another,
+   the probe log's FIRE lit lines one per house.
+5. **The ruins stay** (+90 s, then wait 60 and snap): the burnt houses still charred shells, not whole again.
+6. **The town reacts** (+6 s clip): the folk near the first house run from it; a bucket line forms from the
+   well to its door; the square's folk within reach stop what they're doing.
+7. **Many fires at once** (`look` at +45 s): fps above 10 with every house burning (far fires thin their
+   flames; the smoke stays).
