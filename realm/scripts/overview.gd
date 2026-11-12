@@ -6,6 +6,7 @@ extends RefCounted
 ## is in (_overview_setup) and opens it on the whole realm when the map comes.
 
 const Main := preload("res://scripts/main.gd")
+const MapLook := preload("res://scripts/map_look.gd")
 
 var main: Main  # the realm that owns the map: its camera, land, names and bridge
 
@@ -31,6 +32,9 @@ func _overview_setup() -> void:
 	# The painting holds up to about four times the whole realm; closer than
 	# that the land itself is the better view.
 	_over_map.max_zoom = 4.0
+	_over_map.v2 = MapLook.v2()
+	if _over_map.v2 and bool(MapLook.Data.value(MapLook.F, "overview.match", true)):
+		_over_map.max_zoom = MapLook.num("overview.match_most", 7.0)  # it opens at the camera's own scale
 	_over_map.modulate.a = 0.0
 	overview.add_child(_over_map)
 	main.rig.overview.connect(_overview_open)
@@ -38,7 +42,30 @@ func _overview_setup() -> void:
 	_over_map.town_pressed.connect(func(t: Dictionary): _overview_close(Vector2(float(t["x"]), float(t["y"])), int(t.get("size", 4))))
 	main.bridge.world_updated.connect(func(_w):
 		if _over_open:
+			_mirror()
 			main.bridge.realm_map(func(d): _over_map.data = d))
+
+
+## The realm as it stands now, from the mirror (--map=v2): who holds the land, the hosts, marches and sieges.
+func _mirror() -> void:
+	if not _over_map.v2 or main.awareness == null:
+		return
+	var aw: Object = main.awareness
+	var houses := {}
+	for p in aw.realm.get_var(&"houses", [], false):
+		houses[int(p.get("id", -1))] = p.get("house", {})
+	_over_map.houses = houses
+	_over_map.owners = aw.realm.get_var(&"owners", [], false)
+	_over_map.hosts = MapLook.armies(aw)
+	_over_map.marches = MapLook.marches(aw)
+	_over_map.sieges = MapLook.sieges(aw)
+	_over_map.queue_redraw()
+
+
+## The painting's zoom that shows as much of the realm as the camera saw from its distance (CK3's map switch at one scale).
+func _matched_zoom() -> float:
+	var seen: float = 2.0 * float(main.rig.distance) * tan(deg_to_rad(main.rig.cam.fov / 2.0)) / main.terrain.TILE
+	return clampf(_over_map.tiles().y / maxf(seen, 1.0), _over_map.min_zoom(), _over_map.max_zoom)
 
 
 ## Draws back from the land to the painted map, centred where you were looking
@@ -47,10 +74,11 @@ func _overview_open(whole := false) -> void:
 	if _over_open:
 		return
 	_over_open = true
+	_mirror()
 	if whole:
 		_over_map.fit()
 	else:
-		_over_map.zoom = _over_map.max_zoom
+		_over_map.zoom = _matched_zoom() if _over_map.v2 and bool(MapLook.Data.value(MapLook.F, "overview.match", true)) else _over_map.max_zoom
 		_over_map.center = Vector2(main.rig.target.x, main.rig.target.z) / main.terrain.TILE - Vector2(0.5, 0.5)
 	overview.visible = true
 	main.labels.visible = false
@@ -58,7 +86,7 @@ func _overview_open(whole := false) -> void:
 	var tw := main.create_tween().set_parallel(true)
 	tw.tween_property(_over_map, "modulate:a", 1.0, 0.0 if whole else 0.35)
 	if not whole:  # still drawing back as the painting comes up
-		tw.tween_property(_over_map, "zoom", maxf(2.6, _over_map.min_zoom()), 0.5).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+		tw.tween_property(_over_map, "zoom", maxf(MapLook.num("overview.ease_to", 2.6) if _over_map.v2 else 2.6, _over_map.min_zoom()), 0.5).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 		tw.tween_method(func(_v): _over_map.queue_redraw(), 0.0, 1.0, 0.5)
 	tw = tw.chain()
 	tw.tween_callback(func():

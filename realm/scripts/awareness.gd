@@ -129,6 +129,7 @@ func sync(world: Dictionary) -> void:
 	realm.set_var(&"intrigue", world.get("intrigue", []))  # the houses' schemes, seat to seat (bridge intrigue.js)
 	realm.set_var(&"threat", _dict(world.get("crown")).get("threat"))  # the director's live threat, or null (bridge director.js)
 	realm.set_var(&"hosts", world.get("hosts") if world.get("hosts") is Array else [])  # the King's hosts and their orders (bridge hosts.js)
+	realm.set_var(&"armies", _armies(world))  # every house's hosts in the field (the map's banners, map_look.gd)
 	# The weather, as the bridge reads it (/world's weather: clear, showers, rain,
 	# storm or snow falling). Until the bridge sends it, falling snow in winter.
 	var weather: Dictionary = _dict(world.get("weather"))
@@ -157,6 +158,36 @@ static func mood_of(f: float) -> String:
 
 ## A value from /world that should be a record: an empty one when it's missing or null
 ## (outside a running reign the bridge sends nulls).
+## Every house's hosts in the field: its soldiers out of town, a company within two tiles of another as one host
+## (as the bridge groups them for the realm's map, routes_realm.js). [{owner, x, y, companies}], x and y the
+## companies' middle. Ships and the civilian kinds (world.civilian) aren't hosts; a garrison isn't in the field.
+static func _armies(world: Dictionary) -> Array:
+	var towns := {}
+	for c in world.get("cities", []):
+		towns[Vector2i(int(c.get("x", 0)), int(c.get("y", 0)))] = true
+	var out: Array = []
+	for u in world.get("units", []):
+		var kind := String(u.get("type", ""))
+		if kind in civilian or kind in ["Trireme", "Caravel", "Galleon", "Frigate", "Transport"]:
+			continue
+		var t := Vector2i(int(u.get("x", 0)), int(u.get("y", 0)))
+		if towns.has(t):
+			continue
+		var owner := int(u.get("owner", -1))
+		var joined := false
+		for g in out:
+			if int(g["owner"]) == owner and maxf(absf(float(g["x"]) - t.x), absf(float(g["y"]) - t.y)) <= 2.0:
+				var n := int(g["companies"])
+				g["x"] = (float(g["x"]) * n + t.x) / (n + 1)
+				g["y"] = (float(g["y"]) * n + t.y) / (n + 1)
+				g["companies"] = n + 1
+				joined = true
+				break
+		if not joined:
+			out.append({"owner": owner, "x": float(t.x), "y": float(t.y), "companies": 1})
+	return out
+
+
 static func _dict(v) -> Dictionary:
 	return v if v is Dictionary else {}
 

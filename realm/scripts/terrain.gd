@@ -884,6 +884,8 @@ func _set_politics(players: Array, colour: Dictionary, by_name: Dictionary) -> v
 	var pol: Dictionary = preload("res://scripts/look.gd").LOOK.get("politics", {})
 	var args := OS.get_cmdline_user_args()
 	var on := args.has("--politics=on") or (bool(pol.get("on", false)) and not args.has("--politics=off"))
+	if preload("res://scripts/map_look.gd").politics() and not args.has("--politics=off"):
+		on = true  # the realm at map zoom reads who holds it (data/map.json politics)
 	var hold := PackedFloat32Array()
 	hold.resize(64)
 	hold.fill(1.0)
