@@ -20,3 +20,23 @@ then one headless Godot import; only while no other Godot runs). Each shot twice
 
 Not placed, so not filmed: the market stalls (passed in the turntable, but they're one 7.8 x 6.7 m market block
 that needs its place in the square first), the treasury and house (still rejected), the well (cards for shingles).
+
+## The realm at map zoom (9147f986; docs/review/realm-map.md; `--map=v2`)
+
+Each shot twice, `--map=v1` (before) and `--map=v2` (after), the same frame, `--hosts=on` so the crown has hosts
+to order. Oblique, the rig's own pitch.
+
+5. **Mid zoom over Kingsmere:** `city Kingsmere 40`, then `city Kingsmere 55`, a snap after each. Judge: house
+   colours and two-tone borders read on the land (none at roof height: `city Kingsmere 10` stays clean); every
+   town of size 5+ named, bigger towns in bigger type; each host out of town under a standard in its house's
+   colour with its sigil and men; nothing over the interface.
+6. **A march on the map:** `host 0`, `order march <a town two houses away>`, then `city Kingsmere 50`. Judge: a
+   dashed gold line with an arrowhead from the host's standard to the town; it shortens as the host walks.
+7. **A siege on the map** (`--siege`, or wait for one): `city <the besieged town> 45`. Judge: crossed swords in
+   a pulsing red ring over the town (a 3 s clip at 0.2 s shows the pulse); the red war seam on the border.
+8. **The hand-off:** `city Kingsmere 58`, then `wheel 0.5 0.5 3` (out past 60), a 2 s clip at 0.1 s. Judge: the
+   painting comes in at about the scale the land showed (v1 jumps out to ~22 tiles tall first), then eases
+   out; standards, marches and sieges look the same on both sides; only the ground changes.
+9. **The whole realm** (the overview as the game opens, or `wheel 0.5 0.5 6` from 8): Judge against
+   02-realm.jpg: each house's land in its colour as held now, a crisp border on every seam, the coast with no
+   border, seats under their sigils, big towns named without overlaps, hosts as standards.
