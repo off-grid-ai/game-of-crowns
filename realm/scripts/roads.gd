@@ -17,7 +17,6 @@ static func earth(kings := false) -> Color:
 	var t: Array = Data.value("ground", "roads.tint", [0.75, 0.85, 1.0])
 	var k := Data.num("ground", "roads.kingsShade", 0.92) if kings else 1.0
 	return Color(float(t[0]) * k, float(t[1]) * k, float(t[2]) * k)
-const Land3D := preload("res://scripts/land3d.gd")  # PAINTED: the painted ground (realm/data/ground.json)
 const Data := preload("res://scripts/data.gd")
 var GRASS: String = "res://assets/ground/grass-albedo.jpg"  # a verge's grass
 
@@ -471,13 +470,12 @@ func _paint_run(p: Vector3, q: Vector3, width: float, owner: String, parent: Nod
 	var at := Vector3(c.x, (p.y + q.y) / 2.0, c.z)
 	var yaw := atan2(q.x - p.x, q.z - p.z)
 	var fade := 100.0 if width > WIDTH * 0.8 else 40.0
-	if Land3D.PAINTED:
-		# The painted ground (realm/data/ground.json roads): a soft grass verge either side, under the track,
-		# so it reads as a worn way through the grass (Foundation, Tiny Glade); the track itself warmer.
-		var vt: Array = Data.value("ground", "roads.vergeTint", [0.82, 0.86, 0.55, 0.85])
-		var verge: Decal = terrain.paint(parent if parent else self, terrain.tiled(GRASS, 2, roundi(len / width), "sides"), at, Vector2(width * Data.num("ground", "roads.verge", 2.4), len), yaw, Color(float(vt[0]), float(vt[1]), float(vt[2]), float(vt[3]) if vt.size() > 3 else 1.0), absf(p.y - q.y) + 3.0, fade)
-		verge.sorting_offset = -1.0  # under the track
-		made.append(verge)
+	# A soft grass verge either side, under the track (realm/data/ground.json roads), so it reads as a worn way
+	# through the grass (Foundation, Tiny Glade); the track itself warmer.
+	var vt: Array = Data.value("ground", "roads.vergeTint", [0.82, 0.86, 0.55, 0.85])
+	var verge: Decal = terrain.paint(parent if parent else self, terrain.tiled(GRASS, 2, roundi(len / width), "sides"), at, Vector2(width * Data.num("ground", "roads.verge", 2.4), len), yaw, Color(float(vt[0]), float(vt[1]), float(vt[2]), float(vt[3]) if vt.size() > 3 else 1.0), absf(p.y - q.y) + 3.0, fade)
+	verge.sorting_offset = -1.0  # under the track
+	made.append(verge)
 	made.append(terrain.paint(parent if parent else self, terrain.tiled(TEX, 2 if width > WIDTH else 1, roundi(len / width), "track"), at, Vector2(width, len), yaw, earth(owner == "kings"), absf(p.y - q.y) + 3.0, fade))
 	return made
 

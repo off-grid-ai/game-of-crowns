@@ -16,9 +16,6 @@ const TINT := [Color(0.95, 1.0, 0.9), Color.WHITE, Color.WHITE, Color(0.92, 0.94
 var land: Terrain3D
 var _grass_tint := Color.WHITE  # the painted grass's own tint (ground.json layers.grass.tint), under the season's
 const Data := preload("res://scripts/data.gd")
-## The painted ground (realm/data/ground.json painted): each layer's tint and scale
-## from data, a wider beach, no surf.
-static var PAINTED: bool = bool(Data.value("ground", "painted", false))
 
 
 func build(terrain: Node3D, ground_layer: int) -> void:
@@ -45,18 +42,17 @@ func build(terrain: Node3D, ground_layer: int) -> void:
 	for i in LAYERS.size():
 		var ta := Terrain3DTextureAsset.new()
 		ta.name = LAYERS[i]
-		var tex := layer_textures(i, PAINTED)
+		var tex := layer_textures(i)
 		ta.albedo_texture = load(tex[0])
 		ta.normal_texture = load(tex[1])
-		ta.uv_scale = UV_SCALE[i]
+		# Each layer's tint and scale (realm/data/ground.json layers: the painted ground).
 		ta.albedo_color = TINT[i]
-		if PAINTED:
-			var tint: Array = Data.value("ground", "layers.%s.tint" % LAYERS[i], [])
-			if tint.size() == 3:
-				ta.albedo_color = Color(float(tint[0]), float(tint[1]), float(tint[2]))
-				if i == 0:
-					_grass_tint = ta.albedo_color  # the season's colour goes over it (set_grass), never in its place
-			ta.uv_scale = Data.num("ground", "layers.%s.scale" % LAYERS[i], UV_SCALE[i])
+		var tint: Array = Data.value("ground", "layers.%s.tint" % LAYERS[i], [])
+		if tint.size() == 3:
+			ta.albedo_color = Color(float(tint[0]), float(tint[1]), float(tint[2]))
+			if i == 0:
+				_grass_tint = ta.albedo_color  # the season's colour goes over it (set_grass), never in its place
+		ta.uv_scale = Data.num("ground", "layers.%s.scale" % LAYERS[i], UV_SCALE[i])
 		# Terrain3D's detiling turns and shifts each tile so the repeat never shows.
 		if "detiling_rotation" in ta:
 			ta.set("detiling_rotation", 0.3)
@@ -135,18 +131,18 @@ func build(terrain: Node3D, ground_layer: int) -> void:
 
 ## A ground layer's two textures (albedo with height, normal with roughness), the one
 ## place their paths are decided: the game's ground and tools/ground_check.gd both ask here.
-static func layer_textures(i: int, painted: bool) -> Array:
+static func layer_textures(i: int) -> Array:
 	# The town's trodden ground is dry packed earth (the beach's gravelly
 	# sand, browned): the muddy-tracks photo read as a wet red band.
 	var file: String = "sand" if LAYERS[i] == "mud" else LAYERS[i]
 	var dir := "packed"
-	if painted and String(Data.value("ground", "layers.%s.painting" % LAYERS[i], "")) != "" and ResourceLoader.exists("res://assets/ground/painted/%s-albedo-height.png" % LAYERS[i]):
+	if String(Data.value("ground", "layers.%s.painting" % LAYERS[i], "")) != "" and ResourceLoader.exists("res://assets/ground/painted/%s-albedo-height.png" % LAYERS[i]):
 		dir = "painted"  # the painted set (tools/pack_painted_ground.gd, realm/data/ground.json layers.<layer>.painting)
 		file = LAYERS[i]
 	return ["res://assets/ground/%s/%s-albedo-height.png" % [dir, file], "res://assets/ground/%s/%s-normal-rough.png" % [dir, file]]
 
 
-static var _beach_top: float = Data.num("ground", "beach.top", 0.02) if PAINTED else 0.02
+static var _beach_top: float = Data.num("ground", "beach.top", 0.02)
 
 
 ## The ground for an eroded heightmap, from the land itself rather than the

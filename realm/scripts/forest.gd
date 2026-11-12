@@ -1,59 +1,25 @@
 extends Node3D
-## Woods of game-ready pines, oaks and bushes (assets/realistic: detail levels
-## and a billboard each), drawn by Terrain3D's instancer: in full near the
-## camera, lighter further out, then as flat billboards, swapped ground cell by
-## ground cell, so a realm-wide forest costs little. Tree positions come from
-## terrain.gd's woodland noise.
+## Woods of Quaternius' Stylized Nature pines, oaks and bushes (the painted look; realm/data/assets.json woods.kit),
+## drawn in blocks of land, each with its near, middle and far batches switched by distance on the GPU (Godot's
+## import-made detail levels lighten them), so a realm-wide forest costs little. Tree positions come from terrain.gd's
+## woodland noise.
 
 const Real := preload("res://scripts/realistic.gd")  # the asset catalogue (realm/data/assets.json)
 const Data := preload("res://scripts/data.gd")
-## Which trees the woods grow (realm/data/assets.json woods.set):
-## "pack", the realistic pine, oak and bush packs below, or "kit", Quaternius'
-## Stylized Nature trees (the painted look, docs art-direction fix 4), drawn by the
-## same near/middle/far blocks, the far ones by Godot's import-made detail levels.
-static var SET: String = String(Data.value("assets", "woods.set", "pack"))
 ## The kit's kinds, from data alone (the pickers run before any mesh loads):
 ## [file, scale on its true height] per kind, and role -> [first kind, count].
 static var _kit: Array = []
 static var _roles := {}
 static var _kit_read := _kit_layout()
-static var PACK := Real.path_of("tree_pine")
-static var OAKS := Real.path_of("tree_oak")
-static var BUSHES := Real.path_of("bush")
-# The broadleaf packs: [file, kinds, full-detail group suffix, billboard suffix].
-# Kind indices run on after the pines: oaks from 8, then bushes.
-static var MORE := [
-	[OAKS, ["Big_oak_tree__001", "Big_oak_tree__002", "Big_oak_tree__003", "Medium_oak_tree__001", "Medium_oak_tree__002", "Medium_oak_tree__003", "Large_oak_tree_004"], "_LOD2", "_Billboard"],
-	[BUSHES, ["Bush_big_001", "Bush_big_002", "Bush_big_003", "Bush_medium_001", "Bush_medium_003", "Bush_medium_005"], "_LOD1", "_Billboard"],
-	# The rest of each pack, so no two woods grow from the same few shapes (Manor
-	# Lords' forests read as real because they're mixed): young pines and
-	# saplings, smaller and younger oaks, low bushes. After the first kinds, so
-	# their indices stay put.
-	[PACK, ["Pine_medium_3", "Pine_small_1", "Pine_small_2", "Pine_small_3", "Pine_sapling_1", "Pine_sapling_2", "Pine_sapling_3"], "_LOD1", "_Billboard_LOD3", "_LOD2"],
-	[OAKS, ["Big_oak_tree__004", "Large_oak_tree_001", "Large_oak_tree_002", "Large_oak_tree_003", "Small_oak_tree__001", "Small_oak_tree__002", "Small_oak_tree__003", "Sapling_oak_tree_001", "Sapling_oak_tree_002", "Sapling_oak_tree_003"], "_LOD2", "_Billboard"],
-	[BUSHES, ["Bush_big_004", "Bush_big_005", "Bush_medium_002", "Bush_medium_004", "Bush_small_001", "Bush_small_002", "Bush_small_003", "Bush_small_004", "Bush_small_005"], "_LOD1", "_Billboard"],
-]
-const OAK_FIRST := 8
-const OAK_KINDS := 7
-const BUSH_FIRST := 15
-const BUSH_KINDS := 6
-const MORE_PINES := 21  # Pine_medium_3, three small pines, then three saplings (from 25)
-const MORE_OAKS := 28  # a big and three large oaks, three small, then three saplings (from 35)
-const MORE_BUSHES := 38  # nine more bushes
 const CHUNK := 20.0  # game units per side
 const NEAR := 6.0  # within this distance of the camera, trees are drawn in full, with shadows (a block of woods switches as one: further, and the blocks under a town view drew thousands of full trees twice)
-const MID := 24.0  # out to this distance, the pack's lighter detail level, without shadows; its painted cards beyond
+const MID := 24.0  # out to this distance the middle batch, without shadows; the far one beyond
 const S := 0.12  # game units per metre
-## The realistic packs come at their true size (13-31 m), two to three houses tall: this share of it
-## (realm/data/assets.json woods.pack_scale; the kit's heights are its woods.kit data).
-static var PACK_SCALE: float = Data.num("assets", "woods.pack_scale", 1.0)
-const KINDS := ["Pine_big_1", "Pine_big_2", "Pine_big_3", "Pine_medium_1", "Pine_medium_2", "Pine_large_1", "Pine_large_2", "Pine_large_3"]
-
 var _full: Array = []  # Mesh or null
 var _mid: Array = []  # the lighter detail level, or the full one where a kind has none
 var _card: Array = []
 var _height: Array[float] = []
-var _kscale: Array[float] = []  # kit: each kind's scale to its true height (the packs come at true size: none)
+var _kscale: Array[float] = []  # each kind's scale to its true height
 var _ids := {}  # kind -> the Terrain3D mesh id it was planted under
 var _trees := {}  # kind -> its trees' transforms, so felling can replant the rest
 var _felled := {}  # kinds to replant at the end of this frame
@@ -64,8 +30,6 @@ var _sight := {}  # Vector2i -> Array of Vector4(x, z, ground y, height)
 
 
 static func _kit_layout() -> bool:
-	if SET != "kit":
-		return false
 	var kit: Dictionary = Data.value("assets", "woods.kit", {})
 	for role in ["pine", "oak", "bush"]:
 		var r: Dictionary = kit.get(role, {})
@@ -86,46 +50,31 @@ static func _kit_pick(rng: RandomNumberGenerator, role: String) -> int:
 ## A pine for a wood: any of the grown ones, a young one now and then, and at
 ## a wood's fringe (where seed falls on open ground) sometimes a sapling.
 static func pine_kind(rng: RandomNumberGenerator, fringe: bool) -> int:
-	if SET == "kit":
-		if fringe and rng.randf() < 0.25:
-			return _kit_pick(rng, "pine_sapling")
-		return _kit_pick(rng, "pine" if rng.randf() < 0.75 else "pine_young")
 	if fringe and rng.randf() < 0.25:
-		return MORE_PINES + 4 + rng.randi() % 3
-	return rng.randi() % 8 if rng.randf() < 0.75 else MORE_PINES + rng.randi() % 4
+		return _kit_pick(rng, "pine_sapling")
+	return _kit_pick(rng, "pine" if rng.randf() < 0.75 else "pine_young")
 
 
 ## An oak for the lowland woods, the same way: grown, younger, saplings at the edge.
 static func oak_kind(rng: RandomNumberGenerator, fringe: bool) -> int:
-	if SET == "kit":
-		if fringe and rng.randf() < 0.25:
-			return _kit_pick(rng, "oak_sapling")
-		return _kit_pick(rng, "oak" if rng.randf() < 0.6 else "oak_young")
 	if fringe and rng.randf() < 0.25:
-		return MORE_OAKS + 7 + rng.randi() % 3
-	return OAK_FIRST + rng.randi() % OAK_KINDS if rng.randf() < 0.6 else MORE_OAKS + rng.randi() % 7
+		return _kit_pick(rng, "oak_sapling")
+	return _kit_pick(rng, "oak" if rng.randf() < 0.6 else "oak_young")
 
 
-## A bush of any of the pack's fifteen.
+## A bush of the kit's.
 static func bush_kind(rng: RandomNumberGenerator) -> int:
-	if SET == "kit":
-		return _kit_pick(rng, "bush")
-	var n := rng.randi() % (BUSH_KINDS + 9)
-	return BUSH_FIRST + n if n < BUSH_KINDS else MORE_BUSHES + n - BUSH_KINDS
+	return _kit_pick(rng, "bush")
 
 
-## True when the pine pack is in the project.
+## True when the kit's trees are in the project.
 static func available() -> bool:
-	if SET == "kit":
-		return not _kit.is_empty() and ResourceLoader.exists(String(_kit[0][0]))
-	return ResourceLoader.exists(PACK)
+	return not _kit.is_empty() and ResourceLoader.exists(String(_kit[0][0]))
 
 
-## True when the oak and bush packs are in the project too.
+## True when its oaks and bushes are there too.
 static func broadleaf() -> bool:
-	if SET == "kit":
-		return available() and _roles.has("oak") and _roles.has("bush")
-	return available() and ResourceLoader.exists(OAKS) and ResourceLoader.exists(BUSHES)
+	return available() and _roles.has("oak") and _roles.has("bush")
 
 
 ## trees: Array of [kind index, Transform3D] in world space (the transform's
@@ -148,8 +97,7 @@ func plant(trees: Array) -> void:
 			if k >= _full.size() or _full[k] == null:
 				continue
 			var xf: Transform3D = t[1]
-			# Meshes are in metres at the pack's own size.
-			xf.basis = xf.basis * Basis.from_scale(Vector3.ONE * S * (_kscale[k] if k < _kscale.size() else PACK_SCALE))  # a pack tree: its true height (13–31 m) times pack_scale; a kit tree: scaled to its data height
+			xf.basis = xf.basis * Basis.from_scale(Vector3.ONE * S * (_kscale[k] if k < _kscale.size() else 1.0))  # scaled to its data height (metres), in game units
 			var cell := Vector2i(floori(xf.origin.x / SIGHT_CELL), floori(xf.origin.z / SIGHT_CELL))
 			if not _sight.has(cell):
 				_sight[cell] = []
@@ -209,30 +157,23 @@ func _layer(mesh: Mesh, xfs: Array, begin: float, end: float, shadows: bool) -> 
 	# of thousands of trees bounce little light and cost it a great deal.
 	mmi.gi_mode = GeometryInstance3D.GI_MODE_DISABLED
 	add_child(mmi)
-	if SET == "kit" and not _leafy.has(mesh):
+	if not _leafy.has(mesh):
 		_leafy[mesh] = mmi
 
 
 ## The kit's trees, one batch per tree mesh: terrain.gd's season pass tints their
 ## leaves with the rest of the land's (the meshes share their materials, so one
-## batch each is all of them). The packs keep their own colour: none.
+## batch each is all of them).
 var _leafy := {}
 func leafy() -> Array:
 	return _leafy.values()
 
 
-## Each kind's LOD1 (bark + needle clusters, merged) and its billboard, as
-## meshes in metres with the trunk's foot at the origin.
+## Each kind's mesh, once.
 func _load() -> void:
 	if not _full.is_empty() or not available():
 		return
-	if SET == "kit":
-		_load_kit()
-		return
-	_load_pack(PACK, KINDS, "_LOD1", "_LOD2", "_Billboard_LOD3")
-	for pack in MORE:
-		if ResourceLoader.exists(pack[0]):
-			_load_pack(pack[0], pack[1], pack[2], pack[4] if pack.size() > 4 else pack[2], pack[3])
+	_load_kit()
 
 
 ## The kit's kinds: each file baked to one mesh (house_builder's bake), drawn at
@@ -257,20 +198,6 @@ func _load_kit() -> void:
 		var h := mesh.get_aabb().size.y if mesh else 0.0
 		_height.append(h)
 		_kscale.append(float(kd[1]) / h if h > 0.0 else 1.0)
-
-
-func _load_pack(path: String, kinds: Array, full_suffix: String, mid_suffix: String, card_suffix: String) -> void:
-	var scene: Node = (load(path) as PackedScene).instantiate()
-	for kind in kinds:
-		var full := _merge(scene, kind + full_suffix)
-		var mid := _merge(scene, kind + mid_suffix) if mid_suffix != full_suffix else null
-		var card := _merge(scene, kind + card_suffix)
-		# A missing kind keeps its slot, so indices stay put.
-		_full.append(full if card != null else null)
-		_mid.append((mid if mid != null else full) if card != null else null)
-		_card.append(card if full != null else null)
-		_height.append(full.get_aabb().size.y if full else 0.0)
-	scene.free()
 
 
 ## A kit tree's leaves as its own (data/assets.json woods.kit; art target 01-town): a leaf texture swapped
@@ -298,9 +225,8 @@ func _leaves(mat: Material, path: String) -> Material:
 	return c
 
 
-## The pack's leaves and billboards are alpha-blended: every layer of every
-## canopy shaded and sorted each frame, which made the woods most of the frame's
-## cost. Cut out instead (a pixel is leaf or not), as foliage in games is; the
+## Alpha-blended leaves: every layer of every canopy shaded and sorted each frame, which made the woods most of the
+## frame's cost. Cut out instead (a pixel is leaf or not), as foliage in games is; the
 ## temporal upscaler softens the edges, so it reads the same.
 var _cut := {}
 func _cutout(mat: Material) -> Material:
@@ -316,54 +242,6 @@ func _cutout(mat: Material) -> Material:
 		preload("res://scripts/realistic.gd").fade_near(c, preload("res://scripts/realistic.gd").TREE_GONE, preload("res://scripts/realistic.gd").TREE_SOLID)
 		_cut[mat] = c
 	return _cut[mat]
-
-
-func _merge(scene: Node, group: String) -> ArrayMesh:
-	var root: Node = scene.find_child(group, true, false)
-	if root == null:
-		return null
-	var out := ArrayMesh.new()
-	for mi in root.find_children("*", "MeshInstance3D", true, false):
-		# The whole chain from the scene root: the pack is authored Z-up, and
-		# its root node is what stands the trees upright.
-		var xf: Transform3D = _global(mi)
-		var mesh: Mesh = (mi as MeshInstance3D).mesh
-		for sidx in mesh.get_surface_count():
-			var arrays := mesh.surface_get_arrays(sidx)
-			var v: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
-			for i in v.size():
-				v[i] = xf * v[i]
-			arrays[Mesh.ARRAY_VERTEX] = v
-			if arrays[Mesh.ARRAY_NORMAL] != null:
-				var nrm: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
-				for i in nrm.size():
-					nrm[i] = (xf.basis * nrm[i]).normalized()
-				arrays[Mesh.ARRAY_NORMAL] = nrm
-			arrays[Mesh.ARRAY_TANGENT] = null
-			out.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
-			out.surface_set_material(out.get_surface_count() - 1, _cutout(mi.get_active_material(sidx)))
-	# Stand the tree on its foot, in metres.
-	var box := out.get_aabb()
-	var shifted := ArrayMesh.new()
-	for sidx in out.get_surface_count():
-		var arrays := out.surface_get_arrays(sidx)
-		var v: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
-		for i in v.size():
-			v[i] -= Vector3(box.get_center().x, box.position.y, box.get_center().z)
-		arrays[Mesh.ARRAY_VERTEX] = v
-		shifted.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
-		shifted.surface_set_material(sidx, out.surface_get_material(sidx))
-	return shifted
-
-
-func _global(n: Node) -> Transform3D:
-	var xf := Transform3D.IDENTITY
-	var p: Node = n
-	while p != null:
-		if p is Node3D:
-			xf = (p as Node3D).transform * xf
-		p = p.get_parent()
-	return xf
 
 
 ## How many tree crowns stand between `eye` and `at` (the canopy right over

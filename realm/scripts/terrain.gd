@@ -570,7 +570,7 @@ func _build_sea() -> void:
 		mat.set_shader_parameter("depth_fog_fade_max", float(df[1]))
 	mat.set_shader_parameter("shore_fade_min", 12.0)  # surf at the shore only up close: no white outline round the map
 	mat.set_shader_parameter("shore_fade_max", 30.0)
-	if preload("res://scripts/land3d.gd").PAINTED and not bool(preload("res://scripts/data.gd").value("ground", "surf", true)):
+	if not bool(preload("res://scripts/data.gd").value("ground", "surf", true)):
 		# The painted coast (realm/data/ground.json surf: false): sand meets clear water, no white line.
 		mat.set_shader_parameter("shore_fade_min", 0.001)
 		mat.set_shader_parameter("shore_fade_max", 0.002)

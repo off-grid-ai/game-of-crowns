@@ -156,7 +156,6 @@ var _env: Environment
 var _ground: MeshInstance3D
 var _sun: DirectionalLight3D
 var _trees: Node = null  # forest.gd, for its tree meshes in metres
-var _fine_pines: Array = []  # the pine pack at its finest, for trees seen this close
 
 ## Each house's land as you'd stand in it: ground texture, its trees, its sky.
 const LANDS := {
@@ -245,22 +244,12 @@ func _dress_stage(house: Dictionary, family: Dictionary) -> void:
 		if _trees == null:
 			_trees = preload("res://scripts/forest.gd").new()
 			_trees._load()
+		# The woods' own grown pines or oaks (forest.gd's kit), each with its scale to its true height in metres.
 		var pool: Array = []
-		# Close enough to see, the pack's finest level of each tree: fuller crowns.
-		if land["trees"] == "pine" and _fine_pines.is_empty():
-			var scene: Node = (load(_trees.PACK) as PackedScene).instantiate()
-			for kind in _trees.KINDS:
-				var m: ArrayMesh = _trees._merge(scene, kind + "_LOD0")
-				if m:
-					_fine_pines.append(m)
-			scene.free()
-		pool.append_array(_fine_pines if land["trees"] == "pine" else [])
-		var lo: int = 0 if land["trees"] == "pine" else _trees.OAK_FIRST
-		var hi: int = _trees.OAK_FIRST if land["trees"] == "pine" else mini(_trees._full.size(), _trees.OAK_FIRST + 7)
-		if pool.is_empty():
-			for i in range(lo, hi):
-				if i < _trees._full.size() and _trees._full[i] != null:
-					pool.append(_trees._full[i])
+		var role: Array = _trees._roles.get("pine" if land["trees"] == "pine" else "oak", [0, 0])
+		for i in range(int(role[0]), int(role[0]) + int(role[1])):
+			if i < _trees._full.size() and _trees._full[i] != null:
+				pool.append([_trees._full[i], _trees._kscale[i]])
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash(who)
 		for i in 90:
@@ -273,10 +262,11 @@ func _dress_stage(house: Dictionary, family: Dictionary) -> void:
 			if at.z > -12.0:
 				continue
 			var t := MeshInstance3D.new()
-			t.mesh = pool[rng.randi() % pool.size()]
+			var pick: Array = pool[rng.randi() % pool.size()]
+			t.mesh = pick[0]
 			t.position = at
 			t.rotation.y = rng.randf() * TAU
-			t.scale = Vector3.ONE * rng.randf_range(0.8, 1.2)
+			t.scale = Vector3.ONE * float(pick[1]) * rng.randf_range(0.8, 1.2)
 			t.add_to_group("hero_dressing")
 			_stage.add_child(t)
 	# Low hills all round, far off in the haze, so the land rolls away instead of
