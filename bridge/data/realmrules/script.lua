@@ -418,7 +418,6 @@ end
 function ev_tech(tech, player, source)
   emit("tech", {tech = tech:rule_name(), owner = player.id, source = source})
 end
-function ev_civil_war(player) emit("civil_war", {owner = player.id}) end
 -- The realm starts in its medieval age: every house already knows these.
 local MEDIEVAL = {"Alphabet", "Bronze Working", "Ceremonial Burial", "Masonry", "Horseback Riding", "Warrior Code",
   "Iron Working", "Pottery", "The Wheel", "Code of Laws", "Writing", "Monarchy", "Mathematics", "Currency",
@@ -444,7 +443,7 @@ local hooks = {
   {"city_destroyed", "ev_city_destroyed"}, {"city_transferred", "ev_city_transferred"},
   {"disaster_occurred", "ev_disaster"}, {"building_built", "ev_building_built"},
   {"building_lost", "ev_building_lost"}, {"unit_lost", "ev_unit_lost"},
-  {"tech_researched", "ev_tech"}, {"civil_war_triggered", "ev_civil_war"},
+  {"tech_researched", "ev_tech"},
   {"turn_begin", "ev_turn"}, {"action_started_unit_units", "ev_attack"}, {"action_started_unit_unit", "ev_attack"}, {"action_started_unit_tile", "ev_attack"},  -- Freeciv 3.2 reports an attack as unit-on-tile
 }
 for _, h in ipairs(hooks) do

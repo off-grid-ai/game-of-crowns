@@ -152,8 +152,6 @@ export function describe(ev, world) {
       return NOTABLE_TECH[ev.tech] ? `${owner(world, ev.owner)}'s ${NOTABLE_TECH[ev.tech]}.` : null;
     case "seam_spent":
       return `The gold seam in ${owner(world, ev.owner)}'s hills is worked out. The miners walk away.`;
-    case "civil_war":
-      return `${owner(world, ev.owner)} tears itself apart in civil war.`;
     default:
       return null;
   }
