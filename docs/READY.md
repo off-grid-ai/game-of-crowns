@@ -11,15 +11,15 @@ shot or clip that shows it. The status column is updated by the supervisor only.
 
 | # | Line | What passes looks like | Owner | Status |
 |---|------|------------------------|-------|--------|
-| 1 | The square | Matches or beats r11 c01: open (visible paving ≥ 55%), detailed (≥ 16 stalls, ≥ 226 goods), people at the stalls, no one stacked or inside a building | Fire and siege, Town life | square built (22bd0e9c); people open (town life) |
+| 1 | The square | Matches or beats r11 c01: open (visible paving ≥ 55%), detailed (≥ 16 stalls, ≥ 226 goods), people at the stalls, no one stacked or inside a building | Fire and siege, Town life | square built (22bd0e9c); people built (8b93de23, bb90a325); one inside-a-building check open (town life) |
 | 2 | People can walk the town | Kingsmere's walk map bakes (nav_dense_probe PASS); nobody stands still for lack of a path | Army command | built (996f29bb, nav_dense PASS) |
-| 3 | War: the armies march out | When war is declared, the host forms up at its seat and marches out along the roads, seen from the town and the realm views | Army layer | open |
+| 3 | War: the armies march out | When war is declared, the host forms up at its seat and marches out along the roads, seen from the town and the realm views | Army layer | built (b7f20217, 851cc670, 3731a4a5) |
 | 4 | The right banner | Every regiment carries its own house's emblem and colours, on banner and livery, at every zoom | Army layer | built (1514f7ee, army_probe 10) |
 | 5 | They fight | A battle reads on film: lines meet, men fall, a rout starts where they break and runs along the line ("Panic spreads") | Army layer | built (4e62a758, army_probe 8-9) |
 | 6 | They lay siege | A host besieges a walled town: camps, engines, the walls take hits and breach, the assault goes in through the breach | Fire and siege (siege), Freeciv (the rules) | built (cd0c63ba, 8c29d79c, storm_probe 7/7) |
-| 7 | Capture a town | The King's host can take a town by siege or storm, and it changes hands in Freeciv and on screen (banners, colours, the town card) | Freeciv (rule), Army command (the order) | open |
-| 8 | Command the army | Select a regiment or a host (select ring), give it orders from the command card: march, attack, besiege, hold, go home | Army command | open |
-| 9 | Politics you can see | A house's mood shows in the world (unrest in its towns, its land tinted in its colours); supporting a house sends your army to reinforce it; decrees have a cost you see; the story arcs are the politics (Mac: "our stories should be enough… they just need to be wired in"): every arc effect reaches Freeciv (a rising beat calls Freeciv's civil war; the usurper's and rebels' hosts march and fight) | Freeciv (state), Town life (unrest in the streets) | open |
+| 7 | Capture a town | The King's host can take a town by siege or storm, and it changes hands in Freeciv and on screen (banners, colours, the town card) | Freeciv (rule), Army command (the order) | built (76f2151b hamlets kept, 5fbb4361 Besiege order) |
+| 8 | Command the army | Select a regiment or a host (select ring), give it orders from the command card: march, attack, besiege, hold, go home | Army command | card on (5af67493), Besiege (5fbb4361), Attack (d0a609b9); select_host open (army layer) |
+| 9 | Politics you can see | A house's mood shows in the world (unrest in its towns, its land tinted in its colours); supporting a house sends your army to reinforce it; decrees have a cost you see; the story arcs are the politics (Mac: "our stories should be enough… they just need to be wired in"): every arc effect reaches Freeciv (a rising beat calls Freeciv's civil war; the usurper's and rebels' hosts march and fight) | Freeciv (state), Town life (unrest in the streets) | reinforce built (687f170b), risings (6e14d444, triggers moving into stories); story wiring and unrest open |
 | 10 | The world makes sense | A full reign plays end to end: no crash, no frozen screen, no unit vanishing, every action gets a reaction | Supervisor (playtest) | open |
 
 ## The foundations (Mac: "I want to see all of that in one shot… that's what I mean when I say everything in")
