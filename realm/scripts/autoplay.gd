@@ -365,6 +365,7 @@ func _step(w: PackedStringArray) -> void:
 					var r: Dictionary = nav.probe(int(c["id"]), root, nn, rng)
 					if int(r["paths"]) == 0:
 						_note("CHECK nav probe: FAIL %s: the walk map was ready after %.1f s (%d rebakes) but no walk found a path" % [title, waited, rebakes])
+						_nav_why(nav, root)
 					_note("CHECK nav probe: %s: ready after %.1f s, %d rebakes; %d walks, %d segments, %d crossing something (%d walks), straight lines would cross %d; the cart's straight legs into the market: %d of %d through something; %d outlines; crossed near %s" % [title, waited, rebakes, r["paths"], r["segments"], r["crossing"], r["paths_crossing"], r["straight"], r.get("cart_crossing", 0), r.get("cart_legs", 0), load("res://scripts/town_nav.gd").footprints(root).size(), str(r["what"])])
 					break
 			"overlapprobe":
@@ -700,6 +701,42 @@ func _key(code: int, down: bool) -> void:
 	e.physical_keycode = code
 	e.pressed = down
 	_feed(e)
+
+
+## Why a town's walk map answers no paths: its open-ground source baked again here, synchronously, with and without
+## the water town_nav cuts out (its _water), and with nothing cut out at all, each bake's polygon count; the
+## largest obstruction outlines (area, middle). A bake of 0 polygons is an empty map: closest() answers (0, 0).
+func _nav_why(nav, root: Node3D) -> void:
+	var reach := float(root.get_meta("reach", 6.0))
+	var ring := PackedVector2Array()
+	for i in 24:
+		ring.append(Vector2.from_angle(TAU * i / 24) * reach)
+	var blocks: Array = nav.blocks_of(root, main.terrain)
+	var water: Array = nav._water(root.position, reach)
+	var big: Array = []
+	for o in blocks + water:
+		var poly := PackedVector2Array(o)
+		var area := 0.0
+		for i in poly.size():
+			area += poly[i].cross(poly[(i + 1) % poly.size()]) * 0.5
+		var mid := Vector2.ZERO
+		for q in poly:
+			mid += q / maxf(poly.size(), 1)
+		big.append([absf(area), mid, poly.size(), o in water])
+	big.sort_custom(func(x, y): return x[0] > y[0])
+	var counts := []
+	for set in [[blocks + water, "all"], [blocks, "no water"], [[], "nothing cut"]]:
+		var np := NavigationPolygon.new()
+		np.agent_radius = 0.035
+		np.cell_size = 0.01
+		var src := NavigationMeshSourceGeometryData2D.new()
+		src.add_traversable_outline(ring)
+		for o in set[0]:
+			src.add_obstruction_outline(o)
+		NavigationServer2D.bake_from_source_geometry_data(np, src)
+		counts.append("%s %d" % [set[1], np.get_polygon_count()])
+	_note("  nav why: reach %.1f, %d blocks, %d water outlines; open ground baked: %s; largest outlines: %s" % [reach, blocks.size(), water.size(), ", ".join(counts),
+		", ".join(big.slice(0, 4).map(func(b): return "%.2f at (%.1f, %.1f) %d pts%s" % [b[0], b[1].x, b[1].y, b[2], " water" if b[3] else ""]))])
 
 
 func _click(frac: Vector2, button := MOUSE_BUTTON_LEFT, double := false) -> void:
