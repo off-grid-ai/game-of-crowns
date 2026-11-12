@@ -959,6 +959,9 @@ actor_reqs    =
 
 ; The Crown (Norman) never takes a town by storm: the King's host defends; towns
 ; change hands by his decree (a grant), never by his soldiers razing a hamlet.
+; Raiders (Freeciv's barbarians, land and sea) never take a town either: they kill men,
+; pillage and plunder, but a house is never lost to them (casebook, Every answer costs).
+; The dead are a player of their own, not a barbarian, and still can.
 [actionenabler_conquer_city_native]
 action        = "Conquer City"
 actor_reqs    =
@@ -970,6 +973,7 @@ actor_reqs    =
       "UnitState",      "OnLivableTile",  "Local",  TRUE
       "Nation",         "Animal Kingdom", "Player", FALSE
       "Nation",         "Norman",         "Player", FALSE
+      "PlayerState",    "Barbarian",      "Player", FALSE
     }
 target_reqs   =
     { "type",           "name",           "range",  "present"
@@ -988,6 +992,7 @@ actor_reqs    =
       "UnitState",      "OnLivableTile",  "Local",  FALSE
       "Nation",         "Animal Kingdom", "Player", FALSE
       "Nation",         "Norman",         "Player", FALSE
+      "PlayerState",    "Barbarian",      "Player", FALSE
     }
 target_reqs   =
     { "type",           "name",           "range",  "present"

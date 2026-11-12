@@ -16,6 +16,10 @@ const read = (f) => fs.readFileSync(path.join(BRIDGE, f), "utf8");
 // No dice raid is left: nothing kills a town's men by a coin toss.
 for (const f of ["arcs.js", "characters.js"]) check(!/math\.random\(\) < 0\.5 then edit\.unit_kill/.test(read(f)), `${f} still has a dice raid`);
 
+// Raiders never take a town: both conquer enablers exclude Freeciv's barbarians (the dead, a player of their own, still can).
+const enablers = read("data/realmrules/actions.ruleset").split(/\n(?=\[)/).filter((s) => /^\[actionenabler_conquer_city/.test(s));
+check(enablers.length === 2 && enablers.every((s) => /"PlayerState",\s*"Barbarian",\s*"Player",\s*FALSE/.test(s)), "a Conquer City enabler lets barbarians take a town");
+
 // A short game, then its save loaded the way the bridge loads a realm.
 const a = await bareFreeciv({ port: 5574, serv: ["set aifill 3", "set minplayers 0", "set timeout -1", `set barbarians ${BARBARIANS.normal}`, "set endturn 3", "start"] });
 check(await a.until(/Game ended as the turn limit/, 90000), "the game didn't run to its end");
