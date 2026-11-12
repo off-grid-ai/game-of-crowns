@@ -549,6 +549,13 @@ func _real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds
 	# landmarks and the trades first, then the big and middle houses; the small fill what is left.
 	_tiers = TownTiers.new(size, seat)
 	_trades = TownTrades.plan(size, root.get_meta("buildings", []), seat, rng.seed + 53)
+	# A trade that stands elsewhere at this rank (towns.json trades.list where_by_rank): the crown's smithy on the
+	# square's edge, its foreground trade (01-town). --smithy=off: where it stands at every rank.
+	if not OS.get_cmdline_user_args().has("--smithy=off"):
+		for tr in _trades:
+			var wr: Dictionary = tr.get("where_by_rank", {})
+			if wr.has(_rank):
+				tr["where"] = String(wr[_rank])
 	var landmarks: Array = ["tavern", "hall", "church"]
 	for tr in _trades:
 		if String(tr["where"]) == "square":
@@ -578,6 +585,8 @@ func _real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds
 				_trade_record(root, center, {"component": "tavern", "model": lm}, p, -p.normalized(), f)
 			if not square_trade.is_empty():
 				_trade_record(root, center, square_trade, p, -p.normalized(), f)
+				if comp == "forge":
+					_smithy(root, center, p, -p.normalized(), f, rng)
 			if comp == "church":
 				_walled(root, center, p, -p.normalized(), f, "church", lots)  # the churchyard
 		gap_ang += PI * 0.62
@@ -1632,9 +1641,39 @@ func _trade_of(component: String) -> Dictionary:
 	return {}
 
 
+## The square's smithy dressed (01-town's open-fronted forge on the square: the house's banner on its front, a
+## quench barrel, the tools racked by the door; its hearth is lit by _trade_record). towns.json market.<rank>.smithy:
+## banner [across, up, width, height] metres on its front wall; barrel and rack [across, out] metres from its front.
+func _smithy(root: Node3D, center: Vector3, p: Vector3, face: Vector3, f: Vector2, rng: RandomNumberGenerator) -> void:
+	var k: Dictionary = _market_knobs().get("smithy", {})
+	if k.is_empty():
+		return
+	var along := Vector3(-face.z, 0, face.x)
+	var yaw := atan2(face.x, face.z)
+	var front := p + face * f.y * 0.5
+	var bn: Array = k.get("banner", [])
+	if bn.size() >= 4:
+		var at := front + along * float(bn[0]) * S + face * 0.015 * S
+		_arms_quad(root, at + Vector3(0, _ground_y(center, at) + float(bn[1]) * S, 0), yaw, Vector2(float(bn[2]), float(bn[3])) * S)
+	for item in [["barrel", "props/Barrel"], ["rack", "props/WeaponStand"]]:  # catalogue names (assets.json)
+		var at2: Array = k.get(item[0], [])
+		var kind := String(item[1])
+		if at2.size() < 2 or Real.footprint(kind) == Vector2.ZERO:
+			continue
+		var q := front + along * float(at2[0]) * S + face * float(at2[1]) * S
+		_place(root, kind, q + Vector3(0, _ground_y(center, q) - 0.005, 0), yaw + rng.randf_range(-0.2, 0.2))
+
+
 ## The house's arms carved on the front of the King's monument's plinth (assets.json square_statue: the plinth
 ## 1.4 m square, its face 1.0-2.5 m up): the house's painted banner, else a panel in its colour.
 func _plinth_arms(root: Node3D, center: Vector3, p: Vector3, yaw: float, foot: Vector2) -> void:
+	var face := Vector3(sin(yaw), 0, cos(yaw))
+	var y := _foot_y(center, p, foot, yaw)
+	_arms_quad(root, p + face * (0.7 + 0.015) * S + Vector3(0, y + 1.75 * S, 0), yaw, Vector2(0.8, 1.2) * S)
+
+
+## The house's arms as a flat panel (its painted banner, else its colour) centred on `at`, facing along `yaw`.
+func _arms_quad(root: Node3D, at: Vector3, yaw: float, size: Vector2) -> void:
 	var m := StandardMaterial3D.new()
 	m.roughness = 0.9
 	var slug := preload("res://scripts/heraldry.gd").slug(_house)
@@ -1646,15 +1685,13 @@ func _plinth_arms(root: Node3D, center: Vector3, p: Vector3, yaw: float, foot: V
 	else:
 		m.albedo_color = _house_colour
 	var q := QuadMesh.new()
-	q.size = Vector2(0.8, 1.2) * S
+	q.size = size
 	var mi := MeshInstance3D.new()
 	mi.mesh = q
 	mi.material_override = m
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	root.add_child(mi)
-	var face := Vector3(sin(yaw), 0, cos(yaw))
-	var y := _foot_y(center, p, foot, yaw)
-	mi.position = p + face * (0.7 + 0.015) * S + Vector3(0, y + 1.75 * S, 0)
+	mi.position = at
 	mi.rotation.y = yaw
 
 
@@ -1954,6 +1991,26 @@ func _croft(root: Node3D, center: Vector3, hp: Vector3, face: Vector3, f: Vector
 	# A yard's bed reads from roof height (round 5, 01-town: big cabbages in rows behind a low fence): its crops
 	# drawn larger (towns.json plots.green.garden_grow) and a low fence round it (garden_fence, a component).
 	Fields.sow(plots[1], terrain, center, ["cabbage", "beans", "cabbage"][rng.randi() % 3], center + back, size, yaw, rng, float(gk.get("garden_grow", 1.0)))
+	# A row or two of ripe produce through the bed, in colours that read from the town view (towns.json
+	# plots.green.garden_produce: rows, every (game units along a row), scale; assets.json garden_produce: carrots,
+	# melons, reds; round 7, 01-town: orange and red in the green rows).
+	var pr: Dictionary = gk.get("garden_produce", {})
+	if not pr.is_empty():
+		var kinds: Array = Real.variants("garden_produce").filter(func(k): return Real.footprint(k) != Vector2.ZERO)
+		var pb := Basis(Vector3.UP, yaw)
+		var nrow := int(pr.get("rows", 1))
+		var every := float(pr.get("every", 0.07))
+		var span: Array = pr.get("scale", [1.0, 1.4])
+		for row in nrow:
+			if kinds.is_empty():
+				break
+			var kind: String = kinds[rng.randi() % kinds.size()]  # one crop a row
+			var z := (float(row) + 0.5) / nrow - 0.5
+			var x := -size.x * 0.42
+			while x <= size.x * 0.42:
+				var at := back + pb * Vector3(x + rng.randf_range(-0.2, 0.2) * every, 0, z * size.y * 0.8 + rng.randf_range(-0.2, 0.2) * every)
+				_place(root, kind, at + Vector3(0, _ground_y(center, at), 0), rng.randf() * TAU, Vector3.ONE * rng.randf_range(float(span[0]), float(span[1])), Vector2(0.001, 0.001))
+				x += every
 	lots.append([back, held])
 	var gf := String(gk.get("garden_fence", ""))
 	if gf != "":
@@ -2194,6 +2251,10 @@ func _plaza(root: Node3D, center: Vector3, square_r: float, size: int, seat: boo
 					drop.call(clutter[rng.randi() % clutter.size()], p, rng.randf() * TAU)
 			if ResourceLoader.exists("res://assets/realistic/ph/wooden_lantern_01/wooden_lantern_01_1k.gltf") and i % 2 == 0:
 				drop.call("ph/wooden_lantern_01", m - m.normalized() * (stall.y * 0.5 + 0.05) + along * stall.x * 0.45, yaw)
+			# The others a lantern on its post at the front corner (Kenney's town lantern; Mac 2026-11-12, "no
+			# finesse"; 01-town's lit stalls). towns.json market.<rank>.stall_posts; --house-finesse=off.
+			elif bool(mk.get("stall_posts", false)) and Real.one("lamp_post") != "" and not OS.get_cmdline_user_args().has("--house-finesse=off"):
+				drop.call(Real.one("lamp_post"), m - m.normalized() * (stall.y * 0.5 + 0.05) - along * stall.x * 0.5, yaw)
 	root.set_meta("stalls_stood", n)
 	if n > 0:
 		places["market"] = fronts / n
@@ -2557,6 +2618,9 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 	var pave: Dictionary = _paving()
 	var pave_span := square_r * float(pave.get("square", 2.0))
 	_note_paved(root, Vector2.ZERO, Vector2.ZERO, pave_span * 0.5 * 0.9)  # the plaza edge holds whole to about there
+	var realm_roads = get_parent().get("roads") if get_parent() else null
+	if realm_roads and realm_roads.has_method("clear_in"):
+		realm_roads.clear_in(Vector2(center.x, center.z), pave_span * 0.5 * 0.9)  # the realm's roads end at the setts
 	var pave_reps := clampi(roundi(pave_span / float(pave.get("tile", 0.25))), 2, 12)
 	var setts: Decal = terrain.paint(root, terrain.tiled(String(pave.get("texture", SQUARE_TEX)), pave_reps, pave_reps, String(pave.get("square_edge", "setts"))), Vector3(0, _ground_y(center, Vector3.ZERO), 0), Vector2(pave_span, pave_span * float(pave.get("square_aspect", 0.9))), rng.randf() * TAU, _rgb(pave.get("tint"), Color.WHITE))
 	setts.sorting_offset = 1.0  # the paving over the roads that come into the square: a road ends at its setts, never a dirt stripe across them

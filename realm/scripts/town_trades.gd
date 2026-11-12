@@ -32,7 +32,7 @@ static func plan(size: int, buildings: Array, seat: bool, seed: int) -> Array:
 		var models: Array = Real.variants(String(r["component"])).filter(func(n): return Real.footprint(String(n)) != Vector2.ZERO)
 		if models.is_empty():
 			continue  # nothing in this build draws it
-		out.append({"component": String(r["component"]), "where": String(r.get("where", "edge")), "t": r.get("t", [0.15, 0.6]), "model": String(models[rng.randi() % models.size()])})
+		out.append({"component": String(r["component"]), "where": String(r.get("where", "edge")), "where_by_rank": r.get("where_by_rank", {}), "t": r.get("t", [0.15, 0.6]), "model": String(models[rng.randi() % models.size()])})
 	return out
 
 

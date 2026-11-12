@@ -445,7 +445,6 @@ func _segment(a: Vector3, b: Vector3, parent: Node3D = null, width := WIDTH, own
 	for run in [[a, mid], [mid, b]]:
 		var p: Vector3 = run[0]
 		var q: Vector3 = run[1]
-		var c := p.lerp(q, 0.5)
 		# Roads stop at the shore: never a track drawn across the sea.
 		var wet := false
 		for k in 5:
@@ -453,15 +452,74 @@ func _segment(a: Vector3, b: Vector3, parent: Node3D = null, width := WIDTH, own
 			wet = wet or not terrain.is_land(s.x, s.z)
 		if wet:
 			continue
-		var len := Vector2(q.x - p.x, q.z - p.z).length() + width
 		_remember(owner, p, q, width * 0.5)
-		var at := Vector3(c.x, (p.y + q.y) / 2.0, c.z)
-		var yaw := atan2(q.x - p.x, q.z - p.z)
-		var fade := 100.0 if width > WIDTH * 0.8 else 40.0
-		if Land3D.PAINTED:
-			# The painted ground (realm/data/ground.json roads): a soft grass verge either side, under the track,
-			# so it reads as a worn way through the grass (Foundation, Tiny Glade); the track itself warmer.
-			var vt: Array = Data.value("ground", "roads.vergeTint", [0.82, 0.86, 0.55, 0.85])
-			var verge: Decal = terrain.paint(parent if parent else self, terrain.tiled(GRASS, 2, roundi(len / width), "sides"), at, Vector2(width * Data.num("ground", "roads.verge", 2.4), len), yaw, Color(float(vt[0]), float(vt[1]), float(vt[2]), float(vt[3]) if vt.size() > 3 else 1.0), absf(p.y - q.y) + 3.0, fade)
-			verge.sorting_offset = -1.0  # under the track
-		terrain.paint(parent if parent else self, terrain.tiled(TEX, 2 if width > WIDTH else 1, roundi(len / width), "track"), at, Vector2(width, len), yaw, earth(owner == "kings"), absf(p.y - q.y) + 3.0, fade)
+		_painted.append([p, q, width, owner, parent if parent else self, _paint_run(p, q, width, owner, parent)])
+	for d in _stone_discs:
+		clear_in(d[0], float(d[1]), false)
+
+
+## The stretches painted so far: [from, to, width, owner, parent, [its decals]] (clear_in trims them where a town lays
+## its setts).
+var _painted: Array = []
+
+
+## One painted stretch from p to q: the verge (painted ground) under the track; its decals.
+func _paint_run(p: Vector3, q: Vector3, width: float, owner: String, parent: Node3D) -> Array:
+	var made: Array = []
+	var c := p.lerp(q, 0.5)
+	var len := Vector2(q.x - p.x, q.z - p.z).length() + width
+	var at := Vector3(c.x, (p.y + q.y) / 2.0, c.z)
+	var yaw := atan2(q.x - p.x, q.z - p.z)
+	var fade := 100.0 if width > WIDTH * 0.8 else 40.0
+	if Land3D.PAINTED:
+		# The painted ground (realm/data/ground.json roads): a soft grass verge either side, under the track,
+		# so it reads as a worn way through the grass (Foundation, Tiny Glade); the track itself warmer.
+		var vt: Array = Data.value("ground", "roads.vergeTint", [0.82, 0.86, 0.55, 0.85])
+		var verge: Decal = terrain.paint(parent if parent else self, terrain.tiled(GRASS, 2, roundi(len / width), "sides"), at, Vector2(width * Data.num("ground", "roads.verge", 2.4), len), yaw, Color(float(vt[0]), float(vt[1]), float(vt[2]), float(vt[3]) if vt.size() > 3 else 1.0), absf(p.y - q.y) + 3.0, fade)
+		verge.sorting_offset = -1.0  # under the track
+		made.append(verge)
+	made.append(terrain.paint(parent if parent else self, terrain.tiled(TEX, 2 if width > WIDTH else 1, roundi(len / width), "track"), at, Vector2(width, len), yaw, earth(owner == "kings"), absf(p.y - q.y) + 3.0, fade))
+	return made
+
+
+## No road painted over a town's laid stone (towns.gd, once its square is paved; round 7: the road into Kingsmere
+## ran on over the setts to the square's heart as an olive band of verge and track, whatever the decals' order):
+## every stretch reaching into the disc round `centre` (world x/z) of radius `r` is drawn again only outside it,
+## a stretch wholly inside goes. Its bed (_paths, on_path) is kept: travellers still walk it.
+var _stone_discs: Array = []  # [centre, r] of every town's laid stone so far: a road laid later is trimmed too
+func clear_in(centre: Vector2, r: float, remember := true) -> void:
+	if remember:
+		_stone_discs.append([centre, r])
+	var kept: Array = []
+	for st in _painted:
+		var p: Vector3 = st[0]
+		var q: Vector3 = st[1]
+		var a := Vector2(p.x, p.z)
+		var b := Vector2(q.x, q.z)
+		var reach := r + float(st[2]) * Data.num("ground", "roads.verge", 2.4) * 0.5  # the verge's half-width as well
+		if Geometry2D.get_closest_point_to_segment(centre, a, b).distance_to(centre) >= reach:
+			kept.append(st)
+			continue
+		for d in st[5]:
+			if is_instance_valid(d):
+				d.queue_free()
+		# What lies outside the disc: up to two pieces of p..q.
+		var ts: Array = []
+		var d2 := b - a
+		var aa := d2.dot(d2)
+		if aa > 0.0:
+			var f := a - centre
+			var bb := 2.0 * f.dot(d2)
+			var cc := f.dot(f) - reach * reach
+			var disc := bb * bb - 4.0 * aa * cc
+			if disc > 0.0:
+				var sq := sqrt(disc)
+				ts = [(-bb - sq) / (2.0 * aa), (-bb + sq) / (2.0 * aa)]
+		if ts.size() == 2:
+			for piece in [[0.0, float(ts[0])], [float(ts[1]), 1.0]]:
+				if float(piece[1]) - float(piece[0]) > 0.02:
+					var p2 := p.lerp(q, clampf(float(piece[0]), 0.0, 1.0))
+					var q2 := p.lerp(q, clampf(float(piece[1]), 0.0, 1.0))
+					if Vector2(q2.x - p2.x, q2.z - p2.z).length() > 0.05:
+						kept.append([p2, q2, st[2], st[3], st[4], _paint_run(p2, q2, float(st[2]), String(st[3]), st[4])])
+	_painted = kept

@@ -374,6 +374,14 @@ func _extras(w: int, d: int, hw: float, hd: float, back: float, fronts: Array, f
 		var sx := door_x + (1.0 if door_i < w - 1 else -1.0)
 		_add("Prop_Support", Transform3D(Basis.from_scale(Vector3(1, 1, 0.5)), Vector3(sx, -0.25, front0)))
 		_add("Floor_WoodLight", Transform3D(Basis(Vector3(0, 0, 1), PI / 2) * Basis.from_scale(Vector3(0.32, 1, 0.24)), Vector3(sx, 2.15, front0 + 0.72)))
+	if not OS.get_cmdline_user_args().has("--house-finesse=off") and _chance("door_lamp"):
+		# A lantern on its post beside the front door, on the other side from any sign (Kenney's town lantern, CC0;
+		# Mac 2026-11-12, "no finesse"; 01-town's lit doors). extras.door_lamp; house_kit.door_lamp its file and
+		# height in metres.
+		var dl: Array = _k.get("door_lamp", [])
+		if dl.size() >= 2 and ResourceLoader.exists(String(dl[0])):
+			var lx := door_x - (1.0 if door_i < w - 1 else -1.0)
+			_add(String(dl[0]), Transform3D(Basis.from_scale(Vector3.ONE * float(dl[1]) / 1.556), Vector3(lx, 0, front0 + 0.45)))
 	if not stair and _chance("lean_to"):
 		# A lean-to against the back wall: a pent roof on two posts, a crate or two under it.
 		var span := mini(w, 2)
