@@ -440,7 +440,9 @@ func _step(w: PackedStringArray) -> void:
 				# squarelife Town [secs]: how lived-in a town's square is, sampled twice a second for secs, against what
 				# 01-town shows (towns.json square.targets): people on its setts, per 100 m2 of open paving, standing
 				# or walking, alone or in groups, the largest stretch of open paving nobody stands near, and how many
-				# stand by a stall, the well, the statue or a doorstep. A measuring tool: town_life drives the numbers.
+				# stand by a stall, the well, the statue or a doorstep; the casebook's Living towns cases too: the crowd
+				# is the census (Stronghold: idle hands stand together in one place) and desire paths (Foundation: people
+				# keep to the same ways). A measuring tool: town_life drives the numbers.
 				var stitle := String(w[1]) if w.size() > 1 else "Kingsmere"
 				var ssecs := float(w[2]) if w.size() > 2 else 60.0
 				var sroot: Node3D = null
@@ -508,12 +510,14 @@ func _step(w: PackedStringArray) -> void:
 							if not under:
 								open_cells.append(Vector2i(gx, gz))
 					var open_m2 := float(open_cells.size())
-					var sums := {"people": 0.0, "standing": 0.0, "moving_seen": 0.0, "alone": 0.0, "g24": 0.0, "g5": 0.0, "empty": 0.0, "near": 0.0}
+					var sums := {"people": 0.0, "standing": 0.0, "moving_seen": 0.0, "alone": 0.0, "g24": 0.0, "g5": 0.0, "empty": 0.0, "near": 0.0, "crowd": 0.0}
 					var last := {}  # instance id -> where it stood the sample before
+					var trod := {}  # open cell -> walkers seen on it (desire paths: do people keep to the same ways?)
 					var samples := 0
 					var t_end := Time.get_ticks_msec() + int(ssecs * 1000.0)
 					while Time.get_ticks_msec() < t_end:
 						var pts: Array = []
+						var still: Array = []  # those standing (seen the sample before, and barely moved)
 						var now := {}
 						for p in get_tree().get_nodes_in_group("people"):
 							var pn := p as Node3D
@@ -529,6 +533,10 @@ func _step(w: PackedStringArray) -> void:
 								sums["moving_seen"] += 1.0
 								if q.distance_to(last[pn.get_instance_id()]) < 0.3 * um:  # under 0.6 m/s: standing
 									sums["standing"] += 1.0
+									still.append(q)
+								else:
+									var tc := Vector2i(roundi(q.x / um), roundi(q.y / um))
+									trod[tc] = int(trod.get(tc, 0)) + 1
 							if by_feature.call(q):
 								sums["near"] += 1.0
 						last = now
@@ -550,6 +558,24 @@ func _step(w: PackedStringArray) -> void:
 						for r in sizes:
 							var s: int = sizes[r]
 							sums["alone" if s == 1 else ("g24" if s <= 4 else "g5")] += float(s)
+						# The crowd is the census (Stronghold): the largest knot of people standing about in one place.
+						var crowd := 0
+						var claimed := {}
+						for i in still.size():
+							if claimed.has(i):
+								continue
+							var knot := 0
+							var todo: Array = [i]
+							claimed[i] = true
+							while not todo.is_empty():
+								var a: int = todo.pop_back()
+								knot += 1
+								for b in still.size():
+									if not claimed.has(b) and (still[a] as Vector2).distance_to(still[b]) <= near:
+										claimed[b] = true
+										todo.append(b)
+							crowd = maxi(crowd, knot)
+						sums["crowd"] += crowd
 						# The largest stretch of open setts nobody stands within near of (cells joined side to side).
 						var free := {}
 						for cell in open_cells:
@@ -582,6 +608,18 @@ func _step(w: PackedStringArray) -> void:
 						samples += 1
 						await get_tree().create_timer(0.5).timeout
 					var ns := float(maxi(1, samples))
+					# Desire paths (Foundation): the share of walking seen on the busiest fifth of the open setts; people
+					# walking anywhere at random give about 0.2, worn ways far more.
+					var walks: Array = trod.values()
+					walks.sort()
+					walks.reverse()
+					var walked := 0
+					for v in walks:
+						walked += int(v)
+					var top := 0
+					for k in mini(walks.size(), maxi(1, int(open_cells.size() / 5))):
+						top += int(walks[k])
+					var trodden := float(top) / float(maxi(1, walked))
 					var everyone := maxf(1.0, sums["people"])
 					var cols := [
 						["people", sums["people"] / ns, "%.0f"],
@@ -592,6 +630,8 @@ func _step(w: PackedStringArray) -> void:
 						["groups_5_plus", sums["g5"] / everyone, "%.2f"],
 						["largest_empty_m2", sums["empty"] / ns, "%.0f"],
 						["near_feature", sums["near"] / everyone, "%.2f"],
+						["idle_crowd", sums["crowd"] / ns, "%.1f"],
+						["trodden", trodden, "%.2f"],
 					]
 					var parts: Array = []
 					for col in cols:
