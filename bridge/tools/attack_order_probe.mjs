@@ -19,7 +19,7 @@ process.env.GOC_HOME = fs.mkdtempSync(path.join(os.tmpdir(), "goc-attack-"));  /
 const { bareFreeciv, checker } = await import("./fc_probe_lib.mjs");
 const Hosts = await import("../hosts.js");
 const Lua = await import("../lua.js");
-const { editRow } = await import("../fresh.js");
+const { editRow } = await import("../savefile.js");
 
 const { check, done } = checker("ATTACK ORDER");
 const card = JSON.parse(fs.readFileSync(new URL("../../realm/data/host_command.json", import.meta.url), "utf8"));

@@ -9,7 +9,7 @@ import path from "node:path";
 import { bareFreeciv, checker } from "./fc_probe_lib.mjs";
 import zlib from "node:zlib";
 import * as Lua from "../lua.js";
-import { editRow } from "../fresh.js";
+import { editRow } from "../savefile.js";
 
 const { check, done } = checker("SIEGE");
 const camp = fs.readFileSync(new URL("../campaigns.js", import.meta.url), "utf8");

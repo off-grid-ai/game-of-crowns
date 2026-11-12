@@ -16,7 +16,7 @@ process.env.GOC_HOME = fs.mkdtempSync(path.join(os.tmpdir(), "goc-besiege-"));  
 const { bareFreeciv, checker } = await import("./fc_probe_lib.mjs");
 const Hosts = await import("../hosts.js");
 const Camp = await import("../campaigns.js");
-const { editRow } = await import("../fresh.js");
+const { editRow } = await import("../savefile.js");
 const { houseFor } = await import("../narrator.js");
 
 const { check, done } = checker("BESIEGE ORDER");

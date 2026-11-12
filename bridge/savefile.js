@@ -111,3 +111,23 @@ export function extractDetail(save) {
   for (let y = 0; save.map?.[`owner${String(y).padStart(4, "0")}`] !== undefined; y++) owners.push(String(save.map[`owner${String(y).padStart(4, "0")}`]));
   return { players, cities, units, owners };
 }
+
+// Row q of a per-player table ("diplstate" or "ai") in player p's section.
+export function row(text, p, table, q) {
+  const at = text.indexOf(`\n[player${p}]\n`);
+  if (at < 0) return null;
+  const head = text.indexOf(`\n${table}={`, at);
+  const next = text.indexOf("\n[player", at + 2);
+  if (head < 0 || (next > 0 && head > next)) return null;
+  let line = text.indexOf("\n", head + 1);  // the header row ends here
+  for (let i = 0; i < q; i++) line = text.indexOf("\n", line + 1);
+  const end = text.indexOf("\n", line + 1);
+  return { start: line + 1, end, cells: text.slice(line + 1, end).split(",") };
+}
+
+export function editRow(text, p, table, q, edit) {
+  const r = row(text, p, table, q);
+  if (!r || r.cells.length < 4) return text;
+  edit(r.cells);
+  return text.slice(0, r.start) + r.cells.join(",") + text.slice(r.end);
+}

@@ -11,7 +11,7 @@ import path from "node:path";
 import zlib from "node:zlib";
 import { bareFreeciv, checker } from "./fc_probe_lib.mjs";
 import * as Lua from "../lua.js";
-import { editRow } from "../fresh.js";
+import { editRow } from "../savefile.js";
 
 const { check, done } = checker("CAPTURE");
 const PORT = 5578;

@@ -43,7 +43,7 @@ export function turn(ctx, ev) {
   Damage.season(ctx, Number(ev.turn));  // walls battered and mended, houses burnt and rebuilt (damage.js)
   collectTithe(ctx, Number(ev.turn));
   // The storyteller's pace: a threat rises after a quiet stretch and grows until answered (director.js).
-  const tc = ctx.treasuryCtx();
+  const tc = ctx;
   Director.season({ world: ctx.world, meta: ctx.meta, history: tc.history, usurper: ctx.stakes?.s?.usurper?.stage ?? "none", send: ctx.send, record: ctx.record, scene: tc.scene, favourOf: ctx.favourOf, shiftFavour: ctx.shiftFavour, addMark: ctx.addMark, court: ctx.court, detail: ctx.detail }, Number(ev.turn));
   setTimeout(() => ctx.stakes?.tick(Number(ev.turn), ctx.world, { favour: ctx.favourOf, sworn: ctx.sworn, shift: ctx.shiftFavour, send: (l) => send(`lua cmd ${l}`), watched: isWatched(), options: ctx.meta.options ?? {}, usurperMay: Opening.usurperMay(ctx.meta), mayRise: (pid) => mayRise(ctx, pid), ultimatum: (pid) => askUltimatum(ctx, pid), rose: (pid) => rose(ctx, pid) }), 2000);
   if (isYearEnd(ev.turn)) setTimeout(() => runSeason(ctx), 2500);
@@ -67,7 +67,7 @@ export async function runSeason(ctx) {
     await court.season(world, { wetHarvest: () => Weather.wetHarvest(meta.weather),
       // The crown's purse below one big thing's worth: the court may hear of it (economy.json thin).
       thinTreasury: () => (crownOf(ctx.world)?.gold ?? 0) < Treasury.ECONOMY.thin,
-      deed: (key, pid) => ctx.treasuryCtx().deed(kingDeeds.tagsFor("realm", key), { act: false, place: houseFor(ctx.world?.players?.find((p) => p.id === pid) ?? {}).name ?? "" }),
+      deed: (key, pid) => ctx.deed(kingDeeds.tagsFor("realm", key), { act: false, place: houseFor(ctx.world?.players?.find((p) => p.id === pid) ?? {}).name ?? "" }),
       favour: ctx.favourOf, cause: ctx.causeOf, warded: (pid) => (stakes?.s.wards?.[pid] ?? -1) > (ctx.world?.turn ?? 0) || ctx.sworn(pid), send: (l) => send(`lua cmd ${l}`), shift: ctx.shiftFavour, watched: isWatched(), options: meta.options ?? {}, ...ctx.heardCtx(), mayRise: (pid) => mayRise(ctx, pid), rose: (pid) => rose(ctx, pid) });
   } catch (err) {
     console.error("season:", err);
@@ -200,7 +200,7 @@ export function collectTithe(ctx, turn) {
   }
   for (const t of Object.keys(favourPast)) if (Number(t) < turn - 8) delete favourPast[t];
   // The season's tithe, its wagons and its deed (treasury.js).
-  Treasury.tithe(ctx.treasuryCtx(), turn);
+  Treasury.tithe(ctx, turn);
   const wear = isWatched() ? meta.tithe * Treasury.ECONOMY.tithe.wear : 0;  // data/economy.json: at 10%, 0.4 a season; the drift to 55 outweighs it
   for (const p of world.players) {
     if (houseFor(p).wild || houseFor(p).crown) continue;
@@ -234,7 +234,7 @@ export function collectTithe(ctx, turn) {
     meta.united = false;
     chron.saveMeta(meta);
   }
-  Treasury.reckoning(ctx.treasuryCtx(), turn);
+  Treasury.reckoning(ctx, turn);
 }
 
 // A King who gives no order and no ruling for a year is thought asleep (data/favour.json idle;

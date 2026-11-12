@@ -17,7 +17,7 @@ import { fileURLToPath } from "node:url";
 import { houseFor, cityName, describe, rememberNames } from "./narrator.js";
 import { readSave, extractDetail } from "./savefile.js";
 import { setReignSeed } from "./characters.js";
-import { editRow, rng as rngFor } from "./fresh.js";
+import { rng as rngFor } from "./fresh.js";
 import { moodRules, speak } from "./claude.js";
 import * as chron from "./chronicles.js";
 import { clampFavour, DECREES } from "./crown.js";
@@ -38,6 +38,7 @@ import * as Freeciv from "./freeciv.js";
 import * as View from "./view.js";
 import * as Camp from "./campaigns.js";
 import * as Risings from "./risings.js";
+import * as Diplomacy from "./diplomacy.js";
 import { CIVILIAN } from "./campaigns.js";
 import * as Counsel from "./counsel.js";
 import * as Treasury from "./treasury.js";
@@ -186,61 +187,11 @@ function load(id) {
   minds.catchUp(chronicle);
 }
 
-// Diplomacy between two houses in Freeciv itself, the bridge's one writer of it: the King's truce (a
-// ceasefire) and the King's march (war on the house he besieges). Freeciv 3.2's Lua and server commands
-// can't change diplomacy (3.3 adds Player:cancel_pact and add_love; docs/research/freeciv-leverage-2026-11-12.md),
-// but its save holds it: save, set both players' diplstate rows, and resume from that save. Freeciv then
-// keeps it (a ceasefire ends by itself; a war lasts until its AI makes peace).
-// pairs: [[houseA, houseB, seasons, state], ...] (state "Cease-fire", the default, or "War"), one reload.
-async function setDiplomacy(pairs) {
-  if (!Freeciv.proc() || switching || !pairs.length) return false;
-  switching = true;
-  const t0 = Date.now();
-  try {
-    await stopFreeciv();
-    const save = newestSave();
-    if (!save) return false;
-    let text = zlib.zstdDecompressSync(fs.readFileSync(save)).toString();
-    for (const [a, b, turns = 16, state = "Cease-fire"] of pairs) text = setDipl(setDipl(text, a, b, turns, state), b, a, turns, state);
-    const out = path.join(P.saves, `realm-T${String(world?.turn ?? 0).padStart(4, "0")}-diplomacy-${Date.now()}.sav.zst`);
-    fs.writeFileSync(out, zlib.zstdCompressSync(Buffer.from(text)));
-    return true;
-  } finally {
-    startFreeciv();
-    switching = false;
-    // The hitch: how long the realm was without Freeciv while the diplomacy went in.
-    Freeciv.timeReload(t0);
-  }
-}
-
-// A truce or a war, [houseA, houseB, seasons, state]: written now behind a sitting court, where the realm is
-// already held and the card covers the screen; otherwise it waits for the next sitting (court.js sends them).
-function diplomacyNow(pair) {
-  if (meta?.court?.sitting != null) setDiplomacy([pair]).catch((e) => console.log("diplomacy:", e.message));
-  else (meta.pendingDiplomacy ??= []).push(pair);
-}
-
-// Player p's diplstate toward player q. A ceasefire: Freeciv's AI keeps its own war plan per rival (the "ai"
-// table: love, spam, countdown, war_reason, ...); left alone it declares war again on its first turn, so the
-// King's truce also drops the plan: no countdown, no reason (DAI_WR_NONE = 5). The grudge stays, cooled a
-// tenth: a truce stops the swords, not the hatred, and war may come back when it ends. A war: the rows say
-// "War", and each side's AI fights it as its own.
-function setDipl(text, p, q, turns, state = "Cease-fire") {
-  const war = state === "War";
-  text = editRow(text, p, "diplstate", q, (c) => {
-    c[0] = war ? '"War"' : '"Cease-fire"';
-    c[1] = war ? '"War"' : '"Cease-fire"';
-    c[3] = war ? "0" : String(turns);
-    c[4] = "0";
-  });
-  if (war) return text;
-  return editRow(text, p, "ai", q, (c) => {
-    const love = Number(c[0]) || 0;
-    c[0] = String(love < 0 ? Math.round(love * 0.9) : love);
-    c[2] = "-1";
-    c[3] = "5";
-  });
-}
+// Diplomacy is written by diplomacy.js, the one writer; these are the bridge's two entry points into it.
+const diplomacyRealm = () => ({ proc: Freeciv.proc, busy: () => switching, hold: (v) => { switching = v; }, stop: stopFreeciv,
+  start: startFreeciv, newestSave: () => newestSave(), saves: P.saves, turn: () => world?.turn, timeReload: Freeciv.timeReload });
+const setDiplomacy = (pairs) => Diplomacy.write(diplomacyRealm(), pairs);
+const diplomacyNow = (pair) => Diplomacy.now(diplomacyRealm(), meta, pair);
 
 // The active realm's newest save (freeciv.js keeps the folder listing).
 function newestSave(kind = "") {
@@ -442,10 +393,9 @@ function applyStartOptions() {
 }
 
 // What view.js needs to build the /world answer, read fresh on every call.
-const viewCtx = () => ({ markSeasons: MARK_SEASONS, world, meta, history, court, stakes, turnSeconds, counselNow, scenes, effects, favourWhy, favourPast, lastSeason, detail, favourOf, marchOdds, greatHouses, sworn, priceOf, seasonsLeft, crownOf: crownNow, crownSeat, reignInfo, storyNow, marksNow, goalNow, CIVILIAN, TURNING, GOAL_FAVOUR, soulsOf });
 // The realm as the view sees it (GET /world): built in view.js.
 function worldView() {
-  return { ...View.worldView(viewCtx()), hosts: Hosts.list({ world, meta }), hostOrdersLeft: Hosts.ordersLeft({ world, meta }) };  // the King's hosts and their orders, and how many more orders this season (hosts.js)
+  return { ...View.worldView(realmCtx()), hosts: Hosts.list({ world, meta }), hostOrdersLeft: Hosts.ordersLeft({ world, meta }) };  // the King's hosts and their orders, and how many more orders this season (hosts.js)
 }
 
 // The Hand's matters, read from the realm as it stands now.
@@ -528,20 +478,16 @@ async function talkToNamed(res, city, id, b) {
 // The court's sitting and its rulings (court.js). Its context, read fresh on
 // every call: getters for what the bridge reassigns (the sitting reads them
 // again after each await), setSitting for the hold.
-const sittingCtx = () => ({ get world() { return world; }, get meta() { return meta; }, get court() { return court; }, get counselNow() { return counselNow; },
-  get sitting() { return sitting; }, setSitting: (v) => { sitting = v; }, timeoutNow, send, record, scene, deed, crowns, marchOn, shiftAndTell, shiftFavour, favourOf, setDiplomacy, turnHouses, lapse, lapseOf });
 // A ruling on a petition, by option, and how the realm sees it (court.js).
-function rule(id, option) { return Sittings.rule(sittingCtx(), id, option); }
+function rule(id, option) { return Sittings.rule(realmCtx(), id, option); }
 
 // A town besieged, the royal host and its sieges: campaigns.js. Its context,
 // read fresh on every call; scenes is read live, as scene() may replace it.
 // Risings (risings.js): the realm's side of a house split by Freeciv's civil war.
-const risingsCtx = () => ({ world, meta, send, record, scene, diplomacy: diplomacyNow });
-const campCtx = () => ({ world, meta, court, get scenes() { return scenes; }, send, record, scene, deed, shiftFavour, greatHouses, crownOf: crownNow, favourOf, causeOf, SOLDIER, detail, diplomacy: diplomacyNow });
 // The fighting companies of other houses on the tiles around a town (campaigns.js).
-function besiegers(c) { return Camp.besiegers(campCtx(), c); }
+function besiegers(c) { return Camp.besiegers(realmCtx(), c); }
 // A town besieged is seen, once a turn (campaigns.js).
-function sieges() { return Camp.sieges(campCtx()); }
+function sieges() { return Camp.sieges(realmCtx()); }
 
 // Every decree is seen in the world, with the scenes the realm already plays
 // (scenes.gd); the townsfolk's awareness hears each one (world.scenes).
@@ -571,13 +517,13 @@ function onEvent(line) {
   let ev;
   try { ev = JSON.parse(line.slice(line.indexOf("EVENT {") + 6)); } catch { return; }
   // A house split by Freeciv's civil war, its odds and its end (risings.js).
-  if (ev.kind === "rising" || ev.kind === "rising_odds" || ev.kind === "rising_over") return Risings.event(risingsCtx(), ev);
+  if (ev.kind === "rising" || ev.kind === "rising_odds" || ev.kind === "rising_over") return Risings.event(realmCtx(), ev);
   // A blight run its course (realmrules/script.lua: its Blight building taken up): the land recovers.
   if (ev.kind === "decree_lapsed") {
     if (ev.building === "Blight" && world?.cities?.some((c) => c.id === Number(ev.city))) record({ turn: Number(ev.turn), kind: "heal", text: `The land around ${cityName(Number(ev.city))} slowly recovers.`, city: Number(ev.city) });
     return;
   }
-  if (ev.kind === "turn") return Season.turn(seasonCtx(), ev);  // the turn's sequence (season.js)
+  if (ev.kind === "turn") return Season.turn(realmCtx(), ev);  // the turn's sequence (season.js)
   if (ev.kind === "attack") return Battles.struck(ev, world?.turn ?? 0);  // who struck where (battles.js)
   // Freeciv fought the King's assault (realm_assault): the view storms the siege and ends it as Freeciv did (campaigns.js).
   if (ev.kind === "assault") { const storm = Camp.stormScene(world, ev, crownNow()?.id); if (storm) scene("storm", storm); return; }
@@ -606,8 +552,6 @@ function onEvent(line) {
 // The reign (reign.js): its clock and acts, the King's name and deeds, his aims
 // and ambitions, its goal, its readings and how it ends. Its context, read fresh
 // on every call (getters for what the bridge reassigns; endReign pauses through setPaused).
-const reignCtx = () => ({ meta, world, court, stakes, arcs, favour, favourPast, turnSeconds, get paused() { return paused; }, setPaused: (v) => { paused = v; },
-  get history() { return history; }, get chronicle() { return chronicle; }, get counselNow() { return counselNow; }, record, send, scene, detail, favourOf, saveFavour, crownOf: crownNow, crownSeat, SOLDIER, soulsOf, theirs, canDecree });
 // Whether the realm would take this order now, by the decree route's own once-a-year and price rules (next.js offers only these).
 // purse: the gold to judge the price against (Infinity: by the yearly rules only, for what he'd want if he could pay).
 function canDecree(cmd, purse = null) {
@@ -618,8 +562,8 @@ function canDecree(cmd, purse = null) {
   return !!crown && (purse ?? crown.gold ?? 0) >= priceOf(cmd.action);
 }
 // The King's ledger and the name the realm gives him (reign.js).
-function kingName(outcome = null) { return Reign.kingName(reignCtx(), outcome); }
-function deed(tag, opts = {}) { return Reign.deed(reignCtx(), tag, opts); }
+function kingName(outcome = null) { return Reign.kingName(realmCtx(), outcome); }
+function deed(tag, opts = {}) { return Reign.deed(realmCtx(), tag, opts); }
 
 // The realm's scars, as long as they show: a battle's ground heals in 12 seasons, a stormed
 // town's in 16; a razed town's ruin stands until a town is founded on the spot again.
@@ -644,16 +588,12 @@ function marksNow() {
 // reckoning, the people's yearly moves, the rising gate and the one truce writer. Its
 // context, read fresh on every call (getters for what the bridge reassigns, read live in
 // the turn's timers).
-const seasonCtx = () => ({ get world() { return world; }, get meta() { return meta; }, get court() { return court; }, get stakes() { return stakes; }, get minds() { return minds; },
-  get P() { return P; }, get favour() { return favour; }, get deeds() { return deeds; },
-  favourWhy, favourPast, treasuryCtx, send, record, flushHeld, courtSeason, royalWorks, resolveCampaigns, favourOf, restingFavour, noteFavour, recordDeed,
-  causeOf, saveFavour, goalNow, sworn, shiftFavour, heardCtx, setDiplomacy, diplomacy: diplomacyNow, snapshot, runArcs, addMark, detail, marksNow, besiegers, startCampaign });
-function runSeason() { return Season.runSeason(seasonCtx()); }
-function turnHouses(turn) { return Season.turnHouses(seasonCtx(), turn); }
-function storyMarch(pid, size) { return Season.storyMarch(seasonCtx(), pid, size); }
-function houseTruce(pair, seasons = 16) { return Season.houseTruce(seasonCtx(), pair, seasons); }
-function keepTruce(pair) { return Season.keepTruce(seasonCtx(), pair); }
-function councilRuled(beat, option) { return Season.councilRuled(seasonCtx(), beat, option); }
+function runSeason() { return Season.runSeason(realmCtx()); }
+function turnHouses(turn) { return Season.turnHouses(realmCtx(), turn); }
+function storyMarch(pid, size) { return Season.storyMarch(realmCtx(), pid, size); }
+function houseTruce(pair, seasons = 16) { return Season.houseTruce(realmCtx(), pair, seasons); }
+function keepTruce(pair) { return Season.keepTruce(realmCtx(), pair); }
+function councilRuled(beat, option) { return Season.councilRuled(realmCtx(), beat, option); }
 
 // Each season the realm's story arcs move on (arcs.js); n seasons at once
 // fast-forwards them, re-reading the realm whenever a beat pulled a lever.
@@ -729,8 +669,8 @@ function arcCtx() {
     // A story's march waits on the house's ultimatum, as any rising does (turnHouses).
     declare: (pid, size) => storyMarch(pid, size),
     // A story splits a house by Freeciv's civil war, warns of the odds first, and settles it (risings.js).
-    rising: (pid, leader) => Risings.rise(risingsCtx(), pid, leader),
-    risingOdds: (pid) => Risings.odds(risingsCtx(), pid),
+    rising: (pid, leader) => Risings.rise(realmCtx(), pid, leader),
+    risingOdds: (pid, claimant) => Risings.odds(realmCtx(), pid, claimant),
     usurperStage: () => stakes?.s.usurper.stage ?? "none",
     // How far through its clock the reign is (0-1): a story's acts land at its quarters.
     reignAt: meta.minutes > 0 ? Math.min(1, meta.elapsedMs / (meta.minutes * 60000)) : null,
@@ -758,25 +698,23 @@ async function runArcs(n = 1, start = true) {
 // The crown's favour book (favourbook.js): each house's favour and why, the
 // deeds it will not forget, kindness wearing thin, and where favour settles.
 // Its context, read fresh on every call; nextEffect numbers the effects.
-const favourCtx = () => ({ world, meta, P, favour, deeds, favourWhy, favourPast, lastSeason, effects, nextEffect: () => ++effectSeq, detail });
-function saveFavour() { return Book.saveFavour(favourCtx()); }
-function favourOf(id) { return Book.favourOf(favourCtx(), id); }
+function saveFavour() { return Book.saveFavour(realmCtx()); }
+function favourOf(id) { return Book.favourOf(realmCtx(), id); }
 // A deed the house will not forget, and the grievance named as the cause (favourbook.js).
-function recordDeed(id, d, why, turn) { return Book.recordDeed(favourCtx(), id, d, why, turn); }
-function causeOf(id) { return Book.causeOf(favourCtx(), id); }
-function noteFavour(id, d, why) { return Book.noteFavour(favourCtx(), id, d, why); }
+function recordDeed(id, d, why, turn) { return Book.recordDeed(realmCtx(), id, d, why, turn); }
+function causeOf(id) { return Book.causeOf(realmCtx(), id); }
+function noteFavour(id, d, why) { return Book.noteFavour(realmCtx(), id, d, why); }
 // Kindness wears thin (favourbook.js).
-function temper(action, house, changes, dry = false) { return Book.temper(favourCtx(), action, house, changes, dry); }
+function temper(action, house, changes, dry = false) { return Book.temper(realmCtx(), action, house, changes, dry); }
 // Shifts favour, and says what it did for the result card (favourbook.js).
-function shiftAndTell(changes, why, cost = 0) { return Book.shiftAndTell(favourCtx(), changes, why, cost); }
-function shiftFavour(changes, why = "", told = false) { return Book.shiftFavour(favourCtx(), changes, why, told); }
+function shiftAndTell(changes, why, cost = 0) { return Book.shiftAndTell(realmCtx(), changes, why, cost); }
+function shiftFavour(changes, why = "", told = false) { return Book.shiftFavour(realmCtx(), changes, why, told); }
 // Where a house's favour settles when the King leaves it be (favourbook.js).
-function restingFavour(p) { return Book.restingFavour(favourCtx(), p); }
+function restingFavour(p) { return Book.restingFavour(realmCtx(), p); }
 
 // The Hand of the King advises: the realm's matters, worst first, with the
 // orders that answer them (counsel.js). Its context, read fresh on every call.
-const counselCtx = () => ({ world, meta, court, stakes, deeds, favourWhy, lastSeason, favourOf, seasonsLeft, priceOf, yearlyKey, FAVOUR, shiftFavour, record });
-function counsel(players, cities, threat) { return Counsel.counsel(counselCtx(), players, cities, threat); }
+function counsel(players, cities, threat) { return Counsel.counsel(realmCtx(), players, cities, threat); }
 
 // --- the court's season (court.js) ------------------------------------------------
 // Once a season the court sits and the realm holds still: its sitting, pace,
@@ -787,22 +725,22 @@ let counselNow = [];  // the realm's matters, as the last reading of the world f
 let sitting = false;  // a sitting holds the realm until the court closes
 let away = false;  // no window is watching: the realm waits for the King (every strategy game pauses when the player isn't there)
 const timeoutNow = () => (paused || sitting || away ? 0 : turnSeconds);
-const courtYearOf = () => Sittings.courtYearOf(sittingCtx());
-const heardCtx = () => Sittings.heardCtx(sittingCtx());
-function hold(on) { return Sittings.hold(sittingCtx(), on); }
-function courtSeason(turn, force = false) { return Sittings.courtSeason(sittingCtx(), turn, force); }
+const courtYearOf = () => Sittings.courtYearOf(realmCtx());
+const heardCtx = () => Sittings.heardCtx(realmCtx());
+function hold(on) { return Sittings.hold(realmCtx(), on); }
+function courtSeason(turn, force = false) { return Sittings.courtSeason(realmCtx(), turn, force); }
 // The King closes the court; every matter answered, the doors close (court.js).
-function closeCourt(turn) { return Sittings.closeCourt(sittingCtx(), turn); }
-function closeIfDone(turn, closing = false) { return Sittings.closeIfDone(sittingCtx(), turn, closing); }
+function closeCourt(turn) { return Sittings.closeCourt(realmCtx(), turn); }
+function closeIfDone(turn, closing = false) { return Sittings.closeIfDone(realmCtx(), turn, closing); }
 // What stands before the King now (court.js).
-function docket() { return Sittings.docket(sittingCtx()); }
+function docket() { return Sittings.docket(realmCtx()); }
 
 // What the King's silence costs, matter by matter (counsel.js).
-function lapseOf(o) { return Counsel.lapseOf(counselCtx(), o); }
-function lapse(m, turn) { return Counsel.lapse(counselCtx(), m, turn); }
+function lapseOf(o) { return Counsel.lapseOf(realmCtx(), o); }
+function lapse(m, turn) { return Counsel.lapse(realmCtx(), m, turn); }
 
 // A royal match needs an unwed son or daughter of age from each house (counsel.js).
-function matchFor(pa, pb) { return Counsel.matchFor(counselCtx(), pa, pb); }
+function matchFor(pa, pb) { return Counsel.matchFor(realmCtx(), pa, pb); }
 
 // --- What the crown's favour costs -------------------------------------------------
 
@@ -815,28 +753,27 @@ function storyNow() {
 
 // The crown's great occasions come once a year, and a decree's price grows with
 // the treasury (treasury.js). Its context, read fresh on every call.
-const treasuryCtx = () => ({ world, meta, history, tally, lastSeason, send, record, scene, deed, crownOf: crownNow });
-function yearlyKey(cmd) { return Treasury.yearlyKey(treasuryCtx(), cmd); }
-function seasonsLeft(key) { return Treasury.seasonsLeft(treasuryCtx(), key); }
-function priceOf(action) { return Treasury.priceOf(treasuryCtx(), action); }
+function yearlyKey(cmd) { return Treasury.yearlyKey(realmCtx(), cmd); }
+function seasonsLeft(key) { return Treasury.seasonsLeft(realmCtx(), key); }
+function priceOf(action) { return Treasury.priceOf(realmCtx(), action); }
 
 // --- Oaths and the royal host (campaigns.js) ---------------------------------------
 
-function sworn(pid) { return Camp.sworn(campCtx(), pid); }
-function startCampaign(c) { return Camp.startCampaign(campCtx(), c); }
-function marchOdds(house, allies, opts) { return Camp.marchOdds(campCtx(), house, allies, opts); }
-function siegeRuled(beat, option) { return Camp.siegeRuled(campCtx(), beat, option); }
-function resolveCampaigns(turn) { return Camp.resolveCampaigns(campCtx(), turn); }
+function sworn(pid) { return Camp.sworn(realmCtx(), pid); }
+function startCampaign(c) { return Camp.startCampaign(realmCtx(), c); }
+function marchOdds(house, allies, opts) { return Camp.marchOdds(realmCtx(), house, allies, opts); }
+function siegeRuled(beat, option) { return Camp.siegeRuled(realmCtx(), beat, option); }
+function resolveCampaigns(turn) { return Camp.resolveCampaigns(realmCtx(), turn); }
 
 // The reign's goal, as the top bar shows it (reign.js; GOAL_FAVOUR comes from there).
-function goalNow() { return Reign.goalNow(reignCtx()); }
+function goalNow() { return Reign.goalNow(realmCtx()); }
 
 // Each turn the crown takes its tithe (season.js); what it keeps between turns stays here.
 const tally = { total: 0, upkeep: 0 };  // the tithe since the last reckoning
 const lastSeason = { net: 0 };  // the tithe less upkeep, this season, for the top bar
 const favourPast = {};  // turn -> {house id: favour}, the last two years
 // The King's own works rise over two seasons, then stand and pay (treasury.js).
-function royalWorks(turn) { return Treasury.royalWorks(treasuryCtx(), turn); }
+function royalWorks(turn) { return Treasury.royalWorks(realmCtx(), turn); }
 
 function yearText(y) {
   const n = Number(y);
@@ -901,14 +838,14 @@ const crownNow = () => Realm.crownOf(world);
 const crownSeat = () => { const c = crownNow(); return c ? world.cities.find((x) => x.owner === c.id && x.capital) ?? world.cities.find((x) => x.owner === c.id) : null; };
 const SOLDIER = (u) => !CIVILIAN.has(u.type);
 // The royal ladder of aims and the King's three ambitions (reign.js).
-function ladder() { return Reign.ladder(reignCtx()); }
+function ladder() { return Reign.ladder(realmCtx()); }
 
 
 // The royal host marches on a town for a ruling the court already paid for (campaigns.js).
-function marchOn(cityId) { return Camp.marchOn(campCtx(), cityId); }
+function marchOn(cityId) { return Camp.marchOn(realmCtx(), cityId); }
 
 // How the reign ends: its epilogue, its score, its name (reign.js).
-function endReign(why, outcome = "completed") { return Reign.endReign(reignCtx(), why, outcome); }
+function endReign(why, outcome = "completed") { return Reign.endReign(realmCtx(), why, outcome); }
 
 // The reign's clock only runs while the realm does.
 setInterval(() => {
@@ -929,7 +866,7 @@ setInterval(() => {
   // An aim met is met at once, held clock or not: the King never reads "21 of 12".
   if (meta?.status === "running" && Freeciv.proc()) ladder();
   if (!meta || paused || sitting || meta.status !== "running" || !Freeciv.proc()) return;  // the court sitting holds the clock too
-  Reign.tick(reignCtx());  // the clock, and what it brings: the last act, ambitions, the council, an act's end (reign.js)
+  Reign.tick(realmCtx());  // the clock, and what it brings: the last act, ambitions, the council, an act's end (reign.js)
 }, 5000);
 
 function shutdown() {
@@ -946,57 +883,68 @@ process.on("SIGTERM", shutdown);
 
 // json, body and bytes: http_util.js.
 
-function reignInfo() { return Reign.reignInfo(reignCtx()); }
+function reignInfo() { return Reign.reignInfo(realmCtx()); }
 
 // The routes' context (routes_*.js), built fresh for each request: the realm's
 // state through getters (read when a handler uses it, so a snapshot or a switch
 // of chronicle during an await is seen), setters for what a route changes, and
 // the bridge's own helpers.
-const routeCtx = () => ({
-  get world() { return world; },
-  get counselStale() { return counselStale; }, set counselStale(v) { counselStale = v; },
-  get P() { return P; },
-  get meta() { return meta; },
-  get chronicle() { return chronicle; },
-  get history() { return history; },
-  get turnSeconds() { return turnSeconds; }, set turnSeconds(v) { turnSeconds = v; },
-  get paused() { return paused; }, set paused(v) { paused = v; },
-  get court() { return court; }, get chatter() { return chatter; },
-  get decreesIssued() { return decreesIssued; }, set decreesIssued(v) { decreesIssued = v; },
-  get stakes() { return stakes; },
-  get minds() { return minds; },
-  get arcs() { return arcs; },
-  get arcsRunning() { return arcsRunning; }, set arcsRunning(v) { arcsRunning = v; },
-  townStates, reignInfo, refreshCounsel, worldView, inCrowns, switchTo, endReign, send, timeoutNow, record,
-  DIR, favourOf, runSeason, sittingCtx, docket, hold, closeCourt, rule, closeIfDone, yearlyKey, seasonsLeft,
-  priceOf, causeOf, sworn, deed, startCampaign, temper, shiftAndTell, scene, keepTruce, decreeScenes, snapshot,
-  crowns, arrivals, courtSeason, kingName, marksNow, marks, picture, detail, talkToNamed, isKing, KING, arcCtx,
-  runArcs, OWN_STORIES, ownStory, storyForForm, rolesOf, BEAT_WHEN, BEAT_DOES
-});
+
+// The realm's one context (integration audit #14): every module gets this same object. The realm's state is
+// read through getters (never a copy taken when the context was made, which went stale) and the few things a
+// route sets (the pace, a pause, the counsel's staleness, a story run, the decrees issued) through setters.
+// Made once, on first use, after every function and constant it names exists.
+let REALM_CTX = null;
+function realmCtx() {
+  return (REALM_CTX ??= {
+    get meta() { return meta; }, get P() { return P; }, get chronicle() { return chronicle; },
+    get world() { return world; }, get history() { return history; },
+    get turnSeconds() { return turnSeconds; }, set turnSeconds(x) { turnSeconds = x; },
+    get paused() { return paused; }, set paused(x) { paused = x; }, get favour() { return favour; },
+    get deeds() { return deeds; }, get court() { return court; }, get minds() { return minds; },
+    get arcs() { return arcs; }, get chatter() { return chatter; },
+    get arcsRunning() { return arcsRunning; }, set arcsRunning(x) { arcsRunning = x; },
+    get stakes() { return stakes; },
+    get decreesIssued() { return decreesIssued; }, set decreesIssued(x) { decreesIssued = x; },
+    get scenes() { return scenes; },
+    get counselStale() { return counselStale; }, set counselStale(x) { counselStale = x; },
+    get counselNow() { return counselNow; }, get sitting() { return sitting; },
+    addMark, arcCtx, arrivals, BEAT_DOES, BEAT_WHEN, besiegers, canDecree, causeOf, CIVILIAN, closeCourt, closeIfDone,
+    courtSeason, crownOf: crownNow, crowns, crownSeat, decreeScenes, deed, detail, diplomacy: diplomacyNow, DIR,
+    docket, effects, endReign, FAVOUR, favourOf, favourPast, favourWhy, flushHeld, GOAL_FAVOUR, goalNow, greatHouses,
+    heardCtx, hold, inCrowns, isKing, keepTruce, KING, kingName, lapse, lapseOf, lastSeason, marchOdds, marchOn, marks,
+    markSeasons: MARK_SEASONS, marksNow, nextEffect: () => ++effectSeq, noteFavour, OWN_STORIES, ownStory, picture,
+    priceOf, record, recordDeed, refreshCounsel, reignInfo, resolveCampaigns, restingFavour, rolesOf, royalWorks, rule,
+    runArcs, runSeason, saveFavour, scene, seasonsLeft, send, setDiplomacy, setPaused: (v) => { paused = v; },
+    setSitting: (v) => { sitting = v; }, shiftAndTell, shiftFavour, snapshot, SOLDIER, soulsOf, startCampaign,
+    storyForForm, storyNow, switchTo, sworn, talkToNamed, tally, temper, theirs, timeoutNow, townStates, turnHouses,
+    TURNING, worldView, yearlyKey,
+  });
+}
 
 // The bridge's routes, "METHOD /path" -> handler(req, res, url). "* /path" answers
 // any method; an exact method's entry is looked up first, so "POST /person" wins
 // over "* /person" as it did when the routes were a chain of ifs.
 const ROUTES = {
-  "* /world": (req, res, url) => RealmRoutes.world(routeCtx(), req, res, url),
-  "* /map": (req, res, url) => RealmRoutes.realmMap(routeCtx(), req, res, url),
-  "* /chronicle": (req, res, url) => RealmRoutes.chronicle(routeCtx(), req, res, url),
-  "* /ledger": (req, res, url) => RealmRoutes.ledger(routeCtx(), req, res, url),
-  "* /records": (req, res, url) => RealmRoutes.records(routeCtx(), req, res, url),
-  "* /scenarios": (req, res, url) => RealmRoutes.scenarios(routeCtx(), req, res, url),
-  "* /chronicles/options": (req, res, url) => RealmRoutes.chronicleOptions(routeCtx(), req, res, url),
-  "GET /chronicles": (req, res, url) => RealmRoutes.listChronicles(routeCtx(), req, res, url),
-  "POST /chronicles": (req, res, url) => RealmRoutes.createChronicle(routeCtx(), req, res, url),
-  "POST /chronicles/open": (req, res, url) => RealmRoutes.openChronicle(routeCtx(), req, res, url),
-  "POST /reign/end": (req, res, url) => RealmRoutes.end(routeCtx(), req, res, url),
-  "POST /reign/continue": (req, res, url) => RealmRoutes.continueReign(routeCtx(), req, res, url),
-  "POST /reign/opening": (req, res, url) => RealmRoutes.opening(routeCtx(), req, res, url),
-  "POST /pause": (req, res, url) => RealmRoutes.pause(routeCtx(), req, res, url),
+  "* /world": (req, res, url) => RealmRoutes.world(realmCtx(), req, res, url),
+  "* /map": (req, res, url) => RealmRoutes.realmMap(realmCtx(), req, res, url),
+  "* /chronicle": (req, res, url) => RealmRoutes.chronicle(realmCtx(), req, res, url),
+  "* /ledger": (req, res, url) => RealmRoutes.ledger(realmCtx(), req, res, url),
+  "* /records": (req, res, url) => RealmRoutes.records(realmCtx(), req, res, url),
+  "* /scenarios": (req, res, url) => RealmRoutes.scenarios(realmCtx(), req, res, url),
+  "* /chronicles/options": (req, res, url) => RealmRoutes.chronicleOptions(realmCtx(), req, res, url),
+  "GET /chronicles": (req, res, url) => RealmRoutes.listChronicles(realmCtx(), req, res, url),
+  "POST /chronicles": (req, res, url) => RealmRoutes.createChronicle(realmCtx(), req, res, url),
+  "POST /chronicles/open": (req, res, url) => RealmRoutes.openChronicle(realmCtx(), req, res, url),
+  "POST /reign/end": (req, res, url) => RealmRoutes.end(realmCtx(), req, res, url),
+  "POST /reign/continue": (req, res, url) => RealmRoutes.continueReign(realmCtx(), req, res, url),
+  "POST /reign/opening": (req, res, url) => RealmRoutes.opening(realmCtx(), req, res, url),
+  "POST /pause": (req, res, url) => RealmRoutes.pause(realmCtx(), req, res, url),
   "POST /resume": (req, res, url) => ROUTES["POST /pause"](req, res, url),
-  "* /reign/options": (req, res, url) => RealmRoutes.reignOptions(routeCtx(), req, res, url),
-  "* /ai": (req, res, url) => RealmRoutes.ai(routeCtx(), req, res, url),
-  "POST /speed": (req, res, url) => RealmRoutes.speed(routeCtx(), req, res, url),
-  "POST /counsel/answer": (req, res, url) => CourtRoutes.counselAnswer(routeCtx(), req, res, url),
+  "* /reign/options": (req, res, url) => RealmRoutes.reignOptions(realmCtx(), req, res, url),
+  "* /ai": (req, res, url) => RealmRoutes.ai(realmCtx(), req, res, url),
+  "POST /speed": (req, res, url) => RealmRoutes.speed(realmCtx(), req, res, url),
+  "POST /counsel/answer": (req, res, url) => CourtRoutes.counselAnswer(realmCtx(), req, res, url),
   // An event card answered (events.js): its cost paid, its effect now, its later one queued.
   "POST /event/answer": async (req, res, url) => {
     const b = await body(req);
@@ -1018,54 +966,54 @@ const ROUTES = {
     }
     return json(res, code, out);
   },
-  "POST /decree": (req, res, url) => DecreeRoutes.issueDecree(routeCtx(), req, res, url),
-  "POST /test/court": (req, res, url) => TestRoutes.sit(routeCtx(), req, res, url),
-  "POST /test/stage": (req, res, url) => TestRoutes.stage(routeCtx(), req, res, url),
-  "POST /test/grow": (req, res, url) => TestRoutes.grow(routeCtx(), req, res, url),
-  "POST /test/deed": (req, res, url) => TestRoutes.noteDeed(routeCtx(), req, res, url),
-  "POST /test/mark": (req, res, url) => TestRoutes.mark(routeCtx(), req, res, url),
-  "POST /test/news": (req, res, url) => TestRoutes.news(routeCtx(), req, res, url),
-  "POST /test/clock": (req, res, url) => TestRoutes.clock(routeCtx(), req, res, url),
-  "POST /scene/arrived": (req, res, url) => DecreeRoutes.arrived(routeCtx(), req, res, url),
-  "POST /scene/kindled": (req, res, url) => DecreeRoutes.kindled(routeCtx(), req, res, url),
-  "* /usage": (req, res, url) => RealmRoutes.usage(routeCtx(), req, res, url),
-  "GET /mood": (req, res, url) => DecreeRoutes.moods(routeCtx(), req, res, url),
-  "POST /mood/revoke": (req, res, url) => DecreeRoutes.revokeMood(routeCtx(), req, res, url),
-  "POST /mood": (req, res, url) => DecreeRoutes.setMood(routeCtx(), req, res, url),
-  "GET /court": (req, res, url) => CourtRoutes.court(routeCtx(), req, res, url),
-  "POST /hear": (req, res, url) => CourtRoutes.hear(routeCtx(), req, res, url),
-  "POST /voice": (req, res, url) => CourtRoutes.sayAloud(routeCtx(), req, res, url),
-  "POST /interlude/close": (req, res, url) => CourtRoutes.closeInterlude(routeCtx(), req, res, url),
-  "POST /court/close": (req, res, url) => CourtRoutes.close(routeCtx(), req, res, url),
-  "POST /court/answer": (req, res, url) => CourtRoutes.answer(routeCtx(), req, res, url),
-  "POST /court/say": (req, res, url) => CourtRoutes.say(routeCtx(), req, res, url),
-  "* /house": (req, res, url) => PeopleRoutes.house(routeCtx(), req, res, url),
-  "POST /lore/written/person": (req, res, url) => RealmRoutes.writePerson(routeCtx(), req, res, url),
-  "* /names": (req, res, url) => RealmRoutes.playerNames(routeCtx(), req, res, url),
-  "* /lore/map": (req, res, url) => RealmRoutes.loreMap(routeCtx(), req, res, url),
-  "* /lore": (req, res, url) => RealmRoutes.lore(routeCtx(), req, res, url),
-  "* /person": (req, res, url) => PeopleRoutes.person(routeCtx(), req, res, url),
-  "* /characters/options": (req, res, url) => PeopleRoutes.characterOptions(routeCtx(), req, res, url),
-  "POST /person/fall": (req, res, url) => PeopleRoutes.fall(routeCtx(), req, res, url),
-  "POST /person": (req, res, url) => PeopleRoutes.editPerson(routeCtx(), req, res, url),
-  "POST /characters": (req, res, url) => PeopleRoutes.createCharacter(routeCtx(), req, res, url),
-  "* /townsfolk": (req, res, url) => PeopleRoutes.folkOf(routeCtx(), req, res, url),
-  "* /town/people": (req, res, url) => PeopleRoutes.townPeople(routeCtx(), req, res, url),
-  "POST /talk": (req, res, url) => PeopleRoutes.talk(routeCtx(), req, res, url),
-  "GET /arcs": (req, res, url) => StoryRoutes.arcs(routeCtx(), req, res, url),
-  "* /arcs/templates": (req, res, url) => StoryRoutes.templates(routeCtx(), req, res, url),
-  "POST /arcs/tick": (req, res, url) => StoryRoutes.tick(routeCtx(), req, res, url),
-  "POST /arcs/start": (req, res, url) => StoryRoutes.start(routeCtx(), req, res, url),
-  "POST /stories/generate": (req, res, url) => StoryRoutes.generate(routeCtx(), req, res, url),
-  "GET /stories/own": (req, res, url) => StoryRoutes.own(routeCtx(), req, res, url),
-  "POST /write": (req, res, url) => StoryRoutes.write(routeCtx(), req, res, url),
-  "POST /stories/premise/idea": (req, res, url) => StoryRoutes.suggestPremise(routeCtx(), req, res, url),
-  "POST /stories/beat/idea": (req, res, url) => StoryRoutes.suggestBeat(routeCtx(), req, res, url),
-  "POST /stories/beat": (req, res, url) => StoryRoutes.beat(routeCtx(), req, res, url),
-  "POST /arcs/write": (req, res, url) => StoryRoutes.writeArc(routeCtx(), req, res, url),
-  "* /lord": (req, res, url) => PeopleRoutes.lord(routeCtx(), req, res, url),
-  "POST /season": (req, res, url) => RealmRoutes.season(routeCtx(), req, res, url),
-  "POST /tithe": (req, res, url) => DecreeRoutes.tithe(routeCtx(), req, res, url),
+  "POST /decree": (req, res, url) => DecreeRoutes.issueDecree(realmCtx(), req, res, url),
+  "POST /test/court": (req, res, url) => TestRoutes.sit(realmCtx(), req, res, url),
+  "POST /test/stage": (req, res, url) => TestRoutes.stage(realmCtx(), req, res, url),
+  "POST /test/grow": (req, res, url) => TestRoutes.grow(realmCtx(), req, res, url),
+  "POST /test/deed": (req, res, url) => TestRoutes.noteDeed(realmCtx(), req, res, url),
+  "POST /test/mark": (req, res, url) => TestRoutes.mark(realmCtx(), req, res, url),
+  "POST /test/news": (req, res, url) => TestRoutes.news(realmCtx(), req, res, url),
+  "POST /test/clock": (req, res, url) => TestRoutes.clock(realmCtx(), req, res, url),
+  "POST /scene/arrived": (req, res, url) => DecreeRoutes.arrived(realmCtx(), req, res, url),
+  "POST /scene/kindled": (req, res, url) => DecreeRoutes.kindled(realmCtx(), req, res, url),
+  "* /usage": (req, res, url) => RealmRoutes.usage(realmCtx(), req, res, url),
+  "GET /mood": (req, res, url) => DecreeRoutes.moods(realmCtx(), req, res, url),
+  "POST /mood/revoke": (req, res, url) => DecreeRoutes.revokeMood(realmCtx(), req, res, url),
+  "POST /mood": (req, res, url) => DecreeRoutes.setMood(realmCtx(), req, res, url),
+  "GET /court": (req, res, url) => CourtRoutes.court(realmCtx(), req, res, url),
+  "POST /hear": (req, res, url) => CourtRoutes.hear(realmCtx(), req, res, url),
+  "POST /voice": (req, res, url) => CourtRoutes.sayAloud(realmCtx(), req, res, url),
+  "POST /interlude/close": (req, res, url) => CourtRoutes.closeInterlude(realmCtx(), req, res, url),
+  "POST /court/close": (req, res, url) => CourtRoutes.close(realmCtx(), req, res, url),
+  "POST /court/answer": (req, res, url) => CourtRoutes.answer(realmCtx(), req, res, url),
+  "POST /court/say": (req, res, url) => CourtRoutes.say(realmCtx(), req, res, url),
+  "* /house": (req, res, url) => PeopleRoutes.house(realmCtx(), req, res, url),
+  "POST /lore/written/person": (req, res, url) => RealmRoutes.writePerson(realmCtx(), req, res, url),
+  "* /names": (req, res, url) => RealmRoutes.playerNames(realmCtx(), req, res, url),
+  "* /lore/map": (req, res, url) => RealmRoutes.loreMap(realmCtx(), req, res, url),
+  "* /lore": (req, res, url) => RealmRoutes.lore(realmCtx(), req, res, url),
+  "* /person": (req, res, url) => PeopleRoutes.person(realmCtx(), req, res, url),
+  "* /characters/options": (req, res, url) => PeopleRoutes.characterOptions(realmCtx(), req, res, url),
+  "POST /person/fall": (req, res, url) => PeopleRoutes.fall(realmCtx(), req, res, url),
+  "POST /person": (req, res, url) => PeopleRoutes.editPerson(realmCtx(), req, res, url),
+  "POST /characters": (req, res, url) => PeopleRoutes.createCharacter(realmCtx(), req, res, url),
+  "* /townsfolk": (req, res, url) => PeopleRoutes.folkOf(realmCtx(), req, res, url),
+  "* /town/people": (req, res, url) => PeopleRoutes.townPeople(realmCtx(), req, res, url),
+  "POST /talk": (req, res, url) => PeopleRoutes.talk(realmCtx(), req, res, url),
+  "GET /arcs": (req, res, url) => StoryRoutes.arcs(realmCtx(), req, res, url),
+  "* /arcs/templates": (req, res, url) => StoryRoutes.templates(realmCtx(), req, res, url),
+  "POST /arcs/tick": (req, res, url) => StoryRoutes.tick(realmCtx(), req, res, url),
+  "POST /arcs/start": (req, res, url) => StoryRoutes.start(realmCtx(), req, res, url),
+  "POST /stories/generate": (req, res, url) => StoryRoutes.generate(realmCtx(), req, res, url),
+  "GET /stories/own": (req, res, url) => StoryRoutes.own(realmCtx(), req, res, url),
+  "POST /write": (req, res, url) => StoryRoutes.write(realmCtx(), req, res, url),
+  "POST /stories/premise/idea": (req, res, url) => StoryRoutes.suggestPremise(realmCtx(), req, res, url),
+  "POST /stories/beat/idea": (req, res, url) => StoryRoutes.suggestBeat(realmCtx(), req, res, url),
+  "POST /stories/beat": (req, res, url) => StoryRoutes.beat(realmCtx(), req, res, url),
+  "POST /arcs/write": (req, res, url) => StoryRoutes.writeArc(realmCtx(), req, res, url),
+  "* /lord": (req, res, url) => PeopleRoutes.lord(realmCtx(), req, res, url),
+  "POST /season": (req, res, url) => RealmRoutes.season(realmCtx(), req, res, url),
+  "POST /tithe": (req, res, url) => DecreeRoutes.tithe(realmCtx(), req, res, url),
 };
 
 http.createServer(async (req, res) => {

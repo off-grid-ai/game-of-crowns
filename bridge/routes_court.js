@@ -19,10 +19,9 @@ import { body, bytes, json } from "./http_util.js";
 import { weigh } from "./routes_decree.js";
 
 export async function counselAnswer(ctx, req, res, url) {
-  const { sittingCtx } = ctx;
   // The King answered the Hand's matter: it rests a year, and the next one comes up (court.js).
   const { key } = await body(req);
-  return json(res, 200, Sittings.answerMatter(sittingCtx(), key));
+  return json(res, 200, Sittings.answerMatter(ctx, key));
 }
 
 export async function court(ctx, req, res, url) {
@@ -88,9 +87,8 @@ export async function answer(ctx, req, res, url) {
 }
 
 export async function say(ctx, req, res, url) {
-  const { sittingCtx } = ctx;
   // The King answers a petition in his own words; nothing happens until he confirms it (court.js).
-  const [code, out] = await Sittings.say(sittingCtx(), await body(req));
+  const [code, out] = await Sittings.say(ctx, await body(req));
   return json(res, code, out);
 }
 

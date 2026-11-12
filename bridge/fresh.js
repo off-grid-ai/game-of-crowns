@@ -3,6 +3,7 @@
 // from the reign's seed: Freeciv's own dice, the opening tensions between
 // neighbouring great houses, and the lords' grudges. Test reigns never come
 // here, so proofs stay repeatable.
+import { setPair } from "./diplomacy.js";
 import fs from "node:fs";
 import path from "node:path";
 import zlib from "node:zlib";
@@ -15,42 +16,6 @@ export function rng(seed) {
     s = Math.imul(s ^ (s >>> 13), 3266489909) >>> 0;
     return ((s ^ (s >>> 16)) >>> 0) / 4294967296;
   };
-}
-
-// Row q of a per-player table ("diplstate" or "ai") in player p's section.
-function row(text, p, table, q) {
-  const at = text.indexOf(`\n[player${p}]\n`);
-  if (at < 0) return null;
-  const head = text.indexOf(`\n${table}={`, at);
-  const next = text.indexOf("\n[player", at + 2);
-  if (head < 0 || (next > 0 && head > next)) return null;
-  let line = text.indexOf("\n", head + 1);  // the header row ends here
-  for (let i = 0; i < q; i++) line = text.indexOf("\n", line + 1);
-  const end = text.indexOf("\n", line + 1);
-  return { start: line + 1, end, cells: text.slice(line + 1, end).split(",") };
-}
-
-export function editRow(text, p, table, q, edit) {
-  const r = row(text, p, table, q);
-  if (!r || r.cells.length < 4) return text;
-  edit(r.cells);
-  return text.slice(0, r.start) + r.cells.join(",") + text.slice(r.end);
-}
-
-// One side of a pair: Freeciv's state and its AI's feelings and war plan.
-function setPair(text, p, q, state, turn, turnsLeft, love) {
-  text = editRow(text, p, "diplstate", q, (c) => {
-    c[0] = `"${state}"`;
-    if (state !== "War") c[1] = `"${state}"`;
-    if (c[2] === "0") c[2] = String(turn);  // they know each other now
-    c[3] = String(turnsLeft);
-    c[4] = "0";
-  });
-  return editRow(text, p, "ai", q, (c) => {
-    c[0] = String(love);
-    c[2] = "-1";  // no war already planned
-    c[3] = "5";   // DAI_WR_NONE
-  });
 }
 
 const greatNation = (n) => { const h = HOUSES[String(n).toLowerCase()]; return h && !h.crown && !h.wild ? h : null; };
