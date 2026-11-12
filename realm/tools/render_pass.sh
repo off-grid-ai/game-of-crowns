@@ -55,6 +55,10 @@ if pgrep -fl "^(arch -arm64 )?godot( |$)" | grep -v -e "--headless" | grep -q .;
   echo "render_pass: a windowed Godot is up (Mac's game or another render); nothing run"; exit 2
 fi
 for p in $PORT $FC; do lsof -iTCP:$p -sTCP:LISTEN > /dev/null 2>&1 && { echo "render_pass: port $p is taken; set PORT and FC"; exit 2; }; done
+# Room on the disk: a pass writes a few GB of frames, and a full disk cut the first pass short (21:52, 'No space left on
+# device' while the second copied the game). DISK_MIN GB free at the start (15).
+FREE=$(df -g "$R" 2>/dev/null | awk 'NR==2 {print $4}')
+[ -n "$FREE" ] && [ "$FREE" -lt ${DISK_MIN:-15} ] && { echo "render_pass: ${FREE} GB free on the disk (at least ${DISK_MIN:-15}); nothing run"; exit 2; }
 mkdir -p $OUT/side $OUT/frames
 say "render pass into $OUT at $(git -C $R log --oneline -1 | cut -c1-90)"
 
@@ -125,7 +129,13 @@ shot() {
   local ga="$OFF"; [ $kind = film ] && ga="$OFF --fixed-fps 24"
   local play=(); [ -f $OUT/$n.play ] && play=(--play=$OUT/$n.play --out=$OUT/frames/$n)
   LIMIT=$limit GODOT_ARGS="$ga" $F/realm/tools/render.sh $OUT/frames/$n.png $B "$@" $play > $OUT/$n.out 2>&1
-  say "$n: $(tail -1 $OUT/$n.out); $(/bin/ls $OUT/frames/$n 2>/dev/null | grep -c png) frames, $(grep -c 'SCRIPT ERROR' $OUT/frames/$n.log 2>/dev/null) script errors"
+  # A played take saves its own frames and never the --shot still, so render.sh's 'MISSING <name>.png' is its normal end
+  # (and Godot's 'recursive_mutex' abort on quit comes after the take's 'done'): its frames and 'done' are what count.
+  if [ ${#play} -gt 0 ]; then
+    say "$n: $(/bin/ls $OUT/frames/$n 2>/dev/null | grep -c png) frames, $(grep -c 'SCRIPT ERROR' $OUT/frames/$n.log 2>/dev/null) script errors, play $(grep -q ' done$' $OUT/frames/$n/play.log 2>/dev/null && echo done || echo 'cut short')"
+  else
+    say "$n: $(tail -1 $OUT/$n.out); $(grep -c 'SCRIPT ERROR' $OUT/frames/$n.log 2>/dev/null) script errors"
+  fi
 }
 # side <name> <frame png> <target jpg> [note]: the frame beside its target, one picture in $OUT/side
 side() {
