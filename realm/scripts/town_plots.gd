@@ -37,10 +37,6 @@ static var WANDER := 0.0  # how much a street wanders on level ground (a share o
 static func tune(base: Dictionary, over: Dictionary = {}) -> void:
 	var k := base.duplicate()
 	k.merge(over, true)
-	# A town's straighter streets (towns.json plots.<rank>.straight; round 6: houses at every angle where 01-town's
-	# stand in rows along their street): laid over its knobs unless --streets=winding.
-	if k.get("straight") is Dictionary and not OS.get_cmdline_user_args().has("--streets=winding"):
-		k.merge(k["straight"], true)
 	SET_BACK = float(k.get("set_back", 0.04))
 	YARD = float(k.get("yard", 0.55))
 	GAP = float(k.get("gap", 0.03))

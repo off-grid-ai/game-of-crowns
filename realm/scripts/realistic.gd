@@ -420,7 +420,7 @@ static func _built(name: String) -> Node3D:
 ## 9.7 m and a merchant's at 12-15 m beside 1.7 m townsfolk; a medieval storey was nearer 2.5 m. Trades keep
 ## the kit's size (their work spots are in its metres: works.gd) unless their tier is in scale_tiers (one storey
 ## height round the square: a forge or an armoury at the houses' 2.55 m storeys, their work spots scaled with them,
-## town_trades.gd; --trade-scale=kit for the kit's 3 m). A mill keeps the kit's size: its sails and wheel are
+## town_trades.gd). A mill keeps the kit's size: its sails and wheel are
 ## hung in the kit's metres (towns.gd _rotor).
 static func _built_scale(name: String) -> float:
 	var spec: Dictionary = BUILT[name].get("spec", {})
@@ -429,7 +429,7 @@ static func _built_scale(name: String) -> float:
 		return 1.0
 	if String(KIT[name][0]) in (hk.get("scale_kinds", []) as Array):
 		return float(hk.get("scale", 1.0))
-	if String(spec["tier"]) in (hk.get("scale_tiers", []) as Array) and not OS.get_cmdline_user_args().has("--trade-scale=kit"):
+	if String(spec["tier"]) in (hk.get("scale_tiers", []) as Array):
 		return float(hk.get("scale", 1.0))
 	return 1.0
 

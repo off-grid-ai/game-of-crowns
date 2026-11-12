@@ -94,11 +94,10 @@ func _look(kit_mat: String, look: String, tint: Color) -> Material:
 ## A house's roof covering, weathered (house_kit.roof_weather; round 2 against 01-town: every roof one flat
 ## orange-red, where the concept's vary roof by roof, new tile to dark weathered tile): the covering's tint times
 ## one of the weathers, picked by the house's seed on its own roll so nothing else about the house changes.
-## --roof-weather=off for one weather.
 func _roof_look(roof_kind: String, seed: int) -> Material:
 	var tint := _rgb((_k.get("roof_tints", {}) as Dictionary).get(roof_kind), Color.WHITE)
 	var weathers: Array = _k.get("roof_weather", [])
-	if weathers.is_empty() or OS.get_cmdline_user_args().has("--roof-weather=off"):
+	if weathers.is_empty():
 		return _look("MI_RoundTiles", roof_kind, tint)
 	var r := RandomNumberGenerator.new()
 	r.seed = seed * 92821 + roof_kind.hash()
@@ -237,8 +236,8 @@ func build(spec: Dictionary) -> ArrayMesh:
 					_add(piece, xf)
 					_add("Door_%d_%s" % [[1, 2][_rng.randi() % 2], "Round" if round_win else "Flat"], xf)
 					# The front door framed (the kit's door frame: dark timber, or stone on a stone front; Mac
-					# 2026-11-12, "no finesse"; 01-town's framed doors). extras.door_frame; --house-finesse=off.
-					if not OS.get_cmdline_user_args().has("--house-finesse=off") and _chance("door_frame"):
+					# 2026-11-12, "no finesse"; 01-town's framed doors). extras.door_frame.
+					if _chance("door_frame"):
 						var frame_kind := "DoorFrame_%s_%s" % ["Round" if round_win else "Flat", "Brick" if fam == "UnevenBrick" else "WoodDark"]
 						if _has(frame_kind):
 							_add(frame_kind, xf)
@@ -374,7 +373,7 @@ func _extras(w: int, d: int, hw: float, hd: float, back: float, fronts: Array, f
 		var sx := door_x + (1.0 if door_i < w - 1 else -1.0)
 		_add("Prop_Support", Transform3D(Basis.from_scale(Vector3(1, 1, 0.5)), Vector3(sx, -0.25, front0)))
 		_add("Floor_WoodLight", Transform3D(Basis(Vector3(0, 0, 1), PI / 2) * Basis.from_scale(Vector3(0.32, 1, 0.24)), Vector3(sx, 2.15, front0 + 0.72)))
-	if not OS.get_cmdline_user_args().has("--house-finesse=off") and _chance("door_lamp"):
+	if _chance("door_lamp"):
 		# A lantern on its post beside the front door, on the other side from any sign (Kenney's town lantern, CC0;
 		# Mac 2026-11-12, "no finesse"; 01-town's lit doors). extras.door_lamp; house_kit.door_lamp its file and
 		# height in metres.

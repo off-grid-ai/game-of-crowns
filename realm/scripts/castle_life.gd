@@ -145,6 +145,8 @@ func _dress(id: int, root: Node3D, castle: Node3D) -> void:
 		_carpet(xf, sp, colour, d)
 	# The bailey's buildings, their backs to the curtain wall: stables, the forge, the armoury, the stores.
 	_bailey_buildings(xf, sp, d)
+	# The rock it stands on (01-town: the castle raised on its outcrop, shrubs and cypresses on the rock).
+	_outcrop(xf, sp, d)
 	# The bailey lived in: drill, the butts, the gate's guards, the smith, the stores' cart, servants and grooms
 	# (castle_folk.gd, the people layer's).
 	preload("res://scripts/castle_folk.gd").dress(self, main, xf, sp, colour, d)
@@ -214,6 +216,62 @@ func _bailey_buildings(xf: Transform3D, sp: Dictionary, d: Dictionary) -> void:
 		# The box's own middle onto the spot, its floor on the ground.
 		mi.global_transform = Transform3D(xf.basis * b, w) * Transform3D(Basis(), -Vector3(box.get_center().x, box.position.y, box.get_center().z))
 		d["nodes"].append(mi)
+
+
+## The castle's rock (data/castle.json outcrop; 01-town: the castle up on a rocky outcrop, shrubs and dark cypresses
+## growing out of it): grey rocks banked against the outer foot of every curtain, shrubs among them and a slim
+## cypress now and then, clear of the gate's approach and never on water. The keep's stair climbs inside as before.
+## --outcrop=off.
+func _outcrop(xf: Transform3D, sp: Dictionary, d: Dictionary) -> void:
+	var k: Dictionary = Data.value("castle", "outcrop", {})
+	if k.is_empty() or not bool(k.get("on", false)) or OS.get_cmdline_user_args().has("--outcrop=off"):
+		return
+	var rng := RandomNumberGenerator.new()
+	rng.seed = int(k.get("seed", 91))
+	var scale := xf.basis.get_scale().x / S
+	var rocks: Array = Real.variants("castle_rock")
+	var out_r: Array = k.get("out", [0.4, 1.3])
+	var size_r: Array = k.get("size", [0.7, 1.3])
+	var clear := Builder.gate_tower_x() + float(k.get("front_clear", 3.0))
+	var put := func(kind: String, local: Vector3, s: Vector3, sink: float) -> void:
+		var n: Node3D = Real.make(kind)
+		if n == null:
+			return
+		var w: Vector3 = xf * local
+		if not main.terrain.is_land(w.x, w.z):
+			n.free()
+			return
+		w.y = main.terrain.height_at(w.x, w.z) - sink * S * scale
+		add_child(n)
+		n.global_position = w
+		n.rotation.y = rng.randf() * TAU
+		n.scale = s * scale
+		d["nodes"].append(n)
+	for run in Builder.curtain_runs(sp):
+		var a: Vector3 = run["a"]
+		var b: Vector3 = run["b"]
+		var o: Vector3 = run["out"]
+		var length := a.distance_to(b)
+		var t := 0.0
+		var since_bush := 0.0
+		var since_tree := float(k.get("cypress_every", 9.0)) * 0.5
+		while t < length:
+			var at: Vector3 = a.lerp(b, t / maxf(length, 0.01))
+			var step := float(k.get("every", 2.6)) * rng.randf_range(0.8, 1.2)
+			t += step
+			since_bush += step
+			since_tree += step
+			if int(run["side"]) == 0 and absf(at.x) < clear:
+				continue  # the gate's approach stays open
+			if not rocks.is_empty():
+				put.call(String(rocks[rng.randi() % rocks.size()]), at + o * rng.randf_range(float(out_r[0]), float(out_r[1])), Vector3.ONE * rng.randf_range(float(size_r[0]), float(size_r[1])), float(k.get("sink", 0.5)))
+			if since_bush >= float(k.get("bush_every", 5.0)):
+				since_bush = 0.0
+				put.call(Real.one("castle_shrub"), at + o * (float(out_r[1]) + 0.3) + (b - a).normalized() * rng.randf_range(-0.8, 0.8), Vector3.ONE * rng.randf_range(0.8, 1.2), 0.1)
+			if since_tree >= float(k.get("cypress_every", 9.0)):
+				since_tree = 0.0
+				var sq := float(k.get("cypress_squash", 0.45))
+				put.call(Real.one("castle_cypress"), at + o * float(out_r[1]), Vector3(sq, 1.0, sq) * rng.randf_range(0.85, 1.15), 0.1)
 
 
 ## The house's painted banners (assets/heraldry/banner-<house>.png; else a cloth in its colour) hung flat on

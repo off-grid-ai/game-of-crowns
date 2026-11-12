@@ -52,7 +52,9 @@ func build_castle(spec: Dictionary) -> ArrayMesh:
 	if spec.get("side_towers", false):
 		towers.append_array([Vector3(-hx, 0, 0), Vector3(hx, 0, 0)])
 	for t in towers:
-		_block(parts, t, 2, 2, tower_st, rng, {"cone": true, "windows": 0.3})
+		# Round at the four corners only (round 9: round everywhere read as a forest of grey cylinders).
+		var corner := absf(t.x) > 0.01 and absf(t.z) > 0.01
+		_block(parts, t, 2, 2, tower_st, rng, {"cone": true, "windows": 0.3, "round": corner})
 	# Curtain walls between them: front (gate on it), right, back (keep in it), left. With stone walls on
 	# (walls.gd, --walls=stone) they're left out: walls.gd stands stone walls that can breach in their place.
 	if not stone_curtains():
@@ -72,11 +74,11 @@ func build_castle(spec: Dictionary) -> ArrayMesh:
 		parts.append([meshy_gate, Transform3D(Basis(), gate_at + Vector3(0, 0, float(mg.get("z", 1.0))))])
 		if bool(mg.get("towers", false)):
 			for sx in [-1, 1]:
-				_block(parts, gate_at + Vector3(sx * gate_tower_x(), 0, 1.0), 2, 2, wall_st + 2, rng, {"cone": true, "windows": 0.5})
+				_block(parts, gate_at + Vector3(sx * gate_tower_x(), 0, 1.0), 2, 2, wall_st + 2, rng, {"cone": true, "windows": 0.5, "round": true})
 	else:
 		_block(parts, gate_at, gate_w, 3, wall_st + 1, rng, {"gate": true, "crenel": true, "windows": 0.5, "portcullis": float(spec.get("gate_portcullis", 2.4))})
 		for sx in [-1, 1]:
-			_block(parts, gate_at + Vector3(sx * (gh + 1.0), 0, 1.0), 2, 2, wall_st + 2, rng, {"cone": true, "windows": 0.5})
+			_block(parts, gate_at + Vector3(sx * (gh + 1.0), 0, 1.0), 2, 2, wall_st + 2, rng, {"cone": true, "windows": 0.5, "round": true})
 	# The keep: tall, crenellated, a tiled roof over its leads, a turret at each corner. On a seat's castle it
 	# stands on a stone podium, a broad flight of steps up to its door (01-town: the steps up to the keep, the
 	# red carpet down them; castle_life.gd lays the carpet): the kit's exterior stairs, a metre a flight.
@@ -119,10 +121,10 @@ func build_castle(spec: Dictionary) -> ArrayMesh:
 ## The castle's own stone (data/castle.json stone; 01-town: warm light-grey stone; round 5: flat grey slabs
 ## with dark mortar and orange course strips): the kit's stone lightened and warmed, and the timber courses
 ## the wall panel carries at each storey laid in a darker stone of the same, so no orange strips run round the
-## walls. Its own materials, graded, so look.gd's kit tints leave them be. --castle-stone=kit: the kit's.
+## walls. Its own materials, graded, so look.gd's kit tints leave them be.
 func _castle_stone() -> Dictionary:
 	var k: Dictionary = preload("res://scripts/data.gd").value("castle", "stone", {})
-	if k.is_empty() or not bool(k.get("on", true)) or OS.get_cmdline_user_args().has("--castle-stone=kit"):
+	if k.is_empty():
 		return {}
 	var n: Node3D = _piece(WALL)
 	var brick: BaseMaterial3D = null
@@ -253,17 +255,11 @@ static func meshy_gatehouse() -> String:
 	return path if String(g.get("replaces", "")) == "castle_gate" and ResourceLoader.exists(path) else ""
 
 
-## Round turrets (01-town's round towers under red cones; castle.json turrets): every coned 2 x 2 tower, the castle's
-## corners and gate, the keep's turrets and the town wall's, as Kenney's hexagonal tower (Castle Kit, CC0: its base, as
+## Round turrets (01-town's round towers under red cones; castle.json turrets): the castle's four corner towers, the
+## two flanking its gate (and a town gate's) and the town wall's towers at its turns (a _block with round), as Kenney's
+## hexagonal tower (Castle Kit, CC0: its base, as
 ## many middles as its height takes, its pointed roof) at castle size, its stone the castle's (the kit's stone laid
-## world-free, warmed as castle.json stone.tint), its roof the kit's terracotta tiles. --turrets=square for the kit's.
-static func _round_turrets() -> bool:
-	var args := OS.get_cmdline_user_args()
-	if args.has("--turrets=square"):
-		return false
-	return args.has("--turrets=round") or bool((preload("res://scripts/data.gd").value("castle", "turrets", {}) as Dictionary).get("round", false))
-
-
+## world-free, warmed as castle.json stone.tint), its roof the kit's terracotta tiles.
 func _round_tower(parts: Array, at: Vector3, storeys: int) -> void:
 	var k: Dictionary = preload("res://scripts/data.gd").value("castle", "turrets", {})
 	var sc := float(k.get("scale", 4.4))
@@ -302,7 +298,7 @@ func town_wall(bays: Array, towers: Array, storeys: int, seed: int) -> ArrayMesh
 		var off := (int(b[2]) + 0.5) * CELL  # its place along the run: every third bay slit, as the castle's
 		_curtain(parts, Transform3D(basis, Vector3(b[0]) - basis * Vector3(off, 0, 0)), off, storeys)
 	for t in towers:
-		_block(parts, t, 2, 2, storeys + 2, rng, {"cone": true, "windows": 0.3})
+		_block(parts, t, 2, 2, storeys + 2, rng, {"cone": true, "windows": 0.3, "round": true})
 	var stone := _castle_stone()
 	if not stone.is_empty():
 		for p in parts:
@@ -325,7 +321,7 @@ func town_gate(wall_st: int, seed: int) -> ArrayMesh:
 	else:
 		_block(parts, Vector3.ZERO, 4, 3, wall_st + 1, rng, {"gate": true, "crenel": true, "windows": 0.5, "portcullis": 2.4})
 		for sx in [-1, 1]:
-			_block(parts, Vector3(sx * (gh + 1.0), 0, 0), 2, 2, wall_st + 2, rng, {"cone": true, "windows": 0.5})
+			_block(parts, Vector3(sx * (gh + 1.0), 0, 0), 2, 2, wall_st + 2, rng, {"cone": true, "windows": 0.5, "round": true})
 	return _bake(parts)
 
 
@@ -351,7 +347,7 @@ static func stone_curtains() -> bool:
 ## and as opts say: windows (a share of the upper panels), a door or a gate in
 ## its front, merlons, the tiled cone (a 2x2 tower) or a tiled roof (the keep).
 func _block(parts: Array, at: Vector3, wc: int, dc: int, storeys: int, rng: RandomNumberGenerator, opts: Dictionary) -> void:
-	if opts.get("cone", false) and wc == 2 and dc == 2 and _round_turrets():
+	if opts.get("cone", false) and bool(opts.get("round", false)) and wc == 2 and dc == 2:
 		_round_tower(parts, at, storeys)
 		return
 	var hw := wc * CELL / 2.0

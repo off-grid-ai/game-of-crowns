@@ -10,7 +10,24 @@ const DIR := "res://assets/village/%s.gltf"
 var _cache := {}
 
 
+## "box": a unit block of dressed stone (a BoxMesh, sides and all; its material named MI_UnevenBrick so a piece's dye
+## lays the kit's stone on it world-free). The kit's floor tiles are flat planes: stretched up they drew no sides,
+## and the King's plinth read as squares floating in the air (round 9).
+static var _box_mat: StandardMaterial3D
+
+
 func _piece(name: String) -> Node3D:
+	if name == "box":
+		if _box_mat == null:
+			_box_mat = StandardMaterial3D.new()
+			_box_mat.resource_name = "MI_UnevenBrick"
+		var bm := BoxMesh.new()
+		bm.material = _box_mat
+		var holder := Node3D.new()
+		var mi := MeshInstance3D.new()
+		mi.mesh = bm
+		holder.add_child(mi)
+		return holder
 	var path := name if name.begins_with("res://") else DIR % name
 	if not _cache.has(path):
 		_cache[path] = load(path)
@@ -59,18 +76,13 @@ static func _matte(mat: Material) -> Material:
 
 ## The kit's colour sheets repainted in the painted style (realm/tools/kit_paint.py, data/kit_paint.json; North Star
 ## 01-town): a kit material whose base colour is one of the kit's T_<sheet>_BaseColor sheets wears the painted copy
-## from assets/village/painted/ when data/kit_paint.json on (or --kit-paint=painted; --kit-paint=kit for the kit's own).
+## from assets/village/painted/ (the originals stay on disk for kit_paint.py; the game draws the painted ones).
 ## Same layout, so every UV lands where it did. One copy per material.
 static var _painted_of := {}
 
 
 static func _painted(mat: Material) -> Material:
 	if not mat is BaseMaterial3D or (mat as BaseMaterial3D).albedo_texture == null:
-		return mat
-	var args := OS.get_cmdline_user_args()
-	if args.has("--kit-paint=kit"):
-		return mat
-	if not args.has("--kit-paint=painted") and not bool(preload("res://scripts/data.gd").value("kit_paint", "on", false)):
 		return mat
 	if _painted_of.has(mat):
 		return _painted_of[mat]
@@ -87,12 +99,12 @@ static func _painted(mat: Material) -> Material:
 
 
 ## Warm light in the windows (data/assets.json house_kit.window_glow; 01-town's lit windows; Mac 2026-11-12, "no
-## finesse"): the kit's near-clear window glass as warm amber, a little lit. --house-finesse=off for the kit's.
+## finesse"): the kit's near-clear window glass as warm amber, a little lit.
 static var _glass_of := {}
 
 
 static func _glass(mat: Material) -> Material:
-	if not mat is BaseMaterial3D or String(mat.resource_name) != "MI_WindowGlass" or OS.get_cmdline_user_args().has("--house-finesse=off"):
+	if not mat is BaseMaterial3D or String(mat.resource_name) != "MI_WindowGlass":
 		return mat
 	if _glass_of.has(mat):
 		return _glass_of[mat]
