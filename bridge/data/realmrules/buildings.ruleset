@@ -2359,3 +2359,26 @@ sound_alt2      = "-"
 helptext	= _("\
 Raised in the house's seat while its lord has turned from the King: in every town of the house three townsmen fewer are content.\
 ")
+
+[building_blight]
+name		= _("Blight")
+genus		= "Improvement"
+reqs	=
+    { "type", "name", "range"
+      "Tech", "Forbidden Lore", "Player"
+    }
+graphic         = "b.temple"
+graphic_alt     = "-"
+graphic_alt2    = "-"
+obsolete_by	=
+    { "type", "name", "range"
+    }
+build_cost	= 1
+upkeep		= 0
+sabotage	= 0
+sound		= "b_generic"
+sound_alt	= "b_generic"
+sound_alt2      = "-"
+helptext	= _("\
+Rot in the fields round this town: half its food is lost while the blight lasts.\
+")

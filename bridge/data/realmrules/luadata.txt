@@ -17,3 +17,4 @@ gold_seams = "3"
 ; How many seasons a decree building stands (script.lua realm_decree). Their effects: effects.ruleset.
 feast = "4"
 relief = "2"
+blight = "12"

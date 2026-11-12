@@ -6,11 +6,10 @@
 // favour fading and drifting, the tithe, the goal); the people's yearly moves
 // (runSeason); a house turning against the crown and the one rule for every
 // rising (turnHouses, storyMarch, askUltimatum, mayRise, rose); the one truce
-// writer (houseTruce, keepTruce, councilRuled); and blighted land growing back
-// (healBlights). Nothing here reads server.js: the realm's state and the
+// writer (houseTruce, keepTruce, councilRuled). Nothing here reads server.js: the realm's state and the
 // bridge's own helpers come in as one context argument, built fresh by
 // server.js on each call (getters for what it reassigns, read live inside the
-// turn's timers; setBlights for the blights), and server.js keeps wrappers of the
+// turn's timers), and server.js keeps wrappers of the
 // same names where its own code still calls them.
 
 import * as Damage from "./damage.js";
@@ -20,10 +19,7 @@ import * as Seals from "./seals.js";
 import * as Next from "./next.js";
 import * as Director from "./director.js";
 import * as Lua from "./lua.js";
-import fs from "node:fs";
-import path from "node:path";
 import { houseFor, cityName } from "./narrator.js";
-import { regrowLua } from "./blight.js";
 import { decree, clampFavour } from "./crown.js";
 import { BANDS, IDLE } from "./favour.js";
 import { calendar } from "./stakes.js";
@@ -43,7 +39,6 @@ export function turn(ctx, ev) {
   Seals.season(ctx.meta, Number(ev.turn));  // the season's royal seal (seals.js)
   Hosts.season({ world: ctx.world, meta: ctx.meta, send, record: ctx.record, besiege: (c) => ctx.startCampaign?.(c) }, Number(ev.turn));  // the King's hosts move on their orders (hosts.js)
   Reword.season();  // one more wording of a court result from the local model, in idle time (reword.js)
-  healBlights(ctx, Number(ev.turn));
   Damage.season(ctx, Number(ev.turn));  // walls battered and mended, houses burnt and rebuilt (damage.js)
   collectTithe(ctx, Number(ev.turn));
   // The storyteller's pace: a threat rises after a quiet stretch and grows until answered (director.js).
@@ -255,21 +250,6 @@ export function idle(ctx, turn) {
     meta.idleTold = true;
     chron.saveMeta(meta);
     record({ turn, kind: "unrest", text: `No word has come from the throne in ${since} seasons. The great houses whisper that the King sleeps, and each begins to look to its own.` });
-  }
-}
-
-// Blighted land grows back when its time comes (the blights themselves are kept by server.js's onEvent).
-export function healBlights(ctx, turn) {
-  const { world, P, send, record } = ctx;
-  const due = ctx.blights.filter((s) => s.heal <= turn);
-  if (!due.length) return;
-  ctx.setBlights(ctx.blights.filter((s) => s.heal > turn));
-  fs.writeFileSync(path.join(P.state, "blights.json"), JSON.stringify(ctx.blights));
-  for (const s of due) {
-    regrowLua(s.tiles).forEach((l) => send(`lua cmd ${l}`));
-    if (world?.cities?.some((c) => c.id === s.city)) {
-      record({ turn, kind: "heal", text: `The land around ${cityName(s.city)} slowly recovers.`, city: s.city });
-    }
   }
 }
 

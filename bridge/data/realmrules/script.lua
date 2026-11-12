@@ -572,20 +572,20 @@ function realm_host(who, x, y, kinds, count)
   log.normal("HOST %s raised %d of %d near (%d,%d)", who.name, made, count, x, y)
 end
 
--- Decree buildings (buildings.ruleset "Royal Feast", "Royal Relief", "Heavy Tithe"; their effects in
+-- Decree buildings (buildings.ruleset "Royal Feast", "Royal Relief", "Blight", "Heavy Tithe"; their effects in
 -- effects.ruleset). The King's decree sets one down in a town for a number of seasons (luadata.txt
 -- [decrees]); each turn the lapsed ones are taken up. Kept as a plain string ("city,building,until;..."),
 -- which the save keeps.
 GOC_DECREES = GOC_DECREES or ""
-local DECREE_BUILDING = {feast = "Royal Feast", relief = "Royal Relief"}
+local DECREE_BUILDING = {feast = "Royal Feast", relief = "Royal Relief", blight = "Blight"}
 
-function realm_decree(city_id, kind)
+function realm_decree(city_id, kind, seasons)
   local c = find.city(nil, city_id)
   local name = DECREE_BUILDING[kind]
   local b = name and find.building_type(name)
   if not (c and b) then log.normal("DECREE no %s in %s", tostring(kind), tostring(city_id)); return end
   if not c:has_building(b) then edit.create_building(c, b) end
-  local til = game.current_turn() + (tonumber(luadata.get_str("decrees." .. kind)) or 1)
+  local til = game.current_turn() + (seasons or tonumber(luadata.get_str("decrees." .. kind)) or 1)
   local kept = {}
   for id, bn, t in GOC_DECREES:gmatch("(%d+),([^,;]+),(%d+)") do
     if not (tonumber(id) == city_id and bn == name) then kept[#kept + 1] = string.format("%s,%s,%s", id, bn, t) end
@@ -599,7 +599,10 @@ function realm_decrees_lapse()
   for id, bn, t in GOC_DECREES:gmatch("(%d+),([^,;]+),(%d+)") do
     local c, b = find.city(nil, tonumber(id)), find.building_type(bn)
     if c and b and tonumber(t) > turn then kept[#kept + 1] = string.format("%s,%s,%s", id, bn, t)
-    elseif c and b and c:has_building(b) then edit.remove_building(c, b) end
+    elseif c and b and c:has_building(b) then
+      edit.remove_building(c, b)
+      emit("decree_lapsed", {city = c.id, building = bn})
+    end
   end
   GOC_DECREES = table.concat(kept, ";")
 end

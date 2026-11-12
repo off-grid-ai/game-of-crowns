@@ -69,7 +69,6 @@ let meta = null; // chronicles.js meta for the running realm
 let P = null; // its paths
 let chronicle = [];
 let world = null;
-let blights = [];  // blighted land waiting to grow back (blight.js)
 let history = [];
 let detailCache = { file: null, mtime: 0, data: null };
 let turnSeconds = chron.PACE.season;  // data/pace.json
@@ -138,7 +137,6 @@ function load(id) {
   history = lines(path.join(P.state, "history.jsonl"));
   world = chron.readJson(path.join(P.state, "world.json"));
   queueMicrotask(townStates);  // the towns' states, once the realm is loaded
-  blights = chron.readJson(path.join(P.state, "blights.json"), null) ?? chron.readJson(path.join(P.state, "scars.json"), []);  // scars.json: before the rename
   detailCache = { file: null, mtime: 0, data: null };
   turnSeconds = chron.PACE.season;  // one pace for every realm, with a court at each season (data/pace.json; GAME_DESIGN)
   sitting = meta.court?.sitting != null;  // a realm reopened mid-sitting still holds
@@ -562,9 +560,9 @@ function decreeScenes(cmd, result, seat, target) {
 function onEvent(line) {
   let ev;
   try { ev = JSON.parse(line.slice(line.indexOf("EVENT {") + 6)); } catch { return; }
-  if (ev.kind === "blight") {
-    blights.push({ city: Number(ev.city), tiles: ev.tiles, heal: Number(ev.heal) });
-    fs.writeFileSync(path.join(P.state, "blights.json"), JSON.stringify(blights));
+  // A blight run its course (realmrules/script.lua: its Blight building taken up): the land recovers.
+  if (ev.kind === "decree_lapsed") {
+    if (ev.building === "Blight" && world?.cities?.some((c) => c.id === Number(ev.city))) record({ turn: Number(ev.turn), kind: "heal", text: `The land around ${cityName(Number(ev.city))} slowly recovers.`, city: Number(ev.city) });
     return;
   }
   if (ev.kind === "turn") return Season.turn(seasonCtx(), ev);  // the turn's sequence (season.js)
@@ -628,11 +626,11 @@ function marksNow() {
 }
 
 // The season and the turn (season.js): the turn's sequence, the season's tithe and
-// reckoning, the people's yearly moves, the rising gate, the one truce writer and
-// blighted land growing back. Its context, read fresh on every call (getters for what the
-// bridge reassigns, read live in the turn's timers; setBlights for the blights).
+// reckoning, the people's yearly moves, the rising gate and the one truce writer. Its
+// context, read fresh on every call (getters for what the bridge reassigns, read live in
+// the turn's timers).
 const seasonCtx = () => ({ get world() { return world; }, get meta() { return meta; }, get court() { return court; }, get stakes() { return stakes; }, get minds() { return minds; },
-  get P() { return P; }, get favour() { return favour; }, get deeds() { return deeds; }, get blights() { return blights; }, setBlights: (v) => { blights = v; },
+  get P() { return P; }, get favour() { return favour; }, get deeds() { return deeds; },
   favourWhy, favourPast, treasuryCtx, send, record, flushHeld, courtSeason, royalWorks, resolveCampaigns, favourOf, restingFavour, noteFavour, recordDeed,
   causeOf, saveFavour, goalNow, sworn, shiftFavour, heardCtx, setDiplomacy, diplomacy: diplomacyNow, snapshot, runArcs, addMark, detail, marksNow, besiegers, startCampaign });
 function runSeason() { return Season.runSeason(seasonCtx()); }

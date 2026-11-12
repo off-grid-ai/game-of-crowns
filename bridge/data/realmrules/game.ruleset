@@ -404,14 +404,14 @@ skip_year_0 = TRUE
 ; How many fragments each year has. In addition to this, "Turn_Fragments" effects are
 ; needed to control fragment accumulation.
 ; Value 0 here disables year advancement by fragment accumulation.
-fragments = 0
+; Game of Crowns: one turn is one season, four to a year (effects.ruleset Turn_Fragments); the bridge's
+; calendar (stakes.js calendar) counts the same way, spring first. Winter's effects ask "MinCalFrag" 3.
+fragments = 4
 
-; Calendar fragment names. If name is missing, only a fragment number +1 (so human readable
-; numbers begin from 1 and not 0) is shown.
-
-;fragment_name0 = _("Jan")
-;fragment_name1 = _("Feb")
-; ...
+fragment_name0 = _("Spring")
+fragment_name1 = _("Summer")
+fragment_name2 = _("Autumn")
+fragment_name3 = _("Winter")
 
 ; What labels are used for positive and negative years.
 ; /* TRANS: year label (Common Era) */
@@ -456,6 +456,17 @@ name           = _("Flood")
 reqs           =
     { "type", "name", "range"
       "Extra", "River", "Adjacent"
+    }
+frequency      = 10
+effects        = "EmptyFoodStock"
+
+[disaster_blight]
+name           = _("Blight")
+reqs           =
+    { "type", "name", "range", "present"
+      "MinCalFrag", "1", "World", TRUE
+      "MinCalFrag", "3", "World", FALSE
+      "MinSize", "3", "City", TRUE
     }
 frequency      = 10
 effects        = "EmptyFoodStock"

@@ -24,7 +24,7 @@ const minstrels = (file) => {
   return out;
 };
 
-const a = await bareFreeciv({ serv: ["set aifill 3", "set minplayers 0", "set timeout -1", "set saveturns 1", 'set autosaves "TURN|GAMEOVER"', 'set savename "probe"', "set endturn 14", "start"] });
+const a = await bareFreeciv({ serv: ["set aifill 3", "set minplayers 0", "set timeout -1", "set saveturns 1", 'set autosaves "TURN|GAMEOVER"', 'set savename "probe"', "set endturn 30", "start"] });
 check(await a.until(/Game ended as the turn limit/, 150000), "the game didn't run");
 const first = autos(a.dir).pop();
 await a.quit();
@@ -39,7 +39,7 @@ const on = await bears();
 check(on.includes(`${owner}:true`), `the aggrieved house's seat doesn't bear the Grievance (${on})`);
 check(!/(\d+):/.test(on.replace(new RegExp(`\\b${owner}:true`, "g"), "")), `another town bears it (${on})`);
 const from = b.lines.length;
-b.send("set endturn 16");
+b.send("set endturn 32");
 b.send("start");
 check(await b.until(/Game ended as the turn limit/, 120000, from), "the loaded game didn't run on");
 const after = minstrels(path.join(a.dir, autos(a.dir).pop()));

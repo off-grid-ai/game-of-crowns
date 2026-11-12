@@ -10,8 +10,9 @@ export const inCity = (cityId, body) => `local c = find.city(nil, ${n(cityId)});
 // Hand a town to a player.
 export const transferCity = (cityId, pid) => `local c = find.city(nil, ${n(cityId)}); local to; for p in players_iterate() do if p.id == ${n(pid)} then to = p end end; if c and to then edit.transfer_city(c, to) end`;
 
-// A decree building set down in a town for its seasons (realmrules/script.lua realm_decree): "feast", "relief".
-export const decree = (cityId, kind) => `realm_decree(${n(cityId)}, "${kind === "relief" ? "relief" : "feast"}")`;
+// A decree building set down in a town for its seasons (realmrules/script.lua realm_decree): "feast", "relief",
+// "blight" (fate's, not the King's: half the town's food); seasons, if given, instead of luadata.txt's.
+export const decree = (cityId, kind, seasons) => `realm_decree(${n(cityId)}, "${["relief", "blight"].includes(kind) ? kind : "feast"}"${seasons ? `, ${n(seasons)}` : ""})`;
 
 // The King's soldiers beside a town he besieges strike it once each, and take it if no one is left
 // (realmrules/script.lua realm_assault; Freeciv fights every blow and reports "assault").

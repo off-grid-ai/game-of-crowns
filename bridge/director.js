@@ -11,7 +11,6 @@ import * as Opening from "./opening.js";
 import * as Events from "./events.js";
 import fs from "node:fs";
 import { houseFor, cityName } from "./narrator.js";
-import { blightLua } from "./blight.js";
 import * as chron from "./chronicles.js";
 import * as Lua from "./lua.js";
 import { BANDS } from "./favour.js";
@@ -153,8 +152,8 @@ function grow(ctx, d, turn) {
     send(`lua cmd realm_host(realm_find_player(${th.house}), ${at.x}, ${at.y}, {"Pikemen","Archers","Knights"}, 2)`);
     scene("muster", { x: at.x, y: at.y, tx: at.x, ty: at.y, city: at.id });
   } else if (th.kind === "famine") {
-    // The fields round the town fail: Freeciv's own farmland turned to waste, so it really starves.
-    send(`lua cmd ${blightLua(at.id, "Desert", 0.25 + th.level * 0.4, 12)}`);
+    // The fields round the town fail: a Blight in Freeciv (half its food) for 12 seasons, so it really starves.
+    send(`lua cmd ${Lua.decree(at.id, "blight", 12)}`);
   } else if (th.kind === "pretender") {
     scene("vigil", { x: at.x, y: at.y, city: at.id, strength: 0.5 + th.level * 0.5 });
   }
@@ -186,9 +185,9 @@ function breaks(ctx, d, turn) {
     }
   } else if (at && th.kind === "famine") {
     // The town's own fields waste and its granary is lost: Freeciv starves it, and it shrinks.
-    send(`lua cmd ${blightLua(at.id, "Desert", 0.9, 16)}`);
+    send(`lua cmd ${Lua.decree(at.id, "blight", 16)}`);
     send(`lua cmd local c = find.city(nil, ${at.id}); local g = find.building_type("Granary"); if c and g and c:has_building(g) then edit.remove_building(c, g) end`);
-    for (const c of world.cities.filter((x) => x.owner === at.owner && x.id !== at.id).sort((a, b) => dist(a, at) - dist(b, at)).slice(0, 2)) send(`lua cmd ${blightLua(c.id, "Desert", 0.5, 12)}`);
+    for (const c of world.cities.filter((x) => x.owner === at.owner && x.id !== at.id).sort((a, b) => dist(a, at) - dist(b, at)).slice(0, 2)) send(`lua cmd ${Lua.decree(c.id, "blight", 12)}`);
     scene("famine", { x: at.x, y: at.y, city: at.id });
     shiftFavour({ [th.house]: -8 }, "the famine the crown let spread");
     record({ turn, kind: "death", text: `At ${th.townName} the old and the young die first; the granary is eaten and burnt for warmth.`, city: at.id });
