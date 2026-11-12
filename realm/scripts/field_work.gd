@@ -10,6 +10,7 @@ extends Node
 ## field to the next. What each does next is their mind's (npc_mind.gd posts); the plough team and
 ## the flock are walked here (movement only). Numbers: realm/data/fieldwork.json (--fieldwork=off).
 
+const Awareness := preload("res://scripts/awareness.gd")
 const Data := preload("res://scripts/data.gd")
 const People := preload("res://scripts/people.gd")
 const Animals := preload("res://scripts/animals.gd")
@@ -358,7 +359,7 @@ func _walk_flocks(delta: float) -> void:
 			fl["rest"] = _rng.randf_range(float(span[0]), float(span[1]))
 			var mind := lead.get_node_or_null("Mind")
 			if mind:
-				(mind.get("blackboard") as Blackboard).set_var(&"post", lead.position)  # his place is by the new field now
+				Awareness.assign(mind as BTPlayer, {"post": lead.position})  # his place is by the new field now (the minds' one reducer)
 				mind.set("active", true)
 			else:
 				People.play(lead, "Idle")
