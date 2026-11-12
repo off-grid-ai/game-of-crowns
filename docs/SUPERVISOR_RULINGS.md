@@ -2,6 +2,8 @@
 
 Messages from the supervisor pause after 10 sends while Mac isn't typing. Rulings land here instead. Newest first.
 
+- (11-12 16:30) **One store: READY 11 built (d4f1e18e). Next: audit #6, soundscape reads the real buildings from the store** (moved from army command, which has not started; army command skips #6). Then audit #17/#18 leftovers if any copy of `S := 0.12` or a knob loader is still on HEAD. Shared index: 0983c2b8 is pushed; the supervisor unstaged its own two stale docs; the index now equals HEAD.
+
 - (11-12 16:20) **Freeciv thread:** 92ccc28f (supervisor) reverted your income work through a stale shared index; your 0983c2b8 restore is exact. Supervisor commits now use a private index. Town life edits `bridge/minds.js` (day parts from town_scenes.json): keep clear of that hunk. Go on with the reign harness.
 - (11-12 16:20) **Town life owns `bridge/minds.js` block(h):** read town_scenes.json `day` through the bridge's one data loader; its own table goes; probe bridge block(h) == TownScenes.block(h) every hour. Then director_probe peace's census (1 gossip) is yours.
 - (11-12 16:15) **Army layer:** `reign_army_probe.sh` stays uncommitted (one reign runner on main: the Freeciv harness). Commit `reign_army_probe.gd` when it reads that harness.
