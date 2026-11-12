@@ -7,7 +7,6 @@ extends Node
 ## GOC_LOOK=noview leaves it all off, for side-by-side renders.
 
 const Data := preload("res://scripts/data.gd")  # the one loader of realm/data (data.gd)
-const SUN_HEIGHT := 35.0  # degrees above the horizon: a warm morning sun, shadows long but never swallowing the square
 # The one look (data/look.json; PLAN.md Phase 2 item 1): warm key, cool shade, an earthy kit. Off keeps today's.
 static var LOOK: Dictionary = _read_look()
 var _tinted := {}  # a kit material -> its re-graded copy, made once
@@ -81,7 +80,7 @@ func _ready() -> void:
 		_haze = float((LOOK.get("haze", {}) as Dictionary).get("volumetric", 0.008))
 	# A shot's own hour (--hour=, shot_harness) stands: the golden hour overwrote it (batch 8b: night shots in daylight).
 	if not sky3d.game_time_enabled and not Array(OS.get_cmdline_user_args()).any(func(x): return String(x).begins_with("--hour=")):
-		_golden_hour(sky3d, float(LOOK.get("sun_elevation", SUN_HEIGHT)) if look_one else SUN_HEIGHT)
+		_golden_hour(sky3d, float(LOOK["sun_elevation"]))
 	if look_one:
 		# The one look: no brown LUT; a warm key against a cool shade, and a gentle S-curve after AgX.
 		var lut := String(LOOK.get("lut", ""))
@@ -205,9 +204,9 @@ static func _lut(path: String) -> Texture3D:
 	return tex
 
 
-## The morning hour when the sun stands SUN_HEIGHT above the horizon: the
-## sky's own clock and latitude decide it, so the light is never a sunset.
-func _golden_hour(sky3d: Node, height := SUN_HEIGHT) -> void:
+## The morning hour when the sun stands `height` degrees above the horizon (look.json sun_elevation: a warm morning
+## sun, shadows long but never swallowing the square): the sky's own clock and latitude decide it, never a sunset.
+func _golden_hour(sky3d: Node, height: float) -> void:
 	# Morning: from the camera's usual bearing (frame_town's 35°) the sun then
 	# lights the faces of the houses; in the afternoon the town is backlit.
 	var step := -0.1
