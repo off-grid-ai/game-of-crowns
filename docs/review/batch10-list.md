@@ -15,7 +15,7 @@ then one headless Godot import; only while no other Godot runs). Each shot twice
    walking map.)
 3. **The market cart, no '$'** (`--dressing=on`): `city Kingsmere 4.5 -25`, find the cart by the square. Judge:
    the hanging sign reads as a plain board (a faint bag at most), no dollar sign from any side.
-4. **The tavern at 30,000 triangles** (`work * tavern 4.5 -25`, then `4.5 -12`): its roofs whole (no rag edges, no
+4. **The tavern at 30,000 triangles** (`work * inn 4.5 -25`, then `4.5 -12`): its roofs whole (no rag edges, no
    holes), no grey smoke blob over the chimney (the game's own smoke rises there), the sign and barrels read.
 
 Not placed, so not filmed: the market stalls (passed in the turntable, but they're one 7.8 x 6.7 m market block
