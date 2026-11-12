@@ -5,7 +5,7 @@ description: Game of Crowns working rules (entry point). Load at the start of su
 
 # Game of Crowns rules
 
-**The main thread does all coding and change work.** Every edit to `realm/`, `bridge/`, the docs, every commit and push happens here, one step after another. Don't hand change work to another session, sub-agent or workflow: each starts without the context, and two writers on one file collide.
+**One supervisor, several builder threads (Mac, 2026-11-12: "override the threads thing with the status quo").** The supervisor session judges, routes, renders and keeps `docs/SUPERVISOR_LEDGER.md`; builder sessions it starts each own a layer and its files (today: buildings, ground, people's looks), and other sessions Mac starts own whole systems (town life, the army layer, ground truth). Every writer names its files before editing, commits only its own hunks by path, and checks `pgrep -x godot` before any Godot run. Two writers never edit the same file at once: the owner of a file is asked first.
 
 **Build in batches, test together (Mac, 2026-11-07).** Make all the related changes first, then compile-check them all, launch once, and film and judge them together in one run, rather than launching and testing after each small change. Fix what the run shows, then run again. A change that can break a working system still gets its own before/after on film within that run.
 
@@ -20,7 +20,7 @@ description: Game of Crowns working rules (entry point). Load at the start of su
 - **No fallbacks.** The better system replaces the old one in the same change: no switch back, no two systems for one job. We haven't launched, so no save-compatibility shims. The behaviour must carry over (never lose functionality), the old code must not.
 - **Rules check themselves.** `realm/tools/rules_check.sh` runs before every commit of `realm/scripts`; its known-breach list only shrinks.
 
-**Other sessions only fetch assets or look.** A review or test session films, judges and pins notes on the review page (`review-loop` writes its findings to `docs/review/LOOP.md`); it changes no code and hands findings back here. The asset session briefs Codex to download models and moves (Sketchfab, Mixamo) into `downloads/` and `~/Downloads/Aldmere/`, and reports. It changes no game code. Wiring an asset into the game happens here.
+**Review and asset sessions only look or fetch.** A review or test session films, judges and pins notes on the review page (`review-loop` writes its findings to `docs/review/LOOP.md`); it changes no code. An asset session (Codex, Meshy, Sketchfab, Mixamo) downloads into `downloads/`, `~/Downloads/Aldmere/` or `~/code/goc-kits/` and reports; the builder that owns the layer wires it into the game. Renders are batched by the supervisor (CLAUDE.md).
 
 **Decisions live in [VISION.md](../../../VISION.md) and [DESIGN.md](../../../DESIGN.md).** Read them first; update them when Mac changes a decision.
 
