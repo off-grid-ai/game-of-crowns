@@ -387,6 +387,7 @@ func _step(w: PackedStringArray) -> void:
 					var hits := {}  # body name -> [kind, times seen inside, where]
 					var samples := 0
 					var bodies_seen := {}
+					var census := {}  # kind -> {instance id: true}: every beast, horse and cart seen in the square
 					var t_end := Time.get_ticks_msec() + int(secs * 1000.0)
 					while Time.get_ticks_msec() < t_end:
 						var outlines: Array = TN.footprints(oroot)
@@ -395,6 +396,11 @@ func _step(w: PackedStringArray) -> void:
 							bodies.append([p, "person"])
 						for h in load("res://scripts/works.gd").horses(oroot):
 							bodies.append([h, "horse"])
+						# The farm's beasts too (animals.gd make tags each with its kind): the square's dog, the
+						# yards' hens and pig; their count by kind is the census line below.
+						for bst in oroot.find_children("*", "Node3D", true, false):
+							if bst.has_meta("beast"):
+								bodies.append([bst, String(bst.get_meta("beast"))])
 						var olife: Node = oroot.get_node_or_null("Life")
 						if olife:
 							for k in olife.get_children():
@@ -408,6 +414,10 @@ func _step(w: PackedStringArray) -> void:
 							if Vector2(lp.x, lp.z).length() > reach:
 								continue
 							bodies_seen[n.get_instance_id()] = true
+							if b[1] != "person":
+								var kin: Dictionary = census.get(b[1], {})
+								kin[n.get_instance_id()] = true
+								census[b[1]] = kin
 							var q := Vector2(lp.x, lp.z)
 							for fp in outlines:
 								if (fp as PackedVector2Array).size() > 2 and Geometry2D.is_point_in_polygon(q, fp):
@@ -422,6 +432,10 @@ func _step(w: PackedStringArray) -> void:
 					for k in hits:
 						by_kind[hits[k][0]] = int(by_kind.get(hits[k][0], 0)) + 1
 					_note("CHECK overlap probe: %s: %d samples over %.0f s, %d bodies in the square, %d ever inside something (%s); first: %s" % [otitle, samples, secs, bodies_seen.size(), hits.size(), str(by_kind), str(hits.values().slice(0, 5))])
+					var counts := {}
+					for kind in census:
+						counts[kind] = (census[kind] as Dictionary).size()
+					_note("CHECK square beasts: %s: %s (wants a dog, hens, the cart's horse; none inside: see the overlap line)" % [otitle, str(counts)])
 			"town":
 				# Open a town's card, as clicking the town would.
 				for c in main.bridge.world.get("cities", []):
