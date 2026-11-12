@@ -46,11 +46,13 @@ Every change follows these. A plan that breaks one isn't approved.
 - **SOLID.**
   - New behaviour arrives as a new tree, task, handler or data row, not as another branch in a growing `match` on kind strings.
   - Depend on the mirror's interface and on signals, not on another script's internals or on raw bridge JSON shapes.
-- **Consolidating is allowed.** Rewrites toward these principles are welcome (Mac). Do them behind a switch, one module at a time, with nothing lost. They're exempt from "additive" below, but only once the consolidation plan names them.
+- **Consolidating is expected; no fallbacks (Mac, 2026-11-12).** Rewrites toward these principles are welcome. The new code replaces the old in the same change: no switch back to the old path, no two systems doing one job. Carry every behaviour over (nothing lost), delete the old code. They're exempt from "additive" below.
+- **One interface per behaviour.** Everything that moves goes through `realm/scripts/mover.gd` (`Mover.of(body).go(to, then)`): it asks the navigation for the route. Nothing tweens or sets a position to travel. Town life is one store and one reducer (`docs/TOWN_LIFE.md`): scenes, moods and reactions are data rows in `realm/data/town_scenes.json`, never new hand-written scene functions.
+- **Check the rules.** Run `realm/tools/rules_check.sh` before committing `realm/scripts`; a breach is fixed, not added to `tools/rules_known.txt` (that list only shrinks).
 - **Proof includes behaviour.** Compiling isn't working. Every NPC or tree change passes the headless behaviour probe (distinct activities, no repeats outside runs, no over-long holds, pools non-empty after clone) before it's committed.
 
 1. **Write like the code around it.** GDScript doc comments (`##`) say what a thing is in the game's own words; same naming, density and idiom. Bridge stays plain Node with no npm dependencies.
-2. **Additive.** No unrelated refactors. Ask Mac before a new abstraction, a change to the saved realm's format (`bridge/chronicles/*/state`, `meta.json`) or a migration: old chronicles must still open.
+2. **Additive.** No unrelated refactors. Ask Mac before a new abstraction. The game hasn't launched: a change to the saved realm's format (`bridge/chronicles/*/state`, `meta.json`) needs no migration or compatibility shim (Mac, 2026-11-12).
 3. **Glue, not engines.** Our code connects Freeciv, Godot add-ons and assets. A new system needs a reason no existing block covers it.
 4. **Check every edit.** GDScript: `arch -arm64 godot --headless --path realm --check-only -s res://scripts/<file>.gd`. Give explicit types to values from untyped nodes (`var d: float = terrain.…`), or it won't parse. Bridge: `node --check <file>.js`.
 5. **Reload what you changed.** Bridge: `launchctl kickstart -k gui/$(id -u)/com.realm.bridge`. New or changed assets: `arch -arm64 godot --headless --path realm --import`.

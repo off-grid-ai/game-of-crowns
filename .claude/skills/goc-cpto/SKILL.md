@@ -13,6 +13,13 @@ description: Game of Crowns working rules (entry point). Load at the start of su
 
 **We are system integrators** (CLAUDE.md): survey the proven building blocks before building, and never hand-build a system where one exists.
 
+**How we build (Mac, 2026-11-12; CLAUDE.md).** We kept redoing the same fixes because each system was hand-built its own way. So:
+- **Engine blocks first.** Godot, Freeciv and their add-ons before our code (Godot's navigation, not hand-made obstacle lists).
+- **One store, one direction, like Redux.** Freeciv -> bridge -> `/world` -> one mirror (`awareness.gd`). Changes arrive only as actions (a world sync, an event, a person's done); one reducer per slice decides; everything else reads. Town life: `docs/TOWN_LIFE.md`.
+- **One interface per behaviour, everyone inherits it.** Moving is `mover.gd`; nothing else moves a body. Scenes, moods and reactions are rows of data, not hand-written functions.
+- **No fallbacks.** The better system replaces the old one in the same change: no switch back, no two systems for one job. We haven't launched, so no save-compatibility shims. The behaviour must carry over (never lose functionality), the old code must not.
+- **Rules check themselves.** `realm/tools/rules_check.sh` runs before every commit of `realm/scripts`; its known-breach list only shrinks.
+
 **Other sessions only fetch assets or look.** A review or test session films, judges and pins notes on the review page (`review-loop` writes its findings to `docs/review/LOOP.md`); it changes no code and hands findings back here. The asset session briefs Codex to download models and moves (Sketchfab, Mixamo) into `downloads/` and `~/Downloads/Aldmere/`, and reports. It changes no game code. Wiring an asset into the game happens here.
 
 **Decisions live in [VISION.md](../../../VISION.md) and [DESIGN.md](../../../DESIGN.md).** Read them first; update them when Mac changes a decision.
