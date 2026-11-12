@@ -956,6 +956,17 @@ var _deaf := false  # a --play run hears only its scenario: the window coming to
 
 func _feed(e: InputEvent) -> void:
 	e.device = DEVICE
+	# Every step aims in the viewport's space (the visible rect, cam.unproject_position); Input.parse_input_event takes
+	# the window's, and the game scales its interface (main.gd: root.content_scale_factor), so a mouse event goes
+	# out through the root's own transform and arrives where it was aimed (tools/autoplay_click_probe.gd; the
+	# milestone's command take clicked 1.34x off the standard and selected nothing).
+	if e is InputEventMouse:
+		var to_window: Transform2D = get_tree().root.get_final_transform()
+		var m := e as InputEventMouse
+		m.position = to_window * m.position
+		m.global_position = to_window * m.global_position
+		if e is InputEventMouseMotion:
+			(e as InputEventMouseMotion).relative = to_window.basis_xform((e as InputEventMouseMotion).relative)
 	Input.parse_input_event(e)
 
 
