@@ -129,6 +129,19 @@ func _dress(id: int, root: Node3D, castle: Node3D) -> void:
 		var torch: Node3D = _torch(xf * local, xf.basis.get_rotation_quaternion(), tk, scale)
 		d["nodes"].append(torch)
 		d["torches"].append(torch)
+	# Folk through the gate (Meshy's gatehouse stands open; the kit's has a door in its arch): townsfolk and
+	# a guard walk in from the road, through the passage into the bailey, and out again.
+	if Builder.meshy_gatehouse() != "":
+		var wk: Dictionary = Data.value("castle", "gate_walkers", {})
+		var hz := int(sp.get("d", 16)) * Builder.CELL / 2.0
+		var path: Array = []
+		for z in [front + float(wk.get("out", 3.0)), front - 0.3, hz - 1.0, hz - float(wk.get("inside", 4.0))]:
+			var q: Vector3 = xf * Vector3(0, 0, z)
+			if z > front or z < hz - 1.5:  # on open ground: on the land itself; in the passage, its floor
+				q.y = main.terrain.height_at(q.x, q.z)
+			path.append(q)
+		for i in int(wk.get("count", 3)):
+			d["nodes"].append(_walker(path, colour, wk, scale, i))
 	# The bailey's well, at its heart.
 	var w: Array = Data.value("castle", "well", [0.75, 0.0, 0.45])
 	var well_kind := Real.one("well")
@@ -215,6 +228,36 @@ func _guard(a: Vector3, b: Vector3, colour: Color, k: Dictionary, scale: float) 
 		tw.tween_property(f, "global_position", end, leg)
 		tw.tween_callback(func(): main.scenes.people.play(f, ["Looking_Around", "Weight_Shift", "Idle"][_rng.randi() % 3], 1.0))
 		tw.tween_interval(look)
+	return f
+
+
+## One of the folk going in and out by the gate: along `path` (the road outside, the gate, the passage's
+## inner end, the bailey) and back, a while in the bailey and a while out on the road between.
+func _walker(path: Array, colour: Color, k: Dictionary, scale: float, i: int) -> Node3D:
+	var guard := i == 0
+	var f: Node3D = main.scenes.people.make(_rng, "soldier" if guard else "peasant", colour.lerp(Color.WHITE, 0.3) if guard else Color.WHITE, "adult")
+	add_child(f)
+	if guard:
+		main.scenes.arm(f, "spear")
+	var side := Vector3(1, 0, 0) * (float(k.get("abreast", 0.4)) * (i - 1)) * scale
+	var pts: Array = path.map(func(p): return p + side)
+	f.global_position = pts[0]
+	var pace := maxf(float(k.get("pace", 0.8)) * S * scale, 0.001)
+	var wait: Array = k.get("wait_s", [4.0, 10.0])
+	var tw := f.create_tween().set_loops()
+	tw.tween_interval(_rng.randf_range(0.0, float(wait[1])) + i * 2.0)  # each on his own beat
+	var back: Array = pts.duplicate()
+	back.reverse()
+	for leg in [pts, back]:  # in, then out
+		for j in range(1, leg.size()):
+			var to: Vector3 = leg[j]
+			tw.tween_callback(func():
+				var dir: Vector3 = to - f.global_position
+				f.rotation.y = atan2(dir.x, dir.z)
+				main.scenes.people.play(f, "Walk", _rng.randf_range(0.9, 1.05)))
+			tw.tween_property(f, "global_position", to, (leg[j - 1] as Vector3).distance_to(to) / pace)
+		tw.tween_callback(func(): main.scenes.people.play(f, ["Looking_Around", "Weight_Shift", "Idle"][_rng.randi() % 3], 1.0))
+		tw.tween_interval(_rng.randf_range(float(wait[0]), float(wait[1])))
 	return f
 
 
