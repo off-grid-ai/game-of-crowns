@@ -129,6 +129,7 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- (11-12) Mac: build risings ("Yes, my defaults"): the Crown never splits, a backed rival becomes a lesser house, a rising settles after 8 seasons. Freeciv thread, after line 7; it is the core of READY line 9.
 - (11-12) Mac's "ready to play" list is docs/READY.md (10 lines: square, walking, march out, banners, fight, siege, capture, command, politics, a full reign). The game opens for him only when all pass on film.
 - (11-12) Mac: "I want to be able to capture a town." This overrides the old rule that the Crown (Norman) never takes a town by its soldiers (actions.ruleset). The King's host may take a town on his order; the Crown's AI still never goes conquering on its own.
 - (11-12) Mac on what he likes in r11: "the level of detail, the openness". The square: wide and open at r11's size, house fronts at r11's distance, filled with many small readable things (wares, crates, goods, people). Openness is measured as the visible paving share of c01, with r11 as the floor.
