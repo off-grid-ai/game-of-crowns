@@ -1,5 +1,7 @@
 extends "res://scripts/house_builder.gd"
-## Assembles a great house's castle from the Medieval Village MegaKit, the way
+## A great house's castle from the Meshy castle set (docs/art/castle: keep, round and square towers, wall stretches)
+## laid out on the castle's plan below; the town walls (town_wall) are still the MegaKit's, as follows. Formerly:
+## assembles a great house's castle from the Medieval Village MegaKit, the way
 ## house_builder.gd raises a townhouse: the kit's 2 m stone wall panel stacked in
 ## 3 m storeys makes the keep, the towers, the gatehouse and the curtain walls;
 ## the same panel, cut down, makes the merlons; the kit's tiled roofs and tower
@@ -45,49 +47,29 @@ func build_castle(spec: Dictionary) -> ArrayMesh:
 	var towers: Array = [Vector3(-hx, 0, -hz), Vector3(hx, 0, -hz), Vector3(hx, 0, hz), Vector3(-hx, 0, hz)]
 	if spec.get("side_towers", false):
 		towers.append_array([Vector3(-hx, 0, 0), Vector3(hx, 0, 0)])
+	# The castle is the Meshy castle set (docs/art/castle, data/meshy.json ck_*; castle.json meshy): a round tower at
+	# each corner and either side of the gate, a square tower midway along each side wall of a royal seat, the curtain
+	# as wall stretches along each run, and the keep, all in the 01-town painted stone and red tiles.
 	for t in towers:
-		# Round at the four corners only (round 9: round everywhere read as a forest of grey cylinders).
 		var corner := absf(t.x) > 0.01 and absf(t.z) > 0.01
-		_block(parts, t, 2, 2, tower_st, rng, {"cone": true, "windows": 0.3, "round": corner})
-	# Curtain walls between them: front (gate on it), right, back (keep in it), left: the kit's curtain.
-	var bays := curtain_bays(spec)
-	for side in 4:
-		var half := (hz if side % 2 == 0 else hx)
-		var frame := Transform3D(Basis(Vector3.UP, SIDES[side]), Basis(Vector3.UP, SIDES[side]) * Vector3(0, 0, half))
-		for off in bays[side]:
-			_curtain(parts, frame, off, wall_st)
+		_meshy_tower(parts, t, tower_st, "round" if corner else "square")
+	_meshy_curtain(parts, spec, wall_st)
 	# The gatehouse astride the front wall: Meshy's (data/meshy.json gatehouse, imported), in metres.
 	var meshy_gate := meshy_gatehouse()
 	if meshy_gate != "":
-		# Set into the curtain, a little proud of it, between two cone towers (castle.json meshy_gate; round 4:
+		# Set into the curtain, a little proud of it, between two round towers (castle.json meshy_gate; round 4:
 		# 3.5 m proud with nothing either side, it stood out on its own in front of the wall).
 		var mg := _meshy_gate()
 		parts.append([meshy_gate, Transform3D(Basis(), gate_at + Vector3(0, 0, float(mg.get("z", 1.0))))])
 		if bool(mg.get("towers", false)):
 			for sx in [-1, 1]:
-				_block(parts, gate_at + Vector3(sx * gate_tower_x(), 0, 1.0), 2, 2, wall_st + 2, rng, {"cone": true, "windows": 0.5, "round": true})
-	# The keep: tall, crenellated, a tiled roof over its leads, a turret at each corner. On a seat's castle it
-	# stands on a stone podium, a broad flight of steps up to its door (01-town: the steps up to the keep, the
-	# red carpet down them; castle_life.gd lays the carpet): the kit's exterior stairs, a metre a flight.
-	var up := podium()
-	if up > 0:
-		_block(parts, keep_at, keep, keep, up, rng, {})
-		var kf := keep_at.z + kh
-		var rises := up * int(STOREY)
-		for i in rises:
-			var y := float(rises - 1 - i)
-			var z := kf + 1.0 + 2.0 * i
-			for sx in [-1.0, 1.0]:
-				parts.append(["Stairs_Exterior_Straight", Transform3D(Basis(), Vector3(sx, y, z))])
-				for j in int(y):
-					parts.append(["Stairs_Exterior_Sides", Transform3D(Basis(), Vector3(sx, float(j), z))])
-	var lift := Vector3(0, up * STOREY, 0)
-	# Its face windowed (castle.json keep_roof.windows; round 4: at 0.45 the keep read as a flat grey wall).
-	var kwin := float((preload("res://scripts/data.gd").value("castle", "keep_roof", {}) as Dictionary).get("windows", 0.45))
-	_block(parts, keep_at + lift, keep, keep, keep_st, rng, {"door": true, "crenel": true, "windows": kwin, "roof": true})
-	for k in 4:
-		var c := Vector3((-1 if k in [0, 3] else 1) * (kh + 0.3), 0, (-1 if k < 2 else 1) * (kh + 0.3))
-		_block(parts, keep_at + c, 2, 2, keep_st + up + (1 if k % 2 == 0 else 0), rng, {"cone": true, "windows": 0.4})
+				_meshy_tower(parts, gate_at + Vector3(sx * gate_tower_x(), 0, 1.0), wall_st + 2, "round")
+	# The keep (ck_keep: its own steps up to its door, its turrets and red roofs), stood into the back wall.
+	var km: Dictionary = _meshy().get("keep", {})
+	var keep_file := _meshy_file("ck_keep")
+	if keep_file != "":
+		var ks := float(km.get("scale", 1.0))
+		parts.append([keep_file, Transform3D(Basis.from_scale(Vector3.ONE * ks), keep_at + Vector3(0, 0, float(km.get("z", 0.0))))])
 	# The house's banners on the keep and the gate are castle_life.gd's (its painted arms).
 	var stone := _castle_stone()
 	if not stone.is_empty():
@@ -130,6 +112,65 @@ func _castle_stone() -> Dictionary:
 		course.set_meta("graded", true)
 		out["MI_WoodTrim"] = course
 	return out
+
+
+## The castle set's sizes (data/castle.json meshy): keep {scale, z}; tower {round, square: the pieces; width, metres
+## across; cone, metres of roof over the stone}; wall {piece; length, its metres along; depth, metres through; over,
+## metres of merlons over the walk}.
+static func _meshy() -> Dictionary:
+	return preload("res://scripts/data.gd").value("castle", "meshy", {})
+
+
+## A castle-set piece's file (realm/assets/meshy/<name>/<name>.glb, meshy_import.py), else "".
+static func _meshy_file(name: String) -> String:
+	var path := "res://assets/meshy/%s/%s.glb" % [name, name]
+	return path if ResourceLoader.exists(path) else ""
+
+
+## A piece's size as imported, metres [across, deep, tall] (its import.json size_m).
+static func _meshy_size(name: String) -> Array:
+	var f := FileAccess.open("res://assets/meshy/%s/import.json" % name, FileAccess.READ)
+	var j = JSON.parse_string(f.get_as_text()) if f else null
+	return (j as Dictionary).get("size_m", [7.4, 7.4, 14.0]) if j is Dictionary else [7.4, 7.4, 14.0]
+
+
+## A tower of the castle set at `at` (its foot): its stone `storeys` high under its roof, its width castle.json
+## meshy.tower.width (the import's own across, about 7-8 m, would crowd the curtain's 2 m bays).
+func _meshy_tower(parts: Array, at: Vector3, storeys: int, kind: String) -> void:
+	var k: Dictionary = _meshy().get("tower", {})
+	var name := String(k.get(kind, "ck_wall_tower"))
+	var file := _meshy_file(name)
+	if file == "":
+		return
+	var sz: Array = _meshy_size(name)
+	var h := storeys * STOREY + float(k.get("cone", 4.0))
+	var across := float(k.get("width", 6.0))
+	parts.append([file, Transform3D(Basis.from_scale(Vector3(across / float(sz[0]), h / float(sz[2]), across / float(sz[1]))), at)])
+
+
+## The curtain: along each run (curtain_runs) as many wall stretches as fit their length, each stretched to share
+## the run evenly, its outer face on the run's line, as tall as the curtain's storeys and its merlons.
+func _meshy_curtain(parts: Array, spec: Dictionary, storeys: int) -> void:
+	var k: Dictionary = _meshy().get("wall", {})
+	var file := _meshy_file(String(k.get("piece", "ck_wall_stretch")))
+	if file == "":
+		return
+	var size := _meshy_size(String(k.get("piece", "ck_wall_stretch")))
+	var length := float(size[0])
+	var depth := float(k.get("depth", 3.0))
+	var tall := storeys * STOREY + float(k.get("over", 1.5))
+	var sy := tall / float(size[2])
+	var sz := depth / float(size[1])
+	for run in curtain_runs(spec):
+		var a: Vector3 = run["a"]
+		var b: Vector3 = run["b"]
+		var out: Vector3 = run["out"]
+		var span := a.distance_to(b)
+		var n := maxi(1, int(round(span / length)))
+		var basis := Basis.looking_at(-out, Vector3.UP)  # its front (+Z) outward
+		for i in n:
+			var mid := a.lerp(b, (i + 0.5) / n) - out * depth / 2.0
+			parts.append([file, Transform3D(basis * Basis.from_scale(Vector3(span / n / length, sy, sz)), mid)])
 
 
 ## The curtain's 2 m bays on each side (front, right, back, left), as offsets along the side's frame: all

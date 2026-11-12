@@ -16,6 +16,7 @@
     {"tier": "armoury", "side": "right", "at": 0.5, "w": 4, "d": 2, "floors": 2, "seed": 213},
     {"tier": "granary", "side": "right", "at": -0.75, "w": 2, "d": 2, "floors": 2, "seed": 214}
   ]},
-  "steps": {"storeys": 1, "carpet": [0.6, 0.07, 0.06], "carpet_w": 1.6, "carpet_lift": 0.06, "gate_in": 3.2},
+  "meshy": {"_": "The Meshy castle set (castle_builder.gd _meshy_tower, _meshy_curtain, the keep; docs/art/castle): keep scale (1: its imported 15.7 x 17.5 x 20 m) and z (metres toward the gate from the keep's place); tower round and square, the pieces at the corners and gate, and midway along a royal seat's side walls; width, metres across; cone, metres of roof over its stone storeys; wall piece, depth (metres through, walk and all), over (metres of merlons over the curtain's storeys).", "keep": {"scale": 1.0, "z": 0.0}, "tower": {"round": "ck_wall_tower", "square": "ck_corner_tower", "width": 6.0, "cone": 4.0}, "wall": {"piece": "ck_wall_stretch", "depth": 3.0, "over": 1.5}},
+  "steps": {"storeys": 0, "carpet": [0.6, 0.07, 0.06], "carpet_w": 1.6, "carpet_lift": 0.06, "gate_in": 3.2},
   "gate_walkers": {"count": 3, "pace": 0.8, "out": 3.0, "inside": 4.0, "abreast": 0.4, "wait_s": [4.0, 10.0]}
 }

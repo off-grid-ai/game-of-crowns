@@ -154,7 +154,8 @@ static func still(model: Node, path: String) -> void:
 static func meshy_piece(role: String) -> Node3D:
 	var pieces: Dictionary = Data.value("meshy", "pieces", {})
 	for name in pieces:
-		if String((pieces[name] as Dictionary).get("replaces", "")) != role:
+		var r = (pieces[name] as Dictionary).get("replaces", "")
+		if not ((r is Array and role in r) or (r is String and r == role)):
 			continue
 		var path := "res://assets/meshy/%s/%s.glb" % [name, name]
 		if not ResourceLoader.exists(path):
@@ -168,19 +169,23 @@ static func meshy_piece(role: String) -> Node3D:
 ## The variants of a Meshy piece that replaces `component`, once its file is
 ## imported (realm/tools/meshy_import.py -> assets/meshy/<name>/<name>.glb): stood by its true height.
 ## Else [] (the component as it was).
+## A piece's replaces may name one component or several ([..]), and a component may take several pieces (the town
+## houses: each hovel, cottage or townhouse one of the set's houses, by its seed), each its own variant.
 static func _meshy_for(component: String) -> Array:
 	var pieces: Dictionary = Data.value("meshy", "pieces", {})
 	var defaults: Dictionary = Data.value("meshy", "defaults", {})
+	var out := []
 	for name in pieces:
 		var p: Dictionary = pieces[name]
-		if String(p.get("replaces", "")) != component:
+		var r = p.get("replaces", "")
+		if not ((r is Array and component in r) or (r is String and r == component)):
 			continue
 		var rel := "meshy/%s/%s.glb" % [name, name]
 		if not ResourceLoader.exists("res://assets/" + rel):
 			continue
 		var h := float(p.get("height_m", defaults.get("height_m", 8.0)))
-		return [{"model": rel, "name": "meshy_" + String(name), "length": h, "height": h}]
-	return []
+		out.append({"model": rel, "name": "meshy_" + String(name), "length": h, "height": h})
+	return out
 
 
 ## A builder variant with a count stands for that many: name_1..name_n, each its own seed (spec seed + i),
