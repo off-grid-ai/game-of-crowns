@@ -3,8 +3,7 @@
 Updated 2026-11-12 ~19:45.
 
 ## Waiting on Mac
-- Orders a season: one per host (recommended) or one for all hosts (hosts.json ordersPerSeason; today 1 for all).
-- The square: keep the r11 openness floor (paving >= 55%) and fill it with life (recommended), or lower the floor and shrink it toward 01-town's packed square.
+- Nothing.
 
 ## Threads (4 + 1 closing)
 | Thread | Session | Doing now | Next |
@@ -21,6 +20,9 @@ Art step 6 (town camera) landed: people 2.5x larger, house colours. castle_build
 Built: 1-6, 9, 11-15. Reopened: 7 (capture chain fails at link 3), 8 (film click; fix in hand). Open: 10 (a full reign: muster crash, view faults). Look pass: started (owner look audit).
 
 ## Decisions and why
+- One order per host per season (supervisor, on Mac's "just get this right"): each army acts each season, closer to the WC3 command bar; the season still sets the pace. Reversible in hosts.json.
+- The square keeps the r11 openness floor and fills with life to 01-town's density (supervisor): both are Mac's picks, and filling serves both.
+- Art stays local in the shared tree; film copies link to it (Mac: "as of now it's ok if it's local").
 - Engines and visuals are one: nothing drawn without an engine fact; the engine first (Mac).
 - Ships carry armies and fight nothing (Mac), so the ruleset drops warships and the art set makes one transport hull.
 - Four threads, not nine: collisions and idle waits cost more than parallelism gave (Mac).
