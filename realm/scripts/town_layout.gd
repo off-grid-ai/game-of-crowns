@@ -158,9 +158,10 @@ func real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds:
 			p = Vector3(cos(gap_ang), 0, sin(gap_ang)) * (square_r + maxf(f.x, f.y) * 0.45)
 		if tb._put(root, center, lm, p, f, lots, rng, false):
 			placed += 1
-			tb._door(root, p, f, rooms[comp][0], rooms[comp][1])
-			# Where the town gathers: just out from its door, on the square.
-			places[rooms[comp][2]] = p - p.normalized() * (f.y * 0.5 + 0.35)
+			if rooms.has(comp):  # a landmark has its room and a door into it; a trade on the square has its trade record below
+				tb._door(root, p, f, rooms[comp][0], rooms[comp][1])
+				# Where the town gathers: just out from its door, on the square.
+				places[rooms[comp][2]] = p - p.normalized() * (f.y * 0.5 + 0.35)
 			if comp == "tavern":
 				tb._tether(root, center, p, f)
 				tb._trade_record(root, center, {"component": "tavern", "model": lm}, p, -p.normalized(), f)
