@@ -212,7 +212,7 @@ const HANDLERS = {
     };
   },
   ward(x) {
-    const { world, cost, pay, c } = x;
+    const { world, cost, pay, c, cmd } = x;
     // The heir lives at court: the house cannot rise while the King holds them.
     const owner = c ? world.players.find((p) => p.id === c.owner) : null;
     if (!owner || houseFor(owner).crown) return { error: "choose a great house's town" };
