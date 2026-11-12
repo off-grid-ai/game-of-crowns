@@ -11,7 +11,9 @@ extends SceneTree
 ## - the bridge minds' plan for a villager (minds.js plans: where they mean to be) is one input the pick reads: its
 ##   place's activities come up more (town_scenes.json `plan`); villagers.gd follows no plan of its own (`_follow`);
 ## - one path for a villager's day (integration audit #1): no old-rules routine in villagers.gd (`_choose_next`, its
-##   gatherings and the minds-off switch), and every calling a villager can be given has a mind's activities.
+##   gatherings and the minds-off switch), and every calling a villager can be given has a mind's activities;
+## - villagers.gd split (integration audit #10): the talks are village_talk.gd's alone (no talk function or store
+##   left in villagers.gd, nobody reaching for villagers' own).
 ##   arch -arm64 godot --headless --path realm --script res://tools/square_probe.gd
 
 const Mind := preload("res://scripts/npc_mind.gd")
@@ -46,6 +48,7 @@ func _init() -> void:
 	await _picks()
 	await _plan()
 	_one_path()
+	_split()
 	print("SQUARE %s (%d fails)" % ["PASS" if fails == 0 else "FAIL", fails])
 	quit(1 if fails > 0 else 0)
 
@@ -255,3 +258,23 @@ func _one_path() -> void:
 		if Mind.villager_activities(c).is_empty():
 			_fail("the calling '%s' has no mind's activities: such a villager would stand mindless" % c)
 	print("SQUARE one path: %d callings, each with a mind's day" % callings.size())
+
+
+# --- villagers.gd split: one owner each (integration audit #10) ------------------------------
+
+const TALK := ["func gatherings(", "func open_talk(", "func join_talk(", "func leave_talk(", "func close_talk(", "func floor_of(",
+	"func give_floor(", "func talk_centre(", "func room_to_talk(", "func talk_counts(", "var _talks"]
+
+
+func _split() -> void:
+	var vsrc := FileAccess.get_file_as_string("res://scripts/villagers.gd")
+	var tsrc := FileAccess.get_file_as_string("res://scripts/village_talk.gd")
+	for f in TALK:
+		if vsrc.contains(f):
+			_fail("villagers.gd still keeps the talks (%s): village_talk.gd owns them" % f)
+		elif f.begins_with("func") and not tsrc.contains(f):
+			_fail("village_talk.gd has no %s" % f)
+	for dir in ["res://scripts", "res://tools"]:
+		for file in DirAccess.get_files_at(dir):
+			if file.ends_with(".gd") and file != "square_probe.gd" and FileAccess.get_file_as_string(dir.path_join(file)).contains("._talks"):
+				_fail("%s reaches into villagers' talks (._talks)" % file)

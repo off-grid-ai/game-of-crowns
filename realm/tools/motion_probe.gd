@@ -454,12 +454,12 @@ func _talks() -> void:
 		var row: Array = _talk_town.get(id, [INF, 0.0, 0, 0])
 		row[0] = minf(row[0], cd)
 		row[1] = maxf(row[1], cd)
-		row[2] += 1 if not vill._talks.get(id, []).is_empty() else 0
-		row[3] += 1 if not vill.gatherings(int(id)).is_empty() else 0
+		row[2] += 1 if not vill.talk.talks.get(id, []).is_empty() else 0
+		row[3] += 1 if not vill.talk.gatherings(int(id)).is_empty() else 0
 		_talk_town[id] = row
-	for id in vill._talks:
-		var heard: Array = vill.gatherings(int(id)).map(func(g): return int(g["key"]))
-		for g in vill._talks[id]:
+	for id in vill.talk.talks:
+		var heard: Array = vill.talk.gatherings(int(id)).map(func(g): return int(g["key"]))
+		for g in vill.talk.talks[id]:
 			if not g.get("mind", false) or g["members"].size() != 2:
 				continue
 			var a: Dictionary = g["members"][0]

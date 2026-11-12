@@ -1166,7 +1166,7 @@ class FindPartner extends BTAction:
 		var meet: Vector3 = (mine + them.global_position) * 0.5
 		# Never a third knot on a spot, nor a talk on top of someone standing there.
 		var v0: Node = blackboard.get_var(&"vill", null, false)
-		if v0 != null and v0.has_method("room_to_talk") and not v0.room_to_talk(blackboard.get_var(&"va"), (agent as Node3D).position + (meet - mine), bb_va(best)):
+		if v0 != null and v0.get("talk") != null and not v0.talk.room_to_talk(blackboard.get_var(&"va"), (agent as Node3D).position + (meet - mine), bb_va(best)):
 			return FAILURE
 		var off: Vector3 = (mine - them.global_position).normalized() * TALK_GAP * 0.5  # face to face, a pace apart
 		blackboard.set_var(&"meet", (agent as Node3D).position + (meet + off - mine))
@@ -1194,8 +1194,8 @@ class FindPartner extends BTAction:
 			Awareness.assign(best, {"topic": ""})
 		# Overheard: the two are a gathering chatter.gd puts words over (villagers.open_talk).
 		var v: Node = blackboard.get_var(&"vill", null, false)
-		if v != null and v.has_method("open_talk"):
-			var key: int = v.open_talk(blackboard.get_var(&"va"), bb_va(best), "talk" if talk.is_empty() else "mutter", String(blackboard.get_var(&"topic", "", false)))
+		if v != null and v.get("talk") != null:
+			var key: int = v.talk.open_talk(blackboard.get_var(&"va"), bb_va(best), "talk" if talk.is_empty() else "mutter", String(blackboard.get_var(&"topic", "", false)))
 			blackboard.set_var(&"talk_key", key)
 			Awareness.assign(best, {"talk_key": key})
 		return SUCCESS
@@ -1367,16 +1367,16 @@ class Talk extends PlayRun:
 	func _floor_now() -> int:
 		var v: Node = blackboard.get_var(&"vill", null, false)
 		var me: Dictionary = blackboard.get_var(&"va", {}, false)
-		if v == null or me.is_empty() or not blackboard.has_var(&"talk_key") or not v.has_method("floor_of"):
+		if v == null or me.is_empty() or not blackboard.has_var(&"talk_key") or v.get("talk") == null:
 			return -1
-		return v.floor_of(int(me["town"]), int(blackboard.get_var(&"talk_key")))
+		return v.talk.floor_of(int(me["town"]), int(blackboard.get_var(&"talk_key")))
 
 	func _face() -> void:
 		# Others have joined: the ring faces in, to its centre (villagers.talk_centre), not the two face to face.
 		var v: Node = blackboard.get_var(&"vill", null, false)
 		var me: Dictionary = blackboard.get_var(&"va", {}, false)
-		if v != null and v.has_method("talk_centre") and blackboard.has_var(&"talk_key") and not me.is_empty():
-			var ctr: Vector3 = v.talk_centre(int(me["town"]), int(blackboard.get_var(&"talk_key")))
+		if v != null and v.get("talk") != null and blackboard.has_var(&"talk_key") and not me.is_empty():
+			var ctr: Vector3 = v.talk.talk_centre(int(me["town"]), int(blackboard.get_var(&"talk_key")))
 			if ctr != Vector3.INF:
 				var here0: Vector3 = (agent as Node3D).global_position
 				var f0 := Vector2(ctr.x - here0.x, ctr.z - here0.z)
@@ -1404,8 +1404,8 @@ class Talk extends PlayRun:
 			return
 		var v: Node = bb.get_var(&"vill", null, false)
 		var a: Dictionary = bb.get_var(&"va", {}, false)
-		if v != null and not a.is_empty() and v.has_method("close_talk"):
-			v.close_talk(int(a["town"]), int(bb.get_var(&"talk_key")))
+		if v != null and not a.is_empty() and v.get("talk") != null:
+			v.talk.close_talk(int(a["town"]), int(bb.get_var(&"talk_key")))
 		bb.erase_var(&"talk_key")
 
 
@@ -1426,9 +1426,9 @@ class JoinCircle extends BTAction:
 		_key = -1
 		var v: Node = blackboard.get_var(&"vill", null, false)
 		var a: Dictionary = blackboard.get_var(&"va", {}, false)
-		if v == null or a.is_empty() or not v.has_method("join_talk"):
+		if v == null or a.is_empty() or v.get("talk") == null:
 			return
-		var got: Array = v.join_talk(a)
+		var got: Array = v.talk.join_talk(a)
 		if got.is_empty():
 			return
 		_key = int(got[0])
@@ -1454,9 +1454,9 @@ class JoinCircle extends BTAction:
 			_turned = true
 			return RUNNING
 		_left -= delta
-		var f: int = v.floor_of(int(a["town"]), _key) if v.has_method("floor_of") else -1
+		var f: int = v.talk.floor_of(int(a["town"]), _key) if v.get("talk") != null else -1
 		var open := false
-		for g in v._talks.get(a["town"], []):
+		for g in v.talk.talks.get(a["town"], []):
 			if int(g["key"]) == _key:
 				open = true
 		if _left <= 0.0 or not open:
@@ -1476,8 +1476,8 @@ class JoinCircle extends BTAction:
 	func _exit() -> void:
 		var v: Node = blackboard.get_var(&"vill", null, false)
 		var a: Dictionary = blackboard.get_var(&"va", {}, false)
-		if _key >= 0 and v != null and v.has_method("leave_talk") and not a.is_empty():
-			v.leave_talk(a, _key)
+		if _key >= 0 and v != null and v.get("talk") != null and not a.is_empty():
+			v.talk.leave_talk(a, _key)
 		_key = -1
 
 

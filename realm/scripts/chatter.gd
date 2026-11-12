@@ -113,10 +113,10 @@ func _process_timed(delta: float) -> void:
 		if not is_instance_valid(node) or node.global_position.distance_to(cam.global_position) > TOWN_NEAR:
 			continue
 		if _probe and villagers.has_method("talk_counts"):
-			var tc: Dictionary = villagers.talk_counts(int(id))
+			var tc: Dictionary = villagers.talk.talk_counts(int(id))
 			for k in tc:
 				_counts[k] = int(_counts.get(k, 0)) + int(tc[k])
-		for g in villagers.gatherings(int(id)):
+		for g in villagers.talk.gatherings(int(id)):
 			_count("talking")
 			var key := "%d:%d" % [int(id), int(g["key"])]
 			if _playing.has(key) or Time.get_ticks_msec() - int(_asked.get(key, -60000)) < 45000:
@@ -402,7 +402,7 @@ func _own_words(town: int, g: Dictionary, key: String) -> void:
 
 ## Gathering `key` of the town is still going, everyone in it in place.
 func _talking(town: int, key: int) -> bool:
-	for g in villagers.gatherings(town):
+	for g in villagers.talk.gatherings(town):
 		if int(g["key"]) == key:
 			return true
 	return false
@@ -433,7 +433,7 @@ func _play(town: int, g: Dictionary, key: String, talk: Dictionary) -> void:
 		_count("lines (minds)" if talk.has("id") else "lines (plain)")
 		var secs := clampf(1.2 + text.length() * 0.05, 2.5, 4.5)  # a few seconds each: overheard, not a subtitle
 		if villagers.has_method("give_floor"):
-			villagers.give_floor(town, int(g["key"]), i, secs + 0.6)
+			villagers.talk.give_floor(town, int(g["key"]), i, secs + 0.6)
 		if prev:
 			_fade(prev, 0.4)
 		prev = _caption(speaker, text)
