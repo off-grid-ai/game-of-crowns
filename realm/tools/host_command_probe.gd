@@ -244,6 +244,33 @@ func _run() -> void:
 	var play := FileAccess.get_file_as_string("res://scripts/autoplay.gd")
 	_check(not play.contains("\"/host/order\"") and not play.contains("else all[0]"), "the play step orders only the selected host, through the card")
 
+	# The film's host step (autoplay `host`, GoC's milestone take: "host selected: -1", the lens still easing at 3 fps
+	# and a ledger and town card open): it puts the cards away, waits for the lens by frames, not seconds, and clicks
+	# where the host's pick proxy stands (host_pick.gd), logging what the ray met. A camera framed as _host frames
+	# (_oblique: 6 units off, 25 degrees down) sees the standard's proxy, and its ray through that point meets it.
+	var host_src := play.substr(play.find("func _host("), 2400)
+	_check(host_src.contains("_clear_ui()"), "the host step puts open cards and drawers away first")
+	_check(play.contains("SETTLE_MOST_FRAMES") and not play.contains("SETTLE_MOST * 1000"), "the lens's settle counts frames, not seconds")
+	_check(host_src.contains("HostPick.pick(") and host_src.contains("_aim_of("), "the host step aims at the pick proxy and logs what the ray met")
+	var bearer := Node3D.new()
+	root.add_child(bearer)
+	bearer.global_position = Vector3(30, 0, 30)
+	preload("res://scripts/host_pick.gd").proxy(bearer, 77, Vector3(0.22, 0.62, 0.22))
+	var cam2 := Camera3D.new()
+	root.add_child(cam2)
+	var aim := bearer.global_position + Vector3(0, 0.31, 0)
+	cam2.global_position = aim + Vector3(0, sin(deg_to_rad(25.0)), cos(deg_to_rad(25.0))) * 6.0
+	cam2.look_at(aim)
+	cam2.current = true
+	await physics_frame
+	await physics_frame
+	var ap: Script = load("res://scripts/autoplay.gd")
+	var has_aim: bool = ap.get_script_method_list().any(func(m): return m.name == "_aim_of")
+	var at: Vector3 = ap.call("_aim_of", bearer.get_node("Pick")) if has_aim else bearer.global_position
+	var met: Dictionary = preload("res://scripts/host_pick.gd").pick(cam2, cam2.unproject_position(at))
+	_check(int(met.get("unit", -1)) == 77, "a camera framed as the host step frames it meets the standard at its aim point: %s" % met)
+	cam.current = true
+
 	for x in fails:
 		print("HOST COMMAND FAIL " + x)
 	print("HOST COMMAND %s" % ("PASS" if fails.is_empty() else "FAIL (%d)" % fails.size()))

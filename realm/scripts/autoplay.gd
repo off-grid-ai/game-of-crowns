@@ -128,25 +128,29 @@ const FRAMING := ["home", "city", "road", "site", "work", "field", "flock", "bre
 
 
 ## The camera settled: it has moved less than SETTLE_EPS a frame for SETTLE_FRAMES frames running (its eases and
-## the clarity lift done), or SETTLE_MOST seconds passed. Logs its distance, pitch and how long it took.
+## the clarity lift done), or SETTLE_MOST_FRAMES frames passed: frames, not seconds, since the lens eases by the
+## frame and a film runs at a few frames a second (GoC's milestone take gave up at 5 s with the lens still easing, and
+## its click fell on the town). Logs its distance, pitch and how long it took.
 const SETTLE_EPS := 0.002
 const SETTLE_FRAMES := 8
-const SETTLE_MOST := 5.0
+const SETTLE_MOST_FRAMES := 240
 func _settle() -> void:
 	var cam: Camera3D = get_viewport().get_camera_3d()
 	if cam == null:
 		return
 	var t0 := Time.get_ticks_msec()
 	var still := 0
+	var frames := 0
 	var last := cam.global_position
-	while still < SETTLE_FRAMES and Time.get_ticks_msec() - t0 < SETTLE_MOST * 1000.0:
+	while still < SETTLE_FRAMES and frames < SETTLE_MOST_FRAMES:
 		await get_tree().process_frame
+		frames += 1
 		var now := cam.global_position
 		still = still + 1 if now.distance_to(last) < SETTLE_EPS else 0
 		last = now
 	var look := cam.global_position + (-cam.global_basis.z) * 10.0
 	var pitch := rad_to_deg(asin(clampf(-(-cam.global_basis.z).y, -1.0, 1.0)))
-	_note("  settled in %.1f s: distance %.1f (rig), %.1f to the ground ahead, %.0f deg down%s" % [(Time.get_ticks_msec() - t0) / 1000.0,
+	_note("  settled in %.1f s, %d frames: distance %.1f (rig), %.1f to the ground ahead, %.0f deg down%s" % [(Time.get_ticks_msec() - t0) / 1000.0, frames,
 		float(main.rig.distance), cam.global_position.y - main.terrain.height_at(look.x, look.z), pitch, "" if still >= SETTLE_FRAMES else " (still moving)"])
 
 
@@ -1128,7 +1132,9 @@ func _order(kind: String) -> void:
 			return
 
 
-## Frames the King's n-th host and clicks its standard, as a player selects it (host_command.gd).
+## Frames the King's n-th host and clicks its standard, as a player selects it (host_command.gd): open cards and
+## drawers put away first (the milestone take had the ledger and Rosehall's card over it), the lens settled by frames,
+## then the click goes where the host's pick proxy stands on screen (host_pick.gd), and the log says what the ray met.
 func _host(n: int, dist: float, tilt: float) -> void:
 	var hc: Node = main.get_node_or_null("HostCommand")
 	if hc == null:
@@ -1139,22 +1145,44 @@ func _host(n: int, dist: float, tilt: float) -> void:
 		_note("  host %d: none (%d hosts in the field)" % [n, all.size()])
 		return
 	var h: Dictionary = all[n]
+	_clear_ui()
 	var at: Vector3 = hc._ground(h)
 	_note("  host %d: %d men at %d,%d, order %s" % [n, int(h.get("men", 0)), int(h.get("x", 0)), int(h.get("y", 0)), str(h.get("order"))])
 	_oblique(at, dist, tilt)
 	if main.rig.is_processing_input() == false:
 		main.rig.apply()
-	# As a player clicks what he sees: the view settled first, then the standard's place on screen taken in the frame
-	# the click goes in (the milestone take clicked 2 s in, the view still easing, and its click fell beside the
-	# standard and opened Redbridge's card).
 	await _settle()
 	await get_tree().process_frame
+	await get_tree().physics_frame  # the proxies' shapes are in the physics world as they stand now
 	var cam := get_viewport().get_camera_3d()
-	var b: Node3D = hc._banner(h)
-	var p: Vector3 = b.global_position if b else hc._ground(h)
-	_click(cam.unproject_position(p) / get_viewport().get_visible_rect().size)
+	var pick: Node3D = _pick_of(h)
+	var p: Vector3 = _aim_of(pick) if pick else hc._ground(h)
+	var screen := get_viewport().get_visible_rect()
+	var s := cam.unproject_position(p)
+	if cam.is_position_behind(p) or not screen.has_point(s):
+		_note("  host %d: its standard is off the screen (%s); no click" % [n, str(s)])
+		return
+	const HostPick := preload("res://scripts/host_pick.gd")
+	var met: Dictionary = HostPick.pick(cam, s)
+	_note("  host %d: the ray at %d,%d meets %s" % [n, int(s.x), int(s.y), ("unit %d" % int(met["unit"])) if not met.is_empty() else "nothing"])
+	_click(s / screen.size)
 	await get_tree().create_timer(0.5).timeout
 	_note("  host selected: %d" % int(hc.selected))
+
+
+## The pick proxy (host_pick.gd) of one of the host's companies or regiments, or null.
+func _pick_of(h: Dictionary) -> Node3D:
+	var units: Array = h.get("units", [])
+	for a in get_tree().root.find_children("Pick", "Area3D", true, false):
+		if a.has_meta("unit") and units.has(int(a.get_meta("unit"))) and (a as Node3D).is_visible_in_tree():
+			return a
+	return null
+
+
+## Where to click a pick proxy: the middle of its box, not its foot (a tall standard's foot is far below what shows).
+static func _aim_of(pick: Node3D) -> Vector3:
+	var cs := pick.get_child(0) as Node3D if pick.get_child_count() > 0 else null
+	return cs.global_position if cs else pick.global_position
 
 
 ## Frames the n-th roadside site of a kind, the nearest to the crown's seat first.
