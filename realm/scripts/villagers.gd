@@ -1733,7 +1733,7 @@ func _crown_market(id) -> Dictionary:
 	var node = towns.towns.get(id, {}).get("node")
 	if not is_instance_valid(node) or not bool(node.get_meta("crown_seat", false)):
 		return {}
-	return preload("res://scripts/data.gd").value("towns", "market", {}).get("crown", {})
+	return TownLife.crown_market()
 
 
 ## Whether the square (with its edge) already holds its fill: everyone bound

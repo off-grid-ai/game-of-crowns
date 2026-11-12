@@ -722,7 +722,10 @@ func _traffic(delta: float) -> void:
 	var stop := Vector3(r.x, main.terrain.height_at(r.x, r.y), r.y)
 	var home := _rng.randf() < 0.5
 	if s["kind"] == "hamlet" and kind in ["walker", "cart"] and _rng.randf() < float(T.get("herd_chance", 0.3)):
-		if _herd(stop if home else best_at, best_at if home else stop):
+		# A herd stops at the town's edge (batch 8b #15: boxy cows walked through the market): driven to the
+		# road's end short of the town by herd.stop_short (world units), never into its square.
+		var edge := best_at + (stop - best_at).normalized() * float((T.get("herd", {}) as Dictionary).get("stop_short", 3.2))
+		if _herd(stop if home else edge, edge if home else stop):
 			return
 	if traffic.go(stop if home else best_at, best_at if home else stop, kind, func(): _out -= 1):
 		_out += 1

@@ -727,7 +727,19 @@ func _trade(root: Node3D, life: Node3D, center: Vector3, rng: RandomNumberGenera
 func _market_knobs(root: Node3D) -> Dictionary:
 	if not bool(root.get_meta("crown_seat", false)):
 		return {}
-	return preload("res://scripts/data.gd").value("towns", "market", {}).get("crown", {})
+	return crown_market()
+
+
+## The crown's market's numbers (towns.json market.crown), the one reading of them (town_life and
+## villagers): with --crowd=off, the square as it was before the crowd work (crowd.json off: fewer buyers,
+## porters and carts, a square that holds fewer), so the switch shows the whole difference (batch 8b
+## #15: crowd on and off barely differed).
+static func crown_market() -> Dictionary:
+	var m: Dictionary = (preload("res://scripts/data.gd").value("towns", "market", {}) as Dictionary).get("crown", {})
+	if OS.get_cmdline_user_args().has("--crowd=off") or not bool(preload("res://scripts/data.gd").value("crowd", "on", true)):
+		m = m.duplicate()
+		m.merge(preload("res://scripts/data.gd").value("crowd", "off", {}), true)
+	return m
 
 
 ## The crown's market at midday (art target 01-town: some twenty at work round the square): a
