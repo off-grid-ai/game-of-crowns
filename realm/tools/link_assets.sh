@@ -6,6 +6,9 @@
 # (git archive brings only fragments: .import files, licences) is replaced by the link.
 #   zsh realm/tools/link_assets.sh <copy root>        the folder that holds the copy's realm/ (e.g. /tmp/film/)
 #   zsh realm/tools/link_assets.sh <copy root> --own-cache   link the art only; the copy imports into its own .godot
+# Once linked, the copy's .godot IS the shared tree's: never copy anything onto it (a `cp -R .godot` lands inside the
+# shared cache as .godot/.godot) and never run an --import in the copy (it writes into the shared cache); use
+# --own-cache for a copy that must import. (GoC found both in render_pass.sh, 2026-11-12.)
 # Checked by realm/tools/rules_check.sh asset-exists: every asset the game loads is in the shared tree.
 set -e
 SHARED=${0:A:h:h}  # the shared tree's realm/
