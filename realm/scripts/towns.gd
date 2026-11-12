@@ -1961,6 +1961,11 @@ func _plaza(root: Node3D, center: Vector3, square_r: float, size: int, seat: boo
 	var centre_yaw := rng.randf() * TAU
 	var draw_well := well  # the roofed draw well's own spot, off the heart
 	var draw_kind := well_kind
+	# What stands off the heart beside the centrepiece (towns.json market.<rank>.beside, a component; the draw well
+	# by default). Round 3, 01-town: the crown's roofed well is the heart and the King's statue stands aside.
+	var beside := Real.one(String(_market_knobs().get("beside", "")))
+	if beside != "" and Real.footprint(beside) != Vector2.ZERO:
+		draw_kind = beside
 	if centre_kind != "" and Real.footprint(centre_kind) != Vector2.ZERO:
 		well_kind = centre_kind
 		well = Vector3.ZERO
@@ -1972,8 +1977,10 @@ func _plaza(root: Node3D, center: Vector3, square_r: float, size: int, seat: boo
 	# square has its statue and, out in the cobbles, the little roofed well the town draws its water from).
 	if well != draw_well and bool(_market_knobs().get("well_too", false)) and Real.footprint(draw_kind) != Vector2.ZERO:
 		draw_well = draw_well.normalized() * square_r * float(_market_knobs().get("well_at", 0.5))
-		if drop.call(draw_kind, draw_well, rng.randf() * TAU):
+		var stood: bool = drop.call(draw_kind, draw_well, rng.randf() * TAU)
+		if stood:
 			lots.append([draw_well, maxf(Real.footprint(draw_kind).x, Real.footprint(draw_kind).y) * 0.5])
+		if stood and (beside == "" or beside == Real.one("well")):  # the water is drawn there, not at a statue beside
 			places["well"] = draw_well
 			well = draw_well
 			well_kind = draw_kind
@@ -2172,9 +2179,11 @@ func _dress(root: Node3D, center: Vector3, hp: Vector3, face: Vector3, out: Vect
 	if tight:
 		# On a plot: the street in front stays clear and the neighbours stand at its sides,
 		# so the woodpile and the hay go in the yard behind (the yard has its own fence).
+		# How often (towns.json plots.green.woodpile, haystack; round 3: yards full like 01-town's).
+		var gk: Dictionary = _plot_knobs().get("green", {})
 		spots = [
-			["wood_pile_pack", hp - face * (fd * 0.5 + 0.1) - along * fw * 0.22, 0.4],
-			["haystack_2", hp - face * (fd * 0.5 + 0.2) + along * fw * 0.2, 0.25],
+			["wood_pile_pack", hp - face * (fd * 0.5 + 0.1) - along * fw * 0.22, float(gk.get("woodpile", 0.4))],
+			["haystack_2", hp - face * (fd * 0.5 + 0.2) + along * fw * 0.2, float(gk.get("haystack", 0.25))],
 		]
 	# The small things of a working yard against the walls: barrels, crates,
 	# a bucket, a basket.
