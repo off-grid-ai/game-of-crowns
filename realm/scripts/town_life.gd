@@ -2139,21 +2139,44 @@ func _square_more(root: Node3D, life: Node3D, center: Vector3, n: Callable, go: 
 	var ways: Array = root.get_meta("ways_main", [])
 	if n.call("cart") > 0 and ways.size() >= 2:
 		var ends: Array = []
+		var lanes: Array = []  # each street's own points from the square's edge out to its end: the cart keeps to them
 		for w in ways.slice(0, 2):
 			var line := w as PackedVector2Array
 			var far := line[line.size() - 1]
+			var lane: Array = []
 			for q in line:
+				if q.length() > r * 0.9:
+					lane.append(Vector3(q.x, 0, q.y))
 				if q.length() > r * float(K.get("from", 1.3)):
 					far = q
 					break
 			ends.append(Vector3(far.x, 0, far.y))
+			if lane.is_empty() or (lane[0] as Vector3).length() > (lane[lane.size() - 1] as Vector3).length():
+				lane.reverse()  # the square's end first
+			lanes.append(lane)
 		var rig := horse_cart(_people, rng)
 		if rig:
 			rig.position = Vector3(ends[0].x, _y(center, ends[0]), ends[0].z)
 			life.add_child(rig)
 			var mkt: Vector3 = places.get("market", Vector3.ZERO)
 			mkt = mkt * float(K.get("market_in", 0.7))
-			go.carts.append({"rig": rig, "stops": [mkt, ends[1], mkt, ends[0]], "leg": 0, "rest": 0.0, "pace": float(K.get("pace", 0.16)), "stop": K.get("stop", [6.0, 12.0])})
+			# Round 6: it crossed the cobbles on a straight line from a street's end, turned aside round the stalls, and read
+			# sideways. Now in along one street's own line, to the market, out along the other's, and back; it waits only
+			# at the market and at the streets' ends (crowd.json cart.by_street: off for the straight line as before).
+			var route: Array = [mkt, ends[1], mkt, ends[0]]
+			var waits: Array = [true, true, true, true]
+			if bool(K.get("by_street", true)):
+				var out_b: Array = (lanes[1] as Array).duplicate()
+				var in_b: Array = out_b.duplicate()
+				in_b.reverse()
+				var out_a: Array = (lanes[0] as Array).duplicate()
+				var in_a: Array = out_a.duplicate()
+				in_a.reverse()
+				route = in_a + [mkt] + out_b + [ends[1]] + in_b + [mkt] + out_a + [ends[0]]
+				waits = []
+				for q in route:
+					waits.append(q == mkt or q == ends[0] or q == ends[1])
+			go.carts.append({"rig": rig, "stops": route, "waits": waits, "leg": 0, "rest": 0.0, "pace": float(K.get("pace", 0.16)), "stop": K.get("stop", [6.0, 12.0])})
 	# The yards nearest the square: hens and a pig about the beds, a gardener on their knees.
 	var gardens: Array = (root.get_meta("gardens", []) as Array).filter(func(g): return Vector3(g).length() < r * float(Data.num("crowd", "yards.within", 3.0)))
 	gardens.sort_custom(func(a, b): return Vector3(a).length() < Vector3(b).length())
@@ -2319,12 +2342,16 @@ class SquareLife extends Node:
 			k["rest"] = float(k["rest"]) - delta
 			return
 		var stops: Array = k["stops"]
-		if step(rig, stops[int(k["leg"]) % stops.size()], float(k["pace"]), delta, 0.08):
+		if step(rig, stops[int(k["leg"]) % stops.size()], float(k["pace"]), delta, 0.08, false):
 			if carter is Node3D and is_instance_valid(carter) and not (carter as Node3D).has_meta("walking"):
 				(carter as Node3D).set_meta("walking", true)
 				People.play(carter, "Walk")
 			return
+		var waits: Array = k.get("waits", [])
+		var here := int(k["leg"]) % stops.size()
 		k["leg"] = int(k["leg"]) + 1
+		if not waits.is_empty() and not bool(waits[here]):
+			return  # a bend in the street: on without stopping
 		var span: Array = k["stop"]
 		k["rest"] = rng.randf_range(float(span[0]), float(span[1]))
 		if carter is Node3D and is_instance_valid(carter):
@@ -2332,13 +2359,14 @@ class SquareLife extends Node:
 			People.play(carter, ["Idle", "Looking_Around", "Idle_Talking"][rng.randi() % 3])
 
 	## One step toward `to` at `pace`; false once there (within `near`).
-	func step(n: Node3D, to: Vector3, pace: float, delta: float, near := 0.02) -> bool:
+	func step(n: Node3D, to: Vector3, pace: float, delta: float, near := 0.02, sidestep := true) -> bool:
 		pace *= READ  # drawn larger (people.json readable): they cover ground as their legs do
 		var flat := Vector2(to.x - n.position.x, to.z - n.position.z)
 		if flat.length() <= near:
 			return false
 		var d := flat.normalized() * minf(pace * delta, flat.length() - near * 0.5)
-		d = _round(n.position, d)
+		if sidestep:
+			d = _round(n.position, d)  # a cart keeps its street and is never shoved sideways
 		n.position += Vector3(d.x, 0, d.y)
 		n.position.y = float(ground.call(n.position))
 		n.rotation.y = lerp_angle(n.rotation.y, atan2(d.x, d.y), minf(1.0, delta * 8.0))
