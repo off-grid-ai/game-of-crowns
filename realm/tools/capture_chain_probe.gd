@@ -97,14 +97,14 @@ func _run() -> void:
 		said = String(res[0][1]) if not res.is_empty() else "no answer"
 		if not res.is_empty() and int(res[0][0]) == 200 and said.contains("siege"):
 			target = int(c["id"])
-			print("  besiege %s (%d soldiers inside): %s" % [String(c.get("name", "")), int(guard.call(c)), said])
+			print("  besiege %s (%d soldiers inside): %s" % [String(c.get("title", c.get("name", ""))), int(guard.call(c)), said])
 			break
 		print("  besiege %s: %s" % [String(c.get("name", "")), said])
 	var from := _turn()
 	if not _check(target >= 0, "Besiege given through host_command.order and taken by the bridge (%s)" % said):
 		_end()
 		return
-	var tname := String(main.awareness.city(target).get("name", ""))
+	var tname := String(main.awareness.city(target).get("title", main.awareness.city(target).get("name", "")))
 	# 3. The siege laid, then Freeciv takes the town; the store's city owner is the crown's.
 	var sieged := [-1]
 	var seen := [-1]

@@ -248,16 +248,17 @@ export function homeward(ctx, { owner, units }, send) {
 export function season(ctx, turn) {
   const { world, meta, send, record, besiege } = ctx;
   if (!world) return;
-  // A host holding before walls it besieges is kept there: the crown is AI-marshalled (realm.serv), and
-  // Freeciv's AI walked the King's men off the walls between seasons, so no assault came and the siege broke
-  // (realm/tools/capture_chain_probe.sh). Held from the AI while its siege stands (realm_hold, as the homeward
-  // men are), freed the season its order or the siege changes (before this season's moves).
+  // A host under the King's order is the King's, not Freeciv's AI's: the crown is AI-marshalled (realm.serv), and
+  // the AI walked the King's men off the walls between seasons (and a marching host a tile off its road the season
+  // it arrived), so no assault came and the siege broke (realm/tools/capture_chain_probe.sh). A host marching or
+  // garrisoning, or holding before walls it besieges, is held from the AI (realm_hold, as the homeward men are),
+  // let go only for its own steps; freed the season its order ends (a plain hold, at ease) or its siege does.
   const besieging = new Set((meta.campaigns ?? []).map((k) => k.city));
   for (const o of meta.hostOrders ?? []) if (o.siege != null && o.kind === "hold" && !besieging.has(o.siege)) delete o.siege;
-  const keep = (orders) => orders.filter((o) => o.kind === "hold" && o.siege != null).flatMap((o) => o.units);
-  const freed = (meta.siegeHeld ?? []).filter((id) => !keep(meta.hostOrders ?? []).includes(id));
+  const keep = (orders) => orders.filter((o) => o.kind === "march" || o.kind === "garrison" || (o.kind === "hold" && o.siege != null)).flatMap((o) => o.units);
+  const freed = (meta.hostsHeld ?? []).filter((id) => !keep(meta.hostOrders ?? []).includes(id));
   if (freed.length) send(`lua cmd ${Lua.homewardRelease(freed)}`);
-  meta.siegeHeld = (meta.siegeHeld ?? []).filter((id) => !freed.includes(id));
+  meta.hostsHeld = (meta.hostsHeld ?? []).filter((id) => !freed.includes(id));
   if (!(meta.hostOrders ?? []).length) { if (freed.length) chron.saveMeta(meta); return; }
   const crown = crownOf(world);
   const next = [];
@@ -329,16 +330,19 @@ export function season(ctx, turn) {
       next.push({ kind: "hold", units, since: turn });
       continue;
     }
+    const pinned = units.filter((id) => meta.hostsHeld.includes(id));  // let go for their own steps, held again after
+    if (pinned.length) send(`lua cmd ${Lua.homewardRelease(pinned)}`);
     for (const id of units) {
       // A march on another's town halts at its walls (reach0): the walk never steps onto the town's own tile, where
       // Freeciv's edit move would put the King's men inside an empty town without taking it (besiege_order_probe).
       const way = steps ? wayOn(steps, byId.get(id), HOSTS.speed, reach0) : [];
       send(`lua cmd ${way.length ? Lua.walk(id, way) : Lua.step(id, o.x, o.y, HOSTS.speed, reach0)}`);
     }
+    if (pinned.length) send(`lua cmd ${Lua.homewardHold(pinned)}`);
     next.push({ ...o, units, far });
   }
-  const held = keep(next).filter((id) => !meta.siegeHeld.includes(id));
+  const held = keep(next).filter((id) => !meta.hostsHeld.includes(id));
   if (held.length) send(`lua cmd ${Lua.homewardHold(held)}`);
-  meta.siegeHeld.push(...held);
+  meta.hostsHeld.push(...held);
   save(meta, next);
 }
