@@ -27,7 +27,6 @@ var yaw := 0.0
 ## eye stands about 3 up at the closest pitch, just over a tall house's roof (about 2.4):
 ## at 4.5 it stood under them, and the first ring of towers and barns filled the view (v14).
 ## The camera's knobs, from data (realm/data/camera.json; docs/TUNING.md): this rig is their one owner.
-static var KNOBS: Dictionary = Data.read("camera")
 static func knob(path: String, fallback: float) -> float:
 	return Data.num("camera", path, fallback)
 var min_distance := knob("floor", 6.0)
@@ -481,7 +480,7 @@ func _sees(look: Vector3, pos: Vector3) -> bool:
 	var flat := Vector3(look.x - pos.x, 0.0, look.z - pos.z)
 	var side := Vector3(-flat.z, 0.0, flat.x).normalized() * flat.length() * knob("clarity.lowerSide", 0.25)
 	var near := knob("clarity.lowerNear", 0.6)
-	var ats: Array = KNOBS.get("clarity", {}).get("lowerAt", [0.45, 0.7]) if KNOBS.get("clarity") is Dictionary else [0.45, 0.7]
+	var ats: Array = Data.value("camera", "clarity.lowerAt", [0.45, 0.7])
 	var targets: Array[Vector3] = []
 	for t in ats:
 		targets.append(pos + flat * float(t))
