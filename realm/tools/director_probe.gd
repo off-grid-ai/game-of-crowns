@@ -38,8 +38,8 @@ class FlatLand extends Node3D:
 ## town's walk map baked to nothing (round 13's Kingsmere): no route anywhere, so a Mover asking waits for ever.
 class Nav extends RefCounted:
 	var empty := false
-	func waits(_towns: Variant, _from: Vector3, _to: Vector3, _wide := false) -> bool:
-		return empty
+	func waits(_towns: Variant, from: Vector3, to: Vector3, _wide := false) -> bool:
+		return empty and from.distance_to(to) > 0.01  # town_nav.waits: two ends on one point are no walk to wait for
 	func route(_towns: Variant, from: Vector3, to: Vector3, _wide := false) -> PackedVector3Array:
 		return PackedVector3Array([from, to])
 

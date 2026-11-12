@@ -1047,10 +1047,16 @@ func _start(id: int, root: Node3D, row: Dictionary) -> Dictionary:
 		var n: Array = role.get("n", [1, 1])
 		var count := _rng.randi_range(int(n[0]), int(n[1]))
 		for i in count:
-			var slot: Vector3 = main.scenes.stand(_passing_spot(at, role, i, count, axis))
+			var want := _passing_spot(at, role, i, count, axis)
+			var slot: Vector3 = main.scenes.stand(want)
 			var ea := _rng.randf() * TAU
-			var door: Vector3 = main.scenes.stand(slot + Vector3(cos(ea), 0, sin(ea)) * _rng.randf_range(float(enter[0]), float(enter[1])))
-			if main.scenes.nav.waits(main.towns, door, slot):
+			var asked := slot + Vector3(cos(ea), 0, sin(ea)) * _rng.randf_range(float(enter[0]), float(enter[1]))
+			var door: Vector3 = main.scenes.stand(asked)
+			var reach := float(_d.get("director", {}).get("stand_reach", 0.4))
+			# Stood where asked, a walk in from somewhere else: on a walk map that answers nothing, every stand is the town's
+			# middle (town_nav closest() on no polygons: (0, 0)) and both ends are that one point, which waits() lets by.
+			var stood := _flat(slot - want) <= reach and _flat(door - asked) <= reach and _flat(door - slot) > 0.05
+			if not stood or main.scenes.nav.waits(main.towns, door, slot):
 				# No way in: nobody parked. A map still baking (Recast, a worker thread, 0.1-0.2 s) is waited for: the
 				# scene, cast by nobody, doesn't start and is chosen again next tick. A baked map with no route is said.
 				var nav: Object = main.scenes.nav
@@ -1067,6 +1073,11 @@ func _start(id: int, root: Node3D, row: Dictionary) -> Dictionary:
 	if (s["cast"] as Array).is_empty():
 		return {}  # nobody could walk in: the scene isn't playing
 	return s
+
+
+## Distance on the ground, height aside.
+static func _flat(v: Vector3) -> float:
+	return Vector2(v.x, v.z).length()
 
 
 ## A passing person the director didn't cast: the town's walk map, baked, gives no way from their way in to their
