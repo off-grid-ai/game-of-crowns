@@ -3,13 +3,17 @@ extends SceneTree
 ## open ground baked 0 polygons with them, 1 with nothing cut, so every walker got no path; navprobe's 'nav why').
 ## Bakes a stand-in as dense as Kingsmere (N small outlines, most a few tenths of a unit, scattered over the reach, as
 ## nav_ground.gd traces a town) through town_nav's own bake (bake_open), and asserts its walk map has polygons and
-## reaches most of the open ground: points sampled across the reach, off every outline, lie on the baked map.
+## reaches most of the open ground: points sampled across the reach, off every outline, lie on the baked map. A closed
+## ring of wall cells (a walled town, every cell overlapping the next) must keep the ground it encloses, and a walker
+## must cross the map from side to side and from north to south (at 500 outlines, open or walled: at 3,500 random
+## outlines the stand-in closes pockets off, so a walk there would judge the random layout, not the bake).
 ## Exit 1 on a fail.
 ##   arch -arm64 godot --headless --path realm -s res://tools/nav_dense_probe.gd
 
 const TownNav := preload("res://scripts/town_nav.gd")
 const REACH := 8.7
-const COUNTS := [500, 3500]
+const COUNTS := [500, 3500, -3500, -500]  # below 0: that many, inside a closed wall ring
+const WALKED := 500  # up to this many outlines, the walk across must arrive
 const COVER := 0.8  # the share of the open sample points the map must hold
 
 
@@ -24,7 +28,7 @@ func _run() -> void:
 		var rng := RandomNumberGenerator.new()
 		rng.seed = 7
 		var blocks: Array = []
-		for i in n:
+		for i in absi(n):
 			var c := Vector2.from_angle(rng.randf() * TAU) * REACH * sqrt(rng.randf()) * 0.95
 			var s := Vector2(rng.randf_range(0.04, 0.35), rng.randf_range(0.04, 0.35))
 			var a := rng.randf() * PI
@@ -32,7 +36,14 @@ func _run() -> void:
 			for k in [Vector2(-1, -1), Vector2(1, -1), Vector2(1, 1), Vector2(-1, 1)]:
 				o.append(c + (k * s * 0.5).rotated(a))
 			blocks.append(o)
-		var polys: Array = TownNav.bake_open(REACH, blocks)
+		if n < 0:
+			for i in 300:
+				var c := Vector2.from_angle(TAU * i / 300.0) * 7.5
+				var o := PackedVector2Array()
+				for k in [Vector2(-1, -1), Vector2(1, -1), Vector2(1, 1), Vector2(-1, 1)]:
+					o.append(c + k * 0.08 * 0.54)
+				blocks.append(o)
+		var polys: Array = [TownNav.bake_open(REACH, blocks)]
 		var count := 0
 		for np: NavigationPolygon in polys:
 			count += np.get_polygon_count()
@@ -52,13 +63,46 @@ func _run() -> void:
 				z += step
 			x += step
 		var share := float(held) / maxf(open, 1)
-		print("CHECK dense walk map: %d outlines: %d polygons in %d pieces, %.0f%% of %d open points on it (want %.0f%%)" % [n, count, polys.size(), share * 100.0, open, COVER * 100.0])
-		if count == 0 or share < COVER:
-			fails.append("%d outlines: %d polygons, %.0f%% of the open ground" % [n, count, share * 100.0])
+		var walk: String = await _walk(polys)
+		var what := "%d outlines%s" % [absi(n), " in a wall ring" if n < 0 else ""]
+		print("CHECK dense walk map: %s: %d polygons, %.0f%% of %d open points on it (want %.0f%%); across it: %s" % [what, count, share * 100.0, open, COVER * 100.0, walk])
+		if count == 0 or share < COVER or (absi(n) <= WALKED and not walk.begins_with("walked")):
+			fails.append("%s: %d polygons, %.0f%% of the open ground, %s" % [what, count, share * 100.0, walk])
 	for f in fails:
 		print("DENSE FAIL " + f)
 	print("DENSE %s" % ("PASS" if fails.is_empty() else "FAIL (%d)" % fails.size()))
 	quit(0 if fails.is_empty() else 1)
+
+
+## A walk from the west of the reach to the east and from the north to the south, on a map of these pieces as
+## town_nav makes it: "walked" when both arrive (the path ends at the target's nearest map point, at least a reach
+## from where it started), else what went wrong.
+func _walk(polys: Array) -> String:
+	var map := TownNav.new_map()
+	var regions: Array[RID] = []
+	for np: NavigationPolygon in polys:
+		var r := NavigationServer2D.region_create()
+		NavigationServer2D.region_set_map(r, map)
+		NavigationServer2D.region_set_navigation_polygon(r, np)
+		regions.append(r)
+	# The map syncs on physics frames after its regions change (its first sync is still empty; a big map takes a few):
+	# waited for until it answers with ground, not the origin it gives while empty.
+	for f in 300:
+		await physics_frame
+		if NavigationServer2D.map_get_iteration_id(map) > 1 and NavigationServer2D.map_get_closest_point(map, Vector2(-REACH * 0.7, 0.3)) != Vector2.ZERO:
+			break
+	var out := "walked"
+	for ends in [[Vector2(-REACH * 0.7, 0.3), Vector2(REACH * 0.7, -0.3)], [Vector2(0.4, -REACH * 0.7), Vector2(-0.4, REACH * 0.7)]]:
+		var a := NavigationServer2D.map_get_closest_point(map, ends[0])
+		var b := NavigationServer2D.map_get_closest_point(map, ends[1])
+		var path := NavigationServer2D.map_get_path(map, a, b, true)
+		if path.is_empty() or path[path.size() - 1].distance_to(b) > 0.1 or a.distance_to(b) < REACH:
+			out = "no way from %s to %s (%d points, ends %s)" % [a, b, path.size(), path[path.size() - 1] if not path.is_empty() else Vector2.INF]
+			break
+	for r in regions:
+		NavigationServer2D.free_rid(r)
+	NavigationServer2D.free_rid(map)
+	return out
 
 
 func _near(p: Vector2, blocks: Array, r: float) -> bool:

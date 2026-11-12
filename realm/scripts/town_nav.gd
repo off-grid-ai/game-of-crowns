@@ -62,18 +62,15 @@ func map_for(id: int, root: Node3D, wide := false) -> RID:
 	# to walk, open ground costs several times as much, so a path crosses grass
 	# only where it has to (out to the fields, a house off the lanes).
 	var ways := _ways(root)
-	var map := NavigationServer2D.map_create()
-	NavigationServer2D.map_set_cell_size(map, CELL)
-	NavigationServer2D.map_set_edge_connection_margin(map, 0.12)
-	NavigationServer2D.map_set_active(map, true)
-	var regions: Array = []
+	var map := new_map()
 	var radius := _wide_r() if wide else AGENT
-	if not ways.is_empty():
-		regions.append(_region(map, root, reach, ways, blocks, 1.0, radius))
-	regions.append(_region(map, root, reach, [outline], blocks, OPEN_COST, radius, ways))
+	var water := _water(root.position, reach)
 	_maps[k] = map
-	_regions[k] = regions
+	_regions[k] = []
 	_live[map] = true
+	if not ways.is_empty():
+		_layer(map, k, ways, blocks + water, 1.0, radius)
+	_layer(map, k, [outline], blocks + ways + water, OPEN_COST, radius)
 	return map
 
 
@@ -105,63 +102,128 @@ static func blocks_of(root: Node3D, land: Node3D) -> Array:
 const OPEN_COST := 6.0  # open ground: six times a street, so people keep to the streets but cross a green between two neighbouring lanes rather than all funnelling through the square
 
 
-## One walkable region of the town's map: `walk` outlines, less `blocks` and water.
-## Baked on a worker thread (Godot's async bake; in one frame it held the window
-## 60-210 ms): the map isn't ready() until every region's bake has landed.
-## The open ground of a town's reach baked with `blocks` cut out, synchronously: the walk map's polygons, as
-## the map bakes them (tools/nav_dense_probe.gd).
-static func bake_open(reach: float, blocks: Array, radius := AGENT) -> Array:
+## How a walk map is baked (round 13: Kingsmere's 3,530 outlines baked an empty map, "convex partition failed", so
+## nobody had a path). Godot's 2D bake hands its clipped shape to polypartition, which fails outright on a dense town's
+## overlapping, touching outlines and the slivers between them, whatever the cell size, the piece size or a merge
+## first. Recast is the proven block for that (Godot's 3D baker; Unity's and Unreal's navigation): it rasterizes the
+## ground into cells, so any number of overlapping outlines bake. The town's ground is laid flat as faces, everything
+## standing in it as projected obstructions grown by the walker's half-width (Recast's own radius rounds up to whole
+## cells), and Recast's convex polygons are read back as the town's 2D walk map. tools/nav_dense_probe.gd holds it.
+
+## Recast's sources for `walk` outlines less `obstacles`, at a walker's half-width `radius`, all in town-local XZ on a
+## flat ground. Safe on a worker thread (Geometry2D and new resources only).
+static func sources(walk: Array, obstacles: Array, radius: float) -> NavigationMeshSourceGeometryData3D:
+	var src := NavigationMeshSourceGeometryData3D.new()
+	for o: PackedVector2Array in walk:
+		for g in Geometry2D.offset_polygon(_ccw(o), -radius, Geometry2D.JOIN_MITER):
+			if Geometry2D.is_polygon_clockwise(g):
+				continue
+			var idx := Geometry2D.triangulate_polygon(g)
+			var faces := PackedVector3Array()
+			for t in range(0, idx.size(), 3):
+				var a := g[idx[t]]
+				var b := g[idx[t + 1]]
+				var c := g[idx[t + 2]]
+				if (b - a).cross(c - a) < 0.0:  # every face up, or Recast reads it as a ceiling
+					var swap := b
+					b = c
+					c = swap
+				faces.append_array([Vector3(a.x, 0, a.y), Vector3(b.x, 0, b.y), Vector3(c.x, 0, c.y)])
+			src.add_faces(faces, Transform3D.IDENTITY)
+	for o: PackedVector2Array in obstacles:
+		for g in Geometry2D.offset_polygon(_ccw(o), radius, Geometry2D.JOIN_MITER):
+			if Geometry2D.is_polygon_clockwise(g):
+				continue
+			for part in Geometry2D.decompose_polygon_in_convex(g):
+				var v := PackedVector3Array()
+				for p in part:
+					v.append(Vector3(p.x, 0, p.y))
+				src.add_projected_obstruction(v, -1.0, 2.0, true)
+	return src
+
+
+static func _ccw(o: PackedVector2Array) -> PackedVector2Array:
+	if not Geometry2D.is_polygon_clockwise(o):
+		return o
+	var r := o.duplicate()
+	r.reverse()
+	return r
+
+
+## What Recast bakes into: cells of CELL, no radius of its own (the obstructions come grown), nothing too small kept
+## out (a yard between two houses is ground too).
+static func recast() -> NavigationMesh:
+	var nm := NavigationMesh.new()
+	nm.cell_size = CELL
+	nm.cell_height = CELL
+	nm.agent_radius = 0.0
+	nm.agent_height = 0.1
+	nm.agent_max_climb = 0.0
+	nm.region_min_size = 0.0
+	nm.region_merge_size = 0.0
+	nm.detail_sample_distance = 0.11 / CELL  # Recast's floor is 0.1 world units; the ground is flat, so it only has to be legal
+	nm.sample_partition_type = NavigationMesh.SAMPLE_PARTITION_MONOTONE
+	return nm
+
+
+## Recast's polygons as a 2D walk map (its XZ).
+static func flat(nm: NavigationMesh) -> NavigationPolygon:
+	var np := NavigationPolygon.new()
+	var verts := PackedVector2Array()
+	for v in nm.vertices:
+		verts.append(Vector2(v.x, v.z))
+	np.vertices = verts
+	for i in nm.get_polygon_count():
+		np.add_polygon(nm.get_polygon(i))
+	return np
+
+
+## A walk map: Godot's navigation map at the bake's cell, its layers joined across their seams.
+static func new_map() -> RID:
+	var map := NavigationServer2D.map_create()
+	NavigationServer2D.map_set_cell_size(map, CELL)
+	NavigationServer2D.map_set_edge_connection_margin(map, 0.12)
+	NavigationServer2D.map_set_active(map, true)
+	return map
+
+
+## The open ground of a town's reach baked with `blocks` cut out, synchronously, as the map bakes it
+## (tools/nav_dense_probe.gd).
+static func bake_open(reach: float, blocks: Array, radius := AGENT) -> NavigationPolygon:
 	var ring := PackedVector2Array()
 	for i in 24:
 		ring.append(Vector2.from_angle(TAU * i / 24) * reach)
-	var poly := NavigationPolygon.new()
-	poly.agent_radius = radius
-	poly.cell_size = CELL
-	var src := NavigationMeshSourceGeometryData2D.new()
-	src.add_traversable_outline(ring)
-	for b in blocks:
-		src.add_obstruction_outline(b)
-	NavigationServer2D.bake_from_source_geometry_data(poly, src)
-	return [poly]
+	var nm := recast()
+	NavigationServer3D.bake_from_source_geometry_data(nm, sources([ring], blocks, radius))
+	return flat(nm)
 
 
-func _region(map: RID, root: Node3D, reach: float, walk: Array, blocks: Array, cost: float, radius: float, cut := []) -> RID:
+## One walkable layer of the town's map at a travel cost: `walk` outlines less `obstacles` (water included). Its
+## sources are made on a worker thread and Recast bakes on another (Godot's async bake; in one frame the 2D bake held
+## the window 60-210 ms): the map isn't ready() until every layer has landed.
+func _layer(map: RID, k: int, walk: Array, obstacles: Array, cost: float, radius: float) -> void:
+	_baking[map] = int(_baking.get(map, 0)) + 1
 	var region := NavigationServer2D.region_create()
 	NavigationServer2D.region_set_map(region, map)
 	NavigationServer2D.region_set_travel_cost(region, cost)
-	_bake_into(region, map, root, reach, walk, blocks, cut, radius)
-	return region
+	_regions[k].append(region)
+	WorkerThreadPool.add_task(func() -> void:
+		var nm := recast()
+		NavigationServer3D.bake_from_source_geometry_data_async(nm, sources(walk, obstacles, radius), func() -> void:
+			_landed.call_deferred(region, map, nm)))
 
 
-func _bake_into(region: RID, map: RID, root: Node3D, reach: float, walk: Array, blocks: Array, cut: Array, radius: float) -> void:
-	var poly := NavigationPolygon.new()
-	poly.agent_radius = radius
-	poly.cell_size = CELL
-	var src := NavigationMeshSourceGeometryData2D.new()
-	for o in walk:
-		src.add_traversable_outline(o)
-	for b in blocks + cut:
-		src.add_obstruction_outline(b)
-	for w in _water(root.position, reach):
-		src.add_obstruction_outline(w)
-	_baking[map] = int(_baking.get(map, 0)) + 1
-	NavigationServer2D.bake_from_source_geometry_data_async(poly, src, func() -> void:
-		_landed.call_deferred(region, map, poly, root, reach, walk, blocks, cut, radius))
-
-
-## A region's bake is back (on the main thread): it goes on the map, unless the
-## map was freed meanwhile (the town rebuilt again).
-func _landed(region: RID, map: RID, poly: NavigationPolygon, root: Node3D, reach: float, walk: Array, blocks: Array, cut: Array, radius: float) -> void:
+## A layer's bake is back (on the main thread): it goes on the map, unless the map was freed meanwhile (the town
+## rebuilt again).
+func _landed(region: RID, map: RID, nm: NavigationMesh) -> void:
 	if not _live.has(map):
 		_baking.erase(map)
 		return
-	if poly.get_polygon_count() == 0 and not cut.is_empty() and is_instance_valid(root):
-		# Streets crossing each other can't all be cut out of the open ground
-		# in one bake: bake it with only the buildings cut out. The streets
-		# overlap it but stay far cheaper, so people still keep to them.
-		_bake_into(region, map, root, reach, walk, blocks, [], radius)
-	else:
-		NavigationServer2D.region_set_navigation_polygon(region, poly)
+	NavigationServer2D.region_set_navigation_polygon(region, flat(nm))
+	_done_one(map)
+
+
+func _done_one(map: RID) -> void:
 	var left := int(_baking.get(map, 1)) - 1
 	if left > 0:
 		_baking[map] = left
