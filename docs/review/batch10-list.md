@@ -120,3 +120,11 @@ Add `--probe` and keep the log: its FIRE lit lines say how many houses caught.
    well to its door; the square's folk within reach stop what they're doing.
 7. **Many fires at once** (`look` at +45 s): fps above 10 with every house burning (far fires thin their
    flames; the smoke stays).
+
+## Wheat from roof height (`--wheat=shells`, before: `--wheat=flat`)
+
+17. **The fields at three distances** (`field summer 0.8`, then `city Kingsmere 6`, `city Kingsmere 16` and
+    `city Kingsmere 30` over the town's fields, and a 4 s clip at 0.2 at 16): standing wheat with rows and ears
+    that has depth at d6-d16, waves of sheen running across it in the wind (the clip), an even golden stand with
+    drill lines at d30, never the flat ochre slab and no shimmer. Then `field autumn 0.9`: stubble, and the reaped
+    fields flat. If it reads right, `shells.on` goes to true.
