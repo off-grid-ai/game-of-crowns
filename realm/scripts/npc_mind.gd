@@ -1035,7 +1035,7 @@ class GoTo extends BTAction:
 				"home": to = a["home"]
 				"meet": to = blackboard.get_var(&"meet", a["home"], false)  # where a talk was arranged
 				"bucket": to = blackboard.get_var(&"bucket_at", a["home"], false)  # their place in a bucket line (fire.gd)
-				_: to = v.place(a, where)
+				_: to = v.slots.place(a, where)
 		if to == Vector3.INF:
 			_none = true  # no slot to be had (up from a queue): the activity is off
 			return
@@ -1095,8 +1095,8 @@ class GoTo extends BTAction:
 		_turn_left = -1.0
 		if where in ["stall", "stall_buy"]:
 			var vv: Node = blackboard.get_var(&"vill")
-			if vv.has_method("at_stall"):
-				vv.at_stall(a, agent as Node3D)  # the keeper turns to serve them
+			if vv.get("slots") != null:
+				vv.slots.at_stall(a, agent as Node3D)  # the keeper turns to serve them
 		blackboard.set_var(&"post", agent.position)
 		blackboard.set_var(&"face", agent.rotation.y)
 		blackboard.set_var(&"at_post", true)

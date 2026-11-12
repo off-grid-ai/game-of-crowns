@@ -529,7 +529,7 @@ func _roof(near: Array[Node3D], delta: float) -> void:
 		var f: Dictionary = p.get_meta("folk", {})
 		var agent: Dictionary = agents.get("%s:%s" % [f.get("town"), f.get("i")], {}) if not f.is_empty() else {}
 		if cap == 0 and not agent.is_empty() and vill.has_method("_square_cap"):
-			cap = vill._square_cap(agent)
+			cap = vill.slots.square_cap(agent)
 		# The idle stretch (a statue): standing in an idle clip, uninterrupted.
 		_idle_for[p] = float(_idle_for.get(p, 0.0)) + delta if g == "idle" else 0.0
 		_statues[p] = maxf(float(_statues.get(p, 0.0)), float(_idle_for[p]))

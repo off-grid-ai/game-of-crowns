@@ -304,7 +304,7 @@ func audit() -> void:
 					if not is_same(b, a):
 						gaps.append("%.2f/%s/%s" % [Vector2(n.position.x - b["node"].position.x, n.position.z - b["node"].position.z).length(), _present(b, g), PackedVector2Array(b["route"]).size()])
 				print("UNFACED %s in_talk=%s self_present=%s others=%s" % [now, not g.is_empty(), _present(a, g) if not g.is_empty() else false, gaps])
-	print("TALK v.hour=%.1f planned=%d gatherings=%d talkers=%d unfaced=%d" % [v.hour, planned, groups, talkers, unfaced])
+	print("TALK hour=%.1f planned=%d gatherings=%d talkers=%d unfaced=%d" % [v.hour, planned, groups, talkers, unfaced])
 	# How the town's places fill: people at each, the biggest gathering, and the
 	# biggest cluster of people standing within a shoulder's reach of each other.
 	for id in v.crowds:
@@ -317,8 +317,8 @@ func audit() -> void:
 			if not n.visible or not PackedVector2Array(a["route"]).is_empty():
 				continue
 			standing.append(Vector2(n.position.x, n.position.z))
-			for k in v.ROOM:
-				if Vector2(n.position.x - places[k].x, n.position.z - places[k].z).length() < float(v.ROOM[k]["far"]) + 0.1:
+			for k in v.slots.ROOM:
+				if Vector2(n.position.x - places[k].x, n.position.z - places[k].z).length() < float(v.slots.ROOM[k]["far"]) + 0.1:
 					at[k] = int(at.get(k, 0)) + 1
 		var biggest := 0
 		for g in talks.get(id, []):
