@@ -15,8 +15,8 @@ extends Node3D
 ## field. In play it is quiet, sized from the men who really fought, ends as Freeciv decided, never moves the camera,
 ## and is gone field.play.linger seconds after. The test aid prints "BATTLE …" lines and frames itself.
 ##
-## A storm (storm(), beside a siege's assault parties, army_assault.gd, whose breach drives it; --storm-host=on|off,
-## on with --wall-demo): the besiegers in line on the camp side, the holder's drawn up inside the wall
+## A storm (storm(), raised with every siege beside its assault parties, army_assault.gd, whose breach drives it once
+## Freeciv assaults the town): the besiegers in line on the camp side, the holder's drawn up inside the wall
 ## (minds.storm_regiment). Before the gap opens the besiegers stand ready and loose fire arrows over the wall: they
 ## arc into the town and now and then a roof catches (fire.gd kindle). Once the gap is open the besiegers' regiments
 ## march up in waves and queue into it, the front one at blows in the gap, the holder's regiments meeting them on
@@ -85,16 +85,6 @@ static func stage(m: Node, s: Dictionary, houses: Dictionary, at: Vector3) -> No
 	b.add_to_group(&"field_battles")
 	m.add_child(b)
 	return b
-
-
-## The storm as a mass on for this run (data/siege.json storm_host.on; --storm-host=on|off, on with --wall-demo).
-static func storm_host_on() -> bool:
-	var args := OS.get_cmdline_user_args()
-	if args.has("--storm-host=off"):
-		return false
-	if args.has("--storm-host=on") or args.has("--wall-demo"):
-		return true
-	return bool(Data.value("siege", "storm_host.on", false))
 
 
 static func k(path: String, fallback: float) -> float:
