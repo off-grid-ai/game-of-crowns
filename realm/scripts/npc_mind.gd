@@ -734,7 +734,11 @@ class FaceCustomer extends BTAction:
 ## Done serving: the customer is let go and the keeper faces their counter again.
 class Served extends BTAction:
 	func _tick(_delta: float) -> Status:
+		var life := agent.get_parent()
+		if life and life.get_parent() is Node3D and agent.has_meta("customer_stall"):
+			load("res://scripts/town_life.gd").pile(life.get_parent(), int(agent.get_meta("customer_stall")), -1)  # one off the stall's pile: sold
 		agent.remove_meta("customer")
+		agent.remove_meta("customer_stall")
 		Turn.toward(agent as Node3D, float(blackboard.get_var(&"face", (agent as Node3D).rotation.y, false)))
 		return SUCCESS
 
@@ -742,6 +746,22 @@ class Served extends BTAction:
 ## The keeper serves (the research's pair at the counter, The Sims' paired object): turns to the shopper, talks it
 ## over, bends to the goods and holds one out (the hand-over the shopper takes with their own PickUp_Table), nods,
 ## and turns back to the counter.
+## Succeeds unless the villager's claimed slot is a queue's (villagers.gd _slot "wait").
+class NotQueued extends BTCondition:
+	func _tick(_delta: float) -> Status:
+		var a: Dictionary = blackboard.get_var(&"va", {}, false)
+		return FAILURE if String(a.get("slot_kind", "")) == "wait" else SUCCESS
+
+
+## At a stall: straight to it, or, all its buying slots taken, a wait behind in the queue (shifting weight, looking
+## about) and up to a buying slot as one frees; none frees, the activity is off and they go elsewhere.
+static func to_stall() -> BTTask:
+	var sel := BTSelector.new()
+	sel.add_child(NotQueued.new())
+	sel.add_child(plain([brk(["Weight_Shift", "Looking_Around", "Bored"]), brk(["Weight_Shift", "Looking_Around"]), go("stall_buy")]))
+	return plain([go("stall"), sel])
+
+
 static func serve() -> BTTask:
 	return plain([HasCustomer.new(), FaceCustomer.new(), run(["Talking", "Idle_Talking", "Talking_Hands"], 2, 3), once("PickUp_Table"), once("Nodding"), Served.new()])
 
@@ -866,6 +886,9 @@ class GoTo extends BTAction:
 				"meet": to = blackboard.get_var(&"meet", a["home"], false)  # where a talk was arranged
 				"bucket": to = blackboard.get_var(&"bucket_at", a["home"], false)  # their place in a bucket line (fire.gd)
 				_: to = v.place(a, where)
+		if to == Vector3.INF:
+			_none = true  # no slot to be had (up from a queue): the activity is off
+			return
 		a["gait"] = gait
 		v.route_to(a, to)
 		_to = to
@@ -920,7 +943,7 @@ class GoTo extends BTAction:
 			if _turn_left > 0.0:
 				return RUNNING
 		_turn_left = -1.0
-		if where == "stall":
+		if where in ["stall", "stall_buy"]:
 			var vv: Node = blackboard.get_var(&"vill")
 			if vv.has_method("at_stall"):
 				vv.at_stall(a, agent as Node3D)  # the keeper turns to serve them
@@ -1458,7 +1481,7 @@ static func villager_activities(role: String) -> Array:
 			return [
 				# Waits a beat at the counter, points out what they want and talks it over, weighs it up, takes it
 				# (the hand-over), nods it's done, and leaves carrying it.
-				seq("shop", [go("street"), go("stall"), brk(["Weight_Shift", "Looking_Around"]), run(["Pointing_Forward", "Idle_Talking", "Talking_Hands"], 2, 3), run(["Thinking", "Shake_No", "Arguing"], 1, 1), once("PickUp_Table"), once("Nod_Yes"), brk(["Holding_Idle", "Weight_Shift"]), go("street", "Carrying"), brk(LOOK)]),
+				seq("shop", [go("street"), to_stall(), brk(["Weight_Shift", "Looking_Around"]), run(["Pointing_Forward", "Idle_Talking", "Talking_Hands"], 2, 3), run(["Thinking", "Shake_No", "Arguing"], 1, 1), once("PickUp_Table"), once("Nod_Yes"), brk(["Holding_Idle", "Weight_Shift"]), go("street", "Carrying"), brk(LOOK)]),
 				seq("browse", [go("stall"), once("Looking_Around"), run(["Thinking", "Doubtful"], 1, 1), go("stall"), once("PickUp_Table"), run(["Nod_Yes", "Nodding"], 1, 1), brk(LOOK)]),
 				seq("gossip", [partner(), go("meet"), Talk.new(), brk(LOOK)]),
 				seq("errand", [go("stall"), run(["Idle_Talking", "Nodding"], 1, 2), once("PickUp_Table"), go("home", "Carrying"), once("PickUp_Table"), brk(REST)]),

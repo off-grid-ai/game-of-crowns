@@ -898,8 +898,19 @@ const KNOT := 0.26  # a gathering keeps this clear round its middle: knots of tw
 ## their door (their bench: the yard, the workshop front), where a town's
 ## people mostly are.
 func place(a: Dictionary, key: String, knot := false) -> Vector3:
+	if a.has("slot_id"):
+		_released[String(a["slot_id"])] = Time.get_ticks_msec()  # the slot they leave shuts a moment (square_agents.cooldown)
+		a.erase("slot_id")
 	a["face_at"] = Vector3.INF
 	a["slot_stall"] = -1
+	a["slot_kind"] = ""
+	if key == "stall_buy":
+		# Up from the queue to a buying slot: one or none; none sends them on (GoTo fails, the tree moves on).
+		var sb := _slot(a, "stall", false)
+		if not is_nan(sb.x):
+			a["place_key"] = "stall"
+			return sb
+		return Vector3.INF
 	if key in SLOTS:
 		# A smart object's slot (a stall's front, the well's rim, a street's mouth): claimed, faced, never stacked.
 		var sp := _slot(a, key)
@@ -998,12 +1009,16 @@ func _claim(a: Dictionary, key: String, clear: float) -> Vector3:
 func at_stall(a: Dictionary, who: Node3D) -> void:
 	var stall := int(a.get("slot_stall", -1))
 	var town_node: Node3D = towns.towns.get(a["town"], {}).get("node")
-	if stall < 0 or not is_instance_valid(town_node):
+	if stall < 0 or not is_instance_valid(town_node) or String(a.get("slot_kind", "")) == "wait":
+		return
+	if String(a.get("role", "")) == "porter":
+		TownLife.pile(town_node, stall, 1)  # the load set down on the stall's pile
 		return
 	var keeper: Variant = (town_node.get_meta("keepers", {}) as Dictionary).get(stall)
 	if keeper is Node3D and is_instance_valid(keeper) and not (keeper as Node3D).has_meta("customer"):
 		(keeper as Node3D).set_meta("customer", who)
 		(keeper as Node3D).set_meta("customer_at", Time.get_ticks_msec())
+		(keeper as Node3D).set_meta("customer_stall", stall)
 
 
 ## The square's smart objects (crowd.json square_agents, the switch --square-agents=on|off; supervisor 2026-11-12,
@@ -1013,9 +1028,10 @@ func at_stall(a: Dictionary, who: Node3D) -> void:
 ## Lords' and Anno's villagers claim a market stall's or a well's slot, so two never stack and the square fills
 ## by its stalls and its well, not in one ring round a point.
 const SLOTS := ["stall", "draw", "street"]
+var _released := {}  # slot id -> when it was last left (msec): shut for square_agents.cooldown after
 
 
-func _slot(a: Dictionary, key: String) -> Vector3:
+func _slot(a: Dictionary, key: String, queue := true) -> Vector3:
 	if not TownLife.square_agents_on():
 		return Vector3(NAN, 0, 0)
 	var town_node: Node3D = towns.towns.get(a["town"], {}).get("node")
@@ -1029,14 +1045,22 @@ func _slot(a: Dictionary, key: String) -> Vector3:
 		"stall":
 			var off := float(K.get("stall_out", 0.13))
 			var sti := -1
+			var keepers: Dictionary = town_node.get_meta("keepers", {})
+			var waits: Array = []
 			for st in town_node.get_meta("stalls", []):
 				sti += 1
 				var m: Vector3 = st[0]
+				if not (keepers.get(sti) is Node3D and is_instance_valid(keepers.get(sti))):
+					continue  # nobody to buy from: the buyer's loop runs only with a keeper there
 				var out := Vector3(m.x, 0, m.z).normalized()
 				var along := Vector3(-out.z, 0, out.x)
 				var front := m - out * (float(st[1]) * 0.5 + off)
 				for k in [0.0, -0.32, 0.32]:
-					offers.append([front + along * float(st[2]) * k, m, sti])
+					offers.append([front + along * float(st[2]) * k, m, sti, "buy"])
+				waits.append([front - out * float(K.get("queue_back", 0.1)), m, sti, "wait"])
+			if queue:
+				waits.shuffle()
+				offers.append_array(waits)  # every buying slot taken: one waits behind, at a stall
 		"draw":
 			var places: Dictionary = town_node.get_meta("places", {})
 			if places.has("well"):
@@ -1066,9 +1090,20 @@ func _slot(a: Dictionary, key: String) -> Vector3:
 	if life:
 		goals.append_array(Array(life.get_meta("standing", PackedVector2Array())))
 	var clear := float(K.get("slot_clear", 0.1))
-	var first: int = a["rng"].randi() % offers.size()
-	for i in offers.size():
-		var o: Array = offers[(first + i) % offers.size()]
+	var cool := int(float(K.get("cooldown", 3.0)) * 1000.0)
+	var now := Time.get_ticks_msec()
+	var buys := offers.filter(func(o: Array) -> bool: return o.size() < 4 or o[3] != "wait")
+	var rest := offers.filter(func(o: Array) -> bool: return o.size() >= 4 and o[3] == "wait")
+	var first: int = a["rng"].randi() % maxi(buys.size(), 1)
+	var order: Array = []
+	for i in buys.size():
+		order.append(buys[(first + i) % buys.size()])
+	order.append_array(rest)  # the queue only once every buying slot is taken
+	for i in order.size():
+		var o: Array = order[i]
+		var sid := "%s:%d:%d" % [key, roundi(o[0].x * 1000.0), roundi(o[0].z * 1000.0)]
+		if now - int(_released.get(sid, -100000)) < cool:
+			continue  # just left: shut a moment
 		var q := nav.closest(a["map"], Vector2(o[0].x, o[0].z))
 		if q.distance_to(Vector2(o[0].x, o[0].z)) > 0.06:
 			continue  # under a stall's counter or a wall
@@ -1079,6 +1114,8 @@ func _slot(a: Dictionary, key: String) -> Vector3:
 		var f: Vector3 = o[1]
 		a["face_at"] = Vector3(c.x + f.x, 0, c.z + f.z)
 		a["slot_stall"] = int(o[2]) if o.size() > 2 else -1
+		a["slot_kind"] = String(o[3]) if o.size() > 3 else key
+		a["slot_id"] = sid
 		return Vector3(c.x + q.x, terrain.height_at(c.x + q.x, c.z + q.y), c.z + q.y)
 	return Vector3(NAN, 0, 0)
 

@@ -722,6 +722,7 @@ func _trade(root: Node3D, life: Node3D, center: Vector3, rng: RandomNumberGenera
 		keepers[si] = keeper
 		if si > 0 and not keepers.has(si - 1):
 			keepers[si - 1] = keeper  # the stall before had no keeper of its own: this one keeps both
+		_pile(root, life, center, si, m, out, float(st[2]))
 		_mind(keeper, "trade", center)
 		taken.append(Vector2(at.x, at.z))
 		life.set_meta("standing", taken)
@@ -737,6 +738,50 @@ func _trade(root: Node3D, life: Node3D, center: Vector3, rng: RandomNumberGenera
 				var to := m - buyer.position
 				buyer.rotation.y = atan2(to.x, to.z)
 				_mind(buyer, "buy", center)
+
+
+## A kept stall's stock beside it (crowd.json square_agents.pile; the routines spec: Stronghold's one load, one drop
+## on a pile that grows; a sale takes one off): sacks and crates on the ground at the stall's end, the stall's
+## pile in root meta piles by stall index. Only with the square's agents on.
+func _pile(root: Node3D, life: Node3D, center: Vector3, si: int, m: Vector3, out: Vector3, width: float) -> void:
+	if not square_agents_on():
+		return
+	var K: Dictionary = Data.value("crowd", "square_agents.pile", {})
+	var kinds: Array = K.get("props", ["Bag", "FarmCrate_Apple"])
+	var most := int(K.get("most", 4))
+	if kinds.is_empty() or most <= 0:
+		return
+	var along := Vector3(-out.z, 0, out.x)
+	var base := m + along * (width * 0.5 + float(K.get("aside", 0.06))) - out * 0.02
+	var nodes: Array = []
+	for i in most:
+		var at := base + along * float(i % 2) * 0.05 - out * float(i / 2) * 0.05
+		var n := _prop(life, center, String(kinds[i % kinds.size()]), at, atan2(out.x, out.z) + float(i) * 0.4, float(K.get("size", 1.0)))
+		if n:
+			nodes.append(n)
+	var piles: Dictionary = root.get_meta("piles", {})
+	piles[si] = nodes
+	root.set_meta("piles", piles)
+
+
+## Takes one off stall `si`'s pile (`n` -1, a sale) or puts one back (`n` +1, a porter's load). False when there's
+## none to take or no room.
+static func pile(root: Node3D, si: int, n: int) -> bool:
+	if not is_instance_valid(root):
+		return false
+	var nodes: Array = (root.get_meta("piles", {}) as Dictionary).get(si, [])
+	nodes = nodes.filter(func(x): return is_instance_valid(x))
+	if n < 0:
+		for i in range(nodes.size() - 1, -1, -1):
+			if (nodes[i] as Node3D).visible:
+				(nodes[i] as Node3D).visible = false
+				return true
+		return false
+	for x in nodes:
+		if not (x as Node3D).visible:
+			(x as Node3D).visible = true
+			return true
+	return false
 
 
 ## The crown's seat's market knobs (data/towns.json market.crown), {} elsewhere.
