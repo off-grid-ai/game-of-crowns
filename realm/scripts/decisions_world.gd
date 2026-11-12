@@ -24,6 +24,8 @@ const Towns := preload("res://scripts/towns.gd")
 const CROWN := {"name": "The Crown", "crown": true}
 const CROWN_RED := Color(0.72, 0.13, 0.16)
 const PLANTED := 0.45  # a planted standard's height, as the scenes plant theirs
+const BAR_TURN := 0.42  # how far each of a barred door's two boards is turned off level (radians), so they cross
+static var BOARD := BoxMesh.new()  # a unit box, scaled into each board
 
 static var CFG: Dictionary = _read()
 
@@ -193,15 +195,20 @@ func _unrest(root: Node3D, node: Node3D, centre: Vector3, house: Dictionary, lev
 	banner.position = main.scenes.ground(speaker_at + Vector3(cos(side + 1.2), 0, sin(side + 1.2)) * 0.18)
 	banner.rotation.z = float(u.get("banner_tilt", 0.5))
 	root.add_child(banner)
-	# Shops barred: a plank across the doors nearest the square.
-	var doors: Array = (node.get_meta("doors", []) as Array).duplicate()
-	doors.sort_custom(func(a, b): return (a["at"] as Vector3).length() < (b["at"] as Vector3).length())
+	# Shops barred (07-unrest: the shopfronts boarded shut): two boards nailed crossways over each door nearest the
+	# square, flat on the door itself (towns.gd's door record: its wall and the way it looks).
+	var doors: Array = (node.get_meta("doors", []) as Array).filter(func(d: Dictionary) -> bool: return d.has("wall"))
+	doors.sort_custom(func(a, b): return (a["wall"] as Vector3).length() < (b["wall"] as Vector3).length())
+	var wood := Realistic.dyed(null, {"like": "Floor_WoodDark", "triplanar": 2.0})
 	for d in doors.slice(0, int(pick.call("barred", 3))):
-		var at: Vector3 = d["at"]
-		var plank := _prop(root, "plank", centre + Vector3(at.x, 0, at.z), atan2(-at.x, -at.z) + PI * 0.5)
-		if plank:
-			plank.position.y += 0.9 * Realistic.S  # across the door at chest height
-			plank.rotation.z = 0.25
+		var w: Vector3 = d["wall"]
+		var base: Vector3 = main.scenes.ground(centre + Vector3(w.x, 0, w.z)) - centre - Vector3(w.x, 0, w.z)
+		for t: Transform3D in bar_boards(d):
+			var board := MeshInstance3D.new()
+			board.mesh = BOARD
+			board.material_override = wood
+			board.transform = Transform3D(t.basis, centre + t.origin + base)
+			root.add_child(board)
 	# Angry: smoke, a burned cart with rubble, and the guard doubled between the crowd and the keep.
 	for k in int(pick.call("smoke", 0)):
 		_smoke(root, centre + Vector3(rng.randf_range(-1.0, 1.0), 0, rng.randf_range(-1.0, 1.0)) * square_r)
@@ -353,6 +360,21 @@ func _prop(root: Node3D, component: String, at: Vector3, yaw: float) -> Node3D:
 	n.rotation.y = yaw
 	root.add_child(n)
 	return n
+
+
+## A barred door's boards (town-local, standing on the ground at y 0): two planks crossed over the door, flat on
+## its wall, each a unit box scaled to a board (1.7 m by 0.22 m, 4 cm thick) and turned BAR_TURN either way.
+static func bar_boards(door: Dictionary) -> Array:
+	var face: Vector3 = (door["face"] as Vector3).normalized()
+	var along := Vector3(-face.z, 0, face.x)
+	var out: Array = []
+	for turn in [BAR_TURN, -BAR_TURN]:
+		var x := along.rotated(face, turn)
+		var z := Vector3.UP.rotated(face, turn)
+		var b := Basis(x * 1.7 * Realistic.S, face * 0.04 * Realistic.S, z * 0.22 * Realistic.S)
+		var at: Vector3 = (door["wall"] as Vector3) + face * 0.03 * Realistic.S + Vector3.UP * 1.1 * Realistic.S
+		out.append(Transform3D(b, Vector3(at.x, at.y, at.z)))
+	return out
 
 
 ## Burnt: every surface a dull char, the shape still a cart.

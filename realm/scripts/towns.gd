@@ -585,6 +585,7 @@ func _real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds
 		var ring_n0: int = await _square_ring(root, center, square_r, ways, kinds, lots, rng, want - placed)
 		placed += ring_n0
 		root.set_meta("ring_houses", ring_n0)
+	_square_piles(root, center, square_r, rng)
 	# The trades that need a particular ground take it before any other house: the armoury by the castle,
 	# the watermill on the water.
 	for tr in _trades:
@@ -2064,7 +2065,8 @@ func _door(root: Node3D, p: Vector3, f: Vector2, room: String, name: String, fac
 	if face == Vector3.ZERO:
 		face = -Vector3(p.x, 0, p.z).normalized()
 	var all: Array = root.get_meta("doors", [])
-	all.append({"at": p + face * (f.y * 0.5 + 0.1), "room": room, "name": name})
+	# at: the doorstep, where a caller stands; wall: the door itself on the front wall; face: the way it looks out.
+	all.append({"at": p + face * (f.y * 0.5 + 0.1), "wall": p + face * f.y * 0.5, "face": face, "width": f.x, "room": room, "name": name})
 	root.set_meta("doors", all)
 
 
@@ -2246,13 +2248,14 @@ func _plaza(root: Node3D, center: Vector3, square_r: float, size: int, seat: boo
 		var kept: Array = root.get_meta("stalls", [])
 		kept.append([m, stall.y, stall.x])  # where it stands (its front toward the square), how deep and how wide
 		root.set_meta("stalls", kept)
-		# Goods at the stall's ends and behind it: crates, sacks, barrels.
+		# Goods at the stall's ends: a squared pile against each end, running back from its front (Anno 1800's
+		# and Manor Lords' market stalls: the stock stacked at the stall's sides, never out in the walk).
 		var along := Vector3(-sin(a), 0, cos(a))
 		_counter(root, center, kind, m, yaw, along, clutter, rng)
+		var inward := -m.normalized()  # the stall's front, toward the square's heart
 		for e in [-1, 1]:
-			for k in rng.randi_range(int(heaps[0]), int(heaps[1])):
-				var p: Vector3 = m + along * e * (stall.x * 0.5 + rng.randf_range(0.03, 0.1)) + m.normalized() * rng.randf_range(-0.08, 0.12)
-				drop.call(clutter[rng.randi() % clutter.size()], p, rng.randf() * TAU)
+			var end: Vector3 = m + along * e * stall.x * 0.5 + inward * stall.y * 0.5
+			_pile(drop, clutter, end, -inward, along * e, rng.randi_range(int(heaps[0]), int(heaps[1])), stall.y, rng)
 		if ResourceLoader.exists("res://assets/realistic/ph/wooden_lantern_01/wooden_lantern_01_1k.gltf") and i % 2 == 0:
 			drop.call("ph/wooden_lantern_01", m - m.normalized() * (stall.y * 0.5 + 0.05) + along * stall.x * 0.45, yaw)
 		# The others a lantern on its post at the front corner (Kenney's town lantern; Mac 2026-11-12, "no
@@ -2266,23 +2269,13 @@ func _plaza(root: Node3D, center: Vector3, square_r: float, size: int, seat: boo
 	var wa := market_ang + outer_end + 0.35 * 0.8 / maxf(outer_arc, 0.1)
 	var wp := Vector3(cos(wa), 0, sin(wa)) * outer_arc
 	drop.call("old_wooden_wagon" if Real.footprint("old_wooden_wagon") != Vector2.ZERO else "medieval_wooden_cart", wp, -wa)  # lying along the row
-	for k in 2:
-		drop.call(clutter[rng.randi() % clutter.size()], wp * (1.0 - (0.16 + k * 0.09) / outer_arc) + Vector3(-sin(wa), 0, cos(wa)) * rng.randf_range(-0.12, 0.12), rng.randf() * TAU)
-	# A busy market spills over (towns.json market.<rank>.piles; art target town-b): heaps of goods,
-	# barrels, crates and sacks, set down about the square beyond the stalls, before the house fronts.
-	if int(mk.get("piles", 0)) > 0:
-		var span_half := outer_end + 0.6 / maxf(outer_arc, 0.1)
-		var pr: Array = mk.get("piles_r", [0.62, 0.86])  # how far out (shares of the square's radius; round 8: through the middle too)
-		var clear := deg_to_rad(float(mk.get("approach_clear", 0.0)))  # either side of the way to the castle gate, kept open
-		for i in int(mk.get("piles", 0)):
-			var a := market_ang + span_half + rng.randf() * (TAU - 2.0 * span_half)
-			if clear > 0.0 and absf(angle_difference(a, market_ang + PI)) < clear:
-				continue
-			var at := Vector3(cos(a), 0, sin(a)) * square_r * rng.randf_range(float(pr[0]), float(pr[1]))
-			if at.distance_to(well) < square_r * 0.3:
-				continue  # the well's ground stays open
-			for k in rng.randi_range(2, 4):
-				drop.call(clutter[rng.randi() % clutter.size()], at + Vector3(rng.randf_range(-0.1, 0.1), 0, rng.randf_range(-0.1, 0.1)), rng.randf() * TAU)
+	var wagon_foot := Real.footprint("old_wooden_wagon" if Real.footprint("old_wooden_wagon") != Vector2.ZERO else "medieval_wooden_cart")
+	var wagon_side := -wp.normalized()  # its side toward the square's heart, where it's unloaded
+	var tangent := Vector3(-sin(wa), 0, cos(wa))  # the wagon lies along the row: its length (deep) runs this way, its width out to its side
+	_pile(drop, clutter, wp + wagon_side * wagon_foot.x * 0.5 - tangent * wagon_foot.y * 0.3, tangent, wagon_side, 2, wagon_foot.y * 0.6, rng)
+	# A busy market spills over (towns.json market.<rank>.piles): laid against the square's house fronts once its
+	# ring stands (_square_piles), never out in the walk.
+	root.set_meta("market_goods", clutter)
 	# Buckets and a basket set down against the well's curb, where water is drawn (not strewn
 	# over the square): just clear of its footprint, on one side of it.
 	var curb := maxf(Real.footprint(well_kind).x, Real.footprint(well_kind).y) * 0.5
@@ -2292,6 +2285,53 @@ func _plaza(root: Node3D, center: Vector3, square_r: float, size: int, seat: boo
 		var p := well + Vector3(cos(a), 0, sin(a)) * (curb + rng.randf_range(0.03, 0.07))
 		drop.call(["ph/wooden_bucket_01", "ph/wicker_basket_01", "ph/wooden_bucket_01"][i % 3], p, rng.randf() * TAU)
 	root.set_meta("places", places)
+
+
+## A pile of goods set down against something (a stall's end, a wagon's side, a house's front wall): `n` pieces
+## laid edge to edge from `start` along `run`, each with its back to the thing (`out`: the way the pile faces,
+## away from it) and squared to it, a few degrees off at most, never further along than `room`. Anno 1800's and
+## Manor Lords' markets: stock stacked where it's sold, the walk between left open.
+func _pile(drop: Callable, kinds: Array, start: Vector3, run: Vector3, out: Vector3, n: int, room: float, rng: RandomNumberGenerator) -> void:
+	if kinds.is_empty():
+		return
+	var cursor := 0.01
+	var yaw := atan2(out.x, out.z)
+	for k in n:
+		var kind: String = kinds[rng.randi() % kinds.size()]
+		var f := Real.footprint(kind)
+		if cursor + f.x > room:
+			return
+		var p := start + run * (cursor + f.x * 0.5) + out * (f.y * 0.5 + 0.005)
+		drop.call(kind, p, yaw + rng.randf_range(-0.08, 0.08))
+		cursor += f.x + 0.01
+
+
+## The market's spill (towns.json market.<rank>.piles): piles of its goods against the house fronts round the square,
+## beside a door, never before it, so the walk stays open (art target town-b: goods stacked along the fronts).
+func _square_piles(root: Node3D, center: Vector3, square_r: float, rng: RandomNumberGenerator) -> void:
+	var piles := int(_market_knobs().get("piles", 0))
+	var goods: Array = root.get_meta("market_goods", [])
+	if piles <= 0 or goods.is_empty():
+		return
+	var drop := func(kind: String, p: Vector3, yaw: float) -> bool:
+		if not terrain.is_land(center.x + p.x, center.z + p.z):
+			return false
+		_place(root, kind, p + Vector3(0, _foot_y(center, p, Real.footprint(kind), yaw), 0), yaw)
+		return true
+	var fronts: Array = (root.get_meta("doors", []) as Array).filter(func(d: Dictionary) -> bool:
+		return d.has("wall") and Vector3(d["wall"]).length() < square_r * 1.3)
+	fronts.shuffle()  # the town's own rng order isn't needed: which fronts take a pile is the market's whim
+	var gate := float(root.get_meta("market_ang", 0.0)) + PI
+	var clear := deg_to_rad(float(_market_knobs().get("approach_clear", 0.0)))  # either side of the way to the castle gate, kept open
+	for d: Dictionary in fronts.slice(0, piles):
+		var w: Vector3 = d["wall"]
+		var face: Vector3 = d["face"]
+		if clear > 0.0 and absf(angle_difference(atan2(w.z, w.x), gate)) < clear:
+			continue
+		var along := Vector3(-face.z, 0, face.x) * (1.0 if rng.randf() < 0.5 else -1.0)
+		var side := float(d.get("width", 0.4)) * 0.5
+		var door_half := 0.08  # a kit door is about 1.3 m wide
+		_pile(drop, goods, w + along * door_half, along, face, rng.randi_range(2, 4), side - door_half, rng)
 
 
 ## A stall's counter piled with its wares (towns.json market.counter; art target 01-town: every stall heaped with
