@@ -405,9 +405,9 @@ static func height_of(fp: PackedVector2Array, tops: Array, i: int) -> float:
 	return top
 
 
-## The towns' buildings and walls as the lens sees them: one static body per
-## town, a prism over each footprint up to its roof, on a layer only the camera's
-## spring arm looks at. Rebuilt when a town's footprints change.
+## The towns' buildings and walls as the lens sees them: a static body per
+## building, a prism over each footprint up to its roof, on a layer only the camera's
+## spring arm looks at, for the towns near the camera only. Rebuilt when a town's footprints change.
 const LENS_LAYER := 1 << 19
 ## Street things (stalls, carts, barrels) the lens rises over rather than going
 ## through; on a layer of their own, so the roof sweep never pulls the lens in for them.
@@ -670,6 +670,20 @@ func _lens_bodies() -> void:
 		var fps: Array = root.get_meta("footprints", [])
 		var walls: Array = root.get_meta("walls", [])
 		var tops: Array = root.get_meta("tops", [])
+		# Only the towns the lens can reach have bodies (Jolt holds at most 10,240, and every town's every house,
+		# wall and cart is one): a town whose nearest edge lies further from what the camera looks at than the
+		# camera's arm (and lens.margin) has its bodies freed, built again when the camera comes near.
+		var reach := 0.0
+		for fp in fps + walls.map(func(w): return w[0]):
+			for q in fp:
+				reach = maxf(reach, (q as Vector2).length())
+		var off := Vector2(root.global_position.x - target.x, root.global_position.z - target.z).length()
+		if off - reach > maxf(distance, goal_distance) + knob("lens.margin", 12.0):
+			if _bodies.has(id):
+				if is_instance_valid(_bodies[id][0]):
+					_bodies[id][0].queue_free()
+				_bodies.erase(id)
+			continue
 		# The town's street things (stalls, carts, barrels, the fire's ring: town_life.gd's Life).
 		var life: Node = root.get_node_or_null("Life")
 		var props: Array = life.get_meta("footprints", []) if life else []
