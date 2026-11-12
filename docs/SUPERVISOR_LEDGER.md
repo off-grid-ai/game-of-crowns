@@ -121,6 +121,10 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- 15:20 (11-12) Freeciv research landed (22c72fe2, docs/research/freeciv-leverage-2026-11-12.md): our ruleset is stock
+  civ2civ3; every king-game rule lives in the bridge, unseen by Freeciv's AI and its saves. Mac: move rules into
+  Freeciv "after the square". Until then no new bridge rules; then decree buildings, riots/civil war, fought sieges,
+  seasons/disasters, ruleset Lua; stop save-rewrite truces, dice sieges, armies from nothing, teleport walking.
 - 15:40 (11-12) Light: 38f9f33d (look.json v3 exposure 1.35->1.25, white 5->8, bloom 0.08->0, saturation 1.25;
   weather roof snow 1.6->1.2; probe realm/tools/still_probe.py vs 01-town). Offline estimate only; next square round
   judges it (r11: mean 0.517, 7.7% blown, sat 0.39; target 0.431/0.5%/0.47). Ground snow tint -> army-ui.
