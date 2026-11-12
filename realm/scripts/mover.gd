@@ -483,10 +483,17 @@ func _process(delta: float) -> void:
 		_waited = 0.0
 		_drive(body, at, aim, flat, step)
 		return
-	if flat.length() <= step:
+	# The frame's whole step, through every point of the way it reaches (a road is baked every few centimetres: one
+	# point a frame would cap the pace at the frame rate).
+	while flat.length() <= step:
 		at = Vector3(aim.x, aim.y if _keep_y else at.y, aim.z)
+		step -= flat.length()
 		_i += 1
-	else:
+		if _i >= _way.size():
+			break
+		aim = _way[_i]
+		flat = Vector2(aim.x - at.x, aim.z - at.z)
+	if _i < _way.size() and step > 0.0:
 		var dir := flat.normalized() * step
 		var from_y := at.y
 		at += Vector3(dir.x, 0, dir.y)

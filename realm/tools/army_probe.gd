@@ -63,7 +63,10 @@ extends SceneTree
 ##     crown's (its orders draw those), a civilian or a ship;
 ## 20. a ship sails the water (the reign replay: Triremes 46 units from their tiles, never set out, as no land route
 ##     crosses the sea): the realm's paths give a sea route (land_paths.sea_path) that keeps to water round an island,
-##     and units.gd sends a ship by it.
+##     and units.gd sends a ship by it;
+## 21. a mover covers its speed whatever the frame rate (the reign replay: every off-tile figure still moving when its
+##     season ended): along a way baked every 0.05 units (a march's road), one frame of a second at speed 1 carries it
+##     about 1 unit, through every point it passes, not one point a frame.
 ## Prints "ARMY PROBE …" lines and "ARMY PROBE PASS" or "ARMY PROBE FAIL n"; quits with 0 or 1.
 
 const Data := preload("res://scripts/data.gd")
@@ -108,8 +111,26 @@ func _run() -> void:
 	_figure_keeps_up()
 	_house_marches_show()
 	_ship_sails_the_water()
+	_mover_keeps_its_speed()
 	print("ARMY PROBE PASS" if _fails == 0 else "ARMY PROBE FAIL %d" % _fails)
 	quit(0 if _fails == 0 else 1)
+
+
+## 21. A mover keeps its speed: a body on a straight way of points 0.05 apart, one frame of 1 s at speed 1.
+func _mover_keeps_its_speed() -> void:
+	var man := Node3D.new()
+	root.add_child(man)
+	var mo: Node = Mover.of(man)
+	var way := PackedVector3Array()
+	for i in 101:
+		way.append(Vector3(i * 0.05, 0, 0))
+	mo.speed = 1.0
+	mo.clip = ""
+	mo.follow(way)
+	mo.call("_process", 1.0)
+	var went := man.global_position.x
+	_check(absf(went - 1.0) < 0.06, "one frame of 1 s at speed 1 along a road baked every 0.05 carries a mover about 1 unit (%.2f)" % went)
+	man.queue_free()
 
 
 ## 20. A ship sails the water: a stand-in tile map 12 x 9 of ocean with an island (land) in the middle, 4 x 3 tiles.
