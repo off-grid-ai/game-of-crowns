@@ -1308,11 +1308,15 @@ func _yard_thing(root: Node3D, center: Vector3, pl: Array, face: Vector3, lots: 
 		sides.reverse()
 	var q := Vector3.INF
 	var k := 1.0
+	var yaw := atan2(face.x, face.z)
+	# The yard itself: behind the house's back wall, inside the back fence and the plot's sides (towns.gd _yard's lines).
+	var house_part := float(pl[3]) / (float(pl[3]) + TownPlots.YARD)
+	var yard := PackedVector2Array([corners[0].lerp(corners[3], house_part), corners[1].lerp(corners[2], house_part), corners[2], corners[3]])
 	for sc in yt[1]:
 		for side in sides:
 			var q2: Vector2 = corners[3].lerp(corners[2], float(side)) + Vector2(face.x, face.z) * (f.y * 0.5 * float(sc) + 0.04)
 			var c := Vector3(q2.x, 0, q2.y)
-			if terrain.is_land(center.x + c.x, center.z + c.z) and not _crowded(lots, c, maxf(f.x, f.y) * 0.4 * float(sc)) and not _on_road(c, 0.05) and _flat_enough(center, c, 0.15):
+			if _fits(yard, c, f * float(sc), yaw) and terrain.is_land(center.x + c.x, center.z + c.z) and not _crowded(lots, c, maxf(f.x, f.y) * 0.4 * float(sc)) and not _on_road(c, 0.05) and _flat_enough(center, c, 0.15):
 				q = c
 				k = float(sc)
 				break
@@ -1321,12 +1325,22 @@ func _yard_thing(root: Node3D, center: Vector3, pl: Array, face: Vector3, lots: 
 	if q == Vector3.INF:
 		root.set_meta("yard_things_refused", int(root.get_meta("yard_things_refused", 0)) + 1)  # the CHECK town yards line
 		return
-	var yaw := atan2(face.x, face.z)
 	_place(root, kind, q + Vector3(0, _ground_y(center, q) - 0.005, 0), yaw, Vector3.ONE * k)
 	lots.append([q, maxf(f.x, f.y) * 0.4 * k])
 	var all: Array = root.get_meta("yard_things", [])
 	all.append({"component": comp, "at": q})  # where the life at a yard goes (a pen's animals, the washing)
 	root.set_meta("yard_things", all)
+
+
+## Whether a thing of footprint `f`, set at `c` turned `yaw`, stands wholly inside `area` (a convex outline, town-local):
+## a yard's thing never pokes into the house or over the fence (the Meshy farm set's pen, bigger than the kit's).
+static func _fits(area: PackedVector2Array, c: Vector3, f: Vector2, yaw: float) -> bool:
+	var b := Basis(Vector3.UP, yaw)
+	for k in [Vector3(-0.5, 0, -0.5), Vector3(0.5, 0, -0.5), Vector3(0.5, 0, 0.5), Vector3(-0.5, 0, 0.5)]:
+		var w: Vector3 = c + b * (k * Vector3(f.x, 0, f.y))
+		if not Geometry2D.is_point_in_polygon(Vector2(w.x, w.z), area):
+			return false
+	return true
 
 
 ## Fence panels from `a` to `b` (town-local), on the ground, walked round;
