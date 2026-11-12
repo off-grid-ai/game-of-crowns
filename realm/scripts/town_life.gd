@@ -2067,7 +2067,7 @@ func _square_more(root: Node3D, life: Node3D, center: Vector3, n: Callable, go: 
 				_face(g, g.position + ff)
 				_mind(g, "guard", center)
 	# Guards at the castle's steps: along the castle's side that faces the square, a little out from it.
-	var poly: Variant = root.get_meta("castle_poly", null)
+	var poly: Variant = root.get_meta("castle_poly") if root.has_meta("castle_poly") else null  # a null default errors when unset (towns without a castle)
 	if poly is PackedVector2Array and (poly as PackedVector2Array).size() >= 3:
 		var cp := poly as PackedVector2Array
 		var best := Vector2.INF
