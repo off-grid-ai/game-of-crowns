@@ -121,6 +121,10 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- 10:40 (11-12) Round 5 (composites work): gate in the wall, terracotta house roofs, striped stalls read. Still: ring
+  laid twice (7 fronts then 3); castle a flat grey slab with orange courses, castle roofs bright red -> fire-siege;
+  grass lime under exposure 1.35, bare yards, empty counters, bare forecourt -> army-ui; crowd knot by the statue,
+  a pink villager, a floater on the plinth, big twisted horses -> works-life.
 - 10:30 (11-12) Round 4 (import ran; focus.sh composites now `arch -arm64 /usr/bin/python3`): brighter, cleaner lines,
   colourful crowd, the well reads. Still: square ring 3-4 fronts (blocked by "a building" 139, "a street" 114) ->
   fire-siege, plus gatehouse apart from the curtain and roofs too bright red; grass saturated emerald, side streets
