@@ -388,6 +388,14 @@ static func lens_aim(rows: Array, loser: int, met: bool, last: Vector3) -> Vecto
 	return sum / n if n > 0 else last
 
 
+## How many of the beaten side's regiments have broken (autoplay's `rout` step waits on it, so a film starts at
+## the first break).
+func routed() -> int:
+	if sides.size() < 2:
+		return 0
+	return (sides[loser] as Army).rows().filter(func(r): return String(r.get("state_name", "")) == "rout").size()
+
+
 ## Both hosts' regiments, [side 0's, side 1's] (what army_morale.gd reads).
 func _rows() -> Array:
 	return [(sides[0] as Army).rows(), (sides[1] as Army).rows()]

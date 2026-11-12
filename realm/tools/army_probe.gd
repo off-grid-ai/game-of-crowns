@@ -394,6 +394,8 @@ func _lens_on_the_rout() -> void:
 	_check(has, "the battle's lens has one rule (army_field.gd lens_aim, lens_distance)")
 	if not has:
 		return
+	_check(FieldS.get_script_method_list().any(func(m): return m["name"] == "routed") and FileAccess.get_file_as_string("res://scripts/autoplay.gd").contains("\"rout\":"),
+		"a film can wait for the first break (army_field.routed, autoplay's rout step)")
 	var want := Data.num("camera", "town_view.dist", 6.0)
 	_check(absf(float(FieldS.call("lens_distance")) - want) < 0.01, "the lens stands at the square's distance (%.1f, want %.1f)" % [float(FieldS.call("lens_distance")), want])
 	var holder := Node3D.new()

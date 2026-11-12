@@ -27,6 +27,7 @@ extends Node
 ##   order march         give the selected host (else the first) an order; march/garrison to the nearest town it can reach
 ##   answer              give the matter on the court card its first answer
 ##   director            let the camera director run, as it does in play
+##   rout 120            wait (at most 120 s) for the field battle's first break (--army-battle), so the film starts there
 
 var main: Node
 var out := ""
@@ -814,6 +815,16 @@ func _step(w: PackedStringArray) -> void:
 				else:
 					print("AUTOPLAY face none (%d on the map)" % faces.size())
 				await get_tree().create_timer(2.0).timeout
+			"rout":
+				# rout [most]: waits until a regiment of the field battle (--army-battle, army_field.gd) breaks, at most
+				# `most` seconds (120); the lens is already on the line where it breaks (army_field.lens_aim).
+				var most := float(w[1]) if w.size() > 1 else 120.0
+				var t0 := Time.get_ticks_msec()
+				var field: Node = main.get_node_or_null("FieldBattle")
+				while (Time.get_ticks_msec() - t0) / 1000.0 < most and (field == null or int(field.call("routed")) == 0):
+					await get_tree().create_timer(0.25).timeout
+					field = main.get_node_or_null("FieldBattle")
+				_note("  rout: %s after %.0f s" % ["the first break" if field != null and int(field.call("routed")) > 0 else "no break", (Time.get_ticks_msec() - t0) / 1000.0])
 			"director":
 				# director: the camera director runs as in play (shots turn it off).
 				main._shot["director"] = true
