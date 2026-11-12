@@ -74,14 +74,20 @@ func build(terrain: Node3D, ground_layer: int) -> void:
 	# blended in with distance so the tiling never shows.
 	mat.projection_enabled = true
 	mat.macro_variation_enabled = true
-	if PAINTED:
-		for k in [["a", "macro_variation1"], ["b", "macro_variation2"]]:
-			var c: Array = Data.value("ground", "macro." + String(k[0]), [])
-			if c.size() == 3:
-				mat.set_shader_param(String(k[1]), Color(float(c[0]), float(c[1]), float(c[2])))
 	mat.dual_scaling_enabled = true
 	mat.set_shader_param("macro_variation1", Color(0.78, 0.9, 0.7))  # lusher hollows
 	mat.set_shader_param("macro_variation2", Color(1.0, 0.86, 0.7))  # drier, sun-burnt rises
+	# The ground's broad hue tint (ground.json macro; research #3/#7: Anno's and AoE IV's big low-frequency tint over
+	# every layer, WC3's varied green, not one olive): its two colours and the size of its patches, set over the
+	# defaults above, painted ground or not (it was set only when painted, then overwritten by the line after).
+	for k in [["a", "macro_variation1"], ["b", "macro_variation2"]]:
+		var c: Array = Data.value("ground", "macro." + String(k[0]), [])
+		if c.size() == 3:
+			mat.set_shader_param(String(k[1]), Color(float(c[0]), float(c[1]), float(c[2])))
+	if Data.value("ground", "macro.scale", null) != null:
+		mat.set_shader_param("noise1_scale", Data.num("ground", "macro.scale", 0.04))  # Terrain3D's macro noise: lower is broader
+	if Data.value("ground", "macro.slope", null) != null:
+		mat.set_shader_param("macro_variation_slope", Data.num("ground", "macro.slope", 0.333))
 	_drape_atlas(mat, terrain)
 	var w: int = terrain.width * int(terrain.TILE)
 	var h: int = terrain.height * int(terrain.TILE)
