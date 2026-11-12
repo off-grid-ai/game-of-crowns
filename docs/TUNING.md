@@ -72,6 +72,7 @@ Switches (`--name`) go after `--` on the game's command line.
 
 ## The house colours and the target town (art target 01-town, 02-realm)
 - The political map's wash by zoom: `realm/data/look.json`: `politics.wash_near`, `wash_far`, and `map_from` / `map_to` (the camera's height over the ground where the wash, band and stripes come in; below it the land stays natural and only the border line shows); `politics.on` (on).
+- The realm at map zoom: a house's land edged, not filled: `realm/data/look.json` `politics.wash_far` (the tint inside, now 0.25), `politics.band` and `band_strength` (its colour strong just inside the border: how deep, a share of a tile, and how strong), `border_px` (the line); the land's hills shaded at map zoom: `realm/data/map.json` `relief.strength` (0 none) and `relief.light`.
 - The same `map_from` / `map_to` hold back the plain (politics off) far wash of a house's colour, so the land round a town stays painted ground at mid zoom.
 - How soon the sea's swell settles into a flat sheen away from the lens (further out it aliased into stripes): `realm/data/look.json`: `sea.waves_fade`.
 - Where a house's colour sits on its buildings: `realm/data/look.json`: `team.materials` (roof tiles, shutters `MI_Shutter`, timber `MI_WoodTrim`, banners), `team.ranks` (which components are ordinary houses), `team.paint.ordinary_share` (an ordinary house's share of the colour on its trims and shutters), `team.paint.saturation`, `team.paint.warm` (the colour toned to painted reds); `team.on` (on).

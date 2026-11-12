@@ -403,7 +403,8 @@ uniform float hold[64];
 uniform vec3 lean[64];
 uniform vec4 pol_k = vec4(0.3, 0.8, 0.45, 0.4);  // wash_near, wash_far, own_mix, stripes_below
 uniform vec4 pol_b = vec4(1.35, 3.0, 1.4, 0.0);  // border_bright, border_px, stripe_width
-uniform vec2 pol_z = vec2(12.0, 30.0);  // map_from, map_to: the camera's height over the ground where the wash comes in
+uniform vec4 pol_z = vec4(12.0, 30.0, 0.4, 0.35);  // map_from, map_to: the camera's height over the ground where the wash comes in; band, band_strength: the house's colour strong just inside its border (tile share, strength)
+uniform vec4 relief = vec4(0.0, -0.5, 0.7, -0.5);  // the land's relief at the map's height (data/map.json relief): strength, the light it is shaded from
 uniform vec4 pol_l = vec4(9.0, 22.0, 0.22, 0.55);  // line_from, line_to (camera height where borders fade in), soft (the painted band's width, tile share), crisp (the fine line's share)
 float flood_d(vec2 t) {
 	float d = 100000.0;
@@ -417,6 +418,11 @@ vec4 realm_owner(ivec2 c) {
 }
 """
 const REALM_WASH := """
+	// The land's relief at the map's height (data/map.json relief; target 02-realm: hills and mountains stand out):
+	// each slope shaded from a low light, as a painted map draws its hills; flat ground keeps its colour.
+	float relief_zoom = smoothstep(pol_z.x, pol_z.y, CAMERA_POSITION_WORLD.y - v_vertex.y);
+	float relief_lit = dot(normalize(w_normal), normalize(relief.yzw));
+	ALBEDO *= mix(1.0, clamp(0.3 + relief_lit * 0.99, 0.5, 1.3), relief.x * relief_zoom);
 	if (realm_on > 0.5) {
 		vec2 rt = v_vertex.xz / realm_tile;
 		vec2 rg = rt - 0.5;
@@ -448,7 +454,7 @@ const REALM_WASH := """
 		float edge = other >= 0 ? 1.0 - smoothstep(px * 1.2, px * 2.6 + 0.01, gap) : 0.0;
 		if (politics > 0.5 && other >= 0) edge = 1.0 - smoothstep(px * pol_b.y * 0.5, px * pol_b.y + 0.01, gap);  // a crisp, bolder line
 		// A band of stronger colour just inside it, as a map would draw a realm's edge.
-		float band = other >= 0 ? 1.0 - smoothstep(0.0, 0.4, gap) : 0.0;
+		float band = other >= 0 ? 1.0 - smoothstep(0.0, pol_z.z, gap) : 0.0;
 		// The two houses' standing across this border (terrain.politics.set_realm): r war, g truce, b sworn.
 		vec4 sa = texelFetch(war_tex, clamp(cs[best], ivec2(0), ivec2(realm_size) - 1), 0);
 		vec4 sb = other >= 0 ? texelFetch(war_tex, clamp(cs[other], ivec2(0), ivec2(realm_size) - 1), 0) : vec4(0.0);
@@ -486,7 +492,7 @@ const REALM_WASH := """
 				// By the camera's height, not each spot's distance: at roof and town height the land near and far
 				// stays natural (the house reads from banners and roofs); the wash, the band and the stripes come in
 				// only as the lens rises to the map. The border line stays at every height.
-				k = (mix(pol_k.x, pol_k.y, map_zoom) * hd + band * 0.35 + front * 0.5) * mix(0.15, 1.0, map_zoom);
+				k = (mix(pol_k.x, pol_k.y, map_zoom) * hd + band * pol_z.w + front * 0.5) * mix(0.15, 1.0, map_zoom);
 			}
 			ALBEDO = mix(ALBEDO, tinted, clamp(k, 0.0, politics > 0.5 ? 0.92 : 0.85));
 		}
@@ -549,7 +555,7 @@ func _show_realm(realm: Texture2D, prev: Texture2D, war: Texture2D, flood: Dicti
 
 
 ## The political map's per-house numbers (terrain.politics.set_realm): hold and lean by owner id, and the knobs.
-func set_politics(on: bool, hold: PackedFloat32Array, lean: PackedVector3Array, k: Vector4, b: Vector4, z := Vector2(12.0, 30.0), l := Vector4(9.0, 22.0, 0.22, 0.55)) -> void:
+func set_politics(on: bool, hold: PackedFloat32Array, lean: PackedVector3Array, k: Vector4, b: Vector4, z: Vector4, l: Vector4, r: Vector4) -> void:
 	if land == null:
 		return
 	var mat: Terrain3DMaterial = land.material
@@ -560,6 +566,7 @@ func set_politics(on: bool, hold: PackedFloat32Array, lean: PackedVector3Array, 
 	mat.set_shader_param("pol_b", b)
 	mat.set_shader_param("pol_z", z)
 	mat.set_shader_param("pol_l", l)
+	mat.set_shader_param("relief", r)
 
 
 ## The scars as terrain.politics.set_marks drew them, and the season it is now.

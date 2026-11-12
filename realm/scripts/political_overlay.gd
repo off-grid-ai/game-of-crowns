@@ -56,8 +56,16 @@ func _set_politics(players: Array, colour: Dictionary, by_name: Dictionary) -> v
 	_t.land3d.set_politics(on, hold, lean,
 		Vector4(float(pol.get("wash_near", 0.3)), float(pol.get("wash_far", 0.8)), float(pol.get("own_mix", 0.45)), float(pol.get("stripes_below", 0.4))),
 		Vector4(float(pol.get("border_bright", 1.35)), float(pol.get("border_px", 3.0)), float(pol.get("stripe_width", 1.4)), 0.0),
-		Vector2(float(pol.get("map_from", 12.0)), float(pol.get("map_to", 30.0))),
-		Vector4(float(pol.get("line_from", 9.0)), float(pol.get("line_to", 22.0)), float(pol.get("line_soft", 0.22)), float(pol.get("line_crisp", 0.55))))
+		Vector4(float(pol.get("map_from", 12.0)), float(pol.get("map_to", 30.0)), float(pol.get("band", 0.4)), float(pol.get("band_strength", 0.35))),
+		Vector4(float(pol.get("line_from", 9.0)), float(pol.get("line_to", 22.0)), float(pol.get("line_soft", 0.22)), float(pol.get("line_crisp", 0.55))),
+		_relief())
+
+
+
+## The land's relief at the map's height (data/map.json relief): its strength and the light it is shaded from.
+static func _relief() -> Vector4:
+	var l: Array = preload("res://scripts/data.gd").value("map", "relief.light", [-0.5, 0.7, -0.5])
+	return Vector4(preload("res://scripts/map_look.gd").num("relief.strength", 0.0), float(l[0]), float(l[1]), float(l[2]))
 
 
 func set_realm(owners: Array, players: Array, intrigue: Array = []) -> void:

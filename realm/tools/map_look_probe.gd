@@ -2,7 +2,9 @@ extends SceneTree
 ## Headless check that the realm at map zoom has one look (integration audit #8: old/new switches keep both
 ## paths; READY.md line 15, one path). The map marks (house standards, march lines, siege swords), the
 ## political map and the painted overview's held lands always draw, with no --map=v1/v2 switch, no `version`
-## in data/map.json, and no v1 drawing left in realm_map.gd. Exit 1 on a failure.
+## in data/map.json, and no v1 drawing left in realm_map.gd. And the 3D land at map zoom edges each house's land
+## (a strong band inside a bold line, a light tint within; look.json politics) and shades its relief (map.json relief).
+## Exit 1 on a failure.
 ##   arch -arm64 godot --headless --path realm -s res://tools/map_look_probe.gd
 
 const FILES := ["map_look.gd", "map_marks.gd", "map_labels.gd", "overview.gd", "realm_map.gd", "political_overlay.gd"]
@@ -71,5 +73,18 @@ func _init() -> void:
 			print("FAIL v2 tints the house's lands %s" % how)
 			fails += 1
 		v.free()
+	# The realm at map zoom (pass 2159 against 02-realm: borders filled the land pink and the land read flat): a house's
+	# land reads by its edge, a strong band of its colour inside a bold line and a light tint within, and the land
+	# keeps its relief, its slopes shaded at the map's height.
+	var pol: Dictionary = (JSON.parse_string(FileAccess.get_file_as_string("res://data/look.json")) as Dictionary).get("politics", {})
+	var inside := float(pol.get("wash_far", 1.0))
+	var edge := float(pol.get("band_strength", 0.0))
+	if inside > 0.35 or edge < inside * 2.0 or float(pol.get("band", 0.0)) < 0.6 or float(pol.get("border_px", 0.0)) < 4.0:
+		print("FAIL a house's land is filled, not edged: inside %.2f, band %.2f strength %.2f, line %s px (want inside at most 0.35, the band twice as strong and 0.6 tile deep, a 4 px line)" % [inside, float(pol.get("band", 0.0)), edge, pol.get("border_px", 0)])
+		fails += 1
+	var land_src := FileAccess.get_file_as_string("res://scripts/land3d.gd")
+	if float((data.get("relief", {}) as Dictionary).get("strength", 0.0)) <= 0.0 or not land_src.contains("dot(normalize(w_normal), normalize(relief.yzw))") or not land_src.contains("smoothstep(0.0, pol_z.z, gap)"):
+		print("FAIL the map reads flat: no relief shading at map zoom (data/map.json relief, land3d.gd's shader) or the band is not the data's")
+		fails += 1
 	print("PASS" if fails == 0 else "FAIL %d" % fails)
 	quit(1 if fails else 0)
