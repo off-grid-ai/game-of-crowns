@@ -317,6 +317,30 @@ static func dyed(src: Material, rgb) -> Material:
 		p.roughness = maxf(p.roughness, 0.85)
 		p.resource_name = "Painted_%s_%s" % [src.resource_name, p.albedo_color.to_html(false)]
 		return p
+	# {"stripes": [[r, g, b], [r, g, b], count, across]}: the cloth woven in two-colour stripes (art target 01-town: the
+	# stalls' red-and-white and yellow-and-white awnings; the kit cloth has none), `count` stripes over its texture's
+	# width, or its height when `across`; its weave kept in the normal map.
+	if src is BaseMaterial3D and rgb is Dictionary and (rgb as Dictionary).get("stripes") is Array:
+		var st: Array = rgb["stripes"]
+		var key := "stripes:%s:%s" % [src.resource_name, str(st)]
+		if not _cache.has(key):
+			var a: Array = st[0]
+			var b: Array = st[1]
+			var n := maxi(2, int(st[2]) if st.size() > 2 else 16)
+			var across: bool = st.size() > 3 and bool(st[3])
+			var img := Image.create(256, 256, false, Image.FORMAT_RGB8)
+			for y in 256:
+				for x in 256:
+					var t := float(y if across else x) / 256.0 * n
+					img.set_pixel(x, y, Color(float(a[0]), float(a[1]), float(a[2])) if int(t) % 2 == 0 else Color(float(b[0]), float(b[1]), float(b[2])))
+			img.generate_mipmaps()
+			var s: BaseMaterial3D = src.duplicate()
+			s.albedo_texture = ImageTexture.create_from_image(img)
+			s.albedo_color = Color(1, 1, 1, s.albedo_color.a)
+			s.roughness = maxf(s.roughness, 0.85)
+			s.resource_name = "Striped_%s_%d" % [src.resource_name, hash(key)]
+			_cache[key] = s
+		return _cache[key]
 	if not src is BaseMaterial3D or not rgb is Array or (rgb as Array).size() < 3:
 		return src
 	var m: BaseMaterial3D = src.duplicate()
