@@ -121,6 +121,10 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- 15:00 (11-12) Round 11 (shared tree, Meshy wiring uncommitted; /tmp/goc-focus/r11/, 0 script errors), sent to Mac:
+  Meshy houses, statue, well show round the square. Defects: roof house-colour mask reads as red smears, stray planks,
+  stalls packed in rows. overlapprobe 19/53 inside something (18 people, 1 cart) -> parent routes. navprobe walked 0
+  (broken) -> army-ui. Tree bake-off didn't stand ("work Kingsmere tree_bakeoff: none") -> fire-siege; no tree pick.
 - 14:45 (11-12) Mac like: the Meshy king's statue in the square, "this actually looks good". It's the bar for the
   square set (full painted colour, gold trim, house banner on the plinth, clear silhouette). Mac on the square still,
   "SUPER weird": routed (note supervisor-routing-square-weird.md in the shared notes): grey fountain-well and trees
