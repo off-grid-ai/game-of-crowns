@@ -146,8 +146,6 @@
     "ladder": { "heightRange": [2, 5], "kind": "clutter", "variants": [ { "model": "realistic/ph/wooden_ladder/wooden_ladder_1k.gltf", "name": "ph/wooden_ladder", "length": 3.0 } ] },
     "lantern": { "heightRange": [0.2, 0.9], "kind": "clutter", "variants": [ { "model": "realistic/ph/wooden_lantern_01/wooden_lantern_01_1k.gltf", "name": "ph/wooden_lantern_01", "length": 0.35 } ] },
     "square_statue": {"heightRange": [4.0, 8.0], "kind": "centrepiece", "variants": []},
-    "square_fountain": { "heightRange": [2.5, 5.0], "kind": "centrepiece", "variants": [ { "name": "kit_square_fountain", "builder": "house", "spec": { "pieces": [
-      ["res://assets/town/fountain-round-detail.glb", [0, 0, 0], 0, 2.2, {"colormap": {"like": "Floor_UnevenBrick", "triplanar": 0.5}, "Water": {"water": {"colour": [0.1, 0.2, 0.22], "alpha": 0.85, "roughness": 0.05}}}], ["res://assets/town/pillar-stone.glb", [0, 0.9, 0], 0, [5.0, 2.4, 5.0], {"colormap": {"like": "Floor_UnevenBrick", "triplanar": 0.6}}], ["res://assets/props/Vase_2.gltf", [0, 3.3, 0], 0, 1.0] ] } } ] },
     "well": {"heightRange": [2.5, 4.5], "kind": "well", "variants": []},
     "fire_pit": { "heightRange": [0.2, 1], "kind": "well", "variants": [ { "model": "realistic/ph/stone_fire_pit/stone_fire_pit_1k.gltf", "name": "ph/stone_fire_pit", "length": 1.6 } ] },
     "stump": { "heightRange": [0.2, 1.2], "kind": "stump", "variants": [
