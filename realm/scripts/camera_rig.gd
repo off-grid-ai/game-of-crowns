@@ -668,35 +668,53 @@ const LENS_EASE := 10.0  # how quickly the lens's own corrections (roofs, crowns
 func _lens_bodies() -> void:
 	if towns == null:
 		return
+	# Only the towns the lens can reach have bodies, nearest first, within a budget (Jolt holds at most 10,240 a
+	# space, and every house, wall stretch and cart is one; a body made past the cap never exists, so the camera's
+	# own town once stood without any): a town whose nearest edge lies further from what the camera looks at than
+	# its arm (never counted past OVERVIEW: the realm starts at 120 out, before its first frame) and lens.margin,
+	# or past lens.budget bodies, has its bodies taken out of the world at once and built again when it comes near.
+	var arm := minf(maxf(distance, goal_distance), OVERVIEW) + knob("lens.margin", 12.0)
+	var order := []
 	for id in towns.towns:
 		var root: Node3D = towns.towns[id]["node"]
 		if not is_instance_valid(root):
 			continue
+		var reach := 0.0
+		for fp in (root.get_meta("footprints", []) as Array) + (root.get_meta("walls", []) as Array).map(func(w): return w[0]):
+			for q in fp:
+				reach = maxf(reach, (q as Vector2).length())
+		order.append([Vector2(root.global_position.x - target.x, root.global_position.z - target.z).length() - reach, id])
+	order.sort_custom(func(a, b): return a[0] < b[0])
+	var budget := int(knob("lens.budget", 8000.0))
+	var build := []
+	for o in order:
+		var id: Variant = o[1]
+		var root: Node3D = towns.towns[id]["node"]
 		var fps: Array = root.get_meta("footprints", [])
 		var walls: Array = root.get_meta("walls", [])
 		var tops: Array = root.get_meta("tops", [])
-		# Only the towns the lens can reach have bodies (Jolt holds at most 10,240, and every town's every house,
-		# wall and cart is one): a town whose nearest edge lies further from what the camera looks at than the
-		# camera's arm (and lens.margin) has its bodies freed, built again when the camera comes near.
-		var reach := 0.0
-		for fp in fps + walls.map(func(w): return w[0]):
-			for q in fp:
-				reach = maxf(reach, (q as Vector2).length())
-		var off := Vector2(root.global_position.x - target.x, root.global_position.z - target.z).length()
-		if off - reach > maxf(distance, goal_distance) + knob("lens.margin", 12.0):
-			if _bodies.has(id):
-				if is_instance_valid(_bodies[id][0]):
-					_bodies[id][0].queue_free()
-				_bodies.erase(id)
-			continue
 		# The town's street things (stalls, carts, barrels, the fire's ring: town_life.gd's Life).
 		var life: Node = root.get_node_or_null("Life")
 		var props: Array = life.get_meta("footprints", []) if life else []
+		var count := fps.size() + walls.size() + props.size()
+		if float(o[0]) > arm or count > budget:
+			_drop_bodies(id)
+			continue
+		budget -= count
 		var sig := hash([fps, tops, walls, props])  # a site growing changes its height, not its count
 		if _bodies.has(id) and _bodies[id][1] == sig and is_instance_valid(_bodies[id][0]):
 			continue
-		if _bodies.has(id) and is_instance_valid(_bodies[id][0]):
-			_bodies[id][0].queue_free()
+		_drop_bodies(id)
+		build.append([id, root, fps, walls, tops, props, sig])
+	# Built once every town out of reach has let go of its bodies.
+	for b in build:
+		var id: Variant = b[0]
+		var root: Node3D = b[1]
+		var fps: Array = b[2]
+		var walls: Array = b[3]
+		var tops: Array = b[4]
+		var props: Array = b[5]
+		var sig: int = b[6]
 		var holder := Node3D.new()
 		holder.name = "LensBodies"
 		for i in fps.size():
@@ -723,6 +741,16 @@ func _lens_bodies() -> void:
 			_prism(holder, fp, PROP_TOP, PROP_LAYER, _floor_at(world) - root.global_position.y)
 		root.add_child(holder)
 		_bodies[id] = [holder, sig]
+
+
+## A town's lens bodies out of the physics world now (not at the frame's end, so the ones built next have room).
+func _drop_bodies(id: Variant) -> void:
+	if _bodies.has(id) and is_instance_valid(_bodies[id][0]):
+		var h: Node3D = _bodies[id][0]
+		if h.get_parent():
+			h.get_parent().remove_child(h)
+		h.queue_free()
+	_bodies.erase(id)
 
 
 ## One building as the lens sees it: a body of its own (so the one the eye
