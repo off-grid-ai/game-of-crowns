@@ -98,7 +98,7 @@ func _ready() -> void:
 		elif a.begins_with("--army-select="):
 			_want_select = a.substr(14)
 	# Wait for the land and the realm's towns as the bridge reports them.
-	while main.terrain.width == 0 or not main.terrain.built or (main.bridge.world.get("cities", []) as Array).is_empty():
+	while main.terrain.width == 0 or not main.terrain.built or (main.awareness.rec("cities", []) as Array).is_empty():
 		await get_tree().create_timer(0.5).timeout
 	var seat := _seat() if not battle.has("field") else {"name": "the field"}
 	var town: Vector3 = _ground_at(battle["field"]) if battle.has("field") else Vector3.ZERO
@@ -354,13 +354,13 @@ func waver(r: Dictionary, w: float) -> void:
 
 ## The crown's largest host from /world (bridge/hosts.js), a regiment per company: [{id, unit, men, strength}].
 func _from_world() -> Array:
-	var hosts: Array = main.bridge.world.get("hosts", [])
+	var hosts: Array = main.awareness.rec("hosts", [])
 	if hosts.is_empty():
 		return []
 	var h: Dictionary = hosts[0]  # the bridge sorts them largest first
 	host_id = int(h.get("id", 0))
 	var types := {}
-	for u in main.bridge.world.get("units", []):
+	for u in main.awareness.rec("units", []):
 		types[int(u.get("id", -1))] = u
 	var each := float(h.get("men", 0)) / maxf(1.0, float(h.get("companies", 1)))
 	var full := Data.num("army", "hpFull", 10.0)
@@ -1014,7 +1014,7 @@ func _road_in(town: Vector3) -> void:
 	var roads = main.get("roads")
 	var way := PackedVector3Array()
 	if roads and roads.has_method("route") and not battle.has("field"):
-		var others: Array = (main.bridge.world.get("cities", []) as Array).duplicate()
+		var others: Array = (main.awareness.rec("cities", []) as Array).duplicate()
 		var seat_xy := Vector2(town.x, town.z)
 		var pos := func(c) -> Vector3: return main.terrain.world_pos(float(c["x"]), float(c["y"]))
 		others = others.filter(func(c): return Vector2((pos.call(c) as Vector3).x, (pos.call(c) as Vector3).z).distance_to(seat_xy) > 1.0)
@@ -1351,11 +1351,11 @@ static func _thousands(n: int) -> String:
 ## The host's seat: the town its muster names (battle seat: a city id), else the crown's (/world seatId), or
 ## Kingsmere by name.
 func _seat() -> Dictionary:
-	var cities: Array = main.bridge.world.get("cities", [])
+	var cities: Array = main.awareness.rec("cities", [])
 	for c in cities if battle.has("seat") else []:
 		if int(c.get("id", -2)) == int(battle["seat"]):
 			return c
-	var want := int(main.bridge.world.get("seatId", -1)) if main.bridge.world.get("seatId") != null else -1
+	var want := int(main.awareness.rec("seatId", -1))
 	for c in cities:
 		if int(c.get("id", -2)) == want:
 			return c

@@ -115,7 +115,7 @@ func _ready() -> void:
 		_raise_in_play()
 		return
 	_dist = lens_distance()
-	while main.terrain.width == 0 or not main.terrain.built or (main.bridge.world.get("cities", []) as Array).is_empty():
+	while main.terrain.width == 0 or not main.terrain.built or (main.awareness.rec("cities", []) as Array).is_empty():
 		await get_tree().create_timer(0.5).timeout
 	var deep: Array = Data.value(F, "field.frontage", [10, 14])
 	var crown: Army = Army.new(main, men, {"side": 0, "shape": "line", "frontage": deep})
