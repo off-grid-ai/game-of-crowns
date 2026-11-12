@@ -448,6 +448,11 @@ func _real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds
 	# A seat's castle: stone walls, towers and gatehouse, on its own ground at
 	# the town's edge, gate turned toward the square, the house's banner above.
 	var gap_ang := rng.randf() * TAU
+	# The castle across the square from its stalls (towns.json castle.gate_clear; round 3, 01-town: a clear cobbled
+	# way from the square to the gate, the stalls ringing the well, not pressed against the gate): its heading search
+	# starts opposite the market's side. Off: a random start, as before.
+	if seat and bool(_castle_knobs().get("gate_clear", false)) and root.has_meta("market_ang"):
+		gap_ang = float(root.get_meta("market_ang")) + PI
 	if seat:
 		# The castle to the seat's rank (data/assets.json castle: the crown's first, a great house's after it).
 		var cv: Array = Real.variants("castle")
@@ -1946,6 +1951,7 @@ func _plaza(root: Node3D, center: Vector3, square_r: float, size: int, seat: boo
 		return true
 	var places: Dictionary = root.get_meta("places", {})
 	var market_ang := rng.randf() * TAU
+	root.set_meta("market_ang", market_ang)  # the stalls' side of the square (the castle turns its gate from it)
 	# The well, off the heart toward the side away from the stalls, so the
 	# market keeps its open ground.
 	var well := Vector3(cos(market_ang + PI), 0, sin(market_ang + PI)) * square_r * rng.randf_range(0.42, 0.52)
@@ -1977,6 +1983,9 @@ func _plaza(root: Node3D, center: Vector3, square_r: float, size: int, seat: boo
 	# square has its statue and, out in the cobbles, the little roofed well the town draws its water from).
 	if well != draw_well and bool(_market_knobs().get("well_too", false)) and Real.footprint(draw_kind) != Vector2.ZERO:
 		draw_well = draw_well.normalized() * square_r * float(_market_knobs().get("well_at", 0.5))
+		# Turned aside off the castle's way in (towns.json market.<rank>.beside_turn, degrees): the statue flanks the
+		# approach to the gate rather than standing in it.
+		draw_well = Basis(Vector3.UP, deg_to_rad(float(_market_knobs().get("beside_turn", 0.0)))) * draw_well
 		var stood: bool = drop.call(draw_kind, draw_well, rng.randf() * TAU)
 		if stood:
 			lots.append([draw_well, maxf(Real.footprint(draw_kind).x, Real.footprint(draw_kind).y) * 0.5])
