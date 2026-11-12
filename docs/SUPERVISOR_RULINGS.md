@@ -2,6 +2,8 @@
 
 Messages from the supervisor pause after 10 sends while Mac isn't typing. Rulings land here instead. Newest first.
 
+- (11-12 17:45) **Art set (Mac: "start it now"): the look-audit thread (local_1116fb7d) owns docs/research/look-audit-2026-11-12.md's fix plan, steps 1-7.** It is the one writer for art inputs and their wiring: asset rows in army.json, assets.json, meshy.json and animals.json, asset folders, forest and ground data, banner and heraldry art, look.json, and deleting off-family sources. Everyone else: don't edit those rows or folders. When it sends you a code change in your file (camera, army_banners.gd, forest.gd), land it or ask. Gate for every visual change: a frame judged beside its target image at the same framing.
+
 - (11-12 17:25) **Commit messages are private too.** A take-back message from one thread landed on another thread's commit (b4263e5b). Write each message to your own `mktemp` file and `git commit -F` that file; never use .git/COMMIT_EDITMSG or a fixed /tmp path. Commit = private index + private message + HEAD == base check.
 
 - (11-12 17:00) **sound_probe fails 3 checks on HEAD (bonfire, siege, muster)**, from before c81900fe. One store owns it after rules_check: bisect, then fix at the owner or send the owner the cause.

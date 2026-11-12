@@ -34,7 +34,7 @@ Audit 2026-11-12 (supervisor): what the design homework planned against what lan
 | 14 | Command card on | Attack and besiege orders exist, drag-to-face, and `host_command.json` is switched on | Army command | built (d0a609b9; host_command.json on since 5af67493) |
 | 15 | Properly integrated | Mac: "everything properly integrated: SSOT, SRP, DRY, SOLID, OOP." Every finding of the architecture audit (supervisor, 12 Nov) fixed at its seam: one writer per fact, no duplicated logic, god files split, no second path left; less hand code (Mac: "make sure that there is less hand code"): what an engine block, add-on, Freeciv rule or data row can do is deleted from our code, and the hand-code line count goes down | All threads, by file owner | in progress: landed #1, #2, #3, #4, #5, #6, #7, #8, #9, #10, #11, #12, #13, #14, #15, #16, #17, #18, #19; left #20 (all: knobs into data) |
 
-## Look pass (Mac 11-12 16:20: "finish the build first", then this)
+## Look pass (Mac 11-12 17:45: "start it now"; owner: look-audit thread, plan in docs/research/look-audit-2026-11-12.md)
 Mac on the war-slice frames: "the heavy cavalry looks so childish… even the banner sigils are off… even the trees look childish… this isn't what we agreed". The probes proved function, not the look. After lines 10 and 15 are built, before the full round is called done, each item below is judged by eye beside docs/art/target/03-army.jpg (and 01-town for trees) at the same framing.
 | # | Item | Today | Target |
 |---|---|---|---|
