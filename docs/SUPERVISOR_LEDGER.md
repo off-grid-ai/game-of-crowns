@@ -11,6 +11,9 @@ limit. Newest first. The plan is [PLAN.md](PLAN.md); the running log of checks i
   - Supervisor "Game of Crowns visual polish": this session (its id is shown by ListAgents).
   - "Freeciv: move the king's rules into Freeciv" `local_0a0368db-d8d8-4522-ae5d-d1c9f4328888`: raids as Freeciv barbarians.
   - "Town life: one director, hand-written scenes gone" `local_6abf9bb7-7230-46ea-875c-8e253bc08578`: blackboard "clip" error, parked bodies.
+  - "Army layer: six systems into one" `local_f87ba101-b783-4de0-9186-5b9ba1e2f8ba`: READY 3, 4, 5.
+  - "Life at the works and grounded people" `local_bbc2c617-c985-48f2-8ffc-c905f7a9f920`: works_probe, trades' workers.
+  - "One store: every view reads awareness" `local_b52a8672-a42c-4e63-b841-6c4fa594c361`: READY 11.
   - "GoC" `local_9c8426ac-4628-4b65-9396-561a0acc3de3`: the round clock; it restarts its children "Fire and siege to the
     measured rules" (trades wave) and "Army command: select ring and command card" (walk map, double-click pan).
 - **Role:** supervise the builders, judge their work against the casebook, route Mac's notes, and keep the plan.
