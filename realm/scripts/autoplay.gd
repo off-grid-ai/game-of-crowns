@@ -338,15 +338,28 @@ func _step(w: PackedStringArray) -> void:
 						break
 					var nav = load("res://scripts/town_nav.gd").new()
 					nav.terrain = main.terrain
-					nav.map_for(int(c["id"]), root)
-					for i in 120:
-						if nav.ready(nav.map_for(int(c["id"]), root)):
-							break
+					# Wait for the walk map by the clock, not by frames (round 11: 120 frames at the render's rate ended
+					# before the bake of a few thousand outlines landed, and the probe walked nothing), counting how
+					# often the map is baked afresh meanwhile (the town's layout changing under it).
+					var map: RID = nav.map_for(int(c["id"]), root)
+					var rebakes := 0
+					var since := Time.get_ticks_msec()
+					while not nav.ready(map) and Time.get_ticks_msec() - since < 90000:
 						await get_tree().process_frame
+						var again: RID = nav.map_for(int(c["id"]), root)
+						if again != map:
+							rebakes += 1
+							map = again
+					var waited := (Time.get_ticks_msec() - since) / 1000.0
+					if not nav.ready(map):
+						_note("CHECK nav probe: FAIL %s: its walk map isn't ready after %.0f s (baked afresh %d times while waiting, layout now %s; bakes still out %d)" % [title, waited, rebakes, str(load("res://scripts/nav_ground.gd").layout(root)), int(nav._baking.get(map, 0))])
+						break
 					var rng := RandomNumberGenerator.new()
 					rng.seed = 11
 					var r: Dictionary = nav.probe(int(c["id"]), root, nn, rng)
-					_note("CHECK nav probe: %s: %d walks, %d segments, %d crossing something (%d walks), straight lines would cross %d; the cart's straight legs into the market: %d of %d through something; %d outlines; crossed near %s" % [title, r["paths"], r["segments"], r["crossing"], r["paths_crossing"], r["straight"], r.get("cart_crossing", 0), r.get("cart_legs", 0), load("res://scripts/town_nav.gd").footprints(root).size(), str(r["what"])])
+					if int(r["paths"]) == 0:
+						_note("CHECK nav probe: FAIL %s: the walk map was ready after %.1f s (%d rebakes) but no walk found a path" % [title, waited, rebakes])
+					_note("CHECK nav probe: %s: ready after %.1f s, %d rebakes; %d walks, %d segments, %d crossing something (%d walks), straight lines would cross %d; the cart's straight legs into the market: %d of %d through something; %d outlines; crossed near %s" % [title, waited, rebakes, r["paths"], r["segments"], r["crossing"], r["paths_crossing"], r["straight"], r.get("cart_crossing", 0), r.get("cart_legs", 0), load("res://scripts/town_nav.gd").footprints(root).size(), str(r["what"])])
 					break
 			"overlapprobe":
 				# overlapprobe Town [secs]: every person, horse and cart in the town's square sampled twice a second for
