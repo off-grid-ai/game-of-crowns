@@ -80,7 +80,9 @@ export const homewardHold = (ids) => `realm_hold("${ids.map(n).join(",")}")`;
 export const homewardStep = (id, way) => `realm_walk_home(${n(id)}, "${way.map(([x, y]) => `${n(x)},${n(y)}`).join(";")}")`;
 export const disbandHome = (id, cityId) => `realm_disband_home(${n(id)}, ${n(cityId)})`;
 export const homewardRelease = (ids) => `realm_release("${ids.map(n).join(",")}")`;
-// The King's host takes ship and comes ashore (hosts.js crossing; realmrules/script.lua realm_ferry_board, realm_ferry_land):
-// Freeciv's own Transport Board / Embark and Disembark actions. Report "FERRY board n of m", "FERRY land n of m".
-export const ferryBoard = (units, hulls) => `realm_ferry_board("${units.map(n).join(",")}", "${hulls.map(n).join(",")}")`;
-export const ferryLand = (units, x, y) => `realm_ferry_land("${units.map(n).join(",")}", ${n(x)}, ${n(y)})`;
+// The King's host takes ship and comes ashore (hosts.js crossing; realmrules/script.lua realm_ferry_raise, realm_ferry_land):
+// the crown raises and pays for its Triremes on the water (x, y) and the host boards them by Freeciv's own Transport
+// Board / Embark; ashore by Transport Disembark, the ships disbanded. Report "FERRY raise k of n", "FERRY board n of m",
+// "FERRY land n of m".
+export const ferryRaise = (pid, units, x, y, ships, cost) => `realm_ferry_raise(${n(pid)}, "${units.map(n).join(",")}", ${n(x)}, ${n(y)}, ${n(ships)}, ${n(cost)})`;
+export const ferryLand = (units, x, y, hulls) => `realm_ferry_land("${units.map(n).join(",")}", ${n(x)}, ${n(y)}, "${hulls.map(n).join(",")}")`;

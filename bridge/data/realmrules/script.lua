@@ -1222,7 +1222,7 @@ local function realm_try(u, names, target)
   return false
 end
 
-function realm_ferry_board(units, hulls)
+local function realm_ferry_board(units, hulls)
   local hs = {}
   for id in tostring(hulls or ""):gmatch("%d+") do
     local h = find.unit(nil, tonumber(id))
@@ -1246,9 +1246,34 @@ function realm_ferry_board(units, hulls)
   log.normal("FERRY board %d of %d", ok, n)
 end
 
--- The King's host comes ashore on the tile (x, y) beside its hulls, by Freeciv's own Transport Disembark. (Aboard,
--- realm_ferry_board left each company held from the AI: it goes where its hull goes.)
-function realm_ferry_land(units, x, y)
+-- The crown raises the King's host its ships (bridge hosts.js crossing; the supervisor's ruling, 2026-11-12): `ships`
+-- Triremes on the water tile (x, y) beside the shore where the host stands, paid from the treasury (`cost` gold,
+-- realm_gold: booked as the crown's dealings), then the host boards them. Nothing is raised when the crown can't pay.
+function realm_ferry_raise(pid, units, x, y, ships, cost)
+  local p = realm_find_player(pid)
+  local t = find.tile(x, y)
+  local ut = find.unit_type("Trireme")
+  if not (p and t and ut) then log.normal("FERRY raise 0 of %d: no crown, water or ship", ships); return end
+  if p:gold() < cost then log.normal("FERRY raise 0 of %d: the treasury holds %d of %d", ships, p:gold(), cost); return end
+  local ids = {}
+  for i = 1, ships do
+    local ok, u = pcall(edit.create_unit, p, t, ut, 0, nil, -1)
+    if ok and u then ids[#ids + 1] = string.format("%d", u.id) end
+  end
+  if #ids < ships then
+    for id in table.concat(ids, ","):gmatch("%d+") do local u = find.unit(nil, tonumber(id)); if u then edit.unit_kill(u, "disbanded", nil) end end
+    log.normal("FERRY raise 0 of %d: the water took no ship", ships)
+    return
+  end
+  realm_gold(p.id, -cost)
+  log.normal("FERRY raise %d of %d", #ids, ships)
+  realm_ferry_board(units, table.concat(ids, ","))
+end
+
+-- The King's host comes ashore on the tile (x, y) beside its hulls, by Freeciv's own Transport Disembark (aboard,
+-- realm_ferry_board left each company held from the AI: it goes where its hull goes); then the ships (`hulls`) are
+-- disbanded: the crown raised them for this crossing alone.
+function realm_ferry_land(units, x, y, hulls)
   local t = find.tile(x, y)
   local n, ok = 0, 0
   for id in tostring(units or ""):gmatch("%d+") do
@@ -1260,6 +1285,12 @@ function realm_ferry_land(units, x, y)
         realm_try(u, {"Transport Disembark", "Transport Disembark 2", "Transport Disembark 3", "Transport Disembark 4", done = function(x) return x.tile == t end}, t)
       end
       if u.tile == t then ok = ok + 1 end  -- ashore, free to march on (the bridge holds it again if its order does)
+    end
+  end
+  if ok == n then  -- every company ashore: a ship disbanded with men aboard would drown them
+    for id in tostring(hulls or ""):gmatch("%d+") do
+      local h = find.unit(nil, tonumber(id))
+      if h then edit.unit_kill(h, "disbanded", nil) end
     end
   end
   log.normal("FERRY land %d of %d", ok, n)

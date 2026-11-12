@@ -63,8 +63,8 @@ export function list(ctx) {
       at: town ? { id: town.id, name: cityName(town.id) } : null, units: g.units.map((u) => u.id),
       order: o ? { kind: o.kind, x: o.x ?? null, y: o.y ?? null, city: o.city ?? null, to: o.city != null ? cityName(o.city) : null,
         seasons: o.x != null ? Math.ceil(Math.max(0, roadTo(lead, o)) / HOSTS.speed) : 0, face: o.face ?? null,
-        sea: o.sea ? { phase: o.sea.phase, port: cityName(o.sea.port.id), landing: o.sea.landing, hulls: o.sea.hulls } : null } : null,
-      aboard: o?.sea?.phase === "sail",  // at sea in the crown's hulls (its crossing: hosts.js crossing)
+        sea: o.sea ? { phase: o.sea.phase, coast: o.sea.coast, landing: o.sea.landing, ships: o.sea.ships, hulls: o.sea.hulls ?? [] } : null } : null,
+      aboard: o?.sea?.phase === "raised" || o?.sea?.phase === "sail",  // at sea in the ships the crown raised (its crossing: hosts.js crossing)
       ordersLeft: ordersLeft(ctx, lead.id),  // this host's orders still to give this season (data/hosts.json ordersPerHost)
     };
   }).sort((a, b) => b.companies - a.companies);
@@ -133,13 +133,13 @@ function give(ctx, b) {
       const foe = owner && !houseFor(owner).crown && !houseFor(owner).wild && !sworn?.(owner.id) ? owner : null;
       if (b.dry) {
         const seasons = sea ? Math.max(1, Math.ceil(sea.walk / HOSTS.speed) + Math.ceil(sea.sail / sea.speed) + Math.ceil(sea.ashore / HOSTS.speed)) : Math.max(1, Math.ceil(road / HOSTS.speed));
-        return [200, { ok: true, dry: true, by: sea ? "sea" : "land", seasons, ...(foe ? { siege: true } : {}), ...(sea ? { sea: { port: sea.port, hulls: sea.hulls, landing: sea.landing } } : {}) }];
+        return [200, { ok: true, dry: true, by: sea ? "sea" : "land", seasons, ...(foe ? { siege: true } : {}), ...(sea ? { sea: { coast: sea.coast, ships: sea.ships, cost: sea.cost, landing: sea.landing } } : {}) }];
       }
       save(meta, [...rest, { kind: "march", units: h.units, x: to.x, y: to.y, city: town?.id ?? null, since: world.turn, ...(foe ? { siege: true, house: foe.id } : {}), ...face,
-        ...(sea ? { sea: { phase: "port", port: sea.port, hulls: sea.hulls, landing: sea.landing } } : {}) }]);
+        ...(sea ? { sea: { phase: "coast", coast: sea.coast, water: sea.water, ships: sea.ships, cost: sea.cost, landing: sea.landing } } : {}) }]);
       if (sea) {
         const seasons = Math.max(1, Math.ceil(sea.walk / HOSTS.speed) + Math.ceil(sea.sail / sea.speed) + Math.ceil(sea.ashore / HOSTS.speed));
-        return [200, { ok: true, text: `${name} marches to ${cityName(sea.port.id)}, takes ship and lands on the far shore${town ? ` for ${cityName(town.id)}` : ""}: about ${seasons === 1 ? "a season" : `${seasons} seasons`}${foe ? ", and lays siege when it reaches the walls" : ""}.`,
+        return [200, { ok: true, text: `${name} marches to the shore, where the crown raises ${sea.ships === 1 ? "a ship" : `${sea.ships} ships`} for ${sea.cost} gold, and lands on the far shore${town ? ` for ${cityName(town.id)}` : ""}: about ${seasons === 1 ? "a season" : `${seasons} seasons`}${foe ? ", and lays siege when it reaches the walls" : ""}.`,
           ...(foe && !b.declared ? { declare: { city: town.id, house: foe.id } } : {}) }];
       }
       const seasons = Math.max(1, Math.ceil(road / HOSTS.speed));
@@ -284,47 +284,46 @@ function seaRoad(L, from, to, deep) {
   return null;
 }
 
-// How a host crosses the water to `to` (Mac: "ships are just to move armies from one point to another"): it walks to
-// the nearest town the crown holds on the water that it can reach over land, takes ship there in the crown's hulls
-// standing free in or beside it (enough room for every company: the ruleset's transport_cap), sails the sea road to
-// the shore nearest the goal (a Trireme keeps to coastal water), lands, and marches on. {port, hulls, landing, walk,
-// sail, ashore, speed} or {error: the reason, for the card}.
+// How a host crosses the water to `to` (Mac: "ships are just to move armies from one point to another"; supervisor's
+// ruling, 2026-11-12: the crown raises its ships where it needs them, at Freeciv's own price): it walks to the nearest
+// shore it can reach over land, where the crown raises Triremes on the water beside it (enough for every company: the
+// ruleset's transport_cap; each costs the treasury the Trireme's build_cost in gold, refused when the crown can't pay),
+// sails the sea road a Trireme may take (coastal water) to the shore nearest the goal, lands, the ships are disbanded,
+// and it marches on. {coast, water, ships, cost, landing, walk, sail, ashore, speed} or {error: the reason, for the card}.
+const SHIP = "Trireme";
 function crossing(ctx, h, to) {
-  const { world, meta } = ctx;
+  const { world } = ctx;
   const L = landOf();
   const crown = crownOf(world);
   const toSteps = stepsTo(to);
-  if (!L || !toSteps) return { error: "Choose a place on the land for the royal host." };
-  const busy = new Set((meta.hostOrders ?? []).flatMap((o) => [...o.units, ...(o.sea?.hulls ?? [])]));
-  const free = (world.units ?? []).filter((u) => u.owner === crown?.id && HULLS[u.type] && !busy.has(u.id));
-  const ports = (world.cities ?? []).filter((c) => c.owner === crown?.id && round(L, c.x, c.y).some(([x, y]) => L.sea[y * L.w + x]))
-    .map((c) => ({ c, walk: stepsTo(c)?.at(h) ?? -1 })).filter((p) => p.walk >= 0).sort((a, b) => a.walk - b.walk);
-  if (!ports.length) return { error: "The crown holds no port the royal host can reach to take ship." };
-  const shores = [];
+  const fromHost = stepsTo(h);
+  const T = HULLS[SHIP];
+  if (!L || !toSteps || !fromHost || !T) return { error: "Choose a place on the land for the royal host." };
+  const ships = Math.ceil(h.units.length / Math.max(1, T.carry));
+  const cost = ships * T.cost;
+  const purse = crown?.gold ?? 0;
+  if (purse < cost) return { error: `The treasury can't pay for the ships: ${ships === 1 ? "a trireme costs" : `${ships} triremes cost`} ${cost} gold, and the crown holds ${purse}.` };
+  const coasts = [], shores = [];
+  const theirs = new Set((world.cities ?? []).filter((c) => c.owner !== crown?.id).map((c) => `${c.x},${c.y}`));  // no landing in another's town
   for (let y = 0; y < L.h; y++) for (let x = 0; x < L.w; x++) {
+    if (!L.walk[y * L.w + x] || theirs.has(`${x},${y}`)) continue;
+    const water = round(L, x, y).filter(([a, b]) => sails(L, a, b, false));
+    if (!water.length) continue;
+    const walk = fromHost.at({ x, y });
+    if (walk >= 0) coasts.push({ x, y, walk, water });
     const ashore = toSteps.at({ x, y });
-    if (ashore >= 0 && round(L, x, y).some(([a, b]) => L.sea[b * L.w + a])) shores.push({ x, y, ashore });
+    if (ashore >= 0) shores.push({ x, y, ashore, water });
   }
+  if (!coasts.length) return { error: "The royal host can reach no shore to take ship." };
+  coasts.sort((a, b) => a.walk - b.walk);
   shores.sort((a, b) => a.ashore - b.ashore);
-  let why = "";
-  for (const p of ports) {
-    const at = free.filter((u) => cheb(u, p.c) <= 1).sort((a, b) => HULLS[b.type].carry - HULLS[a.type].carry);
-    const take = [];
-    let room = 0;
-    for (const u of at) if (room < h.units.length) { take.push(u); room += HULLS[u.type].carry; }
-    if (room < h.units.length) {
-      why ||= `No ship lies free at ${cityName(p.c.id)} for the royal host: room for ${room} of its ${h.units.length} companies.`;
-      continue;
-    }
-    const deep = take.every((u) => HULLS[u.type].deep);
-    const from = round(L, p.c.x, p.c.y).filter(([x, y]) => sails(L, x, y, deep));
+  for (const c of coasts.slice(0, 20)) {
     for (const s of shores.slice(0, 60)) {
-      const road = seaRoad(L, from, round(L, s.x, s.y).filter(([x, y]) => sails(L, x, y, deep)), deep);
-      if (road) return { port: { id: p.c.id, x: p.c.x, y: p.c.y }, hulls: take.map((u) => u.id), landing: { x: s.x, y: s.y }, walk: p.walk, sail: road.length, ashore: s.ashore, speed: Math.min(...take.map((u) => HULLS[u.type].speed)) };
+      const road = seaRoad(L, c.water, s.water, false);
+      if (road) return { coast: { x: c.x, y: c.y }, water: { x: road[0][0], y: road[0][1] }, ships, cost, landing: { x: s.x, y: s.y }, walk: c.walk, sail: road.length, ashore: s.ashore, speed: T.speed };
     }
-    why ||= `No sea road from ${cityName(p.c.id)} reaches a shore near the goal${deep ? "" : " for a coastal ship"}.`;
   }
-  return { error: why };
+  return { error: "No sea road a trireme can sail (it keeps to coastal water) reaches a shore near the goal." };
 }
 
 // A house's men sent home by a decree (crown.js buyoff, settle, peace, cede): one order, walked each season
@@ -398,52 +397,64 @@ export function season(ctx, turn) {
       if (beside.length) send(`lua cmd ${Lua.strike(beside, foe.x, foe.y)}`);  // from beside them, each strikes once
       if (beside.length === units.length) { next.push({ ...o, units, far: null }); continue; }
     }
-    // Over the water (crossing): to the port, aboard, at sea, ashore; then the march goes on to its goal. The hulls are
-    // the King's while they carry his host: held from Freeciv's AI (realm_hold) and let go only for their own sailing,
-    // freed when the host is ashore.
+    // Over the water (crossing): to the shore; there the crown raises and pays for the ships, and the host boards them
+    // (one Lua call: realm_ferry_raise); at sea; ashore, the ships disbanded (realm_ferry_land); then the march goes on
+    // to its goal. The ships are the King's while they carry his host: held from Freeciv's AI (realm_hold) and let go
+    // only for their own sailing.
     if (o.sea && o.sea.phase !== "landed") {
       const sea = o.sea;
       const L = landOf();
-      const hulls = sea.hulls.map((id) => (world.units ?? []).find((u) => u.id === id && u.owner === crown?.id)).filter(Boolean);
-      if (!L || hulls.length < sea.hulls.length) {
-        record?.({ turn, kind: "decree", text: "The ships meant for the royal host are lost; the host makes camp." });
-        if (hulls.length) send(`lua cmd ${Lua.homewardRelease(hulls.map((u) => u.id))}`);
-        next.push({ kind: "hold", units, since: turn });
-        continue;
-      }
       const held = new Set([...(meta.hostsHeld ?? []), ...(meta.siegeHeld ?? [])]);
-      const go = (way) => {  // a step of the King's own, let go from any hold for it
+      const go = (way, hulls = []) => {  // a step of the King's own, let go from any hold for it
         const ids = way.filter(([, w]) => w.length).map(([id]) => id);
         if (ids.length) send(`lua cmd ${Lua.homewardRelease(ids)}`);
         for (const [id, w] of way) if (w.length) send(`lua cmd ${Lua.walk(id, w)}`);
-        const back = ids.filter((id) => held.has(id) || sea.hulls.includes(id));
+        const back = ids.filter((id) => held.has(id) || hulls.includes(id));
         if (back.length) send(`lua cmd ${Lua.homewardHold(back)}`);
       };
-      if (sea.phase === "port") {
-        send(`lua cmd ${Lua.homewardHold(sea.hulls)}`);  // the hulls wait in port for the host
-        if (units.every((id) => cheb(byId.get(id), sea.port) === 0)) {
-          send(`lua cmd ${Lua.ferryBoard(units, sea.hulls)}`);
-          record?.({ turn, kind: "decree", text: `The royal host takes ship at ${cityName(sea.port.id)}.`, city: sea.port.id });
-          next.push({ ...o, units, sea: { ...sea, phase: "sail" } });
+      if (!L) { next.push({ kind: "hold", units, since: turn }); continue; }
+      if (sea.phase === "coast") {
+        if (units.every((id) => cheb(byId.get(id), sea.coast) === 0)) {
+          const triremes = (world.units ?? []).filter((u) => u.owner === crown?.id && u.type === SHIP).map((u) => u.id);
+          send(`lua cmd ${Lua.ferryRaise(crown?.id, units, sea.water.x, sea.water.y, sea.ships, sea.cost)}`);
+          next.push({ ...o, units, sea: { ...sea, phase: "raised", before: triremes } });
           continue;
         }
-        const steps = stepsTo(sea.port, new Set([...shut].filter((k) => k !== `${sea.port.x},${sea.port.y}`))) ?? stepsTo(sea.port);
+        const steps = stepsTo(sea.coast, new Set([...shut].filter((k) => k !== `${sea.coast.x},${sea.coast.y}`))) ?? stepsTo(sea.coast);
         go(units.map((id) => [id, steps ? wayOn(steps, byId.get(id), HOSTS.speed) : []]));
         next.push({ ...o, units });
         continue;
       }
-      // At sea: the hulls (and the host in them) sail toward the water beside the landing; there, the host comes ashore.
-      const deep = hulls.every((u) => HULLS[u.type]?.deep);
-      const beside = round(L, sea.landing.x, sea.landing.y).filter(([x, y]) => sails(L, x, y, deep));
-      const near = new Set(beside.map(([x, y]) => `${x},${y}`));
-      if (hulls.every((u) => near.has(`${u.x},${u.y}`))) {
-        send(`lua cmd ${Lua.ferryLand(units, sea.landing.x, sea.landing.y)}`);
-        send(`lua cmd ${Lua.homewardRelease(sea.hulls)}`);  // the ships are free again
-        record?.({ turn, kind: "decree", text: `The royal host comes ashore${o.city != null ? ` on the road to ${cityName(o.city)}` : ""}.`, city: o.city ?? undefined });
-        next.push({ ...o, units, far: null, sea: { ...sea, phase: "landed" } });
+      if (sea.phase === "raised") {
+        // The ships raised last season: the crown's new Triremes on the water where they were raised, the host in them.
+        const fresh = (world.units ?? []).filter((u) => u.owner === crown?.id && u.type === SHIP && !(sea.before ?? []).includes(u.id) && u.x === sea.water.x && u.y === sea.water.y);
+        const aboard = units.every((id) => { const u = byId.get(id); return u && u.x === sea.water.x && u.y === sea.water.y; });
+        if (fresh.length < sea.ships || !aboard) {
+          record?.({ turn, kind: "decree", text: (crown?.gold ?? 0) < sea.cost ? "The treasury could not pay for the ships; the royal host makes camp on the shore." : "No ships could be raised for the royal host; it makes camp on the shore." });
+          if (fresh.length) send(`lua cmd ${Lua.ferryLand(units, sea.coast.x, sea.coast.y, fresh.map((u) => u.id))}`);
+          next.push({ kind: "hold", units, since: turn });
+          continue;
+        }
+        record?.({ turn, kind: "decree", text: `The royal host takes ship: the crown raises ${sea.ships === 1 ? "a ship" : `${sea.ships} ships`} for ${sea.cost} gold.` });
+        o.sea = { ...sea, phase: "sail", hulls: fresh.slice(0, sea.ships).map((u) => u.id), before: undefined };
+      }
+      // At sea: the ships (and the host in them) sail toward the water beside the landing; there, the host comes ashore
+      // and the ships are disbanded.
+      const hulls = o.sea.hulls.map((id) => (world.units ?? []).find((u) => u.id === id && u.owner === crown?.id)).filter(Boolean);
+      if (hulls.length < o.sea.hulls.length) {
+        record?.({ turn, kind: "decree", text: "The ships carrying the royal host are lost." });
+        next.push({ kind: "hold", units, since: turn });
         continue;
       }
-      go(hulls.map((u) => [u.id, (seaRoad(L, [[u.x, u.y]], beside, deep) ?? []).slice(1, 1 + (HULLS[u.type]?.speed ?? 1))]));
+      const beside = round(L, o.sea.landing.x, o.sea.landing.y).filter(([x, y]) => sails(L, x, y, false));
+      const near = new Set(beside.map(([x, y]) => `${x},${y}`));
+      if (hulls.every((u) => near.has(`${u.x},${u.y}`))) {
+        send(`lua cmd ${Lua.ferryLand(units, o.sea.landing.x, o.sea.landing.y, o.sea.hulls)}`);
+        record?.({ turn, kind: "decree", text: `The royal host comes ashore${o.city != null ? ` on the road to ${cityName(o.city)}` : ""}; the ships are disbanded.`, city: o.city ?? undefined });
+        next.push({ ...o, units, far: null, sea: { ...o.sea, phase: "landed" } });
+        continue;
+      }
+      go(hulls.map((u) => [u.id, (seaRoad(L, [[u.x, u.y]], beside, false) ?? []).slice(1, 1 + (HULLS[u.type]?.speed ?? 1))]), o.sea.hulls);
       next.push({ ...o, units });
       continue;
     }

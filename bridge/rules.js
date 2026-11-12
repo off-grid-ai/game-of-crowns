@@ -32,7 +32,8 @@ export const HULLS = (() => {
     const name = block.match(/^name\s*=\s*_\("([^"]+)"\)/m)?.[1];
     const cls = block.match(/^class\s*=\s*"([^"]+)"/m)?.[1];
     if (!name || !(cls === "Sea" || cls === "Trireme") || /"NoBuild"/.test(block)) continue;
-    out[name] = { carry: Number(block.match(/^transport_cap\s*=\s*(\d+)/m)?.[1] ?? 0), speed: Number(block.match(/^move_rate\s*=\s*(\d+)/m)?.[1] ?? 1), deep: cls === "Sea" };
+    out[name] = { carry: Number(block.match(/^transport_cap\s*=\s*(\d+)/m)?.[1] ?? 0), speed: Number(block.match(/^move_rate\s*=\s*(\d+)/m)?.[1] ?? 1), deep: cls === "Sea",
+      cost: Number(block.match(/^build_cost\s*=\s*(\d+)/m)?.[1] ?? 0) };  // the gold the crown pays to raise one (hosts.js crossing)
   }
   return out;
 })();
