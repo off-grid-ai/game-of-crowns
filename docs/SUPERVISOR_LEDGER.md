@@ -121,6 +121,14 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- 11:15 (11-12) Mac: "overall quality is still poor. look at the trees, the statue, there is no finesse"; "the NPCs
+  look like they are on steroids"; "there isn't gradual smooth actions, the routine for the NPCs isn't figured out".
+  Routed: works-life readable 1.5 -> ~1.1-1.15, held items 1.0, slimmer bodies; then smooth motion (crossfades,
+  arrive/turn/act/exit, intro-loop-outro actions, foot planting) and routines to docs/research/townsfolk-routines.md
+  (research agent writing it: Manor Lords, Anno, Banished, Sims smart objects, AC/Hitman crowds). army-ui: survey and
+  swap town trees for a proven painted stylized set, flowers and shrubs. fire-siege: a real statue (one statue
+  material, dressed plinth, arms, flowers) and a finesse pass on the houses. Gold mine shots ready (3c3de219: seams at
+  start; tiles 13,37 / 7,39 / 15,41) for the next batch.
 - 11:05 (11-12) Other session ("Game of Crowns visual polish", Mac's ask): gold seams via Freeciv (0ea91fb3): 3 seams
   near Goldrock that run out; crown market gold now 0 (balance change). Next batch: add a Goldrock shot (--city=Goldrock,
   < 40 units) to judge the Meshy mine and miners; seamSeasons 1 in bridge/data/mines.json on the render bridge to see a
