@@ -219,3 +219,18 @@ The four "send them home" decrees no longer kill (2585c496: a homeward march and
 | Royal works finished | `treasury.js:98` (`edit.create_building`) | City production and buying (no Lua in 3.2) | Keep (paid for, built over two seasons) |
 | A famine takes the granary | `director.js:189` (`edit.remove_building`) | A disaster with `DestroyBuilding` hits a random building, not the granary | Keep |
 | Reign-start options (house wealth, the King's purse, a strong or small royal host) | `server.js:389,426,428,431`, `chronicles.js:220` | Scenario setup, like `world_setup.lua` | Keep |
+
+## The case each change serves (casebook, Mac's goal since 12 November 2026)
+
+| Change | Case | How |
+|---|---|---|
+| Step 2: house policies (levies, tolls, granaries) | "Every answer costs" (Reigns) | Each policy step buys something and costs something; the house's AI weighs both |
+| Step 3: feast, relief, heavy tithe as buildings | "Every answer costs" (Reigns) | A heavy tithe fills the purse and empties the houses' content; a feast or relief helps for its seasons, then lapses |
+| Step 4: Grievance | "Opinions run one way" (Crusader Kings II) | Favour is the one visible number; below 25 the house's own people pay for it in Freeciv, and its AI acts on that |
+| Step 5: sieges fought by Freeciv | "A siege is a season" (Total War: Attila) | One assault a season, terms from the herald between, the walls cracking, up to four seasons before the host breaks |
+| Step 6: seasons, winter food, blight | "Winter changes every number" (Northgard); "Winter as the exam" (Banished) | Winter cuts every field by a fifth; a granary filled in autumn is what carries a town through |
+| Step 7: hosts move and cost upkeep | "The march feeds the battle" (Bannerlord) | The men raised for a war are fed by a town all the way there, and walk by the land's rules |
+| Homeward march (2585c496) | "Binding promises" (Crusader Kings III) | When the King buys off a pretender or makes two houses stop, their men really go home and disband; the promise is kept in the world |
+| Step 1: the game's Lua in the ruleset | The genre's promise: "a world … that remembers what you did" | Freeciv's save keeps every decree, seam and grievance |
+
+Raids as Freeciv barbarians (open, needs Mac's onset call) would serve "Every answer costs" for the houses: a town left without soldiers is a town the raiders find.
