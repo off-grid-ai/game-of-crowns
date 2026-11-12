@@ -86,6 +86,30 @@ static func _painted(mat: Material) -> Material:
 	return out
 
 
+## Warm light in the windows (data/assets.json house_kit.window_glow; 01-town's lit windows; Mac 2026-11-12, "no
+## finesse"): the kit's near-clear window glass as warm amber, a little lit. --house-finesse=off for the kit's.
+static var _glass_of := {}
+
+
+static func _glass(mat: Material) -> Material:
+	if not mat is BaseMaterial3D or String(mat.resource_name) != "MI_WindowGlass" or OS.get_cmdline_user_args().has("--house-finesse=off"):
+		return mat
+	if _glass_of.has(mat):
+		return _glass_of[mat]
+	var k: Dictionary = (preload("res://scripts/data.gd").value("assets", "house_kit", {}) as Dictionary).get("window_glow", {})
+	var out := mat
+	if not k.is_empty():
+		var c: Array = k.get("colour", [1.0, 0.76, 0.42])
+		var m: BaseMaterial3D = mat.duplicate()
+		m.albedo_color = Color(float(c[0]), float(c[1]), float(c[2]), float(k.get("alpha", 0.75)))
+		m.emission_enabled = true
+		m.emission = Color(float(c[0]), float(c[1]), float(c[2]))
+		m.emission_energy_multiplier = float(k.get("energy", 0.5))
+		out = m
+	_glass_of[mat] = out
+	return out
+
+
 ## Adds every mesh surface under `node` into per-material SurfaceTools. `remap`: a kit material's
 ## name -> the material this house wears in its place (its plaster's wash, its roof's covering).
 func _collect(node: Node, xf: Transform3D, tools: Dictionary, shutter := "", remap := {}) -> void:
@@ -103,7 +127,7 @@ func _collect(node: Node, xf: Transform3D, tools: Dictionary, shutter := "", rem
 			# one surface per copy cost a draw call each (30-50 a house); one per look is ten or so.
 			var key: Variant = (mat.resource_name if mat.resource_name != "" else str(mat.get_instance_id())) if mat else "-"
 			if not tools.has(key):
-				mat = _painted(_matte(mat))
+				mat = _glass(_painted(_matte(mat)))
 				var st := SurfaceTool.new()
 				st.begin(Mesh.PRIMITIVE_TRIANGLES)
 				tools[key] = {"st": st, "mat": mat}
