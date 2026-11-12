@@ -220,6 +220,8 @@ static func states_bb(bb: Blackboard) -> Array:
 		out.append("prosperity")
 	if bool(bb.get_var(&"grief", false, false)):
 		out.append("grief")
+	if bool(bb.get_var(&"plague", false, false)):
+		out.append("plague")  # the town is sick: few about, the sick at the sept (town_scenes.json plague)
 	return _ruled(out, String(bb.get_var(&"ruling", "", false)))
 
 

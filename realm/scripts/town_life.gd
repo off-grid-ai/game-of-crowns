@@ -81,6 +81,7 @@ func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 	var building := String(c.get("building", ""))
 	var progress := float(c.get("progress", 0.0))
 	var sig := "%s|%s|%s|%s|%s|%s|%s|%s|%s" % [kind, building, hungry, c.get("celebrating", false), c.get("disorder", false), c.get("atWar", false), c.get("grief", false), c.get("prosperity", false), c.get("grasping", false)]
+	sig += "|%s" % c.get("plague", false)  # a sick town's life changes (town_scenes.json plague)
 	# The working buildings' life changes with a levy and a low granary too, and when the town agent lists its buildings.
 	sig += "|%s|%s|%d|%s" % [c.get("granaryLow", false), "levy" in Works.states(c, _town_id), hash(root.get_meta("works", {})), (c.get("ruling") as Dictionary).get("kind", "") if c.get("ruling") is Dictionary else ""]
 	# The town dressed in what we own, once (dressing.gd; --dressing=on): gear at the trades' doors,

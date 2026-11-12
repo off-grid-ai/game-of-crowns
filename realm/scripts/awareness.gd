@@ -222,6 +222,7 @@ static func town_facts(c: Dictionary) -> Dictionary:
 		"celebrating": bool(c.get("celebrating", false)),
 		"at_war": bool(c.get("atWar", false)),
 		"grief": bool(c.get("grief", false)),
+		"plague": bool(c.get("plague", false)),  # sick, the seasons after plague struck (bridge view.js: Freeciv's plague turn, stories.json plagueSeasons)
 		"prosperity": bool(c.get("prosperity", false)),
 		"grasping": bool(c.get("grasping", false)),
 		"granary_low": bool(c.get("granaryLow", false)),  # under a quarter full (bridge view.js townStates)
