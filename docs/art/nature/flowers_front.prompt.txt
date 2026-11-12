@@ -1,0 +1,10 @@
+Tool: built-in image_gen
+
+Use case: stylized-concept
+Asset type: one original fantasy real-time strategy game plant concept, square PNG.
+Input image: the attached medieval countryside crop is a STYLE REFERENCE ONLY. Match its design language, colours and hand-painted finish; do not copy its camera or surroundings.
+Subject: one low knee-high compact clump of mixed wildflowers, approximately 0.4 m tall. Chunky painted blooms in red, yellow, white and blue grow from one dense tuft of green foliage. The complete plant is solid, compact and connected. Foliage consists of a few large chunky clumped leaf masses; never loose leaf cards or single leaves sticking out.
+Style: polished stylised 3D game model with hand-painted textures, storybook medieval countryside in the spirit of Warcraft III Reforged, but an original design, not an existing franchise asset. Chunky readable shapes, slightly exaggerated proportions, soft painted surfaces with visible brush strokes, rich warm saturated greens and touches of ochre and amber light on the upper foliage. Well-defined solid flower petals, short substantial stems, clean bold silhouette.
+Composition: show the WHOLE plant alone, centered, three-quarter view from slightly above, approximately 25 degrees downward. Plant fills about 80% of the square image with clear empty space on every side. Its bottom is cut flat and level at ground height. No soil mound or pedestal.
+Lighting/background: warm even studio lighting on the plant. Plain perfectly flat medium grey background. No ground or ground plane and absolutely no cast shadow or contact shadow.
+Exclude: people, animals, fences, buildings, environment, loose or floating bits, text, logos, watermark, frame.

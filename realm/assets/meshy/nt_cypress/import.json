@@ -1,0 +1,23 @@
+{
+ "name": "nt_cypress",
+ "source": "/Users/user/code/goc-kits/meshy/nature/cypress/cypress.glb",
+ "tris_before": 1809,
+ "tris_after": 1809,
+ "scale": 4.207979670931799,
+ "size_m": [
+  2.0,
+  2.04,
+  8.0
+ ],
+ "house_share": 0.0,
+ "leaves_share": 0.97,
+ "mask_png": true,
+ "materials": [
+  "Material_0",
+  "MI_Leaves"
+ ],
+ "cut_faces": 0,
+ "arm": false,
+ "repainted": 0,
+ "flattened": 0
+}
