@@ -496,6 +496,9 @@ var _stone_discs: Array = []  # [centre, r] of every town's laid stone so far: a
 func clear_in(centre: Vector2, r: float, remember := true) -> void:
 	if remember:
 		_stone_discs.append([centre, r])
+	# A stretch painted under a town's root went with it when the town was rebuilt (its decals too): its record goes now,
+	# before anything is painted again under a freed node (clip4: 694 errors; tools/roads_probe.gd).
+	_painted = _painted.filter(func(st: Array) -> bool: return is_instance_valid(st[4]))
 	var kept: Array = []
 	for st in _painted:
 		var p: Vector3 = st[0]
