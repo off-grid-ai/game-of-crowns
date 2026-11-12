@@ -77,8 +77,8 @@ export function priceOf(ctx, action) {
 }
 
 // The King's own works: what he funds in a royal town rises over two seasons
-// (shown as a building site), then stands and works for him: a market brings
-// coin each season, a barracks a company each year, a granary feeds the town.
+// (shown as a building site), then stands and works for him as Freeciv's own
+// building does (a market's tax, a barracks' veterans, a granary's food).
 export const WORK_SEASONS = 2;
 export function royalWorks(ctx, turn) {
   const { world, meta, send, record, scene, crownOf } = ctx;
