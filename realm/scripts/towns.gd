@@ -564,7 +564,16 @@ func _real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds
 		gap_ang += PI * 0.62
 		await _pace()
 	root.set_meta("places", places)
-	# The trades that need a particular ground take it before any house: the armoury by the castle,
+	# --towns=plots: the square's fronts first (round 4: the trades below took the band just outside the square
+	# before its ring was laid, 118-139 fronts turned away by "a building", 3-4 stood): the square's ring of
+	# houses, then the trades round them. towns.json plots.ring_first; --ring-first=off as before.
+	var pk := _plot_knobs()
+	var ring_first := not ways.is_empty() and bool(pk.get("square_ring", true)) and bool(pk.get("ring_first", true)) and not OS.get_cmdline_user_args().has("--ring-first=off")
+	if ring_first:
+		var ring_n0: int = await _square_ring(root, center, square_r, ways, kinds, lots, rng, want - placed)
+		placed += ring_n0
+		root.set_meta("ring_houses", ring_n0)
+	# The trades that need a particular ground take it before any other house: the armoury by the castle,
 	# the watermill on the water.
 	for tr in _trades:
 		if String(tr["where"]) in ["castle", "water", "inn"]:
@@ -573,8 +582,7 @@ func _real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds
 		# --towns=plots: the square enclosed by a ring of houses between the roads in, then the
 		# lanes (laid now, round the castle and the landmarks), then burgage plots along the
 		# roads and lanes, the edge where they stop.
-		var pk := _plot_knobs()
-		if bool(pk.get("square_ring", true)):
+		if bool(pk.get("square_ring", true)) and not ring_first:
 			var ring_n: int = await _square_ring(root, center, square_r, ways, kinds, lots, rng, want - placed)
 			placed += ring_n
 			root.set_meta("ring_houses", ring_n)
