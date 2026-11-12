@@ -809,7 +809,9 @@ func _cart(k: Dictionary, role: Dictionary, W: Dictionary, r: float) -> void:
 	var rig: Node3D = TownLife().horse_cart(tl._people, k["rng"])
 	if rig == null:
 		return
-	rig.position = Vector3(ends[0].x, tl.ground_at(root, ends[0]), ends[0].z)
+	# Drawn up at its street's end where nobody stands (the watch's beat can start at that same mouth).
+	var start := root.to_local(Kit.free_near(life, Blackboard.new(), root.to_global(ends[0]), null, float(W.get("room", 0.2))))
+	rig.position = Vector3(start.x, tl.ground_at(root, start), start.z)
 	life.add_child(rig)
 	rig.add_to_group("bodies")  # the stopping rule (npc_mind Step.room) keeps people out of its way
 	rig.set_meta("scene", String(k["row"]["id"]))
@@ -949,8 +951,6 @@ func _road_out(root: Node3D, p: Node3D) -> Array:
 func _direct(id: int, root: Node3D, c: Dictionary) -> void:
 	var bb: Blackboard = main.awareness.town(id)
 	var states := Works.states_bb(bb)
-	if String(bb.get_var(&"mood", "", false)) == "riot":
-		states.append("riot")
 	var now := Time.get_ticks_msec()
 	var running: Array = _live.get(id, [])
 	for s in running:
@@ -1262,13 +1262,14 @@ class Kit:
 	## The nearest spot to `want` (world) a walker may stop on: room there by the one stopping rule (npc_mind
 	## Step.room: nobody standing or stepping within CLEAR, `but` the one they're with) and nothing built there
 	## (Step.in_the_way). Rings widening out a body at a time; none: `want`.
-	static func free_near(agent: Node3D, bb: Blackboard, want: Vector3, but: Node = null) -> Vector3:
+	static func free_near(agent: Node3D, bb: Blackboard, want: Vector3, but: Node = null, clear := -1.0) -> Vector3:
+		var c := CLEAR if clear < 0.0 else clear  # a person's room, or a wider body's (the cart's)
 		for ring in 6:
 			var n := 1 if ring == 0 else 6 * ring
 			for i in n:
 				var a := TAU * i / n
-				var p := want + Vector3(cos(a), 0, sin(a)) * CLEAR * 0.75 * ring
-				if Mind.Step.room(agent, p, CLEAR, but) and not Mind.Step.in_the_way(agent, bb, p):
+				var p := want + Vector3(cos(a), 0, sin(a)) * c * 0.75 * ring
+				if Mind.Step.room(agent, p, c, but) and not Mind.Step.in_the_way(agent, bb, p):
 					return p
 		return want
 

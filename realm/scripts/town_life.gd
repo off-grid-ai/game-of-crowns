@@ -118,11 +118,7 @@ func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 		_construction(root, life, center, building, progress, rng, int(c["size"]))
 	elif kind == "UnitType" and building != "" and not building in Awareness.civilian:  # a soldier's training, not a civilian's (bridge campaigns.js CIVILIAN)
 		_drill(root, life, center, progress, color, building)
-	var states := Works.states(c, _town_id)
-	if c.get("disorder", false):
-		states.append("riot")
-	if c.get("grasping", false):
-		states.append("grasping")
+	var states := Works.states(c, _town_id)  # riot, grasping and a rising's side among them (the store's facts)
 	life.set_meta("states", states)
 	life.set_meta("size", int(c.get("size", 1)))
 	life.set_meta("town_id", _town_id)

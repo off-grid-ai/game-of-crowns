@@ -175,23 +175,13 @@ static func work_root(agent: Node, bb: Blackboard) -> Node3D:
 ## The states a town is in (works.json priority's words), from the city as the
 ## view has it and the mirror's town scope (a levy is a muster scene there).
 static func states(c: Dictionary, town: int) -> Array:
-	var out: Array = []
-	var mood := String(c.get("mood", ""))
-	if mood == "hunger" or bool(c.get("famine", false)):
-		out.append("hunger")
-	if mood == "feast" or bool(c.get("celebrating", false)):
-		out.append("feast")
-	if Engine.has_meta("awareness") and town >= 0 and bool(Engine.get_meta("awareness").town(town).get_var(&"levy", false, false)):
-		out.append("levy")
-	if bool(c.get("atWar", false)):
-		out.append("war")
-	if bool(c.get("granaryLow", false)):
-		out.append("low")
-	if bool(c.get("prosperity", false)):
-		out.append("prosperity")
-	if bool(c.get("grief", false)):
-		out.append("grief")
-	return _ruled(out, String((c.get("ruling") as Dictionary).get("kind", "")) if c.get("ruling") is Dictionary else "")
+	var bb := Blackboard.new()
+	var facts: Dictionary = load("res://scripts/awareness.gd").town_facts(c)  # the store's own translation
+	for k in facts:
+		bb.set_var(StringName(k), facts[k])
+	if Engine.has_meta("awareness") and town >= 0:
+		bb.set_var(&"levy", bool(Engine.get_meta("awareness").town(town).get_var(&"levy", false, false)))  # a scene fact: the store's
+	return states_bb(bb)
 
 
 ## A court ruling standing at the town (the bridge's rulings.js) adds its kind: a feast or a
@@ -206,10 +196,20 @@ static func _ruled(out: Array, kind: String) -> Array:
 static func states_bb(bb: Blackboard) -> Array:
 	var out: Array = []
 	var mood := String(bb.get_var(&"mood", "", false))
-	if mood == "hunger":
+	if mood == "hunger" or bool(bb.get_var(&"famine", false, false)):
 		out.append("hunger")
-	if mood == "feast":
+	if mood == "feast" or bool(bb.get_var(&"celebrating", false, false)):
 		out.append("feast")
+	if mood == "riot":
+		out.append("riot")  # Freeciv's disorder (bridge view.js mood)
+	if bool(bb.get_var(&"grasping", false, false)):
+		out.append("grasping")
+	# A house split in a rising (bridge risings.js): the rebels hold this town, or its lord still does.
+	var side := String((bb.get_var(&"rising", {}, false) as Dictionary).get("side", ""))
+	if side == "rebels":
+		out.append("rebels")
+	elif side == "lord":
+		out.append("loyal")
 	if bool(bb.get_var(&"levy", false, false)):
 		out.append("levy")
 	if bool(bb.get_var(&"at_war", false, false)):

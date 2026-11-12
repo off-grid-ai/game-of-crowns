@@ -167,7 +167,9 @@ func _run() -> void:
 		"hunger": {"famine": true, "mood": "hunger"},
 		"feast": {"celebrating": true, "mood": "feast", "prosperity": true},
 		"grief": {"grief": true},
-		"riot": {"disorder": true},
+		"riot": {"disorder": true, "mood": "riot"},
+		"rebels": {"rising": {"side": "rebels", "house": 2, "rebel": 5, "claimant": "Ser Aldric"}},
+		"loyal": {"rising": {"side": "lord", "house": 2, "rebel": 5, "claimant": "Ser Aldric"}},
 		"justice": {"ruling": {"kind": "justice", "left": 2}},
 	}
 	var only := ""  # -- --only=peace: one state alone (a flake's many runs)
@@ -219,6 +221,8 @@ func _run() -> void:
 			"feast": {"feaster": 4, "reveller": 6},
 			"grief": {"procession": 8},
 			"riot": {"rioter": 8, "riot_watch": 2},
+			"rebels": {"rebel": 8, "angry": 4},
+			"loyal": {"afraid": 2, "loyal_watch": 4},
 			"justice": {"onlooker": 3},
 		}
 		for meta in need[name]:

@@ -197,28 +197,40 @@ func _reduce_towns(world: Dictionary) -> void:
 		var id := int(c["id"])
 		ids.append(id)
 		var bb := town(id)
-		bb.set_var(&"tile", Vector2i(int(c.get("x", 0)), int(c.get("y", 0))))
-		bb.set_var(&"owner", int(c.get("owner", -1)))
-		bb.set_var(&"besieged", bool(c.get("besieged", false)))
+		var facts := town_facts(c)
+		for k in facts:
+			bb.set_var(StringName(k), facts[k])
 		var owner: Dictionary = players.get(int(c.get("owner", -1)), {})
 		var favour: float = float(owner.get("favour", 100.0)) if owner.get("favour") != null else 100.0
-		var mood := String(c.get("mood", ""))  # the bridge's one definition
-		bb.set_var(&"mood", mood)
-		bb.set_var(&"at_war", bool(c.get("atWar", false)))
-		bb.set_var(&"grief", bool(c.get("grief", false)))
-		bb.set_var(&"prosperity", bool(c.get("prosperity", false)))
-		bb.set_var(&"grasping", bool(c.get("grasping", false)))
-		bb.set_var(&"granary_low", bool(c.get("granaryLow", false)))  # under a quarter full (bridge view.js townStates)
 		# A levy raised here: the muster scene at the town this season or last (bridge crown.js levy).
 		bb.set_var(&"levy", now_scenes.any(func(s): return String(s.get("kind", "")) == "muster" and int(s.get("city", -2)) == id and int(s.get("turn", turn)) >= turn - 1))
-		bb.set_var(&"garrison", int(_dict(c.get("garrison")).get("left", 0)))  # seasons a royal company still stands here (bridge garrison.js)
-		bb.set_var(&"ruling", String(_dict(c.get("ruling")).get("kind", "")))  # the King's latest ruling here while it stands: relief, justice, levy, feast, build, grant (bridge rulings.js)
 		bb.set_var(&"favour", favour)
 		bb.set_var(&"crown_town", int(c.get("owner", -1)) == crown_id)
 		bb.set_var(&"house", String((owner.get("house", {}) as Dictionary).get("name", "")))
-		bb.set_var(&"damage", c.get("damage") if c.get("damage") is Dictionary else {})  # its walls' wear and burnt share (bridge damage.js): stone walls read it
-		bb.set_var(&"burnt", float(_dict(c.get("damage")).get("burnt", 0.0)))  # the share of its houses burnt (bridge damage.js)
 	realm.set_var(&"towns", ids)
+
+
+## A town's own facts as its scope keeps them, from one /world city: the one translation (the reducer above; and
+## Works.states, for a town dressed from the city it is given).
+static func town_facts(c: Dictionary) -> Dictionary:
+	return {
+		"tile": Vector2i(int(c.get("x", 0)), int(c.get("y", 0))),
+		"owner": int(c.get("owner", -1)),
+		"besieged": bool(c.get("besieged", false)),
+		"mood": String(c.get("mood", "")),  # the bridge's one word: riot (Freeciv disorder), hunger, feast
+		"famine": bool(c.get("famine", false)),  # under the one word: a starving town in riot is hungry too
+		"celebrating": bool(c.get("celebrating", false)),
+		"at_war": bool(c.get("atWar", false)),
+		"grief": bool(c.get("grief", false)),
+		"prosperity": bool(c.get("prosperity", false)),
+		"grasping": bool(c.get("grasping", false)),
+		"granary_low": bool(c.get("granaryLow", false)),  # under a quarter full (bridge view.js townStates)
+		"garrison": int(_dict(c.get("garrison")).get("left", 0)),  # seasons a royal company still stands here (bridge garrison.js)
+		"ruling": String(_dict(c.get("ruling")).get("kind", "")),  # the King's latest ruling here while it stands (bridge rulings.js)
+		"rising": _dict(c.get("rising")),  # a house split in a rising: {side rebels|lord, house, rebel, claimant}, else {} (bridge risings.js)
+		"damage": c.get("damage") if c.get("damage") is Dictionary else {},  # its walls' wear and burnt share (bridge damage.js): stone walls read it
+		"burnt": float(_dict(c.get("damage")).get("burnt", 0.0)),  # the share of its houses burnt (bridge damage.js)
+	}
 
 
 ## The land slice: what the view draws on the land (terrain, ruins): who holds each tile, each house's standing
