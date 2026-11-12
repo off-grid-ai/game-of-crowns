@@ -152,9 +152,9 @@ func _y(center: Vector3, off: Vector3) -> float:
 
 
 static var ROOM: float = 0.11 * preload("res://scripts/data.gd").num("people", "readable", 1.0)  # world units between two people standing (about 0.9 m, at their drawn size): shoulders never meet
-const KEEPER_BACK := 0.07  # a stall keeper stands this far behind the counter's back edge (about half a metre)
-const LANE := 0.06  # past a road's verge, ground the travellers on it keep: nobody stands there
-const HEART := 0.2  # about 1.7 m round a town's heart, where every road's travellers come through and wait
+static var KEEPER_BACK: float = preload("res://scripts/data.gd").num("town_scenes", "life.keeper_back", 0.07)  # a stall keeper stands this far behind the counter's back edge (about half a metre)
+static var LANE: float = preload("res://scripts/data.gd").num("town_scenes", "life.lane", 0.06)  # past a road's verge, ground the travellers on it keep: nobody stands there
+static var HEART: float = preload("res://scripts/data.gd").num("town_scenes", "life.heart", 0.2)  # about 1.7 m round a town's heart, where every road's travellers come through and wait
 
 
 ## Whether `world` is on a road's lane through the town (roads.gd: a road or
@@ -517,7 +517,7 @@ func _fire_spot(root: Node3D) -> Vector3:
 	if r <= 0.0:
 		return Vector3.ZERO
 	return SEEN * (r + fire_reach() + float(Data.num("moods", "centre.fire", 0.12)))
-const HEAT := 0.06  # past the stones, a step nobody takes: half a metre
+static var HEAT: float = preload("res://scripts/data.gd").num("town_scenes", "life.heat", 0.06)  # past the stones, a step nobody takes: half a metre
 
 
 ## How far from a bonfire's middle the ground is the fire's: its ring of
@@ -677,7 +677,7 @@ func _site(root: Node3D, life: Node3D, center: Vector3, base: Vector3, ang: floa
 ## How far a site's building has risen (0..1, its height). Below SITE_SHOWS it is not shown at
 ## all: the plot, its scaffold poles, the timber and the builders are the site. A model squashed to
 ## a sliver read as grey slabs on the grass (Kingsmere's tiltyard at 0%, km-cap).
-const SITE_SHOWS := 0.35
+static var SITE_SHOWS: float = preload("res://scripts/data.gd").num("town_scenes", "life.site_shows", 0.35)
 static func _grow(site: Node3D, g: float) -> void:
 	site.scale.y = g
 	site.visible = g >= SITE_SHOWS

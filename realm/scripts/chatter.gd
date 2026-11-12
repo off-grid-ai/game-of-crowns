@@ -17,9 +17,9 @@ var sound: Node  # soundscape.gd: hushes the town while someone speaks
 ## true to have each line spoken in the speaker's own voice when voices are on.
 const SPOKEN := false
 ## Close enough to overhear: the camera within this of a gathering.
-const HEAR := 2.6
+static var HEAR: float = preload("res://scripts/data.gd").num("crowd", "chatter.hear", 2.6)
 ## A talking town: its centre within this of the camera.
-const TOWN_NEAR := 9.0
+static var TOWN_NEAR: float = preload("res://scripts/data.gd").num("crowd", "chatter.town_near", 9.0)
 const CAPTION_PX := 13  # spoken words on screen, as UI.md sets small type
 const SPEECH := preload("res://assets/fonts/EBGaramond-Italic.ttf")
 const HEAD := 0.25  # a caption's height over the speaker's feet
@@ -35,7 +35,7 @@ var _said := {}  # line set -> how many of it have been used: each set's lines i
 const SceneKinds := preload("res://scripts/scene_kinds.gd")
 ## How long a talk in view waits for the minds' words before plain words of
 ## its own are said instead: talk is never silent while the model warms up.
-const OWN_WORDS_SECS := 5.0
+static var OWN_WORDS_SECS: float = preload("res://scripts/data.gd").num("crowd", "chatter.own_words_secs", 5.0)
 ## Plain words for when the minds have none: by the news the talk is about
 ## (its tone), or else by the gathering's kind. Each a short exchange, the
 ## speakers taking turns.
@@ -240,8 +240,8 @@ const CALLINGS := {"farmer": "farmer", "market": "market trader", "pious": "lay 
 	"gentry": "gentleman", "child": "child", "crafter": "craftsman", "idler": "idler", "soldier": "man of the watch", "knight": "knight",
 	"archer": "archer", "noble": "noble", "clergy": "friar", "townsfolk": "townsman", "peasant": "peasant"}
 ## How long a line they spoke in a talk (the minds' own words) stays on their mind.
-const SAID_FRESH_MS := 300000
-const NEWS_FRESH_MS := 90000  # as FindPartner: news older than this isn't on their mind
+static var SAID_FRESH_MS: int = int(preload("res://scripts/data.gd").num("crowd", "chatter.said_fresh_ms", 300000))
+static var NEWS_FRESH_MS: int = int(preload("res://scripts/data.gd").num("crowd", "minds.news_fresh_ms", 90000))  # as FindPartner: news older than this isn't on their mind
 
 var _trades := {}  # town id -> {villager index: trade}, from the bridge's /townsfolk
 var _trades_asked := {}  # town id -> true once asked

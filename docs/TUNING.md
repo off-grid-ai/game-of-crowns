@@ -119,8 +119,17 @@ Switches (`--name`) go after `--` on the game's command line.
 - When it sits anyway if no landing is heard (the intro skipped): `bridge/data/opening.json`: `firstCourtWithoutLandingSec`.
 
 ## Townsfolk (Builder 1)
-- Which towns' people have minds: `--limbo=none` (the old rules everywhere) or `--limbo=<ids>` (only those towns); default every town (`realm/scripts/town_life.gd`: `LIMBO_ALL`).
+- Which towns' scene people have minds: `--limbo=none` or `--limbo=<ids>` (only those towns); default every town (`realm/scripts/town_life.gd`: `LIMBO_ALL`). Villagers always have minds (their old rules are gone).
 - Motion: v3 is the default (props follow the errand, rising through Getting_Up); `--motion=v1` the old motion.
+
+## Townsfolk in the street (town life; integration audit #20)
+- How far round the camera a town has its people about, how many it draws, how fast they walk, how far a child strays and where it stands by its parent, the gap kept as two pass: `realm/data/crowd.json`: `villagers.*` (view_radius, most_per_town, walk_speed, child_reach, child_side, space).
+- Talk and room in the square: how far apart two may talk, when an unclosed talk lapses, a shoulder's width, how many may be bound for the square at once, how far past the paving is still the square, the room a knot keeps clear: `realm/data/crowd.json`: `villagers.*` (talk_reach, talk_lapse_secs, shoulder, square_holds, square_edge, knot_clear).
+- Minds arranging a talk: how far they look for someone, how far apart two stand, how old news may be, how long an arranged talk and a partner are waited for, how long lines may hold a talk, the settle before the first word, and when they give up a walk with no way: `realm/data/crowd.json`: `minds.*`.
+- Overheard talk: how close the camera must come to a gathering, and a town, to hear it, how long a talk waits for the minds' words, how long a line said stays fresh: `realm/data/crowd.json`: `chatter.*`.
+- Where people keep out of: behind a stall's counter (its keeper), a road's lane, a town's heart, a fire's heat, and how far a building site rises before its building shows: `realm/data/town_scenes.json`: `life.*`.
+- How far a person is drawn: `realm/data/people.json`: `seen_to`.
+- Where a person fades near the lens (gone nearer than, whole from): `realm/data/people.json`: `near_fade` (gone, solid).
 
 ## Every click answers (Builder 1; on by default, `--barks=off`)
 - What a lord says when their sigil is clicked, by favour band; the annoyed lines; after how many clicks; the no-repeat window: `realm/data/barks.json`.

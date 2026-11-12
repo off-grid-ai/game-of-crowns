@@ -5,8 +5,8 @@ const Awareness := preload("res://scripts/awareness.gd")  # a mind's part handed
 ## and the fields, stop to work, and go indoors at night. Purely visual: the
 ## simulation of how many people there are belongs to Freeciv (town size).
 
-const VIEW_RADIUS := 30.0  # only the towns round where you look have their people about: beyond, nobody is drawn
-const MAX_PER_TOWN := 40
+static var VIEW_RADIUS: float = preload("res://scripts/data.gd").num("crowd", "villagers.view_radius", 30.0)  # only the towns round where you look have their people about: beyond, nobody is drawn
+static var MAX_PER_TOWN: int = int(preload("res://scripts/data.gd").num("crowd", "villagers.most_per_town", 40))
 ## How often a townsperson far from the camera moves: anim_lod.gd's one set of
 ## distances and strides, shared by how they move and how they animate.
 const AnimLOD := preload("res://scripts/anim_lod.gd")
@@ -34,7 +34,7 @@ var nav = preload("res://scripts/town_nav.gd").new()
 var talk = preload("res://scripts/village_talk.gd").new(self)  # who talks with whom (village_talk.gd): chatter.gd and the minds ask it
 var registry = preload("res://scripts/village_registry.gd").new(self)  # who is who and where (village_registry.gd): a click, a name, the homes lit, the feast fire
 var slots = preload("res://scripts/village_slots.gd").new(self)  # where a villager may stand (village_slots.gd): the places' rings, the stall, well, street and cart slots, the square's room
-const WALK_SPEED := 0.17  # world units per second: an unhurried 1.4 m/s at town scale
+static var WALK_SPEED: float = preload("res://scripts/data.gd").num("crowd", "villagers.walk_speed", 0.17)  # world units per second: an unhurried 1.4 m/s at town scale
 static var _steer: Dictionary = preload("res://scripts/data.gd").value("people", "steer", {}) if bool(preload("res://scripts/data.gd").value("people", "steer.on", true)) and not OS.get_cmdline_user_args().has("--steer=off") else {"turn": 1000.0, "turn_slow": 1.0, "start_from": 1.0, "arrive_from": 1.0, "smooth": 1000.0, "corner": 0.0}
 static var READ: float = preload("res://scripts/data.gd").num("people", "readable", 1.0)  # drawn larger (people.json readable): they walk as fast as their legs carry them
 ## Moves that are walks (a load carried, a barrow pushed): played on the way,
@@ -58,8 +58,8 @@ var _was := {}  # town id -> what the town was showing at the last look, for wit
 var _audit := OS.get_cmdline_user_args().has("--talkprobe")
 
 
-const CHILD_REACH := 0.36  # about 3 m: how far a child strays from their parent
-const CHILD_SIDE := 0.12  # about a metre: where a child stands by their parent
+static var CHILD_REACH: float = preload("res://scripts/data.gd").num("crowd", "villagers.child_reach", 0.36)  # about 3 m: how far a child strays from their parent
+static var CHILD_SIDE: float = preload("res://scripts/data.gd").num("crowd", "villagers.child_side", 0.12)  # about a metre: where a child stands by their parent
 var _presence: Node  # presence.gd: glances, greetings, who makes way for whom
 
 
@@ -133,7 +133,7 @@ func _hold_load(a: Dictionary) -> void:
 ## mind's small step, a traveller on the road). Any walker now inside someone's
 ## space is eased out of it sideways, a few centimetres a frame: the walker
 ## yields; someone standing, a scene's person or a traveller is never moved.
-const SPACE := 0.07  # about 0.6 m between middles
+static var SPACE: float = preload("res://scripts/data.gd").num("crowd", "villagers.space", 0.07)  # about 0.6 m between middles
 const ARRIVE := 0.03  # a waypoint this near is reached (about a quarter of a metre): a step shorter than this barely moves anyone
 const EASE := 0.006  # at most this far a frame (about 5 cm): a sidestep, never a jump
 

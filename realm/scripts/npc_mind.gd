@@ -1057,7 +1057,7 @@ class GoTo extends BTAction:
 		return Vector3(c.x + g.x, 0, c.z + g.y)
 
 	const ARRIVED := 0.06  # about half a metre from where they were going: there
-	const GIVE_UP := 3.0  # seconds with no way there (the town's walk map not ready, or nowhere to stand): off
+	static var GIVE_UP: float = preload("res://scripts/data.gd").num("crowd", "minds.give_up_secs", 3.0)  # seconds with no way there (the town's walk map not ready, or nowhere to stand): off
 
 	func _tick(delta: float) -> Status:
 		if _none:
@@ -1132,11 +1132,11 @@ class FieldRun extends PlayRun:
 ## between the two of them, near where they stand. Fails with nobody free, so
 ## the selector picks something done alone.
 class FindPartner extends BTAction:
-	const NEAR := 2.5
-	const TALK_GAP := 0.14  # two talking stand this far apart (about 1.1 m), as villagers.gd's pairs do
-	const FRESH_MS := 90000  # news older than this isn't worth telling
+	static var NEAR: float = preload("res://scripts/data.gd").num("crowd", "minds.partner_near", 2.5)
+	static var TALK_GAP: float = preload("res://scripts/data.gd").num("crowd", "minds.talk_gap", 0.14)  # two talking stand this far apart (about 1.1 m), as villagers.gd's pairs do
+	static var FRESH_MS: int = int(preload("res://scripts/data.gd").num("crowd", "minds.news_fresh_ms", 90000))  # news older than this isn't worth telling
 	@export var talk: Array = []  # the moves both use (a muttering knot argues); empty: everyday talk
-	const BOOKED_MS := 20000  # a talk arranged this long ago and not begun or ended is off
+	static var BOOKED_MS: int = int(preload("res://scripts/data.gd").num("crowd", "minds.booked_ms", 20000))  # a talk arranged this long ago and not begun or ended is off
 
 	## Spoken for: called or talking, lately (an interrupted arrangement lapses).
 	static func booked(bb: Blackboard) -> bool:
@@ -1213,8 +1213,8 @@ class Talk extends PlayRun:
 
 	## Listening while the other has the floor (a caption over their head).
 	const LISTEN := ["Nodding", "Thinking", "Idle", "Nodding", "Laughing", "Slow_Nod"]
-	const WAIT_SECS := 8.0  # the other not here by then: they aren't coming
-	const LINE_CAP := 25.0  # a talk held past its moves for lines still being read, at most this
+	static var WAIT_SECS: float = preload("res://scripts/data.gd").num("crowd", "minds.partner_wait_secs", 8.0)  # the other not here by then: they aren't coming
+	static var LINE_CAP: float = preload("res://scripts/data.gd").num("crowd", "minds.line_cap_secs", 25.0)  # a talk held past its moves for lines still being read, at most this
 	var _talking := []  # the talking moves chosen for this talk
 	var _waited := 0.0
 	var _held := 0.0
@@ -1251,7 +1251,7 @@ class Talk extends PlayRun:
 	## _in_place), turn (the body round to face them, at a person's rate), settle
 	## (a beat, face to face), and only then converse: the moves start and the
 	## talk is one the town overhears (villagers.gd _in_talk reads "conversing").
-	const SETTLED := 0.4  # seconds face to face before the first word
+	static var SETTLED: float = preload("res://scripts/data.gd").num("crowd", "minds.settled_secs", 0.4)  # seconds face to face before the first word
 	const FACING := 0.35  # radians (20 deg): the body is round to them
 	var _settled := 0.0
 
@@ -1292,7 +1292,7 @@ class Talk extends PlayRun:
 	## do, each taking a short step to cover half what's off (whoever moves,
 	## the gap closes), a step every second or so. Four seconds after both
 	## stand (SETTLE), they talk where they are.
-	const SETTLE := 4.0
+	static var SETTLE: float = preload("res://scripts/data.gd").num("crowd", "minds.settle_secs", 4.0)
 	var _both_for := 0.0  # seconds both have stood within reach, for this talk
 	var _step_at := -100000  # when this one last stepped (msec)
 

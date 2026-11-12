@@ -26,13 +26,13 @@ const ROOM := {"market": {"near": 0.3, "far": 1.0, "room": 6}, "well": {"near": 
 ## Where those who find a place full go instead.
 const OVERFLOW := {"market": ["well", "tavern"], "well": ["market", "sept"], "tavern": ["market", "well"], "sept": ["well", "market"], "feast": ["market", "tavern"]}
 
-const SHOULDER := 0.11  # two people standing: a shoulder's width apart
+static var SHOULDER: float = preload("res://scripts/data.gd").num("crowd", "villagers.shoulder", 0.11)  # two people standing: a shoulder's width apart
 
-const SQUARE_HOLDS := 10  # at most this many bound for the square at once (talkers included), in the biggest towns (_square_cap)
+static var SQUARE_HOLDS: int = int(preload("res://scripts/data.gd").num("crowd", "villagers.square_holds", 10))  # at most this many bound for the square at once (talkers included), in the biggest towns (_square_cap)
 
-const SQUARE_EDGE := 0.6  # past the square's paving this far is still the square: stall fronts, the well, the doors on its edge
+static var SQUARE_EDGE: float = preload("res://scripts/data.gd").num("crowd", "villagers.square_edge", 0.6)  # past the square's paving this far is still the square: stall fronts, the well, the doors on its edge
 
-const KNOT := 0.26  # a gathering keeps this clear round its middle: knots of two or three, never one blob
+static var KNOT: float = preload("res://scripts/data.gd").num("crowd", "villagers.knot_clear", 0.26)  # a gathering keeps this clear round its middle: knots of two or three, never one blob
 
 ## The square's smart objects (crowd.json square_agents, the switch --square-agents=on|off; supervisor 2026-11-12,
 ## Mac: "the people behaviour is poor"): each stall's front, the well's rim and the main streets' mouths offer a

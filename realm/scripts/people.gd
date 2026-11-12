@@ -24,7 +24,7 @@ const TALKS := ["Idle_Talking", "Talking", "Talking_2", "Happy_Gesture"]
 ## them who stands ready with a sword (an archer stands with his bow): one list each.
 const SOLDIERLY := ["soldier", "archer", "knight"]
 const SWORDED := ["soldier", "knight"]
-const SEEN_TO := 18.0  # world units: beyond this a person isn't drawn or animated (a few pixels tall)
+static var SEEN_TO: float = preload("res://scripts/data.gd").num("people", "seen_to", 18.0)  # world units: beyond this a person isn't drawn or animated (a few pixels tall)
 
 const OUTFITS := {
 	"peasant": [["Male_Peasant", "m"], ["Female_Peasant", "f"]],
@@ -1017,8 +1017,8 @@ func _shape(skeleton: Skeleton3D, _build: String, age: String) -> void:
 
 
 ## Within this of the lens a person is gone, beyond the next fully there: about 0.7 m and 1.5 m.
-const NEAR_GONE := 0.08
-const NEAR_SOLID := 0.18
+static var NEAR_GONE: float = preload("res://scripts/data.gd").num("people", "near_fade.gone", 0.08)
+static var NEAR_SOLID: float = preload("res://scripts/data.gd").num("people", "near_fade.solid", 0.18)
 const Realistic := preload("res://scripts/realistic.gd")
 static var _tinted := {}  # [material, colour, livery] -> the shared tinted copy
 

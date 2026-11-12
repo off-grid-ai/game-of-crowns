@@ -21,11 +21,11 @@ func forget(id: int) -> void:
 
 ## Two talking stand no further apart than this (about 2.5 m): further, and
 ## it's calling across the street, not a talk anyone overhears.
-const TALK_REACH := 0.3
+static var TALK_REACH: float = preload("res://scripts/data.gd").num("crowd", "villagers.talk_reach", 0.3)
 
 
 ## A minds' talk nobody closed (both called away before it began) lapses after this.
-const MIND_TALK_SECS := 40.0
+static var MIND_TALK_SECS: float = preload("res://scripts/data.gd").num("crowd", "villagers.talk_lapse_secs", 40.0)
 
 
 ## Where `x` is in `list`, by identity (a gathering and its members point at
