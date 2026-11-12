@@ -20,8 +20,8 @@ const KINDS := {
 	"siege": {"tone": HOSTILE, "reach": 5.0, "power": 0.9, "interest": 10, "dist": 7.0, "caption": "The siege of %s"},
 	"storm": {"tone": HOSTILE, "reach": 6.0, "power": 1.0, "interest": 10, "dist": 7.0, "caption": "%s is stormed"},  # Freeciv's assault on a siege (campaigns.js stormScene)
 	"battle": {"tone": HOSTILE, "reach": 5.0, "power": 0.9, "interest": 9, "dist": 8.0, "caption": "Battle near %s"},
-	"sack": {"tone": HOSTILE, "reach": 6.0, "power": 1.0, "interest": 9, "dist": 8.0, "caption": "%s is sacked"},
-	"razed": {"tone": HOSTILE, "reach": 7.0, "power": 1.0, "interest": 9, "dist": 9.0, "caption": "%s burns"},
+	"sack": {"tone": HOSTILE, "reach": 6.0, "power": 1.0, "interest": 9, "dist": 8.0, "caption": "%s is sacked", "fleeing": 7, "burn": [45.0, 1.0], "play": "res://scripts/scene_kinds/sack.gd"},
+	"razed": {"tone": HOSTILE, "reach": 7.0, "power": 1.0, "interest": 9, "dist": 9.0, "caption": "%s burns", "fleeing": 10, "burn": [70.0, 2.0], "play": "res://scripts/scene_kinds/sack.gd"},
 	"raid": {"tone": HOSTILE, "reach": 4.0, "power": 0.9, "interest": 6, "dist": 7.0, "caption": "Raiders at %s"},
 	"struck": {"tone": HOSTILE, "reach": 1.2, "power": 0.8, "interest": 0, "dist": 4.0, "caption": ""},
 	"fire": {"tone": HOSTILE, "reach": 1.8, "power": 0.9, "interest": 0, "dist": 5.0, "caption": ""},  # a house catching (fire.gd): the near run (batch 9: at 1.0 the square carried on beside it), the rest come to the bucket line
