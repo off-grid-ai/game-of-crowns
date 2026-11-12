@@ -64,7 +64,8 @@ func begin(siege_ai: Node, camp: Vector3, wall: Vector3, town: Vector3, foe_col:
 		var side := {"side": i, "field": camp if i == 0 else inside, "face": face_in if i == 0 else face_out,
 			"colour": foe_col if i == 0 else held_col, "house": foe if i == 0 else held, "shape": "line", "quiet": true}
 		var a := Army.new(main, int(men[i]), side)
-		add_child(a)
+		# Connected before it enters the tree: with the land and the towns already up (a siege always is), its
+		# _ready runs straight through inside add_child and says it's raised before anyone could be listening.
 		a.raised.connect(func():
 			for r in a.rows():
 				r["state"] = "storm"  # the spike leaves it be from here: this drives it
@@ -75,6 +76,7 @@ func begin(siege_ai: Node, camp: Vector3, wall: Vector3, town: Vector3, foe_col:
 			if OS.get_cmdline_user_args().has("--probe"):
 				print("STORM side %d raised: %d regiments" % [i, a.rows().size()]))
 		sides.append(a)
+		add_child(a)
 
 
 ## --probe only: the storm's state as it goes (phase changes, and every 10 s the men in the gap and through it).
