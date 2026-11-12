@@ -436,6 +436,167 @@ func _step(w: PackedStringArray) -> void:
 					for kind in census:
 						counts[kind] = (census[kind] as Dictionary).size()
 					_note("CHECK square beasts: %s: %s (wants a dog, hens, the cart's horse; none inside: see the overlap line)" % [otitle, str(counts)])
+			"squarelife":
+				# squarelife Town [secs]: how lived-in a town's square is, sampled twice a second for secs, against what
+				# 01-town shows (towns.json square.targets): people on its setts, per 100 m2 of open paving, standing
+				# or walking, alone or in groups, the largest stretch of open paving nobody stands near, and how many
+				# stand by a stall, the well, the statue or a doorstep. A measuring tool: town_life drives the numbers.
+				var stitle := String(w[1]) if w.size() > 1 else "Kingsmere"
+				var ssecs := float(w[2]) if w.size() > 2 else 60.0
+				var sroot: Node3D = null
+				for c in main.bridge.world.get("cities", []):
+					if String(c.get("title", c.get("name", ""))) == stitle:
+						var st: Dictionary = main.towns.towns.get(int(c["id"]), {})
+						sroot = st.get("node") if not st.is_empty() else null
+				var tf := FileAccess.open("res://data/towns.json", FileAccess.READ)
+				var tj = JSON.parse_string(tf.get_as_text()) if tf else null
+				var sq: Dictionary = (tj as Dictionary).get("square", {}) if tj is Dictionary else {}
+				var tg: Dictionary = sq.get("targets", {})
+				var um: float = load("res://scripts/towns.gd").S  # world units per metre
+				var near := float(sq.get("near_m", 2.0)) * um
+				var pr := 0.0  # the setts' reach (towns.gd _note_paved: the square's own disc, first laid)
+				if sroot:
+					for pv in sroot.get_meta("paved", []):
+						if (pv[0] as Vector2) == Vector2.ZERO and (pv[1] as Vector2) == Vector2.ZERO:
+							pr = float(pv[2])
+							break
+				if sroot == null or pr <= 0.0:
+					_note("CHECK square life: %s: %s" % [stitle, "no town" if sroot == null else "no paved square"])
+				else:
+					# What stands on the setts (nav_ground outlines centred on them: stalls, the well, the statue) and the
+					# doorsteps round it: the places people gather by.
+					var feats: Array = []
+					for fp in load("res://scripts/town_nav.gd").footprints(sroot):
+						var poly := fp as PackedVector2Array
+						if poly.size() < 3:
+							continue
+						var mid := Vector2.ZERO
+						for v in poly:
+							mid += v
+						if (mid / poly.size()).length() <= pr:
+							feats.append(poly)
+					var doors: Array = []
+					for d in sroot.get_meta("doors", []):
+						var da: Vector3 = d["at"]
+						if Vector2(da.x, da.z).length() <= pr + near:
+							doors.append(Vector2(da.x, da.z))
+					var by_feature := func(q: Vector2) -> bool:
+						for dq in doors:
+							if q.distance_to(dq) <= near:
+								return true
+						for poly in feats:
+							if Geometry2D.is_point_in_polygon(q, poly):
+								return true
+							for k in (poly as PackedVector2Array).size():
+								var e := Geometry2D.get_closest_point_to_segment(q, poly[k], poly[(k + 1) % poly.size()])
+								if q.distance_to(e) <= near:
+									return true
+						return false
+					# The open setts as metre cells (inside the disc, not under anything placed).
+					var n := int(ceil(pr / um))
+					var open_cells: Array = []
+					for gx in range(-n, n + 1):
+						for gz in range(-n, n + 1):
+							var cq := Vector2(gx, gz) * um
+							if cq.length() > pr:
+								continue
+							var under := false
+							for poly in feats:
+								if Geometry2D.is_point_in_polygon(cq, poly):
+									under = true
+									break
+							if not under:
+								open_cells.append(Vector2i(gx, gz))
+					var open_m2 := float(open_cells.size())
+					var sums := {"people": 0.0, "standing": 0.0, "moving_seen": 0.0, "alone": 0.0, "g24": 0.0, "g5": 0.0, "empty": 0.0, "near": 0.0}
+					var last := {}  # instance id -> where it stood the sample before
+					var samples := 0
+					var t_end := Time.get_ticks_msec() + int(ssecs * 1000.0)
+					while Time.get_ticks_msec() < t_end:
+						var pts: Array = []
+						var now := {}
+						for p in get_tree().get_nodes_in_group("people"):
+							var pn := p as Node3D
+							if pn == null or not is_instance_valid(pn) or not pn.is_visible_in_tree():
+								continue
+							var lp := sroot.to_local(pn.global_position)
+							var q := Vector2(lp.x, lp.z)
+							if q.length() > pr:
+								continue
+							pts.append(q)
+							now[pn.get_instance_id()] = q
+							if last.has(pn.get_instance_id()):
+								sums["moving_seen"] += 1.0
+								if q.distance_to(last[pn.get_instance_id()]) < 0.3 * um:  # under 0.6 m/s: standing
+									sums["standing"] += 1.0
+							if by_feature.call(q):
+								sums["near"] += 1.0
+						last = now
+						sums["people"] += pts.size()
+						# Groups: everyone within near of someone in it.
+						var group := range(pts.size())
+						var root_of := func(i: int) -> int:
+							while group[i] != i:
+								i = group[i]
+							return i
+						for i in pts.size():
+							for j in range(i + 1, pts.size()):
+								if (pts[i] as Vector2).distance_to(pts[j]) <= near:
+									group[root_of.call(i)] = root_of.call(j)
+						var sizes := {}
+						for i in pts.size():
+							var r: int = root_of.call(i)
+							sizes[r] = int(sizes.get(r, 0)) + 1
+						for r in sizes:
+							var s: int = sizes[r]
+							sums["alone" if s == 1 else ("g24" if s <= 4 else "g5")] += float(s)
+						# The largest stretch of open setts nobody stands within near of (cells joined side to side).
+						var free := {}
+						for cell in open_cells:
+							var cq := Vector2(cell) * um
+							var taken := false
+							for q in pts:
+								if cq.distance_to(q) <= near:
+									taken = true
+									break
+							if not taken:
+								free[cell] = true
+						var best := 0
+						var seen := {}
+						for cell in free:
+							if seen.has(cell):
+								continue
+							var size := 0
+							var stack: Array = [cell]
+							seen[cell] = true
+							while not stack.is_empty():
+								var cc: Vector2i = stack.pop_back()
+								size += 1
+								for dc in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+									var nb: Vector2i = cc + dc
+									if free.has(nb) and not seen.has(nb):
+										seen[nb] = true
+										stack.append(nb)
+							best = maxi(best, size)
+						sums["empty"] += best
+						samples += 1
+						await get_tree().create_timer(0.5).timeout
+					var ns := float(maxi(1, samples))
+					var everyone := maxf(1.0, sums["people"])
+					var cols := [
+						["people", sums["people"] / ns, "%.0f"],
+						["per_100m2", sums["people"] / ns / maxf(1.0, open_m2) * 100.0, "%.1f"],
+						["standing", sums["standing"] / maxf(1.0, sums["moving_seen"]), "%.2f"],
+						["alone", sums["alone"] / everyone, "%.2f"],
+						["groups_2_4", sums["g24"] / everyone, "%.2f"],
+						["groups_5_plus", sums["g5"] / everyone, "%.2f"],
+						["largest_empty_m2", sums["empty"] / ns, "%.0f"],
+						["near_feature", sums["near"] / everyone, "%.2f"],
+					]
+					var parts: Array = []
+					for col in cols:
+						parts.append("%s %s (01-town %s)" % [col[0], String(col[2]) % float(col[1]), str(tg.get(col[0], "?"))])
+					_note("CHECK square life: %s: %d samples over %.0f s, %.0f m2 of open setts: %s" % [stitle, samples, ssecs, open_m2, ", ".join(parts)])
 			"town":
 				# Open a town's card, as clicking the town would.
 				for c in main.bridge.world.get("cities", []):
