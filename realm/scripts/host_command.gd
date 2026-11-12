@@ -5,8 +5,12 @@ extends Node3D
 ## left to right); right-click on the ground or a town marches. From Total War's campaign map: an army is
 ## one thing, its banner glows when selected, and where it is ordered shows as a dotted route on the map.
 ##   click a host's standard   select it (the ring and the glow); click the land elsewhere to let it go
-##   March / Garrison          then click where (a town, or the ground); right-click or Esc lets it go
-##   Hold / Return / Split     at once
+##   click one of its regiments select its host, that regiment marked (army.gd's regiments, Total War)
+##   March / Attack / Besiege / Garrison   then click where (the ground, a foe's host, a town); right-click or Esc
+##                             lets it go
+##   Hold / Go home / Split    at once
+##   right-drag                the line it marches to and forms on, facing away from the line (Total War's drag
+##                             to face); a right-click marches
 ## It decides nothing and keeps nothing of the realm's: the hosts and their orders are the bridge's
 ## (bridge/hosts.js), read from the view's one mirror (awareness.gd's realm "hosts"); an order is only
 ## asked of the bridge (POST /host/order), and the host's standard moves as Freeciv moves its companies
@@ -21,7 +25,7 @@ const FILE := "host_command"
 
 var main: Node
 var selected := -1  # the selected host's id (bridge/hosts.js: its lowest company's id), or -1
-var _aim := ""  # an order waiting for the King to click where: "march" or "garrison"
+var _aim := ""  # an order waiting for the King to click where (its row's aim: march, attack, besiege, garrison)
 var _card: PanelContainer
 var _title: Label
 var _status: Label
@@ -31,7 +35,9 @@ var _end: Decal  # the ring where the selected host is bound
 var _glow: OmniLight3D
 var _dots_sel: MultiMeshInstance3D  # the selected host's route
 var _dots_rest: MultiMeshInstance3D  # every other host's route, fainter
-var _right_at := Vector2.INF  # where a right-click went down (the camera turns on a right-drag)
+var _right_at := Vector2.INF  # where a right-click went down while a host is selected
+var _facing := false  # the right button is drawing the line the host will form on
+var _ghosts: MultiMeshInstance3D  # a mark per company along that line
 var _t := 0.0
 
 
@@ -63,6 +69,7 @@ func _ready() -> void:
 	var gold := Color.from_string(String(Data.value(FILE, "route.color", "#dbb56e")), T.ACCENT)
 	_dots_sel = _dots(gold)
 	_dots_rest = _dots(Color(gold, Data.num(FILE, "route.others_alpha", 0.4)))
+	_ghosts = _dots(Color.from_string(String(Data.value(FILE, "face.color", "#f0c878")), T.ACCENT), Data.num(FILE, "face.ghost", 0.12))
 	_build_card()
 
 
@@ -123,6 +130,11 @@ func take_click(ground: Vector3) -> bool:
 	if id >= 0:
 		select(id)
 		return true
+	var reg := _pick_regiment(at)
+	if not reg.is_empty():
+		select(int(reg["host"]))
+		(reg["view"] as Node).select(int(reg["id"]))  # army.gd: that regiment's rectangle and banner
+		return true
 	if selected >= 0:
 		select(-1)  # the land elsewhere: the host is let go, and the click picks a town as before
 	return false
@@ -150,6 +162,28 @@ func _pick(screen: Vector2) -> int:
 	return best
 
 
+## The regiment under the pointer (nearest within pick_px on screen) of any host view that lists its regiments
+## (army.gd regiments(): {id, host, at}), as {id, host, view}, or {} when none is near.
+func _pick_regiment(screen: Vector2) -> Dictionary:
+	var cam := get_viewport().get_camera_3d()
+	if cam == null:
+		return {}
+	var best := {}
+	var best_d := Data.num(FILE, "pick_px", 30.0)
+	for n in get_tree().get_nodes_in_group(&"host_views"):
+		if not n.has_method("regiments"):
+			continue
+		for r: Dictionary in n.regiments():
+			var p: Vector3 = r.get("at", Vector3.INF)
+			if p == Vector3.INF or cam.is_position_behind(p) or host(int(r.get("host", -1))).is_empty():
+				continue
+			var d := cam.unproject_position(p).distance_to(screen)
+			if d < best_d:
+				best_d = d
+				best = {"id": int(r["id"]), "host": int(r["host"]), "view": n}
+	return best
+
+
 ## Selects a host (or none, -1): the ring, the glow and the card follow it.
 func select(id: int) -> void:
 	selected = id
@@ -163,24 +197,73 @@ func select(id: int) -> void:
 	_refresh()
 
 
-func _unhandled_input(event: InputEvent) -> void:
-	if selected < 0 or not (event is InputEventMouseButton) or event.button_index != MOUSE_BUTTON_RIGHT:
+## The right button while a host is selected, ahead of the camera (whose right-drag turns the view): a click marches
+## there (or lets a waiting order go, Warcraft III), a drag draws the line the host forms on (Total War). Over the
+## interface it is the interface's.
+func _input(event: InputEvent) -> void:
+	if selected < 0:
 		return
-	if event.pressed:
-		_right_at = event.position
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT:
+		if event.pressed:
+			if get_viewport().gui_get_hovered_control() != null:
+				return
+			_right_at = event.position
+			_facing = false
+			get_viewport().set_input_as_handled()
+			return
+		if _right_at == Vector2.INF:
+			return
+		var was := _right_at
+		_right_at = Vector2.INF
+		get_viewport().set_input_as_handled()
+		_ghosts.multimesh.instance_count = 0
+		if _facing:
+			_facing = false
+			var line := _line(was, event.position)
+			if not line.is_empty():
+				_ask(_place_body("march", line[0]).merged({"face": line[1]}))
+			return
+		if _aim != "":
+			_set_aim("")
+			return
+		var g: Vector3 = main.rig._ground_under(event.position)
+		if g != Vector3.INF:
+			_order_at("march", g)
+	elif event is InputEventMouseMotion and _right_at != Vector2.INF:
+		get_viewport().set_input_as_handled()
+		if not _facing and _right_at.distance_to(event.position) < Data.num(FILE, "face.drag_px", 14.0):
+			return
+		_facing = true
+		_show_line(_right_at, event.position)
+
+
+## A dragged line on the ground, from screen `a` to `b`: [its middle, the way the host faces (a yaw, atan2 of x and
+## z, as the camera and the army measure it)], or [] off the land. The host faces away from the line as dragged:
+## a left-to-right drag faces up the screen (the screen's drag turned a quarter, then read on the ground).
+func _line(a: Vector2, b: Vector2) -> Array:
+	var mid := (a + b) * 0.5
+	var ahead := (b - a).normalized()
+	var up_screen := Vector2(ahead.y, -ahead.x)
+	var g0: Vector3 = main.rig._ground_under(mid)
+	var g1: Vector3 = main.rig._ground_under(mid + up_screen * 20.0)
+	if g0 == Vector3.INF or g1 == Vector3.INF:
+		return []
+	var way := Vector2(g1.x - g0.x, g1.z - g0.z)
+	return [g0, atan2(way.x, way.y)]
+
+
+## The ghost marks along the line being dragged: one per company, evenly from end to end (Total War's ghosts).
+func _show_line(a: Vector2, b: Vector2) -> void:
+	var ga: Vector3 = main.rig._ground_under(a)
+	var gb: Vector3 = main.rig._ground_under(b)
+	if ga == Vector3.INF or gb == Vector3.INF:
 		return
-	var was := _right_at
-	_right_at = Vector2.INF
-	if was == Vector2.INF or was.distance_to(event.position) > 6.0:
-		return  # a right-drag turned the camera
-	if get_viewport().gui_get_hovered_control() != null:
-		return
-	if _aim != "":
-		_set_aim("")  # Warcraft III: a right-click lets a waiting order go
-		return
-	var g: Vector3 = main.rig._ground_under(event.position)
-	if g != Vector3.INF:
-		_order_at("march", g)
+	var n := maxi(1, int(host(selected).get("companies", 1)))
+	var marks: Array[Vector3] = []
+	for i in n:
+		var p := ga.lerp(gb, (i + 0.5) / n)
+		marks.append(Vector3(p.x, main.terrain.height_at(p.x, p.z) + Data.num(FILE, "route.lift", 0.04), p.z))
+	_fill(_ghosts, marks)
 
 
 func _unhandled_key_input(event: InputEvent) -> void:
@@ -205,24 +288,37 @@ func _unhandled_key_input(event: InputEvent) -> void:
 func _press(kind: String) -> void:
 	if selected < 0:
 		return
-	if kind in ["march", "garrison"]:
+	if _row(kind).get("aim", false):
 		_set_aim("" if _aim == kind else kind)
 		return
 	_set_aim("")
 	_ask({"host": selected, "order": kind})
 
 
-## An order to a place: into the town there when one is near, else to the ground.
+## An order's row on the card (host_command.json orders), or {}.
+static func _row(kind: String) -> Dictionary:
+	for o in Data.value(FILE, "orders", []):
+		if String(o.get("order", "")) == kind:
+			return o
+	return {}
+
+
+## An order to a place: into the town there when one is near, else to the ground (an attack is on what stands
+## there, so always the ground: the bridge finds the foe on it).
 func _order_at(kind: String, ground: Vector3) -> void:
+	_ask(_place_body(kind, ground))
+
+
+func _place_body(kind: String, ground: Vector3) -> Dictionary:
 	var body := {"host": selected, "order": kind}
-	var town: Dictionary = main.towns.nearest(ground, Data.num(FILE, "town_reach", 3.0))
+	var town: Dictionary = {} if kind == "attack" else main.towns.nearest(ground, Data.num(FILE, "town_reach", 3.0))
 	if not town.is_empty():
 		body["city"] = int(town.get("id", -1))
 	else:
 		var tile: Vector2i = main.terrain.tile_of(ground)
 		body["x"] = tile.x
 		body["y"] = tile.y
-	_ask(body)
+	return body
 
 
 ## Asks the bridge; it decides, and says so (the toast), and the next /world shows the host's order.
@@ -306,14 +402,14 @@ func _fill(mmi: MultiMeshInstance3D, points: Array[Vector3]) -> void:
 		mm.set_instance_transform(i, Transform3D(Basis.IDENTITY, points[i]))
 
 
-func _dots(color: Color) -> MultiMeshInstance3D:
+func _dots(color: Color, size := -1.0) -> MultiMeshInstance3D:
 	var m := StandardMaterial3D.new()
 	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	m.albedo_color = color
 	if color.a < 1.0:
 		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	var dot := SphereMesh.new()
-	var r := Data.num(FILE, "route.dot", 0.07)
+	var r := size if size > 0.0 else Data.num(FILE, "route.dot", 0.07)
 	dot.radius = r
 	dot.height = r * 0.8  # a flattened stud, lying on the land
 	dot.radial_segments = 8
@@ -388,7 +484,7 @@ func _build_card() -> void:
 		var action := "host_" + kind
 		var key := Keys.label(action) if InputMap.has_action(StringName(action)) else ""
 		var b: Button = main.ui.icon_btn(String(o.get("icon", "play")), String(o.get("tip", kind.capitalize())) + ("  (%s)" % key if key != "" else ""))
-		b.toggle_mode = kind in ["march", "garrison"]
+		b.toggle_mode = bool(o.get("aim", false))
 		b.pressed.connect(_press.bind(kind))
 		if key != "":
 			# The key in the button's corner, as Warcraft III's card shows it.
@@ -417,23 +513,19 @@ func _refresh() -> void:
 	_card.tooltip_text = "%d companies" % int(h.get("companies", 0))
 
 
+## What the host is doing, in the card's words: its order's row in host_command.json doing ({to}, {road}), the
+## "there" row once it has arrived (seasons 0), "at ease" with no order.
 static func _doing(h: Dictionary) -> String:
 	var o: Variant = h.get("order")
+	var rows: Dictionary = Data.value(FILE, "doing", {})
 	if not (o is Dictionary):
-		return "at ease"
-	var to := String(o.get("to")) if o.get("to") != null else "the place you named"
+		return String(rows.get("ease", "at ease"))
+	var kind := String(o.get("kind", ""))
 	var seasons := int(o.get("seasons", 0))
-	var road := ("a season away" if seasons == 1 else "%d seasons away" % seasons) if seasons > 0 else "there"
-	match String(o.get("kind", "")):
-		"hold":
-			return "holding"
-		"march":
-			return "marching for %s, %s" % [to, road]
-		"garrison":
-			if seasons == 0:
-				return "garrisoning %s" % to
-			return "bound for %s, %s" % [to, road]
-	return String(o.get("kind", ""))
+	var row: Variant = rows.get(kind, kind)
+	var line := String((row.get("there", row.get("road", kind)) if seasons == 0 else row.get("road", kind)) if row is Dictionary else row)
+	var road := "a season away" if seasons == 1 else "%d seasons away" % seasons
+	return line.format({"to": String(o.get("to")) if o.get("to") != null else "the place you named", "road": road})
 
 
 ## Stacked over the minimap and its camera pad, its right edge with theirs.

@@ -71,7 +71,7 @@
   "_staged": "staged: a scene the bridge staged -> the soundscape event it sounds as it lands (soundscape.gd STINGS), for anyone's scene; staged_king: the same for the King's own scenes only (a lord's keeps its own cue in news.gd); orders: a host's order (host_command.gd) -> the event as it sets off. Every decision is heard (docs/review/decision-reactions.md).",
   "staged": { "vigil": "vigil", "rider": "rider", "muster": "muster" },
   "staged_king": { "feast": "feast", "grain": "grain", "tribute": "tribute", "ward": "ward" },
-  "orders": { "march": "muster", "garrison": "muster", "return": "muster" },
+  "orders": { "march": "muster", "attack": "muster", "besiege": "muster", "garrison": "muster", "return": "muster" },
   "events": {
     "ui_decree": [["bell", 0.6]],
     "ui_seal": [["bell", 0.6]],

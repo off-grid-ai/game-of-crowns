@@ -24,7 +24,10 @@ extends Node
 ##   host 0 6            frame the King's n-th host (the biggest first) and click its standard (--hosts=on)
 ##   dclick 0.65 0.6     left double-click at a fraction of the screen (the view comes closer onto the spot)
 ##   rclick 0.6 0.5      right-click at a fraction of the screen (a selected host marches there)
-##   order march         give the selected host (else the first) an order; march/garrison to the nearest town it can reach
+##   rdrag 0.4 0.6 0.7 0.6   right-drag between two fractions of the screen (a selected host marches to that line and
+##                       forms on it, facing away from it: left to right faces up the screen; host_command.gd)
+##   order march         give the selected host (else the first) an order; march/garrison to the nearest town it can reach,
+##                       besiege the nearest town not the crown's the bridge accepts, attack the nearest foe's men
 ##   answer              give the matter on the court card its first answer
 ##   director            let the camera director run, as it does in play
 ##   rout 120            wait (at most 120 s) for the field battle's first break (--army-battle), so the film starts there
@@ -225,6 +228,9 @@ func _step(w: PackedStringArray) -> void:
 				await get_tree().create_timer(1.5).timeout
 			"rclick":
 				_click(Vector2(float(w[1]), float(w[2])), MOUSE_BUTTON_RIGHT)
+				await get_tree().create_timer(0.4).timeout
+			"rdrag":
+				await _right_drag(Vector2(float(w[1]), float(w[2])), Vector2(float(w[3]), float(w[4])))
 				await get_tree().create_timer(0.4).timeout
 			"host":
 				# host [n] [dist] [tilt]: frames the King's n-th host from /world's hosts (the biggest first),
@@ -958,6 +964,32 @@ func _nav_why(nav, root: Node3D) -> void:
 		", ".join(big.slice(0, 4).map(func(b): return "%.2f at (%.1f, %.1f) %d pts%s" % [b[0], b[1].x, b[1].y, b[2], " water" if b[3] else ""]))])
 
 
+## A right-drag from one fraction of the screen to another, as a player draws a host's line (host_command.gd).
+func _right_drag(a: Vector2, b: Vector2) -> void:
+	var size := get_viewport().get_visible_rect().size
+	var from := size * a
+	var to := size * b
+	var e := InputEventMouseButton.new()
+	e.button_index = MOUSE_BUTTON_RIGHT
+	e.pressed = true
+	e.position = from
+	e.global_position = from
+	_feed(e)
+	for i in 8:
+		await get_tree().process_frame
+		var m := InputEventMouseMotion.new()
+		m.position = from.lerp(to, (i + 1) / 8.0)
+		m.global_position = m.position
+		m.button_mask = MOUSE_BUTTON_MASK_RIGHT
+		_feed(m)
+	await get_tree().create_timer(0.5).timeout  # the ghost line stays a moment, for the film
+	var up := e.duplicate() as InputEventMouseButton
+	up.pressed = false
+	up.position = to
+	up.global_position = to
+	_feed(up)
+
+
 func _click(frac: Vector2, button := MOUSE_BUTTON_LEFT, double := false) -> void:
 	var at := get_viewport().get_visible_rect().size * frac
 	for down in [true, false]:
@@ -1034,9 +1066,29 @@ func _order(kind: String) -> void:
 	var h: Dictionary = hc.host(int(hc.selected)) if int(hc.selected) >= 0 else all[0]
 	var id := int(h.get("id", -1))
 	var bodies: Array = []
-	if kind in ["march", "garrison"]:
+	var here := Vector2(float(h.get("x", 0)), float(h.get("y", 0)))
+	var near := func(a, b): return here.distance_to(Vector2(float(a["x"]), float(a["y"]))) < here.distance_to(Vector2(float(b["x"]), float(b["y"])))
+	var ours := -1
+	for u in main.bridge.world.get("units", []):
+		if int(u.get("id", -1)) == id:
+			ours = int(u.get("owner", -1))
+	if kind == "attack":
+		# The nearest foe's men, one tile each (the bridge says whether they are at war with the crown).
+		var foes: Array = (main.bridge.world.get("units", []) as Array).filter(func(u): return int(u.get("owner", -1)) != ours)
+		foes.sort_custom(near)
+		var tiles := {}
+		for u in foes:
+			var t := Vector2i(int(u["x"]), int(u["y"]))
+			if not tiles.has(t) and tiles.size() < 8:
+				tiles[t] = true
+				bodies.append({"host": id, "order": kind, "x": t.x, "y": t.y})
+	elif kind == "besiege":
+		var theirs: Array = (main.bridge.world.get("cities", []) as Array).filter(func(c): return int(c.get("owner", -1)) != ours)
+		theirs.sort_custom(near)
+		for c in theirs.slice(0, 8):
+			bodies.append({"host": id, "order": kind, "city": int(c["id"])})
+	elif kind in ["march", "garrison"]:
 		var towns: Array = (main.bridge.world.get("cities", []) as Array).duplicate()
-		var here := Vector2(float(h.get("x", 0)), float(h.get("y", 0)))
 		towns = towns.filter(func(c): return Vector2(float(c["x"]), float(c["y"])) != here)
 		towns.sort_custom(func(a, b): return here.distance_to(Vector2(float(a["x"]), float(a["y"]))) < here.distance_to(Vector2(float(b["x"]), float(b["y"]))))
 		for c in towns.slice(0, 8):
@@ -1049,7 +1101,7 @@ func _order(kind: String) -> void:
 		while res.is_empty():
 			await get_tree().process_frame
 		var said := String(res[0][1].get("text", res[0][1].get("error", "")))
-		_note("  order %s %s: %d %s" % [kind, str(body.get("city", "")), int(res[0][0]), said])
+		_note("  order %s %s: %d %s" % [kind, str(body.get("city", body.get("x", ""))), int(res[0][0]), said])
 		if int(res[0][0]) == 200:
 			if main.ui:
 				main.ui.toast(said)

@@ -34,9 +34,11 @@ const ACTIONS := [
 	["back", "Close, step back", "The realm", [KEY_ESCAPE]],
 	# The command card's cells, left to right (host_command.gd; Warcraft III's grid keys).
 	["host_march", "March the selected host", "The King's hosts", [KEY_T]],
+	["host_attack", "Attack a foe's host", "The King's hosts", [KEY_V]],
+	["host_besiege", "Besiege a foe's town", "The King's hosts", [KEY_N]],
 	["host_hold", "Hold where it stands", "The King's hosts", [KEY_Y]],
 	["host_garrison", "Garrison a town", "The King's hosts", [KEY_U]],
-	["host_return", "Return to the King's seat", "The King's hosts", [KEY_I]],
+	["host_return", "Go home to the King's seat", "The King's hosts", [KEY_I]],
 	["host_split", "Split the host in two", "The King's hosts", [KEY_O]],
 	["walk_forward", "Walk forward", "Walking and fighting", [KEY_W, KEY_UP]],
 	["walk_back", "Walk back", "Walking and fighting", [KEY_S, KEY_DOWN]],
