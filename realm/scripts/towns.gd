@@ -1061,6 +1061,11 @@ func _plot_lots(root: Node3D, center: Vector3, square_r: float, ways: Array, kin
 	# never take a house's ground.
 	for s in stood:
 		_yard(root, center, s[0], s[1], s[2], s[3], lots, rng, int(s[4]))
+	# CHECK line: how the yards came out (round 6: no gardens, fences or pens read at Kingsmere).
+	var things := {}
+	for t in root.get_meta("yard_things", []):
+		things[String(t["component"])] = int(things.get(String(t["component"]), 0)) + 1
+	print("CHECK town yards: %s: %d yards for %d houses, %d kitchen gardens (refused: %s), yard things %s, %d fence panels (%d refused)" % [String(root.get_meta("title", "")), int(root.get_meta("plot_yards", 0)), stood.size(), (root.get_meta("gardens", []) as Array).size(), str(root.get_meta("garden_why", {})), str(things), int(root.get_meta("fence_panels", 0)), int(root.get_meta("fence_refused", 0))])
 	var size := int(root.get_meta("size", 0))
 	print("CHECK town plots: %s (size %d, edge %.1f): %d plots cut along %d ways, %d houses stood (and %d round the square), %d left in budget; turned away: %s" % [String(root.get_meta("title", "")), size, float(root.get_meta("plot_edge", 0.0)), all.size(), ways.size(), placed, int(root.get_meta("ring_houses", 0)), budget - placed, str(why)])
 	if OS.get_cmdline_user_args().has("--probe=towns"):
@@ -1399,8 +1404,10 @@ func _fence_line(root: Node3D, center: Vector3, a: Vector2, b: Vector2, lots: Ar
 		var q := a.lerp(b, (i + 0.5) / n)
 		var p := Vector3(q.x, 0, q.y)
 		if not terrain.is_land(center.x + p.x, center.z + p.z) or _crowded(lots, p, 0.02):
+			root.set_meta("fence_refused", int(root.get_meta("fence_refused", 0)) + 1)  # the CHECK town yards line
 			continue
 		_place(root, kind, p + Vector3(0, _ground_y(center, p) - 0.01, 0), yaw, Vector3.ONE, Vector2(panel * 1.05, 0.06))
+		root.set_meta("fence_panels", int(root.get_meta("fence_panels", 0)) + 1)
 
 
 ## The palisade round the plots' edge (an outline, town-local), with a gate
@@ -1880,11 +1887,25 @@ func _croft(root: Node3D, center: Vector3, hp: Vector3, face: Vector3, f: Vector
 	var deep: Array = _plot_knobs().get("green", {}).get("garden_depth", [0.3, 0.42]) if plot else [0.3, 0.42]
 	var gk: Dictionary = _plot_knobs().get("green", {}) if plot else {}
 	var wide: Array = gk.get("garden_width", [0.75, 0.4, 0.8])  # [share of the house's width, least, most] (game units)
-	var size := Vector2(clampf(f.x * float(wide[0]), float(wide[1]), float(wide[2])), rng.randf_range(float(deep[0]), float(deep[1])))
-	var back := hp - face * (f.y * 0.5 + size.y * 0.5 + 0.1)
-	var held := minf(size.x, size.y) * 0.5 if plot else size.x * 0.4  # the ground it keeps others off
+	var full := Vector2(clampf(f.x * float(wide[0]), float(wide[1]), float(wide[2])), rng.randf_range(float(deep[0]), float(deep[1])))
 	var others: Array = lots.slice(0, lots.size() - 1) if own_lot < 0 else lots.slice(0, own_lot) + lots.slice(own_lot + 1)
-	if _crowded(others, back, held) or not _flat_enough(center, back, 0.18) or _built_on(root, back):
+	# A bed that doesn't fit is tried smaller before the yard goes without (towns.json plots.green.garden_shrink;
+	# round 6: a crown's back-to-back yards refused the full bed and no garden read at Kingsmere).
+	var size := full
+	var back := Vector3.ZERO
+	var held := 0.0
+	var refused := ""
+	for k in ([1.0] + (gk.get("garden_shrink", []) as Array) if plot else [1.0]):
+		size = full * float(k)
+		back = hp - face * (f.y * 0.5 + size.y * 0.5 + 0.1)
+		held = minf(size.x, size.y) * 0.5 if plot else size.x * 0.4  # the ground it keeps others off
+		refused = "crowded" if _crowded(others, back, held) else ("steep" if not _flat_enough(center, back, 0.18) else ("built on" if _built_on(root, back) else ""))
+		if refused == "":
+			break
+	if refused != "":
+		var gw: Dictionary = root.get_meta("garden_why", {})
+		gw[refused] = int(gw.get(refused, 0)) + 1
+		root.set_meta("garden_why", gw)  # the CHECK town yards line
 		return
 	var yaw := atan2(face.x, face.z) + PI / 2
 	var plots := _plots(root)
@@ -2489,7 +2510,7 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 	var pave: Dictionary = _paving()
 	var pave_span := square_r * float(pave.get("square", 2.0))
 	var pave_reps := clampi(roundi(pave_span / float(pave.get("tile", 0.25))), 2, 12)
-	var setts: Decal = terrain.paint(root, terrain.tiled(String(pave.get("texture", SQUARE_TEX)), pave_reps, pave_reps, "setts"), Vector3(0, _ground_y(center, Vector3.ZERO), 0), Vector2(pave_span, pave_span * float(pave.get("square_aspect", 0.9))), rng.randf() * TAU, _rgb(pave.get("tint"), Color.WHITE))
+	var setts: Decal = terrain.paint(root, terrain.tiled(String(pave.get("texture", SQUARE_TEX)), pave_reps, pave_reps, String(pave.get("square_edge", "setts"))), Vector3(0, _ground_y(center, Vector3.ZERO), 0), Vector2(pave_span, pave_span * float(pave.get("square_aspect", 0.9))), rng.randf() * TAU, _rgb(pave.get("tint"), Color.WHITE))
 	setts.sorting_offset = 1.0  # the paving over the roads that come into the square: a road ends at its setts, never a dirt stripe across them
 
 	var per_variant := {}

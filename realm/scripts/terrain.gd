@@ -1343,7 +1343,10 @@ func tiled(path: String, nx: int, ny: int, edge := "") -> Texture2D:
 				a *= clampf(0.75 + wear.get_noise_2d(x * 4.0, y * 4.0) * 0.6, 0.0, 1.0) if d > 0.45 else 1.0
 				if a < 1.0:
 					img.set_pixel(x, y, Color(img.get_pixel(x, y), a))
-	elif edge == "setts":
+	elif edge == "setts" or edge == "plaza":
+		# "plaza" (round 6, 01-town: the square cobbled out to the house fronts): whole to near its rim, a narrow
+		# ragged border only, few setts lost.
+		var plaza := edge == "plaza"
 		# Laid stone: whole at the heart, and toward its border breaking up in
 		# clumps where setts were lost and the earth shows, out in tongues toward
 		# the streets, so it ends in packed earth rather than on a ruled circle.
@@ -1357,9 +1360,9 @@ func tiled(path: String, nx: int, ny: int, edge := "") -> Texture2D:
 		for y in h:
 			for x in w:
 				var d := Vector2(2.0 * x / w - 1.0, 2.0 * y / h - 1.0).length()
-				var reach := 0.8 + wear.get_noise_2d(x, y) * 0.22  # the border wanders in and out
-				var a := clampf((reach - d) * 6.0, 0.0, 1.0)
-				if d > reach - 0.3:
+				var reach := (0.93 + wear.get_noise_2d(x, y) * 0.05) if plaza else (0.8 + wear.get_noise_2d(x, y) * 0.22)  # the border wanders in and out
+				var a := clampf((reach - d) * (14.0 if plaza else 6.0), 0.0, 1.0)
+				if d > reach - (0.08 if plaza else 0.3):
 					a *= clampf(0.6 + lost.get_noise_2d(x, y) * 1.4, 0.0, 1.0)  # setts gone in patches
 				if a < 1.0:
 					img.set_pixel(x, y, Color(img.get_pixel(x, y), a))
