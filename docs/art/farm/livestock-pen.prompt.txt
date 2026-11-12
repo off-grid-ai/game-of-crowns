@@ -1,0 +1,9 @@
+Use case: stylized-concept.
+Create one original game asset concept, square image, for a stylised fantasy real-time strategy game.
+Input image: /Users/user/wednesday/civilization/docs/art/farm/ref/pen_ref.jpg is a STYLE AND DESIGN reference only. Copy its chunky oak fence design, warm colours and painted finish, not its camera or surroundings. Do not include the animal or flowers.
+Subject: A small square livestock pen with NO animals. Sturdy rustic split-rail fence made of weathered oak, thick square posts and chunky rails, fully enclosing a patch of trodden earth with a little straw. A simple closed plank gate on one side. Inside are one hollowed-log feeding trough and one wooden water bucket. A small plank lean-to shelter with a short red clay-tile roof stands in one corner. All parts form one coherent solid asset.
+Style: polished stylised 3D game model with hand-painted textures, storybook medieval town feel; chunky readable shapes, slightly exaggerated proportions, thick timbers, soft painted textures with visible brush strokes, rich warm saturated colours, dark oak timber and warm red clay roof tiles. Original design, no existing franchise asset.
+Composition: WHOLE object alone, centred, three-quarter view from slightly above, about 25 degrees down, front and one side visible. Object fills about 80 percent of square image with clear margin on all sides. Choose arrangement so trough, bucket and shelter are readable. Clean bold silhouette, every part solid and well defined.
+Background: plain perfectly flat medium grey. The enclosed patch of earth is part of the pen asset; no surrounding ground, no ground plane, no pedestal or diorama base. No cast shadow on the background.
+Lighting: warm even studio light, softly painted material shading.
+Constraints: no people, no animals, no smoke, no text, no logos, no frame, no loose cards, no floating bits, no scenery outside the pen.

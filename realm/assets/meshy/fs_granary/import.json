@@ -1,0 +1,21 @@
+{
+ "name": "fs_granary",
+ "source": "/Users/user/code/goc-kits/meshy/farm/granary/granary_20k.glb",
+ "tris_before": 20431,
+ "tris_after": 20000,
+ "scale": 4.209923719124463,
+ "size_m": [
+  5.54,
+  8.0,
+  7.0
+ ],
+ "house_share": 0.0,
+ "mask_png": true,
+ "materials": [
+  "Material_0"
+ ],
+ "cut_faces": 0,
+ "arm": false,
+ "repainted": 0,
+ "flattened": 0
+}

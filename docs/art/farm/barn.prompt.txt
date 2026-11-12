@@ -1,0 +1,23 @@
+# Barn image prompt
+
+Tool: built-in image_gen.
+
+## First prompt
+
+Use case: stylized-concept.
+Asset type: one original fantasy real-time strategy game building concept, square image.
+Input image 1 is a STYLE REFERENCE ONLY: copy its chunky medieval architecture, golden straw thatch, dark oak beams, warm palette, hand-painted finish and storybook character. Do not copy its camera or surroundings.
+Subject: A large long farm barn. Heavy dark oak timber frame and solid wooden plank walls on a low rough warm-grey stone foundation. Tall steep golden straw thatch roof with a neat finished ridge and thick solid layered thatch edges. Big double plank doors stand open on the LONG side, clearly showing hay in the dim interior. On the visible SHORT gable end, a small upper hay loft door sits beneath the roof peak with a projecting solid wooden hoist beam. A compact stack of hay bales and a wooden pitchfork lean beside the main double doors. Make all details physically solid and well connected.
+Style/medium: polished stylised 3D game model with hand-painted textures, as in the reference crop: chunky readable forms, slightly exaggerated proportions, thick timbers, chunky stones, soft painted textures with visible brush strokes, warm saturated colours. Golden thatch, dark oak, warm brown planks, warm grey stone, subtle cream plaster in the gable if needed. Original asset, no existing franchise design.
+Composition: show the WHOLE barn and its requested props alone, centred, three-quarter view from slightly above, approximately 25 degrees down. The long facade with open doors and one short gable end with loft door and hoist must both be visible. Barn fills approximately 80 percent of the square canvas, with clear space around every edge and every prop. Clean bold silhouette, no cropping.
+Lighting: warm even studio light. Shade the model surfaces for volume, but no cast shadow outside the object.
+Background: completely uniform flat medium grey, no gradient, no ground, no floor, no ground plane, no platform, no terrain, no shadow, no ambient shadow below the object.
+Avoid: people, animals, smoke, text, logos, frame, extra buildings, trees, scenery, loose cards, floating bits, photorealism.
+
+## Final edit prompt
+
+Edit the generated barn image. Keep the same barn design, camera angle, open doors, hay interior, gable loft door, hoist, stone base, straw roof, colours and painted 3D finish. Make these precise corrections:
+1. Scale the complete object down uniformly so its widest extent occupies 80 percent of the square canvas, with at least 10 percent clear background at the left and right and clear space above and below. Show the whole barn and props.
+2. The pitchfork leaning beside the bales must be entirely WOODEN: warm brown wooden handle and three thick wooden tines, no metal tines.
+3. Make every background pixel a single uniform flat medium grey, approximately #808080. No grain, gradient, vignette, floor, ground, platform, cast shadow or contact shadow outside the model.
+Preserve all other details. One original stylised fantasy RTS barn asset, no people, animals, smoke, text, logos or frame.
