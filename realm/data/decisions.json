@@ -47,12 +47,12 @@
  },
  "levy": {
   "_": "A levy raised at a town (the mirror's levy: a muster there this season or last): at its gate, a sergeant at a table under the royal standard and a line of recruits.",
-  "recruits": 6,
+  "recruits": 10,
   "spacing": 0.14
  },
  "garrison": {
   "_": "Reinforcements: while the bridge says a royal company stands at a town (cities[].garrison; bridge/garrison.js and data/garrison.json own how long), the royal standard stands at its gate with a guard.",
-  "guards": 6,
+  "guards": 12,
   "standards": 2,
   "spacing": 0.13
  },

@@ -106,9 +106,6 @@ export function royalWorks(ctx, turn) {
   // A market's gold beyond Freeciv's own tax (data/economy.json marketGold; 0: the crown earns only what its towns yield).
   const marketGold = ECONOMY.marketGold ?? 0;
   if (markets && marketGold) send(`lua cmd ${Lua.gold(crown.id, markets * marketGold)}`);
-  if (isYearEnd(turn)) for (const x of mine.filter((y) => (y.buildings ?? []).includes("Barracks"))) {
-    send(`lua cmd ${Lua.levy(x.id, ["Pikemen"])}`);
-  }
   chron.saveMeta(meta);
 }
 
