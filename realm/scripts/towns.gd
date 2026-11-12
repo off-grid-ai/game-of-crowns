@@ -1111,13 +1111,39 @@ func _yard_green(root: Node3D, center: Vector3, pl: Array, p: Vector3, face: Vec
 		lots.append([q, r])
 	if rng.randf() < float(green.get("tree", 0.0)):
 		var t := 0.12 if rng.randf() < 0.5 else 0.88
-		drop.call("town_tree", corners[3].lerp(corners[2], t) + f2 * 0.1, float(green.get("tree_ground", 0.12)), rng.randf_range(0.8, 1.1))
+		var at2: Vector2 = corners[3].lerp(corners[2], t) + f2 * 0.1
+		var grown := rng.randf_range(0.8, 1.1)
+		var before: int = lots.size()
+		drop.call("town_tree", at2, float(green.get("tree_ground", 0.12)), grown)
+		if lots.size() > before and rng.randf() < float(green.get("apples", 0.0)):
+			_apples(root, center, Vector3(at2.x, 0, at2.y), grown, green, rng)
 	if rng.randf() < float(green.get("hedge", 0.0)):
 		for k in 2:
 			drop.call("garden_hedge", side_from.lerp(corners[2], 0.3 + 0.4 * k) + (Vector2(p.x, p.z) - side_from).normalized() * 0.07, 0.06, rng.randf_range(0.8, 1.15))
 	if rng.randf() < float(green.get("flowers", 0.0)):
 		var back := Vector2(p.x, p.z) - f2 * (f.y * 0.5 + 0.09) + f2.orthogonal() * f.x * rng.randf_range(0.3, 0.42) * (1.0 if rng.randf() < 0.5 else -1.0)
 		drop.call("garden_flowers", back, 0.05, rng.randf_range(0.8, 1.1))
+
+
+## An apple tree (towns.json plots.green.apples; art target 01-town: the yards' trees hung with red apples): red apples
+## (assets.json fruit_apple) set about the outside of a yard tree's crown, more on its lower half and its sides, big
+## enough to read from roof height. The crown is taken as a ball: crown [its middle's height, its radius] as shares
+## of the tree's height (the kit's broadleaf, town_tree, about 10 m at `grown` 1).
+func _apples(root: Node3D, center: Vector3, at: Vector3, grown: float, green: Dictionary, rng: RandomNumberGenerator) -> void:
+	var kind := Real.one("fruit_apple")
+	if kind == "" or Real.footprint(kind) == Vector2.ZERO:
+		return
+	var tall := 10.0 * S * grown
+	var cr: Array = green.get("crown", [0.66, 0.3])
+	var mid := at + Vector3(0, _ground_y(center, at) + tall * float(cr[0]), 0)
+	var r := tall * float(cr[1])
+	var n := rng.randi_range(int((green.get("apple_count", [10, 16]) as Array)[0]), int((green.get("apple_count", [10, 16]) as Array)[1]))
+	var size: Array = green.get("apple_size", [1.0, 1.4])
+	for i in n:
+		var a := rng.randf() * TAU
+		var up := rng.randf_range(-0.55, 0.45)  # more on the lower half, where fruit hangs
+		var dir := Vector3(cos(a) * sqrt(1.0 - up * up), up, sin(a) * sqrt(1.0 - up * up))
+		_place(root, kind, mid + dir * r * rng.randf_range(0.92, 1.02), rng.randf() * TAU, Vector3.ONE * rng.randf_range(float(size[0]), float(size[1])), Vector2(0.001, 0.001))
 
 
 ## Shade trees round the square's rim, before the house fronts (towns.json plots.green.square_trees;
@@ -1137,9 +1163,18 @@ func _square_trees(root: Node3D, center: Vector3, square_r: float, ways: Array, 
 		var kind := _green_kind("town_tree", rng)
 		if kind == "":
 			return
-		_place(root, kind, q + Vector3(0, _ground_y(center, q) - 0.01, 0), rng.randf() * TAU, Vector3.ONE * rng.randf_range(0.7, 0.85), Vector2(0.08, 0.08))
+		var sc := rng.randf_range(0.7, 0.85)
+		_place(root, kind, q + Vector3(0, _ground_y(center, q) - 0.01, 0), rng.randf() * TAU, Vector3.ONE * sc, Vector2(0.08, 0.08))
+		_crown(center, q, kind, sc)
 		lots.append([q, 0.06])
 		stood += 1
+
+
+## A town tree's crown into the woods' sight lines (forest.add_crown), so the camera reads it as it does a roof.
+func _crown(center: Vector3, q: Vector3, kind: String, scale: float) -> void:
+	var woods = terrain.get("forest") if terrain else null
+	if woods and woods.has_method("add_crown"):
+		woods.add_crown(Vector3(center.x + q.x, terrain.height_at(center.x + q.x, center.z + q.z), center.z + q.z), Real.height(kind) * scale)
 
 
 ## One of a garden component's models (assets.json town_tree, garden_hedge, garden_flowers), or "".
@@ -1171,7 +1206,9 @@ func _edge_trees(root: Node3D, center: Vector3, edge: PackedVector2Array, ways: 
 			var kind := _green_kind("town_tree", rng)
 			if kind == "":
 				return
-			_place(root, kind, q + Vector3(0, _ground_y(center, q) - 0.01, 0), rng.randf() * TAU, Vector3.ONE * rng.randf_range(0.85, 1.25), Vector2(0.14, 0.14))
+			var sc := rng.randf_range(0.85, 1.25)
+			_place(root, kind, q + Vector3(0, _ground_y(center, q) - 0.01, 0), rng.randf() * TAU, Vector3.ONE * sc, Vector2(0.14, 0.14))
+			_crown(center, q, kind, sc)
 			lots.append([q, 0.14])
 
 
@@ -1375,7 +1412,9 @@ func _orchards(root: Node3D, center: Vector3, main: Array, edge: PackedVector2Ar
 				var kind := _green_kind("orchard_tree", rng)
 				if kind == "":
 					return
-				_place(root, kind, q + Vector3(0, _ground_y(center, q) - 0.01, 0), rng.randf() * TAU, Vector3.ONE * rng.randf_range(float(sc_r[0]), float(sc_r[1])), Vector2(0.1, 0.1))
+				var sc := rng.randf_range(float(sc_r[0]), float(sc_r[1]))
+				_place(root, kind, q + Vector3(0, _ground_y(center, q) - 0.01, 0), rng.randf() * TAU, Vector3.ONE * sc, Vector2(0.1, 0.1))
+				_crown(center, q, kind, sc)
 				trees += 1
 		if trees == 0:
 			continue

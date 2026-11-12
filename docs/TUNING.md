@@ -281,4 +281,5 @@ Switches (`--name`) go after `--` on the game's command line.
 ## Kingsmere's square, the ground layer (art target 01-town)
 - The square's and streets' stone (Poly Haven cobblestone_floor_01, CC0), its tint and size: `realm/data/towns.json` `paving.texture`, `tint`, `tile`; how far the main streets are paved by rank: `paving.streets`; the back lanes paved too: `lanes.paved`.
 - The roofed well beside the statue: `market.crown.well_too`, `well_at`; goods on each stall's counter: `market.<rank>.counter.*`; the awnings' colours: `realm/data/assets.json` `market_stall.kit` (red and ochre only now).
+- Apple trees: how many yard trees carry fruit, how many apples, how big, where the crown is: `plots.green.apples`, `apple_count`, `apple_size`, `crown`; the apples' red: `assets.json` `fruit_apple.dye`. The wares on the stalls: `market.<rank>.counter.comp` (`assets.json` `stall_wares`).
 - How green the yards are: `plots.green.tree`, `hedge`, `flowers`, `garden`, `square_trees`; the dressing between the houses: `realm/data/dressing.json` `on` (now on), `ground.tries`.
