@@ -345,6 +345,68 @@ def split_arm(obj, spec):
     return arm
 
 
+def repaint(obj, rules):
+    """Paint an emblem out of the texture itself (a cream glyph, a "$"): within the UV triangles of the faces in a
+    rule's box, every pale texel (value above light_above, saturation under 0.4) takes the median colour of the
+    texels round it that aren't pale (the board's own wood). The image is repacked into the model. Returns how
+    many texels changed."""
+    import numpy as np
+    bm = bmesh.new()
+    bm.from_mesh(obj.data)
+    uv = bm.loops.layers.uv.active
+    mats = obj.data.materials
+    done = 0
+    for rule in rules:
+        tris = {}
+        for f in bm.faces:
+            if not in_box(f.calc_center_median(), rule["box"]):
+                continue
+            src = mats[f.material_index] if f.material_index < len(mats) else None
+            img = base_image(src)
+            if img is None or uv is None:
+                continue
+            loops = [l[uv].uv.copy() for l in f.loops]
+            for i in range(1, len(loops) - 1):
+                tris.setdefault(img.name, []).append((loops[0], loops[i], loops[i + 1]))
+        for name, ts in tris.items():
+            img = bpy.data.images[name]
+            w, h = img.size
+            px = np.array(img.pixels[:], dtype=np.float32).reshape(h, w, 4)
+            mask = np.zeros((h, w), dtype=bool)
+            for a, b, c in ts:
+                pts = np.array([[a.x * w, a.y * h], [b.x * w, b.y * h], [c.x * w, c.y * h]])
+                x0, y0 = np.floor(pts.min(0)).astype(int)
+                x1, y1 = np.ceil(pts.max(0)).astype(int)
+                x0, y0, x1, y1 = max(x0, 0), max(y0, 0), min(x1, w - 1), min(y1, h - 1)
+                if x1 < x0 or y1 < y0:
+                    continue
+                ys, xs = np.mgrid[y0:y1 + 1, x0:x1 + 1]
+                p = np.stack([xs + 0.5, ys + 0.5], -1)
+                v0, v1 = pts[1] - pts[0], pts[2] - pts[0]
+                d = v0[0] * v1[1] - v0[1] * v1[0]
+                if abs(d) < 1e-9:
+                    continue
+                q = p - pts[0]
+                l1 = (q[..., 0] * v1[1] - q[..., 1] * v1[0]) / d
+                l2 = (v0[0] * q[..., 1] - v0[1] * q[..., 0]) / d
+                inside = (l1 >= 0) & (l2 >= 0) & (l1 + l2 <= 1)
+                mask[y0:y1 + 1, x0:x1 + 1] |= inside
+            rgb = px[..., :3]
+            mx = rgb.max(-1)
+            mn = rgb.min(-1)
+            sat = np.where(mx > 0, (mx - mn) / np.maximum(mx, 1e-6), 0)
+            pale = mask & (mx > float(rule.get("light_above", 0.6))) & (sat < 0.4)
+            board = mask & ~pale
+            fill = np.median(rgb[board], 0) if board.any() else np.array(rule.get("colour", [0.36, 0.24, 0.14]))
+            rgb[pale] = fill
+            px[..., :3] = rgb
+            img.pixels[:] = px.ravel()
+            img.pack()
+            done += int(pale.sum())
+    bm.free()
+    return done
+
+
 def passage(obj, spec):
     """A way through where a gate was cut open: a box's floor, side walls and ceiling facing inward (no ends), in
     a plain stone of spec colour, joined into the piece (Meshy's models are a shell: behind a cut door is hollow)."""
@@ -387,6 +449,7 @@ def main():
     removed = cut(obj, spec.get("cut", []), spec.get("smoke_above")) if spec.get("cut") or spec.get("smoke_above") is not None else 0
     if spec.get("passage"):
         passage(obj, spec["passage"])
+    repainted = repaint(obj, spec["repaint"]) if spec.get("repaint") else 0
     if "--islands" in sys.argv:
         for n, lo, hi, col in islands(obj)[:40]:
             print("ISLAND faces=%d min=%s max=%s colour=%s" % (n, [round(x, 2) for x in lo], [round(x, 2) for x in hi], col))
@@ -397,7 +460,7 @@ def main():
     bpy.ops.export_scene.gltf(filepath=glb, export_format="GLB", use_selection=False, export_yup=True, export_apply=True)
     report = {"name": name, "source": src, "tris_before": before, "tris_after": after, "scale": k,
               "size_m": [round(x, 2) for x in size], "house_share": round(share, 3), "mask_png": has_mask,
-              "materials": [m.name for m in obj.data.materials if m], "cut_faces": removed, "arm": arm is not None}
+              "materials": [m.name for m in obj.data.materials if m], "cut_faces": removed, "arm": arm is not None, "repainted": repainted}
     json.dump(report, open(os.path.join(out, "import.json"), "w"), indent=1)
     print("MESHY " + json.dumps(report))
 
