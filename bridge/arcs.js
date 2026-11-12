@@ -739,11 +739,11 @@ export class Arcs {
       const at = who?.town ? who : ctx.world.cities.find((x) => x.id === who?.seat) ?? ctx.world.cities.find((x) => x.owner === h?.id && x.capital) ?? ctx.world.cities.find((x) => x.owner === h?.id);
       if (at) send(`local c = find.city(nil, ${at.id}); if c then local t = find.unit_type("${v.type ?? "Pikemen"}") or find.unit_type("Warriors"); for i = 1, ${Number(v.count ?? v) || 1} do edit.create_unit(c.owner, c.tile, t, 1, c, -1) end end`);
     }
-    // Men without banners: soldiers by the victim's town die, its house loses gold.
+    // Men without banners: Freeciv's barbarians raised beside the victim's town (realm_raid); its AI raids.
     if (d.raid && R(d.raid[0]) && R(d.raid[1])) {
       const [atk, def] = [R(d.raid[0]), R(d.raid[1])];
       const prey = d.raid[2] && R(d.raid[2])?.town ? R(d.raid[2]) : ctx.world.cities.find((x) => x.owner === def.playerId && !x.capital) ?? ctx.world.cities.find((x) => x.owner === def.playerId);
-      if (prey) send(`local c = find.city(nil, ${prey.id}); if c then for t in c.tile:square_iterate(1) do for u in t:units_iterate() do if u.owner == c.owner and math.random() < 0.5 then edit.unit_kill(u, "killed", nil) end end end; edit.change_gold(c.owner, -50) end`);
+      if (prey) send(`realm_raid(${prey.id})`);
       if (court.people[def.id]) court.shift(def.id, atk.id, -35);
     }
     // War: a host raised beside the victim's town; Freeciv's AI fights it out.

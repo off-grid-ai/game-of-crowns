@@ -579,6 +579,27 @@ function realm_host(who, x, y, kinds, count)
   log.normal("HOST %s raised %d of %d near (%d,%d)", who.name, made, count, x, y)
 end
 
+-- Men without banners: Freeciv's own barbarians raised beside a town (a paid raid, a story's raid). Freeciv's
+-- barbarian AI then raids, pillages and plunders as it does with a hut's. Raised on an empty land tile two out,
+-- never on anyone's men (unleashing wipes the tile's units). Needs the barbarians setting above "disabled" and
+-- onsetbarbs passed (game.ruleset sets it to 1); with raiders off, nothing comes.
+function realm_raid(city_id)
+  local c = find.city(nil, city_id)
+  if not c then log.normal("RAID no town %s", tostring(city_id)); return end
+  local spots = {}
+  for t in c.tile:square_iterate(2) do
+    local n = t.terrain:rule_name()
+    if t:city() == nil and t:num_units() == 0 and not n:find("Ocean") and n ~= "Lake" and c.tile:sq_distance(t) >= 4 then
+      spots[#spots + 1] = t
+    end
+  end
+  if #spots == 0 then log.normal("RAID no open ground by %s", c.name); return end
+  local function barbs() local n = 0 for p in players_iterate() do if p.nation and p.nation:rule_name() == "Barbarian" then n = n + p:num_units() end end return n end
+  local before = barbs()
+  spots[random(1, #spots)]:unleash_barbarians()
+  log.normal("RAID %s raised %d", c.name, barbs() - before)
+end
+
 -- Decree buildings (buildings.ruleset "Royal Feast", "Royal Relief", "Blight", "Heavy Tithe"; their effects in
 -- effects.ruleset). The King's decree sets one down in a town for a number of seasons (luadata.txt
 -- [decrees]); each turn the lapsed ones are taken up. Kept as a plain string ("city,building,until;..."),

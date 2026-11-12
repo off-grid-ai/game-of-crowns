@@ -120,12 +120,17 @@ export function cleanOptions(o = {}, fate) {
   return out;
 }
 
+// The raiders choice as Freeciv's barbarians level. "Some" is huts only: no wild hordes rise on their own,
+// but raids (realm_raid in the ruleset's Lua: a paid raid, a story's) bring Freeciv's barbarians from the
+// first turn (game.ruleset onsetbarbs 1). "None" stops those raids too. One table: new realms and live changes.
+export const BARBARIANS = { none: "disabled", normal: "huts_only", hordes: "hordes" };
+
 // Freeciv's own settings for the chosen fate, AI skill and pace.
 function servFor(text, opt) {
   return text
     .replace(/^set timeout \d+$/m, `set timeout ${opt.pace}`)
     .replace(/^set disasters \d+$/m, `set disasters ${{ none: 0, gentle: 5, normal: 25, cruel: 70 }[opt.disasters]}`)
-    .replace(/^set barbarians \w+$/m, `set barbarians ${{ none: "disabled", normal: "normal", hordes: "hordes" }[opt.raiders]}`)
+    .replace(/^set barbarians \w+$/m, `set barbarians ${BARBARIANS[opt.raiders]}`)
     .replace(/^(hard|normal|easy|novice|cheating)$/m, opt.cunning);
 }
 

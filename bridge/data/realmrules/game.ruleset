@@ -776,7 +776,7 @@ set =
       "foggedborders", "ENABLED"
       "restrictinfra", "ENABLED"
       "unreachableprotects", "DISABLED"
-      "onsetbarbs", 120
+      "onsetbarbs", 1
       "occupychance", 100
       "razechance", 10
       "techlossforgiveness", 0

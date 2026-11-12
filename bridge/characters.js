@@ -595,7 +595,7 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
         if (choice === "raid") {
           const prey = world.cities.find((x) => x.owner === m.target.playerId && !x.capital);
           if (prey) {
-            ctx.send(`local c = find.city(nil, ${prey.id}); if c then for t in c.tile:square_iterate(1) do for u in t:units_iterate() do if u.owner == c.owner and math.random() < 0.5 then edit.unit_kill(u, "killed", nil) end end end; edit.change_gold(c.owner, -40) end`);
+            ctx.send(`realm_raid(${prey.id})`);
             this.shift(m.target.id, c.id, -40, `${c.name}'s men raided ${cityName(prey.id)}.`);
             this.record({ turn, kind: "raid", text: `Men without banners raid ${cityName(prey.id)}. Everyone knows who paid them: ${c.house}.${line}`, city: prey.id });
           }
@@ -1128,10 +1128,10 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
     }
     if (e.marry && roles[e.marry[0]] && roles[e.marry[1]]) { const [x, y] = [roles[e.marry[0]], roles[e.marry[1]]]; x.spouse = y.id; y.spouse = x.id; this.save(x); this.save(y); }
     if (e.ward && roles[e.ward]) { roles[e.ward].ward = true; if (roles.me) roles.me.hostage = roles[e.ward].id; this.save(roles[e.ward]); }
-    // Men without banners burn a town of the victim's: soldiers die, gold is lost.
+    // Men without banners fall on a town of the victim's: Freeciv's barbarians, raised beside it (realm_raid).
     if (e.raid && roles[e.raid[1]]) {
       const prey = roles.rivalTown && roles[e.raid[1]] === roles.rival ? roles.rivalTown : world.cities.find((x) => x.owner === roles[e.raid[1]].playerId && !x.capital);
-      if (prey?.x !== undefined) out.lua.push(`local c = find.city(nil, ${prey.id}); if c then for t in c.tile:square_iterate(1) do for u in t:units_iterate() do if u.owner == c.owner and math.random() < 0.5 then edit.unit_kill(u, "killed", nil) end end end; edit.change_gold(c.owner, -60) end`);
+      if (prey?.x !== undefined) out.lua.push(`realm_raid(${prey.id})`);
       if (roles[e.raid[0]]) this.shift(roles[e.raid[1]].id, roles[e.raid[0]].id, -40);
     }
     // War: a host is raised for the attacker beside the victim's town, and

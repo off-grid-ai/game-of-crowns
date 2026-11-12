@@ -339,6 +339,10 @@ function startFreeciv() {
     // The Crown's soldiers defend and never take a town unbidden: the ruleset
     // forbids the Normans "Conquer City" (data/realmrules/actions.ruleset).
     send(`set timeout ${timeoutNow()}`);
+    // A save keeps the barbarian settings it was made with: a realm in play gets the raiders choice and the
+    // ruleset's first-turn onset (raids are Freeciv's barbarians, realm_raid).
+    send(`set barbarians ${chron.BARBARIANS[chron.cleanOptions(meta.options ?? {}).raiders]}`);
+    send("set onsetbarbs 1");
     snapshot();
   }, 4000);
 }

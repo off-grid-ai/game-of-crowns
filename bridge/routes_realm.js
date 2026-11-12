@@ -163,7 +163,7 @@ export async function reignOptions(ctx, req, res, url) {
   chron.saveMeta(ctx.meta);
   // Freeciv's own dials, applied now.
   send(`set disasters ${{ none: 0, gentle: 5, normal: 25, cruel: 70 }[ctx.meta.options.disasters]}`);
-  send(`set barbarians ${{ none: "disabled", normal: "normal", hordes: "hordes" }[ctx.meta.options.raiders]}`);
+  send(`set barbarians ${chron.BARBARIANS[ctx.meta.options.raiders]}`);
   return json(res, 200, { options: ctx.meta.options, live: LIVE });
 }
 

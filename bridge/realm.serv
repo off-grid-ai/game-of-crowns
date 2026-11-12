@@ -20,7 +20,7 @@ create Sunspire
 create Highfell
 create Crown
 set minplayers 0
-set barbarians normal
+set barbarians huts_only
 set disasters 25
 # Research is slow; the ruleset itself stops it at the high middle ages.
 set sciencebox 300

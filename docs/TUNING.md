@@ -22,6 +22,7 @@ Switches (`--name`) go after `--` on the game's command line.
 - When the last act's finale lands, as a share of the reign's clock: `bridge/data/director.json`: `finale.landAt`.
 - Each threat's growth, words and the orders that answer it: `bridge/data/director.json`: `threats.<kind>.*`.
 - How a too-comfortable King draws envy: `bridge/data/director.json`: `pushback.*`.
+- Raids (men without banners, paid or in a story) are Freeciv's barbarians raised beside the town (`realm_raid` in `bridge/data/realmrules/script.lua`). From which turn they can come: `bridge/data/realmrules/game.ruleset` `onsetbarbs` (1). What each raiders choice means in Freeciv (None, Some = huts only, Hordes): `BARBARIANS` in `bridge/chronicles.js`. Probe: `bridge/tools/raid_probe.mjs`.
 
 ## The King's season: royal seals (Builder 2)
 - On or off for reigns that don't say: `bridge/data/seals.json`: `on`. A new reign can set it with `options.seals`.
