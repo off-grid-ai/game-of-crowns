@@ -1,9 +1,22 @@
 {
-  "_": "The cast: Meshy characters (CC0, Meshy community; ~/code/goc-kits/meshy, verdicts in docs/research/meshy-cast.md) brought in as our townsfolk's bodies by realm/tools/cast_import.py (Blender on the CPU: Mixamo bones renamed to our map, its own clips dropped, textures capped at 1024 px, a cloth mask). on: the switch (--cast=meshy, or on here; --cast=kit the bodies and outfits as before). members: each body by its folder under realm/assets/people/mixamo (cast_<name>): sex, the roles it plays (people.gd's stations: peasant, townsfolk, soldier, noble, knight, clergy; the roles' places are villagers.gd's and works.gd's), and mask: its cloth mask (the cloth that takes a dye: the town's dyes for townsfolk, the house's colour for a soldier). A role a cast member covers is played by the cast alone.",
+  "_": "The cast: Meshy characters (CC0, Meshy community; ~/code/goc-kits/meshy, verdicts in docs/research/meshy-cast.md) brought in as our townsfolk's bodies by realm/tools/cast_import.py (Blender on the CPU: Mixamo bones renamed to our map, its own clips dropped, textures capped at 1024 px, a cloth mask). on: the switch (--cast=meshy, or on here; --cast=kit the bodies and outfits as before). members: each body by its folder under realm/assets/people/mixamo (cast_<name>): sex, the roles it plays (people.gd's stations: peasant, townsfolk, soldier, noble, knight, clergy; the roles' places are villagers.gd's and works.gd's), age: \"child\" or \"elder\" (the cast's children play in the square, its old folk keep their benches; none: grown), posts: the work they're drawn for (npc_mind posts: the smith at the forge, the miller at the mill, the crier at the square's heart, a stallholder at a stall; a member with posts and no roles is seen only there), and mask: its cloth mask (the cloth that takes a dye: the town's dyes for townsfolk, the house's colour for a soldier). A role a cast member covers is played by the cast alone.",
   "on": false,
   "members": {
-    "cast_town_guard": { "sex": "m", "roles": ["soldier"], "mask": "res://assets/people/mixamo/cast_town_guard/cast_town_guard_mask.png" },
-    "cast_young_ranger": { "sex": "m", "roles": ["townsfolk", "peasant"], "mask": "res://assets/people/mixamo/cast_young_ranger/cast_young_ranger_mask.png" },
-    "cast_farmer_m": { "sex": "m", "roles": ["peasant"], "mask": "res://assets/people/mixamo/cast_farmer_m/cast_farmer_m_mask.png" }
+    "cast_town_guard": {"sex": "m", "roles": ["soldier"], "mask": "res://assets/people/mixamo/cast_town_guard/cast_town_guard_mask.png"},
+    "cast_young_ranger": {"sex": "m", "roles": ["townsfolk", "peasant"], "mask": "res://assets/people/mixamo/cast_young_ranger/cast_young_ranger_mask.png"},
+    "cast_farmer_m": {"sex": "m", "roles": ["peasant"], "mask": "res://assets/people/mixamo/cast_farmer_m/cast_farmer_m_mask.png"},
+    "cast_farmer_f": {"sex": "f", "roles": ["peasant", "townsfolk"], "mask": "res://assets/people/mixamo/cast_farmer_f/cast_farmer_f_mask.png"},
+    "cast_townswoman": {"sex": "f", "roles": ["townsfolk"], "mask": "res://assets/people/mixamo/cast_townswoman/cast_townswoman_mask.png"},
+    "cast_stallholder": {"sex": "m", "roles": ["townsfolk"], "posts": ["stallholder"], "mask": "res://assets/people/mixamo/cast_stallholder/cast_stallholder_mask.png"},
+    "cast_merchant": {"sex": "m", "roles": ["townsfolk"], "mask": "res://assets/people/mixamo/cast_merchant/cast_merchant_mask.png"},
+    "cast_blacksmith": {"sex": "m", "roles": [], "posts": ["smith"], "mask": "res://assets/people/mixamo/cast_blacksmith/cast_blacksmith_mask.png"},
+    "cast_miller": {"sex": "m", "roles": [], "posts": ["miller"], "mask": "res://assets/people/mixamo/cast_miller/cast_miller_mask.png"},
+    "cast_town_crier": {"sex": "m", "roles": [], "posts": ["crier"], "mask": "res://assets/people/mixamo/cast_town_crier/cast_town_crier_mask.png"},
+    "cast_priest": {"sex": "m", "roles": ["clergy"]},
+    "cast_noble_lady": {"sex": "f", "roles": ["noble"], "mask": "res://assets/people/mixamo/cast_noble_lady/cast_noble_lady_mask.png"},
+    "cast_boy": {"sex": "m", "roles": ["peasant", "townsfolk"], "age": "child", "mask": "res://assets/people/mixamo/cast_boy/cast_boy_mask.png"},
+    "cast_girl": {"sex": "f", "roles": ["peasant", "townsfolk"], "age": "child", "mask": "res://assets/people/mixamo/cast_girl/cast_girl_mask.png"},
+    "cast_old_man": {"sex": "m", "roles": ["peasant", "townsfolk"], "age": "elder", "mask": "res://assets/people/mixamo/cast_old_man/cast_old_man_mask.png"},
+    "cast_old_woman": {"sex": "f", "roles": ["peasant", "townsfolk"], "age": "elder", "mask": "res://assets/people/mixamo/cast_old_woman/cast_old_woman_mask.png"}
   }
 }

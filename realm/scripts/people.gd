@@ -422,10 +422,23 @@ func make(rng: RandomNumberGenerator, role := "peasant", tint := Color.WHITE, ag
 	if build == "":
 		build = ["thin", "average", "average", "stout"][rng.randi() % 4]
 	var roll := rng.randf()
+	# With the cast on, its children and old folk play their age (cast.json age); never the twin of the one
+	# beside them when there's another.
+	var aged: Array = []
+	if CAST_ON and age in ["child", "elder"] and look == "":
+		var aged_sex := sex if sex != "" else ("male" if rng.randf() < 0.5 else "female")  # rolled first: the cast on hand never decides it
+		aged = cast_of_age(role, age, aged_sex)
+	if not aged.is_empty():
+		var fresh_aged := aged.filter(func(b): return not ("body:" + String(b)) in _recent)
+		if not fresh_aged.is_empty():
+			aged = fresh_aged
+		var one: String = aged[rng.randi() % aged.size()]
+		_seen("body:" + one)
+		return make_body(rng, one, tint, age, build, role)
 	# Children and elders are outfits only: every Mixamo character is in their
 	# prime, so a lady of 74 would stand there looking 25. Built from parts,
 	# an elder gets grey hair and a slightly shorter frame.
-	var share: float = 1.0 if CAST_ON and cast_members().any(func(b): return role in body_info(b)["roles"]) else MIXAMO_SHARE[role]  # the cast plays its roles always
+	var share: float = 1.0 if not cast_of_age(role, "").is_empty() else MIXAMO_SHARE[role]  # the cast plays its roles always
 	if (age not in ["child", "elder"] or (role in STATION_DRESS and age != "child")) and (roll < share or look != ""):  # an old friar is still robed, an old knight in his surcoat
 		# A named person is known by their body, so only a crowd needs one that shows its colour.
 		# A crowd's sex is rolled first, so the mix of bodies on hand doesn't decide it.
@@ -510,7 +523,7 @@ static func station(person: Dictionary) -> String:
 func _bodies(role: String, sex: String, coloured: bool, crowd: bool) -> Array:
 	# The cast (--cast=meshy; realm/data/cast.json): a role the cast covers is played by the cast alone.
 	if CAST_ON:
-		var cast := cast_members().filter(func(b): return role in body_info(b)["roles"] and _usable(b) and (sex == "" or body_info(b)["sex"] == sex.left(1)))
+		var cast := cast_of_age(role, "", sex)
 		if not cast.is_empty():
 			return cast
 	var pool := BODIES.keys().filter(func(b): return not b in NEVER and role in BODIES[b]["roles"] and (not crowd or BODIES[b]["crowd"]) and (not coloured or not BODIES[b]["cloth"].is_empty()) and _usable(b))
@@ -533,8 +546,31 @@ static func body_info(body: String) -> Dictionary:
 	if BODIES.has(body):
 		return BODIES[body]
 	var m: Dictionary = (Data.value("cast", "members", {}) as Dictionary).get(body, {})
-	var row := {"sex": String(m.get("sex", "m")), "roles": m.get("roles", []), "cloth": [], "crowd": true, "cast": true, "mask": String(m.get("mask", ""))}
+	var row := {"sex": String(m.get("sex", "m")), "roles": m.get("roles", []), "cloth": [], "crowd": true, "cast": true, "mask": String(m.get("mask", "")),
+		"age": String(m.get("age", "")), "posts": m.get("posts", [])}
 	return row
+
+
+## The cast members of an age (cast.json age: "child" or "elder"; "" for the grown) who play a role, of a sex if
+## one is asked: the cast's children play in the square and its old folk sit on the benches.
+func cast_of_age(role: String, age: String, sex := "") -> Array:
+	if not CAST_ON:
+		return []
+	var want := age if age in ["child", "elder"] else ""
+	return cast_members().filter(func(b): return role in body_info(b)["roles"] and String(body_info(b)["age"]) == want and _usable(b) and (sex == "" or body_info(b)["sex"] == sex.left(1)))
+
+
+## The cast member who works a post (cast.json posts: the smith at the forge, the miller at the mill, the crier at
+## the square's heart), or "" when the cast has none for it (then whoever the role draws works it).
+func cast_for_post(post: String) -> String:
+	if not CAST_ON or post == "":
+		return ""
+	# Never the twin of whoever stands beside them: with one stallholder in the cast, one stall has him.
+	for b in cast_members():
+		if post in body_info(b)["posts"] and _usable(b) and not ("body:" + String(b)) in _recent:
+			_seen("body:" + String(b))
+			return b
+	return ""
 
 
 ## Every body there is to dress the crowd in: the Mixamo bodies and, with the cast on, the cast.
@@ -701,7 +737,7 @@ func _finish(person: Node3D, skeleton: Skeleton3D, rng: RandomNumberGenerator, r
 			mi.visibility_range_end = SEEN_TO
 			mi.visibility_range_end_margin = 3.0
 			mi.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_DISABLED
-	_shape(skeleton, build, age)
+	_shape(skeleton, build, "" if person.has_meta("body") and body_info(String(person.get_meta("body"))).get("cast", false) else age)  # a cast child is drawn a child already
 	var height: float = rng.randf_range(0.96, 1.04) * {"child": 0.72, "young": 0.98, "adult": 1.0, "elder": 0.96}[age]
 	person.scale = Vector3.ONE * height * k * S
 	person.set_meta("age", age)
