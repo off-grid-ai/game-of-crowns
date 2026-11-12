@@ -5,6 +5,9 @@ extends SceneTree
 ## share of standing height (or takes it under the ground). Kinds with no model
 ## in the game yet are listed, not failed. An asset validation pass, like
 ## scale_check.gd and feet_check.gd; no window.
+## The set (animals.json set, Mac 2026-11-12: "one Meshy look across people, animals and props"): every farm kind
+## in set.kinds is drawn from the one painted set (its model, as animals.gd make finds it, under set.dir), and every
+## kind in set.walks has a walk its legs step in (animals.gd make and walk play "Walk": a kind without one glided).
 ##   arch -arm64 godot --headless --path realm -s res://tools/animals_check.gd
 
 const Animals := preload("res://scripts/animals.gd")
@@ -62,5 +65,27 @@ func _initialize() -> void:
 				"" if reached else "; as low as its neck goes", int(round(rad_to_deg(turn[1])))])
 		print("ANIMALS %s: %s; %s" % [kind, ", ".join(got), "; ".join(notes)])
 		model.queue_free()
+	var S: Dictionary = Data.value("animals", "set", {})
+	for kind in S.get("kinds", []):
+		var own := String(Data.value("animals", "kinds.%s.model" % kind, ""))
+		var path := own if own != "" else Real.path_of(String(kind))
+		if path == "" or not ResourceLoader.exists(path):
+			bad += 1
+			print("ANIMALS SET FAIL %s: no model in the game" % kind)
+			continue
+		var fails := bad
+		if not path.begins_with(String(S.get("dir", "res://assets/beasts/"))):
+			bad += 1
+			print("ANIMALS SET FAIL %s: drawn from %s, not the painted set" % [kind, path])
+		var model: Node3D = (load(path) as PackedScene).instantiate()
+		var ap := model.find_children("*", "AnimationPlayer", true, false)
+		if kind in S.get("walks", []) and (ap.is_empty() or Animals._clip(ap[0], "Walk") == ""):
+			bad += 1
+			print("ANIMALS SET FAIL %s: no Walk (it glides when driven)" % kind)
+		if bad == fails:
+			print("ANIMALS SET ok %s: %s" % [kind, path])
+		model.free()
+	for kind in S.get("next", []):
+		print("ANIMALS SET next %s: still its kit model, joins the set next" % kind)
 	print("ANIMALS %s: %d problems" % ["PASS" if bad == 0 else "FAIL", bad])
 	quit(1 if bad > 0 else 0)

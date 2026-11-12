@@ -6,6 +6,7 @@
   "change": 0.7,
   "busyRetry": 2.0,
   "mostTurn": 85,
+  "set": { "_": "The farm's beasts drawn from one painted set (Mac 2026-11-12: one Meshy look across people, animals and props; docs/art/animals/STYLE.md, realm/tools/beast_rig.py): kinds, every one under dir; walks, the kinds that are driven or led and must step (hens keep to their yards) (animals.gd make/walk play Walk). tools/animals_check.gd fails a kind outside the set or without a walk; next: the kinds still on their kit models, listed until they join (square first: the hen and the dog, judged before the rest).", "kinds": ["chicken", "dog"], "next": ["cow", "sheep", "pig", "goat"], "dir": "res://assets/meshy/beasts/", "walks": ["dog"] },
   "kinds": {
     "cow": {
       "life": [["Idle", 3, [1, 1]], ["Graze", 5, [1, 3]]],
@@ -23,10 +24,7 @@
       "life": [["Idle", 3, [1, 1]], ["Graze", 4, [1, 2]]],
       "derive": {"Graze": {"from": "Idle", "bones": ["Neck", "Head"], "head": "Head", "to": 0.15, "bob": [5, 0.9], "ease": 0.6, "muzzle": 1.0}}
     },
-    "chicken": {
-      "life": [["Idle", 2, [1, 1]], ["Peck", 6, [1, 4]]],
-      "derive": {"Peck": {"from": "Idle", "bones": ["Neck", "Head"], "head": "Head", "to": 0.2, "bob": [28, 0.35], "ease": 0.25, "muzzle": 0.6}}
-    },
+    "chicken": { "model": "res://assets/meshy/beasts/hen/hen.glb", "length": 0.45, "life": [["Idle", 2, [1, 2]], ["Idle_Peck", 6, [1, 4]]] },
     "deer": {
       "life": [["Idle", 2, [1, 1]], ["Idle_2", 2, [1, 1]], ["Eating", 4, [1, 2]], ["Idle_Headlow", 2, [1, 1]]]
     },
@@ -35,7 +33,7 @@
       "derive": {"Graze": {"from": "idle", "bones": ["DEF-neck.001", "DEF-neck.002", "DEF-neck.003", "DEF-neck.004", "DEF-head"], "head": "DEF-head", "to": 0.12, "bob": [2, 1.8], "ease": 0.9, "muzzle": 0.7}}
     },
     "dog": {
-      "model": "res://assets/q/wolf-0.glb", "length": 0.85,
+      "model": "res://assets/meshy/beasts/dog/dog.glb", "length": 1.1,
       "life": [["Idle", 3, [1, 2]], ["Idle_2", 2, [1, 1]], ["Eating", 2, [1, 2]], ["Idle_2_HeadLow", 2, [1, 1]]]
     },
     "horse_q": {
