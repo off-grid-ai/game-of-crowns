@@ -1317,26 +1317,30 @@ func _source_image(path: String) -> Image:
 ## stretching. `edge` softens it: "round" for a worn, ragged patch, "setts" for laid stone, "sides" for a
 ## verge's frayed edges, "track" for a road's (frayed, with wheel ruts), "paved" for a street of setts.
 const Data := preload("res://scripts/data.gd")
-const TILED_VERSION := ":v4"  # raise when how a tile is made changes, so the kept copies on disk are made again
+const TILED_VERSION := ":v5"  # raise when how a tile is made changes, so the kept copies on disk are made again
 const TILED_MOST := 2048  # px: the longest side of a tiled ground texture
 
-func tiled(path: String, nx: int, ny: int, edge := "") -> Texture2D:
-	# The copies asked for are the copies drawn (setts_probe: a 12-across cap stretched Kingsmere's 19 sheets into 12,
-	# stones twice their size); a wide or long surface spends fewer pixels per copy instead, the image kept within
-	# TILED_MOST on a side (a copy then covers a few dozen screen pixels at the camera's floor).
-	nx = clampi(nx, 1, 64)
-	ny = clampi(ny, 1, 64)
-	var key := "%s:%d:%d:%s" % [path, nx, ny, edge]
+func tiled(path: String, fx: float, fy: float, edge := "") -> Texture2D:
+	# The copies asked for are the copies drawn, a part copy too (setts_probe: a 12-across cap stretched Kingsmere's 19
+	# sheets into 12, stones twice their size; a street half a sheet wide squeezed a whole one in); a wide or long
+	# surface spends fewer pixels per copy instead, the image kept within TILED_MOST on a side (a copy then covers a
+	# few dozen screen pixels at the camera's floor).
+	fx = snappedf(clampf(fx, 0.25, 64.0), 0.05)
+	fy = snappedf(clampf(fy, 0.25, 64.0), 0.05)
+	var nx := ceili(fx)
+	var ny := ceili(fy)
+	var key := "%s:%.2f:%.2f:%s" % [path, fx, fy, edge]
 	if _tiled.has(key):
 		return _tiled[key]
 	# Made once ever, then kept on disk: building these pixel by pixel is what
 	# stalled a town's first appearance.
-	var cached := "user://tiled/%s.png" % (key + TILED_VERSION).md5_text()
+	# The source's own date in the kept copy's name: a repainted texture (paint_cobbles.sh) is made again, never served stale.
+	var cached := "user://tiled/%s.png" % (key + TILED_VERSION + str(FileAccess.get_modified_time(path))).md5_text()
 	if FileAccess.file_exists(cached):
 		var kept := Image.load_from_file(cached)
 		if kept:
 			_tiled[key] = ImageTexture.create_from_image(kept)
-			_tiled[key].set_meta("copies", Vector2i(nx, ny))
+			_tiled[key].set_meta("copies", Vector2(fx, fy))
 			return _tiled[key]
 	var N := clampi(TILED_MOST / maxi(nx, ny), 32, 256)
 	var fscale := 256.0 / N  # the edges' noise is sized for 256 pixels a copy: the same on the ground at any N
@@ -1361,6 +1365,7 @@ func tiled(path: String, nx: int, ny: int, edge := "") -> Texture2D:
 	for y in ny:
 		for x in nx:
 			img.blit_rect(flips[(x % 2) + 2 * (y % 2)], Rect2i(0, 0, N, N), Vector2i(x * N, y * N))
+	img.crop(maxi(1, roundi(N * fx)), maxi(1, roundi(N * fy)))  # the part copy at the far ends
 	var w := img.get_width()
 	var h := img.get_height()
 	if edge == "round":
@@ -1444,7 +1449,7 @@ func tiled(path: String, nx: int, ny: int, edge := "") -> Texture2D:
 	DirAccess.make_dir_recursive_absolute("user://tiled")
 	img.save_png(cached)
 	_tiled[key] = ImageTexture.create_from_image(img)
-	_tiled[key].set_meta("copies", Vector2i(nx, ny))
+	_tiled[key].set_meta("copies", Vector2(fx, fy))
 	return _tiled[key]
 
 

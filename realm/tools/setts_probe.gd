@@ -5,7 +5,8 @@ extends SceneTree
 ## across), so a surface wider than 12 sheets stretches each sheet instead of repeating it. The rule: the copies asked
 ## for are the copies drawn; a wide surface spends fewer pixels per copy (the image kept within MOST_PX). Asserts, for
 ## the crown's square (its paving span, towns.json square_r x paving.square) and a long street run:
-##   - the texture holds the copies asked for (its meta "copies"), so one sheet covers paving.tile on the ground;
+##   - the texture holds the copies asked for, a part copy too (its meta "copies"), so one sheet covers paving.tile on
+##     the ground both ways (a street narrower than a sheet once squeezed a whole one in, stones squashed);
 ##   - its image stays within MOST_PX on a side.
 ## Exit 1 on a fail.
 ##   arch -arm64 godot --headless --path realm -s res://tools/setts_probe.gd
@@ -31,16 +32,16 @@ func _run() -> void:
 	var terrain: Node3D = Terrain.new()
 	for c in [["the crown's square", Vector2(span, span * float(pave.get("square_aspect", 0.92))), "plaza"], ["a long street run", Vector2(0.4, 9.0), "paved"]]:
 		var size: Vector2 = c[1]
-		var want := Vector2i(maxi(1, roundi(size.x / tile)), maxi(1, roundi(size.y / tile)))
+		var want := Vector2(size.x / tile, size.y / tile)
 		var tex: Texture2D = terrain.tiled(stone, want.x, want.y, String(c[2]))
 		if tex == null:
 			fails.append("%s: no texture (is %s on this machine?)" % [c[0], stone])
 			continue
-		var got: Vector2i = tex.get_meta("copies", Vector2i(tex.get_width() / 256, tex.get_height() / 256))
-		var sheet := size.x / got.x
-		print("CHECK setts %s: %.2f x %.2f units, asked %s copies, drawn %s, one sheet covers %.2f units (want %.2f), image %dx%d" % [c[0], size.x, size.y, want, got, sheet, tile, tex.get_width(), tex.get_height()])
-		if got != want:
-			fails.append("%s: drawn %s copies, asked %s" % [c[0], got, want])
+		var got: Vector2 = Vector2(tex.get_meta("copies", Vector2(tex.get_width() / 256, tex.get_height() / 256)))
+		var sheet := Vector2(size.x / got.x, size.y / got.y)
+		print("CHECK setts %s: %.2f x %.2f units, asked %.2f x %.2f copies, drawn %.2f x %.2f, one sheet covers %.2f x %.2f units (want %.2f), image %dx%d" % [c[0], size.x, size.y, want.x, want.y, got.x, got.y, sheet.x, sheet.y, tile, tex.get_width(), tex.get_height()])
+		if absf(sheet.x / tile - 1.0) > 0.06 or absf(sheet.y / tile - 1.0) > 0.06:
+			fails.append("%s: one sheet covers %.2f x %.2f units, the data asks %.2f" % [c[0], sheet.x, sheet.y, tile])
 		if maxi(tex.get_width(), tex.get_height()) > MOST_PX:
 			fails.append("%s: image %dx%d over %d" % [c[0], tex.get_width(), tex.get_height(), MOST_PX])
 	terrain.free()

@@ -108,6 +108,23 @@ const OPEN_COST := 6.0  # open ground: six times a street, so people keep to the
 ## One walkable region of the town's map: `walk` outlines, less `blocks` and water.
 ## Baked on a worker thread (Godot's async bake; in one frame it held the window
 ## 60-210 ms): the map isn't ready() until every region's bake has landed.
+## The open ground of a town's reach baked with `blocks` cut out, synchronously: the walk map's polygons, as
+## the map bakes them (tools/nav_dense_probe.gd).
+static func bake_open(reach: float, blocks: Array, radius := AGENT) -> Array:
+	var ring := PackedVector2Array()
+	for i in 24:
+		ring.append(Vector2.from_angle(TAU * i / 24) * reach)
+	var poly := NavigationPolygon.new()
+	poly.agent_radius = radius
+	poly.cell_size = CELL
+	var src := NavigationMeshSourceGeometryData2D.new()
+	src.add_traversable_outline(ring)
+	for b in blocks:
+		src.add_obstruction_outline(b)
+	NavigationServer2D.bake_from_source_geometry_data(poly, src)
+	return [poly]
+
+
 func _region(map: RID, root: Node3D, reach: float, walk: Array, blocks: Array, cost: float, radius: float, cut := []) -> RID:
 	var region := NavigationServer2D.region_create()
 	NavigationServer2D.region_set_map(region, map)

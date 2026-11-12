@@ -67,19 +67,21 @@ func _run() -> void:
 				total += 1
 				var f := Real.footprint(kind)
 				var yaw := atan2(t.basis.z.x, t.basis.z.z)
+				# It leans on what it's squared to: of everything within HUG, one it stands square to (a tight square puts a
+				# stall's end pile beside a house front too; it's squared to the stall).
 				var best := INF
-				var best_yaw := 0.0
+				var squared := false
 				for an in anchors:
 					var g := _gap(Vector2(t.origin.x, t.origin.z), f, yaw, an)
-					if g < best:
-						best = g
-						best_yaw = float(an[3])
+					best = minf(best, g)
+					if g <= HUG and absf(wrapf(yaw - float(an[3]), -PI / 4.0, PI / 4.0)) <= SQUARE:
+						squared = true
 				if best > HUG:
 					walk += 1
 					if shown < 6:
 						print("  in the walk: %s at (%.2f, %.2f), %.2f from anything" % [kind, t.origin.x, t.origin.z, best])
 						shown += 1
-				elif absf(wrapf(yaw - best_yaw, -PI / 4.0, PI / 4.0)) > SQUARE:
+				elif not squared:
 					askew += 1
 		towns.free()
 		town.free()
