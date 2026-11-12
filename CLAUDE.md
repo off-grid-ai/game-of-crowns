@@ -20,6 +20,11 @@ replaces hand-built code, the old code goes in the same change. No switches back
 flag until judged", no two systems doing one job. Keep moving forward. The game hasn't launched, so old saves and old
 chronicles need no compatibility shims either.
 
+**One way to move (Mac, 2026-11-12).** Everything that moves (people, carts, horses, soldiers, beasts) moves
+through one Mover (`realm/scripts/mover.gd`): ask it to go somewhere, it asks the navigation for the route and
+walks it. Nothing tweens or sets a position to travel. One base, every mover inherits it, so nothing can drive
+through a well by forgetting to ask.
+
 **Frame rate: anything above 10 fps is fine (Mac, 2026-11-11).** Don't trade density or detail for 30 fps; spend
 the headroom on bigger armies, busier towns and finer detail.
 
