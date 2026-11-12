@@ -45,7 +45,7 @@ format_version = 30
 ; */ <-- avoid gettext warnings
 
 [specialist_elvis]
-name            = _("Entertainers")
+name            = _("Minstrels")
 ; (The original specialist names in the classic ruleset and derivatives were
 ; not designed to be user-visible.)
 rule_name       = "elvis"
@@ -56,13 +56,12 @@ reqs		=
 ; Nothing
     }
 helptext        = _("\
-Each entertainer produces two luxury points for their city per turn, \
-increasing to three once any player has built Shakespeare's Theater. \
+Each minstrel brings two points of cheer to their town each season. \
 See the section on Happiness for the effects of luxury points.\
 ")
 
 [specialist_scientist]
-name            = _("Scientists")
+name            = _("Scholars")
 rule_name       = "scientist"
 short_name	= _("?Scientist:S")
 graphic         = "specialist.scientist"
@@ -71,13 +70,11 @@ reqs		=
 ; Nothing
     }
 helptext        = _("\
-Each scientist adds two points to your empire's research output \
-per turn, increasing to three once any player has built Darwin's \
-Voyage.\
+Each scholar adds two points to the house's learning each season.\
 ")
 
 [specialist_taxman]
-name            = _("Taxmen")
+name            = _("Reeves")
 rule_name       = "taxman"
 short_name	= _("?Taxman:T")
 graphic         = "specialist.taxman"
@@ -86,9 +83,7 @@ reqs		=
 ; Nothing
     }
 helptext        = _("\
-Each tax collector produces two extra gold for your treasury \
-per turn, increasing to three once any player has built \
-A.Smith's Trading Co.\
+Each reeve brings two more gold into the house's purse each season.\
 ")
 
 [parameters]

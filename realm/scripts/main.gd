@@ -505,6 +505,7 @@ func _ready() -> void:
 	if not OS.get_cmdline_user_args().has("--hearths=off"):
 		add_child(load("res://scripts/hearths.gd").new(self))
 	if preload("res://scripts/roadside.gd").on(): add_child(load("res://scripts/roadside.gd").new(self))  # life along the roads (roadside.gd; --roadside=on, data/roadside.json)
+	if preload("res://scripts/gold_mines.gd").on(): add_child(load("res://scripts/gold_mines.gd").new(self))  # a mine on every gold seam, worked or spent (gold_mines.gd; --gold-mines=off, data/gold_mines.json)
 	# The army spike (a test aid, --army-spike=<men>; tools/army_spike.gd): regiments of VAT soldiers by Kingsmere.
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--army-spike="):

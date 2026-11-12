@@ -101,7 +101,9 @@ export function royalWorks(ctx, turn) {
   // What his finished works bring in.
   const mine = world.cities.filter((x) => x.owner === crown.id);
   const markets = mine.filter((x) => (x.buildings ?? []).includes("Marketplace")).length;
-  if (markets) send(`lua cmd for p in players_iterate() do if p.id == ${crown.id} then edit.change_gold(p, ${markets * 40}) end end`);
+  // A market's gold beyond Freeciv's own tax (data/economy.json marketGold; 0: the crown earns only what its towns yield).
+  const marketGold = ECONOMY.marketGold ?? 0;
+  if (markets && marketGold) send(`lua cmd for p in players_iterate() do if p.id == ${crown.id} then edit.change_gold(p, ${markets * marketGold}) end end`);
   if (turn % 4 === 0) for (const x of mine.filter((y) => (y.buildings ?? []).includes("Barracks"))) {
     send(`lua cmd local c = find.city(nil, ${x.id}); if c then edit.create_unit(c.owner, c.tile, find.unit_type("Pikemen"), 1, c, -1) end`);
   }

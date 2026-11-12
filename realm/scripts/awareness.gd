@@ -126,6 +126,8 @@ func sync(world: Dictionary) -> void:
 	realm.set_var(&"owners", world.get("owners", []))
 	realm.set_var(&"houses", world.get("players", []))
 	realm.set_var(&"marks", world.get("marks", []))
+	realm.set_var(&"gold", world.get("gold") if world.get("gold") is Array else [])  # gold seams [x, y, owner] (bridge snapshot.lua; Freeciv owns them): gold_mines.gd
+	realm.set_var(&"spent_seams", world.get("spentSeams") if world.get("spentSeams") is Array else [])  # seams worked out [x, y, turn] (bridge mines.js): the old workings
 	realm.set_var(&"intrigue", world.get("intrigue", []))  # the houses' schemes, seat to seat (bridge intrigue.js)
 	realm.set_var(&"threat", _dict(world.get("crown")).get("threat"))  # the director's live threat, or null (bridge director.js)
 	realm.set_var(&"hosts", world.get("hosts") if world.get("hosts") is Array else [])  # the King's hosts and their orders (bridge hosts.js)

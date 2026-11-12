@@ -55,11 +55,20 @@ for t in whole_map_iterate() do
   if ok and has then roads[#roads + 1] = string.format("[%d,%d]", t.x, t.y) end
 end
 
+-- The realm's gold (Gold on hills and mountains) and whose land it lies in: the seams the view shows worked.
+-- A spent seam's Gold is gone (lua/events.lua realm_mines), so it drops out of this list.
+local gold = {}
+for t in whole_map_iterate() do
+  local ok, has = pcall(function() return t:has_extra("Gold") end)
+  if ok and has then gold[#gold + 1] = string.format("[%d,%d,%d]", t.x, t.y, t.owner and t.owner.id or -1) end
+end
+
 local f = io.open(DIR .. "world.tmp", "w")
 if not f then return end
-f:write(string.format('{"turn":%s,"year":%s,"players":[%s],"cities":[%s],"units":[%s],"roads":[%s]}',
+f:write(string.format('{"turn":%s,"year":%s,"players":[%s],"cities":[%s],"units":[%s],"roads":[%s],"gold":[%s]}',
   n(game.current_turn()), n(game.current_year()),
-  table.concat(players, ","), table.concat(cities, ","), table.concat(units, ","), table.concat(roads, ",")))
+  table.concat(players, ","), table.concat(cities, ","), table.concat(units, ","), table.concat(roads, ","),
+  table.concat(gold, ",")))
 f:close()
 os.rename(DIR .. "world.tmp", DIR .. "world.json")
 
