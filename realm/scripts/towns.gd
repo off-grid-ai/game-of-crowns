@@ -786,6 +786,24 @@ func _keep_ways(root: Node3D, center: Vector3, ways: Array, main := false, back 
 func _back_lane(root: Node3D, center: Vector3, way: PackedVector2Array) -> void:
 	var k: Dictionary = preload("res://scripts/data.gd").value("towns", "lanes", {})
 	var width := TownPlots.ROAD_HALF * 2.0 * float(k.get("width", 1.3))
+	# A great town's back lanes laid in setts too (towns.json lanes.paved: by rank; art target 01-town: cobbles
+	# between every house, worn at their verges), in the square's stone, with straight-ish kerbs.
+	var rank := "crown" if bool(root.get_meta("crown_seat", false)) else ("seat" if bool(root.get_meta("seat", false)) else "town")
+	if rank in (k.get("paved", []) as Array):
+		var pave: Dictionary = _paving()
+		var stone: String = terrain.art(String(pave.get("texture", SQUARE_TEX)), ROAD_TEX)
+		for i in range(1, way.size()):
+			var a2: Vector2 = way[i - 1]
+			var b2: Vector2 = way[i]
+			var run := a2.distance_to(b2)
+			if run < 0.02:
+				continue
+			var mid2 := (a2 + b2) * 0.5
+			var lo2 := minf(_ground_y(center, Vector3(a2.x, 0, a2.y)), _ground_y(center, Vector3(b2.x, 0, b2.y)))
+			var hi2 := maxf(_ground_y(center, Vector3(a2.x, 0, a2.y)), _ground_y(center, Vector3(b2.x, 0, b2.y)))
+			var reps := maxi(1, roundi((run + width) / float(pave.get("tile", 0.3))))
+			terrain.paint(root, terrain.tiled(stone, maxi(1, roundi(width / float(pave.get("tile", 0.3)))), reps, "paved"), Vector3(mid2.x, (lo2 + hi2) / 2.0, mid2.y), Vector2(width, run + width), atan2(b2.x - a2.x, b2.y - a2.y), _rgb(pave.get("tint"), Color.WHITE), hi2 - lo2 + 1.0)
+		return
 	if bool(k.get("ground", true)) and terrain.land3d and terrain.land3d.land:
 		var step := float(k.get("stamp", 0.12))
 		var total := TownPlots.length(way)
@@ -1820,6 +1838,8 @@ func _plaza(root: Node3D, center: Vector3, square_r: float, size: int, seat: boo
 	# rows round it; the town draws its water there.
 	var centre_kind := Real.one(String(_market_knobs().get("centre", "")))
 	var centre_yaw := rng.randf() * TAU
+	var draw_well := well  # the roofed draw well's own spot, off the heart
+	var draw_kind := well_kind
 	if centre_kind != "" and Real.footprint(centre_kind) != Vector2.ZERO:
 		well_kind = centre_kind
 		well = Vector3.ZERO
@@ -1827,6 +1847,15 @@ func _plaza(root: Node3D, center: Vector3, square_r: float, size: int, seat: boo
 		root.set_meta("centrepiece", centre_kind)
 	if drop.call(well_kind, well, centre_yaw):
 		places["well"] = well
+	# The draw well too, beside a centrepiece (towns.json market.<rank>.well_too; art target 01-town: the crown's
+	# square has its statue and, out in the cobbles, the little roofed well the town draws its water from).
+	if well != draw_well and bool(_market_knobs().get("well_too", false)) and Real.footprint(draw_kind) != Vector2.ZERO:
+		draw_well = draw_well.normalized() * square_r * float(_market_knobs().get("well_at", 0.5))
+		if drop.call(draw_kind, draw_well, rng.randf() * TAU):
+			lots.append([draw_well, maxf(Real.footprint(draw_kind).x, Real.footprint(draw_kind).y) * 0.5])
+			places["well"] = draw_well
+			well = draw_well
+			well_kind = draw_kind
 	# The stalls (assets.json market_stall: the kit's stalls, their awnings dyed red, blue, ochre, green, purple
 	# and cream, or the downloaded pack's), in rows on the market's side of the square, each facing its heart,
 	# no two neighbours alike (art target town-b: a square full of stalls and goods). towns.json
@@ -1891,6 +1920,7 @@ func _plaza(root: Node3D, center: Vector3, square_r: float, size: int, seat: boo
 			root.set_meta("stalls", kept)
 			# Goods at the stall's ends and behind it: crates, sacks, barrels.
 			var along := Vector3(-sin(a), 0, cos(a))
+			_counter(root, center, kind, m, yaw, along, clutter, rng)
 			for e in [-1, 1]:
 				for k in rng.randi_range(int(heaps[0]), int(heaps[1])):
 					var p: Vector3 = m + along * e * (stall.x * 0.5 + rng.randf_range(0.03, 0.1)) + m.normalized() * rng.randf_range(-0.08, 0.12)
@@ -1926,6 +1956,25 @@ func _plaza(root: Node3D, center: Vector3, square_r: float, size: int, seat: boo
 		var p := well + Vector3(cos(a), 0, sin(a)) * (curb + rng.randf_range(0.03, 0.07))
 		drop.call(["ph/wooden_bucket_01", "ph/wicker_basket_01", "ph/wooden_bucket_01"][i % 3], p, rng.randf() * TAU)
 	root.set_meta("places", places)
+
+
+## A stall's counter piled with its wares (towns.json market.counter; art target 01-town: every stall heaped with
+## fruit, cheeses and crates): `count` of the market's goods set along the counter's top, shrunk to sit on it,
+## each a little turned. The counter's height and depth are shares of the stall's width (the kit stall's own
+## table: 0.83 m up on a 1.84 m stall). A stall cart (no table) is left as it is.
+func _counter(root: Node3D, center: Vector3, kind: String, m: Vector3, yaw: float, along: Vector3, goods: Array, rng: RandomNumberGenerator) -> void:
+	var c: Dictionary = _market_knobs().get("counter", {})
+	if c.is_empty() or goods.is_empty() or kind.contains("cart"):
+		return
+	var stall: Vector2 = Real.footprint(kind)
+	var top := _foot_y(center, m, stall, yaw) + stall.x * float(c.get("height", 0.45))
+	var n := rng.randi_range(int((c.get("count", [3, 4]) as Array)[0]), int((c.get("count", [3, 4]) as Array)[1]))
+	var shrink := float(c.get("scale", 0.55))
+	var front := -m.normalized() * stall.x * float(c.get("out", 0.08))  # toward the square, the buyers' side
+	for i in n:
+		var t := (float(i) + 0.5) / n - 0.5
+		var p := m + front + along * t * stall.x * float(c.get("span", 0.8))
+		_place(root, goods[rng.randi() % goods.size()], Vector3(p.x, top, p.z), yaw + rng.randf_range(-0.4, 0.4), Vector3.ONE * shrink, Vector2(0.001, 0.001))
 
 
 func _crowded(lots: Array, p: Vector3, r: float) -> bool:
