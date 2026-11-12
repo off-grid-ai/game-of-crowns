@@ -630,6 +630,7 @@ func _square_ring(root: Node3D, center: Vector3, square_r: float, ways: Array, k
 	var walked := 0.0
 	var half_prev := 0.0
 	var placed := 0
+	var why := {"a street": 0, "crowded": 0, "the ground": 0}  # why a front was turned away (the CHECK line)
 	while walked < TAU * ring and placed < budget:
 		var kind: String = _tier_pick(rr, fronts, "square", 0.0, "square")  # the square's fronts: the town's richest
 		var f: Vector2 = Real.footprint(kind)
@@ -651,11 +652,17 @@ func _square_ring(root: Node3D, center: Vector3, square_r: float, ways: Array, k
 			# Its walls held against the roads' bands (not a circle as wide as its longest side, which
 			# turned away nearly every front between roads into the square: Kingsmere stood none in batch 6).
 			if TownPlots.on_other_way(_plot_body(p2, Vector2(-p2.y, p2.x).normalized(), -p2.normalized(), f), ways, -1, TownPlots.ROAD_HALF):
+				why["a street"] += 1
 				continue  # the roads into the square stay open
+			if _crowded(lots, p, f.x * 0.45):
+				why["crowded"] += 1  # a stall, the hall, the tavern, the castle or a realm's road
+				continue
 			if _put(root, center, kind, p, f, lots, rr, true, -p.normalized(), true):
 				placed += 1
 				break
+			why["the ground"] += 1
 		await _pace()
+	print("CHECK square ring: %s (square %.2f): %d fronts stood; turned away: %s" % [String(root.get_meta("title", "")), square_r, placed, str(why)])
 	return placed
 
 
