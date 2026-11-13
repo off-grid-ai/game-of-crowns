@@ -71,6 +71,7 @@ func _run() -> void:
 		root.free()
 	_baked()
 	_banners()
+	_wall_towers()
 	print("CASTLE STONE %s" % ("PASS" if _fails == 0 else "FAIL %d" % _fails))
 	quit(0 if _fails == 0 else 1)
 
@@ -193,3 +194,12 @@ func _banners() -> void:
 			if not pair[2]:
 				_check(cream > 0 and covered >= cream * 0.85, "%s arms cover its painted cream cloth (%d of %d faces)" % [pair[0], covered, cream])
 		root.free()
+
+
+## A town wall's towers (castle_builder.gd town_wall, walls.gd _arms): each turned with its cloth, and the arms over
+## it, out to the country, away from the town's heart (g2: every tower's cloth faced the town's +Z, cream).
+func _wall_towers() -> void:
+	for t: Vector3 in [Vector3(30, 0, 0), Vector3(-20, 0, 20), Vector3(0, 0, -25)]:
+		var face := Castle.tower_xform(t, 4, "round", Castle.tower_out(t)).basis.orthonormalized() * Vector3(0, 0, 1)
+		var out := Vector3(t.x, 0, t.z).normalized()
+		_check(face.dot(out) > 0.99, "town wall tower at %s: its cloth faces out (%.2f)" % [t, face.dot(out)])

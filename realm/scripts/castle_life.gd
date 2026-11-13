@@ -283,7 +283,7 @@ func _arms(xf: Transform3D, sp: Dictionary, house: Dictionary, colour: Color, d:
 	var gate_top := (int(sp.get("wall_storeys", 2)) + 1) * Builder.STOREY - 0.4
 	var gate_z := Builder.gate_front(sp) + 0.12
 	var gh := 4 * cell / 2.0
-	var mat := _arms_material(house, colour)
+	var mat := arms_material(house, colour)
 	var hangs := []
 	# 01-town: two great banners either side of the keep's door.
 	var ka: Dictionary = k.get("keep", {})
@@ -314,15 +314,22 @@ func _arms(xf: Transform3D, sp: Dictionary, house: Dictionary, colour: Color, d:
 		if (t["at"] as Vector3).z > 0.0 and String(t["kind"]) == "round":
 			hangs.append(_on_piece(Builder.tower_xform(t["at"], int(t["storeys"]), "round"), k.get("tower", {}), 1.0))
 	for h in hangs:
-		var q := QuadMesh.new()
-		q.size = h[1]
-		q.center_offset = Vector3(0, -(h[1] as Vector2).y * 0.5, 0)  # hung from its top edge
-		var m := MeshInstance3D.new()
-		m.mesh = q
-		m.material_override = mat
-		add_child(m)
+		var m := hang(self, h[1], mat)
 		m.global_transform = xf * Transform3D(Basis(), h[0])
 		d["nodes"].append(m)
+
+
+## A painted hang of `size`, hung from its top edge (its origin), facing +Z, on `parent`: the castle's and the town
+## wall's arms (walls.gd).
+static func hang(parent: Node, size: Vector2, mat: Material) -> MeshInstance3D:
+	var q := QuadMesh.new()
+	q.size = size
+	q.center_offset = Vector3(0, -size.y * 0.5, 0)
+	var m := MeshInstance3D.new()
+	m.mesh = q
+	m.material_override = mat
+	parent.add_child(m)
+	return m
 
 
 ## A hang on a castle-set piece: its top middle and size in the castle's frame, from the piece's own metres
@@ -333,7 +340,7 @@ static func _on_piece(pxf: Transform3D, h: Dictionary, sx: float) -> Array:
 	return [top, Vector2(float(h.get("w", 1.8)) * sc.x, float(h.get("h", 5.0)) * sc.y)]
 
 
-func _arms_material(house: Dictionary, colour: Color) -> StandardMaterial3D:
+static func arms_material(house: Dictionary, colour: Color) -> StandardMaterial3D:
 	var m := StandardMaterial3D.new()
 	m.cull_mode = BaseMaterial3D.CULL_DISABLED
 	m.roughness = 0.95

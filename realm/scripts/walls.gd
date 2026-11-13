@@ -261,6 +261,7 @@ func _build(id: int, root: Node3D, plan: Dictionary) -> void:
 		kits[s] = _kit(root, "TownWall%d" % s, builder.town_wall(by[s], [], storeys, seed), fade)
 	if not (plan.get("towers", []) as Array).is_empty():
 		_kit(root, "TownWallTowers", builder.town_wall([], plan["towers"], storeys, seed), fade)
+		_arms(root, plan["towers"], storeys, fade)
 	for g in plan.get("gates", []):
 		var q: Vector2 = g[0]
 		var n: Vector2 = g[1]
@@ -268,6 +269,28 @@ func _build(id: int, root: Node3D, plan: Dictionary) -> void:
 		gm.position = Vector3(q.x, main.towns._ground_y(root.global_position, Vector3(q.x, 0, q.y)) - 0.02, q.y)
 		gm.rotation.y = atan2(n.x, n.y)
 	_town_walls[id] = {"root": root, "center": root.global_position, "kits": kits, "bays": by, "stones": {}, "storeys": storeys, "seed": seed}
+
+
+## The holder's arms down each wall tower's outer face, over the cloth it is painted with (01-town: the red eagle on
+## every tower), placed as the castle's are (castle.json arms.tower, castle_life.gd), each tower turned out to the
+## country (castle_builder.gd tower_out).
+func _arms(root: Node3D, towers: Array, storeys: int, fade: float) -> void:
+	const Builder := preload("res://scripts/castle_builder.gd")
+	const Life := preload("res://scripts/castle_life.gd")
+	const Heraldry := preload("res://scripts/heraldry.gd")
+	var house: Dictionary = main.awareness.houses_by_id().get(int(root.get_meta("owner", -1)), {}) if main.awareness else {}
+	var mat := Life.arms_material(house, Heraldry.colour(house, Color(0.6, 0.15, 0.15)))
+	var k: Dictionary = (Data.value("castle", "arms", {}) as Dictionary).get("tower", {})
+	var arms := Node3D.new()
+	arms.name = "TownWallArms"
+	arms.scale = Vector3.ONE * S
+	root.add_child(arms)
+	for t: Vector3 in towers:
+		var yaw := Builder.tower_out(t)
+		var h: Array = Life._on_piece(Builder.tower_xform(t, storeys + 2, "round", yaw), k, 1.0)
+		var m := Life.hang(arms, h[1], mat)
+		m.transform = Transform3D(Basis(Vector3.UP, yaw), h[0])
+		main.towns._fade_beyond(m, fade)
 
 
 ## A piece of the kit wall on its town, at our scale, faded out past its reach as the town's buildings are.

@@ -76,20 +76,27 @@ static func _meshy_size(name: String) -> Array:
 
 ## A tower of the castle set at `at` (its foot): its stone `storeys` high under its roof, its width castle.json
 ## meshy.tower.width (the import's own across, about 7-8 m, would crowd the curtain's 2 m bays).
-func _meshy_tower(parts: Array, at: Vector3, storeys: int, kind: String) -> void:
+func _meshy_tower(parts: Array, at: Vector3, storeys: int, kind: String, yaw := 0.0) -> void:
 	var file := _meshy_file(String(_meshy().get("tower", {}).get(kind, "ck_wall_tower")))
 	if file != "":
-		parts.append([file, tower_xform(at, storeys, kind)])
+		parts.append([file, tower_xform(at, storeys, kind, yaw)])
 
 
 ## Where a castle-set tower stands in the castle's frame and how it is stretched (its own metres -> the castle's):
 ## the one placement, so what hangs on it (castle_life.gd's arms) finds its face.
-static func tower_xform(at: Vector3, storeys: int, kind: String) -> Transform3D:
+## `yaw` turns its painted cloth (on the piece's +Z face) from +Z.
+static func tower_xform(at: Vector3, storeys: int, kind: String, yaw := 0.0) -> Transform3D:
 	var k: Dictionary = _meshy().get("tower", {})
 	var sz: Array = _meshy_size(String(k.get(kind, "ck_wall_tower")))
 	var h := storeys * STOREY + float(k.get("cone", 4.0))
 	var across := float(k.get("width", 6.0))
-	return Transform3D(Basis.from_scale(Vector3(across / float(sz[0]), h / float(sz[2]), across / float(sz[1]))), at)
+	return Transform3D(Basis(Vector3.UP, yaw) * Basis.from_scale(Vector3(across / float(sz[0]), h / float(sz[2]), across / float(sz[1]))), at)
+
+
+## How a town wall's tower at `at` (town-local, its foot; the town's heart at the origin) is turned: its cloth out to
+## the country, away from the town (01-town: the arms hang down the outer face of every wall tower).
+static func tower_out(at: Vector3) -> float:
+	return atan2(at.x, at.z)
 
 
 ## Where the keep (ck_keep) stands in the castle's frame: into the back wall, castle.json meshy.keep's scale and z.
@@ -251,7 +258,7 @@ func town_wall(bays: Array, towers: Array, storeys: int, seed: int) -> ArrayMesh
 				parts.append([file, Transform3D(basis * Basis.from_scale(Vector3(span / n / float(size[0]), sy, sz)), mid)])
 			i = j + 1
 	for t in towers:
-		_meshy_tower(parts, t, storeys + 2, "round")
+		_meshy_tower(parts, t, storeys + 2, "round", tower_out(t))
 	return _bake(parts)
 
 
