@@ -144,6 +144,9 @@ static func layer_textures(i: int) -> Array:
 
 
 static var _beach_top: float = Data.num("ground", "beach.top", 0.02)
+## The ground laid at the waterline (ground.json beach.layer, a name in LAYERS): 02-realm's coasts are rock and shingle,
+## not the bright sand bands round every shore in group render g3 (once the auto shader stopped painting them grass).
+static var _beach_layer: int = maxi(0, LAYERS.find(String(Data.value("ground", "beach.layer", "sand"))))
 
 
 ## The ground for an eroded heightmap: sand at the waterline and below and snow on the high peaks from the land
@@ -181,7 +184,7 @@ func _control_from_land(terrain: Node3D) -> Image:
 			var v: float
 			var sand := smoothstep(_beach_top, -0.12, y)  # a beach at the waterline (wider when painted), sand on the sea floor
 			if sand > 0.02:
-				v = over.call(2, sand, steep)
+				v = over.call(_beach_layer, sand, steep)
 			elif y > 7.5:
 				v = over.call(3, smoothstep(7.5, 9.5, y), steep)
 			else:

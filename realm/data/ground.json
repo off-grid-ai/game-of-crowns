@@ -19,7 +19,7 @@
     "Jungle": [0.15, 0, 0, 0, 0, 1, 0.2, 0, 0, 0], "Ocean": [1, 0, 0, 0, 0, 0, 0, 0, 0, 0], "Deep Ocean": [1, 0, 0, 0, 0, 0, 0, 0, 0, 0], "Lake": [1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     "patches": { "layer": 1, "most": 0.75, "from": 0.08, "soft": 0.25, "scale": 0.35 }
   },
-  "beach": { "top": 0.035 },
+  "beach": { "top": 0.035, "layer": "stony" },
   "auto": { "_": "land3d.gd _control_from_land: the auto shader (rock on cliffs, by slope) only where the ground is this steep or bare grass; cliff, the normal's height under which it is a cliff (lower, fewer cliffs).", "cliff": 0.9 },
   "winter": { "snow": [0.74, 0.76, 0.82] },
   "surf": false,
