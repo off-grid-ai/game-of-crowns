@@ -1,6 +1,6 @@
 extends "res://scripts/town_dress.gd"
 ## The yards nearest the square kept (crowd.json yards): hens and by chance a pig about the beds, each living its
-## idle life (animals.gd); their beds are where a gardener kneels (the yards row).
+## idle life (animals.gd); their beds are where a gardener kneels, their washing lines where a washer works (the yards row).
 
 
 func dress(root: Node3D, life: Node3D, row: Dictionary, rng: RandomNumberGenerator) -> Dictionary:
@@ -29,4 +29,12 @@ func dress(root: Node3D, life: Node3D, row: Dictionary, rng: RandomNumberGenerat
 			b.set_meta("yard_beast", true)
 			life.add_child(b)
 			Animals.live(b, String(kind), rng)
-	return {"gardens": {"points": points}}
+	# The washing lines in the same yards (towns.gd yard_things, yard_washing): where the yards row's washer hangs the
+	# wash, standing beside the line on the square's side, facing it (art target 01-town: washing in the yards).
+	var lines: Array = []
+	for t in root.get_meta("yard_things", []):
+		var q: Vector3 = t["at"]
+		if String(t["component"]) == "yard_washing" and q.length() < r * float(row.get("within", 3.0)):
+			lines.append({"at": q - q.normalized() * float(row.get("washer_off", 0.12)), "point": q, "dir": tl.SEEN})
+	lines.sort_custom(func(a, b): return Vector3(a["at"]).length() < Vector3(b["at"]).length())
+	return {"gardens": {"points": points}, "washing": {"points": lines.slice(0, int(row.get("lines", 2)))}}
