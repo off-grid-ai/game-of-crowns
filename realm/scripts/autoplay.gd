@@ -238,9 +238,10 @@ func _step(w: PackedStringArray) -> void:
 				await _right_drag(Vector2(float(w[1]), float(w[2])), Vector2(float(w[3]), float(w[4])))
 				await get_tree().create_timer(0.4).timeout
 			"host":
-				# host [n] [dist] [tilt]: frames the King's n-th host from /world's hosts (the biggest first),
-				# low and oblique, then clicks its standard as a player would (host_command.gd, --hosts=on).
-				await _host(int(w[1]) if w.size() > 1 else 0, float(w[2]) if w.size() > 2 else 6.0, float(w[3]) if w.size() > 3 else -25.0)
+				# host [n|open] [dist] [tilt]: frames the King's n-th host from /world's hosts (the biggest first), or
+				# the one in the field standing in the most open ground (_open_host), low and oblique, then clicks its
+				# standard as a player would (host_command.gd, --hosts=on).
+				await _host((_open_host() if w[1] == "open" else int(w[1])) if w.size() > 1 else 0, float(w[2]) if w.size() > 2 else 6.0, float(w[3]) if w.size() > 3 else -25.0)
 			"hover":
 				var at := get_viewport().get_visible_rect().size * Vector2(float(w[1]), float(w[2]))
 				get_viewport().warp_mouse(at)
@@ -1204,6 +1205,27 @@ func _host(n: int, dist: float, tilt: float) -> void:
 	await _click(s / screen.size)
 	await get_tree().create_timer(0.5).timeout
 	_note("  host selected: %d" % int(hc.selected))
+
+
+## The King's host in the field (not in a town) with the fewest trees round where it stands (forest.gd trees_near,
+## half a tile), the larger first on a tie; 0 with none in the field. Group render g5, command.jpg: the host the frame
+## picked stood in a forest, its men under the canopy and only its standard showing.
+func _open_host() -> int:
+	var hc: Node = main.get_node_or_null("HostCommand")
+	var woods = main.terrain.get("forest")
+	var all: Array = hc.hosts() if hc else []
+	var best := 0
+	var least := INF
+	for i in all.size():
+		var h: Dictionary = all[i]
+		if h.get("at") != null:
+			continue
+		var trees := float(woods.trees_near(hc._ground(h), 2.0)) if woods and woods.has_method("trees_near") else 0.0
+		trees -= float(h.get("men", 0)) * 0.00001  # the larger host on a tie
+		if trees < least:
+			least = trees
+			best = i
+	return best
 
 
 ## The pick proxy (host_pick.gd) of one of the host's companies or regiments, or null.

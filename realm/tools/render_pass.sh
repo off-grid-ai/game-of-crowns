@@ -202,25 +202,17 @@ if want siege; then
   side siege $OUT/frames/siege/s10.png $TARGETS/04-siege.jpg "READY 6: the breach and storm"
   side siege_taken $OUT/frames/siege/s30.png $TARGETS/04-siege.jpg "READY 7: $(grep -ciE 'taken|changes hands' $OUT/frames/siege.log 2>/dev/null) taken lines"
 fi
-# READY 8: the host in the most open ground (the farthest from any town), so its men show, not a glow among houses.
-open_host() {
-  curl -s -m 10 "$API/world?peek=1" | python3 -I -c "
-import json,sys; d=json.load(sys.stdin); hs=d.get('hosts',[]); cs=d.get('cities',[])
-if not hs: print(0); sys.exit()
-far=lambda h: min(((h['x']-c['x'])**2+(h['y']-c['y'])**2) for c in cs) if cs else 0
-print(max(range(len(hs)), key=lambda i: far(hs[i])))" 2>/dev/null || echo 0
-}
+# READY 8: the host in the field in the most open ground (autoplay _open_host: fewest trees round it; g5's command
+# frame took the one farthest from any town, and it stood under a forest's canopy), so its men show.
 if want command; then
-  N=$(open_host)
-  { print "wait 30"; print "host $N 6 -25"; print "wait 3"; print "snap selected ui"; print "order besiege"; print "wait 2"; print "snap ordered ui"
+  { print "wait 30"; print "host open 6 -25"; print "wait 3"; print "snap selected ui"; print "order besiege"; print "wait 2"; print "snap ordered ui"
     print "wait 6"; print "snap marching ui"; print "look end"; } > $OUT/command.play
   shot command 1500 film $SW
   side command $OUT/frames/command/ordered.png $TARGETS/03-army.jpg "READY 8: $(grep -hE 'host selected|order besiege' $OUT/frames/command/play.log 2>/dev/null | head -2 | tr '\n' ' ')"
 fi
 if want face; then
   new_reign  # a new season of orders: Besiege above spent this host's one (bridge/data/hosts.json ordersPerHost)
-  N=$(open_host)
-  { print "wait 30"; print "host $N 6 -25"; print "wait 3"; print "rdrag 0.40 0.62 0.70 0.62"; print "snap faced ui"; print "wait 6"; print "snap formed ui"; print "look end"; } > $OUT/face.play
+  { print "wait 30"; print "host open 6 -25"; print "wait 3"; print "rdrag 0.40 0.62 0.70 0.62"; print "snap faced ui"; print "wait 6"; print "snap formed ui"; print "look end"; } > $OUT/face.play
   shot face 1500 film $SW
   side face $OUT/frames/face/faced.png $TARGETS/03-army.jpg "READY 8: $(grep -hE 'host selected' $OUT/frames/face/play.log 2>/dev/null | head -1)"
 fi
