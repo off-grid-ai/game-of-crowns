@@ -35,8 +35,13 @@ court_share = "0.02"
 
 [raids]
 ; A raid's life (script.lua realm_raid): Freeciv's barbarians raised beside a town pillage the land around it each
-; season, then leave after this many seasons.
+; season, then leave after this many seasons: they walk off to wild land (no house's) or the map's edge, leave_steps
+; tiles a season over open land, looking up to leave_reach steps for it, and go there; after leave_seasons on the road
+; any still walking go where they stand, as do any with no way out in reach.
 seasons = "8"
+leave_steps = "3"
+leave_reach = "30"
+leave_seasons = "4"
 
 [risings]
 ; A great house split by Freeciv's civil war (script.lua realm_rising, called by a story beat): the rebels' host

@@ -615,7 +615,7 @@ end
 -- Men without banners: a raid is an event, not a standing army. Freeciv's own barbarians are raised beside a
 -- town (a paid raid, a story's raid), on an empty land tile two out, never on anyone's men (unleashing wipes the
 -- tile's units). They can't take the town (actions.ruleset); each season they pillage the land around it with
--- Freeciv's own Pillage order, and after raids.seasons seasons they leave (Disband Unit). Needs the barbarians
+-- Freeciv's own Pillage order, and after raids.seasons seasons they walk off to wild land and go (Disband Unit). Needs the barbarians
 -- setting above "disabled" and onsetbarbs passed (game.ruleset sets it to 1); with raiders off, nothing comes.
 -- Freeciv's own barbarians (a hut's, the wild hordes) get the same season: realm_raids_turn takes in any raider it
 -- hasn't seen, beside the town nearest him. Kept as a plain string ("unit,unit|town|until;..."), which the save keeps.
@@ -634,6 +634,65 @@ local function raiders_now()
 end
 
 local function raid_seasons() return tonumber(luadata.get_str("raids.seasons")) or 8 end
+local function raid_num(k, d) return tonumber(luadata.get_str("raids." .. k)) or d end
+
+-- Where raiders go when the raid is over: wild land (no house's) or the map's edge (a tile with fewer than eight
+-- neighbours on this unwrapped map).
+local function raid_wild(t)
+  if t.owner == nil then return true end
+  local n = 0
+  for _ in t:square_iterate(1) do n = n + 1 end
+  return n < 9
+end
+
+-- Land a raider may walk onto: no water, no town, nobody else's men.
+local function raid_open(t, u)
+  local n = t.terrain:rule_name()
+  if n:find("Ocean") or n == "Lake" or t:city() ~= nil then return false end
+  for o in t:units_iterate() do if o.owner ~= u.owner then return false end end
+  return true
+end
+
+-- The raider's way out: the tiles of the shortest walk over open land to wild land or the edge (breadth-first over
+-- the eight neighbours, out to `reach` steps); {} when he stands on wild land, nil when no way out is in reach.
+local function raid_way_out(u, reach)
+  if raid_wild(u.tile) then return {} end
+  local start = u.tile.id
+  local from, depth, q, head = {}, {[start] = 0}, {u.tile}, 1
+  while head <= #q do
+    local t = q[head]
+    head = head + 1
+    if depth[t.id] < reach then
+      for n in t:square_iterate(1) do
+        if depth[n.id] == nil and raid_open(n, u) then
+          from[n.id], depth[n.id] = t, depth[t.id] + 1
+          if raid_wild(n) then
+            local way, p = {}, n
+            while p.id ~= start do table.insert(way, 1, p); p = from[p.id] end
+            return way
+          end
+          q[#q + 1] = n
+        end
+      end
+    end
+  end
+  return nil
+end
+
+-- A raider leaving: up to raids.leave_steps tiles a season along his way out, by Freeciv's own unit_move; true once he
+-- is gone (disbanded on wild land, or where he stands when no way out is in reach or on the raid's last season).
+local function raid_leave(u, last)
+  local way = not last and raid_way_out(u, raid_num("leave_reach", 30)) or nil
+  if way and #way > 0 then
+    for i = 1, math.min(#way, raid_num("leave_steps", 3)) do
+      pcall(edit.unit_move, u, way[i], 0, nil, false, false, false, false, false)
+      if u.tile.id ~= way[i].id then break end
+    end
+    if not raid_wild(u.tile) then return false end
+  end
+  pcall(edit.perform_action, u, find.action("Disband Unit"))
+  return true
+end
 
 -- Raiders Freeciv raised on its own, not yet in a raid: one raid per town they rise nearest to.
 local function raids_take_in()
@@ -725,7 +784,6 @@ function realm_raids_turn()
   raids_take_in()
   if GOC_RAIDS == "" then return end
   local kept = {}
-  local disband = find.action("Disband Unit")
   for ids, city_id, til in GOC_RAIDS:gmatch("([%d,]+)|(%d+)|(%d+)") do
     local town = find.city(nil, tonumber(city_id))
     local alive = {}
@@ -734,8 +792,16 @@ function realm_raids_turn()
       if u then alive[#alive + 1] = u end
     end
     if game.current_turn() >= tonumber(til) then
-      for _, u in ipairs(alive) do pcall(edit.perform_action, u, disband) end
-      log.normal("RAID over by %s: %d raiders leave", town and town.name or city_id, #alive)
+      -- The raid is over: the raiders walk off to wild land or the map's edge and go there (no man vanishes where he
+      -- stood), for at most raids.leave_seasons seasons; then any still on the road go where they stand.
+      local last = game.current_turn() >= tonumber(til) + raid_num("leave_seasons", 4)
+      local left, gone = {}, 0
+      for _, u in ipairs(alive) do
+        local id = u.id
+        if raid_leave(u, last) or not find.unit(nil, id) then gone = gone + 1 else left[#left + 1] = string.format("%d", id) end
+      end
+      if #left > 0 then kept[#kept + 1] = string.format("%s|%s|%s", table.concat(left, ","), city_id, til) end
+      log.normal("RAID over by %s: %d raiders gone, %d on the road out", town and town.name or city_id, gone, #left)
     elseif #alive > 0 then
       local left = {}
       for _, u in ipairs(alive) do
