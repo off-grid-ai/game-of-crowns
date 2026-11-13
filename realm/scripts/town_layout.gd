@@ -222,6 +222,8 @@ func square_ring(root: Node3D, center: Vector3, square_r: float, ways: Array, ki
 	why["a building"] = 0
 	var kind := ""
 	var f := Vector2.ZERO
+	var prev_ang := -INF  # the last front stood (its angle, half its width): the alley between it and the next
+	var prev_half := 0.0
 	while walked < TAU * ring and placed < budget:
 		var step := 0.0
 		if kind == "":
@@ -265,6 +267,10 @@ func square_ring(root: Node3D, center: Vector3, square_r: float, ways: Array, ki
 				placed += 1
 				stood = true
 				_ring_yard(root, p, kf, k, ways, lots.size() - 1)
+				if prev_ang > -INF:
+					_ring_alley(root, center, ring, prev_ang, prev_half, ang, kf.x * 0.5, ways)
+				prev_ang = ang
+				prev_half = kf.x * 0.5
 				break
 			why["the ground"] += 1
 		if stood:
@@ -713,6 +719,31 @@ func _ring_yard(root: Node3D, p: Vector3, f: Vector2, kind: String, ways: Array,
 		ry.append([pl, p, Vector3(face.x, 0, face.y), f, own_lot])
 		root.set_meta("ring_yards", ry)
 		return
+
+
+## An alley between two neighbouring houses round the square (art target 01-town: cobbled lanes run out of the
+## square between its houses; pass 2243's street.jpg had grass there): where the gap between their sides is at
+## least towns.json plots.ring_alley[0] and at most [1] wide (game units; wider is a landmark's or the ground's), a
+## back lane (back_lane: the crown's in setts) runs from inside the square's edge out [2] past the fronts. None
+## where a street already comes in there.
+func _ring_alley(root: Node3D, center: Vector3, ring: float, a0: float, h0: float, a1: float, h1: float, ways: Array) -> void:
+	var al: Array = tb._plot_knobs().get("ring_alley", [])
+	if al.size() < 3:
+		return
+	var gap := (a1 - a0) * ring - h0 - h1
+	if gap < float(al[0]) or gap > float(al[1]):
+		return
+	var mid := (a0 + h0 / ring + a1 - h1 / ring) * 0.5
+	var dir := Vector2(cos(mid), sin(mid))
+	var from := dir * (ring - 0.1)
+	var to := dir * (ring + float(al[2]))
+	var side := Vector2(-dir.y, dir.x) * 0.02
+	if TownPlots.on_other_way(PackedVector2Array([from - side, from + side, to + side, to - side]), ways, -1, TownPlots.ROAD_HALF):
+		return
+	back_lane(root, center, PackedVector2Array([from, to]))
+	var lanes: Array = root.get_meta("lanes", [])  # town-local, where the grass keeps off and footpaths join
+	lanes.append([from, to])
+	root.set_meta("lanes", lanes)
 
 
 ## A plot house's outline (town-local): `house` its middle, `face` toward the street.
