@@ -333,7 +333,7 @@ func _frame(delta: float) -> void:
 	var crown: Army = sides[0]
 	main.rig.step_floor = _dist if _dist < main.rig.min_distance else 0.0  # the shot's own distance (d4 is d4)
 	main.rig.snap(_focus, _dist, crown.facing() + Data.num(F, "field.camera.quarter", 0.9))
-	main.rig.tilt = Data.num("army", "camera.tilt", -8.0)
+	main.rig.tilt = main.rig.tilt_for(Data.num("army", "camera.pitch", 38.0), maxf(_dist, main.rig.min_distance))  # 03-army's pitch
 	main.rig.goal_tilt = main.rig.tilt
 
 

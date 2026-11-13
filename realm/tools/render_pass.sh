@@ -233,10 +233,11 @@ if want breach; then
   side breach $OUT/frames/breach/breach.png $TARGETS/04-siege.jpg "a breached section beside whole ones"
 fi
 # The wood's edge and the fields in summer and in autumn (the nature set's seasonal leaves; autoplay field holds the
-# countryside's year at that season and frames the crown's first sown field low).
+# countryside's year at that season and frames the crown's first sown field from over the wood: tilt 7 at d6 is about 38
+# degrees down, eye about 30 m up; pass 2243's "6 -20" was 11 degrees, the lens among the tree crowns).
 if want seasons; then
   for se in summer autumn; do
-    { print "wait 30"; print "field $se 0.5 0 6 -20"; print "wait 6"; print "snap $se"; print "look end"; } > $OUT/season_$se.play
+    { print "wait 30"; print "field $se 0.5 0 6 7"; print "wait 6"; print "snap $se"; print "look end"; } > $OUT/season_$se.play
     shot season_$se 1500 film $SW --season=$se
     side season_$se $OUT/frames/season_$se/$se.png $TARGETS/01-town.jpg "the wood's edge and the fields in $se"
   done
@@ -245,7 +246,7 @@ fi
 # shares (0.3, 0.25, 0.2, 0.1, 0.15) give every kind a regiment at about ten regiments, so 1500 men, in column on the
 # road at a high oblique, in the crown's colours.
 if want host5; then
-  shot host5 900 still $SW --army-spike=1500 --army-colours=crown --army-shape=march --dist=9 --wait=50
+  shot host5 900 still $SW --army-spike=1500 --army-colours=crown --army-shape=march --dist=5 --wait=50
   side host5 $OUT/frames/host5.png $TARGETS/03-army.jpg "all five kinds: $(grep -h 'ARMY mustered' $OUT/frames/host5.log 2>/dev/null | grep -o 'regiments=[0-9]* {[^}]*}' | head -1)"
 fi
 # The rest of the look, each beside its target: the castle from its gate, a village street, a host crossing the sea.

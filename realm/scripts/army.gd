@@ -173,7 +173,9 @@ func _ready() -> void:
 	else:
 		_road_in(town)
 		_column_up()
-	_tilt = Data.num("army", "camera.tilt", -8.0)
+	# 03-army's pitch at the shot's own distance (camera_rig.tilt_for): pass 2243's host5 at d9 and the old -8 under the
+	# map's pitch looked 24 degrees down, the column a thread across the fields.
+	_tilt = main.rig.tilt_for(Data.num("army", "camera.pitch", 38.0), maxf(_dist, main.rig.min_distance)) if main.rig else 0.0
 	# The spike's own lens (it fells the trees in its way): never for a battle side, which frames nothing.
 	_yaw_line = _lens_yaw(_field, _face + Data.num("army", "camera.quarter", 0.4)) if battle.is_empty() else _face
 	_yaw = _yaw_line

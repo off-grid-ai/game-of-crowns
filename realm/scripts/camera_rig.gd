@@ -183,10 +183,17 @@ func siege_view(breach: Vector3, town: Vector3) -> Array:
 	var out := Vector3(breach.x - town.x, 0.0, breach.z - town.z) if town != Vector3.INF else Vector3.ZERO
 	out = out.normalized() if out.length() > 0.01 else Vector3(0, 0, 1)
 	var dist := maxf(knob("siege_view.dist", 5.0), min_distance)
-	var t := clampf((dist - min_distance) / (max_distance - min_distance), 0.0, 1.0)
-	var tilt := knob("siege_view.pitch", 38.0) - lerpf(30.0, 55.0, pow(t, 0.7))  # apply()'s own pitch, moved to the view's
+	var tilt := tilt_for(knob("siege_view.pitch", 38.0), dist)
 	var yaw := atan2(out.x, out.z) + knob("siege_view.turn", 0.6)
 	return [breach + out * knob("siege_view.out", 0.4), yaw, dist, tilt]
+
+
+## The tilt that gives `pitch` degrees down at `dist`, as apply() places the lens (its own pitch for the distance, and
+## the ground view close in): a view that wants an absolute pitch (a siege, the army's lens) asks here.
+func tilt_for(pitch: float, dist: float) -> float:
+	var t := clampf((dist - min_distance) / (max_distance - min_distance), 0.0, 1.0)
+	var g := ground_view_at(dist)
+	return (pitch - (1.0 - g) * lerpf(30.0, 55.0, pow(t, 0.7)) - 3.0 * g) / ((1.0 - g) + 0.6 * g)
 
 
 ## The one framing rule for every "go to X" (a town, a castle, a host, a matter),
