@@ -255,6 +255,26 @@ def split_house(obj, mask, into=None):
     return moved / float(max(len(obj.data.polygons), 1))
 
 
+def smooth_leaves(obj):
+    """A tree's leaves (the faces split into MI_Leaves) shaded smooth, so a crown reads as soft painted masses, not lime
+    facets (group render g1, the siege frame: the oaks round Kingsmere as faceted low-poly blobs; 01-town and 04-siege
+    paint round oaks and soft pines). Decimate leaves its faces flat; the custom normals from Meshy's file go with them,
+    so Blender's own vertex normals over the leaf faces. Trunks, stone and timber keep their edges. Returns the faces."""
+    mats = obj.data.materials
+    slots = {i for i, m in enumerate(mats) if m and m.name.startswith("MI_Leaves")}
+    if not slots:
+        return 0
+    if obj.data.has_custom_normals:
+        bpy.context.view_layer.objects.active = obj
+        bpy.ops.mesh.customdata_custom_splitnormals_clear()
+    n = 0
+    for poly in obj.data.polygons:
+        if poly.material_index in slots:
+            poly.use_smooth = True
+            n += 1
+    return n
+
+
 def mask_png(obj, mask, out):
     """The house-colour mask over the piece's texture, white where its colour is the house's."""
     for m in obj.data.materials:
@@ -521,13 +541,14 @@ def main():
             print("ISLAND faces=%d min=%s max=%s colour=%s" % (n, [round(x, 2) for x in lo], [round(x, 2) for x in hi], col))
     share = split_house(obj, spec["mask"])
     leaves = split_house(obj, spec["leaves"], "MI_Leaves") if spec.get("leaves") else 0.0
+    smoothed = smooth_leaves(obj) if leaves else 0
     arm = split_arm(obj, spec["arm"]) if spec.get("arm") else None
     has_mask = mask_png(obj, spec["mask"], out)
     glb = os.path.join(out, name + ".glb")
     bpy.ops.export_scene.gltf(filepath=glb, export_format="GLB", use_selection=False, export_yup=True, export_apply=True)
     report = {"name": name, "source": src, "tris_before": before, "tris_after": after, "scale": k,
               "size_m": [round(x, 2) for x in size], "house_share": round(share, 3), "leaves_share": round(leaves, 3), "mask_png": has_mask,
-              "materials": [m.name for m in obj.data.materials if m], "cut_faces": removed, "arm": arm is not None, "repainted": repainted, "flattened": pressed}
+              "materials": [m.name for m in obj.data.materials if m], "cut_faces": removed, "arm": arm is not None, "repainted": repainted, "flattened": pressed, "smooth_leaves": smoothed}
     json.dump(report, open(os.path.join(out, "import.json"), "w"), indent=1)
     print("MESHY " + json.dumps(report))
 
