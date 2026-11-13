@@ -14,7 +14,7 @@ integrations directly on the main codebase", "no wasting time with side tests". 
 - The one check allowed is a compile check: `node --check` on JS you touched, `godot --headless --check-only` on
   GDScript, `realm/tools/rules_check.sh` (it only reads files). A file that doesn't load is never left in the tree.
 - A probe the fix needs may be written; it isn't run by you. Commit small and often, and name the probe in the commit.
-- Testing is grouped (Mac: "group and test the changes together"): every ~30 minutes the supervisor runs one test of
+- Testing is grouped (Mac: "group and test the changes together"): every 12 minutes (Mac, 2026-11-13) the supervisor runs one test of
   everything that landed on main together, plus the render pass when a group covers the frames, and sends failures back
   to their owners. Everyone works in the one codebase; the supervisor keeps finding the bottleneck and removing it.
 
