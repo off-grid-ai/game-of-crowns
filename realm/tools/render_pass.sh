@@ -273,12 +273,16 @@ if want crossing; then
   new_reign  # its own season of orders
   # The King's host takes ship (One store's crossing, d70ca994: a march with no road over land walks to the nearest crown
   # port, boards the crown's hulls, sails, lands near the goal). The pass asks each march dry first (d94c3c83: by land or
-  # by sea, nothing given) for every host and town, orders the quickest by sea, then waits (CROSS_WAIT, 900 s of the reign:
+  # by sea, nothing given) for every host and town, orders the quickest by sea, then waits (CROSS_WAIT, 900 s of the wall clock:
   # a season at the shore while the crown raises its Triremes, 7b10e42d) until it is aboard, and frames its lead company on
   # the hull: the cog.
-  CROSS=$(curl -s -m 10 "$API/world?peek=1" | python3 -I -c "
-import json,sys,urllib.request
+  # Every wait here is bounded (group test 2 hung 11 h in this block): the dry asks stop after CROSS_ASK s, each call
+  # has its own timeout and the python under perl's alarm, and the whole wait for aboard ends at CROSS_WAIT s of the
+  # wall clock, whatever happens inside it.
+  CROSS=$(curl -s -m 10 "$API/world?peek=1" | perl -e 'alarm shift; exec @ARGV' ${CROSS_ASK:-300} python3 -I -c "
+import json,sys,time,urllib.request
 d=json.load(sys.stdin); hs=d.get('hosts',[]); cs=d.get('cities',[])
+end=time.time()+${CROSS_ASK:-300}-20
 def ask(body):
     req=urllib.request.Request('http://$API/host/order', data=json.dumps(body).encode(), method='POST')
     try:
@@ -289,6 +293,8 @@ def ask(body):
 best=None
 for h in hs:
     for c in cs:
+        if time.time()>end:
+            break
         a=ask({'host':h['id'],'order':'march','city':c['id'],'dry':True})
         if a.get('by')=='sea' and (best is None or int(a.get('seasons',99))<best[0]):
             best=(int(a.get('seasons',99)), h, c)
@@ -304,16 +310,22 @@ if best:
     say "crossing: no march of the King's host went by sea (no town across the water, port or free hull); no frame"
   else
     say "crossing: host $HID ordered over water: ${CROSS#* }"
-    LEAD=""; waited=0
-    while [ -z "$LEAD" ] && [ $waited -lt ${CROSS_WAIT:-900} ]; do
-      LEAD=$(curl -s -m 10 "$API/world?peek=1" | python3 -I -c "
+    # The realm only runs while a window watches it (bridge server.js 'away': a /world?peek=1 doesn't count), so this
+    # wait reads /world as a window does; and, as the hasty King does, it closes the court and an interlude that would
+    # hold the season. Pass g2 polled with peek: the reign stood at T39 with the host on the shore, one season short of
+    # its ship, for 11 hours.
+    LEAD=""; T0=$SECONDS
+    while [ -z "$LEAD" ] && [ $((SECONDS - T0)) -lt ${CROSS_WAIT:-900} ]; do
+      curl -s -m 5 -o /dev/null -X POST $API/court/close
+      curl -s -m 5 -o /dev/null -X POST $API/interlude/close
+      LEAD=$(curl -s -m 10 "$API/world" | perl -e 'alarm shift; exec @ARGV' 20 python3 -I -c "
 import json,sys; d=json.load(sys.stdin)
 me=[x for x in d.get('hosts',[]) if str(x.get('id'))=='$HID' and x.get('aboard')]
 print(min(me[0].get('units',[me[0]['id']])) if me else '')" 2>/dev/null)
-      [ -z "$LEAD" ] && { sleep 15; waited=$((waited + 15)); }
+      [ -z "$LEAD" ] && sleep 5
     done
     if [ -z "$LEAD" ]; then
-      say "crossing: host $HID not aboard in ${CROSS_WAIT:-900} s of the reign; no frame"
+      say "crossing: host $HID not aboard in ${CROSS_WAIT:-900} s; no frame"
     else
       { print "wait 30"; print "unit $LEAD 3"; print "wait 4"; print "snap crossing"; print "unit $LEAD 1.5"; print "wait 3"; print "snap cog"; print "look end"; } > $OUT/crossing.play
       shot crossing 1500 film $SW
