@@ -77,6 +77,14 @@ static func _painted(mat: Material) -> Material:
 			var m: BaseMaterial3D = mat.duplicate()
 			m.albedo_texture = load(p)
 			out = m
+	elif src.begins_with("res://assets/meshy/"):
+		# A Meshy piece's atlas graded to its set (meshy.json pieces.<piece>.tint; group render g3: the wall stretch's
+		# stone painted pink-mauve beside the towers' grey).
+		var tint: Array = (preload("res://scripts/data.gd").value("meshy", "pieces", {}) as Dictionary).get(src.get_base_dir().get_file(), {}).get("tint", [])
+		if tint.size() == 3:
+			var m: BaseMaterial3D = mat.duplicate()
+			m.albedo_color *= Color(float(tint[0]), float(tint[1]), float(tint[2]))
+			out = m
 	_painted_of[mat] = out
 	return out
 
