@@ -319,6 +319,15 @@ func _run() -> void:
 	hc._press("hold")
 	_check(asked.size() == n1 + 1, "and an order is asked")
 
+	# The selection ring marks the land, not a lit square over the host (group test g1's command frame: a gold square,
+	# the company's figure washed white inside it): its clear field gives no light, and it never paints the men.
+	var img: Image = HostCommand._ring_texture().get_image()
+	var corner: Color = img.get_pixel(0, 0)
+	var middle: Color = img.get_pixel(img.get_width() / 2, img.get_height() / 2)
+	_check(corner.r + corner.g + corner.b < 0.01 and middle.r + middle.g + middle.b < 0.01, "the ring's clear field is dark, so its glow lights only the ring (corner %s, middle %s)" % [corner, middle])
+	var ring: Decal = hc.get("_ring")
+	_check(ring != null and ring.cull_mask == preload("res://scripts/terrain.gd").GROUND_LAYER, "the ring paints the land alone, never the men (cull mask %s)" % (ring.cull_mask if ring else -1))
+
 	for x in fails:
 		print("HOST COMMAND FAIL " + x)
 	print("HOST COMMAND %s" % ("PASS" if fails.is_empty() else "FAIL (%d)" % fails.size()))

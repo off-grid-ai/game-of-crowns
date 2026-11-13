@@ -22,6 +22,7 @@ const Data := preload("res://scripts/data.gd")
 const HostPick := preload("res://scripts/host_pick.gd")  # a click on a host picks it by its own body
 const T := preload("res://scripts/theme.gd")
 const Keys := preload("res://scripts/keys.gd")
+const Terrain := preload("res://scripts/terrain.gd")  # its GROUND_LAYER: the ring is painted on the land alone
 const FILE := "host_command"
 
 var main: Node
@@ -420,6 +421,7 @@ func _decal(tex: Texture2D, energy: float) -> Decal:
 	d.texture_emission = tex
 	d.emission_energy = energy
 	d.modulate = Color.from_string(String(Data.value(FILE, "ring.color", "#dbb56e")), T.ACCENT)
+	d.cull_mask = Terrain.GROUND_LAYER  # on the land alone, never on the men it rings (army.gd's rectangle does the same)
 	d.upper_fade = 0.15
 	d.lower_fade = 0.3
 	d.visible = false
@@ -427,11 +429,13 @@ func _decal(tex: Texture2D, energy: float) -> Decal:
 	return d
 
 
-## A thin bright ring on a clear field, drawn from a radial gradient (no art file).
+## A thin bright ring on a clear field, drawn from a radial gradient (no art file). The clear field is black as well as
+## transparent: the decal's emission reads the texture's colour and not its alpha, so a white clear field lit the whole
+## decal box (group test g1's command frame: a gold square over the host, its figure washed out inside it).
 static func _ring_texture() -> Texture2D:
 	var g := Gradient.new()
 	g.offsets = PackedFloat32Array([0.0, 0.76, 0.82, 0.93, 1.0])
-	g.colors = PackedColorArray([Color(1, 1, 1, 0), Color(1, 1, 1, 0), Color(1, 1, 1, 1), Color(1, 1, 1, 1), Color(1, 1, 1, 0)])
+	g.colors = PackedColorArray([Color(0, 0, 0, 0), Color(0, 0, 0, 0), Color(1, 1, 1, 1), Color(1, 1, 1, 1), Color(0, 0, 0, 0)])
 	var t := GradientTexture2D.new()
 	t.gradient = g
 	t.width = 256
