@@ -246,34 +246,46 @@ func Formation_column_order(rows: Array) -> Array:
 	return (load("res://scripts/army_formation.gd") as GDScript).call("column_order", rows)
 
 
-## 27. The push never pins: a straight way of points 0.05 apart from x 0 to 2, a round building of radius 0.3 at x 1.
+## 27. The push never pins: a straight way of points 0.05 apart from x 0 to 2, a round building of radius 0.3 at x 1,
+## pushed off by a place's keep, and again by a battle ground's keep_out (group render g5, host5.jpg: a column's
+## regiments on its ground piled at a cottage by the road).
 func _push_never_pins() -> void:
-	var man := Node3D.new()
-	root.add_child(man)
-	var mo: Node = Mover.of(man)
 	var hub := Vector3(1, 0, 0)
-	var inside := [0]
-	mo.keep = func(p: Vector3) -> Vector3:
+	var push := func(p: Vector3) -> Vector3:
 		var d := Vector2(p.x - hub.x, p.z - hub.z)
 		if d.length() >= 0.3:
 			return p
 		var out := d.normalized() if d.length() > 0.001 else Vector2(0, 1)
 		return Vector3(hub.x + out.x * 0.3, p.y, hub.z + out.y * 0.3)
-	var way := PackedVector3Array()
-	for i in 41:
-		way.append(Vector3(i * 0.05, 0, 0.01))
-	mo.speed = 0.5
-	mo.clip = ""
-	mo.follow(way)
-	for k in 400:
-		mo.call("_process", 0.05)
-		if Vector2(man.global_position.x - hub.x, man.global_position.z - hub.z).length() < 0.299:
-			inside[0] += 1
-		if not mo.moving():
-			break
-	_check(man.global_position.x > 1.9, "a mover pushed off a building on its way goes round it and arrives (x %.2f)" % man.global_position.x)
-	_check(inside[0] == 0, "and never stands inside the building (%d frames inside)" % inside[0])
-	man.queue_free()
+	var fs := GDScript.new()
+	fs.source_code = "extends RefCounted\nvar push: Callable\nfunc keep_out(p: Vector3) -> Vector3:\n\treturn push.call(p)\n"
+	fs.reload()
+	for by in ["keep", "field"]:
+		var man := Node3D.new()
+		root.add_child(man)
+		var mo: Node = Mover.of(man)
+		if by == "keep":
+			mo.keep = push
+		else:
+			var f: RefCounted = fs.new()
+			f.set("push", push)
+			mo.field = f
+		var inside := 0
+		var way := PackedVector3Array()
+		for i in 41:
+			way.append(Vector3(i * 0.05, 0, 0.01))
+		mo.speed = 0.5
+		mo.clip = ""
+		mo.follow(way)
+		for k in 400:
+			mo.call("_process", 0.05)
+			if Vector2(man.global_position.x - hub.x, man.global_position.z - hub.z).length() < 0.299:
+				inside += 1
+			if not mo.moving():
+				break
+		_check(man.global_position.x > 1.9, "a mover pushed off a building on its way (by the %s) goes round it and arrives (x %.2f)" % [by, man.global_position.x])
+		_check(inside == 0, "and never stands inside the building (%d frames inside)" % inside)
+		man.queue_free()
 
 
 ## 26. Never pinned: units.gd's keep on a ship and on a town with a walk map.

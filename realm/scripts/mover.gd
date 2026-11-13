@@ -473,9 +473,11 @@ func _process(delta: float) -> void:
 	if body == null or _i >= _way.size():
 		_finish()
 		return
-	# The walk goes on from where it had come to, not from where a place's keep put the body (pushed off a building
-	# on the way, a step from the pushed spot went straight back in: pinned while it walked).
-	var at := body.global_position if _walk_at == Vector3.INF or not keep.is_valid() else Vector3(_walk_at.x, body.global_position.y, _walk_at.z)
+	# The walk goes on from where it had come to, not from where a place's keep (or a field's keep_out) put the body
+	# (pushed off a building on the way, a step from the pushed spot went straight back in: pinned while it walked;
+	# group render g5, host5.jpg: a column's regiments on a battle ground piled at a cottage by the road).
+	var kept := keep.is_valid() or field != null
+	var at := body.global_position if _walk_at == Vector3.INF or not kept else Vector3(_walk_at.x, body.global_position.y, _walk_at.z)
 	var aim := _way[_i]
 	var flat := Vector2(aim.x - at.x, aim.z - at.z)
 	var step := speed * delta

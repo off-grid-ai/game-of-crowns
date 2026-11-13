@@ -1050,7 +1050,7 @@ func _column_up() -> void:
 ## Along the road in at the host's pace (the Mover follows the road's own way, laid by roads.gd); at the turn-off
 ## out to its place in the line, or, on a column order, halted at its own place in the column.
 func _march(r: Dictionary) -> void:
-	var end := _cum[_cum.size() - 1] - (float(r["off"]) if _goal == "column" else 0.0)
+	var end := (_halt_head() - float(r["off"])) if _goal == "column" else _cum[_cum.size() - 1]
 	var from := float(r["s"])
 	var way := PackedVector3Array()
 	for i in _path.size():
@@ -1067,6 +1067,20 @@ func _march(r: Dictionary) -> void:
 			_clips(r, "rest")
 		else:
 			_deploy(r))
+
+
+## Where the column's head halts on a column order: the road's end, or back along the road until no regiment's place
+## in the column falls on a building (its ground's open_at), so the column halts whole and spaced, not each
+## regiment shoved off the building to its nearest open cell (group render g5, host5.jpg: the blocks piled at a cottage).
+func _halt_head() -> float:
+	var head := _cum[_cum.size() - 1]
+	if ground == null or not ground.has_method("open_at"):
+		return head
+	var step := 0.1
+	var least := Formation.column_length(_regiments)
+	while head - step >= least and not _regiments.all(func(r): return ground.open_at(_at(head - float(r["off"])))):
+		head -= step
+	return head
 
 
 ## Off the road to its place in the line by the ground's route, where it turns into line.
