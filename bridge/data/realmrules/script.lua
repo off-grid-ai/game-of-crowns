@@ -586,7 +586,7 @@ function realm_the_dead()
 end
 
 function realm_host(who, x, y, kinds, count)
-  if not who then log.normal("HOST no owner"); return end
+  if not who then log.normal("HOST no owner"); return {} end
   local tiles = {}
   for t in find.tile(x, y):square_iterate(2) do
     local n = t.terrain:rule_name()
@@ -600,16 +600,38 @@ function realm_host(who, x, y, kinds, count)
     local d = c.tile:sq_distance(at)
     if not best or d < best then home, best = c, d end
   end
-  local made = 0
+  local made = {}
   for i = 1, count do
     local ut = find.unit_type(kinds[(i - 1) % #kinds + 1])
     local t = tiles[(i - 1) % math.max(1, #tiles) + 1]
     if ut and t then
       local ok, u = pcall(edit.create_unit, who, t, ut, 1, home, -1)
-      if ok and u then made = made + 1 end
+      if ok and u then made[#made + 1] = u.id end
     end
   end
-  log.normal("HOST %s raised %d of %d near (%d,%d)", who.name, made, count, x, y)
+  log.normal("HOST %s raised %d of %d near (%d,%d)", who.name, #made, count, x, y)
+  return made
+end
+
+-- A house goes to war on a town (a story's war): its host is raised at its own town nearest the prey, not at the
+-- prey's gates, and marches there by road (casebook, War and sieges: The march feeds the battle). The bridge walks
+-- it (hosts.js warpath) once told who was raised; at the walls the men are their house's AI's again, and it fights.
+-- A house that holds no town has nowhere to march from: its men gather beside the prey, as before.
+function realm_war_host(who, city_id, kinds, count)
+  local prey = find.city(nil, city_id)
+  if not who or not prey then log.normal("WARHOST no house or prey"); return end
+  local home, best = nil, nil
+  for c in who:cities_iterate() do
+    local d = c.tile:sq_distance(prey.tile)
+    if not best or d < best then home, best = c, d end
+  end
+  local at = home and home.tile or prey.tile
+  local made = realm_host(who, at.x, at.y, kinds, count)
+  if home and #made > 0 then
+    local ids = {}
+    for i, id in ipairs(made) do ids[i] = tostring(id) end
+    emit("war_host", {owner = who.id, city = prey.id, units = table.concat(ids, ",")})
+  end
 end
 
 -- Men without banners: a raid is an event, not a standing army. Freeciv's own barbarians are raised beside a

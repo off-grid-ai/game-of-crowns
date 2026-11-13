@@ -27,7 +27,7 @@ const roles = { a: { id: "a", name: "Edwin", playerId: 1 }, b: { id: "b", name: 
 
 // 1. war: declared in Freeciv first, then the host.
 arcs.act({ war: ["a", "b", "town"] }, { tags: [] }, roles, ctx);
-const w = order.findIndex((o) => o[0] === "war"), h = order.findIndex((o) => o[0] === "lua" && o[1].includes("realm_host"));
+const w = order.findIndex((o) => o[0] === "war"), h = order.findIndex((o) => o[0] === "lua" && o[1].includes("realm_war_host"));  // raised at home, it marches (hosts.js warpath)
 check(w >= 0 && order[w][1] === 1 && order[w][2] === 4, "a story's war declared no war in Freeciv");
 check(w >= 0 && h > w, "the war's host was raised before the war was declared");
 // 2. truce: the story's truce reaches the one diplomacy writer (court -> houseTruce -> diplomacy).

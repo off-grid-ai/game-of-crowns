@@ -765,7 +765,7 @@ export class Arcs {
       const prey = (d.war[2] && R(d.war[2])?.town && R(d.war[2])) || ctx.world.cities.find((x) => x.owner === def.playerId && !x.capital) || ctx.world.cities.find((x) => x.owner === def.playerId);
       if (prey && atk.playerId !== def.playerId) {
         court.onWar?.([atk.playerId, def.playerId]);  // the war itself, in Freeciv (the one diplomacy writer), so the host fights
-        send(Lua.host(atk.playerId, prey.x, prey.y, ["Pikemen", "Archers", "Knights", "Catapult"], Math.round(Number(d.warSize ?? 6) * dials(arc.tags).hosts)));
+        send(Lua.warHost(atk.playerId, prey.id, ["Pikemen", "Archers", "Knights", "Catapult"], Math.round(Number(d.warSize ?? 6) * dials(arc.tags).hosts)));  // raised at home, it marches (hosts.js warpath)
         const muster = warMuster(ctx.world, atk.playerId, prey);
         if (muster) ctx.scene("muster", muster);  // the attacker's host marches out from its seat
         court.shift(def.id, atk.id, -50);

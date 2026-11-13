@@ -13,7 +13,7 @@
 //   split     half its companies become a host of their own
 // A host is the crown's fighting companies standing together (data/hosts.json near), or the
 // companies under one order. Orders are kept with the reign (meta.hostOrders). Numbers: data/hosts.json.
-import { crownOf } from "./realm.js";
+import { crownOf, houseName } from "./realm.js";
 import fs from "node:fs";
 import path from "node:path";
 import * as chron from "./chronicles.js";
@@ -338,6 +338,19 @@ export function homeward(ctx, { owner, units }, send) {
   save(meta, [...(meta.hostOrders ?? []).filter((o) => !o.units.some((id) => ids.includes(id))), { kind: "homeward", owner, units: ids, x: seat.x, y: seat.y, city: seat.id }]);
 }
 
+// A house's war host (realmrules realm_war_host: raised at its town nearest the prey, its ids in a war_host event):
+// one order, walked each season by the road like the King's hosts and held from its house's AI meanwhile, so the
+// realm sees it march from home to the walls (casebook, War and sieges: The march feeds the battle). At the walls,
+// or if the prey changes hands to it or is gone, or the road comes no nearer, the men are the AI's again to fight.
+export function warpath(ctx, ev, send) {
+  const { meta } = ctx;
+  const owner = Number(ev.owner);
+  const ids = String(ev.units ?? "").split(",").map(Number).filter((id) => id > 0);
+  if (!ids.length || !Number.isFinite(Number(ev.city))) return;
+  send(`lua cmd ${Lua.homewardHold(ids)}`);
+  save(meta, [...(meta.hostOrders ?? []).filter((o) => !o.units.some((id) => ids.includes(id))), { kind: "warpath", owner, units: ids, city: Number(ev.city), since: Number(ev.turn) }]);
+}
+
 // The King's peace with a house (Freeciv: an armistice turns to Peace when its seasons run out, and no soldier may
 // then stand in the other's land: any there are sent to their nearest town at once, a jump the realm would see as men
 // vanishing). The season the armistice would end before a host in that house's land could walk out of it (with
@@ -443,7 +456,8 @@ export function season(ctx, turn) {
     const byId = new Map(soldiersOf(world, side).map((u) => [u.id, u]));
     const shut = new Set([...(world.cities ?? []), ...(world.units ?? [])].filter((x) => x.owner !== side).map((x) => `${x.x},${x.y}`));
     const units = o.units.filter((id) => byId.has(id));
-    if (!units.length) continue;  // the host is no more
+    // The host is no more (a war host raised this season may not be in the world yet: it waits a season for it).
+    if (!units.length) { if (o.kind === "warpath" && turn <= (o.since ?? 0) + 1) next.push(o); continue; }
     if (o.kind === "homeward") {
       const seat = world.cities.find((c) => c.id === o.city && c.owner === o.owner);
       // Home (or the seat lost): the men disband into its work, or stand where they are, free again.
@@ -459,6 +473,22 @@ export function season(ctx, turn) {
         continue;
       }
       for (const id of units) send(`lua cmd ${Lua.homewardStep(id, steps ? wayOn(steps, byId.get(id), HOSTS.speed) : [])}`);
+      next.push({ ...o, units, far });
+      continue;
+    }
+    if (o.kind === "warpath") {
+      const goal = world.cities.find((c) => c.id === o.city);
+      const free = () => send(`lua cmd ${Lua.homewardRelease(units)}`);
+      if (!goal || goal.owner === o.owner) { free(); continue; }
+      if (units.every((id) => cheb(byId.get(id), goal) <= 1)) {
+        record?.({ turn, kind: "rebellion", text: `${houseName(world, o.owner)}'s host reaches the walls of ${cityName(goal.id)}.`, city: goal.id });
+        free();
+        continue;
+      }
+      const steps = stepsTo(goal, new Set([...shut].filter((k) => k !== `${goal.x},${goal.y}`))) ?? stepsTo(goal);
+      const far = units.reduce((t, id) => t + (steps && steps.at(byId.get(id)) >= 0 ? steps.at(byId.get(id)) : cheb(byId.get(id), goal)), 0);
+      if (o.far != null && far >= o.far) { free(); continue; }  // no nearer: the AI takes them from here
+      for (const id of units) send(`lua cmd ${Lua.homewardStep(id, steps ? wayOn(steps, byId.get(id), HOSTS.speed, 1) : [])}`);
       next.push({ ...o, units, far });
       continue;
     }

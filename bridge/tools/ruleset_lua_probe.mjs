@@ -24,7 +24,7 @@ const defined = async (fc, name) => (await fc.cmd(`lua cmd log.normal("DEF ${nam
 // A new game: the ruleset's Lua is there before anything is sent.
 const a = await bareFreeciv({ serv: [...AUTO, "set endturn 3"] });
 await a.until(/Now accepting new client connections/, 20000);
-for (const fn of ["realm_host", "realm_find_player", "realm_the_dead", "realm_mines"]) check(await defined(a, fn), `${fn} isn't defined in a fresh game`);
+for (const fn of ["realm_host", "realm_war_host", "realm_find_player", "realm_the_dead", "realm_mines"]) check(await defined(a, fn), `${fn} isn't defined in a fresh game`);
 check((await a.cmd('lua cmd log.normal("SEAMDATA %s", tostring(luadata.get_str("mines.seam_seasons")))', /SEAMDATA /))?.endsWith(" 40"),
   "the ruleset's luadata.txt doesn't give mines.seam_seasons");
 await a.cmd("lua cmd GOC_PROBE_MARK = 7");

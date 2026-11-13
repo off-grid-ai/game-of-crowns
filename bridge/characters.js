@@ -21,10 +21,12 @@ import * as names from "./names.js";
 
 
 // War seen (READY.md line 3; casebook, War and sieges: "The march feeds the battle"): the attacker's host musters
-// at its seat and marches out toward the town it goes for (the view's muster scene: army.gd march_out). The
-// muster scene's fields, or null when the attacker holds no town or the prey is unknown.
+// at its town nearest the prey, where Freeciv raises it (realmrules realm_war_host), and marches out toward the town
+// it goes for (the view's muster scene: army.gd march_out). The muster scene's fields, or null when the attacker
+// holds no town or the prey is unknown.
 export function warMuster(world, pid, prey) {
-  const seat = world.cities.find((c) => c.owner === pid && c.capital) ?? world.cities.find((c) => c.owner === pid);
+  const d2 = (c) => (c.x - prey.x) ** 2 + (c.y - prey.y) ** 2;
+  const seat = prey?.x === undefined ? null : world.cities.filter((c) => c.owner === pid).sort((a, b) => d2(a) - d2(b))[0];
   return seat && prey?.x !== undefined ? { x: seat.x, y: seat.y, tx: prey.x, ty: prey.y, city: seat.id, owner: pid } : null;
 }
 
@@ -1143,14 +1145,14 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
       if (prey?.x !== undefined) out.lua.push(Lua.raid(prey.id));
       if (roles[e.raid[0]]) this.shift(roles[e.raid[1]].id, roles[e.raid[0]].id, -40);
     }
-    // War: a host is raised for the attacker beside the victim's town, and
-    // Freeciv's own AI fights the battle that follows.
+    // War: a host is raised at the attacker's town nearest the victim's and marches on it (hosts.js warpath),
+    // and Freeciv's own AI fights the battle at its walls.
     if (e.war && roles[e.war[0]] && roles[e.war[1]]) {
       const [atk, def] = [roles[e.war[0]], roles[e.war[1]]];
       const prey = (def === roles.rival && roles.rivalTown) || world.cities.find((x) => x.owner === def.playerId && !x.capital) || world.cities.find((x) => x.owner === def.playerId);
       if (prey?.x !== undefined) {
         this.onWar?.([atk.playerId, def.playerId]);  // the war itself, in Freeciv (the one diplomacy writer), so the host fights
-        out.lua.push(Lua.host(atk.playerId, prey.x, prey.y, ["Pikemen", "Archers", "Knights", "Catapult"], Number(e.warSize ?? 8)));
+        out.lua.push(Lua.warHost(atk.playerId, prey.id, ["Pikemen", "Archers", "Knights", "Catapult"], Number(e.warSize ?? 8)));  // raised at home, it marches (hosts.js warpath)
       }
       const muster = warMuster(world, atk.playerId, prey);
       if (muster) (out.musters ??= []).push(muster);  // court.js rulingScene shows it
