@@ -385,9 +385,9 @@ func _frame_for_shot() -> void:
 						if bool(army.get("_out")) and not said[1]:
 							said[1] = true
 							print("MUSTER marching out toward %s" % String(near.get("name", "")))
-						var mid: Vector3 = army.call("_middle")
-						main._framed_at = mid
-						main.rig.focus(mid, float(_shot.get("dist", 4.0))))
+						# The army's own lens on its column (army.gd _hold): from beside the road at 03-army's pitch.
+						army.set("_hold", true)
+						main._framed_at = army.call("_middle"))
 					return
 				else:
 					main.scenes.kind("rider").ride(from, to, "The King rules for House Thornvale")

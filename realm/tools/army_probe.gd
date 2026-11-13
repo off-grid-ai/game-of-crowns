@@ -206,11 +206,11 @@ func build(road: PackedVector3Array) -> void:
 			rows.append(r)
 	a.set("_regiments", rows)
 	main.add_child(a)
-	a.call("_form_on_way", Vector3.ZERO, road[road.size() - 1])
+	a.call("_form_on_way", Vector3.ZERO, road[road.size() - 1], null)
 	_on_its_way(a, rows, "the road out")
 	# No road out: the column on the straight way to the goal, its head toward it.
 	(main.get("roads") as Node).set("way", PackedVector3Array())
-	a.call("_form_on_way", Vector3.ZERO, road[road.size() - 1])
+	a.call("_form_on_way", Vector3.ZERO, road[road.size() - 1], null)
 	var line_ok := rows.all(func(r):
 		var p: Vector3 = (r["node"] as Node3D).global_position
 		var dir := road[road.size() - 1].normalized()

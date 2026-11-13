@@ -77,6 +77,7 @@ var battle := {}
 var _pending := Vector3.INF  # a field host's march Freeciv gave before its regiments were raised (march_to)
 var mustered := false
 var _order_face := NAN  # the way its order says its front looks (/world hosts[i].order.face), NAN for its own
+var _seat_root: Node3D = null  # the seat's town (towns.gd), whose edge the muster forms past (_form_on_way)
 var _out := false  # marching out (march_out): halted at the road's end, it is gone after march.linger
 var _gone_in := 0.0
 var ground: RefCounted  # army_ground.gd: where its regiments may stand
@@ -121,7 +122,8 @@ func _ready() -> void:
 		while not main.towns.towns.has(id) and waited < 30.0:
 			await get_tree().create_timer(0.5).timeout
 			waited += 0.5
-		town = main.towns.towns[id]["node"].global_position if main.towns.towns.has(id) else main.terrain.world_pos(float(seat["x"]), float(seat["y"]))
+		_seat_root = main.towns.towns[id]["node"] if main.towns.towns.has(id) else null
+		town = _seat_root.global_position if _seat_root else main.terrain.world_pos(float(seat["x"]), float(seat["y"]))
 	# A battle side brings its own regiments (army_field.gd: one per company that fought, from Freeciv's types).
 	var specs: Array = battle["specs"] if battle.has("specs") else (_made_up(men) if men > 0 else (_from_world() if not battle.has("house") else []))
 	if specs.is_empty() and battle.has("out_to"):  # a muster with no host in the field (or a house's): new levies
@@ -164,7 +166,7 @@ func _ready() -> void:
 		_field = _ground_at(battle["field"])
 		_take_field(extent)
 	elif battle.has("out_to"):
-		_form_on_way(town, battle["out_to"])
+		_form_on_way(town, battle["out_to"], _seat_root)
 		on_road = true  # war: the host forms in column on its way out, as 03-army marches
 	elif not _field_for(town, extent):
 		push_error("ARMY no open ground by the seat")
@@ -202,6 +204,10 @@ func _ready() -> void:
 		var mid := _at(maxf(0.0, _cum[_cum.size() - 1] - Data.num("army", "march.lead", 5.0) - Formation.column_length(_regiments) * 0.5))
 		var ahead := _at(_cum[_cum.size() - 1]) - mid
 		_yaw_march = _lens_yaw(mid, atan2(ahead.x, ahead.z) + Data.num("army", "camera.marchQuarter", 0.9))
+		_yaw = _yaw_march
+	elif on_road:  # war's muster: from beside the road, off the column's heading (03-army), whatever it does next
+		_yaw_march = _lens_yaw(_middle(), _face + Data.num("army", "camera.marchQuarter", 0.9))
+		_yaw_line = _yaw_march
 		_yaw = _yaw_march
 	var roles := {}
 	for r in _regiments:
@@ -980,22 +986,44 @@ func _road_in(town: Vector3) -> void:
 		_fell(_path[j - 1], _path[j], road_w)
 
 
-## War's muster on its way out (03-army: one column on the road, regiments nose to tail): the way it will march, the
-## realm's road from the seat toward `to` (roads.route), or with no road out, straight over the land to `to`. The host
-## stands on it in column.order, halted, its head muster.clear plus the column's length out of the seat, so it
-## marches on along the way it stands on. Group renders g3 and g4, muster.jpg: with no road out of Kingsmere toward
-## its nearest town it mustered in line on a field, its blocks scattered on the grass.
-func _form_on_way(town: Vector3, to: Vector3) -> void:
+## War's muster on its way out (03-army: one column on the open road past the walls, regiments nose to tail): the way
+## it will march, the realm's road from the seat toward `to` (roads.route), or with no road out, out along the town's
+## main way that best faces `to` and on straight over the land. The host stands on it in column.order, halted, its
+## tail muster.gateClear past where the way leaves the town (its edge, towns.gd edge_outline, where the wall's gate
+## stands), so it marches on along the way it stands on. Group renders g3 and g4: with no road out of Kingsmere it
+## mustered in line on a field; g5: formed from the seat's middle, through the lanes inside the walls.
+func _form_on_way(town: Vector3, to: Vector3, root: Node3D) -> void:
 	var roads = main.get("roads")
 	var road: PackedVector3Array = roads.route(town, to, Data.num("army", "march.roadReach", 12.0)) if roads and roads.has_method("route") else PackedVector3Array()
-	# The route sets out from the seat's own spot, up to march.roadReach off the road: the host stands on the road from
-	# its first point on, never on that leg over the grass (group render g3, muster.jpg: a block on open grass).
-	_path = road.slice(1) if road.size() >= 3 else PackedVector3Array([town, to])
+	if road.size() >= 3:
+		_path = road
+	else:
+		_path = PackedVector3Array([town])
+		var best := -INF
+		var way := PackedVector2Array()
+		var aim := Vector2(to.x - town.x, to.z - town.z).normalized()
+		for w in (root.get_meta("ways_main", []) if root else []):
+			var pw := PackedVector2Array(w)
+			if pw.size() >= 2 and pw[pw.size() - 1].normalized().dot(aim) > best:
+				best = pw[pw.size() - 1].normalized().dot(aim)
+				way = pw
+		for q in way:
+			_path.append(town + Vector3(q.x, 0, q.y))
+		_path.append(to)
 	_cum = PackedFloat32Array([0.0])
 	for j in range(1, _path.size()):
 		_cum.append(_cum[j - 1] + _path[j].distance_to(_path[j - 1]))
+	# Where the way leaves the town: the first step along it outside the town's edge.
+	var edge: PackedVector2Array = root.get_meta("edge_outline", PackedVector2Array()) if root else PackedVector2Array()
+	var out := 0.0
+	if edge.size() >= 3:
+		var step := 0.1
+		var p := _at(out)
+		while out < _cum[_cum.size() - 1] and Geometry2D.is_point_in_polygon(Vector2(p.x - town.x, p.z - town.z), edge):
+			out += step
+			p = _at(out)
 	var order := Formation.column_order(_regiments)
-	var head := minf(_cum[_cum.size() - 1], Data.num("army", "muster.clear", 4.5) + Formation.column_length(_regiments))
+	var head := minf(_cum[_cum.size() - 1], out + Data.num("army", "muster.gateClear", 0.6) + Formation.column_length(_regiments))
 	_field = _at(head)
 	_face = _heading(head)
 	for r in order:
