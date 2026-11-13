@@ -1,6 +1,7 @@
 {
  "_": "The land the towns work, drawn from Freeciv's worked map and tilling (land_use.gd; art set step 5, docs/art/STANDARDS.md: fields 10-20 m wide in rows, neighbours alternating crops, a hedge on every edge, clumps of 3-7 trees at field corners). fields: band [least, most] (a strip's length, out from the town: each ring of worked tiles one band past the town's edge), verge (the grass between the edge and the first band, and between bands), shrink (a strip that would reach into water is tried at these shares of its length, so the fields come down to the shore), width [least, most] (a strip's width; a tile's share of its ring takes as many as fit), gap (between two strips, their hedge), hedge (the hedge's component, by role), hedge_every (a bush every so many units), hedge_reach (drawn within this of the camera), clump (chance a tile has a clump of trees at a corner), clump_trees [least, most], tree (the clump's component, by role), fade (the painted ground fades out past this). fallow: burnt (a town at least this share burnt lets its land go fallow; a starving town too). tiles_a_frame: tiles drawn a frame. margin: the ground cover's roles along a field's edges inside its hedge (forest.json cover: grass, flowers; a role not there yet is skipped), margin_every (a clump every so many game units), margin_scale (their scale).",
  "fields": {
+  "edge": "plaza",
   "width": [
    1.2,
    2.0

@@ -70,6 +70,13 @@ func build(terrain: Node3D, ground_layer: int) -> void:
 	mat.projection_enabled = true
 	mat.macro_variation_enabled = true
 	mat.dual_scaling_enabled = true
+	# The grass's grain coarser with distance (ground.json dual: near and far, game units from the lens where the second,
+	# larger scale blends in; reduction, its size against the first). Terrain3D's 100-170 are metres; in our units the
+	# camera never got that far, so the grain was one size near and far (Mac on g3's muster frame).
+	var dual: Dictionary = Data.value("ground", "dual", {})
+	for k in dual:
+		if not String(k).begins_with("_"):
+			mat.set_shader_param("dual_scale_" + String(k), float(dual[k]))
 	mat.set_shader_param("macro_variation1", Color(0.78, 0.9, 0.7))  # lusher hollows
 	mat.set_shader_param("macro_variation2", Color(1.0, 0.86, 0.7))  # drier, sun-burnt rises
 	# The ground's broad hue tint (ground.json macro; research #3/#7: Anno's and AoE IV's big low-frequency tint over

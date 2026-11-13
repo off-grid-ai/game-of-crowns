@@ -325,7 +325,7 @@ func _farmstead(node: Node3D, at: Vector3, rng: RandomNumberGenerator, hedges: A
 		var field: String = FIELDS[rng.randi() % FIELDS.size()]
 		var tex := field_ground(field)
 		c = on_furrows(terrain, c, size)
-		var crop: Decal = terrain.paint(node, terrain.tiled(tex, roundi(size.x * 1.5), roundi(size.y * 1.5)), Vector3(c.x, terrain.height_at(c.x, c.z), c.z), size, fyaw)  # its paint 1.5 deep: wider than any rise a field may have (FIELD_RISE)
+		var crop: Decal = terrain.paint(node, terrain.tiled(tex, roundi(size.x * 1.5), roundi(size.y * 1.5), preload("res://scripts/land_use.gd").field_edge()), Vector3(c.x, terrain.height_at(c.x, c.z), c.z), size, fyaw)  # its paint 1.5 deep: wider than any rise a field may have (FIELD_RISE)
 		if terrain.land3d and terrain.land3d.land:
 			plough(terrain, c, size, fyaw)  # ploughed soil under the crop
 			crop.albedo_mix = 0.55

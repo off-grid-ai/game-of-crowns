@@ -27,6 +27,7 @@
   "wear": { "on": true, "onStone": false, "step": 0.012, "growBack": 0.002, "walkMin": 0.01, "stampEvery": 0.25, "uploadEvery": 3.0, "colour": [0.52, 0.36, 0.22] },
   "mesh": { "size": 128, "lods": 7 },
   "rivers": { "mouthUnder": 0.03, "mouthEase": 6, "taper": 5, "thin": 0.25, "shallow": [0.24, 0.34, 0.34], "deep": [0.1, 0.18, 0.2] },
-  "macro": { "a": [0.8, 0.95, 0.66], "b": [1.12, 0.98, 0.7], "scale": 0.02, "fine": 0.5 },
+  "macro": { "a": [0.7, 0.9, 0.6], "b": [1.25, 1.05, 0.62], "scale": 0.02, "fine": 0.5 },
+  "dual": { "_": "land3d.gd: the grass's second, larger scale blended in between near and far (game units from the lens), reduction its size against the first.", "near": 6.0, "far": 22.0, "reduction": 0.3 },
   "wild": { "reach": 24.0 }
 }

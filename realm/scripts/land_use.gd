@@ -212,7 +212,7 @@ func _field(rec: Dictionary, node: Node3D, c: Vector3, fsize: Vector2, yaw: floa
 	var terrain: Node3D = main.terrain
 	var tex: String = terrain.art(Fields.field_ground(String(crop[0])), "res://assets/ground/painted_v2/earth.png")
 	var reps := Vector2i(roundi(fsize.x * 1.5), roundi(fsize.y * 1.5))
-	var decal: Decal = terrain.paint(node, terrain.tiled(tex, reps.x, reps.y), node.to_local(c), fsize, yaw, Color.WHITE, 1.5, float(Data.num("land_use", "fields.fade", 60.0)))
+	var decal: Decal = terrain.paint(node, terrain.tiled(tex, reps.x, reps.y, field_edge()), node.to_local(c), fsize, yaw, Color.WHITE, 1.5, float(Data.num("land_use", "fields.fade", 60.0)))
 	decal.set_meta("reps", reps)
 	if kind == "pasture":
 		return
@@ -356,3 +356,10 @@ func drawn() -> Dictionary:
 ## The tiles still waiting to be drawn (their town not yet standing, or the frame budget).
 func pending() -> int:
 	return _queue.size()
+
+
+## How a field's paint ends against the grass (land_use.json fields.edge, a terrain.tiled edge): "plaza", a narrow ragged
+## rim where the grass grows in (g3's muster frame: the fields sat on the land as pasted rectangles; 03-army's fields
+## fray into their verges). Also countryside.gd's crops.
+static func field_edge() -> String:
+	return String(Data.value("land_use", "fields.edge", "plaza"))
