@@ -1110,7 +1110,9 @@ func _from_outside(at: Vector3, town: Vector3, dist: float, tilt: float) -> void
 ## The camera low and oblique over a place: never top-down (a tilt below 0 looks further out).
 func _oblique(at: Vector3, dist: float, tilt: float) -> void:
 	main.rig.step_floor = maxf(1.5, dist) if dist < main.rig.min_distance else 0.0  # the step's own distance
-	main.rig.snap(at, dist, 0.6)
+	# From the side with no building, wall or tree crowns between the lens and what it frames (camera_rig sight_yaw;
+	# g6's command frame: a fixed side put the lens inside a wall's tower).
+	main.rig.snap(at, dist, main.rig.sight_yaw(at, dist, 0.6, clampf(tilt, -40.0, 30.0)))
 	main.rig.tilt = clampf(tilt, -40.0, 30.0)
 	main.rig.goal_tilt = main.rig.tilt
 

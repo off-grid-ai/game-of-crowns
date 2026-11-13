@@ -263,7 +263,7 @@ func clear_yaw(pos: Vector3, dist: float, yaw: float) -> float:
 	return yaw
 
 
-## Whether a building more than a storey tall stands on the ground line from `a` to `b`.
+## Whether a building more than a storey tall, or a town wall or its tower, stands on the ground line from `a` to `b`.
 func _blocked(a: Vector3, b: Vector3) -> bool:
 	for id in towns.towns:
 		var root: Node3D = towns.towns[id]["node"]
@@ -280,6 +280,10 @@ func _blocked(a: Vector3, b: Vector3) -> bool:
 				continue
 			for t in 10:
 				if Geometry2D.is_point_in_polygon(la.lerp(lb, 0.15 + t * 0.095), fp):
+					return true
+		for w in root.get_meta("walls", []):  # g6's command frame: the lens stood inside a wall's tower
+			for t in 10:
+				if Geometry2D.is_point_in_polygon(la.lerp(lb, 0.15 + t * 0.095), w[0]):
 					return true
 	return false
 
