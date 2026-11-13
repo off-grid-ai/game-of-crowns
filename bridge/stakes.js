@@ -49,6 +49,13 @@ export class Stakes {
     this.save();
   }
 
+  // The pretender's host on Kingsmere: raised at its house's town nearest the seat and marched there by the road
+  // (realmrules realm_war_host, hosts.js warpath; casebook, War and sieges: The march feeds the battle), not
+  // raised at Kingsmere's gates; at the walls Freeciv's AI wages the war.
+  marchOnSeat(ctx, pid, count) {
+    ctx.send(Lua.warHost(this.playerById(pid), this.s.seat.id, ["Knights", "Pikemen", "Catapult", "Knights"], count));
+  }
+
   // Raises a host through realm_host() in realmrules/script.lua; Freeciv's AI then
   // fights with it. `who` is a Lua expression for the owning player.
   host(ctx, who, x, y, units, count) {
@@ -74,7 +81,7 @@ export class Stakes {
     u.house = pid;
     u.since = world.turn ?? 0;
     u.peak = 0;
-    this.host(ctx, this.playerById(pid), this.s.seat.x, this.s.seat.y, ["Knights", "Pikemen", "Catapult", "Knights"], size);
+    this.marchOnSeat(ctx, pid, size);
     this.save();
     return true;
   }
@@ -127,17 +134,17 @@ export class Stakes {
         u.since = turn;
         const name = houseFor(world.players.find((p) => p.id === u.house) ?? {}).name ?? "A pretender";
         // The usurper marches under their own house's banner; Freeciv's AI wages the war.
-        this.host(ctx, this.playerById(u.house), this.s.seat.x, this.s.seat.y, ["Knights", "Pikemen", "Catapult", "Knights"], 6 + angry.length * 2);
+        this.marchOnSeat(ctx, u.house, 6 + angry.length * 2);
         this.record({ turn, kind: "rebellion", text: `${name} declares for the throne! A usurper's host marches on Kingsmere.` });
       }
     } else if (u.stage === "march" && this.s.seat) {
       // The march ends on the field, not on a timer: the pretender's soldiers
-      // around Kingsmere are counted each season.
+      // around Kingsmere, and those still on the road to it, are counted each season.
       const name = houseFor(world.players.find((p) => p.id === u.house) ?? {}).name ?? "The pretender";
       const CIVIL = new Set(["Settlers", "Workers", "Migrants", "Engineers", "Explorer", "Caravan", "Freight", "Diplomat", "Spy", "Leader"]);
       const near = (world.units ?? []).filter((x) => x.owner === u.house && !CIVIL.has(x.type) && Math.hypot(x.x - this.s.seat.x, x.y - this.s.seat.y) <= 6).length;
       u.peak = Math.max(u.peak ?? 0, near);
-      if (turn - u.since >= 2 && near === 0) {
+      if (turn - u.since >= 2 && near === 0 && !(ctx.marchingOn?.(u.house, this.s.seat.id) > 0)) {
         u.stage = "none";
         this.record({ turn, kind: "decree", text: `${name}'s host is broken before the walls of Kingsmere. The crown endures, and the houses that stood by it take heart.` });
         u.ended = { house: u.house, turn };  // the King decides what becomes of them

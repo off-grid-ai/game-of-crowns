@@ -351,6 +351,13 @@ export function warpath(ctx, ev, send) {
   save(meta, [...(meta.hostOrders ?? []).filter((o) => !o.units.some((id) => ids.includes(id))), { kind: "warpath", owner, units: ids, city: Number(ev.city), since: Number(ev.turn) }]);
 }
 
+// How many of a house's soldiers are on the road to a town under a war host's order (warpath): a march still
+// coming, not one broken (stakes.js: the usurper's host on its way to Kingsmere).
+export function marchingOn({ world, meta }, owner, city) {
+  const ids = new Set((meta?.hostOrders ?? []).filter((o) => o.kind === "warpath" && o.owner === owner && o.city === city).flatMap((o) => o.units));
+  return soldiersOf(world, owner).filter((u) => ids.has(u.id)).length;
+}
+
 // The King's peace with a house (Freeciv: an armistice turns to Peace when its seasons run out, and no soldier may
 // then stand in the other's land: any there are sent to their nearest town at once, a jump the realm would see as men
 // vanishing). The season the armistice would end before a host in that house's land could walk out of it (with
