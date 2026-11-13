@@ -664,9 +664,10 @@ func _step(w: PackedStringArray) -> void:
 				_note("  unit %s: %s" % [w[1], "framed" if fig else "no figure"])
 				await get_tree().create_timer(2.0).timeout
 			"tile":
-				# tile X Y [dist]: frames a map tile (a company in the field, a site's plot).
+				# tile X Y [dist] [yaw]: frames a map tile (a company in the field, a site's plot; the realm frame's
+				# middle of several seats), the lens at yaw (0: from the south, looking north).
 				var at: Vector3 = main.terrain.world_pos(float(w[1]), float(w[2]))
-				main.rig.snap(at, float(w[3]) if w.size() > 3 else 1.6, 0.6)
+				main.rig.snap(at, float(w[3]) if w.size() > 3 else 1.6, float(w[4]) if w.size() > 4 else 0.6)
 				if main.rig.is_processing_input() == false:
 					main.rig.apply()
 				await get_tree().create_timer(2.0).timeout
