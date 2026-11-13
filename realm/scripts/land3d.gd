@@ -101,6 +101,9 @@ func build(terrain: Node3D, ground_layer: int) -> void:
 	var snow: Array = Data.value("ground", "winter.snow", [])
 	if snow.size() == 3:
 		mat.set_shader_param("snow_col", Color(float(snow[0]), float(snow[1]), float(snow[2])))
+	# The shore stays bare in winter (ground.json beach.snow: [none below, whole from], heights in game units).
+	var shore: Array = Data.value("ground", "beach.snow", [-1.0, -1.0])
+	mat.set_shader_param("snow_shore", Vector2(float(shore[0]), float(shore[1])))
 	var w: int = terrain.width * int(terrain.TILE)
 	var h: int = terrain.height * int(terrain.TILE)
 	# Ground layers once per game unit; the eroded heightmap, where the realm has
@@ -306,6 +309,7 @@ const SNOW_UNIFORMS := """
 uniform float rain_wet = 0.0;
 uniform float snow_cover = 0.0;
 uniform vec3 snow_col : source_color = vec3(0.84, 0.86, 0.91);
+uniform vec2 snow_shore = vec2(-1.0, -1.0);  // no snow below x, whole from y (game units of height; ground.json beach.snow)
 uniform float rough_floor = 0.72;  // the dry land is matte: rock and grass never shinier than this
 uniform float spec_cap = 0.35;
 uniform float wet_rough = 0.5;  // soaked ground's roughness and specular (data/weather.json ground)
@@ -330,6 +334,7 @@ const SNOW_COVER := """
 				+ (texture_ids[i].y == %d || texture_ids[i].y == %d ? weights_id_1[i] : 0.0);
 		}
 		float depth = snow_cover * snow_up * (1.0 - 0.6 * clamp(trod, 0.0, 1.0));
+		depth *= smoothstep(snow_shore.x, snow_shore.y, v_vertex.y);  // the tide-washed shore stays bare (g10 crossing: a beach white as snow)
 		float bump = mat.albedo_height.a;
 		snow_k = smoothstep(bump * 0.6, bump * 0.6 + 0.3, depth);
 		roughness = mix(roughness, 0.82, snow_k);

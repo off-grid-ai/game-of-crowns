@@ -205,6 +205,20 @@ func _fall(count: int, size: Vector2, colour: Color, speed: float, life: float, 
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	mat.billboard_mode = BaseMaterial3D.BILLBOARD_FIXED_Y if speed > 3.0 else BaseMaterial3D.BILLBOARD_ENABLED
 	mat.albedo_color = colour
+	if speed < 3.0:
+		# A flake is a soft round dot, not a square (g10 crossing: white squares over the shore): Godot's own radial
+		# gradient as its texture, white at the middle, clear at the rim.
+		var dot := GradientTexture2D.new()
+		dot.fill = GradientTexture2D.FILL_RADIAL
+		dot.fill_from = Vector2(0.5, 0.5)
+		dot.fill_to = Vector2(1.0, 0.5)
+		dot.width = 32
+		dot.height = 32
+		var g := Gradient.new()
+		g.set_color(0, Color(1, 1, 1, 1))
+		g.set_color(1, Color(1, 1, 1, 0))
+		dot.gradient = g
+		mat.albedo_texture = dot
 	# Gone right at the lens, so no drop is ever drawn as a long stick across the frame
 	# (review v12): Godot's own distance fade, transparent within NEAR_GONE of the camera
 	# and whole from NEAR_FULL out. The far drops are small and fine of themselves.
