@@ -485,6 +485,11 @@ const REALM_WASH := """
 		}
 		for (int i = 0; i < 4; i++) if (abs(o[i].a - o[best].a) > 0.001) other = i;
 		vec4 own = o[best];
+		// The house's colour at full value, saturated toward its pure hue (look.json politics.border_bright): the border line
+		// and, on the political map, the wash inside it (g9: the pastel colours washed the land tan and the edge pink).
+		vec3 vfull = own.rgb / max(max(own.r, own.g), max(own.b, 0.05));
+		float vmn = min(vfull.r, min(vfull.g, vfull.b)) * clamp(pol_b.x, 0.0, 0.95);
+		vec3 vivid = clamp((vfull - vec3(vmn)) / (1.0 - vmn), 0.0, 1.0);
 		// How near the lens is to the map's height (pol_z: look.json politics map_from / map_to): the
 		// wide wash is a map's, never laid over the land at playing heights (Warcraft III: the ground
 		// stays ground; the house reads from its roofs, banners and border line).
@@ -515,7 +520,9 @@ const REALM_WASH := """
 			// The house's own colour at the land's brightness: a hue, the ground still showing.
 			float lum = dot(ALBEDO, vec3(0.299, 0.587, 0.114));
 			float hl = max(dot(own.rgb, vec3(0.299, 0.587, 0.114)), 0.05);
-			vec3 tinted = clamp(own.rgb * lum / hl * 1.1, 0.0, 1.0);
+			vec3 hue = politics > 0.5 ? vivid : own.rgb;
+			float hh = max(dot(hue, vec3(0.299, 0.587, 0.114)), 0.05);
+			vec3 tinted = clamp(hue * lum / (politics > 0.5 ? hh : hl) * 1.1, 0.0, 1.0);
 			// Wide washes only from a little way off (never a flat coat over the streets); the band always.
 			float k = far_off * mix(0.45, 0.7, realm_mix) + band * mix(0.35, 0.55, far_off) + front * 0.4 * far_off;
 			if (politics > 0.5) {
@@ -523,7 +530,7 @@ const REALM_WASH := """
 				// its own flat colour; land slipping away striped in the colour of the house it leans to.
 				int oid = clamp(int(round(own.a * 64.0)) - 1, 0, 63);
 				float hd = hold[oid];
-				tinted = mix(tinted, own.rgb, pol_k.z);
+				tinted = mix(tinted, vivid, pol_k.z);
 				vec3 ln = lean[oid];
 				if (hd < pol_k.w && dot(ln, vec3(1.0)) > 0.01) {
 					float st = step(0.5, fract((rt.x - rt.y) / max(pol_b.z, 0.1)));
@@ -551,20 +558,15 @@ const REALM_WASH := """
 		// At its full value and saturation, so it stands out of the washed land in the house's own colour (g7: brightened,
 		// a salmon line on salmon land read as no line; g8: at full value, still a pale pastel; 02-realm edges every land
 		// in a strong, saturated line). pol_b.x: border_bright, how far toward full saturation (1: the hue alone).
-		if (politics > 0.5 && !at_war && !truce && !sworn && !envoy && !pact && !wed && own.a > 0.0) {
-			vec3 full = own.rgb / max(max(own.r, own.g), max(own.b, 0.05));
-			float mn = min(full.r, min(full.g, full.b)) * clamp(pol_b.x, 0.0, 0.95);
-			line = clamp((full - vec3(mn)) / (1.0 - mn), 0.0, 1.0);
-			strength = 1.0;
-		}
+		if (politics > 0.5 && !at_war && !truce && !sworn && !envoy && !pact && !wed && own.a > 0.0) { line = vivid; strength = 1.0; }
 		// Never on the ground at roof or town height (the ground stays ground, Warcraft III); fading in as
 		// the lens rises, and drawn as a painted border, a soft brush band under a finer line, not a hard rule.
 		float line_zoom = smoothstep(pol_l.x, pol_l.y, CAMERA_POSITION_WORLD.y - v_vertex.y);
 		float soft = other >= 0 ? 1.0 - smoothstep(0.0, pol_l.z, gap) : 0.0;
 		float paint = max(edge * pol_l.w, soft * soft * (1.0 - pol_l.w));
 		// A light glow of the line's colour spreading just inside it (02-realm's lit edges; look.json politics.border_glow).
-		float glow = politics > 0.5 && other >= 0 && own.a > 0.0 ? 1.0 - smoothstep(px * pol_b.y * 0.8, px * pol_b.y * 2.6 + 0.01, gap) : 0.0;
-		ALBEDO = mix(ALBEDO, mix(line, vec3(1.0), 0.35), pol_b.w * glow * line_zoom);
+		float glow = politics > 0.5 && other >= 0 && own.a > 0.0 ? 1.0 - smoothstep(px * pol_b.y * 0.8, px * pol_b.y * 1.6 + 0.01, gap) : 0.0;
+		ALBEDO = mix(ALBEDO, mix(line, vec3(1.0), 0.15), pol_b.w * glow * line_zoom);
 		ALBEDO = mix(ALBEDO, line, paint * strength * dash * line_zoom);
 	}
 """

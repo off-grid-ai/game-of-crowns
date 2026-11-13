@@ -110,7 +110,7 @@
   "map_from": 30.0,
   "map_to": 40.0,
   "band": 0.3,
-  "band_strength": 0.65,
+  "band_strength": 0.35,
   "line_from": 30.0,
   "line_to": 38.0,
   "line_soft": 0.1,
