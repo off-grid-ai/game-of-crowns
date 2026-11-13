@@ -255,7 +255,7 @@ def split_house(obj, mask, into=None):
     return moved / float(max(len(obj.data.polygons), 1))
 
 
-def smooth_leaves(obj):
+def smooth_leaves(obj, crown=0.0):
     """A tree's leaves (the faces split into MI_Leaves) shaded smooth, so a crown reads as soft painted masses, not lime
     facets (group render g1, the siege frame: the oaks round Kingsmere as faceted low-poly blobs; 01-town and 04-siege
     paint round oaks and soft pines). Decimate leaves its faces flat; the custom normals from Meshy's file go with them,
@@ -282,7 +282,37 @@ def smooth_leaves(obj):
     bm.to_mesh(obj.data)
     bm.free()
     obj.data.update()
+    if crown > 0.0:
+        crown_normals(obj, slots, crown)
     return sum(1 for poly in obj.data.polygons if poly.material_index in slots)
+
+
+def crown_normals(obj, slots, k):
+    """The leaves' normals turned out from the crown's middle (the stylised-foliage way: the normals of an ellipsoid
+    round the crown, as Blender users do with a Data Transfer from a sphere), so a crown lights as one soft mass, not as
+    its decimated faces (group render g7, the crossing: oaks near the lens as flat green shards). k: how far toward the
+    ellipsoid (meshy.json pieces.<name>.leaves.crown; 0 keeps the welded normals). Trunks keep theirs."""
+    me = obj.data
+    polys = [p for p in me.polygons if p.material_index in slots]
+    vs = {me.loops[li].vertex_index for p in polys for li in p.loop_indices}
+    if not vs:
+        return
+    lo = [min(me.vertices[i].co[a] for i in vs) for a in range(3)]
+    hi = [max(me.vertices[i].co[a] for i in vs) for a in range(3)]
+    c = [(lo[a] + hi[a]) / 2.0 for a in range(3)]
+    e = [max((hi[a] - lo[a]) / 2.0, 1e-3) for a in range(3)]
+    normals = [tuple(cn.vector) for cn in me.corner_normals]
+    for p in polys:
+        for li in p.loop_indices:
+            v = me.vertices[me.loops[li].vertex_index].co
+            g = [(v[a] - c[a]) / (e[a] * e[a]) for a in range(3)]
+            gl = math.sqrt(sum(x * x for x in g)) or 1.0
+            n = normals[li]
+            m = [n[a] * (1.0 - k) + g[a] / gl * k for a in range(3)]
+            ml = math.sqrt(sum(x * x for x in m)) or 1.0
+            normals[li] = tuple(x / ml for x in m)
+    me.normals_split_custom_set(normals)
+    me.update()
 
 
 def mask_png(obj, mask, out):
@@ -551,7 +581,7 @@ def main():
             print("ISLAND faces=%d min=%s max=%s colour=%s" % (n, [round(x, 2) for x in lo], [round(x, 2) for x in hi], col))
     share = split_house(obj, spec["mask"])
     leaves = split_house(obj, spec["leaves"], "MI_Leaves") if spec.get("leaves") else 0.0
-    smoothed = smooth_leaves(obj) if leaves else 0
+    smoothed = smooth_leaves(obj, float(spec["leaves"].get("crown", 0.0))) if leaves else 0
     arm = split_arm(obj, spec["arm"]) if spec.get("arm") else None
     has_mask = mask_png(obj, spec["mask"], out)
     glb = os.path.join(out, name + ".glb")
