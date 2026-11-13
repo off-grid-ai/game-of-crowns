@@ -133,6 +133,7 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- 11-14 03:48 g10 done: crossing now catches the cog at the shore (1b1f1075 works) but the host is one rider, deck empty (army), white quads, faceted shore trees, white sand (look). Muster: a big closed block plus blocks by the cottage, better. Bottleneck: ferried host drawn as its leader only.
 - 11-14 03:45 g10 half: town smithy still out of frame after 02f8419d (third pass), the dark tilted building near left unchanged; back to square with the lens log. Nothing new landed. Bottleneck: square fixing blind; told to read the frame's .out/.play for the lens.
 - 11-14 03:33 round: landed bridge 1b1f1075 (crossing frame with the host aboard), square 02f8419d (smithy faces the town lens). g10 started (crossing town muster). Bottleneck: none new; disk still on Mac.
 - 11-14 03:31 g9 done: host5 PASS (first: closed blocks nose to tail on the road under standards); muster better (a column of blocks, still beside a cottage); crossing FAIL (frame of empty water after the ships put out; cog deck empty, host drawn as one rider): to bridge. Bottleneck: crossing frame timing after 9b8a7d7c.
