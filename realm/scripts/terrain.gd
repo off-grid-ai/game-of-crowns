@@ -784,18 +784,19 @@ static func art(path: String, fallback: String) -> String:
 	return path if ResourceLoader.exists(path) else fallback
 
 
-## The pixels of a ground texture for tiled(): the imported texture when Godot has imported it, else the
-## file itself read straight off disk (art dropped into assets/ before the next import pass, which gave
-## "No loader found" and a null get_image here), else null when the art isn't on this machine at all.
+## The pixels of a ground texture for tiled(): the file itself read straight off disk, the same file whose date
+## keys the kept copy, so a repainted texture is never tiled from Godot's older import (group render g2: setts.png
+## graded at 12:00, the town's tiles made at 12:01 from the import of the orange one and kept under the new date,
+## the square orange until the cache was cleared). In an exported game, where only the import ships, the import.
 func _source_image(path: String) -> Image:
-	if ResourceLoader.exists(path):
-		var tex := load(path) as Texture2D
-		if tex:
-			return tex.get_image()
 	if FileAccess.file_exists(path):
 		var raw := Image.load_from_file(ProjectSettings.globalize_path(path))
 		if raw:
 			return raw
+	if ResourceLoader.exists(path):
+		var tex := load(path) as Texture2D
+		if tex:
+			return tex.get_image()
 	return null
 
 
@@ -803,7 +804,7 @@ func _source_image(path: String) -> Image:
 ## stretching. `edge` softens it: "round" for a worn, ragged patch, "setts" for laid stone, "sides" for a
 ## verge's frayed edges, "track" for a road's (frayed, with wheel ruts), "paved" for a street of setts.
 const Data := preload("res://scripts/data.gd")
-const TILED_VERSION := ":v5"  # raise when how a tile is made changes, so the kept copies on disk are made again
+const TILED_VERSION := ":v6"  # raise when how a tile is made changes, so the kept copies on disk are made again
 const TILED_MOST := 2048  # px: the longest side of a tiled ground texture
 
 func tiled(path: String, fx: float, fy: float, edge := "") -> Texture2D:
