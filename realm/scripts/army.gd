@@ -346,13 +346,24 @@ func board(hulls: Array) -> void:
 		var slot := i / hulls.size()
 		var along := (float(slot) - (per - 1) * 0.5) * length / per
 		r["state"] = "board"
+		var at: Vector3 = (r["node"] as Node3D).global_position
+		if not main.terrain.is_land(at.x, at.z):
+			_on_deck(r, hull, along)  # already at sea when first drawn: on the deck at once (g11: a host raised aboard stood under the sea)
+			continue
+		# Down to the water's edge toward its hull, by its Mover, then aboard (never walking under the sea).
+		var edge := at
+		for k in 40:
+			var p := at.lerp(hull.global_position, (k + 1) / 40.0)
+			if not main.terrain.is_land(p.x, p.z):
+				break
+			edge = p
 		var mo: Node = Mover.of(r["node"]).on(null)
 		mo.speed = Data.num("army", "march.speed", 0.16)
 		get_tree().create_timer(i * Data.num("army", "deck.file", 1.5)).timeout.connect(func():
 			if not is_instance_valid(hull) or not is_instance_valid(r["node"]):
 				return
 			_clips(r, "walk")
-			mo.follow(PackedVector3Array([(r["node"] as Node3D).global_position, hull.global_position]), func(): _on_deck(r, hull, along)))
+			mo.follow(PackedVector3Array([(r["node"] as Node3D).global_position, edge]), func(): _on_deck(r, hull, along)))
 
 
 ## Gone (ashore, or the host disbanded): its regiments on a hull's deck go with it, since they are the hull's children.
@@ -369,7 +380,8 @@ func _on_deck(r: Dictionary, hull: Node3D, along: float) -> void:
 		return
 	var node: Node3D = r["node"]
 	node.reparent(hull, false)
-	node.position = Vector3(along, Data.num("army", "deck.y_m", 2.2) * preload("res://scripts/world_units.gd").M, 0.0)
+	# The deck over the hull's base, which units.gd ship_body sinks by map.ship_sink under the holder (the waterline).
+	node.position = Vector3(along, (Data.num("army", "deck.y_m", 2.2) - Data.num("army", "map.ship_sink", 1.2)) * preload("res://scripts/world_units.gd").M, 0.0)
 	node.rotation = Vector3(0.0, PI / 2.0, 0.0)  # the cog's length runs along its own x (assets/meshy/cog bounds)
 	_shape(r, "deck")
 	r["state"] = "halt"

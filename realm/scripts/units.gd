@@ -264,12 +264,15 @@ func field_hosts(store: Node) -> Dictionary:
 				var hn := figure_of(int(hid))
 				if hn:
 					hulls.append(hn)
+			if hulls.is_empty():  # raised but not yet named (bridge hosts.js names its hulls when they sail): the ships by it
+				hulls = _ships_by(terrain.world_pos(float(tile.x), float(tile.y)), int((sea as Dictionary).get("ships", 1)) if sea is Dictionary else 1)
 			if view == null or not is_instance_valid(view):
 				view = Army.new(get_parent(), 0, {"host": h, "quiet": true})
 				view.set_meta("units", units)
 				add_child(view)
 				_hosts[id] = view
 			view.set_meta("tile", tile)
+			view.visible = view.get_meta("aboard", false) or terrain.is_land(terrain.world_pos(float(tile.x), float(tile.y)).x, terrain.world_pos(float(tile.x), float(tile.y)).z)  # never stood on the sea
 			if not hulls.is_empty() and not view.get_meta("aboard", false):
 				view.set_meta("aboard", true)
 				view.board(hulls)
@@ -296,6 +299,20 @@ func field_hosts(store: Node) -> Dictionary:
 				_hosts[id].queue_free()
 			_hosts.erase(id)
 	return drawn
+
+
+## The ship figures nearest `at` within a tile and a half (a host's hulls before the bridge names them), at most `n`.
+func _ships_by(at: Vector3, n: int) -> Array:
+	var near: Array = []
+	for fid in _figures:
+		var f: Dictionary = _figures[fid]
+		var node: Node3D = f.get("node")
+		if f.get("ship", false) and node and is_instance_valid(node):
+			var d := Vector2(node.global_position.x - at.x, node.global_position.z - at.z).length()
+			if d < 6.0:
+				near.append([d, node])
+	near.sort_custom(func(a, b): return a[0] < b[0])
+	return near.slice(0, maxi(1, n)).map(func(x): return x[1])
 
 
 ## How a soldier stands when not marching: wounded, behind the shield when
