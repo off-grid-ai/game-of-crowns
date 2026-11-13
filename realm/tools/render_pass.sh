@@ -205,14 +205,14 @@ fi
 # READY 8: the host in the field in the most open ground (autoplay _open_host: fewest trees round it; g5's command
 # frame took the one farthest from any town, and it stood under a forest's canopy), so its men show.
 if want command; then
-  { print "wait 30"; print "host open 6 -25"; print "wait 3"; print "snap selected ui"; print "order besiege"; print "wait 2"; print "snap ordered ui"
+  { print "wait 30"; print "host open 6"; print "wait 3"; print "snap selected ui"; print "order besiege"; print "wait 2"; print "snap ordered ui"
     print "wait 6"; print "snap marching ui"; print "look end"; } > $OUT/command.play
   shot command 1500 film $SW
   side command $OUT/frames/command/ordered.png $TARGETS/03-army.jpg "READY 8: $(grep -hE 'host selected|order besiege' $OUT/frames/command/play.log 2>/dev/null | head -2 | tr '\n' ' ')"
 fi
 if want face; then
   new_reign  # a new season of orders: Besiege above spent this host's one (bridge/data/hosts.json ordersPerHost)
-  { print "wait 30"; print "host open 6 -25"; print "wait 3"; print "rdrag 0.40 0.62 0.70 0.62"; print "snap faced ui"; print "wait 6"; print "snap formed ui"; print "look end"; } > $OUT/face.play
+  { print "wait 30"; print "host open 6"; print "wait 3"; print "rdrag 0.40 0.62 0.70 0.62"; print "snap faced ui"; print "wait 6"; print "snap formed ui"; print "look end"; } > $OUT/face.play
   shot face 1500 film $SW
   side face $OUT/frames/face/faced.png $TARGETS/03-army.jpg "READY 8: $(grep -hE 'host selected' $OUT/frames/face/play.log 2>/dev/null | head -1)"
 fi

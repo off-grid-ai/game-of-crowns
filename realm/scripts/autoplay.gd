@@ -241,7 +241,10 @@ func _step(w: PackedStringArray) -> void:
 				# host [n|open] [dist] [tilt]: frames the King's n-th host from /world's hosts (the biggest first), or
 				# the one in the field standing in the most open ground (_open_host), low and oblique, then clicks its
 				# standard as a player would (host_command.gd, --hosts=on).
-				await _host((_open_host() if w[1] == "open" else int(w[1])) if w.size() > 1 else 0, float(w[2]) if w.size() > 2 else 6.0, float(w[3]) if w.size() > 3 else -25.0)
+				# With no tilt, 03-army's pitch at that distance (army.json camera.pitch, camera_rig tilt_for): g6/g7's
+				# -25 at 6 looked 11 degrees down, the lens among the roofs.
+				var hd := float(w[2]) if w.size() > 2 else 6.0
+				await _host((_open_host() if w[1] == "open" else int(w[1])) if w.size() > 1 else 0, hd, float(w[3]) if w.size() > 3 else main.rig.tilt_for(preload("res://scripts/data.gd").num("army", "camera.pitch", 38.0), hd))
 			"hover":
 				var at := get_viewport().get_visible_rect().size * Vector2(float(w[1]), float(w[2]))
 				get_viewport().warp_mouse(at)
@@ -1209,9 +1212,10 @@ func _host(n: int, dist: float, tilt: float) -> void:
 	_note("  host selected: %d" % int(hc.selected))
 
 
-## The King's host in the field (not in a town) with the fewest trees round where it stands (forest.gd trees_near,
-## half a tile), the larger first on a tie; 0 with none in the field. Group render g5, command.jpg: the host the frame
-## picked stood in a forest, its men under the canopy and only its standard showing.
+## The King's host in the field (not in a town, nor within a town's reach: its houses and walls) with the fewest trees
+## round where it stands (forest.gd trees_near, half a tile), the larger first on a tie; 0 with none in the field.
+## Group render g5, command.jpg: the host the frame picked stood in a forest, its men under the canopy; g6/g7: one a
+## tile from Rosehall's walls, the lens inside a wall tower.
 func _open_host() -> int:
 	var hc: Node = main.get_node_or_null("HostCommand")
 	var woods = main.terrain.get("forest")
@@ -1222,7 +1226,12 @@ func _open_host() -> int:
 		var h: Dictionary = all[i]
 		if h.get("at") != null:
 			continue
-		var trees := float(woods.trees_near(hc._ground(h), 2.0)) if woods and woods.has_method("trees_near") else 0.0
+		var g: Vector3 = hc._ground(h)
+		var trees := float(woods.trees_near(g, 2.0)) if woods and woods.has_method("trees_near") else 0.0
+		for tid in (main.towns.towns if main.get("towns") else {}):
+			var root: Node3D = main.towns.towns[tid]["node"]
+			if is_instance_valid(root) and Vector2(g.x - root.global_position.x, g.z - root.global_position.z).length() < float(root.get_meta("reach", 6.0)) + 1.0:
+				trees += 1000.0  # among a town's houses and walls: only if no host stands clear of every town
 		trees -= float(h.get("men", 0)) * 0.00001  # the larger host on a tie
 		if trees < least:
 			least = trees
