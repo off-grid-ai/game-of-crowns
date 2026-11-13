@@ -439,7 +439,7 @@ uniform float politics = 0.0;
 uniform float hold[64];
 uniform vec3 lean[64];
 uniform vec4 pol_k = vec4(0.3, 0.8, 0.45, 0.4);  // wash_near, wash_far, own_mix, stripes_below
-uniform vec4 pol_b = vec4(1.35, 3.0, 1.4, 0.0);  // border_bright, border_px, stripe_width
+uniform vec4 pol_b = vec4(1.35, 3.0, 1.4, 0.0);  // border_bright, border_px, stripe_width, border_dark
 uniform vec4 pol_z = vec4(12.0, 30.0, 0.4, 0.35);  // map_from, map_to: the camera's height over the ground where the wash comes in; band, band_strength: the house's colour strong just inside its border (tile share, strength)
 uniform vec4 relief = vec4(0.0, -0.5, 0.7, -0.5);  // the land's relief at the map's height (data/map.json relief): strength, the light it is shaded from
 uniform vec4 pol_l = vec4(9.0, 22.0, 0.22, 0.55);  // line_from, line_to (camera height where borders fade in), soft (the painted band's width, tile share), crisp (the fine line's share)
@@ -543,12 +543,17 @@ const REALM_WASH := """
 		else if (wed) { line = step(0.5, fract((rt.x + rt.y) * 1.5)) > 0.5 ? own.rgb : o[other].rgb; }
 		// The political map: the line in the house's own colour, brightened (WC3's team colour), unless war,
 		// a truce or an oath has its own.
-		if (politics > 0.5 && !at_war && !truce && !sworn && !envoy && !pact && !wed && own.a > 0.0) { line = clamp(own.rgb * pol_b.x, 0.0, 1.0); strength = 1.0; }
+		// At its full value, so it stands out of the washed land in the house's own colour (g7: brightened, a salmon line
+		// on salmon land read as no line; 02-realm edges every land in a strong line).
+		if (politics > 0.5 && !at_war && !truce && !sworn && !envoy && !pact && !wed && own.a > 0.0) { line = clamp(own.rgb / max(max(own.r, own.g), max(own.b, 0.05)) * pol_b.x, 0.0, 1.0); strength = 1.0; }
 		// Never on the ground at roof or town height (the ground stays ground, Warcraft III); fading in as
 		// the lens rises, and drawn as a painted border, a soft brush band under a finer line, not a hard rule.
 		float line_zoom = smoothstep(pol_l.x, pol_l.y, CAMERA_POSITION_WORLD.y - v_vertex.y);
 		float soft = other >= 0 ? 1.0 - smoothstep(0.0, pol_l.z, gap) : 0.0;
 		float paint = max(edge * pol_l.w, soft * soft * (1.0 - pol_l.w));
+		// A dark rim just outside the line, as a painted map inks a coloured border (look.json politics.border_dark).
+		float rim = politics > 0.5 && other >= 0 ? smoothstep(px * pol_b.y * 0.6, px * pol_b.y, gap) * (1.0 - smoothstep(px * pol_b.y * 1.4, px * pol_b.y * 1.9 + 0.01, gap)) : 0.0;
+		ALBEDO *= 1.0 - pol_b.w * rim * line_zoom;
 		ALBEDO = mix(ALBEDO, line, paint * strength * dash * line_zoom);
 	}
 """
