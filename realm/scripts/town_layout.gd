@@ -147,22 +147,36 @@ func real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds:
 		var square_trade: Dictionary = tb._trade_of(comp)
 		if not square_trade.is_empty():
 			lm = String(square_trade["model"])
+		# The model a landmark stands in at this rank's square (market.<rank>.landmark_models: the component whose model
+		# it takes; g11: the Meshy tavern's dark shingles, the one building off the square's timber-and-red-tile look,
+		# stands in the trades set's alehouse, which takes the house's roof colour).
+		var lm_from := String((tb._market_knobs().get("landmark_models", {}) as Dictionary).get(comp, ""))
+		if lm_from != "" and Real.one(lm_from) != "" and Real.footprint(Real.one(lm_from)) != Vector2.ZERO:
+			lm = Real.one(lm_from)
+			if not square_trade.is_empty():
+				square_trade["model"] = lm  # its trade record and work spots read the model it stands in
 		var f: Vector2 = Real.footprint(lm)
 		if f == Vector2.ZERO:
 			continue
 		var keep_ang := gap_ang
-		var lens_turn: Variant = (tb._market_knobs().get("lens_turns", {}) as Dictionary).get(comp)
-		if lens_turn != null and root.has_meta("castle_frame"):
-			# Where the town camera sees it (camera_rig.town_view puts the lens across the square from the castle): from that
-			# side, turned market.<rank>.lens_turns.<landmark> radians toward the frame's right (negative: its left). Every
-			# square building faces the square's middle, so the smithy on the right shows its open front and fire three-quarter
-			# to the lens (01-town: the forge in the near right), and the tavern goes back from the near left, where g10 read
-			# its dark shingles, seen from behind, as a broken shed.
-			var cp: Vector3 = root.get_meta("castle_frame")[0]
-			var lens := Vector2(-cp.x, -cp.z).normalized()
-			var right := Vector2(lens.y, -lens.x)  # the frame's right, seen from the lens (town_view's yaw)
+		var lens_row: Variant = (tb._market_knobs().get("lens_turns", {}) as Dictionary).get(comp)
+		var lens_turn: Variant = null
+		var face_at := Vector3.ZERO  # Vector3.ZERO: it faces the square's middle, as every square building does
+		var rig: Node = tb.get_parent().get("rig") if tb.get_parent() else null
+		if lens_row != null and rig != null and rig.has_method("town_view"):
+			# Where the town camera sees it: the lens the town view will take (camera_rig.town_view, its yaw from the
+			# castle's place in the frame), then market.<rank>.lens_turns.<landmark>: turn, radians round the square from
+			# the lens's side toward the frame's right (negative: its left); face "lens" turns its front to the camera
+			# (01-town: the forge in the near right, open toward the viewer), else it faces the square's middle. g10-g11:
+			# lens guessed as straight across from the castle stood the smithy out of frame.
+			var yaw: float = float(rig.town_view(root)[1])
+			var lens := Vector2(sin(yaw), cos(yaw))  # from the square toward the camera
+			var right := Vector2(lens.y, -lens.x)
+			lens_turn = float(lens_row.get("turn", 0.0)) if lens_row is Dictionary else float(lens_row)
 			var dir := lens * cos(float(lens_turn)) + right * sin(float(lens_turn))
 			gap_ang = atan2(dir.y, dir.x)
+			if lens_row is Dictionary and String(lens_row.get("face", "")) == "lens":
+				face_at = Vector3(lens.x, 0, lens.y)
 		var p := Vector3(cos(gap_ang), 0, sin(gap_ang)) * (square_r + maxf(f.x, f.y) * 0.45)
 		# Between the roads into the square, never across one (--towns=plots); a spot already taken (a landmark, the
 		# castle, bad ground) moves it on round the edge, so a square trade isn't lost to its first spot (g7: Kingsmere
@@ -174,13 +188,13 @@ func real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds:
 					break
 				gap_ang += TAU / 16.0
 				p = Vector3(cos(gap_ang), 0, sin(gap_ang)) * (square_r + maxf(f.x, f.y) * 0.45)
-			if tb._put(root, center, lm, p, f, lots, rng, false):
+			if tb._put(root, center, lm, p, f, lots, rng, false, face_at):
 				stands = true
 				break
 			# Then on the ring line the square's fronts stand on (front_ring: their walls flush round its edge), out of the
 			# market's goods and benches at the paving's rim (g10: the forge found no room at 16 spots round the edge).
 			var on_ring: Vector3 = Vector3(cos(gap_ang), 0, sin(gap_ang)) * (float(tb.front_ring(square_r)) + f.y * 0.5)
-			if not TownPlots.near_ways(Vector2(on_ring.x, on_ring.z), ways, maxf(f.x, f.y) * 0.5 + 0.05) and tb._put(root, center, lm, on_ring, f, lots, rng, false, -on_ring.normalized(), true):
+			if not TownPlots.near_ways(Vector2(on_ring.x, on_ring.z), ways, maxf(f.x, f.y) * 0.5 + 0.05) and tb._put(root, center, lm, on_ring, f, lots, rng, false, face_at if face_at != Vector3.ZERO else -on_ring.normalized(), true):
 				p = on_ring
 				stands = true
 				break
@@ -191,17 +205,18 @@ func real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds:
 			print("CHECK town trades: %s found no room on the square's edge for its %s: on a main street" % [String(root.get_meta("title", "")), comp])
 		if stands:
 			placed += 1
+			var fc: Vector3 = face_at if face_at != Vector3.ZERO else -p.normalized()  # which way it faces (lens_turns face)
 			if rooms.has(comp):  # a landmark has its room and a door into it; a trade on the square has its trade record below
 				tb._door(root, p, f, rooms[comp][0], rooms[comp][1])
 				# Where the town gathers: just out from its door, on the square.
 				places[rooms[comp][2]] = p - p.normalized() * (f.y * 0.5 + 0.35)
 			if comp == "tavern":
 				tb._tether(root, center, p, f)
-				tb._trade_record(root, center, {"component": "tavern", "model": lm}, p, -p.normalized(), f)
+				tb._trade_record(root, center, {"component": "tavern", "model": lm}, p, fc, f)
 			if not square_trade.is_empty():
-				tb._trade_record(root, center, square_trade, p, -p.normalized(), f)
+				tb._trade_record(root, center, square_trade, p, fc, f)
 				if comp == "forge":
-					tb._smithy(root, center, p, -p.normalized(), f, rng)
+					tb._smithy(root, center, p, fc, f, rng)
 			if comp == "church":
 				tb._walled(root, center, p, -p.normalized(), f, "church", lots)  # the churchyard
 		if lens_turn != null and gap_ang != keep_ang:
