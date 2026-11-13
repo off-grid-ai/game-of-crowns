@@ -133,6 +133,7 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- 11-14 05:09 round: landed army 3cfc3a4d (muster searches every main way for the nearest clear stretch). g18 started (muster only).
 - 11-14 05:08 g17: battle IMPROVED (both sides in frame: grey horse line vs red pikes and archers) but no contact yet; army after muster.
 - 11-14 05:01 g16: muster FAIL 5th pass, near-identical to g14 (a76aa20b in but not reaching the shot); army told to read muster.out/.play first, muster its only job. Crossing PASS holds; shore trees right still dark and messy (look). Bottleneck: muster frame, fixes landing blind.
 - 11-14 04:57 round: landed army 44fd7c14 (battle lens on line meeting line). g16 running, g17 (battle) queued behind it.
