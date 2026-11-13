@@ -6,7 +6,7 @@ extends Node3D
 ##
 ## The camp: a palisade of stakes and planking in front of rows of tents in the besieger's colours, cook fires
 ## with men sat round them, the baggage wagons behind; a ram and a siege tower waiting in the band. The engines
-## (a trebuchet, a catapult) rise where they stand while carpenters hammer, then their crews work them: the arm
+## (Meshy's catapult) rise in a line in the band, ahead of the storm host, where they stand while carpenters hammer, then their crews work them: the arm
 ## drawn back, a stone loaded, the arm whips over and the stone flies on its arc to the wall, where it brings
 ## down the stones the town's wear has doomed (walls.gd aim/strike: the wear is the bridge's damage fact; the
 ## view decides nothing). The walls' archers shoot at the crews (scenes.gd's volleys, marks()).
@@ -59,7 +59,7 @@ func pitch(s: Node, siege: Node3D, town: Vector3, middle: float, line: float, co
 	if OS.get_cmdline_user_args().has("--wall-demo"):
 		count = angles.size()  # the demo's wall falls within a take: every engine at it
 	for e in clampi(maxi(count, 1), 1, angles.size()):
-		_engine(["trebuchet", "catapult"][e % 2], float(angles[e]), k)
+		_engine(float(angles[e]), k)
 
 
 ## The camp's middle among its tents (world), for framing it.
@@ -224,7 +224,7 @@ func _parked() -> void:
 	var kinds := ["siege_ram", "siege_tower"]
 	var angles: Array = k.get("angles", [])
 	for i in mini(angles.size(), kinds.size()):
-		var p := _arc(float(angles[i]), camp_r + float(k.get("at", -0.2)))
+		var p := _arc(float(angles[i]), camp_r - Data.num("siege", "band", 6.0) + float(k.get("from_wall", 1.1)))  # in the band, as the engines
 		if not scenes._footing(p):
 			continue
 		var m: Node3D = load(Real.path_of(kinds[i])).instantiate()
@@ -336,23 +336,25 @@ func _crewman(p: Vector3, idle: Array) -> Dictionary:
 # --- the engines ---------------------------------------------------------------
 
 ## An engine raised where it will stand while carpenters hammer, then worked by its crew.
-func _engine(kind: String, a: float, k: Dictionary) -> void:
-	var p := _arc(a, camp_r + float(k.get("at", -0.55)))
-	if not scenes._footing(p):
+func _engine(a: float, k: Dictionary) -> void:
+	# In the band, from_wall out from the wall's foot (the camp line is siege.json band out from it), ahead of the
+	# storm host; where its own angle's ground isn't level, the nearest level ground a few steps along the arc or out
+	# and in (near), never dropped (group test 1: of three engines one stood in frame).
+	var rad := camp_r - Data.num("siege", "band", 6.0) + float(k.get("from_wall", 0.75))
+	var p := _level_near(a, rad, k.get("near", [0.06, 0.25, 8]))
+	if p == Vector3.INF:
 		return
-	var node: Node3D = load(Real.path_of(kind)).instantiate()
+	var node: Node3D = load(Real.path_of("catapult")).instantiate()  # Meshy's catapult (data/meshy.json replaces the catapult)
 	root.add_child(node)
 	scenes._fit(node, float(k.get("height", 0.7)))
 	scenes._weather(node)
 	node.position = p
 	node.rotation.y = _x_to_town(p)
 	node.add_to_group("siege_engines")
-	var kinds: Dictionary = k.get("kinds", {})
-	# Meshy's catapult (--landmarks=meshy) brings its own arm, split out by the import: its own angles and tip.
-	var meshy := Real.path_of(kind).contains("/meshy/") and kinds.has(kind + "_meshy")
-	var kk: Dictionary = kinds.get(kind + "_meshy" if meshy else kind, {})
+	# Its arm, split out by the Meshy import: its own angles and tip (siege.json engines.kinds.catapult).
+	var kk: Dictionary = (k.get("kinds", {}) as Dictionary).get("catapult", {})
 	var arm: Node3D = node.find_child(String(kk.get("arm", "arm")), true, false)
-	var e := {"node": node, "arm": arm, "kind": kind, "k": kk, "crew": [], "built": false}
+	var e := {"node": node, "arm": arm, "kind": "catapult", "k": kk, "crew": [], "built": false}
 	engines.append(e)
 	var away: Vector3 = (p - at).normalized()
 	away.y = 0.0
@@ -380,6 +382,28 @@ func _engine(kind: String, a: float, k: Dictionary) -> void:
 			dust.queue_free()
 		else:
 			_puff(p + Vector3(0, 0.05, 0), Color(0.55, 0.48, 0.38, 0.2)))
+
+
+## Level ground for an engine at angle `a`, radius `rad` from the town, or the nearest of the steps round it
+## (near: [radians along the arc, units out or in, steps]): first along the arc either way, then out and in.
+## INF when none of them is level ground.
+func _level_near(a: float, rad: float, near: Array) -> Vector3:
+	var da := float(near[0]) if near.size() > 0 else 0.06
+	var dr := float(near[1]) if near.size() > 1 else 0.25
+	var n := int(near[2]) if near.size() > 2 else 8
+	for i in n + 1:
+		for sa in ([0] if i == 0 else [1, -1]):
+			var p := _arc(a + da * i * sa, rad)
+			if scenes._footing(p):
+				return p
+	for i in range(1, n + 1):
+		for sr in [1, -1]:
+			for j in n + 1:
+				for sa in ([0] if j == 0 else [1, -1]):
+					var p := _arc(a + da * j * sa, rad + dr * i * sr)
+					if scenes._footing(p):
+						return p
+	return Vector3.INF
 
 
 ## One throw, then the next after every_s: wind, load, throw (the stone lets go partway through the swing),

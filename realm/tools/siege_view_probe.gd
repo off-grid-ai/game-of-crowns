@@ -40,12 +40,11 @@ func _init() -> void:
 	var base := PI / 2.0  # scene_kinds/siege.gd's arc: (cos(base + a), sin(base + a)) * radius
 	var arc := func(a: float, r: float) -> Vector3: return town + Vector3(cos(base + a), 0, sin(base + a)) * r
 	var breach: Vector3 = arc.call(0.0, wall)
-	var camp_r := wall + 1.3
 	var eng: Dictionary = Data.value("siege", "engines", {})
 	var engines: Array = []  # [where, the wall's top behind it]
 	var wall_top := float(Data.value("walls", "demo", {}).get("height_m", 7.0)) * M
 	for a in eng.get("angles", [0.0]):
-		engines.append([arc.call(float(a), camp_r + float(eng.get("at", -0.55))), arc.call(float(a), wall) + Vector3.UP * wall_top])
+		engines.append([arc.call(float(a), wall + float(eng.get("from_wall", 0.75))), arc.call(float(a), wall) + Vector3.UP * wall_top])
 	var v: Array = rig.siege_view(breach, town)
 	var aim: Vector3 = v[0]
 	var yaw: float = v[1]

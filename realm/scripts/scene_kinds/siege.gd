@@ -70,7 +70,7 @@ func besiege(id: int, at: Vector3, approach: Vector3, size: int, engines: int, f
 	var wall := reach + 0.35
 	var out := Vector3(approach.x - at.x, 0, approach.z - at.z)
 	var want := atan2(out.z, out.x) if out.length() > 0.01 else r.randf() * TAU
-	var camp_r := wall + 1.3
+	var camp_r := wall + Data.num("siege", "band", 6.0)  # the camp line: room for the engines, the host and the parties (siege.json band)
 	var base := _camp_side(at, want, wall, camp_r)
 	var arc := func(a: float, rad: float) -> Vector3:
 		return stage.ground(at + Vector3(cos(base + a), 0, sin(base + a)) * rad)
@@ -126,7 +126,7 @@ func besiege(id: int, at: Vector3, approach: Vector3, size: int, engines: int, f
 	if OS.get_cmdline_user_args().has("--probe"):
 		print("SIEGE staged: parties=%d" % 2)
 	for party in 2:
-		parties.append(_assault(arc, (party - 0.5) * 0.5, camp_r, wall))
+		parties.append(_assault(arc, (party - 0.5) * 0.5, wall))
 	var assault := ArmyAssault.new()
 	assault.start(stage, root, r, foe_col, parties, [3.0, 9.0], held_col, at)  # held_col: the block behind a breach; at: the town the storm torches
 	sieges[id]["assault"] = assault
@@ -176,11 +176,12 @@ func _camp_side(at: Vector3, want: float, wall: float, camp_r: float) -> float:
 ## Six men leave the camp behind their raised shields, run the last stretch,
 ## fight at the foot of the walls and fall back, leaving a man or two there.
 ## The camp sends a fresh man in each one's place before the next rush.
-func _assault(arc: Callable, a: float, camp_r: float, wall: float) -> Array:
+func _assault(arc: Callable, a: float, wall: float) -> Array:
 	var men := []
+	var home_r := wall + Data.num("siege", "assault.home_from_wall", 1.65)  # behind the engines' line, ahead of the host
 	for i in 6:
 		var off := (i - 2.5) * 0.06
-		var home: Vector3 = arc.call(a + off, camp_r - 0.35)
+		var home: Vector3 = arc.call(a + off, home_r)
 		men.append({"home": home, "foot": arc.call(a + off, wall + 0.12), "alive": true, "kit": "sword", "rank": 1})
 	return men  # army_assault.gd raises the men and runs them
 

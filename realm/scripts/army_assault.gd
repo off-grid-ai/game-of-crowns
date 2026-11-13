@@ -87,7 +87,8 @@ func start(s: Node, siege: Node3D, rng: RandomNumberGenerator, colour: Color, gr
 	# siege and driven by this one's breach once Freeciv storms.
 	if not parties.is_empty():
 		var out := Vector3(camp.x - heart.x, 0, camp.z - heart.z).normalized()
-		Field.storm(self, camp + out * Data.num("siege", "storm_host.camp_back", 0.3), wall, heart, col, held)
+		# Its middle storm_host.from_wall out from the wall's foot: behind the engines' line (siege_camp.gd), never on it.
+		Field.storm(self, wall + out * Data.num("siege", "storm_host.from_wall", 3.6), wall, heart, col, held)
 
 
 ## Freeciv's assault on this siege (scenes.gd, on the bridge's storm scene): every party goes at once, through the
