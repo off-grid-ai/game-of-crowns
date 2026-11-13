@@ -995,6 +995,16 @@ func _forge(root: Node3D, life: Node3D, center: Vector3, b: Dictionary, tick: Wo
 	glow.shadow_enabled = false
 	life.add_child(glow)
 	tick.glow = glow
+	# The hearth's fire, seen through the open front (01-town: a bright orange forge): the game's own flames (fire.gd,
+	# as a house burns and the feast's bonfire), small, in the hearth (works.json forge.fire).
+	var fk: Dictionary = Data.value("works", "forge.fire", {})
+	if int(fk.get("amount", 0)) > 0:
+		const Fire := preload("res://scripts/fire.gd")
+		var fr: Array = fk.get("rise", [0.06, 0.12])
+		var reach := float(fk.get("reach", 0.05))
+		var flames := Fire._flames(int(fk["amount"]), 0.8, fk.get("size", [0.04, 0.08]), Vector2(float(fr[0]), float(fr[1])), Vector3(reach, 0.01, reach), Fire._flame_material(true))
+		flames.position = Vector3(inside.x, _y(center, hearth) + float(fk.get("height", 0.04)), inside.z)
+		life.add_child(flames)
 	# Sparks off the anvil's face as the hammer strikes: a burst each stroke (works.Tick restarts it), never a
 	# steady stream. Drawn at their real size in the quad itself: the GPU copy (Particles.to_gpu) loses a CPU
 	# effect's scale, so 0.25-wide additive quads stacked into a white ball at the smith's feet (batch 7).
