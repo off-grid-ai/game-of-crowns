@@ -38,7 +38,7 @@ export function turn(ctx, ev) {
   Next.seasonBegan();  // the next thing's countdown runs from here
   Opening.season(ctx.meta, Number(ev.turn));  // the first winter seen and passed (opening.js)
   Seals.season(ctx.meta, Number(ev.turn));  // the season's royal seal (seals.js)
-  Hosts.season({ world: ctx.world, meta: ctx.meta, send, record: ctx.record, besiege: (c) => ctx.startCampaign?.(c) }, Number(ev.turn));  // the King's hosts move on their orders (hosts.js)
+  Hosts.season({ world: ctx.world, meta: ctx.meta, send, record: ctx.record, besiege: (c) => ctx.startCampaign?.(c), detail: ctx.detail?.(), crownSeat: ctx.crownSeat }, Number(ev.turn));  // the King's hosts move on their orders (hosts.js)
   Reword.season();  // one more wording of a court result from the local model, in idle time (reword.js)
   Damage.season(ctx, Number(ev.turn));  // walls battered and mended, houses burnt and rebuilt (damage.js)
   collectTithe(ctx, Number(ev.turn));

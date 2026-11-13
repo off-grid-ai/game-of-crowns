@@ -338,11 +338,42 @@ export function homeward(ctx, { owner, units }, send) {
   save(meta, [...(meta.hostOrders ?? []).filter((o) => !o.units.some((id) => ids.includes(id))), { kind: "homeward", owner, units: ids, x: seat.x, y: seat.y, city: seat.id }]);
 }
 
+// The King's peace with a house (Freeciv: an armistice turns to Peace when its seasons run out, and no soldier may
+// then stand in the other's land: any there are sent to their nearest town at once, a jump the realm would see as men
+// vanishing). The season the armistice would end before a host in that house's land could walk out of it (with
+// data/hosts.json peaceMargin seasons to spare), the host is ordered home to the King's seat by the road: a march like
+// any other, walked a few tiles each season (CLAUDE.md, one way to move). The armistice's seasons are the save's
+// (savefile.js truces); who holds each tile is Freeciv's border map (savefile.js owners).
+function peaceHome(ctx, turn) {
+  const { world, meta, detail, crownSeat, record } = ctx;
+  const crown = crownOf(world);
+  const truces = detail?.players?.find((p) => p.slot === crown?.id)?.truces ?? [];
+  if (!truces.length || !detail?.owners?.length) return;
+  const seat = crownSeat?.();
+  const steps = seat ? stepsTo(seat) : null;
+  if (!steps) return;
+  const ownerAt = (x, y) => { const v = String(detail.owners[y] ?? "").split(",")[x]; return v == null || v === "-" || v === "" ? null : Number(v); };
+  for (const h of list(ctx)) {
+    if (h.aboard || (h.order?.kind === "garrison" && h.order.city === seat.id)) continue;
+    const t = truces.find((r) => r.with === ownerAt(h.x, h.y));
+    if (!t || steps.at(h) < 0) continue;
+    const way = wayOn(steps, h, steps.at(h));
+    const out = way.findIndex(([x, y]) => ownerAt(x, y) !== t.with);
+    const seasons = Math.ceil((out < 0 ? way.length : out + 1) / HOSTS.speed);
+    if (t.left > seasons + (HOSTS.peaceMargin ?? 1)) continue;
+    const rest = (meta.hostOrders ?? []).filter((o) => !o.units.some((id) => h.units.includes(id)));
+    save(meta, [...rest, { kind: "garrison", units: h.units, x: seat.x, y: seat.y, city: seat.id, home: true, since: turn, peace: t.with }]);
+    const house = houseFor(world.players.find((p) => p.id === t.with) ?? {}).name ?? "the house";
+    record?.({ turn, kind: "decree", text: `The King's peace with ${house} is near: the royal host leaves their land for ${cityName(seat.id)}.`, city: seat.id });
+  }
+}
+
 // Each season (season.js): every host under a marching order moves; one that has arrived stands
 // (a march becomes a hold; a garrison stays a garrison, in the town).
 export function season(ctx, turn) {
   const { world, meta, send, record, besiege } = ctx;
   if (!world) return;
+  peaceHome(ctx, turn);
   // A host under the King's order is the King's, not Freeciv's AI's: the crown is AI-marshalled (realm.serv), and
   // the AI walked the King's men off the walls between seasons (and a marching host a tile off its road the season
   // it arrived), so no assault came and the siege broke (realm/tools/capture_chain_probe.sh). A host marching or

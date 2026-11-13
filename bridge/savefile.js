@@ -85,11 +85,13 @@ export function extractDetail(save) {
   const units = {};
   for (let i = 0; save[`player${i}`]; i++) {
     const p = save[`player${i}`];
-    const relations = (p.diplstate || []).map((d, j) => ({ with: j, state: d.current }));
+    const relations = (p.diplstate || []).map((d, j) => ({ with: j, state: d.current, left: Number(d.turns_left ?? 0) }));
     players.push({
       slot: i, name: p.name, gold: p.gold, government: p.government_name, alive: p.is_alive,
       atWarWith: relations.filter((r) => r.state === "War" && r.with !== i).map((r) => r.with),
       allies: relations.filter((r) => r.state === "Alliance" || r.state === "Team").map((r) => r.with),
+      // Armistices and the seasons each has left before Freeciv makes it Peace (hosts.js peaceHome).
+      truces: relations.filter((r) => r.state === "Armistice" && r.with !== i).map((r) => ({ with: r.with, left: r.left })),
     });
     for (const c of p.c || []) {
       cities[c.id] = {
