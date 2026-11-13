@@ -172,7 +172,7 @@ if want landuse; then
   side landuse $OUT/frames/landuse/land.png $TARGETS/01-town.jpg "land use round the town"
 fi
 if want realm; then
-  { print "wait 30"; print "tile 33 40 60 0";  # 02-realm takes in several houses' lands: from the south over Kingsmere (26,46) and Highfell (39,43) toward Stonefell (41,28) and its highlands (bridge/lua/world_setup_azgaar.lua seats)
+  { print "wait 30"; print "tile 33 74 60 3.14";  # 02-realm: several houses' lands with mountains and the sea: from the north over Stormwatch (47,69) toward Sunspire (42,85) and Rosehall's south, the Belia mountains about (26,80) (bridge/lua/world_setup_azgaar.lua seats; g4: the Kingsmere-Highfell frame was mostly sea and low isles)
    print "wait 8"; print "snap realm"; print "snap realm_ui ui"; print "look end"; } > $OUT/realm.play
   shot realm 1500 film $SW
   side realm $OUT/frames/realm/realm_ui.png $TARGETS/02-realm.jpg "READY 3, 9: standards and flags"
