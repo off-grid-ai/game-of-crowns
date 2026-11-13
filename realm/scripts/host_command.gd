@@ -82,8 +82,7 @@ func _ready() -> void:
 func hosts() -> Array:
 	if main == null or main.awareness == null:
 		return []
-	var v: Variant = main.awareness.realm.get_var(&"hosts", [], false)
-	return v if v is Array else []
+	return main.awareness.hosts()
 
 
 func host(id: int) -> Dictionary:

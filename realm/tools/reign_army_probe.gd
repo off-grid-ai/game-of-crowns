@@ -316,7 +316,7 @@ func _view_faults(store: Node) -> Array:
 			live += 1
 	if live > figs.size():
 		out.append(["orphan-view", "%d figures on the map, %d companies kept" % [live, figs.size()]])
-	for h in store.rec("hosts", []):
+	for h in store.hosts():
 		for uid in (h as Dictionary).get("units", []):
 			if not ids.has(int(uid)):
 				out.append(["host-unit", "host %s names company %d the realm doesn't have" % [h.get("id", "?"), int(uid)]])

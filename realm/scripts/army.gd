@@ -473,7 +473,7 @@ static func order_face(h: Dictionary) -> float:
 
 
 func _from_world() -> Array:
-	var hosts: Array = main.awareness.rec("hosts", [])
+	var hosts: Array = main.awareness.hosts()
 	if hosts.is_empty() and not battle.has("host"):
 		return []
 	var h: Dictionary = battle["host"] if battle.has("host") else hosts[0]  # a field host its own; else the largest (the bridge sorts them)

@@ -31,7 +31,7 @@ static func armies(aw: Object) -> Array:
 	for p in aw.realm.get_var(&"houses", [], false):
 		houses[int(p.get("id", -1))] = p.get("house", {})
 	var crown_men := {}  # the crown's own hosts carry their men (bridge hosts.js)
-	for h in aw.realm.get_var(&"hosts", [], false):
+	for h in aw.hosts():
 		crown_men[Vector2i(int(h.get("x", 0)), int(h.get("y", 0)))] = int(h.get("men", 0))
 	var out := []
 	for g in aw.realm.get_var(&"armies", [], false):
@@ -56,7 +56,7 @@ static func marches(aw: Object) -> Array:
 	var out := []
 	if aw == null:
 		return out
-	for h in aw.realm.get_var(&"hosts", [], false):
+	for h in aw.hosts():
 		var o: Variant = h.get("order")
 		if not (o is Dictionary) or String(o.get("kind", "")) == "hold":
 			continue

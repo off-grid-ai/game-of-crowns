@@ -226,7 +226,7 @@ func figure_of(id: int) -> Node3D:
 func field_hosts(store: Node) -> Dictionary:
 	var drawn := {}
 	var keep := {}
-	for h in store.rec("hosts", []):
+	for h in store.hosts():
 		if h.get("at") != null or bool(h.get("aboard", false)):
 			continue
 		var id := int(h["id"])

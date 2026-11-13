@@ -121,6 +121,13 @@ func rec(key: String, default: Variant = null) -> Variant:
 	return default if v == null else v
 
 
+## The King's hosts as the hosts slice holds them (bridge hosts.js, largest first): every reader asks here. They are
+## not a record (RECORDS): rec("hosts") was always empty, so no host in the field was drawn as its column (g3).
+func hosts() -> Array:
+	var v: Variant = realm.get_var(&"hosts", [], false)
+	return v if v is Array else []
+
+
 ## The houses by their Freeciv player id: pid -> the house record (name, colour, sigil, crown...).
 func houses_by_id() -> Dictionary:
 	var out := {}

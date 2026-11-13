@@ -38,6 +38,8 @@ class Realm:
 
 class Awareness:
 	var realm := Realm.new()
+	func hosts() -> Array:  # awareness.gd hosts(): the hosts slice
+		return realm.hosts
 
 
 class Bridge:
@@ -327,6 +329,14 @@ func _run() -> void:
 	_check(corner.r + corner.g + corner.b < 0.01 and middle.r + middle.g + middle.b < 0.01, "the ring's clear field is dark, so its glow lights only the ring (corner %s, middle %s)" % [corner, middle])
 	var ring: Decal = hc.get("_ring")
 	_check(ring != null and ring.cull_mask == preload("res://scripts/terrain.gd").GROUND_LAYER, "the ring paints the land alone, never the men (cull mask %s)" % (ring.cull_mask if ring else -1))
+
+	# The hosts are the hosts slice's (awareness.gd hosts()), not a record: rec("hosts") is always empty, and reading it
+	# left every host in the field drawn as one soldier and every muster made-up levies (group test g3's command frame).
+	var readers: Array = []
+	for sf in DirAccess.get_files_at("res://scripts"):
+		if sf.ends_with(".gd") and FileAccess.get_file_as_string("res://scripts/" + sf).contains('rec("hosts"'):
+			readers.append(sf)
+	_check(readers.is_empty() and not preload("res://scripts/awareness.gd").RECORDS.has("hosts"), "the hosts are read from the hosts slice, never rec(\"hosts\") (%s)" % str(readers))
 
 	for x in fails:
 		print("HOST COMMAND FAIL " + x)
