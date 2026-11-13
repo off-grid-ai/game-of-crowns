@@ -1,7 +1,9 @@
 extends Node3D
 const PerfTools := preload("res://scripts/perf_tools.gd")  # the frame-cost probe
 ## Armies, settlers and wild beasts on the map: one small figure per unit, coloured by house, marching between
-## tiles as Freeciv moves them. Every march goes through the figure's Mover (mover.gd, CLAUDE.md's one way to
+## tiles as Freeciv moves them. A King's host in the field is drawn whole instead, as the muster's column (army.gd:
+## a formed block of men per company under its banner, the figure floor and drawPerMan, 03-army), one per host,
+## marching where Freeciv moves it (field_hosts); its companies get no figure of their own. Every march goes through the figure's Mover (mover.gd, CLAUDE.md's one way to
 ## move): the route the realm's navigation gives (town_nav.gd: a town's streets, the roads, the land), smoothed,
 ## followed at a soldier's pace across the season. The army layer's map presence (docs/research/army-layer-2026-11-12.md).
 
@@ -11,6 +13,8 @@ const Awareness := preload("res://scripts/awareness.gd")  # the realm's rules as
 const TownNav = preload("res://scripts/town_nav.gd")
 var _nav = TownNav.new()
 var _figures := {}  # unit id -> {node, target}
+var _hosts := {}  # a King's host in the field (/world hosts, not in a town, not at sea): its id -> its column (army.gd)
+const Army := preload("res://scripts/army.gd")  # a host in the field is drawn as the muster's column: one system
 
 
 
@@ -88,8 +92,11 @@ func sync(houses: Dictionary) -> void:
 	_town_tiles.clear()
 	for c in store.rec("cities", []):
 		_town_tiles["%d,%d" % [int(c["x"]), int(c["y"])]] = true
+	var in_hosts := field_hosts(store)
 	for u in store.rec("units", []):
 		var id := int(u["id"])
+		if in_hosts.has(id):
+			continue  # its host's column draws it
 		seen[id] = true
 		var key := "%d,%d" % [int(u["x"]), int(u["y"])]
 		var slot: int = per_tile.get(key, 0)
@@ -201,9 +208,53 @@ static func ship_body(house: Dictionary) -> Node3D:
 	return holder
 
 
-## The figure standing for a company on the map (its id from /world), or null.
+## The figure standing for a company on the map (its id from /world), or null: its own, or in a host in the field,
+## its regiment in the host's column.
 func figure_of(id: int) -> Node3D:
-	return _figures.get(id, {}).get("node") as Node3D
+	if _figures.has(id):
+		return _figures[id].get("node") as Node3D
+	for view in _hosts.values():
+		var r: Dictionary = (view.get("_by_id") as Dictionary).get(id, {}) if is_instance_valid(view) else {}
+		if not r.is_empty():
+			return r["node"] as Node3D
+	return null
+
+
+## Every King's host in the field (/world hosts: not in a town, not aboard) drawn as one column (army.gd), raised when
+## it takes the field (or its companies change: it is raised again where it stands) and marched where Freeciv moves
+## its lead company; gone when it enters a town or is no more. Returns the companies the columns draw (id -> host id).
+func field_hosts(store: Node) -> Dictionary:
+	var drawn := {}
+	var keep := {}
+	for h in store.rec("hosts", []):
+		if h.get("at") != null or bool(h.get("aboard", false)):
+			continue
+		var id := int(h["id"])
+		var units: Array = (h.get("units", []) as Array).duplicate()
+		units.sort()
+		var view: Node3D = _hosts.get(id)
+		if view and is_instance_valid(view) and view.get_meta("units", []) != units:
+			view.queue_free()
+			view = null
+		var tile := Vector2i(int(h.get("x", 0)), int(h.get("y", 0)))
+		if view == null or not is_instance_valid(view):
+			view = Army.new(get_parent(), 0, {"host": h, "quiet": true})
+			view.set_meta("units", units)
+			view.set_meta("tile", tile)
+			add_child(view)
+			_hosts[id] = view
+		elif view.get_meta("tile") != tile:
+			view.set_meta("tile", tile)
+			view.march_to(terrain.world_pos(float(tile.x), float(tile.y)))
+		keep[id] = true
+		for u in units:
+			drawn[int(u)] = id
+	for id in _hosts.keys():
+		if not keep.has(id):
+			if is_instance_valid(_hosts[id]):
+				_hosts[id].queue_free()
+			_hosts.erase(id)
+	return drawn
 
 
 ## How a soldier stands when not marching: wounded, behind the shield when

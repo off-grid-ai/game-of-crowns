@@ -40,6 +40,7 @@ const Heraldry := preload("res://scripts/heraldry.gd")
 const VAT := preload("res://addons/godot_vat/vat_multi_mesh_instance_3d.gd")
 const Banners := preload("res://scripts/army_banners.gd")  # its banners and standard (READY.md line 4)
 const Terrain := preload("res://scripts/terrain.gd")
+const Awareness := preload("res://scripts/awareness.gd")  # how long a season lasts (a field host's march fills it)
 const HOUSES := [Color(0.82, 0.62, 0.12), Color(0.72, 0.12, 0.12), Color(0.15, 0.32, 0.72), Color(0.18, 0.5, 0.22), Color(0.45, 0.2, 0.55), Color(0.85, 0.85, 0.82)]
 
 ## A regiment is shown or selected (the command card listens; no one else does yet).
@@ -70,8 +71,10 @@ var _tilt := 0.0
 var _want_select := ""
 var _rng := RandomNumberGenerator.new()
 ## One side of a battle (army_field.gd raises two): {side: 0 or 1, field: the line's middle, face: its facing,
-## colour, house, shape, ground: the battle's one ground (army_ground.gd)}. Empty for the muster by the seat.
+## colour, house, shape, ground: the battle's one ground (army_ground.gd)}. Empty for the muster by the seat. A host in
+## the field (units.gd keeps one per King's host on the map): {host: its /world hosts entry, quiet}.
 var battle := {}
+var _pending := Vector3.INF  # a field host's march Freeciv gave before its regiments were raised (march_to)
 var mustered := false
 var _order_face := NAN  # the way its order says its front looks (/world hosts[i].order.face), NAN for its own
 var _out := false  # marching out (march_out): halted at the road's end, it is gone after march.linger
@@ -86,7 +89,7 @@ func _init(owner: Node, count: int, side: Dictionary = {}) -> void:
 	main = owner
 	men = count
 	battle = side
-	name = "ArmySpike" if side.is_empty() else "ArmySide%d" % int(side.get("side", 0))
+	name = "ArmySpike" if side.is_empty() else ("Host%d" % int((side["host"] as Dictionary).get("id", 0)) if side.has("host") else "ArmySide%d" % int(side.get("side", 0)))
 	add_to_group(&"host_views")  # the command card (host_command.gd) finds host views here: regiments(), select_host()
 
 
@@ -103,9 +106,12 @@ func _ready() -> void:
 	# Wait for the land and the realm's towns as the bridge reports them.
 	while main.terrain.width == 0 or not main.terrain.built or (main.awareness.rec("cities", []) as Array).is_empty():
 		await get_tree().create_timer(0.5).timeout
-	var seat := _seat() if not battle.has("field") else {"name": "the field"}
+	var in_field := battle.has("field") or battle.has("host")  # a battle side or a host in the field: no seat to muster by
+	var seat := _seat() if not in_field else {"name": "the field"}
 	var town: Vector3 = _ground_at(battle["field"]) if battle.has("field") else Vector3.ZERO
-	if not battle.has("field"):
+	if battle.has("host"):
+		town = main.terrain.world_pos(float(battle["host"].get("x", 0)), float(battle["host"].get("y", 0)))
+	if not in_field:
 		if seat.is_empty():
 			push_error("ARMY no seat in the realm to muster by")
 			return
@@ -141,6 +147,18 @@ func _ready() -> void:
 	_commander = placed["commander"]
 	ground = battle["ground"] if battle.has("ground") else null
 	_extent = extent
+	if battle.has("host"):  # a host in the field: in column on its tile, marching where Freeciv moves it (march_to)
+		_stand_on_tile(town, _bound_yaw(battle["host"], town))
+		for r in _regiments:
+			var mo: Node = Mover.of(r["node"]).on(null)  # the realm's navigation, as every marcher on the map
+			mo.clip = ""
+			mo.turn_rate = 3.0
+		_standard_up()
+		mustered = true
+		raised.emit()
+		if _pending != Vector3.INF:
+			march_to(_pending)
+		return
 	var on_road := false
 	if battle.has("field"):  # a battle side stands where the battle puts it
 		_face = float(battle.get("face", 0.0))
@@ -223,6 +241,71 @@ func march_out(to: Vector3) -> void:
 		r["leave"] = (float(r["off"]) - first) / maxf(float(r["speed"]), 0.01)
 		r["state"] = "out"
 		Mover.of(r["node"]).on(null)
+
+
+## A host in the field stands in column with its head on its lead company's tile, facing `yaw`, closed up behind it
+## (03-army: a column of regiments, each under its banner), halted and at ease.
+func _stand_on_tile(at: Vector3, yaw: float) -> void:
+	var dir := Vector3(sin(yaw), 0, cos(yaw))
+	_path = PackedVector3Array([_ground_at(at - dir * (Formation.column_length(_regiments) + 1.0)), _ground_at(at)])
+	_cum = PackedFloat32Array([0.0, _path[0].distance_to(_path[1])])
+	_field = _path[1]
+	_face = yaw
+	_goal = "column"
+	for r in Formation.column_order(_regiments):
+		r["s"] = _cum[1] - float(r["off"])
+		_shape(r, "column")
+		_set_at(r, _at(r["s"]), yaw)
+		r["state"] = "halt"
+		_clips(r, "rest")
+
+
+## The way a field host faces: toward where its order sends it, else the way it last marched, else north.
+func _bound_yaw(h: Dictionary, at: Vector3) -> float:
+	var o: Variant = h.get("order")
+	if o is Dictionary and (o as Dictionary).get("x") != null and (o as Dictionary).get("y") != null:
+		var to: Vector3 = main.terrain.world_pos(float(o["x"]), float(o["y"]))
+		if Vector2(to.x - at.x, to.z - at.z).length() > 0.01:
+			return atan2(to.x - at.x, to.z - at.z)
+	return _face
+
+
+## Freeciv moved a host in the field (units.gd sync): its column marches to `to` along the realm's roads (roads.route,
+## else over the land), the regiments behind following the head's trail, each by its Mover at the pace that brings
+## the head there within the season (as a company's figure keeps it: never seasons behind its company), and halts
+## closed up behind it, in column.order.
+func march_to(to: Vector3) -> void:
+	if not mustered:
+		_pending = to
+		return
+	var order := Formation.column_order(_regiments)
+	var trail := PackedVector3Array()
+	for i in range(order.size() - 1, -1, -1):  # tail to head: the way the column already stands
+		trail.append(_ground_at((order[i]["node"] as Node3D).global_position))
+	var head: Vector3 = trail[trail.size() - 1]
+	var roads = main.get("roads")
+	var road: PackedVector3Array = roads.route(head, to, Data.num("army", "march.roadReach", 12.0)) if roads and roads.has_method("route") else PackedVector3Array()
+	_path = trail
+	if road.size() >= 2:
+		_path.append_array(road.slice(1))
+	_path.append(_ground_at(to))
+	_cum = PackedFloat32Array([0.0])
+	for j in range(1, _path.size()):
+		_cum.append(_cum[j - 1] + _path[j].distance_to(_path[j - 1]))
+	var ahead := _cum[_cum.size() - 1] - _cum[trail.size() - 1]
+	if ahead < 0.05:
+		return  # already there
+	var slowest := INF
+	for r in order:
+		slowest = minf(slowest, Data.num("army", "march.speed", 0.16) * float(_unit(String(r["unit"])).get("speed", 1.0)))
+	var pace := maxf(slowest, ahead / maxf(2.0, Awareness.season_seconds * 0.9))
+	_field = _ground_at(to)
+	_goal = "column"
+	for r in order:
+		r["s"] = _along((r["node"] as Node3D).global_position)
+		r["speed"] = pace
+		_clips(r, "walk")
+		_march(r)
 
 
 ## Where a host raised for war is in its march (the film's muster step waits on it): forming (its regiments not yet
@@ -391,9 +474,9 @@ static func order_face(h: Dictionary) -> float:
 
 func _from_world() -> Array:
 	var hosts: Array = main.awareness.rec("hosts", [])
-	if hosts.is_empty():
+	if hosts.is_empty() and not battle.has("host"):
 		return []
-	var h: Dictionary = hosts[0]  # the bridge sorts them largest first
+	var h: Dictionary = battle["host"] if battle.has("host") else hosts[0]  # a field host its own; else the largest (the bridge sorts them)
 	host_id = int(h.get("id", 0))
 	_order_face = order_face(h)
 	var types := {}
