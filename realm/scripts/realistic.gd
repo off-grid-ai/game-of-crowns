@@ -479,6 +479,12 @@ static func _template(name: String) -> Dictionary:
 		mi.owner = whole
 		root.free()
 		root = whole
+	if BUILT.has(name) and String(BUILT[name]["builder"]) == "castle":
+		# A castle our builder raised carries its spec and its builder's frame (metres -> this model), which the merge
+		# above bakes away: castle_life.gd hangs its arms, standards, guards and torches from them (g3: read off the
+		# merged mesh, they were gone and the towers' cloth hung cream).
+		root.set_meta("castle_spec", BUILT[name]["spec"])
+		root.set_meta("castle_frame", Transform3D(Basis.from_scale(Vector3.ONE * k), model.position))
 	var scene := PackedScene.new()
 	scene.pack(root)
 	root.free()

@@ -71,20 +71,16 @@ func _tick() -> void:
 			return
 
 
-## A castle's spec, as castle_builder.gd built it (the spec its mesh carries), or {} if our builder didn't raise
-## it. (Read off the castle's width against assets.json castle.kit until g2: the catalogue's castles moved to
-## variants and the Meshy towers widened it, so no castle matched and none was dressed: the cloth hung cream.)
+## A castle's spec, as castle_builder.gd built it (realistic.gd keeps it on the castle: castle_spec), or {} if our
+## builder didn't raise it.
 static func spec_of(castle: Node3D) -> Dictionary:
-	var model: MeshInstance3D = castle.find_child("Model", true, false) as MeshInstance3D
-	if model == null or model.mesh == null:
-		return {}
-	return model.mesh.get_meta("spec", {})
+	return castle.get_meta("castle_spec", {})
 
 
-## The castle's frame, metres to the world (through its model, which the castle's scale carries).
+## The castle's frame, the builder's metres to the world (realistic.gd's castle_frame, under the castle's own
+## place and scale).
 static func frame_of(castle: Node3D) -> Transform3D:
-	var model: Node3D = castle.find_child("Model", true, false)
-	return model.global_transform if model else castle.global_transform
+	return castle.global_transform * (castle.get_meta("castle_frame", Transform3D()) as Transform3D)
 
 
 func _dress(id: int, root: Node3D, castle: Node3D) -> void:

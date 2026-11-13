@@ -72,6 +72,7 @@ func _run() -> void:
 	_baked()
 	_banners()
 	_wall_towers()
+	_dressable()
 	print("CASTLE STONE %s" % ("PASS" if _fails == 0 else "FAIL %d" % _fails))
 	quit(0 if _fails == 0 else 1)
 
@@ -82,15 +83,6 @@ func _baked() -> void:
 	for v: Dictionary in castle.get("variants", []):
 		var spec: Dictionary = v.get("spec", {})
 		var mesh: ArrayMesh = Castle.new().build_castle(spec)
-		# castle_life dresses it (its arms, standards, guards, torches) from the spec it reads back (g2: it read none, the
-		# cloth hung cream).
-		var node := Node3D.new()
-		var model := MeshInstance3D.new()
-		model.name = "Model"
-		model.mesh = mesh
-		node.add_child(model)
-		_check(Life.spec_of(node) == spec, "castle %s: castle_life reads back the spec it was built from" % String(v.get("name", spec.get("seed", "?"))))
-		node.free()
 		var drawn := {}
 		var house_area := 0.0
 		var stone_area := 0.0
@@ -203,3 +195,15 @@ func _wall_towers() -> void:
 		var face := Castle.tower_xform(t, 4, "round", Castle.tower_out(t)).basis.orthonormalized() * Vector3(0, 0, 1)
 		var out := Vector3(t.x, 0, t.z).normalized()
 		_check(face.dot(out) > 0.99, "town wall tower at %s: its cloth faces out (%.2f)" % [t, face.dot(out)])
+
+
+## Every castle the game places (realistic.gd make, as town_layout.gd does) carries the spec and frame castle_life.gd
+## dresses it from (g2: read against a catalogue list that was gone; g3: read off a mesh the merge had replaced).
+func _dressable() -> void:
+	const Real := preload("res://scripts/realistic.gd")
+	for n: String in Real.BUILT:
+		if String(Real.BUILT[n]["builder"]) != "castle":
+			continue
+		var c: Node3D = Real.make(n)
+		_check(not Life.spec_of(c).is_empty() and c.has_meta("castle_frame"), "castle %s: castle_life can dress it (spec %s)" % [n, Life.spec_of(c)])
+		c.free()
