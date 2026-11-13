@@ -218,12 +218,12 @@ func _step(w: PackedStringArray) -> void:
 				_key(OS.find_keycode_from_string(w[1]), false)
 				await get_tree().create_timer(0.3).timeout
 			"click":
-				_click(Vector2(float(w[1]), float(w[2])))
+				await _click(Vector2(float(w[1]), float(w[2])))
 				await get_tree().create_timer(0.4).timeout
 			"dclick":
 				# A click, then a second with Godot's double_click set (as the OS marks it), as a player double-clicks.
-				_click(Vector2(float(w[1]), float(w[2])))
-				_click(Vector2(float(w[1]), float(w[2])), MOUSE_BUTTON_LEFT, true)
+				await _click(Vector2(float(w[1]), float(w[2])))
+				await _click(Vector2(float(w[1]), float(w[2])), MOUSE_BUTTON_LEFT, true)
 				await get_tree().create_timer(0.6).timeout
 			"order":
 				# order <march|garrison|hold|return|split>: the selected host (else the first) is given an order;
@@ -232,7 +232,7 @@ func _step(w: PackedStringArray) -> void:
 				await _order(w[1] if w.size() > 1 else "march")
 				await get_tree().create_timer(1.5).timeout
 			"rclick":
-				_click(Vector2(float(w[1]), float(w[2])), MOUSE_BUTTON_RIGHT)
+				await _click(Vector2(float(w[1]), float(w[2])), MOUSE_BUTTON_RIGHT)
 				await get_tree().create_timer(0.4).timeout
 			"rdrag":
 				await _right_drag(Vector2(float(w[1]), float(w[2])), Vector2(float(w[3]), float(w[4])))
@@ -1043,6 +1043,15 @@ func _right_drag(a: Vector2, b: Vector2) -> void:
 
 func _click(frac: Vector2, button := MOUSE_BUTTON_LEFT, double := false) -> void:
 	var at := get_viewport().get_visible_rect().size * frac
+	# The pointer moves onto the spot first, as a player's does: the interface's hover is set by motion alone, and the
+	# view lets a press go to whatever control it still thinks is under the pointer (camera_rig._unhandled_input), so a
+	# press with no move before it went to the last place hovered (READY 8: the ray met the standard, then "host
+	# selected: -1").
+	var move := InputEventMouseMotion.new()
+	move.position = at
+	move.global_position = at
+	_feed(move)
+	await get_tree().process_frame
 	for down in [true, false]:
 		var e := InputEventMouseButton.new()
 		e.button_index = button
@@ -1191,7 +1200,7 @@ func _host(n: int, dist: float, tilt: float) -> void:
 	const HostPick := preload("res://scripts/host_pick.gd")
 	var met: Dictionary = HostPick.pick(cam, s)
 	_note("  host %d: the ray at %d,%d meets %s" % [n, int(s.x), int(s.y), ("unit %d" % int(met["unit"])) if not met.is_empty() else "nothing"])
-	_click(s / screen.size)
+	await _click(s / screen.size)
 	await get_tree().create_timer(0.5).timeout
 	_note("  host selected: %d" % int(hc.selected))
 
