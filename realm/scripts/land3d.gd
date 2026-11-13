@@ -39,8 +39,8 @@ func build(terrain: Node3D, ground_layer: int) -> void:
 		var ta := Terrain3DTextureAsset.new()
 		ta.name = LAYERS[i]
 		var tex := layer_textures(i)
-		ta.albedo_texture = load(tex[0])
-		ta.normal_texture = load(tex[1])
+		ta.albedo_texture = _layer_texture(tex[0])
+		ta.normal_texture = _layer_texture(tex[1])
 		# Each layer's tint and scale (realm/data/ground.json layers: the painted ground).
 		ta.albedo_color = Color.WHITE  # the paint is final; a tint only where ground.json layers.<layer>.tint gives one
 		var tint: Array = Data.value("ground", "layers.%s.tint" % LAYERS[i], [])
@@ -133,6 +133,20 @@ func build(terrain: Node3D, ground_layer: int) -> void:
 		floor.blit_rect(control, Rect2i(Vector2i.ZERO, control.get_size()), Vector2i.ZERO)
 		control = floor
 	land.data.import_images([heights, control, null], Vector3.ZERO, 0.0, 1.0)
+
+
+## A packed ground texture read straight off disk (RGBA8 with its mipmaps, every layer alike, as Terrain3D's texture
+## array needs), so a repacked layer never waits on Godot's import: g3's frames ran before the repacked PNGs were
+## imported, every layer "Failed loading", and Terrain3D drew its checkerboard over the land. In an exported game,
+## where only the import ships, the import.
+static func _layer_texture(path: String) -> Texture2D:
+	if FileAccess.file_exists(path):
+		var img := Image.load_from_file(ProjectSettings.globalize_path(path))
+		if img:
+			img.convert(Image.FORMAT_RGBA8)
+			img.generate_mipmaps()
+			return ImageTexture.create_from_image(img)
+	return load(path) as Texture2D
 
 
 ## A ground layer's two textures (albedo with height, normal with roughness), the one
