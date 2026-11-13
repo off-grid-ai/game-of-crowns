@@ -367,6 +367,20 @@ static func lens_distance() -> float:
 ## line; once none of the beaten stands, `last` (the lens stays where the rout ended).
 static func lens_aim(rows: Array, loser: int, met: bool, last: Vector3) -> Vector3:
 	if met:
+		# Where two fronts are locked (a beaten regiment at blows with its foe, the shakiest of them): midway between
+		# the two, so the frame holds the press itself, front ranks cutting, men falling, both standards over it (g17
+		# battle.jpg: the shakiest regiment and its nearest foe were not the pair fighting; grey horse and red pikes in
+		# frame, apart).
+		var low := INF
+		var pair: Array = []
+		for r in rows[loser]:
+			var f: Variant = r.get("foe")
+			if String(r.get("state_name", "")) == "fight" and f is Dictionary and String((f as Dictionary).get("state_name", "")) != "rout" \
+					and Morale.of(r) < low:
+				low = Morale.of(r)
+				pair = [r, f]
+		if not pair.is_empty():
+			return ((pair[0]["node"] as Node3D).global_position).lerp((pair[1]["node"] as Node3D).global_position, 0.5)
 		var next := Morale.shakiest(rows, loser)
 		if next.is_empty():
 			return last

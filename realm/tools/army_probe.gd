@@ -1020,6 +1020,12 @@ func _lens_on_the_rout() -> void:
 	# At blows: midway between the regiment that breaks next and its nearest foe (the victor at 0,0,-0.5), so both lines
 	# are in frame (g15 battle.jpg: the lens on one regiment alone).
 	_check(aim.distance_to(Vector3(0, 0, -0.25)) < 0.01, "at blows the lens looks where the regiment that breaks next meets its foe (%s)" % str(aim))
+	# Locked fronts first: the shakiest regiment at blows with a foe of its own (not its nearest) is the frame (g17).
+	var locked: Dictionary = make.call("locked", 0, Vector3(0, 0, 1.0), 1.0)
+	line[1]["foe"] = locked
+	var at_blows: Vector3 = FieldS.call("lens_aim", rows, 1, true, start)
+	_check(at_blows.distance_to(Vector3(0, 0, 0.5)) < 0.01, "at blows the lens looks at the press where the shakiest locked pair fights (%s)" % str(at_blows))
+	line[1].erase("foe")
 	line[1]["state_name"] = "rout"
 	aim = FieldS.call("lens_aim", rows, 1, true, aim)
 	_check(aim.distance_to(Vector3(0.85, 0, 0).lerp(Vector3(0, 0, -0.5), 0.5)) < 0.01, "as it breaks, the lens moves along the line to the next (%s)" % str(aim))

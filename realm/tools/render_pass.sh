@@ -190,7 +190,7 @@ if want cavalry; then
   side cavalry $OUT/frames/cavalry.png $TARGETS/03-army.jpg "READY 4, army_colour_probe"
 fi
 if want battle; then
-  { print "wait 20"; print "clash 150"; print "snap meet"; print "rout 150"
+  { print "wait 20"; print "clash 150"; print "wait 4"; print "snap meet"; print "rout 150"
     for i in $(seq -f "%02g" 1 16); do print "snap r$i"; print "wait 1"; done; print "look end"; } > $OUT/battle.play
   shot battle 2400 film --army-battle=600:foe --probe --dist=5  # 03-army's distance (g15: the town view's 2.4 held one regiment)
   side battle $OUT/frames/battle/meet.png $TARGETS/03-army.jpg "READY 5: $(grep -c 'breaks at' $OUT/frames/battle.log 2>/dev/null) breaks"
