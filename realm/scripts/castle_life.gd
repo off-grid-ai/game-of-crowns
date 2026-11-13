@@ -71,19 +71,14 @@ func _tick() -> void:
 			return
 
 
-## A castle's spec, read off its own size (the kit's spec whose bailey matches), or {} if our builder
-## didn't raise it.
+## A castle's spec, as castle_builder.gd built it (the spec its mesh carries), or {} if our builder didn't raise
+## it. (Read off the castle's width against assets.json castle.kit until g2: the catalogue's castles moved to
+## variants and the Meshy towers widened it, so no castle matched and none was dressed: the cloth hung cream.)
 static func spec_of(castle: Node3D) -> Dictionary:
 	var model: MeshInstance3D = castle.find_child("Model", true, false) as MeshInstance3D
 	if model == null or model.mesh == null:
 		return {}
-	var hx := model.mesh.get_aabb().end.x - Builder.CELL  # the corner towers stand a cell past the curtain
-	var kit: Array = (Data.value("assets", "components", {}).get("castle", {}) as Dictionary).get("kit", [])
-	for v in kit:
-		var sp: Dictionary = v.get("spec", {})
-		if absf(int(sp.get("w", 0)) * Builder.CELL / 2.0 - hx) < 0.6:
-			return sp
-	return {}
+	return model.mesh.get_meta("spec", {})
 
 
 ## The castle's frame, metres to the world (through its model, which the castle's scale carries).

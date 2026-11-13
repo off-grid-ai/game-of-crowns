@@ -47,8 +47,11 @@ func build_castle(spec: Dictionary) -> ArrayMesh:
 	var keep_file := _meshy_file("ck_keep")
 	if keep_file != "":
 		parts.append([keep_file, keep_xform(spec)])
-	# The house's banners on the keep and the gate are castle_life.gd's (its painted arms).
-	return _bake(parts)
+	# The house's banners on the keep and the gate are castle_life.gd's (its painted arms), placed from the spec the
+	# castle carries (castle_life.gd spec_of).
+	var mesh := _bake(parts)
+	mesh.set_meta("spec", spec)
+	return mesh
 
 
 ## The castle set's sizes (data/castle.json meshy): keep {scale, z}; tower {round, square: the pieces; width, metres

@@ -14,6 +14,7 @@ extends SceneTree
 
 const Data := preload("res://scripts/data.gd")
 const Castle := preload("res://scripts/castle_builder.gd")
+const Life := preload("res://scripts/castle_life.gd")
 const PIECES := ["ck_keep", "ck_wall_tower", "ck_corner_tower", "ck_wall_stretch"]
 const BAKED := ["ck_keep", "ck_wall_tower", "ck_wall_stretch"]  # in every castle (a seat has no square towers)
 const STONE_MAX := 0.1  # the share of a piece's house-coloured area that may be grey stone (edges of a roof)
@@ -80,6 +81,15 @@ func _baked() -> void:
 	for v: Dictionary in castle.get("variants", []):
 		var spec: Dictionary = v.get("spec", {})
 		var mesh: ArrayMesh = Castle.new().build_castle(spec)
+		# castle_life dresses it (its arms, standards, guards, torches) from the spec it reads back (g2: it read none, the
+		# cloth hung cream).
+		var node := Node3D.new()
+		var model := MeshInstance3D.new()
+		model.name = "Model"
+		model.mesh = mesh
+		node.add_child(model)
+		_check(Life.spec_of(node) == spec, "castle %s: castle_life reads back the spec it was built from" % String(v.get("name", spec.get("seed", "?"))))
+		node.free()
 		var drawn := {}
 		var house_area := 0.0
 		var stone_area := 0.0
