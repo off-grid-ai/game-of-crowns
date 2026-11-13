@@ -267,12 +267,22 @@ def smooth_leaves(obj):
     if obj.data.has_custom_normals:
         bpy.context.view_layer.objects.active = obj
         bpy.ops.mesh.customdata_custom_splitnormals_clear()
-    n = 0
-    for poly in obj.data.polygons:
-        if poly.material_index in slots:
-            poly.use_smooth = True
-            n += 1
-    return n
+    # Meshy's leaves come unwelded (each face its own corners), so smooth shading alone left every face its own normal
+    # (group render g3: still facets; nt_oak_a 1213 of its 1950 leaf corners carried several normals). Weld the
+    # leaves' corners where they meet, then clear any sharp edge on them.
+    bm = bmesh.new()
+    bm.from_mesh(obj.data)
+    leaf_verts = {v for f in bm.faces if f.material_index in slots for v in f.verts}
+    bmesh.ops.remove_doubles(bm, verts=list(leaf_verts), dist=1e-4)
+    for f in bm.faces:
+        if f.material_index in slots:
+            f.smooth = True
+            for e in f.edges:
+                e.smooth = True
+    bm.to_mesh(obj.data)
+    bm.free()
+    obj.data.update()
+    return sum(1 for poly in obj.data.polygons if poly.material_index in slots)
 
 
 def mask_png(obj, mask, out):
