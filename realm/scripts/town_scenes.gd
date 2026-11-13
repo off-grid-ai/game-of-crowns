@@ -1065,7 +1065,8 @@ func _beat(root: Node3D, tl: Object, r: float, k: int, rng: RandomNumberGenerato
 
 
 ## A horse and cart rolling in along one main street's own line to the market, out along the other and back,
-## waiting only at the market (its tail a porter's slot meanwhile) and at the streets' ends.
+## up an alley to the yards and back from the market now and then (walk.alleys), waiting at the market (its tail a
+## porter's slot meanwhile), at the yards' end of an alley and at the streets' ends.
 func _cart(k: Dictionary, role: Dictionary, W: Dictionary, r: float) -> void:
 	var root: Node3D = k["root"]
 	var life: Node3D = k["life"]
@@ -1107,8 +1108,24 @@ func _cart(k: Dictionary, role: Dictionary, W: Dictionary, r: float) -> void:
 	var out_a: Array = (lanes[0] as Array).duplicate()
 	var in_a: Array = out_a.duplicate()
 	in_a.reverse()
-	var route: Array = in_a + [mkt] + out_b + [ends[1]] + in_b + [mkt] + out_a + [ends[0]]
-	var waits: Array = route.map(func(q): return q == mkt or q == ends[0] or q == ends[1])
+	# Up the alleys between the square's houses to the yards and back to the market (walk.alleys: how many a round;
+	# art target 01-town: a carter on the lanes between the yards), the nearest the market first, along the alley's
+	# own line from its mouth at the house fronts; it waits at the yard end to unload as at the market.
+	var yard_ends: Array = []
+	var trips: Array = []
+	var front := float(root.get_meta("square_r", r)) + 0.25 - 0.1  # where an alley leaves the square (town_layout _ring_alley)
+	var alleys: Array = (root.get_meta("alleys", []) as Array).duplicate()
+	var m2 := Vector2(mkt.x, mkt.z)
+	alleys.sort_custom(func(a, b): return (a as Vector2).normalized().distance_to(m2.normalized()) < (b as Vector2).normalized().distance_to(m2.normalized()))
+	for q in alleys.slice(0, int(W.get("alleys", 0))):
+		var far := Vector3((q as Vector2).x, 0, (q as Vector2).y)
+		var mouth := far.normalized() * front
+		yard_ends.append(far)
+		trips.append([mouth, far, mouth, mkt])
+	var first: Array = trips[0] if trips.size() > 0 else []
+	var second: Array = trips[1] if trips.size() > 1 else []
+	var route: Array = in_a + [mkt] + first + out_b + [ends[1]] + in_b + [mkt] + second + out_a + [ends[0]]
+	var waits: Array = route.map(func(q): return q == mkt or q == ends[0] or q == ends[1] or q in yard_ends)
 	Mover.of(rig).turn_radius = float(W.get("turn_radius", 0.45))  # a cart steers round, never spins
 	_walker(rig, Round.new(), {"route": route.map(func(q): return root.to_global(q)), "plan": {"goal": Vector3.INF, "until": 0, "leg": 0}, "lead": true, "side": 0.0,
 		"pause": W.get("stop", [6.0, 12.0]), "rest": [], "waits": waits, "market": root.to_global(mkt), "tail": float(W.get("tail", 0.22)), "town": root,
