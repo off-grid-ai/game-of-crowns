@@ -339,6 +339,8 @@ func _open(k: Dictionary, d: Dictionary) -> Dictionary:
 			var c: Dictionary = k["census"]
 			var b := square_budget(k["root"])
 			var left := maxi(0, b - int(c.get("cast", 0))) if b >= 0 else 0
+			# Never more than towns.json square.cover_most (Mac: keep round 11's open court; a handful stand in the open).
+			left = mini(left, int(Data.num("towns", "square.cover_most", 8)))
 			k["open"] = cover_people(k["root"], seeds, left, float(d.get("within", 0.85)))
 		else:
 			k["open"] = open_spots(k["root"], float(d.get("apart", 4.0)), float(d.get("within", 0.85)))
