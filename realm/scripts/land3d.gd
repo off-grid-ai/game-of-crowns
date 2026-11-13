@@ -81,6 +81,11 @@ func build(terrain: Node3D, ground_layer: int) -> void:
 			mat.set_shader_param(String(k[1]), Color(float(c[0]), float(c[1]), float(c[2])))
 	if Data.value("ground", "macro.scale", null) != null:
 		mat.set_shader_param("noise1_scale", Data.num("ground", "macro.scale", 0.04))  # Terrain3D's macro noise: lower is broader
+	# The second, finer noise (macro.fine, Terrain3D's noise2_scale): its default patches are some 270 m across, wider
+	# than the army camera sees, so the open country under a host read as one even lawn (g2 command and battle frames;
+	# target 03-army: the ground varied within a company's width).
+	if Data.value("ground", "macro.fine", null) != null:
+		mat.set_shader_param("noise2_scale", Data.num("ground", "macro.fine", 0.076))
 	if Data.value("ground", "macro.slope", null) != null:
 		mat.set_shader_param("macro_variation_slope", Data.num("ground", "macro.slope", 0.333))
 	_drape_atlas(mat, terrain)
@@ -152,22 +157,33 @@ func _control_from_land(terrain: Node3D) -> Image:
 	# Terrain3D switches base textures hard from vertex to vertex, which draws
 	# stair-steps; overlays blend. So the ground is grass everywhere, with sand,
 	# snow and the terrain's own ground laid over it at a blend that ramps smoothly.
-	var over := func(layer: int, weight: float) -> float:
-		var enc := Terrain3DUtil.enc_base(0) | Terrain3DUtil.enc_auto(true)
+	# The auto shader (rock on cliffs) replaces a pixel's own layers outright wherever its auto bit is set, so it is
+	# set only where nothing is laid over the grass, or where the land is as steep as a cliff (ground.json auto.cliff:
+	# the normal's height under which it is). Set everywhere until g2, it drew every open field, worn patch, plain's
+	# dry grass and hill's stones as the one grass: an even lawn under the army (target 03-army: varied ground).
+	var cliff := Data.num("ground", "auto.cliff", 0.9)
+	var run := 2.0 / per  # units between the neighbours either side
+	var over := func(layer: int, weight: float, steep: bool) -> float:
+		var enc := Terrain3DUtil.enc_base(0)
 		var bl := clampi(int(weight * 255.0), 0, 255)
 		if bl > 0:
 			enc |= Terrain3DUtil.enc_overlay(layer) | Terrain3DUtil.enc_blend(bl)
+		if bl == 0 or steep:
+			enc |= Terrain3DUtil.enc_auto(true)
 		return Terrain3DUtil.as_float(enc)
 	var out := Image.create_empty(w, h, false, Image.FORMAT_RF)
 	for z in h:
 		for x in w:
 			var y := hm.get_pixel(x, z).r
+			var gx := (hm.get_pixel(mini(x + 1, w - 1), z).r - hm.get_pixel(maxi(x - 1, 0), z).r) / run
+			var gz := (hm.get_pixel(x, mini(z + 1, h - 1)).r - hm.get_pixel(x, maxi(z - 1, 0)).r) / run
+			var steep := 1.0 / sqrt(1.0 + gx * gx + gz * gz) < cliff
 			var v: float
 			var sand := smoothstep(_beach_top, -0.12, y)  # a beach at the waterline (wider when painted), sand on the sea floor
 			if sand > 0.02:
-				v = over.call(2, sand)
+				v = over.call(2, sand, steep)
 			elif y > 7.5:
-				v = over.call(3, smoothstep(7.5, 9.5, y))
+				v = over.call(3, smoothstep(7.5, 9.5, y), steep)
 			else:
 				# The terrain's own ground (terrain.tile_mix): its strongest layer laid over the grass.
 				var mix: Array = terrain.tile_mix((x + 0.5) / per, (z + 0.5) / per)
@@ -175,7 +191,7 @@ func _control_from_land(terrain: Node3D) -> Image:
 				for i in range(2, mix.size()):
 					if mix[i] > mix[top]:
 						top = i
-				v = over.call(top, mix[top] / (mix[0] + mix[top] + 0.0001))
+				v = over.call(top, mix[top] / (mix[0] + mix[top] + 0.0001), steep)
 			out.set_pixel(x, z, Color(v, 0, 0, 1))
 	return out
 

@@ -20,12 +20,13 @@
     "patches": { "layer": 1, "most": 0.75, "from": 0.08, "soft": 0.25, "scale": 0.35 }
   },
   "beach": { "top": 0.035 },
+  "auto": { "_": "land3d.gd _control_from_land: the auto shader (rock on cliffs, by slope) only where the ground is this steep or bare grass; cliff, the normal's height under which it is a cliff (lower, fewer cliffs).", "cliff": 0.9 },
   "winter": { "snow": [0.74, 0.76, 0.82] },
   "surf": false,
   "roads": { "width": 0.26, "reach": 2.5, "verge": 2.4, "vergeTint": [0.92, 0.95, 0.82, 0.6], "tint": [1.0, 1.0, 1.0], "kingsShade": 0.92, "edge": { "feather": 0.2, "wander": 0.2, "crown": 0.7, "ruts": 0.22, "ends": 0.5 } },
   "wear": { "on": true, "onStone": false, "step": 0.012, "growBack": 0.002, "walkMin": 0.01, "stampEvery": 0.25, "uploadEvery": 3.0, "colour": [0.52, 0.36, 0.22] },
   "mesh": { "size": 128, "lods": 7 },
   "rivers": { "mouthUnder": 0.03, "mouthEase": 6, "taper": 5, "thin": 0.25, "shallow": [0.24, 0.34, 0.34], "deep": [0.1, 0.18, 0.2] },
-  "macro": { "a": [0.8, 0.95, 0.66], "b": [1.12, 0.98, 0.7], "scale": 0.02 },
+  "macro": { "a": [0.8, 0.95, 0.66], "b": [1.12, 0.98, 0.7], "scale": 0.02, "fine": 0.5 },
   "wild": { "reach": 24.0 }
 }
