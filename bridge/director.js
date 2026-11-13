@@ -17,6 +17,8 @@ import * as Lua from "./lua.js";
 import { BANDS } from "./favour.js";
 import * as Stakes from "./stakes.js";
 import * as kingDeeds from "./ledger.js";
+import * as Hosts from "./hosts.js";
+import { CIVILIAN } from "./campaigns.js";
 
 export const DIRECTOR = JSON.parse(fs.readFileSync(new URL("./data/director.json", import.meta.url), "utf8"));
 
@@ -42,6 +44,7 @@ export function season(ctx, turn) {
   const peace = ctx.history?.[ctx.history.length - 1]?.peace ?? 1;
   const t = tension(world, meta, peace, ctx.usurper ?? "none");
   d.curve = [...(d.curve ?? []), { turn, t: Math.round(t * 100) / 100, threat: d.threat?.kind ?? null, level: d.threat?.level ?? 0 }].slice(-60);
+  marches(ctx, d, turn);
   if (d.threat) grow(ctx, d, turn);
   else if (d.rest > 0) d.rest -= 1;
   else if (meta.lastAct) finale(ctx, d, turn);
@@ -176,12 +179,12 @@ function breaks(ctx, d, turn) {
     // The nearest crown town not the King's seat is taken (the seat itself is only sacked).
     const near = world.cities.filter((c) => c.owner === crown?.id).sort((a, b) => dist(a, at) - dist(b, at));
     const target = near.find((c) => !c.capital) ?? near[0];
+    // The men it gathered march there by the road (realm_war_march, hosts.js warpath); the town falls when they reach
+    // its walls (marches), so the King sees them come and can meet them on the way.
     if (target) {
-      if (!target.capital) send(`lua cmd ${Lua.transferCity(target.id, th.house)}`);
-      send(`lua cmd ${Lua.host(th.house, target.x, target.y, ["Pikemen", "Archers", "Knights"], 3 + Math.floor(th.n / 2))}`);
-      addMark?.("sack", target.x, target.y, turn);
-      scene("sack", { x: target.x, y: target.y, city: target.id, owner: th.house });
-      cost = target.capital ? `${cityName(target.id)} is sacked under the King's own walls` : `${cityName(target.id)} is stormed and taken; it flies ${th.houseName}'s banner now`;
+      send(`lua cmd ${Lua.warMarch(th.house, at.id, target.id)}`);
+      d.march = { house: th.house, houseName: th.houseName, city: target.id, since: turn };
+      cost = `it marches on ${cityName(target.id)}`;
     }
   } else if (at && th.kind === "famine") {
     // The town's own fields waste and its granary is lost: Freeciv starves it, and it shrinks.
@@ -205,6 +208,31 @@ function breaks(ctx, d, turn) {
   d.last = th.kind;
   d.threat = null;
   d.rest = th.finale ? 0 : DIRECTOR.breather;  // the finale is the end's own peak: no breather after it
+}
+
+// A broken threat's host on the road (breaks): at the walls of the crown's town the town is stormed and taken (the
+// King's seat only sacked); it ends with nothing taken if the host is beaten or scattered on the road, or the town is
+// no longer the crown's.
+function marches(ctx, d, turn) {
+  const m = d.march;
+  if (!m) return;
+  const { world, send, record, scene, addMark } = ctx;
+  const crown = crownOf(world);
+  const target = world.cities.find((c) => c.id === m.city);
+  const there = target && (world.units ?? []).some((u) => u.owner === m.house && !CIVILIAN.has(u.type) && Math.max(Math.abs(u.x - target.x), Math.abs(u.y - target.y)) <= 1);
+  if (target && target.owner === crown?.id && there) {
+    if (!target.capital) send(`lua cmd ${Lua.transferCity(target.id, m.house)}`);
+    addMark?.("sack", target.x, target.y, turn);
+    scene("sack", { x: target.x, y: target.y, city: target.id, owner: m.house });
+    record({ turn, kind: "rebellion", text: target.capital ? `${m.houseName}'s host reaches the King's own walls: ${cityName(target.id)} is sacked.` : `${m.houseName}'s host reaches ${cityName(target.id)}: it is stormed and taken, and flies ${m.houseName}'s banner now.`, city: target.id });
+    d.march = null;
+    return;
+  }
+  if (!target || target.owner !== crown?.id) { d.march = null; return; }
+  if (turn > m.since + 1 && !Hosts.marchingOn(ctx, m.house, m.city)) {
+    record({ turn, kind: "court", text: `${m.houseName}'s host never reaches ${cityName(target.id)}; what is left of it scatters.`, city: target.id });
+    d.march = null;
+  }
 }
 
 // A decree given (routes_decree.js), weighed against the threat (data answers):

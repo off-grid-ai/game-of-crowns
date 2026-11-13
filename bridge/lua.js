@@ -16,6 +16,7 @@ export const levy = (cityId, kinds, vet = 1) => `realm_levy(${n(cityId)}, "${kin
 const whoLua = (who) => (who === "dead" ? "realm_the_dead()" : `realm_find_player(${n(who)})`);
 export const host = (who, x, y, kinds, count) => `realm_host(${whoLua(who)}, ${n(x)}, ${n(y)}, {${kinds.map((k) => `"${k}"`).join(",")}}, ${n(count)})`;
 export const warHost = (who, cityId, kinds, count) => `realm_war_host(${whoLua(who)}, ${n(cityId)}, {${kinds.map((k) => `"${k}"`).join(",")}}, ${n(count)})`;
+export const warMarch = (who, fromId, toId) => `realm_war_march(${whoLua(who)}, ${n(fromId)}, ${n(toId)})`;
 
 // Men without banners raised beside a town (realm_raid: Freeciv's barbarians, a raid's season).
 export const raid = (cityId) => `realm_raid(${n(cityId)})`;

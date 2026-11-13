@@ -634,6 +634,24 @@ function realm_war_host(who, city_id, kinds, count)
   end
 end
 
+-- A house's gathered host marches out (director.js: a threat left unanswered breaks): its soldiers standing round
+-- its town, not in it (the garrison stays), are told to the bridge as a war host on the crown's town (war_host),
+-- which walks them there by the road (hosts.js warpath); the town falls only when they reach its walls.
+function realm_war_march(who, from_id, to_id)
+  local from, to = find.city(nil, from_id), find.city(nil, to_id)
+  if not who or not from or not to then log.normal("WARMARCH no house or town"); return end
+  local ids = {}
+  for t in from.tile:square_iterate(2) do
+    if t:city() == nil then
+      for u in t:units_iterate() do
+        if u.owner == who and not u.utype:has_flag("NonMil") then ids[#ids + 1] = tostring(u.id) end
+      end
+    end
+  end
+  if #ids > 0 then emit("war_host", {owner = who.id, city = to.id, units = table.concat(ids, ",")}) end
+  log.normal("WARMARCH %s %d men from %s on %s", who.name, #ids, from.name, to.name)
+end
+
 -- Men without banners: a raid is an event, not a standing army. Freeciv's own barbarians are raised beside a
 -- town (a paid raid, a story's raid), on an empty land tile two out, never on anyone's men (unleashing wipes the
 -- tile's units). They can't take the town (actions.ruleset); each season they pillage the land around it with
