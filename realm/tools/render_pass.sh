@@ -181,7 +181,7 @@ if want muster; then
   { print "muster formed 150"; print "snap formed"; print "muster out 150"
     for i in $(seq -f "%02g" 1 20); do print "snap m$i"; print "wait 1.5"; done
     print "muster halted 150"; print "snap halted"; print "look end"; } > $OUT/muster.play
-  shot muster 2400 film $SW --muster --dist=9 --lead=2
+  shot muster 2400 film $SW --muster --dist=5 --lead=2  # 03-army: the column on the road fills the frame (g3: small at 9)
   side muster $OUT/frames/muster/m10.png $TARGETS/03-army.jpg "READY 3: $(grep -h 'muster:' $OUT/frames/muster/play.log 2>/dev/null | tr '\n' ' ')"
 fi
 if want cavalry; then

@@ -997,9 +997,11 @@ func _form_on_road(town: Vector3, to: Vector3) -> bool:
 	if roads == null or not roads.has_method("route"):
 		return false
 	var road: PackedVector3Array = roads.route(town, to, Data.num("army", "march.roadReach", 12.0))
-	if road.size() < 2:
+	if road.size() < 3:
 		return false
-	_path = road
+	# The route sets out from the seat's own spot, up to march.roadReach off the road: the host stands on the road from
+	# its first point on, never on that leg over the grass (group render g3, muster.jpg: a block on open grass).
+	_path = road.slice(1)
 	_cum = PackedFloat32Array([0.0])
 	for j in range(1, _path.size()):
 		_cum.append(_cum[j - 1] + _path[j].distance_to(_path[j - 1]))
