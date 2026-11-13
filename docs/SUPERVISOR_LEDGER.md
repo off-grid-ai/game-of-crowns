@@ -133,6 +133,7 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- 11-14 04:19 g12: crossing PASS (men packed on the cog's deck under standards, 406ee551).
 - 11-14 04:09 round: landed army 406ee551 (host on the cog's deck). g12 started (crossing). Square silent on the smithy. Bottleneck: smithy, 4 passes.
 - 11-14 04:07 g11: crossing FAIL (host's standard floats on the water, no men, deck empty: army); town has carts and horses in the square, tavern moved to the back but still dark, forge not in frame (square, 4th pass). Bottleneck: the smithy on square, 4 passes; asked for its place and the lens.
 - 11-14 03:57 round: landed army 36abd21b (column to the cog, men on deck), look 028fb9ad (no snow on the winter shore), square 55981da2 (smithy room, tavern out of the near left). g11 started (crossing town). Bottleneck: none new.
