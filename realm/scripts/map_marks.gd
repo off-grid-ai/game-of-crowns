@@ -68,6 +68,10 @@ func _draw_marks() -> void:
 		var p := _on_screen(cam, t.x, t.y)
 		if p != Vector2.INF and view.has_point(p):
 			MapLook.draw_siege(_canvas, p, 1.0, a)
+	for u in MapLook.unrest(aw):
+		var p := _on_screen(cam, u["tile"].x, u["tile"].y)
+		if p != Vector2.INF and view.has_point(p):
+			MapLook.draw_unrest(_canvas, p, bool(u["rising"]), 1.0, a)
 	# Farther hosts first, so the nearer standard stands in front.
 	var hosts := MapLook.armies(aw)
 	var placed := []

@@ -32,6 +32,12 @@ var owners: Array = []:
 			_lands_tex = null
 		owners = v
 var houses := {}  # owner id -> house
+var holds := {}:  # owner id -> how strongly its land carries its colour (political_overlay.hold_of: its favour band)
+	set(v):
+		if v != holds:
+			_lands_tex = null
+		holds = v
+var unrest: Array = []  # map_look.unrest: towns in uproar
 var hosts: Array = []  # map_look.armies
 var marches: Array = []  # map_look.marches
 var sieges: Array = []  # map_look.sieges
@@ -188,9 +194,9 @@ func _lands_of() -> Texture2D:
 	return ImageTexture.create_from_image(img)
 
 
-## A siege's ring pulses: the painting redraws while one stands.
+## A siege's ring pulses and an uproar's torch flickers: the painting redraws while one stands.
 func _process(_delta: float) -> void:
-	if visible and not _sieges().is_empty():
+	if visible and (not _sieges().is_empty() or not unrest.is_empty()):
 		queue_redraw()
 
 
@@ -266,7 +272,8 @@ func _held_lands() -> Texture2D:
 		for x in w:
 			var o: int = grid[y][x]
 			if o >= 0:
-				img.set_pixel(x, y, Heraldry.colour(houses.get(o, {}), Color.GRAY))
+				var c := Heraldry.colour(houses.get(o, {}), Color.GRAY)
+				img.set_pixel(x, y, Color(c, c.a * float(holds.get(o, 1.0))))  # a restless house's land fades (its favour band)
 			# A seam on the right and the bottom edge of every tile whose neighbour is another house's.
 			for d in [Vector2i(1, 0), Vector2i(0, 1)]:
 				var nx: int = x + d.x
@@ -348,6 +355,10 @@ func _draw_marks() -> void:
 		var at := to_screen(st.x, st.y)
 		if view.has_point(at):
 			MapLook.draw_siege(self, at, k)
+	for u in unrest:
+		var at := to_screen(u["tile"].x, u["tile"].y)
+		if view.has_point(at):
+			MapLook.draw_unrest(self, at, bool(u["rising"]), k)
 	var standing := []
 	for g in _hosts():
 		var at := to_screen(float(g["x"]), float(g["y"]))

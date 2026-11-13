@@ -7,6 +7,7 @@ extends RefCounted
 
 const Main := preload("res://scripts/main.gd")
 const MapLook := preload("res://scripts/map_look.gd")
+const PoliticalOverlay := preload("res://scripts/political_overlay.gd")
 
 var main: Main  # the realm that owns the map: its camera, land, names and bridge
 
@@ -45,7 +46,8 @@ func _overview_setup() -> void:
 			main.bridge.realm_map(func(d): _over_map.data = d))
 
 
-## The realm as it stands now, from the mirror: who holds the land, the hosts, marches and sieges.
+## The realm as it stands now, from the mirror: who holds the land and how firmly, the hosts, marches, sieges and
+## towns in uproar.
 func _mirror() -> void:
 	if main.awareness == null:
 		return
@@ -54,6 +56,11 @@ func _mirror() -> void:
 	for p in aw.realm.get_var(&"houses", [], false):
 		houses[int(p.get("id", -1))] = p.get("house", {})
 	_over_map.houses = houses
+	var holds := {}
+	for p in aw.realm.get_var(&"houses", [], false):
+		holds[int(p.get("id", -1))] = PoliticalOverlay.hold_of(p)  # an angry house's land fades, as on the ground's map
+	_over_map.holds = holds
+	_over_map.unrest = MapLook.unrest(aw)
 	_over_map.owners = aw.realm.get_var(&"owners", [], false)
 	_over_map.hosts = MapLook.armies(aw)
 	_over_map.marches = MapLook.marches(aw)

@@ -110,6 +110,20 @@ static func sieges(aw: Object) -> Array:
 	return out
 
 
+## The towns in uproar (the mirror's town scopes): the people in the streets against their lord (the bridge's mood
+## riot: Freeciv's civil disorder) or a house split in a rising (risings.js). [{tile, rising}].
+static func unrest(aw: Object) -> Array:
+	var out := []
+	if aw == null:
+		return out
+	for id in aw.realm.get_var(&"towns", [], false):
+		var bb: Object = aw.town(int(id))
+		var rising: bool = not (bb.get_var(&"rising", {}, false) as Dictionary).is_empty()
+		if rising or String(bb.get_var(&"mood", "", false)) == "riot":
+			out.append({"tile": Vector2(bb.get_var(&"tile", Vector2i.ZERO, false)), "rising": rising})
+	return out
+
+
 static func _men(n: int) -> String:
 	return "%.1fk" % (n / 1000.0) if n >= 1000 else str(n)
 
@@ -199,6 +213,23 @@ static func draw_siege(ci: CanvasItem, at: Vector2, k := 1.0, alpha := 1.0) -> v
 		var guard := Vector2(-d.y, d.x).normalized() * 4.0 * k
 		var g: Vector2 = at + d * s * 0.45
 		ci.draw_line(g - guard, g + guard, steel, 2.0 * k, true)
+
+
+## A town in uproar on screen (Total War's unrest over a settlement): a flickering ember ring and a raised torch;
+## a rising wears it brighter and wider (map.json marks.unrest).
+static func draw_unrest(ci: CanvasItem, at: Vector2, rising: bool, k := 1.0, alpha := 1.0) -> void:
+	var col := colour("marks.unrest.color", Color(0.95, 0.5, 0.15))
+	var r := num("marks.unrest.ring", 14.0) * k * (num("marks.unrest.rising", 1.35) if rising else 1.0)
+	var t := Time.get_ticks_msec() / 1000.0 / maxf(0.2, num("marks.unrest.flicker", 0.6))
+	var lit := 0.75 + 0.25 * sin(t * TAU) * sin(t * 2.3)
+	ci.draw_arc(at, r, 0.0, TAU, 32, Color(col, 0.85 * alpha * lit), 2.5 * k, true)
+	var dark := Color(0.06, 0.05, 0.04, 0.9 * alpha)
+	var foot := at + Vector2(r * 0.35, r * 0.55)
+	var head := at - Vector2(r * 0.2, r * 0.5)
+	ci.draw_line(foot, head, dark, 4.0 * k, true)
+	ci.draw_line(foot, head, Color(0.55, 0.38, 0.2, alpha), 2.0 * k, true)
+	ci.draw_circle(head - Vector2(0, 2.0 * k), 4.0 * k * lit, Color(col, alpha))
+	ci.draw_circle(head - Vector2(0, 3.0 * k), 2.0 * k, Color(1.0, 0.88, 0.5, alpha * lit))
 
 
 ## A march on screen: a dashed line from `a` to `b` with an arrowhead at `b`.

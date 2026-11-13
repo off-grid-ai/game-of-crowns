@@ -28,6 +28,14 @@ var _rel_sig := ""  # wars, truces, schemes: a change repaints the borders
 ## envoy, a pact the King's spies have revealed, a marriage, drawn on the seam
 ## between the two houses (a = 0.75 envoy, 0.5 pact, 0.25 marriage; 1 none).
 const SCHEME := {"envoy": 0.75, "pact": 0.5, "marriage": 0.25}
+## How strongly a house's land carries its colour, from its favour band (the bridge's reading; look.json
+## politics.hold): loyal heartland strong, an angry house's land fading. The one rule the ground's map and the
+## painted overview map (realm_map.gd) both read.
+static func hold_of(player: Dictionary) -> float:
+	var bands: Dictionary = (preload("res://scripts/look.gd").LOOK.get("politics", {}) as Dictionary).get("hold", {})
+	return float(bands.get(str(player.get("band", "")), 1.0))
+
+
 ## The political map (realm/data/look.json politics): each house's hold from its favour band (the bridge's
 ## reading) and, for a house slipping away, the colour of the first house it's at war with; to the ground's
 ## shader as two uniform arrays by owner id, so a change of mood repaints nothing.
@@ -43,12 +51,11 @@ func _set_politics(players: Array, colour: Dictionary, by_name: Dictionary) -> v
 	hold.fill(1.0)
 	var lean := PackedVector3Array()
 	lean.resize(64)
-	var bands: Dictionary = pol.get("hold", {})
 	for p in players:
 		var id := int(p.get("id", -1))
 		if id < 0 or id >= 64:
 			continue
-		hold[id] = float(bands.get(str(p.get("band", "")), 1.0))
+		hold[id] = hold_of(p)
 		var foes: Array = p.get("atWarWith", [])
 		if not foes.is_empty() and colour.has(int(foes[0])):
 			var c: Color = colour[int(foes[0])]
