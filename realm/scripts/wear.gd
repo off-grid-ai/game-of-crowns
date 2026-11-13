@@ -55,7 +55,99 @@ func _process(delta: float) -> void:
 		_was = seen
 	if _up_t >= UPLOAD:
 		_up_t = 0.0
+		_facts()
 		_upload()
+
+
+# --- the realm's own traffic: hosts and roads (ground.json wear.hosts, wear.roads) ------------------------------
+# 03-army: dusty bare earth under the column and its camp, the verges of the roads worn. From the facts, not painted
+# on: the hosts in the field as the awareness mirror holds them (every house's: realm armies, from /world's units),
+# the land route each one moved by between two readings (land_paths, roads cheap), and Freeciv's roads (rec roads).
+var HOSTS: Dictionary = Data.value("ground", "wear.hosts", {})
+var ROADS: Dictionary = Data.value("ground", "wear.roads", {})
+var _hosts_was: Array = []  # [owner, world point] of each host at the last reading
+var _roads_sig := -1  # the road list's size when last laid
+var _road_queue: Array = []  # road links still to wear: [a, its bow, b]
+
+
+func _facts() -> void:
+	var aw: Variant = get_tree().current_scene.get("awareness") if get_tree().current_scene else null
+	if aw == null or terrain == null:
+		return
+	if not HOSTS.is_empty():
+		var now: Array = []
+		for h in (aw.realm.get_var(&"armies", [], false) as Array):
+			var at: Vector3 = terrain.world_pos(float(h["x"]), float(h["y"]))
+			var men := float(h.get("men", 0))
+			var r := minf(float(HOSTS.get("camp_max", 2.4)), float(HOSTS.get("camp", 0.6)) + float(HOSTS.get("camp_per_men", 0.12)) * sqrt(men))
+			_brush(at, r, float(HOSTS.get("step", 0.05)))
+			# Where it came from: the nearest of the house's hosts at the last reading, if it has moved since.
+			var best: Variant = null
+			for w in _hosts_was:
+				if int(w[0]) == int(h["owner"]) and (best == null or (w[1] as Vector3).distance_to(at) < (best as Vector3).distance_to(at)):
+					best = w[1]
+			if best != null and (best as Vector3).distance_to(at) > 0.5 and (best as Vector3).distance_to(at) < float(HOSTS.get("track_most", 24.0)):
+				var route: PackedVector3Array = terrain.paths.land_path(best, at)
+				for i in route.size() - 1:
+					_band(route[i], route[i + 1], r * float(HOSTS.get("track", 0.5)), float(HOSTS.get("step", 0.05)) * 3.0, false)
+			now.append([int(h["owner"]), at])
+		_hosts_was = now
+	if not ROADS.is_empty():
+		var roads: Array = aw.rec("roads", [])
+		if roads.size() != _roads_sig:
+			_roads_sig = roads.size()
+			_road_queue.clear()
+			var on := {}
+			for r in roads:
+				on[Vector2i(int(r[0]), int(r[1]))] = true
+			for t: Vector2i in on:
+				for d in [Vector2i(1, 0), Vector2i(0, 1), Vector2i(1, 1), Vector2i(1, -1)]:
+					if on.has(t + d):
+						var a: Vector3 = terrain.world_pos(t.x, t.y)
+						var b: Vector3 = terrain.world_pos(t.x + d.x, t.y + d.y)
+						_road_queue.append([a, terrain.paths.road_bow(a, b), b])
+		# A few road links each reading, never the whole network in one frame.
+		var w := float(ROADS.get("width", 0.5))
+		for i in mini(int(ROADS.get("per_reading", 12)), _road_queue.size()):
+			var e: Array = _road_queue.pop_back()
+			_band(e[0], e[1], w, float(ROADS.get("worn", 0.45)), true)
+			_band(e[1], e[2], w, float(ROADS.get("worn", 0.45)), true)
+
+
+## Wear along a segment, `half` units either side, soft at its edges; `hold` also raises the patch's floor there (a
+## road's verges stay worn: growing back stops at the floor).
+func _band(a: Vector3, b: Vector3, half: float, amount: float, hold: bool) -> void:
+	var n := maxi(1, ceili(a.distance_to(b) / maxf(half * 0.7, 0.1)))
+	for i in n + 1:
+		_brush(a.lerp(b, float(i) / n), half, amount / sqrt(float(n) * 0.2 + 1.0), hold)
+
+
+## Soft round wear, `r` units across its radius, strongest at its middle, never into laid stone.
+func _brush(at: Vector3, r: float, amount: float, hold := false) -> void:
+	if _on_stone(at):
+		return
+	var rp := maxi(1, int(r / TILE * PX))
+	for oy in range(-rp, rp + 1, 1):
+		for ox in range(-rp, rp + 1, 1):
+			var d := Vector2(ox, oy).length() / float(rp)
+			if d > 1.0:
+				continue
+			var p := at + Vector3(float(ox) / PX * TILE, 0.0, float(oy) / PX * TILE)
+			var key := Vector2i(floori(p.x / TILE), floori(p.z / TILE))
+			var t: Dictionary = _tiles.get(key, {})
+			if t.is_empty():
+				t = _new_tile(key)
+			var x := clampi(int((p.x / TILE - key.x) * PX), 0, PX - 1)
+			var y := clampi(int((p.z / TILE - key.y) * PX), 0, PX - 1)
+			var k := amount * (1.0 - d * d)
+			var img: Image = t["img"]
+			var c := img.get_pixel(x, y)
+			c.a = minf(1.0, c.a + k)
+			img.set_pixel(x, y, c)
+			if hold:
+				var fl: PackedByteArray = t["floor"]
+				fl[y * PX + x] = maxi(fl[y * PX + x], int(minf(1.0, k * 2.0) * 255.0 * float(ROADS.get("floor", 0.6))))
+			t["dirty"] = true
 
 
 ## How worn the ground is at a world point, 0..1 (snow tracks and mud read this).
@@ -101,7 +193,9 @@ func _new_tile(key: Vector2i) -> Dictionary:
 	centre.y = terrain.height_at(centre.x, centre.z) if terrain else 0.0
 	var decal: Decal = terrain.paint(self, tex, centre, Vector2(TILE, TILE), 0.0, COLOUR, 12.0, 120.0)
 	decal.sorting_offset = -2.0  # under the roads, the squares and their verges
-	var t := {"img": img, "tex": tex, "decal": decal, "dirty": false}
+	var fl := PackedByteArray()
+	fl.resize(PX * PX)  # the least wear each pixel keeps (a road's verges, _brush hold)
+	var t := {"img": img, "tex": tex, "decal": decal, "dirty": false, "floor": fl}
 	_tiles[key] = t
 	_order.append(key)
 	return t
@@ -118,9 +212,10 @@ func _upload() -> void:
 		var img: Image = t["img"]
 		var data := img.get_data()  # one copy a turn
 		var less := int(GROW * 255.0 * _order.size()) + 1  # this patch's share of the growth since its last turn
+		var fl: PackedByteArray = t["floor"]
 		for i in range(1, data.size(), 2):
 			if data[i] > 0:
-				data[i] = maxi(0, data[i] - less)
+				data[i] = maxi(fl[i >> 1], data[i] - less)
 		img.set_data(PX, PX, false, Image.FORMAT_LA8, data)
 		t["dirty"] = true
 	for key in _tiles:
