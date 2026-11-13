@@ -322,6 +322,29 @@ func _process(_delta: float) -> void:
 	if _air:
 		# The depth fog thinned as the camera pulls back (research #2: d16-30 read grey and hazy, highlights capped).
 		main.env.fog_density = lerpf(float(hz.get("fog", 0.0012)), float(hz.get("fog_far", 0.00015)), smoothstep(float(hz.get("fog_from", 45.0)), float(hz.get("fog_to", 110.0)), d))
+	_map_air_at(d)
+
+
+## The air at the map's height (look.json map_air; target 02-realm: warm, bright land seen from high over the realm):
+## between from and to (camera distance) the sky's share of the ambient light falls to sky_contribution (its blue
+## sky light cast the land blue-green at the map zoom, group render g4: 0.17/0.36/0.29 against 02-realm's
+## 0.24/0.37/0.16) and the haze warms to haze_color. Below from (the town and army views) nothing changes. Sky3D
+## tweens to the contribution set here and keeps its own night boost.
+var _map_air := -1.0
+var _air_base := []  # [sky contribution, haze colour] as the look set them
+func _map_air_at(d: float) -> void:
+	var ma: Dictionary = LOOK.get("map_air", {}) if _one else {}
+	var sky3d: Node = main.get("sky3d")
+	if ma.is_empty() or sky3d == null:
+		return
+	if _air_base.is_empty():
+		_air_base = [float(sky3d.sky_contribution), main.env.fog_light_color]
+	var f := smoothstep(float(ma.get("from", 40.0)), float(ma.get("to", 60.0)), d)
+	if absf(f - _map_air) < 0.02 and not (f == 0.0 and _map_air != 0.0) and not (f == 1.0 and _map_air != 1.0):
+		return
+	_map_air = f
+	sky3d.sky_contribution = lerpf(float(_air_base[0]), float(ma.get("sky_contribution", 0.3)), f)
+	main.env.fog_light_color = (_air_base[1] as Color).lerp(Data.colour(ma.get("haze_color"), _air_base[1]), f)
 
 
 ## The kit's materials, re-graded by name (data/look.json kit_tints): a copy of each with its colour
