@@ -72,7 +72,10 @@ say "render pass into $OUT at $(git -C $R log --oneline -1 | cut -c1-90)"
 # --- the pass's own copy of the game ----------------------------------------------------------------------------------
 F=$OUT/tree
 rm -rf $F; mkdir -p $F
-git -C $R archive HEAD realm bridge docs/art | tar -x -C $F
+# One commit, read once: the copy is that commit and ASSETS.txt names it (g1 archived HEAD at 11:47 and read HEAD
+# again at 11:49, after 194107ec landed, so it named a commit it hadn't drawn).
+CODE=$(git -C $R rev-parse --short HEAD)
+git -C $R archive $CODE realm bridge docs/art | tar -x -C $F
 # The shared tree's art and its import cache, linked (One store's link_assets.sh, 67077a0f): the copy draws exactly what
 # the shared tree draws and imports nothing of its own. (No copy of .godot after it: the link is the shared cache, and a
 # copy onto it would nest 7 GB inside the shared tree.)
@@ -92,7 +95,7 @@ EOF
 ( cd $F/realm && perl -e 'alarm shift; exec @ARGV' 300 arch -arm64 godot --headless --check-only --path . -s scripts/main.gd > $OUT/check.log 2>&1 )
 grep -q "SCRIPT ERROR\|Parse Error" $OUT/check.log && { say "check-only: HEAD's main.gd does not compile (see check.log); nothing rendered"; exit 3; }
 {
-  echo "code: $(git -C $R rev-parse --short HEAD) (git archive)"
+  echo "code: $CODE (git archive)"
   echo "art: realm/assets -> $(readlink $F/realm/assets), import cache -> $(readlink $F/realm/.godot), at $(date '+%F %T')"
   echo "armies hash: $(cd $R/realm/assets/armies && find . -type f -not -name '*.blend*' | sort | xargs md5 -q | md5 -q)"
   echo "newest art file: $(cd $R/realm/assets && find . -type f -not -name '*.import' -print0 | xargs -0 stat -f '%m %N' | sort -n | tail -1 | cut -d' ' -f2-)"
