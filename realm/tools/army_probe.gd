@@ -149,11 +149,13 @@ func _run() -> void:
 	quit(0 if _fails == 0 else 1)
 
 
-## 28. A war's muster on the road: a stand-in realm whose one road runs east from the seat, then north.
+## 28. A war's muster on its way out: a stand-in realm whose one road runs east from the seat, then north; then the
+## same with no road out (group renders g3, g4: Kingsmere had none toward its nearest town, and the host mustered in
+## line on a field, its blocks scattered), where the column stands on the straight way it will march.
 func _muster_forms_on_the_road() -> void:
 	var ArmyS: GDScript = load("res://scripts/army.gd")
-	var has := ArmyS.get_script_method_list().any(func(m): return m["name"] == "_form_on_road")
-	_check(has, "a war's host forms on the road out (army.gd _form_on_road)")
+	var has := ArmyS.get_script_method_list().any(func(m): return m["name"] == "_form_on_way")
+	_check(has, "a war's host forms on its way out (army.gd _form_on_way)")
 	_check(Data.num("army", "column.rank", 1.0) <= 0.15, "the column's ranks are closed up (column.rank %.3f)" % Data.num("army", "column.rank", 1.0))
 	# A regiment on the march is a block, ranks abreast (03-army: 6-10 men to a rank; pass g2's host5: 4 abreast strung
 	# a spearmen regiment 14 ranks down the road, and the horse at 0.5 between ranks): every kind's regiment of its
@@ -204,7 +206,22 @@ func build(road: PackedVector3Array) -> void:
 			rows.append(r)
 	a.set("_regiments", rows)
 	main.add_child(a)
-	var formed: bool = a.call("_form_on_road", Vector3.ZERO, road[road.size() - 1])
+	a.call("_form_on_way", Vector3.ZERO, road[road.size() - 1])
+	_on_its_way(a, rows, "the road out")
+	# No road out: the column on the straight way to the goal, its head toward it.
+	(main.get("roads") as Node).set("way", PackedVector3Array())
+	a.call("_form_on_way", Vector3.ZERO, road[road.size() - 1])
+	var line_ok := rows.all(func(r):
+		var p: Vector3 = (r["node"] as Node3D).global_position
+		var dir := road[road.size() - 1].normalized()
+		return absf(p.cross(dir).y) < 0.05 and p.dot(dir) > 0.0)
+	_check(line_ok, "with no road out, every regiment stands on the straight way to the goal")
+	_on_its_way(a, rows, "the straight way")
+	main.queue_free()
+
+
+## The muster's column on its way (a's _path): every regiment on it, in column and halted, in column order head first.
+func _on_its_way(a: Node3D, rows: Array, way: String) -> void:
 	var on_road := true
 	var near := INF
 	var along: Array = []
@@ -219,11 +236,10 @@ func build(road: PackedVector3Array) -> void:
 	var head_first := true
 	for i in range(1, along.size()):
 		head_first = head_first and float(along[i]) < float(along[i - 1])
-	_check(formed and on_road, "every regiment stands on the road out (%s)" % str(along.map(func(v): return snappedf(v, 0.01))))
+	_check(on_road, "every regiment stands on %s (%s)" % [way, str(along.map(func(v): return snappedf(v, 0.01)))])
 	_check(rows.all(func(r): return r["shape"] == "column" and r["state"] == "halt"), "in column, halted until it marches out (%s)" % str(rows.map(func(r): return "%s/%s" % [r["shape"], r["state"]])))
 	_check(head_first and near > 0.2, "in column order, its head toward the goal, no two in one place (closest %.2f)" % near)
 	_check(rows.all(func(r): return int(r["figures"]) >= int(Data.num("army", "figureFloor", 0.0))), "each regiment at its floor of figures")
-	main.queue_free()
 
 
 func Formation_column_order(rows: Array) -> Array:
