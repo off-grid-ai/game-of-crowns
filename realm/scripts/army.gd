@@ -103,6 +103,9 @@ func _ready() -> void:
 			shape = a.substr(13)
 		elif a.begins_with("--army-select="):
 			_want_select = a.substr(14)
+	for a in (OS.get_cmdline_user_args() if battle.has("out_to") else PackedStringArray()):
+		if a.begins_with("--dist="):  # a muster shot's lens (shot_harness --muster takes the army's own: _hold)
+			_dist = float(a.substr(7))  # g6: unread for a muster, the lens stood at 12, high over two towns
 	# Wait for the land and the realm's towns as the bridge reports them.
 	while main.terrain.width == 0 or not main.terrain.built or (main.awareness.rec("cities", []) as Array).is_empty():
 		await get_tree().create_timer(0.5).timeout
@@ -986,30 +989,49 @@ func _road_in(town: Vector3) -> void:
 		_fell(_path[j - 1], _path[j], road_w)
 
 
-## War's muster on its way out (03-army: one column on the open road past the walls, regiments nose to tail): the way
-## it will march, the realm's road from the seat toward `to` (roads.route), or with no road out, out along the town's
-## main way that best faces `to` and on straight over the land. The host stands on it in column.order, halted, its
-## tail muster.gateClear past where the way leaves the town (its edge, towns.gd edge_outline, where the wall's gate
-## stands), so it marches on along the way it stands on. Group renders g3 and g4: with no road out of Kingsmere it
-## mustered in line on a field; g5: formed from the seat's middle, through the lanes inside the walls.
+## War's muster on its way out (03-army: one column on the open road past the walls, regiments nose to tail): out of
+## the town by the main way (towns.gd ways_main) whose stretch past the town's edge is dry land for the whole column
+## (terrain is_land), the one that best faces `to` among those, and on from there along the realm's road toward `to`
+## (roads.route), or straight over the land with none. The host stands on it in column.order, halted, its tail
+## muster.gateClear past where the way leaves the town (towns.gd edge_outline, where the wall's gate stands), so it
+## marches on along the way it stands on. Group renders g3/g4: in line on a field with no road out; g5: through the
+## lanes inside the walls; g6: on the waterside road to Eaglehaven, its blocks over the strait.
 func _form_on_way(town: Vector3, to: Vector3, root: Node3D) -> void:
 	var roads = main.get("roads")
-	var road: PackedVector3Array = roads.route(town, to, Data.num("army", "march.roadReach", 12.0)) if roads and roads.has_method("route") else PackedVector3Array()
-	if road.size() >= 3:
-		_path = road
-	else:
-		_path = PackedVector3Array([town])
-		var best := -INF
-		var way := PackedVector2Array()
-		var aim := Vector2(to.x - town.x, to.z - town.z).normalized()
-		for w in (root.get_meta("ways_main", []) if root else []):
-			var pw := PackedVector2Array(w)
-			if pw.size() >= 2 and pw[pw.size() - 1].normalized().dot(aim) > best:
-				best = pw[pw.size() - 1].normalized().dot(aim)
-				way = pw
-		for q in way:
-			_path.append(town + Vector3(q.x, 0, q.y))
-		_path.append(to)
+	var long := Data.num("army", "muster.gateClear", 0.6) + Formation.column_length(_regiments) + 1.0
+	var aim := Vector2(to.x - town.x, to.z - town.z).normalized()
+	var dry := func(a: Vector3, b: Vector3) -> bool:
+		for k in int(ceil(a.distance_to(b) / 0.1)) + 1:
+			var p := a.lerp(b, minf(1.0, k * 0.1 / maxf(a.distance_to(b), 0.001)))
+			if not main.terrain.is_land(p.x, p.z):
+				return false
+		return true
+	var best := -INF
+	var out_way := PackedVector3Array()
+	for w in (root.get_meta("ways_main", []) if root else []):
+		var pw := PackedVector2Array(w)
+		if pw.size() < 2:
+			continue
+		var dir := (pw[pw.size() - 1] - pw[pw.size() - 2]).normalized()
+		var last := town + Vector3(pw[pw.size() - 1].x, 0, pw[pw.size() - 1].y)
+		var beyond := last + Vector3(dir.x, 0, dir.y) * long
+		var score := pw[pw.size() - 1].normalized().dot(aim) + (0.0 if dry.call(last, beyond) else -10.0)
+		if score > best:
+			best = score
+			out_way = PackedVector3Array([town])
+			for q in pw:
+				out_way.append(town + Vector3(q.x, 0, q.y))
+			out_way.append(beyond)
+	if out_way.is_empty():
+		out_way = PackedVector3Array([town])
+	# On toward `to` by the realm's road from where the way out ends, never back past it toward the town.
+	var from := out_way[out_way.size() - 1]
+	var road: PackedVector3Array = roads.route(from, to, Data.num("army", "march.roadReach", 12.0)) if roads and roads.has_method("route") else PackedVector3Array()
+	var gone := Vector2(from.x - town.x, from.z - town.z).length()
+	_path = out_way
+	for p in (road.slice(1) if road.size() >= 3 else PackedVector3Array([to])):
+		if Vector2(p.x - town.x, p.z - town.z).length() > gone or p == to:
+			_path.append(p)
 	_cum = PackedFloat32Array([0.0])
 	for j in range(1, _path.size()):
 		_cum.append(_cum[j - 1] + _path[j].distance_to(_path[j - 1]))

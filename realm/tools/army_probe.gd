@@ -156,6 +156,9 @@ func _muster_forms_on_the_road() -> void:
 	var ArmyS: GDScript = load("res://scripts/army.gd")
 	var has := ArmyS.get_script_method_list().any(func(m): return m["name"] == "_form_on_way")
 	_check(has, "a war's host forms on its way out (army.gd _form_on_way)")
+	var src := FileAccess.get_file_as_string("res://scripts/army.gd")
+	var body := src.substr(src.find("func _form_on_way("), 4000)
+	_check(body.contains("is_land") and body.contains("ways_main"), "it leaves by the town's main way whose stretch past the edge is dry land (g6: formed over the strait)")
 	_check(Data.num("army", "column.rank", 1.0) <= 0.15, "the column's ranks are closed up (column.rank %.3f)" % Data.num("army", "column.rank", 1.0))
 	# A regiment on the march is a block, ranks abreast (03-army: 6-10 men to a rank; pass g2's host5: 4 abreast strung
 	# a spearmen regiment 14 ranks down the road, and the horse at 0.5 between ranks): every kind's regiment of its
