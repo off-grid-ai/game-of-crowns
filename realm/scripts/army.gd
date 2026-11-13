@@ -1055,6 +1055,29 @@ func _form_on_way(town: Vector3, to: Vector3, root: Node3D) -> void:
 		while out < _cum[_cum.size() - 1] and Geometry2D.is_point_in_polygon(Vector2(p.x - town.x, p.z - town.z), edge):
 			out += step
 			p = _at(out)
+	# On past the houses outside the walls (towns.gd footprints): the column's tail where no building stands within
+	# a block's half width of the way (g7 muster.jpg: the blocks among the cottages outside Kingsmere's gate).
+	var fps: Array = root.get_meta("footprints", []) if root else []
+	var half := 0.0
+	for r in _regiments:
+		half = maxf(half, float(r.get("w", 0.0)) * 0.5 + 0.1)
+	var near_house := func(at: float) -> bool:
+		var q := _at(at)
+		var h := _heading(at)
+		var side := Vector2(cos(h), -sin(h)) * half
+		var c := Vector2(q.x - town.x, q.z - town.z)
+		for fp in fps:
+			for t in [c, c + side, c - side]:
+				if Geometry2D.is_point_in_polygon(t, fp):
+					return true
+		return false
+	var past := out
+	var clear_for := 0.0
+	while past < _cum[_cum.size() - 1] and clear_for < 1.5:
+		clear_for = 0.0 if near_house.call(past) else clear_for + 0.1
+		past += 0.1
+	if past < _cum[_cum.size() - 1]:
+		out = past - clear_for
 	var order := Formation.column_order(_regiments)
 	var head := minf(_cum[_cum.size() - 1], out + Data.num("army", "muster.gateClear", 0.6) + Formation.column_length(_regiments))
 	_field = _at(head)
