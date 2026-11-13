@@ -69,7 +69,9 @@ static func soldier(asset: String, row: Dictionary, quiet := false) -> Dictionar
 		mat.set_shader_parameter("emblem_%s_up" % "ab"[k], v3.call("up", [0, 1, 0]))
 	for i in mesh.get_surface_count():
 		mesh.surface_set_material(i, mat)
-	_cache[asset] = {"asset": asset, "mesh": mesh, "mat": mat, "tracks": tracks, "index": index, "height": maxf(mesh.get_aabb().size.y, 0.01), "tall": float(row.get("tall", Data.num("army", "man", 0.22))),
+	# A body's own height: the model's, or meshes.<dir>.body where a carried prop stands above the man (the pikeman's
+	# upright pike made the model 3.9 tall to his 1.6, and drew every pikeman at 40% size: group render g5, host5.jpg).
+	_cache[asset] = {"asset": asset, "mesh": mesh, "mat": mat, "tracks": tracks, "index": index, "height": maxf(float(row.get("body", mesh.get_aabb().size.y)), 0.01), "tall": float(row.get("tall", Data.num("army", "man", 0.22))),
 		"roles": row.get("tracks", {})}
 	return _cache[asset]
 
