@@ -728,8 +728,10 @@ func _step(w: PackedStringArray) -> void:
 					main.rig.apply()
 				await get_tree().create_timer(3.0).timeout
 			"breach":
-				# breach [dist] [tilt]: frames the first open breach in a stone wall (walls.gd), low and oblique
-				# from inside the camp's side, where the storm is fought; the siege's front if none is open yet.
+				# breach: frames the first open breach in a stone wall (walls.gd) as 04-siege does (camera_rig.siege_view,
+				# camera.json siege_view): from over the engines, the wall across the frame on a diagonal; the siege's
+				# front if none is open yet. (Passes 2159 and 2243 framed it at the step's own 'breach 3 -25', 5 degrees
+				# down at the wall's foot.)
 				var at := Vector3.INF
 				var town := Vector3.INF
 				var sieges: Dictionary = main.scenes.kind("siege").sieges  # the siege is its own scene kind (8419d7d3); _sieges is gone
@@ -745,7 +747,10 @@ func _step(w: PackedStringArray) -> void:
 					if not gaps.is_empty():
 						at = gaps[0]
 				if at != Vector3.INF:
-					_from_outside(at, town, float(w[1]) if w.size() > 1 else 3.0, float(w[2]) if w.size() > 2 else -25.0)
+					var v: Array = main.rig.siege_view(at, town)
+					main.rig.snap(v[0], v[2], v[1])
+					main.rig.tilt = v[3]
+					main.rig.goal_tilt = v[3]
 					if main.rig.is_processing_input() == false:
 						main.rig.apply()
 				_note("  breach: %s" % ("framed at %s" % at if at != Vector3.INF else "no siege staged (--siege)"))

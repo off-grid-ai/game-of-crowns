@@ -24,6 +24,13 @@
   "castle_x": 0.45,
   "castle_turn_most": 1.2
  },
+ "siege_view": {
+  "_": "A siege framed for the film and the realm's own siege steps (camera_rig.siege_view; autoplay's breach step; art target 04-siege; casebook, War and sieges: Stronghold's and Total War's siege view). Render passes 2159 and 2243 framed the breach at the step's own 'breach 3 -25', about 5 degrees down at the wall's foot: one face of the wall and nothing else. 04-siege looks down about 40 degrees from over the engines, the wall across the frame on a diagonal, the breach in the middle, the engines in front. dist (camera units; 5 is about 42 m of arm, the eye about 25 m up, a wall and its two towers across), pitch (degrees down, under clarity.maxPitch), turn (radians off straight out from the town: the wall runs across on a diagonal, not face-on), out (units the aim sits out from the breach toward the camp, so the engines come into the lower frame). tools/siege_view_probe.gd checks it.",
+  "dist": 5.0,
+  "pitch": 38.0,
+  "turn": 0.6,
+  "out": 0.4
+ },
  "town_shot": {
   "_": "A town's square framed for a still (the shot harness's --city; camera_rig.square_view; art target 01-town): away_from_castle (1: the lens on the far side of the square from the castle, so the castle stands behind it; 0: the old fixed heading), turn (radians off that line, so the castle sits to one side), card_shift (the square set right of the middle by this share of the distance, clear of the town card on the left).",
   "away_from_castle": 1,

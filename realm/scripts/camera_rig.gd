@@ -175,6 +175,20 @@ func town_view(root: Node3D, turn := 0.0, scale := 1.0) -> Array:
 	return [aim.call(yaw), yaw, dist, tilt]
 
 
+## A siege seen as 04-siege sees it (camera.json siege_view): from over the engines, looking down `pitch` degrees, the
+## heading turned `turn` off straight out from the town so the wall runs across the frame on a diagonal, the aim `out`
+## from the breach toward the camp so the engines stand in the lower frame. Returns [where to look, yaw, distance, tilt],
+## as town_view does. tools/siege_view_probe.gd checks the frame.
+func siege_view(breach: Vector3, town: Vector3) -> Array:
+	var out := Vector3(breach.x - town.x, 0.0, breach.z - town.z) if town != Vector3.INF else Vector3.ZERO
+	out = out.normalized() if out.length() > 0.01 else Vector3(0, 0, 1)
+	var dist := maxf(knob("siege_view.dist", 5.0), min_distance)
+	var t := clampf((dist - min_distance) / (max_distance - min_distance), 0.0, 1.0)
+	var tilt := knob("siege_view.pitch", 38.0) - lerpf(30.0, 55.0, pow(t, 0.7))  # apply()'s own pitch, moved to the view's
+	var yaw := atan2(out.x, out.z) + knob("siege_view.turn", 0.6)
+	return [breach + out * knob("siege_view.out", 0.4), yaw, dist, tilt]
+
+
 ## The one framing rule for every "go to X" (a town, a castle, a host, a matter),
 ## as Anno 1800's notification jump and Manor Lords' jump to a building do it: the
 ## target centred at the distance its kind wants, from the heading the King already

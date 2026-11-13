@@ -10,6 +10,7 @@ Switches (`--name`) go after `--` on the game's command line.
 - How many headings "go to" tries before settling for the least blocked: `realm/data/camera.json`: `sight_steps`.
 - How close a roof, wall or tree may come before it dissolves out of the view (gone nearer than, whole from): `realm/data/camera.json`: `near_fade.buildings`, `near_fade.trees`, `near_fade.castle` (a castle's walls, sooner).
 - How a still or film frames a town's square (`--city=`): from the side away from its castle, turned a little, the square set right of the town card: `realm/data/camera.json`: `town_shot.*`.
+- How a siege is framed in the films (the breach step; 04-siege): its distance, how far it looks down, how far the heading turns off straight out from the town so the wall runs on a diagonal, and how far toward the camp the aim sits: `realm/data/camera.json`: `siege_view.*`.
 - Where the flat atlas comes in over the 3D land (only just before the painted overview takes over at distance 60; below it the 3D land is all there is): `realm/data/camera.json`: `map.atlas_from`, `map.atlas_to`, `map.atlas_most`.
 - How far from the lens a town's houses, halls and castle still draw (so a town stays a town at mid zoom; Godot's detail levels lighten them): `realm/data/camera.json`: `map.reach.*` (clutter, small, house, great, castle).
 

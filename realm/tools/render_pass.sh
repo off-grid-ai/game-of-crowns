@@ -192,7 +192,7 @@ if want battle; then
   side battle_rout $OUT/frames/battle/r08.png $TARGETS/03-army.jpg "READY 5: the rout along the line"
 fi
 if want siege; then
-  { print "wait 20"; print "breach 3 -25"; print "wait 1"
+  { print "wait 20"; print "breach"; print "wait 1"
     for i in $(seq -f "%02g" 1 30); do print "snap s$i"; print "wait 1"; done; print "look end"; } > $OUT/siege.play
   shot siege 2400 film --siege=taken --wall-demo --probe
   side siege $OUT/frames/siege/s10.png $TARGETS/04-siege.jpg "READY 6: the breach and storm"
@@ -228,7 +228,7 @@ if want walls; then
 fi
 # A breached section beside whole ones (--wall-demo: a wall across a staged siege's front worn by its stones; no storm).
 if want breach; then
-  { print "wait 45"; print "breach 4 -20"; print "wait 3"; print "snap breach"; print "look end"; } > $OUT/breach.play
+  { print "wait 45"; print "breach"; print "wait 3"; print "snap breach"; print "look end"; } > $OUT/breach.play
   shot breach 1800 film --siege --wall-demo --probe
   side breach $OUT/frames/breach/breach.png $TARGETS/04-siege.jpg "a breached section beside whole ones"
 fi
