@@ -36,6 +36,7 @@ Load the skills the work needs. Each is short; apply with judgement.
 
 - `goc-voice`: always. How to talk and decide.
 - `goc-engineering`: code, checks, commits, pushes.
+- `goc-throughput`: finish code on main, grouped tests every 12 minutes, remove the bottleneck.
 - `goc-ux`: any screen, scene, camera or feel.
 - `goc-tests`: proving a change works (no unit suite: bridge calls and renders).
 - `goc-run`: running the bridge, Freeciv, Godot, the local model, screenshots.
