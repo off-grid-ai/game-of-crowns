@@ -182,6 +182,7 @@ func _ready() -> void:
 		ground = Ground.around(main, _field, maxf(extent.x, extent.y) * 0.5 + Data.num("army", "march.lead", 5.0) + 3.0)
 	for r in _regiments:
 		var mo: Node = Mover.of(r["node"]).on(ground)
+		mo.keep = _block_keep(r)
 		mo.clip = ""  # its men's clips are the regiment's (VAT tracks)
 		mo.turn_rate = 3.0
 		mo.speed = float(r["speed"])
@@ -1103,6 +1104,28 @@ func _halt_head() -> float:
 	while head - step >= least and not _regiments.all(func(r): return ground.open_at(_at(head - float(r["off"])))):
 		head -= step
 	return head
+
+
+## A regiment's keep on its ground (mover.gd keep, each step): its block, not only its middle, clear of what the
+## ground shuts (a cottage by the road): where one flank's edge falls on a building and the other is open, the block
+## steps aside toward the open side, up to half its width, and slides past (Total War's regiments edge round a house
+## on the march). The mover's own walk goes on along the road (fe1b86f1), so it comes back once past. Group render
+## g6, host5.jpg: three blocks pressed against one cottage's walls.
+func _block_keep(r: Dictionary) -> Callable:
+	return func(p: Vector3) -> Vector3:
+		if ground == null or not ground.has_method("open_at"):
+			return p
+		var yaw := (r["node"] as Node3D).rotation.y
+		var right := Vector3(cos(yaw), 0, -sin(yaw))
+		var half := float(r.get("w", 0.0)) * 0.5
+		var step := 0.05
+		for k in int(ceil(half / step)):
+			var lo: bool = ground.open_at(p - right * half)
+			var hi: bool = ground.open_at(p + right * half)
+			if lo == hi:
+				break
+			p += right * (step if lo == false else -step)
+		return p
 
 
 ## Off the road to its place in the line by the ground's route, where it turns into line.

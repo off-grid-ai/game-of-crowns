@@ -289,6 +289,8 @@ func _push_never_pins() -> void:
 		_check(man.global_position.x > 1.9, "a mover pushed off a building on its way (by the %s) goes round it and arrives (x %.2f)" % [by, man.global_position.x])
 		_check(inside == 0, "and never stands inside the building (%d frames inside)" % inside)
 		man.queue_free()
+	var src := FileAccess.get_file_as_string("res://scripts/army.gd")
+	_check(src.contains("mo.keep = _block_keep(r)"), "a regiment on its ground keeps its whole block off a building, not only its middle (army.gd _block_keep; g6 host5: blocks pressed against a cottage)")
 
 
 ## 26. Never pinned: units.gd's keep on a ship and on a town with a walk map.
