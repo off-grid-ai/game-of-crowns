@@ -582,11 +582,11 @@ func _build_sea() -> void:
 	# It works in metres; a game unit is about 8 m, so its numbers are scaled here.
 	var mat: ShaderMaterial = load("res://addons/boujie_water_shader/prefabs/deep_ocean_material.tres").duplicate()
 	_drape_sea(mat)
-	mat.set_shader_parameter("color_deep", Color(0.05, 0.15, 0.2))  # northern water: slate green, not tropical blue
-	mat.set_shader_parameter("color_shallow", Color(0.09, 0.2, 0.22, 0.75))  # the shallows tinted, not a window on the seabed
-	mat.set_shader_parameter("albedo", Color(0.16, 0.3, 0.34, 0.0))
-	mat.set_shader_parameter("albedo_fresnel", Color(0.36, 0.47, 0.54))
-	mat.set_shader_parameter("albedo_snell", Color(0.02, 0.08, 0.12))
+	# The water's colours (look.json sea.colours; target 02-realm: a clear blue-teal sea, turquoise at the rocks).
+	var sc: Dictionary = preload("res://scripts/data.gd").value("look", "sea.colours", {})
+	for k in sc:
+		if not String(k).begins_with("_"):
+			mat.set_shader_parameter(k, preload("res://scripts/data.gd").colour(sc[k], Color.BLACK))
 	mat.set_shader_parameter("beers_law", 2.5)  # clear at the water's edge, dark by a few metres down
 	mat.set_shader_parameter("depth_offset", -0.2)
 	mat.set_shader_parameter("shore_start_blend", 0.01)  # a band of foam a few metres wide
