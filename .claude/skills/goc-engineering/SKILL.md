@@ -5,6 +5,16 @@ description: How code is changed, checked and committed in Game of Crowns (realm
 
 # Engineering
 
+## Finish the code; no test runs (Mac, 2026-11-13, overrides every run rule below)
+
+Mac: "no private bridges no scratch pads nothing", "no test runs", "just keep going finish the code", "finish all the
+integrations directly on the main codebase", "no wasting time with side tests". Until Mac says otherwise:
+- Write code in the main tree and commit it. Find causes by reading the code and the logs and frames that already exist.
+- Run nothing: no probes, no autoplay, no reign harness, no private bridge, no scratch copy, no headless game.
+- The one check allowed is a compile check: `node --check` on JS you touched, `godot --headless --check-only` on
+  GDScript, `realm/tools/rules_check.sh` (it only reads files). A file that doesn't load is never left in the tree.
+- A probe the fix needs may be written; it isn't run. The supervisor's one render pass at the end proves the work.
+
 ## Change the real tree, never a copy (Mac, 2026-11-12)
 
 Mac: "changes need to be made directly, they cannot / shouldn't be made in scratchpads." Every edit is made in the
