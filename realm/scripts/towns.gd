@@ -514,19 +514,20 @@ func _yard_green(root: Node3D, center: Vector3, pl: Array, p: Vector3, face: Vec
 	var corners: PackedVector2Array = pl[4]
 	var f2 := Vector2(face.x, face.z)
 	var tree_comp := _tree_comp()
+	var yard_tree := String(green.get("yard_tree", ""))  # a yard's own fruit tree (towns.json plots.green.yard_tree), else the town's
 	var placed := {"kind": "", "scale": 1.0}
 	var drop := func(comp: String, q2: Vector2, r: float, scale: float) -> void:
 		var kind := _green_kind(comp, rng)
 		var q := Vector3(q2.x, 0, q2.y)
 		if kind == "" or not terrain.is_land(center.x + q.x, center.z + q.z) or _crowded(lots, q, r) or _on_road(q, 0.05) or _paved_at(root, q, r):
 			return
-		if (comp == tree_comp or comp == "town_cypress") and Real.height(kind) > 0.0:
+		if (comp == tree_comp or comp == yard_tree or comp == "town_cypress") and Real.height(kind) > 0.0:
 			scale = minf(scale, float(green.get("tree_most", 99.0)) * S / Real.height(kind))  # no taller than tree_most metres (research #6: about 1.2x a two-storey house)
 		_place(root, kind, q + Vector3(0, _ground_y(center, q) - 0.01, 0), rng.randf() * TAU, Vector3.ONE * scale, Vector2(r, r))
 		lots.append([q, r])
 		placed["kind"] = kind
 		placed["scale"] = scale
-		if comp == tree_comp or comp == "town_cypress":
+		if comp == tree_comp or comp == yard_tree or comp == "town_cypress":
 			_crown(center, q, kind, scale)  # a yard tree: the camera reads its crown as a roof
 			_tree_feet(root, center, q, lots, rng)
 	if rng.randf() < float(green.get("tree", 0.0)):
@@ -534,10 +535,10 @@ func _yard_green(root: Node3D, center: Vector3, pl: Array, p: Vector3, face: Vec
 		var at2: Vector2 = corners[3].lerp(corners[2], t) + f2 * 0.1
 		var grown := rng.randf_range(0.8, 1.1)
 		var before: int = lots.size()
-		var this_tree := _pick_tree(rng)
+		var this_tree := yard_tree if yard_tree != "" and not Real.variants(yard_tree).is_empty() else _pick_tree(rng)
 		drop.call(this_tree, at2, float(green.get("tree_ground", 0.12)), grown)
-		if lots.size() > before and this_tree == tree_comp and rng.randf() < float(green.get("apples", 0.0)):
-			_apples(root, center, Vector3(at2.x, 0, at2.y), Real.height(String(placed["kind"])) * float(placed["scale"]), green, rng, tree_comp)
+		if lots.size() > before and this_tree != "town_cypress" and rng.randf() < float(green.get("apples", 0.0)):
+			_apples(root, center, Vector3(at2.x, 0, at2.y), Real.height(String(placed["kind"])) * float(placed["scale"]), green, rng, this_tree)
 	if rng.randf() < float(green.get("hedge", 0.0)):
 		for k in 2:
 			drop.call("garden_hedge", side_from.lerp(corners[2], 0.3 + 0.4 * k) + (Vector2(p.x, p.z) - side_from).normalized() * 0.07, 0.06, rng.randf_range(0.8, 1.15))
