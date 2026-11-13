@@ -133,6 +133,7 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- 11-14 04:46 round: landed army a76aa20b (muster halts on the first clear stretch), look 9de3f58b (realm tint), a1f76cc4 + 4f857fbf (nature-tree leaves). g15 running (siege battle realm), g16 queued behind it (muster crossing realm). Bottleneck: GPU, kept full.
 - 11-14 04:45 g14: town PASS (children by the well, small); muster FAIL 4th pass (among farm cottages and hedges): army told to reuse the open-ground pick that passed command. Bridge landed b921c75e 9fd28478 912d2ef6 cdc4b85d f9153955 c304a91b (every host marches; none appears at the walls; finale on its clock). g15 started (siege battle realm). Product calls: finale sets off early to land on time; no host spawns at walls.
 - 11-14 04:33 round: landed army 70839c30 (muster beyond the last house, lens down the column), square 74dbe675 (children by the well). g14 started (muster town). Look quiet since 028fb9ad (white quads, shore trees open).
 - 11-14 04:30 g13 done: muster FAIL (blocks among cottages, one cut by the frame, lens on a field), to army as its last open frame. Passing now: town, castle, siege, command, host5, crossing; realm improving.
