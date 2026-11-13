@@ -133,6 +133,7 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- 11-14 05:21 round: landed army 1179d536 (battle lens holds the press), look 8d347b51 + 30d3bd9b (calm deep-green leaves on every nature tree). g19 started (battle muster); passes now delete their frames too (disk).
 - 11-14 05:15 g18: muster moved at last (three blocks under standards on open ground, clear of houses): ACCEPTED (my call after 6 passes; not the road column). Army to battle contact; look to the faceted near trees in front of every army frame.
 - 11-14 05:10 g18 refused again: 14 GB (the disk drifts down ~1 GB an hour outside the passes). Freed 2 GB (old passes' frames and homes; side images kept), 17 GB, g18 restarted. Bottleneck: disk; the 15 GB 11-12 scratchpad still waits on Mac.
 - 11-14 05:09 round: landed army 3cfc3a4d (muster searches every main way for the nearest clear stretch). g18 started (muster only).
