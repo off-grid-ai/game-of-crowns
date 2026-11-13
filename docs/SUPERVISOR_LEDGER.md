@@ -133,6 +133,7 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- 11-14 03:33 round: landed bridge 1b1f1075 (crossing frame with the host aboard), square 02f8419d (smithy faces the town lens). g10 started (crossing town muster). Bottleneck: none new; disk still on Mac.
 - 11-14 03:31 g9 done: host5 PASS (first: closed blocks nose to tail on the road under standards); muster better (a column of blocks, still beside a cottage); crossing FAIL (frame of empty water after the ships put out; cog deck empty, host drawn as one rider): to bridge. Bottleneck: crossing frame timing after 9b8a7d7c.
 - 11-14 03:21 g9 half: realm borders now bold and saturated (red and gold edges read): better than g8; town smithy fire still not in frame (square), setts brown and wet this pass. Nothing new landed. Bottleneck: disk still on Mac.
 - 11-14 03:08 round: landed army bf4374e4 (closed ranks, muster on the road), square 5ec65938 (forge fire), look b8d74ee5 (bold borders). g9 started at once (realm town host5 muster crossing); its tree deleted on exit. Bottleneck: disk (16 GB), still on Mac.
