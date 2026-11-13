@@ -133,6 +133,7 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- 11-14 02:44 round: landed army f140da3c (command host clear of towns), 51ffc2d9 (muster past the houses, column closes up); look 20674fe8 (smooth tree crowns near the lens). g8 running at 1d3fb7f9 with all of them. Bottleneck: disk (16 GB, one pass of headroom), waiting on Mac for the 15 GB 11-12 scratchpad.
 - 11-14 02:43 g8 refused: 13 GB free, render_pass needs 15. Freed 3.4 GB (old passes' tree copies). Restarted g8 at once. Bottleneck: disk; each pass keeps a 384 MB tree, so a pass now deletes its old trees. A 15 GB scratchpad from 11-12 (session 723231f3) awaits Mac.
 - 11-14 02:34 g7: castle PASS, town PASS; host5 spaced on the road, off buildings (ranks loose); muster on dry land, low, but round a cottage; command UNCHANGED from g6 (16bf432d misses its lens path), back to army. Landed look 490f1730 (border edges), square 001d686e (smoke), 8c0a6321 (smithy). g8 queued after crossing. Bottleneck: command frame failed three passes; army told to trace the actual camera call from the .play log.
 - 11-14 02:22 g7 half: town PASS (closest to 01-town), realm colours read but no bold edges (look). Landed bridge 5f451692 (siege ends, host leaves), 00980c74 (starved town hungry). Bottleneck: four threads idle, messages paused; look given realm edges, square given 01-town details (smoke, smithy, gardens, cart).
