@@ -40,41 +40,57 @@
   "framerate": 24
  },
  {
-  "name": "SS_Impact_1",
+  "name": "Pike_Jab_1",
   "startFrame": 152,
-  "endFrame": 170,
+  "endFrame": 199,
+  "isLooping": false,
+  "isBlended": true,
+  "framerate": 24
+ },
+ {
+  "name": "Pike_Jab_2",
+  "startFrame": 200,
+  "endFrame": 247,
+  "isLooping": false,
+  "isBlended": true,
+  "framerate": 24
+ },
+ {
+  "name": "SS_Impact_1",
+  "startFrame": 248,
+  "endFrame": 266,
   "isLooping": false,
   "isBlended": true,
   "framerate": 24
  },
  {
   "name": "SS_Impact_2",
-  "startFrame": 171,
-  "endFrame": 194,
+  "startFrame": 267,
+  "endFrame": 290,
   "isLooping": false,
   "isBlended": true,
   "framerate": 24
  },
  {
   "name": "SS_Death_2",
-  "startFrame": 195,
-  "endFrame": 288,
+  "startFrame": 291,
+  "endFrame": 384,
   "isLooping": false,
   "isBlended": true,
   "framerate": 24
  },
  {
   "name": "SS_Death_1",
-  "startFrame": 289,
-  "endFrame": 344,
+  "startFrame": 385,
+  "endFrame": 440,
   "isLooping": false,
   "isBlended": true,
   "framerate": 24
  },
  {
   "name": "Battlecry",
-  "startFrame": 345,
-  "endFrame": 412,
+  "startFrame": 441,
+  "endFrame": 508,
   "isLooping": false,
   "isBlended": true,
   "framerate": 24
