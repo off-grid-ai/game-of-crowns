@@ -42,6 +42,8 @@ static func soldier(asset: String, row: Dictionary, quiet := false) -> Dictionar
 	if String(row.get("team", "rects")) == "mask" and ResourceLoader.exists(dir + "mask.png"):
 		mat.set_shader_parameter("team_by_mask", true)
 		mat.set_shader_parameter("team_mask", load(dir + "mask.png"))
+		var edge: Array = Data.value("army", "team.mask_edge", [0.15, 0.4])
+		mat.set_shader_parameter("team_mask_edge", Vector2(float(edge[0]), float(edge[1])))
 	else:
 		var rects: Array = Data.value("army", "team.rects", [])
 		var mix := Vector4.ONE

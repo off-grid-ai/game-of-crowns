@@ -61,6 +61,10 @@ uniform float team_shade = 1.1;
 // pipeline paints the white cloth there), instead of by palette cell; data/army.json meshes.<dir>.team "mask".
 uniform bool team_by_mask = false;
 uniform sampler2D team_mask : hint_default_black, filter_linear_mipmap;
+// The mask's edge: a texel this much dyed or more is all cloth. Far off, the mask's mipmaps average a man's cloth with the
+// white around it (about half), and a half-dyed white cloth read candy pink (group render g1, the breach: the besiegers
+// pink, not the house's deep red); data/army.json team.mask_edge.
+uniform vec2 team_mask_edge = vec2(0.15, 0.4);
 uniform sampler2D normal_map: filter_nearest;
 // The house's arms worn on the shield's face and the tabard's front (Total War's faction shields; the arms are the
 // top of the house's banner, assets/heraldry, the same picture its standard flies). Each place is a box in the
@@ -241,7 +245,7 @@ void fragment() {
 	float in_c = step(team_rect_c.x, UV.x) * step(UV.x, team_rect_c.z) * step(team_rect_c.y, UV.y) * step(UV.y, team_rect_c.w) * team_mix.z;
 	float in_d = step(team_rect_d.x, UV.x) * step(UV.x, team_rect_d.z) * step(team_rect_d.y, UV.y) * step(UV.y, team_rect_d.w) * team_mix.w;
 	float shade = max(base.r, max(base.g, base.b));
-	float dyed = team_by_mask ? texture(team_mask, UV).r : max(max(in_a, in_b), max(in_c, in_d));
+	float dyed = team_by_mask ? smoothstep(team_mask_edge.x, team_mask_edge.y, texture(team_mask, UV).r) : max(max(in_a, in_b), max(in_c, in_d));
 	vec3 cloth = team_color.rgb * shade * team_shade;
 	float rel = rest_pos.y / max(mesh_height, 0.001);  // how far up the man this point stands in his rest pose
 	// His own cloth, a little off his fellows'; a darker trim band at the hem and collar.
