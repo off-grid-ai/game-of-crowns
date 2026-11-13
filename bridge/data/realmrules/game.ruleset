@@ -300,7 +300,7 @@ nuke_defender_survival_chance_pct = 0
 
 [borders]
 ; Base border radius from city.
-radius_sq_city = 5
+radius_sq_city = 17
 
 ; Border radius square increased by this amount / point of city size
 size_effect    = 1

@@ -101,7 +101,7 @@
   },
   "stripes_below": 0.4,
   "wash_near": 0.03,
-  "wash_far": 0.55,
+  "wash_far": 0.7,
   "own_mix": 0.6,
   "border_bright": 1.25,
   "border_px": 6.0,
