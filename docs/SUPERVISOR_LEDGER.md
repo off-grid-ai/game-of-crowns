@@ -5,6 +5,7 @@ limit. Newest first. The plan is [PLAN.md](PLAN.md); the running log of checks i
 [review/supervisor-log.md](review/supervisor-log.md).
 
 ## How to take over (read this first)
+- **Takeover 2026-11-13 11:39 (goc-throughput):** four threads on main, no test runs of their own: look `local_4e190f95-c310-4c7c-bb6d-d6c3f89fb652`, bridge `local_b8152a85-f9b5-40cc-9db6-5447648fa31e`, army-command `local_adc9a41f-852d-4c0a-be25-d3c9128b2e14`, square `local_35cb3d2c-b119-4f59-a0ac-937a64827297`. Every older GoC session archived. The supervisor runs the 12-minute round (cron :04/:16/:28/:40/:52).
 - **Takeover 2026-11-12 (account switch):** the "Claude" account ran out of credits. The supervisor moved to a new
   session in another account and restarted only the threads with open work (Army layer, Life at the works and
   Ground truth were done and idle, so they were not restarted). Current ids, which replace the older list below:
@@ -132,6 +133,7 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- 11-13 11:55 round 1: nothing landed yet (all four working). Bottleneck: stray test runs (reign harness, director probe, a test game, a scratch cloth.gd) killed; the rule is in goc-engineering and goc-throughput.
 - (11-12) Mac asked for a short gameplay clip at a realistic milestone. Supervisor's call: milestone 1 is the war slice (READY 2-8, 14, all built): square, muster and march-out, command card, battle and rout, siege and breach, capture. GoC renders one ~60-90 s MP4 (/tmp/goc-focus/milestone1/), the one exception to build-first; broken parts are cut and listed as defects, not shipped.
 - (11-12) GoC's call, approved (audit #7): one wall owner, walls.gd + stone_wall.gd, reading damage.js wear per section, so a town's own wall cracks and breaches in play. The dead kit-panel ring, the bay mesh and the on() switch go. The intact curtain keeps the kit look (slits, merlons, r11's walls); the stones show only where the wall is worn. Then, as its own change: a town has a stone wall when Freeciv's City Walls says so (SSOT), not by view rank; measure first, and seed the ruleset if too few towns have walls.
 - (11-12) GoC r16 (/tmp/goc-focus/r16/sheets): square matches r11's look (openness 62% vs 59, setts 0.200 vs 0.210, 18 stalls, 98 people) but READY 1 FAIL on people stacked at (158,330) + east third bare; READY 2 PASS (0 convex errors, 1/200 walks crossing). Battle not filmed (minimap.gd parse break: 604 script errors), siege on the pre-cd0c63ba steps: lines 4-6 unjudged. Round clock stopped (Mac: build everything, then one full round).
