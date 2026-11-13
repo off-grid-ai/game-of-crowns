@@ -357,8 +357,9 @@ const HANDLERS = {
     const d = DECREES.march;
     const others = greatHouses(world).filter((p) => p.id !== owner.id);
     const favour = { [owner.id]: d.favour ?? -25, ...Object.fromEntries(others.map((p) => [p.id, d.others ?? -2])) };
-    // A ruling that sends the host (a siege plea answered) raises one at the town, as it always did.
-    if (cmd.spawn) return { cost, lua: [pay, Lua.host(crown.id, c.x, c.y, ["Pikemen", "Knights", "Archers", "Catapult"], 8)], favour, march: { city: c.id, house: owner.id },
+    // A ruling that sends the host (a siege plea answered) raises one at the King's town nearest the walls, which
+    // marches there and lays siege when it arrives (realm_war_host, hosts.js warpath; campaigns.js marchOn).
+    if (cmd.spawn) return { cost, lua: [pay, Lua.warHost(crown.id, c.id, ["Pikemen", "Knights", "Archers", "Catapult"], 8)], favour, march: { city: c.id, house: owner.id },
       text: `The royal host marches on ${town}. ${lord} calls every man to its walls, and every house in the realm watches.` };
     const h = cmd.host;
     if (!h) return { error: "the crown has no host to march" };

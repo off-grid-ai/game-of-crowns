@@ -342,13 +342,24 @@ export function homeward(ctx, { owner, units }, send) {
 // one order, walked each season by the road like the King's hosts and held from its house's AI meanwhile, so the
 // realm sees it march from home to the walls (casebook, War and sieges: The march feeds the battle). At the walls,
 // or if the prey changes hands to it or is gone, or the road comes no nearer, the men are the AI's again to fight.
+// The King's own host raised so (a siege plea answered, campaigns.js marchOn) is the King's march with a siege, the
+// same order a host the King sends is given: walked by the road, it lays siege when it reaches the walls, and the
+// campaign's clock starts there (besiege). Either order waits a season for its men to be in the world (raised).
 export function warpath(ctx, ev, send) {
-  const { meta } = ctx;
+  const { meta, world } = ctx;
   const owner = Number(ev.owner);
+  const city = Number(ev.city);
   const ids = String(ev.units ?? "").split(",").map(Number).filter((id) => id > 0);
-  if (!ids.length || !Number.isFinite(Number(ev.city))) return;
+  if (!ids.length || !Number.isFinite(city)) return;
   send(`lua cmd ${Lua.homewardHold(ids)}`);
-  save(meta, [...(meta.hostOrders ?? []).filter((o) => !o.units.some((id) => ids.includes(id))), { kind: "warpath", owner, units: ids, city: Number(ev.city), since: Number(ev.turn) }]);
+  const rest = (meta.hostOrders ?? []).filter((o) => !o.units.some((id) => ids.includes(id)));
+  const town = world?.cities?.find((c) => c.id === city);
+  if (owner === crownOf(world)?.id && town) {
+    save(meta, [...rest, { kind: "march", units: ids, x: town.x, y: town.y, city, since: Number(ev.turn), siege: true, house: town.owner, raised: true }]);
+    ctx.record?.({ turn: Number(ev.turn), kind: "decree", text: `The royal host sets out${ev.from != null ? ` from ${cityName(Number(ev.from))}` : ""} for ${cityName(city)}, and lays siege when it reaches the walls.`, city });
+    return;
+  }
+  save(meta, [...rest, { kind: "warpath", owner, units: ids, city, since: Number(ev.turn), raised: true }]);
 }
 
 // The seasons a host takes by the road from one place to another at the hosts' speed (cheb distance where no land
@@ -471,8 +482,8 @@ export function season(ctx, turn) {
     const byId = new Map(soldiersOf(world, side).map((u) => [u.id, u]));
     const shut = new Set([...(world.cities ?? []), ...(world.units ?? [])].filter((x) => x.owner !== side).map((x) => `${x.x},${x.y}`));
     const units = o.units.filter((id) => byId.has(id));
-    // The host is no more (a war host raised this season may not be in the world yet: it waits a season for it).
-    if (!units.length) { if (o.kind === "warpath" && turn <= (o.since ?? 0) + 1) next.push(o); continue; }
+    // The host is no more (a host raised this season may not be in the world yet: it waits a season for it).
+    if (!units.length) { if (o.raised && turn <= (o.since ?? 0) + 1) next.push(o); continue; }
     if (o.kind === "homeward") {
       const seat = world.cities.find((c) => c.id === o.city && c.owner === o.owner);
       // Home (or the seat lost): the men disband into its work, or stand where they are, free again.

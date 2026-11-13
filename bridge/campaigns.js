@@ -269,14 +269,17 @@ export function resolveCampaigns(ctx, turn) {
   chron.saveMeta(meta);
 }
 
+// The King's host on the road to a town it will besiege (hosts.js: a march with a siege): a campaign not yet begun.
+const marchingOnSiege = (meta, city) => (meta?.hostOrders ?? []).some((o) => o.kind === "march" && o.siege && o.city === city);
+
 // The royal host marches on a town for a ruling the court already paid for: the
-// decree's own march (crown.js), its fee waived, and the same campaign.
+// decree's own march (crown.js), its fee waived. It is raised at the King's town nearest the walls and marches
+// there (hosts.js warpath, the chronicle tells it set out); the campaign begins when it reaches them (besiege).
 export function marchOn(ctx, cityId) {
   const { world, meta, send, shiftFavour, favourOf, causeOf } = ctx;
   if (!world) return;
-  const r = decree({ action: "march", spawn: true, city: cityId, price: 0, favourOf, causeOf, marching: (city) => (meta.campaigns ?? []).some((x) => x.city === city) }, { ...world, players: world.players.map((p) => houseFor(p).crown ? { ...p, gold: 1e9 } : p) });
+  const r = decree({ action: "march", spawn: true, city: cityId, price: 0, favourOf, causeOf, marching: (city) => (meta.campaigns ?? []).some((x) => x.city === city) || marchingOnSiege(meta, city) }, { ...world, players: world.players.map((p) => houseFor(p).crown ? { ...p, gold: 1e9 } : p) });
   if (r.error) { console.error("march:", r.error); return; }
   (r.lua ?? []).slice(1).forEach((l) => send(`lua cmd ${l}`));
   shiftFavour(r.favour, "the royal host");
-  if (r.march) startCampaign(ctx, r.march);
 }

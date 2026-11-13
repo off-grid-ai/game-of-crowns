@@ -630,7 +630,7 @@ function realm_war_host(who, city_id, kinds, count)
   if home and #made > 0 then
     local ids = {}
     for i, id in ipairs(made) do ids[i] = tostring(id) end
-    emit("war_host", {owner = who.id, city = prey.id, units = table.concat(ids, ",")})
+    emit("war_host", {owner = who.id, city = prey.id, from = home.id, units = table.concat(ids, ",")})
   end
 end
 
