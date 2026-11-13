@@ -204,6 +204,7 @@ func square_ring(root: Node3D, center: Vector3, square_r: float, ways: Array, ki
 	if fronts.is_empty() or budget <= 0:
 		return 0
 	root.set_meta("ring_yards", [])  # their yards, laid with the plots' (_ring_yard)
+	root.set_meta("alleys", [])  # the alleys between them (_ring_alley)
 	var rr := RandomNumberGenerator.new()
 	rr.seed = rng.seed + 7  # the old first ring's own sequence
 	var ring: float = tb.front_ring(square_r)
@@ -744,6 +745,9 @@ func _ring_alley(root: Node3D, center: Vector3, ring: float, a0: float, h0: floa
 	var lanes: Array = root.get_meta("lanes", [])  # town-local, where the grass keeps off and footpaths join
 	lanes.append([from, to])
 	root.set_meta("lanes", lanes)
+	var alleys: Array = root.get_meta("alleys", [])  # their far ends: where errands go up an alley (town_scenes _stops)
+	alleys.append(to)
+	root.set_meta("alleys", alleys)
 
 
 ## A plot house's outline (town-local): `house` its middle, `face` toward the street.

@@ -555,6 +555,11 @@ func _stops(k: Dictionary) -> Dictionary:
 				if q.length() > r * far:
 					streets.append(Vector3(q.x, 0, q.y))
 					break
+	# And the alleys between the square's houses (row alleys; art target 01-town: people walking the lanes between
+	# the houses), each a street an errand goes up and back.
+	if bool((k["row"] as Dictionary).get("alleys", false)):
+		for q in root.get_meta("alleys", []):
+			streets.append(Vector3((q as Vector2).x, 0, (q as Vector2).y))
 	return {"at": Vector3.ZERO, "dir": SEEN, "points": open, "streets": streets}
 
 
