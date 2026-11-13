@@ -1320,7 +1320,7 @@ func _put(root: Node3D, center: Vector3, kind: String, p: Vector3, f: Vector2, l
 		_footpath(root, center, p + face * (f.y * 0.5 + 0.12))
 		_dress(root, center, p, face, Vector3(-face.z, 0, face.x), f.x, f.y, rng, tight)
 		# A fire in most homes: a thread of smoke from the roof.
-		if Real.KIT[kind][0] == "house" and rng.randf() < 0.45:
+		if Real.KIT[kind][0] == "house" and rng.randf() < float(Data.num("hearths", "chimneys", 0.45)):
 			var top := Real.height(kind) * k
 			var off := Vector3(-face.z, 0, face.x) * f.x * rng.randf_range(-0.2, 0.2) - face * f.y * 0.1
 			_smoke(root, Vector3(p.x, seat_y + top * 0.92, p.z) + off, p + face * (f.y * 0.5 + 0.12))  # its doorstep: lit only while someone's home (hearths.gd)

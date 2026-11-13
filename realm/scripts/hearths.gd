@@ -53,12 +53,17 @@ func _process(delta: float) -> void:
 			if Vector2((at as Vector3).x - door.x, (at as Vector3).z - door.z).length() < float(_d.get("door_match", 0.35)):
 				lit = true
 				break
+		# A cooking fire burns whoever's in (01-town: smoke over the roofs by day): hearths.json cooking, a share of the
+		# town's hearths chosen by doorstep, so the same houses keep theirs.
+		var pick := float(absi(hash(Vector2i(roundi(door.x * 100.0), roundi(door.z * 100.0)))) % 1000) / 1000.0
+		if pick < float(_d.get("cooking", 0.0)):
+			lit = true
 		if not hungry_town.has(id):
 			hungry_town[id] = aw != null and String(aw.town(id).get_var(&"mood", "", false)) == "hunger"
 		var thin := 1.0
 		if hungry_town[id]:
 			var hg: Dictionary = _d.get("hunger", {})
-			if float(absi(hash(Vector2i(roundi(door.x * 100.0), roundi(door.z * 100.0)))) % 1000) / 1000.0 >= float(hg.get("share", 0.5)):
+			if pick >= float(hg.get("share", 0.5)):
 				lit = false  # nothing to cook: this hearth stays cold
 			thin = float(hg.get("thin", 0.35))
 		if not is_equal_approx(smoke.amount_ratio, thin):

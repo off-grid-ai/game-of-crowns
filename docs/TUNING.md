@@ -165,7 +165,7 @@ Switches (`--name`) go after `--` on the game's command line.
 - How near the camera must be to see a town's talk, and how often it changes: `realm/data/thoughts.json`: `near`, `cycle_sec`.
 
 ## Who's home and the hearths (Builder 1; on by default, `--hearths=off`)
-- Chimney smoke only where someone's home: how often it's checked, how near a person must be to their door: `realm/data/hearths.json`.
+- Chimney smoke only where someone's home: how often it's checked, how near a person must be to their door: `realm/data/hearths.json`. How many houses have a smoking chimney, and the share of hearths whose cooking fire burns whoever's in (smoke by day): `chimneys`, `cooking`.
 
 ## Life along the roads (`on` in the file, on)
 - Which roads get it, how far from towns, farms and roads.gd's own inns it keeps: `realm/data/roadside.json`: `roads`, `town_clear`, `farm_room`, `inn_room`.
