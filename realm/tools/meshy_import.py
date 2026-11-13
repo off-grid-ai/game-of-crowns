@@ -315,11 +315,16 @@ def crown_normals(obj, slots, k):
     me.update()
 
 
-def pad_leaves(obj, pad):
+def pad_leaves(obj, pad, calm=0.0, grade=(1.0, 1.0, 1.0)):
     """The leaves their own copy of the atlas, each leaf island's colour spread `pad` texels past its edge (UV padding,
     as a baker's margin does), so the bark islands packed against them never bleed in when the texture is filtered
     (group render g12, the crossing: orange and dark slivers along the oaks' leaf seams; Meshy packs leaf and bark
-    islands edge to edge). meshy.json pieces.<name>.leaves.pad (texels; 0 none). Returns how many texels it filled."""
+    islands edge to edge). meshy.json pieces.<name>.leaves.pad (texels; 0 none). The same copy is calmed and graded:
+    calm pulls every leaf texel toward the leaves' mean colour (0 as painted, 1 one flat colour; g18 muster: the painted
+    patchwork of yellow and green islands lit each decimated face its own colour, yellow shards across the crowns), and
+    grade multiplies it, taking the set's lime and yellow paint to the targets' deep greens (03-army, 01-town). Every
+    tree that draws the piece (the woods, the towns' trees, the ground cover) shows the one leaf colour. Returns how
+    many texels it filled."""
     import numpy as np
     me = obj.data
     if pad <= 0 or me.uv_layers.active is None:
@@ -357,6 +362,10 @@ def pad_leaves(obj, pad):
                 inside = (b0 >= -e) & (b1 >= -e) & (1.0 - b0 - b1 >= -e)
                 known[ly:hy + 1, lx:hx + 1] |= inside
         out = a.copy()
+        if known.any():
+            mean = out[known][:, :3].mean(axis=0)
+            out[..., :3] = (mean + (out[..., :3] - mean) * (1.0 - calm)) * np.array(grade, np.float32)
+            np.clip(out, 0.0, 1.0, out=out)
         for _ in range(pad):
             acc = np.zeros((h, w, 4), np.float32)
             cnt = np.zeros((h, w), np.float32)
@@ -647,7 +656,7 @@ def main():
     share = split_house(obj, spec["mask"])
     leaves = split_house(obj, spec["leaves"], "MI_Leaves") if spec.get("leaves") else 0.0
     smoothed = smooth_leaves(obj, float(spec["leaves"].get("crown", 0.0))) if leaves else 0
-    padded = pad_leaves(obj, int(spec["leaves"].get("pad", 0))) if leaves else 0
+    padded = pad_leaves(obj, int(spec["leaves"].get("pad", 0)), float(spec["leaves"].get("calm", 0.0)), tuple(spec["leaves"].get("grade", [1.0, 1.0, 1.0]))) if leaves else 0
     arm = split_arm(obj, spec["arm"]) if spec.get("arm") else None
     has_mask = mask_png(obj, spec["mask"], out)
     glb = os.path.join(out, name + ".glb")

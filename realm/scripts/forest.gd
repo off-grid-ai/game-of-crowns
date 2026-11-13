@@ -222,10 +222,6 @@ static func leaves(mat: Material, path: String, kind: String) -> Material:
 		return mat
 	var c: BaseMaterial3D = m.duplicate()
 	c.set_meta("leaf", kind)
-	# The model's leaves graded to the target's deep greens (assets.json woods.kit.grade, by model file; g5 command:
-	# the nature set's lime and yellow paint read as toy puffballs beside 03-army's and 01-town's painted pines and oaks).
-	var g: Array = (Data.value("assets", "woods.kit.grade", {}) as Dictionary).get(path.trim_prefix("res://assets/"), [1.0, 1.0, 1.0])
-	c.albedo_color = c.albedo_color * Color(float(g[0]), float(g[1]), float(g[2]))
 	var tints: Dictionary = (Data.value("assets", "woods.kit.seasons", {}) as Dictionary).get(path.trim_prefix("res://assets/"), {})
 	var by := {}
 	for season in tints:
