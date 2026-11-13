@@ -21,8 +21,9 @@ static func layout(r: Dictionary, shape: String, frontage: Variant, rng: RandomN
 		var cf: Array = Data.value("army", "column.files", [4, 6])
 		files = rng.randi_range(int(cf[0]), int(cf[1]))
 		sr = clampf(sr, Data.num("army", "column.rank", 0.14), Data.num("army", "column.rankMost", 0.32))  # closed ranks on the march, horse too
-		if r.get("role", "") != "cavalry":  # men shoulder to shoulder; a horse keeps its own room (g7 host5: loose blocks)
-			sf = minf(sf, Data.num("army", "column.fileMost", 0.13))
+		if r.get("role", "") != "cavalry":  # men shoulder to shoulder, rank on rank; a horse keeps its own room (g7/g8 host5: loose blocks)
+			sf = minf(sf, Data.num("army", "column.fileMost", 0.08))
+			sr = minf(sr, Data.num("army", "column.footRankMost", 0.1))
 	else:
 		var lf: Array = frontage if frontage is Array else (Data.value("army", "line.frontage", {}) as Dictionary).get(r["role"], [18, 25])  # a battle's regiments stand deeper
 		# As wide as one figure for ten men stands (drawPerMan); the regiment's floor of figures (figureFloor) stands as

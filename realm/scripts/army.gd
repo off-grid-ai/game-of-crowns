@@ -1026,7 +1026,14 @@ func _form_on_way(town: Vector3, to: Vector3, root: Node3D) -> void:
 		var dir := (pw[pw.size() - 1] - pw[pw.size() - 2]).normalized()
 		var last := town + Vector3(pw[pw.size() - 1].x, 0, pw[pw.size() - 1].y)
 		var beyond := last + Vector3(dir.x, 0, dir.y) * long
-		var score := pw[pw.size() - 1].normalized().dot(aim) + (0.0 if dry.call(last, beyond) else -10.0)
+		# On the realm's road out (roads.gd near_road: its great roads and the King's road): the town's ways run out
+		# where those leave, and one way's straight run past the gate lies on it (g8 muster.jpg: the column on the
+		# grass beside the road, not on it).
+		var on_road := 0.0
+		if roads and roads.has_method("near_road"):
+			for k in 10:
+				on_road += 0.1 if roads.near_road(last.lerp(beyond, (k + 0.5) / 10.0), 0.1) else 0.0
+		var score := pw[pw.size() - 1].normalized().dot(aim) + on_road * 3.0 + (0.0 if dry.call(last, beyond) else -10.0)
 		if score > best:
 			best = score
 			out_way = PackedVector3Array([town])
