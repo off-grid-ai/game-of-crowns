@@ -1135,32 +1135,40 @@ func _form_on_way(town: Vector3, to: Vector3, root: Node3D) -> void:
 		while out < _cum[_cum.size() - 1] and Geometry2D.is_point_in_polygon(Vector2(p.x - town.x, p.z - town.z), edge):
 			out += step
 			p = _at(out)
-	# On past the houses outside the walls: the column's tail where no building, wall, fence or stall of any town
-	# (town_nav.gd standable, the one answer) stands within a block's half width of the way for the whole column's
-	# length (g7, g13 muster.jpg: the blocks squeezed between the cottages outside Kingsmere's gate; the seat's own
-	# footprints missed them).
+	# On along the way to the first stretch that holds the whole column clear: dry land, no building, wall, fence or
+	# stall of any town (TownNav.in_building) and no farm, field, hedge or cottage of the countryside (countryside
+	# occupied), across each block's half width and muster.roadClear more either side, the same ground a muster's line
+	# asks for (_clear_at). With none on the way, the longest clear stretch. Group renders g7, g13, g14 muster.jpg: the
+	# blocks among the farm cottages and hedges outside Kingsmere's gate, which the town's own houses never counted.
 	var half := 0.0
 	for r in _regiments:
-		half = maxf(half, float((r["column"] as Dictionary).get("w", 0.0)) * 0.5 + 0.1)
-	var towns: Node3D = main.get("towns")
-	var near_house := func(at: float) -> bool:
-		if towns == null:
-			return false
+		half = maxf(half, float((r["column"] as Dictionary).get("w", 0.0)) * 0.5)
+	half += Data.num("army", "muster.roadClear", 0.3)
+	var blocked := func(at: float) -> bool:
 		var q := _at(at)
 		var h := _heading(at)
-		var side := Vector3(cos(h), 0, -sin(h)) * half
-		for t in [q, q + side, q - side]:
-			if not TownNav.standable(towns, t):
+		var side := Vector3(cos(h), 0, -sin(h))
+		for k in 5:
+			var t := q + side * half * (k / 2.0 - 1.0)
+			if not main.terrain.is_land(t.x, t.z) or (main.get("towns") and TownNav.in_building(main.get("towns"), t, 0.05)) or _farmed(t, 0.05):
 				return true
 		return false
 	var need := Data.num("army", "muster.gateClear", 0.6) + Formation.column_length(_regiments)
-	var past := out
-	var clear_for := 0.0
-	while past < _cum[_cum.size() - 1] and clear_for < need:
-		clear_for = 0.0 if near_house.call(past) else clear_for + 0.1
-		past += 0.1
-	if clear_for >= need:
-		out = past - clear_for
+	var end_s := _cum[_cum.size() - 1]
+	var run_from := out
+	var best_from := out
+	var best_len := 0.0
+	var at_s := out
+	while at_s < end_s:
+		if blocked.call(at_s):
+			run_from = at_s + 0.1
+		elif at_s - run_from > best_len:
+			best_len = at_s - run_from
+			best_from = run_from
+			if best_len >= need:
+				break
+		at_s += 0.1
+	out = best_from
 	var order := Formation.column_order(_regiments)
 	var head := minf(_cum[_cum.size() - 1], out + Data.num("army", "muster.gateClear", 0.6) + Formation.column_length(_regiments))
 	_field = _at(head)

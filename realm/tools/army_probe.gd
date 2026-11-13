@@ -183,7 +183,7 @@ var roads: Node
 func build(road: PackedVector3Array) -> void:
 	terrain = Node3D.new()
 	var ts := GDScript.new()
-	ts.source_code = "extends Node3D\\nvar width := 0\\nvar built := false\\nfunc height_at(_x: float, _z: float) -> float:\\n\\treturn 0.0\\n"
+	ts.source_code = "extends Node3D\\nvar width := 0\\nvar built := false\\nfunc height_at(_x: float, _z: float) -> float:\\n\\treturn 0.0\\nfunc is_land(_x: float, _z: float) -> bool:\\n\\treturn true\\n"
 	ts.reload()
 	terrain.set_script(ts)
 	add_child(terrain)
