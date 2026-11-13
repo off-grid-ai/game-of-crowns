@@ -150,6 +150,18 @@ func real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds:
 		var f: Vector2 = Real.footprint(lm)
 		if f == Vector2.ZERO:
 			continue
+		var keep_ang := gap_ang
+		var lens_turn: Variant = (tb._market_knobs().get("smithy", {}) as Dictionary).get("lens_turn")
+		if comp == "forge" and lens_turn != null and root.has_meta("castle_frame"):
+			# The smithy on the near side of the square, where the town camera sees its open front (01-town: the lit forge
+			# in the near right; camera_rig.town_view puts the lens across the square from the castle): the side away
+			# from the castle, turned market.<rank>.smithy.lens_turn radians toward the frame's right; facing the square's middle
+			# as every square building does, so on the right side its open front shows three-quarter to the lens, not its back.
+			var cp: Vector3 = root.get_meta("castle_frame")[0]
+			var lens := Vector2(-cp.x, -cp.z).normalized()
+			var right := Vector2(lens.y, -lens.x)  # the frame's right, seen from the lens (town_view's yaw)
+			var dir := lens * cos(float(lens_turn)) + right * sin(float(lens_turn))
+			gap_ang = atan2(dir.y, dir.x)
 		var p := Vector3(cos(gap_ang), 0, sin(gap_ang)) * (square_r + maxf(f.x, f.y) * 0.45)
 		# Between the roads into the square, never across one (--towns=plots); a spot already taken (a landmark, the
 		# castle, bad ground) moves it on round the edge, so a square trade isn't lost to its first spot (g7: Kingsmere
@@ -184,6 +196,8 @@ func real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds:
 					tb._smithy(root, center, p, -p.normalized(), f, rng)
 			if comp == "church":
 				tb._walled(root, center, p, -p.normalized(), f, "church", lots)  # the churchyard
+		if comp == "forge" and gap_ang != keep_ang and (tb._market_knobs().get("smithy", {}) as Dictionary).has("lens_turn"):
+			gap_ang = keep_ang  # the landmarks after it keep the spots they had
 		gap_ang += PI * 0.62
 		await tb._pace()
 	root.set_meta("places", places)
