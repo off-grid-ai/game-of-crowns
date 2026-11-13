@@ -473,6 +473,20 @@ func _advance(r: Dictionary, _dt: float) -> void:
 	var to: Vector3 = (foe["node"] as Node3D).global_position
 	var gap := _front_gap(r, foe)
 	var contact := Data.num(F, "field.contact", 0.12)
+	# At blows only face to face: the fronts within sword's length and overlapping across the line (each block's
+	# width), not merely level with each other (g17/g19 battle.jpg: regiments "at blows" with their nearest foe two
+	# blocks off to the side, the fronts level, a gap of grass between the lines). Off to the side, it closes on the
+	# foe's front itself.
+	var a: Node3D = r["node"]
+	var fwd := a.global_transform.basis.z.normalized()
+	var b: Node3D = foe["node"]
+	var off := (b.global_position + b.global_transform.basis.z.normalized() * float(foe["d"]) * 0.5) - (at + fwd * float(r["d"]) * 0.5)
+	off.y = 0.0
+	var across := absf(off.dot(fwd.cross(Vector3.UP).normalized()))
+	if across > (float(r["w"]) + float(foe["w"])) * 0.5 * Data.num(F, "field.overlap", 0.6):
+		var aim := off.normalized()
+		Mover.of(r["node"]).toward(at + off - aim * contact, Data.num(F, "field.advance", 0.12), aim)
+		return
 	if gap <= contact:
 		r["foe"] = foe
 		_send(r, &"engage")
