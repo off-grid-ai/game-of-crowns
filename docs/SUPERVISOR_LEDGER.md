@@ -133,6 +133,7 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- 11-14 03:08 round: landed army bf4374e4 (closed ranks, muster on the road), square 5ec65938 (forge fire), look b8d74ee5 (bold borders). g9 started at once (realm town host5 muster crossing); its tree deleted on exit. Bottleneck: disk (16 GB), still on Mac.
 - 11-14 03:05 g8 done: command PASS (first time: host in open ground, standard, selection square); siege PASS; host5 unchanged from g7 (51ffc2d9 not reaching the halted column), to army. Bottleneck: disk, one pass of room; g8 tree deleted at once.
 - 11-14 02:57 g8 half: town smoke reads, smithy dark and fireless (square); realm edges present but faint (look); muster closer (two closed blocks with standards past the houses), still not a road column. Nothing new landed. Bottleneck: disk for g9 (waiting on Mac).
 - 11-14 02:44 round: landed army f140da3c (command host clear of towns), 51ffc2d9 (muster past the houses, column closes up); look 20674fe8 (smooth tree crowns near the lens). g8 running at 1d3fb7f9 with all of them. Bottleneck: disk (16 GB, one pass of headroom), waiting on Mac for the 15 GB 11-12 scratchpad.
