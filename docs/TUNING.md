@@ -91,7 +91,7 @@ Switches (`--name`) go after `--` on the game's command line.
 - The tree in each yard (the painted fruit tree, apples on it by `plots.green.apples`) and what else a yard may hold, by weight (shed, pen, washing line, a cart): `realm/data/towns.json` `plots.green.yard_tree` ("" for the town's tree), `plots.yard_things`.
 
 ## The woods (NPC perf; art direction fix 4)
-- How near the camera the woods draw full trees with shadows, and out to where the shadowless middle batch reaches (the far batch beyond): `realm/data/forest.json`: `near`, `mid`. At map zoom, from how far the woods stand grown into one canopy, and by how much across and up: `map.from`, `map.grow`.
+- How near the camera the woods draw full trees with shadows, and out to where the shadowless middle batch reaches (the far batch beyond): `realm/data/forest.json`: `near`, `mid`.
 - How tall a seat's standard stands over its castle on the realm map, and from how far away it shows: `realm/data/towns.json` `map_standard.height`, `map_standard.from` (world units).
 - The countryside round a town: how many tiles kept clear round it for its own fields, how far the crops' ears sway in a breeze, how low a reaped field's stubble stands, how near the camera crops and grass tufts are drawn: `realm/data/countryside.json`: `near_town`, `crop.sway`, `crop.cut`, `crop.reach`, `tuft_reach`.
 - How wide a road is drawn, and how far from a road an end may be to set out along it: `realm/data/ground.json`: `roads.width`, `roads.reach`.

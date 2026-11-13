@@ -15,10 +15,6 @@ static var _kit_read := _kit_layout()
 const CHUNK := 20.0  # game units per side
 static var NEAR: float = preload("res://scripts/data.gd").num("forest", "near", 6.0)  # within this distance of the camera, trees are drawn in full, with shadows (a block of woods switches as one: further, and the blocks under a town view drew thousands of full trees twice)
 static var MID: float = preload("res://scripts/data.gd").num("forest", "mid", 24.0)  # out to this distance the middle batch, without shadows; the far one beyond
-## Past this distance (map zoom: the realm drawn as 02-realm draws it) the far cards stand wider, grown by
-## forest.json map.grow ([across, up]) about their foot, so a wood reads as one canopy wall to wall, not dots.
-static var MAP: float = preload("res://scripts/data.gd").num("forest", "map.from", 0.0)
-static var MAP_GROW: Array = preload("res://scripts/data.gd").value("forest", "map.grow", [1.0, 1.0])
 const S := Units.M  # game units per metre
 var _full: Array = []  # Mesh or null
 var _mid: Array = []  # the lighter detail level, or the full one where a kind has none
@@ -119,14 +115,9 @@ func plant(trees: Array) -> void:
 					_trees[k] = []
 				_trees[k].append_array(by_kind[k])
 				continue
-			_layer(_full[k], by_kind[k], 0.0, NEAR, true, "full")
-			_layer(_mid[k], by_kind[k], NEAR - 1.0, MID, false, "mid")
-			if MAP > MID:
-				_layer(_card[k], by_kind[k], MID - 2.0, MAP, false, "card")
-				var g := Vector3(float(MAP_GROW[0]), float(MAP_GROW[1]), float(MAP_GROW[0]))
-				_layer(_card[k], by_kind[k].map(func(t: Transform3D): return Transform3D(t.basis * Basis.from_scale(g), t.origin)), MAP - 2.0, 0.0, false, "map")
-			else:
-				_layer(_card[k], by_kind[k], MID - 2.0, 0.0, false, "card")
+			_layer(_full[k], by_kind[k], 0.0, NEAR, true)
+			_layer(_mid[k], by_kind[k], NEAR - 1.0, MID, false)
+			_layer(_card[k], by_kind[k], MID - 2.0, 0.0, false)
 	if _land():
 		for k in _trees:
 			_ids[k] = _land().plant([_full[k], _mid[k], _card[k]], [NEAR, MID, 1000.0], 1, _trees[k])
@@ -147,7 +138,7 @@ func _land() -> Node:
 	return land3d if land3d and land3d.land else null
 
 
-func _layer(mesh: Mesh, xfs: Array, begin: float, end: float, shadows: bool, tier: String) -> void:
+func _layer(mesh: Mesh, xfs: Array, begin: float, end: float, shadows: bool) -> void:
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
 	mm.mesh = mesh
@@ -166,7 +157,6 @@ func _layer(mesh: Mesh, xfs: Array, begin: float, end: float, shadows: bool, tie
 	# Lit by the global illumination, but not part of what it voxelises: tens
 	# of thousands of trees bounce little light and cost it a great deal.
 	mmi.gi_mode = GeometryInstance3D.GI_MODE_DISABLED
-	mmi.set_meta("tier", tier)  # set_reach moves the mid and card tiers' bounds; the map tier keeps its own
 	add_child(mmi)
 	if not _leafy.has(mesh):
 		_leafy[mesh] = mmi
@@ -366,6 +356,9 @@ func set_reach(mid: float) -> void:
 	for mmi in get_children():
 		if not (mmi is MultiMeshInstance3D):
 			continue
+		if not mmi.has_meta("tier"):
+			# The tier each batch was made for, read once from its distances.
+			mmi.set_meta("tier", "full" if mmi.visibility_range_begin == 0.0 else ("mid" if mmi.visibility_range_end > 0.0 else "card"))
 		match String(mmi.get_meta("tier")):
 			"mid": mmi.visibility_range_end = to
 			"card": mmi.visibility_range_begin = to - 2.0
