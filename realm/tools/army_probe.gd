@@ -155,6 +155,20 @@ func _muster_forms_on_the_road() -> void:
 	var has := ArmyS.get_script_method_list().any(func(m): return m["name"] == "_form_on_road")
 	_check(has, "a war's host forms on the road out (army.gd _form_on_road)")
 	_check(Data.num("army", "column.rank", 1.0) <= 0.15, "the column's ranks are closed up (column.rank %.3f)" % Data.num("army", "column.rank", 1.0))
+	# A regiment on the march is a block, ranks abreast (03-army: 6-10 men to a rank; pass g2's host5: 4 abreast strung
+	# a spearmen regiment 14 ranks down the road, and the horse at 0.5 between ranks): every kind's regiment of its
+	# full men lays out no deeper than it is wide, the horse's ranks closed up too.
+	var Form: GDScript = load("res://scripts/army_formation.gd")
+	var ArmyF: GDScript = load("res://scripts/army.gd")
+	var rng := RandomNumberGenerator.new()
+	for k in (Data.value("army", "units", {}) as Dictionary):
+		var row: Dictionary = Data.value("army", "units", {})[k]
+		var sp: Dictionary = row.get("spacing", {})
+		var r := {"figures": ArmyF.figures(int(row.get("men", 150))), "sf": float(sp.get("file", Data.num("army", "spacing.file", 0.12))),
+			"sr": float(sp.get("rank", Data.num("army", "spacing.rank", 0.15))), "role": String(row.get("role", "melee"))}
+		rng.seed = 7
+		var c: Dictionary = Form.layout(r, "column", null, rng)
+		_check(int(c["files"]) >= 6 and float(c["d"]) <= float(c["w"]) * 1.6, "a %s regiment marches as a block: %d abreast, %.2f deep for %.2f wide" % [k, int(c["files"]), float(c["d"]), float(c["w"])])
 	if not has:
 		return
 	var stub := GDScript.new()
