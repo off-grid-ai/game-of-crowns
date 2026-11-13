@@ -415,7 +415,7 @@ func _hamlet(node: Node3D, s: Dictionary, k: Dictionary, rng: RandomNumberGenera
 	var size_lo: Array = k.get("field_min", [1.2, 0.7])
 	var size_hi: Array = k.get("field_max", [2.0, 1.1])
 	var away := atan2((s["side"] as Vector2).x, (s["side"] as Vector2).y)
-	var tex: Array = k.get("field_tex", ["res://assets/ground/field-wheat.jpg", "res://assets/ground/field-green.jpg"])
+	var tex: Array = (k.get("field_kinds", ["field-wheat", "field-green"]) as Array).map(func(f): return preload("res://scripts/countryside.gd").field_ground(String(f)))  # countryside.json field_ground paints each kind
 	for i in rng.randi_range(int(fr[0]), int(fr[1])):
 		var ang := away + rng.randf_range(-1.3, 1.3)
 		var f := centre + Vector3(sin(ang), 0, cos(ang)) * (grown + rng.randf_range(float(far[0]), float(far[1])))

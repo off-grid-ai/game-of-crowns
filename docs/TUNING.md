@@ -399,3 +399,5 @@ Switches (`--name`) go after `--` on the game's command line.
 - A skirmish's lines: the room between ranks, and how far the fight's ground reaches round the clash: `realm/data/battle.json` `skirmish` (`row`, `span`).
 - How a body moves between its clips: the cut into a blow, a reel or a fall, how long a standing move waits before it gives way, the blend between two standing moves, how fast a turn settles, and the slowest and quickest a walk plays before it breaks into the run: `realm/data/people.json` `motion` (`xfade_hit`, `settle`, `xfade_stand`, `turn_ease`, `step_floor`, `step_ceil`).
 - The companies on the map: a company's figure's steady march (faster than this to reach its tile within the season, it runs), and the hit points at or under which it looks wounded: `realm/data/army.json` `map` (`march_speed`, `wounded_hp`).
+- Each kind of field's painted ground (wheat, green crops, fallow): `realm/data/countryside.json`: `field_ground`.
+- How crisply a soldier's cloth takes his house colour off his mask (far off, a soft mask read pink): `realm/data/army.json`: `team.mask_edge`.

@@ -17,7 +17,7 @@ var towns: Node3D  # the towns, for their squares, lanes and doors (found beside
 var land_use: Node3D  # the towns' worked fields (land_use.gd): no tufts on them
 var _bush: Mesh
 var _fruit: Array = []  # orchard trees: the catalogue's orchard_tree (the nature set's oaks, data/assets.json), grown small
-var _field_tex := ["res://assets/ground/field-wheat.jpg", "res://assets/ground/field-green.jpg", "res://assets/ground/field-fallow.jpg"]
+const FIELDS := ["field-wheat", "field-green", "field-fallow"]  # the kinds of field a farmstead ploughs (field_ground paints each)
 
 var _realm := ""  # the realm the farm sites were surveyed for
 var _sites: Array = []  # {tile, at, seed}: every farmstead the open land offers
@@ -322,16 +322,14 @@ func _farmstead(node: Node3D, at: Vector3, rng: RandomNumberGenerator, hedges: A
 		if rise < 0.0 or rise > FIELD_RISE:
 			continue
 		terrain.clear_around(c, size.length() * 0.5 + 0.1)
-		var kind := rng.randi() % _field_tex.size()
-		var tex: String = _field_tex[kind]
-		if not ResourceLoader.exists(tex):
-			tex = "res://assets/ground/painted_v2/earth.png"
+		var field: String = FIELDS[rng.randi() % FIELDS.size()]
+		var tex := field_ground(field)
 		c = on_furrows(terrain, c, size)
 		var crop: Decal = terrain.paint(node, terrain.tiled(tex, roundi(size.x * 1.5), roundi(size.y * 1.5)), Vector3(c.x, terrain.height_at(c.x, c.z), c.z), size, fyaw)  # its paint 1.5 deep: wider than any rise a field may have (FIELD_RISE)
 		if terrain.land3d and terrain.land3d.land:
 			plough(terrain, c, size, fyaw)  # ploughed soil under the crop
 			crop.albedo_mix = 0.55
-		var grows := crop_for(tex.get_file().get_basename(), rng)
+		var grows := crop_for(field, rng)
 		sow(node, terrain, Vector3.ZERO, grows, c, size, fyaw, rng)
 		hedges.append([c, size, fyaw])
 		fields.append([c, size, fyaw, grows])  # [middle, size, yaw, crop ("" lies fallow)]
@@ -447,6 +445,12 @@ const CROP_ROWS := {"wheat": [0.03, 0.028], "barley": [0.032, 0.026], "flax": [0
 const STANDING := ["wheat", "barley", "flax"]  # cut at harvest and left as stubble; the rest are lifted
 static var CROP_REACH: float = preload("res://scripts/data.gd").num("countryside", "crop.reach", 25.0)  # crops are drawn this near the camera; the field's painted colour does beyond
 static var _crop_meshes := {}
+
+
+## A kind of field's painted ground (data/countryside.json field_ground; the painted earth for a kind it doesn't name).
+static func field_ground(field: String) -> String:
+	var path := String((preload("res://scripts/data.gd").value("countryside", "field_ground", {}) as Dictionary).get(field, ""))
+	return path if path != "" and ResourceLoader.exists(path) else "res://assets/ground/painted_v2/earth.png"
 
 
 ## What a field grows, by the colour painted under it: gold fields wheat or

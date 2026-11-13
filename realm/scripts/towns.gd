@@ -1225,7 +1225,7 @@ func _croft(root: Node3D, center: Vector3, hp: Vector3, face: Vector3, f: Vector
 	if terrain.land3d and terrain.land3d.land:
 		Fields.plough(terrain, center + back, size, yaw)
 	else:
-		terrain.paint(plots[0], terrain.tiled(terrain.art("res://assets/ground/field-fallow.jpg", DIRT), 1, 1), back + Vector3(0, _ground_y(center, back), 0), size, yaw, Color(0.55, 0.42, 0.26))
+		terrain.paint(plots[0], terrain.tiled(terrain.art(Fields.field_ground("field-fallow"), DIRT), 1, 1), back + Vector3(0, _ground_y(center, back), 0), size, yaw, Color(0.55, 0.42, 0.26))
 	# A yard's bed reads from roof height (round 5, 01-town: big cabbages in rows behind a low fence): its crops
 	# drawn larger (towns.json plots.green.garden_grow) and a low fence round it (garden_fence, a component).
 	Fields.sow(plots[1], terrain, center, ["cabbage", "beans", "cabbage"][rng.randi() % 3], center + back, size, yaw, rng, float(gk.get("garden_grow", 1.0)))

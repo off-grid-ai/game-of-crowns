@@ -69,7 +69,7 @@
       "tiles": ["Grassland", "Plains", "Hills"],
       "house": "house_poor", "cottages": [3, 6], "ring": 0.9, "ring_room": 1.15, "mouth": 0.7, "smoking": 2, "smoke_lift": 0.55,
       "fields": [2, 4], "field_ring": [2.0, 2.8], "field_min": [1.2, 0.7], "field_max": [2.0, 1.1],
-      "field_tex": ["res://assets/ground/field-wheat.jpg", "res://assets/ground/field-green.jpg", "res://assets/ground/field-fallow.jpg"],
+      "field_kinds": ["field-wheat", "field-green", "field-fallow"],
       "track": true, "track_width": 0.45,
       "pieces": [
         { "c": "well", "at": [0.0, 0.0], "from_site": true },
