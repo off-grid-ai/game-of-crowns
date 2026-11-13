@@ -101,18 +101,18 @@
   "stripes_below": 0.4,
   "wash_near": 0.03,
   "wash_far": 0.25,
-  "own_mix": 0.45,
+  "own_mix": 0.6,
   "border_bright": 1.1,
   "border_px": 5.0,
   "stripe_width": 1.4,
   "map_from": 30.0,
   "map_to": 40.0,
-  "band": 0.9,
-  "band_strength": 0.75,
+  "band": 0.3,
+  "band_strength": 0.5,
   "line_from": 30.0,
   "line_to": 38.0,
-  "line_soft": 0.22,
-  "line_crisp": 0.55
+  "line_soft": 0.1,
+  "line_crisp": 0.85
  },
  "team": {
   "_": "Team colour (team_colour.gd; Mac's North Star, docs/art/target/02-realm.jpg; Warcraft III): the kit materials whose names start with these keys take the holder's colour, by how much (roof tiles strongly, wood trim lightly; walls, brick and stone not at all). on: the switch (or --team=on / --team=off). saturation: the house colours pushed bolder (WC3's team colours). A town that changes hands eases to its new colour over a season. Art target town-b: ordinary houses keep their own roof (red tile, blue-grey slate, golden thatch, brown shingle) and the colour sits on accents: their shutters, front doors (MI_Door) and banners; only the castle, the manor, the guild hall and the armoury wear it on their roofs (house_kit tiers' 'house' roof). materials: roof tiles (the castle, the hall and any house whose roof draws 'house'), shutters (MI_Shutter, house_builder.gd), doors (MI_Door), banners strongly; the timber frame (MI_WoodTrim) barely. ranks: which components are ordinary (0 a cottage, 1 a townhouse or inn); everything else (castle, hall, banners, armour) wears the full colour. roofs: per house not built from the kit's tiers, seeded by where it stands, the share of thatch, the tiles' own terracotta, slate and the house's colour, as [thatch, terracotta, slate, house] for cottages and for townhouses (house 0: an ordinary roof never wears the colour); house_share (round 5: the castle's and the halls' roofs a bright flat red beside the houses' terracotta): the share of the house colour a roof that wears it takes over its own tiles; thatch and dark_tile (blue-grey slate) their colours (thatch: new straw, warm ochre; thatch_old: the weathered grey-brown each thatched roof leans toward by its own age); straw: how the thatch is drawn (team_colour.gdshader: bundles laid down the slope, never the tiles' rows), fibre and clump (how strongly the bundles and the patches read), eave_dark and eave_band (the ragged darker eave: how dark, how far up as a share of a storey), storey (a kit storey in the mesh's units, where the eave sits); materials: which kit materials are roofs. paint: ordinary_share, the share of the colour an ordinary house's trims and shutters take; saturation and warm, the house colour toned toward its grey and warmed (painted reds, not neon).",
