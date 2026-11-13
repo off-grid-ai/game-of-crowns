@@ -415,9 +415,21 @@ export function season(ctx, turn) {
   // the AI walked the King's men off the walls between seasons (and a marching host a tile off its road the season
   // it arrived), so no assault came and the siege broke (realm/tools/capture_chain_probe.sh). A host marching or
   // garrisoning, or holding before walls it besieges, is held from the AI (realm_hold, as the homeward men are),
-  // let go only for its own steps; freed the season its order ends (a plain hold, at ease) or its siege does.
+  // let go only for its own steps; freed the season its order ends (a plain hold, at ease).
   const besieging = new Set((meta.campaigns ?? []).map((k) => k.city));
-  for (const o of meta.hostOrders ?? []) if (o.siege != null && o.kind === "hold" && !besieging.has(o.siege)) delete o.siege;
+  // A siege over (campaigns.js: the town taken, tribute paid, the siege lifted, the host broken, the town gone to a
+  // friend of the crown): the host before the walls doesn't stand there for ever. It marches into the town it took
+  // and garrisons it, or turns for home to the King's seat (the herald's "your host gone by morning", the captains'
+  // "bring the men home"); with no seat, it stands at ease where it is.
+  const seat = ctx.crownSeat?.();
+  const crownId = crownOf(world)?.id;
+  meta.hostOrders = (meta.hostOrders ?? []).map((o) => {
+    if (o.siege == null || o.kind !== "hold" || besieging.has(o.siege)) return o;
+    const town = world.cities.find((c) => c.id === o.siege);
+    const to = town && town.owner === crownId ? town : seat;
+    if (!to) return { kind: "hold", units: o.units, since: o.since };
+    return { kind: "garrison", units: o.units, x: to.x, y: to.y, city: to.id, since: turn, ...(to === seat ? { home: true } : {}) };
+  });
   const keep = (orders) => orders.filter((o) => o.kind === "march" || o.kind === "garrison" || (o.kind === "hold" && o.siege != null)).flatMap((o) => o.units);
   const freed = (meta.hostsHeld ?? []).filter((id) => !keep(meta.hostOrders ?? []).includes(id));
   if (freed.length) send(`lua cmd ${Lua.homewardRelease(freed)}`);
