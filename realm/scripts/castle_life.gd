@@ -276,28 +276,24 @@ func _outcrop(xf: Transform3D, sp: Dictionary, d: Dictionary) -> void:
 
 
 ## The house's painted banners (assets/heraldry/banner-<house>.png; else a cloth in its colour) hung flat on
-## the castle where the kit's plain ones hung (castle_builder.gd leaves those out while this is on): one long
-## down the keep's face, one either side of the gate (batch 8b: plain yellow cloth with no arms).
+## the castle (01-town's red eagle banners): two on the keep's face either side of its door, one either side of
+## the gate, along the front curtain, and down each front round tower over the cream cloth its piece is painted
+## with (render pass 2243: the towers' cloth hung cream, no arms; the kit-sized hangs sat inside the Meshy keep and
+## towers). The keep's and towers' hangs are in the piece's own metres (castle.json arms.keep, arms.tower), put on
+## it by castle_builder.gd's own placement of it.
 func _arms(xf: Transform3D, sp: Dictionary, house: Dictionary, colour: Color, d: Dictionary) -> void:
 	var k: Dictionary = Data.value("castle", "arms", {})
 	var size := float(sp.get("banner", 1.6)) * float(k.get("size", 1.0))
 	var cell := Builder.CELL
-	var hz := int(sp.get("d", 16)) * cell / 2.0
-	var kh := int(sp.get("keep", 4)) * cell / 2.0
-	var keep_z := -hz + kh - 1.0 + kh + 0.12
-	var keep_top := (int(sp.get("keep_storeys", 5)) + Builder.podium()) * Builder.STOREY - 1.0
 	var gate_top := (int(sp.get("wall_storeys", 2)) + 1) * Builder.STOREY - 0.4
 	var gate_z := Builder.gate_front(sp) + 0.12
 	var gh := 4 * cell / 2.0
 	var mat := _arms_material(house, colour)
-	var hangs := [[Vector3(0, keep_top, keep_z), Vector2(1.2, 3.0) * size]]
-	# 01-town: two great banners either side of the keep's door, not one down its middle (castle.json
-	# arms.keep_pair: [out, a share of the keep's half-width; width; height] times size).
-	var kp: Array = k.get("keep_pair", [])
-	if kp.size() >= 3:
-		hangs = []
-		for sx in [-1.0, 1.0]:
-			hangs.append([Vector3(sx * float(kp[0]) * kh, keep_top, keep_z), Vector2(float(kp[1]), float(kp[2])) * size])
+	var hangs := []
+	# 01-town: two great banners either side of the keep's door.
+	var ka: Dictionary = k.get("keep", {})
+	for sx in [-1.0, 1.0]:
+		hangs.append(_on_piece(Builder.keep_xform(sp), ka, sx))
 	for sx in [-1.0, 1.0]:
 		hangs.append([Vector3(sx * (gh - 0.6), gate_top, gate_z), Vector2(0.9, 2.2) * size])
 	# Along the front curtain, facing the square, every arms.curtain_every metres (01-town: the arms all along
@@ -317,12 +313,11 @@ func _arms(xf: Transform3D, sp: Dictionary, house: Dictionary, colour: Color, d:
 				if absf(at.x) < Builder.gate_tower_x() + 1.5:
 					continue
 				hangs.append([at + out * 0.15 + Vector3(0, wall_top, 0), Vector2(0.9, 2.2) * size * float(k.get("curtain_size", 0.8))])
-	# One down the town-facing face of each front and gate tower (01-town: the arms on every tower).
+	# One down the town-facing face of each front and gate round tower, over its painted cloth (01-town: the arms
+	# on every tower).
 	for t in Builder.towers(sp):
-		var at: Vector3 = t["at"]
-		if at.z <= 0.0:
-			continue
-		hangs.append([Vector3(at.x, float(t["top"]) - float(k.get("tower_below", 1.2)), at.z + Builder.CELL + 0.12), Vector2(0.9, 2.4) * size * float(k.get("tower_size", 0.9))])
+		if (t["at"] as Vector3).z > 0.0 and String(t["kind"]) == "round":
+			hangs.append(_on_piece(Builder.tower_xform(t["at"], int(t["storeys"]), "round"), k.get("tower", {}), 1.0))
 	for h in hangs:
 		var q := QuadMesh.new()
 		q.size = h[1]
@@ -333,6 +328,14 @@ func _arms(xf: Transform3D, sp: Dictionary, house: Dictionary, colour: Color, d:
 		add_child(m)
 		m.global_transform = xf * Transform3D(Basis(), h[0])
 		d["nodes"].append(m)
+
+
+## A hang on a castle-set piece: its top middle and size in the castle's frame, from the piece's own metres
+## (h: {x, top, z, w, h}; sx mirrors x for a pair) through its placement `pxf`.
+static func _on_piece(pxf: Transform3D, h: Dictionary, sx: float) -> Array:
+	var sc := pxf.basis.get_scale()
+	var top := pxf * Vector3(sx * float(h.get("x", 0.0)), float(h.get("top", 8.0)), float(h.get("z", 3.8)))
+	return [top, Vector2(float(h.get("w", 1.8)) * sc.x, float(h.get("h", 5.0)) * sc.y)]
 
 
 func _arms_material(house: Dictionary, colour: Color) -> StandardMaterial3D:

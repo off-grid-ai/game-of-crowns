@@ -119,8 +119,10 @@ func _collect(node: Node, xf: Transform3D, tools: Dictionary, shutter := "", rem
 			if shutter != "":
 				mat = _shutter(mat, shutter)
 			# By the material's name: every kit file brings its own copy of MI_WoodTrim and the rest, and
-			# one surface per copy cost a draw call each (30-50 a house); one per look is ten or so.
-			var key: Variant = (mat.resource_name if mat.resource_name != "" else str(mat.get_instance_id())) if mat else "-"
+			# one surface per copy cost a draw call each (30-50 a house); one per look is ten or so. And by its
+			# painted texture: every Meshy piece names its own atlas "Material_0", so by name alone the castle's
+			# towers and walls drew with the keep's atlas, red roof paint over their stone (render pass 2243).
+			var key: Variant = (mat.resource_name + _tex_key(mat) if mat.resource_name != "" else str(mat.get_instance_id())) if mat else "-"
 			if not tools.has(key):
 				mat = _glass(_painted(_matte(mat)))
 				var st := SurfaceTool.new()
@@ -129,6 +131,15 @@ func _collect(node: Node, xf: Transform3D, tools: Dictionary, shutter := "", rem
 			tools[key]["st"].append_from(node.mesh, s, here)
 	for c in node.get_children():
 		_collect(c, here, tools, shutter, remap)
+
+
+## A material's painted texture as part of its bake key ("" for a plain colour or a shared kit texture's copies,
+## which all load the one file).
+static func _tex_key(mat: Material) -> String:
+	var tex: Texture2D = (mat as BaseMaterial3D).albedo_texture if mat is BaseMaterial3D else null
+	if tex == null:
+		return ""
+	return "|" + (tex.resource_path if tex.resource_path != "" else str(tex.get_instance_id()))
 
 
 func _bake(parts: Array, remap := {}) -> ArrayMesh:

@@ -22,32 +22,16 @@ const SIDES := [0.0, PI / 2, PI, -PI / 2]
 ## height; tower_storeys: the corner and wall towers; side_towers: a tower midway
 ## along each side wall (a royal seat); banner: the banners' size; seed.
 func build_castle(spec: Dictionary) -> ArrayMesh:
-	var w := int(spec.get("w", 18))
-	var d := int(spec.get("d", 16))
 	var wall_st := int(spec.get("wall_storeys", 2))
-	var keep := int(spec.get("keep", 4))
-	var keep_st := int(spec.get("keep_storeys", 5))
-	var tower_st := int(spec.get("tower_storeys", wall_st + 2))
-	var rng := RandomNumberGenerator.new()
-	rng.seed = int(spec.get("seed", 1))
 	var parts := []
-	var hx := w * CELL / 2.0
-	var hz := d * CELL / 2.0
-	var kh := keep * CELL / 2.0
-	# The keep stands into the back wall, its back face a little proud of it.
-	var keep_at := Vector3(0, 0, -hz + kh - 1.0)
+	var hz := int(spec.get("d", 16)) * CELL / 2.0
 	var gate_at := Vector3(0, 0, hz)
-	# Towers: a corner tower at each corner, and on a royal seat one midway along
-	# each side wall; each a 2x2 stone shaft under the kit's tiled cone.
-	var towers: Array = [Vector3(-hx, 0, -hz), Vector3(hx, 0, -hz), Vector3(hx, 0, hz), Vector3(-hx, 0, hz)]
-	if spec.get("side_towers", false):
-		towers.append_array([Vector3(-hx, 0, 0), Vector3(hx, 0, 0)])
 	# The castle is the Meshy castle set (docs/art/castle, data/meshy.json ck_*; castle.json meshy): a round tower at
 	# each corner and either side of the gate, a square tower midway along each side wall of a royal seat, the curtain
 	# as wall stretches along each run, and the keep, all in the 01-town painted stone and red tiles.
-	for t in towers:
-		var corner := absf(t.x) > 0.01 and absf(t.z) > 0.01
-		_meshy_tower(parts, t, tower_st, "round" if corner else "square")
+	for t in towers(spec):
+		if not t.get("gate", false):
+			_meshy_tower(parts, t["at"], int(t["storeys"]), String(t["kind"]))
 	_meshy_curtain(parts, spec, wall_st)
 	# The gatehouse astride the front wall: Meshy's (data/meshy.json gatehouse, imported), in metres.
 	var meshy_gate := meshy_gatehouse()
@@ -60,11 +44,9 @@ func build_castle(spec: Dictionary) -> ArrayMesh:
 			for sx in [-1, 1]:
 				_meshy_tower(parts, gate_at + Vector3(sx * gate_tower_x(), 0, 1.0), wall_st + 2, "round")
 	# The keep (ck_keep: its own steps up to its door, its turrets and red roofs), stood into the back wall.
-	var km: Dictionary = _meshy().get("keep", {})
 	var keep_file := _meshy_file("ck_keep")
 	if keep_file != "":
-		var ks := float(km.get("scale", 1.0))
-		parts.append([keep_file, Transform3D(Basis.from_scale(Vector3.ONE * ks), keep_at + Vector3(0, 0, float(km.get("z", 0.0))))])
+		parts.append([keep_file, keep_xform(spec)])
 	# The house's banners on the keep and the gate are castle_life.gd's (its painted arms).
 	return _bake(parts)
 
@@ -92,15 +74,27 @@ static func _meshy_size(name: String) -> Array:
 ## A tower of the castle set at `at` (its foot): its stone `storeys` high under its roof, its width castle.json
 ## meshy.tower.width (the import's own across, about 7-8 m, would crowd the curtain's 2 m bays).
 func _meshy_tower(parts: Array, at: Vector3, storeys: int, kind: String) -> void:
+	var file := _meshy_file(String(_meshy().get("tower", {}).get(kind, "ck_wall_tower")))
+	if file != "":
+		parts.append([file, tower_xform(at, storeys, kind)])
+
+
+## Where a castle-set tower stands in the castle's frame and how it is stretched (its own metres -> the castle's):
+## the one placement, so what hangs on it (castle_life.gd's arms) finds its face.
+static func tower_xform(at: Vector3, storeys: int, kind: String) -> Transform3D:
 	var k: Dictionary = _meshy().get("tower", {})
-	var name := String(k.get(kind, "ck_wall_tower"))
-	var file := _meshy_file(name)
-	if file == "":
-		return
-	var sz: Array = _meshy_size(name)
+	var sz: Array = _meshy_size(String(k.get(kind, "ck_wall_tower")))
 	var h := storeys * STOREY + float(k.get("cone", 4.0))
 	var across := float(k.get("width", 6.0))
-	parts.append([file, Transform3D(Basis.from_scale(Vector3(across / float(sz[0]), h / float(sz[2]), across / float(sz[1]))), at)])
+	return Transform3D(Basis.from_scale(Vector3(across / float(sz[0]), h / float(sz[2]), across / float(sz[1]))), at)
+
+
+## Where the keep (ck_keep) stands in the castle's frame: into the back wall, castle.json meshy.keep's scale and z.
+static func keep_xform(spec: Dictionary) -> Transform3D:
+	var km: Dictionary = _meshy().get("keep", {})
+	var hz := int(spec.get("d", 16)) * CELL / 2.0
+	var kh := int(spec.get("keep", 4)) * CELL / 2.0
+	return Transform3D(Basis.from_scale(Vector3.ONE * float(km.get("scale", 1.0))), Vector3(0, 0, -hz + kh - 1.0 + float(km.get("z", 0.0))))
 
 
 ## The curtain: along each run (curtain_runs) as many wall stretches as fit their length, each stretched to share
@@ -185,13 +179,13 @@ static func towers(spec: Dictionary) -> Array:
 	var tower_st := int(spec.get("tower_storeys", wall_st + 2))
 	var out := []
 	for c in [Vector3(-hx, 0, -hz), Vector3(hx, 0, -hz), Vector3(hx, 0, hz), Vector3(-hx, 0, hz)]:
-		out.append({"at": c, "top": tower_st * STOREY + 0.12})
+		out.append({"at": c, "top": tower_st * STOREY + 0.12, "storeys": tower_st, "kind": "round"})
 	if spec.get("side_towers", false):
 		for c in [Vector3(-hx, 0, 0), Vector3(hx, 0, 0)]:
-			out.append({"at": c, "top": tower_st * STOREY + 0.12})
+			out.append({"at": c, "top": tower_st * STOREY + 0.12, "storeys": tower_st, "kind": "square"})
 	if bool(_meshy_gate().get("towers", false)):
 		for sx in [-1, 1]:
-			out.append({"at": Vector3(sx * gate_tower_x(), 0, hz + 1.0), "top": (wall_st + 2) * STOREY + 0.12, "gate": true})
+			out.append({"at": Vector3(sx * gate_tower_x(), 0, hz + 1.0), "top": (wall_st + 2) * STOREY + 0.12, "storeys": wall_st + 2, "kind": "round", "gate": true})
 	return out
 
 
