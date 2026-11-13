@@ -217,7 +217,7 @@ def main():
     b6kit = dict(kit)
     b6kit.update(BATCH6["kit"])
     lut6 = lut_of(b6)
-    road = tex_mean("assets/ground/road-dirt.jpg") * tint(read("data/ground.json")["roads"]["tint"])
+    road = tex_mean("assets/ground/painted_v2/dirt_road.png") * tint(read("data/ground.json")["roads"]["tint"])
     k_amb, k_sun = 0.1, 1.0
     for _ in range(12):  # the shade from the walls in shade, the sun from the earth in the sun, in turn
         lo, hi = 0.005, 2.0
