@@ -15,7 +15,7 @@ func _init(towns: Node) -> void:
 	t = towns
 
 
-func stand(root: Node3D, pos: Vector3, color: Color, house: Dictionary, height := 0.65) -> void:
+func stand(root: Node3D, pos: Vector3, color: Color, house: Dictionary, height := 0.65) -> Node3D:
 	var b: Node3D = preload("res://scripts/heraldry.gd").standard(house, color, height)
 	b.position = pos
 	root.add_child(b)
@@ -28,6 +28,25 @@ func stand(root: Node3D, pos: Vector3, color: Color, house: Dictionary, height :
 		flag.set_meta("top", flag.position.y)
 		hoist(flag, _banner_at.get(int(root.get_meta("owner", -1)), 1.0), false)
 		fringe(flag, _sworn.get(int(root.get_meta("owner", -1)), false))
+	return b
+
+
+## A seat's standard as the realm map shows it (docs/art/target/02-realm.jpg: a castle and a tall banner over every
+## house seat): the house's standard over its castle at towns.json map_standard.height, seen only from
+## map_standard.from away (map zoom), so the town and street views keep the castle's own. Raised and lowered with
+## the house's favour like every banner of its towns.
+func map_standard(root: Node3D, pos: Vector3, color: Color, house: Dictionary) -> void:
+	var ms: Dictionary = preload("res://scripts/data.gd").value("towns", "map_standard", {})
+	if float(ms.get("height", 0.0)) <= 0.0:
+		return
+	var b := stand(root, pos, color, house, float(ms["height"]))
+	var todo: Array = [b]
+	while not todo.is_empty():
+		var n: Node = todo.pop_back()
+		if n is GeometryInstance3D:
+			(n as GeometryInstance3D).visibility_range_begin = float(ms.get("from", 40.0))
+			(n as GeometryInstance3D).visibility_range_begin_margin = 2.0
+		todo.append_array(n.get_children())
 
 
 ## Every decision is seen (GAME_DESIGN pillar 3): a house's banners stand as

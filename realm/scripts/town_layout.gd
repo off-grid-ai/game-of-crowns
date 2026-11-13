@@ -113,6 +113,7 @@ func real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds:
 					lots.append([cp, maxf(f.x, f.y) * 0.55])
 					# The castle's standard, to the castle's scale: over the keep, not taller than its towers.
 					tb.banners.stand(root, cp + Vector3(0, cy + 0.9 * scale, 0), tb._house_colour, tb._house, 0.6 * scale)
+					tb.banners.map_standard(root, cp + Vector3(0, cy + 0.9 * scale, 0), tb._house_colour, tb._house)  # the seat on the realm map
 					tb._door(root, cp, f, "great_hall", "great hall")
 					root.set_meta("castle_frame", [cp, castle.rotation.y, f, cy])  # the bailey's dressing reads it (dressing.gd bailey)
 					tb._bailey(root, cp, cy, castle.rotation.y, rng)
