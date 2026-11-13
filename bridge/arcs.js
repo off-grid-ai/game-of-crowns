@@ -27,6 +27,7 @@ import { cityName, houseFor } from "./narrator.js";
 import { arcLine } from "./claude.js";
 import { warMuster } from "./characters.js";
 import * as Lua from "./lua.js";
+import { richestTown } from "./realm.js";
 
 const DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "arcs");
 // The player's own stories (generated or written) live with their realms, not
@@ -746,7 +747,7 @@ export class Arcs {
     // Men without banners: Freeciv's barbarians raised beside the victim's town (realm_raid); its AI raids.
     if (d.raid && R(d.raid[0]) && R(d.raid[1])) {
       const [atk, def] = [R(d.raid[0]), R(d.raid[1])];
-      const prey = d.raid[2] && R(d.raid[2])?.town ? R(d.raid[2]) : ctx.world.cities.find((x) => x.owner === def.playerId && !x.capital) ?? ctx.world.cities.find((x) => x.owner === def.playerId);
+      const prey = d.raid[2] && R(d.raid[2])?.town ? R(d.raid[2]) : richestTown(ctx.world, def.playerId);
       if (prey) send(Lua.raid(prey.id));
       if (court.people[def.id]) court.shift(def.id, atk.id, -35);
     }

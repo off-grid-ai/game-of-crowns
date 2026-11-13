@@ -33,6 +33,14 @@ export function seatOf(world, pid) {
   return towns.find((c) => c.capital) ?? towns[0];
 }
 
+// Where raiders fall on a house (casebook, Wealth draws the raid: the economy picks the threat): its richest town
+// outside its seat, the one with the most people, then the most buildings; its seat only when it holds no other.
+export function richestTown(world, pid) {
+  const towns = (world?.cities ?? []).filter((c) => c.owner === Number(pid));
+  const worth = (c) => Number(c.size ?? 0) * 100 + (c.buildings?.length ?? 0);
+  return towns.filter((c) => !c.capital).sort((a, b) => worth(b) - worth(a))[0] ?? towns[0];
+}
+
 // The King's seat (Kingsmere): the crown's capital, else the town of that name.
 export function kingsSeat(world) {
   const crown = crownOf(world);

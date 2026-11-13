@@ -6,7 +6,7 @@
 // here; pivotal ones go to Claude in the character's own voice. Results land
 // in Freeciv (towns change hands, rebellions, gold) and at the King's court.
 
-import { crownOf, northTowns } from "./realm.js";
+import { crownOf, northTowns, richestTown } from "./realm.js";
 import * as Lua from "./lua.js";
 import { pick as wording } from "./say.js";  // one of a result's wordings (data/dilemmas.json text lists)
 import fs from "node:fs";
@@ -602,7 +602,7 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
         const choice = d?.choice ?? (c.traits.includes("wrathful") || md.aggression > 20 ? "raid" : md.caution > 25 ? "wait" : "slander");
         const line = d?.line ? ` "${d.line}"` : "";
         if (choice === "raid") {
-          const prey = world.cities.find((x) => x.owner === m.target.playerId && !x.capital);
+          const prey = richestTown(world, m.target.playerId);
           if (prey) {
             ctx.send(Lua.raid(prey.id));
             this.shift(m.target.id, c.id, -40, `${c.name}'s men raided ${cityName(prey.id)}.`);
@@ -1139,7 +1139,7 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
     if (e.ward && roles[e.ward]) { roles[e.ward].ward = true; if (roles.me) roles.me.hostage = roles[e.ward].id; this.save(roles[e.ward]); }
     // Men without banners fall on a town of the victim's: Freeciv's barbarians, raised beside it (realm_raid).
     if (e.raid && roles[e.raid[1]]) {
-      const prey = roles.rivalTown && roles[e.raid[1]] === roles.rival ? roles.rivalTown : world.cities.find((x) => x.owner === roles[e.raid[1]].playerId && !x.capital);
+      const prey = roles.rivalTown && roles[e.raid[1]] === roles.rival ? roles.rivalTown : richestTown(world, roles[e.raid[1]].playerId);
       if (prey?.x !== undefined) out.lua.push(Lua.raid(prey.id));
       if (roles[e.raid[0]]) this.shift(roles[e.raid[1]].id, roles[e.raid[0]].id, -40);
     }
