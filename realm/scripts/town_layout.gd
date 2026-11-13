@@ -203,6 +203,7 @@ func square_ring(root: Node3D, center: Vector3, square_r: float, ways: Array, ki
 	var fronts: Array = kinds.filter(func(k): return Real.KIT.get(k, [""])[0] != "barn")
 	if fronts.is_empty() or budget <= 0:
 		return 0
+	root.set_meta("ring_yards", [])  # their yards, laid with the plots' (_ring_yard)
 	var rr := RandomNumberGenerator.new()
 	rr.seed = rng.seed + 7  # the old first ring's own sequence
 	var ring: float = tb.front_ring(square_r)
@@ -263,6 +264,7 @@ func square_ring(root: Node3D, center: Vector3, square_r: float, ways: Array, ki
 			if tb._put(root, center, k, p, kf, lots, rr, true, -p.normalized(), true):
 				placed += 1
 				stood = true
+				_ring_yard(root, p, kf, k, ways, lots.size() - 1)
 				break
 			why["the ground"] += 1
 		if stood:
@@ -555,7 +557,7 @@ func plot_lots(root: Node3D, center: Vector3, square_r: float, ways: Array, kind
 		why["alone"] = left.size()
 	# The yards, once every house stands: their fences and kitchen gardens go round the houses,
 	# never take a house's ground.
-	for s in stood:
+	for s in stood + (root.get_meta("ring_yards", []) as Array):
 		tb._yard(root, center, s[0], s[1], s[2], s[3], lots, rng, int(s[4]))
 	# CHECK line: how the yards came out (round 6: no gardens, fences or pens read at Kingsmere).
 	var things := {}
@@ -682,6 +684,35 @@ static func area(poly: PackedVector2Array) -> float:
 		var j := (i + 1) % poly.size()
 		a += poly[i].x * poly[j].y - poly[j].x * poly[i].y
 	return a * 0.5
+
+
+## A yard behind a house round the square (casebook, the look: 01-town's square houses each have a fenced yard,
+## a bed, a tree or barrels behind; round 2243's street shot stood them on bare grass). Cut as a burgage plot's is
+## (TownPlots.plots: [house, face, frontage, depth, corners front-left, front-right, back-right, back-left, ...]), so
+## the plots' one yard layer (towns.gd _yard: fences, kitchen garden, yard thing, green) lays it once every house
+## stands. Its depth is towns.json plots.ring_yard (game units), shortened to clear a street; none where even half
+## of it lies on one. Kept on the root (meta ring_yards) for the yards pass.
+func _ring_yard(root: Node3D, p: Vector3, f: Vector2, kind: String, ways: Array, own_lot: int) -> void:
+	var deep := float(tb._plot_knobs().get("ring_yard", TownPlots.YARD))
+	if deep <= 0.0:
+		return
+	var p2 := Vector2(p.x, p.z)
+	var face := -p2.normalized()  # toward the square
+	var tan := Vector2(-face.y, face.x)
+	var front := p2 + face * f.y * 0.5
+	var half := tan * f.x * 0.5
+	for d: float in [deep, deep * 0.5]:
+		var back := front - face * (f.y + d)
+		var yard := PackedVector2Array([front - face * f.y + half, front - face * f.y - half, back - half, back + half])
+		if TownPlots.on_other_way(yard, ways, -1, TownPlots.ROAD_HALF):
+			continue
+		if tb._on_road(Vector3(back.x, 0, back.y), 0.02):
+			continue
+		var pl := [p2, face, f.x, f.y, PackedVector2Array([front - half, front + half, back + half, back - half]), p2.length(), kind, "ring"]
+		var ry: Array = root.get_meta("ring_yards", [])
+		ry.append([pl, p, Vector3(face.x, 0, face.y), f, own_lot])
+		root.set_meta("ring_yards", ry)
+		return
 
 
 ## A plot house's outline (town-local): `house` its middle, `face` toward the street.
