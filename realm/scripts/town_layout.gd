@@ -151,13 +151,25 @@ func real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds:
 		if f == Vector2.ZERO:
 			continue
 		var p := Vector3(cos(gap_ang), 0, sin(gap_ang)) * (square_r + maxf(f.x, f.y) * 0.45)
-		# Between the roads into the square, never across one (--towns=plots).
-		for turn in (16 if not ways.is_empty() else 0):
-			if not TownPlots.near_ways(Vector2(p.x, p.z), ways, maxf(f.x, f.y) * 0.5 + 0.05):
+		# Between the roads into the square, never across one (--towns=plots); a spot already taken (a landmark, the
+		# castle, bad ground) moves it on round the edge, so a square trade isn't lost to its first spot (g7: Kingsmere
+		# stood no smithy, its one try crowded, and nothing said so).
+		var stands := false
+		for go in 16:
+			for turn in (16 if not ways.is_empty() else 0):
+				if not TownPlots.near_ways(Vector2(p.x, p.z), ways, maxf(f.x, f.y) * 0.5 + 0.05):
+					break
+				gap_ang += TAU / 16.0
+				p = Vector3(cos(gap_ang), 0, sin(gap_ang)) * (square_r + maxf(f.x, f.y) * 0.45)
+			if tb._put(root, center, lm, p, f, lots, rng, false):
+				stands = true
 				break
 			gap_ang += TAU / 16.0
 			p = Vector3(cos(gap_ang), 0, sin(gap_ang)) * (square_r + maxf(f.x, f.y) * 0.45)
-		if tb._put(root, center, lm, p, f, lots, rng, false):
+		if not stands and not square_trade.is_empty():
+			square_trade["where"] = "main"  # no room on the square's edge: it stands on a main street with the other trades
+			print("CHECK town trades: %s found no room on the square's edge for its %s: on a main street" % [String(root.get_meta("title", "")), comp])
+		if stands:
 			placed += 1
 			if rooms.has(comp):  # a landmark has its room and a door into it; a trade on the square has its trade record below
 				tb._door(root, p, f, rooms[comp][0], rooms[comp][1])
