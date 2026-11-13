@@ -368,12 +368,49 @@ function peaceHome(ctx, turn) {
   }
 }
 
+// The ships that carried a host, once it is ashore (no ship vanishes at the shore): they sail off toward open sea,
+// for data/hosts.json shipsOff.seasons, then they go (realm_ferry_gone). Open sea: coastal water beside deep water, at
+// least shipsOff.far tiles from where the host came ashore; else any water that far; the nearest by sea. meta.shipsOff:
+// [{hulls, from: {x, y}, until}]. Called with hulls at a landing (they set out at once), and each season with none.
+function shipsOff(ctx, turn, L, hulls = null, from = null) {
+  const { world, meta, send } = ctx;
+  const S = HOSTS.shipsOff ?? {};
+  const fresh = hulls?.length ? [{ hulls, from, until: turn + (S.seasons ?? 1) }] : null;
+  const todo = fresh ?? meta.shipsOff ?? [];
+  if (!todo.length) return;
+  const keep = [];
+  for (const s of todo) {
+    const afloat = s.hulls.filter((id) => (world.units ?? []).some((u) => u.id === id));
+    if (!afloat.length) continue;
+    if (turn >= s.until) { send(`lua cmd ${Lua.ferryGone(afloat)}`); continue; }
+    keep.push(s);
+    if (!L) continue;
+    const far = (x, y) => Math.max(Math.abs(x - s.from.x), Math.abs(y - s.from.y)) >= (S.far ?? 4);
+    const open = [], any = [];
+    for (let y = 0; y < L.h; y++) for (let x = 0; x < L.w; x++) {
+      if (!sails(L, x, y, false) || !far(x, y)) continue;
+      any.push([x, y]);
+      if (round(L, x, y).some(([a, b]) => L.sea[b * L.w + a] === 2)) open.push([x, y]);
+    }
+    for (const id of afloat) {
+      const u = world.units.find((v) => v.id === id);
+      const at = [[u.x, u.y]];
+      const road = (open.length && seaRoad(L, at, open, false)) || (any.length && seaRoad(L, at, any, false)) || [];
+      const way = road.slice(1, 1 + (HULLS[u.type]?.speed ?? 1));
+      if (way.length) send(`lua cmd ${Lua.ferryOff(id, way)}`);
+    }
+  }
+  meta.shipsOff = fresh ? [...(meta.shipsOff ?? []), ...keep] : keep;
+  chron.saveMeta(meta);
+}
+
 // Each season (season.js): every host under a marching order moves; one that has arrived stands
 // (a march becomes a hold; a garrison stays a garrison, in the town).
 export function season(ctx, turn) {
   const { world, meta, send, record, besiege } = ctx;
   if (!world) return;
   peaceHome(ctx, turn);
+  shipsOff(ctx, turn, landOf());
   // A host under the King's order is the King's, not Freeciv's AI's: the crown is AI-marshalled (realm.serv), and
   // the AI walked the King's men off the walls between seasons (and a marching host a tile off its road the season
   // it arrived), so no assault came and the siege broke (realm/tools/capture_chain_probe.sh). A host marching or
@@ -462,7 +499,10 @@ export function season(ctx, turn) {
         const aboard = units.every((id) => { const u = byId.get(id); return u && u.x === sea.water.x && u.y === sea.water.y; });
         if (fresh.length < sea.ships || !aboard) {
           record?.({ turn, kind: "decree", text: (crown?.gold ?? 0) < sea.cost ? "The treasury could not pay for the ships; the royal host makes camp on the shore." : "No ships could be raised for the royal host; it makes camp on the shore." });
-          if (fresh.length) send(`lua cmd ${Lua.ferryLand(units, sea.coast.x, sea.coast.y, fresh.map((u) => u.id))}`);
+          if (fresh.length) {
+            send(`lua cmd ${Lua.ferryLand(units, sea.coast.x, sea.coast.y)}`);
+            shipsOff(ctx, turn, L, fresh.map((u) => u.id), sea.coast);
+          }
           next.push({ kind: "hold", units, since: turn });
           continue;
         }
@@ -470,7 +510,7 @@ export function season(ctx, turn) {
         o.sea = { ...sea, phase: "sail", hulls: fresh.slice(0, sea.ships).map((u) => u.id), before: undefined };
       }
       // At sea: the ships (and the host in them) sail toward the water beside the landing; there, the host comes ashore
-      // and the ships are disbanded.
+      // and the ships put out to sea (shipsOff).
       const hulls = o.sea.hulls.map((id) => (world.units ?? []).find((u) => u.id === id && u.owner === crown?.id)).filter(Boolean);
       if (hulls.length < o.sea.hulls.length) {
         record?.({ turn, kind: "decree", text: "The ships carrying the royal host are lost." });
@@ -480,8 +520,9 @@ export function season(ctx, turn) {
       const beside = round(L, o.sea.landing.x, o.sea.landing.y).filter(([x, y]) => sails(L, x, y, false));
       const near = new Set(beside.map(([x, y]) => `${x},${y}`));
       if (hulls.every((u) => near.has(`${u.x},${u.y}`))) {
-        send(`lua cmd ${Lua.ferryLand(units, o.sea.landing.x, o.sea.landing.y, o.sea.hulls)}`);
-        record?.({ turn, kind: "decree", text: `The royal host comes ashore${o.city != null ? ` on the road to ${cityName(o.city)}` : ""}; the ships are disbanded.`, city: o.city ?? undefined });
+        send(`lua cmd ${Lua.ferryLand(units, o.sea.landing.x, o.sea.landing.y)}`);
+        shipsOff(ctx, turn, L, o.sea.hulls, o.sea.landing);
+        record?.({ turn, kind: "decree", text: `The royal host comes ashore${o.city != null ? ` on the road to ${cityName(o.city)}` : ""}; the ships put out to sea.`, city: o.city ?? undefined });
         next.push({ ...o, units, far: null, sea: { ...o.sea, phase: "landed" } });
         continue;
       }

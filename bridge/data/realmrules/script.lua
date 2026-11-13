@@ -1347,9 +1347,9 @@ end
 
 -- The King's host comes ashore on the tile (x, y) beside its hulls, by Freeciv's own unit_move (its disembark
 -- bookkeeping), as it boarded (realm_ferry_board: the crossing is the crown's one decree, whatever moves the men have
--- left); never onto a tile another's men hold. Then the ships (`hulls`) are disbanded: the crown raised them for this
--- crossing alone.
-function realm_ferry_land(units, x, y, hulls)
+-- left); never onto a tile another's men hold. The ships, raised for this crossing alone, then sail off and go
+-- (realm_ferry_off, realm_ferry_gone; the bridge's hosts.js shipsOff).
+function realm_ferry_land(units, x, y)
   local t = find.tile(x, y)
   local n, ok = 0, 0
   for id in tostring(units or ""):gmatch("%d+") do
@@ -1363,13 +1363,33 @@ function realm_ferry_land(units, x, y, hulls)
       if u.tile == t then ok = ok + 1 end  -- ashore, free to march on (the bridge holds it again if its order does)
     end
   end
-  if ok == n then  -- every company ashore: a ship disbanded with men aboard would drown them
-    for id in tostring(hulls or ""):gmatch("%d+") do
-      local h = find.unit(nil, tonumber(id))
-      if h then edit.unit_kill(h, "disbanded", nil) end
-    end
-  end
   log.normal("FERRY land %d of %d", ok, n)
+end
+
+-- Whether a hull still carries men (a ship sailed off or disbanded with men aboard would take or drown them).
+local function ferry_laden(h)
+  for v in h.tile:units_iterate() do
+    local tr = v:transporter()
+    if tr and tr.id == h.id then return true end
+  end
+  return false
+end
+
+-- A hull that has put its host ashore sails off toward open sea (bridge hosts.js shipsOff): along `way` ("x,y;..."),
+-- by Freeciv's own unit_move as a host's road (realm_walk_home), only when it carries no one.
+function realm_ferry_off(id, way)
+  local h = find.unit(nil, id)
+  if h and not ferry_laden(h) then realm_walk_home(id, way) end
+end
+
+-- The hulls go, out at sea (a season after they put their host ashore): each disbanded unless it still carries men.
+function realm_ferry_gone(hulls)
+  local gone = 0
+  for id in tostring(hulls or ""):gmatch("%d+") do
+    local h = find.unit(nil, tonumber(id))
+    if h and not ferry_laden(h) then edit.unit_kill(h, "disbanded", nil); gone = gone + 1 end
+  end
+  log.normal("FERRY gone %d", gone)
 end
 
 function realm_release(ids)

@@ -1,14 +1,14 @@
 // Guards the King's crossing (Mac: "ships are just to move armies from one point to another"; supervisor's ruling,
-// 2026-11-12: the crown raises its ships where it needs them, paying Freeciv's price, and they are disbanded on landing).
+// 2026-11-12: the crown raises its ships where it needs them, paying Freeciv's price, and once the host is ashore they sail off and go).
 // Part A, the order (hosts.js), on a staged land: two shores and a strait of coastal water, the crown's host inland on
 // the west, no port and no ship of the crown's anywhere, the goal on the east; Freeciv's moves emulated from the
 // bridge's own commands. Asked dry, it answers by sea with the shore, the ships and their price, giving nothing. The march
 // is one order that names the shore, the ships and the landing; season by season the host walks to the shore, the crown
 // raises and pays for a Trireme there and the host boards it, sails (aboard in /world's hosts), comes ashore, the ship
-// is disbanded, and the host marches into the goal. Refused, saying why, when the treasury can't pay; a treasury
+// sails off and is gone the next season, and the host marches into the goal. Refused, saying why, when the treasury can't pay; a treasury
 // emptied before the shore raises nothing and the host makes camp. Part B, Freeciv's own rules on a bare server
 // (5573): realm_ferry_raise raises and charges a Trireme on the water beside a company and boards it (Transport
-// Embark), the ship sails with it, realm_ferry_land puts it ashore (Transport Disembark) and disbands the ship; with an
+// Embark), the ship sails with it, realm_ferry_land puts it ashore (Transport Disembark) and realm_ferry_gone disbands the empty ship; with an
 // empty treasury nothing is raised. Exits 1 on a failure.   node tools/crossing_probe.mjs        (from bridge/)
 import fs from "node:fs";
 import os from "node:os";
@@ -49,10 +49,12 @@ const purse = (ctx) => ctx.world.players.find((p) => p.id === crown.id).gold;
   check(out[0] === 400 && /treasury can't pay/.test(out[1]?.error ?? ""), `with too little in the treasury the march is refused, saying why: ${out[0]} ${out[1]?.error}`);
 }
 // Freeciv's moves, emulated from the commands the bridge sends.
+const sailedOff = [];  // hulls that sailed off after their host came ashore (realm_ferry_off)
 const emulator = (ctx) => {
   const aboard = new Map();  // company -> ship
   const unit = (id) => ctx.world.units.find((u) => u.id === id);
   let next = 100;
+  sailedOff.length = 0;
   return (cmd) => {
     let m = cmd.match(/find\.unit\(nil, (\d+)\).*ipairs\(\{(.*)\}\) do/);
     if (m) {
@@ -73,9 +75,18 @@ const emulator = (ctx) => {
       m[2].split(",").map(Number).forEach((c, k) => { aboard.set(c, ships[Math.floor(k / 2)]); Object.assign(unit(c), { x: Number(m[3]), y: Number(m[4]) }); });
       return;
     }
-    if ((m = cmd.match(/realm_ferry_land\("([\d,]*)", (\d+), (\d+), "([\d,]*)"\)/))) {
+    if ((m = cmd.match(/realm_ferry_land\("([\d,]*)", (\d+), (\d+)\)/))) {
       for (const c of m[1].split(",").map(Number)) { aboard.delete(c); Object.assign(unit(c), { x: Number(m[2]), y: Number(m[3]) }); }
-      const gone = new Set(m[4].split(",").filter(Boolean).map(Number));
+      return;
+    }
+    if ((m = cmd.match(/realm_ferry_off\((\d+), "([\d,;]*)"\)/))) {
+      const last = m[2].split(";").filter(Boolean).pop();
+      const h = unit(Number(m[1]));
+      if (last && h && ![...aboard.values()].includes(h.id)) { const [x, y] = last.split(",").map(Number); Object.assign(h, { x, y }); sailedOff.push(h.id); }
+      return;
+    }
+    if ((m = cmd.match(/realm_ferry_gone\("([\d,]*)"\)/))) {
+      const gone = new Set(m[1].split(",").filter(Boolean).map(Number));
       ctx.world.units = ctx.world.units.filter((u) => !gone.has(u.id));
     }
   };
@@ -114,7 +125,7 @@ check(o?.sea?.coast?.x === 3 && o.sea.water?.x === 4 && o.sea.ships === 1 && o.s
 const { said, sawAboard } = run(ctx, 12);
 check(said.some((t) => /takes ship: the crown raises a ship for 20 gold/.test(t)) && purse(ctx) === 500 - COST, `at the shore the crown raises the ship and pays for it (treasury ${purse(ctx)}): ${said.join(" | ")}`);
 check(sawAboard, "while at sea /world shows the host aboard (hosts[].aboard)");
-check(said.some((t) => /comes ashore.*the ships are disbanded/.test(t)) && !ctx.world.units.some((u) => u.type === "Trireme"), "it comes ashore and the ship is disbanded");
+check(said.some((t) => /comes ashore.*the ships put out to sea/.test(t)) && sailedOff.length > 0 && !ctx.world.units.some((u) => u.type === "Trireme"), `it comes ashore, the ship sails off toward open sea and is gone the next season (sailed off: ${sailedOff.join(",") || "none"})`);
 check(said.some((t) => /has reached/.test(t)) && [1, 2].every((id) => ctx.world.units.find((u) => u.id === id).x >= 8), `and marches on to the goal: ${JSON.stringify([1, 2].map((id) => { const u = ctx.world.units.find((v) => v.id === id); return [u.x, u.y]; }))}`);
 check(Hosts.list(ctx).every((h) => !h.aboard), "ashore, no host is aboard");
 {
@@ -165,8 +176,10 @@ const stageLua = [
   'pcall(edit.unit_move, ship, f.o2, 0, nil, false, false, false, false, false)',
   'realm_hold(sid)',
   'log.normal("FERRYPROBE sailed %s", tostring(man.tile.id == f.o2.id and ship.tile.id == f.o2.id))',
-  'realm_ferry_land(id, f.b.x, f.b.y, sid)',
-  'log.normal("FERRYPROBE ashore %s disbanded %s", tostring(man.tile.id == f.b.id and man:transporter() == nil), tostring(find.unit(nil, tonumber(sid)) == nil))',
+  'realm_ferry_land(id, f.b.x, f.b.y)',
+  'local kept = find.unit(nil, tonumber(sid)) ~= nil',
+  'realm_ferry_gone(sid)',
+  'log.normal("FERRYPROBE ashore %s kept %s disbanded %s", tostring(man.tile.id == f.b.id and man:transporter() == nil), tostring(kept), tostring(find.unit(nil, tonumber(sid)) == nil))',
 ].join("\n");
 const file = path.join(fc.dir, "ferry.lua");
 fs.writeFileSync(file, stageLua + "\n");
@@ -176,7 +189,7 @@ check(!line("no coast"), "the map had no coast to cross");
 check(/unpaid true/.test(line("unpaid")), `with an empty treasury no ship is raised: ${line("unpaid") || fc.lines.filter((l) => /rror|FERRY/.test(l)).slice(-3)}`);
 check(/aboard true paid 20/.test(line("aboard")), `the crown raises a Trireme on the water, pays its 20 gold, and the company that marched there this season boards it: ${line("aboard") || fc.lines.filter((l) => /rror|FERRY/.test(l)).slice(-3)}`);
 check(/sailed true/.test(line("sailed")), `the Trireme sails with it: ${line("sailed")}`);
-check(/ashore true disbanded true/.test(line("ashore")), `it comes ashore by Freeciv's rules and the ship is disbanded: ${line("ashore")}`);
+check(/ashore true kept true disbanded true/.test(line("ashore")), `it comes ashore by Freeciv's rules, the ship stays afloat to sail off, and goes when told: ${line("ashore")}`);
 await fc.quit();
 fs.rmSync(a.dir, { recursive: true, force: true });
 fs.rmSync(process.env.GOC_HOME, { recursive: true, force: true });

@@ -82,7 +82,11 @@ export const disbandHome = (id, cityId) => `realm_disband_home(${n(id)}, ${n(cit
 export const homewardRelease = (ids) => `realm_release("${ids.map(n).join(",")}")`;
 // The King's host takes ship and comes ashore (hosts.js crossing; realmrules/script.lua realm_ferry_raise, realm_ferry_land):
 // the crown raises and pays for its Triremes on the water (x, y) and the host boards them by Freeciv's own Transport
-// Board / Embark; ashore by Transport Disembark, the ships disbanded. Report "FERRY raise k of n", "FERRY board n of m",
+// Board / Embark; ashore by Transport Disembark, the ships sailing off and gone a season later. Report "FERRY raise k of n", "FERRY board n of m",
 // "FERRY land n of m".
 export const ferryRaise = (pid, units, x, y, ships, cost) => `realm_ferry_raise(${n(pid)}, "${units.map(n).join(",")}", ${n(x)}, ${n(y)}, ${n(ships)}, ${n(cost)})`;
-export const ferryLand = (units, x, y, hulls) => `realm_ferry_land("${units.map(n).join(",")}", ${n(x)}, ${n(y)}, "${hulls.map(n).join(",")}")`;
+export const ferryLand = (units, x, y) => `realm_ferry_land("${units.map(n).join(",")}", ${n(x)}, ${n(y)})`;
+// The empty hulls sail off toward open sea (realm_ferry_off, along `way` [[x, y], ...]), and go a season later
+// (realm_ferry_gone): no ship vanishes at the shore.
+export const ferryOff = (id, way) => `realm_ferry_off(${n(id)}, "${way.map(([x, y]) => `${n(x)},${n(y)}`).join(";")}")`;
+export const ferryGone = (hulls) => `realm_ferry_gone("${hulls.map(n).join(",")}")`;
