@@ -315,6 +315,71 @@ def crown_normals(obj, slots, k):
     me.update()
 
 
+def pad_leaves(obj, pad):
+    """The leaves their own copy of the atlas, each leaf island's colour spread `pad` texels past its edge (UV padding,
+    as a baker's margin does), so the bark islands packed against them never bleed in when the texture is filtered
+    (group render g12, the crossing: orange and dark slivers along the oaks' leaf seams; Meshy packs leaf and bark
+    islands edge to edge). meshy.json pieces.<name>.leaves.pad (texels; 0 none). Returns how many texels it filled."""
+    import numpy as np
+    me = obj.data
+    if pad <= 0 or me.uv_layers.active is None:
+        return 0
+    uvl = me.uv_layers.active.data
+    filled = 0
+    for si, m in enumerate(me.materials):
+        if not (m and m.name.startswith("MI_Leaves")):
+            continue
+        img = base_image(m)
+        if img is None or not img.size[0]:
+            continue
+        w, h = img.size
+        a = np.empty(w * h * 4, np.float32)
+        img.pixels.foreach_get(a)
+        a = a.reshape(h, w, 4)
+        known = np.zeros((h, w), bool)
+        for poly in me.polygons:
+            if poly.material_index != si:
+                continue
+            pts = [(uvl[li].uv.x * w - 0.5, uvl[li].uv.y * h - 0.5) for li in poly.loop_indices]
+            for k in range(1, len(pts) - 1):
+                (x0, y0), (x1, y1), (x2, y2) = pts[0], pts[k], pts[k + 1]
+                lx, hx = max(int(math.floor(min(x0, x1, x2))), 0), min(int(math.ceil(max(x0, x1, x2))), w - 1)
+                ly, hy = max(int(math.floor(min(y0, y1, y2))), 0), min(int(math.ceil(max(y0, y1, y2))), h - 1)
+                if lx > hx or ly > hy:
+                    continue
+                gy, gx = np.mgrid[ly:hy + 1, lx:hx + 1]
+                den = (y1 - y2) * (x0 - x2) + (x2 - x1) * (y0 - y2)
+                if abs(den) < 1e-9:
+                    continue
+                b0 = ((y1 - y2) * (gx - x2) + (x2 - x1) * (gy - y2)) / den
+                b1 = ((y2 - y0) * (gx - x2) + (x0 - x2) * (gy - y2)) / den
+                e = 0.5 / max(abs(den) ** 0.5, 1.0)
+                inside = (b0 >= -e) & (b1 >= -e) & (1.0 - b0 - b1 >= -e)
+                known[ly:hy + 1, lx:hx + 1] |= inside
+        out = a.copy()
+        for _ in range(pad):
+            acc = np.zeros((h, w, 4), np.float32)
+            cnt = np.zeros((h, w), np.float32)
+            for dy in (-1, 0, 1):
+                for dx in (-1, 0, 1):
+                    if dx == 0 and dy == 0:
+                        continue
+                    k = np.roll(np.roll(known, dy, 0), dx, 1)
+                    acc += np.roll(np.roll(out, dy, 0), dx, 1) * k[..., None]
+                    cnt += k
+            grow = (~known) & (cnt > 0)
+            out[grow] = acc[grow] / cnt[grow][:, None]
+            known |= grow
+            filled += int(grow.sum())
+        new = bpy.data.images.new(img.name + "_leaves", w, h, alpha=True)
+        new.pixels.foreach_set(out.ravel())
+        new.pack()
+        for n in m.node_tree.nodes:
+            if n.type == "TEX_IMAGE" and n.image == img:
+                n.image = new
+    return filled
+
+
 def mask_png(obj, mask, out):
     """The house-colour mask over the piece's texture, white where its colour is the house's."""
     for m in obj.data.materials:
@@ -582,13 +647,14 @@ def main():
     share = split_house(obj, spec["mask"])
     leaves = split_house(obj, spec["leaves"], "MI_Leaves") if spec.get("leaves") else 0.0
     smoothed = smooth_leaves(obj, float(spec["leaves"].get("crown", 0.0))) if leaves else 0
+    padded = pad_leaves(obj, int(spec["leaves"].get("pad", 0))) if leaves else 0
     arm = split_arm(obj, spec["arm"]) if spec.get("arm") else None
     has_mask = mask_png(obj, spec["mask"], out)
     glb = os.path.join(out, name + ".glb")
     bpy.ops.export_scene.gltf(filepath=glb, export_format="GLB", use_selection=False, export_yup=True, export_apply=True)
     report = {"name": name, "source": src, "tris_before": before, "tris_after": after, "scale": k,
               "size_m": [round(x, 2) for x in size], "house_share": round(share, 3), "leaves_share": round(leaves, 3), "mask_png": has_mask,
-              "materials": [m.name for m in obj.data.materials if m], "cut_faces": removed, "arm": arm is not None, "repainted": repainted, "flattened": pressed, "smooth_leaves": smoothed}
+              "materials": [m.name for m in obj.data.materials if m], "cut_faces": removed, "arm": arm is not None, "repainted": repainted, "flattened": pressed, "smooth_leaves": smoothed, "padded": padded}
     json.dump(report, open(os.path.join(out, "import.json"), "w"), indent=1)
     print("MESHY " + json.dumps(report))
 
