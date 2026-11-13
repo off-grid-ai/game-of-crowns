@@ -79,12 +79,23 @@ func _keep_striking(wall: Node3D, center: Vector3) -> void:
 	if int(_blows.get(wall, 0)) >= int(Data.num("walls", "demo.max" if demo else "strike.max", 10)):
 		wall.give_way()
 		return
-	# Engines standing near (siege_camp.gd) throw the stones themselves: none from nowhere.
+	# The stone comes from the nearest engine standing within reach (siege_camp.gd), none from nowhere; with no engine
+	# near, from out in the field where one would stand. Until now an engine near meant no stone of the wall's own at
+	# all, so the wall wore only at the engines' crewed volleys (one in 13 s each, crews shot down): pass g1's demo wall
+	# went from half worn to breached in 116 s and the take's snap caught it whole (supervisor, group test 1).
+	var reach := float(Data.num("walls", "strike.from_m", 70.0)) * S
+	var from := Vector3.INF
+	var bd := reach * 1.5
 	for e in get_tree().get_nodes_in_group("siege_engines"):
-		if is_instance_valid(e) and wall.distance_to((e as Node3D).global_position) < float(Data.num("walls", "strike.from_m", 70.0)) * S * 1.5:
-			return
-	var out := Vector3(target.x - center.x, 0, target.z - center.z).normalized()
-	var from := target + out * float(Data.num("walls", "strike.from_m", 70.0)) * S + Vector3.UP * 0.4
+		if not is_instance_valid(e):
+			continue
+		var d: float = wall.distance_to((e as Node3D).global_position)
+		if d < bd:
+			bd = d
+			from = (e as Node3D).global_position + Vector3.UP * 0.4
+	if from == Vector3.INF:
+		var out := Vector3(target.x - center.x, 0, target.z - center.z).normalized()
+		from = target + out * reach + Vector3.UP * 0.4
 	_throw(wall, from, target)
 
 
