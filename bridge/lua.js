@@ -90,3 +90,6 @@ export const ferryLand = (units, x, y) => `realm_ferry_land("${units.map(n).join
 // (realm_ferry_gone): no ship vanishes at the shore.
 export const ferryOff = (id, way) => `realm_ferry_off(${n(id)}, "${way.map(([x, y]) => `${n(x)},${n(y)}`).join(";")}")`;
 export const ferryGone = (hulls) => `realm_ferry_gone("${hulls.map(n).join(",")}")`;
+// A company's hit points changed by `change` (hunger in a starved town: campaigns.js starve), by Freeciv's own
+// edit.unit_add_hitpoints; the bridge never takes the last one.
+export const hurt = (id, change) => `local u = find.unit(nil, ${n(id)}); if u then pcall(edit.unit_add_hitpoints, u, ${n(change)}) end`;

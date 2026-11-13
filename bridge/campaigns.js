@@ -16,6 +16,7 @@ import * as chron from "./chronicles.js";
 import * as kingDeeds from "./ledger.js";
 import * as Lua from "./lua.js";
 import { view as damageOf } from "./damage.js";
+import { HITPOINTS } from "./rules.js";
 
 // A town is besieged while an enemy host stands at its walls: three or more
 // fighting units of another house on the tiles around it. One scene per turn.
@@ -170,11 +171,34 @@ export function siegeRuled(ctx, beat, option) {
   chron.saveMeta(meta);
 }
 
+// A siege the King chose to starve out ("No cart goes in or out"): each season hunger takes data/siege.json starve of
+// each of the house's soldiers' full hit points in the town, never the last (Freeciv's own hit points, so the men
+// counted, the wounded look and the assault's odds all follow). Said the first season it bites.
+function starve(ctx, c, turn) {
+  const { world, send, record } = ctx;
+  if (!c.starve || c.starved === turn) return;
+  const town = world.cities.find((x) => x.id === c.city);
+  if (!town || town.owner !== c.house) return;
+  c.starved = turn;
+  let hurt = 0;
+  for (const u of world.units ?? []) {
+    if (u.owner !== c.house || u.x !== town.x || u.y !== town.y || CIVILIAN.has(u.type)) continue;
+    const full = HITPOINTS[u.type] ?? 10;
+    const loss = Math.min(Math.max(1, Math.round(full * (SIEGE.starve ?? 0.3))), Number(u.hp ?? full) - 1);
+    if (loss > 0) { send(`lua cmd ${Lua.hurt(u.id, -loss)}`); hurt++; }
+  }
+  if (hurt && !c.hungry) {
+    c.hungry = true;
+    record({ turn, kind: "battle", text: `Hunger comes to ${cityName(c.city)}: no cart has gone in for a season, and ${houseFor(world.players.find((p) => p.id === c.house) ?? {}).name}'s men inside grow weak.`, city: c.city });
+  }
+}
+
 // Each season: a host that has stood two seasons before a town takes it or breaks.
 export function resolveCampaigns(ctx, turn) {
   const { world, meta, court, send, record, deed, shiftFavour, greatHouses, SOLDIER } = ctx;
   for (const c of [...(meta.campaigns ?? [])]) {
     if (turn - c.turn >= 1) siegeTerms(ctx, c, turn);
+    starve(ctx, c, turn);
     // The assault waits while the engines are made (two seasons from the siege), a season more to starve them,
     // none once the King orders it pressed or a wall section is breached (damage.js: the besiegers batter it).
     const breached = (damageOf(meta, { id: c.city })?.walls ?? []).some((w) => w.stage === "breached");

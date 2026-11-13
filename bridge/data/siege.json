@@ -1,6 +1,7 @@
 {
- "_": "When the royal host storms a besieged town (campaigns.js stormCall; casebook, War and sieges: a siege is a season, Total War: Attila's captains don't throw a company at a full garrison). The royal companies beside the walls storm when they are at least ratio times the house's soldiers in the town, each defender counted 1 + wall_edge times its wall's standing share (1 - the worst section's wear, damage.js: a breach takes the walls' edge away). Too few, they wait for more men or a breach; after wait_most such seasons the captains lift the siege, and say why. A siege the King ordered pressed (the herald's terms) storms whatever the odds: it is his word.",
+ "_": "When the royal host storms a besieged town (campaigns.js stormCall; casebook, War and sieges: a siege is a season, Total War: Attila's captains don't throw a company at a full garrison). The royal companies beside the walls storm when they are at least ratio times the house's soldiers in the town, each defender counted 1 + wall_edge times its wall's standing share (1 - the worst section's wear, damage.js: a breach takes the walls' edge away). Too few, they wait for more men or a breach; after wait_most such seasons the captains lift the siege, and say why. A siege the King ordered pressed (the herald's terms) storms whatever the odds: it is his word. starve: when the King answers the herald 'Starve them out', each season of the siege the house's soldiers in the town lose this share of their full hit points to hunger (never the last: Freeciv's edit.unit_add_hitpoints, campaigns.js starve), so the garrison's men fall season by season and it fights weaker when the assault comes.",
  "ratio": 1.0,
  "wall_edge": 1.0,
- "wait_most": 3
+ "wait_most": 3,
+ "starve": 0.3
 }
