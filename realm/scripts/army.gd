@@ -1082,68 +1082,17 @@ func _road_in(town: Vector3) -> void:
 ## lanes inside the walls; g6: on the waterside road to Eaglehaven, its blocks over the strait.
 func _form_on_way(town: Vector3, to: Vector3, root: Node3D) -> void:
 	var roads = main.get("roads")
-	var long := Data.num("army", "muster.gateClear", 0.6) + Formation.column_length(_regiments) + 1.0
 	var aim := Vector2(to.x - town.x, to.z - town.z).normalized()
-	var dry := func(a: Vector3, b: Vector3) -> bool:
-		for k in int(ceil(a.distance_to(b) / 0.1)) + 1:
-			var p := a.lerp(b, minf(1.0, k * 0.1 / maxf(a.distance_to(b), 0.001)))
-			if not main.terrain.is_land(p.x, p.z):
-				return false
-		return true
-	var best := -INF
-	var out_way := PackedVector3Array()
-	for w in (root.get_meta("ways_main", []) if root else []):
-		var pw := PackedVector2Array(w)
-		if pw.size() < 2:
-			continue
-		var dir := (pw[pw.size() - 1] - pw[pw.size() - 2]).normalized()
-		var last := town + Vector3(pw[pw.size() - 1].x, 0, pw[pw.size() - 1].y)
-		var beyond := last + Vector3(dir.x, 0, dir.y) * long
-		# On the realm's road out (roads.gd near_road: its great roads and the King's road): the town's ways run out
-		# where those leave, and one way's straight run past the gate lies on it (g8 muster.jpg: the column on the
-		# grass beside the road, not on it).
-		var on_road := 0.0
-		if roads and roads.has_method("near_road"):
-			for k in 10:
-				on_road += 0.1 if roads.near_road(last.lerp(beyond, (k + 0.5) / 10.0), 0.1) else 0.0
-		var score := pw[pw.size() - 1].normalized().dot(aim) + on_road * 3.0 + (0.0 if dry.call(last, beyond) else -10.0)
-		if score > best:
-			best = score
-			out_way = PackedVector3Array([town])
-			for q in pw:
-				out_way.append(town + Vector3(q.x, 0, q.y))
-			out_way.append(beyond)
-	if out_way.is_empty():
-		out_way = PackedVector3Array([town])
-	# On toward `to` by the realm's road from where the way out ends, never back past it toward the town.
-	var from := out_way[out_way.size() - 1]
-	var road: PackedVector3Array = roads.route(from, to, Data.num("army", "march.roadReach", 12.0)) if roads and roads.has_method("route") else PackedVector3Array()
-	var gone := Vector2(from.x - town.x, from.z - town.z).length()
-	_path = out_way
-	for p in (road.slice(1) if road.size() >= 3 else PackedVector3Array([to])):
-		if Vector2(p.x - town.x, p.z - town.z).length() > gone or p == to:
-			_path.append(p)
-	_cum = PackedFloat32Array([0.0])
-	for j in range(1, _path.size()):
-		_cum.append(_cum[j - 1] + _path[j].distance_to(_path[j - 1]))
-	# Where the way leaves the town: the first step along it outside the town's edge.
+	var reach := Data.num("army", "muster.wayReach", 16.0)
+	var need := Data.num("army", "muster.gateClear", 0.6) + Formation.column_length(_regiments)
 	var edge: PackedVector2Array = root.get_meta("edge_outline", PackedVector2Array()) if root else PackedVector2Array()
-	var out := 0.0
-	if edge.size() >= 3:
-		var step := 0.1
-		var p := _at(out)
-		while out < _cum[_cum.size() - 1] and Geometry2D.is_point_in_polygon(Vector2(p.x - town.x, p.z - town.z), edge):
-			out += step
-			p = _at(out)
-	# On along the way to the first stretch that holds the whole column clear: dry land, no building, wall, fence or
-	# stall of any town (TownNav.in_building) and no farm, field, hedge or cottage of the countryside (countryside
-	# occupied), across each block's half width and muster.roadClear more either side, the same ground a muster's line
-	# asks for (_clear_at). With none on the way, the longest clear stretch. Group renders g7, g13, g14 muster.jpg: the
-	# blocks among the farm cottages and hedges outside Kingsmere's gate, which the town's own houses never counted.
 	var half := 0.0
 	for r in _regiments:
 		half = maxf(half, float((r["column"] as Dictionary).get("w", 0.0)) * 0.5)
 	half += Data.num("army", "muster.roadClear", 0.3)
+	# Ground the whole column may stand on: dry land, no building, wall, fence or stall of any town
+	# (TownNav.in_building) and no farm, field, hedge or cottage of the countryside (countryside occupied), across each
+	# block's half width and muster.roadClear more either side: the ground a muster's line asks for (_clear_at).
 	var blocked := func(at: float) -> bool:
 		var q := _at(at)
 		var h := _heading(at)
@@ -1153,22 +1102,64 @@ func _form_on_way(town: Vector3, to: Vector3, root: Node3D) -> void:
 			if not main.terrain.is_land(t.x, t.z) or (main.get("towns") and TownNav.in_building(main.get("towns"), t, 0.05)) or _farmed(t, 0.05):
 				return true
 		return false
-	var need := Data.num("army", "muster.gateClear", 0.6) + Formation.column_length(_regiments)
-	var end_s := _cum[_cum.size() - 1]
-	var run_from := out
-	var best_from := out
-	var best_len := 0.0
-	var at_s := out
-	while at_s < end_s:
-		if blocked.call(at_s):
-			run_from = at_s + 0.1
-		elif at_s - run_from > best_len:
-			best_len = at_s - run_from
-			best_from = run_from
-			if best_len >= need:
-				break
-		at_s += 0.1
-	out = best_from
+	# Every main way out of the town (towns.gd ways_main: where the realm's roads leave it), carried on straight out
+	# over the land muster.wayReach: on each, from where it leaves the town's edge (edge_outline, the wall's gate), the
+	# first stretch that holds the whole column clear. The column stands on the way whose clear stretch lies nearest
+	# the gate (facing `to` the better on a tie); with none clear for its length, on the longest clear stretch of
+	# any. Group renders g7-g16 muster.jpg: one way out searched, its farms and the strait leaving no stretch clear, the
+	# blocks among the cottages and hedges outside Kingsmere's gate.
+	var ways: Array = []
+	for w in (root.get_meta("ways_main", []) if root else []):
+		var pw := PackedVector2Array(w)
+		if pw.size() >= 2:
+			ways.append(pw)
+	if ways.is_empty():
+		ways.append(PackedVector2Array([Vector2.ZERO, aim * 0.1]))
+	var pick := {}
+	for pw: PackedVector2Array in ways:
+		var dir := (pw[pw.size() - 1] - pw[pw.size() - 2]).normalized()
+		var way := PackedVector3Array([town])
+		for q in pw:
+			way.append(town + Vector3(q.x, 0, q.y))
+		way.append(way[way.size() - 1] + Vector3(dir.x, 0, dir.y) * reach)
+		_path = way
+		_cum = PackedFloat32Array([0.0])
+		for j in range(1, _path.size()):
+			_cum.append(_cum[j - 1] + _path[j].distance_to(_path[j - 1]))
+		var out := 0.0
+		if edge.size() >= 3:
+			while out < _cum[_cum.size() - 1] and Geometry2D.is_point_in_polygon(Vector2(_at(out).x - town.x, _at(out).z - town.z), edge):
+				out += 0.1
+		var run_from := out
+		var best_from := out
+		var best_len := 0.0
+		var at_s := out
+		while at_s < _cum[_cum.size() - 1]:
+			if blocked.call(at_s):
+				run_from = at_s + 0.1
+			elif at_s - run_from > best_len:
+				best_len = at_s - run_from
+				best_from = run_from
+				if best_len >= need:
+					break
+			at_s += 0.1
+		var fits := best_len >= need
+		var score := (1000.0 if fits else best_len) - (best_from if fits else 0.0) + pw[pw.size() - 1].normalized().dot(aim) * 0.5
+		if pick.is_empty() or score > float(pick["score"]):
+			pick = {"score": score, "way": way, "from": best_from}
+	# On toward `to` from the way's end: the realm's road, never back toward the town, else straight on.
+	var chosen: PackedVector3Array = pick["way"]
+	var from := chosen[chosen.size() - 1]
+	var road: PackedVector3Array = roads.route(from, to, Data.num("army", "march.roadReach", 12.0)) if roads and roads.has_method("route") else PackedVector3Array()
+	var gone := Vector2(from.x - town.x, from.z - town.z).length()
+	_path = chosen
+	for p in (road.slice(1) if road.size() >= 3 else PackedVector3Array([to])):
+		if Vector2(p.x - town.x, p.z - town.z).length() > gone or p == to:
+			_path.append(p)
+	_cum = PackedFloat32Array([0.0])
+	for j in range(1, _path.size()):
+		_cum.append(_cum[j - 1] + _path[j].distance_to(_path[j - 1]))
+	var out: float = pick["from"]
 	var order := Formation.column_order(_regiments)
 	var head := minf(_cum[_cum.size() - 1], out + Data.num("army", "muster.gateClear", 0.6) + Formation.column_length(_regiments))
 	_field = _at(head)
