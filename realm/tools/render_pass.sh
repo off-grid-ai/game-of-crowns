@@ -38,7 +38,8 @@
 #   castle   Kingsmere's castle close from its gate side (01-town; the Meshy castle set)
 #   street   the smallest town's street of houses at its town view (01-town; the Meshy house set)
 #   crossing the King's host at sea in the cog (08-reinforce): ordered over water (One store's crossing, d70ca994), then
-#            framed once aboard (CROSS_WAIT, 900 s of the reign); skipped and said when no march goes by sea
+#            framed once aboard, the reign paused while it is filmed (CROSS_WAIT, 900 s of the wall clock); skipped and
+#            said when no march goes by sea
 set -u
 R=${RENDER_PASS_R:-$(cd "$(dirname "$0")/../.." && pwd)}  # the shared tree (its copy in $OUT inherits it)
 STAMP=$(date +%H%M)
@@ -320,8 +321,14 @@ print(min(me[0].get('units',[me[0]['id']])) if me else '')" 2>/dev/null)
     if [ -z "$LEAD" ]; then
       say "crossing: host $HID not aboard in ${CROSS_WAIT:-900} s; no frame"
     else
+      # Held while it is filmed (bridge POST /pause, as the King's own pause): the window watches the realm, so the
+      # seasons ran on while Godot loaded and its first 30 s passed, and pass g9 framed the strait after the ships had
+      # landed the host and put out to sea (empty water and a point of grass). Paused the season the host is aboard,
+      # the lens finds its lead company on the hull, at the shore it embarked from or under way; let go after.
+      curl -s -m 5 -o /dev/null -X POST $API/pause
       { print "wait 30"; print "unit $LEAD 3"; print "wait 4"; print "snap crossing"; print "unit $LEAD 1.5"; print "wait 3"; print "snap cog"; print "look end"; } > $OUT/crossing.play
       shot crossing 1500 film $SW
+      curl -s -m 5 -o /dev/null -X POST $API/resume
       side crossing $OUT/frames/crossing/crossing.png $TARGETS/08-reinforce.jpg "the King's host at sea in the cog (host $HID, company $LEAD)"
       side crossing_cog $OUT/frames/crossing/cog.png $TARGETS/08-reinforce.jpg "the cog close"
     fi
