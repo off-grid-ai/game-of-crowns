@@ -7,6 +7,7 @@ extends "res://scripts/scene_kind.gd"
 const ArmyAssault := preload("res://scripts/army_assault.gd")
 const Awareness := preload("res://scripts/awareness.gd")
 const Data := preload("res://scripts/data.gd")
+const Heraldry := preload("res://scripts/heraldry.gd")
 const SiegeCamp := preload("res://scripts/siege_camp.gd")
 
 var sieges := {}  # city id -> {root, until, front, assault}: one camp per besieged town, kept while the host stays
@@ -57,8 +58,11 @@ func besiege(id: int, at: Vector3, approach: Vector3, size: int, engines: int, f
 					n.queue_free())
 	sweep.start()
 	var r: RandomNumberGenerator = stage.rng(at)
-	var foe_col := Color.from_string(String(foe.get("color", "#7a2222")), Color.DARK_RED).lerp(Color.WHITE, 0.2)
-	var held_col := Color.from_string(String(held.get("color", "#888")), Color.GRAY).lerp(Color.WHITE, 0.3)
+	# Each side in its banner's own colour (heraldry.gd field_colour, as its men in the field wear it): a house's colour
+	# washed toward white (0.2 the besieger, 0.3 the held) put the camp's tents and the storm in candy pink beside a red
+	# house's men (group render g1, the breach).
+	var foe_col := Heraldry.field_colour(foe, Color.from_string(String(foe.get("color", "#7a2222")), Color.DARK_RED))
+	var held_col := Heraldry.field_colour(held, Color.from_string(String(held.get("color", "#888")), Color.GRAY))
 	# The siege stands outside where the town really stands: its houses' outermost corner (round 2's
 	# ring streets and packed plots reach past the old size rule), so the wall, the breach, the band of
 	# engines and the camp are out on open ground with nothing built between them and the camera.
