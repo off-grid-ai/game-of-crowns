@@ -79,6 +79,8 @@ var mustered := false
 var _order_face := NAN  # the way its order says its front looks (/world hosts[i].order.face), NAN for its own
 var _seat_root: Node3D = null  # the seat's town (towns.gd), whose edge the muster forms past (_form_on_way)
 var _then_free := false  # marching into a town (march_in): gone once halted there
+var _aboard := false  # taken ship (board): its regiments filing to the hulls, then on their decks
+var _pending_hulls: Array = []  # hulls to board once mustered
 var _out := false  # marching out (march_out): halted at the road's end, it is gone after march.linger
 var _gone_in := 0.0
 var ground: RefCounted  # army_ground.gd: where its regiments may stand
@@ -161,7 +163,9 @@ func _ready() -> void:
 		_standard_up()
 		mustered = true
 		raised.emit()
-		if _pending != Vector3.INF:
+		if not _pending_hulls.is_empty():
+			board(_pending_hulls)
+		elif _pending != Vector3.INF:
 			march_to(_pending)
 		return
 	var on_road := false
@@ -317,6 +321,59 @@ func march_to(to: Vector3) -> void:
 func march_in(to: Vector3) -> void:
 	march_to(to)
 	_then_free = true
+
+
+## A host takes ship (units.gd field_hosts: the bridge has it aboard the hulls the crown raised; 08-reinforce, the
+## column marching down to the ship, men on the deck): its regiments file to the hulls in column order, one every
+## deck.file seconds, each walking down to its hull by its Mover, and once there it stands on the deck as a small
+## packed block (the "deck" layout, its length along the hull), a child of the hull so it sails with it. Shared out
+## over the hulls in turn, each hull's regiments spaced along its deck (deck.length). Ashore again, units.gd raises the
+## host's column afresh where it lands.
+func board(hulls: Array) -> void:
+	if not mustered:
+		_pending_hulls = hulls
+		return
+	if _aboard or hulls.is_empty():
+		return
+	_aboard = true
+	_then_free = false
+	var order := Formation.column_order(_regiments)
+	var per := ceili(float(order.size()) / hulls.size())
+	var length := Data.num("army", "deck.length", 1.1)
+	for i in order.size():
+		var r: Dictionary = order[i]
+		var hull: Node3D = hulls[i % hulls.size()]
+		var slot := i / hulls.size()
+		var along := (float(slot) - (per - 1) * 0.5) * length / per
+		r["state"] = "board"
+		var mo: Node = Mover.of(r["node"]).on(null)
+		mo.speed = Data.num("army", "march.speed", 0.16)
+		get_tree().create_timer(i * Data.num("army", "deck.file", 1.5)).timeout.connect(func():
+			if not is_instance_valid(hull) or not is_instance_valid(r["node"]):
+				return
+			_clips(r, "walk")
+			mo.follow(PackedVector3Array([(r["node"] as Node3D).global_position, hull.global_position]), func(): _on_deck(r, hull, along)))
+
+
+## Gone (ashore, or the host disbanded): its regiments on a hull's deck go with it, since they are the hull's children.
+func _exit_tree() -> void:
+	for r in _regiments:
+		var n: Variant = r.get("node")
+		if n != null and is_instance_valid(n) and not is_ancestor_of(n):
+			(n as Node).queue_free()
+
+
+## A regiment come to its hull: on the deck as a packed block, a child of the hull (it sails with it), at ease.
+func _on_deck(r: Dictionary, hull: Node3D, along: float) -> void:
+	if not is_instance_valid(hull):
+		return
+	var node: Node3D = r["node"]
+	node.reparent(hull, false)
+	node.position = Vector3(along, Data.num("army", "deck.y_m", 2.2) * preload("res://scripts/world_units.gd").M, 0.0)
+	node.rotation = Vector3(0.0, PI / 2.0, 0.0)  # the cog's length runs along its own x (assets/meshy/cog bounds)
+	_shape(r, "deck")
+	r["state"] = "halt"
+	_clips(r, "rest")
 
 
 ## Where a host raised for war is in its march (the film's muster step waits on it): forming (its regiments not yet
@@ -625,6 +682,7 @@ func _regiment(spec: Dictionary, colour: Color, house: Dictionary = {}) -> Dicti
 		"fidget": _rng.randf_range(0.5, 3.0), "backs": [], "selected": false, "w": 1.0, "d": 1.0, "house": house}
 	r["line"] = Formation.layout(r, "line", battle.get("frontage"), _rng)
 	r["column"] = Formation.layout(r, "column", battle.get("frontage"), _rng)
+	r["deck"] = Formation.layout(r, "deck", null, _rng)
 	banners.banner(r)
 	_ground_marks(r)
 	return r

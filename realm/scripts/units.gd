@@ -227,9 +227,12 @@ func field_hosts(store: Node) -> Dictionary:
 	var drawn := {}
 	var keep := {}
 	for h in store.hosts():
-		if bool(h.get("aboard", false)):
-			continue
 		var id := int(h["id"])
+		var aboard := bool(h.get("aboard", false))
+		var was_aboard: Node3D = _hosts.get(id)
+		if not aboard and was_aboard and is_instance_valid(was_aboard) and was_aboard.get_meta("aboard", false):
+			was_aboard.queue_free()  # ashore: its column is raised afresh where it lands (below)
+			_hosts.erase(id)
 		if h.get("at") != null:
 			# Come into a town (an arrival, or home by road before a Peace: bridge 8c8cb623): its column marches in
 			# through the gate along the road and is gone once halted there (army.gd march_in), not freed on the spot
@@ -250,6 +253,30 @@ func field_hosts(store: Node) -> Dictionary:
 			view.queue_free()
 			view = null
 		var tile := Vector2i(int(h.get("x", 0)), int(h.get("y", 0)))
+		if aboard:
+			# Taken ship (08-reinforce: the column marching down to the ship, men on the deck): its column files to the
+			# hulls the crown raised and stands on their decks while it sails (army.gd board); its companies stay its
+			# own, so none is drawn as a lone figure beside the ship (g10 crossing.jpg: one rider by an empty cog).
+			var o: Variant = h.get("order")
+			var sea: Variant = (o as Dictionary).get("sea") if o is Dictionary else null
+			var hulls: Array = []
+			for hid in ((sea as Dictionary).get("hulls", []) if sea is Dictionary else []):
+				var hn := figure_of(int(hid))
+				if hn:
+					hulls.append(hn)
+			if view == null or not is_instance_valid(view):
+				view = Army.new(get_parent(), 0, {"host": h, "quiet": true})
+				view.set_meta("units", units)
+				add_child(view)
+				_hosts[id] = view
+			view.set_meta("tile", tile)
+			if not hulls.is_empty() and not view.get_meta("aboard", false):
+				view.set_meta("aboard", true)
+				view.board(hulls)
+			keep[id] = true
+			for u in units:
+				drawn[int(u)] = id
+			continue
 		if view == null or not is_instance_valid(view):
 			view = Army.new(get_parent(), 0, {"host": h, "quiet": true})
 			view.set_meta("units", units)

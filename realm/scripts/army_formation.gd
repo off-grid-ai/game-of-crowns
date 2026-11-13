@@ -17,7 +17,12 @@ static func layout(r: Dictionary, shape: String, frontage: Variant, rng: RandomN
 	var files: int
 	var sf: float = r["sf"]
 	var sr: float = r["sr"]
-	if shape == "column":
+	if shape == "deck":  # aboard a ship (army.gd board): a small block packed on the deck, its length along the hull
+		var df: Array = Data.value("army", "deck.files", [4, 5])
+		files = rng.randi_range(int(df[0]), int(df[1]))
+		sr = minf(sr, Data.num("army", "column.footRankMost", 0.1))
+		sf = minf(sf, Data.num("army", "column.fileMost", 0.08))
+	elif shape == "column":
 		var cf: Array = Data.value("army", "column.files", [4, 6])
 		files = rng.randi_range(int(cf[0]), int(cf[1]))
 		sr = clampf(sr, Data.num("army", "column.rank", 0.14), Data.num("army", "column.rankMost", 0.32))  # closed ranks on the march, horse too

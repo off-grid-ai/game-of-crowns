@@ -292,6 +292,7 @@ func _push_never_pins() -> void:
 	var src := FileAccess.get_file_as_string("res://scripts/army.gd")
 	var us := FileAccess.get_file_as_string("res://scripts/units.gd")
 	_check(us.contains(".march_in(") and src.contains("func march_in("), "a host come into a town marches its column in through the gate before it is gone, not freed at the walls (units.gd field_hosts, army.gd march_in; bridge 8c8cb623)")
+	_check(us.contains("view.board(hulls)") and src.contains("func board(") and src.contains("reparent(hull"), "a host aboard draws its regiments filing to the hulls and on their decks, not one figure by an empty ship (units.gd field_hosts, army.gd board; g10 crossing)")
 	_check(src.contains("mo.keep = _block_keep(r)"), "a regiment on its ground keeps its whole block off a building, not only its middle (army.gd _block_keep; g6 host5: blocks pressed against a cottage)")
 
 
