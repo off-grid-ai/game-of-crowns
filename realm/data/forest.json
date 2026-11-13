@@ -61,20 +61,20 @@
     "undergrowth": 0.0
    },
    "Grassland": {
-    "gap": 9.0,
+    "gap": 5.0,
     "clump": [
-     3,
-     6
+     4,
+     8
     ],
     "r": 0.5,
     "pine": 0.1,
     "undergrowth": 0.3
    },
    "Plains": {
-    "gap": 9.0,
+    "gap": 5.0,
     "clump": [
-     3,
-     6
+     4,
+     8
     ],
     "r": 0.5,
     "pine": 0.1,
