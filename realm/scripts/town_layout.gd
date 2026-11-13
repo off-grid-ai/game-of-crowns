@@ -151,12 +151,13 @@ func real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds:
 		if f == Vector2.ZERO:
 			continue
 		var keep_ang := gap_ang
-		var lens_turn: Variant = (tb._market_knobs().get("smithy", {}) as Dictionary).get("lens_turn")
-		if comp == "forge" and lens_turn != null and root.has_meta("castle_frame"):
-			# The smithy on the near side of the square, where the town camera sees its open front (01-town: the lit forge
-			# in the near right; camera_rig.town_view puts the lens across the square from the castle): the side away
-			# from the castle, turned market.<rank>.smithy.lens_turn radians toward the frame's right; facing the square's middle
-			# as every square building does, so on the right side its open front shows three-quarter to the lens, not its back.
+		var lens_turn: Variant = (tb._market_knobs().get("lens_turns", {}) as Dictionary).get(comp)
+		if lens_turn != null and root.has_meta("castle_frame"):
+			# Where the town camera sees it (camera_rig.town_view puts the lens across the square from the castle): from that
+			# side, turned market.<rank>.lens_turns.<landmark> radians toward the frame's right (negative: its left). Every
+			# square building faces the square's middle, so the smithy on the right shows its open front and fire three-quarter
+			# to the lens (01-town: the forge in the near right), and the tavern goes back from the near left, where g10 read
+			# its dark shingles, seen from behind, as a broken shed.
 			var cp: Vector3 = root.get_meta("castle_frame")[0]
 			var lens := Vector2(-cp.x, -cp.z).normalized()
 			var right := Vector2(lens.y, -lens.x)  # the frame's right, seen from the lens (town_view's yaw)
@@ -174,6 +175,13 @@ func real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds:
 				gap_ang += TAU / 16.0
 				p = Vector3(cos(gap_ang), 0, sin(gap_ang)) * (square_r + maxf(f.x, f.y) * 0.45)
 			if tb._put(root, center, lm, p, f, lots, rng, false):
+				stands = true
+				break
+			# Then on the ring line the square's fronts stand on (front_ring: their walls flush round its edge), out of the
+			# market's goods and benches at the paving's rim (g10: the forge found no room at 16 spots round the edge).
+			var on_ring: Vector3 = Vector3(cos(gap_ang), 0, sin(gap_ang)) * (float(tb.front_ring(square_r)) + f.y * 0.5)
+			if not TownPlots.near_ways(Vector2(on_ring.x, on_ring.z), ways, maxf(f.x, f.y) * 0.5 + 0.05) and tb._put(root, center, lm, on_ring, f, lots, rng, false, -on_ring.normalized(), true):
+				p = on_ring
 				stands = true
 				break
 			gap_ang += TAU / 16.0
@@ -196,7 +204,7 @@ func real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds:
 					tb._smithy(root, center, p, -p.normalized(), f, rng)
 			if comp == "church":
 				tb._walled(root, center, p, -p.normalized(), f, "church", lots)  # the churchyard
-		if comp == "forge" and gap_ang != keep_ang and (tb._market_knobs().get("smithy", {}) as Dictionary).has("lens_turn"):
+		if lens_turn != null and gap_ang != keep_ang:
 			gap_ang = keep_ang  # the landmarks after it keep the spots they had
 		gap_ang += PI * 0.62
 		await tb._pace()
