@@ -214,8 +214,11 @@ func _ready() -> void:
 		var ahead := _at(_cum[_cum.size() - 1]) - mid
 		_yaw_march = _lens_yaw(mid, atan2(ahead.x, ahead.z) + Data.num("army", "camera.marchQuarter", 0.9))
 		_yaw = _yaw_march
-	elif on_road:  # war's muster: from beside the road, off the column's heading (03-army), whatever it does next
-		_yaw_march = _lens_yaw(_middle(), _face + Data.num("army", "camera.marchQuarter", 0.9))
+	elif on_road:  # war's muster: from behind the column, a little off its line, looking down it (03-army), whatever it does next
+		# far enough back to hold every block (g13: one cut off in the corner, the lens on a field)
+		_dist = maxf(_dist, Formation.column_length(_regiments) * Data.num("army", "camera.musterHold", 0.75))
+		_tilt = main.rig.tilt_for(Data.num("army", "camera.pitch", 38.0), maxf(_dist, main.rig.min_distance)) if main.rig else 0.0
+		_yaw_march = _lens_yaw(_middle(), _face + PI + Data.num("army", "camera.musterOff", 0.5))
 		_yaw_line = _yaw_march
 		_yaw = _yaw_march
 	var roles := {}
@@ -1132,28 +1135,31 @@ func _form_on_way(town: Vector3, to: Vector3, root: Node3D) -> void:
 		while out < _cum[_cum.size() - 1] and Geometry2D.is_point_in_polygon(Vector2(p.x - town.x, p.z - town.z), edge):
 			out += step
 			p = _at(out)
-	# On past the houses outside the walls (towns.gd footprints): the column's tail where no building stands within
-	# a block's half width of the way (g7 muster.jpg: the blocks among the cottages outside Kingsmere's gate).
-	var fps: Array = root.get_meta("footprints", []) if root else []
+	# On past the houses outside the walls: the column's tail where no building, wall, fence or stall of any town
+	# (town_nav.gd standable, the one answer) stands within a block's half width of the way for the whole column's
+	# length (g7, g13 muster.jpg: the blocks squeezed between the cottages outside Kingsmere's gate; the seat's own
+	# footprints missed them).
 	var half := 0.0
 	for r in _regiments:
-		half = maxf(half, float(r.get("w", 0.0)) * 0.5 + 0.1)
+		half = maxf(half, float((r["column"] as Dictionary).get("w", 0.0)) * 0.5 + 0.1)
+	var towns: Node3D = main.get("towns")
 	var near_house := func(at: float) -> bool:
+		if towns == null:
+			return false
 		var q := _at(at)
 		var h := _heading(at)
-		var side := Vector2(cos(h), -sin(h)) * half
-		var c := Vector2(q.x - town.x, q.z - town.z)
-		for fp in fps:
-			for t in [c, c + side, c - side]:
-				if Geometry2D.is_point_in_polygon(t, fp):
-					return true
+		var side := Vector3(cos(h), 0, -sin(h)) * half
+		for t in [q, q + side, q - side]:
+			if not TownNav.standable(towns, t):
+				return true
 		return false
+	var need := Data.num("army", "muster.gateClear", 0.6) + Formation.column_length(_regiments)
 	var past := out
 	var clear_for := 0.0
-	while past < _cum[_cum.size() - 1] and clear_for < 1.5:
+	while past < _cum[_cum.size() - 1] and clear_for < need:
 		clear_for = 0.0 if near_house.call(past) else clear_for + 0.1
 		past += 0.1
-	if past < _cum[_cum.size() - 1]:
+	if clear_for >= need:
 		out = past - clear_for
 	var order := Formation.column_order(_regiments)
 	var head := minf(_cum[_cum.size() - 1], out + Data.num("army", "muster.gateClear", 0.6) + Formation.column_length(_regiments))
