@@ -31,22 +31,22 @@ func stand(root: Node3D, pos: Vector3, color: Color, house: Dictionary, height :
 	return b
 
 
-## A seat's standard as the realm map shows it (docs/art/target/02-realm.jpg: a castle and a tall banner over every
-## house seat): the house's standard over its castle at towns.json map_standard.height, seen only from
-## map_standard.from away (map zoom), so the town and street views keep the castle's own. Raised and lowered with
-## the house's favour like every banner of its towns.
-func map_standard(root: Node3D, pos: Vector3, color: Color, house: Dictionary) -> void:
-	var ms: Dictionary = preload("res://scripts/data.gd").value("towns", "map_standard", {})
-	if float(ms.get("height", 0.0)) <= 0.0:
+## A seat as the realm map shows it (map_seat.gd: the castle set's keep under the house's standard, hidden up close,
+## grown with the camera's distance at map zoom; docs/art/target/02-realm.jpg), stood at `pos` over the seat's castle.
+## Its standard joins the town's banners, so it rises and falls with the house's favour and carries the sworn fringe.
+func map_seat(root: Node3D, pos: Vector3, color: Color, house: Dictionary) -> void:
+	var ms: Dictionary = preload("res://scripts/data.gd").value("towns", "map_seat", {})
+	if float(ms.get("keep", 0.0)) <= 0.0:
 		return
-	var b := stand(root, pos, color, house, float(ms["height"]))
-	var todo: Array = [b]
-	while not todo.is_empty():
-		var n: Node = todo.pop_back()
-		if n is GeometryInstance3D:
-			(n as GeometryInstance3D).visibility_range_begin = float(ms.get("from", 40.0))
-			(n as GeometryInstance3D).visibility_range_begin_margin = 2.0
-		todo.append_array(n.get_children())
+	var seat: Node3D = preload("res://scripts/map_seat.gd").new()
+	seat.name = "MapSeat"
+	seat.position = pos
+	root.add_child(seat)
+	var top: float = seat.build(float(ms["keep"]))
+	stand(seat, Vector3(0, top, 0), color, house, float(ms.get("standard", 2.6)))
+	var all: Array = root.get_meta("banners", [])
+	all.append_array(seat.get_meta("banners", []))
+	root.set_meta("banners", all)
 
 
 ## Every decision is seen (GAME_DESIGN pillar 3): a house's banners stand as
