@@ -227,9 +227,22 @@ func field_hosts(store: Node) -> Dictionary:
 	var drawn := {}
 	var keep := {}
 	for h in store.hosts():
-		if h.get("at") != null or bool(h.get("aboard", false)):
+		if bool(h.get("aboard", false)):
 			continue
 		var id := int(h["id"])
+		if h.get("at") != null:
+			# Come into a town (an arrival, or home by road before a Peace: bridge 8c8cb623): its column marches in
+			# through the gate along the road and is gone once halted there (army.gd march_in), not freed on the spot
+			# (the men vanished at the walls). Its companies stay its own until then.
+			var at_view: Node3D = _hosts.get(id)
+			if at_view and is_instance_valid(at_view):
+				if not at_view.get_meta("entering", false):
+					at_view.set_meta("entering", true)
+					at_view.march_in(terrain.world_pos(float(h.get("x", 0)), float(h.get("y", 0))))
+				keep[id] = true
+				for u in at_view.get_meta("units", []):
+					drawn[int(u)] = id
+			continue
 		var units: Array = (h.get("units", []) as Array).duplicate()
 		units.sort()
 		var view: Node3D = _hosts.get(id)
@@ -243,8 +256,9 @@ func field_hosts(store: Node) -> Dictionary:
 			view.set_meta("tile", tile)
 			add_child(view)
 			_hosts[id] = view
-		elif view.get_meta("tile") != tile:
+		elif view.get_meta("tile") != tile or view.get_meta("entering", false):
 			view.set_meta("tile", tile)
+			view.set_meta("entering", false)  # out again before it was in: it marches on and stays
 			view.march_to(terrain.world_pos(float(tile.x), float(tile.y)))
 		keep[id] = true
 		for u in units:

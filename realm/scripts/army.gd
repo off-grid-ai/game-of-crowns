@@ -78,6 +78,7 @@ var _pending := Vector3.INF  # a field host's march Freeciv gave before its regi
 var mustered := false
 var _order_face := NAN  # the way its order says its front looks (/world hosts[i].order.face), NAN for its own
 var _seat_root: Node3D = null  # the seat's town (towns.gd), whose edge the muster forms past (_form_on_way)
+var _then_free := false  # marching into a town (march_in): gone once halted there
 var _out := false  # marching out (march_out): halted at the road's end, it is gone after march.linger
 var _gone_in := 0.0
 var ground: RefCounted  # army_ground.gd: where its regiments may stand
@@ -276,6 +277,7 @@ func _bound_yaw(h: Dictionary, at: Vector3) -> float:
 ## the head there within the season (as a company's figure keeps it: never seasons behind its company), and halts
 ## closed up behind it, in column.order.
 func march_to(to: Vector3) -> void:
+	_then_free = false
 	if not mustered:
 		_pending = to
 		return
@@ -307,6 +309,14 @@ func march_to(to: Vector3) -> void:
 		r["speed"] = pace
 		_clips(r, "walk")
 		_march(r)
+
+
+## A host come into a town (units.gd field_hosts: the bridge has it `at` a town): its column marches in along the
+## road through the gate (march_to) and is gone once every regiment has halted there; its companies are the town's
+## figures from then. A host that leaves again first takes a new march_to and stays.
+func march_in(to: Vector3) -> void:
+	march_to(to)
+	_then_free = true
 
 
 ## Where a host raised for war is in its march (the film's muster step waits on it): forming (its regiments not yet
@@ -1224,6 +1234,9 @@ func _process(delta: float) -> void:
 			"halt", "rest":
 				_at_ease(r, delta)
 	_far_view()
+	if _then_free and _regiments.all(func(r): return r["state"] == "halt"):
+		queue_free()
+		return
 	if _out and _regiments.all(func(r): return r["state"] == "halt"):
 		_gone_in += delta
 		if _gone_in > Data.num("army", "march.linger", 40.0):

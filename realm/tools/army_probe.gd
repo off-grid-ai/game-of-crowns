@@ -290,6 +290,8 @@ func _push_never_pins() -> void:
 		_check(inside == 0, "and never stands inside the building (%d frames inside)" % inside)
 		man.queue_free()
 	var src := FileAccess.get_file_as_string("res://scripts/army.gd")
+	var us := FileAccess.get_file_as_string("res://scripts/units.gd")
+	_check(us.contains(".march_in(") and src.contains("func march_in("), "a host come into a town marches its column in through the gate before it is gone, not freed at the walls (units.gd field_hosts, army.gd march_in; bridge 8c8cb623)")
 	_check(src.contains("mo.keep = _block_keep(r)"), "a regiment on its ground keeps its whole block off a building, not only its middle (army.gd _block_keep; g6 host5: blocks pressed against a cottage)")
 
 
