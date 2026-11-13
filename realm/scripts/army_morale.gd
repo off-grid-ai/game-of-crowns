@@ -149,7 +149,7 @@ static func step(sides: Array, dt: float, loser: int, commanders: Array, spent: 
 			if spent and side == loser:
 				m -= _m("spent", 0.1) * dt * _felt(q)
 				shaken = true
-			var calm: float = float(bb.get_var(&"calm_for", 0.0)) + dt if bb else 0.0
+			var calm: float = float(bb.get_var(&"calm_for", 0.0, false)) + dt if bb else 0.0
 			if bb and not shaken:
 				bb.set_var(&"calm_for", calm)
 			if not shaken and calm > _m("steady.after", 2.0):
@@ -157,7 +157,7 @@ static func step(sides: Array, dt: float, loser: int, commanders: Array, spent: 
 			if side != loser:
 				m = maxf(m, _m("floor_victor", 0.4))
 			_put_nerve(q, minf(m, _m("start", 1.0)), shaken)
-			var held: float = float(bb.get_var(&"held", 0.0)) if bb else 0.0
+			var held: float = float(bb.get_var(&"held", 0.0, false)) if bb else 0.0  # unset until a break holds the side
 			if bb and held > 0.0:
 				bb.set_var(&"held", held - dt)
 			if side == loser and m < _m("break", 0.35) and held <= 0.0:

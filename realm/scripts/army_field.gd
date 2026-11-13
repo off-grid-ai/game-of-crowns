@@ -361,13 +361,25 @@ static func lens_distance() -> float:
 
 
 ## Where the battle's lens looks (rows: [side 0's, side 1's]): before the lines meet, the middle of every regiment
-## not running; at blows, the beaten regiment whose nerve is lowest (army_morale.gd: where the line breaks next), so
-## the rout is framed as it starts and as it runs along the line; once none of the beaten stands, `last` (the lens
-## stays where the rout ended).
+## not running; at blows, where the beaten regiment whose nerve is lowest (army_morale.gd: where the line breaks next)
+## meets its nearest foe still standing, so both lines are in frame at the point of contact (g15 battle.jpg: the lens
+## on one flanking cavalry regiment alone, over empty grass) and the rout is framed as it starts and runs along the
+## line; once none of the beaten stands, `last` (the lens stays where the rout ended).
 static func lens_aim(rows: Array, loser: int, met: bool, last: Vector3) -> Vector3:
 	if met:
 		var next := Morale.shakiest(rows, loser)
-		return (next["node"] as Node3D).global_position if not next.is_empty() else last
+		if next.is_empty():
+			return last
+		var at: Vector3 = (next["node"] as Node3D).global_position
+		var foe := at
+		var bd := INF
+		for x in rows[1 - loser]:
+			if String(x.get("state_name", "")) != "rout":
+				var p: Vector3 = (x["node"] as Node3D).global_position
+				if at.distance_squared_to(p) < bd:
+					bd = at.distance_squared_to(p)
+					foe = p
+		return at.lerp(foe, 0.5)
 	var sum := Vector3.ZERO
 	var n := 0
 	for side in rows:
