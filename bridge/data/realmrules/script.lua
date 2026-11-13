@@ -1211,39 +1211,44 @@ function realm_disband_home(id, city_id)
 end
 
 -- Men who can go no nearer home (or whose seat is lost) are their house's AI's again, where they stand.
--- The King's host takes ship (bridge hosts.js crossing): each company boards one of the hulls named, in its town or
--- on the water beside it, by Freeciv's own transport actions (the hull's room is the ruleset's transport_cap).
-local function realm_try(u, names, target)
-  for _, a in ipairs(names) do
-    local ok, act = pcall(find.action, a)
-    if ok and act then pcall(edit.perform_action, u, act, target) end
-    if names.done(u) then return true end
-  end
-  return false
-end
-
+-- The King's host takes ship (bridge hosts.js crossing): each company boards one of the hulls named, on the water
+-- beside it (the hull's room is the ruleset's transport_cap).
 local function realm_ferry_board(units, hulls)
-  local hs = {}
+  -- The host steps aboard the hulls raised beside it as part of the one decree, by Freeciv's own unit_move (its
+  -- embark bookkeeping: the company becomes the hull's cargo), not by Transport Embark: that wants a move left, and
+  -- a host raises its ships the season it reaches the shore, its moves spent on the road (crossing_reign_probe: on
+  -- Aldmere "FERRY board 0 of 1", the host camped). Each hull takes what its type may carry, up to its capacity.
+  -- Aboard, each company and hull is held from the AI (it goes where its hull goes; the bridge lets a hull go to sail).
+  -- All or none: a company left on the shore brings back those already aboard, and the bridge is told false.
+  local hs, us = {}, {}
   for id in tostring(hulls or ""):gmatch("%d+") do
     local h = find.unit(nil, tonumber(id))
-    if h then edit.movement_allow(h); hs[#hs + 1] = h end
+    if h then hs[#hs + 1] = h end
   end
-  local n, ok = 0, 0
-  for id in tostring(units or ""):gmatch("%d+") do
-    local u = find.unit(nil, tonumber(id))
-    n = n + 1
+  for id in tostring(units or ""):gmatch("%d+") do us[#us + 1] = {u = find.unit(nil, tonumber(id))} end
+  local ok = 0
+  for _, c in ipairs(us) do
+    local u = c.u
     if u then
+      c.from = u.tile
       edit.movement_allow(u)
       for _, h in ipairs(hs) do
         if u:transporter() then break end
-        realm_try(u, {"Transport Board", "Transport Board 2", "Transport Board 3", "Transport Embark", "Transport Embark 2", "Transport Embark 3", done = function(x) return x:transporter() ~= nil end}, h)
+        pcall(edit.unit_move, u, h.tile, 0, h, false, false, false, false, false)
       end
       if u:transporter() then ok = ok + 1 end
-      edit.movement_disallow(u)
     end
   end
+  log.normal("FERRY board %d of %d", ok, #us)
+  if ok < #us then
+    for _, c in ipairs(us) do
+      if c.u and c.u:transporter() then pcall(edit.unit_move, c.u, c.from, 0, nil, true, false, false, false, false) end
+    end
+    return false
+  end
+  for _, c in ipairs(us) do edit.movement_disallow(c.u) end
   for _, h in ipairs(hs) do edit.movement_disallow(h) end
-  log.normal("FERRY board %d of %d", ok, n)
+  return true
 end
 
 -- The crown raises the King's host its ships (bridge hosts.js crossing; the supervisor's ruling, 2026-11-12): `ships`
@@ -1265,14 +1270,19 @@ function realm_ferry_raise(pid, units, x, y, ships, cost)
     log.normal("FERRY raise 0 of %d: the water took no ship", ships)
     return
   end
-  realm_gold(p.id, -cost)
   log.normal("FERRY raise %d of %d", #ids, ships)
-  realm_ferry_board(units, table.concat(ids, ","))
+  if not realm_ferry_board(units, table.concat(ids, ",")) then
+    -- Not all aboard (a company a Trireme can't carry): no ship sails half a host; none raised, nothing paid.
+    for _, id in ipairs(ids) do local u = find.unit(nil, tonumber(id)); if u then edit.unit_kill(u, "disbanded", nil) end end
+    return
+  end
+  realm_gold(p.id, -cost)
 end
 
--- The King's host comes ashore on the tile (x, y) beside its hulls, by Freeciv's own Transport Disembark (aboard,
--- realm_ferry_board left each company held from the AI: it goes where its hull goes); then the ships (`hulls`) are
--- disbanded: the crown raised them for this crossing alone.
+-- The King's host comes ashore on the tile (x, y) beside its hulls, by Freeciv's own unit_move (its disembark
+-- bookkeeping), as it boarded (realm_ferry_board: the crossing is the crown's one decree, whatever moves the men have
+-- left); never onto a tile another's men hold. Then the ships (`hulls`) are disbanded: the crown raised them for this
+-- crossing alone.
 function realm_ferry_land(units, x, y, hulls)
   local t = find.tile(x, y)
   local n, ok = 0, 0
@@ -1281,9 +1291,9 @@ function realm_ferry_land(units, x, y, hulls)
     n = n + 1
     if u and t then
       edit.movement_allow(u)
-      if u:transporter() then
-        realm_try(u, {"Transport Disembark", "Transport Disembark 2", "Transport Disembark 3", "Transport Disembark 4", done = function(x) return x.tile == t end}, t)
-      end
+      local theirs = false
+      for v in t:units_iterate() do if v.owner ~= u.owner then theirs = true end end
+      if u:transporter() and not theirs then pcall(edit.unit_move, u, t, 0, nil, true, false, false, false, false) end
       if u.tile == t then ok = ok + 1 end  -- ashore, free to march on (the bridge holds it again if its order does)
     end
   end

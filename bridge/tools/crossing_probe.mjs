@@ -148,7 +148,9 @@ const stageLua = [
   ' end end',
   'end end',
   'if f == nil then log.normal("FERRYPROBE no coast") return end',
-  'local man = edit.create_unit(me, f.c, find.unit_type("Horsemen"), 0, nil, -1)',
+  // A company that marched to the shore this season: no moves left (crossing_reign_probe: Freeciv's Transport Embark
+  // wants one, so on Aldmere the host never boarded, "FERRY board 0 of 1").
+  'local man = edit.create_unit(me, f.c, find.unit_type("Horsemen"), 0, nil, 0)',
   'local id = string.format("%d", man.id)',
   'edit.change_gold(me, -me:gold())',
   'realm_ferry_raise(me.id, id, f.o.x, f.o.y, 1, 20)',
@@ -172,7 +174,7 @@ await fc.cmd(`lua file ${file}`, /FERRYPROBE (ashore|no coast)/, 30000);
 const line = (k) => fc.lines.find((l) => l.includes(`FERRYPROBE ${k}`)) ?? "";
 check(!line("no coast"), "the map had no coast to cross");
 check(/unpaid true/.test(line("unpaid")), `with an empty treasury no ship is raised: ${line("unpaid") || fc.lines.filter((l) => /rror|FERRY/.test(l)).slice(-3)}`);
-check(/aboard true paid 20/.test(line("aboard")), `the crown raises a Trireme on the water, pays its 20 gold, and the company boards it by Freeciv's rules: ${line("aboard") || fc.lines.filter((l) => /rror|FERRY/.test(l)).slice(-3)}`);
+check(/aboard true paid 20/.test(line("aboard")), `the crown raises a Trireme on the water, pays its 20 gold, and the company that marched there this season boards it: ${line("aboard") || fc.lines.filter((l) => /rror|FERRY/.test(l)).slice(-3)}`);
 check(/sailed true/.test(line("sailed")), `the Trireme sails with it: ${line("sailed")}`);
 check(/ashore true disbanded true/.test(line("ashore")), `it comes ashore by Freeciv's rules and the ship is disbanded: ${line("ashore")}`);
 await fc.quit();
