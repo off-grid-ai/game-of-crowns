@@ -587,6 +587,12 @@ func _build_sea() -> void:
 	for k in sc:
 		if not String(k).begins_with("_"):
 			mat.set_shader_parameter(k, preload("res://scripts/data.gd").colour(sc[k], Color.BLACK))
+	# Its surface (look.json sea.surface): the prefab's roughness 0.087 mirrored the sun into a white glare at the map
+	# zoom (group render g3, realm.jpg: by Kingsmere; target 02-realm: no sun on the water).
+	var sf: Dictionary = preload("res://scripts/data.gd").value("look", "sea.surface", {})
+	for k in sf:
+		if not String(k).begins_with("_"):
+			mat.set_shader_parameter(k, float(sf[k]))
 	mat.set_shader_parameter("beers_law", 2.5)  # clear at the water's edge, dark by a few metres down
 	mat.set_shader_parameter("depth_offset", -0.2)
 	mat.set_shader_parameter("shore_start_blend", 0.01)  # a band of foam a few metres wide
