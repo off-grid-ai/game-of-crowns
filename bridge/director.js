@@ -99,12 +99,13 @@ function finale(ctx, d, turn) {
   d.finaleDone = !!d.threat;  // none possible this season: it tries again the next
 }
 
-// The finale's growth a season: what is left of it, over the seasons left before it lands.
-function paced(meta, d, turn, level, grow) {
+// The finale's growth a season: what is left of it, over the seasons left before it lands, less lead: the seasons its
+// host takes to march to the walls, so it sets off early and reaches them on the finale's season.
+function paced(meta, d, turn, level, grow, lead = 0) {
   const total = (meta.minutes ?? 0) * 60000;
   const perTurn = ((meta.elapsedMs ?? 0) - (d.from?.ms ?? 0)) / Math.max(1, turn - (d.from?.turn ?? turn));
   if (!total || !(perTurn > 0)) return grow;
-  const left = Math.max(1, Math.round((DIRECTOR.finale.landAt * total - meta.elapsedMs) / perTurn));
+  const left = Math.max(1, Math.round((DIRECTOR.finale.landAt * total - meta.elapsedMs) / perTurn) - lead);
   return Math.min(0.5, Math.max(grow * 0.5, (1 - level) / left));
 }
 
@@ -138,6 +139,14 @@ export function raise(ctx, d, turn, want = null, isFinale = false) {
   grow(ctx, d, turn);
 }
 
+// Where a host threat marches when it breaks: the nearest crown town not the King's seat (the seat itself is only
+// sacked, and only when the crown holds no other).
+function hostTarget(world, at) {
+  const crown = crownOf(world);
+  const near = world.cities.filter((c) => c.owner === crown?.id).sort((a, b) => dist(a, at) - dist(b, at));
+  return near.find((c) => !c.capital) ?? near[0];
+}
+
 // The threat grows a season: seen in the world, and told.
 function grow(ctx, d, turn) {
   const { world, send, record, scene } = ctx;
@@ -145,7 +154,8 @@ function grow(ctx, d, turn) {
   const spec = DIRECTOR.threats[th.kind];
   const at = world.cities.find((c) => c.id === th.city);
   if (!at) { d.threat = null; return; }
-  th.step = th.finale ? paced(ctx.meta, d, turn, th.level, spec.grow) : spec.grow;  // kept, so its countdown is honest (due)
+  const target = th.kind === "host" ? hostTarget(world, at) : null;
+  th.step = th.finale ? paced(ctx.meta, d, turn, th.level, spec.grow, target ? Hosts.marchSeasons(at, target) : 0) : spec.grow;  // kept, so its countdown is honest (due)
   th.level = Math.min(1, th.level + th.step);
   if (th.level >= 1 && turn > th.since) return breaks(ctx, d, turn);
   const stage = Math.min(spec.says.length - 1, Math.floor(th.level * spec.says.length));
@@ -173,12 +183,9 @@ function breaks(ctx, d, turn) {
   const th = d.threat;
   const spec = DIRECTOR.threats[th.kind];
   const at = world.cities.find((c) => c.id === th.city);
-  const crown = crownOf(world);
   let cost = "";
   if (at && th.kind === "host") {
-    // The nearest crown town not the King's seat is taken (the seat itself is only sacked).
-    const near = world.cities.filter((c) => c.owner === crown?.id).sort((a, b) => dist(a, at) - dist(b, at));
-    const target = near.find((c) => !c.capital) ?? near[0];
+    const target = hostTarget(world, at);
     // The men it gathered march there by the road (realm_war_march, hosts.js warpath); the town falls when they reach
     // its walls (marches), so the King sees them come and can meet them on the way.
     if (target) {

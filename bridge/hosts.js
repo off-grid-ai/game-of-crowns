@@ -351,6 +351,14 @@ export function warpath(ctx, ev, send) {
   save(meta, [...(meta.hostOrders ?? []).filter((o) => !o.units.some((id) => ids.includes(id))), { kind: "warpath", owner, units: ids, city: Number(ev.city), since: Number(ev.turn) }]);
 }
 
+// The seasons a host takes by the road from one place to another at the hosts' speed (cheb distance where no land
+// way is known): a march set off early so it arrives on a given season (director.js: the finale's host).
+export function marchSeasons(from, to) {
+  const steps = stepsTo(to);
+  const n = steps && steps.at(from) >= 0 ? steps.at(from) : cheb(from, to);
+  return Math.ceil(Math.max(0, n - 1) / HOSTS.speed);  // it halts a tile out, at the walls
+}
+
 // How many of a house's soldiers are on the road to a town under a war host's order (warpath): a march still
 // coming, not one broken (stakes.js: the usurper's host on its way to Kingsmere).
 export function marchingOn({ world, meta }, owner, city) {
