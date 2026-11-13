@@ -467,6 +467,7 @@ static func _template(name: String) -> Dictionary:
 	# One mesh, one surface per material: a model authored in hundreds of
 	# pieces (the longhall is 352) costs a draw call for every piece, and on
 	# Metal those calls, not triangles, were what held the frame.
+	var built_frame := Transform3D(Basis.from_scale(Vector3.ONE * k), model.position)  # the builder's metres -> this model (read before the merge frees it)
 	var merged := _merge(parts, FLOOR_CUT.get(name, -INF), BUDGET.get(KIT[name][0], 0))
 	if merged:
 		parts = [[merged, Transform3D.IDENTITY]]
@@ -484,7 +485,7 @@ static func _template(name: String) -> Dictionary:
 		# above bakes away: castle_life.gd hangs its arms, standards, guards and torches from them (g3: read off the
 		# merged mesh, they were gone and the towers' cloth hung cream).
 		root.set_meta("castle_spec", BUILT[name]["spec"])
-		root.set_meta("castle_frame", Transform3D(Basis.from_scale(Vector3.ONE * k), model.position))
+		root.set_meta("castle_frame", built_frame)
 	var scene := PackedScene.new()
 	scene.pack(root)
 	root.free()
