@@ -331,7 +331,17 @@ func _anchor(name: String, k: Dictionary, anchors: Dictionary) -> Dictionary:
 ## Worked out once a stage (k["open"]); facing the heart. {} when the square has no open setts left.
 func _open(k: Dictionary, d: Dictionary) -> Dictionary:
 	if not k.has("open"):
-		k["open"] = open_spots(k["root"], float(d.get("apart", 4.0)), float(d.get("within", 0.85)))
+		if bool(d.get("cover", false)):
+			# The coverage rule: one standing person a spot, laid farthest-first from everyone already standing, inside
+			# what the square's census budget has left (cover_people).
+			var life: Node3D = k["life"]
+			var seeds: Array = Array(life.get_meta("standing", PackedVector2Array())) if life else []
+			var c: Dictionary = k["census"]
+			var b := square_budget(k["root"])
+			var left := maxi(0, b - int(c.get("cast", 0))) if b >= 0 else 0
+			k["open"] = cover_people(k["root"], seeds, left, float(d.get("within", 0.85)))
+		else:
+			k["open"] = open_spots(k["root"], float(d.get("apart", 4.0)), float(d.get("within", 0.85)))
 		k["open_next"] = 0
 	var spots: Array = k["open"]
 	if spots.is_empty():
@@ -345,6 +355,85 @@ func _open(k: Dictionary, d: Dictionary) -> Dictionary:
 		var q: Vector2 = spots[(i + j) % spots.size()]
 		rest.append(Vector3(q.x, 0, q.y))
 	return {"at": Vector3(at.x, 0, at.y), "dir": dir, "spots": rest}
+
+
+## The coverage rule (supervisor, 12 Nov; casebook, "The market is a place"): no stretch of the square's open setts
+## nobody stands within near_m of may be bigger than towns.json square.cover_share of the open setts (01-town's: its
+## largest empty patch, 30 m2, over its about 470 m2). Measured as autoplay squarelife measures it: 1 m cells of the
+## open setts (off every footprint and lane, within `within` of the radius), a cell free when nobody is within near_m,
+## free cells joined side to side. Standing people are laid one by one, each on the cell farthest from everyone already
+## standing (`seeds`, town-local), until the largest free stretch is under the limit or `budget` people are laid.
+## Returns their spots, town-local; tools/square_open_probe.gd asserts it on a staged square.
+static func cover_people(root: Node3D, seeds: Array, budget: int, within: float) -> Array:
+	var um: float = load("res://scripts/towns.gd").S
+	var TL: Script = load("res://scripts/town_life.gd")
+	var pr := 0.0
+	for pv in root.get_meta("paved", []):
+		if (pv[0] as Vector2) == Vector2.ZERO and (pv[1] as Vector2) == Vector2.ZERO:
+			pr = float(pv[2])
+			break
+	if pr <= 0.0 or budget <= 0:
+		return []
+	var feats: Array = []
+	for fp in load("res://scripts/town_nav.gd").footprints(root):
+		if (fp as PackedVector2Array).size() >= 3:
+			feats.append(fp)
+	var near := float(Data.num("towns", "square.near_m", 2.0)) * um
+	var cells: Array = []  # Vector2i
+	var n := int(ceil(pr / um))
+	for gx in range(-n, n + 1):
+		for gz in range(-n, n + 1):
+			var q := Vector2(gx, gz) * um
+			if q.length() > pr * within:
+				continue
+			if feats.any(func(poly): return Geometry2D.is_point_in_polygon(q, poly)):
+				continue
+			if TL.on_lane(root, root.global_position + Vector3(q.x, 0, q.y)):
+				continue
+			cells.append(Vector2i(gx, gz))
+	if cells.is_empty():
+		return []
+	var limit := float(Data.num("towns", "square.cover_share", 0.064)) * cells.size()  # m2: a cell is a square metre
+	var index := {}
+	for ci in cells.size():
+		index[cells[ci]] = ci
+	var dist: Array = []
+	dist.resize(cells.size())
+	dist.fill(INF)
+	var lay := func(q: Vector2) -> void:
+		for ci in cells.size():
+			dist[ci] = minf(float(dist[ci]), q.distance_to(Vector2(cells[ci]) * um))
+	for sd in seeds:
+		lay.call(sd as Vector2)
+	var largest := func() -> int:
+		var seen := {}
+		var most := 0
+		for ci in cells.size():
+			if seen.has(ci) or float(dist[ci]) <= near:
+				continue
+			var size := 0
+			var todo: Array = [ci]
+			seen[ci] = true
+			while not todo.is_empty():
+				var a: int = todo.pop_back()
+				size += 1
+				for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+					var b = index.get(cells[a] + d, -1)
+					if b >= 0 and not seen.has(b) and float(dist[b]) > near:
+						seen[b] = true
+						todo.append(b)
+			most = maxi(most, size)
+		return most
+	var spots: Array = []
+	while spots.size() < budget and largest.call() > limit:
+		var bi := 0
+		for ci in cells.size():
+			if float(dist[ci]) > float(dist[bi]):
+				bi = ci
+		var q := Vector2(cells[bi]) * um
+		spots.append(q)
+		lay.call(q)
+	return spots
 
 
 ## The open setts' spots, town-local, the emptiest first: grid points on the paved square (within `within` of its
@@ -445,6 +534,12 @@ func _stops(k: Dictionary) -> Dictionary:
 	var wk: Dictionary = root.get_meta("works", {})
 	if wk.has("forge"):
 		pts.append((wk["forge"]["at"] as Vector3) + Basis(Vector3.UP, float(wk["forge"].get("yaw", 0.0))) * Vector3(0, 0, 1) * 0.45)
+	# And the open middle (open_stops: that many of the square's open spots), so the errands cross the bare setts
+	# rather than keep to the stalls' ring (supervisor: walkers on errands that cross the open middle).
+	var mid := int((k["row"] as Dictionary).get("open_stops", 0))
+	if mid > 0:
+		for q2 in open_spots(root, float((k["row"] as Dictionary).get("open_apart", 6.0)), 0.6).slice(0, mid):
+			pts.append(Vector3((q2 as Vector2).x, 0, (q2 as Vector2).y))
 	var open: Array = []
 	for p in pts:
 		var q: Vector3 = tl.place(root, p, 0.4, false)
@@ -649,6 +744,8 @@ func _stage_role(k: Dictionary, role: Dictionary, anchors: Dictionary) -> void:
 		_stage_walkers(k, role, a, does)
 		return
 	var n := 0 if String(role.get("form", "")) == "each" else _count(role.get("n", 1), k)
+	if bool(role.get("cover", false)):
+		n = (a.get("spots", []) as Array).size()  # the coverage rule: a knot on every spot it took to cover the setts
 	if bool(role.get("pairs", false)):
 		n *= 2
 	var cap := _census_cap(k, role)

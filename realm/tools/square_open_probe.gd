@@ -9,7 +9,11 @@ extends SceneTree
 ##   - no two nearer than `apart` metres;
 ##   - the emptiest first, spread (farthest-point sampling): each spot's gap to the box and to every spot before it
 ##     no more than the one before's, so knots fill the bare ground rather than all keeping to its emptiest edge;
-##   - town_scenes.json has the open anchor and the everyday gossip stands on it (knots_open).
+##   - the coverage rule: with a ring of people standing, cover_people lays standing people until no free stretch (open
+##     cells nobody stands within near_m of, joined side to side) is bigger than towns.json square.cover_share of the
+##     open setts (01-town's), and never past its budget;
+##   - town_scenes.json has the open anchor covering the square, the everyday gossip on it (knots_open), errands that
+##     stop in the open middle (open_stops).
 ## Exit 1 on a failure.  arch -arm64 godot --headless --path realm -s res://tools/square_open_probe.gd
 
 const Data := preload("res://scripts/data.gd")
@@ -71,9 +75,75 @@ func _run() -> void:
 				print("FAIL spot %d has a %.1f m gap, more than the one before it (%.1f m): not the emptiest first" % [i, d / um, last / um])
 				fails += 1
 			last = d
+	# The coverage rule: with a ring of people already standing (the stalls' crowd), cover_people lays standing people
+	# one by one until no free stretch (open cells nobody stands within near_m of, joined side to side, as squarelife
+	# measures) is bigger than cover_share of the open setts, inside the budget.
+	if TS.get_script_method_list().any(func(m: Dictionary) -> bool: return m["name"] == "cover_people"):
+		var um2: float = load("res://scripts/towns.gd").S
+		var root2 := Node3D.new()
+		get_root().add_child(root2)
+		var pr2 := 15.0 * um2
+		root2.set_meta("paved", [[Vector2.ZERO, Vector2.ZERO, pr2]])
+		await process_frame
+		var ring: Array = []
+		for i in 16:
+			ring.append(Vector2(cos(TAU * i / 16.0), sin(TAU * i / 16.0)) * 12.0 * um2)
+		var share := float(Data.num("towns", "square.cover_share", 0.0))
+		var near := float(Data.num("towns", "square.near_m", 2.0)) * um2
+		var laid: Array = TS.call("cover_people", root2, ring, 80, 0.85)
+		var few: Array = TS.call("cover_people", root2, ring, 3, 0.85)
+		# the measure, worked out here on its own
+		var cells := {}
+		var n2 := int(ceil(pr2 * 0.85 / um2))
+		for gx in range(-n2, n2 + 1):
+			for gz in range(-n2, n2 + 1):
+				if (Vector2(gx, gz) * um2).length() <= pr2 * 0.85:
+					cells[Vector2i(gx, gz)] = true
+		var everyone: Array = ring + laid
+		var free := {}
+		for c in cells:
+			var q := Vector2(c) * um2
+			if not everyone.any(func(o): return q.distance_to(o) <= near):
+				free[c] = true
+		var most := 0
+		var seen := {}
+		for c in free:
+			if seen.has(c):
+				continue
+			var size := 0
+			var todo: Array = [c]
+			seen[c] = true
+			while not todo.is_empty():
+				var a: Vector2i = todo.pop_back()
+				size += 1
+				for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+					if free.has(a + d) and not seen.has(a + d):
+						seen[a + d] = true
+						todo.append(a + d)
+			most = maxi(most, size)
+		var limit := share * cells.size()
+		print("cover: %d people laid on a 15 m square ringed by 16; largest free stretch %d m2 of %d open (at most %.0f, share %.3f); budget 3 gives %d" % [laid.size(), most, cells.size(), limit, share, few.size()])
+		if share <= 0.0:
+			print("FAIL towns.json square.cover_share is not set: the square's empty-patch limit")
+			fails += 1
+		if most > limit:
+			print("FAIL the largest free stretch is %d m2, over the limit %.0f: the coverage rule doesn't hold" % [most, limit])
+			fails += 1
+		if few.size() > 3:
+			print("FAIL cover_people laid %d people on a budget of 3" % few.size())
+			fails += 1
+	else:
+		print("FAIL town_scenes.gd has no cover_people(): the square's coverage isn't a rule of the staging")
+		fails += 1
 	var s := FileAccess.get_file_as_string("res://data/town_scenes.json")
 	if not s.contains("\"open\": {\"by\": \"open\""):
 		print("FAIL town_scenes.json has no open anchor")
+		fails += 1
+	if not s.contains("\"open\": {\"by\": \"open\", \"cover\": true"):
+		print("FAIL the open anchor doesn't cover the square (anchors.open cover)")
+		fails += 1
+	if not s.contains("\"open_stops\":"):
+		print("FAIL no errands cross the open middle (errands open_stops)")
 		fails += 1
 	if not s.contains("\"at\": \"open\", \"form\": \"knots_open\""):
 		print("FAIL the everyday gossip doesn't stand on the square's open ground (knots_open)")
