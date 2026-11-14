@@ -313,6 +313,11 @@ func delete_chronicle(id: String, cb: Callable) -> void:
 	_post("/chronicles/delete", {"id": id}, cb)
 
 
+## The King steps down for his grown heir (bridge royals.js abdicate): cb(code, d), 409 with an error when he can't.
+func abdicate(cb: Callable) -> void:
+	_post("/abdicate", {}, cb)
+
+
 func records(cb: Callable) -> void:
 	_http_get("/records", cb)
 

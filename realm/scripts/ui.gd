@@ -34,6 +34,7 @@ signal reign_continued  # the reign was scored, and the King rules on
 signal court_closed  # the doors shut: the realm moves, and the camera may go and look
 signal interlude_closed  # the King has read the act just gone: the realm goes on
 signal speed_stepped(dir: int)  # + and -: the seasons pass faster (1) or slower (-1); main.gd asks the bridge
+signal abdicate_asked(cb: Callable)  # the King steps down for his heir (royal_sheet.gd); main.gd asks the bridge, cb(code, d)
 signal next_host  # comma: the next of the King's hosts, selected and looked at (main.gd)
 signal last_event  # Space: go to the latest news, or back again
 signal event_back  # Home: back to where the King was
@@ -77,6 +78,7 @@ var _houses_panel: PanelContainer:
 		return houses_drawer._houses_panel
 var chronicle := ChroniclePanel.new(self)  # the chronicle drawer and the ticker (chronicle_panel.gd): their state lives there
 var reign_now := {}  # the reign as the bridge last told it (set_reign): its id and name, for the book of the reign
+var royal := preload("res://scripts/royal_sheet.gd").new(self)  # the King's sheet and his family (royal_sheet.gd), from the bar's heading
 var book := preload("res://scripts/chronicle_book.gd").new(self)  # the book of the reign (chronicle_book.gd), opened from the bar
 var _chron_panel: PanelContainer:
 	get:

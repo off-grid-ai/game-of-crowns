@@ -1,0 +1,22 @@
+{
+ "_": "The King's sheet and his family (royal_sheet.gd; CK3's ruler window), opened from the bar's heading. Each line's words; {name}, {age}, {traits}, {house}, {how} are filled from /world royals (bridge royals.js). nature_tip: why his nature matters at court; regency: while a child is King; no_heir: with none; abdicate_tip: what stepping down does.",
+ "none": "The royal house is not yet known.",
+ "king": "King {name}",
+ "age": "{age} years old",
+ "nature": "By nature {traits}.",
+ "nature_tip": "Lords of a like nature warm to him; those of the opposite nature cool. A new King is measured again by every lord.",
+ "regency": "A child sits the throne. Until he comes of age the realm is held by a regent, and cold lords rise more readily.",
+ "consort": "Consort",
+ "heir": "Heir",
+ "match": "promised to {name} of {house}",
+ "no_heir": "There is no heir. If the King dies so, the crown is up for the taking.",
+ "children": "Children",
+ "kin": "Kin",
+ "line": "The Kings before him",
+ "line_row": "{name}, {how} at {age}",
+ "close": "Close",
+ "abdicate": "Step down for the heir",
+ "abdicate_sure": "Sure? The crown passes now.",
+ "abdicate_tip": "The heir is of age. The crown passes to him now, and every lord takes his measure afresh.",
+ "abdicating": "The crown is passing."
+}

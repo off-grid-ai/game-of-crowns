@@ -11,6 +11,7 @@ const T := preload("res://scripts/theme.gd")
 const UI := preload("res://scripts/ui.gd")
 const Juice := preload("res://scripts/juice.gd")
 const Data := preload("res://scripts/data.gd")
+const RoyalSheet := preload("res://scripts/royal_sheet.gd")  # the King's name and nature, from /world royals
 
 var ui: UI  # the interface that owns this bar: its signals, its building blocks, its other cards
 
@@ -286,6 +287,12 @@ func _build_top_bar() -> void:
 	_earning.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_heading.add_child(_earning)
 	who.add_child(_heading)
+	# The King himself is a click away from his name (royal_sheet.gd: his nature, his family, his line).
+	_heading.mouse_filter = Control.MOUSE_FILTER_STOP
+	_heading.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	_heading.gui_input.connect(func(e):
+		if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
+			ui.royal.toggle())
 	_last_act = Label.new()
 	_last_act.add_theme_font_override("font", T.mono)
 	_last_act.add_theme_font_size_override("font_size", T.SIZE_LABEL)
@@ -600,6 +607,13 @@ func _show_heading(r: Dictionary) -> void:
 	# One line in words: what people call you, what's moving, and your promises.
 	# (What's rising or falling already shows in the arrows beside it: the line keeps to the name and a promise.)
 	_earning.text = "People call you %s" % name
+	# The King's own name and nature first (bridge royals.js: his two traits, by blood).
+	var rs := RoyalSheet.royals()
+	if rs.get("king") is Dictionary:
+		var k: Dictionary = rs["king"]
+		var nature := RoyalSheet.traits_of(k)
+		_earning.text = "%s%s  ·  %s" % [String(k.get("name", "")), (", " + nature) if nature != "" else "", _earning.text]
+		tip.append("King %s, %d: %s.%s Click for the royal family." % [RoyalSheet.line_of(k).get_slice(",", 0), int(k.get("age", 0)), nature if nature != "" else "of no marked nature", "  A child King: a regent holds the realm." if bool(rs.get("regency", false)) else ""])
 	tip.append("If the reign ended today, the realm would remember you as %s%s." % [name, ("; a few would say %s" % next) if next != "" else ""])
 	# The King's three ambitions: a diamond each, filled when met.
 	var am = r.get("ambitions")

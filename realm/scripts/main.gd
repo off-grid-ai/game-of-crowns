@@ -369,6 +369,7 @@ func _ready() -> void:
 	ui.last_event.connect(news._to_news)
 	ui.speed_stepped.connect(_step_speed)
 	ui.next_host.connect(_next_host)
+	ui.abdicate_asked.connect(func(cb): bridge.abdicate(cb))
 	ui.court_waits_at.connect(func(at, caption, id): news.point_at(at, caption, ui.open_matter.bind(id)))
 	ui.event_back.connect(news._back_from_news)
 	ui.house_followed.connect(_follow_house)  # a house's sigil clicked: go with its host
