@@ -696,8 +696,12 @@ func _build_sea() -> void:
 	var ocean: Node3D = preload("res://addons/boujie_water_shader/types/ocean.gd").new()
 	ocean.name = "Sea"
 	ocean.outermost_resolution = 16
-	ocean.levels_of_detail = 6
-	ocean.unit_size = 0.25  # two metres between vertices at the camera (the ripples are the shader's), coarser further out
+	# look.json sea.mesh: rings of the finest grid round the camera, each further ring twice as coarse. The levels set
+	# the triangles (6 levels of 16 were ~2.4M, a 512-square inner tile: cyclevis fps), the unit the vertex spacing at
+	# the lens (0.5 still draws the swells, wavelengths 1.25-2.9; the ripples are the shader's); the far plane takes over past them.
+	var sm: Dictionary = preload("res://scripts/data.gd").value("look", "sea.mesh", {})
+	ocean.levels_of_detail = int(sm.get("levels", 4))
+	ocean.unit_size = float(sm.get("unit", 0.5))
 	ocean.far_edge = 2000
 	ocean.material = mat
 	ocean.position = Vector3(width * TILE / 2, SEA_LEVEL, height * TILE / 2)

@@ -156,6 +156,7 @@ Switches (`--name`) go after `--` on the game's command line.
 - Far haze at town zoom: `look.json v3.haze.depth` near_begin, near_end (camera-distances where the depth fog starts and is full), near_most (how thick); `look.json politics.near_fade` (where the house wash fades out at town zoom).
 - Who casts a shadow: people and beasts only within `realm/data/people.json` lod.shadow_near (6 units) of the lens; town props, carts, stalls and banners never (towns.gd detail). Raise shadow_near for more shadows, lower it for frame rate.
 - Ground cover detail: `realm/data/forest.json` cover_lod_bias (grass 0.3, flowers 0.3, bush 0.5, rock 0.5): lower and grass, flowers, bushes and rocks turn coarse nearer the lens (frame rate); 1 is Godot's own pick.
+- The sea's mesh: `realm/data/look.json` sea.mesh levels (4) and unit (0.5): more levels or a smaller unit, finer water and many more triangles (6 levels were ~2.4M); the waves are the shader's.
 - The coast: how far the beach runs above the waterline and which painting it blends through (dirt, no outline), and the surf at the shore: `realm/data/ground.json`: `beach.top`, `surf`.
 - How far out the land keeps its fine shape (Terrain3D's rings round the lens; too coarse and a lake's low shore sinks under the water at the mid zoom): `realm/data/ground.json`: `mesh.size`, `mesh.lods`.
 - From what distance the sea's colour stops reading the depth to its bed (nearer shows clear shallows, but the bed's coarser rings show as seams further out): `realm/data/look.json`: `sea.depth_fade`.
