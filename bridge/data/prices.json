@@ -1,0 +1,9 @@
+{
+ "_": "The realm's market prices (prices.js; Anno's and Manor Lords' prices that follow supply, Victoria's goods that war makes dear): each good's base in gold, moved each season by what the realm lives through, each factor multiplying. grain: poorHarvest while a wet harvest's lean seasons last, winter, famine per share of the realm's towns starving (1 + famine x share), sickness while a plague walks the roads. iron: war per war between houses or a royal siege (1 + war x n, at most warMost). timber: siege per town under siege (1 + siege x n). cloth: blocked per share of towns whose trade is stopped (besieged, roads shut). Decrees cost their price times their good's rise (decrees: action -> good; treasury.js priceOf), so the treasury feels the market.",
+ "base": { "grain": 10, "iron": 20, "timber": 8, "cloth": 15 },
+ "grain": { "poorHarvest": 1.6, "winter": 1.15, "famine": 1.0, "sickness": 1.15 },
+ "iron": { "war": 0.15, "warMost": 2 },
+ "timber": { "siege": 0.1 },
+ "cloth": { "blocked": 1.0 },
+ "decrees": { "relief": "grain", "feast": "grain", "gift": "grain", "levy": "iron", "banners": "iron", "sellswords": "iron", "reinforce": "iron", "march": "iron", "build": "timber" }
+}

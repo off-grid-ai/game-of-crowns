@@ -11,6 +11,7 @@ import { SEASONS_PER_YEAR, isYearEnd } from "./calendar.js";
 import { houseFor, cityName } from "./narrator.js";
 import { DECREES, TITHE_HIGH, ECONOMY } from "./crown.js";
 import * as Lua from "./lua.js";
+import * as Prices from "./prices.js";
 import * as chron from "./chronicles.js";
 import * as kingDeeds from "./ledger.js";
 export { ECONOMY };
@@ -71,7 +72,7 @@ export function seasonsLeft(ctx, key) {
 
 export function priceOf(ctx, action) {
   const { world, meta } = ctx;
-  const base = DECREES[action]?.cost ?? 0;
+  const base = Math.round((DECREES[action]?.cost ?? 0) * Prices.rise(meta, action));  // dearer as its good is (prices.js)
   const purse = crownOf(world)?.gold ?? 0;
   return worn(meta, `decree:${action}`, Math.max(base, Math.round(purse * (SHARE[action] ?? 0))), world?.turn ?? 0);
 }
