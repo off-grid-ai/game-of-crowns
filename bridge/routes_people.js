@@ -60,7 +60,7 @@ export async function person(ctx, req, res, url) {
     traits: c.traits, goals: (c.goals ?? []).map((g) => g.text), goal: c.goals?.[0]?.kind ?? null, role_key: c.role ?? null, loyalty: c.loyalty,
     seat: c.seat != null ? cityName(c.seat) : null, role: c.role ? ROLES[c.role]?.title : null,
     memories: [...new Set(c.memories ?? [])].slice(-6), backstory: c.backstory ?? null,
-    why: whyOf(ctx, c), family: familyOf(ctx, c),
+    why: whyOf(ctx, c), family: familyOf(ctx, c), ambition: ctx.court.ambitionOf(c, ctx.world),
   });
 }
 

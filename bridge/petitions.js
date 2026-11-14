@@ -7,8 +7,32 @@ import { crownOf } from "./realm.js";
 import * as Lua from "./lua.js";
 import { cityName, houseFor } from "./narrator.js";
 import { say } from "./say.js";
+import fs from "node:fs";
 
 export const ANSWERS = {
+  // A lord's want brought to court (characters.js ambitionOf: land or power, a town another great house holds).
+  ambition({ p, c, option, out, world }) {
+    const A = JSON.parse(fs.readFileSync(new URL("./data/ambitions.json", import.meta.url), "utf8")).plea;
+    const town = cityName(p.city);
+    const holder = houseFor(world.players.find((x) => x.id === p.holder) ?? {}).name;
+    if (option === "back") {
+      out.favour[c.playerId] = A.back.him; out.favour[p.holder] = A.back.holder;
+      const foe = this.lordOfHouse(p.holder);
+      if (foe) this.onWar?.([c.playerId, p.holder]);  // the war itself, in Freeciv (the one diplomacy writer)
+      out.text = `With the King's leave, ${c.house} goes to war for ${town}. ${holder} calls its banners.`;
+      this.remember(c.id, `The King gave me leave to take ${town}.`);
+    }
+    if (option === "forbid") {
+      out.favour[c.playerId] = A.forbid.him; out.favour[p.holder] = A.forbid.holder;
+      out.text = `The King forbids ${c.house} to touch ${town}. ${c.name} bows, and does not forget.`;
+      this.remember(c.id, `The King forbade me ${town}.`);
+    }
+    if (option === "promise") {
+      out.favour[c.playerId] = A.promise.him;
+      out.text = `The King sends ${c.name} home with gold and fair words. ${town} stays with ${holder}, for now.`;
+      this.remember(c.id, `The King bought me off with gold when I asked for ${town}.`);
+    }
+  },
   siege({ p, c, option, out, gold, world }) {
     const town = cityName(p.city);
     const them = houseFor(world.players.find((x) => x.id === p.besieger) ?? {}).name;

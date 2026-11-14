@@ -32,6 +32,8 @@ export function warMuster(world, pid, prey) {
 
 // The court's deck of dilemmas: data, so new ones are written, not coded.
 const DECK_FILE = new URL("./data/dilemmas.json", import.meta.url);
+// Each lord's one want, made a thing in the realm (data/ambitions.json; ambitionOf).
+const AMB = JSON.parse(fs.readFileSync(new URL("./data/ambitions.json", import.meta.url), "utf8"));
 function loadDeck() {
   try { return JSON.parse(fs.readFileSync(DECK_FILE, "utf8")); } catch { return []; }
 }
@@ -385,6 +387,30 @@ export class Court {
 
   opinion(a, b) {
     return this.people[a]?.relationships[b]?.opinion ?? 0;
+  }
+
+  // What a lord wants, as a thing in the realm (CK3's ambitions): his goal (goals[0], the one he holds) with its
+  // target read from the realm now: the town nearest his seat another great house holds (land, power), the great
+  // house whose lord he likes best (marriage), the lord he likes least (revenge). {kind, text, line, target}: line
+  // as he says it on his sheet; target {kind: town|house|person, id, name, house}. Derived, never stored.
+  ambitionOf(c, world) {
+    const g = c?.goals?.[0];
+    if (!g) return null;
+    const lords = this.alive().filter((o) => o.rank === "lord" && o.id !== c.id && o.playerId !== c.playerId);
+    const seat = world?.cities?.find((x) => x.id === c.seat) ?? world?.cities?.find((x) => x.owner === c.playerId);
+    let target = null;
+    if ((g.kind === "land" || g.kind === "power") && seat) {
+      const great = (pid) => { const p = world.players.find((x) => x.id === pid); return p && !houseFor(p).crown && !houseFor(p).wild && pid !== c.playerId; };
+      const t = world.cities.filter((x) => great(x.owner)).map((x) => [x, Math.max(Math.abs(x.x - seat.x), Math.abs(x.y - seat.y))])
+        .filter(([, d]) => d <= AMB.plea.reach).sort((a, b) => a[1] - b[1])[0]?.[0];
+      if (t) target = { kind: "town", id: t.id, name: cityName(t.id), house: houseFor(world.players.find((x) => x.id === t.owner)).name, pid: t.owner };
+    }
+    const by = (dir) => [...lords].sort((a, b) => dir * (this.opinion(c.id, b.id) - this.opinion(c.id, a.id)))[0];
+    if (g.kind === "marriage" && c.rank === "lord") { const o = by(1); if (o) target = { kind: "house", id: o.playerId, name: o.house, house: o.house }; }
+    if (g.kind === "revenge") { const o = by(-1); if (o) target = { kind: "person", id: o.id, name: o.name, house: o.house }; }
+    const line = target || !["land", "power", "marriage", "revenge"].includes(g.kind)
+      ? String(AMB.lines[g.kind] ?? "").replace(/\{(\w+)\}/g, (_, k) => ({ town: target?.name, house: target?.house, name: target?.name }[k] ?? "")) : `I mean to ${g.text}.`;
+    return { kind: g.kind, text: g.text, line: line || `I mean to ${g.text}.`, target };
   }
 
   shift(a, b, delta, why) {
@@ -928,6 +954,18 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
       { id: "refuse", label: "Send him back to his liege", hint: `${c.house} +10 · ${loyal.name} remembers the crown would not reward him` },
     ] }) });
 
+    // His want itself (data/ambitions.json plea): a lord who wants land or power asks the King's leave to take a
+    // town from another great house.
+    const want = c.rank === "lord" ? this.ambitionOf(c, world) : null;
+    if (want?.target?.kind === "town") candidates.push({ kind: "ambition", weight: AMB.plea.weight, make: () => {
+      const t = want.target;
+      return { kind: "ambition", city: t.id, holder: t.pid, text: `${c.name} of ${c.house}: "${t.name} should be ours, Your Grace, and ${t.house} holds it badly. Give me your leave and I will take it."`, facts: facts(c.playerId, t.pid), options: [
+        { id: "back", label: `Give ${c.name} leave to take ${t.name}`, hint: `${c.house} +${AMB.plea.back.him} · ${t.house} ${AMB.plea.back.holder}, and war between them`, favour: { [c.playerId]: AMB.plea.back.him, [t.pid]: AMB.plea.back.holder } },
+        { id: "forbid", label: "Forbid it", hint: `${c.house} ${AMB.plea.forbid.him} · ${t.house} +${AMB.plea.forbid.holder}`, favour: { [c.playerId]: AMB.plea.forbid.him, [t.pid]: AMB.plea.forbid.holder } },
+        { id: "promise", label: `Promise him something smaller (${AMB.plea.promise.cost} gold)`, hint: `${c.house} +${AMB.plea.promise.him} · the want stays`, cost: AMB.plea.promise.cost, favour: { [c.playerId]: AMB.plea.promise.him } },
+      ] };
+    } });
+
     for (const card of loadDeck()) {
       const roles = this.cast(card, c, world, ctx);
       if (roles) candidates.push({ kind: card.id, deck: true, weight: card.weight ?? 2, make: () => this.deal(card, roles, c, world, facts) });
@@ -938,7 +976,9 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
     // No matter is put to the King twice in a reign: a dealt dilemma once, a
     // lord's own kind of plea once per house, a remembered deed once.
     const heard = (x) => x.deck ? `card:${x.kind}` : x.deed ? `remembers:${c.house}:${x.deed}` : `${x.kind}:${c.house}`;
-    const pool = candidates.filter((x) => !open.has(x.kind) && !ctx.heard?.(heard(x))).map((x) => ({ ...x, w: x.weight / (1 + 2 * recent.filter((k) => k === x.kind).length) }));
+    // A plea his want drives weighs more (data/ambitions.json drives, boost): his want shows in what he brings.
+    const driven = new Set(AMB.drives[c.goals?.[0]?.kind] ?? []);
+    const pool = candidates.filter((x) => !open.has(x.kind) && !ctx.heard?.(heard(x))).map((x) => ({ ...x, w: x.weight * (driven.has(x.kind) ? AMB.boost : 1) / (1 + 2 * recent.filter((k) => k === x.kind).length) }));
     // A crisis brings its own plea (a starving town's lord asks for grain), whatever was heard lately.
     const forced = opts.prefer ? candidates.find((x) => x.kind === opts.prefer) : null;
     if (opts.prefer && !forced) return;  // a crisis plea is that plea or nothing

@@ -1,0 +1,27 @@
+{
+ "_": "Each lord's one want (characters.js ambitionOf; CK3's ambitions, KoDP's lords who each want something): his goal made a thing in the realm, a town to take (land, power), a house to wed into (marriage), a man to settle with (revenge). It drives his court matters: a plea of a kind his want drives (drives) weighs boost times more when he chooses what to bring, and a lord who wants land or power brings his want itself (plea: weight; the town nearest his seat that another great house holds, within reach tiles). lines: how he says it on his sheet ({town}, {house}, {name}). plea: the King's three answers' favour (back: him up, its holder down, and war between them; forbid; promise: him a little, at a cost).",
+ "boost": 3,
+ "drives": {
+  "revenge": ["justice"],
+  "marriage": ["match"],
+  "land": ["claim", "ambition"],
+  "power": ["claim", "ambition"],
+  "peace": ["grain", "outlaws", "faith"],
+  "crown": ["regency"],
+  "favour": ["remembers"],
+  "court": ["remembers"],
+  "defect": ["debt"]
+ },
+ "lines": {
+  "land": "I mean to take {town} from {house}.",
+  "power": "{town} first. Then the realm will know my house.",
+  "marriage": "I mean to see my heir wed into {house}.",
+  "revenge": "I will settle the old score with {name} of {house}.",
+  "crown": "I mean to sit the throne myself one day.",
+  "peace": "I want my people fed and out of other men's wars.",
+  "favour": "I mean to rise in my liege's esteem.",
+  "court": "I mean to be noticed by the King himself.",
+  "defect": "I mean to find a liege more worthy of my sword."
+ },
+ "plea": { "weight": 4, "reach": 10, "back": { "him": 20, "holder": -25 }, "forbid": { "him": -15, "holder": 5 }, "promise": { "him": 5, "cost": 120 } }
+}
