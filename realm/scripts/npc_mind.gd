@@ -13,7 +13,7 @@ extends RefCounted
 const People := preload("res://scripts/people.gd")
 const SceneKinds := preload("res://scripts/scene_kinds.gd")
 const Motion := preload("res://scripts/motion.gd")
-const TownNav := preload("res://scripts/town_nav.gd")  # what stands in a town's way
+const Ground := preload("res://scripts/ground.gd")  # the one answer to where a body may stand
 const Awareness := preload("res://scripts/awareness.gd")  # the realm's rules as the bridge sends them (season length, bands)
 const Weapons := preload("res://scripts/weapons.gd")  # what a move needs in hand (can_play)
 const AnimLOD := preload("res://scripts/anim_lod.gd")  # minds think by distance from the camera
@@ -216,10 +216,10 @@ class Step extends BTAction:
 	static func in_the_way(agent: Node, bb: Blackboard, at: Vector3) -> bool:
 		var life := agent.get_parent()
 		if life and life.name == "Life" and life.get_parent() is Node3D:
-			return not TownNav.inside(life.get_parent(), at).is_empty() or load("res://scripts/town_life.gd").on_lane(life.get_parent(), at)
+			return not Ground.inside(at).is_empty() or load("res://scripts/town_life.gd").on_lane(life.get_parent(), at)
 		var v = bb.get_var(&"vill", null, false)
 		if v != null and "towns" in v and v.towns != null:
-			return not TownNav.clear(v.towns, at)
+			return not Ground.is_clear(at)
 		return false
 
 	func _exit() -> void:

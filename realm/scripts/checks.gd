@@ -11,7 +11,7 @@ extends Node
 ## wall-walk stand on it: neither counts.
 
 const People = preload("res://scripts/people.gd")
-const TownNav = preload("res://scripts/town_nav.gd")
+const Ground := preload("res://scripts/ground.gd")  # the one answer to where a body may stand
 const HORSE_BODY: float = preload("res://scripts/scenes.gd").HORSE_BODY
 const EVERY := 5.0
 const SAMPLE := 0.3  # seconds between the looks that tell who is moving
@@ -56,7 +56,7 @@ func _look() -> String:
 		var ground: float = terrain.height_at(feet.x, feet.z)
 		var on_ground := feet.y <= ground + 0.03  # above it: on a wall-walk or a stair
 		var wrong := ""
-		if on_ground and TownNav.in_building(towns, feet):
+		if on_ground and not Ground.inside(feet).is_empty():
 			wrong = "inside"
 		elif feet.y < ground - 0.015:
 			wrong = "sunk"
@@ -77,7 +77,7 @@ func _look() -> String:
 			continue
 		for rig in sys.find_children("HorseRig", "Node3D", true, false):
 			var horse := rig.get_parent().get_parent() as Node3D
-			if horse and horse.is_visible_in_tree() and TownNav.in_building(towns, horse.global_position, HORSE_BODY * 0.8):
+			if horse and horse.is_visible_in_tree() and not Ground.is_clear(horse.global_position, HORSE_BODY * 0.8):
 				count["inside"] += 1
 				if worst.size() < 5:
 					worst.append("inside:%s horse(%.1f,%.1f)" % [label, horse.global_position.x, horse.global_position.z])

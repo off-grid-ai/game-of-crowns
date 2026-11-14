@@ -35,7 +35,7 @@ const KNIGHT := Visual.KNIGHT
 const Data := preload("res://scripts/data.gd")
 const Mover := preload("res://scripts/mover.gd")  # the one way to move (CLAUDE.md)
 const Ground := preload("res://scripts/army_ground.gd")
-const TownNav := preload("res://scripts/town_nav.gd")
+const Footing := preload("res://scripts/ground.gd")  # the realm's one answer to where a body may stand
 const Heraldry := preload("res://scripts/heraldry.gd")
 const VAT := preload("res://addons/godot_vat/vat_multi_mesh_instance_3d.gd")
 const Banners := preload("res://scripts/army_banners.gd")  # its banners and standard (READY.md line 4)
@@ -1173,7 +1173,7 @@ func _clear_at(mid: Vector3, right3: Vector3, fwd3: Vector3, w: float, d: float,
 	for i in nx:
 		for j in nz:
 			var q := mid + right3 * ((float(i) / (nx - 1) - 0.5) * (w + m * 2.0)) + fwd3 * ((float(j) / (nz - 1) - 0.5) * (d + m * 2.0))
-			if not main.terrain.is_land(q.x, q.z) or TownNav.in_building(main.towns, q, 0.05) or (strict and _farmed(q, 0.0)):
+			if not main.terrain.is_land(q.x, q.z) or not Footing.is_clear(q, 0.05) or (strict and _farmed(q, 0.0)):
 				return false
 			if strict and roads and roads.has_method("on_path") and roads.on_path(q, 0.05):
 				return false
@@ -1294,7 +1294,7 @@ func _form_on_way(town: Vector3, to: Vector3, root: Node3D) -> void:
 		half = maxf(half, float((r["column"] as Dictionary).get("w", 0.0)) * 0.5)
 	half += Data.num("army", "muster.roadClear", 0.3)
 	# Ground the whole column may stand on: dry land, no building, wall, fence or stall of any town
-	# (TownNav.in_building) and no farm, field, hedge or cottage of the countryside (countryside occupied), across each
+	# (ground.gd is_clear) and no farm, field, hedge or cottage of the countryside (countryside occupied), across each
 	# block's half width and muster.roadClear more either side: the ground a muster's line asks for (_clear_at).
 	var blocked := func(at: float) -> bool:
 		var q := _at(at)
@@ -1302,7 +1302,7 @@ func _form_on_way(town: Vector3, to: Vector3, root: Node3D) -> void:
 		var side := Vector3(cos(h), 0, -sin(h))
 		for k in 5:
 			var t := q + side * half * (k / 2.0 - 1.0)
-			if not main.terrain.is_land(t.x, t.z) or (main.get("towns") and TownNav.in_building(main.get("towns"), t, 0.05)) or _farmed(t, 0.05):
+			if not main.terrain.is_land(t.x, t.z) or not Footing.is_clear(t, 0.05) or _farmed(t, 0.05):
 				return true
 		return false
 	# Every main way out of the town (towns.gd ways_main: where the realm's roads leave it), carried on straight out
@@ -1810,7 +1810,7 @@ func _ground(p: Vector3, size: float) -> bool:
 	for gx in 5:
 		for gz in 5:
 			var q := Vector3(p.x + (gx / 4.0 - 0.5) * size, 0, p.z + (gz / 4.0 - 0.5) * size)
-			if not main.terrain.is_land(q.x, q.z) or TownNav.in_building(main.towns, q, 0.1) or _farmed(q, 0.05):
+			if not main.terrain.is_land(q.x, q.z) or not Footing.is_clear(q, 0.1) or _farmed(q, 0.05):
 				return false
 			if absf(main.terrain.height_at(q.x, q.z) - h) > slope:
 				return false

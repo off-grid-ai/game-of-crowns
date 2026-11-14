@@ -21,6 +21,7 @@ const Heraldry = preload("res://scripts/heraldry.gd")
 const Realistic = preload("res://scripts/realistic.gd")
 const TownLife := preload("res://scripts/town_life.gd")  # a feast's fire, its reach, and footprints
 const TownNav := preload("res://scripts/town_nav.gd")
+const Ground := preload("res://scripts/ground.gd")  # the one answer to where a body may stand
 const Data := preload("res://scripts/data.gd")
 const SceneKinds := preload("res://scripts/scene_kinds.gd")
 var _seen := {}  # scene key -> true, so each event plays once
@@ -174,14 +175,11 @@ func rng(at: Vector3) -> RandomNumberGenerator:
 	return r
 
 
-## Where a person may stand nearest `p`: on the ground and in no building
-## (town_nav.gd, the realm's one answer). Every person or horse a scene places
-## or moves is set down through here; things (standards, fires, wagons' dust)
-## use _ground.
+## Where a person may stand nearest `p`: on walkable ground and in no building (ground.gd, the realm's one
+## answer). Every person or horse a scene places or moves is set down through here; things (standards, fires,
+## wagons' dust) use _ground.
 func stand(p: Vector3, body := 0.0) -> Vector3:
-	if towns == null:
-		towns = get_parent().get("towns")
-	return nav.stand(towns, p, body)
+	return Ground.nearest_clear(p, body)
 
 
 ## A horse is set down with its whole body clear, nose to tail.

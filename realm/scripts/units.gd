@@ -12,6 +12,7 @@ var towns: Node3D  # towns.gd: inside a town's reach, soldiers keep to its stree
 const Awareness := preload("res://scripts/awareness.gd")  # the realm's rules as the bridge sends them (season length, bands)
 const Heraldry := preload("res://scripts/heraldry.gd")  # the rival King's colours on his raiders
 const TownNav = preload("res://scripts/town_nav.gd")
+const Ground := preload("res://scripts/ground.gd")  # the one answer to where a body may stand
 var _nav = TownNav.new()
 var _figures := {}  # unit id -> {node, target}
 var _hosts := {}  # a King's host in the field (/world hosts, not in a town, not at sea): its id -> its column (army.gd)
@@ -139,11 +140,11 @@ func sync(houses: Dictionary) -> void:
 			if Vector2(site.x - centre.x, site.z - centre.z).length() <= terrain.TILE * 1.5:
 				target = site + Vector3(cos(slot * 2.4), 0, sin(slot * 2.4)) * 0.3
 		target.y = terrain.height_at(target.x, target.z)
-		# Never in a building: on the town's walk map where it has one, and
-		# off every footprint (town_nav.gd). A ship keeps to its water.
+		# Never in a building or the water: on the town's walk map where it has one,
+		# and off every footprint (ground.gd). A ship keeps to its water.
 		var ship := String(u["type"]) in MapLook.SHIPS
 		if not ship:
-			target = _nav.stand(towns, target, 0.17 if String(u["type"]) in MOUNTED and String(u["type"]) != "Elephants" else 0.0)
+			target = Ground.nearest_clear(target, 0.17 if String(u["type"]) in MOUNTED and String(u["type"]) != "Elephants" else 0.0)
 		elif terrain.is_land(target.x, target.z):
 			target = _moor(key, centre, slot)  # a ship in a port town lies at its waterside, never on the square
 			if target == Vector3.INF:
@@ -286,7 +287,7 @@ func _band(id: int, at: Vector3, seen: Dictionary) -> void:
 		seen[key] = true
 		var ang := k * 2.39996 + float(id % 7)  # the golden angle: loose, never in ranks
 		var off := Vector3(cos(ang), 0, sin(ang)) * spread * sqrt(float(k) / float(r.get("men", 5)))
-		var target := _nav.stand(towns, at + off, 0.0)
+		var target := Ground.nearest_clear(at + off)
 		target.y = terrain.height_at(target.x, target.z)
 		if not _figures.has(key):
 			var node := _raider_man(key, _rival_of(id, Awareness.store()))
@@ -568,11 +569,11 @@ func _settle() -> void:
 			continue  # a beast keeps its own ground, a ship its water
 		var body := 0.17 if f.get("horse", false) else 0.0
 		var n: Node3D = f["node"]
-		if not _nav.clear(towns, f["target"], body):
-			f["target"] = _nav.stand(towns, f["target"], body)
+		if not Ground.is_clear(f["target"], body):
+			f["target"] = Ground.nearest_clear(f["target"], body)
 			_march(f)
-		elif not Mover.of(n).moving() and not _nav.clear(towns, n.position, body):
-			Mover.of(n).shift(_nav.stand(towns, n.position, body), 0.6)  # a step out of a building that went up round him
+		elif not Mover.of(n).moving() and not Ground.is_clear(n.position, body):
+			Mover.of(n).shift(Ground.nearest_clear(n.position, body), 0.6)  # a step out of a building that went up round him
 
 
 ## Where a marcher through a town stands clear of its buildings. The town's walk
@@ -583,7 +584,7 @@ const STAND_AGAIN := 0.02
 func _stood(f: Dictionary, at: Vector3) -> Vector3:
 	var was: Vector3 = f.get("stood_at", Vector3.INF)
 	if was == Vector3.INF or Vector2(at.x - was.x, at.z - was.z).length() > STAND_AGAIN:
-		var q := _nav.stand(towns, at, 0.17 if f.get("horse", false) else 0.0)
+		var q := Ground.nearest_clear(at, 0.17 if f.get("horse", false) else 0.0)
 		f["stood_at"] = at
 		f["stood_by"] = q - at
 		return q

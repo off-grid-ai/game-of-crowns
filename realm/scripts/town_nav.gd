@@ -340,11 +340,11 @@ static func live(map: RID) -> bool:
 
 ## True once the map's bakes have landed and it has synced since: it can
 ## answer for paths and places.
-func ready(map: RID) -> bool:
+static func ready(map: RID) -> bool:
 	return live(map) and not _baking.has(map) and _baked_at.has(map) and NavigationServer2D.map_get_iteration_id(map) > int(_baked_at[map])
 
 
-func closest(map: RID, p: Vector2) -> Vector2:
+static func closest(map: RID, p: Vector2) -> Vector2:
 	if not ready(map):
 		return p  # not synced yet, or gone: the point as given
 	return NavigationServer2D.map_get_closest_point(map, p)
@@ -380,14 +380,7 @@ func walk(id: int, root: Node3D, from: Vector3, to: Vector3, wide := false) -> P
 	return out
 
 
-# --- where a person may stand ---------------------------------------------------
-
-## One answer, for everyone who puts a person on the ground (villagers, armies,
-## battles, sieges, feasts): never inside a building. Read off the town's own
-## geometry (nav_ground.gd: its houses, walls, fences, props, and what its life
-## puts up), the same outlines the walk maps are cut from.
-
-const CLEAR := 0.03  # how far outside a footprint a person is set: half a shoulder, about 0.25 m
+# --- the towns near a place (where a body may stand is ground.gd's answer) ------
 
 static var _near := {}  # tile -> [[town id, root]] whose reach covers it, kept a second
 static var _near_at := -1
@@ -425,90 +418,6 @@ static func towns_at(towns: Node3D, p: Vector3) -> Array:
 static func footprints(root: Node3D) -> Array:
 	return NavGround.all(root, _land)
 
-
-## The footprint `p` (world) stands in, or an empty one (nav_ground.inside_something: the one answer).
-static func inside(root: Node3D, p: Vector3) -> PackedVector2Array:
-	return NavGround.inside_something(root, p, _land)
-
-
-## Whether a person could stand at `p` (world): in no building anywhere.
-static func standable(towns: Node3D, p: Vector3) -> bool:
-	for t in towns_at(towns, p):
-		if not inside(t[1], p).is_empty():
-			return false
-	return true
-
-
-## The nearest place to `p` (world) a person may stand, on the ground: on the
-## town's walk map where it has one, and pushed clear of any footprint it still
-## falls in (a town without a walk map, or one baked before its life changed).
-## `body` is how far the one standing reaches from his feet: 0 for a man, a
-## horse's half-length for a horse, kept clear all round.
-func stand(towns: Node3D, p: Vector3, body := 0.0) -> Vector3:
-	var q := p
-	for t in towns_at(towns, p):
-		var id: int = t[0]
-		var root: Node3D = t[1]
-		if _maps.has(id) and ready(_maps[id]):
-			var c := root.global_position
-			var m := closest(_maps[id], Vector2(q.x - c.x, q.z - c.z))
-			q = Vector3(c.x + m.x, q.y, c.z + m.y)
-		for i in 6:
-			var moved := false
-			for o in _reach_of(body):
-				var fp := inside(root, q + o)
-				if not fp.is_empty():
-					q = _out_of(root, fp, q + o) - o
-					moved = true
-			if not moved:
-				break
-	# Wedged between two buildings, pushed from one into the other: the nearest
-	# clear place on rings widening out from where it got to.
-	# Or asked to stand on water (a place out in a river at the town's edge): the same search, for ground a body
-	# may stand on (terrain.walkable: dry, or a ford). Nobody is set down in the water.
-	if not clear(towns, q, body) or not _dry(q):
-		for ring in range(1, 61):
-			var found := false
-			for i in 12:
-				var o := Vector3(cos(TAU * i / 12.0), 0, sin(TAU * i / 12.0)) * ring * 0.04
-				if clear(towns, q + o, body) and _dry(q + o):
-					q += o
-					found = true
-					break
-			if found:
-				break
-	return Vector3(q.x, terrain.height_at(q.x, q.z) if terrain else p.y, q.z)
-
-
-## Ground a body may stand on at `p` (world): not sea, lake or river, unless a road fords it (terrain.walkable).
-## True with no terrain known.
-func _dry(p: Vector3) -> bool:
-	return terrain == null or terrain.walkable(p.x, p.z)
-
-
-## Whether `p` (world), or anything within `body` of it, is inside something standing in a town: a house, wall,
-## fence, stall, the well (nav_ground.inside_something: the one answer; a castle's open bailey is open ground).
-static func in_building(towns: Node3D, p: Vector3, body := 0.0) -> bool:
-	return not clear(towns, p, body)
-
-
-## Whether something reaching `body` all round could stand at `p` (world).
-static func clear(towns: Node3D, p: Vector3, body := 0.0) -> bool:
-	for t in towns_at(towns, p):
-		for o in _reach_of(body):
-			if not inside(t[1], p + o).is_empty():
-				return false
-	return true
-
-
-## The points that must be clear for a body of that reach: its centre, and
-## eight round it.
-static func _reach_of(body: float) -> Array:
-	var out := [Vector3.ZERO]
-	if body > 0.0:
-		for i in 8:
-			out.append(Vector3(cos(TAU * i / 8.0), 0, sin(TAU * i / 8.0)) * body)
-	return out
 
 
 ## The way between two world points: through the streets of a town with a
@@ -568,24 +477,6 @@ static func _walked(towns: Node3D, p: Vector3) -> Array:
 		if baked(t[0]) and Vector2(p.x - c.x, p.z - c.z).length() < float(root.get_meta("reach", 6.0)):
 			return t
 	return []
-
-
-## `p` (world) moved to the nearest edge of the footprint it is in, and a
-## little past it.
-static func _out_of(root: Node3D, fp: PackedVector2Array, p: Vector3) -> Vector3:
-	var c := root.global_position
-	var q := Vector2(p.x - c.x, p.z - c.z)
-	var best := q
-	var gap := INF
-	var mid := Vector2.ZERO
-	for i in fp.size():
-		mid += fp[i] / fp.size()
-		var e := Geometry2D.get_closest_point_to_segment(q, fp[i], fp[(i + 1) % fp.size()])
-		if e.distance_to(q) < gap:
-			gap = e.distance_to(q)
-			best = e
-	best += (best - mid).normalized() * CLEAR
-	return Vector3(c.x + best.x, p.y, c.z + best.y)
 
 
 ## The town's walk maps are freed (it is rebuilt, razed or out of sight): a person's and a horse's and cart's.

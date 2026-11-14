@@ -36,6 +36,7 @@ const TownScenes := preload("res://scripts/town_scenes.gd")  # the director: the
 const Works := preload("res://scripts/works.gd")  # the working buildings and their hands
 const Weapons := preload("res://scripts/weapons.gd")  # what a move needs in hand (can_play)
 const TownNav := preload("res://scripts/town_nav.gd")
+const Ground := preload("res://scripts/ground.gd")  # the one answer to where a body may stand
 var nav = preload("res://scripts/town_nav.gd").new()
 var talk = preload("res://scripts/village_talk.gd").new(self)  # who talks with whom (village_talk.gd): chatter.gd and the minds ask it
 var registry = preload("res://scripts/village_registry.gd").new(self)  # who is who and where (village_registry.gd): a click, a name, the homes lit, the feast fire
@@ -878,8 +879,8 @@ func _crowd_check() -> void:
 				if not held:
 					var why := "%s tool=%s held_for=%s can=%s from=%s" % [clip, n.get_meta("tool", "-"), mo.get("_held_for"), Weapons.can_play(clip), n.get_parent().name]
 					_crowd["empty_who"][why] = int(_crowd["empty_who"].get(why, 0)) + 1
-		# Nobody inside a house, wall, fence or stall (town_nav's building footprints).
-		if nav.in_building(towns, n.global_position):  # nav_ground.inside_something: the one answer (a bailey is open)
+		# Nobody inside a house, wall, fence or stall (ground.gd: the one answer; a bailey is open).
+		if not Ground.inside(n.global_position).is_empty():
 			_crowd["in_building"] = int(_crowd.get("in_building", 0)) + 1
 			_crowd["building_who"][_who(n)] = true
 		for f in fires:

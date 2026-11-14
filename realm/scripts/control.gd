@@ -1,5 +1,6 @@
 extends Node3D
 const Units := preload("res://scripts/world_units.gd")  # the world's one scale (Units.M)
+const Ground := preload("res://scripts/ground.gd")  # the one answer to where a body may stand
 const PerfTools := preload("res://scripts/perf_tools.gd")  # the frame-cost probe
 ## Taking control of a character: you step into a lord, heir or knight and walk
 ## them through their own town, low behind their shoulder. WASD walks (Shift
@@ -105,7 +106,7 @@ func start(person: Dictionary, house: Dictionary, town_id: int) -> void:
 	_horse = Horse.new()
 	add_child(_horse)
 	var by := _walkable(_body.position + Vector3(cos(_yaw), 0, -sin(_yaw)) * (HORSE_BODY * 2.2))
-	by = villagers.nav.stand(towns, by, HORSE_BODY)
+	by = Ground.nearest_clear(by, HORSE_BODY)
 	_horse.position = Vector3(by.x, terrain.height_at(by.x, by.z), by.z)
 	_horse.rotation.y = _body.rotation.y
 	_cam = Camera3D.new()
