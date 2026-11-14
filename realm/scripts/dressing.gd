@@ -27,7 +27,9 @@ static func on() -> bool:
 ## Dresses a town once: a node "Dressing" under its root (kept while the town stands; built again
 ## only if taken away). `ground(q)` is the ground's height under a town-local point, town-local. Each piece stands
 ## only where the ground is clear (ground.gd). Returns what it set down, {kind: count} (the layout probe reads it).
-static func dress(root: Node3D, ground: Callable, seed: int) -> Dictionary:
+## `pace`: awaited after every piece tried (town_life.gd _pace: the frame's 4 ms share), so a town is dressed over
+## frames, never in one (fps6: 878 ms in one step); none, and it is dressed at once (tools).
+static func dress(root: Node3D, ground: Callable, seed: int, pace := Callable()) -> Dictionary:
 	if root == null or not is_instance_valid(root) or root.get_node_or_null("Dressing") != null:
 		return {}
 	var rng := RandomNumberGenerator.new()
@@ -72,6 +74,10 @@ static func dress(root: Node3D, ground: Callable, seed: int) -> Dictionary:
 		for r in rows:
 			var at: Vector3 = (b["at"] as Vector3) + basis * Vector3(float(r[1]), 0, float(r[2])) * Works.S
 			put.call(String(r[0]), at, float(b["yaw"]) + deg_to_rad(float(r[3])), float(r[4]) if r.size() > 4 else 1.0, "trade")
+			if pace.is_valid():
+				await pace.call()
+				if not is_instance_valid(root):
+					return {}  # the town went meanwhile
 	# The square's fronts (Mac on Kingsmere's square, 2026-11-12: benches and crates strewn at random angles over the
 	# paving read as riot debris): each house facing the square takes one set against its front wall beside the door,
 	# squared to it, a bench, the shop's stores (barrels and crates) or its flower tubs (dressing.json square_fronts;
@@ -100,6 +106,10 @@ static func dress(root: Node3D, ground: Callable, seed: int) -> Dictionary:
 			for r in rows:
 				var at: Vector3 = step - face * 0.09 + along * float(r[1]) * Works.S + face * float(r[2]) * Works.S  # against the front wall
 				put.call(String(r[0]), at, atan2(face.x, face.z) + deg_to_rad(float(r[3])) + rng.randf_range(-0.05, 0.05), float(r[4]), "front")
+				if pace.is_valid():
+					await pace.call()
+					if not is_instance_valid(root):
+						return {}  # the town went meanwhile
 	# Planters and flower boxes at house fronts, beside the door.
 	var homes: Array = root.get_meta("homes", [])
 	var pots: Array = Data.value("dressing", "homes", [])
@@ -118,6 +128,10 @@ static func dress(root: Node3D, ground: Callable, seed: int) -> Dictionary:
 				if n >= most:
 					break
 				var r: Array = pots[i]
+				if pace.is_valid():
+					await pace.call()
+					if not is_instance_valid(root):
+						return {}  # the town went meanwhile
 				var at: Vector3 = step - face * 0.09 + along * float(r[1]) * Works.S + face * float(r[2]) * Works.S  # against the front wall
 				if put.call(String(r[0]), at, atan2(face.x, face.z) + deg_to_rad(float(r[3])) + rng.randf_range(-0.4, 0.4), float(r[4]), "home"):
 					n += 1
@@ -146,6 +160,10 @@ static func dress(root: Node3D, ground: Callable, seed: int) -> Dictionary:
 				break
 		var span: Array = row[2]
 		put.call(String(row[0]), at, rng.randf() * TAU, rng.randf_range(float(span[0]), float(span[1])), "ground")
+		if pace.is_valid():
+			await pace.call()
+			if not is_instance_valid(root):
+				return {}  # the town went meanwhile
 	# The castle's bailey lived in (dressing.json bailey; Mac: "the emptiness looks kinda weird", a lawn with scattered
 	# props): a training yard (dummies, weapon racks, a target), the stores' barrels, crates and sacks stacked by the
 	# wall, a wagon, the smith's anvil, buckets, banners by the gate and the keep. Each row [kit/model, across, toward
@@ -160,6 +178,10 @@ static func dress(root: Node3D, ground: Callable, seed: int) -> Dictionary:
 		for r in Data.value("dressing", "bailey", []):
 			var at: Vector3 = cp + cb * Vector3(float(r[1]) * cf.x, 0, float(r[2]) * cf.y)
 			put.call(String(r[0]), at, cyaw + deg_to_rad(float(r[3])) + rng.randf_range(-0.1, 0.1), float(r[4]) if r.size() > 4 else 1.0, "bailey")
+			if pace.is_valid():
+				await pace.call()
+				if not is_instance_valid(root):
+					return {}  # the town went meanwhile
 	# Every gap dressed the way Anno does it (docs/research/quality-deep-dive.md #4; dressing.json clusters): a group
 	# round one big piece (a wagon, a workbench, a barrel rack, a big plant), a few medium things about it (barrels,
 	# crates, a stool, a bucket, a bush) and many small ones further out (flowers, grass tufts, pebbles, petals), so a
@@ -190,6 +212,10 @@ static func dress(root: Node3D, ground: Callable, seed: int) -> Dictionary:
 			if taken.any(func(q: Vector2) -> bool: return q.distance_to(Vector2(at.x, at.z)) < float(C.get("gap", 0.3))):
 				continue
 			var row: Array = pick_of.call(cbig)
+			if pace.is_valid():
+				await pace.call()
+				if not is_instance_valid(root):
+					return {}  # the town went meanwhile
 			if not put.call(String(row[0]), at, rng.randf() * TAU, rng.randf_range(float(row[2][0]), float(row[2][1])), "cluster"):
 				continue
 			for ring in [[mids, nmid, rmid], [smalls, nsmall, rsmall]]:
@@ -202,6 +228,10 @@ static func dress(root: Node3D, ground: Callable, seed: int) -> Dictionary:
 						continue
 					var r2: Array = pick_of.call(ring[0])
 					put.call(String(r2[0]), q, rng.randf() * TAU, rng.randf_range(float(r2[2][0]), float(r2[2][1])), "cluster")
+					if pace.is_valid():
+						await pace.call()
+						if not is_instance_valid(root):
+							return {}  # the town went meanwhile
 	# One batch per model.
 	var node := Node3D.new()
 	node.name = "Dressing"

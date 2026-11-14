@@ -169,7 +169,7 @@ func _stage_town(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 	# planters by house doors, bushes, flowers and rocks between the houses.
 	if Dressing.on() and root.get_node_or_null("Dressing") == null:
 		var at := root.position
-		Dressing.dress(root, func(q: Vector3) -> float: return _y(at, q), int(c.get("id", 0)))
+		await Dressing.dress(root, func(q: Vector3) -> float: return _y(at, q), int(c.get("id", 0)), _pace.bind("dressing"))
 		await _pace("dressing")
 		if not is_instance_valid(root):
 			return
