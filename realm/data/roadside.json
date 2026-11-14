@@ -31,7 +31,7 @@
     "inn": { "crossroads": true, "crossroads_along": 1.2, "first": 9.0, "every": 18.0, "gap": 12.0, "out": 1.1, "road_clear": 0.45, "room": 1.8, "clear": 2.2, "stop": true,
       "pieces": [
         { "c": "tavern", "at": [0.0, 1.15] },
-        { "c": "stable", "at": [1.75, 1.35], "yaw": 90 },
+        { "c": "town_stables", "at": [1.75, 1.35], "yaw": 90 },
         { "c": "fence_yard", "at": [1.7, 0.55] },
         { "c": "fence_yard", "at": [2.45, 0.95], "yaw": 90 },
         { "c": "cart", "at": [1.15, 0.55], "yaw": 30, "turn": 20 },
