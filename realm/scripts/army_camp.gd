@@ -8,6 +8,7 @@ extends Node3D
 const Data := preload("res://scripts/data.gd")
 const CampKit := preload("res://scripts/camp_kit.gd")
 const Heraldry := preload("res://scripts/heraldry.gd")
+const Bulk := preload("res://scripts/bulk.gd")  # the one drawer of repeated small things: the tents
 const Horse := preload("res://scripts/horse.gd")
 
 
@@ -22,26 +23,26 @@ func pitch(scenes: Node, mid: Vector3, yaw: float, length: float, side: float, c
 	# Tents: rows along the column, ridges along it, the house's canvas and now and then plain linen.
 	var t: Dictionary = k.get("tents", {})
 	var sz: Array = t.get("size", [0.26, 0.2, 0.36])
-	var mesh := PrismMesh.new()
-	mesh.size = Vector3(float(sz[0]), float(sz[1]), float(sz[2]))
 	var canvas := CampKit.cloth(col.lerp(Color(0.9, 0.85, 0.72), float(t.get("canvas", 0.15))))
 	var plain := CampKit.cloth(Color(0.82, 0.76, 0.62))
+	var tents := []  # the house's canvas and plain linen, one prism each that every tent copies (bulk.gd)
+	for cloth in [canvas, plain]:
+		var mesh := PrismMesh.new()
+		mesh.size = Vector3(float(sz[0]), float(sz[1]), float(sz[2]))
+		mesh.material = cloth
+		tents.append(mesh)
 	var n := 0
 	for row in t.get("rows", [0.45, 0.8]):
 		var along := -span * 0.5
 		while along <= span * 0.5:
 			var p: Vector3 = scenes.ground(mid + right * (float(row) + r.randf_range(-0.04, 0.04)) + fwd * (along + r.randf_range(-0.03, 0.03)))
 			if scenes._footing(p):
-				var tent := MeshInstance3D.new()
-				tent.mesh = mesh
-				tent.material_override = canvas if n % 3 != 2 else plain
-				tent.position = p + Vector3(0, float(sz[1]) * 0.5, 0)
-				tent.rotation.y = yaw + r.randf_range(-0.15, 0.15)
-				add_child(tent)
+				var place := Transform3D(Basis(Vector3.UP, yaw + r.randf_range(-0.15, 0.15)), p + Vector3(0, float(sz[1]) * 0.5, 0))
+				Bulk.add(tents[0] if n % 3 != 2 else tents[1], global_transform * place, self, 1000.0, true)  # drawn in bulk, gone with the camp
 				if n % int(t.get("pennant_every", 3)) == 0:
 					var flag := Heraldry.standard(house, col, float(t.get("pennant", 0.14)))
-					flag.position = Vector3(0, float(sz[1]) * 0.5, float(sz[2]) * 0.45)
-					tent.add_child(flag)
+					flag.transform = place * Transform3D(Basis.IDENTITY, Vector3(0, float(sz[1]) * 0.5, float(sz[2]) * 0.45))
+					add_child(flag)
 				n += 1
 			along += float(t.get("every", 0.38))
 	# Cook fires between the rows; a hungry host's more of them, its men huddled round what little there is (The march
