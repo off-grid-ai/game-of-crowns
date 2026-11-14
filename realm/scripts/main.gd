@@ -493,6 +493,11 @@ func _ready() -> void:
 			ui.events.result(ok, text)))
 	ui.event_lapsed.connect(func(): sound.ui("lapse"))  # an event's cost landing: a bell, not to be missed
 	ui.event_came.connect(func(): sound.ui("event"))
+	# Every button answers the click, wherever it was made (Into the Breach's instant reply): one hook on the tree,
+	# so no card, menu or panel can forget it. A seal or coins still sound over it from their own answers.
+	get_tree().node_added.connect(_hook_click)
+	for n in get_tree().root.find_children("*", "BaseButton", true, false):
+		_hook_click(n)
 	ui.heard.connect(sound.ui)  # the interface's own sounds (the treasury counting down, a lord answering)
 	bridge.command_done.connect(func(ok, text):
 		if not ok and text == "no such petition":
@@ -592,6 +597,15 @@ func _set_ui_scale(v: float) -> void:
 		f.store_string(str(ui_scale))
 	if ui:
 		ui.toast("Interface size %d%%" % int(ui_scale * 100))
+
+
+func _hook_click(n: Node) -> void:
+	if n is BaseButton and not (n as BaseButton).pressed.is_connected(_clicked):
+		(n as BaseButton).pressed.connect(_clicked)
+
+
+func _clicked() -> void:
+	sound.ui("click")
 
 
 ## + and -, as in Anno and Age of Empires: the seasons pass faster or slower, a step at a time
