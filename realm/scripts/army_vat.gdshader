@@ -66,9 +66,11 @@ uniform vec4 undyed : source_color = vec4(0.52, 0.45, 0.35, 1.0);
 // pipeline paints the white cloth there), instead of by palette cell; data/army.json meshes.<dir>.team "mask".
 uniform bool team_by_mask = false;
 uniform sampler2D team_mask : hint_default_black, filter_linear_mipmap;
-// The mask's edge: a texel this much dyed or more is all cloth. Far off, the mask's mipmaps average a man's cloth with the
-// white around it (about half), and a half-dyed white cloth read candy pink (group render g1, the breach: the besiegers
-// pink, not the house's deep red); data/army.json team.mask_edge.
+// The mask's edge: a texel this much dyed or more is all cloth (its anti-aliased fringe at full size); data/army.json
+// team.mask_edge. The mask is read at its full size (textureLod 0), never its mipmaps: far off, a mip averages a man's
+// cloth with the rest of his paint to about half, which a low edge took for cloth everywhere (g35 battle: whole men
+// dyed, the crown's archers red sticks, Wolfholt's horse slate lumps) and a high one for half-dyed (g1: candy pink).
+// Read crisp, each texel is cloth or not, so a far man keeps his house's deep colour on his cloth and his own paint.
 uniform vec2 team_mask_edge = vec2(0.15, 0.4);
 uniform sampler2D normal_map: filter_nearest;
 // The house's arms worn on the shield's face and the tabard's front (Total War's faction shields; the arms are the
@@ -250,7 +252,7 @@ void fragment() {
 	float in_c = step(team_rect_c.x, UV.x) * step(UV.x, team_rect_c.z) * step(team_rect_c.y, UV.y) * step(UV.y, team_rect_c.w) * team_mix.z;
 	float in_d = step(team_rect_d.x, UV.x) * step(UV.x, team_rect_d.z) * step(team_rect_d.y, UV.y) * step(UV.y, team_rect_d.w) * team_mix.w;
 	float shade = max(base.r, max(base.g, base.b));
-	float dyed = team_by_mask ? smoothstep(team_mask_edge.x, team_mask_edge.y, texture(team_mask, UV).r) : max(max(in_a, in_b), max(in_c, in_d));
+	float dyed = team_by_mask ? smoothstep(team_mask_edge.x, team_mask_edge.y, textureLod(team_mask, UV, 0.0).r) : max(max(in_a, in_b), max(in_c, in_d));
 	float rel = rest_pos.y / max(mesh_height, 0.001);  // how far up the man this point stands in his rest pose
 	float in_band = step(team_band.x, rel) * step(rel, team_band.y);
 	vec3 cloth = mix(undyed.rgb, team_color.rgb, in_band) * shade * team_shade;
