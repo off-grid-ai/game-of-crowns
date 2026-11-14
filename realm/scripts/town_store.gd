@@ -65,7 +65,7 @@ static func save(root: Node3D, path: String) -> void:
 			n.set_meta("_groups", groups)
 		for m in n.get_meta_list():
 			var v: Variant = n.get_meta(m)
-			var w: Variant = _out(v, root)
+			var w: Variant = paths(v, root)
 			if not _same(w, v):
 				kept.append([n, m, v])
 				n.set_meta(m, w)
@@ -109,21 +109,21 @@ static func take(path: String) -> Variant:
 			n.remove_meta("_groups")
 		for m in n.get_meta_list():
 			var v: Variant = n.get_meta(m)
-			var w: Variant = _in(v, root)
+			var w: Variant = nodes(v, root)
 			if not _same(w, v):
 				n.set_meta(m, w)
 	return root
 
 
 ## A meta's value with every node in it written as {"_node": its path from the town's root}.
-static func _out(v: Variant, root: Node) -> Variant:
+static func paths(v: Variant, root: Node) -> Variant:
 	if v is Node:
 		return {"_node": root.get_path_to(v)} if is_instance_valid(v) and (v == root or root.is_ancestor_of(v)) else null
 	if v is Array:
 		var a: Array = []
 		var changed := false
 		for x in v:
-			var y: Variant = _out(x, root)
+			var y: Variant = paths(x, root)
 			changed = changed or not _same(y, x)
 			a.append(y)
 		return a if changed else v
@@ -131,7 +131,7 @@ static func _out(v: Variant, root: Node) -> Variant:
 		var d := {}
 		var changed := false
 		for k in v:
-			var y: Variant = _out(v[k], root)
+			var y: Variant = paths(v[k], root)
 			changed = changed or not _same(y, v[k])
 			d[k] = y
 		return d if changed else v
@@ -139,14 +139,14 @@ static func _out(v: Variant, root: Node) -> Variant:
 
 
 ## The inverse of _out: {"_node": path} back to the node.
-static func _in(v: Variant, root: Node) -> Variant:
+static func nodes(v: Variant, root: Node) -> Variant:
 	if v is Dictionary and (v as Dictionary).size() == 1 and (v as Dictionary).has("_node"):
 		return root.get_node_or_null(v["_node"])
 	if v is Array:
 		var a: Array = []
 		var changed := false
 		for x in v:
-			var y: Variant = _in(x, root)
+			var y: Variant = nodes(x, root)
 			changed = changed or not _same(y, x)
 			a.append(y)
 		return a if changed else v
@@ -154,7 +154,7 @@ static func _in(v: Variant, root: Node) -> Variant:
 		var d := {}
 		var changed := false
 		for k in v:
-			var y: Variant = _in(v[k], root)
+			var y: Variant = nodes(v[k], root)
 			changed = changed or not _same(y, v[k])
 			d[k] = y
 		return d if changed else v

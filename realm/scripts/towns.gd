@@ -194,6 +194,72 @@ func _on_tier(key: Variant, tier: int) -> void:
 	var id := int((key as String).substr(5))
 	if towns.has(id) and is_instance_valid(towns[id]["node"]):
 		(towns[id]["node"] as Node3D).process_mode = Node.PROCESS_MODE_DISABLED if tier == ViewTier.OFF else Node.PROCESS_MODE_INHERIT
+		if tier == ViewTier.OFF or tier == ViewTier.FAR:
+			_shell(id)
+		else:
+			_revive(id)
+
+
+## Towns streamed by the lens (Mac: "stream towns by distance"): a town FAR or off screen keeps a shell, its full
+## detail freed, and a town at MID or NEAR has it read back from disk (town_store.gd). The shell is the root with
+## everything that shows past view_tier.far_from: its far stand-ins (the low batches, _hlod), banners, map seat and
+## growing houses (its Life), every meta (footprints, doors, plots: Ground and the walk maps read them) and its marks on
+## the world. Freed is only what Godot's own visibility ranges already hide at FAR (_detail_only: the whole models
+## past NEAR, props, smoke), so nothing seen is lost. A town not yet kept on disk, or being raised, stays whole.
+func _shell(id: int) -> void:
+	var t: Dictionary = towns[id]
+	if t.get("shell", false) or _queue.has(id) or not FileAccess.file_exists(String(t.get("path", ""))):
+		return
+	var root: Node3D = t["node"]
+	for g in root.find_children("*", "GeometryInstance3D", true, false):
+		if is_instance_valid(g) and _detail_only(g, root):
+			g.free()
+	t["shell"] = true
+
+
+func _revive(id: int) -> void:
+	var t: Dictionary = towns[id]
+	if not t.get("shell", false):
+		return
+	t["shell"] = false
+	var path := String(t.get("path", ""))
+	if not TownStore.ask(path):
+		return
+	var got: Variant = TownStore.take(path)
+	while got == null:
+		await get_tree().process_frame
+		got = TownStore.take(path)
+	var root: Node3D = t["node"] if towns.has(id) and towns[id] == t else null
+	if not (got is Node3D) or root == null or not is_instance_valid(root) or t.get("shell", false):
+		if got is Node3D:
+			(got as Node).free()
+		return
+	var copy: Node3D = got
+	var pointing := {}  # the copy's metas that point at its nodes, as paths: pointed into the town once they're moved
+	for m in copy.get_meta_list():
+		var v: Variant = copy.get_meta(m)
+		var w: Variant = TownStore.paths(v, copy)
+		if not TownStore._same(w, v):
+			pointing[m] = w
+	for g in copy.find_children("*", "GeometryInstance3D", true, false):
+		if not copy.is_ancestor_of(g) or not _detail_only(g, copy):
+			continue  # moved already with a part above it, or kept by the shell
+		var dest: Node = root.get_node_or_null(copy.get_path_to(g.get_parent()))
+		g.get_parent().remove_child(g)
+		(dest if dest else root).add_child(g)
+	for m in pointing:
+		root.set_meta(m, TownStore.nodes(pointing[m], root))
+	copy.free()
+	terrain.season_on(root)
+
+
+## Whether a part of a town is only seen at MID or nearer (its visibility range ends by view_tier.far_from) and isn't
+## its life's (growing houses stand in its Life): what a shell frees.
+func _detail_only(g: GeometryInstance3D, root: Node3D) -> bool:
+	if g.visibility_range_end <= 0.0 or g.visibility_range_end > ViewTier.FAR_FROM + 0.01:
+		return false
+	var life := root.get_node_or_null("Life")
+	return life == null or not life.is_ancestor_of(g)
 
 
 ## Whether a town is NEAR (view_tier.gd), its room the town's reach.
@@ -311,6 +377,8 @@ func _raise(best: int, job: Dictionary) -> void:
 		_merge(standing, node)
 		standing.set_meta("imprint", (standing.get_meta("imprint", []) as Array) + (node.get_meta("imprint", []) as Array))  # its new pieces' marks too
 		towns[best]["data"] = job["c"]
+		towns[best]["path"] = path  # its new state as kept on disk
+		towns[best]["shell"] = false  # a shell merged with its whole new layout stands whole again
 		_grow(job.get("was", {}), homes_before, standing, job["c"])
 		terrain.season_on(standing)
 		PerfTools.add("towns.merge", Time.get_ticks_usec() - pt0)
@@ -321,7 +389,7 @@ func _raise(best: int, job: Dictionary) -> void:
 		return
 	Engine.set_meta("stage", "towns.add")  # each step after the paced build named, for the slow-frame log (perf_tools.gd)
 	add_child(node)
-	towns[best] = {"node": node, "signature": job["sig"], "data": job["c"]}
+	towns[best] = {"node": node, "signature": job["sig"], "data": job["c"], "path": path}
 	_watch(best, node)
 	PerfTools.add("towns.add", Time.get_ticks_usec() - pt0)
 	pt0 = Time.get_ticks_usec()
