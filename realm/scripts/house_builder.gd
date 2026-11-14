@@ -171,8 +171,25 @@ func _bake(parts: Array, remap := {}) -> ArrayMesh:
 	return mesh
 
 
+## Every house and model baked this session, by what it was baked from (a spec, a model's path): one house kind or
+## one tree is baked, merged and given its detail levels once a session, never again (FPS: each town baked its
+## houses afresh). Callers get their own copy (they set their own materials on it: forest.gd's leaves, a castle's own).
+static var _baked := {}
+
+
+static func _once(key: String, make: Callable) -> ArrayMesh:
+	if not _baked.has(key):
+		_baked[key] = make.call()
+	var mesh: ArrayMesh = _baked[key]
+	return mesh.duplicate() if mesh else null
+
+
 ## spec: {w: cells across (2-4), d: cells deep (2-4), floors: 1-3, style: "plaster"|"timber"|"brick", seed}
 func build(spec: Dictionary) -> ArrayMesh:
+	return _once("spec:" + var_to_str(spec), _build.bind(spec))
+
+
+func _build(spec: Dictionary) -> ArrayMesh:
 	if spec.has("tier"):
 		return preload("res://scripts/house_tiers.gd").new(self).build(spec)
 	if spec.has("pieces"):
@@ -356,6 +373,10 @@ func piece_mesh(name: String) -> ArrayMesh:
 ## frame at the realm view, 3 fps; Mac's P0 "super laggy"). Houses and castles (build) get theirs where
 ## the town merges them (realistic.gd _merge).
 func bake_path(path: String) -> ArrayMesh:
+	return _once("path:" + path, _bake_lods.bind(path))
+
+
+func _bake_lods(path: String) -> ArrayMesh:
 	var mesh := _bake([[path, Transform3D()]])
 	var im := ImporterMesh.new()
 	for s in mesh.get_surface_count():
