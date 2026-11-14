@@ -81,7 +81,7 @@ func _draw_marks() -> void:
 			placed.append([p, g])
 	placed.sort_custom(func(x, y): return x[0].y < y[0].y)
 	for e in placed:
-		MapLook.draw_banner(_canvas, e[0], e[1]["house"], int(e[1]["men"]), 1.0, a)
+		MapLook.draw_banner(_canvas, e[0], e[1]["house"], int(e[1]["men"]), 1.0, a, String(e[1].get("captain", "")))
 	# Under the pointer, the standard says whose host it is, its men and where it is bound (the nearest standard
 	# whose pole, flag or plate the pointer is on).
 	var mouse := _canvas.get_local_mouse_position()

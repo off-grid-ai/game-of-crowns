@@ -31,8 +31,10 @@ static func armies(aw: Object) -> Array:
 	for p in aw.realm.get_var(&"houses", [], false):
 		houses[int(p.get("id", -1))] = p.get("house", {})
 	var crown_men := {}  # the crown's own hosts carry their men (bridge hosts.js)
+	var crown_captain := {}  # and the captain of each one's lead company (bridge captains.js)
 	for h in aw.hosts():
 		crown_men[Vector2i(int(h.get("x", 0)), int(h.get("y", 0)))] = int(h.get("men", 0))
+		crown_captain[Vector2i(int(h.get("x", 0)), int(h.get("y", 0)))] = aw.captain(int(h.get("id", -1)))
 	var out := []
 	for g in aw.realm.get_var(&"armies", [], false):
 		var house: Dictionary = houses.get(int(g.get("owner", -1)), {})
@@ -40,10 +42,12 @@ static func armies(aw: Object) -> Array:
 			continue
 		var n := int(g.get("companies", 1))
 		var men := int(g.get("men", 0))  # its companies' men, by kind and health (the bridge's, per company)
+		var captain := ""
 		if house.get("crown", false):
 			var k := Vector2i(roundi(float(g["x"])), roundi(float(g["y"])))
 			men = int(crown_men.get(k, men))
-		out.append({"x": float(g["x"]), "y": float(g["y"]), "companies": n, "men": men, "house": house, "goal": g.get("goal")})
+			captain = String(crown_captain.get(k, ""))
+		out.append({"x": float(g["x"]), "y": float(g["y"]), "companies": n, "men": men, "house": house, "goal": g.get("goal"), "captain": captain})
 	return out
 
 
@@ -130,7 +134,7 @@ static func _men(n: int) -> String:
 
 ## An army's standard standing at `foot` (the ground under it, on screen): a dark pole, a swallow-tailed flag in
 ## the house's colour with its sigil, and how many men march under it.
-static func draw_banner(ci: CanvasItem, foot: Vector2, house: Dictionary, men: int, k := 1.0, alpha := 1.0) -> void:
+static func draw_banner(ci: CanvasItem, foot: Vector2, house: Dictionary, men: int, k := 1.0, alpha := 1.0, captain := "") -> void:
 	var pole := num("marks.banner.pole", 44.0) * k
 	var fw := num("marks.banner.flag_w", 28.0) * k
 	var fh := num("marks.banner.flag_h", 20.0) * k
@@ -166,7 +170,8 @@ static func draw_banner(ci: CanvasItem, foot: Vector2, house: Dictionary, men: i
 	if font == null or men <= 0:
 		return
 	var fs := int(num("marks.banner.font", 12.0) * k)
-	var text := String(Data.value(F, "marks.line.plate", "{men} troops")).replace("{men}", _men(men))
+	# Its captain named on it (War, Every soldier has a name: Battle Brothers' named men, Total War's generals).
+	var text := String(Data.value(F, "marks.line.plate_captain" if captain != "" else "marks.line.plate", "{men} troops")).replace("{men}", _men(men)).replace("{captain}", captain)
 	var w := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 	var plate := Rect2(foot + Vector2(-w * 0.5 - 4.0, 2.0), Vector2(w + 8.0, fs + 4.0))
 	ci.draw_rect(plate, Color(0.06, 0.05, 0.04, 0.78 * alpha))

@@ -5,7 +5,7 @@
     "from": 30.0,
     "to": 42.0,
     "banner": { "pole": 44.0, "flag_w": 28.0, "flag_h": 20.0, "sigil": 16.0, "font": 12 },
-    "line": {"host": "{house}'s host, {men} troops", "bound": ", bound for {to}", "ease": ", at ease", "field": "the field", "plate": "{men} troops"},
+    "line": {"host": "{house}'s host, {men} troops", "bound": ", bound for {to}", "ease": ", at ease", "field": "the field", "plate": "{men} troops", "plate_captain": "Captain {captain} · {men} troops"},
     "siege": { "ring": 20.0, "pulse": 1.4, "color": "#d8382a" },
     "unrest": { "ring": 14.0, "rising": 1.35, "flicker": 0.6, "color": "#f2801f" },
     "route": { "dash": 9.0, "width": 3.0, "arrow": 11.0, "color": "#e6c26a" }

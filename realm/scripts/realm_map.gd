@@ -366,7 +366,7 @@ func _draw_marks() -> void:
 			standing.append([at, g])
 	standing.sort_custom(func(x, y): return x[0].y < y[0].y)
 	for e in standing:
-		MapLook.draw_banner(self, e[0], e[1]["house"], int(e[1]["men"]), k)
+		MapLook.draw_banner(self, e[0], e[1]["house"], int(e[1]["men"]), k, 1.0, String(e[1].get("captain", "")))
 
 
 ## The towns the painting marks in `view` (screen rect), a seat first, then the bigger town: [{town, at, r, seat,
