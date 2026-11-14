@@ -29,9 +29,10 @@ func real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds:
 	# around it, houses along the roads leading in, and a palisade with gates
 	# where the roads come through. Seats get more of everything.
 	tb.terrain.flatten(center, Vector2.ONE * square_r * 2.0, 0.0, tb.terrain.height_at(center.x, center.z), 0.6)
+	await tb._pace()
 	root.set_meta("square_r", square_r)
 	var lots: Array = [[Vector3.ZERO, square_r * 0.9]]
-	tb._plaza(root, center, square_r, size, seat, lots, rng)
+	await tb._plaza(root, center, square_r, size, seat, lots, rng)
 	await tb._pace()
 	# How many houses (data/towns.json density): the crown's seat packs its streets tighter and fuller
 	# (art target 01-town: plots shoulder to shoulder behind the square).

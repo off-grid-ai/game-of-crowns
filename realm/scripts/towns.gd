@@ -92,7 +92,7 @@ static func _shows(was: Dictionary, c: Dictionary) -> bool:
 
 var _queue := {}  # city id -> {c, house, sig, was?}: towns waiting to be built, or a standing one's new pieces to lay
 var _life_queue := {}  # city id -> house: towns whose life wants refreshing
-const BUILD_BUDGET_MS := 12  # per frame: a town's raise waits a frame when it is spent (_pace)
+const BUILD_BUDGET_MS := 4  # per frame: a town's raise waits a frame when it is spent (_pace; fps4: 12 left 30-40 ms steps)
 var _graded_at := 0
 var _raising_since := 0
 var _raised := 0
@@ -1651,6 +1651,7 @@ func _plaza(root: Node3D, center: Vector3, square_r: float, size: int, seat: boo
 			places["well"] = draw_well
 			well = draw_well
 			well_kind = draw_kind
+	await _pace()
 	# The stalls (assets.json market_stall: the kit's stalls, their awnings dyed red, blue, ochre, green, purple
 	# and cream, or the downloaded pack's), in rows on the market's side of the square, each facing its heart,
 	# no two neighbours alike (art target town-b: a square full of stalls and goods). towns.json
@@ -1670,6 +1671,7 @@ func _plaza(root: Node3D, center: Vector3, square_r: float, size: int, seat: boo
 	var n := 0
 	var laid := lay_stalls(mk, stalls, square_r, market_ang, stall_kinds, rng)
 	for i in (laid["stalls"] as Array).size():
+		await _pace()
 		var kind: String = laid["stalls"][i][0]
 		var stall: Vector2 = Real.footprint(kind)
 		var a: float = laid["stalls"][i][1]
@@ -1702,6 +1704,7 @@ func _plaza(root: Node3D, center: Vector3, square_r: float, size: int, seat: boo
 	root.set_meta("stalls_stood", n)
 	if n > 0:
 		places["market"] = fronts / n
+	await _pace()
 	# A wagon drawn up at the end of the inner row, unloading.
 	var spot := wagon_spot(mk, laid, market_ang)
 	var wa := float(spot[0])
@@ -1711,6 +1714,7 @@ func _plaza(root: Node3D, center: Vector3, square_r: float, size: int, seat: boo
 	var wagon_side := -wp.normalized()  # its side toward the square's heart, where it's unloaded
 	var tangent := Vector3(-sin(wa), 0, cos(wa))  # the wagon lies along the row: its length (deep) runs this way, its width out to its side
 	_pile(drop, clutter, wp + wagon_side * wagon_foot.x * 0.5 - tangent * wagon_foot.y * 0.3, tangent, wagon_side, 2, wagon_foot.y * 0.6, rng)
+	await _pace()
 	# The third toward the gate filled with small things (GoC on round 16: bare paving where round 11 had crates,
 	# benches, barrels and sacks): a bench at each of strew_spots with goods stacked at both its ends, squared to it.
 	var sk: Dictionary = mk.get("strew", {})
@@ -2171,10 +2175,13 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 	root.set_meta("reach", reach + 3.0)
 	root.set_meta("trodden", outer)  # where its people walk: no grass grows within
 	terrain.commit_grading()
+	await _pace()
 	terrain.clear_around(center, outer + 0.6)
 	await _pace()
 	fields.edge(root, center, rng)  # the orchards by the roads out (town_fields.gd); the fields are land_use.gd's
+	await _pace()
 	_smoke(root, keep_off + Vector3(0.2, _ground_y(center, keep_off) + 1.2, 0.1))
+	await _pace()
 
 	_kerbs(root, center)  # after the houses and stalls stand: the kerb runs only where the paving meets open ground
 	await _pace()
