@@ -23,6 +23,10 @@ static var terrain: Node3D  # the land (terrain.gd), set by main as the realm lo
 const REACH := 2.4  # how far nearest_clear looks by default
 const RINGS := 6  # rings nearest_clear tries out to its reach, off a walk map
 const SPOKES := 8  # points on each ring: at most RINGS x SPOKES checks a call
+const KEPT_MAX := 20000  # answers nearest_clear keeps before it starts afresh
+
+static var _kept := {}  # tile (Vector2i) -> {[point, radius, reach] (Vector4i, hundredths) -> [answer, its towns' layouts]}
+static var _kept_n := 0
 
 
 ## Whether something reaching `radius` all round may stand at `p` (world): on walkable land and in no footprint.
@@ -92,14 +96,47 @@ static func inside(p: Vector3) -> PackedVector2Array:
 	return PackedVector2Array()
 
 
-## The nearest place to `p` (world) a body reaching `radius` may stand, at the ground's height. In a town with a walk
+## The nearest place to `p` (world) a body reaching `radius` may stand, at the ground's height, kept per tile (the
+## armies' and the townsfolk's one cache): asked afresh once the ground there changes (forget) or a town over it has
+## something set down or taken away (nav_ground.gd layout). In a town with a walk
 ## map, the map's own nearest point (NavigationServer2D: the map is the town's open ground, every footprint cut out).
 ## Elsewhere (the open land, or a town whose map isn't baked), `p` if clear, else the first clear point on SPOKES
 ## points of RINGS rings widening out to `max_dist`: a fixed cost, never a fine search (Mac's 70 s beach ball, 14 Nov:
 ## a company asked to stand in a packed town or the river ran 60 rings x 12 points x 9 reach points). `p` itself,
 ## grounded, when nothing near is clear.
 static func nearest_clear(p: Vector3, radius := 0.0, max_dist := REACH) -> Vector3:
-	for t in TownNav.towns_at(towns, p):
+	var tile := Vector2i(floori(p.x), floori(p.z))
+	var key := Vector4i(roundi(p.x * 100.0), roundi(p.z * 100.0), roundi(radius * 100.0), roundi(max_dist * 100.0))
+	var near: Array = TownNav.towns_at(towns, p)
+	var lay := near.map(func(t: Array) -> Array: return NavGround.layout(t[1]) if is_instance_valid(t[1]) else [])
+	var here: Dictionary = _kept.get(tile, {})
+	var k: Array = here.get(key, [])
+	if not k.is_empty() and k[1] == lay:
+		return k[0]  # asked before, and nothing has been set down or taken away in its towns since
+	var q := _nearest(p, radius, max_dist, near)
+	if _kept_n >= KEPT_MAX:
+		_kept.clear()
+		_kept_n = 0
+		here = {}
+	if not here.has(key):
+		_kept_n += 1
+	here[key] = [q, lay]
+	_kept[tile] = here
+	return q
+
+
+## The ground changed in `area` (terrain.ground_changed, main.gd): the answers kept over it are asked afresh.
+static func forget(area: Rect2) -> void:
+	for x in range(floori(area.position.x), floori(area.end.x) + 1):
+		for z in range(floori(area.position.y), floori(area.end.y) + 1):
+			var t := Vector2i(x, z)
+			if _kept.has(t):
+				_kept_n -= (_kept[t] as Dictionary).size()
+				_kept.erase(t)
+
+
+static func _nearest(p: Vector3, radius: float, max_dist: float, near: Array) -> Vector3:
+	for t in near:
 		var map: RID = TownNav._maps.get(int(t[0]), RID())
 		if map.is_valid() and TownNav.ready(map):
 			var c: Vector3 = (t[1] as Node3D).global_position
