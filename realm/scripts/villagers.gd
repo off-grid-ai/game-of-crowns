@@ -1,5 +1,6 @@
 extends Node3D
 const PerfTools := preload("res://scripts/perf_tools.gd")  # the frame-cost probe
+const Data := preload("res://scripts/data.gd")  # the one loader of realm/data (data.gd)
 const Awareness := preload("res://scripts/awareness.gd")  # a mind's part handed it through the store (assign)
 ## Villagers for the towns near the camera: they walk between home, the square
 ## and the fields, stop to work, and go indoors at night. Purely visual: the
@@ -256,6 +257,7 @@ func _keep_up(id: int) -> void:
 	if not towns.towns.has(id) or not crowds.has(id):
 		return  # the town is gone or being rebuilt (taken, razed): its folk go with it
 	var map: RID = nav.map_for(id, towns.towns[id]["node"])
+	_raid_indoors(id)
 	for a in crowds[id]:
 		var n: Node3D = a["node"]
 		if a.get("map", RID()) != map:
@@ -274,6 +276,19 @@ func _keep_up(id: int) -> void:
 				a["route"] = nav.path(map, nav.closest(map, Vector2(n.position.x - c.x, n.position.z - c.z)), nav.closest(map, route[route.size() - 1]))
 		if PackedVector2Array(a["route"]).is_empty():
 			n.position.y = terrain.height_at(n.position.x, n.position.z)
+
+
+## Raiders at the town (its scope's raid, awareness.gd): everyone out takes fright and runs (their mind's danger),
+## and is indoors within towns.json raid.indoors seconds, out of sight until the raiders go; then they come out.
+func _raid_indoors(id: int) -> void:
+	var raid := Engine.has_meta("awareness") and bool(Engine.get_meta("awareness").town(id).get_var(&"raid", false, false))
+	var within: Array = Data.value("towns", "raid.indoors", [2.0, 5.0])
+	for a in crowds[id]:
+		if raid and not a.has("in_at"):
+			a["in_at"] = Time.get_ticks_msec() + int(1000.0 * (a["rng"] as RandomNumberGenerator).randf_range(float(within[0]), float(within[1])))
+			_flee(a, a["center"])
+		elif not raid:
+			a.erase("in_at")
 
 
 ## A house's banner colour (main.gd's houses, by the player who holds the town); none when unknown.
@@ -561,7 +576,7 @@ func _step(a: Dictionary, delta: float, _t: float) -> void:
 	if block != a["block"]:
 		a["block"] = block
 		a["wait"] = minf(a["wait"], a["rng"].randf_range(0.0, 3.0))
-	n.visible = a["block"] != "night" or (a["role"] == "tavern" and a["phase"] < 2.0)
+	n.visible = (a["block"] != "night" or (a["role"] == "tavern" and a["phase"] < 2.0)) and Time.get_ticks_msec() < int(a.get("in_at", 1 << 62))
 	var center: Vector3 = a["center"]
 	var route: PackedVector2Array = a["route"]
 	var here := Vector2(n.position.x - center.x, n.position.z - center.z)

@@ -181,6 +181,7 @@ static func states(c: Dictionary, town: int) -> Array:
 		bb.set_var(StringName(k), facts[k])
 	if Engine.has_meta("awareness") and town >= 0:
 		bb.set_var(&"levy", bool(Engine.get_meta("awareness").town(town).get_var(&"levy", false, false)))  # a scene fact: the store's
+		bb.set_var(&"raid", bool(Engine.get_meta("awareness").town(town).get_var(&"raid", false, false)))  # raiders at its edge: the store's
 	return states_bb(bb)
 
 
@@ -214,6 +215,8 @@ static func states_bb(bb: Blackboard) -> Array:
 		out.append("levy")
 	if bool(bb.get_var(&"at_war", false, false)):
 		out.append("war")
+	if bool(bb.get_var(&"raid", false, false)):
+		out.append("raid")  # raiders at its edge (awareness.gd _raided): folk indoors, the alarm bell, houses burning
 	if bool(bb.get_var(&"granary_low", false, false)):
 		out.append("low")
 	if bool(bb.get_var(&"prosperity", false, false)):

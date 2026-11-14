@@ -224,6 +224,7 @@ func _reduce_towns(world: Dictionary) -> void:
 	var players := _players(world)
 	var crown_id := _crown_id(players)
 	var now_scenes: Array = world.get("scenes", [])
+	var raided := _raided(world)
 	var ids: Array[int] = []
 	for c in world.get("cities", []):
 		var id := int(c["id"])
@@ -237,9 +238,28 @@ func _reduce_towns(world: Dictionary) -> void:
 		# A levy raised here: the muster scene at the town this season or last (bridge crown.js levy).
 		bb.set_var(&"levy", now_scenes.any(func(s): return String(s.get("kind", "")) == "muster" and int(s.get("city", -2)) == id and int(s.get("turn", turn)) >= turn - 1))
 		bb.set_var(&"favour", favour)
+		bb.set_var(&"raid", raided.has(id))  # raiders at its edge (towns.json raid.near): its folk go in, the bell rings
 		bb.set_var(&"crown_town", int(c.get("owner", -1)) == crown_id)
 		bb.set_var(&"house", String((owner.get("house", {}) as Dictionary).get("name", "")))
 	realm.set_var(&"towns", ids)
+
+
+## The towns raiders are at (the raids slice, bridge raids.js): a raid's goal town with any of its men within
+## towns.json raid.near tiles of it. {town id: true}.
+static func _raided(world: Dictionary) -> Dictionary:
+	var near := float(preload("res://scripts/data.gd").value("towns", "raid.near", 3))
+	var at := {}
+	for u in world.get("units", []):
+		at[int(u.get("id", -1))] = Vector2(float(u.get("x", 0)), float(u.get("y", 0)))
+	var out := {}
+	for r in world.get("raids", []) if world.get("raids") is Array else []:
+		var goal := Vector2(float(r.get("x", 0)), float(r.get("y", 0)))
+		for id in r.get("units", []):
+			var p: Variant = at.get(int(id))
+			if p != null and maxf(absf((p as Vector2).x - goal.x), absf((p as Vector2).y - goal.y)) <= near:
+				out[int(r.get("goal", -1))] = true
+				break
+	return out
 
 
 ## A town's own facts as its scope keeps them, from one /world city: the one translation (the reducer above; and

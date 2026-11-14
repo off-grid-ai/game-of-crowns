@@ -234,7 +234,7 @@ static func open_setts_m2(root: Node3D) -> float:
 
 
 ## Whether a row's conditions hold: any of `needs`, none of `not`, the square's own life (`square`: a market
-## town big enough, or the crown's seat, and no riot), the crown's seat (`crown`).
+## town big enough, or the crown's seat, and none of director.square_off: a riot, a raid), the crown's seat (`crown`).
 func _meets(row: Dictionary, root: Node3D, states: Array, size: int) -> bool:
 	var needs: Array = row.get("needs", [])
 	if not needs.is_empty() and not needs.any(func(n): return n in states):
@@ -245,7 +245,7 @@ func _meets(row: Dictionary, root: Node3D, states: Array, size: int) -> bool:
 	if bool(row.get("crown", false)) and not crown:
 		return false
 	if bool(row.get("square", false)):
-		if "riot" in states or not bool(Data.value("crowd", "on", true)):
+		if (_d.get("director", {}).get("square_off", ["riot"]) as Array).any(func(s): return s in states) or not bool(Data.value("crowd", "on", true)):
 			return false
 		if size < int(_d.get("director", {}).get("square_size", 6)) and not crown:
 			return false
