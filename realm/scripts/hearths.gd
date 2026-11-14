@@ -8,6 +8,7 @@ extends Node
 ## Knobs: realm/data/hearths.json. --hearths=off leaves every chimney as built.
 const Data := preload("res://scripts/data.gd")  # the one loader of realm/data (data.gd)
 const WeatherFx := preload("res://scripts/weather_fx.gd")
+const Works := preload("res://scripts/works.gd")  # the village clock (Works.hour)
 
 var main: Node
 var _d := {"on": true, "every_sec": 1.0, "door_match": 0.35}
@@ -24,6 +25,7 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	_far()
 	_wait -= delta
 	if _wait > 0.0 or not bool(_d.get("on", true)) or main.towns == null or main.villagers == null:
 		return
@@ -53,10 +55,10 @@ func _process(delta: float) -> void:
 			if Vector2((at as Vector3).x - door.x, (at as Vector3).z - door.z).length() < float(_d.get("door_match", 0.35)):
 				lit = true
 				break
-		# A cooking fire burns whoever's in (01-town: smoke over the roofs by day): hearths.json cooking, a share of the
-		# town's hearths chosen by doorstep, so the same houses keep theirs.
+		# A cooking fire burns whoever's in (01-town: thin wisps from a few chimneys): hearths.json cooking, a share of
+		# the town's hearths chosen by doorstep, so the same houses keep theirs; more at mealtimes, few between.
 		var pick := float(absi(hash(Vector2i(roundi(door.x * 100.0), roundi(door.z * 100.0)))) % 1000) / 1000.0
-		if pick < float(_d.get("cooking", 0.0)):
+		if pick < _cooking_share():
 			lit = true
 		if not hungry_town.has(id):
 			hungry_town[id] = aw != null and String(aw.town(id).get_var(&"mood", "", false)) == "hunger"
@@ -66,10 +68,47 @@ func _process(delta: float) -> void:
 			if pick >= float(hg.get("share", 0.5)):
 				lit = false  # nothing to cook: this hearth stays cold
 			thin = float(hg.get("thin", 0.35))
-		if not is_equal_approx(smoke.amount_ratio, thin):
-			smoke.amount_ratio = thin
+		smoke.set_meta("thin", thin)  # its share of the smoke; _far thins it again with the lens's distance
 		if smoke.emitting != lit:
 			smoke.emitting = lit
+
+
+## The share of a town's hearths cooking now (hearths.json cooking: at_meals inside one of its meals [from, to] hours
+## on the village clock, between at other hours).
+func _cooking_share() -> float:
+	var c: Dictionary = _d.get("cooking", {})
+	var h := Works.hour()
+	for m in c.get("meals", []):
+		var a := float(m[0])
+		var b := float(m[1])
+		if (h >= a and h < b) if a <= b else (h >= a or h < b):
+			return float(c.get("at_meals", 0.3))
+	return float(c.get("between", 0.1))
+
+
+## Smoke thins as the lens draws back (hearths.json far; g28 landuse: from the drawn-back view every chimney threw a
+## long thick streak and together they veiled half the roofs, where 01-town has a few pale wisps): past `near` world
+## units from the camera each chimney sends fewer puffs, down to `amount` of them at `far`; the one smoke material
+## fades to `alpha` of its look by the nearest chimneys' distance, as the camera sees the town.
+func _far() -> void:
+	var fr: Dictionary = _d.get("far", {})
+	var cam := get_viewport().get_camera_3d() if is_inside_tree() else null
+	if fr.is_empty() or cam == null or _styled.is_empty():
+		return
+	var near := float(fr.get("near", 4.0))
+	var span := maxf(float(fr.get("far", 10.0)) - near, 0.01)
+	var least := INF
+	for r in _styled:
+		var s: GPUParticles3D = r.get_ref()
+		if s == null or not s.is_inside_tree():
+			continue
+		var k := clampf((cam.global_position.distance_to(s.global_position) - near) / span, 0.0, 1.0)
+		least = minf(least, k)
+		var want := float(s.get_meta("thin", 1.0)) * lerpf(1.0, float(fr.get("amount", 0.2)), k)
+		if absf(s.amount_ratio - want) > 0.02:
+			s.amount_ratio = want
+	if _mat and least < INF:
+		_mat.albedo_color.a = lerpf(1.0, float(fr.get("alpha", 0.4)), least)
 
 
 # --- how the smoke looks (batch 8b look2: bright white blobs; hearths.json look) ----------------
