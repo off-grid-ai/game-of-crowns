@@ -9,6 +9,7 @@ const MOVED := [
 	["anim_lod", "NEAR", "people", "lod.near"],
 	["anim_lod", "STRIDE", "people", "lod.stride"],
 	["anim_lod", "DECIDE_S", "people", "lod.decide_s"],
+	["anim_lod", "MIND_BUDGET_MS", "people", "lod.mind_budget_ms"],
 	["particles", "FAR", "fire", "particles_far"],
 	["army_assault", "WAVE", "siege", "assault.wave"],
 	["army_assault", "FALL", "siege", "assault.fall"],

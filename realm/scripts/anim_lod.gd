@@ -21,6 +21,11 @@ const PerfTools := preload("res://scripts/perf_tools.gd")  # the frame-cost prob
 static var NEAR: float = preload("res://scripts/data.gd").num("people", "lod.near", 6.0)  # world units: closer than this, every frame (people.json lod.near)
 static var STRIDE: int = int(preload("res://scripts/data.gd").num("people", "lod.stride", 3))  # further off, one frame in this many (people.json lod.stride)
 static var DECIDE_S: float = preload("res://scripts/data.gd").num("people", "lod.decide_s", 30.0)  # game seconds between a person's decisions (people.json lod.decide_s)
+## Milliseconds of a frame the minds may take (people.json lod.mind_budget_ms): minds due past it wait for the next
+## frame, which starts where this one stopped (round robin), so a crowd arriving at once never holds a frame
+## (Mac: "too many long running operations"). A mind kept waiting is given all the time it is owed.
+static var MIND_BUDGET_MS: float = preload("res://scripts/data.gd").num("people", "lod.mind_budget_ms", 3.0)
+var _turn := 0  # where in _minds the next frame's thinking starts
 const People = preload("res://scripts/people.gd")
 
 static var _players: Array[WeakRef] = []
@@ -151,7 +156,13 @@ func _animate(delta: float, vp: Viewport, cam: Camera3D) -> void:
 
 func _think(delta: float, vp: Viewport, cam: Camera3D) -> void:
 	var keep: Array[WeakRef] = []
-	for w in _minds:
+	var count := _minds.size()
+	var start := _turn % maxi(count, 1)
+	var until := Time.get_ticks_usec() + int(MIND_BUDGET_MS * 1000.0)
+	var spent := false
+	for k in count:
+		var i := (start + k) % count
+		var w: WeakRef = _minds[i]
 		var m: BTPlayer = w.get_ref()
 		if m == null:
 			continue
@@ -162,18 +173,24 @@ func _think(delta: float, vp: Viewport, cam: Camera3D) -> void:
 		if body == null or not m.is_inside_tree() or not m.active or not m.can_process():
 			_mind_owed.erase(id)
 			continue
-		if not _mind_owed.has(id):
-			# New: decides now, then on a phase of its own (its id spread over DECIDE_S).
-			m.update(delta)
-			thought += 1
-			_mind_owed[id] = fposmod(float(id) * 0.6180339, 1.0) * DECIDE_S
+		var fresh := not _mind_owed.has(id)
+		var owed: float = delta if fresh else float(_mind_owed[id]) + delta
+		if not fresh and owed < DECIDE_S:
+			_mind_owed[id] = owed
 			continue
-		var owed: float = _mind_owed[id] + delta
-		if owed >= DECIDE_S:
-			m.update(owed)
-			thought += 1
-			owed = 0.0
-		_mind_owed[id] = owed
+		if not spent and Time.get_ticks_usec() > until:
+			spent = true
+			_turn = keep.size() - 1  # the next frame starts with this one
+		if spent:
+			if not fresh:
+				_mind_owed[id] = owed  # still due: decides next frame with all it is owed
+			continue
+		m.update(owed)
+		thought += 1
+		# New: then on a phase of its own (its id spread over DECIDE_S); else from now.
+		_mind_owed[id] = fposmod(float(id) * 0.6180339, 1.0) * DECIDE_S if fresh else 0.0
+	if not spent:
+		_turn = 0
 	_minds = keep
 
 

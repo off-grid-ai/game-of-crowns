@@ -78,7 +78,7 @@
     "palettes": { "child": ["house", "house", "house", "house", [0.94, 0.9, 0.8], [0.96, 0.94, 0.88]], "rich": [[0.56, 0.1, 0.12], [0.14, 0.24, 0.5], [0.46, 0.1, 0.16], [0.5, 0.08, 0.1], [0.36, 0.08, 0.14]] },
     "rank": { "crown": { "dyed": 0.85, "house": 0.65 }, "seat": { "dyed": 0.6, "house": 0.5 }, "town": { "dyed": 0.45, "house": 0.4 }, "village": { "dyed": 0.25, "house": 0.2 } }
   },
-  "lod": {"near": 6.0, "stride": 3, "decide_s": 30.0},
+  "lod": {"near": 6.0, "stride": 3, "decide_s": 30.0, "mind_budget_ms": 3.0},
   "_seen_to": "seen_to: world units beyond which a person isn't drawn or animated (a few pixels tall). near_fade: within gone of the lens a person is gone, beyond solid fully there (about 0.7 m and 1.5 m).",
   "seen_to": 18.0,
   "near_fade": {"gone": 0.08, "solid": 0.18},
