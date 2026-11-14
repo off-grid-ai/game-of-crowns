@@ -33,6 +33,7 @@ func _try_look(look: String) -> void:
 			"notrees": _no_trees = true
 			"nosea": _no_sea = true
 			"noinstancer": _no_instancer = true
+			"noparticles": _no_particles = true
 			"profile": main._shot["profile"] = true
 			"cycle": _cycle = []  # starts once the towns are built; see _cycle_step
 			"cyclevis":  # the same, hiding each system rather than pausing it: what each one draws
@@ -268,6 +269,8 @@ var _no_instancer := false  # test: Terrain3D's instancer switched off
 var _no_sea := false  # test: hide the sea
 var _no_trees := false  # test: hide what Terrain3D's instancer draws
 var _no_forest := false  # GOC_LOOK=noforest: the woods hidden, to measure what they cost
+var _no_particles := false  # GOC_LOOK=noparticles: every particle system stopped and hidden, to measure what the GPU spends simulating them
+var _particles_at := 0.0
 ## GOC_LOOK=cycle: once the realm is built, each system in turn stops processing
 ## for a few seconds while script time and frame rate are averaged, so the
 ## frame's cost can be pinned on the system that carries it.
@@ -288,6 +291,9 @@ func _cycle_step(delta: float) -> void:
 		_cycle = [["nothing", null], ["villagers", main.villagers], ["units", main.units], ["scenes", main.scenes], ["towns", main.towns], ["labels", main.labels], ["director", main.director], ["ui", main.ui], ["sound", main.sound], ["countryside", main.countryside], ["roads", main.roads], ["terrain", main.terrain], ["bridge", main.bridge], ["anim", main.get_node_or_null("AnimLOD")], ["chatter", main.get_node_or_null("Chatter")], ["control", main.control], ["awareness", main.get_node_or_null("Awareness")], ["traffic", main.get_node_or_null("Traffic")]]
 		if _cycle_vis:
 			_cycle = [["nothing", null], ["villagers", main.villagers], ["units", main.units], ["scenes", main.scenes], ["towns", main.towns], ["countryside", main.countryside], ["roads", main.roads], ["forest", main.terrain.forest], ["ground", main.terrain.land3d], ["rivers", main.terrain.get_node_or_null("Rivers")], ["vegetation", main.terrain.vegetation], ["sea", main.terrain.get_node_or_null("Sea")], ["seafloor", main.terrain.get_node_or_null("SeaFloor")], ["grass", main.terrain.get_node_or_null("GrassBatches")], ["wear", main.terrain.get_node_or_null("Wear")], ["terrain", main.terrain]]
+			for c in main.terrain.get_children():  # every child of the ground, named or not: hiding all of it doubles fps
+				if c is Node3D and not _cycle.any(func(e): return e[1] == c):
+					_cycle.insert(_cycle.size() - 1, ["t:" + String(c.name), c])
 		_cycle_i = 0
 		_cycle_t = 0.0
 	_cycle_t += delta
@@ -328,6 +334,11 @@ func _cycle_step(delta: float) -> void:
 ## The GOC_LOOK test switches, each frame: the woods, the instancer, the sea or
 ## the trees hidden, to measure what they cost.
 func _test_hides() -> void:
+	if _no_particles and Time.get_ticks_msec() * 0.001 > _particles_at:
+		_particles_at = Time.get_ticks_msec() * 0.001 + 5.0  # new fires and hearths come and go: every 5 s
+		for p in main.get_tree().root.find_children("*", "GPUParticles3D", true, false):
+			(p as GPUParticles3D).emitting = false
+			(p as GPUParticles3D).visible = false
 	if _no_forest and main.terrain.forest:
 		main.terrain.forest.visible = false
 	if _no_instancer and main.terrain.land3d and main.terrain.land3d.land and main.terrain.land3d.land.instancer_mode != 0:
