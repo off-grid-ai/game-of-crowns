@@ -182,6 +182,33 @@ func _layer(mesh: Mesh, xfs: Array, begin: float, end: float, shadows: bool, tie
 	add_child(mmi)
 
 
+## What the woods draw now, by tier (perf_tools.gd's probe line, GOC_PERF_PROBE): the batches in their distance band
+## and on screen, their trees, and the vertices of a tree's finest level.
+func census(cam: Camera3D) -> String:
+	var by := {}
+	for mmi in get_children():
+		if not (mmi is MultiMeshInstance3D):
+			continue
+		var tier := String(mmi.get_meta("tier", "?"))
+		var row: Array = by.get(tier, [0, 0, 0, 0])
+		row[0] += 1
+		var box: AABB = mmi.global_transform * mmi.get_aabb()
+		var d := cam.global_position.distance_to(box.get_center())
+		if d >= mmi.visibility_range_begin and (mmi.visibility_range_end <= 0.0 or d <= mmi.visibility_range_end) and cam.is_position_in_frustum(box.get_center()):
+			var mm: MultiMesh = mmi.multimesh
+			row[1] += 1
+			row[2] += mm.instance_count
+			var v := 0
+			for si in mm.mesh.get_surface_count():
+				v += mm.mesh.surface_get_array_len(si)
+			row[3] = maxi(row[3], v)
+		by[tier] = row
+	var out := PackedStringArray()
+	for t in by:
+		out.append("%s: %d/%d batches, %d trees, <=%d verts a tree" % [t, by[t][1], by[t][0], by[t][2], by[t][3]])
+	return ", ".join(out)
+
+
 static var DEAD_SHARE: float = Data.num("assets", "woods.kit.dead.share", 0.1)
 ## The leaf materials' names: Quaternius Stylized Nature's (Leaves_NormalTree, Leaves_Pine) and the Meshy set's split
 ## (MI_Leaves, meshy_import.py). Everything else on a tree is bark and keeps its paint through the seasons.

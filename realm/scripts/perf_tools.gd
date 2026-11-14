@@ -211,6 +211,8 @@ func _log_perf(delta: float) -> void:
 			jobs.append("%s:%.1fms/%d" % [k, tally[k][0] / 1000.0, tally[k][1]])
 		f.store_line("    jobs (10 s) " + ", ".join(jobs))
 		f.store_line("    engine " + _engine_counts())
+		if main.terrain and main.terrain.forest and main.get_viewport().get_camera_3d():
+			f.store_line("    woods " + main.terrain.forest.census(main.get_viewport().get_camera_3d()))  # forest.gd: tiers in range and on screen
 	if probing and not ring_clips.is_empty():
 		var by := ring_clips.keys()
 		by.sort_custom(func(x, y): return int(ring_clips[x]) > int(ring_clips[y]))
