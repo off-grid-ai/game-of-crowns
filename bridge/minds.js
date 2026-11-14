@@ -81,6 +81,7 @@ const MOVES = {
   unrest: { anger: 0.15 }, raid: { fear: 0.35, anger: 0.2 }, outlaws: { fear: 0.25 }, death: { grief: 0.15 }, marriage: { joy: 0.2 },
   feast: { joy: 0.35 }, bounty: { joy: 0.35, faith: 0.15, hunger: -0.3 }, grain: { hunger: -0.3, joy: 0.15 }, faith: { faith: 0.25 },
   peace: { joy: 0.2, fear: -0.15 }, war: { fear: 0.3 }, visit: { joy: 0.15 }, dread: { fear: 0.3, anger: 0.15 },
+  promise_kept: { joy: 0.25, anger: -0.15 }, promise_broken: { anger: 0.4, fear: 0.1 },  // the King's word to their lord (promises.js)
 };
 
 const NEAR = { here: 1, lands: 0.5, realm: 0.22 };

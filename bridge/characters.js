@@ -16,6 +16,7 @@ import { decide } from "./claude.js";
 
 import { calendar, SEASONS_PER_YEAR, yearsIn, isYearEnd } from "./calendar.js";
 import { ANSWERS } from "./petitions.js";
+import { PROMISES as PR } from "./promises.js";
 import { heir as royalHeir, MATCH as RM, REGENCY, isRegency } from "./royals.js";
 import { BANDS } from "./favour.js";
 import * as names from "./names.js";
@@ -862,8 +863,10 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
       // Each answer carries its favour as data: the hint, the weighs and the ruling (petitions.js) read the same numbers.
       const options = [{ id: "grant", label: "The crown pays (150 gold)", hint: `${c.house} +15`, cost: 150, favour: { [c.playerId]: 15 } }];
       if (donor) options.push({ id: "order", label: `Order ${donorHouse} to feed them`, hint: `Costs you nothing · ${donorHouse} −20 · ${c.house} +10`, favour: { [donor.id]: -20, [c.playerId]: 10 } });
+      // Or a promise (promises.js): grain before the season's out, by a Royal Relief in their lands; broken, it cuts deeper.
+      options.push({ id: "pledge", label: `Promise relief within ${PR.grain.due} seasons`, hint: `${c.house} +${PR.grain.made} now · a Royal Relief in their lands in time, or ${c.house} ${PR.grain.broken}`, favour: { [c.playerId]: PR.grain.made } });
       options.push({ id: "refuse", label: "Let them starve", hint: `${c.house} −15 · their bannermen's loyalty wavers`, favour: { [c.playerId]: -15 } });
-      return { kind: "grain", donor: donor?.id, text: `${c.name} of ${c.house}: "${hungry} of my towns have empty granaries. Children are dying in the streets of my lands. I beg the crown for grain."`, facts: facts(c.playerId, donor?.id), options };
+      return { kind: "grain", donor: donor?.id, city: myTowns.find((x) => x.famine)?.id, text: `${c.name} of ${c.house}: "${hungry} of my towns have empty granaries. Children are dying in the streets of my lands. I beg the crown for grain."`, facts: facts(c.playerId, donor?.id), options };
     } });
 
     // A match that needs the King's blessing.
@@ -1011,6 +1014,7 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
       return { kind: "ambition", city: t.id, holder: t.pid, text: `${c.name} of ${c.house}: "${t.name} should be ours, Your Grace, and ${t.house} holds it badly. Give me your leave and I will take it."`, facts: facts(c.playerId, t.pid), options: [
         { id: "back", label: `Give ${c.name} leave to take ${t.name}`, hint: `${c.house} +${AMB.plea.back.him} · ${t.house} ${AMB.plea.back.holder}, and war between them`, favour: { [c.playerId]: AMB.plea.back.him, [t.pid]: AMB.plea.back.holder } },
         { id: "forbid", label: "Forbid it", hint: `${c.house} ${AMB.plea.forbid.him} · ${t.house} +${AMB.plea.forbid.holder}`, favour: { [c.playerId]: AMB.plea.forbid.him, [t.pid]: AMB.plea.forbid.holder } },
+        { id: "pledge", label: `Promise him ${t.name} within ${Math.round(PR.land.due / 4)} years`, hint: `${c.house} +${PR.land.made} now · ${t.name} theirs in time, or ${c.house} ${PR.land.broken}`, favour: { [c.playerId]: PR.land.made } },
         { id: "promise", label: `Promise him something smaller (${AMB.plea.promise.cost} gold)`, hint: `${c.house} +${AMB.plea.promise.him} · the want stays`, cost: AMB.plea.promise.cost, favour: { [c.playerId]: AMB.plea.promise.him } },
       ] };
     } });

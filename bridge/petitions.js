@@ -48,7 +48,7 @@ export const ANSWERS = {
     }
   },
   // A lord's want brought to court (characters.js ambitionOf: land or power, a town another great house holds).
-  ambition({ p, c, option, out, world }) {
+  ambition({ p, c, opt, option, out, world }) {
     const A = JSON.parse(fs.readFileSync(new URL("./data/ambitions.json", import.meta.url), "utf8")).plea;
     const town = cityName(p.city);
     const holder = houseFor(world.players.find((x) => x.id === p.holder) ?? {}).name;
@@ -63,6 +63,12 @@ export const ANSWERS = {
       out.favour[c.playerId] = A.forbid.him; out.favour[p.holder] = A.forbid.holder;
       out.text = `The King forbids ${c.house} to touch ${town}. ${c.name} bows, and does not forget.`;
       this.remember(c.id, `The King forbade me ${town}.`);
+    }
+    if (option === "pledge") {
+      Object.assign(out.favour, opt.favour ?? {});
+      this.onPromise?.({ kind: "land", text: `${town} for ${c.house}`, house: c.playerId, lord: c.id, town: p.city, turn: world.turn });
+      out.text = `The King gives ${c.name} his word: ${town} will be ${c.house}'s. ${holder} is not told, yet.`;
+      this.remember(c.id, `The King promised me ${town}.`);
     }
     if (option === "promise") {
       out.favour[c.playerId] = A.promise.him;
@@ -95,12 +101,17 @@ export const ANSWERS = {
   grain({ p, c, opt, option, out, gold, world }) {
     if (option === "grant") { Object.assign(out.favour, opt?.favour ?? { [c.playerId]: 15 }); gold(c.playerId, 150); out.text = say("grain.grant", { house: c.house }, `The crown sends grain to ${c.house}.`); }
     if (option === "order") { Object.assign(out.favour, opt?.favour ?? { [p.donor]: -20, [c.playerId]: 10 }); gold(p.donor, -150); gold(c.playerId, 150); out.text = say("grain.order", { donor: houseFor(world.players.find((x) => x.id === p.donor)).name, house: c.house }, `By royal command, ${houseFor(world.players.find((x) => x.id === p.donor)).name} feeds the starving of ${c.house}, and resents every sack.`); }
+    if (option === "pledge") {
+      Object.assign(out.favour, opt?.favour ?? {});
+      this.onPromise?.({ kind: "grain", text: `relief for ${c.house}'s hungry towns`, house: c.playerId, lord: c.id, town: p.city ?? null, turn: world.turn });
+      out.text = `The King gives ${c.name} his word: relief will come to ${c.house}'s lands before the season turns twice.`;
+    }
     if (option === "refuse") {
       Object.assign(out.favour, opt?.favour ?? { [c.playerId]: -15 });
       for (const b of this.alive().filter((x) => x.rank === "bannerman" && x.playerId === c.playerId)) b.loyalty = Math.max(0, b.loyalty - 15);
       out.text = say("grain.refuse", { house: c.house }, `The King refuses grain. In ${c.house}'s lands, the bannermen begin to talk.`);
     }
-    this.remember(c.id, option === "refuse" ? "The King let my people starve." : "The King fed my people when they starved.");
+    if (option !== "pledge") this.remember(c.id, option === "refuse" ? "The King let my people starve." : "The King fed my people when they starved.");
   },
   claim({ p, c, opt, option, out, gold, world }) {
     const k = p.claim;
