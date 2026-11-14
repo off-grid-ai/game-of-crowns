@@ -53,7 +53,7 @@ export function rule(ctx, id, option) {
     const pc = petition.city != null ? world.cities.find((x) => x.id === Number(petition.city)) : null;
     deed(tag ?? { axes: {} }, { favour: out.favour, place: pc ? cityName(pc.id) : (court.people?.[petition.from]?.house ?? "") });
   }
-  if (petition) Royals.ruled(ctx, petition.kind, option);  // against his own nature, it weighs on the King (royals.js)
+  if (petition) Royals.ruled(ctx, petition.kind === "arc" ? petition.arc : petition.kind, option);  // against his own nature, it weighs on the King (royals.js)
   // The one who asked remembers what the King answered, in their own words.
   if (petition && asked) court.remember(petition.from, `I went before the King, and he ruled: ${String(asked.label ?? asked.id).toLowerCase()}.`);
   const crownNow = crownOf(world);

@@ -11,6 +11,7 @@
 
 import { crownOf } from "./realm.js";
 import * as Rivals from "./rivals.js";
+import * as Royals from "./royals.js";
 import * as Contagion from "./contagion.js";
 import * as Lua from "./lua.js";
 import fs from "node:fs";
@@ -113,6 +114,7 @@ function draw(ctx, e, turn, resting) {
     if (c.deck === "rival") Object.assign(sub, Rivals.words(ctx.meta));
     let w = c.weight ?? 1;
     if (!resting && S.boost[c.deck]) w *= S.boost[c.deck];
+    if (Royals.focusDecks(ctx.meta).includes(c.deck)) w *= Royals.FOCUS_BOOST;  // the King's focus draws its matters (royals.js)
     bag.push([c, sub, w]);
   }
   const fresh = bag.filter(([c]) => !recent.includes(c.deck));
@@ -190,6 +192,7 @@ export function answer(ctx, i) {
   // A text written as a list of wordings: one not heard lately (say.js), the same in the chronicle and the reply.
   const said = wording(`event:${card.id}:${Number(i)}`, ch.text);
   apply(ctx, { ...ch, text: said }, e.up.subject, turn);
+  Royals.ruled(ctx, `event:${card.id}`, Number(i), ch.against ?? []);  // a choice against his focus weighs on him (royals.js)
   if (ch.later) e.later.push({ turn: turn + (ch.later.in ?? 2), effect: { ...ch.later, text: wording(`event:${card.id}:later:${Number(i)}`, ch.later.text) }, subject: e.up.subject });
   const told = fill(said ?? ch.label, e.up.subject);
   meta.lastRuling = told;  // the save card's line (reign.js saveCard)

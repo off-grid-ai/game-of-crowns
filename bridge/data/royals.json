@@ -1,29 +1,282 @@
 {
  "_": "The King's own household and the crown's succession (royals.js; CK3's dynasty and its heirs, Crusader Kings' 'the game goes on as your heir'). The King, his consort and their children age a year at each year's end; the King dies by his age (death: [from age, chance a year], first match), children are born while the consort is young enough, a King of age without a consort weds (wed.chance a year), and a dead or abdicating King's crown passes by law to the eldest son, else the eldest daughter (male-preference). A King under majority reigns through a regency, and each great house cools by minor.favour. With no heir of his blood the reign ends (outcome heirless). The King may give up the crown to an heir of abdicate.age (POST /abdicate).",
- "king": { "age": [26, 38] },
- "consort": { "younger": [0, 8] },
- "children": { "count": [1, 3], "age": [1, 14], "gap": [1, 4] },
- "birth": { "chance": 0.3, "until": 42, "most": 6 },
- "death": [[75, 0.3], [65, 0.12], [55, 0.05], [40, 0.02], [0, 0.006]],
+ "king": {
+  "age": [
+   26,
+   38
+  ]
+ },
+ "consort": {
+  "younger": [
+   0,
+   8
+  ]
+ },
+ "children": {
+  "count": [
+   1,
+   3
+  ],
+  "age": [
+   1,
+   14
+  ],
+  "gap": [
+   1,
+   4
+  ]
+ },
+ "birth": {
+  "chance": 0.3,
+  "until": 42,
+  "most": 6
+ },
+ "death": [
+  [
+   75,
+   0.3
+  ],
+  [
+   65,
+   0.12
+  ],
+  [
+   55,
+   0.05
+  ],
+  [
+   40,
+   0.02
+  ],
+  [
+   0,
+   0.006
+  ]
+ ],
  "childDeath": 0.02,
- "wed": { "chance": 0.5 },
+ "wed": {
+  "chance": 0.5
+ },
  "law": "male-preference",
  "majority": 16,
- "abdicate": { "age": 16 },
- "traits": { "_": "The royals' traits (royals.js; CK3's traits as heirlooms): a child takes each parent's trait by inherit, the rest by chance (characters.js TRAITS); a consort from a great house brings its own. At a crowning each great lord warms by like for every trait he shares with the new King and cools by unlike for every trait of the King's that is the opposite of his (opposed pairs).", "inherit": 0.5, "like": 6, "unlike": 6, "opposed": [["brave", "craven"], ["honourable", "cunning"], ["generous", "greedy"], ["patient", "wrathful"], ["content", "ambitious"], ["just", "vengeful"], ["pious", "cunning"]] },
- "stress": { "_": "Personality with teeth (royals.js ruled; CK3's stress): a court ruling against the King's own traits (against: trait -> [petition kind.answer]) adds per to his stress; over high the chronicle says it once and every point over adds risk to his yearly chance of death; it eases by ease a year.", "per": 1, "high": 3, "risk": 0.02, "ease": 1,
-   "against": {
-    "generous": ["grain.refuse", "grain.order"], "greedy": ["grain.grant"], "brave": ["siege.abandon"], "craven": ["siege.relieve"],
-    "honourable": ["claim.confirm", "royalwed.refuse"], "just": ["claim.seize", "justice.other"], "pious": ["faith.silence"], "patient": ["ambition.back"],
-    "content": ["claim.seize", "ambition.back"], "ambitious": ["ambition.forbid"], "vengeful": ["justice.peace"], "wrathful": ["justice.peace", "faith.ignore"],
-    "paranoid": ["royalwed.wed"], "proud": ["grain.pledge", "ambition.pledge"]
-   } },
- "rest": { "_": "How the King eases his stress (royals.js rest, POST /king/rest {kind}; CK3's hunts, feasts and pilgrimages): each kind once in every seasons, for its gold from the crown's chest; ease is taken off his stress. hunt: risk, his chance of a fall from the saddle (a wound that adds to his yearly death risk for a year, wound). feast: every great house warms by favour. pilgrimage: the realm's pious lords warm by pious, and the King is away for away seasons (the court still sits under the Hand; noted only).",
-   "hunt": { "gold": 40, "ease": 2, "seasons": 4, "risk": 0.05, "wound": 0.05, "words": "The King rides out to hunt in the royal forest." },
-   "feast": { "gold": 120, "ease": 2, "seasons": 4, "favour": 3, "words": "The King holds a feast in the great hall. Musicians, roast swan, the lords' wives in their best." },
-   "pilgrimage": { "gold": 80, "ease": 4, "seasons": 8, "pious": 6, "words": "The King goes barefoot on pilgrimage to the old shrine, and prays." } },
- "funeral": { "_": "A new King's crowning (death or abdication): each great house's favour moves pull of the way toward to (oaths were sworn to the old King; CK2's and Old World's succession).", "to": 42, "pull": 0.35 },
- "minor": { "_": "A King under majority: every great house cools by favour once at the crowning; while the regency lasts a rising weighs rising more in a cold lord's choice (characters.js rebel), and claim more again for a lord who wants the crown.", "favour": -6, "rising": 20, "claim": 20 },
- "match": { "_": "A great lord offers his child for the heir's hand at court (characters.js royalwed): both of age; wed binds his house and cools the rest, refuse cools his.", "age": 16, "weight": 3, "wed": { "him": 20, "others": -3 }, "refuse": { "him": -8 } },
- "heirless": { "score": 0.5, "verdict": "The King died without an heir of his blood. The great houses went to war for the empty throne." }
+ "abdicate": {
+  "age": 16
+ },
+ "traits": {
+  "_": "The royals' traits (royals.js; CK3's traits as heirlooms): a child takes each parent's trait by inherit, the rest by chance (characters.js TRAITS); a consort from a great house brings its own. At a crowning each great lord warms by like for every trait he shares with the new King and cools by unlike for every trait of the King's that is the opposite of his (opposed pairs).",
+  "inherit": 0.5,
+  "like": 6,
+  "unlike": 6,
+  "opposed": [
+   [
+    "brave",
+    "craven"
+   ],
+   [
+    "honourable",
+    "cunning"
+   ],
+   [
+    "generous",
+    "greedy"
+   ],
+   [
+    "patient",
+    "wrathful"
+   ],
+   [
+    "content",
+    "ambitious"
+   ],
+   [
+    "just",
+    "vengeful"
+   ],
+   [
+    "pious",
+    "cunning"
+   ]
+  ]
+ },
+ "stress": {
+  "_": "Personality with teeth (royals.js ruled; CK3's stress): a court ruling against the King's own traits (against: trait -> [petition kind.answer]) adds per to his stress; over high the chronicle says it once and every point over adds risk to his yearly chance of death; it eases by ease a year.",
+  "per": 1,
+  "high": 3,
+  "risk": 0.02,
+  "ease": 1,
+  "against": {
+   "generous": [
+    "grain.refuse",
+    "grain.order"
+   ],
+   "greedy": [
+    "grain.grant"
+   ],
+   "brave": [
+    "siege.abandon"
+   ],
+   "craven": [
+    "siege.relieve"
+   ],
+   "honourable": [
+    "claim.confirm",
+    "royalwed.refuse"
+   ],
+   "just": [
+    "claim.seize",
+    "justice.other"
+   ],
+   "pious": [
+    "faith.silence"
+   ],
+   "patient": [
+    "ambition.back"
+   ],
+   "content": [
+    "claim.seize",
+    "ambition.back"
+   ],
+   "ambitious": [
+    "ambition.forbid"
+   ],
+   "vengeful": [
+    "justice.peace"
+   ],
+   "wrathful": [
+    "justice.peace",
+    "faith.ignore"
+   ],
+   "paranoid": [
+    "royalwed.wed"
+   ],
+   "proud": [
+    "grain.pledge",
+    "ambition.pledge"
+   ]
+  }
+ },
+ "rest": {
+  "_": "How the King eases his stress (royals.js rest, POST /king/rest {kind}; CK3's hunts, feasts and pilgrimages): each kind once in every seasons, for its gold from the crown's chest; ease is taken off his stress. hunt: risk, his chance of a fall from the saddle (a wound that adds to his yearly death risk for a year, wound). feast: every great house warms by favour. pilgrimage: the realm's pious lords warm by pious, and the King is away for away seasons (the court still sits under the Hand; noted only).",
+  "hunt": {
+   "gold": 40,
+   "ease": 2,
+   "seasons": 4,
+   "risk": 0.05,
+   "wound": 0.05,
+   "words": "The King rides out to hunt in the royal forest."
+  },
+  "feast": {
+   "gold": 120,
+   "ease": 2,
+   "seasons": 4,
+   "favour": 3,
+   "words": "The King holds a feast in the great hall. Musicians, roast swan, the lords' wives in their best."
+  },
+  "pilgrimage": {
+   "gold": 80,
+   "ease": 4,
+   "seasons": 8,
+   "pious": 6,
+   "words": "The King goes barefoot on pilgrimage to the old shrine, and prays."
+  }
+ },
+ "funeral": {
+  "_": "A new King's crowning (death or abdication): each great house's favour moves pull of the way toward to (oaths were sworn to the old King; CK2's and Old World's succession).",
+  "to": 42,
+  "pull": 0.35
+ },
+ "minor": {
+  "_": "A King under majority: every great house cools by favour once at the crowning; while the regency lasts a rising weighs rising more in a cold lord's choice (characters.js rebel), and claim more again for a lord who wants the crown.",
+  "favour": -6,
+  "rising": 20,
+  "claim": 20
+ },
+ "match": {
+  "_": "A great lord offers his child for the heir's hand at court (characters.js royalwed): both of age; wed binds his house and cools the rest, refuse cools his.",
+  "age": 16,
+  "weight": 3,
+  "wed": {
+   "him": 20,
+   "others": -3
+  },
+  "refuse": {
+   "him": -8
+  }
+ },
+ "heirless": {
+  "score": 0.5,
+  "verdict": "The King died without an heir of his blood. The great houses went to war for the empty throne."
+ },
+ "focus": {
+  "_": "The King's focus (royals.js setFocus, POST /king/focus; CK3's lifestyle focus): chosen once a crowning. Cards of its decks are drawn boost times as often (events.js); an answer against it adds stress.per to his stress like a ruling against a trait (royals.js ruled): a court answer whose kind.option is in against, or an event choice whose own against names the focus (data/events.json). trait: the word the chronicle uses for him then; words: the crowning line ({king}).",
+  "boost": 2,
+  "choices": {
+   "war": {
+    "label": "The sword",
+    "hint": "war and the host: war cards come more often; paying for peace weighs on him",
+    "trait": "warlike",
+    "decks": [
+     "war"
+    ],
+    "against": [
+     "rival.pay",
+     "rival.cede",
+     "rebel.grant",
+     "siege.abandon",
+     "siege.tribute",
+     "justice.peace"
+    ],
+    "words": "{king} means to be remembered for the sword. The captains drink to it; the stewards count the cost."
+   },
+   "court": {
+    "label": "The court",
+    "hint": "lords and their quarrels: court and house cards more often; a hard word to a lord weighs on him",
+    "trait": "courtly",
+    "decks": [
+     "court",
+     "house"
+    ],
+    "against": [
+     "rival.insult",
+     "rebel.hang",
+     "claim.seize",
+     "ambition.forbid",
+     "justice.other"
+    ],
+    "words": "{king} means to rule through his lords: favours, matches and a full hall. The great houses take note."
+   },
+   "faith": {
+    "label": "The faith",
+    "hint": "the church and the folk: faith and folk cards more often; cruelty and a deaf ear weigh on him",
+    "trait": "devout",
+    "decks": [
+     "faith",
+     "folk"
+    ],
+    "against": [
+     "faith.silence",
+     "faith.ignore",
+     "rebel.hang",
+     "grain.refuse"
+    ],
+    "words": "{king} kneels longer than his father did. The bishops are pleased, and the poor have heard."
+   },
+   "coin": {
+    "label": "The purse",
+    "hint": "trade and the treasury: trade and realm cards more often; gold thrown away weighs on him",
+    "trait": "thrifty",
+    "decks": [
+     "trade",
+     "realm"
+    ],
+    "against": [
+     "grain.grant",
+     "rival.pay",
+     "rebel.grant",
+     "spoils.pay"
+    ],
+    "words": "{king} means to leave a full treasury. The merchants bow lower; the lords guard their purses."
+   }
+  }
+ }
 }

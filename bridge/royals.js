@@ -161,6 +161,24 @@ export function year(ctx, turn) {
   if (r() < risk) { h.king.alive = false; pass(ctx, h, "died", turn); }
 }
 
+// The King's focus (POST /king/focus {focus}; data/royals.json focus; CK3's lifestyle focus): who he means to be, war,
+// court, faith or coin, chosen once a crowning (a new King chooses again). The realm's matters lean toward it (events.js
+// draw: its decks' cards come focus.boost times as often) and test it: an answer against it weighs on him as a ruling
+// against his traits does (ruled).
+export function setFocus(ctx, focus) {
+  const h = of(ctx.meta), k = h.king;
+  const F = R.focus.choices[focus];
+  if (!F || focus === "_") return { error: "No such focus." };
+  if (k.focus) return { error: `${k.woman ? "Queen" : "King"} ${k.name} has chosen already: ${R.focus.choices[k.focus].label}.` };
+  k.focus = focus;
+  ctx.record({ turn: ctx.world?.turn ?? 0, kind: "court", text: F.words.replace("{king}", `${k.woman ? "Queen" : "King"} ${k.name}`) });
+  return { ok: true, focus, text: F.words.replace("{king}", `${k.woman ? "Queen" : "King"} ${k.name}`) };
+}
+
+// The decks the King's focus draws toward (events.js), and how much more often.
+export const focusDecks = (meta) => R.focus.choices[meta?.royals?.king?.focus]?.decks ?? [];
+export const FOCUS_BOOST = R.focus.boost;
+
 // The King gives up the crown (POST /abdicate): only to an heir of age; else why not.
 export function abdicate(ctx) {
   const h = of(ctx.meta);
@@ -195,11 +213,15 @@ export const isRegency = (h) => Boolean(h?.king && h.king.age < R.majority);
 
 // A ruling at court (court.js answer): against the King's own nature it weighs on him (data/royals.json stress; CK3's
 // stress). Over high, the chronicle says it once, and each point over makes his yearly death likelier (year).
-export function ruled(ctx, kind, option) {
+// tags: the focuses an answer goes against (an event card choice's own `against`, data/events.json); a court answer's
+// are found by its kind.option in data/royals.json focus.<focus>.against.
+export function ruled(ctx, kind, option, tags = []) {
   const h = ctx.meta.royals;
   if (!h?.king) return;
   const k = h.king, S = R.stress;
   const against = (k.traits ?? []).filter((t) => (S.against[t] ?? []).includes(`${kind}.${option}`));
+  const F = R.focus.choices[k.focus];
+  if (F && (tags.includes(k.focus) || F.against.includes(`${kind}.${option}`))) against.push(F.trait);
   if (!against.length) return;
   const was = k.stress ?? 0;
   k.stress = was + S.per * against.length;
@@ -238,11 +260,12 @@ export function view(meta, turn = 0) {
   if (!h) return null;
   // The King's stress, and the seasons until he may next rest at all (Loop's sheet: 0 when one is ready).
   const wait = Math.min(...Object.entries(R.rest).filter(([k]) => k !== "_").map(([k, v]) => h.rested?.[k] == null ? 0 : Math.max(0, v.seasons - (turn - h.rested[k]))));
-  const who = (p) => p && { id: p.id, name: p.name, age: p.age, woman: p.woman, traits: p.traits ?? [], ...(p === h.king ? { stress: p.stress ?? 0, restWait: wait } : {}) };
+  const who = (p) => p && { id: p.id, name: p.name, age: p.age, woman: p.woman, traits: p.traits ?? [], ...(p === h.king ? { stress: p.stress ?? 0, restWait: wait, focus: p.focus ?? null } : {}) };
   const next = heir(h);
   return {
     king: who(h.king), consort: h.consort?.alive ? who(h.consort) : null, heir: who(next), match: next?.spouse ? { name: next.spouse.name, house: next.spouse.house } : null,
     children: h.children.filter((k) => k.alive).map(who), kin: h.kin.filter((k) => k.alive).map(who), regency: isRegency(h),
+    focuses: Object.entries(R.focus.choices).filter(([k]) => k !== "_").map(([id, f]) => ({ id, label: f.label, hint: f.hint })),
     line: h.line, rest: Object.fromEntries(Object.entries(R.rest).filter(([k]) => k !== "_").map(([k, v]) => [k, { gold: v.gold, ease: v.ease, ready: h.rested?.[k] == null || turn - h.rested[k] >= v.seasons, last: h.rested?.[k] ?? null, seasons: v.seasons }])), abdicate: Boolean(next && next.age >= R.abdicate.age),
   };
 }

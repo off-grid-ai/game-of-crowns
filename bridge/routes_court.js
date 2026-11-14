@@ -84,6 +84,15 @@ export async function rest(ctx, req, res, url) {
   return json(res, 200, out);
 }
 
+// POST /king/focus {focus}: the King says who he means to be, once a crowning (royals.js setFocus).
+export async function focus(ctx, req, res, url) {
+  const b = await body(req);
+  const out = Royals.setFocus(ctx, String(b.focus ?? ""));
+  if (out.error) return json(res, 409, out);
+  chron.saveMeta(ctx.meta);
+  return json(res, 200, out);
+}
+
 export async function close(ctx, req, res, url) {
   const { closeCourt, inCrowns, docket } = ctx;
   closeCourt(ctx.world?.turn ?? 0);
