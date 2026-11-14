@@ -10,7 +10,7 @@ func dress(root: Node3D, life: Node3D, row: Dictionary, _rng: RandomNumberGenera
 	var sept: Vector3 = places.get("sept", well)
 	var rim := (tl.centre_reach(root) if tl.centre_reach(root) > 0.0 else 0.16) + 0.06
 	var a0 := atan2(sept.x, sept.z)
-	var walls := tl._blocked(root, life)
+	var fires := tl._fires(life)
 	var taken: PackedVector2Array = life.get_meta("standing", PackedVector2Array())
 	# The round at the first of these shares of the square's radius whose every leg keeps a shoulder off anyone
 	# standing (a stall's keeper, the crier): a funeral walks round the living, not through them.
@@ -20,7 +20,7 @@ func dress(root: Node3D, life: Node3D, row: Dictionary, _rng: RandomNumberGenera
 		var try: Array = []
 		for i in 12:
 			var a := a0 + TAU * i / 12.0
-			var p := tl._spot(center, Vector3(sin(a), 0, cos(a)) * maxf(r, rim + 0.25), walls, taken, 0.25)  # open cobble
+			var p := tl._spot(center, Vector3(sin(a), 0, cos(a)) * maxf(r, rim + 0.25), fires, taken, 0.25)  # open cobble
 			if not is_nan(p.x):
 				try.append(p)
 		var clear := try.size() >= 3

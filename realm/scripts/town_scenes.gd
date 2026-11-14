@@ -19,6 +19,7 @@ extends Node3D
 ## Copies the proven designs: Unreal's smart objects and slots, GTA's scenario points, RimWorld's moods.
 
 const Data := preload("res://scripts/data.gd")
+const Ground := preload("res://scripts/ground.gd")  # the one answer to where a body may stand
 const People := preload("res://scripts/people.gd")
 const Works := preload("res://scripts/works.gd")
 const SceneKinds := preload("res://scripts/scene_kinds.gd")
@@ -810,8 +811,10 @@ func _stage_role(k: Dictionary, role: Dictionary, anchors: Dictionary) -> void:
 		if bool(role.get("off_centre", false)):
 			want = tl.off_centre(root, want, Data.num("moods", "centre.mourners", 0.08))
 		var pos := want
-		if not bool(role.get("exact", false)):
-			pos = tl.place(root, want, float(role.get("reach", 0.2)), bool(role.get("inside", false)))
+		# An exact anchor (a keeper at his counter, a guest on the feast's bench) is kept only where no building and no
+		# water is (ground.gd: the life's own pieces don't count); one that lands in a house is placed like the rest.
+		if not bool(role.get("exact", false)) or not Ground.is_clear(root.position + want, 0.0, false):
+			pos = tl.place(root, want, float(role.get("reach", 0.2)))
 			if is_nan(pos.x):
 				missed += 1
 				if spare == 0 or missed > spare:

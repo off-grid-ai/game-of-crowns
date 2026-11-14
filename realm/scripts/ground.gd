@@ -10,6 +10,8 @@ extends RefCounted
 ##   is_clear(p, radius): whether a body reaching `radius` all round may stand at `p`.
 ##   nearest_clear(p, radius, max_dist): the nearest such place, on the town's walk map where it has one.
 ##   inside(p): the footprint `p` stands in, or an empty one.
+##   area_clear(poly): whether a piece set down over `poly` (world) stands on land and over no footprint.
+##   open_floor(root, poly): a builder says ground inside its own footprint is open floor (a bailey, a forge's).
 
 const NavGround := preload("res://scripts/nav_ground.gd")
 const TownNav := preload("res://scripts/town_nav.gd")
@@ -23,15 +25,49 @@ const REACH := 2.4  # how far nearest_clear looks by default (60 rings)
 
 
 ## Whether something reaching `radius` all round may stand at `p` (world): on walkable land and in no footprint.
-static func is_clear(p: Vector3, radius := 0.0) -> bool:
+## `props` false: only the buildings keep it out, not the life's own pieces (a keeper behind his stall's counter,
+## a guest on the feast's bench, an elder on his doorstep's bench is at them, not in a building).
+static func is_clear(p: Vector3, radius := 0.0, props := true) -> bool:
+	var keys: Array = ["town", "life"] if props else ["town"]
 	for o in _reach_of(radius):
 		var q: Vector3 = p + o
 		if terrain != null and not terrain.walkable(q.x, q.z):
 			return false
 		for t in TownNav.towns_at(towns, q):
-			if not NavGround.inside_something(t[1], q, terrain).is_empty():
+			if not NavGround.inside_something(t[1], q, terrain, keys).is_empty():
 				return false
 	return true
+
+
+## Whether a piece set down over `poly` (world XZ: a building site, a camp's tent) stands on walkable land at every
+## corner and its middle, and overlaps no footprint.
+static func area_clear(poly: PackedVector2Array) -> bool:
+	var mid := Vector2.ZERO
+	for v in poly:
+		mid += v / poly.size()
+	for v in Array(poly) + [mid]:
+		if terrain != null and not terrain.walkable(v.x, v.y):
+			return false
+	for t in TownNav.towns_at(towns, Vector3(mid.x, 0, mid.y)):
+		var root: Node3D = t[1]
+		var c := root.global_position
+		var local := PackedVector2Array()
+		for v in poly:
+			local.append(v - Vector2(c.x, c.z))
+		for fp: PackedVector2Array in NavGround.all(root, terrain):
+			if fp.size() > 2 and not Geometry2D.intersect_polygons(local, fp).is_empty():
+				return false
+	return true
+
+
+## A builder says ground inside its own footprint is open floor (`poly`, its town's space): a castle's bailey, a
+## forge's working floor. Bodies may stand there; the footprint around it still keeps them out.
+static func open_floor(root: Node3D, poly: PackedVector2Array) -> void:
+	var yards: Array = root.get_meta("yards", [])
+	if yards.any(func(y): return y[0] == poly):
+		return  # said already (a town dressed again)
+	yards.append([poly, -1])
+	root.set_meta("yards", yards)
 
 
 ## The footprint `p` (world) stands in, in its town's space, or an empty one.

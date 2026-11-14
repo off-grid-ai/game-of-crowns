@@ -74,9 +74,10 @@ static func all(root: Node3D, terrain: Node3D = null) -> Array:
 ## The one answer to "is `p` (world) inside something standing in this town": the outline it is in, or an empty one.
 ## Anything the town has on the ground counts, its builders' (a house, a wall, the well's curb) and its life's (a
 ## stall, a parked cart, a fire's ring); a castle's open bailey (towns.gd meta "yards": inside its walls' foot, but
-## open ground) is not. Every check and placer asks this (town_nav inside, in_building and clear; villagers' crowd
-## check; autoplay's overlap probe), so they can't disagree.
-static func inside_something(root: Node3D, p: Vector3, terrain: Node3D = null) -> PackedVector2Array:
+## open ground) is not. Every check and placer asks this through ground.gd (is_clear, inside, nearest_clear), so
+## they can't disagree.
+## `keys`: "town" for what its builders set down, "life" for what its life puts up.
+static func inside_something(root: Node3D, p: Vector3, terrain: Node3D = null, keys: Array = ["town", "life"]) -> PackedVector2Array:
 	if root == null or not is_instance_valid(root):
 		return PackedVector2Array()
 	var c := root.global_position
@@ -85,7 +86,7 @@ static func inside_something(root: Node3D, p: Vector3, terrain: Node3D = null) -
 		if Geometry2D.is_point_in_polygon(q, y[0]):
 			return PackedVector2Array()
 	var o := outlines(root, terrain)  # kept per town until its layout changes: no copy made per ask
-	for key in ["town", "life"]:
+	for key in keys:
 		for fp: PackedVector2Array in o[key]:
 			if fp.size() > 2 and Geometry2D.is_point_in_polygon(q, fp):
 				return fp

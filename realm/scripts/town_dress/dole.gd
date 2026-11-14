@@ -6,7 +6,7 @@ func dress(root: Node3D, life: Node3D, _row: Dictionary, rng: RandomNumberGenera
 	var center := root.position
 	var places: Dictionary = root.get_meta("places", {})
 	var at: Vector3 = places.get(String(tl.Data.value("moods", "hunger.dole.at", "market")), places.get("well", Vector3(0.4, 0, 0.4)))
-	at = tl._spot(center, at, tl._blocked(root, life), life.get_meta("standing"), 0.3)
+	at = tl._spot(center, at, tl._fires(life), life.get_meta("standing"), 0.3)
 	if is_nan(at.x):
 		return {}
 	var out := Vector3(at.x, 0, at.z).normalized() if Vector2(at.x, at.z).length() > 0.05 else tl.SEEN

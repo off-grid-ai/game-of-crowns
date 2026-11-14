@@ -10,7 +10,7 @@ func dress(root: Node3D, life: Node3D, _row: Dictionary, rng: RandomNumberGenera
 	var n := int(g.get("banners", 4))
 	for i in n:
 		var a := atan2(tl.SEEN.x, tl.SEEN.z) + (i - (n - 1) * 0.5) * 0.7
-		var at := tl._spot(center, Vector3(sin(a), 0, cos(a)) * float(g.get("ring", 0.7)), tl._blocked(root, life), life.get_meta("standing"), 0.2)
+		var at := tl._spot(center, Vector3(sin(a), 0, cos(a)) * float(g.get("ring", 0.7)), tl._fires(life), life.get_meta("standing"), 0.2)
 		if is_nan(at.x):
 			continue
 		var flag := tl.Heraldry.standard(life.get_meta("house", {}), col, tl.STANDARD_TALL)

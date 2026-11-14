@@ -93,7 +93,7 @@ func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 	# planters by house doors, bushes, flowers and rocks between the houses.
 	if Dressing.on() and root.get_node_or_null("Dressing") == null:
 		var at := root.position
-		Dressing.dress(root, func(q: Vector3) -> float: return _y(at, q), func(q: Vector3) -> bool: return terrain.is_land(at.x + q.x, at.z + q.z), int(c.get("id", 0)))
+		Dressing.dress(root, func(q: Vector3) -> float: return _y(at, q), int(c.get("id", 0)))
 	var life: Node3D = root.get_node_or_null("Life")
 	if life and life.get_meta("sig", "") == sig:
 		# Only the work moved on: the site grows where it stands, and the
@@ -184,46 +184,38 @@ const SEEN := Vector3(-0.5736, 0, -0.8192)
 static var CLEAR: float = 0.05 * preload("res://scripts/data.gd").num("people", "readable", 1.0)  # how far a person keeps off a wall or a fence
 
 
-## Everything that stands in the town, town-local: read off what is set down there (nav_ground.gd: its buildings,
-## walls, fences, stalls, carts, tables, the life's props), the outlines its walk map is cut from, and each fire's
-## ring and the step of heat past it (the life's "fires").
-func _blocked(root: Node3D, life: Node3D) -> Array:
-	var out: Array = NavGround.all(root, terrain)
+## What the life keeps clear beyond the ground's footprints, town-local: each fire's ring and the step of heat past
+## it (the life's "fires"). Buildings, stalls, props and the water are the ground's answer (ground.gd).
+func _fires(life: Node3D) -> Array:
+	var out: Array = []
 	for f in life.get_meta("fires", []):
 		out.append(_rect(Vector3(f[0].x, 0, f[0].y), Vector2(f[1], f[1]) * 2.0, 0.0))
 	return out
 
 
-## True when a person can stand at `p` (town-local): on land, clear of every
-## footprint, and a shoulder's width from everyone already placed.
-func _open(center: Vector3, p: Vector3, walls: Array, taken: PackedVector2Array) -> bool:
-	if not terrain.is_land(center.x + p.x, center.z + p.z):
-		return false
+## True when a person can stand at `p` (town-local): where the ground says a body keeping CLEAR off every wall may
+## stand (ground.gd), out of every fire's heat, and a shoulder's width from everyone already placed.
+func _open(center: Vector3, p: Vector3, fires: Array, taken: PackedVector2Array) -> bool:
 	var q := Vector2(p.x, p.z)
 	for t in taken:
 		if q.distance_to(t) < ROOM:
 			return false
-	for fp: PackedVector2Array in walls:
-		if q.distance_to(fp[0]) > 3.0:
-			continue  # far off: no building is that big
+	for fp: PackedVector2Array in fires:
 		if Geometry2D.is_point_in_polygon(q, fp):
 			return false
-		for i in fp.size():
-			if q.distance_to(Geometry2D.get_closest_point_to_segment(q, fp[i], fp[(i + 1) % fp.size()])) < CLEAR:
-				return false
-	return true
+	return Ground.is_clear(center + p, CLEAR)
 
 
 ## The nearest open spot to `want` (town-local), searching outward in rings;
 ## NAN in x when there is none within reach, and that person isn't placed.
-func _spot(center: Vector3, want: Vector3, walls: Array, taken: PackedVector2Array, reach := 0.4, lanes: Node3D = null) -> Vector3:
+func _spot(center: Vector3, want: Vector3, fires: Array, taken: PackedVector2Array, reach := 0.4, lanes: Node3D = null) -> Vector3:
 	var r := 0.0
 	while r <= reach:
 		var n := 1 if r == 0.0 else int(TAU * r / 0.05)
 		for i in n:
 			var a := TAU * i / n
 			var p := want + Vector3(cos(a), 0, sin(a)) * r
-			if _open(center, p, walls, taken) and (lanes == null or not on_lane(lanes, center + p)):
+			if _open(center, p, fires, taken) and (lanes == null or not on_lane(lanes, center + p)):
 				p.y = _y(center, p)
 				return p
 		r += 0.05
@@ -232,11 +224,9 @@ func _spot(center: Vector3, want: Vector3, walls: Array, taken: PackedVector2Arr
 
 ## Places a townsperson at the nearest open spot to `want` and keeps them in
 ## the life's list of who stands where; null when there's no room.
-## inside: they work inside a building's own footprint (the smiths at the forge's anvil and bellows, on its
-## paved yard): no building's walls keep them out, only the others standing and the road's lanes.
-func _stand(root: Node3D, life: Node3D, center: Vector3, want: Vector3, role: String, anim: String, seed: int, tint := Color.WHITE, reach := 0.4, post := "", inside := false) -> Node3D:
+func _stand(root: Node3D, life: Node3D, center: Vector3, want: Vector3, role: String, anim: String, seed: int, tint := Color.WHITE, reach := 0.4, post := "") -> Node3D:
 	var taken: PackedVector2Array = life.get_meta("standing")
-	var p := _spot(center, want, [] if inside else _blocked(root, life), taken, reach, root)  # a person: never on a road's lane
+	var p := _spot(center, want, _fires(life), taken, reach, root)  # a person: never on a road's lane
 	if is_nan(p.x):
 		return null
 	taken.append(Vector2(p.x, p.z))
@@ -395,7 +385,6 @@ func _construction(root: Node3D, life: Node3D, center: Vector3, building: String
 	var seen := _seen_dir(root, float(rw.get("turn", -0.6))) if not royal.is_empty() else Vector2.ZERO
 	if seen != Vector2.ZERO:
 		ang = atan2(seen.y, seen.x)  # the side of the town the lens looks across: tried first, then either side of it
-	var walls: Array = _blocked(root, life)
 	var plot := PackedVector2Array()
 	var found := false
 	for tries in 36:
@@ -403,15 +392,13 @@ func _construction(root: Node3D, life: Node3D, center: Vector3, building: String
 		var a := ang + TAU * ((o + 1) / 2 * (1 if o % 2 == 1 else -1)) / 12.0  # outward from `ang`, either side in turn
 		var probe := Vector3(cos(a), 0, sin(a)) * (reach + (tries / 12) * 0.5)
 		var wp := center + probe
-		if not terrain.is_land(wp.x, wp.z) or absf(terrain.height_at(wp.x + 0.4, wp.z) - terrain.height_at(wp.x - 0.4, wp.z)) >= 0.3:
+		if absf(terrain.height_at(wp.x + 0.4, wp.z) - terrain.height_at(wp.x - 0.4, wp.z)) >= 0.3:
 			continue
 		var rect := _rect(probe, f + Vector2(0.4, 0.4), a + PI)
-		var clear := true
-		for fp: PackedVector2Array in walls:
-			if Vector2(probe.x, probe.z).distance_to(fp[0]) < 4.0 and not Geometry2D.intersect_polygons(rect, fp).is_empty():
-				clear = false
-				break
-		if clear:
+		var world := PackedVector2Array()
+		for v in rect:
+			world.append(v + Vector2(center.x, center.z))
+		if Ground.area_clear(world):  # on land, over no footprint (ground.gd)
 			ang = a
 			plot = _rect(probe, f * 1.1, a + PI)
 			found = true
@@ -478,7 +465,7 @@ func _drill(root: Node3D, life: Node3D, center: Vector3, progress: float, color:
 	# One rank, side by side a pace and a half apart (0.45), on open ground beside
 	# the square and facing its heart: nobody stands at another's back.
 	var count := clampi(3 + int(progress * 4), 3, 6)
-	var walls: Array = _blocked(root, life)
+	var fires: Array = _fires(life)
 	var none := PackedVector2Array()
 	var bow := unit.contains("Archer") or unit.contains("bow")
 	for tries in 32:
@@ -489,7 +476,7 @@ func _drill(root: Node3D, life: Node3D, center: Vector3, progress: float, color:
 		var spots: Array[Vector3] = []
 		for i in count:
 			var p := -face * dist + side * ((i - (count - 1) * 0.5) * 0.45)
-			if not _open(center, p, walls, none):
+			if not _open(center, p, fires, none):
 				break
 			spots.append(p)
 		if spots.size() < count:
@@ -536,7 +523,7 @@ func _bonfire(life: Node3D, center: Vector3) -> void:
 		ring.scale = Vector3.ONE * RING_SCALE
 		life.add_child(ring)
 	# Nobody stands in the fire: the ring as wide as it really stands, and a
-	# step of heat past its stones, is ground nobody claims (_blocked reads "fires").
+	# step of heat past its stones, is ground nobody claims (_fires reads "fires").
 	var keep := fire_reach()
 	life.set_meta("fires", [[Vector2(_fire_at.x, _fire_at.z), keep]])
 	var light := OmniLight3D.new()
@@ -889,7 +876,7 @@ func _dress(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, rng: Ran
 	if c.get("atWar", false):
 		# A barricade cart across the road in, weapons stacked, and more of the watch.
 		var cart: Node3D = Real.make(Real.one("cart"))
-		var cart_at := _spot(center, edge * 1.2, _blocked(root, life), life.get_meta("standing"), 0.3)  # the nearest open ground to the way in
+		var cart_at := _spot(center, edge * 1.2, _fires(life), life.get_meta("standing"), 0.3)  # the nearest open ground to the way in
 		if cart and not is_nan(cart_at.x):
 			cart.position = Vector3(cart_at.x, _y(center, cart_at), cart_at.z)
 			cart.rotation.y = atan2(side.x, side.z) + 0.35  # slewed across the way, not parked
@@ -945,7 +932,7 @@ const Works := preload("res://scripts/works.gd")
 const Dressing := preload("res://scripts/dressing.gd")
 const Horse := preload("res://scripts/horse.gd")
 const Data := preload("res://scripts/data.gd")
-const NavGround := preload("res://scripts/nav_ground.gd")  # what stands in the town, read off what is set down
+const Ground := preload("res://scripts/ground.gd")  # the one answer to where a body may stand
 
 
 ## The life at the town's working buildings, from the town agent's list of
@@ -1094,11 +1081,15 @@ func _forge(root: Node3D, life: Node3D, center: Vector3, b: Dictionary, tick: Wo
 		if sp.has("trough"):
 			_prop(life, center, "Bucket_Metal", sp["trough"], 0.0, 1.0, 0.0)
 	# The smith at the anvil, the second at the bellows by the hearth (batch 9: both stood out by the door, the
-	# building's own footprint keeping them off its yard): they work inside it.
+	# building's own footprint keeping them off its yard): they work inside it, on its working floor, which the forge
+	# says is open floor (ground.gd open_floor), so the ground's one answer lets them stand there.
 	var bellows: Vector3 = sp.get("bellows", sp.get("second", hearth + _front(b) * 0.1))
 	var posts: Array = [sp.get("smith", anvil + _front(b) * 0.08), bellows]
+	var floor_half := float(Data.num("towns", "forge.floor_half", 0.09))
 	for i in mini(smiths, posts.size()):
-		var s := _stand(root, life, center, posts[i], "townsfolk", "Hammer_Swing" if i == 0 else "Pushing", rng.randi(), Color.WHITE, 0.12, "smith" if i == 0 else "", true)
+		var at: Vector3 = posts[i]
+		Ground.open_floor(root, _rect(at, Vector2(floor_half, floor_half) * 2.0, 0.0))
+		var s := _stand(root, life, center, posts[i], "townsfolk", "Hammer_Swing" if i == 0 else "Pushing", rng.randi(), Color.WHITE, 0.12, "smith" if i == 0 else "")
 		if s:
 			_face(s, anvil if i == 0 else hearth)
 			if i == 0 and sp.has("trough"):
@@ -1400,7 +1391,7 @@ func _inn(root: Node3D, life: Node3D, center: Vector3, b: Dictionary, tick: Work
 	var yard: Vector3 = sp.get("yard", b["at"] + _front(b) * 0.4)
 	var tables := int(Data.num("works", "inn.tables", 1))
 	for k in tables:
-		var at := _spot(center, yard + along * (k - (tables - 1) * 0.5) * 0.36, _blocked(root, life), life.get_meta("standing"), 0.25)
+		var at := _spot(center, yard + along * (k - (tables - 1) * 0.5) * 0.36, _fires(life), life.get_meta("standing"), 0.25)
 		if is_nan(at.x):
 			continue
 		for p in _long_table(life, center, at, _front(b), int(Data.num("works", "inn.seats", 2)), k, rng, "soldier" if int(n.call("inn_soldiers")) > 0 and k == 0 else ""):
@@ -1462,7 +1453,7 @@ func _bunting(root: Node3D, life: Node3D, center: Vector3, well: Vector3, b: Dic
 	var lines := int(b.get("lines", 5))
 	if lines <= 0:
 		return
-	var walls := _blocked(root, life)
+	var fires := _fires(life)
 	var taken: PackedVector2Array = life.get_meta("standing")
 	# Its tall pole by the well, toward the heart; with a fountain at the heart, clear of its basin on the
 	# seen side (moods.json centre.bunting), never in the water.
@@ -1470,7 +1461,7 @@ func _bunting(root: Node3D, life: Node3D, center: Vector3, well: Vector3, b: Dic
 	# (On the far side of a fountain from the camera's side: the lines then cross the square toward the seen half
 	# and no bare pole stands in the foreground; batch 8b goldrock-fountain.)
 	var hub_want: Vector3 = (-SEEN * (basin + float(Data.num("moods", "centre.bunting", 0.1)))) if basin > 0.0 else (well + (Vector3.ZERO - well).normalized() * 0.14)
-	var hub_at := _spot(center, hub_want, walls, taken, 0.2)
+	var hub_at := _spot(center, hub_want, fires, taken, 0.2)
 	if is_nan(hub_at.x):
 		return
 	var top := float(b.get("height", 3.8)) * S
@@ -1499,7 +1490,7 @@ func _bunting(root: Node3D, life: Node3D, center: Vector3, well: Vector3, b: Dic
 	var n := 0
 	for i in lines:
 		var a := face + (i - (lines - 1) * 0.5) * (2.6 / maxf(lines - 1, 1))
-		var end_at := _spot(center, Vector3(sin(a), 0, cos(a)) * ring, walls, taken, 0.15)
+		var end_at := _spot(center, Vector3(sin(a), 0, cos(a)) * ring, fires, taken, 0.15)
 		if is_nan(end_at.x):
 			continue
 		var end: Vector3 = pole.call(end_at, low)
@@ -1700,13 +1691,12 @@ static func fields_season() -> bool:
 
 
 ## The nearest open spot to `want` (town-local) within `reach`, kept as taken; NAN in x when there's none.
-## inside: within a building's own footprint (only the others standing and the road's lanes keep them out).
-func place(root: Node3D, want: Vector3, reach: float, inside := false) -> Vector3:
+func place(root: Node3D, want: Vector3, reach: float) -> Vector3:
 	var life: Node3D = root.get_node_or_null("Life")
 	if life == null:
 		return Vector3(NAN, 0, 0)
 	var taken: PackedVector2Array = life.get_meta("standing", PackedVector2Array())
-	var p := _spot(root.position, want, [] if inside else _blocked(root, life), taken, reach, root)
+	var p := _spot(root.position, want, _fires(life), taken, reach, root)
 	if not is_nan(p.x):
 		taken.append(Vector2(p.x, p.z))
 		life.set_meta("standing", taken)
@@ -1728,10 +1718,10 @@ func open_ground(root: Node3D, p: Vector3) -> bool:
 	for t in life.get_meta("standing", PackedVector2Array()):
 		if (t as Vector2).distance_to(q) < ROOM:
 			return false  # someone stands there
-	for fp in _blocked(root, life):
-		if (fp as PackedVector2Array).size() > 2 and q.distance_to(fp[0]) < 1.5 and Geometry2D.is_point_in_polygon(q, fp):
+	for fp in _fires(life):
+		if Geometry2D.is_point_in_polygon(q, fp):
 			return false
-	return true
+	return Ground.is_clear(root.position + p)
 
 
 ## One of a scene's people, set down under the town's Life at `pos` (town-local), dressed as this town dresses its
@@ -1803,7 +1793,7 @@ func beast(root: Node3D, kind: String, pos: Vector3, tints: Array, i: int, rng: 
 ## The nearest spot to `want` (town-local) a prop `half` across each way fits on: its middle and its four sides on
 ## open ground (_open: no building, stall or plinth, nobody standing) and off the road's lanes, on rings widening out
 ## to half the square; NAN if none.
-func _room_for(center: Vector3, want: Vector3, half: float, walls: Array, root: Node3D) -> Vector3:
+func _room_for(center: Vector3, want: Vector3, half: float, fires: Array, root: Node3D) -> Vector3:
 	var taken: PackedVector2Array = PackedVector2Array()
 	var reach := float(root.get_meta("square_r", 1.0)) * 0.5
 	var r := 0.0
@@ -1813,7 +1803,7 @@ func _room_for(center: Vector3, want: Vector3, half: float, walls: Array, root: 
 			var p := want + Vector3(cos(TAU * i / n), 0, sin(TAU * i / n)) * r
 			var fits := not on_lane(root, center + p)
 			for o in [Vector3.ZERO, Vector3(half, 0, 0), Vector3(-half, 0, 0), Vector3(0, 0, half), Vector3(0, 0, -half)]:
-				if fits and not _open(center, p + o, walls, taken):
+				if fits and not _open(center, p + o, fires, taken):
 					fits = false
 			if fits:
 				return p

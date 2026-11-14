@@ -6,6 +6,7 @@ extends RefCounted
 ## (tb) that owns the town being built: its placing, its ground, the land and the town's facts.
 
 const Data := preload("res://scripts/data.gd")
+const Ground := preload("res://scripts/ground.gd")  # the one answer to where a body may stand
 const Real := preload("res://scripts/realistic.gd")
 const TownPlots := preload("res://scripts/town_plots.gd")
 const TownTiers := preload("res://scripts/town_tiers.gd")
@@ -106,9 +107,7 @@ func real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds:
 					for c in [Vector2(-0.36, -0.05), Vector2(0.36, -0.05), Vector2(0.36, 0.36), Vector2(-0.36, 0.36)]:
 						var w: Vector3 = cp + yb * Vector3(c.x * f.x, 0, c.y * f.y)
 						yard.append(Vector2(w.x, w.z))
-					var yards: Array = root.get_meta("yards", [])
-					yards.append([yard, root.get_meta("footprints").size() - 1])
-					root.set_meta("yards", yards)
+					Ground.open_floor(root, yard)
 					# No wood stands inside its walls or leans over them: felled to
 					# the corners, and a crown's reach (about 0.8) beyond.
 					tb.terrain.clear_around(center + cp, f.length() * 0.5 + 0.8)

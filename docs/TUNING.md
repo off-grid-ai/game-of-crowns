@@ -624,3 +624,4 @@ Switches (`--name`) go after `--` on the game's command line.
 - A great seat's roofs in its house colour: `realm/data/look.json` `team.mask.amount` (0.85: how much of the colour a Meshy building's masked roof takes) and `team.mask.ordinary` (0.45: the share an ordinary house wears; castle, hall, manor all of it).
 - A vassal's manor on the map: `realm/data/towns.json` `map_seat.manor` (keep 1.4: its manor house's height as the marker, standard 1.8, most 3.5: how far it grows with the camera's distance).
 - A town's roads out through its wall: `realm/data/towns.json` `plots.road_past` (2.0: how far past the town's edge its main roads run, was 1.0) and `town_wall.road_on` (3.0: how far a main road is taken on when finding its gate).
+- A forge's working floor, where its smiths stand inside its walls: `realm/data/towns.json` `forge.floor_half` (0.09: half the side of the open floor round each smith's post, ground.gd open_floor).

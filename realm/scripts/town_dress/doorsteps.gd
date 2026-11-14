@@ -1,4 +1,5 @@
 extends "res://scripts/town_dress.gd"
+const Ground := preload("res://scripts/ground.gd")  # the one answer to where a body may stand
 ## A bench by the door of the homes nearest the square (the elders row: benches, within square radii, seats each), set
 ## along the wall beside the door, where the old folk sit and watch the street (Banished's and Manor Lords' elders).
 ## Every seat is a point the row's elders sit at, looking out from the house.
@@ -14,13 +15,12 @@ func dress(root: Node3D, life: Node3D, row: Dictionary, rng: RandomNumberGenerat
 		homes[i] = homes[j]
 		homes[j] = t
 	var points: Array = []
-	var walls := tl._blocked(root, life)
 	for h in homes.slice(0, int(row.get("benches", 3))):
 		var step: Vector3 = h[0]
 		var face: Vector3 = h[1]
 		var side := Vector3(-face.z, 0, face.x) * (1.0 if rng.randf() < 0.5 else -1.0)
 		var at := step - face * 0.04 + side * 0.14 * tl.FURN
-		if walls.any(func(poly): return Geometry2D.is_point_in_polygon(Vector2(at.x, at.z), poly)):
+		if not Ground.is_clear(center + at):  # on the ground, in no house (ground.gd)
 			continue
 		if tl._prop(life, center, "Bench", at, atan2(side.x, side.z), 1.0, 0.0) == null:
 			continue

@@ -21,9 +21,9 @@ func dress(root: Node3D, life: Node3D, _row: Dictionary, rng: RandomNumberGenera
 	var wk: Dictionary = root.get_meta("works", {})
 	if wk.has("forge") and bool(tl.Data.value("crowd", "square_agents.smith_in_smithy", true)) and tl.square_agents_on():
 		smithy = (wk["forge"]["at"] as Vector3).length() < square_r * 1.8
-	var walls := tl._blocked(root, life)
+	var fires := tl._fires(life)
 	if not smithy and bool(k.get("smith", true)) and preload("res://scripts/weapons.gd").can_play("Hammer_Swing"):
-		var at := tl._room_for(center, side * square_r * 0.72, 0.08, walls, root)
+		var at := tl._room_for(center, side * square_r * 0.72, 0.08, fires, root)
 		if not is_nan(at.x) and tl._prop(life, center, "Anvil", at, atan2(-side.x, -side.z), 1.0, 0.0):
 			tl._prop(life, center, "Bucket_Metal", at + Vector3(-side.z, 0, side.x) * 0.12, 0.0, 1.0, 0.0)
 			out["anvil"] = {"points": [{"at": at, "dir": side}]}
@@ -34,13 +34,13 @@ func dress(root: Node3D, life: Node3D, _row: Dictionary, rng: RandomNumberGenera
 		# (g38 landuse: the square read bare for its stalls), clear of every stall (round 11's square: two rows of them
 		# where the carts used to stand), and of the carts before it.
 		var turn := TAU * i / maxf(1.0, n_carts)
-		var cp := tl._room_for(center, (-side * 0.62 + toward * 0.1).rotated(Vector3.UP, turn) * square_r, 0.16, walls, root)
+		var cp := tl._room_for(center, (-side * 0.62 + toward * 0.1).rotated(Vector3.UP, turn) * square_r, 0.16, fires, root)
 		var along := toward.rotated(Vector3.UP, turn)
 		if is_nan(cp.x):
 			continue  # no room on the setts: no cart (the market is what fits)
 		var cart: Node3D = tl.Real.meshy_piece("square_cart")  # Meshy's merchant cart
 		if cart:
-			walls.append(PackedVector2Array([Vector2(cp.x - 0.16, cp.z - 0.16), Vector2(cp.x + 0.16, cp.z - 0.16), Vector2(cp.x + 0.16, cp.z + 0.16), Vector2(cp.x - 0.16, cp.z + 0.16)]))
+			fires.append(PackedVector2Array([Vector2(cp.x - 0.16, cp.z - 0.16), Vector2(cp.x + 0.16, cp.z - 0.16), Vector2(cp.x + 0.16, cp.z + 0.16), Vector2(cp.x - 0.16, cp.z + 0.16)]))
 			cart.position = Vector3(cp.x, tl._y(center, cp), cp.z)
 			cart.rotation.y = atan2(along.x, along.z)
 			life.add_child(cart)

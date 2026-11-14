@@ -8,7 +8,7 @@ func dress(root: Node3D, life: Node3D, _row: Dictionary, rng: RandomNumberGenera
 	var dir := tl.SEEN.rotated(Vector3.UP, rng.randf_range(-0.25, 0.25))
 	var side := Vector3(-dir.z, 0, dir.x)
 	var tipped: Node3D = tl.Real.make(tl.Real.one("cart"))
-	var tip_at := tl._spot(center, dir * 0.8, tl._blocked(root, life), life.get_meta("standing"), 0.35)
+	var tip_at := tl._spot(center, dir * 0.8, tl._fires(life), life.get_meta("standing"), 0.35)
 	if tipped and not is_nan(tip_at.x):
 		tipped.position = Vector3(tip_at.x, tl._y(center, tip_at) + 0.05, tip_at.z)
 		tipped.rotation = Vector3(0, atan2(side.x, side.z), PI * 0.5)  # over on its side

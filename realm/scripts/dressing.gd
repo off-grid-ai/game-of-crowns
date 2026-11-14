@@ -12,6 +12,7 @@ extends RefCounted
 ## a town. Knobs: realm/data/dressing.json (on).
 
 const Data := preload("res://scripts/data.gd")
+const Ground := preload("res://scripts/ground.gd")  # the one answer to where anything may stand
 const Works := preload("res://scripts/works.gd")
 const Batch := preload("res://scripts/batch.gd")
 
@@ -24,9 +25,9 @@ static func on() -> bool:
 
 
 ## Dresses a town once: a node "Dressing" under its root (kept while the town stands; built again
-## only if taken away). `ground(q)` is the ground's height under a town-local point, town-local;
-## `land(q)` whether it is land. Returns what it set down, {kind: count} (the layout probe reads it).
-static func dress(root: Node3D, ground: Callable, land: Callable, seed: int) -> Dictionary:
+## only if taken away). `ground(q)` is the ground's height under a town-local point, town-local. Each piece stands
+## only where the ground is clear (ground.gd). Returns what it set down, {kind: count} (the layout probe reads it).
+static func dress(root: Node3D, ground: Callable, seed: int) -> Dictionary:
 	if root == null or not is_instance_valid(root) or root.get_node_or_null("Dressing") != null:
 		return {}
 	var rng := RandomNumberGenerator.new()
@@ -44,7 +45,8 @@ static func dress(root: Node3D, ground: Callable, land: Callable, seed: int) -> 
 		if why != "bailey" and not _fits(root, at, taken, why == "ground"):  # the bailey lies inside the castle's own footprint
 			counts["refused"] = int(counts["refused"]) + 1
 			return false
-		if not bool(land.call(at)):
+		var keep := float((Data.value("dressing", "clear", {}) as Dictionary).get("wall", 0.02)) if why != "bailey" else 0.0
+		if not Ground.is_clear(root.position + at, keep):  # on land, a step off every wall (the bailey is open floor)
 			counts["refused"] = int(counts["refused"]) + 1
 			return false
 		var m := mesh_of(model)
@@ -245,16 +247,6 @@ static func _fits(root: Node3D, at: Vector3, taken: Array[Vector2], ground_cover
 	for b in Works.anchors(root).values():
 		for s in (b["spots"] as Dictionary).values():
 			if q.distance_to(Vector2((s as Vector3).x, (s as Vector3).z)) < float(C.get("spot", 0.07)):
-				return false
-	var wall := float(C.get("wall", 0.02))
-	for fp in root.get_meta("footprints", []):
-		var poly := PackedVector2Array(fp)
-		if poly.size() < 3 or q.distance_to(poly[0]) > 3.0:
-			continue
-		if Geometry2D.is_point_in_polygon(q, poly):
-			return false
-		for i in poly.size():
-			if q.distance_to(Geometry2D.get_closest_point_to_segment(q, poly[i], poly[(i + 1) % poly.size()])) < wall:
 				return false
 	if ground_cover:
 		var places: Dictionary = root.get_meta("places", {})

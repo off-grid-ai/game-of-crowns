@@ -83,7 +83,7 @@ func _run() -> void:
 		root.add_child(Node3D.new())  # (its Life would be here)
 		get_root().add_child(root)
 		var walls: Array = (root.get_meta("footprints") as Array).duplicate()
-		var counts := Dressing.dress(root, func(_q: Vector3) -> float: return 0.0, func(_q: Vector3) -> bool: return true, 11)
+		var counts := Dressing.dress(root, func(_q: Vector3) -> float: return 0.0, 11)
 		var node: Node = root.get_node_or_null("Dressing")
 		var placed := {}  # model -> where its copies stand, as each batch holds them (batch.gd)
 		for bt in (node.get_children() if node else []):
