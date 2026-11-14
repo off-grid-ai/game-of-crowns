@@ -9,6 +9,7 @@
 
 import { crownOf } from "./realm.js";
 import { houseFor, cityName } from "./narrator.js";
+import { say } from "./say.js";
 import fs from "node:fs";
 import { decree } from "./crown.js";
 import { calendar } from "./calendar.js";
@@ -55,7 +56,7 @@ export function sieges(ctx) {
     if (ctx.scenes.some((x) => x.kind === "siege" && x.city === c.id && x.turn === world.turn)) continue;
     scene("siege", { x: c.x, y: c.y, city: c.id, owner, defender: c.owner, size: near.length, engines: engines(near), ax: near[0].x, ay: near[0].y });
     const first = !ctx.scenes.some((x) => x.kind === "siege" && x.city === c.id && x.turn === world.turn - 1);
-    if (first) record({ turn: world.turn, kind: "battle", text: `${houseFor(world.players.find((p) => p.id === owner)).name} lays siege to ${cityName(c.id)} with ${near.length} companies.`, city: c.id });
+    if (first) record({ turn: world.turn, kind: "battle", text: say("event.siege", { house: houseFor(world.players.find((p) => p.id === owner)).name, town: cityName(c.id), n: near.length }), city: c.id });
   }
 }
 

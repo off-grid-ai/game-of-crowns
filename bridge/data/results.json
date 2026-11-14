@@ -1,5 +1,5 @@
 {
- "_": "Several wordings per court result (say.js; Reigns' fresh deck): the realm never says the same thing twice in a row. Keys are kind.option; {names} are filled by the court. Add a wording to any list to widen it; a key with none uses the court's own line. reword: the local model (Omni, reword.js) adds a wording a season to the result with the fewest, kept beside the chronicles (on: the switch; most: added wordings kept per result).",
+ "_": "Several wordings per court result (say.js; Reigns' fresh deck): the realm never says the same thing twice in a row. Keys are kind.option, and event.* for the chronicle's own news (narrator.js and the realm's lords, sieges, years and the dead); {names} are filled by the court. Add a wording to any list to widen it; a key with none uses the court's own line. reword: the local model (Omni, reword.js) adds a wording a season to the result with the fewest, kept beside the chronicles (on: the switch; most: added wordings kept per result). A line told for several towns at once (famine, plague, barracks: server.js GROUPED) takes the season's wording, so the towns share one line.",
  "grain.order": [
   "By royal command, {donor} feeds the starving of {house}, and resents every sack.",
   "{donor}'s granaries open on the King's word. The carts roll to {house}, and {donor} counts each one.",
@@ -52,8 +52,94 @@
   "{winner} has the King's backing. {loser} hears it in silence, and is gone before the wine.",
   "The King rules for {winner}. {loser} does not argue. It simply stops coming to council."
  ],
+ "event.founded": [
+  "{house} founds the town of {town}.",
+  "Settlers under {house}'s banner raise the first roofs of {town}.",
+  "{town} is marked out in the mud, and {house} calls it a town.",
+  "{house} plants a new town at {town}."
+ ],
+ "event.famine": [
+  "The granaries are empty and {people} starve.",
+  "There is no bread, and {people} eat the seed corn.",
+  "The granaries stand empty; {people} go hungry.",
+  "Not a sack of grain is left, and {people} grow thin."
+ ],
+ "event.plague": [
+  "The dead are carted out by night.",
+  "The bells ring for the dead every morning.",
+  "Doors are marked with chalk, and the carts come at dusk.",
+  "The gravediggers cannot keep pace."
+ ],
+ "event.barracks": [
+  "{house} is arming.",
+  "{house} drills men in the yard.",
+  "{house} wants more spears, and does not say why."
+ ],
+ "event.walls": [
+  "{town} raises walls of stone. {house} expects war.",
+  "Masons of {house} wall in {town}. Someone expects trouble.",
+  "Stone walls go up round {town}; {house} trusts its neighbours less each year."
+ ],
+ "event.arena": [
+  "{house} builds an arena in {town} to quiet the restless crowds.",
+  "{house} gives {town} an arena, and the crowds something to shout at.",
+  "An arena rises in {town}; {house} would rather the people roar there than at its gates."
+ ],
+ "event.sept": [
+  "{house} raises a sept in {town}; the people turn to the gods.",
+  "A sept goes up in {town}, paid for by {house}. The people pray louder.",
+  "{house} builds the gods a house in {town}."
+ ],
+ "event.conquest": [
+  "{to} storms {town}, tearing it from {from}.",
+  "{town} falls to {to}. {from} loses it in a day.",
+  "{to}'s banners fly over {town}; {from}'s are trampled in the gate."
+ ],
+ "event.razed": [
+  "{town} is razed to the ground by {house}.",
+  "{house} burns {town} and salts its fields.",
+  "Nothing stands of {town} now. {house} saw to it."
+ ],
+ "event.death": [
+  "{name} of {house} dies at {age}. The bells toll in {where}.",
+  "{name} of {house} is dead at {age}. {where} goes into mourning.",
+  "The bells of {where} ring for {name} of {house}, dead at {age}.",
+  "{name} of {house} is buried in {where}, aged {age}."
+ ],
+ "event.alliance": [
+  "Ravens fly between {house} and {other}. {name} and {othername} speak of friendship.",
+  "{name} of {house} sends gifts to {othername} of {other}. Friendship, they call it.",
+  "{house} and {other} drink to each other's health. {name} and {othername} mean some of it.",
+  "Letters pass between {name} and {othername}. {house} and {other} grow close."
+ ],
+ "event.court": [
+  "{name} of {house} comes to court.",
+  "{name} of {house} rides to Kingsmere with something to say.",
+  "{name} of {house} waits on the King's pleasure.",
+  "{name} of {house} asks to be heard at court."
+ ],
+ "event.siege": [
+  "{house} lays siege to {town} with {n} companies.",
+  "{n} companies of {house} close round {town}.",
+  "{house} brings {n} companies against the walls of {town}."
+ ],
+ "event.year": [
+  "The year {year} AC begins.",
+  "The year turns. It is {year} AC.",
+  "{year} AC: a new year, and the old quarrels with it."
+ ],
+ "event.deadagain": [
+  "The dead come again, more than before{often}. The northern houses beg the King for aid.",
+  "Again the dead cross the wall, more of them than last time{often}. The North sends riders to Kingsmere.",
+  "The dead are back in greater number{often}. The northern lords beg for the King's men."
+ ],
+ "event.deadheld": [
+  "The dead broke against the walls of {town}. {lord} held, and {men} of them lie in the snow.",
+  "The walls of {town} held against the dead. {lord} leaves {men} of them in the snow.",
+  "{lord} held {town}. {men} of the dead lie frozen under its walls."
+ ],
  "reword": {
-  "on": false,
+  "on": true,
   "most": 8
  }
 }

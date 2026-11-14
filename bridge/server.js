@@ -221,9 +221,10 @@ function detail() {
 // grouped: "Plague sweeps through Riverwood and Lionkeep." Keyed by the rest
 // of the sentence, so famine in two houses stays two lines.
 const GROUPED = [
-  [/^Plague sweeps through (.+?)\. (The dead are carted out by night\.)$/, (towns, rest) => `Plague sweeps through ${towns}. ${rest}`],
-  [/^Famine in (.+?)\. (The granaries are empty and .+ starve\.)$/, (towns, rest) => `Famine in ${towns}. ${rest}`],
-  [/^Barracks rise in (.+?)\. (.+ is arming\.)$/, (towns, rest) => `Barracks rise in ${towns}. ${rest}`],
+  // (The rest is the season's wording, say.js with the turn as seed, so the season's towns share it.)
+  [/^Plague sweeps through (.+?)\. (.+)$/, (towns, rest) => `Plague sweeps through ${towns}. ${rest}`],
+  [/^Famine in (.+?)\. (.+)$/, (towns, rest) => `Famine in ${towns}. ${rest}`],
+  [/^Barracks rise in (.+?)\. (.+)$/, (towns, rest) => `Barracks rise in ${towns}. ${rest}`],
 ];
 const held = new Map();  // key -> { entry, towns[], make }
 const andList = (xs) => (xs.length > 1 ? `${xs.slice(0, -1).join(", ")} and ${xs.at(-1)}` : xs[0]);

@@ -9,6 +9,7 @@ import * as Lua from "./lua.js";
 import fs from "node:fs";
 import path from "node:path";
 import { houseFor, cityName } from "./narrator.js";
+import { say } from "./say.js";
 import { greatHouses, crownOf, northTowns, farNorthTowns } from "./realm.js";
 import { BANDS } from "./favour.js";
 
@@ -176,7 +177,7 @@ export class Stakes {
       const town = world.cities.find((c) => c.id === n.struck.id);
       const name = cityName(n.struck.id);
       const lord = houseFor(world.players.find((p) => p.id === n.struck.owner) ?? {}).name ?? "its lord";
-      if (town && town.owner === n.struck.owner) this.record({ turn, kind: "decree", text: `The dead broke against the walls of ${name}. ${lord} held, and ${n.struck.men.toLocaleString("en-US")} of them lie in the snow.` });
+      if (town && town.owner === n.struck.owner) this.record({ turn, kind: "decree", text: say("event.deadheld", { town: name, lord, men: n.struck.men.toLocaleString("en-US") }) });
       else this.record({ turn, kind: "rebellion", text: `${name} has fallen to the dead. ${lord} could not hold it, and the North is smaller for it.` });
       n.struck = null;
     }
@@ -189,7 +190,7 @@ export class Stakes {
       this.host(ctx, this.theDead(), x, y, ["Warriors", "Archers", "Pikemen"], 3 + n.waves * 2);
       // Remember where they struck, to tell how it ended.
       if (north) n.struck = { id: north.id, owner: north.owner, turn, men: (3 + n.waves * 2) * 200 };
-      this.record({ turn, kind: "rebellion", text: n.waves === 1 ? "The dead come over the wall. The North bleeds first." : `The dead come again, more than before${n.waves > 4 ? ", as they have for years now" : ""}. The northern houses beg the King for aid.` });
+      this.record({ turn, kind: "rebellion", text: n.waves === 1 ? "The dead come over the wall. The North bleeds first." : say("event.deadagain", { often: n.waves > 4 ? ", as they have for years now" : "" }) });
       const northernSeats = farNorthTowns(world);
       if (n.waves >= 4 && northernSeats.length === 0) this.endReign("The North is lost to the dead, and the realm with it.", "fallen");
     }

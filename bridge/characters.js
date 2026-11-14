@@ -8,7 +8,7 @@
 
 import { crownOf, northTowns, richestTown } from "./realm.js";
 import * as Lua from "./lua.js";
-import { pick as wording } from "./say.js";  // one of a result's wordings (data/dilemmas.json text lists)
+import { pick as wording, say } from "./say.js";  // one of a result's wordings (data/dilemmas.json text lists)
 import fs from "node:fs";
 import path from "node:path";
 import { cityName, houseFor } from "./narrator.js";
@@ -456,7 +456,7 @@ export class Court {
   die(c, turn, world) {
     c.alive = false;
     const where = c.seat ? cityName(c.seat) : c.house;
-    this.record({ turn, kind: "death", text: `${c.name} of ${c.house} dies at ${c.age}. The bells toll in ${where}.`, city: c.seat ?? undefined });
+    this.record({ turn, kind: "death", text: say("event.death", { name: c.name, house: c.house, age: c.age, where }), city: c.seat ?? undefined });
     if (c.rank !== "lord" && c.rank !== "bannerman") return;
     const heir = c.children.map((id) => this.people[id]).filter((k) => k?.alive).sort((a, b) => b.age - a.age)[0];
     if (heir) {
@@ -593,7 +593,7 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
       case "alliance": {
         this.shift(c.id, m.target.id, 15, `I sought friendship with ${m.target.name}.`);
         this.shift(m.target.id, c.id, 12);
-        this.record({ turn, kind: "alliance", text: `Ravens fly between ${c.house} and ${m.target.house}. ${c.name} and ${m.target.name} speak of friendship.`, city: c.seat ?? undefined, with: m.target.seat ?? undefined });
+        this.record({ turn, kind: "alliance", text: say("event.alliance", { house: c.house, other: m.target.house, name: c.name, othername: m.target.name }), city: c.seat ?? undefined, with: m.target.seat ?? undefined });
         this.scheme({ kind: "pact", from: c.playerId, to: m.target.playerId, turn, line: `Ravens fly between ${c.house} and ${m.target.house}: a pact in the making.` });
         return;
       }
@@ -951,7 +951,7 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
     // them (it can be slow or busy, and the court never waits on it).
     this.petitions.push(p);
     if (this.petitions.length > 60) this.petitions = this.petitions.filter((x) => !x.answered || x.turn > turn - 40);
-    this.record({ turn, kind: "court", text: `${c.name} of ${c.house} comes to court.` });
+    this.record({ turn, kind: "court", text: say("event.court", { name: c.name, house: c.house }) });
     this.saveCourt();
     this.ask(c, `You stand before the King to say: ${p.text}`, ["speak"]).then((d) => {
       if (d?.line && !p.answered) { p.voice = d.line; this.saveCourt(); }

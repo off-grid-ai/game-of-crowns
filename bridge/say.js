@@ -26,8 +26,10 @@ export const added = (key) => ADDED[key] ?? [];
 export function add(key, text) { (ADDED[key] ??= []).push(text); }
 
 // The result's line: one of data/results.json's wordings for key, or one the model added (fallback when
-// it has none), its {names} filled.
-export function say(key, vars, fallback) {
-  const t = pick(key, [...(RESULTS[key] ?? [fallback]), ...(ADDED[key] ?? [])]);
+// it has none), its {names} filled. With a seed (the season), the season's own wording: lines told for
+// several towns at once take the same one, so they are written as one (server.js GROUPED).
+export function say(key, vars, fallback, seed) {
+  const all = [...(RESULTS[key] ?? [fallback]), ...(ADDED[key] ?? [])];
+  const t = seed == null ? pick(key, all) : all[Math.abs(Math.floor(seed)) % all.length];
   return String(t).replace(/\{(\w+)\}/g, (m, k) => (vars[k] ?? m));
 }

@@ -1,6 +1,7 @@
 // Turns Freeciv's raw events into chronicle sentences and gives the realm
 // its own names: great houses instead of nations, fantasy towns instead of
 // real-world city names.
+import { say } from "./say.js";  // several wordings per line (data/results.json event.*)
 
 export const HOUSES = {
   scottish: { name: "House Wolfholt", seat: "the cold North", words: "Hold Fast", color: "#9aa6b2", sigil: "wolf" },
@@ -82,14 +83,14 @@ function town(id) {
 }
 
 const NOTABLE_BUILDINGS = {
-  "City Walls": (c, h) => `${c} raises walls of stone. ${h} expects war.`,
-  Temple: (c, h) => `${h} raises a sept in ${c}; the people turn to the gods.`,
+  "City Walls": (c, h) => say("event.walls", { town: c, house: h }),
+  Temple: (c, h) => say("event.sept", { town: c, house: h }),
   Granary: (c, h) => `${c} builds a great granary, remembering hungry winters.`,
-  Barracks: (c, h) => `Barracks rise in ${c}. ${h} is arming.`,
+  Barracks: (c, h, turn) => `Barracks rise in ${c}. ${say("event.barracks", { house: h }, null, turn)}`,
   Cathedral: (c, h) => `A great sept rises over ${c}, the pride of ${h}.`,
   Harbor: (c, h) => `${c} opens its harbour to the sea.`,
-  Colosseum: (c, h) => `${h} builds an arena in ${c} to quiet the restless crowds.`,
-  Amphitheater: (c, h) => `${h} builds an arena in ${c} to quiet the restless crowds.`,
+  Colosseum: (c, h) => say("event.arena", { town: c, house: h }),
+  Amphitheater: (c, h) => say("event.arena", { town: c, house: h }),
   "Great Wall": (c, h) => `${h} completes the Great Wall. Their enemies despair.`,
   Pyramids: (c, h) => `${h} raises the Pyramids at ${c}, a wonder of the age.`,
   "Hanging Gardens": (c, h) => `The Hanging Gardens bloom in ${c}. ${h} rejoices.`,
@@ -117,22 +118,22 @@ export function describe(ev, world) {
   const c = ev.city !== undefined ? town(ev.city) : "";
   switch (ev.kind) {
     case "city_built":
-      return `${owner(world, ev.owner)} founds the town of ${c}.`;
+      return say("event.founded", { house: owner(world, ev.owner), town: c });
     case "city_shrank":
       if (ev.reason === "famine") {
         const who = owner(world, ev.owner);
-        return `Famine in ${c}. The granaries are empty and ${who === "The Crown" ? "the King's own people" : `the people of ${who}`} starve.`;
+        return `Famine in ${c}. ${say("event.famine", { people: who === "The Crown" ? "the King's own people" : `the people of ${who}` }, null, Number(ev.turn))}`;
       }
-      if (ev.reason === "plague") return `Plague sweeps through ${c}. The dead are carted out by night.`;
+      if (ev.reason === "plague") return `Plague sweeps through ${c}. ${say("event.plague", {}, null, Number(ev.turn))}`;
       if (ev.reason === "disaster") return `Disaster strikes ${c}; many are lost.`;
       if (ev.reason === "migration") return `Families abandon ${c}, seeking better lands.`;
       return null;
     case "city_destroyed":
       return Number(ev.destroyer) >= 0
-        ? `${c} is razed to the ground by ${owner(world, ev.destroyer)}.`
+        ? say("event.razed", { town: c, house: owner(world, ev.destroyer) })
         : `${c} is abandoned and falls to ruin.`;
     case "city_transferred":
-      if (ev.reason === "conquest") return `${owner(world, ev.to)} storms ${c}, tearing it from ${owner(world, ev.from)}.`;
+      if (ev.reason === "conquest") return say("event.conquest", { to: owner(world, ev.to), town: c, from: owner(world, ev.from) });
       if (ev.reason === "civil_war") return `Civil war! ${c} breaks from ${owner(world, ev.from)}.`;
       if (ev.reason === "incite") return `${c} is bribed into revolt and opens its gates to ${owner(world, ev.to)}.`;
       return `${c} passes from ${owner(world, ev.from)} to ${owner(world, ev.to)}.`;
@@ -140,7 +141,7 @@ export function describe(ev, world) {
       return `${ev.disaster} strikes ${c}.`;
     case "building_built": {
       const f = NOTABLE_BUILDINGS[ev.building];
-      return f ? f(c, owner(world, ev.owner)) : null;
+      return f ? f(c, owner(world, ev.owner), Number(ev.turn)) : null;
     }
     case "building_lost":
       // Freeciv also "loses" buildings when they go obsolete or are sold; only violence is news.

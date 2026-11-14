@@ -21,6 +21,7 @@ import * as Next from "./next.js";
 import * as Director from "./director.js";
 import * as Lua from "./lua.js";
 import { houseFor, cityName } from "./narrator.js";
+import { say } from "./say.js";
 import { decree, clampFavour } from "./crown.js";
 import { BANDS, IDLE, TURN } from "./favour.js";
 import { calendar, isYearEnd, isYearStart } from "./calendar.js";
@@ -53,7 +54,7 @@ export function turn(ctx, ev) {
   // Let the AI finish its start-of-turn moves before dumping the world.
   setTimeout(ctx.snapshot, 1500);
   setTimeout(() => ctx.minds?.tick(Number(ev.turn)), 3000);
-  if (isYearStart(ev.turn)) ctx.record({ turn: Number(ev.turn), kind: "year", text: `The year ${calendar(ev.turn).year} AC begins.` });
+  if (isYearStart(ev.turn)) ctx.record({ turn: Number(ev.turn), kind: "year", text: say("event.year", { year: calendar(ev.turn).year }) });
 }
 
 // Every four turns (a year of seasons), the people of the realm make their moves.
