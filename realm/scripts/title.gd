@@ -12,6 +12,7 @@ const PARCHMENT := Color(0.95, 0.9, 0.8)
 const MUTED := Color(0.72, 0.66, 0.56)
 const GOLD := Color(0.86, 0.68, 0.32)
 const Data := preload("res://scripts/data.gd")  # the one loader of realm/data
+const Awareness := preload("res://scripts/awareness.gd")  # the season's length as the bridge last said
 
 var bridge: Node
 var store: Node  # awareness.gd: the realm as the view knows it (the reign, for Continue)
@@ -1001,6 +1002,38 @@ func _choices(parent: Control, title: String, pairs: Array, current, setter: Cal
 const Settings := preload("res://scripts/settings.gd")
 
 
+## The game's own pace and reading size (Total War: Warhammer III's Game tab: campaign speed, UI scale): the size of
+## the words on screen (main.gd's interface scale, Cmd+ and Cmd- too) and how fast the seasons pass (juice.json
+## speed: the same steps as + and -). Words in juice.json settings.
+func _game_settings(parent: Control) -> void:
+	var w: Dictionary = Data.value("juice", "settings", {})
+	_section(parent, String(w.get("head", "The game")))
+	var main := get_tree().root.get_node_or_null("Main")
+	if main and "ui_scale" in main:
+		var sizes: Array = w.get("sizes", [])
+		var now := float(main.ui_scale)
+		var near: Variant = null
+		for p in sizes:
+			if near == null or absf(float(p[1]) - now) < absf(float(near) - now):
+				near = float(p[1])
+		_choices(parent, String(w.get("size", "")), sizes.map(func(p): return [p[0], float(p[1])]), near, func(v):
+			if is_instance_valid(main):
+				main._set_ui_scale(float(v)))
+	var steps: Array = (Data.value("juice", "speed", {}) as Dictionary).get("steps", [])
+	var names: Array = w.get("speeds", [])
+	if bridge and steps.size() == names.size() and not steps.is_empty():
+		var pairs := []
+		var at := 0
+		var cur := Awareness.season_seconds
+		for i in steps.size():
+			pairs.append([names[i], int(steps[i])])
+			if absf(float(steps[i]) - cur) < absf(float(steps[at]) - cur):
+				at = i
+		_choices(parent, String(w.get("speed", "")), pairs, int(steps[at]), func(v):
+			bridge.set_speed(int(v))
+			Awareness.season_seconds = float(v))
+
+
 ## The settings, one page: the running reign's choices that can still change
 ## (applied to the realm at once), and how you play on this Mac: voices, the
 ## microphone, and whether Off Grid's local model is there to give people words.
@@ -1158,6 +1191,7 @@ func _voice_settings(right: Control) -> void:
 	vol.value = float(Settings.get_value("voice_volume"))
 	vol.value_changed.connect(func(v): Settings.set_value("voice_volume", v))
 	right.add_child(vol)
+	_game_settings(right)
 	# Sound: everything at once, then the music and the realm's own sounds.
 	_section(right, "Graphics")
 	_choices(right, "How the realm is drawn", [["Smooth", "smooth"], ["Beautiful", "beautiful"]], Settings.get_value("graphics"), func(v):
