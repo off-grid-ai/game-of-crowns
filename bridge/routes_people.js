@@ -60,7 +60,29 @@ export async function person(ctx, req, res, url) {
     traits: c.traits, goals: (c.goals ?? []).map((g) => g.text), goal: c.goals?.[0]?.kind ?? null, role_key: c.role ?? null, loyalty: c.loyalty,
     seat: c.seat != null ? cityName(c.seat) : null, role: c.role ? ROLES[c.role]?.title : null,
     memories: [...new Set(c.memories ?? [])].slice(-6), backstory: c.backstory ?? null,
+    why: whyOf(ctx, c), family: familyOf(ctx, c),
   });
+}
+
+// A lord's sheet, toward the King (CK3's opinion breakdown): the King's last deeds their house keeps (favourbook.js
+// recordDeed), newest first, each as the lord would put it ("The King fed our people when they starved"). Only a
+// house's lord speaks for it.
+function whyOf(ctx, c) {
+  if (c.rank !== "lord" || c.playerId == null) return [];
+  return [...(ctx.deeds?.[c.playerId] ?? [])].sort((a, b) => (b.last ?? b.turn) - (a.last ?? a.turn)).slice(0, 5)
+    .map((x) => ({ d: x.d, what: `The King ${x.what}` }));
+}
+
+// Their family as the sheet lists it: spouse, children, brothers and sisters (by shared parents), living or dead.
+function familyOf(ctx, c) {
+  const P = ctx.court.people;
+  const one = (k, rel) => k && { id: k.id, name: k.name, rel, age: k.age, alive: k.alive !== false };
+  const male = (k) => k.gender === "male";
+  const spouse = P[c.spouse];
+  const kids = (c.children ?? []).map((id) => P[id]).filter(Boolean);
+  const sibs = c.parents?.length ? Object.values(P).filter((k) => k.id !== c.id && k.parents?.some((x) => c.parents.includes(x))) : [];
+  return [one(spouse, spouse && (male(spouse) ? "husband" : "wife")), ...kids.map((k) => one(k, male(k) ? "son" : "daughter")),
+    ...sibs.map((k) => one(k, male(k) ? "brother" : "sister"))].filter(Boolean);
 }
 
 export async function characterOptions(ctx, req, res, url) {
