@@ -231,11 +231,11 @@ func _stage_town(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 	life.set_meta("house", house)
 	life.set_meta("dress", [String(root.get_meta("rank", "town")), Color.from_string(String(house.get("color", "")), Color(0, 0, 0, 0)), bool(c.get("grief", false))])
 	root.set_meta("keepers", {})
-	_dress(root, life, center, c, rng, house)
+	await _dress(root, life, center, c, rng, house)  # each stall and each mood's dressing its own step
 	await _pace("dress")  # the town's working life when this frame's share is spent, its scenes after (staged over frames)
 	if _gone(root, life):
 		return  # redressed meanwhile
-	_works(root, life, center, c, rng)
+	await _works(root, life, center, c, rng)  # each working building its own step
 	await _pace("works")
 	if _gone(root, life):
 		return
@@ -929,6 +929,23 @@ func raise_site(town_node: Node3D, plot: Transform3D, building: String, seasons:
 const PROPS := "res://assets/props/%s.gltf"
 const PROP_SCALE := Units.M  # the props kit is in metres; a person here stands about 0.2
 static var _prop_cache := {}
+
+
+## Every prop file starts loading on Godot's own background loader (ResourceLoader's threaded loading) as the realm
+## boots, so a town's life finds its props read and only places them (fps6: life.dress 852 ms, life.works 339 ms, the
+## props read from disk the first time a town used them). A prop asked for before its load is done waits for that
+## load, never reads it twice. Called by main beside realistic.gd warm.
+static func warm() -> void:
+	var dir := PROPS.get_base_dir()
+	var asked := {}
+	for f in DirAccess.get_files_at(dir):
+		var name := f.trim_suffix(".remap").trim_suffix(".import")
+		if not name.ends_with(".gltf") or asked.has(name):
+			continue
+		asked[name] = true
+		var path := dir.path_join(name)
+		if not ResourceLoader.has_cached(path):
+			ResourceLoader.load_threaded_request(path)
 ## What people sit on, eat at and work at (people.json furniture: benches, tables and what's on them, the
 ## anvil) is drawn at the people's own size (readable), so a drinker sits on the bench and not proud of it.
 ## --furniture=off draws it life size, as before.
@@ -970,6 +987,9 @@ func _dress(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, rng: Ran
 	elif c.get("famine", false) or c.get("atWar", false) or c.get("grief", false):
 		goods = ["FarmCrate_Empty", "Crate_Wooden"]  # shut or sold out
 	for st in stalls:
+		await _pace("dress")  # each stall's goods their own step
+		if _gone(root, life):
+			return
 		var m: Vector3 = st[0]
 		var out := preload("res://scripts/town_plots.gd").stall_out(st)
 		var along := Vector3(-out.z, 0, out.x)
@@ -984,6 +1004,9 @@ func _dress(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, rng: Ran
 	var side := Vector3(-edge.z, 0, edge.x).normalized()
 	life.set_meta("anchors", {"barricade": {"at": edge * 0.95, "dir": edge}, "lute": {"at": well + side * 0.18, "dir": SEEN},
 		"tax": {"at": edge * 0.6, "dir": edge, "side": side}, "tax_queue": {"at": edge * 0.6, "dir": -edge.normalized()}})
+	await _pace("dress")
+	if _gone(root, life):
+		return
 	if c.get("atWar", false):
 		# A barricade cart across the road in, weapons stacked, and more of the watch.
 		var cart: Node3D = Real.make(Real.one("cart"))
@@ -1010,6 +1033,9 @@ func _dress(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, rng: Ran
 			life.add_child(flag)
 		_prop(life, center, "WeaponStand", edge * 1.05 + side * 0.2, atan2(-edge.x, -edge.z), 1.0, 0.0)
 		_prop(life, center, "Shield_Wooden", edge * 1.05 - side * 0.2, atan2(-edge.x, -edge.z))
+	await _pace("dress")
+	if _gone(root, life):
+		return
 	if c.get("grief", false):
 		# Mourners gathered at the well, candles set down; at a fountain, round its rim, outside the basin
 		# (moods.json centre.mourners, centre.candles: past its real radius).
@@ -1017,6 +1043,9 @@ func _dress(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, rng: Ran
 		var set_down := basin + float(Data.num("moods", "centre.candles", 0.04)) if basin > 0.0 else 0.19
 		for i in 3:
 			_prop(life, center, "Candle_1", well + Vector3(cos(i * 2.1), 0, sin(i * 2.1)) * set_down)  # round the well's curb (its winch reaches 0.16 out) or the basin's rim, not in it
+	await _pace("dress")
+	if _gone(root, life):
+		return
 	if c.get("prosperity", false):
 		# One more stall in good times, by the well, heaped with produce.
 		var extra := _off_centre(root, well + side * 0.38, float(Data.num("moods", "centre.stall", 0.2)))  # the canopy clear of a fountain's rim
@@ -1027,6 +1056,9 @@ func _dress(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, rng: Ran
 			life.add_child(stall)
 			for i in 3:
 				_prop(life, center, ["FarmCrate_Apple", "FarmCrate_Carrot", "Barrel_Apples"][i], extra + Vector3(-extra.z, 0, extra.x).normalized() * (i - 1) * 0.06 - extra.normalized() * 0.08, atan2(-extra.x, -extra.z))
+	await _pace("dress")
+	if _gone(root, life):
+		return
 	if c.get("grasping", false):
 		# The tax collector's table in the square, coin and ledger on it, a guard by him, a queue muttering.
 		var at := edge * 0.6
@@ -1071,23 +1103,53 @@ func _works(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, rng: Ran
 	tick.make_prop = func(name: String, at: Vector3, yaw: float, lift: float) -> Node3D: return _work_prop(life, center, name, at, yaw, lift)
 	life.add_child(tick)
 	var n := func(what: String) -> int: return Works.count(what, active, size)
+	await _pace("works")
+	if _gone(root, life):
+		return
 	if all.has("forge"):
 		_forge(root, life, center, all["forge"], tick, n.call("smiths"), rng)
+	await _pace("works")
+	if _gone(root, life):
+		return
 	if all.has("armoury"):
 		_armoury(root, life, center, all["armoury"], tick, n.call("levy_queue"), rng)
+	await _pace("works")
+	if _gone(root, life):
+		return
 	var pad := Works.find(root, "paddock")
 	if not pad.is_empty():
 		_paddock(root, life, center, pad, tick, n.call("horses"), rng)
+	await _pace("works")
+	if _gone(root, life):
+		return
 	if all.has("barn"):
 		_yard(root, life, center, all["barn"], n.call("beasts"), n.call("yardhands"), rng)
+	await _pace("works")
+	if _gone(root, life):
+		return
 	for kind in ["windmill", "watermill"]:
 		if all.has(kind):
+			await _pace("works")
+			if _gone(root, life):
+				return
 			_mill(root, life, center, all[kind], kind, tick, n.call("millers"), rng)
+	await _pace("works")
+	if _gone(root, life):
+		return
 	if all.has("granary"):
 		_granary(root, life, center, all["granary"], c, tick, n.call("granary_queue"), rng)
+	await _pace("works")
+	if _gone(root, life):
+		return
 	_crews(root, life, center, all, n, rng)
+	await _pace("works")
+	if _gone(root, life):
+		return
 	if all.has("inn"):
 		_inn(root, life, center, all["inn"], tick, n, rng)
+	await _pace("works")
+	if _gone(root, life):
+		return
 	_door_lamps(root, life, center, tick, rng)
 
 

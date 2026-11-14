@@ -161,6 +161,7 @@ func _ready() -> void:
 	Ground.towns = towns  # the one answer to where a body may stand
 	Ground.terrain = terrain
 	Real.warm()  # the towns' models read on worker threads while the land forms
+	preload("res://scripts/town_life.gd").warm()  # and the props a town's life sets down
 	ruins = preload("res://scripts/ruins.gd").new()  # what war leaves on the land
 	ruins.terrain = terrain
 	add_child(ruins)
