@@ -26,6 +26,8 @@ const Works := preload("res://scripts/works.gd")  # the sky's night: a bribed ma
 
 var scenes: Node
 var root: Node3D
+const Bulk := preload("res://scripts/bulk.gd")  # the one drawer of repeated small things: trench, tents, baggage
+const REACH := 1000.0  # the camp's bulk-drawn things stand as far as its nodes did (no draw distance of their own)
 var r: RandomNumberGenerator
 var at: Vector3  # the town
 var base := 0.0  # the camp's middle, as an angle round the town
@@ -252,22 +254,22 @@ func _trench(rad: float, t: Dictionary) -> void:
 	spoil.albedo_color = Color(0.4, 0.32, 0.23)
 	spoil.roughness = 1.0
 	var seg := float(t.get("segment", 0.18))
+	# One box a part, every segment a copy of it drawn in bulk (bulk.gd: a trench was a node a segment).
+	var parts := []
+	for part in [[dug, w, 0.004, 0.0], [spoil, w * 0.7, 0.018, w * 0.9]]:
+		var box := BoxMesh.new()
+		box.size = Vector3(seg * 1.02, float(part[2]), float(part[1]))
+		box.material = part[0]
+		parts.append([box, float(part[2]), float(part[3])])
 	var a := -span
 	while a < span:
 		var mid := a + seg / rad * 0.5
 		var p := _arc(mid, rad)
 		if scenes._footing(p):
 			var yaw := -(base + mid) + PI * 0.5  # along the arc
-			for part in [[dug, w, 0.004, 0.0], [spoil, w * 0.7, 0.018, w * 0.9]]:
-				var m := MeshInstance3D.new()
-				var box := BoxMesh.new()
-				box.size = Vector3(seg * 1.02, float(part[2]), float(part[1]))
-				m.mesh = box
-				m.material_override = part[0]
-				var out := Vector3(cos(base + mid), 0, sin(base + mid))  # away from the town: the camp side
-				m.position = scenes.ground(p + out * float(part[3])) + Vector3(0, float(part[2]) * 0.5, 0)
-				m.rotation.y = yaw
-				root.add_child(m)
+			var out := Vector3(cos(base + mid), 0, sin(base + mid))  # away from the town: the camp side
+			for part: Array in parts:
+				Bulk.add(part[0], Transform3D(Basis(Vector3.UP, yaw), scenes.ground(p + out * float(part[2])) + Vector3(0, float(part[1]) * 0.5, 0)), root, REACH, true)
 		a += seg / rad
 
 
@@ -332,8 +334,12 @@ func _tents() -> void:
 	# toward linen (half toward cream read as salmon pink beside a red house, batch 8b), and plain linen.
 	var canvas := CampKit.cloth(col.lerp(Color(0.9, 0.85, 0.72), float(k.get("canvas", 0.15))))
 	var plain := CampKit.cloth(Color(0.82, 0.76, 0.62))
-	var mesh := PrismMesh.new()
-	mesh.size = Vector3(float(sz[0]), float(sz[1]), float(sz[2]))
+	var tents := []  # the house's canvas and plain linen, each one prism every tent of it copies (bulk.gd)
+	for cloth in [canvas, plain]:
+		var mesh := PrismMesh.new()
+		mesh.size = Vector3(float(sz[0]), float(sz[1]), float(sz[2]))
+		mesh.material = cloth
+		tents.append(mesh)
 	for row in k.get("rows", [0.75]):
 		var rad := camp_r + float(row)
 		var step := float(k.get("every", 0.38)) / rad
@@ -342,16 +348,12 @@ func _tents() -> void:
 		while a <= span:
 			var p := _arc(a + r.randf_range(-0.02, 0.02), rad + r.randf_range(-0.06, 0.06))
 			if scenes._footing(p):
-				var t := MeshInstance3D.new()
-				t.mesh = mesh
-				t.material_override = canvas if n % 3 != 2 else plain  # the house's canvas, now and then plain
-				t.position = p + Vector3(0, float(sz[1]) * 0.5, 0)
-				t.rotation.y = -(base + a) + r.randf_range(-0.15, 0.15)  # ridge along the row
-				root.add_child(t)
+				var place := Transform3D(Basis(Vector3.UP, -(base + a) + r.randf_range(-0.15, 0.15)), p + Vector3(0, float(sz[1]) * 0.5, 0))  # ridge along the row
+				Bulk.add(tents[0] if n % 3 != 2 else tents[1], place, root, REACH, true)  # the house's canvas, now and then plain
 				if n % int(k.get("pennant_every", 3)) == 0:  # the house's pennant on the ridge's end (WC3's worn colour)
 					var flag := Heraldry.standard(house, col, float(k.get("pennant", 0.14)))
-					flag.position = Vector3(0, float(sz[1]) * 0.5, float(sz[2]) * 0.45)
-					t.add_child(flag)
+					flag.transform = place * Transform3D(Basis.IDENTITY, Vector3(0, float(sz[1]) * 0.5, float(sz[2]) * 0.45))
+					root.add_child(flag)
 			a += step
 			n += 1
 
@@ -389,12 +391,12 @@ func _wagons() -> void:
 			w.position = p
 			w.rotation.y = r.randf() * TAU
 			root.add_child(w)
-		for j in int(k.get("props", 4)) / n + 1:
-			var c: Node3D = Real.make(Real.one(["barrel", "crate"][r.randi() % 2]))
-			if c:
-				c.position = scenes.ground(p + Vector3(r.randf_range(-0.25, 0.25), 0, r.randf_range(-0.25, 0.25)))
-				c.rotation.y = r.randf() * TAU
-				root.add_child(c)
+		for j in int(k.get("props", 4)) / n + 1:  # barrels and crates by it, drawn in bulk (bulk.gd)
+			var parts := Real.parts(Real.one(["barrel", "crate"][r.randi() % 2]))
+			var place := Transform3D(Basis.IDENTITY, scenes.ground(p + Vector3(r.randf_range(-0.25, 0.25), 0, r.randf_range(-0.25, 0.25))))
+			place.basis = Basis(Vector3.UP, r.randf() * TAU)
+			for pt: Array in parts:
+				Bulk.add(pt[0], place * (pt[1] as Transform3D), root, REACH, true)
 
 
 ## A ram and a siege tower waiting in the band, their men by them: the ram before the gate nearest the camp when

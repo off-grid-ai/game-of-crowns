@@ -17,7 +17,7 @@ static var _next := 1
 
 
 ## A copy of `mesh` standing at `place` (world), drawn out to `reach` from the lens (ViewTier.FAR_FROM when not given),
-## for `owner` (any key: a layer, a site). Returns its handle.
+## for `owner` (any key: a layer, a site; a Node owner's copies go when it leaves the tree). Returns its handle.
 static func add(mesh: Mesh, place: Transform3D, owner: Variant, reach := -1.0, shadows := false) -> int:
 	if mesh == null:
 		return 0
@@ -42,6 +42,8 @@ static func add(mesh: Mesh, place: Transform3D, owner: Variant, reach := -1.0, s
 	_where[h] = [key, i, owner]
 	if not _owned.has(owner):
 		_owned[owner] = {}
+		if owner is Node:  # a node owner takes its copies with it when it leaves the tree
+			(owner as Node).tree_exiting.connect(remove_owner.bind(owner), CONNECT_ONE_SHOT)
 	_owned[owner][h] = true
 	return h
 
