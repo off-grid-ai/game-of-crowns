@@ -1,0 +1,1405 @@
+{
+ "_": "gen.py's court faces (style.md fills {subject}), about 900 AD in Game of Thrones' gritty look (Mac 2026-11-14): kind (lord, lady, warrior, archer, clergy, trader, elder, youth, child), sex, age (young, adult, old), child, subject. Every kind covered, children and old women included; ages, hair, build, skin and scars varied.",
+ "faces": [
+  {
+   "kind": "lord",
+   "sex": "m",
+   "age": "adult",
+   "child": false,
+   "subject": "a broad high lord of about fifty, olive skin, close-cropped hair, a moustache and stubble, a heavy fox-fur cloak pinned with a gold brooch over mail, a sword hilt at his side"
+  },
+  {
+   "kind": "lord",
+   "sex": "m",
+   "age": "adult",
+   "child": false,
+   "subject": "a wiry high lord of about fifty, brown skin, a balding head, stubble, a cut lip, a heavy bear-fur cloak pinned with a gold brooch over dark silk, a sword hilt at his side"
+  },
+  {
+   "kind": "lord",
+   "sex": "m",
+   "age": "adult",
+   "child": false,
+   "subject": "a big-boned high lord of about forty-five, brown skin, close-cropped hair, a forked braided beard, a scar through one eyebrow, a heavy sable-fur cloak pinned with a gold brooch over mail, a sword hilt at his side"
+  },
+  {
+   "kind": "lord",
+   "sex": "m",
+   "age": "adult",
+   "child": false,
+   "subject": "a broad high lord of about fifty, windburnt skin, thick greasy hair, a short grizzled beard, a missing ear tip, a heavy sable-fur cloak pinned with a gold brooch over dark silk, a sword hilt at his side"
+  },
+  {
+   "kind": "lord",
+   "sex": "m",
+   "age": "adult",
+   "child": false,
+   "subject": "a broad high lord of about forty-five, brown skin, dark matted hair, a forked braided beard, a missing ear tip, a heavy fox-fur cloak pinned with a gold brooch over mail, a sword hilt at his side"
+  },
+  {
+   "kind": "lord",
+   "sex": "m",
+   "age": "adult",
+   "child": false,
+   "subject": "a hollow-cheeked high lord of about forty-five, pale skin, shaved sides and a long braid, a short grizzled beard, a heavy fox-fur cloak pinned with a gold brooch over dark silk, a sword hilt at his side"
+  },
+  {
+   "kind": "lord",
+   "sex": "m",
+   "age": "adult",
+   "child": false,
+   "subject": "a big-boned high lord of about fifty, ruddy skin, long tangled hair, a long beard, a cut lip, a heavy wolf-fur cloak pinned with a gold brooch over dark silk, a sword hilt at his side"
+  },
+  {
+   "kind": "lord",
+   "sex": "m",
+   "age": "adult",
+   "child": false,
+   "subject": "a hollow-cheeked high lord of about forty-five, ruddy skin, hair tied back, a moustache and stubble, a missing ear tip, a heavy bear-fur cloak pinned with a gold brooch over dark silk, a sword hilt at his side"
+  },
+  {
+   "kind": "lord",
+   "sex": "m",
+   "age": "adult",
+   "child": false,
+   "subject": "a gaunt high lord of about forty-five, fair skin, shaved sides and a long braid, a short grizzled beard, a broken nose, a heavy fox-fur cloak pinned with a gold brooch over mail, a sword hilt at his side"
+  },
+  {
+   "kind": "lord",
+   "sex": "m",
+   "age": "young",
+   "child": false,
+   "subject": "a broad high lord of about twenty-eight, brown skin, a balding head, a forked braided beard, a broken nose, a heavy fox-fur cloak pinned with a gold brooch over dark silk, a sword hilt at his side"
+  },
+  {
+   "kind": "lord",
+   "sex": "m",
+   "age": "old",
+   "child": false,
+   "subject": "a thick-necked high lord of about sixty-five, fair skin, close-cropped hair, a long beard, a cut lip, a heavy wolf-fur cloak pinned with a gold brooch over mail, a sword hilt at his side"
+  },
+  {
+   "kind": "lord",
+   "sex": "m",
+   "age": "adult",
+   "child": false,
+   "subject": "a broad high lord of about forty-five, tawny skin, a balding head, a forked braided beard, a broken nose, a heavy wolf-fur cloak pinned with a gold brooch over rich dyed wool, a sword hilt at his side"
+  },
+  {
+   "kind": "lord",
+   "sex": "m",
+   "age": "old",
+   "child": false,
+   "subject": "a broad high lord of about sixty-five, windburnt skin, thick greasy hair, a thick beard, a burn scar on the cheek, a heavy wolf-fur cloak pinned with a gold brooch over dark silk, a sword hilt at his side"
+  },
+  {
+   "kind": "lord",
+   "sex": "m",
+   "age": "adult",
+   "child": false,
+   "subject": "a hollow-cheeked high lord of about fifty, olive skin, dark matted hair, a short grizzled beard, a heavy sable-fur cloak pinned with a gold brooch over mail, a sword hilt at his side"
+  },
+  {
+   "kind": "lord",
+   "sex": "m",
+   "age": "adult",
+   "child": false,
+   "subject": "a big-boned high lord of about fifty, pale skin, dark matted hair, a moustache and stubble, a broken nose, a heavy wolf-fur cloak pinned with a gold brooch over rich dyed wool, a sword hilt at his side"
+  },
+  {
+   "kind": "lord",
+   "sex": "m",
+   "age": "old",
+   "child": false,
+   "subject": "a broad high lord of about sixty-five, weathered skin, dark matted hair, a moustache and stubble, a scar through one eyebrow, a heavy wolf-fur cloak pinned with a gold brooch over rich dyed wool, a sword hilt at his side"
+  },
+  {
+   "kind": "lord",
+   "sex": "m",
+   "age": "young",
+   "child": false,
+   "subject": "a broad high lord of about twenty-eight, ruddy skin, shaved sides and a long braid, a forked braided beard, a broken nose, a heavy wolf-fur cloak pinned with a gold brooch over rich dyed wool, a sword hilt at his side"
+  },
+  {
+   "kind": "lord",
+   "sex": "m",
+   "age": "adult",
+   "child": false,
+   "subject": "a gaunt high lord of about forty-five, brown skin, long tangled hair, a thick beard, a heavy wolf-fur cloak pinned with a gold brooch over mail, a sword hilt at his side"
+  },
+  {
+   "kind": "lord",
+   "sex": "m",
+   "age": "adult",
+   "child": false,
+   "subject": "a hollow-cheeked high lord of about forty-five, brown skin, a balding head, a forked braided beard, a scar through one eyebrow, a heavy fox-fur cloak pinned with a gold brooch over mail, a sword hilt at his side"
+  },
+  {
+   "kind": "lord",
+   "sex": "m",
+   "age": "old",
+   "child": false,
+   "subject": "a heavy-set high lord of about sixty-five, pale skin, a balding head, a forked braided beard, a burn scar on the cheek, a heavy wolf-fur cloak pinned with a gold brooch over dark silk, a sword hilt at his side"
+  },
+  {
+   "kind": "lord",
+   "sex": "m",
+   "age": "adult",
+   "child": false,
+   "subject": "a heavy-set high lord of about forty-five, ruddy skin, shaved sides and a long braid, a long beard, a cut lip, a heavy fox-fur cloak pinned with a gold brooch over mail, a sword hilt at his side"
+  },
+  {
+   "kind": "lord",
+   "sex": "m",
+   "age": "adult",
+   "child": false,
+   "subject": "a heavy-set high lord of about fifty, weathered skin, long tangled hair, a short grizzled beard, a heavy wolf-fur cloak pinned with a gold brooch over rich dyed wool, a sword hilt at his side"
+  },
+  {
+   "kind": "lord",
+   "sex": "m",
+   "age": "adult",
+   "child": false,
+   "subject": "a thick-necked high lord of about fifty, brown skin, hair tied back, a thick beard, a cut lip, a heavy sable-fur cloak pinned with a gold brooch over mail, a sword hilt at his side"
+  },
+  {
+   "kind": "lord",
+   "sex": "m",
+   "age": "young",
+   "child": false,
+   "subject": "a broad high lord of about twenty-eight, tawny skin, long tangled hair, a short grizzled beard, a broken nose, a heavy wolf-fur cloak pinned with a gold brooch over mail, a sword hilt at his side"
+  },
+  {
+   "kind": "lady",
+   "sex": "f",
+   "age": "adult",
+   "child": false,
+   "subject": "a lean lady of a great house, about thirty-five, weathered skin, fair braids, a plain headband, a faded blue apron dress with oval brooches and glass beads, cold watchful eyes"
+  },
+  {
+   "kind": "lady",
+   "sex": "f",
+   "age": "adult",
+   "child": false,
+   "subject": "a heavy-set lady of a great house, about thirty-five, olive skin, greying hair under a linen headrail, a silver fillet, a black silk-trimmed wool gown, cold watchful eyes"
+  },
+  {
+   "kind": "lady",
+   "sex": "f",
+   "age": "young",
+   "child": false,
+   "subject": "a hollow-cheeked lady of a great house, about twenty, olive skin, greying hair under a linen headrail, a linen headrail, a ochre apron dress with oval brooches and glass beads, cold watchful eyes"
+  },
+  {
+   "kind": "lady",
+   "sex": "f",
+   "age": "adult",
+   "child": false,
+   "subject": "a wiry lady of a great house, about thirty-five, olive skin, fair braids, a silver fillet, a brown apron dress with oval brooches and glass beads, cold watchful eyes"
+  },
+  {
+   "kind": "lady",
+   "sex": "f",
+   "age": "adult",
+   "child": false,
+   "subject": "a broad lady of a great house, about thirty-five, brown skin, tangled brown hair, a linen headrail, a grey fur-lined cloak over a dark gown, cold watchful eyes"
+  },
+  {
+   "kind": "lady",
+   "sex": "f",
+   "age": "old",
+   "child": false,
+   "subject": "a heavy-set lady of a great house, about sixty, tawny skin, red hair in a long plait, a plain headband, a black fur-lined cloak over a dark gown, cold watchful eyes"
+  },
+  {
+   "kind": "lady",
+   "sex": "f",
+   "age": "adult",
+   "child": false,
+   "subject": "a wiry lady of a great house, about forty-five, pale skin, tangled brown hair, a plain headband, a faded blue apron dress with oval brooches and glass beads, cold watchful eyes"
+  },
+  {
+   "kind": "lady",
+   "sex": "f",
+   "age": "old",
+   "child": false,
+   "subject": "a hollow-cheeked lady of a great house, about sixty, fair skin, red hair in a long plait, a silver fillet, a black fur-lined cloak over a dark gown, cold watchful eyes"
+  },
+  {
+   "kind": "lady",
+   "sex": "f",
+   "age": "young",
+   "child": false,
+   "subject": "a hollow-cheeked lady of a great house, about twenty, olive skin, fair braids, a plain headband, a dark green apron dress with oval brooches and glass beads, cold watchful eyes"
+  },
+  {
+   "kind": "lady",
+   "sex": "f",
+   "age": "adult",
+   "child": false,
+   "subject": "a hollow-cheeked lady of a great house, about forty-five, olive skin, tangled brown hair, a silver fillet, a brown fur-lined cloak over a dark gown, cold watchful eyes"
+  },
+  {
+   "kind": "lady",
+   "sex": "f",
+   "age": "adult",
+   "child": false,
+   "subject": "a hollow-cheeked lady of a great house, about forty-five, weathered skin, greying hair under a linen headrail, a plain headband, a black fur-lined cloak over a dark gown, cold watchful eyes"
+  },
+  {
+   "kind": "lady",
+   "sex": "f",
+   "age": "old",
+   "child": false,
+   "subject": "a wiry lady of a great house, about sixty, tawny skin, black hair pinned up, a silver fillet, a brown fur-lined cloak over a dark gown, cold watchful eyes"
+  },
+  {
+   "kind": "lady",
+   "sex": "f",
+   "age": "adult",
+   "child": false,
+   "subject": "a thick-necked lady of a great house, about forty-five, weathered skin, tangled brown hair, a plain headband, a faded blue fur-lined cloak over a dark gown, cold watchful eyes"
+  },
+  {
+   "kind": "lady",
+   "sex": "f",
+   "age": "old",
+   "child": false,
+   "subject": "a lean lady of a great house, about sixty, ruddy skin, dark braids, a plain headband, a dark red silk-trimmed wool gown, cold watchful eyes"
+  },
+  {
+   "kind": "lady",
+   "sex": "f",
+   "age": "old",
+   "child": false,
+   "subject": "a broad lady of a great house, about sixty, pale skin, tangled brown hair, a plain headband, a ochre apron dress with oval brooches and glass beads, cold watchful eyes"
+  },
+  {
+   "kind": "lady",
+   "sex": "f",
+   "age": "adult",
+   "child": false,
+   "subject": "a hollow-cheeked lady of a great house, about forty-five, ruddy skin, greying hair under a linen headrail, a silver fillet, a dark red apron dress with oval brooches and glass beads, cold watchful eyes"
+  },
+  {
+   "kind": "lady",
+   "sex": "f",
+   "age": "young",
+   "child": false,
+   "subject": "a heavy-set lady of a great house, about twenty, weathered skin, black hair pinned up, a linen headrail, a ochre apron dress with oval brooches and glass beads, cold watchful eyes"
+  },
+  {
+   "kind": "lady",
+   "sex": "f",
+   "age": "old",
+   "child": false,
+   "subject": "a lean lady of a great house, about sixty, tawny skin, dark braids, a linen headrail, a rust fur-lined cloak over a dark gown, cold watchful eyes"
+  },
+  {
+   "kind": "lady",
+   "sex": "f",
+   "age": "adult",
+   "child": false,
+   "subject": "a big-boned lady of a great house, about forty-five, ruddy skin, red hair in a long plait, a plain headband, a dark green apron dress with oval brooches and glass beads, cold watchful eyes"
+  },
+  {
+   "kind": "lady",
+   "sex": "f",
+   "age": "adult",
+   "child": false,
+   "subject": "a heavy-set lady of a great house, about forty-five, olive skin, red hair in a long plait, a linen headrail, a dark red apron dress with oval brooches and glass beads, cold watchful eyes"
+  },
+  {
+   "kind": "lady",
+   "sex": "f",
+   "age": "adult",
+   "child": false,
+   "subject": "a big-boned lady of a great house, about forty-five, ruddy skin, fair braids, a plain headband, a dark red apron dress with oval brooches and glass beads, cold watchful eyes"
+  },
+  {
+   "kind": "lady",
+   "sex": "f",
+   "age": "adult",
+   "child": false,
+   "subject": "a big-boned lady of a great house, about forty-five, olive skin, greying hair under a linen headrail, a silver fillet, a dark red fur-lined cloak over a dark gown, cold watchful eyes"
+  },
+  {
+   "kind": "lady",
+   "sex": "f",
+   "age": "young",
+   "child": false,
+   "subject": "a big-boned lady of a great house, about twenty, pale skin, fair braids, a plain headband, a black silk-trimmed wool gown, cold watchful eyes"
+  },
+  {
+   "kind": "lady",
+   "sex": "f",
+   "age": "old",
+   "child": false,
+   "subject": "a gaunt lady of a great house, about sixty, brown skin, greying hair under a linen headrail, a silver fillet, a dark red silk-trimmed wool gown, cold watchful eyes"
+  },
+  {
+   "kind": "warrior",
+   "sex": "m",
+   "age": "adult",
+   "child": false,
+   "subject": "a hollow-cheeked warrior of about forty, brown skin, shaved sides and a long braid, a forked braided beard, a scar through one eyebrow, bare-headed, a mail shirt, a round painted shield and a spear"
+  },
+  {
+   "kind": "warrior",
+   "sex": "m",
+   "age": "adult",
+   "child": false,
+   "subject": "a heavy-set warrior of about thirty, olive skin, thick greasy hair, a short grizzled beard, a burn scar on the cheek, a nasal helm pushed back, a mail shirt, a seax at his belt and a spear"
+  },
+  {
+   "kind": "warrior",
+   "sex": "m",
+   "age": "young",
+   "child": false,
+   "subject": "a big-boned warrior of about twenty-two, brown skin, red hair in braids, a long beard, a conical nasal helm, a mail shirt, a Dane axe on his shoulder"
+  },
+  {
+   "kind": "warrior",
+   "sex": "m",
+   "age": "adult",
+   "child": false,
+   "subject": "a gaunt warrior of about forty, brown skin, hair tied back, a forked braided beard, a broken nose, a conical nasal helm, a mail shirt, a round painted shield and a spear"
+  },
+  {
+   "kind": "warrior",
+   "sex": "m",
+   "age": "young",
+   "child": false,
+   "subject": "a broad warrior of about twenty-two, pale skin, long tangled hair, a long beard, a burn scar on the cheek, bare-headed, a mail shirt, a Dane axe on his shoulder"
+  },
+  {
+   "kind": "warrior",
+   "sex": "m",
+   "age": "young",
+   "child": false,
+   "subject": "a big-boned warrior of about twenty-two, ruddy skin, close-cropped hair, a moustache and stubble, a broken nose, bare-headed, a mail shirt, a Dane axe on his shoulder"
+  },
+  {
+   "kind": "warrior",
+   "sex": "m",
+   "age": "old",
+   "child": false,
+   "subject": "a thick-necked warrior of about fifty-five, pale skin, thick greasy hair, a short grizzled beard, bare-headed, a mail shirt, a Dane axe on his shoulder"
+  },
+  {
+   "kind": "warrior",
+   "sex": "m",
+   "age": "young",
+   "child": false,
+   "subject": "a lean warrior of about twenty-two, ruddy skin, hair tied back, a moustache and stubble, a scar through one eyebrow, a nasal helm pushed back, a mail shirt, a round painted shield and a spear"
+  },
+  {
+   "kind": "warrior",
+   "sex": "m",
+   "age": "adult",
+   "child": false,
+   "subject": "a big-boned warrior of about thirty, pale skin, shaved sides and a long braid, a thick beard, bare-headed, a mail shirt, a round painted shield and a spear"
+  },
+  {
+   "kind": "warrior",
+   "sex": "m",
+   "age": "young",
+   "child": false,
+   "subject": "a big-boned warrior of about twenty-two, windburnt skin, thick greasy hair, a moustache and stubble, a missing ear tip, a conical nasal helm, a mail shirt, a sword and a round shield"
+  },
+  {
+   "kind": "warrior",
+   "sex": "m",
+   "age": "old",
+   "child": false,
+   "subject": "a lean warrior of about fifty-five, weathered skin, close-cropped hair, a short grizzled beard, a conical nasal helm, a mail shirt, a Dane axe on his shoulder"
+  },
+  {
+   "kind": "warrior",
+   "sex": "m",
+   "age": "adult",
+   "child": false,
+   "subject": "a heavy-set warrior of about forty, ruddy skin, thick greasy hair, a thick beard, a burn scar on the cheek, a conical nasal helm, a mail shirt, a round painted shield and a spear"
+  },
+  {
+   "kind": "warrior",
+   "sex": "m",
+   "age": "adult",
+   "child": false,
+   "subject": "a big-boned warrior of about forty, windburnt skin, thick greasy hair, a short grizzled beard, a burn scar on the cheek, a nasal helm pushed back, a mail shirt, a seax at his belt and a spear"
+  },
+  {
+   "kind": "warrior",
+   "sex": "m",
+   "age": "adult",
+   "child": false,
+   "subject": "a big-boned warrior of about thirty, brown skin, hair tied back, a thick beard, a conical nasal helm, a mail shirt, a seax at his belt and a spear"
+  },
+  {
+   "kind": "warrior",
+   "sex": "m",
+   "age": "adult",
+   "child": false,
+   "subject": "a heavy-set warrior of about forty, weathered skin, dark matted hair, a long beard, a cut lip, a nasal helm pushed back, a mail shirt, a Dane axe on his shoulder"
+  },
+  {
+   "kind": "warrior",
+   "sex": "m",
+   "age": "old",
+   "child": false,
+   "subject": "a lean warrior of about fifty-five, pale skin, long tangled hair, a short grizzled beard, bare-headed, a mail shirt, a sword and a round shield"
+  },
+  {
+   "kind": "warrior",
+   "sex": "m",
+   "age": "adult",
+   "child": false,
+   "subject": "a lean warrior of about forty, windburnt skin, long tangled hair, a forked braided beard, a missing ear tip, bare-headed, a mail shirt, a sword and a round shield"
+  },
+  {
+   "kind": "warrior",
+   "sex": "m",
+   "age": "young",
+   "child": false,
+   "subject": "a hollow-cheeked warrior of about twenty-two, windburnt skin, dark matted hair, a moustache and stubble, a burn scar on the cheek, a nasal helm pushed back, a mail shirt, a round painted shield and a spear"
+  },
+  {
+   "kind": "warrior",
+   "sex": "m",
+   "age": "young",
+   "child": false,
+   "subject": "a wiry warrior of about twenty-two, windburnt skin, thick greasy hair, a moustache and stubble, a cut lip, a conical nasal helm, a mail shirt, a seax at his belt and a spear"
+  },
+  {
+   "kind": "warrior",
+   "sex": "m",
+   "age": "adult",
+   "child": false,
+   "subject": "a gaunt warrior of about thirty, fair skin, dark matted hair, a thick beard, a broken nose, a nasal helm pushed back, a mail shirt, a seax at his belt and a spear"
+  },
+  {
+   "kind": "warrior",
+   "sex": "m",
+   "age": "old",
+   "child": false,
+   "subject": "a wiry warrior of about fifty-five, tawny skin, shaved sides and a long braid, a forked braided beard, a scar through one eyebrow, a conical nasal helm, a mail shirt, a round painted shield and a spear"
+  },
+  {
+   "kind": "warrior",
+   "sex": "m",
+   "age": "young",
+   "child": false,
+   "subject": "a broad warrior of about twenty-two, pale skin, shaved sides and a long braid, a long beard, a broken nose, bare-headed, a mail shirt, a Dane axe on his shoulder"
+  },
+  {
+   "kind": "warrior",
+   "sex": "f",
+   "age": "old",
+   "child": false,
+   "subject": "a heavy-set shieldmaiden of about fifty-five, olive skin, red hair in a long plait, a missing ear tip, a mail shirt over wool, a spear and a round shield"
+  },
+  {
+   "kind": "warrior",
+   "sex": "f",
+   "age": "adult",
+   "child": false,
+   "subject": "a thick-necked shieldmaiden of about forty, windburnt skin, black hair pinned up, a scar through one eyebrow, a mail shirt over wool, a spear and a round shield"
+  },
+  {
+   "kind": "warrior",
+   "sex": "f",
+   "age": "adult",
+   "child": false,
+   "subject": "a wiry shieldmaiden of about thirty, pale skin, red hair in a long plait, a broken nose, a mail shirt over wool, a round painted shield and an axe"
+  },
+  {
+   "kind": "warrior",
+   "sex": "f",
+   "age": "adult",
+   "child": false,
+   "subject": "a heavy-set shieldmaiden of about forty, olive skin, fair braids, a missing ear tip, a mail shirt over wool, a spear and a round shield"
+  },
+  {
+   "kind": "warrior",
+   "sex": "f",
+   "age": "young",
+   "child": false,
+   "subject": "a lean shieldmaiden of about twenty-two, weathered skin, red hair in a long plait, a mail shirt over wool, a sword and a seax"
+  },
+  {
+   "kind": "warrior",
+   "sex": "f",
+   "age": "adult",
+   "child": false,
+   "subject": "a gaunt shieldmaiden of about forty, tawny skin, greying hair under a linen headrail, a mail shirt over wool, a round painted shield and an axe"
+  },
+  {
+   "kind": "warrior",
+   "sex": "f",
+   "age": "old",
+   "child": false,
+   "subject": "a lean shieldmaiden of about fifty-five, windburnt skin, black hair pinned up, a mail shirt over wool, a sword and a seax"
+  },
+  {
+   "kind": "warrior",
+   "sex": "f",
+   "age": "adult",
+   "child": false,
+   "subject": "a thick-necked shieldmaiden of about thirty, pale skin, tangled brown hair, a mail shirt over wool, a sword and a seax"
+  },
+  {
+   "kind": "archer",
+   "sex": "m",
+   "age": "young",
+   "child": false,
+   "subject": "a gaunt hunter-archer of about twenty-five, pale skin, a balding head, a short bow and a quiver of grey-fletched arrows, leather and rough faded blue wool"
+  },
+  {
+   "kind": "archer",
+   "sex": "m",
+   "age": "adult",
+   "child": false,
+   "subject": "a big-boned hunter-archer of about thirty-five, pale skin, close-cropped hair, a missing ear tip, a short bow and a quiver of grey-fletched arrows, leather and rough ochre wool"
+  },
+  {
+   "kind": "archer",
+   "sex": "m",
+   "age": "young",
+   "child": false,
+   "subject": "a hollow-cheeked hunter-archer of about nineteen, fair skin, dark matted hair, a missing ear tip, a short bow and a quiver of grey-fletched arrows, leather and rough ochre wool"
+  },
+  {
+   "kind": "archer",
+   "sex": "m",
+   "age": "young",
+   "child": false,
+   "subject": "a big-boned hunter-archer of about twenty-five, windburnt skin, close-cropped hair, a short bow and a quiver of grey-fletched arrows, leather and rough rust wool"
+  },
+  {
+   "kind": "archer",
+   "sex": "m",
+   "age": "young",
+   "child": false,
+   "subject": "a heavy-set hunter-archer of about nineteen, weathered skin, shaved sides and a long braid, a broken nose, a short bow and a quiver of grey-fletched arrows, leather and rough brown wool"
+  },
+  {
+   "kind": "archer",
+   "sex": "m",
+   "age": "adult",
+   "child": false,
+   "subject": "a thick-necked hunter-archer of about thirty-five, fair skin, thick greasy hair, a missing ear tip, a short bow and a quiver of grey-fletched arrows, leather and rough brown wool"
+  },
+  {
+   "kind": "archer",
+   "sex": "m",
+   "age": "young",
+   "child": false,
+   "subject": "a big-boned hunter-archer of about nineteen, weathered skin, hair tied back, a burn scar on the cheek, a short bow and a quiver of grey-fletched arrows, leather and rough dark green wool"
+  },
+  {
+   "kind": "archer",
+   "sex": "f",
+   "age": "young",
+   "child": false,
+   "subject": "a big-boned archer woman of about nineteen, tawny skin, red hair in a long plait, a short bow and a quiver of grey-fletched arrows, leather and rough ochre wool"
+  },
+  {
+   "kind": "archer",
+   "sex": "f",
+   "age": "young",
+   "child": false,
+   "subject": "a big-boned archer woman of about nineteen, olive skin, tangled brown hair, a burn scar on the cheek, a short bow and a quiver of grey-fletched arrows, leather and rough brown wool"
+  },
+  {
+   "kind": "archer",
+   "sex": "f",
+   "age": "young",
+   "child": false,
+   "subject": "a gaunt archer woman of about nineteen, brown skin, greying hair under a linen headrail, a scar through one eyebrow, a short bow and a quiver of grey-fletched arrows, leather and rough brown wool"
+  },
+  {
+   "kind": "clergy",
+   "sex": "m",
+   "age": "old",
+   "child": false,
+   "subject": "a big-boned priest of about sixty-five, pale skin, long unkempt hair, a black wool robe, ink-stained fingers, tired wise eyes"
+  },
+  {
+   "kind": "clergy",
+   "sex": "m",
+   "age": "old",
+   "child": false,
+   "subject": "a gaunt monk of about sixty-five, pale skin, long unkempt hair, a black wool robe, ink-stained fingers, tired wise eyes"
+  },
+  {
+   "kind": "clergy",
+   "sex": "m",
+   "age": "young",
+   "child": false,
+   "subject": "a lean hermit of about twenty-five, pale skin, a tonsure, a black wool robe, ink-stained fingers, tired wise eyes"
+  },
+  {
+   "kind": "clergy",
+   "sex": "m",
+   "age": "young",
+   "child": false,
+   "subject": "a thick-necked priest of about twenty-five, olive skin, a shaved head, a rough brown wool robe, ink-stained fingers, tired wise eyes"
+  },
+  {
+   "kind": "clergy",
+   "sex": "m",
+   "age": "adult",
+   "child": false,
+   "subject": "a thick-necked scholar-scribe of about forty, pale skin, long unkempt hair, a black wool robe, ink-stained fingers, tired wise eyes"
+  },
+  {
+   "kind": "clergy",
+   "sex": "m",
+   "age": "adult",
+   "child": false,
+   "subject": "a heavy-set scholar-scribe of about forty, pale skin, long unkempt hair, a grey wool robe, ink-stained fingers, tired wise eyes"
+  },
+  {
+   "kind": "clergy",
+   "sex": "m",
+   "age": "old",
+   "child": false,
+   "subject": "a heavy-set hermit of about sixty-five, tawny skin, a shaved head, a black wool robe, ink-stained fingers, tired wise eyes"
+  },
+  {
+   "kind": "clergy",
+   "sex": "m",
+   "age": "old",
+   "child": false,
+   "subject": "a big-boned hermit of about sixty-five, brown skin, a tonsure, a rough brown wool robe, ink-stained fingers, tired wise eyes"
+  },
+  {
+   "kind": "clergy",
+   "sex": "m",
+   "age": "old",
+   "child": false,
+   "subject": "a wiry priest of about sixty-five, brown skin, long unkempt hair, a grey wool robe, ink-stained fingers, tired wise eyes"
+  },
+  {
+   "kind": "clergy",
+   "sex": "m",
+   "age": "adult",
+   "child": false,
+   "subject": "a heavy-set scholar-scribe of about forty, ruddy skin, a shaved head, a black wool robe, ink-stained fingers, tired wise eyes"
+  },
+  {
+   "kind": "clergy",
+   "sex": "f",
+   "age": "young",
+   "child": false,
+   "subject": "a thick-necked nun of about twenty-five, pale skin, a plain linen headrail, a ochre wool robe, a pouch of herbs at her belt"
+  },
+  {
+   "kind": "clergy",
+   "sex": "f",
+   "age": "young",
+   "child": false,
+   "subject": "a gaunt wise woman of about twenty-five, tawny skin, a plain linen headrail, a dark red wool robe, a pouch of herbs at her belt"
+  },
+  {
+   "kind": "clergy",
+   "sex": "f",
+   "age": "young",
+   "child": false,
+   "subject": "a thick-necked nun of about twenty-five, brown skin, a plain linen headrail, a black wool robe, a pouch of herbs at her belt"
+  },
+  {
+   "kind": "clergy",
+   "sex": "f",
+   "age": "young",
+   "child": false,
+   "subject": "a big-boned healer of about twenty-five, weathered skin, a plain linen headrail, a ochre wool robe, a pouch of herbs at her belt"
+  },
+  {
+   "kind": "trader",
+   "sex": "m",
+   "age": "old",
+   "child": false,
+   "subject": "a lean trader of about sixty, windburnt skin, long tangled hair, a forked braided beard, silver arm rings, a faded blue wool cloak, a hacksilver scale-pouch, shrewd eyes"
+  },
+  {
+   "kind": "trader",
+   "sex": "m",
+   "age": "adult",
+   "child": false,
+   "subject": "a heavy-set trader of about forty, weathered skin, dark matted hair, a thick beard, silver arm rings, a faded blue wool cloak, a hacksilver scale-pouch, shrewd eyes"
+  },
+  {
+   "kind": "trader",
+   "sex": "m",
+   "age": "adult",
+   "child": false,
+   "subject": "a lean trader of about forty, olive skin, dark matted hair, a moustache and stubble, silver arm rings, a brown wool cloak, a hacksilver scale-pouch, shrewd eyes"
+  },
+  {
+   "kind": "trader",
+   "sex": "m",
+   "age": "young",
+   "child": false,
+   "subject": "a hollow-cheeked trader of about twenty-eight, ruddy skin, dark matted hair, a short grizzled beard, silver arm rings, a grey wool cloak, a hacksilver scale-pouch, shrewd eyes"
+  },
+  {
+   "kind": "trader",
+   "sex": "m",
+   "age": "young",
+   "child": false,
+   "subject": "a gaunt trader of about twenty-eight, windburnt skin, close-cropped hair, stubble, silver arm rings, a ochre wool cloak, a hacksilver scale-pouch, shrewd eyes"
+  },
+  {
+   "kind": "trader",
+   "sex": "m",
+   "age": "adult",
+   "child": false,
+   "subject": "a hollow-cheeked trader of about forty, windburnt skin, long tangled hair, a long beard, silver arm rings, a dark green wool cloak, a hacksilver scale-pouch, shrewd eyes"
+  },
+  {
+   "kind": "trader",
+   "sex": "m",
+   "age": "adult",
+   "child": false,
+   "subject": "a hollow-cheeked trader of about fifty, brown skin, hair tied back, a short grizzled beard, silver arm rings, a ochre wool cloak, a hacksilver scale-pouch, shrewd eyes"
+  },
+  {
+   "kind": "trader",
+   "sex": "m",
+   "age": "young",
+   "child": false,
+   "subject": "a wiry trader of about twenty-eight, pale skin, long tangled hair, a moustache and stubble, silver arm rings, a grey wool cloak, a hacksilver scale-pouch, shrewd eyes"
+  },
+  {
+   "kind": "trader",
+   "sex": "m",
+   "age": "adult",
+   "child": false,
+   "subject": "a big-boned trader of about fifty, brown skin, shaved sides and a long braid, a forked braided beard, silver arm rings, a dark green wool cloak, a hacksilver scale-pouch, shrewd eyes"
+  },
+  {
+   "kind": "trader",
+   "sex": "m",
+   "age": "young",
+   "child": false,
+   "subject": "a hollow-cheeked trader of about twenty-eight, pale skin, red hair in braids, a short grizzled beard, silver arm rings, a dark red wool cloak, a hacksilver scale-pouch, shrewd eyes"
+  },
+  {
+   "kind": "trader",
+   "sex": "f",
+   "age": "old",
+   "child": false,
+   "subject": "a lean trader woman of about sixty, pale skin, dark braids, keys and a purse at her belt, a dark green apron dress with brooches"
+  },
+  {
+   "kind": "trader",
+   "sex": "f",
+   "age": "adult",
+   "child": false,
+   "subject": "a big-boned trader woman of about fifty, weathered skin, greying hair under a linen headrail, keys and a purse at her belt, a dark green apron dress with brooches"
+  },
+  {
+   "kind": "trader",
+   "sex": "f",
+   "age": "young",
+   "child": false,
+   "subject": "a thick-necked trader woman of about twenty-eight, fair skin, fair braids, keys and a purse at her belt, a dark green apron dress with brooches"
+  },
+  {
+   "kind": "trader",
+   "sex": "f",
+   "age": "adult",
+   "child": false,
+   "subject": "a big-boned trader woman of about forty, weathered skin, dark braids, keys and a purse at her belt, a ochre apron dress with brooches"
+  },
+  {
+   "kind": "trader",
+   "sex": "f",
+   "age": "adult",
+   "child": false,
+   "subject": "a gaunt trader woman of about forty, ruddy skin, black hair pinned up, keys and a purse at her belt, a rust apron dress with brooches"
+  },
+  {
+   "kind": "trader",
+   "sex": "f",
+   "age": "young",
+   "child": false,
+   "subject": "a gaunt trader woman of about twenty-eight, ruddy skin, fair braids, keys and a purse at her belt, a dark green apron dress with brooches"
+  },
+  {
+   "kind": "elder",
+   "sex": "m",
+   "age": "old",
+   "child": false,
+   "subject": "an old man of about seventy, ruddy deeply lined skin, white stubble, thin white hair, a cut lip, a worn fur over grey wool, leaning on a staff"
+  },
+  {
+   "kind": "elder",
+   "sex": "m",
+   "age": "old",
+   "child": false,
+   "subject": "an old man of about seventy, weathered deeply lined skin, white long beard, thin white hair, a cut lip, a worn fur over grey wool, a cup in his hand"
+  },
+  {
+   "kind": "elder",
+   "sex": "m",
+   "age": "old",
+   "child": false,
+   "subject": "an old man of about sixty-five, olive deeply lined skin, white long beard, a bald scarred head, a scar through one eyebrow, a worn fur over brown wool, leaning on a staff"
+  },
+  {
+   "kind": "elder",
+   "sex": "m",
+   "age": "old",
+   "child": false,
+   "subject": "an old man of about sixty-five, weathered deeply lined skin, white braided beard, a bald scarred head, a broken nose, a worn fur over brown wool, a cup in his hand"
+  },
+  {
+   "kind": "elder",
+   "sex": "m",
+   "age": "old",
+   "child": false,
+   "subject": "an old man of about sixty-five, brown deeply lined skin, white long beard, a bald scarred head, a burn scar on the cheek, a worn fur over dark green wool, leaning on a staff"
+  },
+  {
+   "kind": "elder",
+   "sex": "m",
+   "age": "old",
+   "child": false,
+   "subject": "an old man of about seventy, ruddy deeply lined skin, white braided beard, thin white hair, a worn fur over rust wool, a cup in his hand"
+  },
+  {
+   "kind": "elder",
+   "sex": "m",
+   "age": "old",
+   "child": false,
+   "subject": "an old man of about seventy-eight, windburnt deeply lined skin, white stubble, thin white hair, a broken nose, a worn fur over dark green wool, leaning on a staff"
+  },
+  {
+   "kind": "elder",
+   "sex": "m",
+   "age": "old",
+   "child": false,
+   "subject": "an old man of about seventy, olive deeply lined skin, white stubble, thin white hair, a worn fur over grey wool, leaning on a staff"
+  },
+  {
+   "kind": "elder",
+   "sex": "m",
+   "age": "old",
+   "child": false,
+   "subject": "an old man of about seventy-eight, pale deeply lined skin, white braided beard, thin white hair, a broken nose, a worn fur over faded blue wool, an old sword across his knees"
+  },
+  {
+   "kind": "elder",
+   "sex": "m",
+   "age": "old",
+   "child": false,
+   "subject": "an old man of about seventy, ruddy deeply lined skin, white braided beard, a bald scarred head, a scar through one eyebrow, a worn fur over ochre wool, an old sword across his knees"
+  },
+  {
+   "kind": "elder",
+   "sex": "m",
+   "age": "old",
+   "child": false,
+   "subject": "an old man of about sixty-five, brown deeply lined skin, white braided beard, long white hair, a worn fur over ochre wool, a cup in his hand"
+  },
+  {
+   "kind": "elder",
+   "sex": "m",
+   "age": "old",
+   "child": false,
+   "subject": "an old man of about sixty-five, olive deeply lined skin, white stubble, a bald scarred head, a missing ear tip, a worn fur over grey wool, an old sword across his knees"
+  },
+  {
+   "kind": "elder",
+   "sex": "m",
+   "age": "old",
+   "child": false,
+   "subject": "an old man of about sixty-five, tawny deeply lined skin, white braided beard, long white hair, a broken nose, a worn fur over dark green wool, an old sword across his knees"
+  },
+  {
+   "kind": "elder",
+   "sex": "m",
+   "age": "old",
+   "child": false,
+   "subject": "an old man of about seventy-eight, brown deeply lined skin, white long beard, a bald scarred head, a worn fur over rust wool, a cup in his hand"
+  },
+  {
+   "kind": "elder",
+   "sex": "m",
+   "age": "old",
+   "child": false,
+   "subject": "an old man of about seventy, brown deeply lined skin, white long beard, thin white hair, a worn fur over black wool, leaning on a staff"
+  },
+  {
+   "kind": "elder",
+   "sex": "m",
+   "age": "old",
+   "child": false,
+   "subject": "an old man of about seventy-eight, fair deeply lined skin, white long beard, a bald scarred head, a scar through one eyebrow, a worn fur over black wool, leaning on a staff"
+  },
+  {
+   "kind": "elder",
+   "sex": "m",
+   "age": "old",
+   "child": false,
+   "subject": "an old man of about seventy-eight, brown deeply lined skin, white braided beard, long white hair, a scar through one eyebrow, a worn fur over brown wool, an old sword across his knees"
+  },
+  {
+   "kind": "elder",
+   "sex": "m",
+   "age": "old",
+   "child": false,
+   "subject": "an old man of about seventy-eight, brown deeply lined skin, white stubble, thin white hair, a worn fur over rust wool, an old sword across his knees"
+  },
+  {
+   "kind": "elder",
+   "sex": "f",
+   "age": "old",
+   "child": false,
+   "subject": "an old woman of about sixty-five, windburnt deeply lined skin, grey hair loose, a black wool dress and a shawl of fur, tired kind eyes"
+  },
+  {
+   "kind": "elder",
+   "sex": "f",
+   "age": "old",
+   "child": false,
+   "subject": "an old woman of about sixty-five, fair deeply lined skin, grey hair loose, a rust wool dress and a shawl of fur, tired kind eyes"
+  },
+  {
+   "kind": "elder",
+   "sex": "f",
+   "age": "old",
+   "child": false,
+   "subject": "an old woman of about seventy, ruddy deeply lined skin, grey hair loose, a faded blue wool dress and a shawl of fur, tired kind eyes"
+  },
+  {
+   "kind": "elder",
+   "sex": "f",
+   "age": "old",
+   "child": false,
+   "subject": "an old woman of about sixty-five, weathered deeply lined skin, grey hair loose, a brown wool dress and a shawl of fur, a toothless hard smile"
+  },
+  {
+   "kind": "elder",
+   "sex": "f",
+   "age": "old",
+   "child": false,
+   "subject": "an old woman of about sixty-five, tawny deeply lined skin, grey hair loose, a ochre wool dress and a shawl of fur, sharp knowing eyes"
+  },
+  {
+   "kind": "elder",
+   "sex": "f",
+   "age": "old",
+   "child": false,
+   "subject": "an old woman of about seventy, pale deeply lined skin, white hair under a linen headrail, a faded blue wool dress and a shawl of fur, a toothless hard smile"
+  },
+  {
+   "kind": "elder",
+   "sex": "f",
+   "age": "old",
+   "child": false,
+   "subject": "an old woman of about seventy-eight, weathered deeply lined skin, white hair under a linen headrail, a ochre wool dress and a shawl of fur, sharp knowing eyes"
+  },
+  {
+   "kind": "elder",
+   "sex": "f",
+   "age": "old",
+   "child": false,
+   "subject": "an old woman of about sixty-five, brown deeply lined skin, thin white braids, a ochre wool dress and a shawl of fur, sharp knowing eyes"
+  },
+  {
+   "kind": "elder",
+   "sex": "f",
+   "age": "old",
+   "child": false,
+   "subject": "an old woman of about seventy-eight, pale deeply lined skin, grey hair loose, a dark green wool dress and a shawl of fur, tired kind eyes"
+  },
+  {
+   "kind": "elder",
+   "sex": "f",
+   "age": "old",
+   "child": false,
+   "subject": "an old woman of about sixty-five, brown deeply lined skin, thin white braids, a faded blue wool dress and a shawl of fur, tired kind eyes"
+  },
+  {
+   "kind": "elder",
+   "sex": "f",
+   "age": "old",
+   "child": false,
+   "subject": "an old woman of about seventy, ruddy deeply lined skin, grey hair loose, a dark green wool dress and a shawl of fur, a toothless hard smile"
+  },
+  {
+   "kind": "elder",
+   "sex": "f",
+   "age": "old",
+   "child": false,
+   "subject": "an old woman of about seventy-eight, fair deeply lined skin, thin white braids, a dark green wool dress and a shawl of fur, sharp knowing eyes"
+  },
+  {
+   "kind": "elder",
+   "sex": "f",
+   "age": "old",
+   "child": false,
+   "subject": "an old woman of about seventy, tawny deeply lined skin, thin white braids, a ochre wool dress and a shawl of fur, a toothless hard smile"
+  },
+  {
+   "kind": "elder",
+   "sex": "f",
+   "age": "old",
+   "child": false,
+   "subject": "an old woman of about seventy, windburnt deeply lined skin, white hair under a linen headrail, a grey wool dress and a shawl of fur, a toothless hard smile"
+  },
+  {
+   "kind": "elder",
+   "sex": "f",
+   "age": "old",
+   "child": false,
+   "subject": "an old woman of about seventy, brown deeply lined skin, thin white braids, a faded blue wool dress and a shawl of fur, tired kind eyes"
+  },
+  {
+   "kind": "elder",
+   "sex": "f",
+   "age": "old",
+   "child": false,
+   "subject": "an old woman of about sixty-five, pale deeply lined skin, thin white braids, a faded blue wool dress and a shawl of fur, tired kind eyes"
+  },
+  {
+   "kind": "elder",
+   "sex": "f",
+   "age": "old",
+   "child": false,
+   "subject": "an old woman of about seventy-eight, ruddy deeply lined skin, white hair under a linen headrail, a brown wool dress and a shawl of fur, sharp knowing eyes"
+  },
+  {
+   "kind": "elder",
+   "sex": "f",
+   "age": "old",
+   "child": false,
+   "subject": "an old woman of about sixty-five, weathered deeply lined skin, white hair under a linen headrail, a black wool dress and a shawl of fur, a toothless hard smile"
+  },
+  {
+   "kind": "youth",
+   "sex": "m",
+   "age": "young",
+   "child": false,
+   "subject": "a lean youth of about seventeen, a stable boy, weathered skin, dark matted hair, dirt on his face, a ochre wool tunic"
+  },
+  {
+   "kind": "youth",
+   "sex": "m",
+   "age": "young",
+   "child": false,
+   "subject": "a big-boned youth of about seventeen, a squire, fair skin, shaved sides and a long braid, dirt on his face, a faded blue wool tunic, a spear"
+  },
+  {
+   "kind": "youth",
+   "sex": "m",
+   "age": "young",
+   "child": false,
+   "subject": "a broad youth of about seventeen, a shield-bearer, brown skin, long tangled hair, dirt on his face, a brown wool tunic, a spear"
+  },
+  {
+   "kind": "youth",
+   "sex": "m",
+   "age": "young",
+   "child": false,
+   "subject": "a gaunt youth of about seventeen, a squire, fair skin, thick greasy hair, dirt on his face, a dark red wool tunic, a spear"
+  },
+  {
+   "kind": "youth",
+   "sex": "m",
+   "age": "young",
+   "child": false,
+   "subject": "a lean youth of about fifteen, a squire, brown skin, shaved sides and a long braid, dirt on his face, a black wool tunic"
+  },
+  {
+   "kind": "youth",
+   "sex": "m",
+   "age": "young",
+   "child": false,
+   "subject": "a broad youth of about seventeen, a hunter, windburnt skin, long tangled hair, dirt on his face, a grey wool tunic"
+  },
+  {
+   "kind": "youth",
+   "sex": "m",
+   "age": "young",
+   "child": false,
+   "subject": "a lean youth of about seventeen, a stable boy, weathered skin, thick greasy hair, dirt on his face, a dark red wool tunic, a spear"
+  },
+  {
+   "kind": "youth",
+   "sex": "m",
+   "age": "young",
+   "child": false,
+   "subject": "a heavy-set youth of about fifteen, a stable boy, weathered skin, shaved sides and a long braid, dirt on his face, a dark green wool tunic, a spear"
+  },
+  {
+   "kind": "youth",
+   "sex": "m",
+   "age": "young",
+   "child": false,
+   "subject": "a lean youth of about fifteen, a stable boy, ruddy skin, close-cropped hair, dirt on his face, a brown wool tunic, a spear"
+  },
+  {
+   "kind": "youth",
+   "sex": "m",
+   "age": "young",
+   "child": false,
+   "subject": "a big-boned youth of about seventeen, a hunter, fair skin, dark matted hair, dirt on his face, a dark green wool tunic, a spear"
+  },
+  {
+   "kind": "youth",
+   "sex": "m",
+   "age": "young",
+   "child": false,
+   "subject": "a big-boned youth of about seventeen, a shield-bearer, weathered skin, red hair in braids, dirt on his face, a black wool tunic, a spear"
+  },
+  {
+   "kind": "youth",
+   "sex": "f",
+   "age": "young",
+   "child": false,
+   "subject": "a broad girl of about fifteen, a servant girl, fair skin, red hair in a long plait, a grey wool dress, a fur wrap"
+  },
+  {
+   "kind": "youth",
+   "sex": "f",
+   "age": "young",
+   "child": false,
+   "subject": "a broad girl of about seventeen, a lord's daughter, pale skin, tangled brown hair, a dark green wool dress, a fur wrap"
+  },
+  {
+   "kind": "youth",
+   "sex": "f",
+   "age": "young",
+   "child": false,
+   "subject": "a gaunt girl of about fifteen, a servant girl, pale skin, fair braids, a rust wool dress, a fur wrap"
+  },
+  {
+   "kind": "youth",
+   "sex": "f",
+   "age": "young",
+   "child": false,
+   "subject": "a heavy-set girl of about fifteen, a lord's daughter, windburnt skin, black hair pinned up, a faded blue wool dress, a fur wrap"
+  },
+  {
+   "kind": "youth",
+   "sex": "f",
+   "age": "young",
+   "child": false,
+   "subject": "a lean girl of about seventeen, a ward of the house, tawny skin, black hair pinned up, a rust wool dress, a fur wrap"
+  },
+  {
+   "kind": "youth",
+   "sex": "f",
+   "age": "young",
+   "child": false,
+   "subject": "a wiry girl of about fifteen, a lord's daughter, ruddy skin, fair braids, a grey wool dress, a fur wrap"
+  },
+  {
+   "kind": "youth",
+   "sex": "f",
+   "age": "young",
+   "child": false,
+   "subject": "a wiry girl of about seventeen, a lord's daughter, pale skin, red hair in a long plait, a ochre wool dress, a fur wrap"
+  },
+  {
+   "kind": "youth",
+   "sex": "f",
+   "age": "young",
+   "child": false,
+   "subject": "a heavy-set girl of about seventeen, a lord's daughter, brown skin, black hair pinned up, a faded blue wool dress, a fur wrap"
+  },
+  {
+   "kind": "youth",
+   "sex": "f",
+   "age": "young",
+   "child": false,
+   "subject": "a gaunt girl of about seventeen, a lord's daughter, olive skin, black hair pinned up, a dark green wool dress, a fur wrap"
+  },
+  {
+   "kind": "youth",
+   "sex": "f",
+   "age": "young",
+   "child": false,
+   "subject": "a gaunt girl of about fifteen, a lord's daughter, brown skin, dark braids, a grey wool dress, a fur wrap"
+  },
+  {
+   "kind": "youth",
+   "sex": "f",
+   "age": "young",
+   "child": false,
+   "subject": "a lean girl of about fifteen, a servant girl, windburnt skin, tangled brown hair, a black wool dress, a fur wrap"
+  },
+  {
+   "kind": "child",
+   "sex": "m",
+   "age": "young",
+   "child": true,
+   "subject": "a boy of about ten, olive skin, tangled hair, smudged face, a small grey wool tunic and a fur wrap, wary eyes"
+  },
+  {
+   "kind": "child",
+   "sex": "m",
+   "age": "young",
+   "child": true,
+   "subject": "a boy of about twelve, brown skin, a bowl of fair hair, smudged face, a small brown wool tunic and a fur wrap, wary eyes"
+  },
+  {
+   "kind": "child",
+   "sex": "m",
+   "age": "young",
+   "child": true,
+   "subject": "a boy of about eight, weathered skin, tangled hair, smudged face, a small dark red wool tunic and a fur wrap, wary eyes"
+  },
+  {
+   "kind": "child",
+   "sex": "m",
+   "age": "young",
+   "child": true,
+   "subject": "a boy of about eight, pale skin, tangled hair, smudged face, a small dark red wool tunic and a fur wrap, wary eyes"
+  },
+  {
+   "kind": "child",
+   "sex": "m",
+   "age": "young",
+   "child": true,
+   "subject": "a boy of about six, weathered skin, tangled hair, smudged face, a small brown wool tunic and a fur wrap, wary eyes"
+  },
+  {
+   "kind": "child",
+   "sex": "m",
+   "age": "young",
+   "child": true,
+   "subject": "a boy of about ten, pale skin, tangled hair, smudged face, a small ochre wool tunic and a fur wrap, wary eyes"
+  },
+  {
+   "kind": "child",
+   "sex": "m",
+   "age": "young",
+   "child": true,
+   "subject": "a boy of about six, olive skin, a bowl of fair hair, smudged face, a small dark green wool tunic and a fur wrap, wary eyes"
+  },
+  {
+   "kind": "child",
+   "sex": "m",
+   "age": "young",
+   "child": true,
+   "subject": "a boy of about six, windburnt skin, a bowl of fair hair, smudged face, a small faded blue wool tunic and a fur wrap, wary eyes"
+  },
+  {
+   "kind": "child",
+   "sex": "m",
+   "age": "young",
+   "child": true,
+   "subject": "a boy of about twelve, ruddy skin, tangled hair, smudged face, a small dark green wool tunic and a fur wrap, wary eyes"
+  },
+  {
+   "kind": "child",
+   "sex": "m",
+   "age": "young",
+   "child": true,
+   "subject": "a boy of about twelve, windburnt skin, red hair, smudged face, a small faded blue wool tunic and a fur wrap, wary eyes"
+  },
+  {
+   "kind": "child",
+   "sex": "m",
+   "age": "young",
+   "child": true,
+   "subject": "a boy of about twelve, ruddy skin, tangled hair, smudged face, a small grey wool tunic and a fur wrap, wary eyes"
+  },
+  {
+   "kind": "child",
+   "sex": "m",
+   "age": "young",
+   "child": true,
+   "subject": "a boy of about six, weathered skin, a bowl of fair hair, smudged face, a small dark red wool tunic and a fur wrap, wary eyes"
+  },
+  {
+   "kind": "child",
+   "sex": "f",
+   "age": "young",
+   "child": true,
+   "subject": "a girl of about twelve, ruddy skin, fair braids, smudged face, a small dark red wool dress and a fur wrap, wary eyes"
+  },
+  {
+   "kind": "child",
+   "sex": "f",
+   "age": "young",
+   "child": true,
+   "subject": "a girl of about twelve, olive skin, dark tangled hair, smudged face, a small brown wool dress and a fur wrap, wary eyes"
+  },
+  {
+   "kind": "child",
+   "sex": "f",
+   "age": "young",
+   "child": true,
+   "subject": "a girl of about eight, fair skin, dark tangled hair, smudged face, a small rust wool dress and a fur wrap, wary eyes"
+  },
+  {
+   "kind": "child",
+   "sex": "f",
+   "age": "young",
+   "child": true,
+   "subject": "a girl of about six, pale skin, dark tangled hair, smudged face, a small dark red wool dress and a fur wrap, wary eyes"
+  },
+  {
+   "kind": "child",
+   "sex": "f",
+   "age": "young",
+   "child": true,
+   "subject": "a girl of about twelve, brown skin, dark tangled hair, smudged face, a small faded blue wool dress and a fur wrap, wary eyes"
+  },
+  {
+   "kind": "child",
+   "sex": "f",
+   "age": "young",
+   "child": true,
+   "subject": "a girl of about eight, windburnt skin, dark tangled hair, smudged face, a small ochre wool dress and a fur wrap, wary eyes"
+  },
+  {
+   "kind": "child",
+   "sex": "f",
+   "age": "young",
+   "child": true,
+   "subject": "a girl of about six, fair skin, dark tangled hair, smudged face, a small dark red wool dress and a fur wrap, wary eyes"
+  },
+  {
+   "kind": "child",
+   "sex": "f",
+   "age": "young",
+   "child": true,
+   "subject": "a girl of about twelve, pale skin, fair braids, smudged face, a small faded blue wool dress and a fur wrap, wary eyes"
+  },
+  {
+   "kind": "child",
+   "sex": "f",
+   "age": "young",
+   "child": true,
+   "subject": "a girl of about ten, windburnt skin, dark tangled hair, smudged face, a small dark green wool dress and a fur wrap, wary eyes"
+  },
+  {
+   "kind": "child",
+   "sex": "f",
+   "age": "young",
+   "child": true,
+   "subject": "a girl of about twelve, weathered skin, red hair in a plait, smudged face, a small brown wool dress and a fur wrap, wary eyes"
+  },
+  {
+   "kind": "child",
+   "sex": "f",
+   "age": "young",
+   "child": true,
+   "subject": "a girl of about six, windburnt skin, red hair in a plait, smudged face, a small dark red wool dress and a fur wrap, wary eyes"
+  },
+  {
+   "kind": "child",
+   "sex": "f",
+   "age": "young",
+   "child": true,
+   "subject": "a girl of about ten, pale skin, dark tangled hair, smudged face, a small black wool dress and a fur wrap, wary eyes"
+  }
+ ]
+}
