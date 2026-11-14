@@ -5,7 +5,7 @@
   "kickOdds": 0.08,
   "floored": 0.3,
   "field": {
-    "gap": 9.0, "turns": 12, "frontage": [10, 14], "start": 2.0, "advance": 0.16, "contact": 0.12, "overlap": 0.6, "longest": 45.0,
+    "gap": 6.0, "turns": 12, "frontage": [10, 14], "start": 2.0, "advance": 0.16, "contact": 0.12, "overlap": 0.6, "longest": 45.0,
     "volley": { "every": [2.5, 3.6], "arrows": 70, "flight": 1.7, "arc": 0.45, "kills": [1, 4], "until": 3.0 },
     "fight": { "loss": { "beaten": 2.4, "victors": 0.9 }, "swing": [0.7, 1.8], "hitOdds": 0.2, "blockOdds": 0.25, "ranks": 2, "surge": 0.02, "flanked": 1.6, "dustEvery": 6.0 },
     "cavalry": { "ride": 0.45, "charge": 0.55, "wide": 2.2, "behind": 1.0, "shock": 12 },
