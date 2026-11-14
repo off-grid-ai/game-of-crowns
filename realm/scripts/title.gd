@@ -1124,7 +1124,7 @@ func _voice_settings(right: Control) -> void:
 			main.apply_graphics())
 	right.add_child(_label("Smooth runs well on any Mac. Beautiful adds bounce light, soft haze and depth of field, at a cost.", 13, MUTED))
 	_section(right, "Sound")
-	for pair in [["All sound", "vol_master"], ["Music", "vol_music"], ["Sounds of the realm", "vol_ambience"]]:
+	for pair in [["All sound", "vol_master"], ["Music", "vol_music"], ["Sounds of the realm", "vol_ambience"], ["Work and war", "vol_sfx"], ["Seals, coins and clicks", "vol_ui"]]:
 		right.add_child(_label(pair[0], 15, MUTED))
 		var sl := HSlider.new()
 		sl.min_value = 0.0
@@ -1136,7 +1136,7 @@ func _voice_settings(right: Control) -> void:
 			Settings.set_value(key, v)
 			var main := get_tree().root.get_node_or_null("Main")
 			if main and main.sound:
-				main.sound.set_volume({"vol_master": "Master", "vol_music": "Music"}.get(key, "Ambience"), v))
+				main.sound.set_volume({"vol_master": "Master", "vol_music": "Music", "vol_sfx": "SFX", "vol_ui": "UI"}.get(key, "Ambience"), v))
 		right.add_child(sl)
 	_section(right, "The local model")
 	var ai := _label("Asking Off Grid AI…", 14, MUTED)

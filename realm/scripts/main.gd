@@ -342,7 +342,7 @@ func _ready() -> void:
 	chatter.bridge = bridge
 	chatter.sound = sound
 	add_child(chatter)
-	for bus in ["Master", "Music", "Ambience"]:
+	for bus in ["Master", "Music", "Ambience", "SFX", "UI"]:
 		sound.set_volume(bus, float(Settings.get_value("vol_" + bus.to_lower())))
 	bridge.chronicle_added.connect(_sound_events)
 	interior.opened.connect(func(room): sound.set_interior(room))
