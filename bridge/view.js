@@ -176,7 +176,9 @@ export function townStates(ctx) {
     const st = meta?.stage?.[c.id];
     if (st) for (const k of ["famine", "celebrating", "disorder", "atWar", "grasping", "grief", "prosperity"]) if (k in st) c[k] = st[k];
     // The town's mood, one word everyone reads: a riot outweighs hunger, hunger a feast.
-    c.mood = c.disorder ? "riot" : c.famine ? "hunger" : c.celebrating ? "feast" : "";
+    // A harsh ruling given nearby (rulings.js heardOf) leaves the town in dread when nothing stronger stands.
+    c.heard = ctx.heardOf?.(c) ?? null;
+    c.mood = c.disorder ? "riot" : c.famine ? "hunger" : c.celebrating ? "feast" : c.heard?.mood ?? "";
     // Why the town looks as it does, in one line (situation.js): the card's first line.
     c.situation = situation({ world, scenes, marks: ctx.marksNow?.() ?? [], besiegers }, c);
     c.thoughts = ctx.thoughtsOf?.(c.id) ?? [];  // what the town is saying (chatter.js; the crowd thinks out loud)

@@ -11,5 +11,6 @@
     { "kind": "relief", "match": "\\b(relie(f|ve)|remit|forgive|spare|lower|ease|grain|feed|alms|harvest|pardon|mercy|exempt)" },
     { "kind": "grant", "match": "\\b(grant|endow|gift|land|title|charter|reward|gold|award|confirm)" },
     { "kind": "grant", "match": ".", "cost": true }
-  ]
+  ],
+  "echo": {"_": "A harsh ruling is heard in the towns around it (rulings.js echo; Stronghold's and Tropico's fear that spreads from the gallows, CK3's dread): a ruling of a harsh kind posted at a town reaches every town within reach tiles for seasons, whatever house holds it. Their mood reads mood (/world cities[].heard, cities[].mood when nothing stronger stands), and their townsfolk remember the words ({town}: where it was given), which move their fear and anger (minds.js dread).", "harsh": ["justice", "levy"], "reach": 6, "seasons": 1, "mood": "dread", "words": {"justice": "Word comes from {town}: the King hanged a man there. Folk here keep their heads down.", "levy": "Word comes from {town}: the King's men took sons for the levy. Mothers here hide theirs."}}
 }

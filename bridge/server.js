@@ -423,7 +423,7 @@ function refreshCounsel() {
 // reports (snapshot): nothing to set yet (tools/switch_probe.mjs).
 function townStates() {
   if (!world) return;
-  View.townStates({ world, meta, scenes, detail, besiegers, favourOf, marksNow, thoughtsOf: (id) => chatter?.thoughtsOf(id) ?? [], damageOf: (c) => Damage.view(meta, c), garrisonOf: (c) => Garrison.view(meta, c, world?.turn ?? 0), rulingOf: (c) => Rulings.view(meta, c, world?.turn ?? 0) });
+  View.townStates({ world, meta, scenes, detail, besiegers, favourOf, marksNow, thoughtsOf: (id) => chatter?.thoughtsOf(id) ?? [], damageOf: (c) => Damage.view(meta, c), garrisonOf: (c) => Garrison.view(meta, c, world?.turn ?? 0), rulingOf: (c) => Rulings.view(meta, c, world?.turn ?? 0), heardOf: (c) => Rulings.heardOf(meta, c, world?.turn ?? 0) });
   world.intrigue = intrigueNow({ world, court });  // the houses' schemes, for the map (intrigue.js)
 }
 

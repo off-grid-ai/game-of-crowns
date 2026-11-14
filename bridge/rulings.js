@@ -7,6 +7,7 @@
 // (cities[].ruling in /world; realm town_life.gd and realm/data/moods.json).
 import fs from "node:fs";
 import * as chron from "./chronicles.js";
+import { cityName } from "./narrator.js";
 
 export const RULINGS = JSON.parse(fs.readFileSync(new URL("./data/rulings.json", import.meta.url), "utf8"));
 export const KINDS = [...new Set(RULINGS.kinds.map((k) => k.kind))];
@@ -43,7 +44,33 @@ export function note(ctx, petition, asked, out) {
     || (who && (world.cities.find((c) => c.id === who.seat) ?? world.cities.find((c) => c.owner === who.playerId && c.capital) ?? world.cities.find((c) => c.owner === who.playerId)))
     || world.cities.find((c) => c.title === "Kingsmere") || world.cities.find((c) => c.owner === crown?.id && c.capital);
   const kind = kindOf(asked?.id, asked?.label, out?.text, out?.cost);
-  return at && kind ? post(meta, at.id, kind, world.turn ?? 0) : null;
+  if (!at || !kind) return null;
+  const r = post(meta, at.id, kind, world.turn ?? 0);
+  echo(ctx, at, kind);
+  return r;
+}
+
+// A harsh ruling heard around (data/rulings.json echo): every town within reach of where it was given takes its
+// dread for a season (meta.echoes, read by heardOf), and its townsfolk remember the word (minds.js hearTown).
+export function echo(ctx, at, kind) {
+  const E = RULINGS.echo;
+  const { world, meta } = ctx;
+  if (!E || !E.harsh.includes(kind)) return [];
+  const turn = world.turn ?? 0;
+  const near = world.cities.filter((c) => c.id !== at.id && Math.max(Math.abs(c.x - at.x), Math.abs(c.y - at.y)) <= E.reach);
+  const ids = new Set(near.map((c) => c.id));
+  meta.echoes = [...(meta.echoes ?? []).filter((e) => e.until > turn && !ids.has(e.city)), ...near.map((c) => ({ city: c.id, from: at.id, kind, since: turn, until: turn + E.seasons }))];
+  const words = String(E.words?.[kind] ?? "").replace("{town}", cityName(at.id) ?? at.name);
+  for (const c of near) ctx.minds?.hearTown?.(c.id, words, "dread");
+  chron.saveMeta(meta);
+  return near;
+}
+
+// For /world (view.js townStates): a harsh ruling heard here from a town nearby, or null: {kind, from (the town's
+// name), mood (echo.mood), left}.
+export function heardOf(meta, city, turn) {
+  const e = (meta?.echoes ?? []).find((x) => x.city === city.id && x.until > turn);
+  return e ? { kind: e.kind, from: cityName(e.from), mood: RULINGS.echo.mood, left: e.until - turn } : null;
 }
 
 // A decree that leaves its mark in the town it names (rulings.json decrees: relief, grant, build), as a ruling would.
