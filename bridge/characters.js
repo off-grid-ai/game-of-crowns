@@ -313,8 +313,9 @@ export class Court {
     const r = rng((world.turn + 7) * 7919);
     for (const p of world.players) {
       const h = houseFor(p);
-      if (h.wild || h.crown) continue;
-      if (!this.lordOfHouse(p.id)) {
+      if (h.wild) continue;
+      // The crown has no lord of its own (the King is royals.js's); its towns are held by sworn bannermen all the same.
+      if (!h.crown && !this.lordOfHouse(p.id)) {
         const seat = world.cities.find((c) => c.owner === p.id && c.capital);
         const surname = h.name.replace("House ", "");
         const lord = this.newPerson({ surname, house: h.name, playerId: p.id, rank: "lord", seat: seat?.id ?? null, age: 35 + Math.floor(r() * 25), loyalty: 40 + Math.floor(r() * 40) }, r);
@@ -327,7 +328,7 @@ export class Court {
       for (const town of world.cities.filter((c) => c.owner === p.id && !c.capital)) {
         if (this.lordOfTown(town.id)) continue;
         const surname = pick(SURNAMES, r);
-        const liege = this.lordOfHouse(p.id);
+        const liege = h.crown ? null : this.lordOfHouse(p.id);
         const bm = this.newPerson({ surname, house: h.name, playerId: p.id, rank: "bannerman", seat: town.id, liege: liege?.id ?? null, age: 25 + Math.floor(r() * 35) }, r);
         bm.goals = [this.goalFor(bm, r)];
         if (r() < 0.7) this.family(bm, r);

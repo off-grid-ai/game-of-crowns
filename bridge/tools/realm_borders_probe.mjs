@@ -1,7 +1,7 @@
 // Guards Mac's order (2026-11-14): the whole continent is held by the crown and the great houses from a reign's first
 // frame. Reads the Aldmere baseline save itself (what every new reign starts from, and what the bridge's /world owners
 // are read from until Freeciv's first autosave), and counts the land of the realm's main continent (the landmass with
-// most towns) no house's border claims. Exits 1 on any. A baseline whose owner rows predate the border rules fails
+// most towns) no house's border claims, and that all eight (seven great houses and the crown) hold towns. Exits 1 on any. A baseline whose owner rows predate the border rules fails
 // here even though Freeciv would redraw them on load (g37): regenerate it by loading it in a bare Freeciv and saving.
 //   node tools/realm_borders_probe.mjs        (from bridge/)
 import fs from "node:fs";
@@ -45,6 +45,10 @@ const file = path.join(base, fs.readdirSync(base).find((f) => f.endsWith(".sav.z
   const open = tiles.filter(([x, y]) => (own[y]?.[x] ?? "-") === "-");
   console.log(`main continent: ${tiles.length} land tiles, ${open.length} unclaimed`);
   check(tiles.length > 500, "couldn't find the main continent");
+  // Seven great houses and the crown, every one alive with towns (Mac: the continent is theirs).
+  const houses = text.split(/^\[player\d+\]/m).slice(1).filter((b) => /^is_alive=TRUE/m.test(b) && Number(b.match(/^ncities=(\d+)/m)?.[1] ?? 0) > 0);
+  console.log(`houses with towns: ${houses.length}`);
+  check(houses.length === 8, `${houses.length} houses hold towns, not the seven and the crown`);
   check(open.length === 0, `${open.length} of ${tiles.length} land tiles unclaimed at the first frame, e.g. ${open.slice(0, 5).map((t) => t.join(",")).join(" ")}`);
 }
 done();
