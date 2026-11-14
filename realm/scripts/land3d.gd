@@ -296,6 +296,9 @@ func set_wet(v: float, settle := -1.0) -> void:
 func _set_snow(v: float) -> void:
 	_snow_now = v
 	land.material.set_shader_param("snow_cover", v)
+	var t := get_parent()
+	if t and t.has_method("paint_snow"):
+		t.paint_snow(v)  # the roads', squares' and paths' paint under it (terrain.gd paint)
 
 
 ## Winter's snow in Terrain3D's own shader (Terrain3D has no snow layer; its

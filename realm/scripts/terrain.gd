@@ -774,7 +774,34 @@ func paint(parent: Node3D, tex: Texture2D, at: Vector3, size: Vector2, yaw := 0.
 	d.position = at
 	d.rotation.y = yaw
 	parent.add_child(d)
+	_painted.append(d)
+	_snow_one.call_deferred(d)  # after its caller sets its own mix
 	return d
+
+
+## Painted ground under winter's snow (ground.json winter.paint: how much of a road's, a square's, a field's or a worn
+## path's paint the snow hides at full cover; g25 raid: the worn paths glowed orange through the snow): each decal's
+## own mix thinned as the land's snow lies (land3d.gd _set_snow), so the tracks show as trodden lines in the snow.
+static var PAINT_SNOW: float = preload("res://scripts/data.gd").num("ground", "winter.paint", 0.75)
+var _painted: Array = []
+var _paint_snow := 0.0
+func paint_snow(v: float) -> void:
+	_paint_snow = v
+	var keep: Array = []
+	for d in _painted:
+		if is_instance_valid(d):
+			_snow_one(d)
+			keep.append(d)
+	_painted = keep
+
+
+func _snow_one(d: Variant) -> void:
+	if not is_instance_valid(d):
+		return
+	var dec := d as Decal
+	if not dec.has_meta("mix"):
+		dec.set_meta("mix", dec.albedo_mix)
+	dec.albedo_mix = float(dec.get_meta("mix")) * (1.0 - PAINT_SNOW * _paint_snow)
 
 
 ## `path` if that art has been delivered, otherwise `fallback`, so new

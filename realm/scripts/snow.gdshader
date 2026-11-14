@@ -39,8 +39,9 @@ void fragment() {
 	// Not on a model's own floor (a house's base plate, a doorstep): those sat as bright white slabs.
 	float lifted = smoothstep(0.04, 0.12, above);
 	// Snow: on what faces the sky, thinner on steep roofs, broken into patches that join as it deepens.
-	float facing = smoothstep(0.45, 0.85, up);
-	float snow = facing * lifted * smoothstep(0.55, 0.85, n + amount * 0.75 - 0.25) * clamp(amount * 1.4, 0.0, 1.0);
+	// Each patch whole, with a crisp edge (g25 raid: soft half-cover mixed white into red tiles as pink).
+	float facing = smoothstep(0.55, 0.7, up);
+	float snow = facing * lifted * smoothstep(0.6, 0.68, n + amount * 0.75 - 0.25) * clamp(amount * 2.0, 0.0, 1.0);
 	// Wet: everything above the ground darker, the roofs most, and glinting.
 	float soak = clamp(wet, 0.0, 1.0) * lifted * mix(0.55, 1.0, smoothstep(0.2, 0.7, up)) * (0.85 + n * 0.3);
 	float wet_a = soak * dark;
