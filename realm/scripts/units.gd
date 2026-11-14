@@ -154,6 +154,7 @@ func sync(houses: Dictionary) -> void:
 				node = mi
 			elif ship:
 				node = ship_body(house)  # the transport cog (ships only carry armies: Mac)
+				_crew(node, house, id)
 			else:
 				var rng := RandomNumberGenerator.new()
 				rng.seed = id
@@ -356,6 +357,26 @@ static func ship_body(house: Dictionary) -> Node3D:
 	for g in cog.find_children("*", "GeometryInstance3D", true, false):
 		(g as GeometryInstance3D).set_instance_shader_parameter("team_color", colour)
 	return holder
+
+
+## A cog's crew on its deck (Age of Empires' and Warcraft III's ships are manned; a cog sails, so no oars): army.json
+## map.ship_crew sailors in plain cloth with the house's colour washed in, spread along the deck (its length on the
+## cog's x), looking out, shifting, now and then a wave.
+func _crew(holder: Node3D, house: Dictionary, id: int) -> void:
+	var k: Dictionary = Data.value("army", "map", {}).get("ship_crew", {})
+	var rng := RandomNumberGenerator.new()
+	rng.seed = id * 7 + 1
+	var tint := Color(0.5, 0.44, 0.36).lerp(TeamColour.house_colour(house), float(k.get("tint", 0.35)))
+	var n := int(k.get("men", 3))
+	var deck := (Data.num("army", "deck.y_m", 2.2) - Data.num("army", "map.ship_sink", 1.2)) * Units.M
+	var length := float(k.get("length_m", 9.0)) * Units.M
+	var clips: Array = k.get("clips", ["Looking_Around", "Idle", "Weight_Shift"])
+	for i in n:
+		var man: Node3D = _people.make(rng, "peasant", tint, "adult")
+		man.position = Vector3(lerpf(-0.5, 0.5, (i + 0.5) / float(n)) * length, deck, rng.randf_range(-0.6, 0.6) * Units.M)
+		man.rotation.y = rng.randf() * TAU
+		holder.add_child(man)
+		_people.play(man, String(clips[rng.randi() % clips.size()]), rng.randf_range(0.85, 1.1))
 
 
 ## The figure standing for a company on the map (its id from /world), or null: its own, or in a host in the field,

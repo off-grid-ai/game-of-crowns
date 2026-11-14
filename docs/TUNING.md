@@ -509,3 +509,4 @@ Switches (`--name`) go after `--` on the game's command line.
 - Prisoners led away after a battle: `realm/data/battle.json` `field.play.prisoners` (per_regiment 4, most 12, guards 2, gap 0.11, pace 0.12, back 4.0).
 - Horsemen scouting ahead of a host's column: `realm/data/army.json` `scouts` (count 2, ahead 0.9, spread 0.25, pace 0.3).
 - A selected regiment's health bar (Warcraft III), its house's colour filled to its strength: `realm/data/army.json` `select.bar` (width 3.0, height 0.32, above 2.95, in men's heights).
+- A cog's crew on deck: `realm/data/army.json` `map.ship_crew` (men 3, tint 0.35, length_m 9.0, clips).
