@@ -56,57 +56,18 @@ The game plays fully without it and is much better with it. In order of payoff:
 4. The chronicle and the reign's ending written about *your* reign.
 The local model only words what the rules decide; choices and costs stay authored.
 
-## 4. The plan, in phases
-Each phase ends with a measured reign against the fun bar, film judged against the copy sheet, and Mac
-playing it. Work inside a phase runs in parallel by owner; one bundled Godot run per round.
+## 4. One list, built at once (Mac, 2026-11-14: "single phase, do everything in one go")
+No phases. Every thread builds its part of this list at the same time; the supervisor renders everything that landed
+together each round. Status from the audit of 2026-11-14 (11 done, 28 partly, 5 not started); done items are left out.
 
-### Phase 1, now: a reign that grips (the loop)
-| Item | Owner | Done when |
-|---|---|---|
-| Seals that force a choice (two-way line, competing needs, a biased Hand and a second voice) | Builder 2 | 2+ worthwhile uses in ≥50% of seasons; always-the-Hand no longer clearly wins; then on by default |
-| One court flow with painted faces, opened at the matter's town, results in words | Builder 2 | filmed at the town; no stacking; on by default |
-| Event cards (~120, the director draws one a season by wave) | Builder 2 | no repeat within 8 seasons; a third start a consequence that lands; decision load held |
-| The first ten minutes (opening v2: 2 screens, first card at 1:00, the ruling seen on the map, quiet to winter, 5 Hand prompts, reveal as it matters) | Lead | the timed harness shows first card ≤1:00, first ruling ≤1:30, setback from a ruling ~5:00 |
-| Motion that reads at roof height (v3 props and posture; the square budget; no statues) | Lead + Townsfolk | gate equals or beats v2 on every line |
-
-**From the fun audit (2026-11-11, fun-audit-report.md in the notes; ranked by fun per effort):** today the
-King's own moves are off by default, the reign is back-loaded (0.6 decisions a minute in minutes 1–5,
-2.8 in minutes 11–14, in clumps), nothing answers a click, result lines repeat (one 33 times in 10 reigns),
-and there's no humour. Added to Phase 1, in this order:
-
-| Item (reference) | Owner | Done when |
-|---|---|---|
-| Juice: the seal thunks, coins count down with a sound, results land at the town, music follows the tension (Kingdom Two Crowns) | Builder 2 | answer to sound <0.2 s, to the world <2 s, timed on a clip |
-| Kill the repeats: several wordings per result, Omni rewords flavour, fresh minor names each reign (Reigns, RCT's guests) | Builder 2 | 0 repeated kinds; ≥90% distinct result sentences |
-| Every click answers out loud: lords, the host and townsfolk reply, annoyed by the fourth click (Warcraft II, Stronghold) | Lead | click to sound <0.2 s; no line repeated within 10 clicks |
-| One matter at a time, spread through the season, riders at their towns with deadlines (Frostpunk) | Builder 2 | ≤2 decisions in any 15 s; minutes 1–5 at 1–1.5 a minute |
-| The crowd thinks out loud: gossip by each town echoes your rulings (RCT's thoughts) | Lead | ≥60% of rulings echoed within 2 seasons |
-| A herald with a dry wit replaces the toast stack (Theme Hospital, Stronghold's scribe) | Builder 2 | ≤1 toast on screen; quiet share holds |
-| The King's own works rise where he sees them, with a crown pennant, and can be threatened (Stronghold, Manor Lords) | Lead + Townsfolk | his own things are the next goal ≥50%; ≥2 open projects at any pause |
-| An ending worth retelling (an Omni epitaph from his weightiest rulings), the next reign inherits a grudge (Reigns) | Builder 2, Phase 3 | testers start a second reign |
-
-### Phase 2: a realm worth looking at (the look)
-| Item | Owner | Done when |
-|---|---|---|
-| **The finesse level (picked 2026-11-11, art-direction-report.md):** a painted storybook look, Foundation's town view lit like Tiny Glade at Manor Lords' plot density. Chunky silhouettes, steep roofs carrying the colour, painted materials (no photo textures, no outlines), warm low sun with cool shadows, ~5 readable features a building. One free family: Quaternius (Medieval Village, Stylized Nature, Fantasy Props MegaKits, CC0), through the asset catalogue; gaps filled in its style. Target frame: Codex's repaint of Kingsmere (art-direction/concept-town-repaint.png) | supervisor | stills beside the target pass |
-| 1. One look: lighting, colour grade, the kit colour pass | Builder 2 | a Kingsmere still beside the target |
-| 2. Castles built from the kit's walls and towers (a castle builder like house_builder.gd); the Kenney castle and the black hall retired | Townsfolk | every seat's castle beside the concept keep |
-| 3. Every house from house_builder.gd, with thatch and yards in dense street-facing plots; the Sketchfab houses retired | Townsfolk | ~20 houses at Kingsmere, one style |
-| 4. Quaternius trees in clumps with bushes at the edges, season colour, a far version | NPC perf (via the catalogue) | forest stills beside Tiny Glade and Foundation |
-| 5. Painted ground, roads with verges, strip fields with hedges, a sand band at the coast | NPC perf + Builder 2 | land still beside the concept |
-| Dense plot towns along growing streets | Townsfolk | ~20 houses at Kingsmere, ≥90% facing a street, beside the Manor Lords shot |
-| Fire, smoke, sack and razing that read as fire | Lead | a still beside the reference |
-| Light, grade, seasons and the map at three zooms, judged against the copy sheet | Builder 2 | side-by-side stills pass |
-| Play at ≥10 fps (Mac: anything above 10 is fine) in the busiest town and the biggest battle | NPC perf | --perf numbers at Goldrock, Kingsmere and the army spike |
-
-### Phase 3: stories and people (immersion and the AI edge)
-House pages and a lord's sheet (CK3's character window, one house page, never the whole dynasty);
-lords' own words, rule in your own words, gossip; the chronicle feeding one reign-end sequence and act
-interludes; the host's battle result card (CK3's war panels).
-
-### Phase 4: the package
-Main menu, loading card, saves as reigns, merged settings, sound and juice pass, ≥30 fps everywhere,
-a filmed trailer from real play.
+| Owner | What's left (player impact first) |
+|---|---|
+| **Loop** (court, cards, juice, herald, opening, sound, menus, settings, saves UI, lord's sheet) | Seals that force a choice (competing needs, a biased Hand, a second voice); event cards 20 → ~120, no repeat within 8 seasons; one matter at a time with riders and deadlines; every click answers out loud; sound_v2 on as the one sound system; juice with sound; kill the repeats (≥90% distinct lines); the crowd echoes rulings; the King's works with a crown pennant that can be threatened; an ending (Omni epitaph) and a grudge into the next reign; court and inn frames in the render pass against 05-court and 06-inn; a lord's sheet; one settings screen; saves as reigns (UI) |
+| **Bridge** (bridge/*, Freeciv rules) | Raid strength and framing (047bee66 to judge); event card data and the deadline/rider rules with Loop; saves as reigns (bridge side); the host's battle result card data; our own people sim: lasting households beyond the 8-54 sample; the epitaph and grudge data |
+| **Army** (units.gd, army*.gd) | Raid band (b63f0f62 to judge); siege taken (0 taken lines at g24-25); decisions seen on the map, on (07-unrest, 08-reinforce); the host's battle result card |
+| **Square** (towns, town_life, smoke) | Street (e1db9235 to judge); smoke (5c115280 to judge); the ten Meshy house pieces placed so houses share one style; crowd density down to the target (9.4 → ~6 per 100 m², groups of 2-4 up from 0.23 to ~0.65) |
+| **Look** (woods, stone, terrain, grade, fire, snow) | Seasons (7883bc4e to judge); snow passed; one grade frame beside the target; a sacked town; the map's middle zoom; the other cities checked (coastal, small, hill) |
+| **Supervisor** | Renders of everything that landed, every round; a trailer from real play once the list is mostly done |
 
 ## 5. One change to the fun bar, said out loud
 GAME_DESIGN.md's "≤1 decision a minute" was written before the King had his own verbs (seals, cards,
