@@ -137,6 +137,7 @@ Switches (`--name`) go after `--` on the game's command line.
 - The hills stepped into shelves with steep rock faces between (WC3's cliff levels): `realm/data/ground.json` `tiers` (`on`, `from`: the height they start, `step`: each shelf's rise, `ramp`: the share of a step that is its face, `over`).
 - The trodden earth fanning out from every town gate: `realm/data/ground.json` `wear.gates` (`out`, `half`, `spread`, `worn`).
 - Mountains: where the snow starts and lies whole (`realm/data/ground.json` peaks.snow, game units), the height above which hills stop stepping into shelves (tiers.to), and how strongly the map zoom shades the relief (`realm/data/map.json` relief.strength).
+- The far sea's swell: how much the drifting light and shade moves the open water from the realm view, its size, speed and the distance it starts (`realm/data/look.json` sea.swell).
 - The coast: how far the beach runs above the waterline and which painting it blends through (dirt, no outline), and the surf at the shore: `realm/data/ground.json`: `beach.top`, `surf`.
 - How far out the land keeps its fine shape (Terrain3D's rings round the lens; too coarse and a lake's low shore sinks under the water at the mid zoom): `realm/data/ground.json`: `mesh.size`, `mesh.lods`.
 - From what distance the sea's colour stops reading the depth to its bed (nearer shows clear shallows, but the bed's coarser rings show as seams further out): `realm/data/look.json`: `sea.depth_fade`.

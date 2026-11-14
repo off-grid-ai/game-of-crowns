@@ -753,7 +753,7 @@ func _drape_sea(mat: ShaderMaterial) -> void:
 ## to the second, alpha how much, so the realm view reads the sea's depth), foam (the surf's depth band), foam_colour (alpha: how white),
 ## foam_scale (the foam texture's repeats a game unit), foam_speed (how fast the surf breathes in and out).
 func _shore_code(code: String) -> String:
-	code = code.replace("uniform float atlas_mix = 0.0;", "uniform float atlas_mix = 0.0;\nuniform sampler2D shore_land : filter_linear, repeat_disable;\nuniform float shore_on = 0.0;\nuniform float sea_level = -0.15;\nuniform vec4 shore_shallow = vec4(0.22, 0.52, 0.5, 0.7);\nuniform vec4 shore_foam = vec4(0.9, 0.94, 0.92, 0.55);\nuniform vec4 shore_k = vec4(0.5, 0.06, 0.6, 0.4);\nuniform vec4 shore_deep = vec4(0.05, 0.2, 0.3, 0.0);\nuniform vec2 shore_deep_at = vec2(0.6, 3.0);")
+	code = code.replace("uniform float atlas_mix = 0.0;", "uniform float atlas_mix = 0.0;\nuniform sampler2D shore_land : filter_linear, repeat_disable;\nuniform float shore_on = 0.0;\nuniform float sea_level = -0.15;\nuniform vec4 shore_shallow = vec4(0.22, 0.52, 0.5, 0.7);\nuniform vec4 shore_foam = vec4(0.9, 0.94, 0.92, 0.55);\nuniform vec4 shore_k = vec4(0.5, 0.06, 0.6, 0.4);\nuniform vec4 shore_deep = vec4(0.05, 0.2, 0.3, 0.0);\nuniform vec2 shore_deep_at = vec2(0.6, 3.0);\nuniform vec4 shore_swell = vec4(0.0, 0.05, 0.015, 20.0);")
 	var end := code.rfind("}")
 	return code.left(end) + """	if (shore_on > 0.5) {
 		vec2 suv = world_coordinates.xz / atlas_size;
@@ -771,6 +771,13 @@ func _shore_code(code: String) -> String:
 		float foam = clamp(band * (0.45 + grain), 0.0, 1.0) * shore_foam.a;
 		ALBEDO = mix(ALBEDO, shore_foam.rgb, foam);
 		EMISSION *= 1.0 - foam;
+		// The swell seen from afar, where the vertex waves have settled flat (look.json sea.swell; WC3's and AoE2's
+		// open water moves at every zoom): two slow trains of light and shade drifting across each other.
+		float far = smoothstep(shore_swell.w, shore_swell.w * 2.0, distance(CAMERA_POSITION_WORLD, world_coordinates));
+		vec2 sw = world_coordinates.xz * shore_swell.y;
+		float s1 = texture(texture_foam, sw + vec2(TIME * shore_swell.z, TIME * shore_swell.z * 0.4)).a;
+		float s2 = texture(texture_foam, sw * 1.7 + vec2(-TIME * shore_swell.z * 0.6, TIME * shore_swell.z)).a;
+		ALBEDO *= 1.0 + (s1 + s2 - 1.0) * shore_swell.x * far * (1.0 - shallow);
 	}
 }
 """
@@ -790,6 +797,8 @@ func _shore_params(mat: ShaderMaterial) -> void:
 	var da: Array = sh.get("deep_at", [0.6, 3.0])
 	mat.set_shader_parameter("shore_deep_at", Vector2(float(da[0]), float(da[1])))
 	mat.set_shader_parameter("shore_k", Vector4(float(sh.get("shallow", 0.5)), float(sh.get("foam", 0.06)), float(sh.get("foam_scale", 0.6)), float(sh.get("foam_speed", 0.4))))
+	var sw: Dictionary = D.value("look", "sea.swell", {})
+	mat.set_shader_parameter("shore_swell", Vector4(float(sw.get("amount", 0.0)), float(sw.get("scale", 0.05)), float(sw.get("speed", 0.015)), float(sw.get("from", 20.0))))
 
 
 ## The wild plants (vegetation.gd) and the kit woods (forest.gd) planted where it lays them.
