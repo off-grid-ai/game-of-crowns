@@ -324,6 +324,7 @@ Switches (`--name`) go after `--` on the game's command line.
 - A household leaving the town: who walks (the father with the barrow, the mother, two children), their pace and spacing: `realm/data/town_scenes.json` the `leaving` row (`walk.pace`, `walk.spacing`, its roles).
 - A fair (a glad town's market day): the dancers round the well and the minstrels, how many, how far out: `realm/data/town_scenes.json` the `fair` row; more children then (`kids_play` `n.fair`); where it ranks (`realm/data/works.json` `priority`).
 - A plague town: the share of its folk who keep indoors, how many doors round the square bear the red cross, how far out, its colour and size: `realm/data/towns.json` `plague`; no errand-walkers or stall buyers then (`realm/data/town_scenes.json` `errands` and `stalls` rows' `plague`).
+- How full the stalls' piles of goods stand as the town fares (bare in hunger, thin when lean or short, piled high on market day, at a fair, in good times, with autumn's stores): `realm/data/moods.json` each state's `pile_full`; otherwise `realm/data/crowd.json` `square_agents.pile.full`.
 - The roadside's people (inns, hamlets, camps, shrines, tolls) now think on the same minds: each `life` row's `post` in `realm/data/roadside.json` (no post: the old clip timer). Check it all with `tools/mind_probe.gd` and `tools/works_probe.gd`.
 
 ## The town as art target town-b (the crown's seat dense, mixed roofs, warm walls, cobbles, green)
@@ -544,3 +545,4 @@ Switches (`--name`) go after `--` on the game's command line.
 - A hungry host's stragglers trailing its column (the share is the bridge's, hosts.json supply): `realm/data/army.json` `stragglers` (back 0.6, across 0.08).
 - How a great house takes a town after a failed storm: `realm/data/siege.json` `approach` (mine: in 1.5, heap 0.08 + heap_per 0.06 a season dug, sappers 3; starve: posts 10 round the town, skip 0.9 rad of the camp, watch 2; bribe: meet 0.45 of the way from the gate, pace 0.12, talk_s 6, again_s 40).
 - A host answering the King's order where it stands: `realm/data/army.json` `ack` (role "cheer", the battlecry; s 1.8 seconds).
+- Beacons on a walled town's wall walk when a foe's host nears: `realm/data/walls.json` `beacons` (reach 16 world units, linger 30 s, smoke, the watchman's clip).

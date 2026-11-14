@@ -3,7 +3,7 @@
   "war": {"stalls_open": 0.5, "rack": 5, "hammer": 1.4},
   "levy": {"stalls_open": 0.7, "rack": 4, "hammer": 1.3},
   "grief": {"stalls_open": 0.1, "out": 0.45, "candles": 16, "flowers": 10, "black_doors": 12, "toll": [9.0, 12.0]},
-  "hunger": {"stalls_open": 0.35, "dole": {"at": "market"}},
+  "hunger": {"stalls_open": 0.35, "pile_full": 0.15, "dole": {"at": "market"}},
   "relief": {"goods": true},
   "justice": {"gallows": true, "from_well": 0.62},
   "grant": {"banners": 4, "ring": 0.7, "site": "Palace", "progress": 0.15},
@@ -11,6 +11,13 @@
   "_centre": "Round the square's centrepiece (a fountain at a seat; towns.gd root meta centrepiece, its real footprint): how far past its basin's rim things stand (game units). mourners: the grief's kneelers (and anyone set down near the heart: the levy's kin, dogs, children); stall: a good year's extra stall by the well (its canopy); candles: their candles set down; bunting: the feast's tall pole; fire: the feast's bonfire (past its own heat too), moved off the heart to the seen side, its dancers and tables round it.",
   "centre": {"mourners": 0.08, "candles": 0.04, "bunting": 0.1, "fire": 0.12, "stall": 0.2},
   "feast": {"bonfire": {"amount": 26, "size": [0.09, 0.16], "rise": [0.1, 0.2], "light": 1.6, "range": 1.4}, "tables": 2, "seats": 3, "bunting": {"flag_m": 0.35, "lines": 5, "ring": 0.62, "height": 3.8, "edge_height": 2.8, "flags": 12, "sag": 0.45}, "colours": [[0.95, 0.92, 0.82], [0.85, 0.68, 0.22], [0.25, 0.4, 0.65]]},
+  "_pile_full": "pile_full: how full each stall's pile of goods stands as the town is dressed (town_life.gd _pile; its most is crowd.json square_agents.pile.most), the least over the town's states that set it, else crowd.json square_agents.pile.full: bare in hunger, thin when lean or the granary low, piled high on market day, at a fair, in good times and with autumn's stores in.",
+  "lean": {"pile_full": 0.35},
+  "low": {"pile_full": 0.5},
+  "market": {"pile_full": 1.0},
+  "fair": {"pile_full": 1.0},
+  "prosperity": {"pile_full": 1.0},
+  "stores": {"pile_full": 1.0},
   "rebels": {"_": "A town the rebels hold in a rising (bridge risings.js): half the market shut, the rest trading under the claimant's men.", "stalls_open": 0.5},
   "loyal": {"_": "A town its lord still holds in a rising: stalls shut against the trouble.", "stalls_open": 0.6}
 }

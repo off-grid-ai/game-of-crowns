@@ -560,10 +560,14 @@ func _pile(root: Node3D, life: Node3D, center: Vector3, si: int, m: Vector3, out
 	var along := Vector3(-out.z, 0, out.x)
 	var base := m + along * (width * 0.5 + float(K.get("aside", 0.06))) - out * 0.02
 	var nodes: Array = []
+	# As full as the town is faring (moods.json pile_full): bare in hunger, piled high on market day; the rest laid
+	# but hidden, room for a porter's load (pile +1).
+	var full := roundi(most * _mood_num(life.get_meta("states", []), "pile_full", float(K.get("full", 0.7))))
 	for i in most:
 		var at := base + along * float(i % 2) * 0.05 - out * float(i / 2) * 0.05
 		var n := _prop(life, center, String(kinds[i % kinds.size()]), at, atan2(out.x, out.z) + float(i) * 0.4, float(K.get("size", 1.0)))
 		if n:
+			n.visible = i < full
 			nodes.append(n)
 	var piles: Dictionary = root.get_meta("piles", {})
 	piles[si] = nodes
