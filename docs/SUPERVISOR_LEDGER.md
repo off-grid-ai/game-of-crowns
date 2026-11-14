@@ -133,6 +133,7 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- 11-14 07:21 g28 half: landuse PASS (Kingsmere whole: castle, market ring, town), cavalry PASS (four houses in contact, standards); smoke too dense from far (square). Landed bridge 5c484454 (barbarians set before any command). g29 (raid) queued.
 - 11-14 07:14 g27 evidence: "RAID Saltkeep raised 0" with barbarians DISABLED in the save (set HUTS_ONLY only after); the 4 raiders seen were Dundee's raid at (41,18). Sent to bridge: raise order, read only this raid's ids. Evidence-first worked in one pass.
 - 11-14 07:09 round: g27 (raid, home kept for bridge's evidence) running at 1243c5c9; army, look, square idle with no known failures. g28 queued: a wide sweep (landuse cavalry walls breach seasons castle street command host5 crossing) to find the next failures. Bottleneck: no known work for three threads.
 - 11-14 07:08 g26: raid pixel-identical to g25 (no raiders), walk-off stepped 0 seasons (already gone). 4th raid pass: bridge to log raider ids, tiles and season at each snap before the next fix. Town holds.
