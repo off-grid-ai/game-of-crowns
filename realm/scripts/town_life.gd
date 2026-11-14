@@ -752,15 +752,25 @@ func raise_site(town_node: Node3D, plot: Transform3D, building: String, seasons:
 	var aw = Engine.get_meta("awareness") if Engine.has_meta("awareness") else null
 	if aw == null:
 		return site
+	# Held weakly: a site raised on a town not yet in the tree never leaves it, so its handler outlived the nodes it
+	# held (g36: "Lambda capture at index 0/3 was freed"); it lets go of the season once they're gone.
+	var site_ref: WeakRef = weakref(site)
+	var holder_ref: WeakRef = weakref(holder)
+	var me := [Callable()]
 	var grow_on := func(_turn: int) -> void:
-		if not is_instance_valid(site):
+		var s: Node3D = site_ref.get_ref()
+		var h: Node = holder_ref.get_ref()
+		if s == null or h == null or s.is_queued_for_deletion():
+			if aw.season_turned.is_connected(me[0]):
+				aw.season_turned.disconnect(me[0])
 			return
 		left[0] -= 1
-		site.create_tween().tween_method(func(g: float): _grow(site, g), site.scale.y, minf(1.0, site.scale.y + step), 1.5)
+		s.create_tween().tween_method(func(g: float): _grow(s, g), s.scale.y, minf(1.0, s.scale.y + step), 1.5)
 		if left[0] <= 0:
-			holder.queue_free()
+			h.queue_free()
 			if on_done.is_valid():
 				on_done.call()
+	me[0] = grow_on
 	aw.season_turned.connect(grow_on)
 	holder.tree_exiting.connect(func():
 		if aw.season_turned.is_connected(grow_on):
