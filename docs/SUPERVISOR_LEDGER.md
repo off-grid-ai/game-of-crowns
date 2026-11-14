@@ -133,6 +133,7 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- 11-14 07:08 g26: raid pixel-identical to g25 (no raiders), walk-off stepped 0 seasons (already gone). 4th raid pass: bridge to log raider ids, tiles and season at each snap before the next fix. Town holds.
 - 11-14 06:57 round: landed army 9fa2a95a (wild players' companies drawn as men without banners, not beasts), bridge 1abda38f (walk-off stepped). g26 started (raid town).
 - 11-14 06:53 g25: siege PASS (storm at one breach, the town beyond burning: 65fa6ab2 reached the shot); raid frames aimed but no raider visible (army: are barbarian units drawn?); raid_leave missed (raiders gone between polls: bridge to step season by season). Snow soft now.
 - 11-14 06:45 round: landed bridge cb9e58cf a0cd941e (raid lens on the raiders and this raid's own men), look 65fa6ab2 (a breached town always burns), 25e841cc (soft blue-white snow). g25 started (siege raid).
