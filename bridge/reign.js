@@ -151,7 +151,7 @@ const mustered = (ctx) => Math.max(companies(ctx), ctx.meta?.ladder?.peak ?? 0);
 export const LADDER = [
   { key: "granary", do: "Fund a granary", text: "Raise a granary in Kingsmere", how: "Open Kingsmere's card and fund a granary.",
     met: (ctx) => crownHas(ctx, "Granary", true), reward: "feast", says: "Kingsmere's granary stands full. The town holds a harvest feast in the King's name." },
-  { key: "host", do: "Raise the levy", text: "Muster a royal host of 2,400 men", how: "Raise the levy, or call the banners.",
+  { key: "host", do: "Raise the levy", text: "Muster a royal host of 2,400 troops", how: "Raise the levy, or call the banners.",
     met: (ctx) => mustered(ctx) >= 12, reward: "knights", says: "Two thousand four hundred men stand under the royal banner. Two knights ride in to join them, unasked." },
   { key: "friend", do: "Win over", text: "Win a great house to the Crown", how: "Favour a house until it stands at 70.",
     met: ({ world, favourOf }) => world.players.some((p) => !houseFor(p).wild && !houseFor(p).crown && favourOf(p.id) >= 70), reward: "gold", says: "A great house swears itself to the Crown, and sends a chest of silver to prove it." },
@@ -225,7 +225,7 @@ export function aimProgress(ctx, a) {
   const seat = world.cities.find((x) => x.owner === crown.id && x.capital);
   const favourTo = (pid, to) => { const f = Math.round(favourOf(pid)); return { text: `${houseFor(world.players.find((p) => p.id === pid)).name} at ${f} of ${to}`, frac: Math.max(0, Math.min(1, f / to)) }; };
   switch (a.key) {
-    case "host": { const n = mustered(ctx); return { text: `${(Math.min(n, 12) * 200).toLocaleString("en-US")} of 2,400 men`, frac: Math.min(1, n / 12) }; }  // in men, as the ledger counts them; the best muster so far
+    case "host": { const n = mustered(ctx); return { text: `${(Math.min(n, 12) * 200).toLocaleString("en-US")} of 2,400 troops`, frac: Math.min(1, n / 12) }; }  // in men, as the ledger counts them; the best muster so far
     case "friend": {
       const best = world.players.filter((p) => !houseFor(p).wild && !houseFor(p).crown).sort((x, y) => favourOf(y.id) - favourOf(x.id))[0];
       return best ? favourTo(best.id, 70) : null;

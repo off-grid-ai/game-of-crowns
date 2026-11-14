@@ -108,7 +108,7 @@ const HANDLERS = {
     const firstNo = world.players.find((p) => houseFor(p).name.replace("House ", "") === refused[0]);
     const why = firstNo && cmd.causeOf ? cmd.causeOf(firstNo.id) : "";
     if (why) parts.push(`${refused[0]} has not forgotten ${why}`);
-    return { cost, favour, text: `The King calls the banners. ${parts.join("; ").replace(/^./, (c) => c.toUpperCase())}.${men ? ` ${(men * 200).toLocaleString("en-US")} men march to Kingsmere.` : " No one marches."}`, lua, refused };
+    return { cost, favour, text: `The King calls the banners. ${parts.join("; ").replace(/^./, (c) => c.toUpperCase())}.${men ? ` ${(men * 200).toLocaleString("en-US")} troops march to Kingsmere.` : " No one marches."}`, lua, refused };
   },
   relief(x) {
     const { cost, pay, c, owner, lord, town } = x;
@@ -344,7 +344,7 @@ const HANDLERS = {
     const why = to.besieged ? `to break the siege of ${cityName(to.id)}` : `to ${cityName(to.id)}, its seat`;
     return { cost, lua: [pay], favour: { [owner.id]: d.favour ?? 15, ...Object.fromEntries(others.map((p) => [p.id, d.others ?? 0])) },
       hostMarch: { host: h.id, city: to.id, house: owner.id, order: "garrison", opens: owner.id },
-      text: `The King stands by ${lord}: the royal host, ${h.men.toLocaleString("en-US")} men, marches ${why}.` };
+      text: `The King stands by ${lord}: the royal host, ${h.men.toLocaleString("en-US")} troops, marches ${why}.` };
   },
   march(x) {
     const { cmd, world, crown, cost, pay, c, owner, lord, town } = x;
@@ -363,7 +363,7 @@ const HANDLERS = {
     const h = cmd.host;
     if (!h) return { error: "the crown has no host to march" };
     return { cost, lua: [pay], favour, hostMarch: { host: h.id, city: c.id, house: owner.id },
-      text: `The royal host, ${h.men.toLocaleString("en-US")} men, marches on ${town}. ${lord} calls every man to its walls, and every house in the realm watches.` };
+      text: `The royal host, ${h.men.toLocaleString("en-US")} troops, marches on ${town}. ${lord} calls every man to its walls, and every house in the realm watches.` };
   },
 };
 

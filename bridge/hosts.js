@@ -111,7 +111,7 @@ function give(ctx, b) {
   // One order a season to each host (data/hosts.json ordersPerHost): another host may still be ordered.
   if (ordersLeft(ctx, h.id) < 1) return [400, { error: "This host has its orders for this season; the next goes with the season's turn. Another host may still be ordered." }];
   const rest = (meta.hostOrders ?? []).filter((o) => !o.units.some((id) => h.units.includes(id)));
-  const name = `The royal host (${h.men.toLocaleString("en-US")} men)`;
+  const name = `The royal host (${h.men.toLocaleString("en-US")} troops)`;
   const crown = crownOf(world);
   const town = b.city != null ? world.cities.find((c) => c.id === Number(b.city)) : null;
   const inside = (x, y) => Number.isFinite(x) && Number.isFinite(y) && x >= 0 && y >= 0 && x < (world.width ?? 9999) && y < (world.height ?? 9999);
@@ -187,7 +187,7 @@ function give(ctx, b) {
       const was = (meta.hostOrders ?? []).find((o) => o.units.some((id) => h.units.includes(id)));
       save(meta, [...rest, { ...(was ?? { kind: "hold", since: world.turn }), units: stay }, { kind: "hold", units: away, since: world.turn }]);
       const men = away.reduce((n, id) => n + menOf(world.units.find((u) => u.id === id) ?? {}), 0);
-      return [200, { ok: true, text: `The host divides: ${men.toLocaleString("en-US")} men stand apart under their own captain.` }];
+      return [200, { ok: true, text: `The host divides: ${men.toLocaleString("en-US")} troops stand apart under their own captain.` }];
     }
   }
   return [400, { error: "no such order" }];
