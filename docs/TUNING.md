@@ -216,6 +216,7 @@ Switches (`--name`) go after `--` on the game's command line.
 
 ## Fire (lead; `on` in realm/data/fire.json, on)
 - On by default or not: `realm/data/fire.json`: `on`.
+- A sacked town's smoulder once its flames are out (04-siege: a stormed town reads by its smoke): `realm/data/fire.json` `char.smoulder`: the share of burnt shells that smoulder, for how many seconds of play, and the wisp's own amount, size, rise, life and colour, laid over `smoke`.
 - The flames on a burning roof (how many, how big, how tall for their width, how fast they rise, how far they lean downwind, how fine their licks): `realm/data/fire.json`: `flames.*`; the smaller ones out of the front: `front.*`.
 - The flames' three colours (core, body, edge) and their brightness: `realm/data/fire.json`: `colours.*`.
 - Embers, and the smoke column (how dark, how big, how high, how far it drifts on the wind): `realm/data/fire.json`: `embers.*`, `smoke.*`.

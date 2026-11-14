@@ -29,6 +29,7 @@
 #   cavalry  a house-coloured host in line, close (03-army; READY 4, the Meshy army set)
 #   battle   two hosts meet, then the rout runs along the line (03-army; READY 5)
 #   siege    the siege taken: breach, storm, the town changing hands (04-siege; READY 6, 7)
+#   sack     Kingsmere sacked: burning, then its burnt shells smouldering in the burnt ring (04-siege's town)
 #   command  a host in open ground clicked by its standard, then Besiege (03-army for the field; READY 8)
 #   face     the same host given a line by a right drag (its own reign: one order a season a host; READY 8)
 #   walls    Kingsmere's walls whole, from outside and low (01-town)
@@ -51,7 +52,7 @@ STAMP=$(date +%H%M)
 OUT=${OUT:-/tmp/goc-pass/$STAMP}
 PORT=${PORT:-8789}; FC=${FC:-5558}
 API=localhost:$PORT
-ONLY=${ONLY:-"town landuse realm muster cavalry battle siege command face walls breach seasons winter host5 castle street cities crossing raid"}
+ONLY=${ONLY:-"town landuse realm muster cavalry battle siege command face walls breach seasons winter host5 castle street cities sack crossing raid"}
 # The pass runs from its own copy of this script: zsh reads a script as it runs, so a commit to it mid-pass broke the
 # first full pass (2159: 'parse error near fi' at line 229, ten lines added above it at 22:00 while it ran).
 if [ -z "${RENDER_PASS_SELF:-}" ]; then
@@ -305,6 +306,29 @@ print(name(sea), name(small[0]), name(hill))" 2>/dev/null)
       shot city_$1 1500 film $SW
       side city_$1 $OUT/frames/city_$1/$1.png $TARGETS/01-town.jpg "a $1 town at the town view: $2"
     done
+  fi
+fi
+# A sacked town (Look, PLAN.md section 4; 04-siege's town beyond the breach): Kingsmere's burnt ring and its burnt share
+# staged in the bridge (POST /test/mark sack, /test/stage damage burnt 0.4, as a sack leaves them: damage.json
+# burntOnSack), then put to the torch in the film (autoplay burn), framed while it burns and once the flames are out
+# (the shells charred and smouldering: fire.json char.smoulder). After every other frame of Kingsmere: the seat stays
+# burnt for the rest of the pass.
+if want sack; then
+  SEAT=$(curl -s -m 10 "$API/world?peek=1" | python3 -I -c "
+import json,sys; d=json.load(sys.stdin)
+c=[c for c in d.get('cities',[]) if c['id']==d.get('seatId')]
+print(c[0]['id'], c[0]['x'], c[0]['y'], c[0].get('title', c[0].get('name',''))) if c and ' ' not in c[0].get('title','') else None" 2>/dev/null)
+  set -- ${=SEAT}
+  if [ $# -lt 4 ]; then
+    say "sack: no seat in /world; no frame"
+  else
+    curl -s -m 10 -o /dev/null -X POST -H 'X-Test: 1' $API/test/mark -d "{\"kind\":\"sack\",\"x\":$2,\"y\":$3,\"age\":0}"
+    curl -s -m 10 -o /dev/null -X POST -H 'X-Test: 1' $API/test/stage -d "{\"damage\":{\"city\":$1,\"burnt\":0.4}}"
+    { print "wait 30"; print "home $4 0 2"; print "wait 6"; print "home $4 0 2"; print "burn $4 40"; print "wait 18"; print "snap sack"
+      print "wait 70"; print "snap after"; print "look end"; } > $OUT/sack.play
+    shot sack 1800 film $SW
+    side sack $OUT/frames/sack/sack.png $TARGETS/04-siege.jpg "$4 sacked, burning"
+    side sack_after $OUT/frames/sack/after.png $TARGETS/04-siege.jpg "$4 after the sack: burnt shells, smoulder, the burnt ring"
   fi
 fi
 if want crossing; then

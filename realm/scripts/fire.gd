@@ -589,10 +589,10 @@ func _process(delta: float) -> void:
 				p.set_meta("lod", lod)
 				_ratio(p, float(p.get_meta("want")))
 	var g := _drift()
-	for key in _burning:
-		var f: Node3D = _burning[key]
+	var lit: Array = _burning.values() + _burnt.values().map(func(b): return b["shell"])  # the fires and the smouldering shells
+	for f in lit:
 		if is_instance_valid(f):
-			for p in f.get_children():
+			for p in (f as Node3D).get_children():
 				if p is GPUParticles3D and p.has_meta("drift"):
 					((p as GPUParticles3D).process_material as ParticleProcessMaterial).gravity = g * float(p.get_meta("drift")) + Vector3(0, float(p.get_meta("lift", 0.0)), 0)
 
@@ -802,6 +802,18 @@ func _char(root: Node3D, key: String, h: Array) -> Dictionary:
 	scorch.distance_fade_begin = FAR * 0.8
 	scorch.distance_fade_length = FAR * 0.2
 	shell.add_child(scorch)
+	# A sacked town smoulders after its flames are out (04-siege: the stormed town reads by its smoke; fire.json
+	# char.smoulder): most shells give a thin dark wisp from the fallen roof, for a while, then go cold.
+	var sm: Dictionary = ck.get("smoulder", {})
+	if not sm.is_empty() and r.randf() < float(sm.get("share", 0.0)):
+		var sk: Dictionary = (d.get("smoke", {}) as Dictionary).duplicate()
+		sk.merge(sm, true)
+		var wisp := _smoke(sk)
+		wisp.position = Vector3(box.get_center().x, box.position.y + box.size.y * cut, box.get_center().z)
+		shell.add_child(wisp)
+		get_tree().create_timer(float(sm.get("seconds", 240.0)) * r.randf_range(0.6, 1.0)).timeout.connect(func():
+			if is_instance_valid(wisp):
+				wisp.emitting = false)
 	_burnt[key] = {"shell": shell, "hidden": hidden, "box": box}
 	return _burnt[key]
 
