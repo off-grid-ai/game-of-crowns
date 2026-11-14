@@ -76,6 +76,8 @@
     { "sound": "rooster", "seasons": ["spring", "summer", "autumn", "winter"], "hours": [5.0, 7.5], "every": [12.0, 30.0] },
     { "sound": "hens", "seasons": ["spring", "summer", "autumn"], "hours": [7.0, 18.0], "every": [20.0, 45.0] },
     { "sound": "sparrows", "seasons": ["spring", "summer"], "hours": [6.0, 19.0], "every": [10.0, 25.0] },
+    { "sound": "bell", "seasons": ["spring", "summer", "autumn", "winter"], "hours": [6.8, 7.2], "every": [1.4, 2.2], "_": "the sept's bell rings the working day in (town_scenes.json day: work from 7)" },
+    { "sound": "bell", "seasons": ["spring", "summer", "autumn", "winter"], "hours": [20.9, 21.3], "every": [1.8, 2.6], "_": "and the curfew at dusk, when the folk go in (villagers.gd night)" },
     { "sound": "owl", "seasons": ["spring", "summer", "autumn", "winter"], "hours": [21.0, 4.5], "every": [20.0, 50.0] }
   ],
   "_staged": "staged: a scene the bridge staged -> the soundscape event it sounds as it lands (soundscape.gd STINGS), for anyone's scene; staged_king: the same for the King's own scenes only (a lord's keeps its own cue in news.gd); orders: a host's order (host_command.gd) -> the event as it sets off. Every decision is heard (docs/review/decision-reactions.md).",
