@@ -46,7 +46,7 @@ var _seen := {}  # scene id -> true: each scene is news once
 ## The bridge's records the views draw, as /world sends them (bridge/view.js): the records slice. A view reads one
 ## with `rec`; nobody holds /world itself.
 const RECORDS := ["cities", "players", "units", "roads", "scenes", "date", "reign", "story", "crown", "seatId",
-	"crownId", "sitting", "counsel", "fallen", "effects", "peace", "prosperity", "souls", "goal", "threat", "turn", "royals"]
+	"crownId", "sitting", "counsel", "fallen", "effects", "peace", "prosperity", "souls", "goal", "threat", "turn", "royals", "promises"]
 var _records := {}
 
 const SceneKinds := preload("res://scripts/scene_kinds.gd")  # reach, power and tone of each kind
@@ -233,6 +233,7 @@ func _reduce_towns(world: Dictionary) -> void:
 	var raided := _raided(world)
 	var lean: Array = _dict(world.get("harvest")).get("lean", [])  # towns eating lean after a wet harvest (bridge harvest.js)
 	var mourning := _king_mourned(world, turn)
+	var word := _word_heard(world, turn)
 	var ids: Array[int] = []
 	for c in world.get("cities", []):
 		var id := int(c["id"])
@@ -247,6 +248,8 @@ func _reduce_towns(world: Dictionary) -> void:
 		bb.set_var(&"levy", now_scenes.any(func(s): return String(s.get("kind", "")) == "muster" and int(s.get("city", -2)) == id and int(s.get("turn", turn)) >= turn - 1))
 		bb.set_var(&"favour", favour)
 		bb.set_var(&"royal_funeral", mourning and bool(c.get("capital", false)) and int(c.get("owner", -1)) == crown_id)  # the King buried from his seat
+		bb.set_var(&"promise_kept", word.get(id, "") == "kept")  # the King's word kept to this town, lately (bridge promises.js)
+		bb.set_var(&"promise_broken", word.get(id, "") == "broken")
 		bb.set_var(&"lean", lean.any(func(t): return int(t) == id))  # a wet harvest and no granary: short rations (harvest.js)
 		bb.set_var(&"raid", raided.has(id))  # raiders at its edge (towns.json raid.near): its folk go in, the bell rings
 		bb.set_var(&"crown_town", int(c.get("owner", -1)) == crown_id)
@@ -262,6 +265,29 @@ static func _king_mourned(world: Dictionary, turn: int) -> bool:
 		return false
 	var last: Dictionary = _dict(line[line.size() - 1])
 	return String(last.get("how", "")) == "died" and turn - int(last.get("to", -999)) < int(preload("res://scripts/data.gd").value("towns", "royal_funeral.seasons", 2))
+
+
+## The towns that heard lately how the King kept his word (/world promises, bridge promises.js): a promise kept or
+## broken within towns.json promise.seasons, at the town it was made for, or for a house's grain at the house's seat.
+## {town id: "kept" | "broken"}, the latest promise's word winning.
+static func _word_heard(world: Dictionary, turn: int) -> Dictionary:
+	var within := int(preload("res://scripts/data.gd").value("towns", "promise.seasons", 2))
+	var seat := {}
+	for c in world.get("cities", []):
+		if bool(c.get("capital", false)):
+			seat[int(c.get("owner", -1))] = int(c["id"])
+	var out := {}
+	var when := {}
+	for p in world.get("promises", []) if world.get("promises") is Array else []:
+		var t: Variant = p.get("kept") if p.get("kept") != null else p.get("broken")
+		if t == null or turn - int(t) >= within:
+			continue
+		var town := int(p.get("town")) if p.get("town") != null else int(seat.get(int(p.get("house", -1)), -1))
+		if town < 0 or int(t) < int(when.get(town, -1)):
+			continue
+		when[town] = int(t)
+		out[town] = "kept" if p.get("kept") != null else "broken"
+	return out
 
 
 ## The towns raiders are at (the raids slice, bridge raids.js): a raid's goal town with any of its men within

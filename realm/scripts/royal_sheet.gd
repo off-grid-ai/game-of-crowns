@@ -38,6 +38,21 @@ static func traits_of(p: Dictionary) -> String:
 	return ", ".join(t.slice(0, t.size() - 1).map(func(x): return String(x))) + " and " + String(t[-1])
 
 
+## The King's word (bridge promises.js; /world promises): every promise, open or decided, as the mirror holds it.
+static func promises() -> Array:
+	var st := Awareness.store()
+	var r: Variant = st.rec("promises") if st else null
+	return r if r is Array else []
+
+
+## An open promise in a line: what he promised, to whom, and the seasons left.
+static func word_line(p: Dictionary) -> String:
+	var st := Awareness.store()
+	var turn := int(st.rec("turn", 0)) if st else 0
+	var left := maxi(0, int(p.get("due", turn)) - turn)
+	return String(Data.value("royal_sheet", "word_open", "{text}, {left}")).replace("{text}", String(p.get("text", ""))).replace("{left}", String(Data.value("royal_sheet", "word_left_one" if left <= 1 else "word_left", "")).replace("{n}", str(left)))
+
+
 ## One person's line: "Edric, 34, brave and just".
 static func line_of(p: Dictionary) -> String:
 	var bits := PackedStringArray([String(p.get("name", ""))])
@@ -108,6 +123,19 @@ func open() -> void:
 		_row(v, _w("children", "Children"), "; ".join(others.map(func(c): return line_of(c))))
 	if not (r.get("kin", []) as Array).is_empty():
 		_row(v, _w("kin", "Kin"), "; ".join((r["kin"] as Array).map(func(c): return line_of(c))))
+	# His word: the promises open, and the last kept or broken (bridge promises.js).
+	var ps := promises()
+	if not ps.is_empty():
+		v.add_child(HSeparator.new())
+		v.add_child(T.label(_w("word", "His word")))
+		for pr in ps:
+			if pr.get("kept") == null and pr.get("broken") == null:
+				_say(v, word_line(pr), T.TEXT)
+		for pr in ps.slice(-4):
+			if pr.get("kept") != null:
+				_say(v, _w("word_kept", "Kept: {text}").replace("{text}", String(pr.get("text", ""))), T.ACCENT)
+			elif pr.get("broken") != null:
+				_say(v, _w("word_broken", "Broken: {text}").replace("{text}", String(pr.get("text", ""))), T.DANGER)
 	# The Kings before him.
 	var line: Array = r.get("line", []) if r.get("line") is Array else []
 	if not line.is_empty():
@@ -172,6 +200,8 @@ var _favour_was := {}  # house name -> favour at the last reading, to tell the s
 func reset() -> void:
 	_king_id = ""
 	_favour_was = {}
+	_decided = {}
+	_word_seen = false
 
 
 func on_synced() -> void:
@@ -191,6 +221,29 @@ func on_synced() -> void:
 	if id != "":
 		_king_id = id
 	_favour_was = now
+	_word_news()
+
+
+# --- his word kept or broken, as court news (CK3's promises, Frostpunk's promises to the people) ----------------
+var _decided := {}  # promise id -> true: kept or broken, already told
+var _word_seen := false  # the first reading only learns what was already decided
+
+
+func _word_news() -> void:
+	for pr in promises():
+		var id := String(pr.get("id", ""))
+		var kept := pr.get("kept") != null
+		if not (kept or pr.get("broken") != null) or _decided.has(id):
+			continue
+		_decided[id] = true
+		if not _word_seen:
+			continue
+		var said := _w("news_kept" if kept else "news_broken", "").replace("{text}", String(pr.get("text", ""))).replace("{place}", String(pr.get("place", "")) if pr.get("place") != null else "")
+		ui.toast(said)
+		ui.heard.emit("seal" if kept else "lapse")
+		if pr.get("town") != null:
+			ui.word_news.emit(int(pr["town"]), said)
+	_word_seen = true
 
 
 func _crowned(king: Dictionary, r: Dictionary, was: Dictionary, now: Dictionary) -> void:

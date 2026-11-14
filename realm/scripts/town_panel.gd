@@ -7,6 +7,8 @@ extends RefCounted
 const T := preload("res://scripts/theme.gd")
 const UI := preload("res://scripts/ui.gd")
 const Heraldry = preload("res://scripts/heraldry.gd")
+const Data := preload("res://scripts/data.gd")
+const RoyalSheet := preload("res://scripts/royal_sheet.gd")  # the King's word for this town (promises)
 
 var ui: UI  # the interface that owns this card: its signals, its building blocks, its other cards
 
@@ -272,6 +274,10 @@ func show_town(c: Dictionary, house: Dictionary, _player: Dictionary) -> void:
 	var befallen = c.get("situation")  # null when nothing has befallen it
 	if befallen is String and befallen != "":
 		parts.append(befallen)
+	# The King's word given for this town, or to the house that holds it, still open (bridge promises.js).
+	for pr in RoyalSheet.promises():
+		if pr.get("kept") == null and pr.get("broken") == null and (pr.get("town") == c["id"] or (String(pr.get("kind", "")) == "grain" and int(pr.get("house", -2)) == int(c.get("owner", -1)))):
+			parts.append(String(Data.value("royal_sheet", "word_town", "{line}")).replace("{line}", RoyalSheet.word_line(pr)))
 	if c.get("capital", false):
 		parts.append("Seat of the house")
 	if (_town_player.get("besieged", []) as Array).has(int(c["id"])):

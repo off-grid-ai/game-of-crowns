@@ -22,5 +22,15 @@
  "crowned": "Long live King {name}",
  "crowned_nature": "{age}, by nature {traits}.",
  "funeral": "The great houses swore to the old King, not to this one. Old friends wait to be won again, and old grudges are half forgotten.",
- "crowned_ok": "So it begins"
+ "crowned_ok": "So it begins",
+ "word": "His word",
+ "word_open": "{text}, {left}",
+ "word_left": "{n} seasons left",
+ "word_left_one": "by the season's end",
+ "word_kept": "Kept: {text}",
+ "word_broken": "Broken: {text}",
+ "word_town": "The King's word: {line}",
+ "pledge_tag": "Your word. Kept, it is remembered warmly; broken, bitterly.",
+ "news_kept": "The King keeps his word: {text}.",
+ "news_broken": "The King's word is broken: {text}. They will remember it."
 }

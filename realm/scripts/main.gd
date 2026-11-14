@@ -372,6 +372,10 @@ func _ready() -> void:
 	ui.abdicate_asked.connect(func(cb): bridge.abdicate(cb))
 	awareness.synced.connect(ui.royal.on_synced)  # the crown passing: court news of how the houses take the new King
 	awareness.cleared.connect(ui.royal.reset)
+	ui.word_news.connect(func(town, said):
+		var at: Vector3 = ui.town_point.call(ui.town_of.call(town))
+		if at != Vector3.INF:
+			news.point_at(at, said, func(): pass))
 	ui.court_waits_at.connect(func(at, caption, id): news.point_at(at, caption, ui.open_matter.bind(id)))
 	ui.event_back.connect(news._back_from_news)
 	ui.house_followed.connect(_follow_house)  # a house's sigil clicked: go with its host

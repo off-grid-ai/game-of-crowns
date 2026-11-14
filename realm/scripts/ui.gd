@@ -35,6 +35,7 @@ signal court_closed  # the doors shut: the realm moves, and the camera may go an
 signal interlude_closed  # the King has read the act just gone: the realm goes on
 signal speed_stepped(dir: int)  # + and -: the seasons pass faster (1) or slower (-1); main.gd asks the bridge
 signal abdicate_asked(cb: Callable)  # the King steps down for his heir (royal_sheet.gd); main.gd asks the bridge, cb(code, d)
+signal word_news(town: int, said: String)  # a promise kept or broken (royal_sheet.gd): main.gd makes it the news at its town
 signal next_host  # comma: the next of the King's hosts, selected and looked at (main.gd)
 signal last_event  # Space: go to the latest news, or back again
 signal event_back  # Home: back to where the King was
