@@ -13,6 +13,8 @@
       "young": 0.65,
       "sapling": 0.35,
       "_leaves": "The nature set (docs/art/nature; the look audit's fix plan 3): each role a list of models, any of them picked per tree (pine: nt_pine_a, nt_pine_b; oak: nt_oak_a, nt_oak_b; bush: nt_bush; another model slots in by adding it to its list). Every model has its leaves in their own material, MI_Leaves, which the season tints (terrain.gd's season pass; forest.gd _leaves names the leaves of a pine \"pine\", the rest \"leaves\"); the trunks keep their paint. seasons: by model file, a tint over its summer colour that replaces the season's own for that model, so a wood turns as a mix (art target 01-town: mostly deep green, some ochre and amber); a model not listed takes the season's tint for its kind. The leaves' colour (graded to deep green, its painted patchwork calmed) is the piece's own, made at import: data/meshy.json pieces.<name>.leaves.",
+      "evergreen": ["meshy/nt_cypress/nt_cypress.glb"],
+      "_evergreen": "Models outside the pine role whose leaves keep the pines' winter tint, not the broadleaves' turn (forest.gd leaf_kind; the towns' cypresses).",
       "seasons": {
         "meshy/nt_oak_a/nt_oak_a.glb": { "autumn": [1.15, 0.94, 0.58] },
         "meshy/nt_oak_b/nt_oak_b.glb": { "autumn": [0.85, 0.96, 0.76] }

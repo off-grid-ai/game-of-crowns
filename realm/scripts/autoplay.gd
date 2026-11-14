@@ -716,11 +716,11 @@ func _step(w: PackedStringArray) -> void:
 					main.rig.apply()
 				await get_tree().create_timer(3.0).timeout
 			"field":
-				# field season t [n] [dist] [tilt]: the countryside's year held at that season and that far
-				# through it (countryside.gd hold_season), then the n-th sown field from the crown's seat
+				# field season t [n] [dist] [tilt]: the land, its leaves and the fields' year held at that season
+				# and that far through it (main.film_hold), then the n-th sown field from the crown's seat
 				# framed low and oblique; its work (ploughing, sowing, weeding, reaping and stooking,
 				# gleaning, lifting: field_work.gd) comes out as the camera arrives.
-				preload("res://scripts/countryside.gd").hold_season(w[1], float(w[2]) if w.size() > 2 else 0.5)
+				main.film_hold(w[1], float(w[2]) if w.size() > 2 else 0.5)
 				_frame_field(false, int(w[3]) if w.size() > 3 else 0, float(w[4]) if w.size() > 4 else 4.0, float(w[5]) if w.size() > 5 else -25.0)
 				if main.rig.is_processing_input() == false:
 					main.rig.apply()

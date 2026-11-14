@@ -168,16 +168,6 @@ func _layer(mesh: Mesh, xfs: Array, begin: float, end: float, shadows: bool, tie
 	mmi.gi_mode = GeometryInstance3D.GI_MODE_DISABLED
 	mmi.set_meta("tier", tier)  # set_reach moves the mid and card tiers' bounds; the map tier keeps its own
 	add_child(mmi)
-	if not _leafy.has(mesh):
-		_leafy[mesh] = mmi
-
-
-## The kit's trees, one batch per tree mesh: terrain.gd's season pass tints their
-## leaves with the rest of the land's (the meshes share their materials, so one
-## batch each is all of them).
-var _leafy := {}
-func leafy() -> Array:
-	return _leafy.values()
 
 
 ## Each kind's mesh, once.
@@ -224,11 +214,37 @@ static func leaves(mat: Material, path: String, kind: String) -> Material:
 	c.set_meta("leaf", kind)
 	var tints: Dictionary = (Data.value("assets", "woods.kit.seasons", {}) as Dictionary).get(path.trim_prefix("res://assets/"), {})
 	var by := {}
-	for season in tints:
-		var t: Array = tints[season]
-		by[season] = Color(float(t[0]), float(t[1]), float(t[2]))
+	for s in tints:
+		var t: Array = tints[s]
+		by[s] = Color(float(t[0]), float(t[1]), float(t[2]))
 	c.set_meta("seasons", by)
+	c.set_meta("summer", c.albedo_color)
+	if season != "":
+		c.albedo_color = c.albedo_color * tint(c)  # made after the land turned (a town built later): in its season at once
+	marked.append(c)
 	return c
+
+
+## Which season's tint a model's leaves take (terrain.gd SEASONS): "pine" for the woods' pines and the other
+## evergreens (assets.json woods.kit.evergreen: the towns' cypresses), else "leaves".
+static func leaf_kind(path: String) -> String:
+	var kit: Dictionary = Data.value("assets", "woods.kit", {})
+	var p := path.trim_prefix("res://assets/")
+	return "pine" if p in ((kit.get("pine", {}) as Dictionary).get("models", []) as Array) or p in (kit.get("evergreen", []) as Array) else "leaves"
+
+
+## Every leaf material leaves() has made (the woods, the ground cover, the towns' and orchards' trees): the one list
+## terrain.gd's season pass turns (g28 seasons: the towns' trees, never marked, stayed summer green in autumn).
+static var marked: Array[BaseMaterial3D] = []
+## The season the leaves stand in and its tints by kind (terrain.gd set_season: its SEASONS row), for leaves made after it.
+static var season := ""
+static var row := {}
+
+
+## A leaf material's tint in the season over its summer colour: its model's own turn (woods.kit.seasons), else the
+## season's for its kind.
+static func tint(mat: BaseMaterial3D) -> Color:
+	return (mat.get_meta("seasons", {}) as Dictionary).get(season, row.get(String(mat.get_meta("leaf", "")), Color.WHITE))
 
 
 ## Alpha-blended leaves: every layer of every canopy shaded and sorted each frame, which made the woods most of the

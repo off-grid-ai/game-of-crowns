@@ -287,6 +287,44 @@ def smooth_leaves(obj, crown=0.0):
     return sum(1 for poly in obj.data.polygons if poly.material_index in slots)
 
 
+def tuck_roots(obj, h, flare):
+    """A tree's root flare drawn in to its trunk (group render g28 seasons, 01-town: every oak stood in a wide red-brown
+    skirt of painted roots, 3.9 m out from a 1.5 m trunk on nt_oak_a; 01-town's trees rise straight out of the grass).
+    The trunk's axis is the middle of its bark between h and 2h metres up; below h, every bark vertex is drawn toward it
+    so it stands no further out than the trunk's own reach at h, widened by `flare` at the ground. The leaves keep their
+    place. Returns the vertices moved."""
+    mats = obj.data.materials
+    slots = {i for i, m in enumerate(mats) if m and m.name.startswith("MI_Leaves")}
+    bark = set()
+    for p in obj.data.polygons:
+        if p.material_index not in slots:
+            bark.update(p.vertices)
+    vs = obj.data.vertices
+    band = [vs[i].co for i in bark if h <= vs[i].co.z <= 2.0 * h]
+    if not band:
+        return 0
+    cx = sorted(c.x for c in band)[len(band) // 2]
+    cy = sorted(c.y for c in band)[len(band) // 2]
+    near = sorted(math.hypot(vs[i].co.x - cx, vs[i].co.y - cy) for i in bark if abs(vs[i].co.z - h) <= 0.25 * h)
+    if not near:
+        return 0
+    reach = near[len(near) // 2]
+    moved = 0
+    for i in bark:
+        c = vs[i].co
+        if c.z >= h:
+            continue
+        r = math.hypot(c.x - cx, c.y - cy)
+        most = reach * (1.0 + flare * (1.0 - max(c.z, 0.0) / h))
+        if r > most:
+            s = most / r
+            c.x = cx + (c.x - cx) * s
+            c.y = cy + (c.y - cy) * s
+            moved += 1
+    obj.data.update()
+    return moved
+
+
 def crown_normals(obj, slots, k):
     """The leaves' normals turned out from the crown's middle (the stylised-foliage way: the normals of an ellipsoid
     round the crown, as Blender users do with a Data Transfer from a sphere), so a crown lights as one soft mass, not as
@@ -657,13 +695,14 @@ def main():
     leaves = split_house(obj, spec["leaves"], "MI_Leaves") if spec.get("leaves") else 0.0
     smoothed = smooth_leaves(obj, float(spec["leaves"].get("crown", 0.0))) if leaves else 0
     padded = pad_leaves(obj, int(spec["leaves"].get("pad", 0)), float(spec["leaves"].get("calm", 0.0)), tuple(spec["leaves"].get("grade", [1.0, 1.0, 1.0]))) if leaves else 0
+    tucked = tuck_roots(obj, float(spec["roots"]["h"]), float(spec["roots"]["flare"])) if spec.get("roots") else 0
     arm = split_arm(obj, spec["arm"]) if spec.get("arm") else None
     has_mask = mask_png(obj, spec["mask"], out)
     glb = os.path.join(out, name + ".glb")
     bpy.ops.export_scene.gltf(filepath=glb, export_format="GLB", use_selection=False, export_yup=True, export_apply=True)
     report = {"name": name, "source": src, "tris_before": before, "tris_after": after, "scale": k,
               "size_m": [round(x, 2) for x in size], "house_share": round(share, 3), "leaves_share": round(leaves, 3), "mask_png": has_mask,
-              "materials": [m.name for m in obj.data.materials if m], "cut_faces": removed, "arm": arm is not None, "repainted": repainted, "flattened": pressed, "smooth_leaves": smoothed, "padded": padded}
+              "materials": [m.name for m in obj.data.materials if m], "cut_faces": removed, "arm": arm is not None, "repainted": repainted, "flattened": pressed, "smooth_leaves": smoothed, "padded": padded, "roots_tucked": tucked}
     json.dump(report, open(os.path.join(out, "import.json"), "w"), indent=1)
     print("MESHY " + json.dumps(report))
 

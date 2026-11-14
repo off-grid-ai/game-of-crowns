@@ -107,6 +107,15 @@ func film_reseason() -> void:
 	_film_snap = true
 
 
+## A film holding a season of its own (autoplay's field step): the land and its leaves take `season`, laid at once,
+## and the fields' year with them (countryside.gd hold_season), so the field's season and the trees round it agree
+## (g28 seasons: "field autumn" turned the crops alone, the woods and the towns' trees stayed summer green).
+func film_hold(season: String, t: float) -> void:
+	preload("res://scripts/countryside.gd").hold_season(season, t)
+	_film_season = season
+	_film_snap = true
+
+
 func _ready() -> void:
 	shots._parse_args()
 	if _film():

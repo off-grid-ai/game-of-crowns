@@ -449,6 +449,7 @@ static func _template(name: String) -> Dictionary:
 	model.position = -Vector3(box.get_center().x, box.position.y, box.get_center().z) * k
 	_own(model, root)
 	_no_glow(root, name in STONE, KIT[name][0] == "castle")
+	_leaves(root, path)
 	# The same model as plain meshes, for drawing many copies in one batch.
 	var parts := []
 	for mi in root.find_children("*", "MeshInstance3D", true, false):
@@ -547,6 +548,22 @@ static func _no_glow(root: Node, stone := false, castle := false) -> void:
 					fade_near(lit, gone, solid)
 					lit_of[mat] = lit
 				m.set_surface_override_material(i, lit_of[mat])
+
+
+## A nature-set model's leaves (a town's yard and orchard trees, its hedges and shrubs) marked to turn with the land's
+## season, as the woods' do: the one marker, forest.gd leaves (g28 seasons: the towns' oaks stayed summer green in autumn).
+static func _leaves(root: Node, path: String) -> void:
+	var Forest: GDScript = load("res://scripts/forest.gd")  # at run time: forest.gd preloads this catalogue
+	var made := {}  # one copy per material, so merged surfaces still share it
+	for mi in root.find_children("*", "MeshInstance3D", true, false):
+		var m: MeshInstance3D = mi
+		for i in (m.mesh.get_surface_count() if m.mesh else 0):
+			var mat := m.get_active_material(i)
+			if mat == null or not String(mat.resource_name).begins_with("MI_Leaves"):
+				continue
+			if not made.has(mat):
+				made[mat] = Forest.leaves(mat, path, Forest.leaf_kind(path))
+			m.set_surface_override_material(i, made[mat])
 
 
 ## The model as [mesh, transform] pairs relative to its foot, for batching.

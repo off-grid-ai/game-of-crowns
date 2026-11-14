@@ -99,7 +99,6 @@ func world_pos(tx: float, ty: float) -> Vector3:
 var land3d: Node3D
 var _sea_mat: ShaderMaterial
 var season := ""
-var _leaf_mats := {}  # material -> its summer colour
 const SNOW := preload("res://scripts/snow.gdshader")
 var _snow: ShaderMaterial
 # Per season: broadleaf leaves, pine needles, grass and ground.
@@ -155,24 +154,16 @@ func set_season(name: String, towns: Array = [], settle := 10.0) -> void:
 	if name == season:
 		return
 	season = name
-	var wild: Array = vegetation.batches if vegetation else []
-	for mmi in wild + (forest.leafy() if forest and forest.has_method("leafy") else []):  # the kit woods turn with the season too
-		var mesh: Mesh = mmi.multimesh.mesh
-		for i in mesh.get_surface_count():
-			var mat := mesh.surface_get_material(i) as StandardMaterial3D
-			if mat == null:
-				continue
-			var key := String(mat.get_meta("leaf", ""))  # a nature-set model's leaves, by kind (forest.gd leaves)
-			if key == "":
-				continue
-			if not _leaf_mats.has(mat):
-				_leaf_mats[mat] = mat.albedo_color
-			# Leaves turn and grass dulls over the settle, never in a frame.
-			# A tree with its own turn (forest.gd leaves, assets.json woods.kit.seasons) takes that instead.
-			var tint: Color = (mat.get_meta("seasons", {}) as Dictionary).get(name, s[key])
-			create_tween().tween_property(mat, "albedo_color", _leaf_mats[mat] * tint, settle)
-			_leaf_snow(mat, key != "grass" and s["snow"] > 0.0)
-		if s["snow"] > 0.0 and OVERLAY_SNOW and mmi in wild:  # (the kit woods' batches are tinted through one per mesh: no overlay there)
+	const Forest := preload("res://scripts/forest.gd")
+	Forest.season = name
+	Forest.row = s
+	for mat in Forest.marked:  # every tree's and plant's leaves, wherever they stand (forest.gd leaves)
+		# Leaves turn and grass dulls over the settle, never in a frame. A tree with its own turn
+		# (assets.json woods.kit.seasons) takes that instead.
+		create_tween().tween_property(mat, "albedo_color", (mat.get_meta("summer", mat.albedo_color) as Color) * Forest.tint(mat), settle)
+		_leaf_snow(mat, String(mat.get_meta("leaf", "")) != "grass" and s["snow"] > 0.0)
+	if s["snow"] > 0.0 and OVERLAY_SNOW and vegetation:
+		for mmi in vegetation.batches:
 			mmi.material_overlay = _snow  # left on as it melts; the fade takes it to nothing
 	if land3d:
 		land3d.set_grass(s["ground"], s["snow"] > 0.0, settle)
@@ -182,7 +173,7 @@ func set_season(name: String, towns: Array = [], settle := 10.0) -> void:
 ## the sky), on in a snowy season; one pass per leaf material, kept for when the snow comes back.
 const SNOW_LEAF := preload("res://scripts/snow_leaf.gdshader")
 var _leaf_passes := {}
-func _leaf_snow(mat: StandardMaterial3D, on: bool) -> void:
+func _leaf_snow(mat: BaseMaterial3D, on: bool) -> void:
 	if not on:
 		if mat.next_pass and _leaf_passes.get(mat) == mat.next_pass:
 			mat.next_pass = null
