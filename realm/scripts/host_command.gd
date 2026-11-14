@@ -293,6 +293,7 @@ func order(kind: String, at := {}, done := Callable()) -> bool:
 	var body := {"host": selected, "order": String(_row(kind).get("send", kind))}  # the bridge's name for it
 	if at.has("ground"):
 		var ground: Vector3 = at["ground"]
+		_mark(ground, kind)
 		var town: Dictionary = {} if kind == "attack" else main.towns.nearest(ground, Data.num(FILE, "town_reach", 3.0))
 		if not town.is_empty():
 			body["city"] = int(town.get("id", -1))
@@ -414,6 +415,24 @@ func _dots(color: Color, size := -1.0) -> MultiMeshInstance3D:
 	mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(mmi)
 	return mmi
+
+
+## Where an order was given, a ring flashed on the ground that closes and fades (Warcraft III's command marker):
+## the accent for a march, red for an attack or a siege (host_command.json marker).
+func _mark(at: Vector3, kind: String) -> void:
+	var k: Dictionary = Data.value(FILE, "marker", {})
+	var d := _decal(_ring_texture(), float(k.get("energy", 2.0)))
+	if kind in ["attack", "besiege"]:
+		d.modulate = T.DANGER
+	d.global_position = at
+	d.visible = true
+	var from := float(k.get("from", 0.7))
+	var to := float(k.get("to", 0.25))
+	d.size = Vector3(from, 1.2, from)
+	var tw := d.create_tween().set_parallel()
+	tw.tween_property(d, "size", Vector3(to, 1.2, to), float(k.get("secs", 0.6))).set_ease(Tween.EASE_OUT)
+	tw.tween_property(d, "modulate:a", 0.0, float(k.get("secs", 0.6))).set_ease(Tween.EASE_IN)
+	tw.chain().tween_callback(d.queue_free)
 
 
 ## A ground ring painted on the land as it lies (a decal: it follows hills and roads).
