@@ -14,7 +14,7 @@ extends RefCounted
 const Data := preload("res://scripts/data.gd")
 const Ground := preload("res://scripts/ground.gd")  # the one answer to where anything may stand
 const Works := preload("res://scripts/works.gd")
-const Batch := preload("res://scripts/batch.gd")
+const Bulk := preload("res://scripts/bulk.gd")  # the one drawer of repeated small things
 
 static var _meshes := {}  # "kit/model" -> [ArrayMesh, its lowest y in metres] (or [] when it doesn't load)
 static var _builder = null
@@ -232,29 +232,22 @@ static func dress(root: Node3D, ground: Callable, seed: int, pace := Callable())
 						await pace.call()
 						if not is_instance_valid(root):
 							return {}  # the town went meanwhile
-	# One batch per model.
+	# Drawn in bulk (bulk.gd, the one drawer of repeated small things), out to 30 from the lens (small things: near the
+	# camera only), owned by the Dressing node (they go when it does). The node keeps where each stands (meta "bulk":
+	# [mesh, place in the town's frame, model]) for the walk map (nav_ground.gd) and the dressing probe.
 	var node := Node3D.new()
 	node.name = "Dressing"
 	root.add_child(node)
+	var bulk: Array = []
 	for model in placed:
-		var mmi := Batch.make(batch_name(model), mesh_of(model)[0], placed[model])  # the batch owns where its copies stand
-		mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF if model.begins_with("meshy/nt_") else GeometryInstance3D.SHADOW_CASTING_SETTING_ON
-		mmi.visibility_range_end = 30.0  # small things: drawn near the camera only
-		node.add_child(mmi)
+		var mesh: Mesh = mesh_of(model)[0]
+		for xf: Transform3D in placed[model]:
+			Bulk.add(mesh, root.global_transform * xf, node, 30.0, not model.begins_with("meshy/nt_"))
+			bulk.append([mesh, xf, model])
+	node.set_meta("bulk", bulk)
 	node.set_meta("counts", counts)
 	node.set_meta("fronts", fronts)
 	return counts
-
-
-## A model's batch under the Dressing node is named for it ("kit/model" -> "kit_model": a node name holds no "/").
-static func batch_name(model: String) -> String:
-	return model.replace("/", "_")
-
-
-## The model a batch under the Dressing node stands for (batch_name's inverse: kits have no "_" in their name).
-static func model_of(batch: Node) -> String:
-	var parts := String(batch.name).split("_", true, 1)
-	return parts[0] + "/" + parts[1]
 
 
 ## Whether a thing may stand at `at` (town-local): off every footprint (building, wall, stall), clear

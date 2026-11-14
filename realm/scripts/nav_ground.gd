@@ -134,6 +134,9 @@ static func _walk(n: Node, root: Node3D, life: Node3D, to_town: Transform3D, ter
 	if n is Node3D and not (n as Node3D).visible:
 		return
 	var key := "life" if life and (n == life or life.is_ancestor_of(n)) else "town"
+	if n.has_meta("bulk"):  # what it draws through bulk.gd (a town's dressing): [mesh, place in the town's frame, ...]
+		for e in n.get_meta("bulk"):
+			_add(e[0], root.global_transform * (e[1] as Transform3D), to_town, terrain, K, out[key])
 	if n is MeshInstance3D and (n as MeshInstance3D).mesh:
 		var mi := n as MeshInstance3D
 		_add(mi.mesh, mi.global_transform, to_town, terrain, K, out[key])

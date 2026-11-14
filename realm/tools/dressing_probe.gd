@@ -85,9 +85,11 @@ func _run() -> void:
 		var walls: Array = (root.get_meta("footprints") as Array).duplicate()
 		var counts: Dictionary = await Dressing.dress(root, func(_q: Vector3) -> float: return 0.0, 11)
 		var node: Node = root.get_node_or_null("Dressing")
-		var placed := {}  # model -> where its copies stand, as each batch holds them (batch.gd)
-		for bt in (node.get_children() if node else []):
-			placed[Dressing.model_of(bt)] = bt.get("xfs")
+		var placed := {}  # model -> where its copies stand, as the Dressing node keeps them (meta bulk)
+		for e in (node.get_meta("bulk", []) if node else []):
+			if not placed.has(e[2]):
+				placed[e[2]] = []
+			(placed[e[2]] as Array).append(e[1])
 		var bad := PackedStringArray()
 		var total := 0
 		var sq := float(root.get_meta("square_r"))
