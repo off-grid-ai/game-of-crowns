@@ -133,6 +133,9 @@ func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 	life.set_meta("dress", [String(root.get_meta("rank", "town")), Color.from_string(String(house.get("color", "")), Color(0, 0, 0, 0)), bool(c.get("grief", false))])
 	root.set_meta("keepers", {})
 	_dress(root, life, center, c, rng, house)
+	await Engine.get_main_loop().process_frame  # the town's working life next frame, its scenes after (staged over frames)
+	if not is_instance_valid(root) or not is_instance_valid(life) or root.get_node_or_null("Life") != life:
+		return  # redressed meanwhile
 	_works(root, life, center, c, rng)
 	# What stands so far is the town's working life (its buildings' people, a site's builders, the drill); the
 	# director casts every scene's people, by the rows of realm/data/town_scenes.json.
@@ -140,7 +143,9 @@ func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 		if n.has_meta("role"):
 			n.set_meta("works", true)
 	if director:
-		director.stage(root, life, c, states, self)
+		await director.stage(root, life, c, states, self)
+		if not is_instance_valid(root) or not is_instance_valid(life) or root.get_node_or_null("Life") != life:
+			return
 	_near_only(life)
 	_pin(life, center)
 

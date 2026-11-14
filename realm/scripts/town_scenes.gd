@@ -114,9 +114,18 @@ func stage(root: Node3D, life: Node3D, c: Dictionary, states: Array, tl: Object)
 				var w: Variant = role.get("census", 0.0)
 				if not (w is String):
 					census["weights"] = float(census["weights"]) + float(w)
+	# Staged over frames, a slice at a time (towns.json life.slice_ms; FPS: a town's whole cast in one frame held it
+	# 5.5 s); a town redressed meanwhile (its Life replaced) ends this one.
+	var slice := float(Data.num("towns", "life.slice_ms", 10.0))
+	var t0 := Time.get_ticks_msec()
 	for row in _d.get("standing", []):
 		if not _meets(row, root, states, size):
 			continue
+		if Time.get_ticks_msec() - t0 > slice:
+			await get_tree().process_frame
+			t0 = Time.get_ticks_msec()
+			if not is_instance_valid(root) or not is_instance_valid(life) or root.get_node_or_null("Life") != life:
+				return
 		var anchors: Dictionary = (life.get_meta("anchors", {}) as Dictionary).duplicate()  # where town_life's own dressing stands
 		for dress in row.get("dress", []):
 			var d = _dressing(String(dress), tl)
@@ -124,6 +133,11 @@ func stage(root: Node3D, life: Node3D, c: Dictionary, states: Array, tl: Object)
 				anchors.merge(d.dress(root, life, row, rng), true)
 		var k := {"root": root, "life": life, "tl": tl, "states": states, "size": size, "rng": rng, "row": row, "lead": null, "cast": [], "tally": tally, "census": census}
 		for role in row.get("roles", []):
+			if Time.get_ticks_msec() - t0 > slice:
+				await get_tree().process_frame
+				t0 = Time.get_ticks_msec()
+				if not is_instance_valid(root) or not is_instance_valid(life) or root.get_node_or_null("Life") != life:
+					return
 			_stage_role(k, role, anchors)
 		if row.has("march") and _meets(row["march"], root, states, size):
 			_begin_march(root, life, row["march"], rng)
