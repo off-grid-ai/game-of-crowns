@@ -104,6 +104,10 @@ func build(terrain: Node3D, ground_layer: int) -> void:
 	# The shore stays bare in winter (ground.json beach.snow: [none below, whole from], heights in game units).
 	var shore: Array = Data.value("ground", "beach.snow", [-1.0, -1.0])
 	mat.set_shader_param("snow_shore", Vector2(float(shore[0]), float(shore[1])))
+	# The hills shaded from a low light below the map's height too (data/map.json relief.near; Mac on Kingsmere drawn
+	# back, "flat land": WC3 and AoE2 read their rises from light and shade at play zoom, not only on the map).
+	var rl: Array = Data.value("map", "relief.light", [-0.5, 0.7, -0.5])
+	mat.set_shader_param("relief_near", Vector4(Data.num("map", "relief.near", 0.0), float(rl[0]), float(rl[1]), float(rl[2])))
 	var w: int = terrain.width * int(terrain.TILE)
 	var h: int = terrain.height * int(terrain.TILE)
 	# Ground layers once per game unit; the eroded heightmap, where the realm has
@@ -450,6 +454,7 @@ uniform vec4 pol_k = vec4(0.3, 0.8, 0.45, 0.4);  // wash_near, wash_far, own_mix
 uniform vec4 pol_b = vec4(1.35, 3.0, 1.4, 0.0);  // border_bright (saturation), border_px, stripe_width, border_glow
 uniform vec4 pol_z = vec4(12.0, 30.0, 0.4, 0.35);  // map_from, map_to: the camera's height over the ground where the wash comes in; band, band_strength: the house's colour strong just inside its border (tile share, strength)
 uniform vec4 relief = vec4(0.0, -0.5, 0.7, -0.5);  // the land's relief at the map's height (data/map.json relief): strength, the light it is shaded from
+uniform vec4 relief_near = vec4(0.0, -0.5, 0.7, -0.5);  // the same below the map's height (data/map.json relief.near): strength, light
 uniform vec4 pol_l = vec4(9.0, 22.0, 0.22, 0.55);  // line_from, line_to (camera height where borders fade in), soft (the painted band's width, tile share), crisp (the fine line's share)
 float flood_d(vec2 t) {
 	float d = 100000.0;
@@ -468,6 +473,8 @@ const REALM_WASH := """
 	float relief_zoom = smoothstep(pol_z.x, pol_z.y, CAMERA_POSITION_WORLD.y - v_vertex.y);
 	float relief_lit = dot(normalize(w_normal), normalize(relief.yzw));
 	ALBEDO *= mix(1.0, clamp(0.3 + relief_lit * 0.99, 0.5, 1.3), relief.x * relief_zoom);
+	float near_lit = dot(normalize(w_normal), normalize(relief_near.yzw));
+	ALBEDO *= mix(1.0, clamp(0.3 + near_lit * 0.99, 0.5, 1.3), relief_near.x * (1.0 - relief_zoom));
 	if (realm_on > 0.5) {
 		vec2 rt = v_vertex.xz / realm_tile;
 		vec2 rg = rt - 0.5;
