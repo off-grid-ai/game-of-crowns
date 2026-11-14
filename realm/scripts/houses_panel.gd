@@ -191,6 +191,18 @@ func _fill_houses() -> void:
 			if not names.is_empty():
 				var shown_b := String(names[0]) + (" +%d" % (names.size() - 1) if names.size() > 1 else "")
 				odds.append("[color=#%s]%s · %s[/color]" % [T.TEXT_2.to_html(false), String(BOUND_WORDS[kind][0]), shown_b.to_upper()])
+		# The minor houses sworn to it (bridge /world vassals; CK3's vassal list under its liege): their names under
+		# the house's own, each one's seat and lord on hover.
+		var sworn := PackedStringArray()
+		var sworn_said := PackedStringArray()
+		for vs in st.rec("vassals", []):
+			if int(vs.get("owner", -2)) == owner:
+				sworn.append(String(vs.get("house", "")).trim_prefix("House "))
+				sworn_said.append(String(_dw("vassal_tip", "{house} of {town}, {lord}")).replace("{house}", String(vs.get("house", ""))).replace("{town}", String(ui.town_of.call(int(vs.get("town", -1))).get("name", ""))).replace("{lord}", String(vs.get("lord", ""))))
+		if not sworn.is_empty():
+			var most := int(Data.num("herald", "drawer.vassals_shown", 3))
+			var shown_v := ", ".join(sworn.slice(0, most)) + (" +%d" % (sworn.size() - most) if sworn.size() > most else "")
+			odds.append("[color=#%s]%s · %s[/color]" % [T.TEXT_3.to_html(false), String(_dw("vassals", "SWORN")), shown_v.to_upper()])
 		if odds.is_empty():
 			grid.add_child(name)
 		else:
@@ -214,6 +226,8 @@ func _fill_houses() -> void:
 				said.append("Under the King's truce with " + ", ".join(truces))
 			if risen:
 				said.append(String(_dw("risen_tip", "")))
+			if not sworn_said.is_empty():
+				said.append(String(_dw("vassals_head", "Sworn to them:")) + "\n" + "\n".join(sworn_said))
 			for kind in ["marriage", "pact"]:
 				if not (bound.get(kind, []) as Array).is_empty():
 					said.append(String(BOUND_WORDS[kind][1]) % ", ".join(bound[kind]))
