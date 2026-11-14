@@ -37,9 +37,10 @@ export function toWinter(meta, turn) {
   return i < 0 ? null : 3 - i + 1;  // this season to the end of winter, counted whole
 }
 
-// The first ruling that slights the lord who asked: due later than the usual return, so it lands
+// The first ruling that cools a house (the lord who asked, or the house it ruled against): due later than the usual return, so it lands
 // about five minutes in (firstSetbackSeasons after it), and always as a plea for amends, never a quiet
 // gift or a scheme. Returns the seasons it's due in, or null for an ordinary ruling.
+// d: how much the ruling cooled the house that will come back (its asker, or the house it cooled most: court.js).
 export function firstSetback(meta, d) {
   if (!v2(meta) || d >= 0 || state(meta).setback) return null;
   state(meta).setback = true;

@@ -72,8 +72,15 @@ export function rule(ctx, id, option) {
     const matter = petition.thread ?? null;
     const what = `heard ${matter ? `us on ${matter}` : "our plea"} at court and ruled: ${String(asked.label ?? asked.id).replace(/ \(.*\)$/, "").toLowerCase()}`;
     // Opening v2: the first ruling that slights its asker comes back about five minutes in, as the first setback (opening.js).
-    const late = Opening.firstSetback(meta, d);
-    recordRuling(court.deedsOf(asker.playerId), { d, what, by: asker.id, turn: world.turn ?? 0, ...(late != null ? { due: late, setback: true } : {}) });
+    // Opening v2: the first ruling that cools a house comes back about five minutes in, as the first setback
+    // (opening.js): from its asker when it slights him, else from the house it cooled most, by its lord.
+    const cooled = Object.entries(out.favour ?? {}).map(([pid, v]) => [Number(pid), Number(v)]).filter(([pid, v]) => v < 0 && pid !== asker.playerId && court.lordOfHouse(pid)).sort((a, b) => a[1] - b[1])[0];
+    const late = Opening.firstSetback(meta, d < 0 ? d : cooled?.[1] ?? 0);
+    recordRuling(court.deedsOf(asker.playerId), { d, what, by: asker.id, turn: world.turn ?? 0, ...(late != null && d < 0 ? { due: late, setback: true } : {}) });
+    if (late != null && d >= 0 && cooled) {
+      const lord = court.lordOfHouse(cooled[0]);
+      recordRuling(court.deedsOf(cooled[0]), { d: cooled[1], what: `ruled for ${asker.house} at court, against us: ${String(asked.label ?? asked.id).replace(/ \(.*\)$/, "").toLowerCase()}`, by: lord.id, turn: world.turn ?? 0, due: late, setback: true });
+    }
   }
   // Every ruling is told, even one whose answer has no words of its own written for it.
   if (!String(out.text ?? "").trim()) out.text = `The King gives his answer${petition ? ` to ${petition.name}` : ""}: ${String(asked?.label ?? option).replace(/ \(.*\)$/, "").toLowerCase()}.`;
@@ -189,9 +196,10 @@ function oneChance(meta) {
   const k = meta.minutes ? meta.elapsedMs / (meta.minutes * 60000) : null;
   return k == null ? COURT.one.noClock : (COURT.one.stages.find((s) => k < s.until) ?? COURT.one.stages.at(-1)).chance;
 }
-function pace(ctx) {
+function pace(ctx, first = false) {
   const { meta } = ctx;
-  if (oneAtATime(meta)) return { every: 1, want: Math.random() < oneChance(meta) ? 1 : 0 };
+  // The reign's first sitting always brings its matter (the first ten minutes: the first card by a minute in).
+  if (oneAtATime(meta)) return { every: 1, want: first || Math.random() < oneChance(meta) ? 1 : 0 };
   let r = Math.random();
   let want = (stageOf(meta).want.find(([, p]) => (r -= p) < 0) ?? stageOf(meta).want.at(-1))[0];
   want += COURT.petitions[meta.options?.petitions]?.want ?? 0;
@@ -226,7 +234,7 @@ export async function courtSeason(ctx, turn, force = false) {
   // No word of a landing (the intro skipped): it sits FIRST_COURT_LATE_MS after the reign began, as it would anyway.
   const ready = first?.landedAt ? Date.now() - first.landedAt >= FIRST_COURT_MS : Date.now() - (meta.created ?? 0) >= FIRST_COURT_LATE_MS;
   if (!force && c.lastSat == null && first && !ready) { chron.saveMeta(meta); return; }
-  const { every, want: wanted } = pace(ctx);
+  const { every, want: wanted } = pace(ctx, c.lastSat == null);
   const crises = counselNow.filter((o) => isCrisis(o) && o.acts?.length && c.heard[o.key] == null && !c.hand[o.key]);
   // A herald's terms under a siege can't wait for the next sitting: the court sits for them.
   const herald = court.petitions.some((p) => !p.answered && p.called == null && p.arc === "siege");
