@@ -10,6 +10,23 @@ import { say } from "./say.js";
 import fs from "node:fs";
 
 export const ANSWERS = {
+  // A lord's want of a match made by the King (characters.js royalmatch): the two wed, and the houses are bound.
+  royalmatch({ p, c, option, out, world }) {
+    const a = this.people[p.mine], b = this.people[p.theirs];
+    if (option === "arrange" && a?.alive && b?.alive && !a.spouse && !b.spouse) {
+      a.spouse = b.id; b.spouse = a.id;
+      this.shift(c.id, this.lordOfHouse(p.other)?.id ?? c.id, 20, `Our houses are bound by ${a.name} and ${b.name}'s marriage.`);
+      const them = this.lordOfHouse(p.other);
+      if (them) this.shift(them.id, c.id, 15, `Our houses are bound by ${a.name} and ${b.name}'s marriage.`);
+      for (const x of [a, b, c, them].filter(Boolean)) this.save(x);
+      out.text = `By the King's word, ${a.name} of ${a.house} weds ${b.name} of ${b.house}. Two great houses are bound.`;
+      this.remember(c.id, `The King made my ${a.gender === "male" ? "son" : "daughter"}'s match into ${b.house}.`);
+    } else if (option === "arrange") out.text = `The match between ${a?.name ?? "the heir"} and ${b?.name ?? "the bride"} cannot be made: one is wed or gone.`;
+    if (option === "refuse") {
+      out.text = `The King will not make the match. ${c.name} goes home, and ${a?.name ?? "the heir"} stays unwed.`;
+      this.remember(c.id, `The King would not make my ${a?.gender === "male" ? "son" : "daughter"}'s match.`);
+    }
+  },
   // A lord's want brought to court (characters.js ambitionOf: land or power, a town another great house holds).
   ambition({ p, c, option, out, world }) {
     const A = JSON.parse(fs.readFileSync(new URL("./data/ambitions.json", import.meta.url), "utf8")).plea;

@@ -528,9 +528,14 @@ export class Court {
         opts.push({ kind: "plot", score: 10 - this.opinion(c.id, foe.id) * 0.5 + (has("vengeful") || has("wrathful") ? 20 : 0) + (goal.kind === "revenge" ? 30 : 0) - (has("honourable") ? 20 : 0), target: foe });
       }
       const favour = ctx.favour(c.playerId);
+      // His want acted on (data/ambitions.json act): a lord who wants land or power and is not the King's friend
+      // takes the town himself, by war on its holder; one the King forbade it the more so.
+      const want = (goal.kind === "land" || goal.kind === "power") ? this.ambitionOf(c, world) : null;
+      const forbade = want?.target && c.memories.some((x) => x === `The King forbade me ${want.target.name}.`);
+      if (want?.target?.kind === "town" && favour < BANDS.loyal) opts.push({ kind: "press", score: AMB.act.press + (has("ambitious") ? 15 : 0) + (has("brave") ? 10 : 0) - (has("honourable") ? 20 : 0) - (has("craven") ? 25 : 0) + (forbade ? AMB.act.forbidden : 0), target: want.target });
       opts.push({ kind: "petition", score: 20 + (goal.kind === "court" || goal.kind === "peace" ? 20 : 0) + (favour >= BANDS.loyal ? 10 : 0) });
       // Only after the house's ultimatum to the crown was refused (server.js turnHouses).
-      if (favour < BANDS.cooling && !ctx.warded?.(c.playerId) && (ctx.mayRise?.(c.playerId) ?? true)) opts.push({ kind: "rebel", score: 40 + (BANDS.cooling - favour) * 2 + (goal.kind === "crown" ? 40 : 0) + (has("ambitious") ? 15 : 0) - (has("craven") ? 30 : 0) - (c.hostage && this.people[c.hostage]?.alive ? 60 : 0) });
+      if (favour < BANDS.cooling && !ctx.warded?.(c.playerId) && (ctx.mayRise?.(c.playerId) ?? true)) opts.push({ kind: "rebel", score: 40 + (BANDS.cooling - favour) * 2 + (goal.kind === "crown" ? 40 : 0) + (forbade ? AMB.act.forbidden : 0) + (has("ambitious") ? 15 : 0) - (has("craven") ? 30 : 0) - (c.hostage && this.people[c.hostage]?.alive ? 60 : 0) });
     }
     if (!opts.length) return null;
     // The realm's mood, set by the King in words, tilts everyone at once.
@@ -543,6 +548,7 @@ export class Court {
       plot: md.aggression * 0.8 + md.cunning * 0.3 - md.caution * 0.4 - md.piety * 0.2,
       petition: md.loyalty * 0.4 + md.caution * 0.3 + md.piety * 0.2,
       rebel: md.aggression * 0.6 - md.loyalty * 0.7 + md.ambition * 0.4 - md.caution * 0.4,
+      press: md.aggression * 0.6 + md.ambition * 0.5 - md.caution * 0.4 - md.loyalty * 0.2,
     };
     for (const o of opts) o.score += (tilt[o.kind] ?? 0) + r() * 18; // nobody is perfectly predictable
     const best = opts.sort((a, b) => b.score - a.score)[0];
@@ -644,6 +650,20 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
       }
       case "petition":
         return this.petition(c, world, turn, ctx);
+      case "press": {
+        // He takes the town he wants (characters.js ambitionOf): war on its holder, in Freeciv (the one diplomacy writer).
+        const t = m.target;
+        const holder = world.cities.find((x) => x.id === t.id)?.owner;
+        if (holder == null || holder === c.playerId) return;
+        const d = await this.ask(c, `You want ${t.name}, which ${t.house} holds. You could go to war for it now, without the King's leave, or wait.`, ["war", "wait"]);
+        if (d && d.choice !== "war") return;
+        this.onWar?.([c.playerId, holder]);
+        const foe = this.lordOfHouse(holder);
+        if (foe) { this.shift(foe.id, c.id, -30, `${c.name} came for ${t.name}.`); this.save(foe); }
+        this.remember(c.id, `I went to war for ${t.name}.`);
+        this.record({ turn, kind: "battle", text: `${c.name} of ${c.house} goes to war for ${t.name}, and ${t.house} calls its banners.${d?.line ? ` "${d.line}"` : ""}`, city: t.id });
+        return;
+      }
       case "rebel": {
         const d = await this.ask(c, `Your house has lost faith in the King. You could raise your banners against the crown, or swallow your pride.`, ["rebel", "endure"]);
         if (d && d.choice !== "rebel") return;
@@ -957,6 +977,19 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
     // His want itself (data/ambitions.json plea): a lord who wants land or power asks the King's leave to take a
     // town from another great house.
     const want = c.rank === "lord" ? this.ambitionOf(c, world) : null;
+    // A lord who wants a match asks the King to make it (data/ambitions.json match): his eldest unwed child to the
+    // eldest unwed child, of the other sex, of the house he wants to wed into.
+    const unwed = (lord) => (lord?.children ?? []).map((id) => this.people[id]).filter((k) => k?.alive && !k.spouse && k.age >= AMB.match.age).sort((a, b) => b.age - a.age);
+    const otherLord = want?.target?.kind === "house" ? this.lordOfHouse(want.target.id) : null;
+    const mine = unwed(c)[0];
+    const theirs = mine && unwed(otherLord).find((k) => k.gender !== mine.gender);
+    if (mine && theirs) candidates.push({ kind: "royalmatch", weight: AMB.match.weight, make: () => ({
+      kind: "royalmatch", mine: mine.id, theirs: theirs.id, other: otherLord.playerId,
+      text: `${c.name} of ${c.house}: "My ${mine.gender === "male" ? "son" : "daughter"} ${mine.name} is of an age to wed, Your Grace, and ${otherLord.house} has ${theirs.name}. A word from the crown and it is done. Two great houses bound to each other, and both to you."`,
+      facts: facts(c.playerId, otherLord.playerId), options: [
+        { id: "arrange", label: `Make the match: ${mine.name} and ${theirs.name}`, hint: `${c.house} +${AMB.match.arrange.him} · ${otherLord.house} +${AMB.match.arrange.them} · the two houses bound`, favour: { [c.playerId]: AMB.match.arrange.him, [otherLord.playerId]: AMB.match.arrange.them } },
+        { id: "refuse", label: "Refuse the match", hint: `${c.house} ${AMB.match.refuse.him}`, favour: { [c.playerId]: AMB.match.refuse.him } },
+      ] }) });
     if (want?.target?.kind === "town") candidates.push({ kind: "ambition", weight: AMB.plea.weight, make: () => {
       const t = want.target;
       return { kind: "ambition", city: t.id, holder: t.pid, text: `${c.name} of ${c.house}: "${t.name} should be ours, Your Grace, and ${t.house} holds it badly. Give me your leave and I will take it."`, facts: facts(c.playerId, t.pid), options: [

@@ -3,7 +3,7 @@
  "boost": 3,
  "drives": {
   "revenge": ["justice"],
-  "marriage": ["match"],
+  "marriage": ["match", "royalmatch"],
   "land": ["claim", "ambition"],
   "power": ["claim", "ambition"],
   "peace": ["grain", "outlaws", "faith"],
@@ -23,5 +23,7 @@
   "court": "I mean to be noticed by the King himself.",
   "defect": "I mean to find a liege more worthy of my sword."
  },
+ "act": { "_": "A lord who wants land or power and is not loyal goes to war for his town himself (characters.js press): press is the move's base score; forbidden is added to it, and to a rising's, once the King forbade him that town.", "press": 15, "forbidden": 25 },
+ "match": { "_": "A lord who wants a match asks the King to make it (royalmatch): his eldest unwed child of age to the eldest unwed child of the other sex of the house he likes best; the King's answers' favour.", "age": 15, "weight": 4, "arrange": { "him": 15, "them": 5 }, "refuse": { "him": -10 } },
  "plea": { "weight": 4, "reach": 10, "back": { "him": 20, "holder": -25 }, "forbid": { "him": -15, "holder": 5 }, "promise": { "him": 5, "cost": 120 } }
 }
