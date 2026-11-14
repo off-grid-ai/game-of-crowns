@@ -66,8 +66,6 @@ const MOVED := [
 	["presence", "SWITCH", "crowd", "presence.switch"],
 	["presence", "GREET", "crowd", "presence.greet"],
 	["presence", "GREET_AGAIN", "crowd", "presence.greet_again"],
-	["army_skirmish", "ROW", "battle", "skirmish.row"],
-	["army_skirmish", "SPAN", "battle", "skirmish.span"],
 	["motion", "XFADE_HIT", "people", "motion.xfade_hit"],
 	["motion", "SETTLE", "people", "motion.settle"],
 	["motion", "XFADE_STAND", "people", "motion.xfade_stand"],

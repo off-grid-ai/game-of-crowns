@@ -1,7 +1,6 @@
 extends Node
 ## Men fighting man to man: the army layer's close fight (docs/research/army-layer-2026-11-12.md). What every
-## close fight shares, whatever staged it (army_skirmish.gd a battle on the field, army_assault.gd a siege's
-## parties at the wall and in the breach):
+## close fight shares, whatever staged it (army_assault.gd a siege's parties at the wall and in the breach):
 ##  - the field's own ground (army_ground.gd: water, houses and walls shut) and one crowd (Godot's RVO), so every
 ##    man goes round the lake, the house and the man beside him;
 ##  - every step through the Mover (mover.gd: toward a moving mark, shifted back by a blow, off at a run);

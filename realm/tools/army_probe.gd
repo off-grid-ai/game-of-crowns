@@ -4,7 +4,7 @@ extends SceneTree
 ##   arch -arm64 godot --headless --path realm -s res://tools/army_probe.gd
 ## It proves:
 ##  1. every mind row in data/army.json is whole: its start and every state its events lead to are among its
-##     states, and every method a state names is one its fight has (army_skirmish, army_assault, army_field);
+##     states, and every method a state names is one its fight has (army_assault, army_field);
 ##  2. the ground (army_ground.gd) shuts water: a field with a round lake in it, a route across goes round it;
 ##  3. the Mover steers a man by that ground (toward, each frame): he never stands in the lake, and arrives;
 ##  4. a Mover's follow and go arrive and say so;
@@ -100,8 +100,7 @@ const Ground := preload("res://scripts/army_ground.gd")
 const Mover := preload("res://scripts/mover.gd")
 const TownNav := preload("res://scripts/town_nav.gd")
 
-const OWNERS := {"line_soldier": "res://scripts/army_skirmish.gd", "knight": "res://scripts/army_skirmish.gd",
-	"assault_man": "res://scripts/army_assault.gd", "gap_holder": "res://scripts/army_assault.gd",
+const OWNERS := {"assault_man": "res://scripts/army_assault.gd", "gap_holder": "res://scripts/army_assault.gd",
 	"regiment": "res://scripts/army_field.gd", "storm_regiment": "res://scripts/army_field.gd"}
 const LAKE := Vector2(0.0, 0.0)
 const LAKE_R := 1.2

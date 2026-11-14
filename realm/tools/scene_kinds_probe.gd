@@ -19,7 +19,7 @@ const OLD := {"feast": "_feast", "handover": "_handover", "grain": "_convoy", "t
 const CLASSED := ["feast", "grain", "tribute", "ward", "rider", "muster", "famine", "plague", "sack", "razed", "handover", "battle", "siege", "storm"]
 
 ## What each kind, staged on the stand-in, must set down: [the node's name under the stage, the least of its children].
-const STAGED := {"feast": ["Feast", 10], "grain": ["Convoy/ConvoyRoad", 4], "tribute": ["Convoy/ConvoyRoad", 4], "ward": ["Convoy/ConvoyRoad", 4], "rider": ["RiderRoad/Rider", 1], "famine": ["Refugees", 5], "plague": ["Refugees", 3], "sack": ["Burn", 15], "razed": ["Burn", 30], "handover": ["Handover", 7], "battle": ["Battle", 60], "siege": ["Siege", 20]}
+const STAGED := {"feast": ["Feast", 10], "grain": ["Convoy/ConvoyRoad", 4], "tribute": ["Convoy/ConvoyRoad", 4], "ward": ["Convoy/ConvoyRoad", 4], "rider": ["RiderRoad/Rider", 1], "famine": ["Refugees", 5], "plague": ["Refugees", 3], "sack": ["Burn", 15], "razed": ["Burn", 30], "handover": ["Handover", 7], "siege": ["Siege", 20]}
 
 
 class Land extends Node3D:

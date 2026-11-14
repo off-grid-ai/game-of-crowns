@@ -6,8 +6,7 @@ extends Node3D
 ## battle's one ground (army_ground.gd), and decides by its mind (a LimboHSM from a data/army.json minds row,
 ## army_mind.gd). Numbers in data/battle.json field and data/siege.json storm_host (docs/TUNING.md).
 ##
-## A field battle (stage(), from scenes.gd when the bridge tells of a battle, data/battle.json field.play.on or
-## --battles=field; the test aid --army-battle=<men per side>[:foe|crown]): both hosts form facing each other, then
+## A field battle (stage(), from scenes.gd whenever the bridge tells of a battle, the one way a battle is fought; the test aid --army-battle=<men per side>[:foe|crown]): both hosts form facing each other, then
 ## each regiment's mind (minds.regiment) takes it through: archers loose volleys that arc onto the enemy's ranks
 ## and fell men where they land; the foot advance and stop at sword's length, front ranks cutting, reeling and
 ## falling, the fallen left where they fell; cavalry swings round the enemy's end and charges his flank; a beaten
@@ -62,17 +61,11 @@ var _probe_t := 0.0
 var _ready_sides := 0
 
 
-## Field battles in play, on or off (data/battle.json field.play.on; --battles=field / --battles=skirmish).
-static func in_play() -> bool:
-	var args := OS.get_cmdline_user_args()
-	return args.has("--battles=field") or (bool(Data.value(F, "field.play.on", false)) and not args.has("--battles=skirmish"))
-
-
 ## A battle the bridge told of (its scene: x, y, owner the beaten, victor, men [beaten, victors], kinds [beaten,
 ## victors]) staged as a field battle at `at` (open ground near it), or null when it can't be: switched off, no
-## victors known, or field.play.most already fighting (scenes.gd then plays the small skirmish).
+## victors known, or field.play.most already fighting (the battle is then told, not shown).
 static func stage(m: Node, s: Dictionary, houses: Dictionary, at: Vector3) -> Node:
-	if not in_play() or at == Vector3.INF or int(s.get("victor", -1)) < 0 or not (s.get("kinds") is Array):
+	if at == Vector3.INF or int(s.get("victor", -1)) < 0 or not (s.get("kinds") is Array):
 		return null
 	if m.get_tree().get_nodes_in_group(&"field_battles").size() >= int(Data.num(F, "field.play.most", 1)):
 		return null

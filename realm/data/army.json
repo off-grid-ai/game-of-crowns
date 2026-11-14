@@ -71,33 +71,6 @@
   "team": { "rects": [[0.0, 0.25, 0.125, 0.5], [0.125, 0.0, 0.25, 0.25, 0.5], [0.375, 0.125, 0.5, 0.25, 0.65]], "shade": 1.1, "mask_edge": [0.15, 0.4] },
   "minds": {
     "_": "Every mind in the army layer (scripts/army_mind.gd builds a LimboHSM from a row): states (each: enter, tick, exit, the fight's methods it runs on entering, each frame and on leaving; guard, the method that says whether it may be entered), go (from, to, event), any (event: the state it leads to from any other), start. A man's minds run on army_melee.gd's stagings (army_skirmish.gd: line_soldier, knight; army_assault.gd: assault_man, gap_holder), a regiment's on army_field.gd (regiment, storm_regiment).",
-    "line_soldier": {
-      "start": "hold",
-      "states": {
-        "hold": { "enter": "_hold_in", "tick": "_hold" },
-        "advance": { "enter": "_advance_in", "tick": "_advance" },
-        "fight": { "enter": "_fight_in", "tick": "_fight", "exit": "_fight_out" },
-        "run": { "enter": "_run_in", "tick": "_run", "guard": "_still_in" },
-        "cheer": { "enter": "_cheer_in", "tick": "_cheer", "guard": "_still_in" },
-        "dead": { "enter": "_dead_in", "guard": "_not_out" },
-        "yielded": { "enter": "_yield_in", "guard": "_still_in" },
-        "gone": { "enter": "_gone_in" }
-      },
-      "go": [["hold", "advance", "advance"], ["hold", "fight", "fight"], ["advance", "fight", "fight"], ["fight", "hold", "hold"], ["run", "gone", "gone"]],
-      "any": { "break": "run", "won": "cheer", "die": "dead", "yield": "yielded" }
-    },
-    "knight": {
-      "start": "wait",
-      "states": {
-        "wait": { "tick": "_knight_wait" },
-        "charge": { "enter": "_plan_charge", "tick": "_knight_charge" },
-        "wheel": { "enter": "_plan_wheel", "tick": "_knight_wheel" },
-        "down": { "enter": "_unhorse" },
-        "rein": { "tick": "_knight_rein" }
-      },
-      "go": [["wait", "charge", "charge"], ["charge", "wheel", "wheel"], ["wheel", "charge", "charge"]],
-      "any": { "die": "down", "won": "rein" }
-    },
     "assault_man": {
       "start": "camp",
       "states": {

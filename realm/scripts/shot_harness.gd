@@ -490,7 +490,7 @@ func _stage_test_battle(best: Dictionary) -> void:
 	main.rig.snap(ground, float(_shot.get("dist", 4.0)), 0.6)
 	main._framed_at = ground
 	main._framed_until = int(main._game_ms) + 600000
-	main.scenes.kind("battle").fight(field, main._houses.get(int(best["owner"]), {}))
+	main.scenes.kind("battle").stage_at(field, main._houses.get(int(best["owner"]), {}))
 
 
 ## A test aid for playing as a player would (--play=<scenario> --out=<dir>):
