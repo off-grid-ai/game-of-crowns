@@ -147,7 +147,11 @@ func besiege(id: int, at: Vector3, approach: Vector3, size: int, engines: int, f
 	var loose := Timer.new()
 	loose.wait_time = 2.6
 	loose.autostart = true
+	var starved := [false]  # hunger has reached the walls (the town's siege.hungry): once
 	loose.timeout.connect(func():
+		if not starved[0] and bool((Awareness.store().town(id).get_var(&"siege", {}, false) as Dictionary).get("hungry", false)):
+			starved[0] = true
+			_hungry_walls(archers, spears, r)
 		var marks := []
 		for men in parties:
 			marks.append_array(men.filter(func(m): return m.get("out", false) and m["alive"]))
@@ -171,6 +175,33 @@ func besiege(id: int, at: Vector3, approach: Vector3, size: int, engines: int, f
 				stage.people.play(sp, "Spear_Thrust" if r.randf() < 0.7 else stage.guard(r), r.randf_range(0.9, 1.15)))
 	root.add_child(loose)
 	_siege_watch(id)
+
+
+## A town starved out (the King's siege, bridge campaigns.js starve; Total War's and Stronghold's starved garrison):
+## hunger reaches the walls. Of the men up there, siege.json garrison.hungry.down sink down slumped and shoot no more
+## (Defeated, then sat against the parapet); the rest stand on, hurting between volleys (Injured_Idle).
+func _hungry_walls(archers: Array, spears: Array, r: RandomNumberGenerator) -> void:
+	var k: Dictionary = (Data.value("siege", "garrison", {}) as Dictionary).get("hungry", {})
+	var down := float(k.get("down", 0.45))
+	var men := []
+	for a in archers:
+		men.append([a["node"], a])
+	for sp in spears:
+		men.append([sp, null])
+	for i in men.size():
+		var f: Node3D = men[i][0]
+		if not is_instance_valid(f) or f.has_meta("dead"):
+			continue
+		if fmod(i * 0.618, 1.0) < down:  # spread along the wall, not one end of it
+			if men[i][1] != null:
+				men[i][1]["kit"] = ""  # no more volleys from him (scenes.gd _arrows looses only bows)
+			spears.erase(f)
+			stage.people.play(f, "Defeated", 1.0)
+			stage.get_tree().create_timer(2.5).timeout.connect(func():
+				if is_instance_valid(f) and not f.has_meta("dead"):
+					stage.people.play(f, "Sitting_Ground", r.randf_range(0.8, 1.0)))
+		else:
+			stage.people.play(f, "Injured_Idle", r.randf_range(0.8, 1.0))
 
 
 ## The side a host camps on: open, dry, gentle ground, as near as possible to

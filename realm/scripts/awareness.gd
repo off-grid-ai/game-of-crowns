@@ -269,6 +269,7 @@ static func town_facts(c: Dictionary) -> Dictionary:
 		"tile": Vector2i(int(c.get("x", 0)), int(c.get("y", 0))),
 		"owner": int(c.get("owner", -1)),
 		"besieged": bool(c.get("besieged", false)),
+		"siege": _dict(c.get("siege")),  # the King starving it out: {starve, hungry, since}, else {} (bridge view.js, campaigns.js starve)
 		"mood": String(c.get("mood", "")),  # the bridge's one word: riot (Freeciv disorder), hunger, feast
 		"famine": bool(c.get("famine", false)),  # under the one word: a starving town in riot is hungry too
 		"celebrating": bool(c.get("celebrating", false)),
