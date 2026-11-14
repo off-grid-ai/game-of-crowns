@@ -44,6 +44,7 @@ static func show_lines(d: Dictionary, n: int) -> void:
 				f.visible = l < n
 
 
+## Made over frames (a coroutine: castle_life.gd awaits it), each body within the staging budget (host.paced()).
 static func dress(host: Node, main: Node, xf: Transform3D, sp: Dictionary, colour: Color, d: Dictionary) -> void:
 	if not on():
 		return
@@ -82,11 +83,13 @@ static func dress(host: Node, main: Node, xf: Transform3D, sp: Dictionary, colou
 		for i in per:
 			var p: Vector3 = at.call(float(yard[0]) - l * float(gap[0]), float(yard[1]) + (i - (per - 1) * 0.5) * float(gap[1]))
 			var f: Node3D = put.call(people.make(rng, "soldier", cloth, "adult"), p)
+			await host.paced()  # castle_life.gd: the one staging budget (view_tier.gd stage_ms)
 			main.scenes.arm(f, "sword" if l % 2 == 0 else "spear")
 			face.call(f, sergeant_at)
 			drillers.append(f)
 			d["drill"][l].append(f)
 	var sergeant: Node3D = put.call(people.make(rng, "soldier", cloth, "adult"), sergeant_at)
+	await host.paced()  # castle_life.gd: the one staging budget (view_tier.gd stage_ms)
 	face.call(sergeant, at.call(float(yard[0]) - 0.3, float(yard[1])))
 	People.play(sergeant, "Yelling")
 	var drills: Array = Dr.get("moves", ["SS_Slash_1", "Spear_Thrust", "SS_Slash_4", "SS_Attack_4"])
@@ -133,6 +136,7 @@ static func dress(host: Node, main: Node, xf: Transform3D, sp: Dictionary, colou
 	for i in n_arch:
 		var p: Vector3 = at.call(float(line_at[0]) + (i - (n_arch - 1) * 0.5) * 0.08, float(line_at[1]))
 		var f: Node3D = put.call(people.make(rng, "soldier", cloth, "adult"), p)
+		await host.paced()  # castle_life.gd: the one staging budget (view_tier.gd stage_ms)
 		main.scenes.arm(f, "bow")
 		face.call(f, at.call(float(butts_at[0]), float(butts_at[1])))
 		var tw := f.create_tween().set_loops()
@@ -147,6 +151,7 @@ static func dress(host: Node, main: Node, xf: Transform3D, sp: Dictionary, colou
 		for j in int(Gt.get("per_side", 1)):
 			var p: Vector3 = at.call(sx * (float(Gt.get("out", 0.16)) + j * 0.06), float(Gt.get("z", 0.86)))
 			var g: Node3D = put.call(people.make(rng, "soldier", cloth, "adult"), p)
+			await host.paced()  # castle_life.gd: the one staging budget (view_tier.gd stage_ms)
 			main.scenes.arm(g, "spear")
 			face.call(g, at.call(0.0, 0.0))
 			People.play(g, "Sword_Idle")
@@ -159,9 +164,11 @@ static func dress(host: Node, main: Node, xf: Transform3D, sp: Dictionary, colou
 	if anvil:
 		put.call(anvil, anvil_at)
 	var smith: Node3D = put.call(people.make(rng, "townsfolk", Color.WHITE, "adult", "", "male"), anvil_at + (xf.basis * Vector3(1, 0, 0)).normalized() * 0.16)
+	await host.paced()  # castle_life.gd: the one staging budget (view_tier.gd stage_ms)
 	face.call(smith, anvil_at)
 	People.repeat(smith, "Hammer_Swing")
 	var helper: Node3D = put.call(people.make(rng, "peasant", Color.WHITE, "young", "", "male"), anvil_at + (xf.basis * Vector3(0, 0, 1)).normalized() * 0.2)
+	await host.paced()  # castle_life.gd: the one staging budget (view_tier.gd stage_ms)
 	face.call(helper, anvil_at)
 	People.repeat(helper, "Pushing")  # at the bellows
 
@@ -177,6 +184,7 @@ static func dress(host: Node, main: Node, xf: Transform3D, sp: Dictionary, colou
 		var gp: Vector3 = fire + frame * Vector3(float(by[0]), 0, float(by[1]))
 		gp.y = main.terrain.height_at(gp.x, gp.z)
 		var groom: Node3D = put.call(people.make(rng, String(Fg.get("kind", "peasant")), Color.WHITE, "adult", "", "male"), gp)
+		await host.paced()  # castle_life.gd: the one staging budget (view_tier.gd stage_ms)
 		face.call(groom, Vector3(fire.x, gp.y, fire.z))
 		People.play(groom, String(Fg.get("clip", "Idle")))
 		break
@@ -202,6 +210,7 @@ static func dress(host: Node, main: Node, xf: Transform3D, sp: Dictionary, colou
 			People.play(carter, "Idle_Talking")
 		for i in 2:
 			var u: Node3D = put.call(people.make(rng, "peasant", Color.WHITE, "adult", "", "male"), cp.lerp(stores_at, 0.35 + 0.3 * i))
+			await host.paced()  # castle_life.gd: the one staging budget (view_tier.gd stage_ms)
 			_shuttle(u, cp, stores_at, "Box_Walk", rng, float(St.get("pace", 0.18)), i * 1.5)
 
 	# Servants: water from the well to the keep's steps, firewood from the stores to the kitchen door; and back.
@@ -213,6 +222,7 @@ static func dress(host: Node, main: Node, xf: Transform3D, sp: Dictionary, colou
 		var a: Vector3 = well_at if water else stores_at
 		var b: Vector3 = keep_foot + xf.basis * Vector3((i - 1.5) * 1.2, 0, 0)
 		var s: Node3D = put.call(people.make(rng, "peasant", Color.WHITE, "adult", "", "female" if water else "male"), a.lerp(b, rng.randf()))
+		await host.paced()  # castle_life.gd: the one staging budget (view_tier.gd stage_ms)
 		_shuttle(s, a, b, "Carrying" if water else "Box_Walk", rng, float(Sv.get("pace", 0.17)), i * 2.0)
 
 	# Grooms leading horses between the gate and the stables corner.
@@ -222,6 +232,7 @@ static func dress(host: Node, main: Node, xf: Transform3D, sp: Dictionary, colou
 	var Horse := load("res://scripts/horse.gd")
 	for i in int(Gr.get("count", 2)):
 		var groom: Node3D = put.call(people.make(rng, "peasant", Color.WHITE, "adult", "", "male"), stable_at.lerp(gate_in, 0.3 * i))
+		await host.paced()  # castle_life.gd: the one staging budget (view_tier.gd stage_ms)
 		var horse: Node3D = Horse.new(rng.randi() % 5)
 		host.add_child(horse)
 		d["nodes"].append(horse)

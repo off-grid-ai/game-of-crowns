@@ -179,7 +179,7 @@ func _dress(id: int, root: Node3D, castle: Node3D) -> void:
 			d["nodes"].append(well)
 
 
-## The castle's people, made when the camera comes near (_tick): a guard on each curtain's walk, the folk through
+## The castle's people, made over frames within the staging budget (paced) when its tier asks (_tick): a guard on each curtain's walk, the folk through
 ## the gate, the door's guards at the top of the steps, and the bailey lived in (castle_folk.gd: drill, the butts,
 ## the smith, the stores' cart, servants and grooms). All of them kept in d["folk"], freed together by _unpeople.
 func _people(d: Dictionary, full := true) -> void:
@@ -191,12 +191,14 @@ func _people(d: Dictionary, full := true) -> void:
 	var gk: Dictionary = Data.value("castle", "guards", {})
 	for w in d["walks"]:
 		f["nodes"].append(_guard(w[0], w[1], colour, gk, scale))
+		await paced()
 	var wk: Dictionary = Data.value("castle", "gate_walkers", {})
 	if not (d["gate"] as Array).is_empty():
 		for i in int(wk.get("count", 3)):
 			f["nodes"].append(_walker(d["gate"], colour, wk, scale, i))
+			await paced()
 	if not full:
-		_off_unseen(f)
+		_staged(d, f)
 		return  # MID: the walls and the gate only
 	for p in d["door"]:
 		var g: Node3D = main.scenes.people.make(_rng, "soldier", colour.lerp(Color.WHITE, 0.3), "adult")
@@ -207,7 +209,37 @@ func _people(d: Dictionary, full := true) -> void:
 		g.global_rotation.y = atan2(out.x, out.z)
 		main.scenes.people.play(g, "Idle", 1.0)
 		f["nodes"].append(g)
-	preload("res://scripts/castle_folk.gd").dress(self, main, xf, d["sp"], colour, f)
+		await paced()
+	await preload("res://scripts/castle_folk.gd").dress(self, main, xf, d["sp"], colour, f)
+	_staged(d, f)
+
+
+var _stage_frame := -1
+var _stage_until := 0
+
+
+## Waits for the next frame once this frame's staging budget is spent (camera.json view_tier.stage_ms, the one budget
+## every layer makes its people within; view_tier's lead has a castle staged before it shows). Shared by every castle
+## being peopled at once.
+func paced() -> void:
+	var now := Time.get_ticks_usec()
+	if Engine.get_process_frames() != _stage_frame:
+		_stage_frame = Engine.get_process_frames()
+		_stage_until = now + int(ViewTier.STAGE_MS * 1000.0)
+	elif now > _stage_until:
+		await get_tree().process_frame
+		_stage_frame = Engine.get_process_frames()
+		_stage_until = Time.get_ticks_usec() + int(ViewTier.STAGE_MS * 1000.0)
+
+
+## A castle's people all made: off screen they stop (_off_unseen); if the castle was emptied or fell while they were
+## being made, they go at once.
+func _staged(d: Dictionary, f: Dictionary) -> void:
+	if not is_same(d.get("folk"), f):
+		for n in f["nodes"]:
+			if is_instance_valid(n):
+				n.queue_free()
+		return
 	_off_unseen(f)
 
 
