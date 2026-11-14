@@ -10,9 +10,9 @@ extends Node
 ## traffic.mix, night, parties).
 
 ## How busy the roads are (realm/data/roadside.json traffic.towns; batch 7's road shots held no one in 28 s):
-## towns within near of the camera send travellers, to a town within reach; most out at once around a town
-## in plenty (in want fewer); gap: seconds between departures.
-static var NEAR: float = Data.num("roadside", "traffic.towns.near", 30.0)
+## towns alive on screen (view_tier.gd: MID or NEAR) send travellers, to a town within reach; most out at once
+## around a town in plenty (in want fewer); gap: seconds between departures.
+const ViewTier := preload("res://scripts/view_tier.gd")
 static var REACH: float = Data.num("roadside", "traffic.towns.reach", 18.0)
 static var MOST: int = int(Data.num("roadside", "traffic.towns.most", 5))
 static var GAP := Vector2(float(Data.value("roadside", "traffic.towns.gap", [6.0, 12.0])[0]), float(Data.value("roadside", "traffic.towns.gap", [6.0, 12.0])[1]))
@@ -75,10 +75,6 @@ func _decide(delta: float) -> void:
 	var aw: Object = Engine.get_meta("awareness") if Engine.has_meta("awareness") else null
 	if aw == null or scenes == null or not scenes.has_method("traveller") or terrain == null:
 		return
-	var cam := get_viewport().get_camera_3d()
-	if cam == null:
-		return
-	var seen := Vector3(cam.global_position.x, 0, cam.global_position.z)
 	# The towns in view, each with what the mirror knows of it.
 	var near: Array = []
 	for id in aw.realm.get_var(&"towns", [], false):
@@ -87,7 +83,7 @@ func _decide(delta: float) -> void:
 		if tile.x < 0:
 			continue
 		var at: Vector3 = terrain.world_pos(float(tile.x), float(tile.y))
-		if Vector3(at.x, 0, at.z).distance_to(seen) < NEAR:
+		if ViewTier.of(at) >= ViewTier.MID:
 			near.append({"at": at, "bb": bb})
 	if near.size() < 2:
 		return
@@ -124,15 +120,13 @@ var _ore_left := {}  # a worked mine's mouth -> seconds until its next cart sets
 ## mirror where each town stands; a cart sets out from each in view every few tens of seconds, one cart on a road.
 func _haul(delta: float, aw: Object) -> void:
 	var mines: Node = get_parent().get_node_or_null("GoldMines") if get_parent() else null
-	var cam := get_viewport().get_camera_3d()
-	if mines == null or cam == null:
+	if mines == null:
 		return
 	var O: Dictionary = Data.value("roadside", "traffic.ore", {})
 	var every: Array = O.get("every", [25.0, 45.0])
-	var seen := Vector3(cam.global_position.x, 0, cam.global_position.z)
 	for w: Dictionary in mines.worked():
 		var mouth: Vector3 = w["mouth"]
-		if Vector3(mouth.x, 0, mouth.z).distance_to(seen) > float(O.get("near", 34.0)):
+		if ViewTier.of(mouth) < ViewTier.MID:
 			continue
 		var left := float(_ore_left.get(mouth, _rng.randf_range(0.0, float(every[0])))) - delta
 		_ore_left[mouth] = left
