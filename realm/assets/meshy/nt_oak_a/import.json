@@ -10,7 +10,7 @@
   10.5
  ],
  "house_share": 0.0,
- "leaves_share": 0.709,
+ "leaves_share": 0.727,
  "mask_png": true,
  "materials": [
   "Material_0",
@@ -20,6 +20,6 @@
  "arm": false,
  "repainted": 0,
  "flattened": 0,
- "smooth_leaves": 2127,
- "padded": 1208935
+ "smooth_leaves": 2182,
+ "padded": 1197274
 }

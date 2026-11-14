@@ -435,3 +435,4 @@ Switches (`--name`) go after `--` on the game's command line.
 - War's muster column on the road: `muster.roadClear` (0.3) units of ground either side of its blocks clear of buildings, hedges, fields and cottages: `realm/data/army.json`.
 - War's muster: how far out along each main way out of the town it looks for a stretch clear for its column (`muster.wayReach`, 16 units, four tiles): `realm/data/army.json`.
 - Field battle: two regiments are at blows only face to face, their fronts no further apart across the line than `field.overlap` (0.6) of their half widths together; off to the side, a regiment closes on its foe's front first: `realm/data/battle.json`.
+- Which faces of a nature-set tree are leaves (g19 muster: yellow faces left in the bark, never graded or turned): `realm/data/meshy.json` pieces.<nt_ tree>.leaves.hues [[40, 170]] (was 60: the painted yellow highlights, hue 35-60, stayed bark).
