@@ -150,17 +150,17 @@ func _land() -> Node:
 	return land3d if land3d and land3d.land else null
 
 
-func _layer(mesh: Mesh, xfs: Array, begin: float, end: float, shadows: bool, tier: String) -> void:
+func _layer(mesh: Mesh, xfs_: Array, begin: float, end: float, shadows: bool, tier: String) -> void:
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
 	mm.use_colors = true  # each tree's shade of its leaves (shade_at); leaves() reads it, the trunks don't
 	mm.mesh = mesh
-	mm.instance_count = xfs.size()
+	mm.instance_count = xfs_.size()
 	var light := Data.num("assets", "woods.kit.shade.light", 0.14)
 	var warm := Data.num("assets", "woods.kit.shade.warm", 0.08)
-	for i in xfs.size():
-		mm.set_instance_transform(i, xfs[i])
-		mm.set_instance_color(i, shade_at((xfs[i] as Transform3D).origin, light, warm))
+	for i in xfs_.size():
+		mm.set_instance_transform(i, xfs_[i])
+		mm.set_instance_color(i, shade_at((xfs_[i] as Transform3D).origin, light, warm))
 	var mmi := MultiMeshInstance3D.new()
 	mmi.multimesh = mm
 	mmi.visibility_range_begin = begin
@@ -180,6 +180,13 @@ func _layer(mesh: Mesh, xfs: Array, begin: float, end: float, shadows: bool, tie
 	mmi.lod_bias = float((Data.value("forest", "lod_bias", {}) as Dictionary).get(tier, 1.0))
 	mmi.set_meta("tier", tier)  # set_reach moves the mid and card tiers' bounds; the map tier keeps its own
 	add_child(mmi)
+	xfs[mmi] = xfs_.duplicate()
+
+
+## Where each tree of each batch stands (MultiMeshInstance3D -> Array of Transform3D), kept here because a MultiMesh is
+## never read back (each get_instance_transform waits on the renderer; supervisor P0, vegetation.gd settle). clear,
+## clear_where and terrain.settle_scatter read and write here.
+var xfs := {}
 
 
 ## What the woods draw now, by tier (perf_tools.gd's probe line, GOC_PERF_PROBE): the batches in their distance band
@@ -537,10 +544,12 @@ func clear(center: Vector3, radius: float) -> void:
 		var box := mm.get_aabb().grow(radius)
 		if center.x < box.position.x or center.x > box.end.x or center.z < box.position.z or center.z > box.end.z:
 			continue
-		for i in mm.instance_count:
-			var t := mm.get_instance_transform(i)
+		var list: Array = xfs[mmi]
+		for i in list.size():
+			var t: Transform3D = list[i]
 			if Vector2(t.origin.x - center.x, t.origin.z - center.z).length() < radius:
-				mm.set_instance_transform(i, Transform3D(Basis.from_scale(Vector3.ZERO), t.origin))
+				list[i] = Transform3D(Basis.from_scale(Vector3.ZERO), t.origin)
+				mm.set_instance_transform(i, list[i])
 
 
 ## Fells every tree for which `standing_on(origin)` is true: the lanes the
@@ -562,11 +571,13 @@ func clear_where(standing_on: Callable, budget_usec := 4000, within := Rect2()) 
 		if not (mmi is MultiMeshInstance3D):
 			continue
 		var mm: MultiMesh = mmi.multimesh
+		var list: Array = xfs.get(mmi, [])
 		var i := 0
-		while is_instance_valid(mmi) and mm != null and i < mm.instance_count:
-			var t := mm.get_instance_transform(i)
+		while is_instance_valid(mmi) and mm != null and i < list.size():
+			var t: Transform3D = list[i]
 			if t.basis.x != Vector3.ZERO and (all or within.has_point(Vector2(t.origin.x, t.origin.z))) and standing_on.call(t.origin):
-				mm.set_instance_transform(i, Transform3D(Basis.from_scale(Vector3.ZERO), t.origin))
+				list[i] = Transform3D(Basis.from_scale(Vector3.ZERO), t.origin)
+				mm.set_instance_transform(i, list[i])
 				felled += 1
 			i += 1
 			if i % 16 == 0 and Time.get_ticks_usec() - t0 > budget_usec:

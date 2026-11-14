@@ -19,7 +19,14 @@ func _scatter(mesh: Mesh, transforms: Array) -> MultiMeshInstance3D:
 	var mmi := MultiMeshInstance3D.new()
 	mmi.multimesh = mm
 	add_child(mmi)
+	xfs[mmi] = transforms.duplicate()
 	return mmi
+
+
+## Where each plant of each batch stands (MultiMeshInstance3D -> Array of Transform3D), kept here because a MultiMesh
+## is never read back: each get_instance_transform waits on the renderer (supervisor P0: settle's per-plant reads held
+## the first frame after the towns rose for 105 s). clear and settle read and write here, and set the MultiMesh.
+var xfs := {}
 
 
 ## Nature MegaKit trees, bushes and rocks, at the same scale as the towns.
@@ -174,9 +181,10 @@ func clear(center: Vector3, radius: float) -> void:
 		for cy in range(lo.y, hi.y + 1):
 			for cx in range(lo.x, hi.x + 1):
 				for i in cells.get(Vector2i(cx, cy), []):
-					var t := mm.get_instance_transform(i)
+					var t: Transform3D = xfs[mmi][i]
 					if Vector2(t.origin.x - center.x, t.origin.z - center.z).length() < radius:
-						mm.set_instance_transform(i, Transform3D(Basis.from_scale(Vector3.ZERO), t.origin))
+						xfs[mmi][i] = Transform3D(Basis.from_scale(Vector3.ZERO), t.origin)
+						mm.set_instance_transform(i, xfs[mmi][i])
 
 
 ## The order a realm is built in: the land is shaped, then towns grade their
@@ -185,25 +193,49 @@ func clear(center: Vector3, radius: float) -> void:
 ## forms, before any town levels its ground, so once the towns are up they are
 ## settled onto the finished ground: none buried in a levelled plot, none
 ## floating over a cut. A few thousand at a time, so the window stays live.
-func settle(extra: Array = []) -> void:
-	var all: Array = batches.duplicate()
-	all.append_array(extra)  # the kit woods' batches (terrain.settle_scatter)
+## The heights are worked out on a worker thread from the kept places (xfs, and the kit woods' `more`, forest.gd xfs);
+## only the plants whose ground moved are set, a few milliseconds a frame (supervisor P0: the old loop read every
+## plant back from the renderer and held the frame for 105 s, then ~1 s a frame).
+func settle(more: Dictionary = {}) -> void:
+	var all := xfs.duplicate()
+	all.merge(more)  # the kit woods' batches (terrain.settle_scatter)
+	var lists := all.values()
+	var ground := land
+	var moved := []  # per list: [[index, Transform3D], ...], filled off the main thread
+	moved.resize(lists.size())
+	var task := WorkerThreadPool.add_task(func() -> void:
+		for li in lists.size():
+			var out := []
+			var list: Array = lists[li]
+			for i in list.size():
+				var t: Transform3D = list[i]
+				if t.basis.determinant() == 0.0:
+					continue  # cleared for a town
+				var y: float = ground.height_at(t.origin.x, t.origin.z) - 0.03
+				if absf(y - t.origin.y) > 0.005:
+					t.origin.y = y
+					out.append([i, t])
+			moved[li] = out)
+	while not WorkerThreadPool.is_task_completed(task):
+		await get_tree().process_frame
+	WorkerThreadPool.wait_for_task_completion(task)
+	var keys := all.keys()
 	var done := 0
-	for mmi in all:
-		if not is_instance_valid(mmi):
-			continue
-		var mm: MultiMesh = mmi.multimesh
-		for i in mm.instance_count:
-			var t := mm.get_instance_transform(i)
-			if t.basis.determinant() == 0.0:
-				continue  # cleared for a town
-			var y: float = land.height_at(t.origin.x, t.origin.z) - 0.03
-			if absf(y - t.origin.y) > 0.005:
-				t.origin.y = y
-				mm.set_instance_transform(i, t)
+	var t0 := Time.get_ticks_usec()
+	for li in keys.size():
+		for m: Array in moved[li]:
+			if not is_instance_valid(keys[li]):
+				break
+			var list: Array = all[keys[li]]
+			var t: Transform3D = m[1]
+			if (list[m[0]] as Transform3D).basis.determinant() == 0.0:
+				continue  # cleared while the heights were worked out
+			list[m[0]] = t
+			(keys[li] as MultiMeshInstance3D).multimesh.set_instance_transform(m[0], t)
 			done += 1
-			if done % 4000 == 0:
+			if done % 64 == 0 and Time.get_ticks_usec() - t0 > 4000:
 				await get_tree().process_frame
+				t0 = Time.get_ticks_usec()
 	print_verbose("SETTLED %d plants and trees on the finished ground" % done)
 
 
@@ -215,9 +247,9 @@ func _veg_cells_of(mmi: MultiMeshInstance3D) -> Dictionary:
 	if _veg_cells.has(mmi):
 		return _veg_cells[mmi]
 	var cells := {}
-	var mm: MultiMesh = mmi.multimesh
-	for i in mm.instance_count:
-		var o := mm.get_instance_transform(i).origin
+	var list: Array = xfs[mmi]
+	for i in list.size():
+		var o: Vector3 = (list[i] as Transform3D).origin
 		var key := Vector2i(floori(o.x / VEG_CELL), floori(o.z / VEG_CELL))
 		if not cells.has(key):
 			cells[key] = []

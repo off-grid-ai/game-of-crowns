@@ -853,7 +853,7 @@ func clear_around(center: Vector3, radius: float) -> void:
 ## Once the towns have graded their ground, the woods and the wild plants are set on it (vegetation.gd settle).
 func settle_scatter() -> void:
 	if vegetation:
-		await vegetation.settle(forest.find_children("*", "MultiMeshInstance3D", true, false) if forest else [])
+		await vegetation.settle(forest.xfs if forest else {})  # the kit woods' kept places (forest.gd xfs): never read back from the renderer
 
 
 # --- the realm map: who holds what (political_overlay.gd) ---------------------------
