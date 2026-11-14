@@ -496,6 +496,7 @@ uniform float hold[64];
 uniform vec3 lean[64];
 uniform vec4 pol_k = vec4(0.3, 0.8, 0.45, 0.4);  // wash_near, wash_far, own_mix, stripes_below
 uniform vec4 pol_b = vec4(1.35, 3.0, 1.4, 0.0);  // border_bright (saturation), border_px (a marked seam's width), stripe_width, unused
+uniform vec2 pol_near = vec2(10.0, 24.0);  // look.json politics.near_fade: the town-zoom wash gone by this far from the lens
 uniform vec4 pol_z = vec4(12.0, 30.0, 0.0, 0.0);  // map_from, map_to: the camera's height over the ground where the wash comes in; unused
 uniform vec4 relief = vec4(0.0, -0.5, 0.7, -0.5);  // the land's relief at the map's height (data/map.json relief): strength, the light it is shaded from
 uniform vec4 relief_near = vec4(0.0, -0.5, 0.7, -0.5);  // the same below the map's height (data/map.json relief.near): strength, light
@@ -610,7 +611,7 @@ const REALM_WASH := """
 				// By the camera's height, not each spot's distance: at roof and town height the land near and far
 				// stays natural (the house reads from banners and roofs); the wash and the stripes come in
 				// only as the lens rises to the map.
-				k = (mix(pol_k.x, pol_k.y, map_zoom) * hd + front * 0.5) * mix(0.15, 1.0, map_zoom);
+				k = (mix(pol_k.x, pol_k.y, map_zoom) * hd + front * 0.5) * mix(0.15 * (1.0 - smoothstep(pol_near.x, pol_near.y, length(VERTEX))), 1.0, map_zoom);  // at town zoom the faint wash only near the lens: none smeared over the far land at a grazing angle
 			}
 			ALBEDO = mix(ALBEDO, tinted, clamp(k * cov, 0.0, politics > 0.5 ? 0.92 : 0.85));
 		}
@@ -685,6 +686,8 @@ func set_politics(on: bool, hold: PackedFloat32Array, lean: PackedVector3Array, 
 	mat.set_shader_param("pol_z", z)
 	mat.set_shader_param("pol_l", l)
 	mat.set_shader_param("pol_vassal", Data.num("look", "politics.vassal_line", 0.35))
+	var nf: Array = Data.value("look", "politics.near_fade", [10.0, 24.0])
+	mat.set_shader_param("pol_near", Vector2(float(nf[0]), float(nf[1])))
 	mat.set_shader_param("relief", r)
 
 

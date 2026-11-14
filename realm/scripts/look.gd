@@ -320,14 +320,18 @@ func _process(_delta: float) -> void:
 		# what the camera looks at stays clear): Godot's depth fog, clear to begin camera-distances past the lens and
 		# rising to most by end, coming in between from and to. Below from, the depth fog thinned as the camera pulls
 		# back (research #2: d16-30 read grey and hazy, highlights capped).
+		# At town and army zoom the far land seen past the town fades into the haze too (Total War, Age of Empires IV: a
+		# low view's horizon is soft blue-grey air, never the land's far rings stretched flat): the depth fog clear
+		# to near_begin camera-distances, most (near_most) by near_end, eased into the drawn-back values between from
+		# and to.
 		var dp: Dictionary = hz.get("depth", {})
 		var deep := smoothstep(float(dp.get("from", 45.0)), float(dp.get("to", 70.0)), d) if not dp.is_empty() else 0.0
-		if deep > 0.0:
+		if not dp.is_empty() and (deep > 0.0 or float(dp.get("near_most", 0.0)) > 0.0):
 			main.env.fog_mode = Environment.FOG_MODE_DEPTH
-			main.env.fog_depth_begin = d * float(dp.get("begin", 1.3))
-			main.env.fog_depth_end = d * float(dp.get("end", 5.0))
+			main.env.fog_depth_begin = d * lerpf(float(dp.get("near_begin", 1.3)), float(dp.get("begin", 1.3)), deep)
+			main.env.fog_depth_end = d * lerpf(float(dp.get("near_end", 5.0)), float(dp.get("end", 5.0)), deep)
 			main.env.fog_depth_curve = float(dp.get("curve", 1.6))
-			main.env.fog_density = float(dp.get("most", 0.45)) * deep
+			main.env.fog_density = lerpf(float(dp.get("near_most", 0.0)), float(dp.get("most", 0.45)), deep)
 		else:
 			main.env.fog_mode = Environment.FOG_MODE_EXPONENTIAL
 			main.env.fog_density = lerpf(float(hz.get("fog", 0.0012)), float(hz.get("fog_far", 0.00015)), smoothstep(float(hz.get("fog_from", 45.0)), float(hz.get("fog_to", 110.0)), d))
