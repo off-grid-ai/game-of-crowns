@@ -550,7 +550,7 @@ export function tick(ctx) {
 
 // A reign's save card (saves as reigns: the load list shows each reign by it, as any game's save slot shows the
 // ruler, the date and the playtime): the season and date in the realm, the crown's towns, its seat and its souls, and
-// when it was last played. Kept in the reign's meta (meta.save) with the clock and on a save; the reign's own fields
+// when it was last played, the King's name and his latest ruling. Kept in the reign's meta (meta.save) with the clock and on a save; the reign's own fields
 // (name, minutes, elapsedMs, status, title) are the rest of the slot.
 export function saveCard(ctx) {
   const { meta, world, soulsOf } = ctx;
@@ -558,8 +558,11 @@ export function saveCard(ctx) {
   const crown = crownOf(world);
   const towns = (world.cities ?? []).filter((c) => c.owner === crown?.id);
   const seat = towns.find((c) => c.capital);
+  // The King as the realm calls him now (ledger.js epithet, as the reign's end titles him) and his latest ruling's words.
+  const name = meta.ledger?.name ?? (ctx.history ? kingName(ctx).name : null);
   return { turn: world.turn ?? 0, date: calendar(world.turn).text, towns: towns.length, seat: seat ? cityName(seat.id) : null,
-    souls: towns.reduce((t, c) => t + (soulsOf?.(c.size) ?? 0), 0), playedAt: Date.now() };
+    souls: towns.reduce((t, c) => t + (soulsOf?.(c.size) ?? 0), 0), playedAt: Date.now(),
+    king: name ? `The King ${name}` : "The King", lastRuling: meta.lastRuling ?? null };
 }
 
 // Opening v2: until the first winter has passed, the aim is to hold the realm to it, with the seasons left

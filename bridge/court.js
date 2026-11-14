@@ -78,6 +78,7 @@ export function rule(ctx, id, option) {
   // Every ruling is told, even one whose answer has no words of its own written for it.
   if (!String(out.text ?? "").trim()) out.text = `The King gives his answer${petition ? ` to ${petition.name}` : ""}: ${String(asked?.label ?? option).replace(/ \(.*\)$/, "").toLowerCase()}.`;
   record({ turn: world.turn, kind: "decree", text: out.text });
+  meta.lastRuling = out.text;  // the save card's line (reign.js saveCard)
   rulingScene(ctx, id, option, out);
   Rulings.note(ctx, petition, asked ?? { id: option }, out);  // its answer stands at the town it touches for a season or two (rulings.js)
   return { ok: true, text: crowns(out.text) + (effects ? `\n${effects}` : "") };

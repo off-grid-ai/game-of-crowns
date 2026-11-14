@@ -180,6 +180,7 @@ export function answer(ctx, i) {
   apply(ctx, { ...ch, text: said }, e.up.subject, turn);
   if (ch.later) e.later.push({ turn: turn + (ch.later.in ?? 2), effect: { ...ch.later, text: wording(`event:${card.id}:later:${Number(i)}`, ch.later.text) }, subject: e.up.subject });
   const told = fill(said ?? ch.label, e.up.subject);
+  meta.lastRuling = told;  // the save card's line (reign.js saveCard)
   e.up = null;
   chron.saveMeta(meta);
   return [200, { ok: true, text: told }];
