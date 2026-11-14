@@ -312,7 +312,7 @@ func _aftermath() -> void:
 				std.rotation = Vector3(0.0, _rng.randf() * TAU, PI * 0.47)  # fallen over, its pole along the ground
 	for a in sides:
 		var b = (a as Army).banners
-		for n in [b.standard, b.label]:
+		for n in [b.standard]:
 			if n is Node3D and is_instance_valid(n):
 				(n as Node3D).visible = false  # the host's standard goes with the living
 	_prisoners()

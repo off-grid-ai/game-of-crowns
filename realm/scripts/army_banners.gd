@@ -4,7 +4,7 @@ extends RefCounted
 ## (pole and cloth, army_banner.gdshader) at its middle, its house's painted arms with its kind's glyph in the
 ## canton on its house colour (a house with no arms drawn flies its colour with the glyph), strength as pips, lit
 ## when selected, wavering as its nerve goes. The host's standard over its commander's regiment: larger, its
-## house's arms (or its colour with a crown), no pips, with the host's strength in men under it from afar. Banners
+## house's arms (or its colour with a crown), no pips (its strength in men is the map's plate, map_look.gd: one label per company). Banners
 ## and the standard keep their size on screen beyond banner.fixedFrom. Numbers in data/army.json banner.*,
 ## standard.*.
 
@@ -14,7 +14,6 @@ const BANNER := preload("res://scripts/army_banner.gdshader")
 const GLYPHS := {"sword": 1, "spear": 2, "bow": 3, "horse": 4, "axe": 5, "engine": 6, "crown": 7}
 
 var standard: MeshInstance3D  # the host's standard (null until raised)
-var label: Label3D  # the host's strength in men, under the standard from afar
 var _commander: Dictionary = {}
 
 
@@ -55,9 +54,8 @@ func banner(r: Dictionary) -> void:
 	r["bar"] = bar
 
 
-## The host's standard over regiment `c` (its commander's), in `house`'s arms (or c's colour with a crown), with
-## `men` under it from afar.
-func raise_standard(c: Dictionary, house: Dictionary, men: int) -> void:
+## The host's standard over regiment `c` (its commander's), in `house`'s arms (or c's colour with a crown).
+func raise_standard(c: Dictionary, house: Dictionary, _men: int) -> void:
 	_commander = c
 	var man := Data.num("army", "man", 0.22)
 	var k := Data.num("army", "standard.scale", 1.7)
@@ -72,19 +70,6 @@ func raise_standard(c: Dictionary, house: Dictionary, men: int) -> void:
 		m.set_shader_parameter("arms", arms)
 		m.set_shader_parameter("use_arms", true)
 	(c["node"] as Node3D).add_child(standard)
-	label = Label3D.new()
-	label.text = thousands(men)
-	label.font = load("res://assets/fonts/GeistMono.ttf")
-	label.font_size = 28
-	label.outline_size = 8
-	label.modulate = Color(0.95, 0.93, 0.88)
-	label.outline_modulate = Color(0.1, 0.08, 0.06, 0.8)
-	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	label.fixed_size = true
-	label.pixel_size = 0.0006
-	label.no_depth_test = true
-	label.visible = false
-	(c["node"] as Node3D).add_child(label)
 	place()
 
 
@@ -95,7 +80,6 @@ func place() -> void:
 		return
 	var back := -float(_commander["d"]) * 0.5 - 0.1
 	standard.position = Vector3(0.0, 0.0, back)
-	label.position = Vector3(0.0, -0.05, back)
 
 
 ## Whether `r` is the regiment the standard rides with.
@@ -120,27 +104,17 @@ func lit(r: Dictionary, on: bool) -> void:
 	(r["bar"] as Node3D).visible = on
 
 
-## The lens at distance `d`, the host shown far or near: banners hidden from afar (the standard and its strength
-## stay), and banners and the standard kept their size on screen beyond banner.fixedFrom.
+## The lens at distance `d`, the host shown far or near: banners hidden from afar (the standard
+## stays), and banners and the standard kept their size on screen beyond banner.fixedFrom.
 func view(rows: Array, d: float, far: bool) -> void:
 	for r in rows:
 		(r["banner"] as Node3D).visible = not far
-	label.visible = far
 	var k := maxf(1.0, d / maxf(Data.num("army", "banner.fixedFrom", 14.0), 0.1))
 	for r in rows:
 		(r["banner"] as Node3D).scale = Vector3.ONE * k
 	standard.scale = Vector3.ONE * k
-	label.position.y = Data.num("army", "man", 0.22) * Data.num("army", "banner.height", 2.6) * Data.num("army", "standard.scale", 1.7) * k * 1.05
 
 
-## A number with thousands marked (6,000).
-static func thousands(n: int) -> String:
-	var s := str(n)
-	var out := ""
-	while s.length() > 3:
-		out = "," + s.substr(s.length() - 3) + out
-		s = s.substr(0, s.length() - 3)
-	return s + out
 
 
 ## A banner quad `high` tall and `wide` across, its pivot at the pole's foot, its place in the wind its own.

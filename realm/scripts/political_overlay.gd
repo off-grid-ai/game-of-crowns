@@ -63,10 +63,11 @@ func _set_politics(players: Array, colour: Dictionary, by_name: Dictionary, kin:
 	for vid in kin:  # a vassal's holding stands as firm as his liege's realm
 		hold[vid] = hold[kin[vid]]
 		lean[vid] = lean[kin[vid]]
+	var wash: Dictionary = pol.get("wash", {})
 	_t.land3d.set_politics(on, hold, lean,
-		Vector4(float(pol.get("wash_near", 0.3)), float(pol.get("wash_far", 0.8)), float(pol.get("own_mix", 0.45)), float(pol.get("stripes_below", 0.4))),
-		Vector4(float(pol.get("border_bright", 1.35)), float(pol.get("border_px", 3.0)), float(pol.get("stripe_width", 1.4)), 0.0),
-		Vector4(float(pol.get("map_from", 12.0)), float(pol.get("map_to", 30.0)), 0.0, 0.0),
+		Vector4(float(wash.get("mid", 0.18)), float(wash.get("realm", 0.38)), float(wash.get("bright", 0.6)), float(pol.get("stripes_below", 0.4))),
+		Vector4(0.0, float(pol.get("border_px", 3.0)), float(pol.get("stripe_width", 1.4)), 0.0),
+		Vector4(float(wash.get("from", 12.0)), float(wash.get("mid_at", 24.0)), float(wash.get("realm_at", 40.0)), 0.0),
 		Vector4(float(pol.get("line_from", 9.0)), float(pol.get("line_to", 22.0)), float(pol.get("line_soft", 0.22)), float(pol.get("line_crisp", 0.55))),
 		_relief())
 
@@ -390,5 +391,3 @@ func set_realm_mix(v: float) -> void:
 	_realm_mix = v
 	if _t._land_mat:
 		_t._land_mat.set_shader_parameter("realm_mix", v)
-	if _t.land3d:
-		_t.land3d.set_realm_mix(v)

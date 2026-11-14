@@ -484,7 +484,6 @@ uniform sampler2D realm_prev : filter_nearest, repeat_disable;
 uniform sampler2D war_tex : filter_nearest, repeat_disable;
 uniform vec2 realm_size = vec2(1.0);
 uniform float realm_tile = 4.0;
-uniform float realm_mix = 0.0;
 uniform vec2 flood_at[8];
 uniform int flood_n = 0;
 uniform float flood_r = 100000.0;
@@ -494,10 +493,9 @@ uniform float realm_on = 0.0;
 uniform float politics = 0.0;
 uniform float hold[64];
 uniform vec3 lean[64];
-uniform vec4 pol_k = vec4(0.3, 0.8, 0.45, 0.4);  // wash_near, wash_far, own_mix, stripes_below
-uniform vec4 pol_b = vec4(1.35, 3.0, 1.4, 0.0);  // border_bright (saturation), border_px (a marked seam's width), stripe_width, unused
-uniform vec2 pol_near = vec2(10.0, 24.0);  // look.json politics.near_fade: the town-zoom wash gone by this far from the lens
-uniform vec4 pol_z = vec4(12.0, 30.0, 0.0, 0.0);  // map_from, map_to: the camera's height over the ground where the wash comes in; unused
+uniform vec4 pol_k = vec4(0.18, 0.38, 0.6, 0.4);  // wash.mid, wash.realm, wash.bright, stripes_below
+uniform vec4 pol_b = vec4(0.0, 3.0, 1.4, 0.0);  // unused, border_px (a marked seam's width), stripe_width, unused
+uniform vec4 pol_z = vec4(12.0, 24.0, 40.0, 0.0);  // wash.from, wash.mid_at, wash.realm_at: the camera's height over the ground; unused
 uniform vec4 relief = vec4(0.0, -0.5, 0.7, -0.5);  // the land's relief at the map's height (data/map.json relief): strength, the light it is shaded from
 uniform vec4 relief_near = vec4(0.0, -0.5, 0.7, -0.5);  // the same below the map's height (data/map.json relief.near): strength, light
 uniform vec4 pol_l = vec4(9.0, 22.0, 0.22, 0.55);  // line_from, line_to (camera height where borders fade in), soft (the painted band's width, tile share), crisp (the fine line's share)
@@ -516,7 +514,7 @@ vec4 realm_owner(ivec2 c) {
 const REALM_WASH := """
 	// The land's relief at the map's height (data/map.json relief; target 02-realm: hills and mountains stand out):
 	// each slope shaded from a low light, as a painted map draws its hills; flat ground keeps its colour.
-	float relief_zoom = smoothstep(pol_z.x, pol_z.y, CAMERA_POSITION_WORLD.y - v_vertex.y);
+	float relief_zoom = smoothstep(pol_l.x, pol_l.y, CAMERA_POSITION_WORLD.y - v_vertex.y);
 	float relief_lit = dot(normalize(w_normal), normalize(relief.yzw));
 	ALBEDO *= mix(1.0, clamp(0.3 + relief_lit * 0.99, 0.5, 1.3), relief.x * relief_zoom);
 	float near_lit = dot(normalize(w_normal), normalize(relief_near.yzw));
@@ -553,16 +551,8 @@ const REALM_WASH := """
 		for (int i = 0; i < 4; i++) if (o[i].a > 0.0) { mixc += o[i].rgb * w[i]; cov += w[i]; if (w[i] > bw) { bw = w[i]; bo = i; } }
 		vec4 town = own.a > 0.0 ? own : (bo >= 0 ? o[bo] : own);  // whose hold and lean the tint reads
 		vec3 trgb = cov > 0.0 ? mixc / cov : own.rgb;
-		// The house's colour at full value, saturated toward its pure hue (look.json politics.border_bright): the border line
-		// and, on the political map, the wash inside it (g9: the pastel colours washed the land tan and the edge pink).
+		// The house's colour at full value (its brightest channel 1): the wash multiplies the land by it.
 		vec3 vfull = trgb / max(max(trgb.r, trgb.g), max(trgb.b, 0.05));
-		float vmn = min(vfull.r, min(vfull.g, vfull.b)) * clamp(pol_b.x, 0.0, 0.95);
-		vec3 vivid = clamp((vfull - vec3(vmn)) / (1.0 - vmn), 0.0, 1.0);
-		// How near the lens is to the map's height (pol_z: look.json politics map_from / map_to): the
-		// wide wash is a map's, never laid over the land at playing heights (Warcraft III: the ground
-		// stays ground; the house reads from its roofs, banners and border line).
-		float map_zoom = smoothstep(pol_z.x, pol_z.y, CAMERA_POSITION_WORLD.y - v_vertex.y);
-		float far_off = smoothstep(14.0, 40.0, length(VERTEX)) * map_zoom;
 		// The border: a few pixels wide at any zoom, where the leading house barely leads.
 		float px = max(fwidth(rt.x), fwidth(rt.y));
 		float gap = lead - 0.5;
@@ -587,33 +577,30 @@ const REALM_WASH := """
 		bool wed = both && !at_war && abs(sa.a - 0.25) < 0.1 && abs(sb.a - 0.25) < 0.1;
 		float front = flood_n > 0 ? exp(-abs(flood_d(rt) - flood_r) * 2.0) : 0.0;
 		if (cov > 0.0) {
-			// The house's own colour at the land's brightness: a hue, the ground still showing.
+			// Just tinted colour (Mac): a light wash multiplied over the land's own colours, never paint over them, so
+			// grass stays grass and snow white-grey (Total War's campaign map, CK3's realm mode). The house's colour at
+			// full value (its brightest channel 1), so the wash only takes away. None at town zoom; a light wash at mid
+			// zoom (look.json politics.wash.mid); stronger only at the realm zoom (wash.realm); by the camera's height.
 			float lum = dot(ALBEDO, vec3(0.299, 0.587, 0.114));
-			float hl = max(dot(trgb, vec3(0.299, 0.587, 0.114)), 0.05);
-			vec3 hue = politics > 0.5 ? vivid : trgb;
-			float hh = max(dot(hue, vec3(0.299, 0.587, 0.114)), 0.05);
-			vec3 tinted = clamp(hue * lum / (politics > 0.5 ? hh : hl) * 1.1, 0.0, 1.0);
-			// Wide washes only from a little way off (never a flat coat over the streets).
-			float k = far_off * mix(0.45, 0.7, realm_mix) + front * 0.4 * far_off;
+			vec3 col = vfull;
+			float hd = 1.0;
 			if (politics > 0.5) {
-				// CK3's political map in WC3's colours: the house's colour as strong as its hold, saturated toward
-				// its own flat colour; land slipping away striped in the colour of the house it leans to.
+				// The house's colour as strong as its hold; land slipping away striped in the colour of the house it leans to.
 				int oid = clamp(int(round(town.a * 64.0)) - 1, 0, 63);
-				float hd = hold[oid];
-				tinted = mix(tinted, vivid, pol_k.z);
+				hd = hold[oid];
 				vec3 ln = lean[oid];
 				if (hd < pol_k.w && dot(ln, vec3(1.0)) > 0.01) {
 					float st = step(0.5, fract((rt.x - rt.y) / max(pol_b.z, 0.1)));
-					vec3 lt = mix(clamp(ln * lum / max(dot(ln, vec3(0.299, 0.587, 0.114)), 0.05) * 1.1, 0.0, 1.0), ln, pol_k.z);
-					tinted = mix(tinted, lt, st);
+					col = mix(col, ln / max(max(ln.r, ln.g), max(ln.b, 0.05)), st);
 					hd = max(hd, 0.6);  // the stripes themselves are the reading: drawn clearly
 				}
-				// By the camera's height, not each spot's distance: at roof and town height the land near and far
-				// stays natural (the house reads from banners and roofs); the wash and the stripes come in
-				// only as the lens rises to the map.
-				k = (mix(pol_k.x, pol_k.y, map_zoom) * hd + front * 0.5) * mix(0.15 * (1.0 - smoothstep(pol_near.x, pol_near.y, length(VERTEX))), 1.0, map_zoom);  // at town zoom the faint wash only near the lens: none smeared over the far land at a grazing angle
 			}
-			ALBEDO = mix(ALBEDO, tinted, clamp(k * cov, 0.0, politics > 0.5 ? 0.92 : 0.85));
+			float high = CAMERA_POSITION_WORLD.y - v_vertex.y;
+			float k = smoothstep(pol_z.x, pol_z.y, high) * pol_k.x + smoothstep(pol_z.y, pol_z.z, high) * (pol_k.y - pol_k.x);
+			// Snow and pale fields take no more than the grass: bright ground's share eases down (wash.bright).
+			k *= hd * mix(1.0, pol_k.z, smoothstep(0.35, 0.75, lum));
+			k += front * 0.3 * smoothstep(pol_z.x, pol_z.y, high);
+			ALBEDO *= mix(vec3(1.0), col, clamp(k * cov, 0.0, 0.6));
 		}
 		// War: red. A truce: muted gold, dashed (held, not settled). Sworn to the crown:
 		// a fine crown-gold edge. Otherwise the house's own colour, darkened.
@@ -686,8 +673,6 @@ func set_politics(on: bool, hold: PackedFloat32Array, lean: PackedVector3Array, 
 	mat.set_shader_param("pol_z", z)
 	mat.set_shader_param("pol_l", l)
 	mat.set_shader_param("pol_vassal", Data.num("look", "politics.vassal_line", 0.35))
-	var nf: Array = Data.value("look", "politics.near_fade", [10.0, 24.0])
-	mat.set_shader_param("pol_near", Vector2(float(nf[0]), float(nf[1])))
 	mat.set_shader_param("relief", r)
 
 
@@ -701,11 +686,6 @@ func set_scars(tex: Texture2D, turn: int) -> void:
 	mat.set_shader_param("scar_on", 1.0)
 
 
-var _realm_mix := -1.0
-func set_realm_mix(v: float) -> void:
-	if land and absf(v - _realm_mix) > 0.002:
-		_realm_mix = v
-		land.material.set_shader_param("realm_mix", v)
 
 
 static var FLOOD_S: float = preload("res://scripts/data.gd").num("map", "flood_seconds", 1.5)  # how long new land takes to fill with its new colour
