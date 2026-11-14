@@ -8,6 +8,8 @@ const T := preload("res://scripts/theme.gd")
 const UI := preload("res://scripts/ui.gd")
 const Awareness := preload("res://scripts/awareness.gd")  # the realm's rules as the bridge sends them (season length, bands)
 const Heraldry = preload("res://scripts/heraldry.gd")
+const Data := preload("res://scripts/data.gd")
+const EventCard := preload("res://scripts/event_card.gd")  # the rival King's plate (who, from where, his mood)
 
 var ui: UI  # the interface that owns this drawer: its signals, its building blocks, its other cards
 
@@ -176,6 +178,13 @@ func _fill_houses() -> void:
 			odds.append("[color=#%s]TRUCE · %s[/color]" % [T.ACCENT.to_html(false), held.to_upper()])
 		# Whom they're bound to, by a pact or a marriage (the mirror's intrigue; bridge characters.js boundTo): bound
 		# houses join each other's wars, and an attack on one's own ally is a betrayal (CK3's alliances by marriage).
+		# A house in arms against the King: its host on the road to his seat (bridge warhosts, rebel true).
+		var risen := false
+		for wh in st.war_hosts():
+			if int(wh.get("owner", -2)) == owner and bool(wh.get("rebel", false)):
+				risen = true
+		if risen:
+			odds.append("[color=#%s]%s[/color]" % [T.DANGER.to_html(false), String(_dw("risen", "RISEN"))])
 		var bound := _bound_to(owner, players)
 		for kind in ["marriage", "pact"]:
 			var names: Array = bound.get(kind, [])
@@ -203,6 +212,8 @@ func _fill_houses() -> void:
 				said.append("At war with " + ", ".join(wars))
 			if not truces.is_empty():
 				said.append("Under the King's truce with " + ", ".join(truces))
+			if risen:
+				said.append(String(_dw("risen_tip", "")))
 			for kind in ["marriage", "pact"]:
 				if not (bound.get(kind, []) as Array).is_empty():
 					said.append(String(BOUND_WORDS[kind][1]) % ", ".join(bound[kind]))
@@ -255,6 +266,32 @@ func _fill_houses() -> void:
 				fav.create_tween().tween_property(fav, "modulate", Color.WHITE, 3.0).set_delay(0.6)
 		else:
 			grid.add_child(Control.new())  # the crown has no favour toward itself: keep the column
+	_rival_line(st)
+
+
+## Beyond the border: the rival King under the houses (bridge /world rival; CK3's neighbouring realm in the realm
+## view): who he is, his mood, and his war or his open demand, in red when it is war.
+func _rival_line(st: Node) -> void:
+	var r: Dictionary = st.rec("rival", {}) if st.rec("rival") is Dictionary else {}
+	if r.is_empty():
+		return
+	_houses.add_child(HSeparator.new())
+	_houses.add_child(EventCard.envoy_plate(String(r.get("king", "")), String(r.get("realm", ""))))
+	var town := func(id: int) -> String: return String(ui.town_of.call(id).get("name", ""))
+	if r.get("war") is Dictionary:
+		var war: Dictionary = r["war"]
+		_houses.add_child(T.datum(String(_dw("rival_war", "")).replace("{realm}", String(r.get("realm", ""))).replace("{town}", town.call(int(war.get("town", -1)))), T.SIZE_DESC, T.DANGER))
+	elif r.get("demand") is Dictionary:
+		var d: Dictionary = r["demand"]
+		_houses.add_child(T.datum(String(_dw("rival_asks", "")).replace("{town}", town.call(int(d.get("town", -1)))), T.SIZE_DESC, T.TEXT_2))
+	for c in _houses.get_children().slice(-2):
+		if c is Label:
+			(c as Label).autowrap_mode = TextServer.AUTOWRAP_WORD
+			(c as Label).custom_minimum_size = Vector2.ZERO
+
+
+static func _dw(key: String, fallback: String) -> String:
+	return String((Data.value("herald", "drawer", {}) as Dictionary).get(key, fallback))
 
 
 ## The great houses' columns: the ledger's measures, in the units the ledger reads them in.
