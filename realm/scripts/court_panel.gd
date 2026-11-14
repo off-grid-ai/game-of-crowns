@@ -1,6 +1,6 @@
 extends RefCounted
 ## The court card: the petitions before the King, one at a time, with his answers,
-## his own words, and the Hand's counsel. Owned by ui.gd, which keeps the court's
+## his own words, and the council's two voices. Owned by ui.gd, which keeps the court's
 ## key in the bar and forwards its public calls here (ui.set_court and the rest).
 
 const T := preload("res://scripts/theme.gd")
@@ -377,7 +377,7 @@ func _show_audience() -> void:
 	if p.get("from") != null:
 		named.add_child(ui.see_btn({"id": p["from"]}, ui.house_by_name.get(String(p.get("house", "")), {})))
 	# A matter of the realm (a famine, a war, a house growing cold) is answered
-	# with the King's own orders, and the Hand says why it matters.
+	# with the King's own orders; why it matters, and the council's two voices on it.
 	if p.get("hand", false):
 		_realm_matter(v, p)
 		return
@@ -396,9 +396,8 @@ func _show_audience() -> void:
 		if p.get("address") != null:
 			said.text = "[i]%s[/i]\n%s" % [String(p["address"]), said.text]
 	v.add_child(said)
-	# The Hand stands at the King's shoulder: one line on what this answer costs him.
-	if String(p.get("counsel", "")) != "":
-		v.add_child(_hand_says(String(p["counsel"])))
+	# Two councillors at the King's shoulder, each urging his own answer (bridge court.js voices).
+	_voices(v, p.get("voices", []))
 	# Without Off Grid AI the lords speak in the court's set lines. The first time
 	# that happens, one quiet line says how they get their own words; never again.
 	if spoken == "" and not ui.ai_words and not ui.offgrid_told():
@@ -422,6 +421,7 @@ func _show_audience() -> void:
 		b.add_theme_color_override("font_color", T.TEXT)
 		b.pressed.connect(_answer.bind(String(p["id"]), String(o["id"])))
 		row.add_child(b)
+		_urged(row, p.get("voices", []), o.get("id"))
 		# An answer the treasury can't pay: greyed, and why, in one line under it.
 		if String(o.get("short", "")) != "":
 			b.disabled = true
@@ -530,7 +530,6 @@ func _close_court() -> void:
 		b.close_court(ui.set_court)
 
 
-## The Hand's word, at the King's shoulder: his voice, set apart from the petitioner's.
 ## Why an answer can't be given: the treasury's line, quiet, under the greyed answer.
 func _short_line(words: String) -> Label:
 	var l := Label.new()
@@ -540,13 +539,41 @@ func _short_line(words: String) -> Label:
 	return l
 
 
-func _hand_says(words: String) -> Control:
-	var l := RichTextLabel.new()
-	l.bbcode_enabled = true
-	l.fit_content = true
-	l.custom_minimum_size = Vector2(240, 0)
-	l.text = "[color=#c9a95a]The Hand[/color]  [i]“%s”[/i]" % words.replace("\"", "")
-	return l
+## The council's two voices on a matter (KoDP's council, CK3's councillors): the Hand, a great lord with a house of
+## his own to favour, and the Steward, who counts the cost. Each says his line; neither is marked best.
+func _voices(v: VBoxContainer, voices: Array) -> void:
+	for w in voices:
+		var d: Dictionary = w
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", T.GAP_TIGHT)
+		if d.get("house") != null and String(d["house"]) != "":
+			row.add_child(ui.sigil_icon(ui.house_by_name.get(String(d["house"]), {}), 16))
+		var l := RichTextLabel.new()
+		l.bbcode_enabled = true
+		l.fit_content = true
+		l.custom_minimum_size = Vector2(240, 0)
+		l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		l.text = "[color=#%s]%s[/color]  [i]“%s”[/i]" % [_voice_colour(d).to_html(false), String(d.get("who", "")), String(d.get("text", "")).replace("\"", "")]
+		row.add_child(l)
+		v.add_child(row)
+
+
+## Under an answer a councillor urges: who urges it, small, in his colour.
+func _urged(row: Container, voices: Array, option: Variant) -> void:
+	for w in voices:
+		var d: Dictionary = w
+		if d.get("option") == null or option == null or str(d["option"]) != str(option):
+			continue
+		var l := Label.new()
+		l.text = "   %s urges this" % String(d.get("who", "")).get_slice(",", 0)
+		l.add_theme_font_size_override("font_size", T.SIZE_DESC)
+		l.add_theme_color_override("font_color", _voice_colour(d))
+		row.add_child(l)
+
+
+## The Hand speaks in his house's gold, the Steward in the plain grey of the crown's clerks.
+func _voice_colour(d: Dictionary) -> Color:
+	return T.ACCENT if d.get("house") != null and String(d["house"]) != "" else T.TEXT_2
 
 
 ## A matter of the realm at court, answered by the King's orders: the matter,
@@ -559,7 +586,13 @@ func _realm_matter(v: VBoxContainer, it: Dictionary) -> void:
 	head.add_theme_font_size_override("font_size", T.SIZE_BODY)
 	head.add_theme_color_override("font_color", T.DANGER if it.get("crisis", false) else T.TEXT)
 	v.add_child(head)
-	v.add_child(_hand_says(String(it.get("why", ""))))
+	# Why it matters, as the realm has it; then the council's two voices on it.
+	if String(it.get("why", "")) != "":
+		var why := T.datum(String(it["why"]), T.SIZE_DESC, T.TEXT_2)
+		why.autowrap_mode = TextServer.AUTOWRAP_WORD
+		why.custom_minimum_size = Vector2(240, 0)
+		v.add_child(why)
+	_voices(v, it.get("voices", []))
 	v.add_child(HSeparator.new())
 	var flow := HFlowContainer.new()
 	flow.add_theme_constant_override("h_separation", T.GAP)
@@ -575,7 +608,9 @@ func _realm_matter(v: VBoxContainer, it: Dictionary) -> void:
 	acts.queue_free()
 	acts = rows
 	v.add_child(rows)
+	var ai := -1  # the act's index: what a voice's option names
 	for a in it.get("acts", []):
+		ai += 1
 		var act: Dictionary = a
 		var w = act.get("weighs")
 		var name := String(act.get("label", ""))
@@ -610,29 +645,13 @@ func _realm_matter(v: VBoxContainer, it: Dictionary) -> void:
 			b.disabled = true
 			b.tooltip_text = String(act.get("short", "The treasury holds too little for this."))
 			b.add_theme_color_override("font_disabled_color", T.TEXT_3)
-		if act.get("pick", false):
-			# The Hand's own advice: framed in gold, and said so on hover.
-			var frame := StyleBoxFlat.new()
-			frame.bg_color = Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.14)
-			frame.border_color = Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.7)
-			frame.set_border_width_all(1)
-			frame.set_corner_radius_all(6)
-			frame.content_margin_left = 10
-			frame.content_margin_right = 10
-			frame.content_margin_top = 4
-			frame.content_margin_bottom = 4
-			for look in ["normal", "hover", "pressed"]:
-				b.add_theme_stylebox_override(look, frame)
-			b.tooltip_text = "The Hand's advice"
+		var row := VBoxContainer.new()
+		row.add_theme_constant_override("separation", T.GAP_TIGHT)
+		row.add_child(b)
+		_urged(row, it.get("voices", []), ai)
 		if w is Dictionary:
-			var row := VBoxContainer.new()
-			row.add_theme_constant_override("separation", T.GAP_TIGHT)
-			b.alignment = HORIZONTAL_ALIGNMENT_LEFT
-			row.add_child(b)
 			row.add_child(_weighs_chips(w))
-			acts.add_child(row)
-		else:
-			acts.add_child(b)
+		acts.add_child(row)
 	_court_later(v, "It waits while you look at the realm; the realm holds still while the court sits.")
 
 
