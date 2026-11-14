@@ -95,45 +95,107 @@ var _town_tiles := {}
 var _heading := {}  # tile -> the way the army standing there last marched
 
 
-## A sync walks the store's companies while the frame's staging pot lasts (ViewTier.spend_ok, the one frame
-## budget), making, placing and marching them; a walk that runs out of time carries on next frame from where it
-## stopped (_walk_on), so neither the first reading's hundreds of soldiers nor the walk itself hold a frame (FPS P0:
-## units.sync 1,858 ms in one frame in the 6aaf2121 run; Mac's beach ball at 2b194f78, the whole walk re-run each frame).
-## A new sync starts a fresh walk; companies not in it go once it has reached the end.
-var _walk := {}  # the walk under way: houses, store, units, i, seen, per_tile, hosts, work
+## Companies are kept per record, never by walking the store (frame-time restructure): the store's record_changed
+## (awareness.gd) marks the tiles a company left or came to, and a town's tile when it rises or falls; a sync (the
+## store's /world taken, main.gd) also marks the tiles of companies that joined or left a host's column or a raid's
+## goal, then re-places the companies on marked tiles only, while the frame's staging pot lasts (ViewTier.spend_ok,
+## the one frame budget), carrying on next frame from where it stopped (_walk_on). A company gone is freed at once.
+var _units := {}  # unit id -> its record as the store last sent it
+var _dirty := {}  # tile key -> true: its companies to be placed again
+var _walk := {}  # the walk under way: houses, store, tiles, i, hosts, work
 var _more := false  # a walk is to go on next frame
 var _placed := {}  # figure key -> [where it was put, where it stands]: ground.gd asked once per place
+var _hosts_were := {}  # unit id -> true: drawn by a host's column at the last sync
+var _work_were := {}  # raider id -> his raid's site at the last sync
+var _heard := false  # listening to the store's record_changed
+
+
+static func _tile(r: Dictionary) -> String:
+	return "%d,%d" % [int(r["x"]), int(r["y"])]
+
+
+func _on_record(kind: String, id: int, now: Dictionary, was: Dictionary) -> void:
+	for r in [now, was]:
+		if not r.is_empty():
+			_dirty[_tile(r)] = true
+	if kind == "cities":
+		if not was.is_empty():
+			_town_tiles.erase(_tile(was))
+		if not now.is_empty():
+			_town_tiles[_tile(now)] = true
+	elif kind == "units":
+		if now.is_empty():
+			_units.erase(id)
+			_free(id)
+		else:
+			_units[id] = now
+
+
+## A company's figure goes, and its raiding band's men with it.
+func _free(id: int) -> void:
+	for key in [id] + range(1, 64).map(func(k: int) -> int: return -(id * 64 + k)):
+		if _figures.has(key):
+			_figures[key]["node"].queue_free()
+			_figures.erase(key)
+		_placed.erase(key)
 
 
 func sync(houses: Dictionary) -> void:
 	var store: Node = Awareness.store()
-	_town_tiles.clear()
-	for c in store.rec("cities", []):
-		_town_tiles["%d,%d" % [int(c["x"]), int(c["y"])]] = true
-	_walk = {"houses": houses, "store": store, "units": store.rec("units", []), "i": 0, "seen": {}, "per_tile": {},
-		"hosts": field_hosts(store), "work": _raid_goals(store)}  # raid work: raider id -> where the royal work stands
+	if store == null:
+		return
+	if not _heard:
+		_heard = true
+		store.record_changed.connect(_on_record)
+		for kind in ["cities", "units"]:  # what the store held before this listened
+			for r in store.rec(kind, []):
+				_on_record(kind, int(r["id"]), r, {})
+	var hosts := field_hosts(store)
+	var work := _raid_goals(store)  # raider id -> where the royal work he goes at stands
+	for id in _units:
+		if hosts.has(id) != _hosts_were.has(id) or work.get(id) != _work_were.get(id):
+			_dirty[_tile(_units[id])] = true
+	_hosts_were = hosts
+	_work_were = work
+	if _dirty.is_empty():
+		return
+	var tiles: Array = _walk.get("tiles", []).slice(int(_walk.get("i", 0))) if not _walk.is_empty() else []
+	for t in _dirty:
+		if not tiles.has(t):
+			tiles.append(t)
+	_dirty.clear()
+	var on := {}  # tile -> its companies' ids
+	for id in _units:
+		var t := _tile(_units[id])
+		if not on.has(t):
+			on[t] = []
+		on[t].append(id)
+	_walk = {"houses": houses, "store": store, "tiles": tiles, "i": 0, "hosts": hosts, "work": work, "on": on}
 	_walk_some()
 
 
 func _walk_some() -> void:
 	var w := _walk
-	var units: Array = w["units"]
-	while int(w["i"]) < units.size():
+	var tiles: Array = w["tiles"]
+	while int(w["i"]) < tiles.size():
 		if not ViewTier.spend_ok():
 			if not _more:
 				_more = true
 				_walk_on.call_deferred()
 			return
-		_company(units[int(w["i"])], w)
+		var ids: Array = w["on"].get(tiles[int(w["i"])], [])
+		ids.sort()
+		var slot := 0
+		for id in ids:
+			if not _units.has(id):
+				continue  # gone since the walk began
+			if w["hosts"].has(id) or slot >= 6:
+				_free(id)  # its host's column draws it, or the tile holds as many as are drawn
+			else:
+				_company(_units[id], slot, w)
+			if not w["hosts"].has(id):
+				slot += 1
 		w["i"] = int(w["i"]) + 1
-	var seen: Dictionary = w["seen"]
-	for id in _figures.keys():
-		if not seen.has(id):
-			_figures[id]["node"].queue_free()
-			_figures.erase(id)
-	for id in _placed.keys():
-		if not seen.has(id):
-			_placed.erase(id)
 	_walk = {}
 
 
@@ -165,22 +227,12 @@ func _stand(raw: Vector3, key: String, centre: Vector3, slot: int, ship: bool, b
 
 
 ## One company of the walk: placed, made if new, marched if its place moved.
-func _company(u: Dictionary, w: Dictionary) -> void:
+func _company(u: Dictionary, slot: int, w: Dictionary) -> void:
 	var houses: Dictionary = w["houses"]
 	var store: Node = w["store"]
-	var seen: Dictionary = w["seen"]
-	var per_tile: Dictionary = w["per_tile"]
-	var in_hosts: Dictionary = w["hosts"]
 	var at_work: Dictionary = w["work"]
 	var id := int(u["id"])
-	if in_hosts.has(id):
-		return  # its host's column draws it
-	seen[id] = true
-	var key := "%d,%d" % [int(u["x"]), int(u["y"])]
-	var slot: int = per_tile.get(key, 0)
-	per_tile[key] = slot + 1
-	if slot >= 6:
-		return
+	var key := _tile(u)
 	var house: Dictionary = houses.get(int(u["owner"]), {})
 	# A wild player's company is a beast only when it is one (BEASTS); otherwise it is raiders, men without banners
 	# (Freeciv's barbarians: the raids; casebook, Wealth draws the raid). g25 raid.jpg: Saltkeep's raiders drawn as
@@ -278,7 +330,7 @@ func _company(u: Dictionary, w: Dictionary) -> void:
 		_march(_figures[id])
 	_figures[id]["target"] = target
 	if raider:
-		_band(id, target, seen)
+		_band(id, target)
 	# How the company stands, from Freeciv's own word on it (the save's hp and orders).
 	_figures[id]["hurt"] = u.get("hp") != null and float(u["hp"]) <= WOUNDED_HP
 	_figures[id]["fort"] = u.get("activity") != null and int(u["activity"]) in FORTIFIED
@@ -341,12 +393,11 @@ func _rival_of(id: int, store: Node) -> Dictionary:
 ## draws the raid: a band of 10-20 men with torches): its man (the company's own figure) and army.json map.raider.men
 ## less one more round him, loose within map.raider.spread world units, each his own figure (keyed below zero, never a
 ## unit id) that marches with the company by the same _march.
-func _band(id: int, at: Vector3, seen: Dictionary) -> void:
+func _band(id: int, at: Vector3) -> void:
 	var r: Dictionary = (Data.value("army", "map", {}) as Dictionary).get("raider", {})
 	var spread := float(r.get("spread", 0.45))
 	for k in range(1, int(r.get("men", 5))):
 		var key := -(id * 64 + k)
-		seen[key] = true
 		var ang := k * 2.39996 + float(id % 7)  # the golden angle: loose, never in ranks
 		var off := Vector3(cos(ang), 0, sin(ang)) * spread * sqrt(float(k) / float(r.get("men", 5)))
 		var raw := at + off
