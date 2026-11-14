@@ -2010,7 +2010,10 @@ func _flush(root: Node3D) -> void:
 			var mmi := MultiMeshInstance3D.new()
 			mmi.multimesh = mm
 			mmi.set_meta("kind", kind)  # which kit model it batches (fire.gd finds a burnt house's place in it)
-			_fade_beyond(mmi, _reach_for(kind))
+			if is_detail(kind):
+				detail(mmi, _reach_for(kind))  # a prop, cart or stall: gone by the far tier, faded
+			else:
+				_fade_beyond(mmi, _reach_for(kind))
 			root.add_child(mmi)
 	_batch.clear()
 	# Anything placed whole (the castle, landmarks) carries furthest.
@@ -2052,10 +2055,18 @@ static func _reach(k: String, fallback: float) -> float:
 ## view_tier.gd's own threshold), faded out by Godot's visibility range (its built-in HLOD), so from the far view a
 ## town is its merged buildings (Mac: "far, towns are static; mid, low detail; near, full detail").
 static var DETAIL_END: float = preload("res://scripts/camera_rig.gd").knob("view_tier.far_from", 60.0)
-static func detail(g: GeometryInstance3D) -> void:
-	g.visibility_range_end = DETAIL_END
-	g.visibility_range_end_margin = DETAIL_END * 0.1
+static func detail(g: GeometryInstance3D, end := DETAIL_END) -> void:
+	end = minf(end, DETAIL_END)
+	g.visibility_range_end = end
+	g.visibility_range_end_margin = end * 0.1
 	g.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
+
+
+## Whether a kit model is a town's small detail, not one of its buildings (towns.json detail_kinds, the catalogue's
+## kinds: props, carts, stalls, goods, clutter, yard things, signs and benches by the road): drawn to its size's reach
+## and never past the far tier, fading (detail).
+static func is_detail(kind: String) -> bool:
+	return String(Real.KIT.get(kind, [""])[0]) in (Data.value("towns", "detail_kinds", []) as Array)
 
 
 func _fade_beyond(g: GeometryInstance3D, end: float) -> void:
