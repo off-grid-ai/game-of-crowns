@@ -34,9 +34,6 @@ func _setup() -> void:
 	main.interior.people = main.villagers.people
 	main.add_child(main.interior)
 	main.ui.walk_as_king.connect(_walk_as_king)
-	main.hero.control_requested.connect(func(p, h):
-		main.hero.close()
-		_take_control(p, h))
 	main.control.want_people.connect(func(town): main.bridge.town_people(town, func(d): main.control.meet(d if d is Array else [])))
 	main.control.said.connect(func(town, i, text, person):
 		var p: Dictionary = main.control._person

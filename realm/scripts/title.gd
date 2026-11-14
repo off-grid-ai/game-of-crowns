@@ -1070,7 +1070,7 @@ func show_settings() -> void:
 		_choices(col, "A usurper may rise", [["Yes", true], ["No", false]], o.get("usurper", true), func(v): apply.call("usurper", v))
 		_choices(col, "Lords at court each season", [["Seldom", "rare"], ["Some", "normal"], ["Many", "often"]], o.get("petitions", "normal"), func(v): apply.call("petitions", v))
 		_choices(col, "Plots and bold moves", [["Quiet", "quiet"], ["Some", "normal"], ["Scheming", "scheming"]], o.get("intrigue", "normal"), func(v): apply.call("intrigue", v))
-		var fixed := _label("The world, the houses' temper, wealth and trust, and the royal host were set when the chronicle began.", 13, MUTED)
+		var fixed := _label("The land, the houses and the royal host were set when the chronicle began.", 14, MUTED)
 		fixed.autowrap_mode = TextServer.AUTOWRAP_WORD
 		fixed.custom_minimum_size.x = 200
 		col.add_child(fixed))
@@ -1685,8 +1685,14 @@ func _heading(text: String) -> void:
 
 
 func _label(text: String, size: int, color: Color) -> Label:
+	var T := preload("res://scripts/theme.gd")
+	# A muted heading is the small uppercase label; a muted sentence (a note, a hint) reads in the body face.
+	if color == MUTED and text.length() <= 48 and not text.ends_with("."):
+		return T.label(text)
 	if color == MUTED:
-		return preload("res://scripts/theme.gd").label(text)
+		var p := T.prose(text, size, T.TEXT_3)
+		p.autowrap_mode = TextServer.AUTOWRAP_WORD
+		return p
 	var l := Label.new()
 	l.text = text
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD

@@ -122,7 +122,7 @@ func _ready_to_roll() -> bool:
 ## town, the hall's room built around them.
 func _scene_up() -> bool:
 	match clip:
-		"hero": return main.hero.visible and is_instance_valid(main.hero._cam)
+		"hero": return main.hero.visible
 		"duel", "walk": return main.control.active
 		"hall": return main.interior.visible and main.interior._settled
 	return true
@@ -281,8 +281,6 @@ func _follow_camera() -> void:
 	var src: Camera3D = null
 	if main.interior.visible and is_instance_valid(main.interior._cam):
 		src = main.interior._cam
-	elif main.hero.visible and is_instance_valid(main.hero._cam):
-		src = main.hero._cam
 	else:
 		src = main.get_viewport().get_camera_3d()
 	if src == null:

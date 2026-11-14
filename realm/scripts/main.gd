@@ -260,10 +260,6 @@ func _ready() -> void:
 	add_child(hero)
 	ui.person_opened.connect(_open_person)
 	ui.lore_opened.connect(func(id): lore.toggle() if id < 0 else lore.open(id))
-	# Reshaping someone: the close-up gives way to the form, then comes back with the new self.
-	hero.edit_requested.connect(func(p, h):
-		hero.close()
-		bridge.character_options(func(opts): ui.show_character_form(int(h.get("id", -1)), String(h.get("name", "")), opts if opts is Dictionary else {}, p)))
 	walking._setup()  # walking as a character (walking.gd): the body, the mic, the interiors
 	ui.story_opened.connect(_follow_story)
 	scenes.staged.connect(_on_staged)
@@ -421,21 +417,10 @@ func _ready() -> void:
 	lore.fetch_map = bridge.lore_map
 	lore.fetch_written = bridge.lore_written
 	lore.rename_name = bridge.rename
-	hero.rename_name = bridge.rename
-	hero.trait_options = bridge.character_options
-	# A rewrite from the close-up: the starting cast (from the menu's Lore), or the person in this reign.
-	hero.save_person = func(p: Dictionary, spec: Dictionary, cb: Callable):
-		if p.get("written", false):
-			bridge.write_person(spec, cb)
-		else:
-			var change := spec.duplicate()
-			change.erase("backstory")  # in a reign that key adds a memory; their past is "past"
-			bridge.edit_character(change, cb)
 	var figures: Node = preload("res://scripts/portrait.gd").new()
 	add_child(figures)
 	lore.portrait = figures.request
 	ui.portrait = figures.request  # the petitioner, painted on the court's card
-	hero.name_changed.connect(lore.refresh)
 	add_child(title)
 	title.began.connect(func(): story._intro_due = true)
 	# The menu stands alone: the game's interface hides behind it until a

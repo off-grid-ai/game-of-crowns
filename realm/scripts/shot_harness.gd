@@ -299,10 +299,8 @@ func _frame_for_shot() -> void:
 			if d is Dictionary and d.get("lord") is Dictionary:
 				main._open_person(str(d["lord"].get("id", "")), d))
 		if _shot.has("move"):
-			# Catch the gesture mid-flow: the shot is timed from the move, not the start.
-			main.get_tree().create_timer(4.0).timeout.connect(func():
-				main.hero.play(String(_shot["move"]))
-				main.get_tree().create_timer(float(_shot.get("lead", 1.2))).timeout.connect(_take_shot))
+			# A person's sheet is a card now (no stage, no moves): the shot is taken once it has opened.
+			main.get_tree().create_timer(4.0 + float(_shot.get("lead", 1.2))).timeout.connect(_take_shot)
 		return
 	if _shot.has("stage"):
 		# Stage a feast or a handover in the named town, timed for the shot.
