@@ -491,8 +491,22 @@ export function tick(ctx) {
     ambitions(ctx);
     council(ctx);
     interlude(ctx);
-    if (meta.elapsedMs % 30000 === 0) chron.saveMeta(meta);
+    if (meta.elapsedMs % 30000 === 0) { meta.save = saveCard(ctx); chron.saveMeta(meta); }
   }
+}
+
+// A reign's save card (saves as reigns: the load list shows each reign by it, as any game's save slot shows the
+// ruler, the date and the playtime): the season and date in the realm, the crown's towns, its seat and its souls, and
+// when it was last played. Kept in the reign's meta (meta.save) with the clock and on a save; the reign's own fields
+// (name, minutes, elapsedMs, status, title) are the rest of the slot.
+export function saveCard(ctx) {
+  const { meta, world, soulsOf } = ctx;
+  if (!world) return meta.save ?? null;
+  const crown = crownOf(world);
+  const towns = (world.cities ?? []).filter((c) => c.owner === crown?.id);
+  const seat = towns.find((c) => c.capital);
+  return { turn: world.turn ?? 0, date: calendar(world.turn).text, towns: towns.length, seat: seat ? cityName(seat.id) : null,
+    souls: towns.reduce((t, c) => t + (soulsOf?.(c.size) ?? 0), 0), playedAt: Date.now() };
 }
 
 // Opening v2: until the first winter has passed, the aim is to hold the realm to it, with the seasons left

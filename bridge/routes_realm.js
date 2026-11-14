@@ -88,6 +88,24 @@ export async function createChronicle(ctx, req, res, url) {
   return json(res, 200, m);
 }
 
+// Save now (the saves screen's Save): Freeciv writes the realm to the reign's saves (its own save command, the newest
+// save is what the reign resumes from), and the reign's card and meta are written with it.
+export async function saveChronicle(ctx, req, res, url) {
+  const { send, saveCard } = ctx;
+  if (ctx.meta.status !== "running") return json(res, 400, { error: "this reign has ended" });
+  send("save");
+  ctx.meta.save = saveCard();
+  chron.saveMeta(ctx.meta);
+  return json(res, 200, { ok: true, id: ctx.meta.id, save: ctx.meta.save });
+}
+
+// Delete a reign from the list (chronicles.remove: put aside, not erased); never the one in play.
+export async function deleteChronicle(ctx, req, res, url) {
+  const { id } = await body(req);
+  if (id === ctx.meta.id) return json(res, 409, { error: "the reign in play can't be deleted" });
+  return chron.remove(id) ? json(res, 200, { ok: true }) : json(res, 404, { error: "no such chronicle" });
+}
+
 export async function openChronicle(ctx, req, res, url) {
   const { switchTo } = ctx;
   const { id } = await body(req);

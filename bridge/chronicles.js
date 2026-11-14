@@ -48,7 +48,17 @@ export function list() {
   return fs.readdirSync(ROOT)
     .filter((d) => fs.existsSync(path.join(ROOT, d, "meta.json")))
     .map((d) => readJson(path.join(ROOT, d, "meta.json")))
-    .sort((a, b) => b.created - a.created);
+    .sort((a, b) => (b.save?.playedAt ?? b.created) - (a.save?.playedAt ?? a.created));  // the last played first, as a load list
+}
+
+// A reign the player deletes from the list: moved out of the chronicles (HOME/chronicles-deleted/<id>), not erased,
+// so a slip of the hand can be undone by hand. Never the reign in play.
+export function remove(id) {
+  if (!/^[a-z0-9-]{1,80}$/.test(String(id ?? "")) || id === activeId() || !fs.existsSync(paths(id).meta)) return false;
+  const away = path.join(HOME, "chronicles-deleted");
+  fs.mkdirSync(away, { recursive: true });
+  fs.renameSync(paths(id).base, path.join(away, `${id}-${Date.now()}`));
+  return true;
 }
 
 export function activeId() {
