@@ -483,6 +483,8 @@ static func crop_mesh(kind: String) -> Mesh:
 			var mat := baked.surface_get_material(i)
 			if mat is BaseMaterial3D:
 				mat = mat.duplicate()
+				if not kind in STANDING:  # a lifted crop's own colours calmed to the land's (countryside.json crop.rows_tint; g35 siege: raw scanned greens read as bright blocks)
+					mat.albedo_color *= preload("res://scripts/data.gd").colour(preload("res://scripts/data.gd").value("countryside", "crop.rows_tint", []), Color.WHITE)
 				# Cut out, never blended: blended leaves sort badly and cost a pass.
 				if mat.transparency != BaseMaterial3D.TRANSPARENCY_DISABLED:
 					mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
@@ -598,7 +600,7 @@ static func _tints(path: String, fallback: Dictionary) -> Dictionary:
 	for k in fallback:
 		out[k] = D.colour(t.get(k, []), fallback[k])
 	return out
-const FLAX_TINTS := {"green": Color(0.8, 1.0, 0.8), "yellowing": Color(1.0, 0.95, 0.6), "gold": Color(1.25, 0.9, 0.5), "stubble": Color(1.0, 0.8, 0.55)}
+static var FLAX_TINTS := _tints("crop.flax_tints", {"green": Color(0.8, 1.0, 0.8), "yellowing": Color(1.0, 0.95, 0.6), "gold": Color(1.25, 0.9, 0.5), "stubble": Color(1.0, 0.8, 0.55)})  # flax's own, by stage (countryside.json crop.flax_tints)
 static var _season_name := ""
 static var _season_from := 0
 static var _held := false  # a film's season held (hold_season), whatever the realm's own
