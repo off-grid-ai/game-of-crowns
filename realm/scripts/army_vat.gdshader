@@ -57,6 +57,11 @@ uniform vec4 team_rect_c = vec4(-1.0);  // up to four cells; an unused one lies 
 uniform vec4 team_rect_d = vec4(-1.0);
 uniform vec4 team_mix = vec4(1.0, 1.0, 1.0, 1.0);  // how much of each cell (a, b, c, d) takes the colour: 1 dyed cloth, less a painted plate
 uniform float team_shade = 1.1;
+// A kind that wears its house's colour only on a band of its cloth (the levy: a plain undyed tunic with the house's
+// colour at the shoulders; data/army.json units.<kind>.cloth): the share of his rest-pose height the band spans, and
+// the plain cloth's colour outside it. The default band spans the whole man: all his cloth in the house's colour.
+uniform vec2 team_band = vec2(-1.0, 9.0);
+uniform vec4 undyed : source_color = vec4(0.52, 0.45, 0.35, 1.0);
 // An image-made soldier (tools/rig/README.md) wears its house colour where its mask.png is white (the rig
 // pipeline paints the white cloth there), instead of by palette cell; data/army.json meshes.<dir>.team "mask".
 uniform bool team_by_mask = false;
@@ -246,8 +251,9 @@ void fragment() {
 	float in_d = step(team_rect_d.x, UV.x) * step(UV.x, team_rect_d.z) * step(team_rect_d.y, UV.y) * step(UV.y, team_rect_d.w) * team_mix.w;
 	float shade = max(base.r, max(base.g, base.b));
 	float dyed = team_by_mask ? smoothstep(team_mask_edge.x, team_mask_edge.y, texture(team_mask, UV).r) : max(max(in_a, in_b), max(in_c, in_d));
-	vec3 cloth = team_color.rgb * shade * team_shade;
 	float rel = rest_pos.y / max(mesh_height, 0.001);  // how far up the man this point stands in his rest pose
+	float in_band = step(team_band.x, rel) * step(rel, team_band.y);
+	vec3 cloth = mix(undyed.rgb, team_color.rgb, in_band) * shade * team_shade;
 	// His own cloth, a little off his fellows'; a darker trim band at the hem and collar.
 	float r2 = fract(man_roll * 7.31);
 	cloth *= vec3(1.0 + (r2 - 0.5) * vary_tint, 1.0 + (fract(r2 * 3.7) - 0.5) * vary_tint, 1.0 + (fract(r2 * 9.1) - 0.5) * vary_tint);

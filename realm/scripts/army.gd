@@ -673,6 +673,11 @@ func _regiment(spec: Dictionary, colour: Color, house: Dictionary = {}) -> Dicti
 	var own := (kit["mat"] as ShaderMaterial).duplicate() as ShaderMaterial
 	own.set_shader_parameter("team_color", Heraldry.field_colour(house, colour) if not house.is_empty() else colour)  # its banner's own field, value and hue
 	Visual.wear_arms(own, house)
+	var dress: Dictionary = row.get("cloth", {})  # a kind in plain cloth, its house's colour on a band (the levy)
+	if not dress.is_empty():
+		var band: Array = dress.get("band", [-1.0, 9.0])
+		own.set_shader_parameter("team_band", Vector2(float(band[0]), float(band[1])))
+		own.set_shader_parameter("undyed", Data.colour(dress.get("undyed"), Color(0.52, 0.45, 0.35)))
 	vat.material_override = own
 	vat.instance_count = count
 	vat.rand_anim_offset = true
