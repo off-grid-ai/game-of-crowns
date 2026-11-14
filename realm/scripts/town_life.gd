@@ -94,6 +94,8 @@ func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 	_step_at = Time.get_ticks_usec()
 	await _stage_town(root, c, house)
 	_staging = false
+	if is_instance_valid(root):
+		preload("res://scripts/team_colour.gd").take(root)  # its life's banners, stalls and sites in its holder's colours
 
 
 ## A town's life gone once its town is no longer NEAR (towns.gd _life_near, view_tier.gd): its

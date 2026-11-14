@@ -4,6 +4,8 @@ extends Node
 ## swapped for one shared shader (team_colour.gdshader: roof tiles and trims take the colour, walls and
 ## stone stay natural), and each town's batches get its holder's colour per instance, from the realm as
 ## the bridge reports it. A town that changes hands recolours over a season, as the land's colour spreads.
+## Whoever builds a house-coloured thing hands it over once with TeamColour.take(node) (towns.gd as a town stands,
+## grows, is read back or its life is set; castle_life's bailey houses; units.gd's ships): nothing watches the tree.
 ## The army's armour uses the same shader (team_colour.gdshader). On with look.json team.on.
 
 const Data := preload("res://scripts/data.gd")  # the one loader of realm/data (data.gd)
@@ -13,7 +15,8 @@ const CameraRig := preload("res://scripts/camera_rig.gd")
 var main: Node
 var _team_of := {}  # a source material -> its team material, made once and shared
 var _done := {}  # a mesh already given team materials (by instance id)
-var _members: Array = []  # [GeometryInstance3D, town id] in a town
+var _members := {}  # a town geometry's instance id -> [GeometryInstance3D, town id]
+static var _one: Node  # the realm's one, for take()
 var _shown := {}  # a geometry's instance id -> the colour it shows now
 var _tick := 0.0
 
@@ -37,8 +40,21 @@ static func apply(m: Node) -> void:
 
 
 func _ready() -> void:
-	get_tree().node_added.connect(func(n): if n is GeometryInstance3D: _take.call_deferred(n))
-	for g in main.find_children("*", "GeometryInstance3D", true, false):
+	_one = self
+	_take_all(main)  # what was built before the colours were on
+
+
+## `node` and everything under it in its holder's colours: its kit materials swapped for the team shader, and each
+## piece standing in a town joined to that town's colour. Called by whoever builds it, once it is in place.
+static func take(node: Node) -> void:
+	if _one != null and is_instance_valid(_one) and node != null and is_instance_valid(node):
+		_one._take_all(node)
+
+
+func _take_all(node: Node) -> void:
+	if node is GeometryInstance3D:
+		_take(node)
+	for g in node.find_children("*", "GeometryInstance3D", true, false):
 		_take(g)
 
 
@@ -100,8 +116,6 @@ func _team_mat(src: BaseMaterial3D, amount: float, mask: Texture2D = null) -> Sh
 
 
 func _take(g: GeometryInstance3D) -> void:
-	if not is_instance_valid(g):
-		return
 	var mesh := _mesh_of(g)
 	if mesh == null:
 		return
@@ -137,7 +151,7 @@ func _take(g: GeometryInstance3D) -> void:
 	# Which town it stands in: the town whose node holds it (towns.gd keeps each town's root).
 	var town := _town_of(g)
 	if town >= 0:
-		_members.append([g, town])
+		_members[g.get_instance_id()] = [g, town]
 
 
 static var _masks := {}  # Meshy piece name -> its team mask, or null where it has none or a blank one
@@ -214,12 +228,15 @@ func _process(delta: float) -> void:
 	var secs: float = preload("res://scripts/awareness.gd").season_seconds
 	var season := maxf(5.0, secs if secs > 0.0 else 40.0)
 	var step := clampf(dt / season, 0.0, 1.0)
-	_members = _members.filter(func(m): return is_instance_valid(m[0]))
-	for m in _members:
+	for key in _members.keys():
+		var m: Array = _members[key]
+		if not is_instance_valid(m[0]):
+			_members.erase(key)
+			_shown.erase(key)
+			continue
 		var g: GeometryInstance3D = m[0]
 		var house: Dictionary = main._houses.get(owner_of.get(int(m[1]), -1), {})
 		var target := Color(1, 1, 1, 0) if house.is_empty() or house.get("wild", false) else house_colour(house)
-		var key := g.get_instance_id()
 		var now: Color = _shown.get(key, target)  # a new town takes its colour at once; a change of hands eases
 		var next := now.lerp(target, step) if now != target and _shown.has(key) else target
 		if not _shown.has(key) or next != now:

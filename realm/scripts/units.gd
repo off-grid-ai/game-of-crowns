@@ -484,6 +484,7 @@ static func ship_body(house: Dictionary) -> Node3D:
 	cog.scale = Vector3.ONE * Units.M
 	cog.position.y = -Data.num("army", "map.ship_sink", 1.2) * Units.M
 	holder.add_child(cog)
+	TeamColour.take(cog)  # its sail's material as the team shader
 	var colour: Color = TeamColour.house_colour(house)
 	for g in cog.find_children("*", "GeometryInstance3D", true, false):
 		(g as GeometryInstance3D).set_instance_shader_parameter("team_color", colour)

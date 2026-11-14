@@ -5,6 +5,7 @@ extends Node3D
 ## Towns grow street by street with their Freeciv size, and are only rebuilt
 ## when size, owner or buildings change.
 
+const TeamColour := preload("res://scripts/team_colour.gd")  # a town in its holder's colours, handed over as it stands
 const Units := preload("res://scripts/world_units.gd")  # the world's one scale (Units.M)
 const PerfTools := preload("res://scripts/perf_tools.gd")  # the slow-frame log (GOC_PERF_PROBE)
 const Awareness := preload("res://scripts/awareness.gd")  # the view's one store: the realm's records (rec)
@@ -251,6 +252,7 @@ func _revive(id: int) -> void:
 		root.set_meta(m, TownStore.nodes(pointing[m], root))
 	copy.free()
 	terrain.season_on(root)
+	TeamColour.take(root)
 
 
 ## Whether a part of a town is only seen at MID or nearer (its visibility range ends by view_tier.far_from) and isn't
@@ -381,6 +383,7 @@ func _raise(best: int, job: Dictionary) -> void:
 		towns[best]["shell"] = false  # a shell merged with its whole new layout stands whole again
 		_grow(job.get("was", {}), homes_before, standing, job["c"])
 		terrain.season_on(standing)
+		TeamColour.take(standing)
 		PerfTools.add("towns.merge", Time.get_ticks_usec() - pt0)
 		terrain.hold_grading = false
 		_raising = false
@@ -402,6 +405,7 @@ func _raise(best: int, job: Dictionary) -> void:
 	Engine.set_meta("stage", "towns.season")
 	pt0 = Time.get_ticks_usec()
 	terrain.season_on(node)
+	TeamColour.take(node)
 	PerfTools.add("towns.season", Time.get_ticks_usec() - pt0)
 	_raised += 1
 	terrain.hold_grading = false
@@ -540,6 +544,7 @@ func _grow(old: Dictionary, homes_before: Array, node: Node3D, c: Dictionary) ->
 		if site == null:
 			show.call()  # no room or no kit for the site: it simply stands
 			continue
+		TeamColour.take(site)
 		site.tree_exiting.connect(show)  # the town's life redressed, the site gone with it: the house stands
 		sites += 1
 

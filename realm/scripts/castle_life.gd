@@ -317,6 +317,7 @@ func _bailey_buildings(xf: Transform3D, sp: Dictionary, d: Dictionary) -> void:
 		var mi := MeshInstance3D.new()
 		mi.mesh = mesh
 		add_child(mi)
+		preload("res://scripts/team_colour.gd").take(mi)  # its roof in the holder's colours
 		var w: Vector3 = xf * p
 		w.y = main.terrain.height_at(w.x, w.z)
 		# The box's own middle onto the spot, its floor on the ground.
