@@ -32,7 +32,8 @@ static var LANE_LENGTH := 1.9  # how far a lane runs from its road
 static var RING_WOBBLE := 0.35  # how far a ring street wanders in and out of its circle (game units)
 static var WANDER := 0.0  # how much a street wanders on level ground (a share of a cell's cost, from a gentle noise)
 static var FACE_WINDOW := 0.5  # how far either side of its frontage a house reads its street's line (game units)
-static var ROW_SNAP := 0.18  # a house within this many radians of its neighbour's line takes it: the row stays parallel
+static var GRID := true  # every house stands square to the town's axis (AoE2's and WC3's towns: one grid, rows read from above)
+static var AXIS := 0.0  # the town's axis (radians, town-local XZ angle): its first main road's heading (town_layout lay_ways)
 
 
 ## The knobs for the next town's layout: towns.json plots, with `over` (plots.crown) on top.
@@ -47,7 +48,7 @@ static func tune(base: Dictionary, over: Dictionary = {}) -> void:
 	WANDER = float(k.get("wander", 0.0))
 	RING_WOBBLE = float(k.get("ring_wobble", 0.35))
 	FACE_WINDOW = float(k.get("face_window", 0.5))
-	ROW_SNAP = float(k.get("row_snap", 0.18))
+	GRID = bool(k.get("grid", true))
 
 
 ## The town's main roads (town-local polylines), from the square's edge out
@@ -191,7 +192,6 @@ static func plots(ways: Array, square_r: float, edge: float, widths: Callable, s
 			var total := length(way)
 			var pick: Array = []
 			var first := true  # no plot cut on this side yet: the next is its corner house
-			var row := Vector2.ZERO  # the line the last house on this side stands square to
 			while s < total:
 				if pick.is_empty():
 					var at := point_at(way, s)
@@ -207,12 +207,15 @@ static func plots(ways: Array, square_r: float, edge: float, widths: Callable, s
 				var tan := line_at(way, s, s + fd.x, total)
 				if tan == Vector2.ZERO:
 					tan = a[1]
-				# A row: a house close to its neighbour's line takes it, so the fronts run parallel (Manor Lords',
-				# AoE2's and WC3's streets) instead of following each kink the grid leaves in the street.
-				var lean := 0.0  # how far the snapped front turns off the street: it steps back that much, clear of it
-				if row != Vector2.ZERO and absf(row.angle_to(tan)) < ROW_SNAP:
-					lean = absf(sin(row.angle_to(tan)))
-					tan = row
+				# On the town's grid: the street's line turned to the nearest quarter of the town's axis, so every house
+				# stands square to every other and rows read from above (AoE2's and WC3's towns), whichever way a ring
+				# street or a lane bends; the front still faces its street, within an eighth of a turn.
+				var lean := 0.0  # how far the squared front turns off the street: it steps back that much, clear of it
+				if GRID:
+					var q := snappedf(angle_difference(AXIS, tan.angle()), PI * 0.5)
+					var on := Vector2.from_angle(AXIS + q)
+					lean = absf(sin(on.angle_to(tan)))
+					tan = on
 				if p.length() > edge:
 					break
 				var n: Vector2 = tan.orthogonal() * side  # out from the street
@@ -227,7 +230,6 @@ static func plots(ways: Array, square_r: float, edge: float, widths: Callable, s
 					s += CELL  # the square's own ground, another street or a house already cut there: on along this one
 					continue
 				bodies.append(body)
-				row = tan
 				var back := front + n * (fd.y + YARD)
 				out.append([house, -n, fd.x, fd.y, PackedVector2Array([front - half, front + half, back + half, back - half]), p.length(), pick[2], "%d%s" % [w, "+" if side > 0.0 else "-"]])
 				s += fd.x + GAP

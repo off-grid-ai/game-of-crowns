@@ -162,15 +162,13 @@ func real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds:
 		var lens_row: Variant = (tb._market_knobs().get("lens_turns", {}) as Dictionary).get(comp)
 		var lens_turn: Variant = null
 		var face_at := Vector3.ZERO  # Vector3.ZERO: it faces the square's middle, as every square building does
-		var rig: Node = tb.get_parent().get("rig") if tb.get_parent() else null
-		if lens_row != null and rig != null and rig.has_method("town_view"):
-			# Where the town camera sees it: the lens the town view will take (camera_rig.town_view, its yaw from the
-			# castle's place in the frame), then market.<rank>.lens_turns.<landmark>: turn, radians round the square from
-			# the lens's side toward the frame's right (negative: its left); face "lens" turns its front to the camera
-			# (01-town: the forge in the near right, open toward the viewer), else it faces the square's middle. g10-g11:
-			# lens guessed as straight across from the castle stood the smithy out of frame.
-			var yaw: float = float(rig.town_view(root)[1])
-			var lens := Vector2(sin(yaw), cos(yaw))  # from the square toward the camera
+		if lens_row != null:
+			# Where the town view sees it: the side the square is seen from (lens()), then
+			# market.<rank>.lens_turns.<landmark>: turn, radians round the square from the lens's side toward the frame's
+			# right (negative: its left); face "lens" turns its front to the viewer (01-town: the forge in the near right,
+			# open toward the viewer), else it faces the square's middle. g10-g11: lens guessed as straight across from
+			# the castle stood the smithy out of frame.
+			var lens := lens()
 			var right := Vector2(lens.y, -lens.x)
 			lens_turn = float(lens_row.get("turn", 0.0)) if lens_row is Dictionary else float(lens_row)
 			var dir := lens * cos(float(lens_turn)) + right * sin(float(lens_turn))
@@ -374,6 +372,7 @@ func lay_ways(root: Node3D, center: Vector3, c: Dictionary, size: int, square_r:
 	var crown_town := bool(c.get("capital", false)) and bool(tb._house.get("crown", false))
 	var pk: Dictionary = tb._plot_knobs()
 	TownPlots.tune(pk)
+	TownPlots.AXIS = float(great[0]) if not great.is_empty() else (float(headings[0]) if not headings.is_empty() else 0.0)  # the town squares to its great road
 	var edge := reach + float(pk.get("edge_more", 0.0))
 	root.set_meta("plot_edge", edge)
 	var height := func(p: Vector2) -> float: return tb._ground_y(center, Vector3(p.x, 0, p.y))
@@ -782,19 +781,25 @@ func _ring_yard(root: Node3D, p: Vector3, f: Vector2, kind: String, ways: Array,
 		return
 
 
+## The side of the square the town is seen from, town-local XZ (towns.json plots.lens_yaw): the layout's own, never the
+## camera's. g34: the layout asked camera_rig.town_view before the town was in the tree (142 errors), and every
+## town was laid by its fallback yaw (0.6), the frames judged g13-g33 included; that yaw is now the data's.
+func lens() -> Vector2:
+	var yaw := float(tb._plot_knobs().get("lens_yaw", 0.6))
+	return Vector2(sin(yaw), cos(yaw))  # from the square toward the viewer
+
+
 ## Where the square's kitchen gardens or washing lines go (towns.json plots.lens_garden, plots.lens_washing; art
 ## target 01-town: fenced gardens of cabbages beside the near houses, washing strung between them; g13-g14: every yard
 ## stood behind its house, out of the town view's sight): [the way out from the square toward them, how many], from
-## the lens the town view will take
-## (camera_rig.town_view), `turn` radians round from the lens's side toward the frame's right (negative: its left),
-## as market.<rank>.lens_turns turns a landmark. [Vector2.ZERO, 0] when there's none to lay.
+## the side the town is seen from (lens()); `turn` radians
+## round from that side toward the frame's right (negative: its left), as market.<rank>.lens_turns turns a landmark.
+## [Vector2.ZERO, 0] when there's none to lay.
 func _lens_toward(root: Node3D, key: String) -> Array:
 	var lg: Dictionary = tb._plot_knobs().get(key, {})
-	var rig: Node = tb.get_parent().get("rig") if tb.get_parent() else null
-	if lg.is_empty() or int(lg.get("most", 0)) <= 0 or rig == null or not rig.has_method("town_view"):
+	if lg.is_empty() or int(lg.get("most", 0)) <= 0:
 		return [Vector2.ZERO, 0]
-	var yaw: float = float(rig.town_view(root)[1])
-	var lens := Vector2(sin(yaw), cos(yaw))  # from the square toward the camera
+	var lens := lens()
 	var right := Vector2(lens.y, -lens.x)
 	var turn := float(lg.get("turn", -1.3))
 	return [lens * cos(turn) + right * sin(turn), int(lg.get("most", 0))]
