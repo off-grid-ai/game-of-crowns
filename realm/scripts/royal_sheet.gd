@@ -286,6 +286,7 @@ func reset() -> void:
 	_favour_was = {}
 	_decided = {}
 	_word_seen = false
+	_chron_seen = false
 
 
 func on_synced() -> void:
@@ -328,6 +329,66 @@ func _word_news() -> void:
 		if pr.get("town") != null:
 			ui.word_news.emit(int(pr["town"]), said)
 	_word_seen = true
+
+
+# --- a lord's rebellion: the Hand's warning at court (CK3's faction war declared, Mount & Blade's rebel lord) ----------
+var _chron_seen := false  # the first batch is the reign's history: it only learns, nobody is warned twice
+
+
+## New chronicle lines (bridge chronicle_added): a lord rising is a red court card, a corner notice, and the edge
+## arrow at his seat (ui.word_news), with a button to look there (the King's own click).
+func on_chronicle(entries: Array) -> void:
+	var first := not _chron_seen
+	_chron_seen = true
+	if first:
+		return
+	for e in entries:
+		if String(e.get("kind", "")) == "rebellion":
+			_rising(e)
+
+
+func _rising(e: Dictionary) -> void:
+	var w: Dictionary = Data.value("royal_sheet", "rising", {})
+	var said := String(e.get("text", ""))
+	var house := RegEx.create_from_string("the banners of (.+?) against").search(said)
+	var name := house.get_string(1) if house else ""
+	ui.toast(said)
+	ui.heard.emit("event")
+	var at := Vector3.INF
+	if e.get("city") != null:
+		at = ui.town_point.call(ui.town_of.call(int(e["city"])))
+		ui.word_news.emit(int(e["city"]), said)
+	var c: PanelContainer = ui.glass_panel()
+	c.add_theme_stylebox_override("panel", T._box(Color(0.13, 0.08, 0.07, 0.97), Color(T.DANGER.r, T.DANGER.g, T.DANGER.b, 0.7), 10, 22))
+	c.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	c.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	c.position.y = 96
+	c.custom_minimum_size = Vector2(500, 0)
+	ui.card(c)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", T.GAP_SECTION)
+	c.add_child(v)
+	var arms := HBoxContainer.new()
+	arms.add_theme_constant_override("separation", T.GAP_WIDE)
+	v.add_child(arms)
+	if name != "":
+		arms.add_child(ui.sigil_icon(ui.house_by_name.get(name, {}), 40))
+	arms.add_child(T.title(String(w.get("head", "{name}")).replace("{name}", name if name != "" else "A lord"), 24, T.DANGER))
+	var l := T.datum(said, T.SIZE_BODY, T.TEXT)
+	l.add_theme_font_override("font", T.speech)
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD
+	l.custom_minimum_size.x = 460
+	v.add_child(l)
+	_say(v, String(w.get("warn", "")), T.TEXT_2)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", T.GAP)
+	v.add_child(row)
+	if at != Vector3.INF:
+		row.add_child(ui.btn(String(w.get("look", "")), func():
+			c.visible = false
+			ui.matter_opened.emit(at)))
+	row.add_child(ui.btn(String(w.get("ok", "")), func(): c.visible = false))
+	ui.ease_in(c)
 
 
 func _crowned(king: Dictionary, r: Dictionary, was: Dictionary, now: Dictionary) -> void:

@@ -373,6 +373,7 @@ func _ready() -> void:
 	ui.rest_asked.connect(func(kind, cb): bridge.king_rest(kind, cb))
 	awareness.synced.connect(ui.royal.on_synced)  # the crown passing: court news of how the houses take the new King
 	awareness.cleared.connect(ui.royal.reset)
+	bridge.chronicle_added.connect(ui.royal.on_chronicle)  # a lord rising: the Hand's warning at court
 	ui.word_news.connect(func(town, said):
 		var at: Vector3 = ui.town_point.call(ui.town_of.call(town))
 		if at != Vector3.INF:
