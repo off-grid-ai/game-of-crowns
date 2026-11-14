@@ -54,8 +54,10 @@ export function sieges(ctx) {
     for (const u of near) counts[u.owner] = (counts[u.owner] ?? 0) + 1;
     const owner = Number(Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0]);
     if (ctx.scenes.some((x) => x.kind === "siege" && x.city === c.id && x.turn === world.turn)) continue;
-    scene("siege", { x: c.x, y: c.y, city: c.id, owner, defender: c.owner, size: near.length, engines: engines(near), ax: near[0].x, ay: near[0].y });
-    const first = !ctx.scenes.some((x) => x.kind === "siege" && x.city === c.id && x.turn === world.turn - 1);
+    // The season the siege began (Army's works grow from it): last season's siege scene of the town carries it on.
+    const last = ctx.scenes.find((x) => x.kind === "siege" && x.city === c.id && x.turn === world.turn - 1);
+    scene("siege", { x: c.x, y: c.y, city: c.id, owner, defender: c.owner, size: near.length, engines: engines(near), ax: near[0].x, ay: near[0].y, since: last?.since ?? world.turn });
+    const first = !last;
     if (first) record({ turn: world.turn, kind: "battle", text: say("event.siege", { house: houseFor(world.players.find((p) => p.id === owner)).name, town: cityName(c.id), n: near.length }), city: c.id });
   }
 }
