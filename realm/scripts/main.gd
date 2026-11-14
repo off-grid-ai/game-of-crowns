@@ -162,6 +162,7 @@ func _ready() -> void:
 	Ground.terrain = terrain
 	Real.warm()  # the towns' models read on worker threads while the land forms
 	preload("res://scripts/town_life.gd").warm()  # and the props a town's life sets down
+	preload("res://scripts/dressing.gd").warm()  # and the dressing's meshes baked ahead, their detail levels on worker threads
 	ruins = preload("res://scripts/ruins.gd").new()  # what war leaves on the land
 	ruins.terrain = terrain
 	add_child(ruins)

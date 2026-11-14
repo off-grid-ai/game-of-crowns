@@ -307,6 +307,36 @@ static func mesh_of(model: String) -> Array:
 	return out
 
 
+## Every model the dressing names has its bake started ahead as the realm boots (house_builder.gd bake_ahead), one a
+## frame: the gathering on the main thread, the detail levels on worker threads, so a town's dressing finds its meshes
+## made (fps6: a first-use bake inside a town's dressing step). Called by main beside realistic.gd warm.
+static func warm() -> void:
+	var tree := Engine.get_main_loop() as SceneTree
+	if _builder == null:
+		_builder = preload("res://scripts/house_builder.gd").new()
+	var models := {}
+	_models_in(Data.read("dressing"), models)
+	for model in models:
+		var path := String(_kit(model)[0]).replace("%s", String(model).get_slice("/", 1))
+		if ResourceLoader.exists(path):
+			_builder.bake_ahead(path)
+			await tree.process_frame
+
+
+## Every "kit/model" string in the dressing's data whose kit the dressing knows.
+static func _models_in(v: Variant, out: Dictionary) -> void:
+	if v is Dictionary:
+		for k in v:
+			_models_in(v[k], out)
+	elif v is Array:
+		for x in v:
+			_models_in(x, out)
+	elif v is String and (v as String).count("/") == 1 and not (v as String).begins_with("res:"):
+		var kits: Dictionary = Data.value("dressing", "kits", {})
+		if kits.has((v as String).get_slice("/", 0)) or (v as String).begins_with("props/"):
+			out[v] = true
+
+
 ## [path pattern, metres to world units] of a model's kit ("props/Barrel" -> props).
 static func _kit(model: String) -> Array:
 	var kits: Dictionary = Data.value("dressing", "kits", {})

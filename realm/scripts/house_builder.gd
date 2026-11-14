@@ -377,12 +377,37 @@ func bake_path(path: String) -> ArrayMesh:
 
 
 func _bake_lods(path: String) -> ArrayMesh:
+	bake_ahead(path)
+	var job: Array = _ahead[path]
+	_ahead.erase(path)
+	WorkerThreadPool.wait_for_task_completion(int(job[0]))
+	var im: ImporterMesh = job[1][0]
+	return im.get_mesh()  # handed to the renderer on the main thread
+
+
+## A model's bake started ahead (dressing.gd warm, as the realm boots): its pieces gathered into one mesh here on
+## the main thread, then indexed and given its detail levels (SurfaceTool.index, meshoptimizer's generate_lods: the
+## dear part, fps6) on Godot's worker threads; bake_path finishes it when first asked, waiting only if it isn't done.
+static var _ahead := {}  # path -> [worker task, [ImporterMesh when done]]
+func bake_ahead(path: String) -> void:
+	if _baked.has("path:" + path) or _ahead.has(path):
+		return
 	var mesh := _bake([[path, Transform3D()]])
-	var im := ImporterMesh.new()
+	var surfs := []
 	for s in mesh.get_surface_count():
+		surfs.append([mesh.surface_get_arrays(s), mesh.surface_get_material(s)])
+	var out := [null]
+	_ahead[path] = [WorkerThreadPool.add_task(func(): out[0] = _lods_of(surfs), false, "bake " + path.get_file()), out]
+
+
+## The surfaces indexed (the detail levels work on indexed triangles: shared corners once) and given Godot's generated
+## detail levels: plain arrays only, so it runs on a worker thread.
+static func _lods_of(surfs: Array) -> ImporterMesh:
+	var im := ImporterMesh.new()
+	for sf in surfs:
 		var st := SurfaceTool.new()
-		st.create_from(mesh, s)
-		st.index()  # the detail levels work on indexed triangles (shared corners once)
-		im.add_surface(Mesh.PRIMITIVE_TRIANGLES, st.commit_to_arrays(), [], {}, mesh.surface_get_material(s))
+		st.create_from_arrays(sf[0])
+		st.index()
+		im.add_surface(Mesh.PRIMITIVE_TRIANGLES, st.commit_to_arrays(), [], {}, sf[1])
 	im.generate_lods(25.0, 60.0, [])
-	return im.get_mesh()
+	return im
