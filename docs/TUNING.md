@@ -331,6 +331,7 @@ Switches (`--name`) go after `--` on the game's command line.
 - How full the stalls' piles of goods stand as the town fares (bare in hunger, thin when lean or short, piled high on market day, at a fair, in good times, with autumn's stores): `realm/data/moods.json` each state's `pile_full`; otherwise `realm/data/crowd.json` `square_agents.pile.full`.
 - A town the rebels hold: how many of the lord's standards lie torn down on its square, and how far from the well: `realm/data/town_scenes.json` the `rebel_host` row's `torn`, `torn_from`.
 - A sacked town rebuilding: how burnt it must be before its survivors are seen at work, how many burnt houses get timber, a ladder and two workers, and how far the timber stands from the door: `realm/data/towns.json` `rebuilding.from`; `realm/data/town_scenes.json` the `rebuilding` row's `sites`, `pile_side`.
+- A small seat (a vassal's new seat, a bannerman's little town): up to what size it is a manor and its hamlet, how many houses, what stands on its green: `realm/data/towns.json` `plots.manor.max_size`, `houses`, `landmarks`; the manor house's place: `trades.list` house_manor `where_by_rank`.
 - The roadside's people (inns, hamlets, camps, shrines, tolls) now think on the same minds: each `life` row's `post` in `realm/data/roadside.json` (no post: the old clip timer). Check it all with `tools/mind_probe.gd` and `tools/works_probe.gd`.
 
 ## The town as art target town-b (the crown's seat dense, mixed roofs, warm walls, cobbles, green)

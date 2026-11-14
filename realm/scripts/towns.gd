@@ -276,7 +276,7 @@ func _plot_knobs() -> Dictionary:
 	return plot_knobs_for(_rank)
 
 
-const RANKS := ["crown", "seat", "town"]  # the town ranks with their own knobs (towns.json plots and market)
+const RANKS := ["crown", "seat", "manor", "town"]  # the town ranks with their own knobs (towns.json plots and market)
 
 
 ## towns.json plots with `rank`'s own (plots.crown, plots.seat, plots.town) merged on top; the base alone
@@ -291,14 +291,20 @@ static func plot_knobs_for(rank: String) -> Dictionary:
 	return out
 
 
-## A town's rank (the knobs it lays out and fills its market by): crown (the King's seat), seat (a great
+## A town's rank (the knobs it lays out and fills its market by): crown (the King's seat), manor (a small seat: a
+## house's seat or a bannerman's town no bigger than towns.json plots.manor.max_size, a vassal's new seat among them:
+## a manor house and its hamlet, no castle, no market square; CK3's and Bannerlord's lesser holdings), seat (a great
 ## house's seat), town (a market town at least towns.json plots.town.min_size), else village.
-static func town_rank(capital: bool, crown: bool, size: int) -> String:
+static func town_rank(capital: bool, crown: bool, size: int, seated := false) -> String:
 	if capital and crown:
 		return "crown"
+	var plots: Dictionary = preload("res://scripts/data.gd").value("towns", "plots", {})
+	var manor: Dictionary = plots.get("manor", {})
+	if (capital or seated) and not manor.is_empty() and size <= int(manor.get("max_size", 0)):
+		return "manor"
 	if capital:
 		return "seat"
-	var town: Dictionary = preload("res://scripts/data.gd").value("towns", "plots", {}).get("town", {})
+	var town: Dictionary = plots.get("town", {})
 	return "town" if not town.is_empty() and size >= int(town.get("min_size", 99)) else "village"
 var _rank := "village"  # the town being built's rank (town_rank)
 var _road_tiles := {}  # Vector2i tile -> true: Freeciv's roads and towns, where a town's roads lead out
@@ -1876,7 +1882,8 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 	rng.seed = int(c["id"]) * 7919
 	var color := preload("res://scripts/heraldry.gd").colour(house, Color.GRAY, "#888888")
 	_house = house
-	_rank = town_rank(bool(c.get("capital", false)), bool(house.get("crown", false)), size)
+	_rank = town_rank(bool(c.get("capital", false)), bool(house.get("crown", false)), size, c.get("family") is String)
+	var seat := bool(c.get("capital", false)) and _rank != "manor"  # a castle and a great square: a manor has neither
 	root.set_meta("rank", _rank)
 	_house_colour = color
 
@@ -1890,7 +1897,7 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 	for i in street_count:
 		streets.append(base_ang + TAU * i / street_count + rng.randf_range(-0.25, 0.25))
 
-	var square_r := 1.25 if bool(c.get("capital", false)) or size >= 12 else 1.0  # a market square, room for stalls and a crowd
+	var square_r := 1.25 if seat or size >= 12 else 1.0  # a market square, room for stalls and a crowd
 	square_r = float(_market_knobs().get("square_r", square_r))  # by the town's rank: the realm's great market square at the crown's seat (art target town-b; the crown's 2.1 since round 6)
 	reach = maxf(reach, square_r + 3.6)  # the town reaches out to its palisade
 	var reps := roundi(square_r * 4.0)
@@ -1943,7 +1950,7 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 			lanes.append([Vector2(dir.x, dir.z) * t0, Vector2(dir.x, dir.z) * t])
 			root.set_meta("lanes", lanes)
 	if not real_houses.is_empty():
-		await layout.real_lots(root, center, square_r, size, real_houses, rng, streets, bool(c.get("capital", false)), ways)
+		await layout.real_lots(root, center, square_r, size, real_houses, rng, streets, seat, ways)
 
 	# A town's seat raises the stone castle in its lots (town_layout.real_lots); an ordinary town is ruled from its hall.
 	var keep_off := Vector3(cos(base_ang + PI / street_count), 0, sin(base_ang + PI / street_count)) * (square_r + 0.55)

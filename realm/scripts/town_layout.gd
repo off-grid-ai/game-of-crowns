@@ -40,6 +40,8 @@ func real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds:
 	var want := clampi(int(dn.get("base", 14)) + size * int(dn.get("per_size", 3)), int(dn.get("min", 16)), int(dn.get("max", 40))) + (int(dn.get("seat", 8)) if seat else 0) + int(dcrown.get("extra", 0))
 	if not ways.is_empty():
 		want += int(tb._plot_knobs().get("extra", 0))  # plots pack a street shoulder to shoulder: more houses stand
+	if tb._rank == "manor":
+		want = int(tb._plot_knobs().get("houses", want))  # a manor's hamlet: its manor house and a few cottages (towns.json plots.manor)
 	root.set_meta("crown_seat", crown_town)  # the crown's seat: its market is the realm's busiest (town_life, villagers; towns.json market.crown)
 	var placed := 0
 	# A seat's castle: stone walls, towers and gatehouse, on its own ground at
@@ -131,14 +133,14 @@ func real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds:
 	# The town's house decider and its trades (towns.json tiers, trades): the land goes to the
 	# landmarks and the trades first, then the big and middle houses; the small fill what is left.
 	tb._tiers = TownTiers.new(size, seat)
-	tb._trades = TownTrades.plan(size, root.get_meta("buildings", []), seat, rng.seed + 53)
+	tb._trades = TownTrades.plan(size, root.get_meta("buildings", []), seat, rng.seed + 53, tb._rank)
 	# A trade that stands elsewhere at this rank (towns.json trades.list where_by_rank): the crown's smithy on the
 	# square's edge, its foreground trade (01-town).
 	for tr in tb._trades:
 		var wr: Dictionary = tr.get("where_by_rank", {})
 		if wr.has(tb._rank):
 			tr["where"] = String(wr[tb._rank])
-	var landmarks: Array = ["tavern", "hall", "church"]
+	var landmarks: Array = (tb._plot_knobs().get("landmarks", ["tavern", "hall", "church"]) as Array).duplicate()  # by rank: a manor's hamlet has its chapel only
 	for tr in tb._trades:
 		if String(tr["where"]) == "square":
 			landmarks.append(String(tr["component"]))

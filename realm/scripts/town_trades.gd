@@ -14,8 +14,9 @@ const Real := preload("res://scripts/realistic.gd")
 
 
 ## The trades this town raises, in the order they claim land: [{component, where, t, model}],
-## `model` the catalogue model that will draw it (seeded by the town, so the same every run).
-static func plan(size: int, buildings: Array, seat: bool, seed: int) -> Array:
+## `model` the catalogue model that will draw it (seeded by the town, so the same every run). A row's `ranks` stand it
+## at a town of those ranks (towns.gd town_rank: the manor's house at a small seat).
+static func plan(size: int, buildings: Array, seat: bool, seed: int, rank := "") -> Array:
 	var out: Array = []
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed
@@ -27,7 +28,8 @@ static func plan(size: int, buildings: Array, seat: bool, seed: int) -> Array:
 		var by_building := needs.any(func(b): return String(b) in buildings)
 		var by_size := size >= int(r.get("min_size", 99))
 		var by_seat := seat and bool(r.get("seat", false))
-		if not (by_building or by_size or by_seat):
+		var by_rank := (r.get("ranks", []) as Array).has(rank)
+		if not (by_building or by_size or by_seat or by_rank):
 			continue
 		var models: Array = Real.variants(String(r["component"])).filter(func(n): return Real.footprint(String(n)) != Vector2.ZERO)
 		if models.is_empty():
