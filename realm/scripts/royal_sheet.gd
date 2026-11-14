@@ -10,6 +10,7 @@ const Data := preload("res://scripts/data.gd")
 const T := preload("res://scripts/theme.gd")
 const Awareness := preload("res://scripts/awareness.gd")
 const PaintedFaces := preload("res://scripts/painted_faces.gd")
+const Settings := preload("res://scripts/settings.gd")  # the reigns whose first council was held
 
 var ui: Node
 var _card: PanelContainer
@@ -335,6 +336,7 @@ func reset() -> void:
 	_chron_seen = false
 	_raids_told = {}
 	_raids_seen = false
+	_council_asked = false
 
 
 func on_synced() -> void:
@@ -356,6 +358,98 @@ func on_synced() -> void:
 	_favour_was = now
 	_word_news()
 	_raid_news()
+	_council_due(r)
+
+
+# --- the first council: who the King is and the realm as he finds it (CK3's opening: your ruler, your situation,
+# your focus, before the first matter). Once a reign, in its first seasons, after the crowning has had its moment.
+var _council_asked := false
+
+
+func _council_due(r: Dictionary) -> void:
+	var w: Dictionary = Data.value("royal_sheet", "council", {})
+	var st: Node = Awareness.store()
+	var id := String((ui.reign_now as Dictionary).get("id", ""))
+	if _council_asked or id == "" or not (r.get("king") is Dictionary) or st == null:
+		return
+	if int(st.rec("turn", 0)) > int(w.get("by_turn", 2)):
+		return
+	var seen: Array = Settings.get_value("council_seen") if Settings.get_value("council_seen") is Array else []
+	if id in seen:
+		return
+	_council_asked = true
+	seen.append(id)
+	Settings.set_value("council_seen", seen.slice(-20))
+	ui.get_tree().create_timer(float(w.get("after", 9.0))).timeout.connect(func(): _first_council())
+
+
+func _first_council() -> void:
+	var r := royals()
+	if not (r.get("king") is Dictionary):
+		return
+	var w: Dictionary = Data.value("royal_sheet", "council", {})
+	var king: Dictionary = r["king"]
+	var c: PanelContainer = ui.glass_panel()
+	c.add_theme_stylebox_override("panel", T._box(Color(0.13, 0.11, 0.09, 0.97), Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.6), 10, 22))
+	c.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	c.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	c.position.y = 96
+	c.custom_minimum_size = Vector2(520, 0)
+	ui.card(c)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", T.GAP_SECTION)
+	c.add_child(v)
+	var head := HBoxContainer.new()
+	head.add_theme_constant_override("separation", T.GAP_WIDE)
+	v.add_child(head)
+	var face := PaintedFaces.face({"id": String(king.get("id", "king")), "gender": "female" if bool(king.get("woman", false)) else "male", "age": int(king.get("age", 40))})
+	if face:
+		var pic := TextureRect.new()
+		pic.texture = face
+		pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		pic.custom_minimum_size = Vector2(72, 96)
+		head.add_child(pic)
+	var names := VBoxContainer.new()
+	names.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head.add_child(names)
+	names.add_child(T.title(String(w.get("head", "{name}")).replace("{name}", String(king.get("name", ""))), 24, T.ACCENT))
+	var t := traits_of(king)
+	if t != "":
+		_say(names, _w("crowned_nature", "{age}, by nature {traits}.").replace("{age}", str(int(king.get("age", 0)))).replace("{traits}", t), T.TEXT_2)
+	# The realm as he finds it, in the Hand's words: his surest friend, his likeliest foe, the rival over the border,
+	# and what the chest holds.
+	v.add_child(T.label(String(w.get("situation", ""))))
+	var st: Node = Awareness.store()
+	var warm := {}
+	var cold := {}
+	for p in (st.rec("players", []) if st else []):
+		var h: Dictionary = p.get("house", {}) if p.get("house") is Dictionary else {}
+		if p.get("favour") == null or bool(h.get("crown", false)) or bool(h.get("wild", false)):
+			continue
+		if warm.is_empty() or float(p["favour"]) > float(warm["favour"]):
+			warm = p
+		if cold.is_empty() or float(p["favour"]) < float(cold["favour"]):
+			cold = p
+	var lines := PackedStringArray()
+	if not warm.is_empty():
+		lines.append(String(w.get("friend", "")).replace("{house}", String(warm["house"].get("name", ""))).replace("{mood}", Awareness.mood_of(float(warm["favour"])).to_lower()))
+	if not cold.is_empty() and cold != warm:
+		lines.append(String(w.get("foe", "")).replace("{house}", String(cold["house"].get("name", ""))).replace("{mood}", Awareness.mood_of(float(cold["favour"])).to_lower()))
+	var rival: Dictionary = st.rec("rival", {}) if st and st.rec("rival") is Dictionary else {}
+	if not rival.is_empty():
+		lines.append(String(w.get("rival", "")).replace("{king}", String(rival.get("king", ""))).replace("{realm}", String(rival.get("realm", ""))).replace("{edge}", String(rival.get("edge", ""))))
+	lines.append(String(w.get("chest", "")).replace("{crowns}", ui.crowns(ui.purse)))
+	for l in lines:
+		if l != "":
+			var row := T.datum("·  " + l, T.SIZE_BODY, T.TEXT)
+			row.autowrap_mode = TextServer.AUTOWRAP_WORD
+			row.custom_minimum_size.x = 470
+			v.add_child(row)
+	_focus_row(v, r)
+	v.add_child(ui.btn(String(w.get("ok", "To court")), func(): c.visible = false))
+	ui.ease_in(c)
+	ui.heard.emit("event")
 
 
 # --- raiders making for his works (Stronghold's "the enemy approaches the keep"; bridge raids.js /world raids) -----
