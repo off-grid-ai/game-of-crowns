@@ -5,7 +5,7 @@ extends SceneTree
 ## far trees as impostors). The tree baked is the far copy's mesh and materials (forest.gd kit_meshes), in summer.
 ##
 ## Needs the GPU (it renders): arch -arm64 godot --path . -s res://tools/impostor_bake.gd  (never --headless)
-## Writes assets/impostors/<model>_base_<map>.png and assets/impostors/<model>.json (the shader's numbers: frames,
+## Writes assets/impostors/base_<model>_<map>.png and assets/impostors/<model>.json (the shader's numbers: frames,
 ## scale, aabb_max, offset), which forest.gd reads. Re-run after a kit model or its leaves change, then --import.
 
 const OUT := "res://assets/impostors"

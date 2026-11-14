@@ -200,7 +200,7 @@ func census(cam: Camera3D) -> String:
 			row[2] += mm.instance_count
 			var v := 0
 			for si in mm.mesh.get_surface_count():
-				v += mm.mesh.surface_get_array_len(si)
+				v += (mm.mesh.surface_get_arrays(si)[Mesh.ARRAY_VERTEX] as PackedVector3Array).size()  # an ArrayMesh or an impostor's QuadMesh
 			row[3] = maxi(row[3], v)
 		by[tier] = row
 	var out := PackedStringArray()
@@ -287,7 +287,7 @@ func kit_meshes() -> Dictionary:
 
 
 ## The far tiers' tree (card and map, past MID): godot-imposter's octahedral impostor of the kit model (addons/Imposter,
-## MIT; baked by tools/impostor_bake.gd into assets/impostors), one quad a tree that shows the model from the side the
+## MIT; baked by tools/impostor_bake.gd into assets/impostors: base_<model>_<map>.png and <model>.json), one quad a tree that shows the model from the side the
 ## lens sees it, lit by its baked normals (supervisor fps P0: whole 3.5-6.3k-triangle trees past MID were half the
 ## frame; SpeedTree's, UE HLOD's and Total War's far woods). The house shade rides on the batch's instance colours; the
 ## season on `impostors` (terrain.gd's season pass: albedo the season's tint, turn its colour over the summer bake).
@@ -300,7 +300,7 @@ static func _impostor(path: String, far: Mesh) -> Mesh:
 	var mat := ShaderMaterial.new()
 	mat.shader = IMPOSTOR_SHADER
 	for map: String in ["albedo", "normal", "depth", "orm"]:
-		mat.set_shader_parameter("imposterTexture" + map.capitalize(), load(IMPOSTORS + "%s_base_%s.png" % [name, map]))
+		mat.set_shader_parameter("imposterTexture" + map.capitalize(), load(IMPOSTORS + "base_%s_%s.png" % [name, map])  # PhotoStudio's names: <prefix>_<model>_<map>)
 	mat.set_shader_parameter("imposterFrames", Vector2(float(n["frames"]), float(n["frames"])))
 	mat.set_shader_parameter("isFullSphere", bool(n["full_sphere"]))
 	mat.set_shader_parameter("scale", float(n["scale"]))
