@@ -87,6 +87,7 @@ func build() -> Array:
 			mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 			mmi.visibility_range_end = VEG_REACH if parts[0] in ["grass", "flowers"] else BUSH_REACH
 			mmi.visibility_range_end_margin = 3.0
+			mmi.lod_bias = float((Data.value("forest", "cover_lod_bias", {}) as Dictionary).get(parts[0], 1.0))  # under 1: each patch takes its coarser detail levels sooner (fps)
 			batches.append(mmi)
 	return _pines if _pines_ok else []
 

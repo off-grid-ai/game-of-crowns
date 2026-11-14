@@ -109,7 +109,9 @@
   ]
  },
  "_cover_per_tile": "Doodads per tile by terrain and role (WC3 scatters rocks, shrubs and flowers over every tile so no patch is bare paint; docs/research/terrain-wc3-method.md 5). Supervisor list 4: open ground was grass tufts alone; now wildflowers (nt_flowers, also the field margins' flowers role) and more shrubs; rocks stay 2 a tile on grassland and plains (g40 muster: 4 read as pale specks littering the lawn at mid distance).",
- "cover_per_tile": {
+ "_cover_lod_bias": "vegetation.gd: each cover role's patches take their coarser detail levels (house_builder bake_path LODs) this much sooner; 1 is Godot's own pick (fps, cyclevis: the ground cover was most of terrain's ~15M triangles).",
+  "cover_lod_bias": {"grass": 0.3, "flowers": 0.3, "bush": 0.5, "rock": 0.5},
+  "cover_per_tile": {
   "Forest": {
    "bush": 8,
    "grass": 6,
