@@ -71,6 +71,7 @@ import * as Promises from "./promises.js";
 import * as Siegecraft from "./siegecraft.js";
 import * as Rivals from "./rivals.js";
 import * as Rebels from "./rebels.js";
+import * as Peace from "./peace.js";
 import * as Contagion from "./contagion.js";
 import * as Prices from "./prices.js";
 import { TURNING } from "./season.js";
@@ -188,7 +189,7 @@ function load(id) {
   court.spoils = () => meta.spoils ?? [];  // towns taken with allies beside the royal host (campaigns.js; characters.js spoils)
   arcs = new Arcs(P.base, court, record);
   arcsRunning = false;  // a new realm's stories start free of the last one's
-  court.onArcRuling = (arc, beat, option) => arc === "council" ? councilRuled(beat, option) : arc === "siege" ? siegeRuled(beat, option) : arc === "rival" ? Rivals.ruled(realmCtx(), beat, option) : arc === "rebel" ? Rebels.ruled(realmCtx(), beat, option) : arcs.rule(arc, beat, option);
+  court.onArcRuling = (arc, beat, option) => arc === "council" ? councilRuled(beat, option) : arc === "siege" ? siegeRuled(beat, option) : arc === "rival" ? Rivals.ruled(realmCtx(), beat, option) : arc === "rebel" ? Rebels.ruled(realmCtx(), beat, option) : arc === "peace" ? Peace.ruled(realmCtx(), beat, option) : arcs.rule(arc, beat, option);
   chatter?.stop();
   chatter = new Chatter(P.state, { world: () => world, turn: () => world?.turn ?? 0, minds: () => minds });
   stakes = new Stakes(P.state, record, endReign);
@@ -426,7 +427,7 @@ function applyStartOptions() {
 // The realm as the view sees it (GET /world): built in view.js.
 function worldView() {
   const v = View.worldView(realmCtx()), d = detail();
-  return { ...v, trade: Trade.list(v.cities, world?.turn ?? 0, (a, b) => (d?.players?.[a]?.atWarWith ?? []).includes(b)), hosts: Hosts.list({ world, meta }), banners: Hosts.banners({ world, meta }), warhosts: Hosts.warHosts({ world, meta }), battles: Battles.cards(meta, world?.turn), raids: Raids.list(meta, world), works: Treasury.worksOf(meta, world, crownNow()?.id), harvest: Harvest.view(meta, world?.turn ?? 0), royals: Royals.view(meta, world?.turn ?? 0), captains: Captains.list(meta, world), soldiers: Captains.soldiers(meta, world), promises: Promises.view(meta), trust: Promises.trust(meta), sieges: Siegecraft.list(meta), rival: Rivals.view(meta, world), rebels: Rebels.view(meta, world), vassals: court?.vassals(world) ?? [], contagion: Contagion.view(meta), plague: Contagion.history(meta), prices: Prices.view(meta) };  // the King's hosts and their orders, and how many more orders this season (hosts.js)
+  return { ...v, trade: Trade.list(v.cities, world?.turn ?? 0, (a, b) => (d?.players?.[a]?.atWarWith ?? []).includes(b)), hosts: Hosts.list({ world, meta }), banners: Hosts.banners({ world, meta }), warhosts: Hosts.warHosts({ world, meta }), battles: Battles.cards(meta, world?.turn), raids: Raids.list(meta, world), works: Treasury.worksOf(meta, world, crownNow()?.id), harvest: Harvest.view(meta, world?.turn ?? 0), royals: Royals.view(meta, world?.turn ?? 0), captains: Captains.list(meta, world), soldiers: Captains.soldiers(meta, world), promises: Promises.view(meta), trust: Promises.trust(meta), sieges: Siegecraft.list(meta), rival: Rivals.view(meta, world), rebels: Rebels.view(meta, world), wars: Peace.view(meta, world), vassals: court?.vassals(world) ?? [], contagion: Contagion.view(meta), plague: Contagion.history(meta), prices: Prices.view(meta) };  // the King's hosts and their orders, and how many more orders this season (hosts.js)
 }
 
 // The Hand's matters, read from the realm as it stands now.

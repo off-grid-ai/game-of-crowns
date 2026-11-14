@@ -1,0 +1,8 @@
+{
+ "_": "Peace terms after a war between the crown and a great house (peace.js; CK3's peace by war score, Total War's peace treaty). A war run after seasons brings the house's lord with terms, again every every seasons while it lasts. A house that has lost more towns than the crown offers a town or gold (up to gold, from its chest) or takes a white peace; one winning asks a crown town or gold paid; even, a white peace. favour: what each answer does (yieldTown, yieldGold: the losing house; white; fight: refusing; cede, paid: the winning house; weak: every other great house when the crown pays). Peace is an armistice of armistice turns in Freeciv, which turns to peace.",
+ "after": 3,
+ "every": 3,
+ "gold": 150,
+ "armistice": 16,
+ "favour": { "yieldTown": -10, "yieldGold": -5, "white": 10, "fight": -5, "cede": 10, "paid": 5, "weak": -3 }
+}
