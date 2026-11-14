@@ -120,7 +120,7 @@
         { "who": "folk", "post": "woodcutter", "role": "peasant", "hold": "axe", "at": [0.35, 0.93], "face": [0.35, 0.85], "clips": ["Axe_Horizontal", "Axe_Down", "Carrying", "Bored"], "chance": 0.8 },
         { "who": "folk", "post": "porter", "role": "peasant", "at": [0.65, 1.15], "face": [0.6, 1.3], "clips": ["Carrying", "PickUp_Table", "Wiping_Sweat"], "chance": 0.7 }
       ] },
-    "bridge": { "max_width": 0.6, "apart": 1.5, "room": 0.6, "span": 1.6, "apron": 0.25, "across": 2, "lift": 0.03, "half_width": 0.3 },
+    "bridge": { "max_width": 1.8, "apart": 1.5, "room": 0.6, "span": 1.6, "apron": 0.25, "across": 2, "lift": 0.03, "half_width": 0.3 },
     "ford": { "room": 0.6, "span": 1.4, "stone_gap": 0.12, "stones_out": 0.32,
       "pieces": [
         { "c": "boulder", "at": [-1.0, 0.5], "squash": [0.6, 0.6, 0.6], "turn": 180, "road": true },
