@@ -275,8 +275,17 @@ func square_ring(root: Node3D, center: Vector3, square_r: float, ways: Array, ki
 	var f := Vector2.ZERO
 	var prev_ang := -INF  # the last front stood (its angle, half its width): the alley between it and the next
 	var prev_half := 0.0
+	var gardens := _lens_gardens(root)  # [the way out from the square they stand toward, how many] (_lens_garden)
 	while walked < TAU * ring and placed < budget:
 		var step := 0.0
+		if kind == "" and int(gardens[1]) > 0:
+			var gw := _lens_garden(root, center, ring, ang + (half_prev + 0.01) / ring, gardens[0], ways, standing, lots)
+			if gw > 0.0:
+				gardens[1] = int(gardens[1]) - 1
+				ang += (half_prev + 0.01 + gw * 0.5) / ring  # to its middle: the next front stands flush past it
+				walked += half_prev + 0.01 + gw * 0.5
+				half_prev = gw * 0.5
+				prev_ang = -INF  # no alley across a garden
 		if kind == "":
 			kind = tb._tier_pick(rr, fronts, "square", 0.0, "square")  # the square's fronts: the town's richest
 			f = Real.footprint(kind)
@@ -770,6 +779,60 @@ func _ring_yard(root: Node3D, p: Vector3, f: Vector2, kind: String, ways: Array,
 		ry.append([pl, p, Vector3(face.x, 0, face.y), f, own_lot])
 		root.set_meta("ring_yards", ry)
 		return
+
+
+## Where the square's kitchen gardens go (towns.json plots.lens_garden; art target 01-town: fenced gardens of
+## cabbages beside the near houses, in the frame's lower left; g13-g14: every yard stood behind its house, out of the
+## town view's sight): [the way out from the square toward them, how many], from the lens the town view will take
+## (camera_rig.town_view), `turn` radians round from the lens's side toward the frame's right (negative: its left),
+## as market.<rank>.lens_turns turns a landmark. [Vector2.ZERO, 0] when there's none to lay.
+func _lens_gardens(root: Node3D) -> Array:
+	var lg: Dictionary = tb._plot_knobs().get("lens_garden", {})
+	var rig: Node = tb.get_parent().get("rig") if tb.get_parent() else null
+	if lg.is_empty() or int(lg.get("most", 0)) <= 0 or rig == null or not rig.has_method("town_view"):
+		return [Vector2.ZERO, 0]
+	var yaw: float = float(rig.town_view(root)[1])
+	var lens := Vector2(sin(yaw), cos(yaw))  # from the square toward the camera
+	var right := Vector2(lens.y, -lens.x)
+	var turn := float(lg.get("turn", -1.3))
+	return [lens * cos(turn) + right * sin(turn), int(lg.get("most", 0))]
+
+
+## A kitchen garden in the square's ring of fronts, in place of a house (towns.json plots.lens_garden: wide, deep,
+## spread): where the ring at angle `a` lies within `spread` radians of `toward` and the plot is clear of the streets,
+## the buildings standing and the lots, a house-less plot fronting the square goes to the plots' one yard layer
+## (meta ring_yards; towns.gd _yard: a low fence along its back and one side, the bed, the yard's green), its open
+## front on the square where the town view sees it. Returns the width it takes round the ring, 0 where none fits.
+func _lens_garden(root: Node3D, center: Vector3, ring: float, a: float, toward: Vector2, ways: Array, standing: Array, lots: Array) -> float:
+	var lg: Dictionary = tb._plot_knobs().get("lens_garden", {})
+	var w := float(lg.get("wide", 0.8))
+	var deep := float(lg.get("deep", 0.6))
+	var mid_a := a + w * 0.5 / ring
+	var out := Vector2(cos(mid_a), sin(mid_a))
+	if absf(out.angle_to(toward)) > float(lg.get("spread", 0.35)):
+		return 0.0
+	var face := -out  # toward the square
+	var tan := Vector2(-face.y, face.x)
+	var front := out * ring
+	var back := front - face * deep
+	var half := tan * w * 0.5
+	var body := PackedVector2Array([front - half, front + half, back + half, back - half])
+	var mid := (front + back) * 0.5
+	var mid3 := Vector3(mid.x, 0, mid.y)
+	if TownPlots.on_other_way(body, ways, -1, TownPlots.ROAD_HALF) or tb._on_road(mid3, w * 0.3):
+		return 0.0
+	if standing.any(func(o): return not Geometry2D.intersect_polygons(body, o).is_empty()):
+		return 0.0
+	if tb._crowded(lots, mid3, minf(w, deep) * 0.4) or not tb.terrain.is_land(center.x + mid3.x, center.z + mid3.z):
+		return 0.0
+	lots.append([mid3, minf(w, deep) * 0.4])  # its ground: the next front stands beside it, the fence panels round it
+	var hf := Vector2(w, 0.02)  # no house: the yard's front is the square's edge
+	var p := Vector3(front.x, 0, front.y) - Vector3(face.x, 0, face.y) * hf.y * 0.5
+	var pl := [Vector2(p.x, p.z), face, hf.x, hf.y, body, front.length(), "", "ring"]
+	var ry: Array = root.get_meta("ring_yards", [])
+	ry.append([pl, p, Vector3(face.x, 0, face.y), hf, lots.size() - 1])
+	root.set_meta("ring_yards", ry)
+	return w
 
 
 ## An alley between two neighbouring houses round the square (art target 01-town: cobbled lanes run out of the
