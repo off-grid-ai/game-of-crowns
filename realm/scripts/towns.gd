@@ -105,7 +105,7 @@ func _refresh_life(start: int) -> void:
 		var id: int = _life_queue.keys()[0]
 		var house: Dictionary = _life_queue[id]
 		_life_queue.erase(id)
-		if towns.has(id) and _near(towns[id]["node"], 1.0):
+		if towns.has(id) and _near(towns[id]["node"]):
 			life.update(towns[id]["node"], towns[id]["data"], house)
 
 
@@ -113,10 +113,10 @@ var _houses := {}  # city id -> its holder as last reported: a town's life is st
 var _near_at := 0
 
 
-## A town's life (its people and scenes; town_life.gd) comes and goes with the camera by the villagers' rule
-## (villagers.gd lived_in), the towns' buildings and dressing standing everywhere (fps: 2,700 people dressed in all
-## 38 towns at once). Staged towns.json life.lead further out than the folk, so it is up before the town comes into
-## view; freed at twice that, so a camera at the edge doesn't stage and free it over and over.
+## A town's life (its people and scenes; town_life.gd) is staged when its town is NEAR (view_tier.gd, the one
+## decider: the lens low, the town where it looks and on screen, with the tier's lead, so it is staged over frames
+## before it shows) and freed once it has been anything less for towns.json life.linger seconds, so a lens at a
+## tier's edge doesn't stage and free it over and over. The towns' buildings and dressing stand at every tier.
 func _life_near() -> void:
 	var now := Time.get_ticks_msec()
 	if now - _near_at < 250:
@@ -127,17 +127,24 @@ func _life_near() -> void:
 		if not is_instance_valid(node):
 			continue
 		var staged: bool = node.get_node_or_null("Life") != null and node.get_node("Life").has_meta("sig")  # a bare Life holds only growing houses
-		if _near(node, 1.0):
+		if _near(node):
+			_left.erase(id)
 			if not staged:
 				_life_queue[id] = _houses.get(id, {})
-		elif staged and not _near(node, 2.0):
-			life.unstage(node)
+		elif staged:
+			if not _left.has(id):
+				_left[id] = now
+			elif now - int(_left[id]) > int(Data.num("towns", "life.linger", 3.0) * 1000.0):
+				_left.erase(id)
+				life.unstage(node)
 
 
-## Whether a town is within the villagers' rule, `k` times towns.json life.lead past it.
-func _near(node: Node3D, k: float) -> bool:
-	var v: Node = get_parent().get("villagers") if get_parent() else null
-	return v == null or v.lived_in(node.global_position, float(Data.num("towns", "life.lead", 10.0)) * k)
+var _left := {}  # city id -> when its town stopped being NEAR, while its life still stands
+
+
+## Whether a town is NEAR (view_tier.gd), its room the town's reach.
+func _near(node: Node3D) -> bool:
+	return ViewTier.of(node.global_position, float(node.get_meta("reach", 3.0))) == ViewTier.NEAR
 
 
 ## Raise a queued town next, for someone who needs it now; await it to have it standing.
@@ -241,7 +248,7 @@ func _raise(best: int, job: Dictionary) -> void:
 	pt0 = Time.get_ticks_usec()
 	Engine.set_meta("stage", "towns.life")
 	_houses[best] = job["house"]
-	if _near(node, 1.0):  # a far town's life waits for the camera (_life_near)
+	if _near(node):  # a town not NEAR has its life staged when it is (_life_near)
 		life.update(node, job["c"], job["house"])
 	PerfTools.add("towns.life", Time.get_ticks_usec() - pt0)
 	# Each new town takes the season as it stands (snow on its roofs in winter).
@@ -2049,6 +2056,7 @@ func _foot_y(center: Vector3, off: Vector3, foot: Vector2, yaw: float) -> float:
 		lo = minf(lo, _ground_y(center, off + b * Vector3(c.x * foot.x, 0, c.z * foot.y)))
 	return lo - PROP_SINK
 const Data := preload("res://scripts/data.gd")
+const ViewTier := preload("res://scripts/view_tier.gd")  # how much of each town is alive (the one decider)
 static var PROP_SINK: float = Data.num("towns", "props.sink", 0.006)
 
 

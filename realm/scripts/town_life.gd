@@ -96,7 +96,7 @@ func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 	_staging = false
 
 
-## A town's life gone when the camera is far (towns.gd _life_near: the villagers' rule, villagers.gd lived_in): its
+## A town's life gone once its town is no longer NEAR (towns.gd _life_near, view_tier.gd): its
 ## people and scenes freed; its buildings and dressing stay. A staging of it under way stops (_gone).
 ## Its growing houses' sites stay (towns.gd _grow: each house waits on its own to stand), in a bare Life.
 func unstage(root: Node3D) -> void:

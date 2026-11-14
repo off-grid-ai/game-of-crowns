@@ -628,4 +628,4 @@ Switches (`--name`) go after `--` on the game's command line.
 - A forge's working floor, where its smiths stand inside its walls: `realm/data/towns.json` `forge.floor_half` (0.09: half the side of the open floor round each smith's post, ground.gd open_floor).
 - A grown town's new houses rising as building sites: `realm/data/towns.json` `grow.sites` (3: at most this many at once, the rest stand at once) and `grow.seasons` (2: seasons a new house takes to rise).
 - A town dressed over frames: `realm/data/towns.json` `life.slice_ms` (4: how long its life, step by step, and its scenes are staged each frame before the rest waits for the next).
-- A town's life (its people and scenes) staged ahead of the camera: `realm/data/towns.json` `life.lead` (10: how much further out than the villagers' view radius it is staged, so it is up before the town comes into view; freed at twice that).
+- A town's life (its people and scenes) staged only when its town is NEAR (view_tier.gd): `realm/data/towns.json` `life.linger` (3: seconds a town's life stays after its town stops being NEAR, so a lens at a tier's edge doesn't stage and free it over and over).

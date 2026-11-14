@@ -1,7 +1,7 @@
 {
   "_": "Town building knobs (towns.gd reads them). castle: where a great house's castle may stand when the first, old search (eight headings on the square's ring, all dry) finds no plot: headings around, rings out from the square (0 is the old ring; -1 hugs the square), sizes tried in order, and the share of the plot's edge that may stand over water if the keep's middle is dry.",
   "forge": {"floor_half": 0.09},
-  "life": {"slice_ms": 4, "lead": 10},
+  "life": {"slice_ms": 4, "linger": 3},
   "grow": {"_": "A town that grew is seen growing (towns.gd _grow): its new layout laid off-screen and only its new pieces added; at most this many of its new houses rise as building sites at once (town_life.raise_site), the rest stand at once; seasons, how many seasons a new house takes to rise.", "sites": 3, "seasons": 2},
   "_density": "density: how many houses a town raises (towns.gd _real_lots): base + per_size x its size, held between min and max, seat more at a great house's seat; crown: the crown's seat only (art target 01-town, plots shoulder to shoulder behind the square): extra houses.",
   "density": { "base": 14, "per_size": 3, "min": 16, "max": 40, "seat": 8, "crown": { "extra": 14 } },
