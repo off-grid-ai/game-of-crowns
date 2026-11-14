@@ -96,6 +96,32 @@ func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 	_staging = false
 
 
+## A town's life gone when the camera is far (towns.gd _life_near: the villagers' rule, villagers.gd lived_in): its
+## people and scenes freed; its buildings and dressing stay. A staging of it under way stops (_gone).
+## Its growing houses' sites stay (towns.gd _grow: each house waits on its own to stand), in a bare Life.
+func unstage(root: Node3D) -> void:
+	_waiting.erase(root.get_instance_id())
+	var life := root.get_node_or_null("Life")
+	if life == null or not life.has_meta("sig"):
+		return
+	_bare_life(root, life)
+	life.free()
+
+
+## A bare Life in `old`'s place, with `old`'s growing houses' sites (raise_site's "raising" holders) carried over:
+## a house rising season by season is the town's growth, not its life's scenes.
+static func _bare_life(root: Node3D, old: Node3D) -> Node3D:
+	old.name = "LifeGone"
+	var life := Node3D.new()
+	life.name = "Life"
+	life.set_meta("standing", PackedVector2Array())
+	root.add_child(life)
+	for n in old.get_children():
+		if n.has_meta("raising"):
+			n.reparent(life, true)
+	return life
+
+
 ## Waits for the next frame once this frame's share (towns.json life.slice_ms) is spent; each step timed for the
 ## frame-cost probe (perf_tools.gd, GOC_PERF_PROBE; off in play) as life.<step>.
 func _pace(step: String) -> void:
@@ -168,12 +194,15 @@ func _stage_town(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 				if i >= a.size() or i >= b.size() or a[i] != b[i]:
 					moved.append("%d:%s->%s" % [i, a[i] if i < a.size() else "", b[i] if i < b.size() else ""])
 			print("LIFE-RESTAGE %s: %s" % [root.get_meta("title", ""), ", ".join(moved)])
-		life.free()
-	life = Node3D.new()
-	life.name = "Life"
+		var old := life
+		life = _bare_life(root, old)  # its growing houses' sites carried over
+		old.free()
+	else:
+		life = Node3D.new()
+		life.name = "Life"
+		life.set_meta("standing", PackedVector2Array())
+		root.add_child(life)
 	life.set_meta("sig", sig)
-	life.set_meta("standing", PackedVector2Array())
-	root.add_child(life)
 	var center := root.position
 	var color := Color.from_string(String(house.get("color", "#888888")), Color.GRAY)
 	_house_col = Color.from_string(String(house.get("color", "#8a2a1e")), Color(0.55, 0.16, 0.12))
@@ -850,6 +879,7 @@ func raise_site(town_node: Node3D, plot: Transform3D, building: String, seasons:
 	rng.seed = hash(building) + int(base.x * 100.0)
 	var holder := Node3D.new()  # the whole site, freed at once when it's done
 	holder.name = "Raising"
+	holder.set_meta("raising", true)  # kept when the town's life is staged anew or freed (_bare_life)
 	life.add_child(holder)
 	# Its builders keep their set moves: _mind would join them to whichever town was dressed last.
 	var was_on := _town_on

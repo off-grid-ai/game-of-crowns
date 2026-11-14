@@ -45,6 +45,7 @@ func sync(houses: Dictionary) -> void:
 		var id := int(c["id"])
 		seen[id] = true
 		var house: Dictionary = houses.get(int(c["owner"]), {})
+		_houses[id] = house  # its life is staged with it when the camera comes near (_life_near)
 		var sig := "%d|%d|%s|%s" % [int(c["size"]), int(c["owner"]), str(c["buildings"]), str(c["capital"])]
 		if towns.has(id):
 			# A town stands once raised: it is never torn down and raised again in play (Mac: the hitches were
@@ -98,14 +99,45 @@ var _raising_since := 0
 var _raised := 0
 
 
-## Town life a few towns at a time, until the frame's budget is spent.
+## Town life a few towns at a time, until the frame's budget is spent; only near the camera (_life_near).
 func _refresh_life(start: int) -> void:
 	while not _life_queue.is_empty() and Time.get_ticks_msec() - start < BUILD_BUDGET_MS:
 		var id: int = _life_queue.keys()[0]
 		var house: Dictionary = _life_queue[id]
 		_life_queue.erase(id)
-		if towns.has(id):
+		if towns.has(id) and _near(towns[id]["node"], 1.0):
 			life.update(towns[id]["node"], towns[id]["data"], house)
+
+
+var _houses := {}  # city id -> its holder as last reported: a town's life is staged with it when the camera comes near
+var _near_at := 0
+
+
+## A town's life (its people and scenes; town_life.gd) comes and goes with the camera by the villagers' rule
+## (villagers.gd lived_in), the towns' buildings and dressing standing everywhere (fps: 2,700 people dressed in all
+## 38 towns at once). Staged towns.json life.lead further out than the folk, so it is up before the town comes into
+## view; freed at twice that, so a camera at the edge doesn't stage and free it over and over.
+func _life_near() -> void:
+	var now := Time.get_ticks_msec()
+	if now - _near_at < 250:
+		return
+	_near_at = now
+	for id in towns:
+		var node: Node3D = towns[id]["node"]
+		if not is_instance_valid(node):
+			continue
+		var staged: bool = node.get_node_or_null("Life") != null and node.get_node("Life").has_meta("sig")  # a bare Life holds only growing houses
+		if _near(node, 1.0):
+			if not staged:
+				_life_queue[id] = _houses.get(id, {})
+		elif staged and not _near(node, 2.0):
+			life.unstage(node)
+
+
+## Whether a town is within the villagers' rule, `k` times towns.json life.lead past it.
+func _near(node: Node3D, k: float) -> bool:
+	var v: Node = get_parent().get("villagers") if get_parent() else null
+	return v == null or v.lived_in(node.global_position, float(Data.num("towns", "life.lead", 10.0)) * k)
 
 
 ## Raise a queued town next, for someone who needs it now; await it to have it standing.
@@ -152,6 +184,7 @@ func _process_timed(_delta: float) -> void:
 	if _raising:
 		return  # a town is being raised over frames (_raise)
 	if _queue.is_empty():
+		_life_near()
 		_refresh_life(Time.get_ticks_msec())
 		return
 	var start := Time.get_ticks_msec()
@@ -207,7 +240,9 @@ func _raise(best: int, job: Dictionary) -> void:
 	PerfTools.add("towns.add", Time.get_ticks_usec() - pt0)
 	pt0 = Time.get_ticks_usec()
 	Engine.set_meta("stage", "towns.life")
-	life.update(node, job["c"], job["house"])
+	_houses[best] = job["house"]
+	if _near(node, 1.0):  # a far town's life waits for the camera (_life_near)
+		life.update(node, job["c"], job["house"])
 	PerfTools.add("towns.life", Time.get_ticks_usec() - pt0)
 	# Each new town takes the season as it stands (snow on its roofs in winter).
 	Engine.set_meta("stage", "towns.season")

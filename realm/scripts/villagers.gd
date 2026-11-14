@@ -228,9 +228,11 @@ func _folk_route(n: Node) -> PackedVector2Array:
 
 ## Whether a place is close enough to the lens to have its people about: the camera below the realm's height and the
 ## place within VIEW_RADIUS of where it looks. The one rule for every crowd that comes and goes with the camera (the
-## towns' folk here, the castles' in castle_life.gd): nobody is made or kept where nobody can see them.
-func lived_in(p: Vector3) -> bool:
-	return rig.distance < 60.0 and p.distance_to(rig.target) < VIEW_RADIUS
+## towns' folk here, the castles' in castle_life.gd, a town's life and scenes in towns.gd): nobody is made or kept
+## where nobody can see them. `lead`: that much further out, for what is made ahead of the eye (a town's life
+## staged over frames before it comes into view).
+func lived_in(p: Vector3, lead := 0.0) -> bool:
+	return rig.distance < 60.0 + lead and p.distance_to(rig.target) < VIEW_RADIUS + lead
 
 
 func _refresh() -> void:
