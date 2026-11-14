@@ -135,6 +135,13 @@ func banners() -> Array:
 	return v if v is Array else []
 
 
+## The King's battles as result cards, newest first (/world battles, bridge battles.js; the realm blackboard's "battles"
+## slice): [{id, turn, date, x, y, place, sides: [{house, name, men, lost, kinds}] the crown's first, victor, crown}].
+func battles() -> Array:
+	var v: Variant = realm.get_var(&"battles", [], false)
+	return v if v is Array else []
+
+
 ## The houses by their Freeciv player id: pid -> the house record (name, colour, sigil, crown...).
 func houses_by_id() -> Dictionary:
 	var out := {}
@@ -269,6 +276,7 @@ func _reduce_hosts(world: Dictionary) -> void:
 	realm.set_var(&"threat", _dict(world.get("crown")).get("threat"))  # the director's live threat, or null (bridge director.js)
 	realm.set_var(&"hosts", world.get("hosts") if world.get("hosts") is Array else [])  # the King's hosts and their orders (bridge hosts.js)
 	realm.set_var(&"banners", world.get("banners") if world.get("banners") is Array else [])  # houses' men on the road to join the King (bridge hosts.js)
+	realm.set_var(&"battles", world.get("battles") if world.get("battles") is Array else [])  # the King's battles' result cards, newest first (bridge battles.js)
 	realm.set_var(&"armies", _armies(world))  # every house's hosts in the field (the map's banners, map_look.gd)
 
 

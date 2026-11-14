@@ -74,6 +74,7 @@ func _ready() -> void:
 	_dots_rest = _dots(Color(gold, Data.num(FILE, "route.others_alpha", 0.4)))
 	_ghosts = _dots(Color.from_string(String(Data.value(FILE, "face.color", "#f0c878")), T.ACCENT), Data.num(FILE, "face.ghost", 0.12))
 	_build_card()
+	add_child(load("res://scripts/battle_card.gd").new(main))  # the King's battles, when they are over (battle_card.gd)
 
 
 # --- what the bridge says --------------------------------------------------------------------
