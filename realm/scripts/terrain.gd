@@ -161,6 +161,14 @@ func set_season(name: String, towns: Array = [], settle := 10.0) -> void:
 		# Leaves turn and grass dulls over the settle, never in a frame. A tree with its own turn
 		# (assets.json woods.kit.seasons) takes that instead.
 		create_tween().tween_property(mat, "albedo_color", (mat.get_meta("summer", mat.albedo_color) as Color) * Forest.tint(mat), settle)
+		var was: Color = mat.get_meta("turn", Color(0, 0, 0, 0))
+		var goal := Forest.turn_of(mat)
+		if was.a <= 0.0:
+			was = Color(goal.r, goal.g, goal.b, 0.0)  # coming in from none: its colour from the start, only the amount grows
+		elif goal.a <= 0.0:
+			goal = Color(was.r, was.g, was.b, 0.0)  # going to none: the colour held while it fades
+		var leaf_kit: GDScript = Forest  # (a lambda can't see a local const)
+		create_tween().tween_method(func(t: float): leaf_kit.set_turn(mat, was.lerp(goal, t)), 0.0, 1.0, settle)
 		_leaf_snow(mat, String(mat.get_meta("leaf", "")) != "grass" and s["snow"] > 0.0)
 	if s["snow"] > 0.0 and OVERLAY_SNOW and vegetation:
 		for mmi in vegetation.batches:

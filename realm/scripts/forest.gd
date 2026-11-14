@@ -215,14 +215,53 @@ static func leaves(mat: Material, path: String, kind: String) -> Material:
 	var tints: Dictionary = (Data.value("assets", "woods.kit.seasons", {}) as Dictionary).get(path.trim_prefix("res://assets/"), {})
 	var by := {}
 	for s in tints:
+		if s == "turn":
+			continue
 		var t: Array = tints[s]
 		by[s] = Color(float(t[0]), float(t[1]), float(t[2]))
 	c.set_meta("seasons", by)
+	c.set_meta("turns", tints.get("turn", {}))
 	c.set_meta("summer", c.albedo_color)
+	# The leaves' turn (g30 seasons: a multiply on deep green leaves stayed green in autumn): a colour mixed over the
+	# painted leaves by an amount, through the material's own detail layer (a flat colour and a flat mask, each a
+	# one-colour texture this material owns), so a crown goes amber or ochre and keeps some of its painted grain.
+	c.detail_enabled = true
+	c.detail_blend_mode = BaseMaterial3D.BLEND_MODE_MIX
+	c.detail_albedo = _flat(Color.BLACK)
+	c.detail_mask = _flat(Color.BLACK)
+	set_turn(c, turn_of(c) if season != "" else Color(0, 0, 0, 0))
 	if season != "":
 		c.albedo_color = c.albedo_color * tint(c)  # made after the land turned (a town built later): in its season at once
 	marked.append(c)
 	return c
+
+
+## A one-colour texture (a leaf material's turn colour or its mask), changed in place by set_turn.
+static func _flat(col: Color) -> GradientTexture2D:
+	var g := Gradient.new()
+	g.offsets = PackedFloat32Array([0.0])
+	g.colors = PackedColorArray([col])
+	var t := GradientTexture2D.new()
+	t.width = 4
+	t.height = 4
+	t.gradient = g
+	return t
+
+
+## A leaf material's turn now: rgb the colour, a how much of it lies over the painted leaves.
+static func set_turn(mat: BaseMaterial3D, turn: Color) -> void:
+	(mat.detail_albedo as GradientTexture2D).gradient.set_color(0, Color(turn.r, turn.g, turn.b))
+	(mat.detail_mask as GradientTexture2D).gradient.set_color(0, Color(turn.a, turn.a, turn.a))
+	mat.set_meta("turn", turn)
+
+
+## A leaf material's turn in the season: its model's own (woods.kit.seasons.<model>.turn), else its kind's
+## (woods.kit.turn.<season>.<kind>), else none.
+static func turn_of(mat: BaseMaterial3D) -> Color:
+	var t: Variant = (mat.get_meta("turns", {}) as Dictionary).get(season, null)
+	if t == null:
+		t = ((Data.value("assets", "woods.kit.turn", {}) as Dictionary).get(season, {}) as Dictionary).get(String(mat.get_meta("leaf", "")), null)
+	return Color(float(t[0]), float(t[1]), float(t[2]), float(t[3])) if t is Array and (t as Array).size() >= 4 else Color(0, 0, 0, 0)
 
 
 ## Which season's tint a model's leaves take (terrain.gd SEASONS): "pine" for the woods' pines and the other
