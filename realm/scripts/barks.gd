@@ -39,7 +39,13 @@ func lord(pid: int) -> void:
 ## again, curt (barks.json host, host_annoyed). Called by host_command.gd.
 func host(kind: String, id: int) -> void:
 	var pestered := kind == "select" and _pestered("host%d" % id)
-	var pool: Array = _d.get("host_annoyed", []) if pestered else (_d.get("host", {}) as Dictionary).get(kind, [])
+	var lines = (_d.get("host", {}) as Dictionary).get(kind, [])
+	if lines is Dictionary:  # chosen: by what the host is doing (its order's kind; at ease with none)
+		var cmd: Node = main.get_node_or_null("HostCommand")
+		var order = (cmd.host(id) if cmd else {}).get("order")
+		var doing := String((order as Dictionary).get("kind", "ease")) if order is Dictionary else "ease"
+		lines = (lines as Dictionary).get(doing, (lines as Dictionary).get("ease", []))
+	var pool: Array = _d.get("host_annoyed", []) if pestered else (lines as Array)
 	_say("The captain", pool, {"name": "The captain", "gender": "male"})
 
 

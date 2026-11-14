@@ -1,5 +1,5 @@
 {
-"_": "Every click answers (Warcraft II's replies, Stronghold's lords; fun audit item 2), grounded: a lord answers like a lord, by their favour band; pressed again and again they grow curt, in character, never a joke. The King's own host answers too (barks.host): its captain on being chosen (host.select) and on an order (host.order), curt past annoyed_after (host_annoyed). Tune here, not in code.",
+"_": "Every click answers (Warcraft II's replies, Stronghold's lords; fun audit item 2), grounded: a lord answers like a lord, by their favour band; pressed again and again they grow curt, in character, never a joke. The King's own host answers too (barks.host): its captain on being chosen (host.select, by what the host is doing: its order's kind, ease with none) and on an order (host.order), curt past annoyed_after (host_annoyed). Tune here, not in code.",
 "annoyed_after": 3,
 "click_memory_sec": 8,
 "no_repeat": 10,
@@ -68,7 +68,8 @@
 "Forgive me, my King, the day is short."
 ],
 "host": {
-"select": [
+"select": {
+"ease": [
 "Your Grace.",
 "The host stands ready.",
 "Where to, my King?",
@@ -76,6 +77,41 @@
 "We're with you, Sire.",
 "Name the road, Your Grace."
 ],
+"march": [
+"On the road, Your Grace.",
+"We keep the pace, Sire.",
+"The men march well today.",
+"Another day's road, my King."
+],
+"attack": [
+"We go at them, Sire.",
+"Steel is out, Your Grace.",
+"They'll break, my King.",
+"Into them, on your word."
+],
+"besiege": [
+"The walls hold, for now, Sire.",
+"We have them shut in, Your Grace.",
+"They'll starve before we do.",
+"The engines are working, my King."
+],
+"hold": [
+"We hold here, Sire.",
+"Nobody passes, Your Grace.",
+"Standing firm, my King.",
+"Dug in and waiting."
+],
+"garrison": [
+"The walls are ours to keep, Sire.",
+"Behind good stone, Your Grace.",
+"The town sleeps easy with us here."
+],
+"return": [
+"Homeward, Your Grace.",
+"The men want their beds, Sire.",
+"Back to Kingsmere, my King."
+]
+},
 "order": [
 "At once, Your Grace.",
 "We march.",
