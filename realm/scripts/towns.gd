@@ -96,6 +96,13 @@ static func _shows(was: Dictionary, c: Dictionary) -> bool:
 var _queue := {}  # city id -> {c, house, sig, was?}: towns waiting to be built, or a standing one's new pieces to lay
 var _life_queue := {}  # city id -> house: towns whose life wants refreshing
 const BUILD_BUDGET_MS := 4  # per frame: a town's raise waits a frame when it is spent (_pace; fps4: 12 left 30-40 ms steps)
+## Behind the loading screen there is nothing to keep smooth: every town is raised there, before play (Mac: "when
+## you're loading, you should be able to build out the entire town"), with most of each frame (towns.json load_ms; the
+## storybook's pages still turn). main sets it while the loading screen covers the realm.
+var loading := false
+static var LOAD_MS: int = int(Data.num("towns", "load_ms", 50.0))
+func _budget() -> int:
+	return LOAD_MS if loading else BUILD_BUDGET_MS
 var _graded_at := 0
 var _raising_since := 0
 var _raised := 0
@@ -182,6 +189,15 @@ func ensure(id: int) -> void:
 ## True while towns are still being raised.
 func building() -> bool:
 	return not _queue.is_empty() or _raising
+
+
+## How many of the towns the world names stand, of how many: the loading screen's line while they rise.
+func standing() -> Vector2i:
+	var n := 0
+	for c in _cities:
+		if towns.has(int(c["id"])) and not _queue.has(int(c["id"])):
+			n += 1
+	return Vector2i(n, _cities.size())
 
 
 ## Every town the world names standing, with its life set up: what the loading screen waits for, so no town is
@@ -2146,10 +2162,10 @@ var _step_at := 0  # when the last build step ended (GOC_PERF_PROBE: a step over
 func _pace() -> void:
 	if PerfTools.probing:
 		var now := Time.get_ticks_usec()
-		if _step_at > 0 and now - _step_at > BUILD_BUDGET_MS * 1000:
+		if _step_at > 0 and now - _step_at > _budget() * 1000:
 			var at: Dictionary = get_stack()[1] if get_stack().size() > 1 else {}
 			PerfTools.add("build@%s:%d" % [String(at.get("source", "?")).get_file(), int(at.get("line", 0))], now - _step_at)
-	if Time.get_ticks_msec() - _slice > BUILD_BUDGET_MS:
+	if Time.get_ticks_msec() - _slice > _budget():
 		await get_tree().process_frame
 		_slice = Time.get_ticks_msec()
 	_step_at = Time.get_ticks_usec()

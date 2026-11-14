@@ -245,6 +245,9 @@ func _ready() -> void:
 				ui.house_opened.emit(int(spec["house"]))))
 	intro = preload("res://scripts/intro.gd").new()
 	intro.ready_check = func(): return terrain.built and towns != null and towns.settled()  # every town and its life standing
+	intro.forming = func() -> String:
+		var n: Vector2i = towns.standing() if towns else Vector2i.ZERO
+		return "The towns are rising: %d of %d" % [n.x, n.y] if terrain.built and n.y > 0 else "The realm is forming…"
 	add_child(intro)
 	lore = preload("res://scripts/lore.gd").new()
 	lore.person_written.connect(func(p, house):

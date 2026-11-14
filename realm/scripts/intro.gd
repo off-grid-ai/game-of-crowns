@@ -43,6 +43,7 @@ const TIPS := [
 
 var say := Callable()  # (text) -> void: a voice for each page; unset, the intro is read, not narrated
 var ready_check := Callable()  # () -> bool: the realm is built and can be shown
+var forming := Callable()  # () -> String: what of the realm is still rising, said under the pages while it does
 var watching := false  # watched from the menu, not the loading screen: it ends after the last page, and Esc leaves
 var _pages: Array = []  # [still, title, line, house, keys, atlas uv, atlas zoom]
 var _page := -1
@@ -232,7 +233,7 @@ func _process(delta: float) -> void:
 	if visible and _hint:
 		# One quiet line, in sentence case, not a strip of keys in capitals (the audit; no key strips on screen):
 		# a click still turns the page and Esc still returns to the menu.
-		var words := "" if watching else "Click to begin" if _is_ready() else "The realm is forming…"
+		var words: String = "" if watching else "Click to begin" if _is_ready() else (forming.call() if forming.is_valid() else "The realm is forming…")
 		_hint.text = words
 
 

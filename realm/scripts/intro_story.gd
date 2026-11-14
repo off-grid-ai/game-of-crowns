@@ -73,5 +73,8 @@ func _tell_the_story() -> void:
 				c.play()
 			if main.hand_prompts:
 				main.hand_prompts.landed(), CONNECT_ONE_SHOT)
+	# Behind the loading screen the towns rise with most of each frame (towns.gd loading), never in play.
+	main.towns.loading = not _back_to_menu
+	main.intro.finished.connect(func(): main.towns.loading = false, CONNECT_ONE_SHOT)
 	main.intro.watching = _back_to_menu
 	main.intro.play(houses, seats)
