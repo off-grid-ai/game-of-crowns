@@ -56,9 +56,10 @@ func _build_ticker() -> void:
 	_ticker = VBoxContainer.new()
 	_ticker.anchor_top = 1.0
 	_ticker.anchor_bottom = 1.0
-	_ticker.offset_left = 16
-	_ticker.offset_top = -130
-	_ticker.offset_bottom = -16
+	_ticker.offset_left = 12  # the corner's column, with the notices (news_chips.gd _place_stack places both)
+	_ticker.offset_top = -12
+	_ticker.offset_bottom = -12
+	_ticker.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	_ticker.alignment = BoxContainer.ALIGNMENT_END
 	_ticker.add_theme_constant_override("separation", 5)
 	_ticker.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -136,6 +137,7 @@ func _tick(e: Dictionary, loss: bool) -> void:
 	var tw := l.create_tween()
 	tw.tween_interval(14.0)
 	tw.tween_property(l, "modulate:a", 0.0, 1.5)
+	tw.tween_callback(l.queue_free)  # gone, so the notices above settle down
 
 
 static var _dot_tex: Texture2D

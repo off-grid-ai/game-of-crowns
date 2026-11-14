@@ -259,6 +259,21 @@ func _place_stack(delta: float) -> void:
 		var r := ui._town_panel.get_global_rect()
 		if r.position.x < _stack.offset_right:
 			foot = r.position.y - ui.get_viewport().get_visible_rect().size.y - 10.0
+	# One column in the corner, as CK3's and AoE IV's feed: the realm's news (the ticker,
+	# chronicle_panel.gd) at the foot, newest lowest; the notices stand on top of it, never over it.
+	var tick: VBoxContainer = ui.chronicle._ticker
+	if tick and tick.visible:
+		tick.offset_bottom = foot
+		var h := 0.0
+		var n := 0
+		for c in tick.get_children():
+			if not c.is_queued_for_deletion() and c.modulate.a > 0.01:
+				h += c.get_combined_minimum_size().y
+				n += 1
+		if n > 0:
+			h += tick.get_theme_constant("separation") * (n - 1)
+			foot -= h + T.GAP
+		tick.offset_top = tick.offset_bottom - h
 	_stack.offset_bottom = foot
 	_stack.visible = not holding and not ui._interlude_on
 	for row in _stack.get_children():
