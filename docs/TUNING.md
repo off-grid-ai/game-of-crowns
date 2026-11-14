@@ -147,6 +147,7 @@ Switches (`--name`) go after `--` on the game's command line.
 - The trees' trunk colour, a multiply on the painted bark (`realm/data/assets.json` woods.kit.bark).
 - How much a ploughed field's painted crop covers the soil under it (`realm/data/countryside.json` field_mix; lower lets more ground show).
 - How much of each tree's crown holds as the camera draws back (`realm/data/forest.json` lod_bias; higher is fuller further out, at some frame cost).
+- How soon painted ground (roads, fields, squares, worn paths) fades out on a steep bank (`realm/data/ground.json` paint.normal_fade; 0 never).
 - The coast: how far the beach runs above the waterline and which painting it blends through (dirt, no outline), and the surf at the shore: `realm/data/ground.json`: `beach.top`, `surf`.
 - How far out the land keeps its fine shape (Terrain3D's rings round the lens; too coarse and a lake's low shore sinks under the water at the mid zoom): `realm/data/ground.json`: `mesh.size`, `mesh.lods`.
 - From what distance the sea's colour stops reading the depth to its bed (nearer shows clear shallows, but the bed's coarser rings show as seams further out): `realm/data/look.json`: `sea.depth_fade`.

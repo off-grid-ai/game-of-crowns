@@ -877,6 +877,10 @@ func paint(parent: Node3D, tex: Texture2D, at: Vector3, size: Vector2, yaw := 0.
 	d.size = Vector3(size.x, depth, size.y)
 	d.upper_fade = 0.0
 	d.lower_fade = 0.0
+	# Fades where the ground turns steep under it (ground.json paint.normal_fade, Godot's Decal.normal_fade): projected
+	# straight down, a field or track laid by a bank smeared its paint in long streaks down the slope (g38 siege: ochre
+	# streaks down the moat's banks).
+	d.normal_fade = PAINT_STEEP
 	d.position = at
 	d.rotation.y = yaw
 	parent.add_child(d)
@@ -888,6 +892,7 @@ func paint(parent: Node3D, tex: Texture2D, at: Vector3, size: Vector2, yaw := 0.
 ## Painted ground under winter's snow (ground.json winter.paint: how much of a road's, a square's, a field's or a worn
 ## path's paint the snow hides at full cover; g25 raid: the worn paths glowed orange through the snow): each decal's
 ## own mix thinned as the land's snow lies (land3d.gd _set_snow), so the tracks show as trodden lines in the snow.
+static var PAINT_STEEP: float = preload("res://scripts/data.gd").num("ground", "paint.normal_fade", 0.0)
 static var PAINT_SNOW: float = preload("res://scripts/data.gd").num("ground", "winter.paint", 0.75)
 var _painted: Array = []
 var _paint_snow := 0.0
