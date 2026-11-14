@@ -325,6 +325,7 @@ Switches (`--name`) go after `--` on the game's command line.
 - A fair (a glad town's market day): the dancers round the well and the minstrels, how many, how far out: `realm/data/town_scenes.json` the `fair` row; more children then (`kids_play` `n.fair`); where it ranks (`realm/data/works.json` `priority`).
 - A plague town: the share of its folk who keep indoors, how many doors round the square bear the red cross, how far out, its colour and size: `realm/data/towns.json` `plague`; no errand-walkers or stall buyers then (`realm/data/town_scenes.json` `errands` and `stalls` rows' `plague`).
 - How full the stalls' piles of goods stand as the town fares (bare in hunger, thin when lean or short, piled high on market day, at a fair, in good times, with autumn's stores): `realm/data/moods.json` each state's `pile_full`; otherwise `realm/data/crowd.json` `square_agents.pile.full`.
+- A town the rebels hold: how many of the lord's standards lie torn down on its square, and how far from the well: `realm/data/town_scenes.json` the `rebel_host` row's `torn`, `torn_from`.
 - The roadside's people (inns, hamlets, camps, shrines, tolls) now think on the same minds: each `life` row's `post` in `realm/data/roadside.json` (no post: the old clip timer). Check it all with `tools/mind_probe.gd` and `tools/works_probe.gd`.
 
 ## The town as art target town-b (the crown's seat dense, mixed roofs, warm walls, cobbles, green)
