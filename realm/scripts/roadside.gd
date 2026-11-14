@@ -209,8 +209,12 @@ func _raise(s: Dictionary) -> void:
 		"hamlet":
 			_hamlet(node, s, k, rng)
 		_:
+			var made := {}  # component -> its first piece standing (a sign hangs over the one the kind names)
 			for p in k.get("pieces", []):
-				_piece(node, s, p, rng)
+				var n := _piece(node, s, p, rng)
+				if n and not made.has(String(p.get("c", ""))):
+					made[String(p.get("c", ""))] = n
+			s["made"] = made
 	for sm in k.get("smoke", []):
 		_smoke(node, _world(s, float(sm[0]), float(sm[1])) + Vector3(0, float(sm[2]), 0))
 	for f in k.get("fire", []):
@@ -292,13 +296,15 @@ func _smoke(node: Node3D, at: Vector3) -> void:
 	node.add_child(gpu)
 
 
-## The inn's name over its door, read only close by: the realm's one wayside-inn sign (roads.gd builds none).
+## The inn's name over its roof, read only close by: the realm's one wayside-inn sign (roads.gd builds none). It hangs
+## centred over the piece the kind names (sign.over: the tavern), where that piece stands, at any yaw (Mac: "not
+## centered": measured out from the road, it hung over the grass in front of the inn); none if that piece didn't stand.
 func _sign(node: Node3D, s: Dictionary, k: Dictionary, rng: RandomNumberGenerator) -> void:
 	var names: Array = k.get("names", [])
-	if names.is_empty():
+	var over: Node3D = (s.get("made", {}) as Dictionary).get(String(k.get("over", "")))
+	if names.is_empty() or over == null:
 		return
-	var at_v: Array = k.get("at", [0, 0.4])
-	var w := _world(s, float(at_v[0]), float(at_v[1]))
+	var w := over.position
 	var l := Label3D.new()
 	l.text = String(names[rng.randi() % names.size()])
 	l.font_size = int(k.get("font", 34))

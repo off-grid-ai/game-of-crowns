@@ -50,7 +50,7 @@
       ],
       "smoke": [[0.2, 1.25, 0.9]],
       "fire": [[1.5, 0.95]],
-      "sign": { "on": true, "at": [0.0, 0.6], "lift": 1.1, "near": 1.6, "far": 14.0, "font": 34, "pixel": 0.003,
+      "sign": { "on": true, "over": "tavern", "lift": 1.1, "near": 1.6, "far": 14.0, "font": 34, "pixel": 0.003,
         "names": ["The Crossed Keys", "The Drowned Stag", "The King's Rest", "The Broken Wheel", "The Black Ewe", "The Wayfarer", "The Last Lantern", "The Ploughman's Ease", "The Three Barrels", "The Bell and Bough", "The Mended Cart", "The Sleeping Hound", "The Shepherd's Crook", "The Grey Mare", "The Red Lion", "The Old Ford"] },
       "life": [
         { "who": "horse", "at": [1.05, 0.66], "face": [1.05, 1.2] },
