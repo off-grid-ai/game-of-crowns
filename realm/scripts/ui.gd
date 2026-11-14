@@ -52,6 +52,7 @@ static func ui_num(path: String, fallback: float) -> float:
 
 
 const Awareness := preload("res://scripts/awareness.gd")  # the realm's rules as the bridge sends them (season length, bands)
+const PerfTools := preload("res://scripts/perf_tools.gd")  # the slow-frame log (GOC_PERF_PROBE)
 const Features := preload("res://scripts/features.gd")
 const T := preload("res://scripts/theme.gd")
 const Keys := preload("res://scripts/keys.gd")
@@ -1196,14 +1197,24 @@ func set_sigil(rect: TextureRect, house: Dictionary) -> void:
 
 func set_world(houses: Dictionary) -> void:
 	var st: Node = Awareness.store()
+	var t_ui_effects := Time.get_ticks_usec()
 	_tell_effects(st.rec("effects", []))
+	PerfTools.add("ui.effects", Time.get_ticks_usec() - t_ui_effects)
+	var t_ui_standing := Time.get_ticks_usec()
 	houses_drawer._read_standing()
+	PerfTools.add("ui.standing", Time.get_ticks_usec() - t_ui_standing)
 	purse = int(st.rec("crown", {}).get("treasury", 0))  # the court's orders check the purse
+	var t_ui_rank := Time.get_ticks_usec()
 	_rank_houses(st.rec("players", []), st.rec("fallen", []))
+	PerfTools.add("ui.rank", Time.get_ticks_usec() - t_ui_rank)
+	var t_ui_omens := Time.get_ticks_usec()
 	omens.read(float(st.rec("peace", 1.0)), float((st.rec("crown", {}) as Dictionary).get("treasury", -1)) if st.rec("crown") != null else -1.0)
+	PerfTools.add("ui.omens", Time.get_ticks_usec() - t_ui_omens)
 	for pid in houses:
 		house_by_name[String(houses[pid].get("name", ""))] = houses[pid]
+	var t_ui_reign := Time.get_ticks_usec()
 	set_reign(st.rec("reign", {}))
+	PerfTools.add("ui.reign", Time.get_ticks_usec() - t_ui_reign)
 	var c: Dictionary = st.rec("crown", {})
 	purse = int(c.get("treasury", 0))
 	# The realm's report can be older than the King's last word: until it
@@ -1215,8 +1226,12 @@ func set_world(houses: Dictionary) -> void:
 		_tithe_asked = -1.0
 	town_card._decrees = c.get("decrees", {})
 	town_card._favour_wait = c.get("favourWait", {})
+	var t_ui_top_bar := Time.get_ticks_usec()
 	top_bar._show_world(c)  # the bar's numbers and the reign's line (top_bar.gd)
+	PerfTools.add("ui.top_bar", Time.get_ticks_usec() - t_ui_top_bar)
+	var t_ui_houses := Time.get_ticks_usec()
 	houses_drawer._fill_houses()
+	PerfTools.add("ui.houses", Time.get_ticks_usec() - t_ui_houses)
 
 
 # --- the town card -----------------------------------------------------------------------
