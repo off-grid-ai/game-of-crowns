@@ -7,11 +7,13 @@
  "speed": { "_": "+ and - (main.gd _step_speed): steps are the seconds a season lasts, slowest first (the bridge holds them within pace.json's fastest and slowest); words: what the King hears at each step; at either end the same word again.",
   "steps": [120, 80, 40, 20, 10],
   "words": ["The seasons pass slowly.", "The seasons take their time.", "The seasons keep their pace.", "The seasons hurry.", "The seasons fly."] },
- "settings": { "_": "Settings' game section (title.gd _game_settings; Total War: Warhammer III's Game tab): head; size and sizes [label, interface scale] (main.gd ui_scale, 0.6..1.8); speed and speeds, one name per speed.steps entry.",
+ "settings": { "_": "Settings' game section (title.gd _game_settings; Total War: Warhammer III's Game tab): head; size and sizes [label, interface scale] (main.gd ui_scale, 0.6..1.8); speed and speeds, one name per speed.steps entry; cam and cams [label, camera speed] (settings camera_speed, camera_rig.gd _speed).",
   "head": "The game",
   "size": "Size of the words on screen",
   "sizes": [["Small", 0.85], ["Normal", 1.0], ["Large", 1.2], ["Largest", 1.4]],
   "speed": "How fast the seasons pass",
-  "speeds": ["Slowly", "At ease", "Steady", "Briskly", "Fast"] },
+  "speeds": ["Slowly", "At ease", "Steady", "Briskly", "Fast"],
+  "cam": "How fast the camera moves",
+  "cams": [["Slow", 0.6], ["Normal", 1.0], ["Fast", 1.6]] },
  "no_host": "The King has no host in the field."
 }

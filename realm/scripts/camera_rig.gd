@@ -13,6 +13,7 @@ signal overview  # drawn back past OVERVIEW: the painted map takes over from her
 ## Past this the land can't be read (towns are smudges), so zooming out hands
 ## over to the realm's painted map (main._overview) instead of going higher.
 const Data := preload("res://scripts/data.gd")  # the one loader of realm/data (data.gd)
+const Settings := preload("res://scripts/settings.gd")  # the player's camera speed (Settings, the game section)
 static var OVERVIEW: float = preload("res://scripts/data.gd").num("camera", "rig.overview", 60.0)  # camera.json rig.overview
 const NavGround := preload("res://scripts/nav_ground.gd")  # what a town's life has set down
 
@@ -100,10 +101,10 @@ func nudge(action: String) -> void:
 			if goal_distance >= OVERVIEW * 0.999:
 				overview.emit()
 			goal_distance = minf(minf(max_distance, OVERVIEW), goal_distance * 1.07)
-		"up": _pan(Vector2(0, -1) * goal_distance * 0.04)
-		"down": _pan(Vector2(0, 1) * goal_distance * 0.04)
-		"left": _pan(Vector2(-1, 0) * goal_distance * 0.04)
-		"right": _pan(Vector2(1, 0) * goal_distance * 0.04)
+		"up": _pan(Vector2(0, -1) * goal_distance * 0.04 * _speed())
+		"down": _pan(Vector2(0, 1) * goal_distance * 0.04 * _speed())
+		"left": _pan(Vector2(-1, 0) * goal_distance * 0.04 * _speed())
+		"right": _pan(Vector2(1, 0) * goal_distance * 0.04 * _speed())
 		"turn_left": goal_yaw += 0.05
 		"turn_right": goal_yaw -= 0.05
 		"tilt_up": goal_tilt = clampf(goal_tilt - 1.5, -40.0, 30.0)
@@ -364,7 +365,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			goal_yaw -= event.delta.x * 0.05
 			goal_tilt = clampf(goal_tilt + event.delta.y * 1.5, -40.0, 30.0)
 		else:
-			_pan(event.delta * _ground_per_pixel() * 6.0)
+			_pan(event.delta * _ground_per_pixel() * 6.0 * _speed())
 
 
 ## Zooms by `f` (below 1 is in) toward the ground under `screen`: the spot
@@ -867,6 +868,12 @@ func _floor_at(p: Vector3) -> float:
 	return maxf(terrain.height_at(p.x, p.z), 0.0) if terrain and terrain.width > 0 else 0.0
 
 
+## The player's camera speed (Settings: Slow, Normal, Fast; juice.json settings.cams): how fast keys, the pad and
+## the trackpad's two-finger scroll move the camera. A drag stays under the cursor, so it is never scaled.
+static func _speed() -> float:
+	return float(Settings.get_value("camera_speed"))
+
+
 func _pan(d: Vector2) -> void:
 	var right := Vector3(cos(goal_yaw), 0, -sin(goal_yaw))
 	var fwd := Vector3(sin(goal_yaw), 0, cos(goal_yaw))
@@ -913,7 +920,7 @@ func _process(delta: float) -> void:
 		Input.get_axis(&"cam_left", &"cam_right"),
 		Input.get_axis(&"cam_up", &"cam_down"))
 	# Keys ease in and out rather than jolting; Shift runs.
-	var want := keys.normalized() * goal_distance * (1.8 if Input.is_action_pressed(&"cam_fast") else 0.8)
+	var want := keys.normalized() * goal_distance * (1.8 if Input.is_action_pressed(&"cam_fast") else 0.8) * _speed()
 	_keys_v = _keys_v.lerp(want, 1.0 - exp(-delta * 8.0))
 	if _keys_v.length() > goal_distance * 0.001:
 		_pan(_keys_v * delta)

@@ -1019,6 +1019,9 @@ func _game_settings(parent: Control) -> void:
 		_choices(parent, String(w.get("size", "")), sizes.map(func(p): return [p[0], float(p[1])]), near, func(v):
 			if is_instance_valid(main):
 				main._set_ui_scale(float(v)))
+	var cams: Array = w.get("cams", [])
+	if not cams.is_empty():
+		_choices(parent, String(w.get("cam", "")), cams.map(func(p): return [p[0], float(p[1])]), float(Settings.get_value("camera_speed")), func(v): Settings.set_value("camera_speed", float(v)))
 	var steps: Array = (Data.value("juice", "speed", {}) as Dictionary).get("steps", [])
 	var names: Array = w.get("speeds", [])
 	if bridge and steps.size() == names.size() and not steps.is_empty():

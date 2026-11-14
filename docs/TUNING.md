@@ -581,3 +581,4 @@ Switches (`--name`) go after `--` on the game's command line.
 - The host's column reads as ranked companies, not one blob (g36 muster; 03-army): `realm/data/army.json` `column.gap` 0.6 (was 0.3) between regiments, `banner.height` 2.0 / `width` 1.2 (was 2.6 / 1.6), `standard.scale` 1.3 (was 1.7).
 - A field battle's lines stand closer, so the clash fills the frame (g36 battle: two forces on an empty lawn): `realm/data/battle.json` `field.gap` 6.0 (was 9.0).
 - Settings, the game section: `realm/data/juice.json` `settings.sizes` (word size steps, 0.85..1.4 of the interface scale) and `settings.speeds` (one name per `speed.steps`).
+- Camera speed choices in Settings: `realm/data/juice.json` `settings.cams` (Slow 0.6, Normal 1.0, Fast 1.6; scales keys, the pad and trackpad scroll, never a drag).
