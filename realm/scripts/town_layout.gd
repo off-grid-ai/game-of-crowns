@@ -305,11 +305,16 @@ func square_ring(root: Node3D, center: Vector3, square_r: float, ways: Array, ki
 					break
 				k = smaller
 				kf = Real.footprint(k)
-			var p := Vector3(cos(ang), 0, sin(ang)) * (ring + kf.y * 0.5)
+			# Square to the town's grid (TownPlots.squared; g35: fronts facing the square's middle fanned out round it),
+			# set back so its nearest corner meets the ring.
+			var out := Vector2(cos(ang), sin(ang))
+			var fd := TownPlots.squared(-out)
+			var set_back := absf(fd.dot(out)) * kf.y * 0.5 + absf(fd.orthogonal().dot(out)) * kf.x * 0.5
+			var p := Vector3(out.x, 0, out.y) * (ring + set_back)
 			var p2 := Vector2(p.x, p.z)
 			# Its walls held against the roads' bands (not a circle as wide as its longest side, which
 			# turned away nearly every front between roads into the square: Kingsmere stood none in batch 6).
-			var body := plot_body(p2, Vector2(-p2.y, p2.x).normalized(), -p2.normalized(), kf)
+			var body := plot_body(p2, fd.orthogonal(), fd, kf)
 			if TownPlots.on_other_way(body, ways, -1, TownPlots.ROAD_HALF):
 				why["a street"] += 1
 				continue  # the roads into the square stay open
@@ -322,7 +327,7 @@ func square_ring(root: Node3D, center: Vector3, square_r: float, ways: Array, ki
 			if tb._crowded(lots, p, kf.x * 0.45):
 				why["crowded"] += 1  # a stall, the hall, the tavern, the castle
 				continue
-			if tb._put(root, center, k, p, kf, lots, rr, true, -p.normalized(), true):
+			if tb._put(root, center, k, p, kf, lots, rr, true, Vector3(fd.x, 0, fd.y), true):
 				placed += 1
 				stood = true
 				_ring_yard(root, p, kf, k, ways, lots.size() - 1)

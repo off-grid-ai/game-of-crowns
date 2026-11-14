@@ -36,6 +36,15 @@ static var GRID := true  # every house stands square to the town's axis (AoE2's 
 static var AXIS := 0.0  # the town's axis (radians, town-local XZ angle): its first main road's heading (town_layout lay_ways)
 
 
+## `dir` (town-local XZ) turned to the nearest of the town's four grid ways (AXIS and its right angles), so a house
+## laid anywhere (a street's plot, the square's ring of fronts, a landmark) stands square to every other one; `dir`
+## as it is when the grid is off. towns.gd _put squares every house's facing through it: the one place it turns.
+static func squared(dir: Vector2) -> Vector2:
+	if not GRID or dir == Vector2.ZERO:
+		return dir
+	return Vector2.from_angle(AXIS + snappedf(angle_difference(AXIS, dir.angle()), PI * 0.5)) * dir.length()
+
+
 ## The knobs for the next town's layout: towns.json plots, with `over` (plots.crown) on top.
 static func tune(base: Dictionary, over: Dictionary = {}) -> void:
 	var k := base.duplicate()
@@ -212,8 +221,7 @@ static func plots(ways: Array, square_r: float, edge: float, widths: Callable, s
 				# street or a lane bends; the front still faces its street, within an eighth of a turn.
 				var lean := 0.0  # how far the squared front turns off the street: it steps back that much, clear of it
 				if GRID:
-					var q := snappedf(angle_difference(AXIS, tan.angle()), PI * 0.5)
-					var on := Vector2.from_angle(AXIS + q)
+					var on := squared(tan)
 					lean = absf(sin(on.angle_to(tan)))
 					tan = on
 				if p.length() > edge:

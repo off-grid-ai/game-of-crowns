@@ -1335,6 +1335,8 @@ func _put(root: Node3D, center: Vector3, kind: String, p: Vector3, f: Vector2, l
 		return false
 	if face == Vector3.ZERO:
 		face = -p.normalized()
+	var sq := TownPlots.squared(Vector2(face.x, face.z))  # square to the town's grid, wherever it was laid (g35: the ring's fronts faced the square's middle)
+	face = Vector3(sq.x, face.y, sq.y)
 	var yaw := atan2(face.x, face.z)
 	var seat_y := _seat(center, p, f, yaw)
 	if is_nan(seat_y):
