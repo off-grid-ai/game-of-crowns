@@ -218,7 +218,7 @@ func _refresh() -> void:
 	for id in towns.towns.keys():
 		var node: Node3D = towns.towns[id]["node"]
 		var near := close and node.global_position.distance_to(focus) < VIEW_RADIUS
-		if near and not crowds.has(id):
+		if near and not crowds.has(id) and not _spawning.has(id):
 			_spawn(id)
 		elif not near and crowds.has(id):
 			for a in crowds[id]:
@@ -313,11 +313,23 @@ func _house_colour(owner: int) -> Color:
 	return Color(0, 0, 0, 0)
 
 
+## Towns whose crowd is being made, a few people a frame (_spawn).
+var _spawning := {}
+## Milliseconds of a frame a town's crowd may take to be made (crowd.json villagers.spawn_ms): a whole town at
+## once held one frame 400 ms (FPS P0, the supervisor's fps1 run: "spent: villagers 396").
+static var SPAWN_MS: float = preload("res://scripts/data.gd").num("crowd", "villagers.spawn_ms", 6.0)
+
+
+## A town's crowd, made SPAWN_MS of a frame at a time. Nobody is seen until all are made: each is hidden until set
+## down on the walk map, and only a town in `crowds` is set down (_step), so the crowd still appears as one.
 func _spawn(id: int) -> void:
+	_spawning[id] = true
+	var began := Time.get_ticks_msec()
 	var town: Dictionary = towns.towns[id]
 	# Its people dressed as its rank and holder dress them (people.gd cloth_pick; the holder's colour from his banner).
 	var mourning := bool(town["data"].get("grief", false))
-	people.dress_for(String(town["node"].get_meta("rank", "town")), _house_colour(int(town["data"].get("owner", -1))), mourning)
+	var dress := [String(town["node"].get_meta("rank", "town")), _house_colour(int(town["data"].get("owner", -1))), mourning]
+	people.dress_for(dress[0], dress[1], dress[2])
 	var center: Vector3 = town["node"].global_position
 	var size := int(town["data"]["size"])
 	var rng := RandomNumberGenerator.new()
@@ -360,8 +372,24 @@ func _spawn(id: int) -> void:
 		if i < jobs.size():
 			calling = jobs[i]
 		var station := "peasant" if calling in ["farmer", "carter", "groom", "porter"] or (calling == "water" and rng.randf() < 0.5) else ("clergy" if calling == "pious" and rng.randf() < 0.6 else ("noble" if calling == "gentry" else "townsfolk"))
+		if Time.get_ticks_msec() - began > SPAWN_MS:
+			await get_tree().process_frame
+			began = Time.get_ticks_msec()
+			if not towns.towns.has(id) or not is_instance_valid(town["node"]):
+				# The town went while its crowd was being made: hand back what was made.
+				for b in list:
+					b["node"].queue_free()
+					NavigationServer2D.free_rid(b["agent"])
+				_spawning.erase(id)
+				return
+			people.dress_for(dress[0], dress[1], dress[2])  # another town's crowd may have been dressed in between
 		var person: Node3D = people.make(rng, station, Color.WHITE, "adult" if i < jobs.size() else "", "", "female" if calling == "gentry" else "")
 		add_child(person)
+		# Its legs' first step taken now, while hidden: a mixer's first advance builds its caches, and a whole
+		# crowd's first steps in one frame held it 33-78 ms (anim_lod, fps1 run).
+		var legs := people.motion(person)
+		if legs:
+			AnimLOD._advance(legs, 0.0)
 		# Home is a real house's doorstep, the work done in front of it; a
 		# farmer's strip is one of the town's own fields (or the garden behind
 		# a house), so the work happens where the crops are.
@@ -403,7 +431,15 @@ func _spawn(id: int) -> void:
 		# town's mood; the walking stays here.
 		if not preload("res://scripts/npc_mind.gd").give_villager(person, a, self):
 			push_error("villagers: no activities for the calling '%s': %s of town %d stands mindless" % [a["role"], person.name, id])
+		var mind := person.get_node_or_null("Mind") as BTPlayer
+		if mind:
+			mind.active = false  # thinks once the whole crowd is made, as one: its choices read the town's crowd
 	crowds[id] = list
+	_spawning.erase(id)
+	for a in list:
+		var mind := (a["node"] as Node).get_node_or_null("Mind") as BTPlayer
+		if mind:
+			mind.active = true
 	# Every child has a parent: the grown-up of the town whose door is nearest theirs.
 	for a in list:
 		if a["role"] != "child":
