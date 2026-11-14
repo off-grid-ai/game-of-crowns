@@ -340,6 +340,7 @@ func _terrace() -> void:
 	var step := maxf(0.1, float(t.get("step", 0.9)))
 	var ramp := clampf(float(t.get("ramp", 0.35)), 0.05, 1.0)
 	var over := float(t.get("over", 0.6))  # the stepping fades in over this much height above from
+	var top := float(t.get("to", 99.0))  # and out again over the same above to: the peaks rise whole, not as flat shelves
 	var w := land.get_width()
 	var h := land.get_height()
 	var hs := land.get_data().to_float32_array()
@@ -351,7 +352,7 @@ func _terrace() -> void:
 		var k := (y - from) / step
 		var f := floorf(k)
 		var stepped := from + (f + smoothstep(1.0 - ramp, 1.0, k - f)) * step
-		var keep := smoothstep(0.0, over, y - from)
+		var keep := smoothstep(0.0, over, y - from) * (1.0 - smoothstep(top, top + over, y))
 		if rm:
 			var r := rm.get_pixel(i % w, i / w).r8
 			keep *= 1.0 - (1.0 if r == 255 else r / 255.0)
@@ -543,8 +544,9 @@ func tile_mix(wx: float, wz: float) -> Array:
 
 func _layers_at(wx: float, wz: float, h: float) -> Array:
 	var out := tile_mix(wx, wz)
-	if h > 4.8:
-		out[3] += clampf((h - 4.8) / 1.2, 0.0, 1.0) * 2.0
+	var snow: Array = preload("res://scripts/data.gd").value("ground", "peaks.snow", [6.2, 7.8])
+	if h > float(snow[0]):
+		out[3] += smoothstep(float(snow[0]), float(snow[1]), h) * 2.0  # the peaks' snow (ground.json peaks.snow)
 	if h < 0.3:
 		out[2] += clampf((0.3 - h) / 0.5, 0.0, 1.0) * 1.5
 	return out

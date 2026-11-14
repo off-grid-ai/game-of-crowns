@@ -17,7 +17,7 @@
     "font_per_size": 0.6,
     "font_most": 18
   },
-  "relief": { "strength": 0.8, "light": [-0.5, 0.7, -0.5], "near": 0.35 },
+  "relief": { "strength": 1.0, "light": [-0.5, 0.7, -0.5], "near": 0.35 },
   "overview": {
     "wash": 0.42,
     "border_px": 3.0,
