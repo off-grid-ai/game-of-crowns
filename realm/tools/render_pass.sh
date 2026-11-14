@@ -460,15 +460,25 @@ if '$3'!='near' and mine is not None:
     us=[u for u in us if u['id'] in mine]
 far=lambda u: max(abs(u['x']-x),abs(u['y']-y))
 import math
+# the land (bridge /map: [x, y, terrain]) and the cover raiders keep off (luadata [raids] cover): the lens aims at men
+# in the open, not under a wood's canopy (g31: the knot at 14,30-33 stood in the wood, none showed)
+try:
+    land={(t[0],t[1]):t[2] for t in json.load(open('$OUT/raid.map')).get('tiles',[])}
+except (OSError,ValueError):
+    land={}
+cover=set('$RCOVER'.split(','))
 if '$3'=='any':
     u=us[0] if us else None
 elif '$3'=='near':
     us=[u for u in us if far(u)<=3]; u=None
+    open_=[v for v in us if land.get((v['x'],v['y'])) not in cover]
     if us:
+        mine_=us; us=open_ or us
         # the densest knot: the man with most raiders within a tile of him (nearest the town on a tie), its middle
         knot=lambda a: [v for v in us if max(abs(v['x']-a['x']),abs(v['y']-a['y']))<=1]
         a=max(us,key=lambda a: (len(knot(a)),-far(a))); k=knot(a)
         u={'id':a['id'],'x':sum(v['x'] for v in k)/len(k),'y':sum(v['y'] for v in k)/len(k)}
+        us=mine_
     open('$OUT/raid.ids','w').write(' '.join(str(v['id']) for v in us))
 else:
     us=[u for u in us if far(u)>=2 and d.get('turn',0)>=$4]; u=max(us,key=far) if us else None
@@ -494,6 +504,8 @@ print('season %s; %d raiders: %s' % (d.get('turn'), len(us), ' '.join('%d(%s)@%d
   }
   curl -s -m 10 "$API/world?peek=1" | python3 -I -c "
 import json,sys; print(' '.join(str(u['id']) for u in json.load(sys.stdin).get('units',[])))" > $OUT/raid.before 2>/dev/null
+  curl -s -m 20 "$API/map" > $OUT/raid.map 2>/dev/null
+  RCOVER=$(sed -n '/^\[raids\]/,/^\[/s/^cover = "\(.*\)"/\1/p' $F/bridge/data/realmrules/luadata.txt)
   RAID=$(curl -s -m 10 -X POST -H 'X-Test: 1' $API/test/stage -d '{"raid":"crown"}' | python3 -I -c "
 import json,sys; r=json.load(sys.stdin)
 if r.get('ok'): print(r['city'], r['x'], r['y'], r['name'])" 2>/dev/null)
@@ -513,6 +525,22 @@ if r.get('ok'): print(r['city'], r['x'], r['y'], r['name'])" 2>/dev/null)
       [ -z "$AT" ] && sleep 5
     done
     raid_log "the wait by the town ended ($((SECONDS - T0)) s)"
+    # A season of raiding before the snaps: they rise beside the town and only burn from the next season (g31 filmed
+    # them in the season they rose: none at the fields, the town calm). The reign runs until /world's turn moves
+    # (bounded 180 s), then the knot is read again, among the men in the open.
+    if [ -n "$AT" ]; then
+      TN=$(curl -s -m 10 "$API/world" | perl -e 'alarm shift; exec @ARGV' 20 python3 -I -c "import json,sys; print(json.load(sys.stdin).get('turn',0))" 2>/dev/null); TS=$SECONDS
+      curl -s -m 5 -o /dev/null -X POST $API/resume
+      while [ $((SECONDS - TS)) -lt 180 ] && [ "$(curl -s -m 10 "$API/world" | perl -e 'alarm shift; exec @ARGV' 20 python3 -I -c "import json,sys; print(json.load(sys.stdin).get('turn',0))" 2>/dev/null)" = "$TN" ]; do
+        curl -s -m 5 -o /dev/null -X POST $API/court/close
+        curl -s -m 5 -o /dev/null -X POST $API/interlude/close
+        sleep 1
+      done
+      curl -s -m 5 -o /dev/null -X POST $API/pause
+      sleep 2  # the season's snapshot (server.js snapshot reads world.json 0.5 s after asking)
+      AT=$(raider $RX $RY near 0)
+      raid_log "a season of raiding ($((SECONDS - TS)) s)"
+    fi
     if [ -z "$AT" ]; then
       say "raid: no raider by $RNAME in ${RAID_WAIT:-300} s; no frame"
     else

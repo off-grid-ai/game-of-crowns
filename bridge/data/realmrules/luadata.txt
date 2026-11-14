@@ -48,6 +48,8 @@ band = "3"
 ; A royal work draws the raid (script.lua raid_goal): the King's town with a work (rising or standing) within
 ; work_reach tiles of the raid's town; the raiders march on it march_steps tiles a season, then burn the land round it.
 work_reach = "6"
+; Ground raiders keep off when there is open ground (terrain names): they rise, march and stand in the fields to burn.
+cover = "Forest,Jungle,Swamp,Mountains"
 march_steps = "2"
 band_per = "3"
 kinds = "Legion,Archers,Horsemen"

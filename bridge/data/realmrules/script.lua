@@ -806,16 +806,26 @@ local function raids_take_in()
   end
 end
 
+-- Ground a raider stands on to burn and be seen: fields and open country, not wood, marsh or crag (raids.cover:
+-- g31's band rose in the wood west of Saltkeep and stood under its canopy, unseen, for the raid's first seasons).
+local function raid_cover(t)
+  local n = t.terrain:rule_name()
+  for k in tostring(luadata.get_str("raids.cover") or "Forest,Jungle,Swamp,Mountains"):gmatch("[^,]+") do if n == k then return true end end
+  return false
+end
+
 function realm_raid(city_id)
   local c = find.city(nil, city_id)
   if not c then log.normal("RAID no town %s", tostring(city_id)); return end
-  local spots = {}
+  local spots, covered = {}, {}
   for t in c.tile:square_iterate(2) do
     local n = t.terrain:rule_name()
     if t:city() == nil and t:num_units() == 0 and not n:find("Ocean") and n ~= "Lake" and c.tile:sq_distance(t) >= 4 then
-      spots[#spots + 1] = t
+      if raid_cover(t) then covered[#covered + 1] = t else spots[#spots + 1] = t end
     end
   end
+  -- The band rises on the open ground round the town; in the wood only where there is none.
+  if #spots == 0 then spots = covered end
   if #spots == 0 then log.normal("RAID no open ground by %s", c.name); return end
   local before = raiders_now()
   local spot = spots[random(1, #spots)]
@@ -876,6 +886,16 @@ local function raid_season(u, town)
   if best then
     pcall(edit.unit_move, u, best, 0, nil, false, false, false, false, false)
     if u.tile == best then raid_pillage(u, best) end
+  elseif raid_cover(u.tile) then
+    -- Nothing to burn in reach and standing in the wood: out onto the open ground nearest the town.
+    local out, od = nil, nil
+    for t in u.tile:square_iterate(1) do
+      if t ~= u.tile and t:city() == nil and raid_open(t, u) and not raid_cover(t) then
+        local d = town and town.tile:sq_distance(t) or 0
+        if not od or d < od then out, od = t, d end
+      end
+    end
+    if out then pcall(edit.unit_move, u, out, 0, nil, false, false, false, false, false) end
   end
 end
 
@@ -903,7 +923,7 @@ local function raid_march(u, goal)
     local best, bd = nil, u.tile:sq_distance(goal.tile)
     for t in u.tile:square_iterate(1) do
       if t ~= u.tile and raid_open(t, u) then
-        local d = t:sq_distance(goal.tile)
+        local d = t:sq_distance(goal.tile) + (raid_cover(t) and 1 or 0)  -- open ground before wood at the same reach
         if d < bd then best, bd = t, d end
       end
     end
