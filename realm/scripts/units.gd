@@ -51,6 +51,7 @@ const MapLook := preload("res://scripts/map_look.gd")  # Freeciv's hulls (SHIPS)
 const TeamColour := preload("res://scripts/team_colour.gd")  # a house's colour, one rule
 const Units := preload("res://scripts/world_units.gd")  # metres to world units
 const Data := preload("res://scripts/data.gd")
+const Weapons := preload("res://scripts/weapons.gd")  # arms and tools in the hand (a raider's axe and torch)
 
 const RIVER_SHIPS := ["Trireme"]  # the ruleset's Trireme class: its River extra is native to it (they sail rivers)
 const MOUNTED := ["Horsemen", "Chariot", "Elephants", "Crusaders", "Knights", "Dragoons", "Cavalry"]
@@ -104,7 +105,11 @@ func sync(houses: Dictionary) -> void:
 		if slot >= 6:
 			continue
 		var house: Dictionary = houses.get(int(u["owner"]), {})
-		var wild := bool(house.get("wild", false)) or String(u["type"]) in BEASTS
+		# A wild player's company is a beast only when it is one (BEASTS); otherwise it is raiders, men without banners
+		# (Freeciv's barbarians: the raids; casebook, Wealth draws the raid). g25 raid.jpg: Saltkeep's raiders drawn as
+		# beasts' blocks, every unit of a wild player taken for an animal.
+		var wild := String(u["type"]) in BEASTS
+		var raider := not wild and bool(house.get("wild", false))
 		# Garrisons stand guard at the town's edge, not in its square; armies in
 		# the field stand in ranks two abreast behind their banner, facing the
 		# way they last marched.
@@ -139,7 +144,18 @@ func sync(houses: Dictionary) -> void:
 				rng.seed = id
 				var tint := Color.from_string(String(house.get("color", "#888")), Color.GRAY).lerp(Color.WHITE, 0.35)
 				var kind := String(u["type"])
+				if raider:
+					tint = Data.colour((Data.value("army", "map", {}) as Dictionary).get("raider", {}).get("cloth"), Color(0.22, 0.19, 0.16))
 				node = _people.make(rng, "soldier", tint, "adult")
+				if raider:
+					# A ragged band: dark cloth, an axe in the hand, and a torch in the other for some (army.json map.raider).
+					Weapons.arm(node, "axe")
+					if id % maxi(1, int((Data.value("army", "map", {}) as Dictionary).get("raider", {}).get("torch_every", 2))) == 0:
+						var mo_t = _people.motion(node)
+						if mo_t:
+							mo_t.errand_load = "Idle_Torch_Loop"  # held whatever the body plays (motion.gd), lit at rest
+						else:
+							Weapons.hold_for(node, "Idle_Torch_Loop")
 				# Horsemen ride (elephants have no beast of their own yet, so go on foot);
 				# knights carry the lance.
 				if kind in MOUNTED and kind != "Elephants":
@@ -147,7 +163,7 @@ func sync(houses: Dictionary) -> void:
 					horse.mount(node)
 					Scenes.arm(node, "lance" if kind in LANCES else "spear")
 					node = horse
-				else:
+				elif not raider:
 					Scenes.arm(node, "bow" if kind in BOWS else ("spear" if kind in SPEARS or kind in MOUNTED else "sword"))
 			node.position = target
 			add_child(node)
@@ -166,7 +182,7 @@ func sync(houses: Dictionary) -> void:
 			else:
 				mo.stride = true  # the stride matches the ground covered
 			mo.keep = _keep.bind(_figures, id)
-			if not wild and not ship and slot == 0:
+			if not wild and not ship and not raider and slot == 0:  # raiders march under no banner
 				# Carried by the rider when the company is mounted.
 				_banner(node.rider if node.get("rider") else node, Color.from_string(String(house.get("color", "#888")), Color.GRAY), house)
 				HostPick.proxy(node, int(id), Vector3(0.22, 0.62, 0.22))  # the bearer and his standard, to click (host_command.gd)
