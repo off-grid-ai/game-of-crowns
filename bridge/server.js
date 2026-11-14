@@ -425,7 +425,7 @@ function applyStartOptions() {
 // The realm as the view sees it (GET /world): built in view.js.
 function worldView() {
   const v = View.worldView(realmCtx()), d = detail();
-  return { ...v, trade: Trade.list(v.cities, world?.turn ?? 0, (a, b) => (d?.players?.[a]?.atWarWith ?? []).includes(b)), hosts: Hosts.list({ world, meta }), banners: Hosts.banners({ world, meta }), battles: Battles.cards(meta, world?.turn), raids: Raids.list(meta, world), works: Treasury.worksOf(meta, world, crownNow()?.id), harvest: Harvest.view(meta, world?.turn ?? 0), royals: Royals.view(meta, world?.turn ?? 0), captains: Captains.list(meta, world), soldiers: Captains.soldiers(meta, world), promises: Promises.view(meta), trust: Promises.trust(meta), sieges: Siegecraft.list(meta), rival: Rivals.view(meta), contagion: Contagion.view(meta), prices: Prices.view(meta) };  // the King's hosts and their orders, and how many more orders this season (hosts.js)
+  return { ...v, trade: Trade.list(v.cities, world?.turn ?? 0, (a, b) => (d?.players?.[a]?.atWarWith ?? []).includes(b)), hosts: Hosts.list({ world, meta }), banners: Hosts.banners({ world, meta }), battles: Battles.cards(meta, world?.turn), raids: Raids.list(meta, world), works: Treasury.worksOf(meta, world, crownNow()?.id), harvest: Harvest.view(meta, world?.turn ?? 0), royals: Royals.view(meta, world?.turn ?? 0), captains: Captains.list(meta, world), soldiers: Captains.soldiers(meta, world), promises: Promises.view(meta), trust: Promises.trust(meta), sieges: Siegecraft.list(meta), rival: Rivals.view(meta, world), contagion: Contagion.view(meta), prices: Prices.view(meta) };  // the King's hosts and their orders, and how many more orders this season (hosts.js)
 }
 
 // The Hand's matters, read from the realm as it stands now.
@@ -558,6 +558,7 @@ function onEvent(line) {
   if (ev.kind === "attack") return Battles.struck(ev, world?.turn ?? 0);  // who struck where (battles.js)
   if (ev.kind === "war_host") return Hosts.warpath(realmCtx(), ev, send);
   if (ev.kind === "raid_goal") return Raids.goal(meta, ev);  // a raid makes for a royal work (raids.js)
+  if (ev.kind === "raid_raised") return Rivals.raised(meta, ev);  // the rival King's raiders (rivals.js)
   if (ev.kind === "banners_joined") return Hosts.joined(realmCtx(), ev);  // banner men at the King's walls are his (hosts.js)  // a house's war host raised at home: it marches (hosts.js)
   // Freeciv fought the King's assault (realm_assault): the view storms the siege and ends it as Freeciv did (campaigns.js).
   if (ev.kind === "assault") { const storm = Camp.stormScene(world, ev, crownNow()?.id); if (storm) scene("storm", storm); return; }

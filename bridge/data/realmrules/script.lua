@@ -856,7 +856,9 @@ local function raid_cover(t)
   return false
 end
 
-function realm_raid(city_id)
+-- by: whose raid it is, when someone's (the rival King's, bridge rivals.js): its men are told to the bridge
+-- (raid_raised) so they wear his colours.
+function realm_raid(city_id, by)
   local c = find.city(nil, city_id)
   if not c then log.normal("RAID no town %s", tostring(city_id)); return end
   local spots, covered = {}, {}
@@ -893,6 +895,7 @@ function realm_raid(city_id)
     local til = game.current_turn() + raid_seasons()
     for i, id in ipairs(raised) do raised[i] = string.format("%d", id) end
     GOC_RAIDS = GOC_RAIDS .. (GOC_RAIDS == "" and "" or ";") .. string.format("%s|%d|%d|0", table.concat(raised, ","), c.id, til)
+    if by then emit("raid_raised", {city = c.id, by = tostring(by), units = table.concat(raised, ",")}) end
   end
   log.normal("RAID %s raised %d", c.name, #raised)
 end

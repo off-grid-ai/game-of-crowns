@@ -128,14 +128,15 @@ function draw(ctx, e, turn, resting) {
   // answer before it lapses and doing nothing costs. While he rides the card is seen coming (riding) but not answered.
   const crown = crownOf(ctx.world);
   const seat = ctx.world?.cities?.find((c) => c.owner === crown?.id && c.capital);
-  const from = sub.city != null ? ctx.world?.cities?.find((c) => c.id === sub.city) : null;
+  const gate = card.deck === "rival" ? ctx.meta.rival?.gate : null;  // his envoy rides in from his border (rivals.js gate)
+  const from = gate ? { id: null, ...gate } : sub.city != null ? ctx.world?.cities?.find((c) => c.id === sub.city) : null;
   const far = seat && from ? Math.max(Math.abs(from.x - seat.x), Math.abs(from.y - seat.y)) : 0;
   const arrives = turn + Math.floor(far / Math.max(1, S.rider?.speed ?? 12));
   const due = arrives + Math.max(0, (card.deadline ?? S.deadline ?? 1) - 1);
   e.up = { id: card.id, turn, arrives, due, subject: sub, title: fill(card.title, sub), text: fill(card.text, sub), bearer: sub.lord ?? null, house: sub.house ?? null, city: sub.city ?? null,
-    x: from?.x ?? null, y: from?.y ?? null,
+    x: from?.x ?? null, y: from?.y ?? null, by: card.deck === "rival" ? "rival" : null,
     choices: card.choices.map((ch, i) => ({ i, label: fill(ch.label, sub), cost: ch.cost ?? 0, moves: moves(ctx, ch, sub) })), ignore: fill(wording(`event:${card.id}:ignore`, card.ignore?.text), sub) };
-  if (from && seat && from.id !== seat.id) ctx.scene?.("rider", { x: from.x, y: from.y, tx: seat.x, ty: seat.y, city: seat.id, label: e.up.title });
+  if (from && seat && from.id !== seat.id) ctx.scene?.("rider", { x: from.x, y: from.y, tx: seat.x, ty: seat.y, city: seat.id, label: e.up.title, by: e.up.by });
   ctx.record?.({ turn, kind: "event", text: e.up.title, city: sub.city ?? undefined });
 }
 

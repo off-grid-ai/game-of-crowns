@@ -21,8 +21,8 @@ export const HOUSES = {
 // the player calls it (names.js shows their name, never touching `key`).
 for (const h of Object.values(HOUSES)) h.key = h.name;
 
-// The rival King's realm (rivals.js of): a Freeciv player by that name is his.
-export const FOREIGN = new Set();
+// The rival King's realm and its arms (rivals.js of): a Freeciv player by that name is his.
+export const FOREIGN = new Map();
 
 export function houseFor(player) {
   const nation = String(player?.nation || "").toLowerCase();
@@ -30,7 +30,7 @@ export function houseFor(player) {
   if (nation.includes("animal")) return HOUSES.animals;
   if (player?.name === "The Dead") return { name: "The Dead", color: "#9fb4c8", sigil: "skull", wild: true };
   // The rival King's own men (rivals.js, script.lua realm_rival): his realm, foreign, none of the realm's houses.
-  if (FOREIGN.has(player?.name)) return { name: player.name, color: "#4a4a6a", sigil: "banner", wild: true, foreign: true };
+  if (FOREIGN.has(player?.name)) { const a = FOREIGN.get(player.name); return { name: player.name, color: a.colour, sigil: a.sigil, wild: true, foreign: true }; }
   if (nation.includes("pirate")) return HOUSES.pirate;
   if (nation.includes("barbarian")) return HOUSES.barbarian;
   // Houses born from civil war get a name and colour of their own.

@@ -7,17 +7,21 @@
 // own, script.lua realm_rival) until the town is his, peace is bought, or the war wears out. His lesser envoys come
 // as event cards drawn with the realm's (events.js: rivals.json cards, when.rival, the effect rival). /world `rival`.
 import fs from "node:fs";
+import path from "node:path";
 import * as Lua from "./lua.js";
 import { cityName, houseFor, FOREIGN } from "./narrator.js";
 
+const STEP = { north: [0, -1], south: [0, 1], west: [-1, 0], east: [1, 0] };
 export const RIVAL = JSON.parse(fs.readFileSync(new URL("./data/rivals.json", import.meta.url), "utf8"));
 const R = RIVAL;
+const ARMS = (realm) => R.arms[realm] ?? { colour: "#4a4a6a", sigil: "banner" };
+const known = (realm) => FOREIGN.set(realm, ARMS(realm));
 
 export function of(meta) {
-  if (meta.rival) { FOREIGN.add(meta.rival.realm); return meta.rival; }
+  if (meta.rival) { known(meta.rival.realm); return meta.rival; }
   const s = Number(meta.seed ?? 1066) >>> 0;
   const [realm, king] = R.kings[s % R.kings.length];
-  FOREIGN.add(realm);
+  known(realm);
   return (meta.rival = { realm, king, edge: R.edges[(s >>> 3) % R.edges.length], hostility: R.start, probes: 0 });
 }
 
@@ -44,11 +48,30 @@ function border(world, edge, realm) {
   return [...towns].sort((a, b) => key(a) - key(b))[0] ?? null;
 }
 
+// Where his road into the realm starts (data/rivals.json gate): the town nearest his edge, stepped gate.out tiles
+// toward it, inside the map (the reign's map.json size).
+function gate(ctx, r) {
+  const t = border(ctx.world, r.edge, r.realm);
+  if (!t) return r.gate ?? null;
+  let size = null;
+  try { size = JSON.parse(fs.readFileSync(path.join(ctx.P.state, "map.json"), "utf8")); } catch { /* no map yet */ }
+  const [dx, dy] = STEP[r.edge] ?? [0, -1];
+  const w = size?.width ?? t.x + 1, h = size?.height ?? t.y + 1;
+  return { x: Math.max(0, Math.min(w - 1, t.x + dx * R.gate.out)), y: Math.max(0, Math.min(h - 1, t.y + dy * R.gate.out)) };
+}
+
+// His raiders, told by Freeciv when his raid rises (server.js raid_raised, by "rival"): they wear his colours.
+export function raised(meta, ev) {
+  if (ev.by !== "rival") return;
+  of(meta).raiders = String(ev.units ?? "").split(",").filter(Boolean).map(Number);
+}
+
 // The season: hostility drifts, and he may probe the border with a raid.
 export function season(ctx, turn) {
   const { meta, world, send, record } = ctx;
   if (!world?.cities?.length) return;
   const r = of(meta);
+  r.gate = gate(ctx, r);
   if (r.war) return war(ctx, r, turn);
   r.hostility += Math.sign(R.rest - r.hostility) * Math.min(R.drift, Math.abs(R.rest - r.hostility));
   if (r.hostility >= R.war.above) return declare(ctx, r, border(world, r.edge, r.realm), turn, `${r.king} has waited long enough.`);
@@ -56,14 +79,13 @@ export function season(ctx, turn) {
   if (Math.random() >= R.raid * r.hostility / 100) return;
   const t = border(world, r.edge, r.realm);
   if (!t) return;
-  send(`lua cmd ${Lua.raid(t.id)}`);
+  send(`lua cmd ${Lua.raid(t.id, "rival")}`);
   r.probes++;
   record({ turn, kind: "raid", text: `Riders out of ${r.realm} cross the border and fall on the fields of ${cityName(t.id)}. ${r.king} says they are outlaws; nobody believes it.`, city: t.id });
 }
 
 // --- his envoy at court (data/rivals.json demand) ---------------------------------------------------------------
 
-const STEP = { north: [0, -1], south: [0, 1], west: [-1, 0], east: [1, 0] };
 const D = R.demand;
 
 // The great houses, for favour that moves with the crown's pride: every house of the realm that holds a town.
@@ -179,11 +201,15 @@ function peace(ctx, r, turn, why) {
   r.hostility = Math.min(r.hostility, R.war.peace);
 }
 
-export function view(meta) {
+export function view(meta, world) {
   const r = meta?.rival;
   if (!r) return null;
-  FOREIGN.add(r.realm);  // his men are his, from the first /world after a restart
+  known(r.realm);  // his men are his, from the first /world after a restart
+  const alive = new Set((world?.units ?? []).map((u) => u.id));
+  const a = ARMS(r.realm);
   const d = r.demand && !r.demand.answered ? { kind: r.demand.kind, town: r.demand.town } : null;
   return { realm: r.realm, king: r.king, edge: r.edge, hostility: Math.round(r.hostility), probes: r.probes, demand: d,
+    colour: a.colour, sigil: a.sigil, gate: r.gate ?? null, raiders: (r.raiders ?? []).filter((id) => alive.has(id)),
+    player: (world?.players ?? []).find((p) => p.name === r.realm)?.id ?? null,
     war: r.war ? { town: r.war.town, since: r.war.since, until: r.war.until, waves: r.war.waves } : null };
 }

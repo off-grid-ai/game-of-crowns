@@ -181,5 +181,28 @@
   "every": 2,
   "seasons": 6,
   "peace": 35
+ },
+ "arms": {
+  "_": "Each rival realm's colours and sigil (narrator.js houseFor for his own men; /world rival colour, sigil): his raiders, his host and his envoy's rider wear them.",
+  "Varrow": {
+   "colour": "#5a3d6e",
+   "sigil": "boar"
+  },
+  "the Marches of Hale": {
+   "colour": "#2f5e6b",
+   "sigil": "tower"
+  },
+  "Dunmark": {
+   "colour": "#6b3a2a",
+   "sigil": "axe"
+  },
+  "the Tarn": {
+   "colour": "#3e5a3a",
+   "sigil": "heron"
+  }
+ },
+ "gate": {
+  "_": "Where his road into the realm starts (/world rival gate, his envoys' riders ride in from it): the realm's town nearest his edge, stepped this many tiles toward his edge (held inside the map).",
+  "out": 6
  }
 }
