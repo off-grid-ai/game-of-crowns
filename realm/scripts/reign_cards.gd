@@ -377,6 +377,7 @@ func _reign_end(r: Dictionary) -> void:
 		ep_l.add_theme_font_size_override("font_size", T.SIZE_BODY)
 		ep_l.add_theme_color_override("font_color", T.ACCENT)
 		col.add_child(ep_l)
+	_inherits(col, r)
 	# The reign in numbers.
 	var e: Dictionary = r.get("ended", {}) if r.get("ended") is Dictionary else {}
 	var turns := int(e.get("turn", 0))
@@ -444,6 +445,34 @@ func _reign_end(r: Dictionary) -> void:
 	var tw := root.create_tween()
 	tw.tween_interval(0.6)
 	tw.tween_property(root, "modulate:a", 1.0, 2.2).set_trans(Tween.TRANS_SINE)
+
+
+## What the next King inherits (CK3's death screen: your heir, and the hooks and feuds he takes on): the heir by
+## name and age, and the house that will not forget this reign, with why (bridge reign.js grudge; the next reign
+## opens with it). Words in reign_end.json inherits.
+func _inherits(col: VBoxContainer, r: Dictionary) -> void:
+	var w: Dictionary = Data.value("reign_end", "inherits", {})
+	var lines := PackedStringArray()
+	var heir = preload("res://scripts/royal_sheet.gd").royals().get("heir")
+	if heir is Dictionary and String(r.get("outcome", "")) != "heirless":
+		lines.append(String(w.get("heir", "")).replace("{name}", String(heir.get("name", ""))).replace("{age}", str(int(heir.get("age", 0)))))
+	var g = r.get("grudge")
+	if g is Dictionary:
+		var said := String(w.get("grudge", "")).replace("{house}", String(g.get("house", "")))
+		if g.get("cause") != null and String(g["cause"]) != "":
+			said += " " + String(w.get("cause", "")).replace("{cause}", String(g["cause"]))
+		lines.append(said)
+	if lines.is_empty():
+		return
+	var head := T.label(String(w.get("head", "")))
+	head.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	col.add_child(head)
+	for l in lines:
+		var lab := T.datum(l, T.SIZE_BODY, T.TEXT_2)
+		lab.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		lab.autowrap_mode = TextServer.AUTOWRAP_WORD
+		lab.custom_minimum_size.x = 640
+		col.add_child(lab)
 
 
 ## The reign's ledger as a chronicle page: wealth, troops and towns, crowned against now; the towns kept, won and
