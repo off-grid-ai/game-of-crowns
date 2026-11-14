@@ -527,7 +527,10 @@ static func _begin(name: String) -> bool:
 	if by_mat != null:
 		var cut: float = FLOOR_CUT.get(name, -INF)
 		var budget: int = BUDGET.get(KIT[name][0], 0)
-		var hlod: Dictionary = Data.value("towns", "hlod", {})  # read here: the data's cache is the main thread's
+		var hlod: Dictionary = (Data.value("towns", "hlod", {}) as Dictionary).duplicate()  # read here: the data's cache is the main thread's
+		# The most a low level may stray from the whole (game units): error_px pixels on a screen_px-high screen at the
+		# handover (view_tier.near_below), through the lens's 45-degree field (camera_rig.gd).
+		hlod["max_error"] = float(hlod.get("error_px", 1.0)) * 2.0 * tan(deg_to_rad(22.5)) * Data.num("camera", "view_tier.near_below", 18.0) / float(hlod.get("screen_px", 1600.0))
 		task = WorkerThreadPool.add_task(func():
 			out[0] = _lods(by_mat, cut, budget)
 			out.append(_low(out[0], hlod)), false, "merge " + name)
@@ -767,9 +770,11 @@ static func _lods(by_mat: Dictionary, floor_cut: float, budget: int) -> Importer
 
 
 ## A merged model's low mesh, drawn past NEAR in place of the whole one (towns.gd _flush: Godot's visibility ranges,
-## its built-in HLOD; Meshy buildings are 20-100k triangles, a house seen from the middle zoom needs a few thousand):
-## the first of Godot's generated detail levels at or under towns.json hlod.share of its triangles (or hlod.least),
-## else its lightest; null when no level is under hlod.worth of it (a light model needs none). Plain arrays: a worker.
+## its built-in HLOD; a batch's own LOD is judged by the whole town's box, so it never got lighter): the lightest of
+## Godot's generated levels whose error (get_surface_lod_size: how far, in game units, it strays from the whole) stays
+## under hlod.max_error, a pixel at the handover, on every surface. A level picked by its triangle count alone tore
+## thin-walled kit buildings into floating planks and slabs at play zoom (the roadside inn, Mac 14 Nov). Null when no
+## level is under hlod.worth of the whole's triangles (not worth a second batch). Plain arrays: a worker.
 static func _low(im: ImporterMesh, H: Dictionary) -> ImporterMesh:
 	if im == null:
 		return null
@@ -778,15 +783,16 @@ static func _low(im: ImporterMesh, H: Dictionary) -> ImporterMesh:
 	for s in im.get_surface_count():
 		full += (im.get_surface_arrays(s)[Mesh.ARRAY_INDEX] as PackedInt32Array).size() / 3
 		most = maxi(most, im.get_surface_lod_count(s))
-	var want := maxf(float(H.get("least", 1500)), full * float(H.get("share", 0.05)))
+	var max_error := float(H.get("max_error", 0.0))
 	var pick := -1
 	for level in most:
-		pick = level
-		var n := 0
+		var fits := true
 		for s in im.get_surface_count():
-			n += (im.get_surface_lod_indices(s, mini(level, im.get_surface_lod_count(s) - 1)).size() / 3) if im.get_surface_lod_count(s) > 0 else (im.get_surface_arrays(s)[Mesh.ARRAY_INDEX] as PackedInt32Array).size() / 3
-		if n <= want:
+			if level < im.get_surface_lod_count(s) and im.get_surface_lod_size(s, level) > max_error:
+				fits = false
+		if not fits:
 			break
+		pick = level
 	if pick < 0:
 		return null
 	var out := ImporterMesh.new()
