@@ -26,6 +26,10 @@ signal cleared
 signal stimulus(kind: String, pos: Vector3, radius: float, house: String, strength: float)
 ## A new season in the realm (a Freeciv turn): sites rise a step, and so on.
 signal season_turned(turn: int)
+## One of the bridge's records with an id (CHANGES: a company, a town) changed in this /world: `now` is it as sent
+## (empty: gone), `was` as it was (empty: new). Only records whose fields changed; fired once every slice is reduced,
+## before `synced`, so a view keeps itself per record instead of walking the whole list each sync.
+signal record_changed(kind: String, id: int, now: Dictionary, was: Dictionary)
 
 var bridge: Node  # bridge.gd: its world_updated is the store's only way in from the realm
 var terrain: Node3D
@@ -48,6 +52,9 @@ var _seen := {}  # scene id -> true: each scene is news once
 const RECORDS := ["cities", "players", "units", "roads", "scenes", "date", "reign", "story", "crown", "seatId",
 	"crownId", "sitting", "counsel", "fallen", "effects", "peace", "prosperity", "souls", "goal", "threat", "turn", "royals", "promises", "trust", "rival", "works", "rebels", "vassals", "plague", "fate"]
 var _records := {}
+const CHANGES := ["units", "cities"]  # the records record_changed reports, by id
+var _by_id := {}  # kind -> id -> the record as last sent (CHANGES)
+var _changed: Array = []  # this /world's [kind, id, now, was], fired once it is reduced
 
 const SceneKinds := preload("res://scripts/scene_kinds.gd")  # reach, power and tone of each kind
 
@@ -77,12 +84,14 @@ func dispatch(action: StringName, p: Dictionary) -> void:
 			_reduce_records(world)
 			if world.is_empty():
 				cleared.emit()
+				_tell_changes()
 				return  # a new chronicle: the records clear, the scopes wait for its first /world
 			_reduce_realm(world)
 			_reduce_towns(world)
 			_reduce_land(world)
 			_reduce_hosts(world)
 			_reduce_news(world)
+			_tell_changes()
 			synced.emit()
 		STIMULUS:
 			_reduce_minds_perceive(String(p["kind"]), p["at"], String(p.get("house", "")), float(p.get("strength", -1.0)))
@@ -223,6 +232,33 @@ func _reduce_records(world: Dictionary) -> void:
 	for k in RECORDS:
 		if world.has(k):
 			_records[k] = world[k]
+	for k in CHANGES:
+		if world.is_empty() or world.get(k) is Array:
+			_diff(k, world.get(k, []))
+
+
+## Which of a record's entries (by id) are new, changed or gone since the last /world: queued for record_changed.
+func _diff(kind: String, list: Array) -> void:
+	var was: Dictionary = _by_id.get(kind, {})
+	var now := {}
+	for r in list:
+		if r is Dictionary and r.get("id") != null:
+			var id := int(r["id"])
+			now[id] = r
+			var before: Dictionary = was.get(id, {})
+			if before != r:
+				_changed.append([kind, id, r, before])
+	for id in was:
+		if not now.has(id):
+			_changed.append([kind, id, {}, was[id]])
+	_by_id[kind] = now
+
+
+func _tell_changes() -> void:
+	var out := _changed
+	_changed = []
+	for c in out:
+		record_changed.emit(c[0], c[1], c[2], c[3])
 
 
 ## The realm slice: the season, the crown's purse, the King's name, the realm's rules, the weather.
