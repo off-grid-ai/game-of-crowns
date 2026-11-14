@@ -133,6 +133,7 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- 11-14 07:57 round: landed 7883bc4e (autumn on every tree, root skirts tucked; GLBs imported 07:50) and e1db9235 (street: tavern look, cog to the water, cows off the square). g30 rendering at e1db9235. Bridge and army on the raid; look and square idle until g30 judges seasons and street (~15 min). Bottleneck: the one GPU queue, no change needed.
 - 11-14 07:58 g29 raid: raise WORKS ("RAID Saltkeep raised 4", pillage road and irrigation) but frames FAIL: one small rider on empty grass, nothing readable at the town, all four killed by season 41 so no leaving. -> bridge (framing, raid strength), army (band draws as one rider). g30 (town landuse street seasons with 7883bc4e, e1db9235, 5c115280) next.
 - 11-14 07:52 g28 done: crossing PASS (host on the cog deck, flags), street NEAR (lively square; leaning dark timber house, cut-off orange object and poles, cows among drinkers) -> square. g30 widened to town landuse street seasons, after g29 (raid). Bottleneck: GPU queue; army, bridge idle on raid.
 - 11-14 07:46 g28: castle PASS (gate side, crowned standards), host5 PASS (four hosts under banners), seasons FAIL (summer = autumn leaves, red-brown skirts at tree feet) -> look with the .play/.out. g30 (town, landuse: smoke 5c115280) queued after g29 (raid). Bottleneck: army, bridge, square idle until the raid and smoke frames; one GPU queue. Disk 17 GB.
