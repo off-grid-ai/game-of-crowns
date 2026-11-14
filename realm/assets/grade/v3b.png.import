@@ -2,10 +2,16 @@
 
 importer="3d_texture"
 type="CompressedTexture3D"
+uid="uid://c52klvibihiuo"
+path="res://.godot/imported/v3b.png-26b11cb8a8006e29cf693c89611169b9.ctex3d"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/grade/v3b.png"
+dest_files=["res://.godot/imported/v3b.png-26b11cb8a8006e29cf693c89611169b9.ctex3d"]
 
 [params]
 

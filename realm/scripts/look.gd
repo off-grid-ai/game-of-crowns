@@ -1,7 +1,7 @@
 extends Node
 ## The realm's look, laid over Sky3D's environment once main has set it up:
-## a warm morning sun, one colour grade (assets/grade/golden-hour.png, made
-## with HyperFrames' LUT builder by tools/cube_to_lut.gd), light bouncing into
+## a warm morning sun, one colour grade (look.json lut: assets/grade/v3b.png, fitted to
+## 01-town by tools/fit_look_lut.py), light bouncing into
 ## contact shadows, warm haze in the distance and, at town zoom, the soft focus
 ## of a tilt-shift photo, so a town reads as a world in miniature.
 ## GOC_LOOK=noview leaves it all off, for side-by-side renders.
@@ -81,13 +81,10 @@ func _ready() -> void:
 	# A shot's own hour (--hour=, shot_harness) stands: the golden hour overwrote it (batch 8b: night shots in daylight).
 	if not sky3d.game_time_enabled and not Array(OS.get_cmdline_user_args()).any(func(x): return String(x).begins_with("--hour=")):
 		_golden_hour(sky3d, float(LOOK["sun_elevation"]))
+	# The one colour grade, whatever else is on (look.json lut).
+	env.adjustment_color_correction = _lut(String(LOOK.get("lut", "")))
 	if look_one:
-		# The one look: no brown LUT; a warm key against a cool shade, and a gentle S-curve after AgX.
-		var lut := String(LOOK.get("lut", ""))
-		for a in OS.get_cmdline_user_args():  # --lut=res://…: another grade for one run (the before shot)
-			if String(a).begins_with("--lut="):
-				lut = String(a).substr(6)
-		env.adjustment_color_correction = _lut(lut)
+		# The one look: a warm key against a cool shade, and a gentle S-curve after AgX.
 		env.adjustment_saturation = float(_clarity("saturation", LOOK.get("saturation", 1.1)))
 		env.adjustment_contrast = float(_clarity("contrast", LOOK.get("contrast", 1.12)))
 		sky3d.sky.sun_light_color = Data.colour(_clarity("sun_color", null), Data.colour(LOOK.get("sun_color"), Color(1.0, 0.86, 0.68)))
@@ -106,7 +103,6 @@ func _ready() -> void:
 		_add_fill()
 		_add_outline()
 	else:
-		env.adjustment_color_correction = load("res://assets/grade/golden-hour.png")
 		# The low sun is warm already: the colour main gives back to AgX's grey
 		# would turn the grass olive and the earth orange.
 		env.adjustment_saturation = 1.05
@@ -182,7 +178,7 @@ func _tonemap_and_bounce(env: Environment) -> void:
 		env.sdfgi_y_scale = {50: Environment.SDFGI_Y_SCALE_50_PERCENT, 75: Environment.SDFGI_Y_SCALE_75_PERCENT}.get(int(gi["y_scale"]), Environment.SDFGI_Y_SCALE_100_PERCENT)
 
 
-## A colour grade (a 33-slice LUT strip, golden-hour.png's layout) as a 3D texture: the imported one, or, before
+## A colour grade (a 33-slice LUT strip: red across a tile, green down it, blue by tile) as a 3D texture: the imported one, or, before
 ## Godot has imported a new strip (the v3 grade is made offline by tools/fit_look_lut.py), built from the PNG itself.
 static func _lut(path: String) -> Texture3D:
 	if path == "":
