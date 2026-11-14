@@ -225,6 +225,7 @@ func _reduce_towns(world: Dictionary) -> void:
 	var crown_id := _crown_id(players)
 	var now_scenes: Array = world.get("scenes", [])
 	var raided := _raided(world)
+	var lean: Array = _dict(world.get("harvest")).get("lean", [])  # towns eating lean after a wet harvest (bridge harvest.js)
 	var ids: Array[int] = []
 	for c in world.get("cities", []):
 		var id := int(c["id"])
@@ -238,6 +239,7 @@ func _reduce_towns(world: Dictionary) -> void:
 		# A levy raised here: the muster scene at the town this season or last (bridge crown.js levy).
 		bb.set_var(&"levy", now_scenes.any(func(s): return String(s.get("kind", "")) == "muster" and int(s.get("city", -2)) == id and int(s.get("turn", turn)) >= turn - 1))
 		bb.set_var(&"favour", favour)
+		bb.set_var(&"lean", lean.any(func(t): return int(t) == id))  # a wet harvest and no granary: short rations (harvest.js)
 		bb.set_var(&"raid", raided.has(id))  # raiders at its edge (towns.json raid.near): its folk go in, the bell rings
 		bb.set_var(&"crown_town", int(c.get("owner", -1)) == crown_id)
 		bb.set_var(&"house", String((owner.get("house", {}) as Dictionary).get("name", "")))

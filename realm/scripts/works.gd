@@ -182,6 +182,7 @@ static func states(c: Dictionary, town: int) -> Array:
 	if Engine.has_meta("awareness") and town >= 0:
 		bb.set_var(&"levy", bool(Engine.get_meta("awareness").town(town).get_var(&"levy", false, false)))  # a scene fact: the store's
 		bb.set_var(&"raid", bool(Engine.get_meta("awareness").town(town).get_var(&"raid", false, false)))  # raiders at its edge: the store's
+		bb.set_var(&"lean", bool(Engine.get_meta("awareness").town(town).get_var(&"lean", false, false)))  # short rations: the store's
 	return states_bb(bb)
 
 
@@ -219,6 +220,8 @@ static func states_bb(bb: Blackboard) -> Array:
 		out.append("raid")  # raiders at its edge (awareness.gd _raided): folk indoors, the alarm bell, houses burning
 	if bool(bb.get_var(&"granary_low", false, false)):
 		out.append("low")
+	if bool(bb.get_var(&"lean", false, false)):
+		out.append("lean")  # a wet harvest and no granary (bridge harvest.js): the queue at the granary, bare stalls
 	if bool(bb.get_var(&"prosperity", false, false)):
 		out.append("prosperity")
 	if bool(bb.get_var(&"grief", false, false)):
