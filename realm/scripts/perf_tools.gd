@@ -190,9 +190,13 @@ func _log_perf(delta: float) -> void:
 		var render_gpu := RenderingServer.viewport_get_measured_render_time_gpu(vp_rid)
 		var folk := main.get_tree().get_nodes_in_group("people")
 		var minds := folk.filter(func(n): return n.get_node_or_null("Mind") != null).size()
-		print("PERF video=%.0fMB buffers=%.0fMB static=%.0fMB frames=%d over_200ms=%d fps=%d process=%.1fms render_cpu=%.1fms gpu=%.1fms people=%d minds=%d view=%dx%d scale=%.2f" % [Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0,
+		# The jobs' tally since the last line, on this line too (the run's log is what is read; perf.log has it below).
+		var tallied := PackedStringArray()
+		for k in tally:
+			tallied.append("%s:%.1fms/%d" % [k, tally[k][0] / 1000.0, tally[k][1]])
+		print("PERF video=%.0fMB buffers=%.0fMB static=%.0fMB frames=%d over_200ms=%d fps=%d process=%.1fms render_cpu=%.1fms gpu=%.1fms people=%d minds=%d view=%dx%d scale=%.2f jobs=%s" % [Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0,
 			Performance.get_monitor(Performance.RENDER_BUFFER_MEM_USED) / 1048576.0, Performance.get_monitor(Performance.MEMORY_STATIC) / 1048576.0, _frames, _slow,
-			Engine.get_frames_per_second(), Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0, render_cpu, render_gpu, folk.size(), minds, main.get_viewport().get_visible_rect().size.x, main.get_viewport().get_visible_rect().size.y, main.get_viewport().scaling_3d_scale])
+			Engine.get_frames_per_second(), Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0, render_cpu, render_gpu, folk.size(), minds, main.get_viewport().get_visible_rect().size.x, main.get_viewport().get_visible_rect().size.y, main.get_viewport().scaling_3d_scale, ",".join(tallied)])
 	if probing and not tally.is_empty():
 		var jobs := PackedStringArray()
 		for k in tally:
