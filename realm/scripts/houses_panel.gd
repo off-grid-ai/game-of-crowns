@@ -49,6 +49,34 @@ func _build_houses() -> void:
 	v.add_child(_decree_box)
 
 
+## A pact or a marriage on a house's row: its short word, and its line on hover.
+const BOUND_WORDS := {
+	"marriage": ["WED", "Bound by marriage to %s: they stand together in war, and to strike one is to betray the match."],
+	"pact": ["PACT", "Sworn in a pact with %s: each joins the other's wars, and an attack between them is a betrayal."],
+}
+
+
+## The houses bound to this one, by kind, by their short names (the mirror's intrigue, seat to seat).
+func _bound_to(pid: int, players: Array) -> Dictionary:
+	var st := preload("res://scripts/awareness.gd").store()
+	if st == null:
+		return {}
+	var name_of := {}
+	for q in players:
+		name_of[int(q["id"])] = String((q.get("house", {}) as Dictionary).get("name", q.get("name", ""))).replace("House ", "")
+	var out := {}
+	for it in st.realm.get_var(&"intrigue", [], false):
+		var kind := String(it.get("kind", ""))
+		if not BOUND_WORDS.has(kind) or bool(it.get("secret", false)):
+			continue
+		var a := int(it.get("from", -1))
+		var b := int(it.get("to", -1))
+		var other := b if a == pid else (a if b == pid else -1)
+		if other >= 0 and name_of.has(other) and not (out.get(kind, []) as Array).has(name_of[other]):
+			out[kind] = (out.get(kind, []) as Array) + [name_of[other]]
+	return out
+
+
 func _read_standing() -> void:
 	var st: Node = Awareness.store()
 	if _standing:
@@ -146,6 +174,14 @@ func _fill_houses() -> void:
 		if not truces.is_empty():
 			var held := truces[0] + (" +%d" % (truces.size() - 1) if truces.size() > 1 else "")
 			odds.append("[color=#%s]TRUCE · %s[/color]" % [T.ACCENT.to_html(false), held.to_upper()])
+		# Whom they're bound to, by a pact or a marriage (the mirror's intrigue; bridge characters.js boundTo): bound
+		# houses join each other's wars, and an attack on one's own ally is a betrayal (CK3's alliances by marriage).
+		var bound := _bound_to(owner, players)
+		for kind in ["marriage", "pact"]:
+			var names: Array = bound.get(kind, [])
+			if not names.is_empty():
+				var shown_b := String(names[0]) + (" +%d" % (names.size() - 1) if names.size() > 1 else "")
+				odds.append("[color=#%s]%s · %s[/color]" % [T.TEXT_2.to_html(false), String(BOUND_WORDS[kind][0]), shown_b.to_upper()])
 		if odds.is_empty():
 			grid.add_child(name)
 		else:
@@ -167,6 +203,9 @@ func _fill_houses() -> void:
 				said.append("At war with " + ", ".join(wars))
 			if not truces.is_empty():
 				said.append("Under the King's truce with " + ", ".join(truces))
+			for kind in ["marriage", "pact"]:
+				if not (bound.get(kind, []) as Array).is_empty():
+					said.append(String(BOUND_WORDS[kind][1]) % ", ".join(bound[kind]))
 			line.tooltip_text = "\n".join(said)
 			line.mouse_filter = Control.MOUSE_FILTER_PASS
 			cell.add_child(line)
