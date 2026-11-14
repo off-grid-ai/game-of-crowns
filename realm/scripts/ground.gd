@@ -20,9 +20,9 @@ const TownNav := preload("res://scripts/town_nav.gd")
 static var towns: Node3D  # the realm's towns (towns.gd), set by main as the realm loads
 static var terrain: Node3D  # the land (terrain.gd), set by main as the realm loads
 
-const CLEAR := 0.03  # how far outside a footprint a body is set: half a shoulder, about 0.25 m
-const RING := 0.04  # how far apart the search's rings are
-const REACH := 2.4  # how far nearest_clear looks by default (60 rings)
+const REACH := 2.4  # how far nearest_clear looks by default
+const RINGS := 6  # rings nearest_clear tries out to its reach, off a walk map
+const SPOKES := 8  # points on each ring: at most RINGS x SPOKES checks a call
 
 
 ## Whether something reaching `radius` all round may stand at `p` (world): on walkable land and in no footprint.
@@ -92,41 +92,30 @@ static func inside(p: Vector3) -> PackedVector2Array:
 	return PackedVector2Array()
 
 
-## The nearest place to `p` (world) a body reaching `radius` may stand, at the ground's height: on the town's walk
-## map where it has one, pushed out of any footprint it still falls in, then on rings widening out to `max_dist`
-## (wedged between two buildings, or asked to stand in the water). `p` itself, grounded, when nothing near is clear.
+## The nearest place to `p` (world) a body reaching `radius` may stand, at the ground's height. In a town with a walk
+## map, the map's own nearest point (NavigationServer2D: the map is the town's open ground, every footprint cut out).
+## Elsewhere (the open land, or a town whose map isn't baked), `p` if clear, else the first clear point on SPOKES
+## points of RINGS rings widening out to `max_dist`: a fixed cost, never a fine search (Mac's 70 s beach ball, 14 Nov:
+## a company asked to stand in a packed town or the river ran 60 rings x 12 points x 9 reach points). `p` itself,
+## grounded, when nothing near is clear.
 static func nearest_clear(p: Vector3, radius := 0.0, max_dist := REACH) -> Vector3:
-	var q := p
 	for t in TownNav.towns_at(towns, p):
-		var id: int = t[0]
-		var root: Node3D = t[1]
-		var map: RID = TownNav._maps.get(id, RID())
+		var map: RID = TownNav._maps.get(int(t[0]), RID())
 		if map.is_valid() and TownNav.ready(map):
-			var c := root.global_position
-			var m := TownNav.closest(map, Vector2(q.x - c.x, q.z - c.z))
-			q = Vector3(c.x + m.x, q.y, c.z + m.y)
-		for i in 6:
-			var moved := false
-			for o in _reach_of(radius):
-				var fp := NavGround.inside_something(root, q + o, terrain)
-				if not fp.is_empty():
-					q = _out_of(root, fp, q + o) - o
-					moved = true
-			if not moved:
-				break
-	if not is_clear(q, radius):
-		var found := false
-		for ring in range(1, int(ceil(max_dist / RING)) + 1):
-			for i in 12:
-				var o := Vector3(cos(TAU * i / 12.0), 0, sin(TAU * i / 12.0)) * ring * RING
-				if is_clear(q + o, radius):
-					q += o
-					found = true
-					break
-			if found:
-				break
-		if not found:
-			q = p
+			var c: Vector3 = (t[1] as Node3D).global_position
+			var m := TownNav.closest(map, Vector2(p.x - c.x, p.z - c.z))
+			return _grounded(Vector3(c.x + m.x, p.y, c.z + m.y), p)
+	if is_clear(p, radius):
+		return _grounded(p, p)
+	for ring in range(1, RINGS + 1):
+		for i in SPOKES:
+			var q := p + Vector3(cos(TAU * i / SPOKES), 0, sin(TAU * i / SPOKES)) * max_dist * ring / RINGS
+			if is_clear(q, radius):
+				return _grounded(q, p)
+	return _grounded(p, p)
+
+
+static func _grounded(q: Vector3, p: Vector3) -> Vector3:
 	return Vector3(q.x, terrain.height_at(q.x, q.z) if terrain else p.y, q.z)
 
 
@@ -137,20 +126,3 @@ static func _reach_of(radius: float) -> Array:
 		for i in 8:
 			out.append(Vector3(cos(TAU * i / 8.0), 0, sin(TAU * i / 8.0)) * radius)
 	return out
-
-
-## `p` (world) moved to the nearest edge of the footprint it is in, and a little past it.
-static func _out_of(root: Node3D, fp: PackedVector2Array, p: Vector3) -> Vector3:
-	var c := root.global_position
-	var q := Vector2(p.x - c.x, p.z - c.z)
-	var best := q
-	var gap := INF
-	var mid := Vector2.ZERO
-	for i in fp.size():
-		mid += fp[i] / fp.size()
-		var e := Geometry2D.get_closest_point_to_segment(q, fp[i], fp[(i + 1) % fp.size()])
-		if e.distance_to(q) < gap:
-			gap = e.distance_to(q)
-			best = e
-	best += (best - mid).normalized() * CLEAR
-	return Vector3(c.x + best.x, p.y, c.z + best.y)
