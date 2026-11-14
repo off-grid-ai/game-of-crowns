@@ -540,3 +540,4 @@ Switches (`--name`) go after `--` on the game's command line.
 - A hungry host's camp (/world hosts[].hungry): its cook fires and the men huddled at each: `realm/data/army.json` `camp.hungry` (count 4, sitters 5).
 - A hungry host's stragglers trailing its column (the share is the bridge's, hosts.json supply): `realm/data/army.json` `stragglers` (back 0.6, across 0.08).
 - How a great house takes a town after a failed storm: `realm/data/siege.json` `approach` (mine: in 1.5, heap 0.08 + heap_per 0.06 a season dug, sappers 3; starve: posts 10 round the town, skip 0.9 rad of the camp, watch 2; bribe: meet 0.45 of the way from the gate, pace 0.12, talk_s 6, again_s 40).
+- A host answering the King's order where it stands: `realm/data/army.json` `ack` (role "cheer", the battlecry; s 1.8 seconds).

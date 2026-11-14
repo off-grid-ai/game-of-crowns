@@ -319,6 +319,7 @@ func _ask(body: Dictionary, done := Callable()) -> void:
 		if code == 200:
 			main.sound.ordered(String(body.get("order", "")))  # heard as it sets off (sounds.json orders)
 			main.barks.host("order", int(body.get("host", -1)))  # and its captain says he goes (barks.gd)
+			main.units.ack(int(body.get("host", -1)))  # and its men raise a cry where they stand (army.gd ack)
 			main.bridge._poll()
 		if done.is_valid():
 			done.call(code, said))

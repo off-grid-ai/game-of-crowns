@@ -19,6 +19,13 @@ const Army := preload("res://scripts/army.gd")  # a host in the field is drawn a
 
 
 
+## The King's host `id` answers an order the bridge took (host_command.gd; army.gd ack).
+func ack(id: int) -> void:
+	var view: Node = _hosts.get(id)
+	if is_instance_valid(view) and view.has_method("ack"):
+		view.ack()
+
+
 ## A house's host to follow: soldiers only, the biggest stack in the field
 ## first, then its biggest garrison.
 func army_of(owner: int) -> Node3D:

@@ -715,6 +715,22 @@ func play(r: Dictionary, role: String) -> void:
 	_clips(r, role)
 
 
+## The host answers the King's order (host_command.gd, the bridge took it; Warcraft III's unit that answers every
+## command, every action gets a reaction): each regiment standing at ease raises its battlecry (army.json ack: role,
+## for s seconds, a little out of step), then stands at ease again. A marching one keeps marching.
+func ack() -> void:
+	var k: Dictionary = Data.value("army", "ack", {})
+	for r in _regiments:
+		if not String(r.get("state", "")) in ["halt", "rest"]:
+			continue
+		var hold := float(k.get("s", 1.8)) * _rng.randf_range(0.85, 1.15)
+		r["fidget"] = hold  # no man fidgets through it
+		play(r, String(k.get("role", "cheer")))
+		get_tree().create_timer(hold).timeout.connect(func():
+			if is_instance_valid(self) and String(r.get("state", "")) in ["halt", "rest"]:
+				play(r, "idle"))
+
+
 func track(r: Dictionary, role: String) -> int:
 	return _track(r, role)
 
