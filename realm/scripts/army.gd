@@ -309,12 +309,9 @@ func march_to(to: Vector3) -> void:
 	for i in range(order.size() - 1, -1, -1):  # tail to head: the way the column already stands
 		trail.append(_ground_at((order[i]["node"] as Node3D).global_position))
 	var head: Vector3 = trail[trail.size() - 1]
-	var roads = main.get("roads")
-	var road: PackedVector3Array = roads.route(head, to, Data.num("army", "march.roadReach", 12.0)) if roads and roads.has_method("route") else PackedVector3Array()
 	_path = trail
-	if road.size() >= 2:
-		_path.append_array(road.slice(1))
-	_path.append(_ground_at(to))
+	_path.append_array(_onward(head, to))
+	_path = _dry(_path, trail.size())
 	_cum = PackedFloat32Array([0.0])
 	for j in range(1, _path.size()):
 		_cum.append(_cum[j - 1] + _path[j].distance_to(_path[j - 1]))
@@ -325,7 +322,7 @@ func march_to(to: Vector3) -> void:
 	for r in order:
 		slowest = minf(slowest, Data.num("army", "march.speed", 0.16) * float(_unit(String(r["unit"])).get("speed", 1.0)))
 	var pace := maxf(slowest, ahead / maxf(2.0, Awareness.season_seconds * 0.9))
-	_field = _ground_at(to)
+	_field = _path[_path.size() - 1]  # where it can stand: `to`, or the shore where the water stops it
 	_goal = "column"
 	for r in order:
 		r["s"] = _along((r["node"] as Node3D).global_position)
@@ -1352,12 +1349,14 @@ func _form_on_way(town: Vector3, to: Vector3, root: Node3D) -> void:
 	# On toward `to` from the way's end: the realm's road, never back toward the town, else straight on.
 	var chosen: PackedVector3Array = pick["way"]
 	var from := chosen[chosen.size() - 1]
-	var road: PackedVector3Array = roads.route(from, to, Data.num("army", "march.roadReach", 12.0)) if roads and roads.has_method("route") else PackedVector3Array()
 	var gone := Vector2(from.x - town.x, from.z - town.z).length()
 	_path = chosen
-	for p in (road.slice(1) if road.size() >= 3 else PackedVector3Array([to])):
-		if Vector2(p.x - town.x, p.z - town.z).length() > gone or p == to:
+	var onward := _onward(from, to)
+	for i in onward.size():
+		var p := onward[i]
+		if Vector2(p.x - town.x, p.z - town.z).length() > gone or i == onward.size() - 1:
 			_path.append(p)
+	_path = _dry(_path, 1)
 	_cum = PackedFloat32Array([0.0])
 	for j in range(1, _path.size()):
 		_cum.append(_cum[j - 1] + _path[j].distance_to(_path[j - 1]))
@@ -1372,6 +1371,40 @@ func _form_on_way(town: Vector3, to: Vector3, root: Node3D) -> void:
 		_set_at(r, _at(r["s"]), _heading(r["s"]))
 		r["state"] = "halt"
 		_clips(r, "rest")
+
+
+## The way on from `from` to `to`, `from` left out: the realm's road (roads.route) where one joins them, else the
+## realm's land route (land_paths.land_path, its A* over the land tiles), ending at `to`.
+func _onward(from: Vector3, to: Vector3) -> PackedVector3Array:
+	var roads = main.get("roads")
+	var road: PackedVector3Array = roads.route(from, to, Data.num("army", "march.roadReach", 12.0)) if roads and roads.has_method("route") else PackedVector3Array()
+	var way: PackedVector3Array = road if road.size() >= 3 else main.terrain.paths.land_path(from, to)
+	var out := way.slice(1)
+	if out.is_empty() or out[out.size() - 1] != to:
+		out.append(to)
+	return out
+
+
+## `way` as far as men can walk it: from point `keep` on, cut where it first runs onto water (sampled every
+## march.wetStep world units), ending on the last dry ground before it. A town over the sea, or no land route to
+## it (land_path's straight line), halts a host on the shore, never in the sea (g36 muster: the host halted in the
+## strait); crossing water is the ships' (board).
+func _dry(way: PackedVector3Array, keep: int) -> PackedVector3Array:
+	var step := Data.num("army", "march.wetStep", 0.2)
+	var out := way.slice(0, maxi(keep, 1))
+	for i in range(maxi(keep, 1), way.size()):
+		var a := out[out.size() - 1]
+		var b := way[i]
+		var n := maxi(1, ceili(a.distance_to(b) / step))
+		for k in range(1, n + 1):
+			var q := a.lerp(b, float(k) / n)
+			if not main.terrain.is_land(q.x, q.z):
+				var last := a.lerp(b, float(k - 1) / n)
+				if last.distance_to(out[out.size() - 1]) > 0.01:
+					out.append(_ground_at(last))
+				return out
+		out.append(b)
+	return out
 
 
 ## The host in column on the road, its head march.lead short of the turn-off, in column.order (by role), each
