@@ -564,3 +564,4 @@ Switches (`--name`) go after `--` on the game's command line.
 - A host answering the King's order where it stands: `realm/data/army.json` `ack` (role "cheer", the battlecry; s 1.8 seconds).
 - Beacons on a walled town's wall walk when a foe's host nears: `realm/data/walls.json` `beacons` (reach 16 world units, linger 30 s, smoke, the watchman's clip).
 - The rival King's raiders in his colours: `realm/data/army.json` `map.raider.rival_tint` (0.6: how far their cloth leans to /world rival.colour).
+- Vassals named under a great house in the Houses drawer before "+N": `realm/data/herald.json` `drawer.vassals_shown` (3).
