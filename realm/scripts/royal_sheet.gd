@@ -11,6 +11,7 @@ const T := preload("res://scripts/theme.gd")
 const Awareness := preload("res://scripts/awareness.gd")
 const PaintedFaces := preload("res://scripts/painted_faces.gd")
 const Settings := preload("res://scripts/settings.gd")  # the reigns whose first council was held
+const UI := preload("res://scripts/ui.gd")  # the realm's calendar (season_of)
 
 var ui: Node
 var _card: PanelContainer
@@ -407,28 +408,45 @@ func _first_council() -> void:
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", T.GAP_SECTION)
 	c.add_child(v)
+	# The King first (CK3's opening frames the ruler before anything else): the crowning line, his painted
+	# face large, his name as the card's title, his age and nature under it.
+	var st: Node = Awareness.store()
+	var seat := String(ui.town_of.call(int(st.rec("seatId", -1))).get("name", "")) if st else ""
+	var when := UI.season_of(int(st.rec("turn", 1))) if st else ""
+	var crowned := String(w.get("crowned", "")).replace("{seat}", seat).replace("{season}", when)
+	if crowned != "":
+		v.add_child(T.label(crowned, T.ACCENT))
 	var head := HBoxContainer.new()
 	head.add_theme_constant_override("separation", T.GAP_WIDE)
 	v.add_child(head)
 	var face := PaintedFaces.face({"id": String(king.get("id", "king")), "gender": "female" if bool(king.get("woman", false)) else "male", "age": int(king.get("age", 40))})
 	if face:
+		var frame := PanelContainer.new()
+		frame.add_theme_stylebox_override("panel", T._box(Color(0, 0, 0, 0.35), Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.8), 6, 3))
+		head.add_child(frame)
 		var pic := TextureRect.new()
 		pic.texture = face
 		pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-		pic.custom_minimum_size = Vector2(72, 96)
-		head.add_child(pic)
+		var fs: Array = w.get("face", [150, 200])
+		pic.custom_minimum_size = Vector2(float(fs[0]), float(fs[1]))
+		frame.add_child(pic)
 	var names := VBoxContainer.new()
 	names.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	names.alignment = BoxContainer.ALIGNMENT_CENTER
 	head.add_child(names)
-	names.add_child(T.title(String(w.get("head", "{name}")).replace("{name}", String(king.get("name", ""))), 24, T.ACCENT))
+	names.add_child(T.title(String(w.get("head", "{name}")).replace("{name}", String(king.get("name", ""))), int(w.get("head_size", 36)), T.ACCENT))
+	var age := T.prose(String(w.get("age", "")).replace("{age}", str(int(king.get("age", 0)))), T.SIZE_BODY, T.TEXT_2)
+	names.add_child(age)
 	var t := traits_of(king)
 	if t != "":
-		_say(names, _w("crowned_nature", "{age}, by nature {traits}.").replace("{age}", str(int(king.get("age", 0)))).replace("{traits}", t), T.TEXT_2)
+		var nat := T.prose(String(w.get("nature", "")).replace("{traits}", t), T.SIZE_BODY + 2, T.TEXT)
+		nat.autowrap_mode = TextServer.AUTOWRAP_WORD
+		nat.custom_minimum_size.x = 300
+		names.add_child(nat)
 	# The realm as he finds it, in the Hand's words: his surest friend, his likeliest foe, the rival over the border,
 	# and what the chest holds.
 	v.add_child(T.label(String(w.get("situation", ""))))
-	var st: Node = Awareness.store()
 	var warm := {}
 	var cold := {}
 	for p in (st.rec("players", []) if st else []):

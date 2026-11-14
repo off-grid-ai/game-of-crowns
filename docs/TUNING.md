@@ -593,7 +593,7 @@ Switches (`--name`) go after `--` on the game's command line.
 - A field battle's lines stand closer, so the clash fills the frame (g36 battle: two forces on an empty lawn): `realm/data/battle.json` `field.gap` 6.0 (was 9.0).
 - Settings, the game section: `realm/data/juice.json` `settings.sizes` (word size steps, 0.85..1.4 of the interface scale) and `settings.speeds` (one name per `speed.steps`).
 - Camera speed choices in Settings: `realm/data/juice.json` `settings.cams` (Slow 0.6, Normal 1.0, Fast 1.6; scales keys, the pad and trackpad scroll, never a drag).
-- The first council in a reign's opening: `realm/data/royal_sheet.json` `council.after` (9 s after the crowning) and `council.by_turn` (2: only in the first seasons).
+- The first council in a reign's opening: `realm/data/royal_sheet.json` `council.after` (9 s after the crowning) and `council.by_turn` (2: only in the first seasons). The King first: `council.crowned`, `council.face` (portrait size, 150×200), `council.head_size` (36).
 - Foot soldiers wear the house colour on the tabard only, hood and hose plain brown (g37 muster): `realm/data/army.json` `units.spearmen/men_at_arms/archers/knights.cloth` (undyed [0.42, 0.34, 0.25]; band [0.42, 0.8] of the height).
 - The muster's lens low and along the column (g37; 03-army): `realm/data/army.json` `camera.musterPitch` 28 degrees, `musterHold` 0.4 of the column's length (was 0.75), `musterOff` 0.35 rad off its line (was 0.5).
 - A lord's loyalty in words on his sheet: `realm/data/royal_sheet.json` `lord_loyalty` (bands by above, 0..100) and `lord_loyalty_danger` (30: red below).
