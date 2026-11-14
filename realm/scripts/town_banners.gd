@@ -47,6 +47,11 @@ func rehouse(root: Node3D, house: Dictionary, color: Color, owner: int) -> void:
 		var holder := b.get_parent() as Node3D if b else null
 		if holder == null:
 			continue
+		if b.has_meta("arms"):  # a bannerman's own arms: not the holder's to strike (the town's merge adds or drops them)
+			var kept: Array = root.get_meta("banners", [])
+			kept.append(flag)
+			root.set_meta("banners", kept)
+			continue
 		var at := b.position
 		var h := float(b.get_meta("height", 0.65))
 		b.queue_free()

@@ -625,3 +625,4 @@ Switches (`--name`) go after `--` on the game's command line.
 - A vassal's manor on the map: `realm/data/towns.json` `map_seat.manor` (keep 1.4: its manor house's height as the marker, standard 1.8, most 3.5: how far it grows with the camera's distance).
 - A town's roads out through its wall: `realm/data/towns.json` `plots.road_past` (2.0: how far past the town's edge its main roads run, was 1.0) and `town_wall.road_on` (3.0: how far a main road is taken on when finding its gate).
 - A forge's working floor, where its smiths stand inside its walls: `realm/data/towns.json` `forge.floor_half` (0.09: half the side of the open floor round each smith's post, ground.gd open_floor).
+- A grown town's new houses rising as building sites: `realm/data/towns.json` `grow.sites` (3: at most this many at once, the rest stand at once) and `grow.seasons` (2: seasons a new house takes to rise).

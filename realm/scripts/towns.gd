@@ -53,6 +53,8 @@ func sync(houses: Dictionary) -> void:
 			if towns[id]["signature"] != sig:
 				_changed(towns[id], c, house)
 				towns[id]["signature"] = sig
+				if _shows(towns[id]["data"], c):
+					_queue[id] = {"c": c, "house": house, "sig": sig, "was": towns[id]["data"]}  # its new pieces laid off-screen, then added
 			towns[id]["data"] = c
 			# Its life (builders, recruits, crowds) is refreshed within the frame budget too.
 			_life_queue[id] = house
@@ -81,7 +83,14 @@ func _changed(t: Dictionary, c: Dictionary, house: Dictionary) -> void:
 		banners.rehouse(node, house, preload("res://scripts/heraldry.gd").colour(house, Color.GRAY, "#888888"), int(c["owner"]))
 
 
-var _queue := {}  # city id -> {c, house, sig}: towns waiting to be built
+## Whether a change to a standing town shows in what stands: its size (new houses), its buildings (a stone wall, a
+## granary, a trade) or its rank (a capital's castle). A change of hands alone is its banners (_changed).
+static func _shows(was: Dictionary, c: Dictionary) -> bool:
+	return int(was.get("size", 0)) != int(c["size"]) or str(was.get("buildings", [])) != str(c["buildings"]) or bool(was.get("capital", false)) != bool(c["capital"]) \
+		or (c.get("family") is String and int(was.get("owner", -1)) != int(c["owner"]))  # a bannerman's arms stand or go with his liege
+
+
+var _queue := {}  # city id -> {c, house, sig, was?}: towns waiting to be built, or a standing one's new pieces to lay
 var _life_queue := {}  # city id -> house: towns whose life wants refreshing
 const BUILD_BUDGET_MS := 12  # per frame: a town's raise waits a frame when it is spent (_pace)
 var _graded_at := 0
@@ -165,6 +174,21 @@ func _raise(best: int, job: Dictionary) -> void:
 	var node: Node3D = await _build_town(job["c"], job["house"])
 	var pt0 := Time.get_ticks_usec()
 	PerfTools.add("build@last", pt0 - _step_at)  # the build's last step, after its last _pace
+	if towns.has(best) and is_instance_valid(towns[best]["node"]):
+		# A standing town: its new layout was laid off-screen; only what it lacks is added, nothing torn down.
+		Engine.set_meta("stage", "towns.merge")
+		var standing: Node3D = towns[best]["node"]
+		var homes_before: Array = standing.get_meta("homes", [])
+		_merge(standing, node)
+		towns[best]["data"] = job["c"]
+		_grow(job.get("was", {}), homes_before, standing, job["c"])
+		terrain.season_on(standing)
+		PerfTools.add("towns.merge", Time.get_ticks_usec() - pt0)
+		terrain.hold_grading = false
+		_raising = false
+		_graded_at = Time.get_ticks_msec()
+		terrain.commit_grading()  # only its new plots' ground (terrain.gd: each graded place on its own)
+		return
 	Engine.set_meta("stage", "towns.add")  # each step after the paced build named, for the slow-frame log (perf_tools.gd)
 	add_child(node)
 	towns[best] = {"node": node, "signature": job["sig"], "data": job["c"]}
@@ -192,6 +216,148 @@ func _raise(best: int, job: Dictionary) -> void:
 	if _queue.is_empty():
 		print_verbose("BUILD towns raised %d in %d ms, a few per frame" % [_raised, now - _raising_since])
 		_raising_since = 0
+
+
+## A standing town takes from its new layout (`fresh`, built off-screen) only what it lacks: each piece is known by
+## what it is and where it stands (a batch by its kit kind and mesh; anything else by its class and place). A new
+## piece (a stone wall, a castle, a granary's barn, a new standard) moves in; a batch whose houses changed is
+## swapped for the new one, batch by batch; a piece the new layout dropped (a palisade a stone wall replaced) goes.
+## Its life, its dressing and everything else standing are left as they are. `fresh` is freed.
+func _merge(standing: Node3D, fresh: Node3D) -> void:
+	var have := {}
+	for n in standing.get_children():
+		if n.name in KEPT:
+			continue
+		have[_piece_key(n)] = n
+	var seen := {}
+	for n in fresh.get_children():
+		var k := _piece_key(n)
+		seen[k] = true
+		var old: Node = have.get(k)
+		if old == null:
+			fresh.remove_child(n)
+			standing.add_child(n)
+		elif n is MultiMeshInstance3D:
+			if not _same_batch((old as MultiMeshInstance3D).multimesh, (n as MultiMeshInstance3D).multimesh):
+				(old as MultiMeshInstance3D).multimesh = (n as MultiMeshInstance3D).multimesh
+		elif _contents(old) != _contents(n):
+			# A holder whose contents grew (its fields, its castle's parts): the new one in its place.
+			standing.add_child(_moved(fresh, n))
+			old.queue_free()
+	for k in have:
+		if not seen.has(k):
+			have[k].queue_free()
+	for key in fresh.get_meta_list():
+		if key != "yards":  # its own (a castle's bailey) plus what its life opened (a forge's floor): kept
+			standing.set_meta(key, fresh.get_meta(key))
+	var flags: Array = []
+	for f in standing.find_children("Banner", "", true, false):
+		if not (f as Node).is_queued_for_deletion() and not _under_kept(standing, f):
+			flags.append(f)
+	standing.set_meta("banners", flags)
+	fresh.free()
+
+
+const KEPT := ["Life", "Dressing"]  # a town's own, not its layout's: never merged
+
+
+static func _under_kept(root: Node, n: Node) -> bool:
+	var p := n.get_parent()
+	while p and p != root:
+		if p.name in KEPT or p.is_queued_for_deletion():
+			return true
+		p = p.get_parent()
+	return false
+
+
+static func _piece_key(n: Node) -> String:
+	if n is MultiMeshInstance3D:
+		var mm: MultiMesh = (n as MultiMeshInstance3D).multimesh
+		return "batch|%s|%d" % [String(n.get_meta("kind", "")), mm.mesh.get_rid().get_id() if mm and mm.mesh else 0]
+	var at: Vector3 = (n as Node3D).position if n is Node3D else Vector3.ZERO
+	return "%s|%s|%.2f,%.2f,%.2f" % [n.get_class(), String(n.name).get_slice("@", 0) if not String(n.name).begins_with("@") else "", at.x, at.y, at.z]
+
+
+static func _moved(from: Node, n: Node) -> Node:
+	from.remove_child(n)
+	return n
+
+
+## What a piece holds, as a key: its descendants by class and place (a field added, a tower raised changes it).
+static func _contents(n: Node) -> int:
+	var parts: Array = []
+	for d in n.find_children("*", "", true, false):
+		parts.append([d.get_class(), (d as Node3D).position if d is Node3D else Vector3.ZERO])
+	return hash(parts)
+
+
+static func _same_batch(a: MultiMesh, b: MultiMesh) -> bool:
+	if a == null or b == null or a.instance_count != b.instance_count:
+		return false
+	for i in a.instance_count:
+		if not a.get_instance_transform(i).is_equal_approx(b.get_instance_transform(i)):
+			return false
+	return true
+
+
+## A town that grew is seen growing (towns.json grow; Manor Lords' and Banished's plots: a house rises on its plot
+## along the street before it stands): each house its new plan has that the old one didn't (meta homes, by its stable
+## home_id) rises as a building site (town_life.raise_site: scaffold, builders, a season a step) where it will stand,
+## its own model rising, hidden in its batch meanwhile (as fire.gd hides a burnt one) and shown when the site is done
+## or goes. At most towns.json grow.sites at once; the rest stand at once. The new buildings Freeciv gained (a
+## temple, barracks, a granary) name the first sites.
+func _grow(old: Dictionary, homes_before: Array, node: Node3D, c: Dictionary) -> void:
+	if old.is_empty() or int(c.get("size", 0)) <= int(old.get("size", 0)):
+		return
+	var before := {}
+	for h in homes_before:
+		if (h as Array).size() >= 6:
+			before[String(h[5])] = true
+	var gained: Array = (c.get("buildings", []) as Array).filter(func(b): return not (old.get("buildings", []) as Array).has(b))
+	var sites := 0
+	var most := int(preload("res://scripts/data.gd").num("towns", "grow.sites", 3))
+	for h in node.get_meta("homes", []):
+		if sites >= most:
+			break
+		var ha: Array = h
+		if ha.size() < 6 or before.has(String(ha[5])):
+			continue
+		var hidden := _hide_home(node, ha)
+		if hidden.is_empty():
+			continue
+		var at: Vector3 = ha[2]
+		var face: Vector3 = ha[1]
+		at.y = _ground_y(node.position, at)
+		var plot := Transform3D(Basis(Vector3.UP, atan2(face.x, face.z)), at)  # raise_site turns its model by PI from the plot's: the house's own yaw
+		var show := func() -> void:
+			for e in hidden:
+				var mm: MultiMesh = e[0]
+				if is_instance_valid(mm) and int(e[1]) < mm.instance_count:
+					mm.set_instance_transform(int(e[1]), e[2])
+		var building: String = String(gained.pop_front()) if not gained.is_empty() else ""
+		var site: Node3D = life.raise_site(node, plot, building, int(preload("res://scripts/data.gd").num("towns", "grow.seasons", 2)), show, String(ha[3]))
+		if site == null:
+			show.call()  # no room or no kit for the site: it simply stands
+			continue
+		site.tree_exiting.connect(show)  # the town's life redressed, the site gone with it: the house stands
+		sites += 1
+
+
+## Hides a home (meta homes row: [doorstep, face, where, kind, its place in the kind's batch, id]) in every batch of
+## its kind, as fire.gd _char does; returns [[multimesh, index, transform]] to show it again, [] if not found.
+func _hide_home(node: Node3D, h: Array) -> Array:
+	var out := []
+	for g in node.get_children():
+		if not (g is MultiMeshInstance3D and String(g.get_meta("kind", "")) == String(h[3])):
+			continue
+		var mm: MultiMesh = (g as MultiMeshInstance3D).multimesh
+		var idx := int(h[4])
+		if mm == null or idx >= mm.instance_count:
+			continue
+		var t := mm.get_instance_transform(idx)
+		out.append([mm, idx, t])
+		mm.set_instance_transform(idx, Transform3D(Basis.from_scale(Vector3.ONE * 0.0001), t.origin))
+	return out
 
 
 func nearest(pos: Vector3, max_dist := 6.0) -> Dictionary:
@@ -1973,7 +2139,7 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 	banners.stand(root, sq + Vector3(0, _ground_y(center, sq), 0), color, house, 0.85)
 	if not family.is_empty():
 		var side := Vector3(-sq.z, 0, sq.x).normalized() * 0.18
-		banners.stand(root, sq + side + Vector3(0, _ground_y(center, sq + side), 0), color, family, 0.85)
+		banners.stand(root, sq + side + Vector3(0, _ground_y(center, sq + side), 0), color, family, 0.85).set_meta("arms", "family")  # its own, not its holder's: rehouse leaves it
 
 	# The church, hall and tavern stand on the square from the kit (town_layout.real_lots).
 	if "Granary" in buildings and not _trade_of("granary").has("stood"):  # a granary trade stood: it is the store
