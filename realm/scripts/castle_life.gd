@@ -44,6 +44,7 @@ func _ready() -> void:
 func _tick() -> void:
 	for c in _done.keys():
 		if not is_instance_valid(c):
+			_unpeople(_done[c])
 			for n in _done[c]["nodes"]:
 				if is_instance_valid(n):
 					n.queue_free()
@@ -57,9 +58,24 @@ func _tick() -> void:
 			if is_instance_valid(t):
 				t.visible = lit
 		# The training yard drills as many lines as the lord has companies standing in the town (castle_folk.gd).
-		if (_done[c] as Dictionary).has("drill") and st:
+		var folk: Dictionary = _done[c].get("folk", {})
+		if folk.has("drill") and st:
 			var town: Dictionary = st.city(int(_done[c].get("city", -1)))
-			preload("res://scripts/castle_folk.gd").show_lines(_done[c], preload("res://scripts/castle_folk.gd").garrison_lines(units, Aw.civilian, Aw.ships, town, (_done[c]["drill"] as Array).size()))
+			preload("res://scripts/castle_folk.gd").show_lines(folk, preload("res://scripts/castle_folk.gd").garrison_lines(units, Aw.civilian, Aw.ships, town, (folk["drill"] as Array).size()))
+	# The castle's people come and go with the camera, by the villagers' rule (villagers.gd lived_in): one castle
+	# peopled a tick, every far one emptied.
+	var v: Node = main.get("villagers") if main else null
+	var peopled := false
+	for c in _done:
+		var d: Dictionary = _done[c]
+		if not d.has("xf"):
+			continue  # not our builder's castle
+		var near: bool = v != null and v.lived_in(c.global_position)
+		if near and not d.has("folk") and not peopled:
+			_people(d)
+			peopled = true
+		elif not near and d.has("folk"):
+			_unpeople(d)
 	if main == null or main.get("towns") == null:
 		return
 	for id in main.towns.towns:
@@ -94,6 +110,7 @@ func _dress(id: int, root: Node3D, castle: Node3D) -> void:
 	var scale := xf.basis.get_scale().x / S  # 1 at full size, less for a lesser hold
 	var house := _house(root)
 	var colour := Heraldry.colour(house, Color(0.6, 0.15, 0.15))
+	d.merge({"xf": xf, "sp": sp, "colour": colour, "scale": scale, "walks": [], "gate": [], "door": []})
 	# The lord's standard on each corner and gate tower, over its cone.
 	var bk: Dictionary = Data.value("castle", "banners", {})
 	for t in Builder.towers(sp):
@@ -112,7 +129,7 @@ func _dress(id: int, root: Node3D, castle: Node3D) -> void:
 			var b: Vector3 = xf * (run["b"] + inset + Vector3(0, walk, 0))
 			if a.distance_to(b) < 0.3:
 				continue
-			d["nodes"].append(_guard(a, b, colour, gk, scale))
+			d["walks"].append([a, b])
 	# Torches either side of the gate's arch, lit at dusk.
 	var tk: Dictionary = Data.value("castle", "torches", {})
 	var front := Builder.gate_front(sp) + 0.25  # the gatehouse's front face, a hand proud
@@ -132,8 +149,7 @@ func _dress(id: int, root: Node3D, castle: Node3D) -> void:
 			if z > front or z < hz - 1.5:  # on open ground: on the land itself; in the passage, its floor
 				q.y = main.terrain.height_at(q.x, q.z)
 			path.append(q)
-		for i in int(wk.get("count", 3)):
-			d["nodes"].append(_walker(path, colour, wk, scale, i))
+		d["gate"] = path
 	# The red carpet up the keep's steps and across the bailey to the gate, a guard either side of the door
 	# at the top (01-town: the steps up to the keep, the carpet, the halberdiers).
 	if Builder.podium() > 0:
@@ -142,9 +158,6 @@ func _dress(id: int, root: Node3D, castle: Node3D) -> void:
 	_bailey_buildings(xf, sp, d)
 	# The rock it stands on (01-town: the castle raised on its outcrop, shrubs and cypresses on the rock).
 	_outcrop(xf, sp, d)
-	# The bailey lived in: drill, the butts, the gate's guards, the smith, the stores' cart, servants and grooms
-	# (castle_folk.gd, the people layer's).
-	preload("res://scripts/castle_folk.gd").dress(self, main, xf, sp, colour, d)
 	# The bailey's well, at its heart.
 	var w: Array = Data.value("castle", "well", [0.75, 0.0, 0.45])
 	var well_kind := Real.one("well")
@@ -158,6 +171,42 @@ func _dress(id: int, root: Node3D, castle: Node3D) -> void:
 			well.rotation.y = yaw
 			add_child(well)
 			d["nodes"].append(well)
+
+
+## The castle's people, made when the camera comes near (_tick): a guard on each curtain's walk, the folk through
+## the gate, the door's guards at the top of the steps, and the bailey lived in (castle_folk.gd: drill, the butts,
+## the smith, the stores' cart, servants and grooms). All of them kept in d["folk"], freed together by _unpeople.
+func _people(d: Dictionary) -> void:
+	var f := {"nodes": []}
+	d["folk"] = f
+	var xf: Transform3D = d["xf"]
+	var colour: Color = d["colour"]
+	var scale: float = d["scale"]
+	var gk: Dictionary = Data.value("castle", "guards", {})
+	for w in d["walks"]:
+		f["nodes"].append(_guard(w[0], w[1], colour, gk, scale))
+	var wk: Dictionary = Data.value("castle", "gate_walkers", {})
+	if not (d["gate"] as Array).is_empty():
+		for i in int(wk.get("count", 3)):
+			f["nodes"].append(_walker(d["gate"], colour, wk, scale, i))
+	for p in d["door"]:
+		var g: Node3D = main.scenes.people.make(_rng, "soldier", colour.lerp(Color.WHITE, 0.3), "adult")
+		add_child(g)
+		main.scenes.arm(g, "spear")
+		g.global_position = p
+		var out: Vector3 = xf.basis * Vector3(0, 0, 1)  # facing down the steps, toward the gate
+		g.global_rotation.y = atan2(out.x, out.z)
+		main.scenes.people.play(g, "Idle", 1.0)
+		f["nodes"].append(g)
+	preload("res://scripts/castle_folk.gd").dress(self, main, xf, d["sp"], colour, f)
+
+
+## Frees a castle's people (_people), when the camera leaves it or the castle falls.
+func _unpeople(d: Dictionary) -> void:
+	for n in d.get("folk", {}).get("nodes", []):
+		if is_instance_valid(n):
+			n.queue_free()
+	d.erase("folk")
 
 
 ## The bailey's buildings against the curtain wall (data/castle.json bailey_buildings; Mac on Kingsmere from
@@ -406,16 +455,9 @@ func _carpet(xf: Transform3D, sp: Dictionary, colour: Color, d: Dictionary) -> v
 	add_child(m)
 	m.global_transform = xf
 	d["nodes"].append(m)
-	# The door's guards at the top of the steps.
+	# Where the door's guards stand at the top of the steps (_people).
 	for sx in [-1.0, 1.0]:
-		var g: Node3D = main.scenes.people.make(_rng, "soldier", colour.lerp(Color.WHITE, 0.3), "adult")
-		add_child(g)
-		main.scenes.arm(g, "spear")
-		g.global_position = xf * Vector3(sx * (half + 0.7), top, kf + 0.9)
-		var out: Vector3 = xf.basis * Vector3(0, 0, 1)  # facing down the steps, toward the gate
-		g.global_rotation.y = atan2(out.x, out.z)
-		main.scenes.people.play(g, "Idle", 1.0)
-		d["nodes"].append(g)
+		d["door"].append(xf * Vector3(sx * (half + 0.7), top, kf + 0.9))
 
 
 ## One of the folk going in and out by the gate: along `path` (the road outside, the gate, the passage's

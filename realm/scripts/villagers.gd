@@ -226,13 +226,18 @@ func _folk_route(n: Node) -> PackedVector2Array:
 	return PackedVector2Array()
 
 
+## Whether a place is close enough to the lens to have its people about: the camera below the realm's height and the
+## place within VIEW_RADIUS of where it looks. The one rule for every crowd that comes and goes with the camera (the
+## towns' folk here, the castles' in castle_life.gd): nobody is made or kept where nobody can see them.
+func lived_in(p: Vector3) -> bool:
+	return rig.distance < 60.0 and p.distance_to(rig.target) < VIEW_RADIUS
+
+
 func _refresh() -> void:
 	_rain_pace = Data.num("towns", "wet.hurry", 1.25) if TownLife.wet() else 1.0  # rain: those out hurry (towns.json wet)
-	var focus: Vector3 = rig.target
-	var close: bool = rig.distance < 60.0
 	for id in towns.towns.keys():
 		var node: Node3D = towns.towns[id]["node"]
-		var near := close and node.global_position.distance_to(focus) < VIEW_RADIUS
+		var near := lived_in(node.global_position)
 		if near and not crowds.has(id) and not _spawning.has(id):
 			_spawn(id)
 		elif not near and crowds.has(id):
