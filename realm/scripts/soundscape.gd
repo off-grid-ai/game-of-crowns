@@ -72,15 +72,10 @@ const BEDS := {
 }
 
 # Music by mood. Calm plays with long silences between pieces; the rest back to back.
-const MUSIC := {
-	"calm": ["calm_achaidh_cheide", "calm_teller_of_tales", "calm_shores_of_avalon", "calm_exploration", "calm_harvest_season", "calm_vikings_at_shore"],
-	"court": ["court_suonatore_di_liuto", "court_lord_of_the_land"],
-	"feast": ["feast_master_of_the_feast"],
-	"tension": ["tension_darkest_child", "tension_dark_times", "tension_lament_warriors_soul", "tension_lament_of_the_war"],
-	"dead": ["dead_unseen_horrors", "dead_something_approaches"],
-	"battle": ["battle_five_armies", "battle_heroic_age", "battle_for_the_king", "battle_viking_march"],
-}
-const MUSIC_DB := {"calm": -4.0, "court": -5.0, "feast": -3.0, "tension": -3.0, "dead": -2.0, "battle": -1.0}
+## Music by mood (sounds.json music: each mood's pieces and level): calm, court, feast, unrest, war, siege, battle,
+## dead. Calm plays with long silences between pieces; the rest back to back, crossfaded on a change.
+static func _music_of(m: String) -> Dictionary:
+	return (preload("res://scripts/data.gd").value("sounds", "music", {}) as Dictionary).get(m, {})
 const CALM_GAP := Vector2(25.0, 70.0)  # seconds of silence between calm pieces
 
 # Stingers: kind -> list of [takes, dB, delay s]; beds lifted: kind -> [bed, seconds].
@@ -117,7 +112,7 @@ const ALIASES := {"succession": "crown", "coronation": "crown", "reign_end": "de
 	"raid": "rebellion", "city_destroyed": "sack", "razed": "sack", "city_transferred": "handover"}
 const LIFT_BED := {"battle": ["battle", 40.0], "siege": ["drums", 45.0], "feast": ["feast", 50.0], "dead": ["dead_north", 90.0]}
 const LIFT_MOOD := {"battle": ["battle", 60.0], "siege": ["battle", 60.0], "feast": ["feast", 90.0], "dead": ["dead", 120.0],
-	"death": ["tension", 40.0], "famine": ["tension", 60.0], "rebellion": ["tension", 60.0], "sack": ["tension", 60.0]}
+	"death": ["unrest", 40.0], "famine": ["unrest", 60.0], "rebellion": ["unrest", 60.0], "sack": ["unrest", 60.0]}
 const MAX_STINGERS := 12
 
 var _beds := {}  # name -> {player, level (0..1), target}
@@ -265,7 +260,7 @@ func event(kind: String, at := Vector3.INF) -> void:
 
 
 func mood(kind: String) -> void:
-	if MUSIC.has(kind):
+	if not _music_of(kind).is_empty():
 		_base_mood = kind
 
 
@@ -571,14 +566,14 @@ func _tick_music(delta: float) -> void:
 			_start_track(want, 3.0)
 	# Calm music sits lower at night.
 	if want == "calm" and cur.playing and not _fading:
-		cur.volume_db = lerpf(cur.volume_db, MUSIC_DB["calm"] - (3.0 if _view["night"] else 0.0), 1.0 - pow(0.5, delta / 2.0))
+		cur.volume_db = lerpf(cur.volume_db, float(_music_of("calm").get("db", -4.0)) - (3.0 if _view["night"] else 0.0), 1.0 - pow(0.5, delta / 2.0))
 
 
 var _fading := false
 
 
 func _start_track(m: String, fade: float) -> void:
-	var names: Array = MUSIC.get(m, [])
+	var names: Array = _music_of(m).get("tracks", [])
 	var pool := names.filter(func(n): return n != _last_track and ResourceLoader.exists(ROOT + "music/%s.ogg" % n))
 	if pool.is_empty():
 		pool = names.filter(func(n): return ResourceLoader.exists(ROOT + "music/%s.ogg" % n))
@@ -596,7 +591,7 @@ func _start_track(m: String, fade: float) -> void:
 	p.stream = s
 	p.volume_db = -40.0
 	p.play()
-	_fade_player(p, MUSIC_DB.get(m, -4.0), fade, false)
+	_fade_player(p, float(_music_of(m).get("db", -4.0)), fade, false)
 	if old.playing:
 		_fade_player(old, -80.0, fade, true)
 

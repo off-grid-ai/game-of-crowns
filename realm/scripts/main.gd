@@ -761,7 +761,19 @@ func _listen() -> void:
 	if t != null:
 		_music_dark = float(t) >= Juice.knob("music_tension_above", 0.55) or (_music_dark and float(t) > Juice.knob("music_calm_below", 0.35))
 		dark = dark or _music_dark
-	sound.mood("dead" if int(th.get("north", 0)) > 0 and rig.distance > 60.0 else ("tension" if dark else "calm"))
+	# The ladder (Kingdom Two Crowns; sounds.json music): the dead near, a royal town under siege, the crown at war with a
+	# great house, unrest, else calm. A battle or a feast lifts it for a while on its own (soundscape LIFT_MOOD).
+	var crown_id := int(awareness.rec("crownId", -1))
+	var siege := false
+	for town in awareness.rec("cities", []):
+		if int(town.get("owner", -2)) == crown_id and bool(town.get("besieged", false)):
+			siege = true
+			break
+	var war := false
+	for p in awareness.rec("players", []):
+		if int(p.get("id", -2)) == crown_id and not (p.get("wars", []) as Array).is_empty():
+			war = true
+	sound.mood("dead" if int(th.get("north", 0)) > 0 and rig.distance > 60.0 else ("siege" if siege else ("war" if war else ("unrest" if dark else "calm"))))
 
 
 ## The chronicle, heard: each kind of event its own stinger.
