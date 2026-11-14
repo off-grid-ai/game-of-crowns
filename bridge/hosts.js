@@ -510,12 +510,12 @@ function supply(ctx, turn) {
   record({ turn, kind: "battle", text: `The King's men are far from his granaries${near ? ` near ${cityName(near.id)}` : ""}${winter ? ", and it is winter" : ""}. The carts no longer reach them; they grow thin, and men fall out of the line.`, city: near?.id });
 }
 
-// A host's supply (the lowest of its companies') and its stragglers: the share of its men fallen out of the line,
+// A host's supply (the lowest of its companies'), whether hunger bites it (hungry), and its stragglers: the share of its men fallen out of the line,
 // up to data/hosts.json supply.stragglers as the supply runs out under supply.hungry.
 function supplyOf(meta, units) {
   const S = HOSTS.supply;
   const v = Math.min(...units.map((u) => meta?.supply?.[u.id] ?? 1));
-  return { supply: v, stragglers: v >= S.hungry ? 0 : Math.round(S.stragglers * (1 - v / S.hungry) * 100) / 100 };
+  return { supply: v, hungry: v < S.hungry, stragglers: v >= S.hungry ? 0 : Math.round(S.stragglers * (1 - v / S.hungry) * 100) / 100 };
 }
 
 export function season(ctx, turn) {
