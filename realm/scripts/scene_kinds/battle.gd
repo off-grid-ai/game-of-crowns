@@ -5,6 +5,7 @@ extends "res://scripts/scene_kind.gd"
 ## are one battle. The field is open ground found near it (battlefield), never in a town or on a farm.
 
 const ArmyField := preload("res://scripts/army_field.gd")
+const Ground := preload("res://scripts/ground.gd")  # the one answer to where a body may stand
 const Awareness := preload("res://scripts/awareness.gd")
 const Data := preload("res://scripts/data.gd")
 
@@ -135,7 +136,7 @@ func _field_cost(c: Vector3, roads) -> float:
 		var ring := int(ceil(k / 8.0))
 		var q := c + Vector3(cos(TAU * k / 8.0), 0, sin(TAU * k / 8.0)) * field * ring / 3.0 if k > 0 else c
 		# Men stand everywhere out to the field's edge: none of it may be water.
-		if not stage.terrain.is_land(q.x, q.z):
+		if not Ground.is_clear(q):
 			return INF
 		var rise := absf(stage.terrain.height_at(q.x, q.z) - c.y)
 		var tile: Vector2i = stage.terrain.paths.tile_of(q)

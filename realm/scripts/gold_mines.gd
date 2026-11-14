@@ -8,6 +8,7 @@ extends Node3D
 ## Knobs: realm/data/gold_mines.json (docs/TUNING.md). --gold-mines=off shows none.
 
 const Data := preload("res://scripts/data.gd")
+const Ground := preload("res://scripts/ground.gd")  # the one answer to where a body may stand
 const People := preload("res://scripts/people.gd")
 const Real := preload("res://scripts/realistic.gd")
 const Scenes := preload("res://scripts/scenes.gd")
@@ -101,7 +102,7 @@ func worked() -> Array:
 func _raise(t: Vector2i, spent: bool, owner := -1) -> void:
 	var off: Array = _d.get("off", [0.0, 0.0])
 	var at: Vector3 = main.terrain.world_pos(float(t.x) + float(off[0]), float(t.y) + float(off[1]))
-	if not main.terrain.is_land(at.x, at.z):
+	if not Ground.on_land(at):
 		return
 	var n: Node3D = (load(MODEL) as PackedScene).instantiate()
 	n.scale = Vector3.ONE * Real.S * float(_d.get("scale", 1.0))

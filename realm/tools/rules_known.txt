@@ -12,3 +12,4 @@ scripts/roads.gd:one-colour
 scripts/terrain.gd:one-colour
 scripts/wear.gd:one-colour
 scripts/weather_fx.gd:one-colour
+scripts/army.gd:one-ground-water

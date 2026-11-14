@@ -145,7 +145,7 @@ func sync(houses: Dictionary) -> void:
 		var ship := String(u["type"]) in MapLook.SHIPS
 		if not ship:
 			target = Ground.nearest_clear(target, 0.17 if String(u["type"]) in MOUNTED and String(u["type"]) != "Elephants" else 0.0)
-		elif terrain.is_land(target.x, target.z):
+		elif Ground.on_land(target):
 			target = _moor(key, centre, slot)  # a ship in a port town lies at its waterside, never on the square
 			if target == Vector3.INF:
 				# No water out of the town view's sight: the ship isn't drawn while it lies here (g30 street).
@@ -332,7 +332,7 @@ func _moor(key: String, centre: Vector3, slot: int) -> Vector3:
 				if lens != Vector3.ZERO and d.dot(lens) > clear:
 					continue  # on the camera's side of the town
 				var q := centre + d * r
-				if not terrain.is_land(q.x, q.z) and not terrain.is_land(q.x + (q.x - centre.x) * 0.15, q.z + (q.z - centre.z) * 0.15):
+				if not Ground.on_land(q) and not Ground.on_land(q + Vector3(q.x - centre.x, 0, q.z - centre.z) * 0.15):
 					at = q + (q - centre).normalized() * Data.num("army", "map.moor_off", 0.25)  # a little off the shore, in the water
 					break
 			r += 0.2
@@ -344,7 +344,7 @@ func _moor(key: String, centre: Vector3, slot: int) -> Vector3:
 		return m
 	var along := Vector3(m.z - centre.z, 0, centre.x - m.x).normalized() * Data.num("army", "map.moor_gap", 0.5) * slot
 	var t := m + along
-	return t if not terrain.is_land(t.x, t.z) else m
+	return t if not Ground.on_land(t) else m
 
 
 ## The way from a town toward the town view's lens (camera_rig.town_view's yaw), for the town nearest `centre`; ZERO
@@ -507,7 +507,7 @@ func field_hosts(store: Node) -> Dictionary:
 				add_child(view)
 				_hosts[id] = view
 			view.set_meta("tile", tile)
-			view.visible = view.get_meta("aboard", false) or terrain.is_land(terrain.world_pos(float(tile.x), float(tile.y)).x, terrain.world_pos(float(tile.x), float(tile.y)).z)  # never stood on the sea
+			view.visible = view.get_meta("aboard", false) or Ground.on_land(terrain.world_pos(float(tile.x), float(tile.y)))  # never stood on the sea
 			if not hulls.is_empty() and not view.get_meta("aboard", false):
 				view.set_meta("aboard", true)
 				view.board(hulls)

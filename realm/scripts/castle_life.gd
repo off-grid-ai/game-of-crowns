@@ -8,6 +8,7 @@ extends Node3D
 ## Knobs: data/castle.json.
 
 const Units := preload("res://scripts/world_units.gd")  # the world's one scale (Units.M)
+const Ground := preload("res://scripts/ground.gd")  # the one answer to where a body may stand
 const Mover := preload("res://scripts/mover.gd")  # the one way to move (CLAUDE.md)
 const Data := preload("res://scripts/data.gd")
 const Builder := preload("res://scripts/castle_builder.gd")
@@ -230,7 +231,7 @@ func _outcrop(xf: Transform3D, sp: Dictionary, d: Dictionary) -> void:
 		if n == null:
 			return
 		var w: Vector3 = xf * local
-		if not main.terrain.is_land(w.x, w.z):
+		if not Ground.on_land(w):
 			n.free()
 			return
 		w.y = main.terrain.height_at(w.x, w.z) - sink * S * scale

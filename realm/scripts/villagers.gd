@@ -501,7 +501,7 @@ func _random_spot(center: Vector3, rng: RandomNumberGenerator, rmin: float, rmax
 		var ang := rng.randf() * TAU
 		var r := rng.randf_range(rmin, rmax)
 		var p := center + Vector3(cos(ang) * r, 0, sin(ang) * r)
-		if terrain.is_land(p.x, p.z):
+		if Ground.is_clear(p):
 			p.y = terrain.height_at(p.x, p.z)
 			return p
 	return center
@@ -679,7 +679,7 @@ func _step(a: Dictionary, delta: float, _t: float) -> void:
 	if a.get("held_up", false):
 		a["held_up"] = false
 		people.play(n, a.get("gait", "Walk"))  # on the move again: the legs, not a standing pose sliding
-	if not terrain.is_land(n.position.x + step.x, n.position.z + step.y):
+	if not Ground.walkable(n.position + Vector3(step.x, 0, step.y)):
 		people.play(n, "Idle", 1.0)  # the shore: never a step into the water
 		a["route"] = PackedVector2Array()
 		return
@@ -765,7 +765,7 @@ func _strip(node: Node3D, center: Vector3, rng: RandomNumberGenerator, home := V
 		var size: Vector2 = f[1]
 		var l := Vector3(rng.randf_range(-0.4, 0.4) * size.x, 0, rng.randf_range(-0.35, 0.35) * size.y)
 		var p: Vector3 = center + Vector3(f[0]) + Basis(Vector3.UP, float(f[2])) * l
-		if terrain.is_land(p.x, p.z):
+		if Ground.is_clear(p):
 			return p
 	if not gardens.is_empty():
 		return center + Vector3(gardens[rng.randi() % gardens.size()]) + Vector3(rng.randf_range(-0.12, 0.12), 0, rng.randf_range(-0.08, 0.08))

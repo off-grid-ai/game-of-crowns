@@ -5,6 +5,7 @@ extends "res://scripts/scene_kind.gd"
 ## first when none stands there yet, ending as Freeciv decided. One of these serves both kinds (scenes.kind).
 
 const ArmyAssault := preload("res://scripts/army_assault.gd")
+const Ground := preload("res://scripts/ground.gd")  # the one answer to where a body may stand
 const Awareness := preload("res://scripts/awareness.gd")
 const Data := preload("res://scripts/data.gd")
 const Heraldry := preload("res://scripts/heraldry.gd")
@@ -226,7 +227,7 @@ func _camp_side(at: Vector3, want: float, wall: float, camp_r: float) -> float:
 			var aa := a + (k - 2) * 0.3
 			var d := Vector3(cos(aa), 0, sin(aa))
 			var p := at + d * camp_r
-			if not stage.terrain.is_land(p.x, p.z):
+			if not Ground.on_land(p):
 				score += 3.0
 			score += absf(stage.terrain.height_at(p.x, p.z) - stage.terrain.height_at(at.x + d.x * wall, at.z + d.z * wall)) * 1.5
 		if score < best_score:

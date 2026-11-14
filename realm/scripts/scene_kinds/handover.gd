@@ -3,6 +3,7 @@ extends "res://scripts/scene_kind.gd"
 ## down, a file of the new lord's men marches in by the Mover, and his goes up.
 
 const Awareness := preload("res://scripts/awareness.gd")
+const Ground := preload("res://scripts/ground.gd")  # the one answer to where a body may stand
 const Mover := preload("res://scripts/mover.gd")
 
 
@@ -38,7 +39,7 @@ func hand_over(at: Vector3, old_house: Dictionary, new_house: Dictionary, town: 
 	var ang := r.randf() * TAU
 	for tries in 12:
 		var probe := at + Vector3(cos(ang), 0, sin(ang)) * 4.0
-		if stage.terrain.is_land(probe.x, probe.z):
+		if Ground.on_land(probe):
 			break
 		ang += TAU / 12.0
 	var dir := Vector3(cos(ang), 0, sin(ang))

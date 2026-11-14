@@ -512,9 +512,9 @@ func dust(root: Node3D, p: Vector3, along: Vector3, width: float) -> void:
 
 # --- sieges ------------------------------------------------------------------------------
 
-## Whether a man could stand here: dry land, not a crag.
+## Whether a man could stand here: clear ground (ground.gd: on land, in no building), not a crag.
 func _footing(p: Vector3) -> bool:
-	if not terrain.is_land(p.x, p.z):
+	if not Ground.is_clear(p):
 		return false
 	return absf(terrain.height_at(p.x + 0.15, p.z) - terrain.height_at(p.x - 0.15, p.z)) < 0.12 and absf(terrain.height_at(p.x, p.z + 0.15) - terrain.height_at(p.x, p.z - 0.15)) < 0.12
 

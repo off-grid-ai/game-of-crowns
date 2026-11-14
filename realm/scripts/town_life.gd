@@ -725,7 +725,7 @@ func _site(root: Node3D, life: Node3D, center: Vector3, base: Vector3, ang: floa
 		if prop == null:
 			continue
 		var at: Vector3 = base + Vector3(pr[1]).rotated(Vector3.UP, ang)
-		if not terrain.is_land(center.x + at.x, center.z + at.z):
+		if not Ground.is_clear(center + at):  # on land, in no building (ground.gd)
 			prop.free()
 			continue
 		prop.position = Vector3(at.x, _y(center, at), at.z)

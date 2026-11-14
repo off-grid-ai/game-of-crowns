@@ -4,6 +4,7 @@ extends "res://scripts/scene_kind.gd"
 ## (CLAUDE.md, one way to move), gone at the end of the road. How many flee and how far: realm/data/scenes.json fleeing, flight.
 
 const Data := preload("res://scripts/data.gd")
+const Ground := preload("res://scripts/ground.gd")  # the one answer to where a body may stand
 const Mover := preload("res://scripts/mover.gd")
 
 
@@ -19,7 +20,7 @@ func flee(at: Vector3, count: int) -> void:
 	var ang := r.randf() * TAU
 	for tries in 12:
 		var probe := at + Vector3(cos(ang), 0, sin(ang)) * 5.5
-		if stage.terrain.is_land(probe.x, probe.z):
+		if Ground.on_land(probe):
 			break
 		ang += TAU / 12.0
 	var out := Data.num("scenes", "flight.out", 4.0)  # how far each walks out before he is gone

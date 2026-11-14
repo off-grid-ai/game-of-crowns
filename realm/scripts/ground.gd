@@ -9,6 +9,7 @@ extends RefCounted
 ## tools/rules_check.sh keeps every other script from asking the terrain or the footprints itself.
 ##   is_clear(p, radius): whether a body reaching `radius` all round may stand at `p`.
 ##   nearest_clear(p, radius, max_dist): the nearest such place, on the town's walk map where it has one.
+##   walkable(p), on_land(p): the land under a step, or which way the shore lies; never a place to stand.
 ##   inside(p): the footprint `p` stands in, or an empty one.
 ##   area_clear(poly): whether a piece set down over `poly` (world) stands on land and over no footprint.
 ##   open_floor(root, poly): a builder says ground inside its own footprint is open floor (a bailey, a forge's).
@@ -31,7 +32,7 @@ static func is_clear(p: Vector3, radius := 0.0, props := true) -> bool:
 	var keys: Array = ["town", "life"] if props else ["town"]
 	for o in _reach_of(radius):
 		var q: Vector3 = p + o
-		if terrain != null and not terrain.walkable(q.x, q.z):
+		if not walkable(q):
 			return false
 		for t in TownNav.towns_at(towns, q):
 			if not NavGround.inside_something(t[1], q, terrain, keys).is_empty():
@@ -46,7 +47,7 @@ static func area_clear(poly: PackedVector2Array) -> bool:
 	for v in poly:
 		mid += v / poly.size()
 	for v in Array(poly) + [mid]:
-		if terrain != null and not terrain.walkable(v.x, v.y):
+		if not walkable(Vector3(v.x, 0, v.y)):
 			return false
 	for t in TownNav.towns_at(towns, Vector3(mid.x, 0, mid.y)):
 		var root: Node3D = t[1]
@@ -68,6 +69,18 @@ static func open_floor(root: Node3D, poly: PackedVector2Array) -> void:
 		return  # said already (a town dressed again)
 	yards.append([poly, -1])
 	root.set_meta("yards", yards)
+
+
+## Whether a foot may go at `p` (world), whatever stands there: dry land, or a ford a road runs through
+## (terrain.walkable). A step along a walk map asks this; a place to stand asks is_clear.
+static func walkable(p: Vector3) -> bool:
+	return terrain == null or terrain.walkable(p.x, p.z)
+
+
+## Whether `p` (world) is dry land, no ford: which way the shore lies, where a ship may not lie, a tile a mine is
+## dug on. Never a place to stand: that is is_clear.
+static func on_land(p: Vector3) -> bool:
+	return terrain == null or terrain.is_land(p.x, p.z)
 
 
 ## The footprint `p` (world) stands in, in its town's space, or an empty one.

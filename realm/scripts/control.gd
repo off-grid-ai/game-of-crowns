@@ -275,7 +275,7 @@ func _process_timed(delta: float) -> void:
 		var dir := (fwd * -want.y + right * want.x).normalized()
 		var step := dir * (RUN if running else WALK) * delta
 		var next := _walkable(_body.position + step)
-		if terrain.is_land(next.x, next.z):
+		if Ground.walkable(next):
 			_body.position = Vector3(next.x, terrain.height_at(next.x, next.z), next.z)
 		_body.rotation.y = lerp_angle(_body.rotation.y, atan2(dir.x, dir.z), minf(1.0, delta * 10.0))
 		villagers.people.play(_body, _me.walk_clip(running), 1.0)
@@ -435,7 +435,7 @@ func _ride(delta: float, want: Vector2, fast: bool) -> void:
 	if _pace > 0.0:
 		var ahead := Vector3(sin(_horse.rotation.y), 0, cos(_horse.rotation.y))
 		var next := _walkable(_horse.position + ahead * _pace * delta)
-		if terrain.is_land(next.x, next.z):
+		if Ground.walkable(next):
 			_horse.position = Vector3(next.x, terrain.height_at(next.x, next.z), next.z)
 	rig.target = _horse.position
 	rig.distance = 3.0
