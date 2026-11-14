@@ -267,6 +267,7 @@ func _reduce_towns(world: Dictionary) -> void:
 	var lean: Array = _dict(world.get("harvest")).get("lean", [])  # towns eating lean after a wet harvest (bridge harvest.js)
 	var mourning := _king_mourned(world, turn)
 	var word := _word_heard(world, turn)
+	var rests := _king_rests(world, turn)
 	var ids: Array[int] = []
 	for c in world.get("cities", []):
 		var id := int(c["id"])
@@ -280,6 +281,7 @@ func _reduce_towns(world: Dictionary) -> void:
 		# A levy raised here: the muster scene at the town this season or last (bridge crown.js levy).
 		bb.set_var(&"levy", now_scenes.any(func(s): return String(s.get("kind", "")) == "muster" and int(s.get("city", -2)) == id and int(s.get("turn", turn)) >= turn - 1))
 		bb.set_var(&"favour", favour)
+		bb.set_var(&"royal_rest", rests if bool(c.get("capital", false)) and int(c.get("owner", -1)) == crown_id else [])  # the King's feast or pilgrimage, held from his seat
 		bb.set_var(&"royal_funeral", mourning and bool(c.get("capital", false)) and int(c.get("owner", -1)) == crown_id)  # the King buried from his seat
 		bb.set_var(&"promise_kept", word.get(id, "") == "kept")  # the King's word kept to this town, lately (bridge promises.js)
 		bb.set_var(&"promise_broken", word.get(id, "") == "broken")
@@ -298,6 +300,19 @@ static func _king_mourned(world: Dictionary, turn: int) -> bool:
 		return false
 	var last: Dictionary = _dict(line[line.size() - 1])
 	return String(last.get("how", "")) == "died" and turn - int(last.get("to", -999)) < int(preload("res://scripts/data.gd").value("towns", "royal_funeral.seasons", 2))
+
+
+## How the King rested lately (/world royals.rest, bridge royals.js rest: a hunt, a feast, a pilgrimage): the kinds he
+## took within towns.json royal_rest.seasons, seen at his seat (a feast on its square, pilgrims at its sept).
+static func _king_rests(world: Dictionary, turn: int) -> Array:
+	var within := int(preload("res://scripts/data.gd").value("towns", "royal_rest.seasons", 1))
+	var out: Array = []
+	var rest: Dictionary = _dict(_dict(world.get("royals")).get("rest"))
+	for kind in rest:
+		var last: Variant = _dict(rest[kind]).get("last")
+		if last != null and turn - int(last) <= within:
+			out.append(String(kind))
+	return out
 
 
 ## The towns that heard lately how the King kept his word (/world promises, bridge promises.js): a promise kept or

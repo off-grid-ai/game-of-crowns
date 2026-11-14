@@ -344,6 +344,7 @@ Switches (`--name`) go after `--` on the game's command line.
 - Where the sept's folk go (beggars, the sick, the crier, the bell's watchman) in a town whose church found no room: `realm/data/town_scenes.json` `anchors.sept.or` (place:well).
 - How many spare places a muster lays in a row behind its men, so a stall or a statue in the way costs no one: `realm/data/town_scenes.json` the `muster` row's levy role `spare` (any standing role can take one).
 - A lord's favour seen in his towns: a loyal lord's square hung with bunting (how many lines, flags, how high, its colours besides the house's), an angry lord's with sullen knots (how many), its stalls shut (what share stays open), fewer children: `realm/data/moods.json` `devoted`, `sullen.stalls_open`; `realm/data/town_scenes.json` the `sullen` row's n, `kids_play` n.sullen. Which band is which: `bridge/data/favour.json`.
+- The King's rest seen at his seat: for how many seasons after (his feast on the square, the faithful at the sept for his pilgrimage), how many pray, how often the bell rings: `realm/data/towns.json` `royal_rest.seasons`; `realm/data/town_scenes.json` the `pilgrimage` row's n and `bell`.
 - The roadside's people (inns, hamlets, camps, shrines, tolls) now think on the same minds: each `life` row's `post` in `realm/data/roadside.json` (no post: the old clip timer). Check it all with `tools/mind_probe.gd` and `tools/works_probe.gd`.
 
 ## The town as art target town-b (the crown's seat dense, mixed roofs, warm walls, cobbles, green)

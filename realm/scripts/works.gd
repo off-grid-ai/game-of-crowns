@@ -185,6 +185,7 @@ static func states(c: Dictionary, town: int) -> Array:
 		bb.set_var(&"lean", bool(Engine.get_meta("awareness").town(town).get_var(&"lean", false, false)))  # short rations: the store's
 		bb.set_var(&"favour", float(Engine.get_meta("awareness").town(town).get_var(&"favour", 100.0, false)))  # its lord's with the King: the store's
 		bb.set_var(&"crown_town", bool(Engine.get_meta("awareness").town(town).get_var(&"crown_town", true, false)))
+		bb.set_var(&"royal_rest", Engine.get_meta("awareness").town(town).get_var(&"royal_rest", [], false))  # the King's feast or pilgrimage at his seat
 	return states_bb(bb)
 
 
@@ -202,8 +203,11 @@ static func states_bb(bb: Blackboard) -> Array:
 	var mood := String(bb.get_var(&"mood", "", false))
 	if mood == "hunger" or bool(bb.get_var(&"famine", false, false)):
 		out.append("hunger")
-	if mood == "feast" or bool(bb.get_var(&"celebrating", false, false)):
-		out.append("feast")
+	var rests: Variant = bb.get_var(&"royal_rest", [], false)
+	if mood == "feast" or bool(bb.get_var(&"celebrating", false, false)) or (rests is Array and "feast" in rests):
+		out.append("feast")  # the town's own feast, or the King's held at his seat (bridge royals.js rest)
+	if rests is Array and "pilgrimage" in rests:
+		out.append("pilgrimage")  # the King gone on pilgrimage: the faithful at his seat's sept
 	if mood == "riot":
 		out.append("riot")  # Freeciv's disorder (bridge view.js mood)
 	if bool(bb.get_var(&"grasping", false, false)):
