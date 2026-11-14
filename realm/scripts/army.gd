@@ -223,12 +223,15 @@ func _ready() -> void:
 		var ahead := _at(_cum[_cum.size() - 1]) - mid
 		_yaw_march = _lens_yaw(mid, atan2(ahead.x, ahead.z) + Data.num("army", "camera.marchQuarter", 0.9))
 		_yaw = _yaw_march
-	elif on_road:  # war's muster: from behind the column, a little off its line, looking down it (03-army), whatever it does next
+	elif on_road:  # war's muster: ahead of the column, a little off its line, looking back down it (03-army), whatever it does next
 		# far enough back for the column to run from the near blocks, each man readable, up the frame into the distance
 		# (03-army: low and along the column; g37: from 38 degrees and the whole column's length it sat high and far)
 		_dist = maxf(_dist, Formation.column_length(_regiments) * Data.num("army", "camera.musterHold", 0.4))
 		_tilt = main.rig.tilt_for(Data.num("army", "camera.musterPitch", 28.0), maxf(_dist, main.rig.min_distance)) if main.rig else 0.0
-		_yaw_march = _lens_yaw(_middle(), _face + PI + Data.num("army", "camera.musterOff", 0.5))
+		# Ahead of the column, looking back down it with the town behind (03-army: the column comes up the road at the
+		# lens, the castle on the far hill; g40 muster: from behind it at the gate the lens looked over the castle's
+		# roofs and the column was out of shot).
+		_yaw_march = _lens_yaw(_middle(), _face + Data.num("army", "camera.musterOff", 0.5))
 		_yaw_line = _yaw_march
 		_yaw = _yaw_march
 	var roles := {}
