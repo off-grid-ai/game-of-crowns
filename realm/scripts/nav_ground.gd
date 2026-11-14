@@ -20,7 +20,7 @@ static var _foot := {}  # [mesh instance id, slice] -> [the mesh-local foot box 
 ## down, "life" for what its life puts up (the Life node: stalls, carts parked, a fire's ring, a building site).
 static func outlines(root: Node3D, terrain: Node3D = null) -> Dictionary:
 	if root == null or not is_instance_valid(root):
-		return {"town": [], "life": []}
+		return {"town": [], "life": [], "grid": {}}
 	var life: Node3D = root.get_node_or_null("Life")
 	var sig := layout(root)
 	var kept: Array = _cache.get(root.get_instance_id(), [])
@@ -36,8 +36,34 @@ static func outlines(root: Node3D, terrain: Node3D = null) -> Dictionary:
 		_walk(life, root, life, to_town, terrain, K, out)
 	else:
 		_walk(root, root, life, to_town, terrain, K, out)
+	out["grid"] = _grid(out)
 	_cache[root.get_instance_id()] = [sig, out]
 	return out
+
+
+const CELL := 1.0  # the outlines' lookup grid, town units: a point is tested only against the outlines over its cell
+
+
+## The outlines by the grid cells their bounds cover: cell -> [[key, outline]]. A placer asks for thousands of points
+## while a town is dressed; each now tests the few outlines near it, not every one in the town (FPS: towns.life).
+static func _grid(out: Dictionary) -> Dictionary:
+	var g := {}
+	for key in ["town", "life"]:
+		for fp: PackedVector2Array in out[key]:
+			if fp.size() < 3:
+				continue
+			var lo := fp[0]
+			var hi := fp[0]
+			for v in fp:
+				lo = lo.min(v)
+				hi = hi.max(v)
+			for x in range(floori(lo.x / CELL), floori(hi.x / CELL) + 1):
+				for y in range(floori(lo.y / CELL), floori(hi.y / CELL) + 1):
+					var c := Vector2i(x, y)
+					if not g.has(c):
+						g[c] = []
+					g[c].append([key, fp])
+	return g
 
 
 ## What the town's layout is made of, cheaply: its own pieces and its life's that stand still (people, animals and
@@ -86,10 +112,9 @@ static func inside_something(root: Node3D, p: Vector3, terrain: Node3D = null, k
 		if Geometry2D.is_point_in_polygon(q, y[0]):
 			return PackedVector2Array()
 	var o := outlines(root, terrain)  # kept per town until its layout changes: no copy made per ask
-	for key in keys:
-		for fp: PackedVector2Array in o[key]:
-			if fp.size() > 2 and Geometry2D.is_point_in_polygon(q, fp):
-				return fp
+	for e in (o["grid"] as Dictionary).get(Vector2i(floori(q.x / CELL), floori(q.y / CELL)), []):
+		if String(e[0]) in keys and Geometry2D.is_point_in_polygon(q, e[1]):
+			return e[1]
 	return PackedVector2Array()
 
 
