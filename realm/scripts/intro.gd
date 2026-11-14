@@ -64,7 +64,10 @@ func _ready() -> void:
 
 
 func _is_ready() -> bool:
-	return not ready_check.is_valid() or ready_check.call()
+	var ok: bool = not ready_check.is_valid() or ready_check.call()
+	if ok:
+		preload("res://scripts/perf_tools.gd").mark("towns in view")
+	return ok
 
 
 ## houses: the world's players' house dicts; seats: {house name: [town name, Vector2 tile]}.
@@ -379,6 +382,7 @@ func _exit_tree() -> void:
 
 
 func _end() -> void:
+	preload("res://scripts/perf_tools.gd").mark("loading screen off")
 	_report()
 	_frames = 0
 	_hitches.clear()

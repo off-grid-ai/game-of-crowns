@@ -45,6 +45,7 @@ func build(map: Dictionary) -> void:
 	var t0 := Time.get_ticks_msec()
 	Engine.set_meta("stage", "land")
 	await _build_land()
+	preload("res://scripts/perf_tools.gd").mark("land")
 	await get_tree().process_frame
 	var t1 := Time.get_ticks_msec()
 	Engine.set_meta("stage", "sea")
@@ -58,6 +59,7 @@ func build(map: Dictionary) -> void:
 	await get_tree().process_frame
 	Engine.set_meta("stage", "vegetation")
 	_plant()
+	preload("res://scripts/perf_tools.gd").mark("woods")
 	await get_tree().process_frame
 	var t2 := Time.get_ticks_msec()
 	paths.build()
@@ -68,6 +70,7 @@ func build(map: Dictionary) -> void:
 		w.terrain = self
 		add_child(w)
 	built = true
+	preload("res://scripts/perf_tools.gd").mark("terrain")
 	print_verbose("BUILD land %d ms, vegetation %d ms, paths %d ms" % [t1 - t0, t2 - t1, Time.get_ticks_msec() - t2])
 
 

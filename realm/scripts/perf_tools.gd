@@ -49,6 +49,21 @@ var _perf_at := 10.0
 ## A test aid (GOC_PERF_PROBE=1, off in play): microseconds spent per named job
 ## since the last perf line, written on it as "jobs=name:ms/calls,...".
 static var probing := OS.get_environment("GOC_PERF_PROBE") != ""
+static var _marked := {}  # loading steps already written
+
+
+## One step of loading reached (the bridge answered, the land, the woods, the towns...): one LOAD line in
+## user://perf.log with its time since launch, once per step and always on, so any game shows where load time
+## goes. The steps call this; none keeps its own clock.
+static func mark(step: String) -> void:
+	if _marked.has(step):
+		return
+	_marked[step] = true
+	var f := FileAccess.open("user://perf.log", FileAccess.READ_WRITE if FileAccess.file_exists("user://perf.log") else FileAccess.WRITE)
+	if f == null:
+		return
+	f.seek_end()
+	f.store_line("%s LOAD %7.2f s %s" % [Time.get_time_string_from_system(), Time.get_ticks_msec() / 1000.0, step])
 static var tally := {}  # name -> [microseconds, calls]
 ## The probe's clip census (the VAT townsfolk plan, step 1): frames each clip was shown on a body in the ring past
 ## anim_lod.NEAR (where a baked crowd would draw them), since the last perf line. anim_lod.gd counts; written below.

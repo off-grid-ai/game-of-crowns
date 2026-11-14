@@ -457,6 +457,7 @@ func _post(path: String, body: Dictionary, cb: Callable) -> void:
 
 func _on_map(data) -> void:
 	_map_loaded = true
+	preload("res://scripts/perf_tools.gd").mark("bridge answered: map")
 	map_loaded.emit(data)
 
 
@@ -475,6 +476,7 @@ func _on_world(data) -> void:
 	if not data.has("turn"):
 		return
 	world = data
+	preload("res://scripts/perf_tools.gd").mark("first /world")
 	world_updated.emit(data)
 
 

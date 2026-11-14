@@ -1071,6 +1071,7 @@ func _on_synced() -> void:
 		var t_countryside := Time.get_ticks_usec()
 		countryside.build(awareness.rec("cities", []))
 		PerfTools.add("countryside", Time.get_ticks_usec() - t_countryside)
+		PerfTools.mark("roads")
 		if Time.get_ticks_msec() - tt > 500:
 			print_verbose("BUILD roads+countryside %d ms" % (Time.get_ticks_msec() - tt))
 		_laying = false

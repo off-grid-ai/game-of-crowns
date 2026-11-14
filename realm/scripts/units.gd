@@ -197,6 +197,7 @@ func _walk_some() -> void:
 				slot += 1
 		w["i"] = int(w["i"]) + 1
 	_walk = {}
+	preload("res://scripts/perf_tools.gd").mark("units")
 
 
 func _walk_on() -> void:
