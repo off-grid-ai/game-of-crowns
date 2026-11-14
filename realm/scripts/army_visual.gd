@@ -182,7 +182,9 @@ static func _tracks(dir: String) -> Array[VATAnimationTrack]:
 ## steel that reads as steel, the cloth's trim band, grounded feet, each man a little off his fellows. Every
 ## soldier wears it.
 static func _finish(mat: ShaderMaterial, row: Dictionary, mesh: Mesh) -> void:
-	mat.set_shader_parameter("mesh_height", maxf(mesh.get_aabb().size.y, 0.01))
+	# The man's own height (meshes.<dir>.body where a carried prop stands above him, the pikeman's upright pike), so
+	# the cloth band, trim and feet are measured on him, not on his pike (g37 muster).
+	mat.set_shader_parameter("mesh_height", maxf(float(row.get("body", mesh.get_aabb().size.y)), 0.01))
 	for pair in [["steel_sat", "steelSat", 0.14], ["steel_metal", "steelMetal", 0.65], ["steel_rough", "steelRough", 0.38], ["steel_lift", "steelLift", 1.12],
 			["steel_glow", "steelGlow", 0.05], ["rim", "rim", 0.35], ["rim_tint", "rimTint", 0.6], ["foot_dark", "footDark", 0.55], ["foot_height", "footHeight", 0.14],
 			["trim_dark", "trimDark", 0.62], ["vary_value", "varyValue", 0.08], ["vary_tint", "varyTint", 0.06]]:

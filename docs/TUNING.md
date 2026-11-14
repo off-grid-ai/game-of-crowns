@@ -588,3 +588,4 @@ Switches (`--name`) go after `--` on the game's command line.
 - Settings, the game section: `realm/data/juice.json` `settings.sizes` (word size steps, 0.85..1.4 of the interface scale) and `settings.speeds` (one name per `speed.steps`).
 - Camera speed choices in Settings: `realm/data/juice.json` `settings.cams` (Slow 0.6, Normal 1.0, Fast 1.6; scales keys, the pad and trackpad scroll, never a drag).
 - The first council in a reign's opening: `realm/data/royal_sheet.json` `council.after` (9 s after the crowning) and `council.by_turn` (2: only in the first seasons).
+- Foot soldiers wear the house colour on the tabard only, hood and hose plain brown (g37 muster): `realm/data/army.json` `units.spearmen/men_at_arms/archers/knights.cloth` (undyed [0.42, 0.34, 0.25]; band [0.42, 0.8] of the height).
