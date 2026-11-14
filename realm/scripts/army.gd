@@ -1145,8 +1145,7 @@ func _take_field(extent: Vector2) -> void:
 		var pl: Vector2 = r["place"]
 		var p := _field + right3 * pl.x + fwd3 * pl.y
 		r["slot"] = Vector3(p.x, main.terrain.height_at(p.x, p.z), p.z)
-	if battle.is_empty():
-		_clear_slots(right3, fwd3)
+	_clear_slots(right3, fwd3)  # a battle's or a storm's side too (g38 siege: the storm host stood through two houses)
 
 
 ## A farm's yard or hedged field at q (countryside.occupied): what a muster keeps off.
@@ -1157,7 +1156,9 @@ func _farmed(q: Vector3, r: float) -> bool:
 
 ## Whether a regiment's ground (its line's rectangle round `mid`, turned to the line, and muster.margin round it)
 ## is clear: dry land, no building, no farm or field, no road; and no other regiment's ground in `taken`.
-func _clear_at(mid: Vector3, right3: Vector3, fwd3: Vector3, w: float, d: float, taken: Array) -> bool:
+## A side in the field (a battle's, a storm's: `strict` false) keeps off water and buildings only; it may stand on a
+## road or a farm's field, as armies fight over them.
+func _clear_at(mid: Vector3, right3: Vector3, fwd3: Vector3, w: float, d: float, taken: Array, strict := true) -> bool:
 	var m := Data.num("army", "muster.margin", 0.15)
 	var step := Data.num("army", "muster.probe", 0.35)
 	var gap := Data.num("army", "gap", 0.35) * 0.5
@@ -1172,9 +1173,9 @@ func _clear_at(mid: Vector3, right3: Vector3, fwd3: Vector3, w: float, d: float,
 	for i in nx:
 		for j in nz:
 			var q := mid + right3 * ((float(i) / (nx - 1) - 0.5) * (w + m * 2.0)) + fwd3 * ((float(j) / (nz - 1) - 0.5) * (d + m * 2.0))
-			if not main.terrain.is_land(q.x, q.z) or TownNav.in_building(main.towns, q, 0.05) or _farmed(q, 0.0):
+			if not main.terrain.is_land(q.x, q.z) or TownNav.in_building(main.towns, q, 0.05) or (strict and _farmed(q, 0.0)):
 				return false
-			if roads and roads.has_method("on_path") and roads.on_path(q, 0.05):
+			if strict and roads and roads.has_method("on_path") and roads.on_path(q, 0.05):
 				return false
 	return true
 
@@ -1184,7 +1185,9 @@ func _clear_at(mid: Vector3, right3: Vector3, fwd3: Vector3, w: float, d: float,
 ## its facing, rings of muster.cell outward up to muster.reach; one that finds none keeps its place.
 func _clear_slots(right3: Vector3, fwd3: Vector3) -> void:
 	var pitch := Data.num("army", "muster.cell", 2.0) * 0.5
-	var reach := Data.num("army", "muster.search", 8.0)
+	var strict := battle.is_empty()  # a muster keeps off farms and roads too; a side in the field only off houses and water
+	# a side in the field stays near the place its battle gave it (the storm's holders behind their own breach)
+	var reach := Data.num("army", "muster.search" if strict else "muster.fieldSearch", 8.0)
 	var taken: Array = []
 	var moved := 0
 	var stuck := 0
@@ -1193,7 +1196,7 @@ func _clear_slots(right3: Vector3, fwd3: Vector3) -> void:
 		var d := float(r["line"]["d"])
 		var at: Vector3 = r["slot"]
 		at.y = 0.0
-		var found := _clear_at(at, right3, fwd3, w, d, taken)
+		var found := _clear_at(at, right3, fwd3, w, d, taken, strict)
 		if not found:
 			var ring := 1
 			while not found and ring * pitch <= reach:
@@ -1201,7 +1204,7 @@ func _clear_slots(right3: Vector3, fwd3: Vector3) -> void:
 				for k in n:
 					var a := TAU * float(k) / n
 					var q := at + (right3 * cos(a) + fwd3 * sin(a)) * ring * pitch
-					if _clear_at(q, right3, fwd3, w, d, taken):
+					if _clear_at(q, right3, fwd3, w, d, taken, strict):
 						at = q
 						found = true
 						break
