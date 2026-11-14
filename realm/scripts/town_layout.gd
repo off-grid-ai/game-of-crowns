@@ -313,6 +313,12 @@ func square_ring(root: Node3D, center: Vector3, square_r: float, ways: Array, ki
 			var fd := TownPlots.squared(-out)
 			var set_back := absf(fd.dot(out)) * kf.y * 0.5 + absf(fd.orthogonal().dot(out)) * kf.x * 0.5
 			var p := Vector3(out.x, 0, out.y) * (ring + set_back)
+			if TownPlots.GRID:
+				# On the grid the square is square (TownPlots.on_square): its fronts stand in a row along each side, facing in.
+				var ax := Vector2.from_angle(TownPlots.AXIS)
+				var edge_at := out * ring / maxf(absf(out.dot(ax)), absf(out.dot(ax.orthogonal())))
+				var p2g := edge_at - fd * kf.y * 0.5
+				p = Vector3(p2g.x, 0, p2g.y)
 			var p2 := Vector2(p.x, p.z)
 			# Its walls held against the roads' bands (not a circle as wide as its longest side, which
 			# turned away nearly every front between roads into the square: Kingsmere stood none in batch 6).
@@ -380,6 +386,15 @@ func lay_ways(root: Node3D, center: Vector3, c: Dictionary, size: int, square_r:
 	var pk: Dictionary = tb._plot_knobs()
 	TownPlots.tune(pk)
 	TownPlots.AXIS = float(great[0]) if not great.is_empty() else (float(headings[0]) if not headings.is_empty() else 0.0)  # the town squares to its great road
+	if TownPlots.GRID:
+		# Its streets run on that grid: each way out along the nearest of its four (path_on lays them straight), one a way.
+		var on_grid: Array = []
+		for h in headings:
+			var sq := TownPlots.squared(Vector2.from_angle(float(h))).angle()
+			if on_grid.all(func(o): return absf(angle_difference(float(o), sq)) > 0.1):
+				on_grid.append(sq)
+		headings = on_grid
+		great = great.map(func(g): return TownPlots.squared(Vector2.from_angle(float(g))).angle())
 	var edge := reach + float(pk.get("edge_more", 0.0))
 	root.set_meta("plot_edge", edge)
 	var height := func(p: Vector2) -> float: return tb._ground_y(center, Vector3(p.x, 0, p.y))

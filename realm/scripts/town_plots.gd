@@ -106,6 +106,9 @@ static func lanes(main: Array, count: int, square_r: float, edge: float, g: ASta
 				var q := closest_on(other, goal)
 				if q.distance_to(goal) < 0.5 and q.distance_to(p) > 0.8:
 					goal = q
+					if GRID:
+						var ld := tan.orthogonal() * side
+						goal = p + ld * (q - p).dot(ld)  # the junction on the lane's own line: it stays square to its road
 					break
 			if not bool(land.call(goal)) or (g.is_in_boundsv(_cell(g, goal)) and g.is_point_solid(_cell(g, goal))):
 				continue  # it would run into water, or into a castle or a landmark: no lane here
@@ -128,6 +131,8 @@ static func rings(radii: Array, square_r: float, g: AStarGrid2D, land: Callable,
 	for r0 in radii:
 		var r := square_r + float(r0)
 		var n := maxi(12, int(TAU * r / 0.8))
+		if GRID:
+			n = 4 * maxi(3, int(2.0 * r / 0.8))  # a square ring: its four corners among the points
 		var arc: Array = []  # the stretch being laid: points on the ring that are open ground
 		var start := 0
 		# Begin at a closed point, so an arc never wraps across the start.
@@ -160,8 +165,20 @@ static func rings(radii: Array, square_r: float, g: AStarGrid2D, land: Callable,
 
 
 static func _ring_at(r: float, i: int, n: int, noise: FastNoiseLite) -> Vector2:
+	if GRID:
+		return on_square(r, float(i) / n)
 	var a := TAU * i / n
 	return Vector2.from_angle(a) * (r + noise.get_noise_1d(i * 7.0) * RING_WOBBLE)  # a ring street wanders in and out a little
+
+
+## The point `t` (0..1, round from a corner) on the square of half-side `r` laid on the town's grid (AXIS): a ring
+## street, the square's own edge where its fronts stand (town_layout ring of fronts).
+static func on_square(r: float, t: float) -> Vector2:
+	var s := fposmod(t, 1.0) * 4.0
+	var side := int(s)
+	var f := s - side
+	var corners := [Vector2(r, -r), Vector2(r, r), Vector2(-r, r), Vector2(-r, -r)]
+	return (corners[side] as Vector2).lerp(corners[(side + 1) % 4], f).rotated(AXIS)
 
 
 static func _open(g: AStarGrid2D, land: Callable, q: Vector2) -> bool:
@@ -388,12 +405,17 @@ static func block(g: AStarGrid2D, polys: Array) -> void:
 					g.set_point_solid(c, true)
 
 
-## The cheapest way from `a` to `b` on `g`, simplified and eased into curves.
+## The cheapest way from `a` to `b` on `g`, simplified and eased into curves. On the town's grid (GRID), straight
+## from `a` toward `b` instead, as far as open ground goes: the streets run on the grid the houses stand square to,
+## so every house fronts its street (AoE2's and WC3's towns; g36 landuse: squared houses beside winding streets
+## fronted none of them).
 static func path_on(g: AStarGrid2D, a: Vector2, b: Vector2) -> PackedVector2Array:
 	var ia := _cell(g, a)
 	var ib := _cell(g, b)
 	if not g.is_in_boundsv(ia) or not g.is_in_boundsv(ib):
 		return PackedVector2Array()
+	if GRID:
+		return _straight(g, a, b)
 	g.set_point_solid(ia, false)  # the ends themselves are always walkable
 	g.set_point_solid(ib, false)
 	var raw := g.get_point_path(ia, ib, true)
@@ -402,6 +424,27 @@ static func path_on(g: AStarGrid2D, a: Vector2, b: Vector2) -> PackedVector2Arra
 	raw[0] = a
 	raw[raw.size() - 1] = b
 	return _chaikin(_simplify(raw, CELL * 0.6))
+
+
+## A straight street from `a` toward `b`, stopped short of the first closed cell (water, a castle, a landmark; the
+## ends themselves always open), empty when it runs less than two cells.
+static func _straight(g: AStarGrid2D, a: Vector2, b: Vector2) -> PackedVector2Array:
+	var run := a.distance_to(b)
+	var dir := (b - a) / maxf(run, 0.0001)
+	var end := a
+	var t := CELL
+	while t < run:
+		var c := _cell(g, a + dir * t)
+		if not g.is_in_boundsv(c) or g.is_point_solid(c):
+			if c != _cell(g, b):
+				break
+		end = a + dir * t
+		t += CELL
+	if t >= run:
+		end = b
+	if a.distance_to(end) < CELL * 2.0:
+		return PackedVector2Array()
+	return PackedVector2Array([a, end])
 
 
 static func _cell(g: AStarGrid2D, p: Vector2) -> Vector2i:

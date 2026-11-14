@@ -1928,6 +1928,12 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 	# --towns=plots: the roads come first, laid over the land toward where they
 	# lead, and lanes off them as the town grows; the spokes below stand aside.
 	var ways: Array = layout.lay_ways(root, center, c, size, square_r, reach, streets, rng)
+	if TownPlots.GRID and not ways.is_empty():
+		# The square's setts square to the town's grid (its axis known once its ways are laid): its fronts stand along them.
+		var ax := Vector2.from_angle(TownPlots.AXIS)
+		setts_yaw = atan2(ax.x, ax.y)
+		setts.rotation.y = setts_yaw
+		_note_setts(root, setts_size, setts_yaw)
 	for ang in (streets if ways.is_empty() else []):
 		var dir := Vector3(cos(ang), 0, sin(ang))
 		var side := Vector3(-dir.z, 0, dir.x)
