@@ -993,6 +993,8 @@ func _stage_walkers(k: Dictionary, role: Dictionary, a: Dictionary, does: String
 						_walker(g, Round.new(), {"route": route.map(func(q): return root.to_global(q)), "plan": plan, "lead": true, "side": 0.0,
 							"pause": W.get("pause", [3.0, 7.0]), "rest": W.get("rest", ["Looking_Around"]), "waits": []}, "Walk", float(W.get("pace", 0.14)))
 						plan["lead_body"] = g
+						if role.has("torch"):
+							_torch(g, life, role["torch"])
 					else:
 						# His mate walks at his side and stops when he stops.
 						_walker(g, Follow.new(), {"after": plan["lead_body"], "gap": 0.0, "side": float(W.get("abreast", 0.1)), "rest": W.get("rest", ["Looking_Around"])}, "Walk", float(W.get("pace", 0.14)) * 1.2)
@@ -1032,6 +1034,24 @@ func _stage_walkers(k: Dictionary, role: Dictionary, a: Dictionary, does: String
 					"pause": W.get("pause", [2.0, 6.0]), "rest": [String(W.get("set_down", "PickUp_Table"))], "waits": []}, String(ld[0]), float(W.get("pace", 0.15)))
 			"cart":
 				_cart(k, role, W, r)
+
+
+## The watch's torch after dark (a beat row's `torch`: light colour, energy, range; Stronghold's and Manor Lords' night
+## watch): the catalogue's torch in his right hand with a warm light at its head, shown with the town's lamps (the Works
+## tick's lights: lit hours, after dark) and put away by day.
+func _torch(g: Node3D, life: Node3D, T: Dictionary) -> void:
+	var held: Node3D = preload("res://scripts/weapons.gd").arm(g, "torch")
+	var tick: Node = life.get_node_or_null("Works")
+	if held == null or tick == null:
+		return
+	var light := OmniLight3D.new()
+	light.light_color = Data.colour(T.get("color"), Color(1.0, 0.62, 0.3))
+	light.light_energy = float(T.get("energy", 0.9))
+	light.omni_range = float(T.get("range", 0.6))
+	light.position = Vector3(0, float(T.get("up", 0.5)), 0)
+	held.add_child(light)
+	held.visible = false
+	tick.lights.append(held)
 
 
 ## A guard pair's beat: from one main street's mouth across the square past the well to another's, a stop at

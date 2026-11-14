@@ -364,7 +364,7 @@ class Tick extends Node:
 	var glow: OmniLight3D
 	var sparks: GPUParticles3D
 	var mills: Array = []  # [{node, axis, rpm, speed}]
-	var lights: Array = []  # the inn's window lights
+	var lights: Array = []  # what shows only after dark: the inn's window lights, the door lamps, the watch's torches
 	var by_day: Array = []  # people out only by day (the bench drinkers, the crier's ring)
 	var stacks: Array = []  # [{what, at, yaw, prop, most, nodes, fixed}]
 	var make_prop: Callable  # town_life._prop, bound: (name, at, yaw) -> Node3D
@@ -427,7 +427,7 @@ class Tick extends Node:
 		var lit := Works.within(h, "lit") and Works.dark()
 		for l in lights:
 			if is_instance_valid(l):
-				(l as OmniLight3D).visible = lit
+				(l as Node3D).visible = lit  # a window's light, a door's lamp, the watch's torch
 		var benches := Works.within(h, "benches")
 		for p in by_day:
 			if is_instance_valid(p):
