@@ -10,6 +10,14 @@ import { cityName } from "./narrator.js";
 const P = JSON.parse(fs.readFileSync(new URL("./data/promises.json", import.meta.url), "utf8"));
 export const PROMISES = P;
 
+// What the King's word is worth (Warband's reputation, repeated games): his kept promises over all decided, each
+// counted from data/promises.json trust.prior kept ones, so a first broken promise costs a little, a habit a lot.
+export function trust(meta) {
+  const d = (meta?.promises ?? []).filter((p) => p.kept != null || p.broken != null);
+  const kept = d.filter((p) => p.kept != null).length;
+  return (kept + P.trust.prior) / (d.length + P.trust.prior);
+}
+
 // The King promises (petitions.js, a pledge answer): kept in meta.promises from this season.
 export function make(meta, { kind, text, house, lord, town, turn }) {
   const k = P[kind];

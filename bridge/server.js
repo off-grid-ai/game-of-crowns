@@ -179,7 +179,8 @@ function load(id) {
   court.onWar = (pair) => diplomacyNow([pair[0], pair[1], 0, "War"]);  // and every story's war (arcs.js, characters.js)
   court.deedsOf = (pid) => (deeds[pid] ??= []);
   court.royals = () => meta.royals;
-  court.onPromise = (p) => Promises.make(meta, p);  // the King's word given at court (promises.js)  // the King's household (royals.js): his heir's match is a court matter
+  court.onPromise = (p) => Promises.make(meta, p);
+  court.promiseTrust = () => Promises.trust(meta);  // a pledge is worth what his kept promises make it  // the King's word given at court (promises.js)  // the King's household (royals.js): his heir's match is a court matter
   arcs = new Arcs(P.base, court, record);
   arcsRunning = false;  // a new realm's stories start free of the last one's
   court.onArcRuling = (arc, beat, option) => arc === "council" ? councilRuled(beat, option) : arc === "siege" ? siegeRuled(beat, option) : arcs.rule(arc, beat, option);
@@ -418,7 +419,7 @@ function applyStartOptions() {
 // The realm as the view sees it (GET /world): built in view.js.
 function worldView() {
   const v = View.worldView(realmCtx()), d = detail();
-  return { ...v, trade: Trade.list(v.cities, world?.turn ?? 0, (a, b) => (d?.players?.[a]?.atWarWith ?? []).includes(b)), hosts: Hosts.list({ world, meta }), banners: Hosts.banners({ world, meta }), battles: Battles.cards(meta, world?.turn), raids: Raids.list(meta, world), works: Treasury.worksOf(meta, world, crownNow()?.id), harvest: Harvest.view(meta, world?.turn ?? 0), royals: Royals.view(meta), captains: Captains.list(meta, world), soldiers: Captains.soldiers(meta, world), promises: Promises.view(meta), sieges: Siegecraft.list(meta) };  // the King's hosts and their orders, and how many more orders this season (hosts.js)
+  return { ...v, trade: Trade.list(v.cities, world?.turn ?? 0, (a, b) => (d?.players?.[a]?.atWarWith ?? []).includes(b)), hosts: Hosts.list({ world, meta }), banners: Hosts.banners({ world, meta }), battles: Battles.cards(meta, world?.turn), raids: Raids.list(meta, world), works: Treasury.worksOf(meta, world, crownNow()?.id), harvest: Harvest.view(meta, world?.turn ?? 0), royals: Royals.view(meta), captains: Captains.list(meta, world), soldiers: Captains.soldiers(meta, world), promises: Promises.view(meta), trust: Promises.trust(meta), sieges: Siegecraft.list(meta) };  // the King's hosts and their orders, and how many more orders this season (hosts.js)
 }
 
 // The Hand's matters, read from the realm as it stands now.

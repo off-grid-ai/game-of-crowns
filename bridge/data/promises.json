@@ -2,5 +2,6 @@
  "_": "The King's promises at court (promises.js; CK3's binding promises and hooks, Frostpunk's promises to the people: kept, they warm; broken, they cut deeper). A plea may be answered with a promise instead of now (characters.js pledge options): grain, relief to one of the house's towns within due seasons (kept when a Royal Relief decree stands in one of its towns: the decree, 'feast or relief'); land, the town the lord wants in his house's hands within due seasons, however it gets there. made: favour when he promises; kept and broken: when it is decided. The town it was made for remembers either way (minds.js hearTown).",
  "grain": { "due": 2, "store": "Royal Relief", "made": 8, "kept": 12, "broken": -25 },
  "land": { "due": 8, "made": 10, "kept": 20, "broken": -30 },
+ "trust": { "_": "What the King's word is worth (promises.js trust; Warband's reputation): kept promises over all decided, counted from prior kept ones; a pledge's warmth is made times that, and the hint says when it is under 1.", "prior": 2 },
  "keep": 12
 }
