@@ -83,6 +83,8 @@ func refresh_terrain(map: Dictionary) -> void:
 
 
 func tile_at(x: int, y: int) -> String:
+	if terrain.is_empty():
+		return ""  # no map yet, or cleared for a new chronicle
 	x = clampi(x, 0, width - 1)
 	y = clampi(y, 0, height - 1)
 	return terrain[y * width + x]

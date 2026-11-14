@@ -63,6 +63,8 @@ func envoy(id: String) -> Node3D:
 
 
 func _decide(delta: float) -> void:
+	if terrain == null or not terrain.built:
+		return  # nothing on the roads until the land stands (terrain.built: the ground's owner says so)
 	var envoy_aw: Object = Engine.get_meta("awareness") if Engine.has_meta("awareness") else null
 	if envoy_aw and scenes and scenes.has_method("rider_on_road") and terrain:
 		_ride_envoys(envoy_aw)
