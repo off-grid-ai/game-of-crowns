@@ -155,6 +155,15 @@ func _keep_apart() -> void:
 		var n := p as Node3D
 		if n and n.is_visible_in_tree() and n.global_position.distance_to(cam.global_position) < 6.0:
 			all.append(n)
+	# Everyone near by cell of SPACE: a walker is eased only by those within SPACE of them, so only its own and the
+	# eight cells round it are looked at (a spatial hash; it was every walker against everyone near, every frame).
+	var grid := {}  # Vector2i cell -> Array[Node3D]
+	for o in all:
+		var key := Vector2i(floori(o.global_position.x / SPACE), floori(o.global_position.z / SPACE))
+		if not grid.has(key):
+			var cell: Array[Node3D] = []
+			grid[key] = cell
+		grid[key].append(o)
 	for id in crowds:
 		for a in crowds[id]:
 			var n: Node3D = a["node"]
@@ -167,7 +176,13 @@ func _keep_apart() -> void:
 			if me.distance_to(cam.global_position) > 6.0:
 				continue
 			var push := Vector2.ZERO
-			for o in all:
+			var cx := floori(me.x / SPACE)
+			var cz := floori(me.z / SPACE)
+			var near: Array[Node3D] = []
+			for gx in range(cx - 1, cx + 2):
+				for gz in range(cz - 1, cz + 2):
+					near.append_array(grid.get(Vector2i(gx, gz), []))
+			for o in near:
 				if o == n:
 					continue
 				var d := Vector2(me.x - o.global_position.x, me.z - o.global_position.z)
