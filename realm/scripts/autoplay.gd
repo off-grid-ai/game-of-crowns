@@ -748,7 +748,7 @@ func _step(w: PackedStringArray) -> void:
 								town = main.terrain.world_pos(float(c["x"]), float(c["y"]))
 						break
 				if at != Vector3.INF and Engine.has_meta("stone_walls"):
-					var gaps: Array = Engine.get_meta("stone_walls").breaches_near(at, 6.0)
+					var gaps: Array = Engine.get_meta("stone_walls").breaches_near(at, float((Data.value("walls", "assault", {}) as Dictionary).get("reach", 6.0)))  # the storm's own gap (army_assault.gd)
 					if not gaps.is_empty():
 						at = gaps[0]
 				if at != Vector3.INF:

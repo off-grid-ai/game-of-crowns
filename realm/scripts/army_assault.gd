@@ -332,21 +332,22 @@ func _watch_breaches() -> void:
 		return
 	var walls: Node = Engine.get_meta("stone_walls")
 	var k: Dictionary = Data.value("walls", "assault", {})
+	# One gap for the whole storm: the open breach nearest the siege's front (the mean of the parties' wall feet),
+	# within assault.reach of it, the same breach the siege's frame shows (autoplay breach); every party funnels into
+	# it (Total War: the whole host goes for the gap). Group render g21 siege.jpg: a breach open at one end of the
+	# front, each party looking only round its own stretch of wall, the host standing in camp as s10 became s30.
+	var found: Array = walls.breaches_near(_wall, float(k.get("reach", 6.0)))
+	if found.is_empty():
+		return
+	var gap: Vector3 = found[0]
 	for p in parties.size():
 		var men: Array = parties[p]
 		if men.is_empty():
 			continue
-		var foot := Vector3.ZERO
 		var home := Vector3.ZERO
 		for m in men:
-			foot += m.get("wall_foot", m["foot"])
 			home += m["home"]
-		foot /= men.size()
 		home /= men.size()
-		var found: Array = walls.breaches_near(foot, float(k.get("reach", 2.5)))
-		if found.is_empty():
-			continue
-		var gap: Vector3 = found[0]
 		var key := Vector3i(roundi(gap.x * 10.0), 0, roundi(gap.z * 10.0))
 		var inward: Vector3 = gap - home
 		inward.y = 0.0
