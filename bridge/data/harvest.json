@@ -1,0 +1,5 @@
+{
+ "_": "The harvest (harvest.js; Manor Lords' and Banished's harvest, Stronghold's granary that carries a town through). A wet harvest (weather.js wetHarvest: an autumn after two wet seasons running, or a storm at harvest) rots in the fields: every town without the store (Freeciv's building) has its fields yield less for seasons (script.lua's Blight decree: the land gives half its food), while a town with one eats from it. The poor-harvest plea comes to court as it did (dilemmas.json wet_harvest).",
+ "store": "Granary",
+ "seasons": 2
+}

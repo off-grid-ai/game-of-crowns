@@ -17,6 +17,7 @@ import * as Damage from "./damage.js";
 import * as Opening from "./opening.js";
 import * as Reword from "./reword.js";
 import * as Households from "./households.js";
+import * as Harvest from "./harvest.js";
 import * as Seals from "./seals.js";
 import * as Next from "./next.js";
 import * as Director from "./director.js";
@@ -51,6 +52,7 @@ export function turn(ctx, ev) {
   if (isYearEnd(ev.turn)) setTimeout(() => runSeason(ctx), 2500);
   // The season's weather, rolled once as the season turns (weather.js, from the reign's seed).
   Weather.advance(ctx.meta, Number(ev.turn), calendar(Number(ev.turn)).season);
+  Harvest.season(ctx, Number(ev.turn));  // a wet autumn's harvest rots: towns without a granary eat lean (harvest.js)
   setTimeout(() => ctx.runArcs(1), 4000);
   // Let the AI finish its start-of-turn moves before dumping the world.
   setTimeout(ctx.snapshot, 1500);
