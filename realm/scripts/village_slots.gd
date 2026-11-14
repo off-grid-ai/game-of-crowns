@@ -344,6 +344,11 @@ func square_full(a: Dictionary) -> bool:
 	for b in v.crowds.get(a["town"], []):
 		if not is_same(b, a) and b["node"].visible and on_square(a, Vector2(b.get("goal", Vector2(99, 99)))):
 			there += 1
+	# The scene cast the census stood there (town_scenes.gd stage, meta square_cast) shares the one budget: g26 measured
+	# 9.4 people per 100 m2 against 01-town's 6, the cast filling the budget and the villagers filling it again.
+	# (With the square's agents off, the standing places below already hold them.)
+	if v.TownLife.square_agents_on():
+		there += int(town_node.get_meta("square_cast", 0))
 	var life: Node = town_node.get_node_or_null("Life")
 	if life and not v.TownLife.square_agents_on():  # with the square's agents on, the posted few (keepers, the drill) don't use up the walkers' room
 		for p: Vector2 in life.get_meta("standing", PackedVector2Array()):

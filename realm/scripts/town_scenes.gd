@@ -126,6 +126,7 @@ func stage(root: Node3D, life: Node3D, c: Dictionary, states: Array, tl: Object)
 			_stage_role(k, role, anchors)
 		if row.has("march") and _meets(row["march"], root, states, size):
 			_begin_march(root, life, row["march"], rng)
+	root.set_meta("square_cast", int(census["cast"]))  # the census cast standing there: the villagers' room is what's left (village_slots square_full)
 	print("CHECK town scenes: %s: %d cast; no room for %s; rows whose place wasn't there: %s; square census %d for %.0f m2 of open setts, %d cast to it" % [String(root.get_meta("title", root.name)), int(tally["cast"]), str(tally["no_room"]), str(tally["no_place"]), int(census["budget"]), float(census["m2"]), int(census["cast"])])
 
 
