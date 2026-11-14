@@ -454,6 +454,15 @@ func _show_audience() -> void:
 		var arc_tag: Array = ((Data.value("herald", "arc_tags", {}) as Dictionary).get(String(p.get("arc", "")), {}) as Dictionary).get(String(o.get("id", "")), [])
 		if arc_tag.size() == 2:
 			row.add_child(T.datum(String(arc_tag[0]), T.SIZE_DESC, T.DANGER if String(arc_tag[1]) == "danger" else T.TEXT_2))
+		# What it goes against in the King himself (bridge court.js against, royals.js: the same rules that weigh on him
+		# when chosen): who he means to be, and his own nature (CK3's tagged choices). The houses it cools show in its chips.
+		var ag: Dictionary = o.get("against") if o.get("against") is Dictionary else {}
+		var king: Dictionary = RoyalSheet.royals().get("king", {}) if RoyalSheet.royals().get("king") is Dictionary else {}
+		if king.get("focus") != null and String(king["focus"]) in ag.get("focus", []):
+			row.add_child(T.datum(String(Data.value("royal_sheet", "focus.against", "")), T.SIZE_DESC, T.DANGER))
+		var natures: Array = ag.get("traits", [])
+		if not natures.is_empty():
+			row.add_child(T.datum(String(Data.value("royal_sheet", "focus.trait_against", "")).replace("{trait}", " and ".join(natures)), T.SIZE_DESC, T.TEXT_2))
 		# A promise instead of now (bridge promises.js): it says it is his word, and what keeping it means.
 		if String(o.get("id", "")) == "pledge":
 			var tb := RoyalSheet.trust_band()

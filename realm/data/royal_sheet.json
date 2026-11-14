@@ -23,7 +23,7 @@
  "crowned_nature": "{age}, by nature {traits}.",
  "funeral": "The great houses swore to the old King, not to this one. Old friends wait to be won again, and old grudges are half forgotten.",
  "crowned_ok": "So it begins",
- "focus": { "_": "Who the King means to be (royal_sheet.gd _focus_row; bridge royals.js focus): head over the choice; tips by focus id; once under it; chosen ({focus}: its label from the bridge) once made; against: the tag under an answer that goes against it (event cards, court).",
+ "focus": { "_": "Who the King means to be (royal_sheet.gd _focus_row; bridge royals.js focus): head over the choice; tips by focus id; once under it; chosen ({focus}: its label from the bridge) once made; against: the tag under an answer that goes against it (event cards, court); trait_against ({trait}): a court answer against his own nature.",
   "head": "Who he means to be",
   "tips": {
    "war": "A King of the sword. War will find him more often, and buying peace will gnaw at him.",
@@ -33,7 +33,8 @@
   },
   "once": "He chooses once. The realm will test him on it.",
   "chosen": "He means to be remembered for {focus}.",
-  "against": "Against who he means to be: it will weigh on him." },
+  "against": "Against who he means to be: it will weigh on him.",
+  "trait_against": "Against his {trait} nature: it will weigh on him." },
  "council": { "_": "The first council (royal_sheet.gd _first_council; CK3's opening: your ruler, your situation, your focus): once a reign, by_turn its first seasons, after seconds once the crowning has had its moment. head ({name}); situation over the lines; friend, foe ({house}, {mood}); rival ({king}, {realm}, {edge}); chest ({crowns}); ok closes it.",
   "by_turn": 2,
   "after": 9.0,
