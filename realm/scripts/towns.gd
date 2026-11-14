@@ -2065,10 +2065,10 @@ static func detail(g: GeometryInstance3D, end := DETAIL_END) -> void:
 	g.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF  # a small thing's shadow is a smudge that cost a draw in every split (fps)
 
 
-## Godot's built-in HLOD for a town's buildings: the whole model up to towns.json hlod.at (past NEAR, about roof
-## height and a street off), its low mesh (realistic.gd _low: a few thousand triangles of a Meshy house's 20-100k)
-## from there to its reach, the two crossing over hlod.fade with a dithered fade, so nothing pops.
-static var HLOD_AT: float = float((Data.value("towns", "hlod", {}) as Dictionary).get("at", 25.0))
+## Godot's built-in HLOD for a town's buildings: the whole model while the lens is NEAR (view_tier.near_below, Mac:
+## "near and on screen, full detail"), its far mesh (realistic.gd _far: tools/meshy_far.py's 4k cut of a Meshy
+## building's 20-30k) from there to its reach, the two crossing over hlod.fade with a dithered fade, so nothing pops.
+static var HLOD_AT: float = preload("res://scripts/camera_rig.gd").knob("view_tier.near_below", 18.0)
 func _hlod(root: Node3D, high: MultiMeshInstance3D, low: Mesh, kind: String) -> void:
 	var fade := float((Data.value("towns", "hlod", {}) as Dictionary).get("fade", 3.0))
 	var mm := MultiMesh.new()
