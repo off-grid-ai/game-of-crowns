@@ -181,7 +181,7 @@ Switches (`--name`) go after `--` on the game's command line.
 - How tense the realm must be before the music turns dark, and calm before it settles: `realm/data/juice.json`: `music_tension_above`, `music_calm_below`.
 - The pause menu's head and its own buttons' words: `realm/data/reign_end.json`: `pause`.
 - The loading card's line and the Hand's counsel it shows (and how often it changes): `realm/data/reign_end.json`: `loading`. The book of the reign's words and lines a page: `book` (`per_page`), and the kept moments and the copied tale (`keep_hint`, `only_kept`, `copy`, `tale_head`).
-- The King's sheet and his family (opened from the bar's heading): every line's words: `realm/data/royal_sheet.json`.
+- The King's sheet and his family (opened from the bar's heading): every line's words: `realm/data/royal_sheet.json` (trust and stress bands, the rest buttons' words). The rival King's envoy line on an event card (who, from which border, his master's mood by hostility): `realm/data/herald.json`: `rival`.
 - How fast + and - let the seasons pass, and what the King hears at each step: `realm/data/juice.json`: `speed.steps` (seconds a season lasts, slowest first), `speed.words`; comma with no host out: `no_host`.
 - The reign's ledger page on the end card (titles, column heads, measure names): `realm/data/reign_end.json`: `ledger`.
 - The event card's rider and deadline words: `realm/data/herald.json`: `event_card` (riding, riding_tip, ignore_now, ignore_in).

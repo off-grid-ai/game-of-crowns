@@ -72,6 +72,23 @@ func open() -> void:
 	title.autowrap_mode = TextServer.AUTOWRAP_WORD
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	head.add_child(title)
+	# An envoy of the rival King beyond the border (bridge rivals.js; CK3's neighbouring realms): whose, from where,
+	# and what mood his master is in, so the King knows whom he is answering.
+	var sub: Dictionary = _up.get("subject", {}) if _up.get("subject") is Dictionary else {}
+	if String(sub.get("foreign", "")) != "":
+		var st := Awareness.store()
+		var rival: Dictionary = st.rec("rival", {}) if st and st.rec("rival") is Dictionary else {}
+		var w: Dictionary = Data.value("herald", "rival", {})
+		var who := String(w.get("from", "")).replace("{king}", String(sub.get("foreignking", ""))).replace("{realm}", String(sub["foreign"])).replace("{edge}", String(rival.get("edge", "")))
+		var mood := ""
+		for b in w.get("moods", []):
+			if float(rival.get("hostility", 50)) >= float(b.get("above", 0)):
+				mood = String(b.get("says", ""))
+				break
+		var plate := T.datum(who + (("  ·  " + mood) if mood != "" else ""), T.SIZE_DESC, T.DANGER if float(rival.get("hostility", 0)) >= float(w.get("danger", 60)) else T.TEXT_2)
+		plate.autowrap_mode = TextServer.AUTOWRAP_WORD
+		plate.custom_minimum_size = Vector2(420, 0)
+		v.add_child(plate)
 	var text := Label.new()
 	text.text = String(_up.get("text", ""))
 	text.add_theme_font_size_override("font_size", T.SIZE_BODY)  # the court card's body size: one type scale

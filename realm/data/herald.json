@@ -33,5 +33,14 @@
   "riding_nowhere": "A rider on the road: {title}",
   "riding_tip": "The rider is still on the road. The King hears him out when he reaches the seat.",
   "ignore_now": "Left unanswered by the season's end:",
-  "ignore_in": "Left unanswered {n} seasons from now:" }
+  "ignore_in": "Left unanswered {n} seasons from now:" },
+ "rival": { "_": "The rival King's envoy on an event card (event_card.gd; bridge rivals.js, /world rival): from: who sent him ({king}, {realm}, {edge}); moods: his master's mood by hostility (0..100, the first whose above it clears); danger: from here the line is red.",
+  "from": "An envoy of {king} of {realm}, from beyond the {edge} border",
+  "danger": 60,
+  "moods": [
+   { "above": 75, "says": "his master wants war in all but name" },
+   { "above": 55, "says": "his master is hostile" },
+   { "above": 35, "says": "his master is wary of us" },
+   { "above": 0, "says": "his master is friendly" }
+  ] }
 }
