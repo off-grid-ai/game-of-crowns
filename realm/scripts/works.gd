@@ -236,7 +236,14 @@ static func states_bb(bb: Blackboard) -> Array:
 	if float(bb.get_var(&"burnt", 0.0, false)) > Data.num("towns", "rebuilding.from", 0.01) and not "raid" in out and not "war" in out:
 		out.append("rebuilding")  # sacked and rebuilding (bridge damage.js burnt, falling each season): survivors at the burnt houses
 	if bool(bb.get_var(&"lean", false, false)):
-		out.append("lean")  # a wet harvest and no granary (bridge harvest.js): the queue at the granary, bare stalls
+		out.append("lean")
+	# Its market's prices (bridge cities[].market, ratios to normal; casebook, The market is a place): bread dear, the
+	# buyers haggle and grumble; goods cheap, they crowd the stalls (towns.json prices).
+	var mk: Dictionary = bb.get_var(&"market", {}, false)
+	if float(mk.get("food", 1.0)) >= Data.num("towns", "prices.dear", 1.4):
+		out.append("dear")
+	elif float(mk.get("goods", 1.0)) <= Data.num("towns", "prices.cheap", 0.8) or float(mk.get("food", 1.0)) <= Data.num("towns", "prices.cheap", 0.8):
+		out.append("cheap")  # a wet harvest and no granary (bridge harvest.js): the queue at the granary, bare stalls
 	if not bool(bb.get_var(&"crown_town", true, false)):
 		# How its lord stands with the King, seen in his town (awareness.mood_of, the bridge's bands; casebook,
 		# Information lives in the world): bunting for a loyal lord, sullen knots for an angry one.

@@ -381,6 +381,7 @@ static func town_facts(c: Dictionary) -> Dictionary:
 		"wedding": int(_dict(c.get("lives")).get("weddings", 0)) > 0,  # this season's weddings, births, burials (bridge households.js)
 		"birth": int(_dict(c.get("lives")).get("births", 0)) > 0,
 		"burial": int(_dict(c.get("lives")).get("burials", 0)) > 0,
+		"market": _dict(c.get("market")),  # its prices against normal {food, goods} (1 normal, >1 dear, <1 cheap; bridge prices.js)
 		"leaving": not (_dict(c.get("lives")).get("leaving", []) as Array).is_empty(),  # a household packing a cart this season (households.js)
 	}
 
