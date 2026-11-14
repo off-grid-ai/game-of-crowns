@@ -2,7 +2,7 @@ extends SceneTree
 ## Bakes each kit tree into an octahedral impostor (godot-imposter's PhotoStudio, addons/Imposter, MIT): albedo,
 ## normal, depth and ORM atlases of the tree seen from every side of the upper half, for forest.gd's card and map
 ## tiers (supervisor fps P0: far woods drew whole 3.5-6.3k-triangle trees; SpeedTree, UE HLOD and Total War draw
-## far trees as impostors). The tree baked is the far tiers' own mesh and materials (forest.gd _load_kit), in summer.
+## far trees as impostors). The tree baked is the far copy's mesh and materials (forest.gd kit_meshes), in summer.
 ##
 ## Needs the GPU (it renders): arch -arm64 godot --path . -s res://tools/impostor_bake.gd  (never --headless)
 ## Writes assets/impostors/<model>_base_<map>.png and assets/impostors/<model>.json (the shader's numbers: frames,
@@ -22,7 +22,7 @@ func _run() -> void:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUT))
 	var forest: Node3D = preload("res://scripts/forest.gd").new()
 	root.add_child(forest)
-	forest._load()
+	var kit: Dictionary = forest.kit_meshes()  # path -> [near, far]: the far copy is what the card and map tiers stood for
 	var vp := SubViewport.new()
 	vp.transparent_bg = true
 	vp.own_world_3d = true
@@ -34,9 +34,8 @@ func _run() -> void:
 	vp.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	root.add_child(vp)
 	var done := {}
-	for i in forest._kit.size():
-		var path := String(forest._kit[i][0])
-		var mesh: Mesh = forest._card[i] if i < forest._card.size() else null
+	for path: String in kit:
+		var mesh: Mesh = kit[path][1]
 		if done.has(path) or mesh == null:
 			continue
 		done[path] = true

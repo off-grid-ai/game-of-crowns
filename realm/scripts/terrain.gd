@@ -180,6 +180,10 @@ func set_season(name: String, towns: Array = [], settle := 10.0) -> void:
 		create_tween().tween_method(func(t: float): leaf_kit.set_turn(mat, was.lerp(goal, t)), 0.0, 1.0, settle)
 		create_tween().tween_property(mat, "alpha_scissor_threshold", Forest.scissor_of(mat), settle)  # the broadleaves bare in winter
 		_leaf_snow(mat, String(mat.get_meta("leaf", "")) != "grass" and s["snow"] > 0.0)
+	for mat in Forest.impostors:  # the far woods (forest.gd _impostor): the same tint and turn over their summer bake
+		if mat.has_meta("leaf"):
+			create_tween().tween_property(mat, "shader_parameter/albedo", Forest.tint(mat), settle)
+			create_tween().tween_property(mat, "shader_parameter/turn", Forest.turn_of(mat), settle)
 	if s["snow"] > 0.0 and OVERLAY_SNOW and vegetation:
 		for mmi in vegetation.batches:
 			mmi.material_overlay = _snow  # left on as it melts; the fade takes it to nothing

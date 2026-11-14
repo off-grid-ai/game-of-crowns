@@ -246,6 +246,24 @@ func _load() -> void:
 ## every distance; Godot's import-made detail levels lighten it with distance,
 ## each block of woods on its own. Leaves cut out, a crown at the lens dissolves.
 func _load_kit() -> void:
+	var baked := kit_meshes()
+	var far_ones := {}  # path -> its impostor, one a model
+	for kd in _kit:
+		var path := String(kd[0])
+		var mesh: Mesh = baked[path][0]
+		if mesh and not far_ones.has(path):
+			far_ones[path] = _impostor(path, baked[path][1])
+		_full.append(mesh)
+		_mid.append(baked[path][1])
+		_card.append(far_ones.get(path))  # past MID: one quad a tree (tools/impostor_bake.gd)
+		var h := mesh.get_aabb().size.y if mesh else 0.0
+		_height.append(h)
+		_kscale.append(float(kd[1]) / h if h > 0.0 else 1.0)
+
+
+## Each kit model baked twice (path -> [near, far]): the near tier's materials dissolve a crown at the lens, the far
+## copy's never need to. tools/impostor_bake.gd bakes its impostors from the far copy.
+func kit_meshes() -> Dictionary:
 	var builder = preload("res://scripts/house_builder.gd").new()
 	var baked := {}
 	for kd in _kit:
@@ -265,13 +283,46 @@ func _load_kit() -> void:
 						mesh.surface_set_material(si, leaves(_cutout(src), path, kind))  # a crown at the lens dissolves; its leaves turn with the season
 						far.surface_set_material(si, leaves(_cutout(src, false), path, kind))
 			baked[path] = [mesh, far]
-		var mesh: Mesh = baked[path][0]
-		_full.append(mesh)
-		_mid.append(baked[path][1])
-		_card.append(baked[path][1])
-		var h := mesh.get_aabb().size.y if mesh else 0.0
-		_height.append(h)
-		_kscale.append(float(kd[1]) / h if h > 0.0 else 1.0)
+	return baked
+
+
+## The far tiers' tree (card and map, past MID): godot-imposter's octahedral impostor of the kit model (addons/Imposter,
+## MIT; baked by tools/impostor_bake.gd into assets/impostors), one quad a tree that shows the model from the side the
+## lens sees it, lit by its baked normals (supervisor fps P0: whole 3.5-6.3k-triangle trees past MID were half the
+## frame; SpeedTree's, UE HLOD's and Total War's far woods). The house shade rides on the batch's instance colours; the
+## season on `impostors` (terrain.gd's season pass: albedo the season's tint, turn its colour over the summer bake).
+const IMPOSTORS := "res://assets/impostors/"
+const IMPOSTOR_SHADER := preload("res://addons/Imposter/imposter/materials/shaders/ImpostorShader.gdshader")
+static var impostors: Array[ShaderMaterial] = []
+static func _impostor(path: String, far: Mesh) -> Mesh:
+	var name := path.get_file().get_basename()
+	var n: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(IMPOSTORS + name + ".json"))
+	var mat := ShaderMaterial.new()
+	mat.shader = IMPOSTOR_SHADER
+	for map: String in ["albedo", "normal", "depth", "orm"]:
+		mat.set_shader_parameter("imposterTexture" + map.capitalize(), load(IMPOSTORS + "%s_base_%s.png" % [name, map]))
+	mat.set_shader_parameter("imposterFrames", Vector2(float(n["frames"]), float(n["frames"])))
+	mat.set_shader_parameter("isFullSphere", bool(n["full_sphere"]))
+	mat.set_shader_parameter("scale", float(n["scale"]))
+	mat.set_shader_parameter("aabb_max", float(n["aabb_max"]))
+	var o: Array = n["offset"]
+	mat.set_shader_parameter("positionOffset", Vector3(float(o[0]), float(o[1]), float(o[2])))
+	mat.set_shader_parameter("metallic", 0.0)
+	for si in far.get_surface_count():  # its leaves' season (leaves()): the kind, the model's own tints and turns
+		var m := far.surface_get_material(si)
+		if m and m.has_meta("leaf"):
+			for k in ["leaf", "seasons", "turns"]:
+				mat.set_meta(k, m.get_meta(k))
+			break
+	if season != "" and mat.has_meta("leaf"):
+		mat.set_shader_parameter("albedo", tint(mat))
+		mat.set_shader_parameter("turn", turn_of(mat))
+	impostors.append(mat)
+	var q := QuadMesh.new()
+	var box := far.get_aabb()
+	q.custom_aabb = box.grow(box.size.length() * 0.25)  # the quad turns to the lens: the tree's whole box, as the addon's export
+	q.material = mat
+	return q
 
 
 ## A nature-set model's leaves (its MI_Leaves material, docs/art/nature) marked for terrain.gd's season pass: `kind`
@@ -354,7 +405,7 @@ static func set_turn(mat: BaseMaterial3D, turn: Color) -> void:
 
 ## A leaf material's turn in the season: its model's own (woods.kit.seasons.<model>.turn), else its kind's
 ## (woods.kit.turn.<season>.<kind>), else none.
-static func turn_of(mat: BaseMaterial3D) -> Color:
+static func turn_of(mat: Material) -> Color:
 	var t: Variant = (mat.get_meta("turns", {}) as Dictionary).get(season, null)
 	if t == null:
 		t = ((Data.value("assets", "woods.kit.turn", {}) as Dictionary).get(season, {}) as Dictionary).get(String(mat.get_meta("leaf", "")), null)
@@ -391,7 +442,7 @@ static var row := {}
 
 ## A leaf material's tint in the season over its summer colour: its model's own turn (woods.kit.seasons), else the
 ## season's for its kind.
-static func tint(mat: BaseMaterial3D) -> Color:
+static func tint(mat: Material) -> Color:
 	return (mat.get_meta("seasons", {}) as Dictionary).get(season, row.get(String(mat.get_meta("leaf", "")), Color.WHITE))
 
 

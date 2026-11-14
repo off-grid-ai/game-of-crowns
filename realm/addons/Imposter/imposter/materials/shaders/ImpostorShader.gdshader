@@ -27,6 +27,10 @@ uniform bool isFullSphere = true;
 
 uniform float alpha_clamp = 0.5f;
 
+// Game of Crowns (forest.gd): the season's turn laid over the summer bake (rgb, a how much); the batch's instance
+// colour (COLOR, each tree's shade) multiplies the albedo.
+uniform vec4 turn : source_color = vec4(0.0);
+
 uniform bool dither = false;
 
 uniform float scale = 1.0f;
@@ -367,7 +371,7 @@ void fragment()
 								uv_f3, frame3_normal,
 								TANGENT, BINORMAL,
 									quad_blend_weights, imposterTextureNormal);
-	ALBEDO = baseTex.rgb * albedo.rgb;
+	ALBEDO = mix(baseTex.rgb * albedo.rgb * COLOR.rgb, turn.rgb, turn.a);  // Game of Crowns: shade and season
 	NORMAL =normalTex.xyz;
 	
 	if(dither)
