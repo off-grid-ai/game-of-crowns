@@ -455,10 +455,10 @@ func _drape_atlas(mat: Terrain3DMaterial, terrain: Node3D) -> void:
 
 ## Freeciv's owner layer on the ground, in the same shader: each house's land
 ## takes its colour at the land's own brightness (the minimap's colour, the
-## ground still showing through), strongest in a band along its borders, with
-## a fine dark line where two houses meet (red where they are at war), the
-## same few pixels wide at every zoom. The borders follow a smooth contour
-## between tiles, never their square steps. When land changes hands the new
+## ground still showing through), fading into the next house's across a tile,
+## with no outline between houses at peace; a line only where their dealings mark
+## the seam (red where they are at war) and a vassal's thin seam, the same few
+## pixels wide at every zoom, on a smooth contour between tiles. When land changes hands the new
 ## colour floods out from each changed patch (flood_at, in tiles) over the old
 ## (realm_prev). realm_tex: rgb = colour, a = owner id / 64.
 const REALM_UNIFORMS := """
@@ -478,13 +478,12 @@ uniform float politics = 0.0;
 uniform float hold[64];
 uniform vec3 lean[64];
 uniform vec4 pol_k = vec4(0.3, 0.8, 0.45, 0.4);  // wash_near, wash_far, own_mix, stripes_below
-uniform vec4 pol_b = vec4(1.35, 3.0, 1.4, 0.0);  // border_bright (saturation), border_px, stripe_width, border_glow
-uniform vec4 pol_z = vec4(12.0, 30.0, 0.4, 0.35);  // map_from, map_to: the camera's height over the ground where the wash comes in; band, band_strength: the house's colour strong just inside its border (tile share, strength)
+uniform vec4 pol_b = vec4(1.35, 3.0, 1.4, 0.0);  // border_bright (saturation), border_px (a marked seam's width), stripe_width, unused
+uniform vec4 pol_z = vec4(12.0, 30.0, 0.0, 0.0);  // map_from, map_to: the camera's height over the ground where the wash comes in; unused
 uniform vec4 relief = vec4(0.0, -0.5, 0.7, -0.5);  // the land's relief at the map's height (data/map.json relief): strength, the light it is shaded from
 uniform vec4 relief_near = vec4(0.0, -0.5, 0.7, -0.5);  // the same below the map's height (data/map.json relief.near): strength, light
 uniform vec4 pol_l = vec4(9.0, 22.0, 0.22, 0.55);  // line_from, line_to (camera height where borders fade in), soft (the painted band's width, tile share), crisp (the fine line's share)
 uniform float pol_vassal = 0.35;  // a vassal's border with its liege (both in the liege's colour): the line's width as a share of a realm's (look.json politics.vassal_line)
-uniform float pol_key = 0.0;  // the border's dark keyline just inside its bright line (data/look.json politics.keyline)
 float flood_d(vec2 t) {
 	float d = 100000.0;
 	for (int i = 0; i < flood_n; i++) d = min(d, distance(t, flood_at[i]));
@@ -526,9 +525,19 @@ const REALM_WASH := """
 		// along a shore (g38: a house's line round the lake inside its land; 02-realm: borders run on land only).
 		for (int i = 0; i < 4; i++) if (abs(o[i].a - o[best].a) > 0.001 && o[i].a > 0.0 && o[best].a > 0.0) other = i;
 		vec4 own = o[best];
+		// The tint's colour, mixed from the four tiles' holders by their weight (Total War's campaign tint, CK3's realm
+		// map mode: one house's colour fades into the next across a tile, no step, no outline), and how much of the
+		// spot is held at all (cov: the tint fades out toward water and unheld ground the same way).
+		vec3 mixc = vec3(0.0);
+		float cov = 0.0;
+		int bo = -1;
+		float bw = -1.0;
+		for (int i = 0; i < 4; i++) if (o[i].a > 0.0) { mixc += o[i].rgb * w[i]; cov += w[i]; if (w[i] > bw) { bw = w[i]; bo = i; } }
+		vec4 town = own.a > 0.0 ? own : (bo >= 0 ? o[bo] : own);  // whose hold and lean the tint reads
+		vec3 trgb = cov > 0.0 ? mixc / cov : own.rgb;
 		// The house's colour at full value, saturated toward its pure hue (look.json politics.border_bright): the border line
 		// and, on the political map, the wash inside it (g9: the pastel colours washed the land tan and the edge pink).
-		vec3 vfull = own.rgb / max(max(own.r, own.g), max(own.b, 0.05));
+		vec3 vfull = trgb / max(max(trgb.r, trgb.g), max(trgb.b, 0.05));
 		float vmn = min(vfull.r, min(vfull.g, vfull.b)) * clamp(pol_b.x, 0.0, 0.95);
 		vec3 vivid = clamp((vfull - vec3(vmn)) / (1.0 - vmn), 0.0, 1.0);
 		// How near the lens is to the map's height (pol_z: look.json politics map_from / map_to): the
@@ -545,8 +554,6 @@ const REALM_WASH := """
 		// within one realm, drawn as a thin inner line, no band, glow or keyline (CK3's vassal borders inside a realm).
 		bool kin = other >= 0 && own.a > 0.0 && o[other].a > 0.0 && distance(o[other].rgb, own.rgb) < 0.004;
 		if (kin) edge = 1.0 - smoothstep(px * pol_b.y * pol_vassal * 0.5, px * pol_b.y * pol_vassal + 0.01, gap);
-		// A band of stronger colour just inside it, as a map would draw a realm's edge.
-		float band = other >= 0 && !kin ? 1.0 - smoothstep(0.0, pol_z.z, gap) : 0.0;
 		// The two houses' standing across this border (terrain.politics.set_realm): r war, g truce, b sworn.
 		vec4 sa = texelFetch(war_tex, clamp(cs[best], ivec2(0), ivec2(realm_size) - 1), 0);
 		vec4 sb = other >= 0 ? texelFetch(war_tex, clamp(cs[other], ivec2(0), ivec2(realm_size) - 1), 0) : vec4(0.0);
@@ -561,19 +568,19 @@ const REALM_WASH := """
 		bool pact = both && !at_war && abs(sa.a - 0.5) < 0.1 && abs(sb.a - 0.5) < 0.1;
 		bool wed = both && !at_war && abs(sa.a - 0.25) < 0.1 && abs(sb.a - 0.25) < 0.1;
 		float front = flood_n > 0 ? exp(-abs(flood_d(rt) - flood_r) * 2.0) : 0.0;
-		if (own.a > 0.0) {
+		if (cov > 0.0) {
 			// The house's own colour at the land's brightness: a hue, the ground still showing.
 			float lum = dot(ALBEDO, vec3(0.299, 0.587, 0.114));
-			float hl = max(dot(own.rgb, vec3(0.299, 0.587, 0.114)), 0.05);
-			vec3 hue = politics > 0.5 ? vivid : own.rgb;
+			float hl = max(dot(trgb, vec3(0.299, 0.587, 0.114)), 0.05);
+			vec3 hue = politics > 0.5 ? vivid : trgb;
 			float hh = max(dot(hue, vec3(0.299, 0.587, 0.114)), 0.05);
 			vec3 tinted = clamp(hue * lum / (politics > 0.5 ? hh : hl) * 1.1, 0.0, 1.0);
-			// Wide washes only from a little way off (never a flat coat over the streets); the band always.
-			float k = far_off * mix(0.45, 0.7, realm_mix) + band * mix(0.35, 0.55, far_off) + front * 0.4 * far_off;
+			// Wide washes only from a little way off (never a flat coat over the streets).
+			float k = far_off * mix(0.45, 0.7, realm_mix) + front * 0.4 * far_off;
 			if (politics > 0.5) {
 				// CK3's political map in WC3's colours: the house's colour as strong as its hold, saturated toward
 				// its own flat colour; land slipping away striped in the colour of the house it leans to.
-				int oid = clamp(int(round(own.a * 64.0)) - 1, 0, 63);
+				int oid = clamp(int(round(town.a * 64.0)) - 1, 0, 63);
 				float hd = hold[oid];
 				tinted = mix(tinted, vivid, pol_k.z);
 				vec3 ln = lean[oid];
@@ -584,11 +591,11 @@ const REALM_WASH := """
 					hd = max(hd, 0.6);  // the stripes themselves are the reading: drawn clearly
 				}
 				// By the camera's height, not each spot's distance: at roof and town height the land near and far
-				// stays natural (the house reads from banners and roofs); the wash, the band and the stripes come in
-				// only as the lens rises to the map. The border line stays at every height.
-				k = (mix(pol_k.x, pol_k.y, map_zoom) * hd + band * pol_z.w + front * 0.5) * mix(0.15, 1.0, map_zoom);
+				// stays natural (the house reads from banners and roofs); the wash and the stripes come in
+				// only as the lens rises to the map.
+				k = (mix(pol_k.x, pol_k.y, map_zoom) * hd + front * 0.5) * mix(0.15, 1.0, map_zoom);
 			}
-			ALBEDO = mix(ALBEDO, tinted, clamp(k, 0.0, politics > 0.5 ? 0.92 : 0.85));
+			ALBEDO = mix(ALBEDO, tinted, clamp(k * cov, 0.0, politics > 0.5 ? 0.92 : 0.85));
 		}
 		// War: red. A truce: muted gold, dashed (held, not settled). Sworn to the crown:
 		// a fine crown-gold edge. Otherwise the house's own colour, darkened.
@@ -598,25 +605,15 @@ const REALM_WASH := """
 		if (envoy) { line = vec3(0.86, 0.86, 0.9); dash = step(0.5, fract((rt.x + rt.y) * 2.0 - TIME * 0.6)); }
 		else if (pact) { line = vec3(0.22, 0.12, 0.3); strength = 0.5; }
 		else if (wed) { line = step(0.5, fract((rt.x + rt.y) * 1.5)) > 0.5 ? own.rgb : o[other].rgb; }
-		// The political map: the line in the house's own colour, brightened (WC3's team colour), unless war,
-		// a truce or an oath has its own.
-		// At its full value and saturation, so it stands out of the washed land in the house's own colour (g7: brightened,
-		// a salmon line on salmon land read as no line; g8: at full value, still a pale pastel; 02-realm edges every land
-		// in a strong, saturated line). pol_b.x: border_bright, how far toward full saturation (1: the hue alone).
-		if (politics > 0.5 && !at_war && !truce && !sworn && !envoy && !pact && !wed && own.a > 0.0) { line = vivid; strength = 1.0; }
+		// No outline between two houses at peace (Mac: "we dont need the outlines, just tinted colour"): a line only where
+		// the houses' dealings mark the seam (war, truce, an oath, a scheme) and a vassal's thin seam inside a realm.
+		bool marked = at_war || truce || sworn || envoy || pact || wed || kin;
 		// Never on the ground at roof or town height (the ground stays ground, Warcraft III); fading in as
 		// the lens rises, and drawn as a painted border, a soft brush band under a finer line, not a hard rule.
 		float line_zoom = smoothstep(pol_l.x, pol_l.y, CAMERA_POSITION_WORLD.y - v_vertex.y);
 		float soft = other >= 0 ? 1.0 - smoothstep(0.0, pol_l.z, gap) : 0.0;
-		float paint = max(edge * pol_l.w, soft * soft * (1.0 - pol_l.w)) * (kin ? 0.75 : 1.0);
-		// A light glow of the line's colour spreading just inside it (02-realm's lit edges; look.json politics.border_glow).
-		float glow = politics > 0.5 && other >= 0 && !kin && own.a > 0.0 ? 1.0 - smoothstep(px * pol_b.y * 0.8, px * pol_b.y * 1.6 + 0.01, gap) : 0.0;
-		ALBEDO = mix(ALBEDO, mix(line, vec3(1.0), 0.15), pol_b.w * glow * line_zoom);
+		float paint = marked ? max(edge * pol_l.w, soft * soft * (1.0 - pol_l.w)) * (kin ? 0.75 : 1.0) : 0.0;
 		ALBEDO = mix(ALBEDO, line, paint * strength * dash * line_zoom);
-		// A dark keyline just inside the bright line (02-realm: every edge a lit colour line set off by a dark rim),
-		// so a pastel house's line stands out of its own tinted land (g35: yellow on yellow read as a smear).
-		float rim = politics > 0.5 && other >= 0 && !kin ? smoothstep(px * pol_b.y * 0.95, px * pol_b.y * 1.1, gap) * (1.0 - smoothstep(px * pol_b.y * 1.3, px * pol_b.y * 1.7, gap)) : 0.0;
-		ALBEDO *= 1.0 - pol_key * rim * line_zoom;
 	}
 """
 var _flood_t := -1.0  # seconds into a flood; -1: none running
@@ -670,7 +667,6 @@ func set_politics(on: bool, hold: PackedFloat32Array, lean: PackedVector3Array, 
 	mat.set_shader_param("pol_b", b)
 	mat.set_shader_param("pol_z", z)
 	mat.set_shader_param("pol_l", l)
-	mat.set_shader_param("pol_key", Data.num("look", "politics.keyline", 0.0))
 	mat.set_shader_param("pol_vassal", Data.num("look", "politics.vassal_line", 0.35))
 	mat.set_shader_param("relief", r)
 
