@@ -117,6 +117,7 @@ Switches (`--name`) go after `--` on the game's command line.
 - The town's edge (art target town-a/b): orchards by the roads out (`realm/data/towns.json`), how many by rank (`edge.orchards.<crown|seat|town|village>`), each one's rows, columns, spacing and tree size (`edge.orchard`); the fruit trees: `realm/data/assets.json`: `components.orchard_tree`. The windmill itself is a trade: `towns.json trades.list` windmill.
 - The woods' trees (the nature set, docs/art/nature: each role a list of models, pine, oak, bush): `realm/data/assets.json`: `woods.kit`.
 - The hills shaded from a low light at play zoom, not only on the map: `realm/data/map.json` `relief.near` (strength; the light is `relief.light`). How many bushes, grass tufts and rocks each Freeciv terrain's tile holds: `realm/data/forest.json` `cover_per_tile`.
+- How bare the woods stand each season (the broadleaves shed their crowns in winter, the pines keep theirs): `realm/data/assets.json` `woods.kit.bare.<season>.<kind>` (0 in full leaf, 1 bare).
 - The woods' bare trees: `realm/data/assets.json` `woods.kit.dead` (`models`, `height`, `share`: of the broadleaf woods' grown trees).
 - How much each tree's leaves differ from the next in a wood, lighter or darker and warmer or cooler: `realm/data/assets.json`: `woods.kit.shade` (`light`, `warm`).
 - The kit's trees, their true heights and how tall young trees and saplings stand: `realm/data/assets.json`: `woods.kit.*`.

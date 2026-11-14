@@ -264,6 +264,8 @@ static func leaves(mat: Material, path: String, kind: String) -> Material:
 	c.detail_albedo = _flat(Color.BLACK)
 	c.detail_mask = _flat(Color.BLACK)
 	set_turn(c, turn_of(c) if season != "" else Color(0, 0, 0, 0))
+	c.set_meta("scissor", c.alpha_scissor_threshold)
+	c.alpha_scissor_threshold = scissor_of(c)  # made in winter: bare at once
 	if season != "":
 		c.albedo_color = c.albedo_color * tint(c)  # made after the land turned (a town built later): in its season at once
 	marked.append(c)
@@ -296,6 +298,18 @@ static func turn_of(mat: BaseMaterial3D) -> Color:
 	if t == null:
 		t = ((Data.value("assets", "woods.kit.turn", {}) as Dictionary).get(season, {}) as Dictionary).get(String(mat.get_meta("leaf", "")), null)
 	return Color(float(t[0]), float(t[1]), float(t[2]), float(t[3])) if t is Array and (t as Array).size() >= 4 else Color(0, 0, 0, 0)
+
+
+## How bare a leaf material's tree stands in the season (assets.json woods.kit.bare.<season>.<kind>, 0 in full leaf, 1
+## bare: WC3's and AoE2's winter woods are branches against the snow): its cut-out threshold, raised from the painted
+## leaves' own (meta "scissor") past every leaf texel's alpha, so the crown sheds from its ragged edges inward as it
+## settles and the bark's branches stand bare. Leaves drawn without a cut-out keep theirs.
+static func scissor_of(mat: BaseMaterial3D) -> float:
+	var own := float(mat.get_meta("scissor", mat.alpha_scissor_threshold))
+	if mat.transparency != BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR:
+		return own
+	var b: Variant = ((Data.value("assets", "woods.kit.bare", {}) as Dictionary).get(season, {}) as Dictionary).get(String(mat.get_meta("leaf", "")), 0.0)
+	return lerpf(own, 1.01, clampf(float(b), 0.0, 1.0))
 
 
 ## Which season's tint a model's leaves take (terrain.gd SEASONS): "pine" for the woods' pines and the other

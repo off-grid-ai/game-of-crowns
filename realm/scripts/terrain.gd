@@ -169,6 +169,7 @@ func set_season(name: String, towns: Array = [], settle := 10.0) -> void:
 			goal = Color(was.r, was.g, was.b, 0.0)  # going to none: the colour held while it fades
 		var leaf_kit: GDScript = Forest  # (a lambda can't see a local const)
 		create_tween().tween_method(func(t: float): leaf_kit.set_turn(mat, was.lerp(goal, t)), 0.0, 1.0, settle)
+		create_tween().tween_property(mat, "alpha_scissor_threshold", Forest.scissor_of(mat), settle)  # the broadleaves bare in winter
 		_leaf_snow(mat, String(mat.get_meta("leaf", "")) != "grass" and s["snow"] > 0.0)
 	if s["snow"] > 0.0 and OVERLAY_SNOW and vegetation:
 		for mmi in vegetation.batches:
