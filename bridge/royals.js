@@ -115,6 +115,10 @@ export function abdicate(ctx) {
 export const HEIRLESS = R.heirless;
 // A great lord's child offered for the heir's hand at court (characters.js royalwed): the age, the plea's weight, the favour.
 export const MATCH = R.match;
+// A child on the throne emboldens the cold houses (characters.js rebel): a rising weighs minor.rising more, and a lord
+// who wants the crown himself minor.claim more again.
+export const REGENCY = { rising: R.minor.rising ?? 0, claim: R.minor.claim ?? 0 };
+export const isRegency = (h) => Boolean(h?.king && h.king.age < R.majority);
 
 // For /world: the King, his consort, his heir and the rest of his children, and the Kings before him.
 export function view(meta) {
@@ -124,7 +128,7 @@ export function view(meta) {
   const next = heir(h);
   return {
     king: who(h.king), consort: h.consort?.alive ? who(h.consort) : null, heir: who(next), match: next?.spouse ? { name: next.spouse.name, house: next.spouse.house } : null,
-    children: h.children.filter((k) => k.alive).map(who), kin: h.kin.filter((k) => k.alive).map(who), regency: h.king.age < R.majority,
+    children: h.children.filter((k) => k.alive).map(who), kin: h.kin.filter((k) => k.alive).map(who), regency: isRegency(h),
     line: h.line, abdicate: Boolean(next && next.age >= R.abdicate.age),
   };
 }

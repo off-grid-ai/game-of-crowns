@@ -16,7 +16,7 @@ import { decide } from "./claude.js";
 
 import { calendar, SEASONS_PER_YEAR, yearsIn, isYearEnd } from "./calendar.js";
 import { ANSWERS } from "./petitions.js";
-import { heir as royalHeir, MATCH as RM } from "./royals.js";
+import { heir as royalHeir, MATCH as RM, REGENCY, isRegency } from "./royals.js";
 import { BANDS } from "./favour.js";
 import * as names from "./names.js";
 
@@ -536,7 +536,7 @@ export class Court {
       if (want?.target?.kind === "town" && favour < BANDS.loyal) opts.push({ kind: "press", score: AMB.act.press + (has("ambitious") ? 15 : 0) + (has("brave") ? 10 : 0) - (has("honourable") ? 20 : 0) - (has("craven") ? 25 : 0) + (forbade ? AMB.act.forbidden : 0), target: want.target });
       opts.push({ kind: "petition", score: 20 + (goal.kind === "court" || goal.kind === "peace" ? 20 : 0) + (favour >= BANDS.loyal ? 10 : 0) });
       // Only after the house's ultimatum to the crown was refused (server.js turnHouses).
-      if (favour < BANDS.cooling && !ctx.warded?.(c.playerId) && (ctx.mayRise?.(c.playerId) ?? true)) opts.push({ kind: "rebel", score: 40 + (BANDS.cooling - favour) * 2 + (goal.kind === "crown" ? 40 : 0) + (forbade ? AMB.act.forbidden : 0) + (has("ambitious") ? 15 : 0) - (has("craven") ? 30 : 0) - (c.hostage && this.people[c.hostage]?.alive ? 60 : 0) });
+      if (favour < BANDS.cooling && !ctx.warded?.(c.playerId) && (ctx.mayRise?.(c.playerId) ?? true)) opts.push({ kind: "rebel", score: 40 + (BANDS.cooling - favour) * 2 + (goal.kind === "crown" ? 40 : 0) + (forbade ? AMB.act.forbidden : 0) + (isRegency(this.royals?.()) ? REGENCY.rising + (goal.kind === "crown" ? REGENCY.claim : 0) : 0) + (has("ambitious") ? 15 : 0) - (has("craven") ? 30 : 0) - (c.hostage && this.people[c.hostage]?.alive ? 60 : 0) });
     }
     if (!opts.length) return null;
     // The realm's mood, set by the King in words, tilts everyone at once.
