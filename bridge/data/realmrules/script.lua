@@ -406,7 +406,7 @@ function ev_unit_lost(unit, loser, reason)
   -- Every unit Freeciv takes off the map, and why (the reign harness checks no unit vanishes without one).
   log.normal("UNIT_LOST %d %s %d", unit.id, tostring(reason), loser and loser.id or -1)
   if reason == "killed" then
-    emit("unit_killed", {unit = unit.utype:rule_name(), owner = loser.id, x = unit.tile.x, y = unit.tile.y})
+    emit("unit_killed", {unit = unit.utype:rule_name(), uid = unit.id, owner = loser.id, x = unit.tile.x, y = unit.tile.y})
   end
 end
 -- Who struck: an attack on a tile, so the bridge knows the victors when a company dies there (battles.js).

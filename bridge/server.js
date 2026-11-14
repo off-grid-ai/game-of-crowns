@@ -66,6 +66,7 @@ import * as Households from "./households.js";
 import * as Harvest from "./harvest.js";
 import * as Royals from "./royals.js";
 import * as Trade from "./trade.js";
+import * as Captains from "./captains.js";
 import { TURNING } from "./season.js";
 import { intrigueNow } from "./intrigue.js";
 
@@ -414,7 +415,7 @@ function applyStartOptions() {
 // The realm as the view sees it (GET /world): built in view.js.
 function worldView() {
   const v = View.worldView(realmCtx()), d = detail();
-  return { ...v, trade: Trade.list(v.cities, world?.turn ?? 0, (a, b) => (d?.players?.[a]?.atWarWith ?? []).includes(b)), hosts: Hosts.list({ world, meta }), banners: Hosts.banners({ world, meta }), battles: Battles.cards(meta, world?.turn), raids: Raids.list(meta, world), works: Treasury.worksOf(meta, world, crownNow()?.id), harvest: Harvest.view(meta, world?.turn ?? 0), royals: Royals.view(meta) };  // the King's hosts and their orders, and how many more orders this season (hosts.js)
+  return { ...v, trade: Trade.list(v.cities, world?.turn ?? 0, (a, b) => (d?.players?.[a]?.atWarWith ?? []).includes(b)), hosts: Hosts.list({ world, meta }), banners: Hosts.banners({ world, meta }), battles: Battles.cards(meta, world?.turn), raids: Raids.list(meta, world), works: Treasury.worksOf(meta, world, crownNow()?.id), harvest: Harvest.view(meta, world?.turn ?? 0), royals: Royals.view(meta), captains: Captains.list(meta, world) };  // the King's hosts and their orders, and how many more orders this season (hosts.js)
 }
 
 // The Hand's matters, read from the realm as it stands now.
@@ -556,7 +557,8 @@ function onEvent(line) {
     // Who fought, how many and who won (battles.js); one battle per tile a season.
     const f = Battles.fields(world, ev);
     if (!Battles.merge(scenes, f, world?.turn ?? 0)) scene("battle", { ...f, house: loser ? houseFor(loser).name : null });
-    Battles.card(meta, world, f, world?.turn ?? 0, crownNow()?.id);  // the King's battles as result cards (battles.js)
+    const card = Battles.card(meta, world, f, world?.turn ?? 0, crownNow()?.id);  // the King's battles as result cards (battles.js)
+    Captains.fell({ meta, world, record }, { ...ev, x: Number(ev.x), y: Number(ev.y) }, card);  // a crown company's captain falls (captains.js)
   }
   if (ev.kind === "city_transferred" && town) scene(ev.reason === "conquest" ? "sack" : "handover", { x: town.x, y: town.y, city: town.id, from: Number(ev.from), to: Number(ev.to) });
   if (ev.kind === "city_destroyed" && town) scene("razed", { x: town.x, y: town.y, city: town.id });
