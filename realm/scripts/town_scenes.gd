@@ -888,10 +888,12 @@ func _stage_role(k: Dictionary, role: Dictionary, anchors: Dictionary) -> void:
 					body.queue_free()  # no one found room to chase him: he isn't there
 			"live":
 				Animals.live(body, String(role.get("beast", "")), rng)  # its own idle life (a hen pecking about)
-			"procession":
+			"procession", "leave":
 				pass
 	if does == "procession":
 		_procession(k, role, group, a)
+	elif does == "leave":
+		_leave(k, role, group, a)
 
 
 func _face_to(body: Node3D, role: Dictionary, s: Dictionary, a: Dictionary, k: Dictionary, first: Node3D) -> void:
@@ -1184,6 +1186,39 @@ func _procession(k: Dictionary, role: Dictionary, group: Array, a: Dictionary) -
 		bier.position = Vector3(0, 0.15 / maxf(under.scale.x, 0.001), 0)
 		bier.rotation = Vector3.ZERO
 		bier.scale = s
+
+
+## A household leaving the town (the leaving row; bridge households.js): the whole file across the row's roles, the
+## first pushing the barrow with their goods (Wheelbarrow, its barrow weapons.gd's), the rest behind in file, out
+## from their door along the road (the leaving dressing's route) and gone at its end, as the levy marches out.
+func _leave(k: Dictionary, role: Dictionary, group: Array, a: Dictionary) -> void:
+	var route: Array = a.get("route", [])
+	if group.is_empty() or route.is_empty():
+		return
+	var root: Node3D = k["root"]
+	var W: Dictionary = (k["row"] as Dictionary).get("walk", {})
+	var file: Array = (k.get("file", []) as Array)
+	file.append_array(group)
+	k["file"] = file
+	if role != (k["row"]["roles"] as Array)[-1]:
+		return
+	var pace := float(W.get("pace", 0.12))
+	var spacing := float(W.get("spacing", 0.12))
+	var push := "Wheelbarrow" if preload("res://scripts/weapons.gd").can_play("Wheelbarrow") else "Carrying"
+	var behind: Vector3 = ((route[0] as Vector3) - (route[1 % route.size()] as Vector3)).normalized()
+	for i in file.size():
+		var w: Node3D = file[i]
+		var at: Vector3 = (route[0] as Vector3) + behind * spacing * i  # in file at their door, the barrow first
+		w.position = Vector3(at.x, (k["tl"] as Object).ground_at(root, at), at.z)
+		var mind := w.get_node_or_null("Mind")
+		if mind:
+			w.remove_child(mind)
+			mind.queue_free()  # they go now
+		w.set_meta("leaving", true)
+		if i == 0:
+			_walker(w, MarchOut.new(), {"route": route.map(func(q): return root.to_global(q))}, push, pace)
+		else:
+			_walker(w, Follow.new(), {"after": file[i - 1], "gap": spacing, "with": true}, "Carrying" if i == 1 else "Walk", pace * 1.2)
 
 
 # --- the levy marching out ----------------------------------------------------------------------------

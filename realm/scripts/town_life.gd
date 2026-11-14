@@ -84,7 +84,7 @@ func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 	sig += "|%s" % c.get("plague", false)  # a sick town's life changes (town_scenes.json plague)
 	# The working buildings' life changes with a levy and a low granary too, and when the town agent lists its buildings.
 	var now_states := _states(c)
-	sig += "|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%d|%s" % [c.get("granaryLow", false), "levy" in now_states, "raid" in now_states, "market" in now_states, "lean" in now_states, "fields" in now_states, "wet" in now_states, "royal_funeral" in now_states, _season(), "promise_kept" in now_states, "promise_broken" in now_states, hash(root.get_meta("works", {})), (c.get("ruling") as Dictionary).get("kind", "") if c.get("ruling") is Dictionary else ""]
+	sig += "|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%d|%s" % [c.get("granaryLow", false), "levy" in now_states, "raid" in now_states, "market" in now_states, "lean" in now_states, "fields" in now_states, "wet" in now_states, "royal_funeral" in now_states, _season(), "promise_kept" in now_states, "promise_broken" in now_states, "leaving" in now_states, hash(root.get_meta("works", {})), (c.get("ruling") as Dictionary).get("kind", "") if c.get("ruling") is Dictionary else ""]
 	# The town dressed in what we own, once (dressing.gd; --dressing=on): gear at the trades' doors,
 	# planters by house doors, bushes, flowers and rocks between the houses.
 	if Dressing.on() and root.get_node_or_null("Dressing") == null:
