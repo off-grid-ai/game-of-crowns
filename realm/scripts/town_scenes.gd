@@ -19,6 +19,7 @@ extends Node3D
 ## Copies the proven designs: Unreal's smart objects and slots, GTA's scenario points, RimWorld's moods.
 
 const Data := preload("res://scripts/data.gd")
+const ViewTier := preload("res://scripts/view_tier.gd")  # the frame's one staging pot (spend_ok)
 const Ground := preload("res://scripts/ground.gd")  # the one answer to where a body may stand
 const People := preload("res://scripts/people.gd")
 const Works := preload("res://scripts/works.gd")
@@ -114,16 +115,13 @@ func stage(root: Node3D, life: Node3D, c: Dictionary, states: Array, tl: Object)
 				var w: Variant = role.get("census", 0.0)
 				if not (w is String):
 					census["weights"] = float(census["weights"]) + float(w)
-	# Staged over frames, a slice at a time (towns.json life.slice_ms; FPS: a town's whole cast in one frame held it
+	# Staged over frames, on the frame's one staging pot (ViewTier.spend_ok; FPS: a town's whole cast in one frame held it
 	# 5.5 s); a town redressed meanwhile (its Life replaced) ends this one.
-	var slice := float(Data.num("towns", "life.slice_ms", 4.0))
-	var t0 := Time.get_ticks_msec()
 	for row in _d.get("standing", []):
 		if not _meets(row, root, states, size):
 			continue
-		if Time.get_ticks_msec() - t0 > slice:
+		if not ViewTier.spend_ok():
 			await get_tree().process_frame
-			t0 = Time.get_ticks_msec()
 			if not is_instance_valid(root) or not is_instance_valid(life) or root.get_node_or_null("Life") != life:
 				return
 		var anchors: Dictionary = (life.get_meta("anchors", {}) as Dictionary).duplicate()  # where town_life's own dressing stands
@@ -133,9 +131,8 @@ func stage(root: Node3D, life: Node3D, c: Dictionary, states: Array, tl: Object)
 				anchors.merge(d.dress(root, life, row, rng), true)
 		var k := {"root": root, "life": life, "tl": tl, "states": states, "size": size, "rng": rng, "row": row, "lead": null, "cast": [], "tally": tally, "census": census}
 		for role in row.get("roles", []):
-			if Time.get_ticks_msec() - t0 > slice:
+			if not ViewTier.spend_ok():
 				await get_tree().process_frame
-				t0 = Time.get_ticks_msec()
 				if not is_instance_valid(root) or not is_instance_valid(life) or root.get_node_or_null("Life") != life:
 					return
 			_stage_role(k, role, anchors)

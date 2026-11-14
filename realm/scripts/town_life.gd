@@ -1,4 +1,5 @@
 extends RefCounted
+const ViewTier := preload("res://scripts/view_tier.gd")  # the frame's one staging pot (spend_ok)
 const Units := preload("res://scripts/world_units.gd")  # the world's one scale (Units.M)
 const Particles := preload("res://scripts/particles.gd")  # smoke and fire on the GPU
 ## The life director: turns what Freeciv says a town is doing into something you
@@ -70,10 +71,9 @@ static func minds_on(town: int) -> bool:
 
 
 ## One town's life staged at a time (its town, holder and colour are this staging's members): a second waits for the
-## first. Each stage of it takes at most towns.json life.slice_ms of a frame, the rest waiting for the next (FPS:
+## first. Each stage of it draws on the frame's one staging pot (ViewTier.spend_ok), the rest waiting for the next (FPS:
 ## fps4, a new town's life held 278 ms a frame, up to 1.3 s).
 var _staging := false
-var _slice_at := 0
 var _waiting := {}  # town root id -> its newest facts, while another town's staging runs: the latest only is staged
 func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 	if _staging:
@@ -91,7 +91,7 @@ func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 		c = newest[0]
 		house = newest[1]
 	_staging = true
-	_slice_at = Time.get_ticks_usec()
+	_step_at = Time.get_ticks_usec()
 	await _stage_town(root, c, house)
 	_staging = false
 
@@ -122,16 +122,15 @@ static func _bare_life(root: Node3D, old: Node3D) -> Node3D:
 	return life
 
 
-## Waits for the next frame once this frame's share (towns.json life.slice_ms) is spent; each step timed for the
+## Waits for the next frame once the frame's staging pot is spent (ViewTier.spend_ok); each step timed for the
 ## frame-cost probe (perf_tools.gd, GOC_PERF_PROBE; off in play) as life.<step>.
 func _pace(step: String) -> void:
 	var now := Time.get_ticks_usec()
 	if PerfTools.probing:
 		PerfTools.add("life." + step, now - _step_at)
-	if now - _slice_at > int(Data.num("towns", "life.slice_ms", 4.0) * 1000.0):
+	if not ViewTier.spend_ok():
 		await Engine.get_main_loop().process_frame
 		now = Time.get_ticks_usec()
-		_slice_at = now
 	_step_at = now
 
 
@@ -247,7 +246,6 @@ func _stage_town(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 	if director:
 		await director.stage(root, life, c, states, self)  # its own slices, over frames (town_scenes.gd)
 		_step_at = Time.get_ticks_usec()  # the pin step timed from here, not across the casting's frames
-		_slice_at = _step_at
 		if _gone(root, life):
 			return
 	_near_only(life)

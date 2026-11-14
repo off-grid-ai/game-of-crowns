@@ -7,6 +7,7 @@ extends RefCounted
 
 const Main := preload("res://scripts/main.gd")
 const Settings := preload("res://scripts/settings.gd")
+const ViewTier := preload("res://scripts/view_tier.gd")
 
 var main: Main  # the realm that owns the story: its bridge, menu, interface and storybook
 var _intro_due := false
@@ -73,8 +74,8 @@ func _tell_the_story() -> void:
 				c.play()
 			if main.hand_prompts:
 				main.hand_prompts.landed(), CONNECT_ONE_SHOT)
-	# Behind the loading screen the towns rise with most of each frame (towns.gd loading), never in play.
-	main.towns.loading = not _back_to_menu
-	main.intro.finished.connect(func(): main.towns.loading = false, CONNECT_ONE_SHOT)
+	# Behind the loading screen everything staged (towns raised, crowds made) has most of each frame (ViewTier.loading).
+	ViewTier.loading = not _back_to_menu
+	main.intro.finished.connect(func(): ViewTier.loading = false, CONNECT_ONE_SHOT)
 	main.intro.watching = _back_to_menu
 	main.intro.play(houses, seats)

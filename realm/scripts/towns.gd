@@ -27,51 +27,84 @@ func _ready() -> void:
 	life.towns_node = self
 
 
-## Brings the towns in line with the world. Unchanged towns only refresh their
-## life; new or grown ones are queued and built a few per frame, nearest the
-## camera first, so a new realm fills in before your eyes instead of freezing
-## the screen, and a season's growth never stalls the game.
-func sync(houses: Dictionary) -> void:
+## Brings the towns in line with the world: its roads and the towns' list each report; the towns themselves walked
+## once, when the land first stands (or stands anew), then kept town by town as the store says each one changed
+## (awareness.gd record_changed), never every town every report. New or grown ones are queued and raised over frames
+## (ViewTier.spend_ok), nearest the camera first.
+var _walked := false  # every town has been walked on this land; since then only changed towns are touched
+func sync(_houses_by_owner: Dictionary) -> void:
 	var st: Node = Awareness.store()
 	banners.raise()
 	_road_tiles.clear()
 	_cities = st.rec("cities", [])
 	for r in st.rec("roads", []):
 		_road_tiles[Vector2i(int(r[0]), int(r[1]))] = true
-	for c0 in st.rec("cities", []):
+	for c0 in _cities:
 		_road_tiles[Vector2i(int(c0["x"]), int(c0["y"]))] = true
+	if not st.record_changed.is_connected(_on_record):
+		st.record_changed.connect(_on_record)
+	if _walked:
+		return
+	_walked = true
 	var seen := {}
-	for c in st.rec("cities", []):
-		var id := int(c["id"])
-		seen[id] = true
-		var house: Dictionary = houses.get(int(c["owner"]), {})
-		_houses[id] = house  # its life is staged with it when the camera comes near (_life_near)
-		var sig := "%d|%d|%s|%s" % [int(c["size"]), int(c["owner"]), str(c["buildings"]), str(c["capital"])]
-		if towns.has(id):
-			# A town stands once raised: it is never torn down and raised again in play (Mac: the hitches were
-			# towns re-raised whenever they changed). A change of hands strikes its banners for the new holder's
-			# (its roofs take his colour by themselves, team_colour.gd); a new size or building is the town's data.
-			if towns[id]["signature"] != sig:
-				_changed(towns[id], c, house)
-				towns[id]["signature"] = sig
-				if _shows(towns[id]["data"], c):
-					_queue[id] = {"c": c, "house": house, "sig": sig, "was": towns[id]["data"]}  # its new pieces laid off-screen, then added
-			towns[id]["data"] = c
-			# Its life (builders, recruits, crowds) is refreshed within the frame budget too.
-			_life_queue[id] = house
-			_queue.erase(id)
-			continue
-		# The old town stands until its replacement is ready: no gaps while it rebuilds.
-		_queue[id] = {"c": c, "house": house, "sig": sig}
+	for c in _cities:
+		seen[int(c["id"])] = true
+		_city(int(c["id"]), c)
 	for id in towns.keys():
 		if not seen.has(id):
-			towns[id]["node"].queue_free()
-			if ViewTier.get_one():
-				ViewTier.get_one().unwatch("town:%d" % id)
-			towns.erase(id)
+			_gone(id)
 	for id in _queue.keys():
 		if not seen.has(id):
 			_queue.erase(id)
+
+
+## One town the store says changed (record_changed): raised, grown, re-housed or gone. Before the land stands (or
+## while a new realm's comes), the next sync walks every town instead.
+func _on_record(kind: String, id: int, now: Dictionary, _was: Dictionary) -> void:
+	if kind != "cities":
+		return
+	if not terrain.built:
+		_walked = false
+		return
+	if not _walked:
+		return
+	if now.is_empty():
+		_gone(id)
+		_queue.erase(id)
+	else:
+		_city(id, now)
+
+
+func _gone(id: int) -> void:
+	if not towns.has(id):
+		return
+	if is_instance_valid(towns[id]["node"]):
+		towns[id]["node"].queue_free()
+	if ViewTier.get_one():
+		ViewTier.get_one().unwatch("town:%d" % id)
+	towns.erase(id)
+
+
+func _city(id: int, c: Dictionary) -> void:
+	var house: Dictionary = Awareness.store().houses_by_id().get(int(c["owner"]), {})
+	_houses[id] = house  # its life is staged with it when the camera comes near (_life_near)
+	var sig := "%d|%d|%s|%s" % [int(c["size"]), int(c["owner"]), str(c["buildings"]), str(c["capital"])]
+	if towns.has(id):
+		# A town stands once raised: it is never torn down and raised again in play (Mac: the hitches were
+		# towns re-raised whenever they changed). A change of hands strikes its banners for the new holder's
+		# (its roofs take his colour by themselves, team_colour.gd); a new size or building is the town's data.
+		if towns[id]["signature"] != sig:
+			_changed(towns[id], c, house)
+			towns[id]["signature"] = sig
+			if _shows(towns[id]["data"], c):
+				_queue[id] = {"c": c, "house": house, "sig": sig, "was": towns[id]["data"]}  # its new pieces laid off-screen, then added
+		towns[id]["data"] = c
+		# Its life (builders, recruits, crowds) is refreshed within the frame budget too.
+		_life_queue[id] = house
+		_queue.erase(id)
+		return
+	# The old town stands until its replacement is ready: no gaps while it rebuilds.
+	_queue[id] = {"c": c, "house": house, "sig": sig}
 
 
 ## A standing town's facts changed: only what shows them is touched, never the whole town.
@@ -95,22 +128,14 @@ static func _shows(was: Dictionary, c: Dictionary) -> bool:
 
 var _queue := {}  # city id -> {c, house, sig, was?}: towns waiting to be built, or a standing one's new pieces to lay
 var _life_queue := {}  # city id -> house: towns whose life wants refreshing
-const BUILD_BUDGET_MS := 4  # per frame: a town's raise waits a frame when it is spent (_pace; fps4: 12 left 30-40 ms steps)
-## Behind the loading screen there is nothing to keep smooth: every town is raised there, before play (Mac: "when
-## you're loading, you should be able to build out the entire town"), with most of each frame (towns.json load_ms; the
-## storybook's pages still turn). main sets it while the loading screen covers the realm.
-var loading := false
-static var LOAD_MS: int = int(Data.num("towns", "load_ms", 50.0))
-func _budget() -> int:
-	return LOAD_MS if loading else BUILD_BUDGET_MS
 var _graded_at := 0
 var _raising_since := 0
 var _raised := 0
 
 
 ## Town life a few towns at a time, until the frame's budget is spent; only near the camera (_life_near).
-func _refresh_life(start: int) -> void:
-	while not _life_queue.is_empty() and Time.get_ticks_msec() - start < BUILD_BUDGET_MS:
+func _refresh_life() -> void:
+	while not _life_queue.is_empty() and ViewTier.spend_ok():
 		var id: int = _life_queue.keys()[0]
 		var house: Dictionary = _life_queue[id]
 		_life_queue.erase(id)
@@ -230,7 +255,7 @@ func _process_timed(_delta: float) -> void:
 		return  # a town is being raised over frames (_raise)
 	if _queue.is_empty():
 		_life_near()
-		_refresh_life(Time.get_ticks_msec())
+		_refresh_life()
 		return
 	var start := Time.get_ticks_msec()
 	Engine.set_meta("stage", "towns.build")
@@ -258,7 +283,6 @@ func _process_timed(_delta: float) -> void:
 ## One town raised over frames (_pace), then shown whole in place of the old.
 func _raise(best: int, job: Dictionary) -> void:
 	_raising = true
-	_slice = Time.get_ticks_msec()
 	_step_at = Time.get_ticks_usec()
 	terrain.hold_grading = true
 	var node: Node3D = await _build_town(job["c"], job["house"])
@@ -2151,23 +2175,21 @@ func _flat_enough(center: Vector3, off: Vector3, r: float) -> bool:
 	return true
 
 
-## A town is raised over as many frames as it takes, never more than the budget
-## in any one (a big seat once held a frame for over two seconds): the loops that
-## place its pieces call this, which waits a frame when the budget is spent. The
+## A town is raised over as many frames as it takes, never more than the frame's staging pot
+## (a big seat once held a frame for over two seconds): the loops that
+## place its pieces call this, which waits a frame when it is spent (ViewTier.spend_ok). The
 ## town is built off the tree and shown whole when done; one is raised at a time
 ## (_raising), as the build keeps its town in members (_center, _house).
-var _slice := 0
 var _raising := false
 var _step_at := 0  # when the last build step ended (GOC_PERF_PROBE: a step over budget is named in the slow-frame log)
 func _pace() -> void:
 	if PerfTools.probing:
 		var now := Time.get_ticks_usec()
-		if _step_at > 0 and now - _step_at > _budget() * 1000:
+		if _step_at > 0 and now - _step_at > int(ViewTier.STAGE_MS * 1000.0):
 			var at: Dictionary = get_stack()[1] if get_stack().size() > 1 else {}
 			PerfTools.add("build@%s:%d" % [String(at.get("source", "?")).get_file(), int(at.get("line", 0))], now - _step_at)
-	if Time.get_ticks_msec() - _slice > _budget():
+	if not ViewTier.spend_ok():
 		await get_tree().process_frame
-		_slice = Time.get_ticks_msec()
 	_step_at = Time.get_ticks_usec()
 
 
