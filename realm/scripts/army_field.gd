@@ -340,6 +340,7 @@ func _morale(dt: float) -> void:
 		for r in (a as Army).rows():
 			if r.has("alive") and r["state_name"] != "rout":
 				(r["army"] as Army).waver(r, Morale.waver(r))
+				_straggle(r, Morale.waver(r), dt)
 	for r in gone:
 		_send(r, &"break")
 	var standing := 0
@@ -679,6 +680,54 @@ func _charge(r: Dictionary, _dt: float) -> void:
 	Mover.of(r["node"]).toward(spot, Data.num(F, "field.cavalry.charge", 0.55), -side)
 
 
+## Men break ranks before a rout (Total War and Bannerlord: a wavering unit sheds men from its rear before it
+## breaks): as a regiment's banner wavers past morale.straggle.from, up to `most` of its living men, the rearmost
+## first, turn their backs and edge away behind it at `pace`, no further than `back`; steadied again (no one left
+## to shed), they walk back to their places and face the foe. Its break takes them along with the rest.
+func _straggle(r: Dictionary, w: float, dt: float) -> void:
+	var k: Dictionary = Data.value("army", "morale", {}).get("straggle", {})
+	var strag: Dictionary = r.get("strag", {})
+	var local: PackedVector3Array = r["local"]
+	var alive: PackedByteArray = r["alive"]
+	var yaws: PackedFloat32Array = r["yaws"]
+	var vat: VATMultiMeshInstance3D = r["vat"]
+	var army: Army = r["army"]
+	var from := float(k.get("from", 0.5))
+	var living := alive.count(1)
+	var want := int(living * float(k.get("most", 0.12)) * clampf((w - from) / maxf(1.0 - from, 0.01), 0.0, 1.0))
+	if strag.is_empty() and want == 0:
+		return
+	while strag.size() < want:  # the rearmost living man not yet slipping away
+		var pick := -1
+		for s in local.size():
+			if alive[s] == 1 and not strag.has(s) and (pick < 0 or local[s].z < local[pick].z):
+				pick = s
+		if pick < 0:
+			break
+		strag[pick] = local[pick]
+		yaws[pick] += PI
+		vat.update_instance_track(pick, army.track(r, "walk"))
+		vat.update_instance_animation_offset(pick, _rng.randf())
+	var pace := float(k.get("pace", 0.05)) * dt
+	for s in strag.keys():
+		var home: Vector3 = strag[s]
+		if alive[s] == 0:
+			strag.erase(s)  # he fell where he was
+			continue
+		if want > 0:
+			local[s].z = maxf(local[s].z - pace, home.z - float(k.get("back", 0.5)))
+		else:
+			local[s] = local[s].move_toward(home, pace)
+			if local[s].is_equal_approx(home):
+				strag.erase(s)
+				yaws[s] -= PI
+				vat.update_instance_track(s, army.track(r, "ready"))
+	r["strag"] = strag
+	r["local"] = local
+	r["yaws"] = yaws
+	r["moved"] = true
+
+
 ## It breaks: turns its back on the enemy, runs; its banner wavers its last.
 func _break(r: Dictionary) -> void:
 	var army: Army = r["army"]
@@ -686,6 +735,11 @@ func _break(r: Dictionary) -> void:
 		r["broke_at"] = (r["node"] as Node3D).global_position  # where its standard falls (_aftermath)
 	army.waver(r, 1.0)
 	Morale.broke(_rows(), r)  # those beside it are shaken: the chain
+	var yaws: PackedFloat32Array = r["yaws"]
+	for s in (r.get("strag", {}) as Dictionary):  # the stragglers turn with the rest, and run with them
+		yaws[s] -= PI
+	r["yaws"] = yaws
+	r["strag"] = {}
 	army.turn(r, float(r["yaw"]) + PI)
 	# The dead lie where they fell; the living face the other way in their places.
 	var local: PackedVector3Array = r["local"]
@@ -801,8 +855,8 @@ func _play(r: Dictionary, role: String) -> void:
 	var step := Data.num("army", "jitter.step", 0.06)
 	var phase := _rng.randf()
 	for s in vat.multimesh.instance_count:
-		if not alive.is_empty() and alive[s] == 0:
-			continue
+		if not alive.is_empty() and alive[s] == 0 or (r.get("strag", {}) as Dictionary).has(s):
+			continue  # the fallen lie still; a straggler keeps slipping away
 		vat.update_instance_track(s, army.track(r, role))
 		vat.update_instance_animation_offset(s, fposmod(phase + _rng.randf_range(-step, step), 1.0) if role in ["walk", "run"] else _rng.randf())
 
