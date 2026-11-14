@@ -241,7 +241,7 @@ func _ready() -> void:
 			if code == 200:
 				ui.house_opened.emit(int(spec["house"]))))
 	intro = preload("res://scripts/intro.gd").new()
-	intro.ready_check = func(): return terrain.built and towns != null and not towns.building() and not towns.towns.is_empty()
+	intro.ready_check = func(): return terrain.built and towns != null and towns.settled()  # every town and its life standing
 	add_child(intro)
 	lore = preload("res://scripts/lore.gd").new()
 	lore.person_written.connect(func(p, house):

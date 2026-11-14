@@ -123,6 +123,18 @@ func building() -> bool:
 	return not _queue.is_empty() or _raising
 
 
+## Every town the world names standing, with its life set up: what the loading screen waits for, so no town is
+## raised or peopled in play (Mac: "the transition from zoomed out to zoomed in is ... abrupt & laggy": towns were
+## still being raised and their life set up minutes into play, nearest the camera first, so a zoom landed on one).
+func settled() -> bool:
+	if building() or not _life_queue.is_empty() or _cities.is_empty():
+		return false
+	for c in _cities:
+		if not towns.has(int(c["id"])):
+			return false
+	return true
+
+
 ## Each frame, timed for the frame-cost probe (perf_tools.gd, GOC_PERF_PROBE=1; off in play).
 func _process(_delta: float) -> void:
 	if not preload("res://scripts/perf_tools.gd").probing:
