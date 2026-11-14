@@ -96,7 +96,7 @@ func _lay(pts: Array[Vector3], widths: Array[float]) -> void:
 	var sh: Array = Data.value("ground", "rivers.shallow", [0.2, 0.26, 0.2])
 	var dp: Array = Data.value("ground", "rivers.deep", [0.07, 0.12, 0.1])
 	river.set_materials("albedo_color", Transform3D(Vector3(float(sh[0]), float(sh[1]), float(sh[2])), Vector3(float(dp[0]), float(dp[1]), float(dp[2])), Vector3.ZERO, Vector3.ZERO))
-	river.set_materials("foam_amount", 0.0)
+	river.set_materials("foam_amount", Data.num("ground", "rivers.foam", 0.0))  # a little white where it runs fast over the bed
 	river.set_materials("flow_speed", 0.25)
 	river.set_materials("flow_max", 1.0)
 	river.set_materials("normal_scale", 0.35)

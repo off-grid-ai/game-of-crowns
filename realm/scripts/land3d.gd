@@ -174,6 +174,11 @@ static func layer_textures(i: int) -> Array:
 static var _beach_top: float = Data.num("ground", "beach.top", 0.02)
 ## The ground laid at the waterline (ground.json beach.layer, a name in LAYERS): 02-realm's coasts are rock and shingle,
 ## not the bright sand bands round every shore in group render g3 (once the auto shader stopped painting them grass).
+## A river's banks (ground.json rivers.bank: layer, a name in LAYERS, and strength, how much of it shows at the water's
+## edge, fading out with rivers-mask.png's reach): bare earth along the water, so a river reads as a river from the
+## mid zoom, not a dark line through the grass.
+static var _bank_layer: int = maxi(0, LAYERS.find(String(Data.value("ground", "rivers.bank.layer", "dirt"))))
+static var _bank_k: float = Data.num("ground", "rivers.bank.strength", 0.0)
 static var _beach_layer: int = maxi(0, LAYERS.find(String(Data.value("ground", "beach.layer", "sand"))))
 
 
@@ -211,8 +216,11 @@ func _control_from_land(terrain: Node3D) -> Image:
 			var steep := 1.0 / sqrt(1.0 + gx * gx + gz * gz) < cliff
 			var v: float
 			var sand := smoothstep(_beach_top, -0.12, y)  # a beach at the waterline (wider when painted), sand on the sea floor
+			var bank: float = terrain.river_near((x + 0.5) / per, (z + 0.5) / per) * _bank_k if _bank_k > 0.0 else 0.0
 			if sand > 0.02:
 				v = over.call(_beach_layer, sand, steep)
+			elif bank > 0.05:
+				v = over.call(_bank_layer, minf(bank, 1.0), steep)  # a river's banks worn to earth (WC3's, AoE2's rivers run between bare banks)
 			elif y > 7.5:
 				v = over.call(3, smoothstep(7.5, 9.5, y), steep)
 			else:
