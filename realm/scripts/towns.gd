@@ -843,8 +843,8 @@ func _town_wall(root: Node3D, center: Vector3, edge: PackedVector2Array, ways: A
 	return true
 
 
-## CHECK line (--towns=plots): how the plots read, for the judge. Houses whose
-## front faces a street within 30 degrees, each with its yard, and how far
+## CHECK line (--towns=plots): how the plots read, for the judge. Houses with a
+## street before their door (plots.front_reach), each with its yard, and how far
 ## neighbours along one street differ in heading.
 func _layout_check(root: Node3D, taken: Array, ways: Array) -> void:
 	var facing := 0
@@ -854,13 +854,14 @@ func _layout_check(root: Node3D, taken: Array, ways: Array) -> void:
 	for pl in taken:
 		var house: Vector2 = pl[0]
 		var face: Vector2 = pl[1]
-		var best := Vector2.INF
-		for w in ways:
-			var q := TownPlots.closest_on(w, house)
-			if q.distance_to(house) < best.distance_to(house):
-				best = q
-		if absf(face.angle_to(best - house)) < deg_to_rad(30.0):
-			facing += 1
+		# A street before its door: walking out of the front, within the house's half depth and the set-back
+		# (towns.json plots.set_back) plus plots.front_reach, the road is underfoot. Not "the nearest way lies ahead":
+		# a back lane or a corner's other street lies nearer to some houses that front their own (g31: 81% at Sunspire).
+		var reach := float(pl[3]) * 0.5 + float(_plot_knobs().get("set_back", 0.04)) + float(_plot_knobs().get("front_reach", 0.35))
+		for k in 8:
+			if TownPlots.near_ways(house + face * reach * (k + 1) / 8.0, ways, TownPlots.ROAD_HALF):
+				facing += 1
+				break
 		var key := String(pl[7])
 		if last.has(key):
 			turn += absf(rad_to_deg(face.angle_to(last[key])))
