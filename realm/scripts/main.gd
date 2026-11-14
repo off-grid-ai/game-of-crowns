@@ -195,6 +195,7 @@ func _ready() -> void:
 	rig.towns = towns  # so the camera keeps above roofs
 	add_child(rig)
 	rig.clicked.connect(_on_ground_clicked)
+	preload("res://scripts/view_tier.gd").apply(self)  # how much of each place is alive, by the lens (one decider)
 	villagers = preload("res://scripts/villagers.gd").new()
 	villagers.terrain = terrain
 	villagers.towns = towns
