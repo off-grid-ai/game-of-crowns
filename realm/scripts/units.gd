@@ -147,20 +147,12 @@ func sync(houses: Dictionary) -> void:
 				var tint := Color.from_string(String(house.get("color", "#888")), Color.GRAY).lerp(Color.WHITE, 0.35)
 				var kind := String(u["type"])
 				if raider:
-					tint = Data.colour((Data.value("army", "map", {}) as Dictionary).get("raider", {}).get("cloth"), Color(0.22, 0.19, 0.16))
-				node = _people.make(rng, "soldier", tint, "adult")
-				if raider:
-					# A ragged band: dark cloth, an axe in the hand, and a torch in the other for some (army.json map.raider).
-					Weapons.arm(node, "axe")
-					if id % maxi(1, int((Data.value("army", "map", {}) as Dictionary).get("raider", {}).get("torch_every", 2))) == 0:
-						var mo_t = _people.motion(node)
-						if mo_t:
-							mo_t.errand_load = "Idle_Torch_Loop"  # held whatever the body plays (motion.gd), lit at rest
-						else:
-							Weapons.hold_for(node, "Idle_Torch_Loop")
+					node = _raider_man(id)
+				else:
+					node = _people.make(rng, "soldier", tint, "adult")
 				# Horsemen ride (elephants have no beast of their own yet, so go on foot);
-				# knights carry the lance.
-				if kind in MOUNTED and kind != "Elephants":
+				# knights carry the lance. Raiders go on foot, a band (g29 raid: a mounted raider was one small rider).
+				if kind in MOUNTED and kind != "Elephants" and not raider:
 					var horse: Node3D = Horse.new(rng.randi() % Horse.COATS.size())
 					horse.mount(node)
 					Scenes.arm(node, "lance" if kind in LANCES else "spear")
@@ -196,6 +188,8 @@ func sync(houses: Dictionary) -> void:
 			_figures[id]["target"] = target
 			_march(_figures[id])
 		_figures[id]["target"] = target
+		if raider:
+			_band(id, target, seen)
 		# How the company stands, from Freeciv's own word on it (the save's hp and orders).
 		_figures[id]["hurt"] = u.get("hp") != null and float(u["hp"]) <= WOUNDED_HP
 		_figures[id]["fort"] = u.get("activity") != null and int(u["activity"]) in FORTIFIED
@@ -203,6 +197,52 @@ func sync(houses: Dictionary) -> void:
 		if not seen.has(id):
 			_figures[id]["node"].queue_free()
 			_figures.erase(id)
+
+
+## A raider: a man in dark cloth (army.json map.raider.cloth) with an axe, and a lit torch in his other hand for one in
+## torch_every of them, held whatever the body plays (motion.gd errand_load). No banner, no standard, nothing to click.
+func _raider_man(key: int) -> Node3D:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = key
+	var r: Dictionary = (Data.value("army", "map", {}) as Dictionary).get("raider", {})
+	var node: Node3D = _people.make(rng, "soldier", Data.colour(r.get("cloth"), Color(0.22, 0.19, 0.16)), "adult")
+	Weapons.arm(node, "axe")
+	if absi(key) % maxi(1, int(r.get("torch_every", 2))) == 0:
+		var mo_t = _people.motion(node)
+		if mo_t:
+			mo_t.errand_load = "Idle_Torch_Loop"
+		else:
+			Weapons.hold_for(node, "Idle_Torch_Loop")
+	return node
+
+
+## A raiding company is a band, not one figure (g29 raid: four companies read as one small rider; casebook, Wealth
+## draws the raid: a band of 10-20 men with torches): its man (the company's own figure) and army.json map.raider.men
+## less one more round him, loose within map.raider.spread world units, each his own figure (keyed below zero, never a
+## unit id) that marches with the company by the same _march.
+func _band(id: int, at: Vector3, seen: Dictionary) -> void:
+	var r: Dictionary = (Data.value("army", "map", {}) as Dictionary).get("raider", {})
+	var spread := float(r.get("spread", 0.45))
+	for k in range(1, int(r.get("men", 5))):
+		var key := -(id * 64 + k)
+		seen[key] = true
+		var ang := k * 2.39996 + float(id % 7)  # the golden angle: loose, never in ranks
+		var off := Vector3(cos(ang), 0, sin(ang)) * spread * sqrt(float(k) / float(r.get("men", 5)))
+		var target := _nav.stand(towns, at + off, 0.0)
+		target.y = terrain.height_at(target.x, target.z)
+		if not _figures.has(key):
+			var node := _raider_man(key)
+			node.position = target
+			add_child(node)
+			var mo: Node = Mover.of(node)
+			mo.stride = true
+			mo.keep = _keep.bind(_figures, key)
+			_figures[key] = {"node": node, "target": target, "wild": false, "bow": false, "horse": false, "ship": false, "rivers": false}
+		var f: Dictionary = _figures[key]
+		if f["target"].distance_to(target) > 0.01:
+			f["target"] = target
+			_march(f)
+		f["hurt"] = _figures[id].get("hurt", false)
 
 
 ## Hit points at or under which a company looks wounded (most units have 10 or 20).
