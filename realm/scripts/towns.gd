@@ -66,6 +66,8 @@ func sync(houses: Dictionary) -> void:
 	for id in towns.keys():
 		if not seen.has(id):
 			towns[id]["node"].queue_free()
+			if ViewTier.get_one():
+				ViewTier.get_one().unwatch("town:%d" % id)
 			towns.erase(id)
 	for id in _queue.keys():
 		if not seen.has(id):
@@ -140,6 +142,26 @@ func _life_near() -> void:
 
 
 var _left := {}  # city id -> when its town stopped being NEAR, while its life still stands
+
+
+## A town off screen processes nothing (Mac's zoom tiers: "off screen, nothing runs"): view_tier.gd watches it and,
+## when its tier turns OFF, the whole town root is disabled (its seat's marker, its life's people, their timers and
+## tweens wait); any other tier and it runs again. Its buildings are drawn by the renderer's own culling either way.
+func _watch(id: int, node: Node3D) -> void:
+	var vt := ViewTier.get_one()
+	if vt == null:
+		return
+	if not vt.changed.is_connected(_on_tier):
+		vt.changed.connect(_on_tier)
+	vt.watch("town:%d" % id, node.global_position, float(node.get_meta("reach", 3.0)))
+
+
+func _on_tier(key: Variant, tier: int) -> void:
+	if not (key is String and (key as String).begins_with("town:")):
+		return
+	var id := int((key as String).substr(5))
+	if towns.has(id) and is_instance_valid(towns[id]["node"]):
+		(towns[id]["node"] as Node3D).process_mode = Node.PROCESS_MODE_DISABLED if tier == ViewTier.OFF else Node.PROCESS_MODE_INHERIT
 
 
 ## Whether a town is NEAR (view_tier.gd), its room the town's reach.
@@ -244,6 +266,7 @@ func _raise(best: int, job: Dictionary) -> void:
 	Engine.set_meta("stage", "towns.add")  # each step after the paced build named, for the slow-frame log (perf_tools.gd)
 	add_child(node)
 	towns[best] = {"node": node, "signature": job["sig"], "data": job["c"]}
+	_watch(best, node)
 	PerfTools.add("towns.add", Time.get_ticks_usec() - pt0)
 	pt0 = Time.get_ticks_usec()
 	Engine.set_meta("stage", "towns.life")
