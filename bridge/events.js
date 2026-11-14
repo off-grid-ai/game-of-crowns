@@ -85,7 +85,7 @@ export function season(ctx, turn, resting) {
     else if (e.winterSeen) e.wintered = true;
     if (!e.wintered) { chron.saveMeta(meta); return; }
   }
-  if (e.up && turn > e.up.turn) lapse(ctx, e, turn);
+  if (e.up && turn > (e.up.due ?? e.up.turn)) lapse(ctx, e, turn);
   for (const l of e.later.filter((x) => x.turn <= turn)) apply(ctx, l.effect, l.subject, turn);
   e.later = e.later.filter((x) => x.turn > turn);
   if (!e.up && meta.court?.sitting == null && Math.random() < (resting ? S.chanceInBreather : S.chance)) draw(ctx, e, turn, resting);
@@ -112,8 +112,20 @@ function draw(ctx, e, turn, resting) {
   const [card, sub] = bag.find(([, , w]) => (roll -= w) < 0) ?? bag[0];
   e.rested[card.id] = turn;
   e.decks = [...e.decks, card.deck].slice(-8);
-  e.up = { id: card.id, turn, subject: sub, title: fill(card.title, sub), text: fill(card.text, sub), bearer: sub.lord ?? null, house: sub.house ?? null, city: sub.city ?? null,
+  // One matter at a time, from its town (CK3's event with its deadline, Crusader Kings' rider on the map): a rider
+  // brings it from the town to the King's seat, settings.rider.speed tiles a season (none from the seat itself, or a
+  // card with no town), and the King has the card's deadline (else settings.deadline) seasons from his arrival to
+  // answer before it lapses and doing nothing costs. While he rides the card is seen coming (riding) but not answered.
+  const crown = crownOf(ctx.world);
+  const seat = ctx.world?.cities?.find((c) => c.owner === crown?.id && c.capital);
+  const from = sub.city != null ? ctx.world?.cities?.find((c) => c.id === sub.city) : null;
+  const far = seat && from ? Math.max(Math.abs(from.x - seat.x), Math.abs(from.y - seat.y)) : 0;
+  const arrives = turn + Math.floor(far / Math.max(1, S.rider?.speed ?? 12));
+  const due = arrives + Math.max(0, (card.deadline ?? S.deadline ?? 1) - 1);
+  e.up = { id: card.id, turn, arrives, due, subject: sub, title: fill(card.title, sub), text: fill(card.text, sub), bearer: sub.lord ?? null, house: sub.house ?? null, city: sub.city ?? null,
+    x: from?.x ?? null, y: from?.y ?? null,
     choices: card.choices.map((ch, i) => ({ i, label: fill(ch.label, sub), cost: ch.cost ?? 0, moves: moves(ctx, ch, sub) })), ignore: fill(card.ignore?.text, sub) };
+  if (from && seat && from.id !== seat.id) ctx.scene?.("rider", { x: from.x, y: from.y, tx: seat.x, ty: seat.y, city: seat.id, label: e.up.title });
   ctx.record?.({ turn, kind: "event", text: e.up.title, city: sub.city ?? undefined });
 }
 
@@ -154,6 +166,7 @@ export function answer(ctx, i) {
   const { meta, world } = ctx;
   const e = state(meta);
   if (!e.up) return [400, { error: "there's no event before you" }];
+  if ((world?.turn ?? 0) < (e.up.arrives ?? 0)) return [400, { error: `the rider from ${e.up.subject?.town ?? "the town"} is still on the road` }];
   const card = EVENTS.cards.find((c) => c.id === e.up.id);
   const ch = card?.choices?.[Number(i)];
   if (!ch) return [400, { error: "no such answer" }];
@@ -180,4 +193,10 @@ export function testNow(ctx, what) {
 }
 
 // For /world: the card before the King, and the last one that lapsed (the view's sound and badge).
-export const view = (meta) => on(meta) ? { up: meta.events?.up ?? null, lapsed: meta.events?.lapsed ?? null } : null;
+// up carries riding (the rider not yet at the seat) and left (seasons to answer, counting this one) for the view.
+export const view = (meta, turn) => {
+  if (!on(meta)) return null;
+  const up = meta.events?.up ?? null;
+  const t = turn ?? up?.turn ?? 0;
+  return { up: up && { ...up, riding: t < (up.arrives ?? up.turn), left: Math.max(0, (up.due ?? up.turn) - t + 1) }, lapsed: meta.events?.lapsed ?? null };
+};

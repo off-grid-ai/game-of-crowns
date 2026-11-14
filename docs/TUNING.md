@@ -47,6 +47,7 @@ Switches (`--name`) go after `--` on the game's command line.
 - How long before a card can come again: `bridge/data/events.json`: `settings.rest` (or a card's own `rest`).
 - Which decks a breather may draw, and how much war and famine weigh in the build-up: `bridge/data/events.json`: `settings.breatherDecks`, `settings.boost`.
 - A card's words, choices, costs and what doing nothing costs: `bridge/data/events.json`: `cards[]`.
+- How long the King has to answer a card (one matter at a time, brought by a rider from its town; it lapses after): `bridge/data/events.json`: `settings.deadline` (2 seasons from the rider's arrival, or a card's own `deadline`); how fast the rider rides to the King's seat: `settings.rider.speed` (12 tiles a season; the card can't be answered until he arrives).
 
 ## The realm's clock and the houses' favour (NPC perf; changeability audit)
 - How long a season lasts, in every realm: `bridge/data/pace.json`: `season`. The view reads it from /world (`turnSeconds`); crops, snow, sieges and the recruits' drill follow it.
