@@ -87,6 +87,11 @@ func _town(c: Dictionary) -> String:
 		parts.append(_w("besieged"))
 	if bool(c.get("famine", false)):
 		parts.append(_w("hungry"))
+	if st:  # the King's works here: the one his masons raise, else the newest that stands (bridge /world works)
+		for w: Dictionary in st.rec("works", []):
+			if int(w.get("city", -2)) == id:
+				parts.append(_w("works_rising" if bool(w.get("rising", false)) else "works_done", {"work": String(w.get("building", "")).to_lower()}))
+				break
 	return "  ·  ".join(parts)
 
 
