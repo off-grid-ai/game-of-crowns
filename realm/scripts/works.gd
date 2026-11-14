@@ -407,10 +407,11 @@ class Tick extends Node:
 		_strikes()
 		var h := Works.hour()
 		var working := Works.within(h, "work")
+		# A mill whose wheel is gone (its town rebuilt round it) leaves the list: read into a typed variable, a freed
+		# node raised "previously freed instance" here every frame (309 in the FPS run at 6aaf2121).
+		mills = mills.filter(func(m: Dictionary) -> bool: return is_instance_valid(m["node"]))
 		for m: Dictionary in mills:
 			var n: Node3D = m["node"]
-			if not is_instance_valid(n):
-				continue
 			var want: float = float(m["rpm"]) if working and bool(m.get("grain", true)) else 0.0
 			m["speed"] = move_toward(float(m["speed"]), want, delta * float(m["rpm"]) * Data.num("works", "mill.ease", 0.25))
 			if float(m["speed"]) > 0.0:
