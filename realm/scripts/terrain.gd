@@ -747,15 +747,19 @@ func _drape_sea(mat: ShaderMaterial) -> void:
 ## shallows and shore foam read the depth buffer, which the view's distance fades (sea.depth_fade, kept against the
 ## sea bed's ring seams), so at play zoom neither showed. Here the depth is the realm's eroded heightmap under the
 ## water (terrain.gd land), the same at every distance: shallow (depth in game units where the shallow colour has
-## faded out), shallow_colour (alpha: how much), foam (the surf's depth band), foam_colour (alpha: how white),
+## faded out), shallow_colour (alpha: how much), deep_colour and deep_at (the open sea darkening from the first depth
+## to the second, alpha how much, so the realm view reads the sea's depth), foam (the surf's depth band), foam_colour (alpha: how white),
 ## foam_scale (the foam texture's repeats a game unit), foam_speed (how fast the surf breathes in and out).
 func _shore_code(code: String) -> String:
-	code = code.replace("uniform float atlas_mix = 0.0;", "uniform float atlas_mix = 0.0;\nuniform sampler2D shore_land : filter_linear, repeat_disable;\nuniform float shore_on = 0.0;\nuniform float sea_level = -0.15;\nuniform vec4 shore_shallow = vec4(0.22, 0.52, 0.5, 0.7);\nuniform vec4 shore_foam = vec4(0.9, 0.94, 0.92, 0.55);\nuniform vec4 shore_k = vec4(0.5, 0.06, 0.6, 0.4);")
+	code = code.replace("uniform float atlas_mix = 0.0;", "uniform float atlas_mix = 0.0;\nuniform sampler2D shore_land : filter_linear, repeat_disable;\nuniform float shore_on = 0.0;\nuniform float sea_level = -0.15;\nuniform vec4 shore_shallow = vec4(0.22, 0.52, 0.5, 0.7);\nuniform vec4 shore_foam = vec4(0.9, 0.94, 0.92, 0.55);\nuniform vec4 shore_k = vec4(0.5, 0.06, 0.6, 0.4);\nuniform vec4 shore_deep = vec4(0.05, 0.2, 0.3, 0.0);\nuniform vec2 shore_deep_at = vec2(0.6, 3.0);")
 	var end := code.rfind("}")
 	return code.left(end) + """	if (shore_on > 0.5) {
 		vec2 suv = world_coordinates.xz / atlas_size;
 		float bed = texture(shore_land, suv).r;
 		float depth = max(sea_level - bed, 0.0);
+		float deepen = smoothstep(shore_deep_at.x, shore_deep_at.y, depth) * shore_deep.a;  // the open sea darkening with depth, seen from the realm view too
+		ALBEDO = mix(ALBEDO, shore_deep.rgb, deepen);
+		EMISSION *= 1.0 - deepen;
 		float shallow = (1.0 - smoothstep(0.0, shore_k.x, depth)) * shore_shallow.a;
 		ALBEDO = mix(ALBEDO, shore_shallow.rgb, shallow);
 		EMISSION *= 1.0 - shallow;
@@ -780,6 +784,9 @@ func _shore_params(mat: ShaderMaterial) -> void:
 	mat.set_shader_parameter("sea_level", SEA_LEVEL)
 	mat.set_shader_parameter("shore_shallow", D.colour(sh.get("shallow_colour", [0.22, 0.52, 0.5, 0.7]), Color(0.22, 0.52, 0.5, 0.7)))
 	mat.set_shader_parameter("shore_foam", D.colour(sh.get("foam_colour", [0.9, 0.94, 0.92, 0.55]), Color(0.9, 0.94, 0.92, 0.55)))
+	mat.set_shader_parameter("shore_deep", D.colour(sh.get("deep_colour", []), Color(0.05, 0.2, 0.3, 0.0)))
+	var da: Array = sh.get("deep_at", [0.6, 3.0])
+	mat.set_shader_parameter("shore_deep_at", Vector2(float(da[0]), float(da[1])))
 	mat.set_shader_parameter("shore_k", Vector4(float(sh.get("shallow", 0.5)), float(sh.get("foam", 0.06)), float(sh.get("foam_scale", 0.6)), float(sh.get("foam_speed", 0.4))))
 
 
