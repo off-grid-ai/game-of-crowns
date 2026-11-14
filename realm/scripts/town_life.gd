@@ -88,7 +88,7 @@ func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 	# mood) is staged anew; a list of chosen flags left the later states (siege, sullen, pilgrimage) never restaged.
 	var sorted_states := now_states.duplicate()
 	sorted_states.sort()
-	sig += "|%s|%s|%s|%d|%s" % [c.get("granaryLow", false), ",".join(sorted_states), _season(), hash(root.get_meta("works", {})), (c.get("ruling") as Dictionary).get("kind", "") if c.get("ruling") is Dictionary else ""]
+	sig += "|%s|%s|%s|%s|%d|%s" % [c.get("granaryLow", false), ",".join(sorted_states), ",".join(royal_done_of(int(c.get("id", -1)))), _season(), hash(root.get_meta("works", {})), (c.get("ruling") as Dictionary).get("kind", "") if c.get("ruling") is Dictionary else ""]
 	# The town dressed in what we own, once (dressing.gd; --dressing=on): gear at the trades' doors,
 	# planters by house doors, bushes, flowers and rocks between the houses.
 	if Dressing.on() and root.get_node_or_null("Dressing") == null:
@@ -124,6 +124,7 @@ func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 		_construction(root, life, center, building, progress, rng, int(c["size"]), house if bool(c.get("royal", false)) else {})
 	elif kind == "UnitType" and building != "" and not building in Awareness.civilian:  # a soldier's training, not a civilian's (bridge campaigns.js CIVILIAN)
 		_drill(root, life, center, progress, color, building)
+	_royal_done(root, life, center, int(c.get("id", -1)), house)
 	var states := _states(c)  # riot, grasping and a rising's side among them (the store's facts), and its market day
 	life.set_meta("states", states)
 	life.set_meta("size", int(c.get("size", 1)))
@@ -429,6 +430,47 @@ func _construction(root: Node3D, life: Node3D, center: Vector3, building: String
 		life.add_child(pen)
 	# What's being raised shows under the town's name on the map (map_labels.gd).
 	life.set_meta("doing", doing_line("Building", building, progress))
+
+
+## The King's finished works in this town (/world works, rising false; bridge treasury.js worksOf): the crown's
+## standard planted at the door of the building that houses each (towns.json trades.list needs: the Freeciv building),
+## the same pennant its site flew (Loop's ask: "the King's granary stands here"; Stronghold's and Manor Lords' lord's
+## flag over what he built). `house` is the town's holder: works are only ever the crown's own towns.
+static func royal_done_of(id: int) -> Array:
+	var out: Array = []
+	if not Engine.has_meta("awareness"):
+		return out
+	for w in Engine.get_meta("awareness").rec("works", []):
+		if w is Dictionary and int(w.get("city", -1)) == id and not bool(w.get("rising", true)):
+			out.append(String(w.get("building", "")))
+	out.sort()
+	return out
+
+
+func _royal_done(root: Node3D, life: Node3D, center: Vector3, id: int, house: Dictionary) -> void:
+	var done := royal_done_of(id)
+	if done.is_empty():
+		return
+	var rw: Dictionary = Data.value("towns", "royal_works", {})
+	var col := Color.from_string(String(house.get("color", "#c8a040")), Color(0.78, 0.63, 0.25))
+	var comps := {}
+	for tr in (Data.value("towns", "trades", {}) as Dictionary).get("list", []):
+		for b in done:
+			if b in (tr.get("needs", []) as Array):
+				comps[String(tr["component"])] = true
+	for t in root.get_meta("trades", []):
+		if not comps.has(String(t["component"])):
+			continue
+		var face: Vector3 = t["face"]
+		var f: Vector2 = Real.footprint(String(t["model"]))
+		var side := Vector3(-face.z, 0, face.x)
+		# Before its front, at the corner beside the door, so the cloth stands clear of the roof and the way in.
+		var at: Vector3 = (t["at"] as Vector3) + face * (f.y * 0.5 + float(rw.get("done_out", 0.08))) + side * f.x * 0.4
+		var pen: Node3D = preload("res://scripts/heraldry.gd").standard(house, col, float(rw.get("done_pennant", 0.6)))
+		pen.name = "RoyalStandard"
+		pen.position = at + Vector3(0, _y(center, at), 0)
+		life.add_child(pen)
+		comps.erase(String(t["component"]))  # one standard a work
 
 
 ## Recruits drilling in ranks on the square while a unit trains.
