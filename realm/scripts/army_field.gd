@@ -314,7 +314,51 @@ func _aftermath() -> void:
 		for n in [b.standard, b.label]:
 			if n is Node3D and is_instance_valid(n):
 				(n as Node3D).visible = false  # the host's standard goes with the living
+	_prisoners()
 	get_tree().create_timer(maxf(1.0, Awareness.season_seconds * Data.num(F, "field.play.aftermath", 1.0))).timeout.connect(queue_free)
+
+
+## Prisoners led away (Total War's captives after the battle, Bannerlord's prisoners marched behind the victor): from
+## where the beaten broke, a file of their men in their colours trudging (Injured_Walk) between the victors' guards
+## (spears, marching), along the navigation's route to the victors' rear; field.play.prisoners: men per regiment that
+## broke (most at most), guards at the head and tail, pace, how far back. Gone at the end of the way.
+func _prisoners() -> void:
+	var k: Dictionary = Data.value(F, "field", {}).get("play", {}).get("prisoners", {})
+	var scenes: Node = main.get("scenes")
+	if scenes == null:
+		return
+	var beaten: Array = (sides[loser] as Army).rows().filter(func(r): return r.has("broke_at"))
+	if beaten.is_empty():
+		return
+	var victor: Army = sides[1 - loser]
+	var from := Vector3.ZERO
+	for r in beaten:
+		from += r["broke_at"]
+	from /= beaten.size()
+	var face := victor.facing()
+	var to := from - Vector3(sin(face), 0, cos(face)) * float(k.get("back", 4.0))
+	var way: PackedVector3Array = scenes.route(from, to)
+	if way.size() < 2:
+		return
+	var rng := RandomNumberGenerator.new()
+	rng.seed = Time.get_ticks_usec()
+	var held_col: Color = beaten[0].get("colour", Color.GRAY)
+	var won: Array = victor.rows()
+	var won_col: Color = won[0].get("colour", Color.GRAY) if not won.is_empty() else Color.GRAY
+	var n := mini(int(k.get("most", 12)), int(k.get("per_regiment", 4)) * beaten.size())
+	var guards := int(k.get("guards", 2))
+	var gap := float(k.get("gap", 0.11))
+	var file: Array = []  # [body, how far behind the head, how far across]
+	var at := 0
+	for i in n + guards * 2:
+		var guard := i < guards or i >= n + guards
+		var p: Node3D = scenes.people.make(rng, "soldier", won_col if guard else held_col, "adult")
+		if guard:
+			scenes.arm(p, "spear")
+		scenes.people.play(p, "SS_Walk" if guard else "Injured_Walk", rng.randf_range(0.9, 1.05))
+		file.append([p, gap * at, rng.randf_range(-0.03, 0.03) if not guard else 0.06 * (1 if i % 2 == 0 else -1)])
+		at += 1
+	Mover.road(self, way, file, float(k.get("pace", 0.12)), {"name": "Prisoners", "min": 10.0, "max": maxf(12.0, Awareness.season_seconds)})
 
 
 ## Every regiment's men brought back to their stance after a one-shot, and its fallen kept where they fell while it
