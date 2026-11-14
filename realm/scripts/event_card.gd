@@ -11,6 +11,7 @@ extends RefCounted
 const T := preload("res://scripts/theme.gd")
 const Data := preload("res://scripts/data.gd")
 const Awareness := preload("res://scripts/awareness.gd")
+const RoyalSheet := preload("res://scripts/royal_sheet.gd")  # the King's focus, which an answer may go against
 
 var ui: Node
 var _card: PanelContainer
@@ -101,6 +102,12 @@ func open() -> void:
 			b.disabled = true
 			b.tooltip_text = "The treasury holds too little for this."
 		row.add_child(b)
+		# An answer against who the King means to be (bridge royals.js focus; the card's `against`): it will weigh on him.
+		var king: Dictionary = RoyalSheet.royals().get("king", {}) if RoyalSheet.royals().get("king") is Dictionary else {}
+		if king.get("focus") != null and String(king["focus"]) in ch.get("against", []):
+			var tag := T.datum(String(Data.value("royal_sheet", "focus.against", "")), T.SIZE_DESC, T.DANGER)
+			tag.autowrap_mode = TextServer.AUTOWRAP_WORD
+			row.add_child(tag)
 		var helps := []
 		var hurts := []
 		for m in ch.get("moves", []):

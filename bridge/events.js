@@ -137,7 +137,7 @@ function draw(ctx, e, turn, resting) {
   const due = arrives + Math.max(0, (card.deadline ?? S.deadline ?? 1) - 1);
   e.up = { id: card.id, turn, arrives, due, subject: sub, title: fill(card.title, sub), text: fill(card.text, sub), bearer: sub.lord ?? null, house: sub.house ?? null, city: sub.city ?? null,
     x: from?.x ?? null, y: from?.y ?? null, by: card.deck === "rival" ? "rival" : null,
-    choices: card.choices.map((ch, i) => ({ i, label: fill(ch.label, sub), cost: ch.cost ?? 0, moves: moves(ctx, ch, sub) })), ignore: fill(wording(`event:${card.id}:ignore`, card.ignore?.text), sub) };
+    choices: card.choices.map((ch, i) => ({ i, label: fill(ch.label, sub), cost: ch.cost ?? 0, moves: moves(ctx, ch, sub), against: ch.against ?? [] })), ignore: fill(wording(`event:${card.id}:ignore`, card.ignore?.text), sub) };
   if (from && seat && from.id !== seat.id) ctx.scene?.("rider", { x: from.x, y: from.y, tx: seat.x, ty: seat.y, city: seat.id, label: e.up.title, by: e.up.by });
   ctx.record?.({ turn, kind: "event", text: e.up.title, city: sub.city ?? undefined });
 }
