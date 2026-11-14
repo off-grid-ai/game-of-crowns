@@ -486,9 +486,15 @@ func _kneel_up(person: Node3D, body: String, skeleton: Skeleton3D) -> void:
 
 ## Townsfolk are moved by the game, not the clip: keep the hips' sway and bob
 ## but take out any drift across the ground, and drop non-bone tracks.
+## Bones a clip may carry that no body here is skinned to (people.json clip_drop_bones: chain tips and helpers a
+## re-exported clip brought, the pike's jabs): their tracks never resolve, and each failed lookup rebuilt the
+## mixer's caches and printed every frame (FPS P0: about 9,000 lines in the fps2 run).
+static var DROP_BONES: Array = Data.value("people", "clip_drop_bones", [])
+
+
 static func _in_place(a: Animation) -> Animation:
 	for t in range(a.get_track_count() - 1, -1, -1):
-		if not String(a.track_get_path(t)).contains(":"):
+		if not String(a.track_get_path(t)).contains(":") or String(a.track_get_path(t)).get_slice(":", 1) in DROP_BONES:
 			a.remove_track(t)
 			continue
 		if a.track_get_type(t) != Animation.TYPE_POSITION_3D or not String(a.track_get_path(t)).ends_with(":Hips"):
