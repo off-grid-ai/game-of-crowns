@@ -25,6 +25,7 @@ extends Node
 const People := preload("res://scripts/people.gd")
 const TownNav := preload("res://scripts/town_nav.gd")
 const Data := preload("res://scripts/data.gd")
+const PerfTools := preload("res://scripts/perf_tools.gd")
 
 signal arrived
 signal gave_up(by: Node3D)  # held wait_max() twice (once more after going round): it stops there, then arrives
@@ -458,7 +459,18 @@ func moving() -> bool:
 	return is_processing()
 
 
+## Each frame while walking; every mover's walking timed together for the frame-cost probe (perf_tools.gd
+## GOC_PERF_PROBE, off in play): "movers" in the slow-frame log.
 func _process(delta: float) -> void:
+	if not PerfTools.probing:
+		_walk(delta)
+		return
+	var t0 := Time.get_ticks_usec()
+	_walk(delta)
+	PerfTools.add("movers", Time.get_ticks_usec() - t0)
+
+
+func _walk(delta: float) -> void:
 	var body := get_parent() as Node3D
 	if body != null and turn_radius > 0.0:
 		_tell_crowd(body, (body.global_position - _was) / maxf(delta, 0.001) if _was != Vector3.INF else Vector3.ZERO)

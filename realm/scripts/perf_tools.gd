@@ -70,6 +70,15 @@ static func _dear(took_usec: int, least := 10.0) -> String:
 		if _frame_cost[k] / 1000.0 >= least:
 			out.append("%s %.0f" % [k, _frame_cost[k] / 1000.0])
 	out.append("unnamed %.0f" % ((took_usec - named) / 1000.0))
+	# What the engine's own clocks say of the frame before (the unnamed part split): every node's _process together,
+	# physics, the navigation server, and the render's CPU side.
+	var vp := (Engine.get_main_loop() as SceneTree).root.get_viewport_rid()
+	RenderingServer.viewport_set_measure_render_time(vp, true)
+	out.append("(engine: process %.0f, physics %.0f, navigation %.0f, render_cpu %.0f, gpu %.0f)" % [
+		Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0, Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0,
+		Performance.get_monitor(Performance.TIME_NAVIGATION_PROCESS) * 1000.0,
+		RenderingServer.viewport_get_measured_render_time_cpu(vp) + RenderingServer.get_frame_setup_time_cpu(),
+		RenderingServer.viewport_get_measured_render_time_gpu(vp)])
 	return ", ".join(out)
 
 
