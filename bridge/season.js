@@ -16,6 +16,7 @@ import { crownOf } from "./realm.js";
 import * as Damage from "./damage.js";
 import * as Opening from "./opening.js";
 import * as Reword from "./reword.js";
+import * as Households from "./households.js";
 import * as Seals from "./seals.js";
 import * as Next from "./next.js";
 import * as Director from "./director.js";
@@ -53,7 +54,8 @@ export function turn(ctx, ev) {
   setTimeout(() => ctx.runArcs(1), 4000);
   // Let the AI finish its start-of-turn moves before dumping the world.
   setTimeout(ctx.snapshot, 1500);
-  setTimeout(() => ctx.minds?.tick(Number(ev.turn)), 3000);
+  // The common folk's households take their season (households.js), then their minds theirs.
+  setTimeout(() => { Households.season(ctx.world, Number(ev.turn)); ctx.minds?.tick(Number(ev.turn)); }, 3000);
   if (isYearStart(ev.turn)) ctx.record({ turn: Number(ev.turn), kind: "year", text: say("event.year", { year: calendar(ev.turn).year }) });
 }
 

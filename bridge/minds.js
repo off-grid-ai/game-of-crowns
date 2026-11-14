@@ -156,8 +156,20 @@ export class Minds {
   town(cityId) {
     const city = this.realm.world()?.cities?.find((c) => c.id === Number(cityId));
     if (!city) return null;
-    const folk = townsfolk(city);
-    const out = folk.map((p) => this.minds[`folk:${city.id}:${p.i}`] ?? this.seedFolk(city, p, folk));
+    const folk = townsfolk(city, this.now());
+    // A person's place in town closes up over the dead and departed (households.js): their mind moves with them,
+    // and someone new to a place gets a mind of their own.
+    const out = folk.map((p) => {
+      const key = `folk:${city.id}:${p.i}`;
+      if (this.minds[key]?.pid === p.id) return this.minds[key];
+      const was = Object.keys(this.minds).find((k) => k.startsWith(`folk:${city.id}:`) && this.minds[k].pid === p.id);
+      if (!was) return this.seedFolk(city, p, folk);
+      const m = { ...this.minds[was], id: key, i: p.i };
+      delete this.minds[was];
+      this.minds[key] = m;
+      this.save();
+      return m;
+    });
     return { city, folk, minds: out };
   }
 
@@ -176,12 +188,13 @@ export class Minds {
     // Two or three people in town they are bound to, for better or worse.
     const bonds = {};
     for (let k = 0; k < 2 + (r % 2); k++) {
-      const j = (p.i + 1 + ((r >>> (k * 5)) % (folk.length - 1))) % folk.length;
+      // (folk is by place in town, which outlives the dead: a bond is to the one standing that many along)
+      const q = folk[(folk.indexOf(p) + 1 + ((r >>> (k * 5)) % Math.max(1, folk.length - 1))) % folk.length];
       const [note, trust, warmth] = BONDS[(r >>> (k * 3 + 1)) % BONDS.length];
-      if (j !== p.i) bonds[`folk:${city.id}:${j}`] = { trust, warmth, note };
+      if (q && q.i !== p.i) bonds[`folk:${city.id}:${q.i}`] = { trust, warmth, note };
     }
     const m = {
-      id, name: p.name, town: city.id, station: p.trade, sex: p.woman ? "female" : "male", age: p.age, i: p.i,
+      id, pid: p.id, name: p.name, town: city.id, station: p.trade, sex: p.woman ? "female" : "male", age: p.age, i: p.i,
       nature: [p.nature], wants, base, mood: { ...base }, memories: [], life: "", bonds,
       beliefs: BELIEFS[p.nature] ? [BELIEFS[p.nature]] : [], plan: null, reverie: 0, born: this.now(),
     };
@@ -229,7 +242,7 @@ export class Minds {
     id = String(id);
     if (this.minds[id]) return this.minds[id];
     const folk = id.match(/^folk:(\d+):(\d+)$/);
-    if (folk) return this.town(folk[1])?.minds[Number(folk[2])] ?? null;
+    if (folk) return this.town(folk[1])?.minds.find((m) => m.i === Number(folk[2])) ?? null;
     return this.named(id);
   }
 

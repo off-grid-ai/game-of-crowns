@@ -62,6 +62,7 @@ import * as Rulings from "./rulings.js";
 import * as Hosts from "./hosts.js";
 import * as Battles from "./battles.js";
 import * as Raids from "./raids.js";
+import * as Households from "./households.js";
 import { TURNING } from "./season.js";
 import { intrigueNow } from "./intrigue.js";
 
@@ -177,6 +178,7 @@ function load(id) {
   chatter = new Chatter(P.state, { world: () => world, turn: () => world?.turn ?? 0, minds: () => minds });
   stakes = new Stakes(P.state, record, endReign);
   rememberNames(world);
+  Households.open(P.state);  // the reign's common folk, the last reign's written first (households.js)
   if (minds?.timer) minds.flush();  // the last realm's minds, written before the next is opened
   minds = new Minds(P.state, {
     world: () => world, court: () => court, tithe: () => meta.tithe,

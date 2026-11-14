@@ -250,7 +250,7 @@ export class Chatter {
     let made = null;
     if (who?.length >= 2) {
       const folk = this.minds.town(city);
-      const group = who.map((i) => folk[i]).filter(Boolean);
+      const group = who.map((i) => folk?.minds.find((m) => m.i === Number(i))).filter(Boolean);  // by their place in town (townsfolk.js i)
       if (group.length >= 2) {
         const key = `${city}:${who.slice().sort((a, b) => a - b).join(",")}`;
         const had = this.groups.get(key);

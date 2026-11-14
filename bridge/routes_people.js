@@ -93,10 +93,10 @@ export async function folkOf(ctx, req, res, url) {
   // The folk of a town, and, asked for one person, their story in full.
   const city = ctx.world?.cities.find((c) => c.id === Number(url.searchParams.get("city")));
   if (!city) return json(res, 404, { error: "no such town" });
-  const folk = townsfolk(city);
+  const folk = townsfolk(city, ctx.world.turn);
   const i = url.searchParams.get("i");
   if (i === null) return json(res, 200, { town: cityName(city.id), folk });
-  const person = folk[Number(i)];
+  const person = folk.find((p) => p.i === Number(i));
   if (!person) return json(res, 404, { error: "no such person" });
   const file = path.join(ctx.P.state, "folk-tales.json");
   const tales = chron.readJson(file) ?? {};
@@ -132,7 +132,7 @@ export async function talk(ctx, req, res, url) {
   const city = ctx.world?.cities.find((c) => c.id === Number(b.city));
   if (!city) return json(res, 404, { error: "no such town" });
   if (b.person) return talkToNamed(res, city, String(b.person), b);
-  const person = townsfolk(city)[Number(b.i)];
+  const person = townsfolk(city, ctx.world.turn).find((p) => p.i === Number(b.i));
   // b.greet: they've only just walked up, and the townsperson speaks first.
   const greet = !!b.greet;
   const said = greet ? "(They walk up to you and stop, and say nothing yet: you speak first, as you would to them, by what you know of them and what they have done.)" : String(b.said ?? "").trim().slice(0, 400);
