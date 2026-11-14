@@ -413,6 +413,31 @@ func order_now(o: Variant) -> void:
 		_strike_camp()
 
 
+## A field host's hunger now (units.gd each sync: /world hosts[].stragglers, bridge hosts.js supply: the share of its
+## men out of the line as its supply runs out; The march feeds the battle, Bannerlord's and Total War's attrition): in
+## each regiment that share of its men, the rearmost first, trail behind and wide of their places (army.json
+## stragglers: back, across, in world units), each always the same man, so a hungry column frays at its tail.
+var _stragglers := 0.0
+
+func hunger_now(h: Dictionary) -> void:
+	var share := clampf(float(h.get("stragglers", 0.0)), 0.0, 0.5)
+	if absf(share - _stragglers) < 0.01:
+		return
+	_stragglers = share
+	var k: Dictionary = Data.value("army", "stragglers", {})
+	for r in _regiments:
+		var at: PackedVector3Array = r["local"]
+		var order := range(at.size())
+		order.sort_custom(func(a, b): return at[a].z < at[b].z)  # the rearmost first (the front is +z)
+		var lag := {}
+		var rng := RandomNumberGenerator.new()
+		rng.seed = int(r["id"]) * 31 + 7
+		for i in int(at.size() * share):
+			lag[order[i]] = Vector3(rng.randf_range(-1.0, 1.0) * float(k.get("across", 0.08)), 0.0, -rng.randf_range(0.2, 1.0) * float(k.get("back", 0.6)))
+		r["lag"] = lag
+		_dress(r)
+
+
 func _camps() -> bool:
 	return (Data.value("army", "camp", {}).get("when", ["hold", ""]) as Array).has(_order_kind)
 
@@ -871,9 +896,10 @@ func _dress(r: Dictionary) -> void:
 	var at: PackedVector3Array = r["local"]
 	var yaws: PackedFloat32Array = r["yaws"]
 	var sizes: PackedFloat32Array = r["sizes"]
+	var lag: Dictionary = r.get("lag", {})  # stragglers out of the line (hunger_now)
 	for s in at.size():
 		var b := Basis(Vector3.UP, yaws[s]).scaled(Vector3.ONE * tall * sizes[s])
-		vat.multimesh.set_instance_transform(s, Transform3D(b, at[s]))
+		vat.multimesh.set_instance_transform(s, Transform3D(b, at[s] + lag.get(s, Vector3.ZERO)))
 
 
 ## Takes a regiment's shape at once (its men's places, its banner's pips, its rectangle and block fitted).
