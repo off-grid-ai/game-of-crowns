@@ -24,6 +24,7 @@ import * as Siegecraft from "./siegecraft.js";
 import * as Captains from "./captains.js";
 import * as Rivals from "./rivals.js";
 import * as Rebels from "./rebels.js";
+import * as Battles from "./battles.js";
 import * as Peace from "./peace.js";
 import * as Contagion from "./contagion.js";
 import * as Prices from "./prices.js";
@@ -65,6 +66,7 @@ export function turn(ctx, ev) {
   if (isYearEnd(ev.turn)) Royals.year(ctx, Number(ev.turn));
   Promises.season(ctx, Number(ev.turn));
   Siegecraft.season(ctx, Number(ev.turn));
+  Battles.season(ctx, Number(ev.turn));  // who fled, and the beaten lord's fate (battles.js)
   Captains.season(ctx, Number(ev.turn));
   Rivals.season(ctx, Number(ev.turn));
   Rebels.season(ctx, Number(ev.turn));

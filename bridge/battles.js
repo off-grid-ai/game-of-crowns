@@ -8,6 +8,7 @@ import { CIVILIAN } from "./campaigns.js";
 import { houseName } from "./realm.js";
 import { cityName } from "./narrator.js";
 import { calendar } from "./calendar.js";
+import * as Lua from "./lua.js";
 
 const SHIPS = new Set(HOSTS.ships);
 const cheb = (a, b) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
@@ -86,6 +87,45 @@ export function card(meta, world, f, turn, crownId) {
   c.victor = [...c.sides].sort((a, b) => share(a) - share(b))[0].house;
   c.crown = c.victor === crownId ? "won" : "lost";
   return c;
+}
+
+// After a battle's season (season.js, before the captains): each side that lost it, the men who fled the field (those
+// who were there and did not fall), and a beaten great house's lord's fate when it lost hosts.json battles.fate.minLost
+// men or more (CK3's commanders slain or taken in battle): he escapes, is wounded, taken (ransomed to the victor from
+// his house's chest) or slain (court.die, his heir succeeds), by the fate's weights. Set once on the card: sides[].fled,
+// sides[].lord {name, fate}.
+export function season(ctx, turn) {
+  const { meta, world, court, send, record } = ctx;
+  const F = HOSTS.battles?.fate;
+  for (const c of (meta.battles ?? []).filter((b) => b.turn === turn - 1 && !b.settled)) {
+    c.settled = true;
+    for (const s of c.sides) {
+      if (s.house === c.victor) continue;
+      s.fled = Math.max(0, s.men - s.lost);
+      if (!F || s.lost < F.minLost) continue;
+      const lord = court?.lordOfHouse?.(s.house);
+      if (!lord?.alive) continue;
+      const roll = Math.random() * Object.values(F.weights).reduce((t, w) => t + w, 0);
+      let acc = 0;
+      const fate = Object.entries(F.weights).find(([, w]) => (acc += w) > roll)?.[0] ?? "escaped";
+      s.lord = { name: lord.name, fate };
+      const where = c.place ?? "in the field";
+      if (fate === "slain") {
+        record({ turn, kind: "battle", text: `${lord.name} of ${lord.house} is cut down ${where}, under his own banner.` });
+        court.die(lord, turn, world);
+      } else if (fate === "taken") {
+        const house = world?.players?.find((p) => p.id === s.house);
+        const ransom = Math.max(0, Math.min(F.ransom, Math.floor(house?.gold ?? 0)));
+        if (ransom > 0) send(`lua cmd ${Lua.pay(s.house, c.victor, ransom)}`);
+        court.remember(lord.id, `I was taken ${where}, and my house paid ${ransom} gold to have me back.`);
+        record({ turn, kind: "battle", text: `${lord.name} of ${lord.house} is taken ${where}${ransom ? `, and ransomed home for ${ransom} gold` : ""}.` });
+      } else if (fate === "wounded") {
+        court.remember(lord.id, `I was wounded ${where}. I still feel it when it rains.`);
+        record({ turn, kind: "battle", text: `${lord.name} of ${lord.house} is carried from the field ${where}, wounded.` });
+      }
+      if (fate !== "slain") court.save?.(lord);
+    }
+  }
 }
 
 // The battle cards for /world: the King's battles of the last hosts.json battles.recent seasons, the newest first.

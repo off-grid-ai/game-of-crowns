@@ -85,6 +85,7 @@ export function season(ctx, turn) {
       if ((hash(meta, u.id, m.fought * 13 + m.name.length) % 1000) / 1000 < C.fall) {
         c.men = c.men.filter((x) => x !== m);
         meta.fallen = [...(meta.fallen ?? []), { name: m.name, rank: m.rank, turn, place: where }].slice(-C.keep);
+        b.fell = [...new Set([...(b.fell ?? []), m.name])];  // named on the battle's card (battles.js)
         record({ turn, kind: "battle", text: `${m.rank === "sergeant" ? "Sergeant " : ""}${m.name} of Captain ${c.name}'s company falls ${where}.` });
       } else if (m.rank === "soldier" && m.fought >= C.rise.sergeant) {
         m.rank = "sergeant";
