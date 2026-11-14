@@ -26,6 +26,7 @@ const People := preload("res://scripts/people.gd")
 const TownNav := preload("res://scripts/town_nav.gd")
 const Data := preload("res://scripts/data.gd")
 const PerfTools := preload("res://scripts/perf_tools.gd")
+const AnimLOD := preload("res://scripts/anim_lod.gd")
 
 signal arrived
 signal gave_up(by: Node3D)  # held wait_max() twice (once more after going round): it stops there, then arrives
@@ -140,6 +141,7 @@ func walk(way: PackedVector3Array, then := Callable()) -> void:
 
 func _begin(way: PackedVector3Array, then: Callable, face: bool, keep_y: bool) -> void:
 	var body := get_parent() as Node3D
+	_owed = 0.0  # a new walk starts from now
 	_way = way
 	_i = 0
 	_walk_at = Vector3.INF
@@ -269,6 +271,11 @@ var _blocked: Node3D = null
 var _waited := 0.0  # seconds held by a body in its way
 var _went_round := false  # it has re-routed round a body once on this way
 var _was := Vector3.INF  # where it stood last frame (its velocity, told to the crowd)
+var _owed := 0.0  # walking time not yet given (_due): the walk catches up with all of it at its next step
+## Seconds between an unseen walker's steps (people.json lod.move_unseen_s): out of sight, a person's walk goes on
+## in whole-second strides, and the moment they are seen it is stepped with all the time it is owed (snapped to where
+## they would be). On screen, the steps come on the frames their legs move (anim_lod.gd moves_now).
+static var UNSEEN_S: float = Data.num("people", "lod.move_unseen_s", 1.0)
 
 
 ## Tells the town's crowd where the horse or cart is and where it goes, so the villagers' avoidance (Godot's RVO)
@@ -462,12 +469,40 @@ func moving() -> bool:
 ## Each frame while walking; every mover's walking timed together for the frame-cost probe (perf_tools.gd
 ## GOC_PERF_PROBE, off in play): "movers" in the slow-frame log.
 func _process(delta: float) -> void:
+	delta = _due(delta)
+	if delta <= 0.0:
+		return
 	if not PerfTools.probing:
 		_walk(delta)
 		return
 	var t0 := Time.get_ticks_usec()
 	_walk(delta)
 	PerfTools.add("movers", Time.get_ticks_usec() - t0)
+
+
+## The time to walk this frame, or 0 to wait (FPS P0, fps4: 330 mover steps a frame, ~5 ms): a person walking a plain
+## way (no steering, no beast's arc, not on a fight's ground, no route still being asked for) steps by anim_lod.gd's
+## rule, on the frames their legs move, and out of sight once every UNSEEN_S, each step carrying all it is owed, so
+## nobody seen is ever anywhere but where their walk has brought them. Everyone else steps every frame.
+func _due(delta: float) -> float:
+	var body := get_parent() as Node3D
+	if body == null or turn_radius > 0.0 or _steer or _shifting or field != null or _ask_got.is_valid():
+		return delta + _take_owed()
+	_owed += delta
+	var cam := body.get_viewport().get_camera_3d() if body.get_viewport() else null
+	if cam != null:
+		var n := AnimLOD.every(cam, body)
+		if n == 0 and _owed < UNSEEN_S:
+			return 0.0
+		if n > 1 and not AnimLOD.moves_now(body):
+			return 0.0
+	return _take_owed()
+
+
+func _take_owed() -> float:
+	var o := _owed
+	_owed = 0.0
+	return o
 
 
 func _walk(delta: float) -> void:
