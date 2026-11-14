@@ -46,6 +46,7 @@ var _dist := 0.0  # the test aid's lens distance: the town view's (camera.json t
 var _focus := Vector3.ZERO
 var _yaw := 0.0  # the battle lens's heading (lens_yaw, followed)
 var _yawed := false
+var _near := 1.0  # the battle lens's distance as a share of _dist: field.camera.close at blows, eased in
 var _report := 0.0
 var _over := false
 var _formed := 0.0  # seconds both lines have stood formed
@@ -405,12 +406,18 @@ func _frame(delta: float) -> void:
 		return
 	_focus = _focus.lerp(lens_aim(_rows(), loser, met(), _focus), minf(1.0, delta * Data.num(F, "field.camera.follow", 1.2)))
 	var crown: Army = sides[0]
-	main.rig.step_floor = _dist if _dist < main.rig.min_distance else 0.0  # the shot's own distance (d4 is d4)
 	_yaw = lerp_angle(_yaw if _yawed else crown.facing() + Data.num(F, "field.camera.quarter", 0.9), lens_yaw(_rows(), loser, crown.facing()),
 			minf(1.0, delta * Data.num(F, "field.camera.follow", 1.2)))
 	_yawed = true
-	main.rig.snap(_focus, _dist, _yaw)
-	main.rig.tilt = main.rig.tilt_for(Data.num("army", "camera.pitch", 38.0), maxf(_dist, main.rig.min_distance))  # 03-army's pitch
+	# At blows the lens comes in on the press, so the men fighting fill the frame (g38 battle: from the lines' own
+	# distance the clash read as two diagonal lines on a lawn), and lower, across the fronts rather than down on them.
+	var at_blows := met()
+	_near = lerpf(_near, Data.num(F, "field.camera.close", 0.55) if at_blows else 1.0, minf(1.0, delta * Data.num(F, "field.camera.follow", 1.2)))
+	var d := _dist * _near
+	main.rig.step_floor = d if d < main.rig.min_distance else 0.0
+	main.rig.snap(_focus, d, _yaw)
+	var pitch := Data.num(F, "field.camera.pitch", 30.0) if at_blows else Data.num("army", "camera.pitch", 38.0)
+	main.rig.tilt = main.rig.tilt_for(pitch, maxf(d, main.rig.min_distance))  # 03-army's pitch; lower at blows
 	main.rig.goal_tilt = main.rig.tilt
 
 
