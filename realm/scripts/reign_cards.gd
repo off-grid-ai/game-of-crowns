@@ -362,6 +362,24 @@ func _reign_end(r: Dictionary) -> void:
 	verdict.add_theme_font_size_override("font_size", T.SIZE_TITLE)
 	verdict.add_theme_color_override("font_color", Color(0.92, 0.88, 0.8))
 	col.add_child(verdict)
+	# His epitaph (CK3's and Crusader Kings' end of a life; Reigns' last card): a line or two written from his weightiest
+	# rulings (the bridge's epitaph), cut as on a tomb, and the rulings it was written from beneath it, small.
+	if String(r.get("epitaph", "")) != "":
+		var ep_l := Label.new()
+		ep_l.text = "“%s”" % String(r["epitaph"]).strip_edges().replace("\"", "")
+		ep_l.autowrap_mode = TextServer.AUTOWRAP_WORD
+		ep_l.custom_minimum_size.x = 640
+		ep_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		ep_l.add_theme_font_override("font", T.speech)
+		ep_l.add_theme_font_size_override("font_size", T.SIZE_BODY)
+		ep_l.add_theme_color_override("font_color", T.ACCENT)
+		col.add_child(ep_l)
+		for w in r.get("weighed", []):
+			var wl := T.datum(String(w), T.SIZE_DESC, T.TEXT_2)
+			wl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			wl.autowrap_mode = TextServer.AUTOWRAP_WORD
+			wl.custom_minimum_size.x = 640
+			col.add_child(wl)
 	# The reign in numbers.
 	var e: Dictionary = r.get("ended", {}) if r.get("ended") is Dictionary else {}
 	var turns := int(e.get("turn", 0))
