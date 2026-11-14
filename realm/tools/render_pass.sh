@@ -345,8 +345,10 @@ if want raid; then
   # (realmrules/script.lua realm_raids_turn, fc9a094c). Raiders are units of a wild player (Freeciv's barbarians: /world
   # players[].house.wild; g22 read them as 'no player's' and found none by Saltkeep, where six stood) new since the stage. Every wait is bounded and reads /world (the realm runs
   # only while a window watches it), closing the court and an interlude as the crossing's wait does.
-  raider() {  # raider <x> <y> <near|out|any> <from season>: "id x y" of the raider nearest the town, of the farthest one
-    # 4+ tiles out once the raid's seasons are over, or of any still living; '' when none
+  raider() {  # raider <x> <y> <near|out|any> <from season>: "id x y yaw" for the raiders by the town (x y their midpoint),
+    # the farthest one 4+ tiles out once the raid's seasons are over, or any still living; '' when none. yaw: the lens
+    # on their side of the town looking back at it (camera_rig: the lens sits along (sin yaw, cos yaw) from its aim),
+    # so the raiders stand in front with the town behind them, not lost among its roofs (g24 raid.jpg)
     curl -s -m 10 "$API/world" | perl -e 'alarm shift; exec @ARGV' 20 python3 -I -c "
 import json,sys; d=json.load(sys.stdin)
 wild={p['id'] for p in d.get('players',[]) if (p.get('house') or {}).get('wild')}
@@ -354,13 +356,17 @@ old={int(x) for x in open('$OUT/raid.before').read().split()}
 x,y=$1,$2
 us=[u for u in d.get('units',[]) if u.get('owner') in wild and u['id'] not in old]
 far=lambda u: max(abs(u['x']-x),abs(u['y']-y))
+import math
 if '$3'=='any':
     u=us[0] if us else None
 elif '$3'=='near':
     us=[u for u in us if far(u)<=3]; u=min(us,key=far) if us else None
+    if u: u={'id':u['id'],'x':sum(v['x'] for v in us)/len(us),'y':sum(v['y'] for v in us)/len(us)}
 else:
     us=[u for u in us if far(u)>=4 and d.get('turn',0)>=$4]; u=max(us,key=far) if us else None
-print('%d %d %d' % (u['id'],u['x'],u['y']) if u else '')" 2>/dev/null
+if u:
+    dx,dy=u['x']-x,u['y']-y
+    print('%d %.2f %.2f %.2f' % (u['id'],u['x'],u['y'],math.atan2(dx,dy) if (dx or dy) else 0.6))" 2>/dev/null
   }
   curl -s -m 10 "$API/world?peek=1" | python3 -I -c "
 import json,sys; print(' '.join(str(u['id']) for u in json.load(sys.stdin).get('units',[])))" > $OUT/raid.before 2>/dev/null
@@ -388,10 +394,13 @@ if r.get('ok'): print(r['city'], r['x'], r['y'], r['name'])" 2>/dev/null)
       # Held while it is filmed (bridge POST /pause), as the crossing is: the seasons would run on while Godot loads.
       set -- ${=AT}
       curl -s -m 5 -o /dev/null -X POST $API/pause
-      { print "wait 30"; print "unit $1 3"; print "wait 4"; print "snap raid"; print "tile $RX $RY 3 0.8"; print "wait 4"; print "snap raid_town"; print "look end"; } > $OUT/raid.play
+      # The raiders' midpoint, a little back from their side of the town at roof height; then midway between them and the
+      # walls, further back, the town behind them.
+      MX=$(( ($2 + RX) / 2.0 )); MY=$(( ($3 + RY) / 2.0 ))
+      { print "wait 30"; print "tile $2 $3 5 $4"; print "wait 4"; print "snap raid"; print "tile $MX $MY 6.5 $4"; print "wait 4"; print "snap raid_town"; print "look end"; } > $OUT/raid.play
       shot raid 1500 film $SW
       curl -s -m 5 -o /dev/null -X POST $API/resume
-      side raid $OUT/frames/raid/raid.png $TARGETS/03-army.jpg "raiders at $RNAME (raider $1 at $2,$3)"
+      side raid $OUT/frames/raid/raid.png $TARGETS/03-army.jpg "raiders at $RNAME (their midpoint $2,$3)"
       side raid_town $OUT/frames/raid/raid_town.png $TARGETS/03-army.jpg "$RNAME under the raid"
     fi
     # No raider by the town, none to watch leave: skipped at once, not after RAID_LEAVE (g22 sat 16 minutes on the GPU
@@ -414,7 +423,7 @@ if r.get('ok'): print(r['city'], r['x'], r['y'], r['name'])" 2>/dev/null)
       # Framed on his tile, not his figure: one leaving may be gone (Disband Unit on wild land) before the lens finds him.
       set -- ${=OUTR}
       curl -s -m 5 -o /dev/null -X POST $API/pause
-      { print "wait 30"; print "tile $2 $3 3 0.8"; print "wait 4"; print "snap raid_leave"; print "look end"; } > $OUT/raid_leave.play
+      { print "wait 30"; print "tile $2 $3 5 $4"; print "wait 4"; print "snap raid_leave"; print "look end"; } > $OUT/raid_leave.play
       shot raid_leave 1500 film $SW
       curl -s -m 5 -o /dev/null -X POST $API/resume
       side raid_leave $OUT/frames/raid_leave/raid_leave.png $TARGETS/03-army.jpg "a raider walking off from $RNAME to wild land (raider $1 at $2,$3)"
