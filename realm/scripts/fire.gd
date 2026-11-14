@@ -784,7 +784,11 @@ func _char(root: Node3D, key: String, h: Array) -> Dictionary:
 			mi.set_instance_shader_parameter("hi", ab.end.y)
 			mi.set_instance_shader_parameter("cut", cut)
 			mi.set_meta("cut", cut)
+			mi.visibility_range_begin = (g as GeometryInstance3D).visibility_range_begin  # a low batch's shell past NEAR, the whole one's up close (towns.gd _hlod)
+			mi.visibility_range_begin_margin = (g as GeometryInstance3D).visibility_range_begin_margin
 			mi.visibility_range_end = (g as GeometryInstance3D).visibility_range_end
+			mi.visibility_range_end_margin = (g as GeometryInstance3D).visibility_range_end_margin
+			mi.visibility_range_fade_mode = (g as GeometryInstance3D).visibility_range_fade_mode
 			shell.add_child(mi)
 			var wb: AABB = mi.transform * ab
 			box = wb if box.size == Vector3.ZERO else box.merge(wb)

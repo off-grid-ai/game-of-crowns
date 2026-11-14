@@ -527,7 +527,10 @@ static func _begin(name: String) -> bool:
 	if by_mat != null:
 		var cut: float = FLOOR_CUT.get(name, -INF)
 		var budget: int = BUDGET.get(KIT[name][0], 0)
-		task = WorkerThreadPool.add_task(func(): out[0] = _lods(by_mat, cut, budget), false, "merge " + name)
+		var hlod: Dictionary = Data.value("towns", "hlod", {})  # read here: the data's cache is the main thread's
+		task = WorkerThreadPool.add_task(func():
+			out[0] = _lods(by_mat, cut, budget)
+			out.append(_low(out[0], hlod)), false, "merge " + name)
 	_pending[name] = {"task": task, "out": out, "root": root, "parts": parts, "k": k, "box": box, "frame": built_frame}
 	return true
 
@@ -547,7 +550,8 @@ static func _finish(name: String) -> Dictionary:
 	var im: ImporterMesh = p["out"][0]
 	var merged: ArrayMesh = im.get_mesh() if im else null  # the mesh handed to the renderer on the main thread
 	if merged:
-		parts = [[merged, Transform3D.IDENTITY]]
+		var low_im: ImporterMesh = p["out"][1] if (p["out"] as Array).size() > 1 else null
+		parts = [[merged, Transform3D.IDENTITY, low_im.get_mesh() if low_im else null]]  # [mesh, place, its low mesh past NEAR]
 		var whole := Node3D.new()
 		whole.name = name
 		var mi := MeshInstance3D.new()
@@ -567,6 +571,8 @@ static func _finish(name: String) -> Dictionary:
 		# Which Meshy piece its meshes are (the merge drops the glb's path): team_colour.gd finds its team mask by it.
 		for pt in parts:
 			(pt[0] as Mesh).set_meta("meshy_piece", name.substr(6))
+			if (pt as Array).size() > 2 and pt[2] != null:
+				(pt[2] as Mesh).set_meta("meshy_piece", name.substr(6))  # its low mesh takes the same team mask
 		for g in root.find_children("*", "MeshInstance3D", true, false):
 			if (g as MeshInstance3D).mesh:
 				(g as MeshInstance3D).mesh.set_meta("meshy_piece", name.substr(6))
@@ -758,6 +764,42 @@ static func _lods(by_mat: Dictionary, floor_cut: float, budget: int) -> Importer
 	if budget > 0:
 		im = _within(im, budget)
 	return im
+
+
+## A merged model's low mesh, drawn past NEAR in place of the whole one (towns.gd _flush: Godot's visibility ranges,
+## its built-in HLOD; Meshy buildings are 20-100k triangles, a house seen from the middle zoom needs a few thousand):
+## the first of Godot's generated detail levels at or under towns.json hlod.share of its triangles (or hlod.least),
+## else its lightest; null when no level is under hlod.worth of it (a light model needs none). Plain arrays: a worker.
+static func _low(im: ImporterMesh, H: Dictionary) -> ImporterMesh:
+	if im == null:
+		return null
+	var full := 0
+	var most := 0
+	for s in im.get_surface_count():
+		full += (im.get_surface_arrays(s)[Mesh.ARRAY_INDEX] as PackedInt32Array).size() / 3
+		most = maxi(most, im.get_surface_lod_count(s))
+	var want := maxf(float(H.get("least", 1500)), full * float(H.get("share", 0.05)))
+	var pick := -1
+	for level in most:
+		pick = level
+		var n := 0
+		for s in im.get_surface_count():
+			n += (im.get_surface_lod_indices(s, mini(level, im.get_surface_lod_count(s) - 1)).size() / 3) if im.get_surface_lod_count(s) > 0 else (im.get_surface_arrays(s)[Mesh.ARRAY_INDEX] as PackedInt32Array).size() / 3
+		if n <= want:
+			break
+	if pick < 0:
+		return null
+	var out := ImporterMesh.new()
+	var n := 0
+	for s in im.get_surface_count():
+		var arr: Array = im.get_surface_arrays(s)
+		if im.get_surface_lod_count(s) > 0:
+			arr[Mesh.ARRAY_INDEX] = im.get_surface_lod_indices(s, mini(pick, im.get_surface_lod_count(s) - 1))
+		n += (arr[Mesh.ARRAY_INDEX] as PackedInt32Array).size() / 3
+		out.add_surface(Mesh.PRIMITIVE_TRIANGLES, arr, [], {}, im.get_surface_material(s))
+	if n > full * float(H.get("worth", 0.5)):
+		return null
+	return out
 
 
 ## The first of Godot's generated detail levels whose triangles fit the budget, as

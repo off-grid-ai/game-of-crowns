@@ -2014,6 +2014,9 @@ func _flush(root: Node3D) -> void:
 			else:
 				_fade_beyond(mmi, _reach_for(kind))
 			root.add_child(mmi)
+			var low: Mesh = part[2] if (part as Array).size() > 2 else null
+			if low and not is_detail(kind) and _reach_for(kind) > HLOD_AT:
+				_hlod(root, mmi, low, kind)
 	_batch.clear()
 	# Anything placed whole (the castle, landmarks) carries furthest.
 	for g in root.find_children("*", "GeometryInstance3D", true, false):
@@ -2060,6 +2063,33 @@ static func detail(g: GeometryInstance3D, end := DETAIL_END) -> void:
 	g.visibility_range_end_margin = end * 0.1
 	g.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 	g.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF  # a small thing's shadow is a smudge that cost a draw in every split (fps)
+
+
+## Godot's built-in HLOD for a town's buildings: the whole model up to towns.json hlod.at (past NEAR, about roof
+## height and a street off), its low mesh (realistic.gd _low: a few thousand triangles of a Meshy house's 20-100k)
+## from there to its reach, the two crossing over hlod.fade with a dithered fade, so nothing pops.
+static var HLOD_AT: float = float((Data.value("towns", "hlod", {}) as Dictionary).get("at", 25.0))
+func _hlod(root: Node3D, high: MultiMeshInstance3D, low: Mesh, kind: String) -> void:
+	var fade := float((Data.value("towns", "hlod", {}) as Dictionary).get("fade", 3.0))
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.mesh = low
+	mm.instance_count = high.multimesh.instance_count
+	for i in mm.instance_count:
+		mm.set_instance_transform(i, high.multimesh.get_instance_transform(i))
+	var far := MultiMeshInstance3D.new()
+	far.multimesh = mm
+	far.set_meta("kind", kind)  # a burnt or rising house is hidden in it too (fire.gd, _hide_home: every batch of its kind)
+	far.set_meta("hlod", "low")
+	far.visibility_range_begin = HLOD_AT
+	far.visibility_range_begin_margin = fade
+	far.visibility_range_end = high.visibility_range_end
+	far.visibility_range_end_margin = high.visibility_range_end_margin
+	far.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
+	high.visibility_range_end = HLOD_AT
+	high.visibility_range_end_margin = fade
+	high.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
+	root.add_child(far)
 
 
 ## Whether a kit model is a town's small detail, not one of its buildings (towns.json detail_kinds, the catalogue's
