@@ -64,7 +64,10 @@ func build(terrain: Node3D, ground_layer: int) -> void:
 	# slopes; auto.high: higher, rock lower down the mountains; WC3's cliff tiers, so the realm reads its shape).
 	mat.set_shader_param("auto_slope", Data.num("ground", "auto.slope", 1.6) if terrain.land else 2.2)
 	mat.set_shader_param("auto_height_reduction", Data.num("ground", "auto.high", 0.1))
-	mat.set_shader_param("blend_sharpness", 0.87)
+	# How hard one ground gives way to the next (ground.json blend.sharpness; Terrain3D blends by each layer's painted
+	# height, so at 0.87 the brightest, snow, snapped over at any share: g36's snow sheets with hard rims). WC3's
+	# transitions are soft painted masks.
+	mat.set_shader_param("blend_sharpness", Data.num("ground", "blend.sharpness", 0.87))
 	# Terrain3D's own answers to a ground that looks like a carpet: textures
 	# projected onto steep faces instead of stretched down them, broad patches
 	# of colour and tone across the grass, and a second, larger texture scale
