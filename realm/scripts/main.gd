@@ -46,7 +46,7 @@ var _shot: Dictionary:  # the command-line flags, read here wherever a test shot
 	set(v):
 		shots._shot = v
 const News := preload("res://scripts/news.gd")
-const Juice := preload("res://scripts/juice.gd")  # the juice switch and numbers (data/juice.json)
+const Juice := preload("res://scripts/juice.gd")  # juice's numbers (data/juice.json)
 var news := News.new(self)  # the player's news (news.gd): the chip, the Watch offer, the edge arrow, Space
 const Overview := preload("res://scripts/overview.gd")
 var over := Overview.new(self)  # the realm's painted map, the far view (overview.gd)
@@ -459,12 +459,10 @@ func _ready() -> void:
 		get_tree().create_timer(float(_shot.get("wait", 8.0)) - 4.0).timeout.connect(func():
 			lore.open(int(_shot["lore"])))
 	bridge.paid.connect(func(_cost): sound.ui("coins"))
-	# Juice (juice.json): the seal is heard at the click, not when the realm answers; a refusal still sounds its error.
+	# The seal is heard at the click, not when the realm answers; a refusal still sounds its error (juice).
 	# An order of his own (not a court ruling, which its card answers): its result lands at the town as the
 	# latest news, edge arrow and Space to look and back (news.point_at; Frostpunk's consequence on the map).
 	bridge.ordered.connect(func(city_id, matter):
-		if not Juice.on():
-			return
 		sound.ui("seal")
 		order_at[0] = Vector3.INF
 		if matter == "" and terrain != null and terrain.width > 0:
@@ -473,24 +471,22 @@ func _ready() -> void:
 					order_at[0] = terrain.world_pos(float(c.get("x", 0)), float(c.get("y", 0)))
 	)
 	bridge.command_done.connect(func(ok, text):
-		if not Juice.on():
-			return
 		if not ok:
 			sound.ui("error")
 		elif order_at[0] != Vector3.INF and String(text) != "":
 			news.point_at(order_at[0], String(text), func(): pass)
 			order_at[1] = Engine.get_process_frames()  # told at the town: no toast as well
 		order_at[0] = Vector3.INF)
-	bridge.sealed.connect(func(): if not Juice.on(): sound.ui("seal"))  # the royal seal pressed into the wax
+	ui.petition_answered.connect(func(_id, _o): sound.ui("seal"))  # a ruling is sealed at the click too
 	ui.event_chosen.connect(func(i):
-		if Juice.on():
-			sound.ui("seal")
+		sound.ui("seal")
 		bridge.event_answer(i, func(ok, text):
-			if not Juice.on() or not ok:
-				sound.ui("seal" if ok else "error")
+			if not ok:
+				sound.ui("error")
 			ui.events.result(ok, text)))
 	ui.event_lapsed.connect(func(): sound.ui("lapse"))  # an event's cost landing: a bell, not to be missed
 	ui.event_came.connect(func(): sound.ui("event"))
+	ui.heard.connect(sound.ui)  # the interface's own sounds (the treasury counting down, a lord answering)
 	bridge.command_done.connect(func(ok, text):
 		if not ok and text == "no such petition":
 			# The court moved on (answered, or gone with an old session): show who
@@ -758,7 +754,7 @@ func _listen() -> void:
 	# settling below a lower one (no flicker between the two).
 	var rg = awareness.rec("reign")
 	var t = rg.get("tension") if rg is Dictionary else null
-	if Juice.on() and t != null:
+	if t != null:
 		_music_dark = float(t) >= Juice.knob("music_tension_above", 0.55) or (_music_dark and float(t) > Juice.knob("music_calm_below", 0.35))
 		dark = dark or _music_dark
 	sound.mood("dead" if int(th.get("north", 0)) > 0 and rig.distance > 60.0 else ("tension" if dark else "calm"))

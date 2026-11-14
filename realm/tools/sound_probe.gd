@@ -33,7 +33,6 @@ func _run() -> void:
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--secs="):
 			secs = float(a.trim_prefix("--secs="))
-	Scape.v2 = true
 	var scape: Node = Scape.new()
 	root.add_child(scape)
 	var v2: Node = scape.sounds_v2

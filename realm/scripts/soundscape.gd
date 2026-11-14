@@ -24,7 +24,7 @@ extends Node
 ##       unit_killed, act (an act of the reign turns: bells). Unknown kinds do nothing. `at` places it in the world.
 ##   mood(kind: String)   calm|court|feast|tension|dead|battle. The realm's
 ##       standing mood; battle/feast/dead events lift it for a while on their own.
-##   ui(kind: String)     click|open|close|page|seal|decree|parchment|quill|error.
+##   ui(kind: String)     sounds.json ui: click|open|close|page|seal|decree|parchment|quill|error|coins|coin|event|lapse.
 ##   footstep(surface: String, at: Vector3)   grass|wood|snow (the lord you control).
 ##   voice_started() / voice_ended()   around each spoken line.
 ##   voice_bus() -> String   "Voice": set the voice player's bus to this.
@@ -118,12 +118,6 @@ const ALIASES := {"succession": "crown", "coronation": "crown", "reign_end": "de
 const LIFT_BED := {"battle": ["battle", 40.0], "siege": ["drums", 45.0], "feast": ["feast", 50.0], "dead": ["dead_north", 90.0]}
 const LIFT_MOOD := {"battle": ["battle", 60.0], "siege": ["battle", 60.0], "feast": ["feast", 90.0], "dead": ["dead", 120.0],
 	"death": ["tension", 40.0], "famine": ["tension", 60.0], "rebellion": ["tension", 60.0], "sack": ["tension", 60.0]}
-const UI_SOUNDS := {"click": ["ui/click.wav", -6.0], "open": ["ui/open.wav", -4.0], "close": ["ui/close.wav", -6.0],
-	"page": ["ui/page.wav", -6.0], "seal": ["ui/seal.wav", 0.0], "decree": ["ui/seal.wav", 0.0],
-	"parchment": ["ui/parchment.wav", -3.0], "quill": ["ui/quill.wav", -4.0], "error": ["ui/error.wav", -8.0],
-	"coins": ["sfx/coins.wav|sfx/coins_1.ogg|sfx/coins_2.ogg", -6.0],  # the treasury pays for a decree
-	"event": ["ui/parchment.wav", -3.0],  # an event card comes before the King
-	"lapse": ["sfx/toll_bell.ogg", -4.0]}  # an event left past its season: its cost lands
 const MAX_STINGERS := 12
 
 var _beds := {}  # name -> {player, level (0..1), target}
@@ -148,24 +142,22 @@ var _lowpass: AudioEffectLowPassFilter
 var _rng := RandomNumberGenerator.new()
 
 
-## The realm's sound, v2 (--sound=v2, or realm/data/sounds.json on): sound_v2.gd's positional sources,
-## calls, birds by season and hour and more event sounds over these beds; the moves' sounds from the
-## table too (clips: each tool's strike measured on its clip).
-static var v2: bool = OS.get_cmdline_user_args().has("--sound=v2") or (bool(preload("res://scripts/data.gd").value("sounds", "on", false)) and not OS.get_cmdline_user_args().has("--sound=v1"))
-var sounds_v2: Node  # sound_v2.gd, with v2 on
-var _clip_sounds := CLIP_SOUNDS.duplicate()  # a move's sounds: the table's (v2) over these
+## The realm's sound table (sound_v2.gd, realm/data/sounds.json): every one-shot the interface plays, the
+## positional sources, calls, birds by season and hour and the events' sounds over these beds; the moves'
+## sounds too (clips: each tool's strike measured on its clip).
+var sounds_v2: Node  # sound_v2.gd
+var _clip_sounds := CLIP_SOUNDS.duplicate()  # a move's sounds: the steps here, the tools' strikes from the table
 
 
 func _ready() -> void:
 	_rng.randomize()
-	if v2:
-		sounds_v2 = load("res://scripts/sound_v2.gd").new()
-		sounds_v2.name = "SoundV2"
-		sounds_v2.scape = self
-		add_child(sounds_v2)
-		for clip in (preload("res://scripts/data.gd").value("sounds", "clips", {}) as Dictionary):
-			var row: Dictionary = preload("res://scripts/data.gd").value("sounds", "clips", {})[clip]
-			_clip_sounds[clip] = ["v2:" + String(row["sound"]), row.get("at", [0.5])]
+	sounds_v2 = load("res://scripts/sound_v2.gd").new()
+	sounds_v2.name = "SoundV2"
+	sounds_v2.scape = self
+	add_child(sounds_v2)
+	for clip in (preload("res://scripts/data.gd").value("sounds", "clips", {}) as Dictionary):
+		var row: Dictionary = preload("res://scripts/data.gd").value("sounds", "clips", {})[clip]
+		_clip_sounds[clip] = [String(row["sound"]), row.get("at", [0.5])]
 	# Every clip anyone plays (people.gd): the work and the walking are heard in time with the move.
 	preload("res://scripts/people.gd").listen(_on_clip)
 	for bus in BUSES:
@@ -265,8 +257,7 @@ func event(kind: String, at := Vector3.INF) -> void:
 		return
 	for s in STINGS.get(kind, []):
 		_sting(s[0], s[1], s[2], at)
-	if sounds_v2:
-		sounds_v2.event(kind, at)
+	sounds_v2.event(kind, at)
 	if LIFT_BED.has(kind):
 		_lift_bed[LIFT_BED[kind][0]] = LIFT_BED[kind][1]
 	if LIFT_MOOD.has(kind):
@@ -278,18 +269,18 @@ func mood(kind: String) -> void:
 		_base_mood = kind
 
 
+## An interface sound, played at once from the table (sounds.json ui: kind -> sound): every click answered
+## within a frame (Into the Breach's instant reply). The same kind fired twice within ui_gap is one sound.
 func ui(kind: String) -> void:
-	if not UI_SOUNDS.has(kind):
+	var name := String((Data.value("sounds", "ui", {}) as Dictionary).get(kind, ""))
+	if name == "":
 		return
 	var now := Time.get_ticks_msec()
-	if now - int(_ui_last.get(kind, 0)) < 80:  # a double fire is one sound
+	if now - int(_ui_last.get(kind, 0)) < int(Data.num("sounds", "ui_gap", 0.08) * 1000.0):
 		return
 	_ui_last[kind] = now
-	var s: AudioStream = takes_of(UI_SOUNDS[kind][0], 1.02)
-	if s:
-		_one_shot(s, "UI", UI_SOUNDS[kind][1], Vector3.INF, 1.0)
-	if sounds_v2:
-		sounds_v2.event("ui_" + kind)  # a decree sealed rings the bell over the realm (sounds.json events)
+	sounds_v2.play(name, Vector3.INF, "ui:" + kind)
+	sounds_v2.event("ui_" + kind)  # a decree sealed rings the bell over the realm (sounds.json events)
 
 
 ## A crowd's steps are a texture, never a drumbeat (Mac: a thud near the feast's fire,
@@ -502,8 +493,6 @@ const CLIP_SOUNDS := {
 	"Walk": ["step", [0.0, 0.5]], "Walking": ["step", [0.0, 0.5]], "Carry_Walk": ["step", [0.0, 0.5]],
 	"Injured_Walk": ["step", [0.0, 0.5]], "SS_Walk": ["step", [0.0, 0.5]], "GS_Walk": ["step", [0.0, 0.5]],
 	"Axe_Walk": ["step", [0.0, 0.5]], "Running": ["step", [0.0, 0.5]], "Carrying": ["step", [0.0, 0.5]],
-	"Hammer_Swing": ["sfx/hammer.wav|sfx/hammer_1.wav|sfx/hammer_2.wav|sfx/hammer_3.wav|sfx/hammer_4.wav", [0.45]],
-	"Axe_Down": ["sfx/chop.wav|sfx/chop_1.ogg|sfx/chop_2.ogg|sfx/chop_3.ogg|sfx/chop_4.ogg|sfx/chop_5.ogg", [0.5]],
 }
 static var HEARD_WITHIN: float = preload("res://scripts/data.gd").num("sounds", "scape.heard_within", 14.0)  # game units from the camera: further, a move makes no sound
 var _clips := {}  # person -> [clip, period, start (s), looping, hits fired, cycle]
@@ -556,14 +545,10 @@ func _tick_clips(delta: float) -> void:
 		while int(c[4]) < hits.size() and f >= float(hits[c[4]]):
 			c[4] = int(c[4]) + 1
 			var at: Vector3 = (person as Node3D).global_position
-			if String(sound[0]).begins_with("v2:"):
-				sounds_v2.play(String(sound[0]).trim_prefix("v2:"), at, "clip:" + String(c[0]))
-			elif sound[0] == "step":
+			if sound[0] == "step":
 				footstep(("stone" if _interior in ["chapel", "great_hall"] else "wood") if _interior != "" else ("snow" if _view["season"] == "winter" else "grass"), at)
 			else:
-				var s: AudioStream = takes_of(sound[0], 1.08)
-				if s:
-					_one_shot(s, "SFX", -12.0, at, 1.0)
+				sounds_v2.play(String(sound[0]), at, "clip:" + String(c[0]))
 
 
 # --- Music -------------------------------------------------------------------

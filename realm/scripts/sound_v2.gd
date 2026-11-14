@@ -1,5 +1,5 @@
 extends Node
-## The realm's sound, v2 (--sound=v2; realm/data/sounds.json): every action heard where it happens,
+## The realm's sound table (realm/data/sounds.json), the one every sound plays from: every action heard where it happens,
 ## close detail and far murmur (Anno 1800's town sound: the camera's zoom changes the mix). Over
 ## soundscape.gd's beds, music and stingers, this adds:
 ##   sources   what stands near the camera and makes a sound of its own, found as it stands (nothing
@@ -109,7 +109,7 @@ func _note(why: String, name: String, dist: float) -> void:
 			print("SOUND2 t=%.1f %s -> %s dist=%s" % [now_s, why, name, "flat" if dist < 0.0 else "%.1f" % dist])
 
 
-## soundscape's event kinds that sound more under v2 (sounds.json events: [sound, delay s]).
+## soundscape's event kinds and the sounds of the table they add (sounds.json events: [sound, delay s]).
 func event(kind: String, at := Vector3.INF) -> void:
 	for e in (Data.value("sounds", "events", {}) as Dictionary).get(kind, []):
 		if float(e[1]) > 0.0 and is_inside_tree():

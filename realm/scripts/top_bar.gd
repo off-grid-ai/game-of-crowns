@@ -10,6 +10,7 @@ const Features := preload("res://scripts/features.gd")
 const T := preload("res://scripts/theme.gd")
 const UI := preload("res://scripts/ui.gd")
 const Juice := preload("res://scripts/juice.gd")
+const Data := preload("res://scripts/data.gd")
 
 var ui: UI  # the interface that owns this bar: its signals, its building blocks, its other cards
 
@@ -666,12 +667,19 @@ func _show_world(c: Dictionary) -> void:
 	var net := int(c.get("perSeason", 0)) * UI.CROWNS
 	var sum := int(c.get("treasury", 0)) * UI.CROWNS
 	# Juice (juice.json; Kingdom Two Crowns' coins): a spend is counted down, coin by coin, not swapped.
-	if Juice.on() and _gold_shown >= 0 and sum != _gold_shown and sum != _gold_to:
+	if _gold_shown >= 0 and sum != _gold_shown and sum != _gold_to:
 		_gold_to = sum
 		if _gold_tw:
 			_gold_tw.kill()
 		_gold_tw = ui.create_tween()
-		_gold_tw.tween_method(func(v: float): _gold_shown = roundi(v); _gold.text = _gold_line(_gold_shown, _gold_net),
+		var tick := [0]  # when the last coin was heard (ms): one every coin_every while it counts
+		_gold_tw.tween_method(func(v: float):
+			_gold_shown = roundi(v)
+			_gold.text = _gold_line(_gold_shown, _gold_net)
+			var now := Time.get_ticks_msec()
+			if now - int(tick[0]) >= int(Data.num("sounds", "coin_every", 0.06) * 1000.0):
+				tick[0] = now
+				ui.heard.emit("coin"),
 			float(_gold_shown), float(sum), Juice.knob("coins_seconds", 0.8)).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	elif not (_gold_tw and _gold_tw.is_running()):
 		_gold_shown = sum
@@ -777,10 +785,10 @@ func _show_seals(sl) -> void:
 	if _seals_n >= 0 and n < _seals_n:
 		_seals.modulate.a = 0.35
 		ui.create_tween().tween_property(_seals, "modulate:a", 1.0, 0.5)
-		if Juice.on():  # the seal pressed: the pips swell and settle (juice.json seal_punch)
-			_seals.pivot_offset = _seals.size / 2.0
-			_seals.scale = Vector2.ONE * Juice.knob("seal_punch", 1.6)
-			ui.create_tween().tween_property(_seals, "scale", Vector2.ONE, 0.35).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		# The seal pressed: the pips swell and settle (juice.json seal_punch).
+		_seals.pivot_offset = _seals.size / 2.0
+		_seals.scale = Vector2.ONE * Juice.knob("seal_punch", 1.6)
+		ui.create_tween().tween_property(_seals, "scale", Vector2.ONE, 0.35).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	_seals_n = n
 
 
