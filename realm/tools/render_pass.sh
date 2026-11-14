@@ -30,6 +30,8 @@
 #   cavalry  a house-coloured host in line, close (03-army; READY 4, the Meshy army set)
 #   battle   two hosts meet, then the rout runs along the line (03-army; READY 5)
 #   siege    the siege taken: breach, storm, the town changing hands (04-siege; READY 6, 7)
+#   court    the court's card over Kingsmere's square, answered, and its ruling in the town (05-court)
+#   inn      the first roadside inn out from the seat, close and drawn back (06-inn)
 #   sack     Kingsmere sacked: burning, then its burnt shells smouldering in the burnt ring (04-siege's town)
 #   command  a host in open ground clicked by its standard, then Besiege (03-army for the field; READY 8)
 #   face     the same host given a line by a right drag (its own reign: one order a season a host; READY 8)
@@ -53,7 +55,7 @@ STAMP=$(date +%H%M)
 OUT=${OUT:-/tmp/goc-pass/$STAMP}
 PORT=${PORT:-8789}; FC=${FC:-5558}
 API=localhost:$PORT
-ONLY=${ONLY:-"town landuse realm midzoom muster cavalry battle siege command face walls breach seasons winter host5 castle street cities sack crossing raid"}
+ONLY=${ONLY:-"town landuse realm midzoom muster cavalry battle siege command face walls breach seasons winter host5 castle street cities court inn sack crossing raid"}
 # The pass runs from its own copy of this script: zsh reads a script as it runs, so a commit to it mid-pass broke the
 # first full pass (2159: 'parse error near fi' at line 229, ten lines added above it at 22:00 while it ran).
 if [ -z "${RENDER_PASS_SELF:-}" ]; then
@@ -317,6 +319,25 @@ print(name(sea), name(small[0]), name(hill))" 2>/dev/null)
       side city_$1 $OUT/frames/city_$1/$1.png $TARGETS/01-town.jpg "a $1 town at the town view: $2"
     done
   fi
+fi
+# The court (05-court: a ruling's card, then its result playing out in the town): the court sat now (POST /test/court
+# sit), the card framed over Kingsmere's square, answered, and the town 12 s later. Before the sack: the seat whole.
+if want court; then
+  curl -s -m 20 -o /dev/null -X POST -H 'X-Test: 1' $API/test/court -d '{"sit":true}'
+  { print "wait 30"; print "home Kingsmere"; print "wait 6"; print "home Kingsmere"; print "wait 3"; print "snap card ui"
+    print "answer"; print "wait 12"; print "snap ruled ui"; print "look end"; } > $OUT/court.play
+  shot court 1500 film $SW
+  side court $OUT/frames/court/card.png $TARGETS/05-court.jpg "the court's card over the square: $(grep -h 'answered:' $OUT/frames/court/play.log 2>/dev/null | head -1)"
+  side court_ruled $OUT/frames/court/ruled.png $TARGETS/05-court.jpg "the ruling playing out in the town"
+fi
+# The inn on the great road (06-inn: an inn, horses, soldiers at tables, a merchant, a shrine and a milestone): the
+# roadside's first inn out from the seat (autoplay site, roadside.gd), framed low and close, then drawn back.
+if want inn; then
+  { print "wait 30"; print "site inn 0 3 -20"; print "wait 6"; print "site inn 0 3 -20"; print "wait 3"; print "snap inn"
+    print "site inn 0 6 -10"; print "wait 6"; print "snap inn_road"; print "look end"; } > $OUT/inn.play
+  shot inn 1500 film $SW
+  side inn $OUT/frames/inn/inn.png $TARGETS/06-inn.jpg "the first inn on the road: $(grep -h 'site inn' $OUT/frames/inn/play.log 2>/dev/null | sed -n 2p)"
+  side inn_road $OUT/frames/inn/inn_road.png $TARGETS/06-inn.jpg "the inn and its stretch of road"
 fi
 # A sacked town (Look, PLAN.md section 4; 04-siege's town beyond the breach): Kingsmere's burnt ring and its burnt share
 # staged in the bridge (POST /test/mark sack, /test/stage damage burnt 0.4, as a sack leaves them: damage.json
