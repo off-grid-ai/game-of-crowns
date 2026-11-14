@@ -76,6 +76,8 @@ function holds(ctx, when = {}) {
   if (when.rival && !Rivals.holds(meta, when.rival)) return false;
   if (when.contagion && !Contagion.abroad(meta)) return false;
   if (when.spread != null && Contagion.abroad(meta) < when.spread) return false;
+  // A beat hung on the King's own nature (casebook, A running joke the system can make; CK2's absurd trait events).
+  if (when.kingTrait && !(meta.royals?.king?.traits ?? []).some((t) => [].concat(when.kingTrait).includes(t))) return false;
   if (when.threat && !(meta.director?.threat && (when.threat === true || meta.director.threat.kind === when.threat))) return false;
   return true;
 }
