@@ -594,3 +594,4 @@ Switches (`--name`) go after `--` on the game's command line.
 - Foot soldiers wear the house colour on the tabard only, hood and hose plain brown (g37 muster): `realm/data/army.json` `units.spearmen/men_at_arms/archers/knights.cloth` (undyed [0.42, 0.34, 0.25]; band [0.42, 0.8] of the height).
 - The muster's lens low and along the column (g37; 03-army): `realm/data/army.json` `camera.musterPitch` 28 degrees, `musterHold` 0.4 of the column's length (was 0.75), `musterOff` 0.35 rad off its line (was 0.5).
 - A lord's loyalty in words on his sheet: `realm/data/royal_sheet.json` `lord_loyalty` (bands by above, 0..100) and `lord_loyalty_danger` (30: red below).
+- Event cards that have come before come less often: `bridge/data/events.json` `settings.fade` (1: weight / (1 + fade x times drawn this reign)).

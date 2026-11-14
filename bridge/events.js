@@ -116,7 +116,9 @@ function draw(ctx, e, turn, resting) {
     const sub = subject(ctx, c.subject ?? "realm");
     if (!sub) continue;
     if (c.deck === "rival") Object.assign(sub, Rivals.words(ctx.meta));
-    let w = c.weight ?? 1;
+    // A card drawn often comes less often (casebook, The event that repeats: a cooldown is not enough; Reigns, CK3):
+    // its weight falls by settings.fade for each time it has come this reign.
+    let w = (c.weight ?? 1) / (1 + (S.fade ?? 0) * (e.fired?.[c.id] ?? 0));
     if (!resting && S.boost[c.deck]) w *= S.boost[c.deck];
     if (Royals.focusDecks(ctx.meta).includes(c.deck)) w *= Royals.FOCUS_BOOST;  // the King's focus draws its matters (royals.js)
     bag.push([c, sub, w]);
@@ -127,6 +129,7 @@ function draw(ctx, e, turn, resting) {
   let roll = Math.random() * bag.reduce((s, [, , w]) => s + w, 0);
   const [card, sub] = bag.find(([, , w]) => (roll -= w) < 0) ?? bag[0];
   e.rested[card.id] = turn;
+  (e.fired ??= {})[card.id] = (e.fired[card.id] ?? 0) + 1;
   e.decks = [...e.decks, card.deck].slice(-8);
   // One matter at a time, from its town (CK3's event with its deadline, Crusader Kings' rider on the map): a rider
   // brings it from the town to the King's seat, settings.rider.speed tiles a season (none from the seat itself, or a
