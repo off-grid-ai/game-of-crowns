@@ -449,6 +449,13 @@ func wear_to(section: int, wear: float, animate := false) -> void:
 	for i in left:
 		_loosen(i, Vector3.ZERO, false)
 	_support(false)
+	# Stone that falls raises dust, blow or none (04-siege: dust at the breach; g15: a breach the town's wear opened at
+	# once came down in silence): a burst at the gap and, as it settles, a bigger one at its foot.
+	if not left.is_empty() and is_inside_tree():
+		var s := (section + 0.5) * _length / sections
+		dust(section_point(section), 1.2)
+		var foot := _world_at(s, 0.0, _ground_at(s))
+		get_tree().create_timer(0.6).timeout.connect(func(): if is_inside_tree(): dust(foot, 1.8))
 	opened.emit()
 
 

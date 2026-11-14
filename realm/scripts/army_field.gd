@@ -935,6 +935,7 @@ func _storm_tick(delta: float) -> void:
 		_waves(st, delta)
 		_hold_line(st)
 	else:
+		_fire_arrows(delta)  # the archers keep loosing over the wall while the storm goes in (04-siege: the town burns behind the breach)
 		_pour_in(st)
 	_fly()
 	_keep_up()
@@ -1045,7 +1046,9 @@ func _fire_arrows(dt: float) -> void:
 		return
 	var from: Vector3 = (rows[_rng.randi() % rows.size()]["node"] as Node3D).global_position + Vector3(0, 0.2, 0)
 	var spread := k("arrows.spread", 1.4)
-	var to: Vector3 = ai.town_at + Vector3(_rng.randf_range(-spread, spread), 0, _rng.randf_range(-spread, spread))
+	var to: Vector3 = Fire.target(ai.town_at, spread, _rng)  # on a roof within reach of the wall
+	if to == Vector3.INF:
+		to = ai.town_at + Vector3(_rng.randf_range(-spread, spread), 0, _rng.randf_range(-spread, spread))
 	to.y = main.terrain.height_at(to.x, to.z) + 0.2
 	var flame := Node3D.new()
 	add_child(flame)

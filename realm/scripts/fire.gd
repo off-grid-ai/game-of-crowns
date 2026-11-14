@@ -99,6 +99,24 @@ func _kindle(at: Vector3, reach: float) -> bool:
 	return false
 
 
+## Where a fire arrow loosed at a town aims: one of its houses within `spread` of `near` (world), picked by `rng`, so
+## the arrows fall on roofs, not on the square (g15 siege: arrows at random points round the town's heart, a house
+## within kindle's reach of few of them, and nothing burned). INF when no house stands there.
+static func target(near: Vector3, spread: float, rng: RandomNumberGenerator) -> Vector3:
+	if live == null or live.main == null or live.main.towns == null:
+		return Vector3.INF
+	var picks: Array[Vector3] = []
+	for id in live.main.towns.towns:
+		var root: Node3D = live.main.towns.towns[id].get("node")
+		if root == null or not is_instance_valid(root):
+			continue
+		for h in root.get_meta("homes", []):
+			var p := root.to_global(_home_at(h))
+			if Vector2(p.x - near.x, p.z - near.z).length() < spread:
+				picks.append(p)
+	return picks[rng.randi() % picks.size()] if not picks.is_empty() else Vector3.INF
+
+
 ## A yard fire's flames (towns.gd _hearth keeps its light and smoke): the same flames, small.
 static func hearth(root: Node3D, pos: Vector3) -> void:
 	var k: Dictionary = knobs().get("hearth", {})
