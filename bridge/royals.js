@@ -142,7 +142,8 @@ export function year(ctx, turn) {
     h.children.push(k);
     ctx.record({ turn, kind: "birth", text: `${h.king.woman ? `Queen ${h.king.name}` : "The Queen"} is delivered of a ${k.woman ? "daughter" : "son"}, ${k.name}. The bells ring in Kingsmere.` });
   }
-  const risk = (R.death.find(([from]) => h.king.age >= from) ?? [0, 0])[1];
+  h.king.stress = Math.max(0, (h.king.stress ?? 0) - R.stress.ease);
+  const risk = (R.death.find(([from]) => h.king.age >= from) ?? [0, 0])[1] + Math.max(0, (h.king.stress ?? 0) - R.stress.high) * R.stress.risk;
   if (r() < risk) { h.king.alive = false; pass(ctx, h, "died", turn); }
 }
 
@@ -165,11 +166,24 @@ export const MATCH = R.match;
 export const REGENCY = { rising: R.minor.rising ?? 0, claim: R.minor.claim ?? 0 };
 export const isRegency = (h) => Boolean(h?.king && h.king.age < R.majority);
 
+// A ruling at court (court.js answer): against the King's own nature it weighs on him (data/royals.json stress; CK3's
+// stress). Over high, the chronicle says it once, and each point over makes his yearly death likelier (year).
+export function ruled(ctx, kind, option) {
+  const h = ctx.meta.royals;
+  if (!h?.king) return;
+  const k = h.king, S = R.stress;
+  const against = (k.traits ?? []).filter((t) => (S.against[t] ?? []).includes(`${kind}.${option}`));
+  if (!against.length) return;
+  const was = k.stress ?? 0;
+  k.stress = was + S.per * against.length;
+  if (was <= S.high && k.stress > S.high) ctx.record({ turn: ctx.world?.turn ?? 0, kind: "court", text: `${k.woman ? "Queen" : "King"} ${k.name} sleeps badly. A ${against[0]} soul made to rule against itself, season after season; the physicians shake their heads.` });
+}
+
 // For /world: the King, his consort, his heir and the rest of his children, and the Kings before him.
 export function view(meta) {
   const h = meta?.royals;
   if (!h) return null;
-  const who = (p) => p && { id: p.id, name: p.name, age: p.age, woman: p.woman, traits: p.traits ?? [] };
+  const who = (p) => p && { id: p.id, name: p.name, age: p.age, woman: p.woman, traits: p.traits ?? [], ...(p === h.king ? { stress: p.stress ?? 0 } : {}) };
   const next = heir(h);
   return {
     king: who(h.king), consort: h.consort?.alive ? who(h.consort) : null, heir: who(next), match: next?.spouse ? { name: next.spouse.name, house: next.spouse.house } : null,
