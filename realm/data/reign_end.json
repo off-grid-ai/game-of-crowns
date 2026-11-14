@@ -9,5 +9,19 @@
   "rulings": "His weightiest rulings"
  },
  "pause": { "_": "The pause menu Esc opens in play (title.gd show_pause): its head and the words on its own buttons.",
-  "title": "The realm waits", "resume": "Back to the realm", "to_title": "To the title", "leave": "Leave the realm" }
+  "title": "The realm waits", "resume": "Back to the realm", "to_title": "To the title", "leave": "Leave the realm" },
+ "loading": { "_": "The loading card while a chronicle is laid out (title.gd _loading_card): line under the heading; tip_head over the Hand's counsel; tips, one shown at a time, a new one every tip_seconds.",
+  "line": "The land is laid out and the great houses take their seats.",
+  "tip_head": "The Hand's counsel",
+  "tip_seconds": 7.0,
+  "tips": [
+   "Every house remembers how you ruled on its petition. Kindness is remembered too, but not as long.",
+   "A seal spent on one need is a seal not spent on another. Choose what you can live without.",
+   "A town that goes hungry blames its lord first, and its King soon after.",
+   "A host in the field eats as it marches. Bring it home before the winter does.",
+   "A lord who is slighted at court may bow today and bring his banners against you tomorrow.",
+   "The tithe is set once a year. The houses feel it every season.",
+   "A grudge outlives the King who earned it.",
+   "Walls hold a town; bread holds its people. A siege is won by whichever runs out last."
+  ] }
 }

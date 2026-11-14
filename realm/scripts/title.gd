@@ -1459,11 +1459,11 @@ var _waiting_for := ""
 ## (its reign id arrives in a world update), not for a guess at how long it takes.
 func _wait_for(id: String, text: String) -> void:
 	_clear()
-	_heading(text)
 	_waiting_for = id
 	if id == "":
+		_heading(text)
 		return
-	_body.add_child(_label("The land is being laid out and the houses are taking their seats.", 15, MUTED))
+	_loading_card(text)
 	if not store.synced.is_connected(_arrived):
 		store.synced.connect(_arrived)
 	# If the realm never reports, don't strand the player here.
@@ -1475,6 +1475,68 @@ func _wait_for(id: String, text: String) -> void:
 ## The store has a new /world: is it the realm we're waiting for?
 func _arrived() -> void:
 	_arrive(String((store.rec("reign", {}) as Dictionary).get("id", "")))
+
+
+## The loading card (Total War's and Age of Empires' loading painting): the herald riding out with the realm
+## beyond, the words on its quiet left third, a line of the Hand's counsel that changes while it waits.
+## Words: realm/data/reign_end.json loading.
+var _loading: Control
+
+
+func _loading_card(text: String) -> void:
+	var w: Dictionary = Data.value("reign_end", "loading", {})
+	var T := preload("res://scripts/theme.gd")
+	_loading = Control.new()
+	_loading.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_root.add_child(_loading)
+	var art := TextureRect.new()
+	art.texture = load("res://assets/ui/loading.png")
+	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	art.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_loading.add_child(art)
+	# Dark from the left, where the words sit.
+	var shade := TextureRect.new()
+	var g := Gradient.new()
+	g.set_color(0, Color(0.06, 0.05, 0.04, 0.82))
+	g.set_color(1, Color(0.06, 0.05, 0.04, 0.0))
+	var gt := GradientTexture2D.new()
+	gt.gradient = g
+	gt.fill_from = Vector2(0, 0)
+	gt.fill_to = Vector2(0.55, 0)
+	shade.texture = gt
+	shade.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_loading.add_child(shade)
+	var col := VBoxContainer.new()
+	col.anchor_top = 0.5
+	col.anchor_bottom = 0.5
+	col.offset_left = 72
+	col.offset_right = 72 + 520
+	col.grow_vertical = Control.GROW_DIRECTION_BOTH
+	col.add_theme_constant_override("separation", 14)
+	_loading.add_child(col)
+	var head := T.title(text, 34, Color(1, 0.93, 0.78))
+	head.autowrap_mode = TextServer.AUTOWRAP_WORD
+	col.add_child(head)
+	col.add_child(_label(String(w.get("line", "")), 16, PARCHMENT))
+	var gap := Control.new()
+	gap.custom_minimum_size.y = 18
+	col.add_child(gap)
+	var tips: Array = w.get("tips", [])
+	if tips.is_empty():
+		return
+	col.add_child(_label(String(w.get("tip_head", "")), 13, GOLD))
+	var tip := _label(String(tips[randi() % tips.size()]), 17, PARCHMENT)
+	tip.add_theme_font_override("font", T.speech)
+	col.add_child(tip)
+	# A new line of counsel every few seconds while the realm is laid out.
+	var turn := func(): tip.text = String(tips[randi() % tips.size()])
+	var timer := Timer.new()
+	timer.wait_time = float(w.get("tip_seconds", 7.0))
+	timer.timeout.connect(turn)
+	_loading.add_child(timer)
+	timer.start()
 
 
 func _arrive(rid: String) -> void:
@@ -1526,6 +1588,9 @@ func _save_button(reign: Dictionary) -> void:
 
 func _close() -> void:
 	visible = false
+	if _loading:
+		_loading.queue_free()
+		_loading = null
 	_in_game = false
 	_trail.clear()
 	_here = Callable()
@@ -1533,6 +1598,9 @@ func _close() -> void:
 
 
 func _clear() -> void:
+	if _loading:
+		_loading.queue_free()
+		_loading = null
 	# The full logo belongs on the main menu; forms need the room.
 	if _logo:
 		_logo.visible = false

@@ -104,9 +104,7 @@ Background: TRUE FULLY TRANSPARENT PNG WITH ALPHA. Nothing behind or around the 
 Negative prompt: cartoon, toy, glossy, jewels, gems, rubies, multiple crowns, pile of crowns, raven, bird, lions, shield, chunky letters, bubbly letters, heavy outline, bevel, 3D extrusion, drop shadow, glow, fire, sparks, fantasy game logo, mobile game logo, clip art, misspelled text, extra text, watermark, signature, border.
 
 
-- `title-background.png` (the menu background, city on the right): created with OpenAI `image_gen.imagegen` (built-in tool); model: the tool did not report its model name or ID; date: 2026-11-04.
-
-The PNG is 3840 × 2160 (16:9). The tool returned 1672 × 941 images. It was resized with macOS `sips` for delivery.
+- `title-background.png` (the menu background: the capital by its lake at golden hour, in the art target's look) and `loading.png` (the loading card: a herald riding out of the castle gate with the host behind him): created 2026-11-14 with the Codex CLI's built-in image generation, from docs/art/target/style-prompt.txt plus a scene line each (title: the capital and castle with crimson banners on a hill by a calm lake, roads, fields, snowy mountains, quiet sky and water for the logo and menu; loading: a herald with a crimson banner rides out of a castle gate at dawn toward the realm, a crimson column behind, the left third quiet for words). Both PNG, 1920 × 1080. They replace the 2026-11-04 realistic vista, so the menu, intro backdrop and Lore plate match the art target.
 
 ## Prompt record
 
