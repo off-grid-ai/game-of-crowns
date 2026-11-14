@@ -342,17 +342,17 @@ fi
 if want raid; then
   # Wealth draws the raid: men without banners fall on the crown's richest town (bridge routes_test.js {raid}, the town a
   # lord's hired raid picks: realm.js richestTown), pillage round it for the raid's seasons, then walk off to wild land
-  # (realmrules/script.lua realm_raids_turn, fc9a094c). Raiders are units no house owns (Freeciv's barbarians: /world's
-  # players leave them out) that weren't there before the stage. Every wait is bounded and reads /world (the realm runs
+  # (realmrules/script.lua realm_raids_turn, fc9a094c). Raiders are units of a wild player (Freeciv's barbarians: /world
+  # players[].house.wild; g22 read them as 'no player's' and found none by Saltkeep, where six stood) new since the stage. Every wait is bounded and reads /world (the realm runs
   # only while a window watches it), closing the court and an interlude as the crossing's wait does.
   raider() {  # raider <x> <y> <near|out> <from season>: "id x y" of the raider nearest the town, or of the farthest one
     # 4+ tiles out once the raid's seasons are over; '' when none
     curl -s -m 10 "$API/world" | perl -e 'alarm shift; exec @ARGV' 20 python3 -I -c "
 import json,sys; d=json.load(sys.stdin)
-houses={p['id'] for p in d.get('players',[])}
+wild={p['id'] for p in d.get('players',[]) if (p.get('house') or {}).get('wild')}
 old={int(x) for x in open('$OUT/raid.before').read().split()}
 x,y=$1,$2
-us=[u for u in d.get('units',[]) if u.get('owner') not in houses and u['id'] not in old]
+us=[u for u in d.get('units',[]) if u.get('owner') in wild and u['id'] not in old]
 far=lambda u: max(abs(u['x']-x),abs(u['y']-y))
 if '$3'=='near':
     us=[u for u in us if far(u)<=3]; u=min(us,key=far) if us else None
