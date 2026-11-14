@@ -292,7 +292,7 @@ func _smoke(node: Node3D, at: Vector3) -> void:
 	node.add_child(gpu)
 
 
-## The inn's name over its door, read only close by (roads.gd's inns wear the same).
+## The inn's name over its door, read only close by: the realm's one wayside-inn sign (roads.gd builds none).
 func _sign(node: Node3D, s: Dictionary, k: Dictionary, rng: RandomNumberGenerator) -> void:
 	var names: Array = k.get("names", [])
 	if names.is_empty():

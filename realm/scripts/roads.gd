@@ -103,7 +103,7 @@ func kings_road() -> void:
 		var route: PackedVector3Array = terrain.paths.land_path(from, terrain.world_pos(float(c["x"]), float(c["y"])))
 		for i in route.size() - 1:
 			_segment(route[i], route[i + 1], _kings, WIDTH * 2.2, "kings")
-		_roadside(route, cities)
+		_roadside(route)
 	# Lords' roads: every town to the seat of the house that holds it.
 	clear_tracks("lords")
 	for c in cities:
@@ -122,11 +122,10 @@ var _verges: Array = []
 const Real = preload("res://scripts/realistic.gd")
 
 
-func _roadside(route: PackedVector3Array, cities: Array) -> void:
+func _roadside(route: PackedVector3Array) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = int(route[0].x * 31.0 + route[route.size() - 1].z * 17.0)
 	var walked := 0.0
-	var since_inn := 6.0
 	for i in route.size() - 1:
 		var a: Vector3 = route[i]
 		var b: Vector3 = route[i + 1]
@@ -146,57 +145,13 @@ func _roadside(route: PackedVector3Array, cities: Array) -> void:
 						_verges.append(q)
 			t += 0.3
 		walked += len
-		since_inn += len
-		# An inn wherever the road has run long enough from a town and from the last inn.
-		if since_inn > 14.0 and _far_from_towns(b, cities, 7.0):
-			since_inn = 0.0
-			_inn(b + side * 0.9, dir, rng)
-		elif rng.randf() < 0.08:
+		# The wayside inns are roadside.gd's (data/roadside.json): one owner, one sign each.
+		if rng.randf() < 0.08:
 			_waystone(p_side(b, side, 0.38), rng)
 
 
 func p_side(p: Vector3, side: Vector3, d: float) -> Vector3:
 	return p + side * d
-
-
-func _far_from_towns(p: Vector3, cities: Array, d: float) -> bool:
-	for c in cities:
-		var cp: Vector3 = terrain.world_pos(float(c["x"]), float(c["y"]))
-		if Vector2(cp.x - p.x, cp.z - p.z).length() < d:
-			return false
-	return true
-
-
-func _inn(at: Vector3, road: Vector3, rng: RandomNumberGenerator) -> void:
-	if not terrain.is_land(at.x, at.z):
-		return
-	var yaw := atan2(-road.z, road.x)  # the front door faces the road
-	var parts := [[Real.one("tavern"), Vector3.ZERO, 0.0], [Real.one("barn"), Vector3(1.4, 0, 0.3), PI / 2],
-		[Real.one("cart"), Vector3(0.2, 0, -0.9), 0.4], [Real.one("haystack"), Vector3(1.3, 0, -0.8), 0.0],
-		[Real.one("fence"), Vector3(-1.0, 0, 0.6), PI / 2]]  # by component (realm/data/assets.json)
-	var b := Basis(Vector3.UP, yaw)
-	for part in parts:
-		var n: Node3D = Real.make(part[0])
-		if n == null:
-			continue
-		var q: Vector3 = at + b * part[1]
-		if not terrain.is_land(q.x, q.z):
-			continue
-		n.position = Vector3(q.x, terrain.height_at(q.x, q.z) - 0.02, q.z)
-		n.rotation.y = yaw + part[2]
-		_kings.add_child(n)
-	var sign := Label3D.new()
-	sign.visibility_range_begin = 1.6  # gone when you're walking right past it
-	sign.text = ["The Crossed Keys", "The Drowned Stag", "The King's Rest", "The Broken Wheel", "The Black Ewe", "The Wayfarer", "The Last Lantern"][rng.randi() % 7]
-	sign.font_size = 34
-	sign.pixel_size = 0.003
-	sign.outline_size = 8
-	sign.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	sign.modulate = Color(0.95, 0.85, 0.6)
-	sign.position = Vector3(at.x, terrain.height_at(at.x, at.z) + 1.1, at.z)
-	sign.visibility_range_end = 14.0
-	_kings.add_child(sign)
-	preload("res://scripts/camera_rig.gd").sign_over(sign, _kings)  # clarity: over its roofs, hidden behind others
 
 
 ## A milestone of grey stone by the verge.
