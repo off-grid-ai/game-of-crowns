@@ -522,7 +522,9 @@ const REALM_WASH := """
 			for (int j = 0; j < 4; j++) sc += abs(o[i].a - o[j].a) < 0.001 ? w[j] : 0.0;
 			if (sc > lead) { lead = sc; best = i; }
 		}
-		for (int i = 0; i < 4; i++) if (abs(o[i].a - o[best].a) > 0.001) other = i;
+		// A border only between two holders: water and unheld ground (alpha 0) never make one, so no line is drawn
+		// along a shore (g38: a house's line round the lake inside its land; 02-realm: borders run on land only).
+		for (int i = 0; i < 4; i++) if (abs(o[i].a - o[best].a) > 0.001 && o[i].a > 0.0 && o[best].a > 0.0) other = i;
 		vec4 own = o[best];
 		// The house's colour at full value, saturated toward its pure hue (look.json politics.border_bright): the border line
 		// and, on the political map, the wash inside it (g9: the pastel colours washed the land tan and the edge pink).
