@@ -2059,6 +2059,7 @@ static func detail(g: GeometryInstance3D, end := DETAIL_END) -> void:
 	g.visibility_range_end = end
 	g.visibility_range_end_margin = end * 0.1
 	g.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
+	g.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF  # a small thing's shadow is a smudge that cost a draw in every split (fps)
 
 
 ## Whether a kit model is a town's small detail, not one of its buildings (towns.json detail_kinds, the catalogue's

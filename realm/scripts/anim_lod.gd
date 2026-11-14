@@ -19,6 +19,10 @@ const PerfTools := preload("res://scripts/perf_tools.gd")  # the frame-cost prob
 ## MIND_BUDGET_MS caps their cost). Walking is the mover's, every frame, on screen.
 
 static var NEAR: float = preload("res://scripts/data.gd").num("people", "lod.near", 6.0)  # world units: closer than this, every frame (people.json lod.near)
+## Only a body this near the lens casts a shadow (people.json lod.shadow_near): past it a person is a few dozen pixels,
+## their shadow a smudge that still cost every shadow split a skinned draw (supervisor, fps: people and town props
+## casting shadows). Switched only when it changes (_shading), so a crowd costs no calls standing still.
+static var SHADOW_NEAR: float = preload("res://scripts/data.gd").num("people", "lod.shadow_near", 6.0)
 static var STRIDE: int = int(preload("res://scripts/data.gd").num("people", "lod.stride", 3))  # further off, one frame in this many (people.json lod.stride)
 static var DECIDE_S: float = preload("res://scripts/data.gd").num("people", "lod.decide_s", 30.0)  # game seconds between a person's decisions (people.json lod.decide_s)
 ## Milliseconds of a frame the minds may take (people.json lod.mind_budget_ms): minds due past it wait for the next
@@ -63,6 +67,7 @@ static func add_mind(mind: BTPlayer) -> bool:
 	return true
 
 
+var _shading := {}  # player instance id -> [casting now, the body's meshes]
 var _owed := {}  # player instance id -> time it hasn't been given yet
 var _mind_owed := {}  # mind instance id -> time it hasn't been given yet; a new mind starts on its own phase of DECIDE_S
 
@@ -148,6 +153,7 @@ func _animate(delta: float, vp: Viewport, cam: Camera3D) -> void:
 		if n == 0:
 			_owed.erase(id)
 			continue
+		_shade(id, body, body.global_position.distance_to(cam.global_position) < SHADOW_NEAR)
 		if PerfTools.probing and n != 1:
 			PerfTools.seen_clip(People.clip(body))  # the ring's clips, counted for the VAT bake's list (perf.log)
 		var owed: float = _owed.get(id, 0.0) + delta
@@ -157,6 +163,28 @@ func _animate(delta: float, vp: Viewport, cam: Camera3D) -> void:
 		else:
 			_owed[id] = owed
 	_players = keep
+	if _shading.size() > _players.size():  # the gone are dropped
+		var live := {}
+		for w in _players:
+			live[(w.get_ref() as Object).get_instance_id()] = true
+		for id in _shading.keys():
+			if not live.has(id):
+				_shading.erase(id)
+
+
+## A body casts a shadow near the lens and none past SHADOW_NEAR; its meshes are found once.
+func _shade(id: int, body: Node3D, near: bool) -> void:
+	var was: Array = _shading.get(id, [])
+	if was.is_empty():
+		was = [null, body.find_children("*", "GeometryInstance3D", true, false)]
+		_shading[id] = was
+	if was[0] == near:
+		return
+	was[0] = near
+	var cast := GeometryInstance3D.SHADOW_CASTING_SETTING_ON if near else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	for g in was[1]:
+		if is_instance_valid(g):
+			(g as GeometryInstance3D).cast_shadow = cast
 
 
 ## Something happened to this person (a stimulus near them, a call to meet: awareness.gd): they decide next frame,
