@@ -405,6 +405,17 @@ static func built_scale(name: String) -> float:
 	return _built_scale(name) if BUILT.has(name) and KIT.has(name) else 1.0
 
 
+## Every model file the catalogue names starts loading on Godot's own background loader (ResourceLoader's threaded
+## loading) as the realm boots, so the first town to stand one finds it read and doesn't wait on the disk mid-build
+## (FPS: fps1.log, the first plaza 1.8 s, the first landmark 4.1 s, later ones tens of ms). A model asked for
+## before its load is done waits for that load, never reads it twice.
+static func warm() -> void:
+	for n in _model:
+		var path := String(_model[n])
+		if ResourceLoader.exists(path) and not ResourceLoader.has_cached(path):
+			ResourceLoader.load_threaded_request(path)
+
+
 static func _path(name: String) -> String:
 	return String(_model.get(name, ""))
 

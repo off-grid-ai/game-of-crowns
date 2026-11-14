@@ -39,6 +39,7 @@ var _selected := -1
 var _time_of_day := 0.36
 const Awareness := preload("res://scripts/awareness.gd")  # the realm's rules as the bridge sends them (season length, bands)
 const Ground := preload("res://scripts/ground.gd")  # the one answer to where a body may stand
+const Real := preload("res://scripts/realistic.gd")  # the world's models (warm: read ahead on worker threads)
 const Data := preload("res://scripts/data.gd")  # the view's tunables (realm/data/*.json)
 const ShotHarness := preload("res://scripts/shot_harness.gd")
 var shots := ShotHarness.new(self)  # the test-and-film harness (shot_harness.gd): the flags and the shots
@@ -159,6 +160,7 @@ func _ready() -> void:
 	add_child(towns)
 	Ground.towns = towns  # the one answer to where a body may stand
 	Ground.terrain = terrain
+	Real.warm()  # the towns' models read on worker threads while the land forms
 	ruins = preload("res://scripts/ruins.gd").new()  # what war leaves on the land
 	ruins.terrain = terrain
 	add_child(ruins)
