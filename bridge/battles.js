@@ -3,7 +3,7 @@
 // beside that tile were the beaten side, and the nearest other house with men beside it the victors. Many
 // companies killed on one tile in one season are one battle: their scene is kept and its fallen counted up.
 // The view stages it (scenes.gd: a field battle sized from these men, ending as Freeciv decided).
-import { HOSTS, menOf } from "./hosts.js";
+import { HOSTS, menOf, homeward } from "./hosts.js";
 import { CIVILIAN } from "./campaigns.js";
 import { houseName } from "./realm.js";
 import { cityName } from "./narrator.js";
@@ -102,6 +102,7 @@ export function season(ctx, turn) {
     for (const s of c.sides) {
       if (s.house === c.victor) continue;
       s.fled = Math.max(0, s.men - s.lost);
+      panic(ctx, c, s, turn);
       if (!F || s.lost < F.minLost) continue;
       const lord = court?.lordOfHouse?.(s.house);
       if (!lord?.alive) continue;
@@ -126,6 +127,20 @@ export function season(ctx, turn) {
       if (fate !== "slain") court.save?.(lord);
     }
   }
+}
+
+// Panic spreads (casebook, War: morale is contagious; Total War's routs that carry the line): a side that lost
+// battles.panic.share of its men or more on a field, its other companies in the open within panic.radius break, each
+// with panic.chance, and go home (hosts.js homeward: walked to their seat and disbanded into its work). Said once.
+function panic(ctx, c, s, turn) {
+  const P = HOSTS.battles?.panic;
+  if (!P || s.lost / Math.max(1, s.men) < P.share) return;
+  const towns = new Set((ctx.world?.cities ?? []).map((t) => `${t.x},${t.y}`));
+  const near = (ctx.world?.units ?? []).filter((u) => u.owner === s.house && soldier(u) && cheb(u, c) <= P.radius && !towns.has(`${u.x},${u.y}`) && Math.random() < P.chance);
+  if (!near.length) return;
+  homeward(ctx, { owner: s.house, units: near.map((u) => u.id) }, ctx.send);
+  s.routed = near.length;
+  ctx.record({ turn, kind: "battle", text: `The rout ${c.place ?? "in the field"} spreads: ${near.length} more ${near.length === 1 ? "company" : "companies"} of ${s.name} throw down their banners and make for home.` });
 }
 
 // The battle cards for /world: the King's battles of the last hosts.json battles.recent seasons, the newest first.
