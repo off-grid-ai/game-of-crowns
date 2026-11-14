@@ -1,0 +1,24 @@
+{
+ "_": "A word on hover over the map's things (map_tip.gd; Total War's and CK3's map tooltips, in the realm's words): a town or a host under the cursor, from further out than faces are seen (folk_tip.gd has people and the land's scars). every: seconds between looks; town_reach, host_reach: how near the cursor (game units) a town or host counts; words: what each part says ({house}, {n}, {to}).",
+ "every": 0.15,
+ "town_reach": 2.5,
+ "host_reach": 1.6,
+ "words": {
+  "crown": "the King's own",
+  "seat": "the King's seat",
+  "held": "held by {house}",
+  "besieged": "under siege",
+  "hungry": "going hungry",
+  "host_crown": "The King's host",
+  "host_other": "{house}'s host",
+  "companies": "{n} companies",
+  "one_company": "one company",
+  "ease": "at ease",
+  "march": "on the march",
+  "attack": "going into battle",
+  "besiege": "laying siege",
+  "hold": "holding its ground",
+  "garrison": "behind town walls",
+  "return": "going home"
+ }
+}

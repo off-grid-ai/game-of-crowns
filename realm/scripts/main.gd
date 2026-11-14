@@ -208,6 +208,11 @@ func _ready() -> void:
 	var tip := preload("res://scripts/folk_tip.gd").new()
 	tip.main = self
 	ui.add_child(tip)
+	# A town or a host on hover, from further out: its name, whose, what is happening there (map_tip.gd).
+	var map_tip := preload("res://scripts/map_tip.gd").new()
+	map_tip.main = self
+	map_tip.folk = tip
+	ui.add_child(map_tip)
 	ui.focus_house.connect(_focus_house)
 	ui.home_view.connect(func(): _home_view())
 	ui.camera_nudge.connect(rig.nudge)
