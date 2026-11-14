@@ -346,7 +346,7 @@ if want raid; then
   # players[].house.wild; g22 read them as 'no player's' and found none by Saltkeep, where six stood) new since the stage. Every wait is bounded and reads /world (the realm runs
   # only while a window watches it), closing the court and an interlude as the crossing's wait does.
   raider() {  # raider <x> <y> <near|out|any> <from season>: "id x y yaw" for the raiders by the town (x y their midpoint),
-    # the farthest one 4+ tiles out once the raid's seasons are over, or any still living; '' when none. yaw: the lens
+    # the farthest one 2+ tiles out once the raid's seasons are over, or any still living; '' when none. yaw: the lens
     # on their side of the town looking back at it (camera_rig: the lens sits along (sin yaw, cos yaw) from its aim),
     # so the raiders stand in front with the town behind them, not lost among its roofs (g24 raid.jpg). The men by the
     # town are this raid's (raid.ids); the walk-off and 'any' follow only them, not another raid's (g24 raid_leave.jpg
@@ -372,7 +372,7 @@ elif '$3'=='near':
     if u: u={'id':u['id'],'x':sum(v['x'] for v in us)/len(us),'y':sum(v['y'] for v in us)/len(us)}
     open('$OUT/raid.ids','w').write(' '.join(str(v['id']) for v in us))
 else:
-    us=[u for u in us if far(u)>=4 and d.get('turn',0)>=$4]; u=max(us,key=far) if us else None
+    us=[u for u in us if far(u)>=2 and d.get('turn',0)>=$4]; u=max(us,key=far) if us else None
 if u:
     dx,dy=u['x']-x,u['y']-y
     print('%d %.2f %.2f %.2f' % (u['id'],u['x'],u['y'],math.atan2(dx,dy) if (dx or dy) else 0.6))" 2>/dev/null
@@ -412,26 +412,48 @@ if r.get('ok'): print(r['city'], r['x'], r['y'], r['name'])" 2>/dev/null)
       side raid $OUT/frames/raid/raid.png $TARGETS/03-army.jpg "raiders at $RNAME (their midpoint $2,$3)"
       side raid_town $OUT/frames/raid/raid_town.png $TARGETS/03-army.jpg "$RNAME under the raid"
     fi
-    # No raider by the town, none to watch leave: skipped at once, not after RAID_LEAVE (g22 sat 16 minutes on the GPU
-    # with nothing to film); and it stops the moment no raider of this raid is left alive.
+    # The walk-off is a season or two (raids.leave_steps tiles a season to wild land, often near), too quick for a poll
+    # (g25: "every raider gone before one was seen on the road out"). So the reign runs to the season before they leave
+    # (raids.seasons after the stage, two seasons early in case the stage's season and Freeciv's differ), is paused, and
+    # then goes a season at a time (resumed until /world's turn moves, paused again) until one of this raid's men stands
+    # 2+ tiles out, filmed then, still paused. No raider by the town, none to watch leave: skipped at once (g22 sat 16
+    # minutes on the GPU with nothing to film); it stops the moment none of this raid's men is left alive, after
+    # raids.leave_seasons + 2 steps, or at RAID_LEAVE s of the wall clock.
+    turn_now() { curl -s -m 10 "$API/world" | perl -e 'alarm shift; exec @ARGV' 20 python3 -I -c "import json,sys; print(json.load(sys.stdin).get('turn',0))" 2>/dev/null; }
     OUTR=""; T0=$SECONDS; LIVE=$AT
-    while [ -n "$AT" ] && [ -n "$LIVE" ] && [ -z "$OUTR" ] && [ $((SECONDS - T0)) -lt ${RAID_LEAVE:-1200} ]; do
+    LEAVE_AT=$(( ${T_RAID:-0} + ${SEASONS:-8} ))
+    STEPS=$(( $(sed -n '/^\[raids\]/,/^\[/s/^leave_seasons = "\([0-9]*\)"/\1/p' $F/bridge/data/realmrules/luadata.txt) + 2 ))
+    while [ -n "$AT" ] && [ -n "$LIVE" ] && [ "$(turn_now)" -lt $(( LEAVE_AT - 2 )) ] && [ $((SECONDS - T0)) -lt ${RAID_LEAVE:-1200} ]; do
       curl -s -m 5 -o /dev/null -X POST $API/court/close
       curl -s -m 5 -o /dev/null -X POST $API/interlude/close
-      OUTR=$(raider $RX $RY out $(( ${T_RAID:-0} + ${SEASONS:-8} )))
+      LIVE=$(raider $RX $RY any 0)
+      [ -n "$LIVE" ] && sleep 3
+    done
+    [ -n "$AT" ] && curl -s -m 5 -o /dev/null -X POST $API/pause
+    STEP=0
+    while [ -n "$AT" ] && [ -n "$LIVE" ] && [ -z "$OUTR" ] && [ $STEP -lt $STEPS ] && [ $((SECONDS - T0)) -lt ${RAID_LEAVE:-1200} ]; do
+      TN=$(turn_now); TS=$SECONDS
+      curl -s -m 5 -o /dev/null -X POST $API/court/close
+      curl -s -m 5 -o /dev/null -X POST $API/interlude/close
+      curl -s -m 5 -o /dev/null -X POST $API/resume
+      while [ "$(turn_now)" = "$TN" ] && [ $((SECONDS - TS)) -lt 180 ]; do sleep 1; done
+      curl -s -m 5 -o /dev/null -X POST $API/pause
+      STEP=$((STEP + 1))
+      sleep 2  # the season's snapshot (server.js snapshot reads world.json 0.5 s after asking)
+      OUTR=$(raider $RX $RY out $LEAVE_AT)
       [ -z "$OUTR" ] && LIVE=$(raider $RX $RY any 0)
-      [ -z "$OUTR" ] && [ -n "$LIVE" ] && sleep 5
     done
     if [ -z "$AT" ]; then
       :  # said above: no raider by the town
     elif [ -z "$OUTR" ] && [ -z "$LIVE" ]; then
-      say "raid: every raider of $RNAME gone before one was seen on the road out; no frame"
+      curl -s -m 5 -o /dev/null -X POST $API/resume
+      say "raid: every raider of $RNAME gone before one was seen on the road out (stepped $STEP seasons); no frame"
     elif [ -z "$OUTR" ]; then
-      say "raid: no raider on the road out of $RNAME in ${RAID_LEAVE:-1200} s; no frame"
+      curl -s -m 5 -o /dev/null -X POST $API/resume
+      say "raid: no raider 2+ tiles out of $RNAME after $STEP seasons stepped (${RAID_LEAVE:-1200} s bound); no frame"
     else
-      # Framed on his tile, not his figure: one leaving may be gone (Disband Unit on wild land) before the lens finds him.
+      # Framed on his tile, not his figure; the reign still paused from the step that found him.
       set -- ${=OUTR}
-      curl -s -m 5 -o /dev/null -X POST $API/pause
       { print "wait 30"; print "tile $2 $3 5 $4"; print "wait 4"; print "snap raid_leave"; print "look end"; } > $OUT/raid_leave.play
       shot raid_leave 1500 film $SW
       curl -s -m 5 -o /dev/null -X POST $API/resume
