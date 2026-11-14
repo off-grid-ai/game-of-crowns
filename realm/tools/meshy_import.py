@@ -285,7 +285,7 @@ def smooth_leaves(obj, crown=0.0):
         bpy.context.view_layer.objects.active = obj
         bpy.ops.mesh.customdata_custom_splitnormals_clear()
     # Meshy's leaves come unwelded (each face its own corners), so smooth shading alone left every face its own normal
-    # (group render g3: still facets; nt_oak_a 1213 of its 1950 leaf corners carried several normals). Weld the
+    # (group render g3: still facets; the Meshy oak's 1213 of its 1950 leaf corners carried several normals). Weld the
     # leaves' corners where they meet, then clear any sharp edge on them.
     bm = bmesh.new()
     bm.from_mesh(obj.data)
@@ -306,7 +306,7 @@ def smooth_leaves(obj, crown=0.0):
 
 def tuck_roots(obj, h, flare):
     """A tree's root flare drawn in to its trunk (group render g28 seasons, 01-town: every oak stood in a wide red-brown
-    skirt of painted roots, 3.9 m out from a 1.5 m trunk on nt_oak_a; 01-town's trees rise straight out of the grass).
+    skirt of painted roots, 3.9 m out from a 1.5 m trunk on the Meshy oak; 01-town's trees rise straight out of the grass).
     The trunk's axis is the middle of its bark between h and 2h metres up; below h, every bark vertex is drawn toward it
     so it stands no further out than the trunk's own reach at h, widened by `flare` at the ground. The leaves keep their
     place. Returns the vertices moved."""

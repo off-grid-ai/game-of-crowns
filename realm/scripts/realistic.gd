@@ -559,7 +559,7 @@ static func _leaves(root: Node, path: String) -> void:
 		var m: MeshInstance3D = mi
 		for i in (m.mesh.get_surface_count() if m.mesh else 0):
 			var mat := m.get_active_material(i)
-			if mat == null or not String(mat.resource_name).begins_with("MI_Leaves"):
+			if not Forest.is_leaf(mat):
 				continue
 			if not made.has(mat):
 				made[mat] = Forest.leaves(mat, path, Forest.leaf_kind(path))

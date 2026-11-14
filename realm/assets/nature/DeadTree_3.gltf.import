@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://b8capfajtaq3j"
-path="res://.godot/imported/nt_oak_b.glb-b166578e5287a7429171240f72d1c8c0.scn"
+uid="uid://u53gff070jvb"
+path="res://.godot/imported/DeadTree_3.gltf-92983d6a5b6c6ba07a6268c6e27b9501.scn"
 
 [deps]
 
-source_file="res://assets/meshy/nt_oak_b/nt_oak_b.glb"
-dest_files=["res://.godot/imported/nt_oak_b.glb-b166578e5287a7429171240f72d1c8c0.scn"]
+source_file="res://assets/nature/DeadTree_3.gltf"
+dest_files=["res://.godot/imported/DeadTree_3.gltf-92983d6a5b6c6ba07a6268c6e27b9501.scn"]
 
 [params]
 

@@ -1,22 +1,22 @@
 extends SceneTree
-## Guard for the nature set (Mac: "major issues with the trees, the grass"; the look audit's fix plan 3, docs/art/nature):
-## the woods, the ground cover, the town, orchard and castle trees, the verges' bushes, the tufts and the towns' dressing
-## draw the nature set's pieces (nt_oak_a, nt_oak_b, nt_pine_a, nt_pine_b, nt_bush, nt_grass_clump, nt_flowers, nt_cypress,
-## nt_rock_a, nt_rock_b): no tree, plant or stone of another set (Quaternius' nature, KayKit's round trees and shrubs,
-## the ez-tree oak), whose folder realm/assets/nature is gone; every tree the catalogue holds is a nature-set model.
-##   1. nothing the game or its tools read names a Quaternius tree, bush, tuft, rock or pebble or KayKit's cypress
-##      (realm/scripts, realm/data, realm/tools);
-##   2. every nature-set file a role names is in realm/assets (woods.kit, forest.json cover, the catalogue's tree,
-##      cypress and rock components, the tufts, the verges' bush, the gold mines' rocks and ore);
-##   3. built from a saved realm (fixtures town_build_map.json), every mesh the woods and the cover drew is a nature-set
-##      piece: no material of Quaternius' kit (Leaves_*, Leaf_*, Bark_*, Grass) and every MI_Leaves marked with its kind;
-##      a pine's leaves are "pine";
+## Guard for the realm's trees and plants. The trees are Quaternius Stylized Nature (Mac, 2026-11-14: "the trees and the
+## terrain need to look high quality like WC3"; realm/assets/nature: CommonTree, Pine, DeadTree); the bushes, tufts,
+## flowers, crops and rocks are the nature set's (nt_bush, nt_grass_clump, nt_flowers, nt_cypress, nt_rock_a, nt_rock_b;
+## Mac 11-12, "major issues with the trees, the grass"). One tree path: the Meshy oaks and pines are gone.
+##   1. nothing the game or its tools read names a Meshy oak or pine, or a Quaternius bush, tuft, rock or pebble, or
+##      KayKit's or the ez-tree's (realm/scripts, realm/data, realm/tools);
+##   2. every tree a role names (woods.kit pine, oak, dead; the town and orchard trees) is a Quaternius tree in
+##      realm/assets/nature, every other plant and rock a nature-set piece, each in realm/assets;
+##   3. built from a saved realm (fixtures town_build_map.json), every leaf material the woods and the cover drew
+##      (Leaves_*, MI_Leaves) is marked with its kind; a pine's leaves are "pine"; no Quaternius grass;
 ##   4. the leaves turn in autumn and the trunks keep their paint.
 ## Prints CHECK lines; exits 1 on a fail.   arch -arm64 godot --headless --path realm -s res://tools/nature_set_probe.gd
 
 const FIX := "res://tools/fixtures/town_build_map.json"
-const GONE := "nature/[A-Z]|assets/nature|(^|[^a-z_-])(kaykit|eztree)/|(nature/)?(CommonTree_\\d|TwistedTree_\\d|DeadTree_\\d|Pine_\\d|Bush_Common[\"./]|Bush_Common$|Fern_1|Plant_7[\"./]|Grass_Common_Short|Grass_Common_Tall|Grass_Wispy_Short|Rock_Medium_\\d|Pebble_(Round|Square)_\\d|RockPath_(Round_Small|Round_Thin|Square)|kaykit/Tree_4_|Bush_Common_Flowers|Clover_\\d|Flower_[34]_|Mushroom_|Petal_\\d|Plant_1|Grass_Wispy_Tall|RockPath_)"
-const OLD_MATS := ["Leaves", "Leaf_", "Bark_", "Grass"]
+const GONE := "nt_oak_|nt_pine_|(^|[^a-z_-])(kaykit|eztree)/|(nature/)?(TwistedTree_\\d|Bush_Common[\"./]|Bush_Common$|Fern_1|Plant_7[\"./]|Grass_Common_Short|Grass_Common_Tall|Grass_Wispy_Short|Rock_Medium_\\d|Pebble_(Round|Square)_\\d|RockPath_(Round_Small|Round_Thin|Square)|kaykit/Tree_4_|Bush_Common_Flowers|Clover_\\d|Flower_[34]_|Mushroom_|Petal_\\d|Plant_1|Grass_Wispy_Tall|RockPath_)"
+const Forest := preload("res://scripts/forest.gd")
+const TREE := "res://assets/nature/"  # Quaternius' trees: the one tree path
+const OLD_MATS := ["Grass"]  # Quaternius' grass tufts (the cover is the nature set's)
 
 var fail := 0
 
@@ -53,21 +53,27 @@ func _run() -> void:
 		var m := re.search(text)
 		if m:
 			named.append("%s: %s" % [f, m.get_string()])
-	_check(named.is_empty(), "nothing names a Quaternius nature file or KayKit's cypress %s" % [named.slice(0, 6)])
+	_check(named.is_empty(), "nothing names a Meshy oak or pine, a Quaternius plant or rock, or KayKit's cypress %s" % [named.slice(0, 6)])
 
 	# 2. Every nature-set file a role names is there.
 	var Real := preload("res://scripts/realistic.gd")
 	var Data := preload("res://scripts/data.gd")
 	var paths := []
+	var trees := []
 	var kit: Dictionary = Data.value("assets", "woods.kit", {})
-	for role in ["pine", "oak", "bush"]:
+	for role in ["pine", "oak", "dead"]:
 		for m in (kit.get(role, {}) as Dictionary).get("models", []):
-			paths.append("res://assets/" + String(m))
+			trees.append("res://assets/" + String(m))
+	for comp in ["town_tree", "orchard_tree"]:
+		for i in Real.variants(comp).size():
+			trees.append(Real.path_of(comp, i))
+	for m in (kit.get("bush", {}) as Dictionary).get("models", []):
+		paths.append("res://assets/" + String(m))
 	var cover: Dictionary = Data.value("forest", "cover", {})
 	for role in ["bush", "grass", "rock"]:
 		for m in cover.get(role, []):
 			paths.append("res://assets/" + String(m))
-	for comp in ["town_tree", "orchard_tree", "castle_shrub", "town_cypress", "castle_cypress", "castle_rock", "milestone", "garden_hedge", "garden_flowers", "hedge_painted", "crop_flax", "crop_beans", "stepping_stone"]:
+	for comp in ["castle_shrub", "town_cypress", "castle_cypress", "castle_rock", "milestone", "garden_hedge", "garden_flowers", "hedge_painted", "crop_flax", "crop_beans", "stepping_stone"]:
 		for i in Real.variants(comp).size():
 			paths.append(Real.path_of(comp, i))
 	paths.append(str(load("res://scripts/roads.gd").get("BUSH")))  # the verges' bush
@@ -81,9 +87,11 @@ func _run() -> void:
 	for p in paths:
 		if not String(p).begins_with("res://assets/meshy/nt_") or not ResourceLoader.exists(p):
 			bad.append(p)
-	_check(paths.size() >= 32 and bad.is_empty(), "every tree, bush, grass, flower, crop and rock role is a nature-set piece in realm/assets (%d paths) %s" % [paths.size(), bad])
+	_check(paths.size() >= 24 and bad.is_empty(), "every bush, grass, flower, crop and rock role is a nature-set piece in realm/assets (%d paths) %s" % [paths.size(), bad])
+	var bad_trees := trees.filter(func(p): return not String(p).begins_with(TREE) or not ResourceLoader.exists(p))
+	_check(trees.size() >= 12 and bad_trees.is_empty(), "every tree a role names is a Quaternius tree in realm/assets/nature (%d) %s" % [trees.size(), bad_trees])
 	var oaks: Array = (kit.get("oak", {}) as Dictionary).get("models", [])
-	_check(oaks.size() >= 2, "the oak role is a list (%d models)" % oaks.size())
+	_check(oaks.size() >= 3 and not (kit.get("dead", {}) as Dictionary).get("models", []).is_empty(), "the broadleaf woods are a mix (%d oaks) with dead trees among them" % oaks.size())
 	# Every tree in the catalogue is the nature set's: a component that is a tree, by kind or by name (tree, cypress).
 	var off := []
 	var comps: Dictionary = Data.value("assets", "components", {})
@@ -92,10 +100,10 @@ func _run() -> void:
 		if not (c is Dictionary) or not (String(c.get("kind", "")) == "tree" or "tree" in String(id) or "cypress" in String(id)):
 			continue
 		for v in c.get("variants", []):
-			if v is Dictionary and v.has("model") and not String(v["model"]).begins_with("meshy/nt_"):
+			if v is Dictionary and v.has("model") and not (String(v["model"]).begins_with("nature/") or String(v["model"]).begins_with("meshy/nt_")):
 				off.append("%s: %s" % [id, v["model"]])
-	_check(off.is_empty(), "every tree in the catalogue is a nature-set model %s" % [off])
-	_check(not DirAccess.dir_exists_absolute("res://assets/nature"), "realm/assets/nature, the other sets' folder, is gone")
+	_check(off.is_empty(), "every tree in the catalogue is Quaternius' or the nature set's %s" % [off])
+	_check(not DirAccess.dir_exists_absolute("res://assets/meshy/nt_oak_a") and not DirAccess.dir_exists_absolute("res://assets/meshy/nt_pine_a"), "the Meshy oaks and pines are gone")
 
 	# 3. Built: what the woods and the cover drew.
 	var map: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(FIX))
@@ -120,14 +128,14 @@ func _run() -> void:
 			for o in OLD_MATS:
 				if n.begins_with(o):
 					old.append(n)
-			if n.begins_with("MI_Leaves"):
+			if Forest.is_leaf(mat):
 				leaves.append(mat)
 				pine_ok = pine_ok or String(mat.get_meta("leaf", "")) == "pine"
-			elif n.begins_with("Material_0"):
+			elif n.begins_with("Material_0") or n.begins_with("Bark_"):
 				trunks.append([mat, mat.albedo_color])
 	var unmarked := leaves.filter(func(m): return String(m.get_meta("leaf", "")) == "")
-	_check(old.is_empty(), "no Quaternius material in the woods or the cover %s" % [old.slice(0, 6)])
-	_check(leaves.size() >= 4 and unmarked.is_empty(), "the woods' and the cover's leaves are MI_Leaves, each marked with its kind (%d, %d unmarked)" % [leaves.size(), unmarked.size()])
+	_check(old.is_empty(), "no Quaternius grass in the cover %s" % [old.slice(0, 6)])
+	_check(leaves.size() >= 4 and unmarked.is_empty(), "the woods' and the cover's leaves (Leaves_*, MI_Leaves) are each marked with its kind (%d, %d unmarked)" % [leaves.size(), unmarked.size()])
 	_check(pine_ok, "a pine's leaves take the pine's season")
 
 	# 4. Autumn turns the leaves, not the trunks.

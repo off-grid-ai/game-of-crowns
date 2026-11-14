@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://dlq57wfkyi7l"
-path="res://.godot/imported/nt_oak_a.glb-f665b006b97ee74988f50c5c24fad559.scn"
+uid="uid://cr62inrp44uws"
+path="res://.godot/imported/CommonTree_3.gltf-3e534b8d1183548538dc4e6d8f6a6898.scn"
 
 [deps]
 
-source_file="res://assets/meshy/nt_oak_a/nt_oak_a.glb"
-dest_files=["res://.godot/imported/nt_oak_a.glb-f665b006b97ee74988f50c5c24fad559.scn"]
+source_file="res://assets/nature/CommonTree_3.gltf"
+dest_files=["res://.godot/imported/CommonTree_3.gltf-3e534b8d1183548538dc4e6d8f6a6898.scn"]
 
 [params]
 

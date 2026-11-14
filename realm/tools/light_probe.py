@@ -61,8 +61,8 @@ def tex_mean(rel):
 
 
 def leaf_mean(rel):
-    """A nature-set tree's leaves: its texture is one atlas, bark and leaves, so the mean of its green texels (green over
-    red and blue: the leaves meshy.json splits into MI_Leaves by hue)."""
+    """A tree's leaves: the mean of its leaf texture's green texels (green over red and blue; the cut-out's clear texels
+    are black and drop out)."""
     a = np.asarray(Image.open(os.path.join(REALM, rel)).convert("RGB"), float) / 255.0
     px = a.reshape(-1, 3)
     return lin(px[(px[:, 1] > px[:, 0]) & (px[:, 1] > px[:, 2])]).mean(0)
@@ -208,7 +208,7 @@ def main():
         "roof": np.mean([tex_mean(v + "T_RoundTiles_BaseColor.png") * tint(kit["roof_tints"]["tile"]),
                          lin([0.36, 0.40, 0.48]), lin([0.62, 0.48, 0.26]), lin([0.40, 0.30, 0.22])], axis=0),
         "ground": tex_mean(v + "T_UnevenBrick_BaseColor.png") * tint(paving.get("tint", [1, 1, 1])),
-        "green": leaf_mean("assets/meshy/nt_oak_b/nt_oak_b_Image_0.jpg"),
+        "green": leaf_mean("assets/nature/Leaves_NormalTree_C.png"),
     }
     bearings = list(range(0, 360, 30))
     lut_of = lambda lk: Lut(os.path.join(REALM, str(lk.get("lut", "")).replace("res://", "")))

@@ -1,11 +1,18 @@
 {
- "_": "The woods (forest.gd; docs/TUNING.md). near: within this distance of the camera (world units) trees are drawn in full, with shadows (a block of woods switches as one); mid: out to this distance the middle batch, without shadows; the far batch beyond. map: at map zoom, past from (world units), the far batch again with each tree grown by grow [across, up] about its foot, so a wood reads as one canopy (02-realm), not dots. woods: where trees stand, by Freeciv's tile under the land's warped biome line (vegetation.gd _woodland): jitter (a clump's wander off its terrain's grid, a share of its gap), size [least, most] (a tree's scale on its kind's height), shore_gap (no tree within this height of the beach's top, ground.json beach.top: on the land's own shore line, not a fixed height, which left the low coastal woods bare: 0.15 dropped every tree on half the forest tiles of a lowland realm), pine_above (pine likelier above this height); tiles.<Freeciv terrain>: gap (game units between clumps), clump [least, most] trees, r (a clump's reach), pine (the share of pine), undergrowth (the chance of a bush under a clump). cover: the ground cover's files by role (bush, grass, rock; under assets/; bush, grass and rock from the nature set (rock: nt_rock_a 1.2 m and nt_rock_b 2.5 m boulders), nt_bush 1.6 m and nt_grass_clump 0.5 m at scale 1, their leaves turning with the season). cover_per_tile: how many of each role a tile of that terrain holds. Densities from the look audit's spec (2026-11-12, read off 01-town and 03-army, estimates): inside a wood trunks 5-6 m apart, 3-4 trees per 100 m2 (woods_probe measures it over the forest tiles); copses of 3-7 25-40 m apart outside woods. Grassland and plains hold copses 60-100 m apart (the look audit: never a screen of plain grass away from towns; a town's own land is its fields and hedges).",
- "map": {"from": 45.0, "grow": [2.2, 1.4]}, "near": 6.0,
+ "_": "The woods (forest.gd; docs/TUNING.md). near: within this distance of the camera (world units) trees are drawn in full, with shadows (a block of woods switches as one); mid: out to this distance the middle batch, without shadows; the far batch beyond. map: at map zoom, past from (world units), the far batch again with each tree grown by grow [across, up] about its foot, so a wood reads as one stand (02-realm), not dots; kept near the tree's own shape (g31's raid wood: grown 2.2 across, the crowns read as green balloons). woods: where trees stand, by Freeciv's tile under the land's warped biome line (vegetation.gd _woodland): jitter (a clump's wander off its terrain's grid, a share of its gap), size [least, most] (a tree's scale on its kind's height), shore_gap (no tree within this height of the beach's top, ground.json beach.top: on the land's own shore line, not a fixed height, which left the low coastal woods bare: 0.15 dropped every tree on half the forest tiles of a lowland realm), pine_above (pine likelier above this height); tiles.<Freeciv terrain>: gap (game units between clumps), clump [least, most] trees, r (a clump's reach), pine (the share of pine), undergrowth (the chance of a bush under a clump). cover: the ground cover's files by role (bush, grass, rock; under assets/; bush, grass and rock from the nature set (rock: nt_rock_a 1.2 m and nt_rock_b 2.5 m boulders), nt_bush 1.6 m and nt_grass_clump 0.5 m at scale 1, their leaves turning with the season). cover_per_tile: how many of each role a tile of that terrain holds. Densities from the look audit's spec (2026-11-12, read off 01-town and 03-army, estimates): inside a wood trunks 5-6 m apart, 3-4 trees per 100 m2 (woods_probe measures it over the forest tiles); copses of 3-7 25-40 m apart outside woods. Grassland and plains hold copses 60-100 m apart (the look audit: never a screen of plain grass away from towns; a town's own land is its fields and hedges).",
+ "map": {
+  "from": 45.0,
+  "grow": [
+   1.3,
+   1.25
+  ]
+ },
+ "near": 6.0,
  "mid": 24.0,
  "woods": {
   "size": [
-   0.7,
-   1.25
+   0.85,
+   1.15
   ],
   "shore_gap": 0.02,
   "pine_above": 2.2,
@@ -18,7 +25,7 @@
     ],
     "r": 0.8,
     "pine": 0.35,
-    "undergrowth": 0.4
+    "undergrowth": 0.6
    },
    "Jungle": {
     "gap": 1.3,

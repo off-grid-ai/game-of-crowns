@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://su0j4qjjjvdh"
-path="res://.godot/imported/nt_pine_a.glb-25e1635e865e16b2e3b677097b9b8887.scn"
+uid="uid://brcwilpqy6yd4"
+path="res://.godot/imported/CommonTree_2.gltf-a419b95d3c79383030797d2587373c50.scn"
 
 [deps]
 
-source_file="res://assets/meshy/nt_pine_a/nt_pine_a.glb"
-dest_files=["res://.godot/imported/nt_pine_a.glb-25e1635e865e16b2e3b677097b9b8887.scn"]
+source_file="res://assets/nature/CommonTree_2.gltf"
+dest_files=["res://.godot/imported/CommonTree_2.gltf-a419b95d3c79383030797d2587373c50.scn"]
 
 [params]
 

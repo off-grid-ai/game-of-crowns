@@ -2,20 +2,22 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bkx05pkdea8k5"
-path="res://.godot/imported/mask.png-a160b468c67ec12b7a0c2e71b038f758.ctex"
+uid="uid://b5uuj8clelle6"
+path.s3tc="res://.godot/imported/Bark_NormalTree.png-351f9c7ce04c19b831877f3c98341031.s3tc.ctex"
+path.etc2="res://.godot/imported/Bark_NormalTree.png-351f9c7ce04c19b831877f3c98341031.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
-source_file="res://assets/meshy/nt_pine_b/mask.png"
-dest_files=["res://.godot/imported/mask.png-a160b468c67ec12b7a0c2e71b038f758.ctex"]
+source_file="res://assets/nature/Bark_NormalTree.png"
+dest_files=["res://.godot/imported/Bark_NormalTree.png-351f9c7ce04c19b831877f3c98341031.s3tc.ctex", "res://.godot/imported/Bark_NormalTree.png-351f9c7ce04c19b831877f3c98341031.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

@@ -8,19 +8,21 @@
     "tree_range": [8, 14],
     "kit": {
       "shade": { "_": "forest.gd shade_at: each tree's leaves a little lighter or darker (light) and warmer or cooler (warm) than its kind's, from where it stands (Warcraft III tree lines: no two crowns one green).", "light": 0.14, "warm": 0.08 },
-      "pine": { "models": ["meshy/nt_pine_a/nt_pine_a.glb", "meshy/nt_pine_b/nt_pine_b.glb"], "height": 12.0 },
-      "oak": { "models": ["meshy/nt_oak_b/nt_oak_b.glb"], "height": 10.5 },
+      "pine": { "models": ["nature/Pine_1.gltf", "nature/Pine_3.gltf", "nature/Pine_4.gltf"], "height": 13.0 },
+      "oak": { "models": ["nature/CommonTree_1.gltf", "nature/CommonTree_2.gltf", "nature/CommonTree_3.gltf", "nature/CommonTree_4.gltf", "nature/CommonTree_5.gltf"], "height": 11.5 },
+      "dead": { "models": ["nature/DeadTree_1.gltf", "nature/DeadTree_3.gltf"], "height": 11.0, "share": 0.1 },
       "bush": { "models": ["meshy/nt_bush/nt_bush.glb"], "height": 1.6 },
       "young": 0.65,
       "sapling": 0.35,
-      "_leaves": "The nature set (docs/art/nature; the look audit's fix plan 3): each role a list of models, any of them picked per tree (pine: nt_pine_a, nt_pine_b; oak: nt_oak_b, nt_oak_a left the woods for its wide round crown, g31; bush: nt_bush; another model slots in by adding it to its list). Every model has its leaves in their own material, MI_Leaves, which the season tints (terrain.gd's season pass; forest.gd _leaves names the leaves of a pine \"pine\", the rest \"leaves\"); the trunks keep their paint. seasons: by model file, a tint over its summer colour that replaces the season's own for that model, so a wood turns as a mix (art target 01-town: mostly deep green, some ochre and amber); a model not listed takes the season's tint for its kind. The leaves' colour (graded to deep green, its painted patchwork calmed) is the piece's own, made at import: data/meshy.json pieces.<name>.leaves.",
+      "_leaves": "The nature set (docs/art/nature; the look audit's fix plan 3): each role a list of models, any of them picked per tree (Quaternius Stylized Nature, Mac 2026-11-14, 'high quality like WC3': pine: Pine_1, 3, 4; oak: CommonTree_1-5; dead: DeadTree_1, 3, a share of the broadleaf woods' trees bare; bush: nt_bush; another model slots in by adding it to its list). Every model has its leaves in their own material (Leaves_*, Leaf_*: Quaternius; MI_Leaves: the Meshy set), which the season tints (terrain.gd's season pass; forest.gd _leaves names the leaves of a pine \"pine\", the rest \"leaves\"); the trunks keep their paint. seasons: by model file, a tint over its summer colour that replaces the season's own for that model, so a wood turns as a mix (art target 01-town: mostly deep green, some ochre and amber); a model not listed takes the season's tint for its kind. The leaves' colour (graded to deep green, its painted patchwork calmed) is the piece's own, made at import: data/meshy.json pieces.<name>.leaves.",
       "evergreen": ["meshy/nt_cypress/nt_cypress.glb"],
       "turn": { "autumn": { "leaves": [0.68, 0.42, 0.1, 0.55], "grass": [0.58, 0.5, 0.22, 0.3] }, "winter": { "leaves": [0.32, 0.26, 0.19, 0.45] } },
-      "_turn": "The leaves' turn by season and kind (forest.gd turn_of, terrain.gd's season pass): [r, g, b, amount], the colour mixed over the painted leaves through the material's detail layer and how much of it (g30 seasons: the old multiply alone left deep green leaves green in autumn). A model's own (seasons.<model>.turn) takes its place: nt_oak_a amber, nt_oak_b ochre-olive, so a wood turns as a mix. Pines and the evergreens have none. The season's multiply (terrain.gd SEASONS, seasons.<model>.<season>) still darkens or lightens under it.",
+      "_turn": "The leaves' turn by season and kind (forest.gd turn_of, terrain.gd's season pass): [r, g, b, amount], the colour mixed over the painted leaves through the material's detail layer and how much of it (g30 seasons: the old multiply alone left deep green leaves green in autumn). A model's own (seasons.<model>.turn) takes its place: CommonTree_1 amber, _3 ochre-olive, _5 russet, the rest the kind's own, so a wood turns as a mix. Pines and the evergreens have none. The season's multiply (terrain.gd SEASONS, seasons.<model>.<season>) still darkens or lightens under it.",
       "_evergreen": "Models outside the pine role whose leaves keep the pines' winter tint, not the broadleaves' turn (forest.gd leaf_kind; the towns' cypresses).",
       "seasons": {
-        "meshy/nt_oak_a/nt_oak_a.glb": { "autumn": [1.15, 0.94, 0.58], "turn": { "autumn": [0.72, 0.36, 0.08, 0.62] } },
-        "meshy/nt_oak_b/nt_oak_b.glb": { "autumn": [0.85, 0.96, 0.76], "turn": { "autumn": [0.62, 0.52, 0.12, 0.45] } }
+        "nature/CommonTree_1.gltf": { "turn": { "autumn": [0.72, 0.36, 0.08, 0.62] } },
+        "nature/CommonTree_3.gltf": { "turn": { "autumn": [0.62, 0.52, 0.12, 0.5] } },
+        "nature/CommonTree_5.gltf": { "turn": { "autumn": [0.7, 0.24, 0.06, 0.6] } }
       }
     }
   },
@@ -79,8 +81,8 @@
     "alehouse": {"heightRange": [4, 14], "kind": "inn", "variants": [], "trade": "alehouse", "work_front": {"door": [0, 0.3], "bench_a": [1.9, 0.9], "barrels": [-1.9, 0.9]}},
     "guild_hall": {"heightRange": [9, 20], "kind": "guild", "variants": [], "trade": "guild", "work_front": {"door": [0, -0.6], "arcade_a": [-1.5, -1.0], "arcade_b": [1.5, -1.0]}},
     "low_wall": { "heightRange": [0.6, 1.6], "kind": "fence", "variants": [ { "name": "kit_low_wall", "builder": "house", "spec": { "pieces": [ ["Wall_UnevenBrick_Straight", [0, 0, 0], 0, [1, 0.36, 1]] ] } } ] },
-    "town_tree": {"heightRange": [6, 13], "kind": "garden", "variants": [{"model": "meshy/nt_oak_a/nt_oak_a.glb", "name": "town_tree_1", "length": 9.9, "height": 9.0}, {"model": "meshy/nt_oak_b/nt_oak_b.glb", "name": "town_tree_2", "length": 6.5, "height": 10.0}, {"model": "meshy/nt_oak_b/nt_oak_b.glb", "name": "town_tree_3", "length": 7.2, "height": 11.0}, {"model": "meshy/nt_oak_a/nt_oak_a.glb", "name": "town_tree_4", "length": 11.0, "height": 10.0}]},
-    "orchard_tree": {"heightRange": [3.5, 7], "kind": "garden", "variants": [{"model": "meshy/nt_oak_a/nt_oak_a.glb", "name": "orchard_tree_1", "length": 5.5, "height": 5.0}, {"model": "meshy/nt_oak_b/nt_oak_b.glb", "name": "orchard_tree_2", "length": 3.6, "height": 5.5}]},
+    "town_tree": {"heightRange": [6, 13], "kind": "garden", "variants": [{"model": "nature/CommonTree_1.gltf", "name": "town_tree_1", "length": 6.0, "height": 10.0}, {"model": "nature/CommonTree_2.gltf", "name": "town_tree_2", "length": 6.0, "height": 10.5}, {"model": "nature/CommonTree_3.gltf", "name": "town_tree_3", "length": 5.0, "height": 11.5}, {"model": "nature/CommonTree_5.gltf", "name": "town_tree_4", "length": 6.0, "height": 10.0}]},
+    "orchard_tree": {"heightRange": [3.5, 7], "kind": "garden", "variants": [{"model": "nature/CommonTree_1.gltf", "name": "orchard_tree_1", "length": 3.0, "height": 5.0}, {"model": "nature/CommonTree_5.gltf", "name": "orchard_tree_2", "length": 3.3, "height": 5.5}]},
     "garden_hedge": {"heightRange": [0.8, 1.8], "kind": "garden", "variants": [{"model": "meshy/nt_bush/nt_bush.glb", "name": "garden_hedge", "length": 1.7, "height": 1.2}]},
     "garden_flowers": {"heightRange": [0.3, 1.5], "kind": "garden", "variants": [{"model": "meshy/nt_flowers/nt_flowers.glb", "name": "garden_flowers", "length": 0.65, "height": 0.5}, {"model": "meshy/nt_flowers/nt_flowers.glb", "name": "garden_flowers_2", "length": 0.5, "height": 0.4}]},
     "yard_shed": { "heightRange": [1.5, 3.5], "kind": "yard", "variants": [ { "name": "kit_yard_shed", "builder": "house", "spec": { "pieces": [

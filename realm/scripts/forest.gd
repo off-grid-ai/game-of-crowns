@@ -36,9 +36,9 @@ var _sight := {}  # Vector2i -> Array of Vector4(x, z, ground y, height)
 
 static func _kit_layout() -> bool:
 	var kit: Dictionary = Data.value("assets", "woods.kit", {})
-	for role in ["pine", "oak", "bush"]:
+	for role in ["pine", "oak", "dead", "bush"]:
 		var r: Dictionary = kit.get(role, {})
-		var tiers := [["", 1.0]] if role == "bush" else [["", 1.0], ["_young", float(kit.get("young", 0.65))], ["_sapling", float(kit.get("sapling", 0.35))]]
+		var tiers := [["", 1.0]] if role == "bush" or role == "dead" else [["", 1.0], ["_young", float(kit.get("young", 0.65))], ["_sapling", float(kit.get("sapling", 0.35))]]
 		for t in tiers:
 			_roles[role + String(t[0])] = [_kit.size(), (r.get("models", []) as Array).size()]
 			for m in r.get("models", []):
@@ -61,7 +61,10 @@ static func pine_kind(rng: RandomNumberGenerator, fringe: bool) -> int:
 
 
 ## An oak for the lowland woods, the same way: grown, younger, saplings at the edge.
+## A share of them stand dead and bare (assets.json woods.kit.dead.share; WC3's and AoE2's woods are never one green).
 static func oak_kind(rng: RandomNumberGenerator, fringe: bool) -> int:
+	if not fringe and rng.randf() < DEAD_SHARE:
+		return _kit_pick(rng, "dead")
 	if fringe and rng.randf() < 0.25:
 		return _kit_pick(rng, "oak_sapling")
 	return _kit_pick(rng, "oak" if rng.randf() < 0.6 else "oak_young")
@@ -174,6 +177,22 @@ func _layer(mesh: Mesh, xfs: Array, begin: float, end: float, shadows: bool, tie
 	add_child(mmi)
 
 
+static var DEAD_SHARE: float = Data.num("assets", "woods.kit.dead.share", 0.1)
+## The leaf materials' names: Quaternius Stylized Nature's (Leaves_NormalTree, Leaves_Pine) and the Meshy set's split
+## (MI_Leaves, meshy_import.py). Everything else on a tree is bark and keeps its paint through the seasons.
+const LEAF_NAMES := ["Leaves", "Leaf_", "MI_Leaves"]
+
+
+static func is_leaf(mat: Material) -> bool:
+	if mat == null:
+		return false
+	var n := String(mat.resource_name)
+	for p: String in LEAF_NAMES:
+		if n.begins_with(p):
+			return true
+	return false
+
+
 ## A tree's own shade of its kind's leaves (Warcraft III's tree lines: no two crowns one green), from where it stands, so
 ## a wood looks the same each time it is built: lighter or darker by up to light, warmer or cooler by up to warm.
 ## realm/data/assets.json woods.kit.shade.
@@ -222,7 +241,7 @@ func _load_kit() -> void:
 ## The one marker of leaves: the woods here, the ground cover in vegetation.gd.
 static func leaves(mat: Material, path: String, kind: String) -> Material:
 	var m := mat as BaseMaterial3D
-	if m == null or not m.resource_name.begins_with("MI_Leaves"):
+	if m == null or not is_leaf(m):
 		return mat
 	var c: BaseMaterial3D = m.duplicate()
 	c.set_meta("leaf", kind)
