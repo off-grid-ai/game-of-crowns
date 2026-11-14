@@ -171,9 +171,10 @@ func gate_toward(from: Vector3, reach: float, out: float) -> Array:
 	var best := []
 	var bd := reach
 	for id in _town_walls:
-		var root: Node3D = _town_walls[id]["root"]
-		if not is_instance_valid(root):
+		var held = _town_walls[id]["root"]  # untyped: a freed wall's root fails a typed assignment (g37 realm: SCRIPT ERROR)
+		if not is_instance_valid(held):
 			continue
+		var root: Node3D = held
 		for g in _town_walls[id].get("gates", []):
 			var p: Vector3 = root.to_global(g[0])
 			var d := Vector2(p.x - from.x, p.z - from.z).length()
@@ -189,9 +190,10 @@ func gate_toward(from: Vector3, reach: float, out: float) -> Array:
 func gates() -> Array:
 	var out := []
 	for id in _town_walls:
-		var root: Node3D = _town_walls[id]["root"]
-		if not is_instance_valid(root):
+		var held = _town_walls[id]["root"]  # untyped: a freed wall's root fails a typed assignment (g37 realm: SCRIPT ERROR)
+		if not is_instance_valid(held):
 			continue
+		var root: Node3D = held
 		for g in _town_walls[id].get("gates", []):
 			out.append([root.to_global(g[0]), (root.global_basis * (g[1] as Vector3)).normalized()])
 	return out
