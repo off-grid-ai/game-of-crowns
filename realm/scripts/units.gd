@@ -95,7 +95,7 @@ var _town_tiles := {}
 var _heading := {}  # tile -> the way the army standing there last marched
 
 
-## A sync walks the store's companies ViewTier.STAGE_MS a frame (camera.json view_tier.stage_ms, the one staging
+## A sync walks the store's companies while the frame's staging pot lasts (ViewTier.spend_ok, the one frame
 ## budget), making, placing and marching them; a walk that runs out of time carries on next frame from where it
 ## stopped (_walk_on), so neither the first reading's hundreds of soldiers nor the walk itself hold a frame (FPS P0:
 ## units.sync 1,858 ms in one frame in the 6aaf2121 run; Mac's beach ball at 2b194f78, the whole walk re-run each frame).
@@ -117,10 +117,9 @@ func sync(houses: Dictionary) -> void:
 
 func _walk_some() -> void:
 	var w := _walk
-	var until := Time.get_ticks_usec() + int(ViewTier.STAGE_MS * 1000.0)
 	var units: Array = w["units"]
 	while int(w["i"]) < units.size():
-		if Time.get_ticks_usec() > until:
+		if not ViewTier.spend_ok():
 			if not _more:
 				_more = true
 				_walk_on.call_deferred()

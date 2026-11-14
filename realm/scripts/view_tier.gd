@@ -9,6 +9,8 @@ extends Node
 ##   NEAR - the lens below near_below and the place within near_reach of where it looks, on screen: everything.
 ## On screen means the place's sphere (its radius plus a lead, so what is about to come in is staged before it
 ## shows) touches the camera's frustum. Thresholds: camera.json view_tier (docs/TUNING.md).
+## One frame budget (spend_ok): every staged loop (towns raised, crowds made, companies placed, castles peopled)
+## draws on one pot a frame, STAGE_MS in play and LOAD_MS under the loading screen, never its own clock.
 ## Places are watched by key (watch); `changed` fires once when a watched place's tier changes, checked each frame.
 
 signal changed(key: Variant, tier: int)
@@ -22,6 +24,10 @@ static var NEAR_BELOW: float = Data.num("camera", "view_tier.near_below", 18.0) 
 static var NEAR_REACH: float = Data.num("camera", "view_tier.near_reach", 30.0)  # world units from where the lens looks
 static var LEAD: float = Data.num("camera", "view_tier.lead", 4.0)  # world units added to a place's radius on screen
 static var STAGE_MS: float = Data.num("camera", "view_tier.stage_ms", 4.0)  # ms a frame for staging places in
+static var LOAD_MS: float = Data.num("towns", "load_ms", 50.0)  # the pot while the loading screen covers the realm
+static var loading := false  # the loading screen is up: the frame's pot is LOAD_MS, not STAGE_MS
+static var _pot_frame := -1  # the frame the pot was filled for
+static var _pot_at := 0  # when this frame's pot began (usec)
 
 static var _me: Node  # the one in the tree (main.gd adds it)
 var rig: Node  # camera_rig.gd: distance, target
@@ -65,6 +71,17 @@ static func of(at: Vector3, radius := 0.0) -> int:
 	return t
 
 
+## Whether this frame's staging pot has time left: a staged loop does its next piece while it is true, and waits for
+## the next frame once it is false. The pot starts with the frame's first ask (or ViewTier's own _process, which runs
+## before every layer), so a coroutine woken before the layers' _process draws on the same pot.
+static func spend_ok() -> bool:
+	var f := Engine.get_process_frames()
+	if f != _pot_frame:
+		_pot_frame = f
+		_pot_at = Time.get_ticks_usec()
+	return Time.get_ticks_usec() - _pot_at < int((LOAD_MS if loading else STAGE_MS) * 1000.0)
+
+
 ## Whether a place's sphere touches the screen (with the lead).
 static func on_screen(at: Vector3, radius := 0.0) -> bool:
 	return _me == null or _me._seen(at, radius)
@@ -89,6 +106,7 @@ func tier_of(key: Variant) -> int:
 
 
 func _process(_delta: float) -> void:
+	spend_ok()  # this frame's pot starts here at the latest
 	var t0 := Time.get_ticks_usec() if PerfTools.probing else 0
 	_watched()
 	if PerfTools.probing:
