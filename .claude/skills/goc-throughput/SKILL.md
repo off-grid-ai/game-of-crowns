@@ -35,15 +35,21 @@ Keep the loop alive with `/loop 12m /goc-throughput` (or `ScheduleWakeup` 720 s)
    - What is being done twice? Two threads on one job, or a check repeating one already done.
    - Which step is slower than the code it checks?
    - What keeps failing in the combined pass? A file everyone collides on gets one owner.
-5. **Remove it** this round: reassign, split a file's ownership, cut the slow step, unblock with a decision
-   (Mac delegated product calls; log them). Never add a step or a gate.
-6. **Log one line** in `docs/SUPERVISOR_LEDGER.md`: time, what landed, pass/fail, the bottleneck, what was removed.
+5. **Measure it, then remove it.** A bottleneck is a number, not a name. Split the slow thing into its parts with
+   timings from the logs you already have, and ask what each part does that it needn't. Fix the step's own waste
+   (repeated setup, waiting, work redone) before trimming what goes into it. Then remove the biggest part this round:
+   reassign, split a file's ownership, cut or restructure the slow step, unblock with a decision (Mac delegated
+   product calls; log them). Never add a step or a gate.
+6. **Log one line** in `docs/SUPERVISOR_LEDGER.md`: time, what landed, pass/fail, the bottleneck with its numbers,
+   what was removed. The same bottleneck in two lines means the last fix didn't work: break it down further, don't
+   log it a third time.
 
 ## Never
 
 - Per-change test runs, private bridges, scratch copies, probes before fixing, per-session renders.
 - "Behind a flag", two systems doing one job, keeping the old path (CLAUDE.md "No fallbacks").
 - A builder waiting on anything. A supervisor waiting on builders.
+- Treating a slow step as fixed ("the GPU", "the render") without timing its parts.
 - Swapping, stashing, resetting or rebasing the shared tree.
 
 ## Related
