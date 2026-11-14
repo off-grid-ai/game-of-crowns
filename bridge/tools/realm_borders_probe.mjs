@@ -1,29 +1,20 @@
 // Guards Mac's order (2026-11-14): the whole continent is held by the crown and the great houses from a reign's first
-// frame. Loads the Aldmere baseline (what every new reign starts from) in a bare Freeciv, saves at once, and counts
-// the land of the realm's main continent (the landmass with most towns) no house's border claims. Exits 1 on any.
+// frame. Reads the Aldmere baseline save itself (what every new reign starts from, and what the bridge's /world owners
+// are read from until Freeciv's first autosave), and counts the land of the realm's main continent (the landmass with
+// most towns) no house's border claims. Exits 1 on any. A baseline whose owner rows predate the border rules fails
+// here even though Freeciv would redraw them on load (g37): regenerate it by loading it in a bare Freeciv and saving.
 //   node tools/realm_borders_probe.mjs        (from bridge/)
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import zlib from "node:zlib";
-import { bareFreeciv, checker } from "./fc_probe_lib.mjs";
+import { checker } from "./fc_probe_lib.mjs";
 
 const { check, done } = checker("REALM BORDERS");
 const base = path.join(path.dirname(new URL(import.meta.url).pathname), "..", "baseline", "aldmere", "saves");
-const src = path.join(base, fs.readdirSync(base).find((f) => f.endsWith(".sav.zst")));
-const dir = fs.mkdtempSync(path.join(os.tmpdir(), "fc-borders-"));
-const copy = path.join(dir, path.basename(src));
-fs.copyFileSync(src, copy);
-const fc = await bareFreeciv({ port: 5574, save: copy, saves: dir, serv: ["set timeout -1", "set autosaves \"\""] });
-check(await fc.until(/Loading saved game|Now accepting/i, 60000), "the baseline didn't load");
-await fc.cmd("save probe_at_load", /saved|Game saved/i, 20000);
-await new Promise((r) => setTimeout(r, 1500));
-const file = fs.readdirSync(dir).filter((f) => f.startsWith("probe_at_load")).map((f) => path.join(dir, f))[0];
-check(file, "no save written");
-await fc.quit();
-if (file) {
+const file = path.join(base, fs.readdirSync(base).find((f) => f.endsWith(".sav.zst")));
+{
   const raw = fs.readFileSync(file);
-  const text = (file.endsWith(".zst") ? zlib.zstdDecompressSync(raw) : raw).toString();
+  const text = zlib.zstdDecompressSync(raw).toString();
   const rows = (k) => [...text.matchAll(new RegExp(`^${k}(\\d{4})="(.*)"`, "gm"))].map((m) => m[2]);
   const ter = rows("t"), own = rows("owner").map((r) => r.split(","));
   const water = new Set([" ", ":", "+"]);  // Ocean, Deep Ocean, Lake (terrain.ruleset identifiers)
@@ -56,5 +47,4 @@ if (file) {
   check(tiles.length > 500, "couldn't find the main continent");
   check(open.length === 0, `${open.length} of ${tiles.length} land tiles unclaimed at the first frame, e.g. ${open.slice(0, 5).map((t) => t.join(",")).join(" ")}`);
 }
-fs.rmSync(dir, { recursive: true, force: true });
 done();
