@@ -21,7 +21,7 @@ static func earth(kings := false) -> Color:
 	var k := Data.num("ground", "roads.kingsShade", 0.92) if kings else 1.0
 	return Color(float(t[0]) * k, float(t[1]) * k, float(t[2]) * k)
 const Data := preload("res://scripts/data.gd")
-var GRASS: String = "res://assets/ground/painted_v2/grass.png"  # a verge's grass: the painted ground's
+var GRASS: String = "res://assets/ground/terrain3d/grass-paint.png"  # a verge's grass: the ground's own calmed grass (tools/pack_painted_ground.gd)
 
 var terrain: Node3D
 var _signature := ""

@@ -4,7 +4,10 @@ extends SceneTree
 ## (a gentle height from the paint's own lightness, so layers still blend at their edges) and a flat normal with a
 ## matte roughness in alpha (painted ground has no grain to light). Every layer takes a painting (realm/data/ground.json
 ## layers.<layer>.painting, a file name in painted_v2). tools/ground_check.gd fails a layer that isn't packed here.
-## Writes assets/ground/terrain3d/<layer>-albedo-height.png and -normal-rough.png, then run --import.
+## Writes assets/ground/terrain3d/<layer>-albedo-height.png and -normal-rough.png, then run --import. Also <layer>-paint.png:
+## the same calmed paint, opaque, for what is painted over the ground from a layer's painting (the fields' strips,
+## countryside.json field_ground), so a field is as quiet as the ground round it (g34: the raw paintings read as hard
+## bright yellow and green blocks from the drawn-back view).
 ##   arch -arm64 godot --headless --path realm -s res://tools/pack_painted_ground.gd
 const SRC := "res://assets/ground/painted_v2"
 const OUT := "res://assets/ground/terrain3d"
@@ -43,6 +46,7 @@ func _init() -> void:
 		var sat := float(calm.get("sat", 1.0))
 		var mul: Array = calm.get("mult", [1.0, 1.0, 1.0])
 		var normal := Image.create_empty(w, h, false, Image.FORMAT_RGBA8)
+		var paint := Image.create_empty(w, h, false, Image.FORMAT_RGBA8)
 		for y in h:
 			for x in w:
 				var c := img.get_pixel(x, y)
@@ -52,12 +56,14 @@ func _init() -> void:
 					var l := c.get_luminance()
 					c = Color(l, l, l).lerp(c, sat)
 					c = Color(clampf(c.r * float(mul[0]), 0.0, 1.0), clampf(c.g * float(mul[1]), 0.0, 1.0), clampf(c.b * float(mul[2]), 0.0, 1.0), a)
+				paint.set_pixel(x, y, Color(c.r, c.g, c.b, 1.0))
 				c.a = clampf(0.35 + c.get_luminance() * 0.6, 0.0, 1.0)  # a gentle height: lighter paint stands a little higher
 				img.set_pixel(x, y, c)
 				normal.set_pixel(x, y, Color(0.5, 0.5, 1.0, 0.92))  # flat, matte
 		img.save_png(ProjectSettings.globalize_path(OUT.path_join("%s-albedo-height.png" % layer)))
 		normal.save_png(ProjectSettings.globalize_path(OUT.path_join("%s-normal-rough.png" % layer)))
-		for kind in ["albedo-height", "normal-rough"]:
+		paint.save_png(ProjectSettings.globalize_path(OUT.path_join("%s-paint.png" % layer)))
+		for kind in ["albedo-height", "normal-rough", "paint"]:
 			_write_import(layer, kind)
 		print("PAINTED %s <- %s at %dx%d" % [layer, painting, w, h])
 	quit()
