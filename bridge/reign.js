@@ -465,6 +465,8 @@ export function endReign(ctx, why, outcome = "completed") {
   if (outcome === "fallen") { s.score = Math.round(s.score * 0.3); s.verdict = "The realm fell to the dead. No one is left to remember."; }
   { const k = kingName(ctx, outcome); s.title = `The King ${k.name}`; s.why = k.why; }
   meta.epilogue = epilogue(ctx);
+  meta.epitaph = epitaphOf(ctx, s, outcome);
+  const grudge = grudgeOf(ctx);
   s.outcome = outcome;
   meta.status = "ended";
   meta.score = s.score;
@@ -474,10 +476,40 @@ export function endReign(ctx, why, outcome = "completed") {
   meta.outcome = outcome;
   meta.endedAt = { turn: world?.turn ?? 0, peace: s.peace, pop: s.pop, houses: world?.players?.filter((p) => !houseFor(p).wild && !houseFor(p).crown && world.cities.some((c) => c.owner === p.id)).length ?? 0 };
   chron.saveMeta(meta);
-  chron.addRecord({ id: meta.id, name: meta.name, scenario: meta.scenario, minutes: meta.minutes, turns: world?.turn ?? 0, ended: Date.now(), ...s });
+  chron.addRecord({ id: meta.id, name: meta.name, scenario: meta.scenario, minutes: meta.minutes, turns: world?.turn ?? 0, ended: Date.now(), ...s, epitaph: meta.epitaph, grudge });
   record({ turn: world?.turn ?? 0, kind: "reign_end", text: `${why} So ends the reign of ${s.title}. ${s.verdict} (Score ${s.score}.)` });
   setPaused(true);
   send("set timeout 0");
+}
+
+// What the reign's epitaph is written from (Loop's ending: the local model writes the lines, these are its facts;
+// CK3's and Crusader Kings' end-of-life summary: the name, the deeds, the years, who loved and who hated him): kept in
+// meta.epitaph and the Hall of Records.
+function epitaphOf(ctx, s, outcome) {
+  const { meta, world, favourOf, causeOf } = ctx;
+  const crown = crownOf(world);
+  const great = (world?.players ?? []).filter((p) => !houseFor(p).wild && !houseFor(p).crown && world.cities.some((c) => c.owner === p.id));
+  const byFavour = [...great].sort((a, b) => favourOf(b.id) - favourOf(a.id));
+  const house = (p) => p && { house: houseFor(p).name, favour: Math.round(favourOf(p.id)), cause: causeOf?.(p.id) || null };
+  const seasons = Math.max(0, (world?.turn ?? 0) - (meta.crownedAt ?? 0));
+  return {
+    title: s.title, why: s.why ?? null, outcome, verdict: s.verdict, seasons, years: Math.floor(seasons / 4),
+    from: calendar(meta.crownedAt ?? 1).text, to: calendar(world?.turn ?? 1).text,
+    towns: (world?.cities ?? []).filter((c) => c.owner === crown?.id).length,
+    choices: (meta.epilogue?.choices ?? []).map((c) => c.text),
+    loved: house(byFavour[0]), hated: house(byFavour.at(-1)),
+  };
+}
+
+// The grudge a reign leaves the next (casebook, the reign: a grudge into the next reign; CK3's inherited hooks and
+// feuds): the great house coldest to the crown at the end, if under cooling, by its key (the house outlives the
+// players' ids), with the cause it keeps; null when no house is that cold.
+function grudgeOf(ctx) {
+  const { world, favourOf, causeOf } = ctx;
+  const great = (world?.players ?? []).filter((p) => !houseFor(p).wild && !houseFor(p).crown && world.cities.some((c) => c.owner === p.id));
+  const p = [...great].sort((a, b) => favourOf(a.id) - favourOf(b.id))[0];
+  if (!p || favourOf(p.id) >= BANDS.cooling) return null;
+  return { key: houseFor(p).key, house: houseFor(p).name, favour: Math.round(favourOf(p.id)), cause: causeOf?.(p.id) || null };
 }
 
 // The reign's clock, every five seconds while the realm runs and the King

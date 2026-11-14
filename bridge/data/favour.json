@@ -10,5 +10,6 @@
   "seasons": 4,
   "cool": 2
  },
-  "turning": {"seasons": 2, "riseIn": 2}
+  "turning": {"seasons": 2, "riseIn": 2},
+  "grudge": {"_": "A grudge into the next reign (reign.js grudgeOf, server.js applyStartOptions): the great house coldest to the crown at a reign's end, if under cooling, starts the next reign this much colder (never under the start floor), and the chronicle says why.", "carry": 12}
 }

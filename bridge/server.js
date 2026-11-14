@@ -22,7 +22,7 @@ import { moodRules, speak } from "./claude.js";
 import * as chron from "./chronicles.js";
 import { clampFavour, DECREES } from "./crown.js";
 import * as kingDeeds from "./ledger.js";
-import { START } from "./favour.js";
+import { START, GRUDGE } from "./favour.js";
 // Stories the player generates or writes, kept with their realms.
 const OWN_STORIES = path.join(chron.HOME, "stories");
 ownStories(OWN_STORIES);
@@ -374,6 +374,12 @@ function applyStartOptions() {
       favour[id] = favourOf(id) + d;  // their history, not the King's deed: no deed is recorded
       (favourWhy[id] ??= []).push({ d, why: d < 0 ? "an old quarrel with the crown" : "an old kindness from the crown" });
     });
+  }
+  // The last reign's grudge (chronicles.create, reign.js grudgeOf): its house starts colder, and the chronicle says why.
+  const held = meta.grudge && world.players.find((p) => houseFor(p).key === meta.grudge.key && !houseFor(p).wild && !houseFor(p).crown);
+  if (held) {
+    noteFavour(held.id, -GRUDGE.carry, `a grudge from the last King's reign${meta.grudge.cause ? `: ${meta.grudge.cause}` : ""}`);
+    record({ turn: world.turn, kind: "court", text: `${houseFor(held).name} has not forgotten the last King${meta.grudge.cause ? `, nor ${meta.grudge.cause}` : ""}. They bow to the new crown, and keep their grudge.` });
   }
   // No great house begins under the floor (a resentful realm's floor is just above the rising line).
   const floor = o.trust === "resentful" ? START.resentful : START.floor;
