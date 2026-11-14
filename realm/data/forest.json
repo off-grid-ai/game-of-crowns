@@ -125,7 +125,7 @@
    "rock": 1
   },
   "Hills": {
-   "rock": 3,
+   "rock": 4,
    "bush": 3,
    "grass": 8
   },
@@ -134,7 +134,7 @@
    "grass": 4
   },
   "Mountains": {
-   "rock": 4
+   "rock": 6
   },
   "Desert": {
    "rock": 2

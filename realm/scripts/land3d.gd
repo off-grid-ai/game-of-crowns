@@ -60,8 +60,10 @@ func build(terrain: Node3D, ground_layer: int) -> void:
 	# The auto shader shows its overlay on flat ground and its base on slopes.
 	mat.set_shader_param("auto_base_texture", 4)
 	mat.set_shader_param("auto_overlay_texture", 0)
-	# Rock only on real cliffs: higher values keep grass on steeper ground.
-	mat.set_shader_param("auto_slope", 1.6 if terrain.land else 2.2)
+	# Rock on the hills' and mountains' steep faces and high ground (ground.json auto.slope: higher, rock on gentler
+	# slopes; auto.high: higher, rock lower down the mountains; WC3's cliff tiers, so the realm reads its shape).
+	mat.set_shader_param("auto_slope", Data.num("ground", "auto.slope", 1.6) if terrain.land else 2.2)
+	mat.set_shader_param("auto_height_reduction", Data.num("ground", "auto.high", 0.1))
 	mat.set_shader_param("blend_sharpness", 0.87)
 	# Terrain3D's own answers to a ground that looks like a carpet: textures
 	# projected onto steep faces instead of stretched down them, broad patches
