@@ -602,3 +602,4 @@ Switches (`--name`) go after `--` on the game's command line.
 - A town's prices on its square: `realm/data/towns.json` `prices.dear` (1.4: food this dear or more, the buyers haggle, one at each stall; town_scenes.json haggle) and `prices.cheap` (0.8: food or goods this cheap, four buyers at each stall).
 - The order cursor while an order waits for its place: `realm/data/host_command.json` `cursor` (size 32 px, rim 2 px).
 - A broken regiment runs as a loose crowd, not a block: `realm/data/battle.json` `field.scatter` 0.16 (was 0.05) world units a second each man drifts from his place.
+- The garrison on the walls (g37 siege: none on the battlements): `realm/data/siege.json` `garrison.men` 18 (was 12), `every` 0.09 rad apart (was 0.11), `reach` 4.0 world units to find the wall walk from the siege's own wall line (was 1.5: a town's real wall stood further out, so the men stood behind it on the ground).
