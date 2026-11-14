@@ -246,6 +246,16 @@ export class Court {
     return c?.alive ? c : this.stale() ?? this.alive().find((x) => x.playerId === pid && x.rank === "lord");
   }
 
+  // The vassal houses (Mac, 2026-11-14: the continent is the crown's and the seven great houses', some of it through
+  // their sworn vassals): each bannerman seated in a town his great house still holds is a minor house of his own
+  // name, sworn to it. For /world vassals: [{town, house, lord, id, liege, owner}].
+  vassals(world) {
+    const held = new Map((world?.cities ?? []).map((c) => [c.id, c.owner]));
+    return this.alive().filter((c) => c.rank === "bannerman" && c.seat != null && held.get(c.seat) === c.playerId).map((c) => ({
+      town: c.seat, house: `House ${c.surname}`, lord: c.name, id: c.id, liege: c.house, owner: c.playerId,
+    }));
+  }
+
   lordOfTown(cityId) {
     this.alive();
     const c = this._bySeat.get(cityId);

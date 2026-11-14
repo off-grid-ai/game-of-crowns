@@ -300,10 +300,14 @@ nuke_defender_survival_chance_pct = 0
 
 [borders]
 ; Base border radius from city.
-radius_sq_city = 17
+; Game of Crowns: the whole continent is held by the crown and the great houses, directly or through their sworn
+; vassals' towns (Mac, 2026-11-14), so every town claims far: where two claims meet, Freeciv's border strength
+; ((size+2)^2 over distance) gives the tile to the nearer, bigger town, and the realm is one patchwork with no
+; unclaimed land between territories (400 + 12 a size point covers the realm map's farthest land from any town).
+radius_sq_city = 400
 
 ; Border radius square increased by this amount / point of city size
-size_effect    = 1
+size_effect    = 12
 
 ; Difference between city workable area and area permanently claimed by
 ; city (these tiles cannot be stolen by stronger border sources).
