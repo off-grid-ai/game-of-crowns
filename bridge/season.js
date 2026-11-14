@@ -20,6 +20,7 @@ import * as Households from "./households.js";
 import * as Harvest from "./harvest.js";
 import * as Royals from "./royals.js";
 import * as Promises from "./promises.js";
+import * as Siegecraft from "./siegecraft.js";
 import * as Seals from "./seals.js";
 import * as Next from "./next.js";
 import * as Director from "./director.js";
@@ -56,7 +57,8 @@ export function turn(ctx, ev) {
   Weather.advance(ctx.meta, Number(ev.turn), calendar(Number(ev.turn)).season);
   Harvest.season(ctx, Number(ev.turn));  // a wet autumn's harvest rots: towns without a granary eat lean (harvest.js)
   if (isYearEnd(ev.turn)) Royals.year(ctx, Number(ev.turn));
-  Promises.season(ctx, Number(ev.turn));  // the King's promises kept or broken (promises.js)  // the King's household ages; a King may die and his heir reign (royals.js)
+  Promises.season(ctx, Number(ev.turn));
+  Siegecraft.season(ctx, Number(ev.turn));  // the great houses' sieges change approach after a failed storm (siegecraft.js)  // the King's promises kept or broken (promises.js)  // the King's household ages; a King may die and his heir reign (royals.js)
   setTimeout(() => ctx.runArcs(1), 4000);
   // Let the AI finish its start-of-turn moves before dumping the world.
   setTimeout(ctx.snapshot, 1500);

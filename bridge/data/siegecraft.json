@@ -1,0 +1,6 @@
+{
+ "_": "Besiegers that adapt (siegecraft.js; Dwarf Fortress's attackers who break your favourite trick, Total War and Stronghold's siege choices: starve, mine, bribe). A great house's siege of a town (3 or more of its companies at the walls; the King's own sieges are his to call, campaigns.js) that has lost a company storming it changes its approach: mine when the town has walls, bribe when its house has gold, else starve. starve: each season the garrison loses that much of its full hit points, never the last. mine: after seasons, the walls come down (Freeciv's City Walls taken out). bribe: once, gold from the besieger's purse and one company of the garrison slips away in the night; then they starve it.",
+ "starve": 0.2,
+ "mine": { "seasons": 2 },
+ "bribe": { "gold": 120 }
+}
