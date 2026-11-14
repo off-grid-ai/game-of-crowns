@@ -133,6 +133,7 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- 11-14 14:00 Landed ~14: borders on land f2cb1a52, fill kept d7fd443a, vassal holdings b5b5b510 (reads /world vassals; players.liege path dropped), prices on square 16a68b13, fate odds 1f08d201, hunt odds 44ea3a83, X keepsake ad1c3a57, land remembers f00dfb86, order cursor 208404c2, rout crowd 5b570f21, garrison bc506502, field trees 08d05dc0. g38 realm PASS on continent (sent Mac); midzoom fixes confirmed by look. Bottleneck: army holding items for g38 frames; told to build now.
 - 11-14 13:46 Landed: wall closes 0bc67691, edge houses d8b2629d, busy square 96c05327 (square_r kept 2.1: Mac's 11-12 call), fallow 8c977198. g38 landuse: big step (square, rows, street), sent to Mac. Realm rendering. Bottleneck: GPU.
 - 11-14 13:44 Landed: Aldmere names for every town 1965eb14, woods at army scale 1a9caff2. g38 up at 6fb8c24d: players 8, cities 31 (Mac's 7+crown confirmed live); frames pending. Bottleneck: the GPU.
 - 11-14 13:32 Landed: Ironreach back b69c59e6 (8 powers, crown vassals), King's odds 933cb7d1, feast/pilgrimage f39daf7d, loyalty words + card decay. g37 winter hung 74 min (square, likely 3a6793b2 loop); killed g37, g38 at HEAD on 11 views. Freeciv names 'Lyon, Rouen' leak (bridge). Look was holding for renders: told to judge g38 frames as they land.
