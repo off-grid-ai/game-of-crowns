@@ -80,7 +80,7 @@
   },
   "_clip_drop_bones": "bones a clip may carry that no body is skinned to (chain tips, helpers): their tracks are dropped as the clips load (people.gd _in_place).",
   "clip_drop_bones": ["mixamorig_LeftToe_End", "headfront", "mixamorig_LeftHandMiddle4"],
-  "lod": {"near": 6.0, "stride": 3, "decide_s": 30.0, "mind_budget_ms": 3.0},
+  "lod": {"near": 6.0, "stride": 3, "decide_s": 1.0, "mind_budget_ms": 3.0},
   "_seen_to": "seen_to: world units beyond which a person isn't drawn or animated (a few pixels tall). near_fade: within gone of the lens a person is gone, beyond solid fully there (about 0.7 m and 1.5 m).",
   "seen_to": 18.0,
   "near_fade": {"gone": 0.08, "solid": 0.18},

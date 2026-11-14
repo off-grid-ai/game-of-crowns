@@ -450,6 +450,7 @@ func _reduce_minds_perceive(kind: String, pos: Vector3, house: String, strength:
 		if d > radius:
 			continue
 		perceive(player.blackboard, kind, pos, house, power, d / radius)
+		preload("res://scripts/anim_lod.gd").wake(player)  # reacts now, not on its next turn
 		told += 1
 	if OS.get_cmdline_user_args().has("--probe"):
 		print("AWARE %s at %s r=%.1f: %d perceived" % [kind, pos, radius, told])
@@ -469,6 +470,7 @@ static func _reduce_minds_assign(player: BTPlayer, vars: Dictionary) -> void:
 		return
 	for k in vars:
 		player.blackboard.set_var(StringName(k), vars[k])
+	preload("res://scripts/anim_lod.gd").wake(player)  # its new state is acted on now
 
 
 ## One person takes in news: what they've just seen (for React), and a memory

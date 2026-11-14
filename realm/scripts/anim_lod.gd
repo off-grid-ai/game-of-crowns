@@ -14,9 +14,9 @@ const PerfTools := preload("res://scripts/perf_tools.gd")  # the frame-cost prob
 ## Minds (npc_mind.gd hands each BTPlayer over): each person decides once every
 ## DECIDE_S seconds, seen or not, with the time owed, so their waits and holds keep
 ## the clock. Staggered by person, so about 1/DECIDE_S of them decide each second and
-## never all on one frame; a person new to the realm decides at once (Mac, FPS P0,
-## 2026-11-14: "can we delay this to be done once every 30 seconds"; 1,116 people and
-## 804 minds ran the realm at 7 fps). Walking is the mover's, every frame, on screen.
+## never all on one frame; a person new to the realm, or one something just happened to
+## (wake), decides at once (Mac, FPS P0, 2026-11-14: "the reaction time is just too much";
+## MIND_BUDGET_MS caps their cost). Walking is the mover's, every frame, on screen.
 
 static var NEAR: float = preload("res://scripts/data.gd").num("people", "lod.near", 6.0)  # world units: closer than this, every frame (people.json lod.near)
 static var STRIDE: int = int(preload("res://scripts/data.gd").num("people", "lod.stride", 3))  # further off, one frame in this many (people.json lod.stride)
@@ -26,6 +26,7 @@ static var DECIDE_S: float = preload("res://scripts/data.gd").num("people", "lod
 ## (Mac: "too many long running operations"). A mind kept waiting is given all the time it is owed.
 static var MIND_BUDGET_MS: float = preload("res://scripts/data.gd").num("people", "lod.mind_budget_ms", 3.0)
 var _turn := 0  # where in _minds the next frame's thinking starts
+static var _woken := {}  # mind instance id -> WeakRef: minds something just happened to, decided first next frame (wake)
 const People = preload("res://scripts/people.gd")
 
 static var _players: Array[WeakRef] = []
@@ -156,7 +157,23 @@ func _animate(delta: float, vp: Viewport, cam: Camera3D) -> void:
 	_players = keep
 
 
+## Something happened to this person (a stimulus near them, a call to meet: awareness.gd): they decide next frame,
+## ahead of the round robin and its budget, with all the time they are owed (Mac: "the reaction time is just too much").
+static func wake(mind: BTPlayer) -> void:
+	_woken[mind.get_instance_id()] = weakref(mind)
+
+
 func _think(delta: float, vp: Viewport, cam: Camera3D) -> void:
+	var now := {}  # the woken, decided this frame before the rest
+	for id in _woken:
+		var wm: BTPlayer = _woken[id].get_ref()
+		if wm == null or not wm.is_inside_tree() or not wm.active or not wm.can_process() or wm.get_parent() == null:
+			continue
+		wm.update(float(_mind_owed.get(id, 0.0)) + delta)
+		thought += 1
+		_mind_owed[id] = 0.0
+		now[id] = true
+	_woken.clear()
 	var keep: Array[WeakRef] = []
 	var count := _minds.size()
 	var start := _turn % maxi(count, 1)
@@ -171,6 +188,8 @@ func _think(delta: float, vp: Viewport, cam: Camera3D) -> void:
 		keep.append(w)
 		var body := m.get_parent() as Node3D
 		var id := m.get_instance_id()
+		if now.has(id):
+			continue  # decided this frame, woken
 		# Paused with its town or system (the intro, the perf cycle): as its own clock would be.
 		if body == null or not m.is_inside_tree() or not m.active or not m.can_process():
 			_mind_owed.erase(id)
