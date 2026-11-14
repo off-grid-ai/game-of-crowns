@@ -102,8 +102,20 @@ func _read_standing() -> void:
 			else left + " Win them all and end their wars, and the realm is yours in truth."
 
 
+var _shown_sig := 0  # what the table was last built from: a reading that changes none of it leaves it standing
+
+
 func _fill_houses() -> void:
 	var st: Node = Awareness.store()
+	# Built anew only when what it shows changed (the houses' rows, their vassals and the towns those hold, the rival
+	# beyond the border): every reading rebuilt every row, sigils and all, a hitch each time (FPS: ui.set_world).
+	var seats := PackedStringArray()
+	for vs in st.rec("vassals", []):
+		seats.append(String(ui.town_of.call(int(vs.get("town", -1))).get("name", "")))
+	var sig := hash([st.rec("players", []), st.rec("vassals", []), seats, st.rec("rival", {}), Awareness.bands])
+	if sig == _shown_sig and _houses.get_child_count() > 0:
+		return
+	_shown_sig = sig
 	var popup := ui._grant_menu.get_popup()
 	popup.clear()
 	ui._house_ids.clear()
