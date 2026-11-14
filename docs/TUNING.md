@@ -504,7 +504,7 @@ Switches (`--name`) go after `--` on the game's command line.
 - Double-click to come closer (Total War's campaign map, CK3, Google Maps): `realm/data/camera.json` `doubleClick.step` (the share of the distance one double-click comes in, 0.35; never under `floor`, where it only re-centres). Check: `realm/tools/double_click_probe.gd` (headless).
 
 ## The view's knobs moved out of code (integration audit #20; probe: `realm/tools/tunables_view_probe.gd`)
-- How far people animate every frame, one frame in how many beyond, and how often an unseen mind thinks (never more than `mind_lag` seconds behind): `realm/data/people.json` `lod` (`near`, `stride`, `mind_unseen`, `mind_lag`).
+- How far people animate every frame, one frame in how many beyond, and how many seconds between each person's decisions, staggered so a slice decides each second (Mac: 30; off-screen people don't move): `realm/data/people.json` `lod` (`near`, `stride`, `decide_s`).
 - How far off smoke and fire are still drawn: `realm/data/fire.json` `particles_far`.
 - How far off a burning house's flames, embers and scorch are still drawn (game units): `realm/data/fire.json` `far`.
 - How much a town's streets shun a slope (a rise of one unit per unit costs this many times level ground when town_plots.gd lays its ways): `realm/data/towns.json` `plots.slope_cost`.

@@ -11,15 +11,16 @@ const PerfTools := preload("res://scripts/perf_tools.gd")  # the frame-cost prob
 ## Each time a body moves, its state machine also reads how fast the person is
 ## going (motion.gd), which drives their legs.
 ##
-## Minds (npc_mind.gd hands each BTPlayer over): the same distances, but a mind
-## never stops, seen or not: up close every frame, in sight every third frame,
-## out of sight every MIND_UNSEEN frames, each time with the time owed, so its
-## waits and holds keep the clock; and never more than MIND_LAG behind.
+## Minds (npc_mind.gd hands each BTPlayer over): each person decides once every
+## DECIDE_S seconds, seen or not, with the time owed, so their waits and holds keep
+## the clock. Staggered by person, so about 1/DECIDE_S of them decide each second and
+## never all on one frame; a person new to the realm decides at once (Mac, FPS P0,
+## 2026-11-14: "can we delay this to be done once every 30 seconds"; 1,116 people and
+## 804 minds ran the realm at 7 fps). Walking is the mover's, every frame, on screen.
 
 static var NEAR: float = preload("res://scripts/data.gd").num("people", "lod.near", 6.0)  # world units: closer than this, every frame (people.json lod.near)
 static var STRIDE: int = int(preload("res://scripts/data.gd").num("people", "lod.stride", 3))  # further off, one frame in this many (people.json lod.stride)
-static var MIND_UNSEEN: int = int(preload("res://scripts/data.gd").num("people", "lod.mind_unseen", 10))  # a mind out of sight thinks one frame in this many (people.json lod.mind_unseen)
-static var MIND_LAG: float = preload("res://scripts/data.gd").num("people", "lod.mind_lag", 0.25)  # game seconds: a mind is never further behind than this (a person's reaction time) (people.json lod.mind_lag)
+static var DECIDE_S: float = preload("res://scripts/data.gd").num("people", "lod.decide_s", 30.0)  # game seconds between a person's decisions (people.json lod.decide_s)
 const People = preload("res://scripts/people.gd")
 
 static var _players: Array[WeakRef] = []
@@ -54,9 +55,8 @@ static func add_mind(mind: BTPlayer) -> bool:
 	return true
 
 
-var _frame := 0
 var _owed := {}  # player instance id -> time it hasn't been given yet
-var _mind_owed := {}  # mind instance id -> time it hasn't been given yet
+var _mind_owed := {}  # mind instance id -> time it hasn't been given yet; a new mind starts on its own phase of DECIDE_S
 
 
 func _enter_tree() -> void:
@@ -75,7 +75,6 @@ func _exit_tree() -> void:
 
 
 func _process(delta: float) -> void:
-	_frame += 1
 	var vp := get_viewport()
 	var cam := vp.get_camera_3d()
 	# Minds first, then bodies: whatever a mind sets this frame (a facing, a
@@ -84,6 +83,7 @@ func _process(delta: float) -> void:
 	if not PerfTools.probing:
 		_think(delta, vp, cam)
 		_animate(delta, vp, cam)
+		_seen.clear()  # this frame's answers are spent (the movers asked first: process_priority)
 		return
 	var t0 := Time.get_ticks_usec()
 	_think(delta, vp, cam)
@@ -91,13 +91,28 @@ func _process(delta: float) -> void:
 	_animate(delta, vp, cam)
 	PerfTools.add("minds", t1 - t0)  # its shares of the frame (GOC_PERF_PROBE)
 	PerfTools.add("anim_lod", Time.get_ticks_usec() - t1)
+	_seen.clear()
 
 
 ## How often a person at this distance is seen to: 1 every frame, n one frame in
 ## n, 0 out of sight (off screen or past People.SEEN_TO).
+## Asked up to three times a frame for each person (their mind, their legs, their mover: moves_now),
+## so worked out once a frame and kept (_seen: body id -> [frame, reach, answer]).
+static var _seen := {}
 static func every(cam: Camera3D, body: Node3D, reach := -1.0) -> int:
 	if flat:
 		return 1
+	var key := body.get_instance_id()
+	var frame := Engine.get_process_frames()
+	var was: Array = _seen.get(key, [])
+	if not was.is_empty() and was[0] == frame and was[1] == reach:
+		return was[2]
+	var n := _every(cam, body, reach)
+	_seen[key] = [frame, reach, n]
+	return n
+
+
+static func _every(cam: Camera3D, body: Node3D, reach: float) -> int:
 	var d := (body.global_position + Vector3(0, 0.1, 0)).distance_to(cam.global_position)
 	if d > (reach if reach > 0.0 else People.SEEN_TO) or not in_view(cam, body):
 		return 0
@@ -147,18 +162,18 @@ func _think(delta: float, vp: Viewport, cam: Camera3D) -> void:
 		if body == null or not m.is_inside_tree() or not m.active or not m.can_process():
 			_mind_owed.erase(id)
 			continue
-		var n := 1
-		if cam != null and m.get_viewport() == vp:
-			n = every(cam, body)
-			if n == 0:
-				n = MIND_UNSEEN
-		var owed: float = _mind_owed.get(id, 0.0) + delta
-		if n == 1 or owed >= MIND_LAG or (_frame + id) % n == 0:
+		if not _mind_owed.has(id):
+			# New: decides now, then on a phase of its own (its id spread over DECIDE_S).
+			m.update(delta)
+			thought += 1
+			_mind_owed[id] = fposmod(float(id) * 0.6180339, 1.0) * DECIDE_S
+			continue
+		var owed: float = _mind_owed[id] + delta
+		if owed >= DECIDE_S:
 			m.update(owed)
 			thought += 1
-			_mind_owed.erase(id)
-		else:
-			_mind_owed[id] = owed
+			owed = 0.0
+		_mind_owed[id] = owed
 	_minds = keep
 
 
@@ -177,7 +192,7 @@ static func moves_now(body: Node3D) -> bool:
 		return true
 	var n := every(cam, body)
 	if n == 0:
-		n = STRIDE  # out of sight: no legs to keep in step, moved now and then with the time owed
+		return false  # out of sight: not moved at all; the walk goes on from where it was once seen (FPS P0)
 	return n == 1 or (Engine.get_process_frames() + mo.get_instance_id()) % n == 0
 
 

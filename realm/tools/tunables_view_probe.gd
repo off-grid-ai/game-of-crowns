@@ -8,8 +8,7 @@ extends SceneTree
 const MOVED := [
 	["anim_lod", "NEAR", "people", "lod.near"],
 	["anim_lod", "STRIDE", "people", "lod.stride"],
-	["anim_lod", "MIND_UNSEEN", "people", "lod.mind_unseen"],
-	["anim_lod", "MIND_LAG", "people", "lod.mind_lag"],
+	["anim_lod", "DECIDE_S", "people", "lod.decide_s"],
 	["particles", "FAR", "fire", "particles_far"],
 	["army_assault", "WAVE", "siege", "assault.wave"],
 	["army_assault", "FALL", "siege", "assault.fall"],
