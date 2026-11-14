@@ -264,6 +264,13 @@ static func leaves(mat: Material, path: String, kind: String) -> Material:
 	c.detail_albedo = _flat(Color.BLACK)
 	c.detail_mask = _flat(Color.BLACK)
 	set_turn(c, turn_of(c) if season != "" else Color(0, 0, 0, 0))
+	# The leaves' own cut-out, lower than the painted 0.5 (assets.json woods.kit.leaf_scissor): a leaf texture's alpha
+	# averages down as it shrinks with distance, so at 0.5 a crown thinned to bare twigs from the middle zoom (g35:
+	# the woods read as palms, trunks with a tuft). Bare in winter still raises it from here (scissor_of).
+	if c.transparency == BaseMaterial3D.TRANSPARENCY_ALPHA:
+		c.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
+	if c.transparency == BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR:
+		c.alpha_scissor_threshold = Data.num("assets", "woods.kit.leaf_scissor", c.alpha_scissor_threshold)
 	c.set_meta("scissor", c.alpha_scissor_threshold)
 	c.alpha_scissor_threshold = scissor_of(c)  # made in winter: bare at once
 	if season != "":

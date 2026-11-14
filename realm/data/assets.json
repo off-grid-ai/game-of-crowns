@@ -6,7 +6,7 @@
     
     
     "tree_range": [8, 14],
-    "kit": {
+    "kit": { "leaf_scissor": 0.3, "_leaf_scissor": "forest.gd leaves: the leaves' cut-out threshold (was the painted 0.5: from the middle zoom the shrunken leaf textures fell under it and the crowns thinned to twigs, g35's palms).",
       "shade": { "_": "forest.gd shade_at: each tree's leaves a little lighter or darker (light) and warmer or cooler (warm) than its kind's, from where it stands (Warcraft III tree lines: no two crowns one green).", "light": 0.14, "warm": 0.08 },
       "pine": { "models": ["nature/Pine_1.gltf", "nature/Pine_3.gltf", "nature/Pine_4.gltf"], "height": 13.0 },
       "oak": { "models": ["nature/CommonTree_1.gltf", "nature/CommonTree_2.gltf", "nature/CommonTree_3.gltf", "nature/CommonTree_4.gltf", "nature/CommonTree_5.gltf"], "height": 11.5 },
