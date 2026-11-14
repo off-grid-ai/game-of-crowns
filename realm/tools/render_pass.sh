@@ -348,13 +348,21 @@ if want raid; then
   raider() {  # raider <x> <y> <near|out|any> <from season>: "id x y yaw" for the raiders by the town (x y their midpoint),
     # the farthest one 4+ tiles out once the raid's seasons are over, or any still living; '' when none. yaw: the lens
     # on their side of the town looking back at it (camera_rig: the lens sits along (sin yaw, cos yaw) from its aim),
-    # so the raiders stand in front with the town behind them, not lost among its roofs (g24 raid.jpg)
+    # so the raiders stand in front with the town behind them, not lost among its roofs (g24 raid.jpg). The men by the
+    # town are this raid's (raid.ids); the walk-off and 'any' follow only them, not another raid's (g24 raid_leave.jpg
+    # framed a wild raider at 46,69, far from Saltkeep)
     curl -s -m 10 "$API/world" | perl -e 'alarm shift; exec @ARGV' 20 python3 -I -c "
 import json,sys; d=json.load(sys.stdin)
 wild={p['id'] for p in d.get('players',[]) if (p.get('house') or {}).get('wild')}
 old={int(x) for x in open('$OUT/raid.before').read().split()}
 x,y=$1,$2
 us=[u for u in d.get('units',[]) if u.get('owner') in wild and u['id'] not in old]
+try:
+    mine={int(i) for i in open('$OUT/raid.ids').read().split()}
+except OSError:
+    mine=None
+if '$3'!='near' and mine is not None:
+    us=[u for u in us if u['id'] in mine]
 far=lambda u: max(abs(u['x']-x),abs(u['y']-y))
 import math
 if '$3'=='any':
@@ -362,6 +370,7 @@ if '$3'=='any':
 elif '$3'=='near':
     us=[u for u in us if far(u)<=3]; u=min(us,key=far) if us else None
     if u: u={'id':u['id'],'x':sum(v['x'] for v in us)/len(us),'y':sum(v['y'] for v in us)/len(us)}
+    open('$OUT/raid.ids','w').write(' '.join(str(v['id']) for v in us))
 else:
     us=[u for u in us if far(u)>=4 and d.get('turn',0)>=$4]; u=max(us,key=far) if us else None
 if u:
