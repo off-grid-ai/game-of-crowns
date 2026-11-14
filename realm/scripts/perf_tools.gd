@@ -199,9 +199,11 @@ func _log_perf(delta: float) -> void:
 		var tallied := PackedStringArray()
 		for k in tally:
 			tallied.append("%s:%.1fms/%d" % [k, tally[k][0] / 1000.0, tally[k][1]])
-		print("PERF video=%.0fMB buffers=%.0fMB static=%.0fMB frames=%d over_200ms=%d fps=%d process=%.1fms render_cpu=%.1fms gpu=%.1fms people=%d minds=%d view=%dx%d scale=%.2f jobs=%s" % [Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0,
+		print("PERF video=%.0fMB buffers=%.0fMB static=%.0fMB frames=%d over_200ms=%d fps=%d process=%.1fms render_cpu=%.1fms gpu=%.1fms people=%d minds=%d view=%dx%d scale=%.2f jobs=%s holders=%s" % [Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0,
 			Performance.get_monitor(Performance.RENDER_BUFFER_MEM_USED) / 1048576.0, Performance.get_monitor(Performance.MEMORY_STATIC) / 1048576.0, _frames, _slow,
-			Engine.get_frames_per_second(), Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0, render_cpu, render_gpu, folk.size(), minds, main.get_viewport().get_visible_rect().size.x, main.get_viewport().get_visible_rect().size.y, main.get_viewport().scaling_3d_scale, ",".join(tallied)])
+			Engine.get_frames_per_second(), Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0, render_cpu, render_gpu, folk.size(), minds, main.get_viewport().get_visible_rect().size.x, main.get_viewport().get_visible_rect().size.y, main.get_viewport().scaling_3d_scale, ",".join(tallied), _holders(folk)])
+	if probing:
+		f.store_line("    people by holder (all/visible) " + _holders(main.get_tree().get_nodes_in_group("people")))
 	if probing and not tally.is_empty():
 		var jobs := PackedStringArray()
 		for k in tally:
@@ -362,3 +364,24 @@ func _engine_counts() -> String:
 			n["lights"] += 1
 	return "physics=%.1fms nav=%d %s" % [Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0,
 		int(Performance.get_monitor(Performance.NAVIGATION_ACTIVE_MAPS)), " ".join(n.keys().map(func(k): return "%s=%d" % [k, n[k]]))]
+
+
+## Who holds the realm's people (GOC_PERF_PROBE): each body counted under the first script above it (villagers.gd,
+## castle_life.gd, units.gd, town_life.gd...), as all/visible-in-tree, most first: which layer the count comes from.
+static func _holders(folk: Array) -> String:
+	var by := {}
+	for n in folk:
+		var up: Node = (n as Node).get_parent()
+		while up != null and up.get_script() == null:
+			up = up.get_parent()
+		var key := String((up.get_script() as Script).resource_path.get_file().get_basename()) if up != null else "?"
+		var c: Array = by.get(key, [0, 0])
+		c[0] += 1
+		c[1] += 1 if (n as Node3D).is_visible_in_tree() else 0
+		by[key] = c
+	var keys := by.keys()
+	keys.sort_custom(func(x, y): return int(by[x][0]) > int(by[y][0]))
+	var out := PackedStringArray()
+	for k in keys:
+		out.append("%s:%d/%d" % [k, by[k][0], by[k][1]])
+	return ",".join(out)
