@@ -33,6 +33,7 @@ func _init(m: Node) -> void:
 
 func _ready() -> void:
 	Engine.set_meta("stone_walls", self)
+	add_child(preload("res://scripts/beacons.gd").new(self))  # a fire on the walls when a foe's host nears (beacons.gd)
 	var t := Timer.new()
 	t.wait_time = 0.5
 	t.autostart = true
@@ -206,33 +207,61 @@ func walk_toward(from: Vector3, reach: float) -> Vector3:
 	var best := Vector3.INF
 	var bd := reach
 	for id in _town_walls:
-		var tw: Dictionary = _town_walls[id]
-		var root: Node3D = tw["root"]
-		if not is_instance_valid(root):
-			continue
-		var up := int(tw["storeys"]) * CastleBuilder.STOREY * S
-		for sec in tw["bays"]:
-			if (tw["stones"] as Dictionary).has(sec):
-				for w in tw["stones"][sec]:
-					if is_instance_valid(w) and w.distance_to(from) < bd:
-						var p: Vector3 = w.walk_at(from, holds)
-						if p != Vector3.INF:
-							bd = Vector2(p.x - from.x, p.z - from.z).length()
-							best = p
-				continue
-			for b in tw["bays"][sec]:
-				var q: Vector3 = (b[0] as Vector3) * S
-				var inward := Vector3(-q.x, 0, -q.z).normalized()
-				var p := root.to_global(q + inward * float(k.get("in_m", 1.5)) * S + Vector3.UP * up)
-				var d := Vector2(p.x - from.x, p.z - from.z).length()
-				if d < bd:
-					bd = d
-					best = p
+		var got := _walk_on(int(id), from, bd)
+		if not got.is_empty():
+			best = got[0]
+			bd = got[1]
 	if not _demo.is_empty() and is_instance_valid(_demo["wall"]) and _demo["wall"].distance_to(from) < bd:
 		var p: Vector3 = _demo["wall"].walk_at(from, holds)
 		if p != Vector3.INF:
 			best = p
 	return best
+
+
+## Town `id`'s wall walk nearest `from` (world), or INF: where its beacon is lit (beacons.gd).
+func walk_of(id: int, from: Vector3) -> Vector3:
+	var got := _walk_on(id, from, INF)
+	return got[0] if not got.is_empty() else Vector3.INF
+
+
+## The walled towns' ids, and each one's root (beacons.gd).
+func walled() -> Array:
+	return _town_walls.keys().filter(func(id): return is_instance_valid(_town_walls[id]["root"]))
+
+
+func root_of(id: int) -> Node3D:
+	return _town_walls[id]["root"]
+
+
+## Town `id`'s wall walk nearest `from` within `within` (level distance): [point, distance], or [].
+func _walk_on(id: int, from: Vector3, within: float) -> Array:
+	var k: Dictionary = Data.value("walls", "walk", {})
+	var holds := float(k.get("holds_below", 0.15))
+	var best := Vector3.INF
+	var bd := within
+	var tw: Dictionary = _town_walls[id]
+	var root: Node3D = tw["root"]
+	if not is_instance_valid(root):
+		return []
+	var up := int(tw["storeys"]) * CastleBuilder.STOREY * S
+	for sec in tw["bays"]:
+		if (tw["stones"] as Dictionary).has(sec):
+			for w in tw["stones"][sec]:
+				if is_instance_valid(w) and w.distance_to(from) < bd:
+					var p: Vector3 = w.walk_at(from, holds)
+					if p != Vector3.INF:
+						bd = Vector2(p.x - from.x, p.z - from.z).length()
+						best = p
+			continue
+		for b in tw["bays"][sec]:
+			var q: Vector3 = (b[0] as Vector3) * S
+			var inward := Vector3(-q.x, 0, -q.z).normalized()
+			var p := root.to_global(q + inward * float(k.get("in_m", 1.5)) * S + Vector3.UP * up)
+			var d := Vector2(p.x - from.x, p.z - from.z).length()
+			if d < bd:
+				bd = d
+				best = p
+	return [best, bd] if best != Vector3.INF else []
 
 
 ## A stone lands at `at` (world) on a wall, flying along `along`.

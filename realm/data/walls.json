@@ -53,5 +53,6 @@
   },
   "sim_radius": 12.0,
   "dust": {"amount": 22, "life_s": 2.4, "size": 0.32, "colour": "#a39580"},
-  "demo": {"height_m": 7.0, "span_rad": 0.5, "sections": 3, "wear_per_hit": 0.25, "first_s": 2.0, "every_s": 1.3, "flight_s": 1.1, "max": 4}
+  "demo": {"height_m": 7.0, "span_rad": 0.5, "sections": 3, "wear_per_hit": 0.25, "first_s": 2.0, "every_s": 1.3, "flight_s": 1.1, "max": 4},
+  "beacons": {"_": "A fire lit on a walled town's wall walk when a host of another house or raiders comes near (beacons.gd): reach, world units from the town's heart (a tile is 4); linger, seconds it burns after the host has gone; every, seconds between looks; smoke, its colour (r, g, b, a), puffs, rise_s; the watchman beside it stands watch_in world units in from the walk point, playing clip.", "reach": 16.0, "linger": 30.0, "every": 2.0, "smoke": [0.25, 0.24, 0.23, 0.7], "puffs": 16, "rise_s": 5.0, "watch_in": 0.1, "clip": "Pointing_Forward"}
 }
