@@ -14,6 +14,7 @@ import * as Lua from "./lua.js";
 import fs from "node:fs";
 import { houseFor, cityName } from "./narrator.js";
 import { calendar } from "./calendar.js";
+import { pick as wording } from "./say.js";  // a choice's, its later's and a card's ignore text may be a list of wordings
 import * as chron from "./chronicles.js";
 
 export const EVENTS = JSON.parse(fs.readFileSync(new URL("./data/events.json", import.meta.url), "utf8"));
@@ -124,7 +125,7 @@ function draw(ctx, e, turn, resting) {
   const due = arrives + Math.max(0, (card.deadline ?? S.deadline ?? 1) - 1);
   e.up = { id: card.id, turn, arrives, due, subject: sub, title: fill(card.title, sub), text: fill(card.text, sub), bearer: sub.lord ?? null, house: sub.house ?? null, city: sub.city ?? null,
     x: from?.x ?? null, y: from?.y ?? null,
-    choices: card.choices.map((ch, i) => ({ i, label: fill(ch.label, sub), cost: ch.cost ?? 0, moves: moves(ctx, ch, sub) })), ignore: fill(card.ignore?.text, sub) };
+    choices: card.choices.map((ch, i) => ({ i, label: fill(ch.label, sub), cost: ch.cost ?? 0, moves: moves(ctx, ch, sub) })), ignore: fill(wording(`event:${card.id}:ignore`, card.ignore?.text), sub) };
   if (from && seat && from.id !== seat.id) ctx.scene?.("rider", { x: from.x, y: from.y, tx: seat.x, ty: seat.y, city: seat.id, label: e.up.title });
   ctx.record?.({ turn, kind: "event", text: e.up.title, city: sub.city ?? undefined });
 }
@@ -156,7 +157,7 @@ function apply(ctx, fx = {}, sub = {}, turn) {
 
 function lapse(ctx, e, turn) {
   const card = EVENTS.cards.find((c) => c.id === e.up.id);
-  apply(ctx, card?.ignore ?? {}, e.up.subject, turn);
+  apply(ctx, { ...(card?.ignore ?? {}), text: e.up.ignore }, e.up.subject, turn);  // the wording drawn with the card
   e.lapsed = { title: e.up.title, text: e.up.ignore, turn, at: Date.now() };
   e.up = null;
 }
@@ -174,9 +175,11 @@ export function answer(ctx, i) {
   if ((ch.cost ?? 0) > (crown?.gold ?? 0)) return [400, { error: `the treasury holds too little: this costs ${(ch.cost * 100).toLocaleString("en-GB")} crowns` }];
   const turn = world?.turn ?? 0;
   if (ch.cost) apply(ctx, { gold: -ch.cost }, e.up.subject, turn);
-  apply(ctx, ch, e.up.subject, turn);
-  if (ch.later) e.later.push({ turn: turn + (ch.later.in ?? 2), effect: ch.later, subject: e.up.subject });
-  const told = fill(ch.text ?? ch.label, e.up.subject);
+  // A text written as a list of wordings: one not heard lately (say.js), the same in the chronicle and the reply.
+  const said = wording(`event:${card.id}:${Number(i)}`, ch.text);
+  apply(ctx, { ...ch, text: said }, e.up.subject, turn);
+  if (ch.later) e.later.push({ turn: turn + (ch.later.in ?? 2), effect: { ...ch.later, text: wording(`event:${card.id}:later:${Number(i)}`, ch.later.text) }, subject: e.up.subject });
+  const told = fill(said ?? ch.label, e.up.subject);
   e.up = null;
   chron.saveMeta(meta);
   return [200, { ok: true, text: told }];
