@@ -78,7 +78,7 @@ export async function abdicate(ctx, req, res, url) {
 // The King eases his stress (royals.js rest): a hunt, a feast or a pilgrimage, body {kind}.
 export async function rest(ctx, req, res, url) {
   const b = await body(req);
-  const out = Royals.rest(ctx, String(b.kind ?? ""));
+  const out = Royals.rest(ctx, String(b.how ?? b.kind ?? ""));  // {how}: hunt, feast or pilgrimage
   if (out.error) return json(res, 409, out);
   chron.saveMeta(ctx.meta);
   return json(res, 200, out);

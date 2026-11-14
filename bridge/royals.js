@@ -229,14 +229,16 @@ export function rest(ctx, kind) {
     if (pious.length) ctx.shiftFavour(Object.fromEntries(pious.map((p) => [p.id, Rk.pious])), "the King's pilgrimage");
   }
   ctx.record({ turn, kind: kind === "feast" ? "feast" : "court", text: told });
-  return { ok: true, stress: k.stress };
+  return { ok: true, text: told, stress: k.stress };
 }
 
 // For /world: the King, his consort, his heir and the rest of his children, and the Kings before him.
 export function view(meta, turn = 0) {
   const h = meta?.royals;
   if (!h) return null;
-  const who = (p) => p && { id: p.id, name: p.name, age: p.age, woman: p.woman, traits: p.traits ?? [], ...(p === h.king ? { stress: p.stress ?? 0 } : {}) };
+  // The King's stress, and the seasons until he may next rest at all (Loop's sheet: 0 when one is ready).
+  const wait = Math.min(...Object.entries(R.rest).filter(([k]) => k !== "_").map(([k, v]) => h.rested?.[k] == null ? 0 : Math.max(0, v.seasons - (turn - h.rested[k]))));
+  const who = (p) => p && { id: p.id, name: p.name, age: p.age, woman: p.woman, traits: p.traits ?? [], ...(p === h.king ? { stress: p.stress ?? 0, restWait: wait } : {}) };
   const next = heir(h);
   return {
     king: who(h.king), consort: h.consort?.alive ? who(h.consort) : null, heir: who(next), match: next?.spouse ? { name: next.spouse.name, house: next.spouse.house } : null,

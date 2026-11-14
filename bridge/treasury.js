@@ -87,7 +87,7 @@ export function worksOf(meta, world, crownId) {
   const royal = (id) => world?.cities?.some((c) => c.id === Number(id) && c.owner === crownId);
   const out = new Map();
   for (const [cid, w] of Object.entries(meta?.works ?? {})) if (royal(cid)) out.set(Number(cid), { city: Number(cid), building: w.building, rising: true });
-  for (const w of [...(meta?.royalBuilt ?? [])].reverse()) if (royal(w.city) && !out.has(w.city)) out.set(w.city, { city: w.city, building: w.building, rising: false });
+  for (const w of [...(meta?.royalBuilt ?? [])].reverse()) if (royal(w.city) && !out.has(w.city)) out.set(w.city, { city: w.city, building: w.building, rising: false, done: w.turn ?? null });
   return [...out.values()];
 }
 export function royalWorks(ctx, turn) {
