@@ -38,6 +38,8 @@ func lord(pid: int) -> void:
 ## The King's host chosen (kind "select") or given an order ("order"): its captain answers; chosen again and
 ## again, curt (barks.json host, host_annoyed). Called by host_command.gd.
 func host(kind: String, id: int) -> void:
+	if kind == "order":
+		main.ui.guide_mark(4)  # the Hand's fifth step: a host sent on its way
 	var pestered := kind == "select" and _pestered("host%d" % id)
 	var lines = (_d.get("host", {}) as Dictionary).get(kind, [])
 	if lines is Dictionary:  # chosen: by what the host is doing (its order's kind; at ease with none)

@@ -25,5 +25,8 @@
    ]
   }
  ],
- "chance": 0.35
+ "chance": 0.35,
+ "guide": { "_": "The Hand's first-reign steps in his court card (ui.gd guide_steps, in this order: answer at court, the Hand's counsel, the banners, the tithe, a host sent); done: what he says once all are done.",
+  "steps": ["Answer a petitioner at court", "Follow the Hand's counsel at court", "Call the banners", "Set the royal tithe for the year", "Send one of your hosts on its way"],
+  "done": "You have the measure of the throne. The Hand will keep counsel; the choices are yours." }
 }

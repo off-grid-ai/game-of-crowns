@@ -51,6 +51,7 @@ const Awareness := preload("res://scripts/awareness.gd")  # the realm's rules as
 const Features := preload("res://scripts/features.gd")
 const T := preload("res://scripts/theme.gd")
 const Keys := preload("res://scripts/keys.gd")
+const Data := preload("res://scripts/data.gd")  # the one loader of realm/data
 const CourtPanel := preload("res://scripts/court_panel.gd")
 const HousesPanel := preload("res://scripts/houses_panel.gd")
 const TownPanel := preload("res://scripts/town_panel.gd")
@@ -846,10 +847,12 @@ var _tithe_asked := -1.0  # a tithe the King set that the realm hasn't reported 
 var _tithe_asked_at := 0  # when; after half a minute the realm's word stands
 var purse := 0  # the royal treasury, in the bridge's gold (×100 crowns)
 # --- the first reign's guide ---------------------------------------------------------
-# Three steps the Hand teaches inside his own card, each ticked when the King does
-# it; kept once per player in settings.cfg, never shown again once done or skipped.
-const GUIDE := ["Answer a petitioner at court", "Follow the Hand's counsel at court", "Call the banners"]
-var _guide := [false, false, false]
+# Five steps the Hand teaches inside his own card in the first minutes (Age of Empires' and Anno's opening
+# objectives), each ticked when the King does it; kept once per player in settings.cfg, never shown again once
+# done or skipped. The words: realm/data/herald.json guide (steps, in this order: 0 answer at court, 1 the Hand's
+# counsel, 2 the banners, 3 the tithe, 4 a host sent; done: the toast when all are done).
+var guide_steps: Array = Data.value("herald", "guide", {}).get("steps", [])
+var _guide := guide_steps.map(func(_x): return false)
 var guide_on := false
 var guide_loaded := false
 
@@ -877,7 +880,7 @@ func load_guide() -> void:
 	var cfg := ConfigFile.new()
 	cfg.load("user://settings.cfg")
 	guide_on = not bool(cfg.get_value("guide", "done", false))
-	for i in GUIDE.size():
+	for i in guide_steps.size():
 		_guide[i] = bool(cfg.get_value("guide", "step%d" % i, false))
 
 
@@ -885,7 +888,7 @@ func _save_guide(done: bool) -> void:
 	var cfg := ConfigFile.new()
 	cfg.load("user://settings.cfg")
 	cfg.set_value("guide", "done", done)
-	for i in GUIDE.size():
+	for i in guide_steps.size():
 		cfg.set_value("guide", "step%d" % i, _guide[i])
 	cfg.save("user://settings.cfg")
 
@@ -893,14 +896,14 @@ func _save_guide(done: bool) -> void:
 func guide_mark(i: int) -> void:
 	if not guide_loaded:
 		load_guide()
-	if not guide_on or _guide[i]:
+	if not guide_on or i >= _guide.size() or _guide[i]:
 		return
 	_guide[i] = true
 	var all_done: bool = not _guide.has(false)
 	_save_guide(all_done)
 	if all_done:
 		guide_on = false
-		toast("You have the measure of the throne. The Hand will keep counsel; the choices are yours.")
+		toast(String(Data.value("herald", "guide", {}).get("done", "")))
 	if _court_panel.visible and not busy():
 		_show_audience.call_deferred()  # the court redraws with the step ticked
 
@@ -909,7 +912,7 @@ func guide_block() -> Control:
 	var g := VBoxContainer.new()
 	g.add_theme_constant_override("separation", 2)
 	var head := HBoxContainer.new()
-	var t := T.label("Your first reign · %d of 3" % _guide.count(true))
+	var t := T.label("Your first reign · %d of %d" % [_guide.count(true), guide_steps.size()])
 	t.add_theme_color_override("font_color", T.ACCENT)
 	t.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	head.add_child(t)
@@ -920,9 +923,9 @@ func guide_block() -> Control:
 	skip.add_theme_font_size_override("font_size", T.SIZE_DESC)
 	head.add_child(skip)
 	g.add_child(head)
-	for i in GUIDE.size():
+	for i in guide_steps.size():
 		var l := Label.new()
-		l.text = ("✓  " if _guide[i] else "○  ") + GUIDE[i]
+		l.text = ("✓  " if _guide[i] else "○  ") + String(guide_steps[i])
 		l.add_theme_font_size_override("font_size", T.SIZE_DESC + 1)
 		l.add_theme_color_override("font_color", T.TEXT_3 if _guide[i] else T.TEXT)
 		g.add_child(l)
@@ -1036,6 +1039,7 @@ func set_tithe(rate: float) -> void:
 	_tithe_asked = tithe
 	_tithe_asked_at = Time.get_ticks_msec()
 	tithe_changed.emit(tithe)
+	guide_mark(3)
 	_tithe_l.text = "%d%%" % int(tithe * 100)
 	toast("The royal tithe is now %d%%. %s" % [int(tithe * 100), "The houses grumble." if tithe >= Awareness.tithe_high else "The houses breathe easier."])
 
