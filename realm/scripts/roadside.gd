@@ -18,6 +18,7 @@ const Countryside := preload("res://scripts/countryside.gd")
 const Mind := preload("res://scripts/npc_mind.gd")  # the people's one decider (LimboAI)
 const TownLife := preload("res://scripts/town_life.gd")  # minds_on: the --limbo switch
 const Rivers := preload("res://scripts/rivers.gd")  # the realm's rivers, read once by their owner
+const Bulk := preload("res://scripts/bulk.gd")  # the one drawer of repeated small things: the sites' small props
 
 var main: Node
 var _d: Dictionary
@@ -141,6 +142,7 @@ func _lay() -> void:
 	var sites := Plan.plan(input, _d)
 	if _root:
 		_root.queue_free()
+	Bulk.remove_owner(self)  # the small props of the last lay (bulk.gd)
 	_alive = []
 	_bridges = []
 	roads.clear_tracks("roadside")
@@ -209,10 +211,10 @@ func _raise(s: Dictionary) -> void:
 		"hamlet":
 			_hamlet(node, s, k, rng)
 		_:
-			var made := {}  # component -> its first piece standing (a sign hangs over the one the kind names)
+			var made := {}  # component -> where its first piece stands (a sign hangs over the one the kind names)
 			for p in k.get("pieces", []):
 				var n := _piece(node, s, p, rng)
-				if n and not made.has(String(p.get("c", ""))):
+				if n != Vector3.INF and not made.has(String(p.get("c", ""))):
 					made[String(p.get("c", ""))] = n
 			s["made"] = made
 	for sm in k.get("smoke", []):
@@ -224,35 +226,45 @@ func _raise(s: Dictionary) -> void:
 
 
 ## One catalogue piece: {c: component, at: [along, out], yaw: degrees, chance, squash: [x, y, z],
-## road: true (it may stand on the road: a toll's bar, a bridge's rail), lift: units}.
-func _piece(node: Node3D, s: Dictionary, p: Dictionary, rng: RandomNumberGenerator, at := Vector3.INF, yaw := INF) -> Node3D:
+## road: true (it may stand on the road: a toll's bar, a bridge's rail), lift: units}. Returns where it stands
+## (Vector3.INF if it wasn't set down). A small piece (a barrel, crate, bench, fence, haystack, woodpile, lamp post: no
+## bigger than roadside.json fade.big_from) is drawn in bulk (bulk.gd, Mac: "draw repeated things in bulk"), no node
+## of its own; a building stays a node.
+func _piece(node: Node3D, s: Dictionary, p: Dictionary, rng: RandomNumberGenerator, at := Vector3.INF, yaw := INF) -> Vector3:
 	if rng.randf() > float(p.get("chance", 1.0)):
-		return null
+		return Vector3.INF
 	var vs := Real.variants(String(p.get("c", "")))
 	if vs.is_empty():
-		return null
+		return Vector3.INF
 	var at_v: Array = p.get("at", [0, 0])
 	var j := float(p.get("jitter", 0.0))
 	var w: Vector3 = at if at != Vector3.INF else _world(s, float(at_v[0]) + rng.randf_range(-j, j), float(at_v[1]) + rng.randf_range(-j, j), not p.get("from_site", false))
 	if not main.terrain.is_land(w.x, w.z):
-		return null
+		return Vector3.INF
 	if not p.get("road", false) and main.roads.on_path(w, float(_d.get("road_margin", 0.04))):
-		return null
+		return Vector3.INF
 	var model := String(vs[rng.randi() % vs.size()])
+	var pos := Vector3(w.x, (main.terrain.height_at(w.x, w.z) if at == Vector3.INF else w.y) - float(_d.get("sink", 0.02)) + float(p.get("lift", 0.0)), w.z)
+	var rot := Vector3(deg_to_rad(float(p["tilt"])) if p.has("tilt") else 0.0, (yaw if yaw != INF else _yaw(s, float(p.get("yaw", 0.0)))) + deg_to_rad(rng.randf_range(-1.0, 1.0) * float(p.get("turn", 0.0))), 0.0)
+	var q: Array = p.get("squash", [1.0, 1.0, 1.0])
+	var place := Transform3D(Basis.from_euler(rot).scaled_local(Vector3(float(q[0]), float(q[1]), float(q[2]))), pos)
+	var foot := Real.footprint(model)
+	var size := maxf(maxf(foot.x, foot.y), Real.height(model))
+	var f: Dictionary = _d.get("fade", {})
+	if size <= float(f.get("big_from", 0.6)):
+		var parts := Real.parts(model)
+		if parts.is_empty():
+			return Vector3.INF
+		for pt: Array in parts:
+			Bulk.add(pt[0], place * (pt[1] as Transform3D), self, float(f.get("small", 22.0)))
+		return pos
 	var n: Node3D = Real.make(model)
 	if n == null:
-		return null
-	n.position = Vector3(w.x, (main.terrain.height_at(w.x, w.z) if at == Vector3.INF else w.y) - float(_d.get("sink", 0.02)) + float(p.get("lift", 0.0)), w.z)
-	n.rotation.y = (yaw if yaw != INF else _yaw(s, float(p.get("yaw", 0.0)))) + deg_to_rad(rng.randf_range(-1.0, 1.0) * float(p.get("turn", 0.0)))
-	if p.has("squash"):
-		var q: Array = p["squash"]
-		n.scale = Vector3(float(q[0]), float(q[1]), float(q[2]))
-	if p.has("tilt"):
-		n.rotation.x = deg_to_rad(float(p["tilt"]))
-	var foot := Real.footprint(model)
-	_fade(n, maxf(maxf(foot.x, foot.y), Real.height(model)))
+		return Vector3.INF
+	n.transform = place
+	_fade(n, size)
 	node.add_child(n)
-	return n
+	return pos
 
 
 ## Out in the country a sack or a stool is a speck past a short walk, a house past a valley.
@@ -301,10 +313,9 @@ func _smoke(node: Node3D, at: Vector3) -> void:
 ## centered": measured out from the road, it hung over the grass in front of the inn); none if that piece didn't stand.
 func _sign(node: Node3D, s: Dictionary, k: Dictionary, rng: RandomNumberGenerator) -> void:
 	var names: Array = k.get("names", [])
-	var over: Node3D = (s.get("made", {}) as Dictionary).get(String(k.get("over", "")))
-	if names.is_empty() or over == null:
+	var w: Vector3 = (s.get("made", {}) as Dictionary).get(String(k.get("over", "")), Vector3.INF)
+	if names.is_empty() or w == Vector3.INF:
 		return
-	var w := over.position
 	var l := Label3D.new()
 	l.text = String(names[rng.randi() % names.size()])
 	l.font_size = int(k.get("font", 34))
@@ -402,7 +413,7 @@ func _hamlet(node: Node3D, s: Dictionary, k: Dictionary, rng: RandomNumberGenera
 		if Vector2(sin(ang), cos(ang)).dot(-(s["side"] as Vector2)) > float(k.get("mouth", 0.7)):
 			continue
 		var house := _piece(node, s, {"c": house_kind}, rng, Vector3(at.x, main.terrain.height_at(at.x, at.z), at.z), atan2(centre.x - at.x, centre.z - at.z))
-		if house:
+		if house != Vector3.INF:
 			homes.append(at)
 	if homes.is_empty():
 		node.queue_free()
