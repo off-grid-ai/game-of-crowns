@@ -326,6 +326,7 @@ func _farmstead(node: Node3D, at: Vector3, rng: RandomNumberGenerator, hedges: A
 		var tex := field_ground(field)
 		c = on_furrows(terrain, c, size)
 		var crop: Decal = terrain.paint(node, terrain.tiled(tex, roundi(size.x * 1.5), roundi(size.y * 1.5), preload("res://scripts/land_use.gd").field_edge()), Vector3(c.x, terrain.height_at(c.x, c.z), c.z), size, fyaw)  # its paint 1.5 deep: wider than any rise a field may have (FIELD_RISE)
+		mark_field(crop, field, c)
 		if terrain.land3d and terrain.land3d.land:
 			plough(terrain, c, size, fyaw)  # ploughed soil under the crop
 			crop.albedo_mix = 0.55
@@ -688,15 +689,25 @@ func _check_season() -> void:
 ## turn gold and bare with the year): tinted by the same stage its crop stands at (_stage): green in spring and
 ## summer, yellowing, gold, stubble after the harvest, bare earth in winter. A fallow strip keeps its own.
 ## data/countryside.json field_ground_tints.<stage>.
+## Every field's painted strip, whoever lays it (land_use.gd's worked strips, the farmsteads here, roadside.gd's
+## crofts): marked with its kind and its own harvest day, and turned to the season at once and every season after
+## (g36: the farmsteads' and crofts' strips were never marked and kept the full paint, bright blocks from afar).
+static func mark_field(d: Decal, field: String, at: Vector3) -> void:
+	d.set_meta("ground", field)
+	d.set_meta("lag", fposmod(at.x * 0.37 + at.z * 0.71, 1.0))  # its own harvest day, from where it lies
+	d.add_to_group("field_ground")
+	_ground_season(d, _season_name, _through() if _season_name != "" else 0.0)
+
+
 static func _ground_season(d: Decal, season: String, t: float) -> void:
 	if d == null:
 		return
 	var field := String(d.get_meta("ground", ""))
 	var kind := "wheat" if field == "field-wheat" else ("cabbage" if field == "field-green" else "")
-	if kind == "":
-		return
-	var st := _stage(kind, season, t, float(d.get_meta("lag", 0.5)))
-	var stage := String(st[0]) if String(st[0]) != "" else "bare"
+	var stage := "fallow"  # a resting strip keeps its own, muted (field_ground_tints.fallow)
+	if kind != "":
+		var st := _stage(kind, season, t, float(d.get_meta("lag", 0.5)))
+		stage = String(st[0]) if String(st[0]) != "" else "bare"
 	if d.get_meta("stage", "") == stage:
 		return
 	d.set_meta("stage", stage)

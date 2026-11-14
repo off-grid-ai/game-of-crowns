@@ -214,9 +214,7 @@ func _field(rec: Dictionary, node: Node3D, c: Vector3, fsize: Vector2, yaw: floa
 	var reps := Vector2i(roundi(fsize.x * 1.5), roundi(fsize.y * 1.5))
 	var decal: Decal = terrain.paint(node, terrain.tiled(tex, reps.x, reps.y, field_edge()), node.to_local(c), fsize, yaw, Color.WHITE, 1.5, float(Data.num("land_use", "fields.fade", 60.0)))
 	decal.set_meta("reps", reps)
-	decal.set_meta("ground", String(crop[0]))
-	decal.set_meta("lag", fposmod(c.x * 0.37 + c.z * 0.71, 1.0))  # its own harvest day, from where it lies (the rng's draws stay the layout's)
-	decal.add_to_group("field_ground")  # its painted crop turns with the season too (countryside.gd _ground_season)
+	Fields.mark_field(decal, String(crop[0]), c)  # its painted crop turns with the season too (countryside.gd _ground_season)
 	if kind == "pasture":
 		return
 	if terrain.land3d and terrain.land3d.land:

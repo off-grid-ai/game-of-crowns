@@ -415,23 +415,23 @@ func _hamlet(node: Node3D, s: Dictionary, k: Dictionary, rng: RandomNumberGenera
 	var size_lo: Array = k.get("field_min", [1.2, 0.7])
 	var size_hi: Array = k.get("field_max", [2.0, 1.1])
 	var away := atan2((s["side"] as Vector2).x, (s["side"] as Vector2).y)
-	var tex: Array = (k.get("field_kinds", ["field-wheat", "field-green"]) as Array).map(func(f): return preload("res://scripts/countryside.gd").field_ground(String(f)))  # countryside.json field_ground paints each kind
+	var kinds: Array = k.get("field_kinds", ["field-wheat", "field-green"])  # countryside.json field_ground paints each kind
 	for i in rng.randi_range(int(fr[0]), int(fr[1])):
 		var ang := away + rng.randf_range(-1.3, 1.3)
 		var f := centre + Vector3(sin(ang), 0, cos(ang)) * (grown + rng.randf_range(float(far[0]), float(far[1])))
 		var size := Vector2(rng.randf_range(float(size_lo[0]), float(size_hi[0])), rng.randf_range(float(size_lo[1]), float(size_hi[1])))
 		if not main.terrain.is_land(f.x, f.z) or main.roads.on_path(f, maxf(size.x, size.y) * 0.5):
 			continue
-		var tx: String = tex[rng.randi() % tex.size()]
-		if not ResourceLoader.exists(tx):
-			continue
+		var kind := String(kinds[rng.randi() % kinds.size()])
+		var tx: String = Countryside.field_ground(kind)
 		var yaw := ang + rng.randf_range(-0.2, 0.2)
 		f = Countryside.on_furrows(main.terrain, f, size)
 		var crop: Decal = main.terrain.paint(node, main.terrain.tiled(tx, roundi(size.x * 1.5), roundi(size.y * 1.5)), Vector3(f.x, main.terrain.height_at(f.x, f.z), f.z), size, yaw)
 		if main.terrain.land3d and main.terrain.land3d.land:
 			Countryside.plough(main.terrain, f, size, yaw)
 			crop.albedo_mix = 0.55
-		Countryside.sow(node, main.terrain, Vector3.ZERO, Countryside.crop_for(tx.get_file().get_basename(), rng), f, size, yaw, rng)
+		Countryside.mark_field(crop, kind, f)
+		Countryside.sow(node, main.terrain, Vector3.ZERO, Countryside.crop_for(kind, rng), f, size, yaw, rng)
 		fields.append(f)
 	s["fields"] = fields
 	if bool(k.get("track", true)):
