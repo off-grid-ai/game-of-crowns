@@ -218,13 +218,26 @@ func _wagons() -> void:
 				root.add_child(c)
 
 
-## A ram and a siege tower waiting in the band, their men by them.
+## A ram and a siege tower waiting in the band, their men by them: the ram before the gate nearest the camp when
+## the town has one on that side (then it batters the gate), the tower to the wall.
 func _parked() -> void:
 	var k: Dictionary = Data.value("siege", "parked", {})
 	var kinds := ["siege_ram", "siege_tower"]
 	var angles: Array = k.get("angles", [])
+	var wall_r: float = camp_r - Data.num("siege", "band", 6.0)
 	for i in mini(angles.size(), kinds.size()):
-		var p := _arc(float(angles[i]), camp_r - Data.num("siege", "band", 6.0) + float(k.get("from_wall", 1.1)))  # in the band, as the engines
+		var p := _arc(float(angles[i]), wall_r + float(k.get("from_wall", 1.1)))  # in the band, as the engines
+		var yaw := _x_to_town(p)
+		var out := float(k.get("ram_out" if kinds[i] == "siege_ram" else "tower_out", 0.15))
+		var to := Vector3.INF
+		if kinds[i] == "siege_ram":  # the ram waits in front of the gate nearest the camp, if one is in reach
+			var g := _gate(_arc(0.0, wall_r), float(k.get("gate_reach", 3.5)))
+			if not g.is_empty():
+				var n: Vector3 = g[1]
+				p = scenes.ground(g[0] + n * float(k.get("from_wall", 1.1)))
+				to = scenes.ground(g[0] + n * float(k.get("gate_out", 0.45)))
+				out = float(k.get("gate_out", 0.45))
+				yaw = atan2(n.z, -n.x)  # its +X (the ram's head) toward the gate
 		if not scenes._footing(p):
 			continue
 		var m: Node3D = load(Real.path_of(kinds[i])).instantiate()
@@ -232,15 +245,16 @@ func _parked() -> void:
 		scenes._fit(m, float(k.get("height", 0.5)) * (1.6 if kinds[i] == "siege_tower" else 1.0))
 		scenes._weather(m)
 		m.position = p
-		m.rotation.y = _x_to_town(p)
+		m.rotation.y = yaw
 		var crew := []
 		for j in int(k.get("crew", 2)):
 			crew.append(_crewman(p + Vector3(r.randf_range(-0.2, 0.2), 0, r.randf_range(-0.2, 0.2)), ["Idle", "Looking_Around", "Weight_Shift"]))
 		# Then pushed up to the wall (04-siege: the ram at the wall, the tower against it): after roll_after_s,
 		# its crew behind it at pace, the ram to batter the wall's face, the tower to stand against it.
-		var to: Vector3 = _wall_face(p, float(k.get("ram_out" if kinds[i] == "siege_ram" else "tower_out", 0.15)))
+		if to == Vector3.INF:
+			to = _wall_face(p, out)
 		if to != Vector3.INF:
-			var go := {"node": m, "kind": kinds[i], "crew": crew, "from": p, "to": to, "t": -float(k.get("roll_after_s", 10.0)) - i * 4.0, "beat": 0.0}
+			var go := {"node": m, "kind": kinds[i], "crew": crew, "from": p, "to": to, "out": out, "t": -float(k.get("roll_after_s", 10.0)) - i * 4.0, "beat": 0.0}
 			_rolling.append(go)
 
 
@@ -251,6 +265,15 @@ func _wall_face(p: Vector3, out: float) -> Vector3:
 		return Vector3.INF
 	var f: Vector3 = walls.face_toward(p, out)
 	return scenes.ground(f) if f != Vector3.INF else f
+
+
+## The gate nearest `from` within `reach`: [the gate's middle on the ground, its way out], or [] (an unwalled town,
+## the demo wall, or no gate on the camp's side).
+func _gate(from: Vector3, reach: float) -> Array:
+	var walls: Node = Engine.get_meta("stone_walls") if Engine.has_meta("stone_walls") else null
+	if walls == null or not walls.has_method("gate_toward"):
+		return []
+	return walls.gate_toward(from, reach, 0.0)
 
 
 ## The ram and the tower on their way: each goes to the wall by its Mover at the crew's pace (its route from the
@@ -313,7 +336,7 @@ func _roll(dt: float) -> void:
 		if hit_now:
 			g["struck"] = true
 			var walls: Node = Engine.get_meta("stone_walls") if Engine.has_meta("stone_walls") else null
-			var face: Vector3 = g["to"] + dir * float(k.get("ram_out", 0.15)) + Vector3(0, 0.12, 0)
+			var face: Vector3 = g["to"] + dir * float(g["out"]) + Vector3(0, 0.12, 0)
 			if walls and is_instance_valid(walls):
 				walls.strike(face, dir)
 			_puff(face, Color(0.55, 0.5, 0.42, 0.3), 1.0)

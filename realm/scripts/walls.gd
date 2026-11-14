@@ -162,6 +162,26 @@ func face_toward(from: Vector3, out := 0.3) -> Vector3:
 	return best._world_at(best.along(from), best._thick * 0.5 + out)
 
 
+## The gate of a walled town nearest `from` within `reach` (world units): [the ground `out` world units in front of
+## it, its way out (world, level)], or [] (no gate in reach). Where the ram goes to batter (siege_camp.gd; 04-siege,
+## Stronghold and Total War: the ram at the gate).
+func gate_toward(from: Vector3, reach: float, out: float) -> Array:
+	var best := []
+	var bd := reach
+	for id in _town_walls:
+		var root: Node3D = _town_walls[id]["root"]
+		if not is_instance_valid(root):
+			continue
+		for g in _town_walls[id].get("gates", []):
+			var p: Vector3 = root.to_global(g[0])
+			var d := Vector2(p.x - from.x, p.z - from.z).length()
+			if d < bd:
+				bd = d
+				var n: Vector3 = (root.global_basis * (g[1] as Vector3)).normalized()
+				best = [p + n * out, n]
+	return best
+
+
 ## A stone lands at `at` (world) on a wall, flying along `along`.
 func strike(at: Vector3, along: Vector3) -> void:
 	for w in _walls():
@@ -262,13 +282,15 @@ func _build(id: int, root: Node3D, plan: Dictionary) -> void:
 	if not (plan.get("towers", []) as Array).is_empty():
 		_kit(root, "TownWallTowers", builder.town_wall([], plan["towers"], storeys, seed), fade)
 		_arms(root, plan["towers"], storeys, fade)
+	var gates := []  # [the gate's middle on the ground, its way out], on the town's root
 	for g in plan.get("gates", []):
 		var q: Vector2 = g[0]
 		var n: Vector2 = g[1]
 		var gm := _kit(root, "TownGate", builder.town_gate(storeys, int(q.x * 100.0)), fade)
 		gm.position = Vector3(q.x, main.towns._ground_y(root.global_position, Vector3(q.x, 0, q.y)) - 0.02, q.y)
 		gm.rotation.y = atan2(n.x, n.y)
-	_town_walls[id] = {"root": root, "center": root.global_position, "kits": kits, "bays": by, "stones": {}, "storeys": storeys, "seed": seed}
+		gates.append([gm.position, Vector3(n.x, 0, n.y)])
+	_town_walls[id] = {"root": root, "center": root.global_position, "kits": kits, "bays": by, "stones": {}, "storeys": storeys, "seed": seed, "gates": gates}
 
 
 ## The holder's arms down each wall tower's outer face, over the cloth it is painted with (01-town: the red eagle on
