@@ -943,12 +943,8 @@ res://assets/fx/fire/spark_07.png	27522
 res://assets/fx/fire/spark_07.png.import	943
 res://assets/grade/bold.png	27894
 res://assets/grade/bold.png.import	599
-res://assets/grade/golden-hour.png	13730
-res://assets/grade/golden-hour.png.import	620
 res://assets/grade/storybook.png	29736
 res://assets/grade/storybook.png.import	614
-res://assets/grade/v3.png	44515
-res://assets/grade/v3.png.import	593
 res://assets/grade/v3b.png	48234
 res://assets/grade/v3b.png.import	596
 res://assets/ground/dirt-albedo.jpg	2541635
