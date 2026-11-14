@@ -15,6 +15,7 @@ extends Node3D
 const Units := preload("res://scripts/world_units.gd")  # the world's one scale (Units.M)
 const StoneWall := preload("res://scripts/stone_wall.gd")
 const Data := preload("res://scripts/data.gd")
+const CastleBuilder := preload("res://scripts/castle_builder.gd")  # the kit curtain's storey
 const S := Units.M
 
 var main: Node
@@ -179,6 +180,45 @@ func gate_toward(from: Vector3, reach: float, out: float) -> Array:
 				bd = d
 				var n: Vector3 = (root.global_basis * (g[1] as Vector3)).normalized()
 				best = [p + n * out, n]
+	return best
+
+
+## The wall walk nearest `from` within `reach` (world units), where the holder's archers stand to shoot at the
+## besiegers (scene_kinds/siege.gd; 04-siege, Stronghold: bowmen along the walls): on a whole section, the kit
+## curtain's walk (its storeys high, walls.json walk.in_m in from the outer face); on a worn one, the stacked stones'
+## top where they still hold (stone_wall.gd walk_at). INF: no wall in reach, or it has given way there.
+func walk_toward(from: Vector3, reach: float) -> Vector3:
+	var k: Dictionary = Data.value("walls", "walk", {})
+	var holds := float(k.get("holds_below", 0.15))
+	var best := Vector3.INF
+	var bd := reach
+	for id in _town_walls:
+		var tw: Dictionary = _town_walls[id]
+		var root: Node3D = tw["root"]
+		if not is_instance_valid(root):
+			continue
+		var up := int(tw["storeys"]) * CastleBuilder.STOREY * S
+		for sec in tw["bays"]:
+			if (tw["stones"] as Dictionary).has(sec):
+				for w in tw["stones"][sec]:
+					if is_instance_valid(w) and w.distance_to(from) < bd:
+						var p: Vector3 = w.walk_at(from, holds)
+						if p != Vector3.INF:
+							bd = Vector2(p.x - from.x, p.z - from.z).length()
+							best = p
+				continue
+			for b in tw["bays"][sec]:
+				var q: Vector3 = (b[0] as Vector3) * S
+				var inward := Vector3(-q.x, 0, -q.z).normalized()
+				var p := root.to_global(q + inward * float(k.get("in_m", 1.5)) * S + Vector3.UP * up)
+				var d := Vector2(p.x - from.x, p.z - from.z).length()
+				if d < bd:
+					bd = d
+					best = p
+	if not _demo.is_empty() and is_instance_valid(_demo["wall"]) and _demo["wall"].distance_to(from) < bd:
+		var p: Vector3 = _demo["wall"].walk_at(from, holds)
+		if p != Vector3.INF:
+			best = p
 	return best
 
 

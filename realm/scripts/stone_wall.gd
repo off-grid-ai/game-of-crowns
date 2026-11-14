@@ -383,6 +383,18 @@ func section_point(section: int) -> Vector3:
 	return _world_at(s, _thick * 0.5, _ground_at(s) + height_m * 0.5)
 
 
+## The wall walk at the point along the wall nearest `world` (its middle, on the stones' top course, world), or INF
+## where its section has begun to give way (wear past `holds_below`): where an archer of the holder's stands.
+func walk_at(world: Vector3, holds_below: float) -> Vector3:
+	var s := along(world)
+	for g in _gaps:
+		if s >= g.x and s <= g.y:
+			return Vector3.INF
+	if shown[clampi(int(s / maxf(_length, 0.01) * sections), 0, sections - 1)] >= holds_below:
+		return Vector3.INF
+	return _world_at(s, 0.0, _top)
+
+
 func section_of(world: Vector3) -> int:
 	return clampi(int(along(world) / maxf(_length, 0.01) * sections), 0, sections - 1)
 

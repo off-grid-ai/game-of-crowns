@@ -11,6 +11,7 @@
     "tint": "#d9d6d0",
     "tint_spread": 0.1
   },
+  "walk": {"_": "Where the holder's archers stand along a besieged town's wall (walls.gd walk_toward): in_m, metres in from the kit curtain's outer face (its middle: the curtain is 3 m deep); holds_below, a worn section's wear under which its stacked stones still hold a man (the breach opens from 0.15).", "in_m": 1.5, "holds_below": 0.15},
   "merlon": {"w_m": 1.15, "gap_m": 0.75, "courses": 2, "depth_m": 0.75},
   "bricks": [
     [390, 1150, 720, 1325], [755, 1150, 1135, 1325], [1165, 1150, 1535, 1325], [1560, 1150, 1925, 1325],

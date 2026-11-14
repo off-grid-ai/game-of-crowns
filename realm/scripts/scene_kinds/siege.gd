@@ -99,27 +99,41 @@ func besiege(id: int, at: Vector3, approach: Vector3, size: int, engines: int, f
 	# catapults and trebuchets at the walls) built on the spot and worked by their crews.
 	var camp: Node3D = SiegeCamp.new()
 	camp.pitch(stage, root, at, base, camp_r, foe_col, engines, r)
-	# The defenders on the walls, facing out toward the host: archers and
-	# spearmen turn about.
+	# The garrison on the walls, facing out toward the host: archers and spearmen turn about, up on the wall walk
+	# where the town has a wall (walls.gd walk_toward; 04-siege, Stronghold: bowmen along the battlements), on the
+	# ground behind the line where it has none.
+	var gk: Dictionary = Data.value("siege", "garrison", {})
+	var walls: Node = Engine.get_meta("stone_walls") if Engine.has_meta("stone_walls") else null
 	var archers := []
 	var spears := []  # the wall's spearmen, who fight back at whoever reaches its foot
-	for i in 9:
-		var a := (i - 4) * 0.13
-		var p: Vector3 = stage.stand(arc.call(a, wall - 0.3))
-		if not stage._footing(p):
-			continue
+	var up_top := []  # [man, his mark or null]: men on the walk, who fall when it gives way under them
+	var held_men := int(gk.get("men", 12))
+	for i in held_men:
+		var a := (i - (held_men - 1) * 0.5) * float(gk.get("every", 0.11))
+		var p: Vector3 = arc.call(a, wall - 0.3)
+		var walk: Vector3 = walls.walk_toward(p, float(gk.get("reach", 1.5))) if walls else Vector3.INF
+		if walk != Vector3.INF:
+			p = walk
+		else:
+			p = stage.stand(p)
+			if not stage._footing(p):
+				continue
 		var f: Node3D = stage.people.make(r, "soldier", held_col, "adult")
 		f.position = p
 		var face := (p - at).normalized()
 		f.rotation.y = atan2(face.x, face.z)
 		root.add_child(f)
-		var bow := i % 2 == 0
+		var bow := fmod(i * float(gk.get("bows", 0.67)), 1.0) < float(gk.get("bows", 0.67))
 		stage.arm(f, "bow" if bow else "spear")
 		stage.people.play(f, "Bow_Idle" if bow else "Sword_Idle", r.randf_range(0.9, 1.1))
+		var mark: Variant = null
 		if bow:
-			archers.append({"node": f, "alive": true, "kit": "bow", "engaged": false})
+			mark = {"node": f, "alive": true, "kit": "bow", "engaged": false}
+			archers.append(mark)
 		else:
 			spears.append(f)
+		if walk != Vector3.INF:
+			up_top.append([f, mark])
 	# Assault parties rush the walls in turn under the archers' arrows, fight there, and fall back; fought by the
 	# men in them (army_assault.gd, the army layer's close fight).
 	var parties := []
@@ -140,6 +154,14 @@ func besiege(id: int, at: Vector3, approach: Vector3, size: int, engines: int, f
 		if is_instance_valid(camp):
 			marks.append_array(camp.marks())  # the engines' crews
 		marks = marks.filter(func(m): return is_instance_valid(m["node"]))  # a man fallen and gone is no mark
+		# A man on the walk where the wall has given way under him falls with it.
+		for u in up_top:
+			var f: Node3D = u[0]
+			if is_instance_valid(f) and not f.has_meta("dead") and walls and is_instance_valid(walls) \
+					and walls.walk_toward(f.global_position, 0.15) == Vector3.INF:
+				if u[1] != null:
+					u[1]["alive"] = false
+				stage.die(f, "Death_Front", r)
 		if not marks.is_empty():
 			stage._arrows(root, archers, marks, r)
 		# The spearmen above thrust down at the men at the foot of the wall,
