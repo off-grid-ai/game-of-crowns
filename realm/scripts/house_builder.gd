@@ -359,5 +359,18 @@ func piece_mesh(name: String) -> ArrayMesh:
 
 
 ## Any glTF scene (e.g. the nature kit) baked into one mesh.
+## With Godot's generated levels of detail, as an imported model has (ImporterMesh.generate_lods,
+## meshoptimizer, at realistic.gd _merge's angles): a SurfaceTool bake alone has none, so every tree,
+## bush, crop and prop baked here drew all its triangles at any distance (perf.log: ~75M triangles a
+## frame at the realm view, 3 fps; Mac's P0 "super laggy"). Houses and castles (build) get theirs where
+## the town merges them (realistic.gd _merge).
 func bake_path(path: String) -> ArrayMesh:
-	return _bake([[path, Transform3D()]])
+	var mesh := _bake([[path, Transform3D()]])
+	var im := ImporterMesh.new()
+	for s in mesh.get_surface_count():
+		var st := SurfaceTool.new()
+		st.create_from(mesh, s)
+		st.index()  # the detail levels work on indexed triangles (shared corners once)
+		im.add_surface(Mesh.PRIMITIVE_TRIANGLES, st.commit_to_arrays(), [], {}, mesh.surface_get_material(s))
+	im.generate_lods(25.0, 60.0, [])
+	return im.get_mesh()
