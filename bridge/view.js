@@ -54,10 +54,12 @@ export function worldView(ctx) {
     // The lesser family seated here (a bannerman), whose banner the town flies.
     const holder = court?.lordOfTown(c.id);
     const family = holder?.rank === "bannerman" ? holder.surname ?? null : null;
-    if (!x) return { ...c, title: cityName(c.id), family };
+    // A town is shown by its realm name only: Freeciv's own (its nations' stock lists: Lyon, Dundee) never leaves the
+    // bridge, so a town Freeciv founds mid-reign is named like the rest (narrator.js cityName).
+    if (!x) return { ...c, name: cityName(c.id), title: cityName(c.id), family };
     const cost = BUILD_COST[x.building] ?? 0;
     return {
-      ...c, title: cityName(c.id), family,
+      ...c, name: cityName(c.id), title: cityName(c.id), family,
       building: x.building, buildingKind: x.buildingKind,
       progress: cost ? Math.min(1, x.shieldStock / cost) : 0,
       ...(!houseFor(world.players.find((p) => p.id === c.owner)).crown && !houseFor(world.players.find((p) => p.id === c.owner)).wild && world.players.some((p) => p.id === c.owner) ? { odds: Math.round(marchOdds(c.owner, greatHouses().filter((p) => p.id !== c.owner && sworn(p.id)).map((p) => p.id), { extra: 8, turn: (world?.turn ?? 0) + 2 }) * 100) / 100 } : {}),

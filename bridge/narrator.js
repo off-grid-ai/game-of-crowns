@@ -50,7 +50,8 @@ const SUFFIX = ["fell", "hold", "watch", "ford", "haven", "gate", "keep", "mere"
 // Towns named in the world bible keep their names; the rest get a fitting one.
 const AUTHORED = new Set(["Kingsmere", "Stonefell", "Wintermoor", "Frostwatch", "Goldrock", "Gildport", "Silverhill",
   "Saltkeep", "Rook Hollow", "Rosehall", "Elder Reach", "Bitterford", "Stormwatch", "Rainhold", "Sunspire",
-  "Redsands", "Saltmarsh", "Highfell", "Gullhaven"]);
+  "Redsands", "Saltmarsh", "Highfell", "Gullhaven", "Oldtown Reach", "Ironhaven", "Thornbury", "Briarwood", "Rainford",
+  "Thunderhold", "Greymoor", "Dustmarch", "Ambervale", "Sandhollow", "Dornwell", "Greenmantle"]);
 let names = {};
 
 export function rememberNames(world) {

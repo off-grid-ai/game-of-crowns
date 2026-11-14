@@ -1,13 +1,14 @@
 // Guards Mac's order (2026-11-14): the whole continent is held by the crown and the great houses from a reign's first
 // frame. Reads the Aldmere baseline save itself (what every new reign starts from, and what the bridge's /world owners
 // are read from until Freeciv's first autosave), and counts the land of the realm's main continent (the landmass with
-// most towns) no house's border claims, and that all eight (seven great houses and the crown) hold towns. Exits 1 on any. A baseline whose owner rows predate the border rules fails
+// most towns) no house's border claims, that all eight (seven great houses and the crown) hold towns, and that every town has its realm name. Exits 1 on any. A baseline whose owner rows predate the border rules fails
 // here even though Freeciv would redraw them on load (g37): regenerate it by loading it in a bare Freeciv and saving.
 //   node tools/realm_borders_probe.mjs        (from bridge/)
 import fs from "node:fs";
 import path from "node:path";
 import zlib from "node:zlib";
 import { checker } from "./fc_probe_lib.mjs";
+import { nameIn } from "../narrator.js";
 
 const { check, done } = checker("REALM BORDERS");
 const base = path.join(path.dirname(new URL(import.meta.url).pathname), "..", "baseline", "aldmere", "saves");
@@ -49,6 +50,13 @@ const file = path.join(base, fs.readdirSync(base).find((f) => f.endsWith(".sav.z
   const houses = text.split(/^\[player\d+\]/m).slice(1).filter((b) => /^is_alive=TRUE/m.test(b) && Number(b.match(/^ncities=(\d+)/m)?.[1] ?? 0) > 0);
   console.log(`houses with towns: ${houses.length}`);
   check(houses.length === 8, `${houses.length} houses hold towns, not the seven and the crown`);
+  // Every town the baseline holds has its realm name, not one of Freeciv's stock (Lyon, Dundee): /world shows nameIn's.
+  const stock = [...text.matchAll(/^c=\{(.*)\n([\s\S]*?)^\}/gm)].flatMap((m) => {
+    const cols = m[1].split(",").map((c) => c.replace(/"/g, "")), id = cols.indexOf("id"), nm = cols.indexOf("name");
+    return m[2].split("\n").filter(Boolean).map((r) => r.match(/("[^"]*"|[^,]*)/g).filter((x, i, a) => x !== "" || a[i - 1] === undefined)).map((f) => [Number(f[id]), f[nm]?.replace(/"/g, "")]);
+  }).filter(([id, n]) => n && nameIn(id, n) !== n).map(([, n]) => n);
+  console.log(`towns with stock names: ${stock.length}`);
+  check(stock.length === 0, `stock Freeciv town names in the baseline: ${stock.join(", ")}`);
   check(open.length === 0, `${open.length} of ${tiles.length} land tiles unclaimed at the first frame, e.g. ${open.slice(0, 5).map((t) => t.join(",")).join(" ")}`);
 }
 done();
