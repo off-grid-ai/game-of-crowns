@@ -11,6 +11,8 @@ extends RefCounted
 const T := preload("res://scripts/theme.gd")
 const Data := preload("res://scripts/data.gd")
 const Awareness := preload("res://scripts/awareness.gd")
+const PaintedFaces := preload("res://scripts/painted_faces.gd")  # the face of whoever waits on the King's word
+const HAND_FACE := {"id": "the-hand-of-the-king", "gender": "male", "age": 62}  # the Hand's own painted face, the same every reign (here and at court)
 const RoyalSheet := preload("res://scripts/royal_sheet.gd")  # the King's focus, which an answer may go against
 
 var ui: Node
@@ -122,7 +124,7 @@ func open() -> void:
 	ignore.custom_minimum_size = Vector2(420, 0)
 	ignore.add_theme_color_override("font_color", T.TEXT_3)
 	ignore.add_theme_font_size_override("font_size", T.SIZE_DESC)
-	v.add_child(ignore)
+	v.add_child(_waits(ignore))
 	v.add_child(ui.btn("Later", _close))
 	ui.ease_in(_card)
 
@@ -187,3 +189,39 @@ static func envoy_plate(king: String, realm: String) -> Label:
 	plate.autowrap_mode = TextServer.AUTOWRAP_WORD
 	plate.custom_minimum_size = Vector2(420, 0)
 	return plate
+
+
+## The deadline with a face (casebook, A ruler you answer to; Against the Storm's Queen, CK3's waiting petitioner): the
+## lord whose matter this is, by his own painted face, waits on the King's word above what silence will cost; a matter
+## of the whole realm has the Hand's. Bridge events.js subject.face {id, gender, age}; words in herald.json event_card.
+func _waits(cost: Label) -> Control:
+	var sub: Dictionary = _up.get("subject", {}) if _up.get("subject") is Dictionary else {}
+	var face_of: Dictionary = sub.get("face") if sub.get("face") is Dictionary else {}
+	var who := ""
+	var tex: Texture2D = null
+	if not face_of.is_empty() and String(sub.get("lord", "")) != "":
+		tex = PaintedFaces.face(face_of)
+		who = _w("waits_lord").replace("{lord}", String(sub["lord"])).replace("{house}", String(sub.get("house", "")))
+	else:
+		tex = PaintedFaces.face(HAND_FACE)
+		who = _w("waits_hand")
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", T.GAP_WIDE)
+	if tex:
+		var pic := TextureRect.new()
+		pic.texture = tex
+		pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		pic.custom_minimum_size = Vector2(40, 54)
+		pic.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		row.add_child(pic)
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", T.GAP_TIGHT)
+	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var w := T.datum(who, T.SIZE_DESC, T.TEXT_2)
+	w.autowrap_mode = TextServer.AUTOWRAP_WORD
+	col.add_child(w)
+	cost.custom_minimum_size = Vector2(360, 0)
+	col.add_child(cost)
+	row.add_child(col)
+	return row

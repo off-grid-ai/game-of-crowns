@@ -28,7 +28,6 @@ var _opened_at := Vector3.INF  # the place of the matter the King opened from it
 ## ruling did) / out (the next, or the doors close once).
 ## The one court flow (the professional audit: the card shrinks after a ruling, painted faces); the old flow is gone
 ## (integration audit #8).
-const HAND_FACE := {"id": "the-hand-of-the-king", "gender": "male", "age": 62}  # the Hand's own painted face, the same every reign
 const FACE_SIZE := Vector2(96, 128)  # a painted face the eye goes to first (CK3's event portrait), not a 40 px figure
 const PaintedFaces := preload("res://scripts/painted_faces.gd")
 var _seeing: Dictionary = {}  # the matter just ruled, while the card shows what it did
@@ -329,7 +328,7 @@ func _show_audience() -> void:
 	var sitter = p.get("who")
 	# A painted face for every matter (CK3's event portrait; KoDP's council, one face per voice): the lord who
 	# asks, or the Hand himself when the matter is the realm's.
-	var painted: Texture2D = PaintedFaces.face(sitter) if sitter is Dictionary else (PaintedFaces.face(HAND_FACE) if p.get("hand", false) else null)
+	var painted: Texture2D = PaintedFaces.face(sitter) if sitter is Dictionary else (PaintedFaces.face(EventCard.HAND_FACE) if p.get("hand", false) else null)
 	if painted:
 		# One court flow: their painted face (painted_faces.gd), in a frame of their house's colour.
 		var frame := PanelContainer.new()

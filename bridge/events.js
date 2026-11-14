@@ -37,8 +37,10 @@ function subject(ctx, kind) {
   const crown = crownOf(world);
   const houses = great(world);
   const lord = (pid) => ctx.court?.lordOfHouse(pid)?.name ?? null;
-  const town = (c) => c && { town: cityName(c.id), city: c.id, house: houseFor(world.players.find((p) => p.id === c.owner) ?? {}).name, pid: c.owner, lord: lord(c.owner) };
-  const house = (p) => p && { house: houseFor(p).name, pid: p.id, lord: lord(p.id), town: cityName(world.cities.find((c) => c.owner === p.id && c.capital)?.id ?? -1), city: world.cities.find((c) => c.owner === p.id && c.capital)?.id ?? null };
+  // The lord who waits on the King's word, for his painted face on the card (Loop, event_card.gd; casebook, A ruler you answer to).
+  const face = (pid) => { const c = ctx.court?.lordOfHouse(pid); return c ? { id: c.id, gender: c.gender, age: c.age } : null; };
+  const town = (c) => c && { town: cityName(c.id), city: c.id, house: houseFor(world.players.find((p) => p.id === c.owner) ?? {}).name, pid: c.owner, lord: lord(c.owner), face: face(c.owner) };
+  const house = (p) => p && { house: houseFor(p).name, pid: p.id, lord: lord(p.id), face: face(p.id), town: cityName(world.cities.find((c) => c.owner === p.id && c.capital)?.id ?? -1), city: world.cities.find((c) => c.owner === p.id && c.capital)?.id ?? null };
   switch (kind) {
     case "realm": return { realm: true };
     case "sick_town": return town(pick(world.cities.filter((c) => Contagion.sick(ctx.meta, c.id) && !Contagion.closed(ctx.meta, c.id))) ?? null);
