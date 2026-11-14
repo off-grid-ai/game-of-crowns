@@ -5,13 +5,13 @@
     "options": [
       { "id": "return", "label": "Order her sent back, and punish {suitor}", "hint": "{me.house} +15 · {rival.house} −20 · {rival} will call it the crown meddling in a love match",
         "effects": { "favour": { "me": 15, "rival": -20 }, "opinion": [["rival", "me", -20]], "memory": { "rival": "The King shamed my son {suitor} in front of the whole realm." } },
-        "text": "On the King's order, {daughter} goes back to {me.house}. {suitor} is sent to serve on the far marches, and will not come home soon." },
+        "text": ["On the King's order, {daughter} goes back to {me.house}. {suitor} is sent to serve on the far marches, and will not come home soon.", "{daughter} rides home to {me.house} under the King's guard. {suitor} is given a post on the far marches, a long way from any wedding.", "Back to {me.house} goes {daughter}, by royal command. For {suitor} there is a cold march-fort and no word of leave."] },
       { "id": "wed", "label": "They're married. Make it lawful", "hint": "A marriage binds {me.house} to {rival.house} · {me} −25, humiliated · {rival.house} +10",
         "effects": { "marry": ["daughter", "suitor"], "favour": { "me": -25, "rival": 10 }, "memory": { "me": "The King blessed the man who stole my daughter." }, "goal": { "me": { "kind": "revenge", "text": "make {rival.house} pay for taking {daughter}" } } },
-        "text": "The King declares {daughter} and {suitor} lawfully married. {me} leaves court without a word." },
+        "text": ["The King declares {daughter} and {suitor} lawfully married. {me} leaves court without a word.", "Before the court, the King names {daughter} and {suitor} husband and wife. {me} turns and walks out, saying nothing.", "A royal word makes the match lawful. {daughter} and {suitor} are wed, and {me}'s seat at court stands empty by nightfall."] },
       { "id": "war", "label": "Let {me.house} take her back by force", "hint": "{me.house} and {rival.house} go to war, but the crown keeps its hands clean",
         "effects": { "war": ["me", "rival"], "favour": { "me": 10, "rival": -10 } },
-        "text": "The King says a {me.father} may fetch {me.his} own daughter. {me.house} calls up its banners." }
+        "text": ["The King says a {me.father} may fetch {me.his} own daughter. {me.house} calls up its banners.", "Let a {me.father} recover {me.his} own child, says the King. Within the week {me.house} has its banners in the field.", "{me.house} hears the King's ruling and sends riders to every holdfast. A {me.father} may take back {me.his} daughter, and means to."] }
     ]
   },
   {
@@ -20,13 +20,13 @@
     "options": [
       { "id": "home", "label": "Bring {heir} home in chains", "hint": "{rival.house} +10 · {heir} never forgives {heir.his} {me.father} or the crown",
         "effects": { "favour": { "rival": 10 }, "memory": { "heir": "The King dragged me home in chains." }, "loyalty": { "heir": -30 } },
-        "text": "The King's riders bring {heir} home in chains. The girl is sent back to {rival.house}, her name ruined." },
+        "text": ["The King's riders bring {heir} home in chains. The girl is sent back to {rival.house}, her name ruined.", "{heir} comes back in irons behind the King's riders. The girl goes home to {rival.house}, and no man will ask for her now.", "Chains and an escort bring {heir} home. {rival.house} gets its daughter back with her good name left on the road."] },
       { "id": "bless", "label": "Let them be together", "hint": "{me.house} and {rival.house} drawn together · both lords −10, both furious",
         "effects": { "favour": { "me": -10, "rival": -10 }, "opinion": [["me", "rival", 15], ["rival", "me", 15]] },
-        "text": "The King leaves the pair alone. Both fathers rage, but slowly they start to talk." },
+        "text": ["The King leaves the pair alone. Both fathers rage, but slowly they start to talk.", "Nobody stops the pair. The fathers shout for a season, then begin, grudgingly, to speak to one another.", "Left in peace, the lovers keep their bargain. Two angry houses find, over the winter, that they have things to discuss."] },
       { "id": "pay", "label": "Pay {rival.house} for the insult (120 gold)", "cost": 120, "hint": "Blood is bought off · {rival.house} +5",
         "effects": { "gold": { "rival": 120 }, "favour": { "rival": 5 }, "truce": 1 },
-        "text": "The crown pays {rival.house} for its daughter's honour. On parchment, at least, the matter is closed." }
+        "text": ["The crown pays {rival.house} for its daughter's honour. On parchment, at least, the matter is closed.", "Silver from the treasury goes to {rival.house} for the lost honour of its daughter. The clerks write the matter closed.", "{rival.house} accepts the crown's purse for its daughter. Settled, says the treaty. The houses have not read it."] }
     ]
   },
   {
@@ -35,13 +35,13 @@
     "options": [
       { "id": "tell", "label": "Tell {me}", "hint": "{me.house} +10 · {bannerman}'s fate is in {bannerman.his} liege's hands",
         "effects": { "favour": { "me": 10 }, "opinion": [["me", "bannerman", -50]], "loyalty": { "bannerman": -20 }, "memory": { "bannerman": "Someone told my lord about the inn. I know it was the crown." } },
-        "text": "The King sends word to {me}. {bannerman} is called to {bannerman.his} lord's hall and doesn't come out for three days." },
+        "text": ["The King sends word to {me}. {bannerman} is called to {bannerman.his} lord's hall and doesn't come out for three days.", "Word of the meetings reaches {me}. {bannerman} is summoned to {bannerman.his} lord's hall, and three days pass before the doors open again.", "A royal letter goes to {me}. Soon after, {bannerman} enters {bannerman.his} lord's hall, and for three days nobody sees {bannerman} at all."] },
       { "id": "turn", "label": "Make {bannerman} the crown's spy (80 gold)", "cost": 80, "hint": "You'll know what {rival.house} plans, but if it comes out, both houses will hate you",
         "effects": { "loyalty": { "bannerman": 10 }, "memory": { "bannerman": "I serve the King now, whoever else I smile at." } },
-        "text": "{bannerman} is quietly bought. {bannerman.He} keeps meeting {rival.house}'s men, and now {bannerman.he} tells the King what they say." },
+        "text": ["{bannerman} is quietly bought. {bannerman.He} keeps meeting {rival.house}'s men, and now {bannerman.he} tells the King what they say.", "Silver changes hands in the dark. {bannerman} still dines with {rival.house}'s men, and every word they say now reaches the King.", "Now {bannerman} serves two tables. {bannerman.He} goes on meeting {rival.house}'s men, and the King hears every word."] },
       { "id": "nothing", "label": "Watch and say nothing", "hint": "It costs nothing, but if {bannerman} changes sides, {bannerman.his} town goes with {bannerman.his} coat",
         "effects": { "goal": { "bannerman": { "kind": "defect", "text": "go over to {rival.house}" } } },
-        "text": "The King watches. {bannerman} rides home to {me.house}, smiling." }
+        "text": ["The King watches. {bannerman} rides home to {me.house}, smiling.", "Nothing is said. {bannerman} rides back to {me.house} in good spirits.", "The King keeps his counsel and his eyes open. {bannerman} goes home to {me.house} looking pleased with the world."] }
     ]
   },
   {
@@ -50,13 +50,13 @@
     "options": [
       { "id": "bless", "label": "Bless the alliance in public", "hint": "Both +10 · two houses stand together, for or against you",
         "effects": { "favour": { "me": 10, "friend": 10 }, "opinion": [["me", "friend", 20], ["friend", "me", 20]] },
-        "text": "The King blesses the pact between {me.house} and {friend.house} in front of the whole court, as if it were his idea." },
+        "text": ["The King blesses the pact between {me.house} and {friend.house} in front of the whole court, as if it were his idea.", "Before all the court, the King gives his blessing to {me.house} and {friend.house}, and speaks of the pact as though he had drawn it up.", "{me.house} and {friend.house} hear the King praise their pact aloud. By evening it is the crown's own design."] },
       { "id": "break", "label": "Forbid it", "hint": "Both −15 · the pact is broken, and both lords suspect the other betrayed it",
         "effects": { "favour": { "me": -15, "friend": -15 }, "opinion": [["me", "friend", -30], ["friend", "me", -30]] },
-        "text": "The King forbids the pact. Each lord is sure the other leaked the letter." },
+        "text": ["The King forbids the pact. Each lord is sure the other leaked the letter.", "No pact, says the King. Both lords ride home, each blaming the other for the letter.", "The pact dies by royal word. Each lord leaves court certain the other could not keep a secret."] },
       { "id": "rival", "label": "Send the letter on to {rival.house}", "hint": "{rival.house} +15 · {me.house} and {rival.house} drift toward war",
         "effects": { "favour": { "rival": 15 }, "opinion": [["rival", "me", -30], ["me", "rival", -20]] },
-        "text": "A copy of the letter reaches {rival}. The realm grows tense." }
+        "text": ["A copy of the letter reaches {rival}. The realm grows tense.", "{rival} receives a fair copy of the letter. Across the realm, men start counting swords.", "Somehow the letter finds its way to {rival}. Every hall in the realm goes quiet and watchful."] }
     ]
   },
   {
@@ -65,13 +65,13 @@
     "options": [
       { "id": "leave", "label": "Let them march", "hint": "War between {me.house} and {rival.house} · {me.house} +15 · {rival.house} −25",
         "effects": { "war": ["me", "rival"], "favour": { "me": 15, "rival": -25 } },
-        "text": "The King lets {me} march. The banners of {me.house} go up across the land." },
+        "text": ["The King lets {me} march. The banners of {me.house} go up across the land.", "No word comes from the throne to stop {me}. Across the land, {me.house}'s banners rise.", "{me} marches with the King's silence for leave. Every road fills with the colours of {me.house}."] },
       { "id": "forbid", "label": "Forbid it, on pain of treason", "hint": "{me.house} −20 · {me} may march anyway, without your blessing",
         "effects": { "favour": { "me": -20 }, "goal": { "me": { "kind": "revenge", "text": "settle things with {rival.house} my own way" } } },
-        "text": "The King forbids the march. {me} bows stiffly, but nobody thinks it's over." },
+        "text": ["The King forbids the march. {me} bows stiffly, but nobody thinks it's over.", "{me} is told to stand down, and bows, stiffly. Nobody at court believes that ends it.", "No march, rules the King. {me} obeys for now, and the whole hall can see the words for now."] },
       { "id": "peace", "label": "Call both lords in and set the terms (150 gold)", "cost": 150, "hint": "Two years' truce · both −5",
         "effects": { "truce": 2, "favour": { "me": -5, "rival": -5 } },
-        "text": "Both lords kneel at Kingsmere and swear to keep the King's peace. The crown pays for the burned villages." }
+        "text": ["Both lords kneel at Kingsmere and swear to keep the King's peace. The crown pays for the burned villages.", "At Kingsmere both lords go down on one knee and swear the King's peace. The treasury pays for the burned villages.", "Two lords kneel side by side and give their oath. The crown sends silver to rebuild what was burned."] }
     ]
   },
   {
@@ -80,13 +80,13 @@
     "options": [
       { "id": "look_away", "label": "Look the other way", "hint": "{rivalTown} is raided · {me.house} +10 · {rival.house} −15 when they learn of it",
         "effects": { "raid": ["me", "rival"], "favour": { "me": 10, "rival": -15 } },
-        "text": "The King looks the other way. {rivalTown} burns, and its men are buried." },
+        "text": ["The King looks the other way. {rivalTown} burns, and its men are buried.", "No word comes from the throne. {rivalTown} is put to the torch and its dead go into the ground.", "{rivalTown} burns while the King attends to other business. Afterwards there are graves to dig."] },
       { "id": "recall", "label": "Call the riders back", "hint": "{me.house} −10 · {rival.house} +5",
         "effects": { "favour": { "me": -10, "rival": 5 } },
-        "text": "The King's herald catches {me.house}'s riders on the road. They turn back, cursing." },
+        "text": ["The King's herald catches {me.house}'s riders on the road. They turn back, cursing.", "A herald in the King's colours meets {me.house}'s riders on the road. They wheel about and ride home swearing.", "{me.house}'s riders get no farther than the King's herald. They turn their horses with curses to spare."] },
       { "id": "fine", "label": "Fine {me.house} for breaking the peace", "hint": "{me.house} pays 100 gold to the crown · {me.house} −20",
         "effects": { "gold": { "me": -100, "crown": 100 }, "favour": { "me": -20 } },
-        "text": "The King fines {me.house} for its riders. The silver comes late, and short." }
+        "text": ["The King fines {me.house} for its riders. The silver comes late, and short.", "{me.house} is ordered to pay for its riders' work. The silver arrives late, and lighter than agreed.", "A fine is laid on {me.house}. Its steward pays slowly, and the chest comes up short."] }
     ]
   },
   {
@@ -95,13 +95,13 @@
     "options": [
       { "id": "trial", "label": "Put {rival} on trial", "hint": "{rival.house} −30 · {me.house} +15 · if innocent, the realm sees a tyrant",
         "effects": { "favour": { "rival": -30, "me": 15 }, "memory": { "rival": "The King put me on trial for a sickness no one could prove was poison." } },
-        "text": "{rival} stands trial at Kingsmere. Nothing is proven, but nobody forgets it." },
+        "text": ["{rival} stands trial at Kingsmere. Nothing is proven, but nobody forgets it.", "At Kingsmere, {rival} is tried for the poisoning. The judges find nothing, and the court remembers everything.", "No proof is found against {rival}. The trial ends, the whispers do not."] },
       { "id": "maester", "label": "Send the royal physician to save {heir} (80 gold)", "cost": 80, "hint": "{heir} lives · {me.house} +10 · the question is left open",
         "effects": { "favour": { "me": 10 }, "memory": { "heir": "The King's physician saved my life." } },
-        "text": "The royal physician rides all night. {heir} lives, pale and thin, and remembers who saved them." },
+        "text": ["The royal physician rides all night. {heir} lives, pale and thin, and remembers who saved them.", "All night the royal physician rides hard. {heir} survives, thin and grey, and knows whose man came.", "{heir} lives, thanks to a physician sent by the crown through the dark. The debt is not forgotten."] },
       { "id": "nothing", "label": "Call it a sickness, and let it lie", "hint": "{heir} may die · {me.house} −15",
         "effects": { "favour": { "me": -15 }, "dies": { "who": "heir", "chance": 0.5, "text": "{heir}, heir of {me.house}, dies of the fever. {me} names the poisoner in every hall." } },
-        "text": "The King does nothing." }
+        "text": ["The King does nothing.", "No order comes from the throne.", "The King lets the matter lie."] }
     ]
   },
   {
@@ -110,13 +110,13 @@
     "options": [
       { "id": "legitimise", "label": "Make him legitimate", "hint": "{bannerman} +loyalty to the crown · {me.house} −10",
         "effects": { "loyalty": { "bannerman": 20 }, "favour": { "me": -10 }, "memory": { "bannerman": "The King gave my child a name." } },
-        "text": "By royal decree, the boy is trueborn. {bannerman} weeps in the hall." },
+        "text": ["By royal decree, the boy is trueborn. {bannerman} weeps in the hall.", "A royal seal makes the boy trueborn. In the hall, {bannerman} weeps openly.", "{bannerman} hears the decree read and weeps. The boy now bears his father's name by law."] },
       { "id": "refuse", "label": "A bastard stays a bastard", "hint": "{me.house} +5 · {bannerman} sours",
         "effects": { "favour": { "me": 5 }, "loyalty": { "bannerman": -15 } },
-        "text": "The King refuses. The boy keeps his bastard's name, and {bannerman} does not forgive it." },
+        "text": ["The King refuses. The boy keeps his bastard's name, and {bannerman} does not forgive it.", "No, says the King. The boy remains a bastard, and {bannerman} keeps the grudge.", "The boy's name stays as it was. {bannerman} bows to the ruling and never forgives it."] },
       { "id": "kingsguard", "label": "Take the boy into the King's service", "hint": "The crown gains a sworn sword, and {bannerman} is grateful, but you'll have to watch him",
         "effects": { "units": { "crown": { "count": 1, "type": "Knights" } }, "loyalty": { "bannerman": 10 } },
-        "text": "The boy joins the King's service. He swears his oath in front of the whole court." }
+        "text": ["The boy joins the King's service. He swears his oath in front of the whole court.", "Before all the court, the boy kneels and takes the King's oath. His name matters less now than his sword.", "The King takes the boy into his service. He swears in the great hall, with every lord watching."] }
     ]
   },
   {
@@ -125,10 +125,10 @@
     "options": [
       { "id": "accept", "label": "Take {heir} as a ward", "hint": "{me.house} +15 · {me} cannot rise while you hold the child",
         "effects": { "ward": "heir", "favour": { "me": 15 } },
-        "text": "{heir} comes to Kingsmere and kneels before the throne. The court watches the newcomer closely." },
+        "text": ["{heir} comes to Kingsmere and kneels before the throne. The court watches the newcomer closely.", "Kneeling before the throne, {heir} is welcomed to Kingsmere. Every eye at court follows the new ward.", "{heir} arrives at Kingsmere and bends the knee. The court studies its new guest with care."] },
       { "id": "refuse", "label": "The crown doesn't need hostages", "hint": "{me.house} −10 · a gesture refused is an insult",
         "effects": { "favour": { "me": -10 } },
-        "text": "The King turns down the ward. {me} takes it as an insult, and it is one." }
+        "text": ["The King turns down the ward. {me} takes it as an insult, and it is one.", "No ward is taken. {me} hears it as an insult, and is meant to.", "The King sends {me}'s offer back. It is an insult, and {me} knows it."] }
     ]
   },
   {
@@ -137,13 +137,13 @@
     "options": [
       { "id": "fund", "label": "Pay for the tourney (200 gold)", "cost": 200, "hint": "Every house +5 · {me.house} +15 · knights flock to the crown",
         "effects": { "favour": { "all": 5, "me": 10 }, "units": { "crown": { "count": 2, "type": "Knights" } } },
-        "text": "Everyone in the realm talks about the tourney at {town}. Two hedge knights earn their spurs and swear to the King." },
+        "text": ["Everyone in the realm talks about the tourney at {town}. Two hedge knights earn their spurs and swear to the King.", "The tourney at {town} is the talk of the realm. Two hedge knights win their spurs there and kneel to the King.", "For a season nobody speaks of anything but {town}'s tourney. Two hedge knights rise from it, sworn to the crown."] },
       { "id": "half", "label": "Let {me.house} pay for it", "hint": "{me.house} pays 150 gold · {me.house} +5",
         "effects": { "gold": { "me": -150 }, "favour": { "me": 5 } },
-        "text": "{me.house} hosts the tourney at its own cost, and makes sure everyone knows it." },
+        "text": ["{me.house} hosts the tourney at its own cost, and makes sure everyone knows it.", "The tourney is paid for by {me.house}, and {me.house} sees that nobody forgets it.", "{me.house} pays for every lance and banner at the tourney, and has heralds say so twice a day."] },
       { "id": "refuse", "label": "The crown has no time for tourneys", "hint": "{me.house} −5",
         "effects": { "favour": { "me": -5 } },
-        "text": "The King has no time for tourneys. The knights go home disappointed." }
+        "text": ["The King has no time for tourneys. The knights go home disappointed.", "No tourney this year, says the King. The knights ride home with nothing to show.", "The crown will not spend on jousting. The lists stay empty and the knights go home sour."] }
     ]
   },
   {
@@ -152,13 +152,13 @@
     "options": [
       { "id": "hire", "label": "Outbid {me} (250 gold)", "cost": 250, "hint": "The crown gains a company · {me.house} −10",
         "effects": { "units": { "crown": { "count": 4, "type": "Pikemen" } }, "favour": { "me": -10 } },
-        "text": "The Golden Wolf takes the King's silver. His men camp outside Kingsmere." },
+        "text": ["The Golden Wolf takes the King's silver. His men camp outside Kingsmere.", "The Golden Wolf counts the King's silver and pitches his tents outside Kingsmere.", "Outside Kingsmere a sellsword camp rises. The Golden Wolf now takes the King's pay."] },
       { "id": "let", "label": "Let {me.house} have them", "hint": "{me.house} gains a company · {me.house} +5",
         "effects": { "units": { "me": { "count": 4, "type": "Pikemen" } }, "favour": { "me": 5 } },
-        "text": "The sellswords march under {me.house}'s banner. The other houses count them nervously." },
+        "text": ["The sellswords march under {me.house}'s banner. The other houses count them nervously.", "Under the banner of {me.house} the sellswords march. Every other house counts heads.", "{me.house} has the sellswords now. The other houses watch them pass and count the spears."] },
       { "id": "banish", "label": "Send them out of the realm", "hint": "Nobody gains them · {me.house} −5",
         "effects": { "favour": { "me": -5 } },
-        "text": "The King orders the sellswords out of the realm. They head east, looking for another war." }
+        "text": ["The King orders the sellswords out of the realm. They head east, looking for another war.", "Out of the realm, orders the King. The sellswords ride east to find a war that will pay.", "The sellswords are sent across the border. They go east, after someone else's quarrel."] }
     ]
   },
   {
@@ -167,13 +167,13 @@
     "options": [
       { "id": "close", "label": "Shut the gates", "hint": "The sickness stays inside {town}, and the poor of {town} never forgive it",
         "effects": { "favour": { "me": 5 }, "memory": { "me": "I shut the gates of {town} on my own people, with the King's leave." } },
-        "text": "The gates of {town} close. For a season, nobody goes in or out." },
+        "text": ["The gates of {town} close. For a season, nobody goes in or out.", "{town} shuts its gates by royal order. A whole season passes with nobody in or out.", "Nobody leaves {town}, and nobody enters, for a season. The gates stay barred on the King's word."] },
       { "id": "healers", "label": "Send healers and grain (150 gold)", "cost": 150, "hint": "{me.house} +15 · every house +3",
         "effects": { "gold": { "me": 150 }, "favour": { "me": 15, "all": 3 } },
-        "text": "The crown sends healers and grain to {town}. Some of the healers don't come back." },
+        "text": ["The crown sends healers and grain to {town}. Some of the healers don't come back.", "Healers and grain go to {town} at the crown's cost. Not every healer comes home.", "{town} receives the King's healers and the King's grain. Some of the healers are buried there."] },
       { "id": "burn", "label": "Burn the sick quarter", "hint": "Brutal and certain · {me.house} −10 · the realm whispers about the King",
         "effects": { "favour": { "me": -10, "all": -2 } },
-        "text": "The sick quarter of {town} burns. The sickness ends, and so does the King's name for mercy." }
+        "text": ["The sick quarter of {town} burns. The sickness ends, and so does the King's name for mercy.", "Fire takes the sick quarter of {town}. The sickness is gone, and the King's name for mercy with it.", "On royal orders the sick quarter of {town} is burned. The plague ends there; so does any talk of the King's mercy."] }
     ]
   },
   {
@@ -182,10 +182,10 @@
     "options": [
       { "id": "condemn", "label": "Condemn {rival} as a heretic", "hint": "{me.house} +15 · {rival.house} −30, and its people with it",
         "effects": { "favour": { "me": 15, "rival": -30 }, "memory": { "rival": "The King branded me a heretic on the word of a zealot." } },
-        "text": "The King condemns {rival}'s rites. The sacred groves of {rival.house} are cut down." },
+        "text": ["The King condemns {rival}'s rites. The sacred groves of {rival.house} are cut down.", "{rival}'s rites are condemned by the King. Axes go into the sacred groves of {rival.house}.", "The groves of {rival.house} fall to royal axes. The King has named {rival}'s rites unlawful."] },
       { "id": "tolerate", "label": "Let every house keep its own rites", "hint": "{rival.house} +10 · {me} −15, appalled",
         "effects": { "favour": { "rival": 10, "me": -15 } },
-        "text": "The King says every house may keep its own rites. {me} prays for the King's soul." }
+        "text": ["The King says every house may keep its own rites. {me} prays for the King's soul.", "Each house may keep its own rites, rules the King. {me} goes to the temple and prays for the King's soul.", "No house will be made to change its gods. {me} offers prayers at the temple for the King's soul."] }
     ]
   },
   {
@@ -194,13 +194,13 @@
     "options": [
       { "id": "protect", "label": "Let {me.house} keep him", "hint": "{me.house} gains men · {rival.house} −20",
         "effects": { "units": { "me": { "count": 2, "type": "Knights" } }, "favour": { "rival": -20, "me": 5 } },
-        "text": "The knight swears to {me.house}. {rival} sends a letter nobody dares read aloud." },
+        "text": ["The knight swears to {me.house}. {rival} sends a letter nobody dares read aloud.", "{me.house} takes the knight's oath. A letter comes from {rival} that nobody will read aloud.", "The knight now serves {me.house}. {rival}'s reply arrives sealed, and stays unread in public."] },
       { "id": "return", "label": "Send him back to {rival}", "hint": "{rival.house} +10 · the knight hangs · {me.house} −10",
         "effects": { "favour": { "rival": 10, "me": -10 } },
-        "text": "The knight is sent back in chains. He hangs within the week." },
+        "text": ["The knight is sent back in chains. He hangs within the week.", "In chains, the knight goes back. Before the week is out he is hanged.", "The knight is returned bound. He is dead on a rope within seven days."] },
       { "id": "crown", "label": "He serves the crown now", "hint": "The crown gains a knight · both −5",
         "effects": { "units": { "crown": { "count": 1, "type": "Knights" } }, "favour": { "me": -5, "rival": -5 } },
-        "text": "The King takes the knight into his own service, and both lords feel cheated." }
+        "text": ["The King takes the knight into his own service, and both lords feel cheated.", "The knight kneels to the King himself. Both lords leave court feeling robbed.", "Neither house keeps the knight. He wears the King's colours now, and both lords count it a theft."] }
     ]
   },
   {
@@ -209,13 +209,13 @@
     "options": [
       { "id": "pay", "label": "Order {rival.house} to pay", "hint": "{rival.house} pays {me.house} 200 · {rival.house} −15",
         "effects": { "gold": { "rival": -200, "me": 200 }, "favour": { "rival": -15, "me": 10 } },
-        "text": "{rival.house} pays the old dowry. Every coin is counted twice." },
+        "text": ["{rival.house} pays the old dowry. Every coin is counted twice.", "The old dowry is paid by {rival.house}. Each coin is counted twice over.", "{rival.house} hands over the dowry at last. Both stewards count every coin, then count again."] },
       { "id": "half", "label": "Split the difference", "hint": "{rival.house} pays 100 · both −5",
         "effects": { "gold": { "rival": -100, "me": 100 }, "favour": { "rival": -5, "me": -5 } },
-        "text": "The King splits the debt down the middle. Neither house is happy." },
+        "text": ["The King splits the debt down the middle. Neither house is happy.", "Half the debt each, rules the King. Both houses leave unhappy.", "The dowry is cut in two by royal word. No one at the table is content."] },
       { "id": "dismiss", "label": "Ten years is too late", "hint": "{me.house} −10 · {rival.house} +5",
         "effects": { "favour": { "me": -10, "rival": 5 } },
-        "text": "The King throws out the claim. {me} grumbles that the crown forgets its promises." }
+        "text": ["The King throws out the claim. {me} grumbles that the crown forgets its promises.", "The claim is thrown out. {me} mutters that the crown has a short memory for promises.", "No debt, says the King. {me} complains to anyone who will listen that the crown forgets its word."] }
     ]
   },
   {
@@ -224,13 +224,13 @@
     "options": [
       { "id": "blood", "label": "Make {rival.house} pay a blood price", "hint": "{rival.house} pays 120 · {rival.house} −10",
         "effects": { "gold": { "rival": -120, "me": 120 }, "favour": { "rival": -10, "me": 5 } },
-        "text": "{rival.house} pays the blood price for {bannerman}. Nobody ever explains the arrow." },
+        "text": ["{rival.house} pays the blood price for {bannerman}. Nobody ever explains the arrow.", "The blood price for {bannerman} is paid by {rival.house}. Of the arrow, no one says a word.", "{rival.house} pays for {bannerman}'s death in full. The arrow itself is never explained."] },
       { "id": "accident", "label": "Call it an accident", "hint": "{me.house} −15 · {me} looks for {me.his} own justice",
         "effects": { "favour": { "me": -15 }, "goal": { "me": { "kind": "revenge", "text": "avenge {bannerman}" } } },
-        "text": "The King rules it an accident. {me.house} rides home in silence." },
+        "text": ["The King rules it an accident. {me.house} rides home in silence.", "An accident, rules the King. {me.house}'s riders go home without a word between them.", "The death is judged an accident. {me.house} rides home in silence."] },
       { "id": "inquiry", "label": "Send the King's justice to find out (60 gold)", "cost": 60, "hint": "Both −5 · the truth comes out, one way or another",
         "effects": { "favour": { "me": -5, "rival": -5 }, "opinion": [["me", "rival", -15]] },
-        "text": "The King's justice finds the bowman. He hangs without naming anyone." }
+        "text": ["The King's justice finds the bowman. He hangs without naming anyone.", "The bowman is found by the King's justice. He goes to the rope with no name on his lips.", "The King's men find the bowman and hang him. He never says who paid."] }
     ]
   },
   {
@@ -239,13 +239,13 @@
     "options": [
       { "id": "buy", "label": "Buy it for the royal granaries (120 gold)", "cost": 120, "hint": "{me.house} +10 · grain for the lean years",
         "effects": { "gold": { "me": 120 }, "favour": { "me": 10 } },
-        "text": "The King's granaries fill with {me.house}'s grain." },
+        "text": ["The King's granaries fill with {me.house}'s grain.", "{me.house}'s grain fills the royal granaries.", "Wagons of {me.house}'s grain roll into the King's granaries."] },
       { "id": "tax", "label": "Tax the windfall", "hint": "The crown takes 100 gold from {me.house} · {me.house} −15",
         "effects": { "gold": { "me": -100, "crown": 100 }, "favour": { "me": -15 } },
-        "text": "The King taxes the harvest. {me} pays, and doesn't forget." },
+        "text": ["The King taxes the harvest. {me} pays, and doesn't forget.", "{me} pays the King's tax on the harvest, and remembers.", "A royal tax falls on the full harvest. {me} pays it, and keeps the reckoning."] },
       { "id": "free", "label": "Let them sell abroad", "hint": "{me.house} grows richer · {me.house} +5",
         "effects": { "gold": { "me": 150 }, "favour": { "me": 5 } },
-        "text": "{me.house}'s grain sails across the sea, and its coffers fill." }
+        "text": ["{me.house}'s grain sails across the sea, and its coffers fill.", "Ships carry {me.house}'s grain over the sea. Its coffers fill.", "Across the sea goes the grain of {me.house}, and home comes silver."] }
     ]
   },
   {
@@ -254,10 +254,10 @@
     "options": [
       { "id": "bannerman", "label": "Rule for {bannerman}", "hint": "{bannerman} turns to the crown · {me.house} −15",
         "effects": { "loyalty": { "bannerman": 10 }, "favour": { "me": -15 }, "memory": { "bannerman": "The King stood by me against my own lord." }, "opinion": [["me", "bannerman", -25]] },
-        "text": "The King gives {bannerman}'s fields back. {me} won't forget who went over {me.his} head." },
+        "text": ["The King gives {bannerman}'s fields back. {me} won't forget who went over {me.his} head.", "{bannerman} has the fields again by royal order. {me} will remember who went over {me.his} head.", "The fields go back to {bannerman}. {me} does not forget being passed over in {me.his} own lands."] },
       { "id": "liege", "label": "A lord's land is his to give", "hint": "{me.house} +10 · {bannerman} sours, and may look elsewhere",
         "effects": { "favour": { "me": 10 }, "loyalty": { "bannerman": -20 }, "goal": { "bannerman": { "kind": "defect", "text": "find a lord who keeps faith" } } },
-        "text": "The King sides with {me}. {bannerman} rides home with nothing." }
+        "text": ["The King sides with {me}. {bannerman} rides home with nothing.", "{me} has the King's support. {bannerman} goes home empty-handed.", "The King upholds {me}. {bannerman} rides away with nothing."] }
     ]
   },
   {
@@ -266,7 +266,7 @@
     "options": [
       { "id": "heir", "label": "Let {heir} rule", "hint": "{heir} owes the crown, but {me} is shamed",
         "effects": { "loyalty": { "heir": 25 }, "memory": { "me": "The King let my own child push me aside." }, "favour": { "me": -10 } },
-        "text": "The King names {heir} to run {me.house} in {me.his} name. The old {me.lord} sits by the fire and doesn't understand." },
+        "text": ["The King names {heir} to run {me.house} in {me.his} name. The old {me.lord} sits by the fire and doesn't understand.", "{heir} now rules {me.house} in {me.his} name, by royal order. The old {me.lord} sits by the fire and does not follow.", "By the fire, the old {me.lord} hears none of it. The King has given {me.house} to {heir} to run in {me.his} name."] },
       { "id": "wait", "label": "A lord rules until he dies", "hint": "{me.house} +5 · {heir} grows impatient",
         "effects": { "favour": { "me": 5 }, "goal": { "heir": { "kind": "crown", "text": "rule {me.house} now, whatever it takes" } } },
         "text": ["The King says no. {heir} leaves court with dark thoughts.", "\"A lord rules until he dies.\" {heir} bows, and starts counting the old {me.lord}'s breaths.", "No regency for {heir}. In {me.house}'s hall, the heir sits a little closer to the high seat every week."] }
@@ -278,13 +278,13 @@
     "options": [
       { "id": "settle", "label": "Let them settle the empty land", "hint": "{town} grows · {me.house} −10, furious",
         "effects": { "favour": { "me": -10 }, "units": { "me": { "count": 1, "type": "Warriors" } } },
-        "text": "The clansfolk settle the empty hills by {town}. {me} puts guards on every road." },
+        "text": ["The clansfolk settle the empty hills by {town}. {me} puts guards on every road.", "Clansfolk make homes in the empty hills by {town}. {me} sets a guard on every road.", "The hills by {town} fill with clan smoke. {me} has every road watched."] },
       { "id": "drive", "label": "Drive them back (80 gold)", "cost": 80, "hint": "{me.house} +5 · the riders are the crown's to pay · they will come back angrier",
         "effects": { "favour": { "me": 5 } },
-        "text": "{me.house}'s riders drive the clansfolk back into the snow." },
+        "text": ["{me.house}'s riders drive the clansfolk back into the snow.", "The clansfolk are driven back into the snow by {me.house}'s riders.", "Riders of {me.house} push the clans north again, into the snow they came from."] },
       { "id": "levy", "label": "Take their fighters into the King's army", "hint": "The crown gains warriors · {me.house} −5",
         "effects": { "units": { "crown": { "count": 3, "type": "Warriors" } }, "favour": { "me": -5 } },
-        "text": "The clan fighters swear to the King. Their families go south with them." }
+        "text": ["The clan fighters swear to the King. Their families go south with them.", "Clan fighters kneel and swear to the King. Their families follow them south.", "The clans give the King their spears. Women and children go south behind them."] }
     ]
   },
   {
@@ -293,13 +293,13 @@
     "options": [
       { "id": "abolish", "label": "Scrap the toll", "hint": "{me.house} +10 · {rival.house} −15",
         "effects": { "favour": { "me": 10, "rival": -15 } },
-        "text": "The King scraps the toll. {rival}'s men pull down the gate, slowly." },
+        "text": ["The King scraps the toll. {rival}'s men pull down the gate, slowly.", "No more toll, rules the King. {rival}'s men take down the gate, taking their time.", "The toll is ended. {rival}'s men pull the gate down, slowly."] },
       { "id": "share", "label": "The crown takes half", "hint": "The crown gains 80 gold from {rival.house} · both −5",
         "effects": { "gold": { "rival": -80, "crown": 80 }, "favour": { "me": -5, "rival": -5 } },
-        "text": "The toll stays, and the King takes his cut. Now everyone pays." },
+        "text": ["The toll stays, and the King takes his cut. Now everyone pays.", "The toll remains, and part of it goes to the King. Everyone pays now.", "Now the crown takes its share of the toll. Nobody crosses free."] },
       { "id": "keep", "label": "A lord may toll his own bridge", "hint": "{rival.house} +10 · {me.house} −15",
         "effects": { "favour": { "rival": 10, "me": -15 } },
-        "text": "The toll stays. {me.house}'s carts go the long way round." }
+        "text": ["The toll stays. {me.house}'s carts go the long way round.", "The toll is kept. {me.house}'s carts take the long road.", "{me.house}'s carts go the long way round. The toll stands."] }
     ]
   },
   {
@@ -308,13 +308,13 @@
     "options": [
       { "id": "buy", "label": "Buy it (200 gold)", "cost": 200, "hint": "{me.house} +15 · the realm talks of the old kings",
         "effects": { "gold": { "me": 200 }, "favour": { "me": 15 } },
-        "text": "The old crown comes to Kingsmere and is set beside the throne. Pilgrims ask to see it." },
+        "text": ["The old crown comes to Kingsmere and is set beside the throne. Pilgrims ask to see it.", "Set beside the throne at Kingsmere, the old crown draws pilgrims who ask to see it.", "The crown buys the old crown, and it sits beside the throne. Pilgrims come asking for a look."] },
       { "id": "claim", "label": "Take it, by right", "hint": "Free · {me.house} −20",
         "effects": { "favour": { "me": -20 } },
-        "text": "The King takes the old crown as his right. {me} hands it over without a word." },
+        "text": ["The King takes the old crown as his right. {me} hands it over without a word.", "{me} hands over the old crown without a word. The King has claimed it as his right.", "The old crown is the King's by right, he says. {me} gives it up in silence."] },
       { "id": "keep", "label": "Let {me.house} keep it", "hint": "{me.house} +10 · and a house that holds a king's crown starts to dream",
         "effects": { "favour": { "me": 10 }, "goal": { "me": { "kind": "crown", "text": "hatch the egg and take the throne" } } },
-        "text": "{me.house} keeps the old crown. Its lord has started reading old histories." }
+        "text": ["{me.house} keeps the old crown. Its lord has started reading old histories.", "The old crown stays with {me.house}. Its lord has taken to reading old histories.", "{me.house} keeps the old crown, and its lord keeps late hours with old histories."] }
     ]
   },
   {
@@ -323,13 +323,13 @@
     "options": [
       { "id": "duel", "label": "Let them fight it out", "hint": "One may die · the winner's house +10",
         "effects": { "favour": { "me": 10, "rival": -10 }, "opinion": [["rival", "me", -20]] },
-        "text": "Swords out in the King's hall. The envoy bleeds on the floor, and {me.house} is satisfied." },
+        "text": ["Swords out in the King's hall. The envoy bleeds on the floor, and {me.house} is satisfied.", "Steel is drawn in the King's hall. The envoy lies bleeding, and {me.house} counts itself repaid.", "The envoy falls in the King's hall with a wound to show for his words. {me.house} is content."] },
       { "id": "expel", "label": "Throw the envoy out", "hint": "{me.house} +10 · {rival.house} −10",
         "effects": { "favour": { "me": 10, "rival": -10 } },
-        "text": "The King throws {rival.house}'s envoy out of court." },
+        "text": ["The King throws {rival.house}'s envoy out of court.", "{rival.house}'s envoy is put out of court on the King's order.", "Out goes {rival.house}'s envoy, sent from court by the King himself."] },
       { "id": "apology", "label": "Make them both apologise", "hint": "Both −5 · no blood",
         "effects": { "favour": { "me": -5, "rival": -5 } },
-        "text": "Both men apologise through gritted teeth. The feast never recovers." }
+        "text": ["Both men apologise through gritted teeth. The feast never recovers.", "Through clenched teeth, both men say sorry. The feast does not recover.", "Each man gives a stiff apology. Nobody enjoys the rest of the feast."] }
     ]
   },
   {
@@ -338,13 +338,13 @@
     "options": [
       { "id": "grant", "label": "Give them the rights", "hint": "{me.house} grows rich · {me.house} +15",
         "effects": { "gold": { "me": 200 }, "favour": { "me": 15 } },
-        "text": "The King gives {me.house} the silver of {town}. The house grows fat." },
+        "text": ["The King gives {me.house} the silver of {town}. The house grows fat.", "The silver of {town} goes to {me.house}. The house grows rich on it.", "{me.house} is given {town}'s silver by the King, and grows fat."] },
       { "id": "keep", "label": "The crown keeps them", "hint": "The crown gains 150 gold · {me.house} −15",
         "effects": { "gold": { "crown": 150 }, "favour": { "me": -15 } },
-        "text": "The crown's miners arrive at {town}. {me.house} watches its silver go to Kingsmere." },
+        "text": ["The crown's miners arrive at {town}. {me.house} watches its silver go to Kingsmere.", "Royal miners come to {town}. {me.house} watches its silver ride away to Kingsmere.", "{me.house} watches the crown's carts take {town}'s silver south to Kingsmere."] },
       { "id": "split", "label": "Share the silver", "hint": "Both gain 80 · {me.house} +5",
         "effects": { "gold": { "crown": 80, "me": 80 }, "favour": { "me": 5 } },
-        "text": "The crown and the house share the silver of {town}." }
+        "text": ["The crown and the house share the silver of {town}.", "{town}'s silver is shared between crown and house.", "The silver of {town} is divided, half to the crown and half to the house."] }
     ]
   },
   {
@@ -353,13 +353,13 @@
     "options": [
       { "id": "hang", "label": "Demand them, and hang them", "hint": "{me.house} −15 · every levy hears of it",
         "effects": { "favour": { "me": -15 } },
-        "text": "The deserters are handed over and hanged at the crossroads. The levies stop running." },
+        "text": ["The deserters are handed over and hanged at the crossroads. The levies stop running.", "At the crossroads, the deserters hang. No more levies run.", "The deserters are given up and hanged where the roads meet. After that, the levies stay put."] },
       { "id": "pardon", "label": "Pardon them and send them back (50 gold)", "cost": 50, "hint": "The crown gains men, and pays to rearm them · {me.house} +5",
         "effects": { "units": { "crown": { "count": 2, "type": "Pikemen" } }, "favour": { "me": 5 } },
         "text": ["The deserters are pardoned and march back to the King's banner.", "Forty pardoned men march back under the King's banner.", "The deserters get new boots, old pikes and the King's pardon. They walk back into the levy as if they never left.", "Pardoned. The forty come home to the King's host, and the sergeants pretend not to know their faces."] },
       { "id": "let", "label": "Let {me.house} keep them", "hint": "{me.house} +10 · the King's levy loses its teeth",
         "effects": { "favour": { "me": 10, "all": -2 } },
-        "text": "The deserters stay in {town}. Now every lord knows the King's levy can be refused." }
+        "text": ["The deserters stay in {town}. Now every lord knows the King's levy can be refused.", "{town} keeps its deserters. Every lord now knows a King's levy can be refused.", "The deserters live on in {town}, and every lord takes the lesson that the levy can be refused."] }
     ]
   },
   {
@@ -368,13 +368,13 @@
     "options": [
       { "id": "annul", "label": "End the marriage", "hint": "{me.house} +10 · {rival.house} −15 · the realm gossips",
         "effects": { "favour": { "me": 10, "rival": -15 }, "opinion": [["me", "rival", -40]] },
-        "text": "The marriage is ended. {rival}'s name is in every tavern." },
+        "text": ["The marriage is ended. {rival}'s name is in every tavern.", "The marriage is undone. Every tavern talks of {rival}.", "{rival}'s marriage is ended, and {rival}'s name goes from tavern to tavern."] },
       { "id": "deny", "label": "Refuse without proof", "hint": "{me.house} −10 · {me} seeks proof {me.himself}",
         "effects": { "favour": { "me": -10 }, "goal": { "me": { "kind": "revenge", "text": "catch {rival} and my {me.wife} at their letters" } } },
-        "text": "The King refuses. {me} pays men to follow {me.his} own {me.wife}." },
+        "text": ["The King refuses. {me} pays men to follow {me.his} own {me.wife}.", "No, says the King. {me} hires men to follow {me.his} own {me.wife}.", "The King will not end it. {me} pays others to watch {me.his} {me.wife}."] },
       { "id": "septon", "label": "Let the high priest decide", "hint": "Both −3 · it drags on for years",
         "effects": { "favour": { "me": -3, "rival": -3 } },
-        "text": "The matter goes to the Faith, where it will take years." }
+        "text": ["The matter goes to the temple, where it will take years.", "The case goes to the temple. The priests will take years.", "The King sends it to the temple, where such matters take years."] }
     ]
   },
   {
@@ -383,10 +383,10 @@
     "options": [
       { "id": "accept", "label": "Accept the match", "hint": "{me.house} +25 · every other house −5, jealous",
         "effects": { "favour": { "all": -5, "me": 30 } },
-        "text": "{daughter} of {me.house} is promised to the royal family. The other houses smile and seethe." },
+        "text": ["{daughter} of {me.house} is promised to the royal family. The other houses smile and seethe.", "The royal family takes {daughter} of {me.house} as a bride to be. The other houses smile and seethe.", "{me.house} gives {daughter} to the royal family. Elsewhere at court, smiles grow thin."] },
       { "id": "decline", "label": "Say no, gently", "hint": "{me.house} −10",
         "effects": { "favour": { "me": -10 } },
-        "text": "The King says no, with gifts. {me} isn't comforted." }
+        "text": ["The King says no, with gifts. {me} isn't comforted.", "The match is refused, gently and with gifts. {me} is not consoled.", "Gifts come with the King's refusal. {me} is not comforted."] }
     ]
   },
   {
@@ -395,13 +395,13 @@
     "options": [
       { "id": "force", "label": "Send royal troops to fetch them", "hint": "War-like · {me.house} −25 · but the levies come",
         "effects": { "favour": { "me": -25 }, "units": { "crown": { "count": 3, "type": "Pikemen" } } },
-        "text": "Royal troops ride into {me.house}'s lands and march the levies out at spearpoint." },
+        "text": ["Royal troops ride into {me.house}'s lands and march the levies out at spearpoint.", "The King's troops enter {me.house}'s lands and drive the levies out at spearpoint.", "Spears in the crown's colours march {me.house}'s levies off their own fields."] },
       { "id": "accept", "label": "Accept the excuse", "hint": "{me.house} +5 · other houses learn they can refuse",
         "effects": { "favour": { "me": 5, "all": -3 } },
-        "text": "The King accepts {me}'s excuse. The other lords take note." },
+        "text": ["The King accepts {me}'s excuse. The other lords take note.", "{me}'s excuse is accepted. The other lords make a note of it.", "The King lets {me}'s excuse stand. Every other lord marks it."] },
       { "id": "gold", "label": "Take gold instead of men", "hint": "{me.house} pays 120 gold · {me.house} −10",
         "effects": { "gold": { "me": -120, "crown": 120 }, "favour": { "me": -10 } },
-        "text": "{me.house} pays in silver instead of men. The King hires his own soldiers." }
+        "text": ["{me.house} pays in silver instead of men. The King hires his own soldiers.", "Silver comes from {me.house} in place of men. The King hires soldiers of his own.", "{me.house} buys its way out of the levy. The King spends the silver on hired swords."] }
     ]
   },
   {
@@ -410,13 +410,13 @@
     "options": [
       { "id": "believe", "label": "Investigate {me}", "hint": "{me.house} −20 · {rival.house} +10",
         "effects": { "favour": { "me": -20, "rival": 10 }, "opinion": [["me", "rival", -30]] },
-        "text": "The King opens an inquiry into {me}. {rival} looks very pleased." },
+        "text": ["The King opens an inquiry into {me}. {rival} looks very pleased.", "An inquiry is opened into {me}. {rival} looks well pleased.", "The King's men begin asking questions about {me}. {rival} wears a contented face."] },
       { "id": "hang", "label": "Hang the spy", "hint": "{me.house} +10 · {rival.house} −10",
         "effects": { "favour": { "me": 10, "rival": -10 }, "opinion": [["me", "rival", -20]] },
-        "text": "The spy hangs from {me.house}'s walls. {rival} says nothing." },
+        "text": ["The spy hangs from {me.house}'s walls. {rival} says nothing.", "From {me.house}'s walls the spy hangs. {rival} keeps quiet.", "{me.house} hangs the spy over its gate. Not a word comes from {rival}."] },
       { "id": "use", "label": "Give him fake letters and send him back", "hint": "Both houses trust each other less, and the crown watches",
         "effects": { "opinion": [["me", "rival", -15], ["rival", "me", -15]] },
-        "text": "The spy goes home with forged letters. {rival} reads them very carefully." }
+        "text": ["The spy goes home with forged letters. {rival} reads them very carefully.", "Forged letters go home with the spy. {rival} studies every line.", "The spy is sent back carrying false letters. {rival} reads them closely."] }
     ]
   },
   {
@@ -425,13 +425,13 @@
     "options": [
       { "id": "rebuild", "label": "Rebuild it (180 gold)", "cost": 180, "hint": "{me.house} +15 · {town} rises again",
         "effects": { "gold": { "me": 180 }, "favour": { "me": 15 } },
-        "text": "The crown pays to rebuild {town}. New timber goes up before the snow." },
+        "text": ["The crown pays to rebuild {town}. New timber goes up before the snow.", "{town} is rebuilt at the crown's cost. Fresh timber rises before the snow.", "Royal silver rebuilds {town}. The new beams are up before winter."] },
       { "id": "loan", "label": "Make the other houses pay their share", "hint": "Every other house −3 · {me.house} +10",
         "effects": { "favour": { "all": -3, "me": 13 }, "gold": { "me": 100 } },
-        "text": "Every great house sends silver for {town}. None of them gladly." },
+        "text": ["Every great house sends silver for {town}. None of them gladly.", "Silver comes for {town} from every great house. None sends it gladly.", "The great houses each pay for {town}, every one of them with a sour face."] },
       { "id": "refuse", "label": "The town must bear it", "hint": "{me.house} −10",
         "effects": { "favour": { "me": -10 } },
-        "text": "The King sends his sympathy. {town} spends the winter in tents." }
+        "text": ["The King sends his sympathy. {town} spends the winter in tents.", "{town} gets the King's sympathy and nothing more. Its people winter in tents.", "Words of comfort come from the throne. {town} passes the winter under canvas."] }
     ]
   },
   {
@@ -440,10 +440,10 @@
     "options": [
       { "id": "allow", "label": "Allow the duel", "hint": "{heir} may win great honour, or die",
         "effects": { "favour": { "me": 10 }, "dies": { "who": "heir", "chance": 0.4, "text": "{heir} of {me.house} falls in the duel in front of the court. {me} carries the body home." } },
-        "text": "Swords ring out in the yard at Kingsmere." },
+        "text": ["Swords ring out in the yard at Kingsmere.", "Steel rings in the yard at Kingsmere.", "In Kingsmere's yard the swords come out."] },
       { "id": "forbid", "label": "Forbid it", "hint": "{me.house} −5 · {heir} sulks",
         "effects": { "favour": { "me": -5 }, "loyalty": { "heir": -10 } },
-        "text": "The King forbids the duel. {heir} calls it cowardice, loud enough to be heard." }
+        "text": ["The King forbids the duel. {heir} calls it cowardice, loud enough to be heard.", "The duel is forbidden. {heir} calls it cowardice, loudly enough for the hall to hear.", "No duel, rules the King. {heir} names it cowardice, and makes sure the court hears."] }
     ]
   },
   {
@@ -452,13 +452,13 @@
     "options": [
       { "id": "fleet", "label": "Send the fleet (150 gold)", "cost": 150, "hint": "{me.house} +15 · the raiders go elsewhere",
         "effects": { "favour": { "me": 15 } },
-        "text": "The royal fleet drives the raiders off {me.house}'s coast." },
+        "text": ["The royal fleet drives the raiders off {me.house}'s coast.", "The raiders are driven from {me.house}'s coast by the royal fleet.", "Royal ships sweep {me.house}'s coast clear of raiders."] },
       { "id": "own", "label": "Let {me.house} build its own ships", "hint": "{me.house} pays 100 · gains strength · {me.house} +5",
         "effects": { "gold": { "me": -100 }, "units": { "me": { "count": 2, "type": "Archers" } }, "favour": { "me": 5 } },
-        "text": "{me.house} sets up its own coast watch." },
+        "text": ["{me.house} sets up its own coast watch.", "Watch fires go up along {me.house}'s coast, kept by its own men.", "{me.house} guards its own shore now."] },
       { "id": "pay", "label": "Pay the raiders to leave (80 gold)", "cost": 80, "hint": "Swift, but they will return",
         "effects": { "favour": { "me": -5 } },
-        "text": "The raiders take the King's silver and sail away, laughing." }
+        "text": ["The raiders take the King's silver and sail away, laughing.", "King's silver goes to the raiders. They sail off laughing.", "The raiders count the crown's silver and put out to sea in good humour."] }
     ]
   },
   {
@@ -467,10 +467,10 @@
     "options": [
       { "id": "swear", "label": "Swear it", "hint": "{me.house} +20 · and you are bound by it",
         "effects": { "favour": { "me": 20 }, "memory": { "me": "The King swore to protect my house." } },
-        "text": "The King swears, in front of the whole court, to protect {me.house}." },
+        "text": ["The King swears, in front of the whole court, to protect {me.house}.", "Before all the court, the King gives his oath to protect {me.house}.", "{me.house} has the King's sworn protection, given aloud in the great hall."] },
       { "id": "words", "label": "Kind words, but no oath", "hint": "{me.house} −5",
         "effects": { "favour": { "me": -5 } },
-        "text": "The King offers comfort, but no oath. {me} understands." }
+        "text": ["The King offers comfort, but no oath. {me} understands.", "Comfort, yes; an oath, no. {me} understands well enough.", "{me} hears kind words from the King and no promise. The meaning is plain."] }
     ]
   },
   {
@@ -479,13 +479,13 @@
     "options": [
       { "id": "reward", "label": "Reward {me} for staying loyal (100 gold)", "cost": 100, "hint": "{me.house} +20 · {rival.house} learns it was betrayed",
         "effects": { "gold": { "me": 100 }, "favour": { "me": 20, "rival": -10 }, "opinion": [["rival", "me", -40]] },
-        "text": "The King rewards {me.house} in public. {rival} knows exactly why." },
+        "text": ["The King rewards {me.house} in public. {rival} knows exactly why.", "{me.house} is rewarded before the whole court. {rival} knows exactly what for.", "Gifts go to {me.house}, publicly. {rival} needs no one to explain them."] },
       { "id": "strike", "label": "Strike {rival.house} first", "hint": "War: {me.house} marches on {rival.house} in your name",
         "effects": { "war": ["me", "rival"], "favour": { "me": 15, "rival": -30 } },
-        "text": "The King names {rival} a traitor. {me.house} marches in the crown's name." },
+        "text": ["The King names {rival} a traitor. {me.house} marches in the crown's name.", "{rival} is named traitor. {me.house} takes the field in the King's name.", "The King declares {rival} a traitor, and {me.house} marches under the crown's banner."] },
       { "id": "quiet", "label": "Keep it quiet and watch (60 gold)", "cost": 60, "hint": "{me.house} +5 · a watcher on {rival}, paid by the crown · {rival} does not know you know",
         "effects": { "favour": { "me": 5 } },
-        "text": "The King thanks {me} and burns the letter. The court never hears of it." }
+        "text": ["The King thanks {me} and burns the letter. The court never hears of it.", "The letter goes into the fire with the King's thanks to {me}. The court hears nothing.", "{me} is thanked in private, and the letter is burned. No one at court ever learns of it."] }
     ]
   },
   {
@@ -494,13 +494,13 @@
     "options": [
       { "id": "granaries", "label": "Open the royal granaries to {me.house} (150 gold)", "cost": 150, "hint": "{me.house} +12 · every house +2 · the crown's stores grow thin",
         "effects": { "favour": { "me": 12, "all": 2 }, "memory": { "me": "In the drowned year the King opened his granaries to my people." } },
-        "text": "Royal wagons carry grain to {town}. {me.house} will not forget who fed them in the wet year." },
+        "text": ["Royal wagons carry grain to {town}. {me.house} will not forget who fed them in the wet year.", "Grain from the royal stores rolls into {town}. {me.house} will remember who fed them in the wet year.", "The King's wagons feed {town} through the wet year, and {me.house} does not forget it."] },
       { "id": "abroad", "label": "Let them buy grain from across the sea", "hint": "{me.house} pays 100 gold · {me.house} +3",
         "effects": { "gold": { "me": -100 }, "favour": { "me": 3 } },
-        "text": "Ships bring grain to {town} at a merchant's price. {me.house} pays, and grumbles, and eats." },
+        "text": ["Ships bring grain to {town} at a merchant's price. {me.house} pays, and grumbles, and eats.", "Merchant ships unload grain at {town}, at merchant prices. {me.house} pays, complains, and eats.", "{town} eats on bought grain from over the sea. {me.house} grumbles at the price and pays it."] },
       { "id": "tithe", "label": "The tithe stands, harvest or no", "hint": "{me.house} −10 · they remember the wet year",
         "effects": { "favour": { "me": -10 }, "memory": { "me": "The crown took its tithe from a drowned harvest." } },
-        "text": "The King's tax-men go to {town} as in any year. {me} watches them load the carts in silence." }
+        "text": ["The King's tax-men go to {town} as in any year. {me} watches them load the carts in silence.", "Wet year or no, the tax-men come to {town}. {me} watches the carts loaded in silence.", "The King takes his usual due from {town}. {me} says nothing as the carts fill."] }
     ]
   },
   {
@@ -509,13 +509,13 @@
     "options": [
       { "id": "borrow", "label": "Borrow 120 gold from {me.house}, repaid in two years", "hint": "The crown owes {me.house} 160 gold in two years · {me.house} +5 · if it isn't paid, your word is broken",
         "effects": { "gold": { "crown": 120, "me": -120 }, "favour": { "me": 5 }, "loan": { "amount": 160, "seasons": 8 }, "memory": { "me": "When the King's chests were empty, my house lent him gold." } },
-        "text": "{me.house}'s silver goes into the royal chests. The debt is written down: 160 gold, due in two years." },
+        "text": ["{me.house}'s silver goes into the royal chests. The debt is written down: 160 gold, due in two years.", "The royal chests fill with {me.house}'s silver. The clerks write the debt: 160 gold, due in two years.", "{me.house} lends the crown its silver. The debt is set down at 160 gold, to be repaid in two years."] },
       { "id": "sell", "label": "Sell {me.house} a seat on the King's council", "hint": "The crown gains 100 gold · {me.house} +10 · every house −3: offices are for sale now",
         "effects": { "gold": { "crown": 100, "me": -100 }, "favour": { "me": 10, "all": -3 }, "memory": { "me": "I bought my seat on the King's council, and everyone knows it." } },
-        "text": "{me} takes a council seat that was not earned. By evening every house in Kingsmere knows what it cost." },
+        "text": ["{me} takes a council seat that was not earned. By evening every house in Kingsmere knows what it cost.", "A council seat goes to {me}, bought rather than earned. Kingsmere knows the price before nightfall.", "By nightfall every house in Kingsmere knows what {me} paid for a seat at the council."] },
       { "id": "tithe", "label": "Refuse, and raise the tithe to a fifth", "hint": "The tithe rises to 20% · the purse fills faster · every house's favour wears faster each season",
         "effects": { "tithe": 0.2, "favour": { "me": -3 } },
-        "text": "The King wants no house's charity. The tithe rises to a fifth, and the tax-men ride out again." }
+        "text": ["The King wants no house's charity. The tithe rises to a fifth, and the tax-men ride out again.", "No house's charity for the King. The tithe goes to a fifth, and the tax-men ride again.", "The tax-men ride out once more. The King will take no house's gift, and the tithe is raised to a fifth."] }
     ]
   }
 ]
