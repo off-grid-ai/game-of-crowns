@@ -287,6 +287,8 @@ func reset() -> void:
 	_decided = {}
 	_word_seen = false
 	_chron_seen = false
+	_raids_told = {}
+	_raids_seen = false
 
 
 func on_synced() -> void:
@@ -307,6 +309,38 @@ func on_synced() -> void:
 		_king_id = id
 	_favour_was = now
 	_word_news()
+	_raid_news()
+
+
+# --- raiders making for his works (Stronghold's "the enemy approaches the keep"; bridge raids.js /world raids) -----
+var _raids_told := {}  # "<raid town>-<goal>" -> true: each raid told once
+var _raids_seen := false  # the first reading only learns the raids already out
+
+
+func _raid_news() -> void:
+	var st: Node = Awareness.store()
+	if st == null:
+		return
+	var out := {}
+	for r in st.raids():
+		var key := "%d-%d" % [int(r.get("town", -1)), int(r.get("goal", -1))]
+		out[key] = true
+		if _raids_told.has(key):
+			continue
+		_raids_told[key] = true
+		if not _raids_seen:
+			continue
+		var goal := int(r.get("goal", -1))
+		var said := _w("raid_news", "").replace("{from}", String(ui.town_of.call(int(r.get("town", -1))).get("name", ""))).replace("{work}", String(r.get("building", "")).to_lower()).replace("{town}", String(ui.town_of.call(goal).get("name", "")))
+		if said == "":
+			continue
+		ui.toast(said)
+		ui.heard.emit("event")
+		ui.word_news.emit(goal, said)
+	for key in _raids_told.keys():
+		if not out.has(key):
+			_raids_told.erase(key)  # gone home or cut down: a new raid on the same work is news again
+	_raids_seen = true
 
 
 # --- his word kept or broken, as court news (CK3's promises, Frostpunk's promises to the people) ----------------

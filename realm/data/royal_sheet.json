@@ -36,6 +36,7 @@
  "word_broken": "Broken: {text}",
  "word_town": "The King's word: {line}",
  "pledge_tag": "Your word. Kept, it is remembered warmly; broken, bitterly.",
+ "raid_news": "Raiders out of {from} make for the King's {work} at {town}. Send men, or lose it.",
  "news_kept": "The King keeps his word: {text}.",
  "news_broken": "The King's word is broken: {text}. They will remember it.",
  "trust": [

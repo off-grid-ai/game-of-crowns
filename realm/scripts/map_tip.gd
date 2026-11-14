@@ -92,6 +92,10 @@ func _town(c: Dictionary) -> String:
 			if int(w.get("city", -2)) == id:
 				parts.append(_w("works_rising" if bool(w.get("rising", false)) else "works_done", {"work": String(w.get("building", "")).to_lower()}))
 				break
+		for r in st.raids():  # raiders making for it (bridge raids.js)
+			if int(r.get("goal", -2)) == id:
+				parts.append(_w("works_raided"))
+				break
 	return "  ·  ".join(parts)
 
 

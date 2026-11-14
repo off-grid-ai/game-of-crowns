@@ -11,6 +11,7 @@
   "hungry": "going hungry",
   "works_rising": "the King's masons raise a {work}",
   "works_done": "the King's {work} stands here",
+  "works_raided": "raiders make for it",
   "host_crown": "The King's host",
   "host_other": "{house}'s host",
   "companies": "{n} companies",
