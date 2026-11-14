@@ -151,7 +151,16 @@ func _ready() -> void:
 	preload("res://scripts/keys.gd").apply()  # every key as an Input Map action, with your changes
 	shots._hand()  # a test aid for playing by hand from outside (GOC_HAND=<dir>): off in play
 	_load_ui_scale()
+	# The startup order, its one place: the window and a cover first, drawn before anything heavy is made, then each
+	# setup step with a frame between, so the OS never sees the main thread held at launch ("application not
+	# responding", Mac 14 Nov) and perf.log's LOAD lines show what each step took (PerfTools.mark).
+	set_process(false)
+	set_process_input(false)
+	var cover := _boot_cover()
+	await _boot_step("window")
+	await _boot_step("window drawn")
 	_setup_environment()
+	await _boot_step("environment")
 	terrain = preload("res://scripts/terrain.gd").new()
 	terrain.ground_changed.connect(_on_ground_changed)
 	add_child(terrain)
@@ -163,6 +172,7 @@ func _ready() -> void:
 	Real.warm()  # the towns' models read on worker threads while the land forms
 	preload("res://scripts/town_life.gd").warm()  # and the props a town's life sets down
 	preload("res://scripts/dressing.gd").warm()  # and the dressing's meshes baked ahead, their detail levels on worker threads
+	await _boot_step("land and towns set up")
 	ruins = preload("res://scripts/ruins.gd").new()  # what war leaves on the land
 	ruins.terrain = terrain
 	add_child(ruins)
@@ -186,9 +196,11 @@ func _ready() -> void:
 	traffic.terrain = terrain
 	traffic.scenes = scenes
 	add_child(traffic)
+	await _boot_step("roads, countryside, scenes")
 	units = preload("res://scripts/units.gd").new()
 	units.terrain = terrain
 	add_child(units)
+	await _boot_step("units set up")
 	var anim_lod := preload("res://scripts/anim_lod.gd").new()
 	anim_lod.name = "AnimLOD"
 	add_child(anim_lod)
@@ -204,6 +216,7 @@ func _ready() -> void:
 	villagers.land_use = land_use
 	villagers.rig = rig
 	add_child(villagers)
+	await _boot_step("camera and villagers set up")
 	if _shot.has("path"):
 		# Test shots: is everyone where a body can be (checks.gd).
 		var checks = preload("res://scripts/checks.gd").new()
@@ -213,6 +226,7 @@ func _ready() -> void:
 		add_child(checks)
 	ui = preload("res://scripts/ui.gd").new()
 	add_child(ui)
+	await _boot_step("interface")
 	# The houses' schemes, marked on the way between their seats (scheme_marks.gd).
 	var schemes := preload("res://scripts/scheme_marks.gd").new()
 	schemes.main = self
@@ -579,6 +593,36 @@ func _ready() -> void:
 	if Array(OS.get_cmdline_user_args()).any(func(a): return a.begins_with("--motion-probe=")): add_child(load("res://tools/motion_probe.gd").new())
 	# How much of the screen the interface covers at rest (tools/ui_coverage.gd): test runs only.
 	if Array(OS.get_cmdline_user_args()).any(func(a): return a.begins_with("--ui-coverage=")): add_child(load("res://tools/ui_coverage.gd").new())
+	PerfTools.mark("set up")
+	cover.queue_free()
+	set_process(true)
+	set_process_input(true)
+
+
+## One step of startup done: its LOAD line (PerfTools.mark), then a frame drawn before the next.
+func _boot_step(step: String) -> void:
+	PerfTools.mark(step)
+	await get_tree().process_frame
+
+
+## What the window shows while the realm's systems are set up, before the title: the dark of the loading screen and
+## its words, so the first frame is drawn at once.
+func _boot_cover() -> CanvasLayer:
+	var layer := CanvasLayer.new()
+	layer.layer = 128
+	var bg := ColorRect.new()
+	bg.color = Color(0.05, 0.045, 0.04)
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(bg)
+	var words := Label.new()
+	words.text = "The realm is forming…"
+	words.set_anchors_preset(Control.PRESET_CENTER)
+	words.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	words.grow_vertical = Control.GROW_DIRECTION_BOTH
+	words.add_theme_color_override("font_color", Color(0.85, 0.8, 0.7))
+	layer.add_child(words)
+	add_child(layer)
+	return layer
 
 
 ## The Dock and window icon: crown and raven on dark stone, in the macOS
