@@ -79,6 +79,7 @@ var mustered := false
 var _order_face := NAN  # the way its order says its front looks (/world hosts[i].order.face), NAN for its own
 var _seat_root: Node3D = null  # the seat's town (towns.gd), whose edge the muster forms past (_form_on_way)
 var _then_free := false  # marching into a town (march_in): gone once halted there
+var _baggage: Array = []  # a field host's carts behind its column: {node, carter, off, s}
 var _aboard := false  # taken ship (board): its regiments filing to the hulls, then on their decks
 var _pending_hulls: Array = []  # hulls to board once mustered
 var _out := false  # marching out (march_out): halted at the road's end, it is gone after march.linger
@@ -155,6 +156,7 @@ func _ready() -> void:
 	ground = battle["ground"] if battle.has("ground") else null
 	_extent = extent
 	if battle.has("host"):  # a host in the field: in column on its tile, marching where Freeciv moves it (march_to)
+		_raise_baggage()
 		_stand_on_tile(town, _bound_yaw(battle["host"], town))
 		for r in _regiments:
 			var mo: Node = Mover.of(r["node"]).on(null)  # the realm's navigation, as every marcher on the map
@@ -256,7 +258,7 @@ func march_out(_to: Vector3) -> void:
 ## (03-army: a column of regiments, each under its banner), halted and at ease.
 func _stand_on_tile(at: Vector3, yaw: float) -> void:
 	var dir := Vector3(sin(yaw), 0, cos(yaw))
-	_path = PackedVector3Array([_ground_at(at - dir * (Formation.column_length(_regiments) + 1.0)), _ground_at(at)])
+	_path = PackedVector3Array([_ground_at(at - dir * (_baggage_tail() + 1.0)), _ground_at(at)])
 	_cum = PackedFloat32Array([0.0, _path[0].distance_to(_path[1])])
 	_field = _path[1]
 	_face = yaw
@@ -267,6 +269,10 @@ func _stand_on_tile(at: Vector3, yaw: float) -> void:
 		_set_at(r, _at(r["s"]), yaw)
 		r["state"] = "halt"
 		_clips(r, "rest")
+	for c in _baggage:
+		c["s"] = _cum[1] - float(c["off"])
+		(c["node"] as Node3D).global_position = _at(c["s"])
+		(c["node"] as Node3D).rotation.y = yaw
 
 
 ## The way a field host faces: toward where its order sends it, else the way it last marched, else north.
@@ -290,6 +296,8 @@ func march_to(to: Vector3) -> void:
 		return
 	var order := Formation.column_order(_regiments)
 	var trail := PackedVector3Array()
+	for i in range(_baggage.size() - 1, -1, -1):  # the baggage at the very tail
+		trail.append(_ground_at((_baggage[i]["node"] as Node3D).global_position))
 	for i in range(order.size() - 1, -1, -1):  # tail to head: the way the column already stands
 		trail.append(_ground_at((order[i]["node"] as Node3D).global_position))
 	var head: Vector3 = trail[trail.size() - 1]
@@ -316,6 +324,9 @@ func march_to(to: Vector3) -> void:
 		r["speed"] = pace
 		_clips(r, "walk")
 		_march(r)
+	for c in _baggage:
+		c["s"] = _along((c["node"] as Node3D).global_position)
+		_cart_on(c, pace)
 
 
 ## A host come into a town (units.gd field_hosts: the bridge has it `at` a town): its column marches in along the
@@ -340,6 +351,9 @@ func board(hulls: Array) -> void:
 		return
 	_aboard = true
 	_then_free = false
+	for c in _baggage:  # the baggage stays ashore: the carts go back to the seat, out of the picture
+		(c["node"] as Node3D).queue_free()
+	_baggage.clear()
 	var order := Formation.column_order(_regiments)
 	var per := ceili(float(order.size()) / hulls.size())
 	var length := Data.num("army", "deck.length", 1.1)
@@ -375,6 +389,48 @@ func _exit_tree() -> void:
 		var n: Variant = r.get("node")
 		if n != null and is_instance_valid(n) and not is_ancestor_of(n):
 			(n as Node).queue_free()
+
+
+## A host in the field's baggage train (03-army; Age of Empires' and Total War's columns: the carts behind the men):
+## army.json baggage: one horse and cart (scenes.cart) for every per_regiments regiments, at most `most`, `gap`
+## apart behind the column's tail. They march its trail by their Movers at the column's pace and halt behind it.
+func _raise_baggage() -> void:
+	var k: Dictionary = Data.value("army", "baggage", {})
+	var scenes: Node = main.get("scenes")
+	if scenes == null or not scenes.has_method("cart"):
+		return
+	var n := mini(int(k.get("most", 4)), ceili(float(_regiments.size()) / maxf(1.0, float(k.get("per_regiments", 3)))))
+	var tail := Formation.column_length(_regiments)
+	for i in n:
+		var cart: Node3D = scenes.cart(_rng, _regiments[0]["colour"] if not _regiments.is_empty() else Color.GRAY)  # its carter in the house's colour
+		add_child(cart)
+		var mo: Node = Mover.of(cart).on(null)  # the realm's navigation, as the regiments
+		mo.clip = ""
+		mo.turn_rate = 2.0
+		_baggage.append({"node": cart, "carter": cart.get_meta("carter"), "off": tail + float(k.get("gap", 0.35)) * (i + 1), "s": 0.0})
+
+
+## How far behind the column's head its last cart stands (the column's own length with no baggage).
+func _baggage_tail() -> float:
+	return float(_baggage.back()["off"]) if not _baggage.is_empty() else Formation.column_length(_regiments)
+
+
+## A cart marches the column's trail to its place behind the halted column, its carter walking, then stands.
+func _cart_on(c: Dictionary, pace: float) -> void:
+	var end := _halt_head() - float(c["off"])
+	var way := PackedVector3Array()
+	for i in _path.size():
+		if _cum[i] > float(c["s"]) + 0.01 and _cum[i] < end - 0.01:
+			way.append(_path[i])
+	way.append(_at(end))
+	var people: Node = main.scenes.people
+	people.play(c["carter"], "Walk", 1.0)
+	var mo: Node = Mover.of(c["node"])
+	mo.speed = pace
+	mo.follow(way, func():
+		c["s"] = end
+		if is_instance_valid(c["carter"]):
+			people.play(c["carter"], "Idle", 1.0))
 
 
 ## A regiment come to its hull: on the deck as a packed block, a child of the hull (it sails with it), at ease.

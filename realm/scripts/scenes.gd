@@ -129,6 +129,19 @@ func traveller(from: Vector3, to: Vector3, kind := "walker", on_done := Callable
 	return Mover.road(self, way, [[body, 0.0]], pace, {"name": "Traveller", "min": 15.0, "max": 90.0, "yields": true, "ahead": 0.16 if carter else 0.1}, on_done) != null
 
 
+## One horse and cart with its carter in `cloth` (a host's baggage train, army.gd), facing +z as every body the
+## Mover drives; the carter is its meta "carter" (to walk him or stand him).
+func cart(r: RandomNumberGenerator, cloth: Color) -> Node3D:
+	var who: Node3D = people.make(r, "peasant", cloth, "adult")
+	var holder := Node3D.new()
+	holder.name = "BaggageCart"
+	var rig := _cart_rig(r, who)
+	rig.rotation.y = PI  # the rig is built facing -z
+	holder.add_child(rig)
+	holder.set_meta("carter", who)
+	return holder
+
+
 ## One horse and cart, built as a single piece so its parts can never come
 ## apart: the wagon, a hitch where its shafts end, the horse between the shafts
 ## facing the way they point, and the carter at the horse's head. Its forward is

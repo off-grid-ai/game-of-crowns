@@ -61,6 +61,7 @@
   "line": { "frontage": { "melee": [18, 25], "ranged": [22, 30], "cavalry": [12, 16] }, "maxFront": 8, "rowGap": 0.7, "wingGap": 0.6, "reform": 5.0 },
   "march": { "speed": 0.16, "lead": 5.0, "roadTries": 6, "form": 6.0, "linger": 40.0, "men": 600, "roadReach": 12.0 },
   "rest": { "every": [1.5, 4.0], "men": [3, 9], "turn": 0.35 },
+  "baggage": {"_": "A host in the field's baggage train (army.gd _raise_baggage; 03-army, Age of Empires' and Total War's columns): one horse and cart, its carter in the house's colour, for every per_regiments regiments, at most most, gap world units apart behind the column's tail; they march its trail at its pace.", "per_regiments": 3, "most": 4, "gap": 0.35},
   "deck": { "files": [4, 5], "length": 1.1, "y_m": 2.2, "file": 1.5 },
   "muster": { "cell": 2.0, "clear": 4.5, "gateClear": 0.6, "roadClear": 0.3, "wayReach": 16.0, "reach": 40.0, "slope": 0.2, "keepOff": 0.75, "treeCost": 0.15, "missCost": 4.0, "nearCost": 0.25, "margin": 0.15, "probe": 0.35, "search": 8.0 },
   "lod": { "on": true, "bias": 1.0, "least": 300, "mergeAngle": 25.0 },
