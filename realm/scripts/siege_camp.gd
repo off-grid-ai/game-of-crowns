@@ -36,6 +36,8 @@ var _crews := []  # every crewman as the walls' archers see him: {node, alive, r
 var _stone_mesh: SphereMesh
 var _stone_mat: StandardMaterial3D
 var _wood: Material
+var _stakes := []  # the palisade's pieces, middle first: [angle off the middle, node] (works() raises them)
+var _trenches := 0  # trench lines dug so far
 var _rolling := []  # the ram and the tower on their way to the wall: {node, kind, crew, to, from, t, beat, rolling, at_wall}
 
 
@@ -53,6 +55,8 @@ func pitch(s: Node, siege: Node3D, town: Vector3, middle: float, line: float, co
 	name = "SiegeCamp"
 	root.add_child(self)
 	_palisade()
+	_stakes.sort_custom(func(x, y): return float(x[0]) < float(y[0]))
+	works(0)
 	_tents()
 	_fires()
 	_wagons()
@@ -63,6 +67,53 @@ func pitch(s: Node, siege: Node3D, town: Vector3, middle: float, line: float, co
 		count = angles.size()  # the demo's wall falls within a take: every engine at it
 	for e in clampi(maxi(count, 1), 1, angles.size()):
 		_engine(float(angles[e]), k)
+
+
+## The besiegers' works after `seasons` of the siege (siege.json works; Total War's siege works, Age of Empires'
+## and Stronghold's camps that dig in): the palisade rises from its middle outward (first: the share standing in the
+## first season, all of it by the next), then each season from trench_from on another trench line is dug in front of
+## it toward the walls (trench.lines at most), its spoil heaped on the camp side. Only ever grows.
+func works(seasons: int) -> void:
+	var k: Dictionary = Data.value("siege", "works", {})
+	var share := 1.0 if seasons >= 1 else float(k.get("first", 0.4))
+	for i in _stakes.size():
+		(_stakes[i][1] as Node3D).visible = i < ceili(_stakes.size() * share)
+	var t: Dictionary = k.get("trench", {})
+	var lines: Array = t.get("at", [0.75, 1.2])
+	var want := clampi(seasons - int(t.get("from", 2)) + 1, 0, lines.size())
+	while _trenches < want:
+		_trench(camp_r - float(lines[_trenches]), t)
+		_trenches += 1
+
+
+## One trench line along the arc at `rad` from the town: dark dug earth in segments, a low bank of spoil behind it.
+func _trench(rad: float, t: Dictionary) -> void:
+	var span := float(t.get("span", 0.9))
+	var w := float(t.get("width", 0.07))
+	var dug := StandardMaterial3D.new()
+	dug.albedo_color = Color(0.24, 0.19, 0.14)
+	dug.roughness = 1.0
+	var spoil := StandardMaterial3D.new()
+	spoil.albedo_color = Color(0.4, 0.32, 0.23)
+	spoil.roughness = 1.0
+	var seg := float(t.get("segment", 0.18))
+	var a := -span
+	while a < span:
+		var mid := a + seg / rad * 0.5
+		var p := _arc(mid, rad)
+		if scenes._footing(p):
+			var yaw := -(base + mid) + PI * 0.5  # along the arc
+			for part in [[dug, w, 0.004, 0.0], [spoil, w * 0.7, 0.018, w * 0.9]]:
+				var m := MeshInstance3D.new()
+				var box := BoxMesh.new()
+				box.size = Vector3(seg * 1.02, float(part[2]), float(part[1]))
+				m.mesh = box
+				m.material_override = part[0]
+				var out := Vector3(cos(base + mid), 0, sin(base + mid))  # away from the town: the camp side
+				m.position = scenes.ground(p + out * float(part[3])) + Vector3(0, float(part[2]) * 0.5, 0)
+				m.rotation.y = yaw
+				root.add_child(m)
+		a += seg / rad
 
 
 ## The camp's middle among its tents (world), for framing it.
@@ -110,7 +161,9 @@ func _palisade() -> void:
 				piece.position = p
 				var t := Vector3(-sin(base + a), 0, cos(base + a))  # along the line
 				piece.rotation.y = atan2(-t.z, t.x) + r.randf_range(-0.05, 0.05)
+				piece.visible = false  # raised season by season (works)
 				root.add_child(piece)
+				_stakes.append([absf(a), piece])
 		a += step
 		i += 1
 

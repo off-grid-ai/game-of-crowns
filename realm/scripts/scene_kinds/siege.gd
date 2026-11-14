@@ -20,7 +20,9 @@ func play(s: Dictionary, at: Vector3, houses: Dictionary) -> Node3D:
 		if int(c["id"]) == city:
 			town_size = int(c.get("size", 4))
 	var approach: Vector3 = stage.terrain.world_pos(float(s.get("ax", s["x"])), float(s.get("ay", s["y"])))
-	besiege(city, at, approach, town_size, int(s.get("engines", 0)), houses.get(int(s.get("owner", -1)), {}), houses.get(int(s.get("defender", -1)), {}), Awareness.season_seconds)
+	var turn := int(s.get("turn", 0))
+	besiege(city, at, approach, town_size, int(s.get("engines", 0)), houses.get(int(s.get("owner", -1)), {}), houses.get(int(s.get("defender", -1)), {}), Awareness.season_seconds,
+			maxi(0, turn - int(s.get("since", turn))))  # seasons it has run (bridge campaigns.js since): its works grow
 	if String(s["kind"]) == "storm":
 		storm(city, bool(s.get("taken", false)))
 	return null
@@ -30,14 +32,16 @@ func play(s: Dictionary, at: Vector3, houses: Dictionary) -> Node3D:
 ## from, engines throw stones over the walls, assault parties rush the walls
 ## and fall back, and the defenders hold the line. The camp stays while the
 ## bridge keeps reporting the siege, and breaks up a turn and a half after.
-func besiege(id: int, at: Vector3, approach: Vector3, size: int, engines: int, foe: Dictionary, held: Dictionary, turn_secs: float) -> void:
+func besiege(id: int, at: Vector3, approach: Vector3, size: int, engines: int, foe: Dictionary, held: Dictionary, turn_secs: float, seasons := 0) -> void:
 	if sieges.has(id) and is_instance_valid(sieges[id]["root"]):
 		sieges[id]["until"] = Time.get_ticks_msec() / 1000.0 + turn_secs * 1.5
+		if is_instance_valid(sieges[id].get("camp")):
+			sieges[id]["camp"].works(seasons)  # another season: the works grow
 		return
 	if not stage._towns_up():
 		# Pitched once the town stands; until then, where it will be.
 		sieges[id] = {"root": null, "until": 0.0, "front": stage.ground(approach)}
-		stage.get_tree().create_timer(1.0).timeout.connect(besiege.bind(id, at, approach, size, engines, foe, held, turn_secs))
+		stage.get_tree().create_timer(1.0).timeout.connect(besiege.bind(id, at, approach, size, engines, foe, held, turn_secs, seasons))
 		return
 	var root := Node3D.new()
 	root.name = "Siege"
@@ -99,6 +103,8 @@ func besiege(id: int, at: Vector3, approach: Vector3, size: int, engines: int, f
 	# catapults and trebuchets at the walls) built on the spot and worked by their crews.
 	var camp: Node3D = SiegeCamp.new()
 	camp.pitch(stage, root, at, base, camp_r, foe_col, engines, r, foe)
+	camp.works(seasons)
+	sieges[id]["camp"] = camp
 	# The garrison on the walls, facing out toward the host: archers and spearmen turn about, up on the wall walk
 	# where the town has a wall (walls.gd walk_toward; 04-siege, Stronghold: bowmen along the battlements), on the
 	# ground behind the line where it has none.
