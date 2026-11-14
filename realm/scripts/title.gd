@@ -100,13 +100,19 @@ func _ready() -> void:
 	_body = VBoxContainer.new()
 	_body.add_theme_constant_override("separation", 8)
 	_body.custom_minimum_size = Vector2(620, 0)
-	col.add_child(_body)
+	# The main menu's choices stand on a dark translucent column (CK3's and Age of Empires II DE's main
+	# menus), so they read over the bright painting while it still shows round them.
+	_plate = PanelContainer.new()
+	_plate.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	col.add_child(_plate)
+	_plate.add_child(_body)
 	_here = show_main
 	show_main()
 	store.synced.connect(_on_synced)
 
 
 var _on_main := true
+var _plate: PanelContainer  # the dark column behind the main menu's choices (reign_end.json menu.plate)
 var _scrim: ColorRect  # darkens the painting behind the forms
 
 
@@ -197,6 +203,9 @@ func show_main() -> void:
 		_scrim.visible = false
 	for a in _art:
 		a.visible = true
+	var mw: Dictionary = Data.value("reign_end", "menu", {})
+	var T := preload("res://scripts/theme.gd")
+	_plate.add_theme_stylebox_override("panel", T._box(Data.colour(mw.get("plate"), Color(0.06, 0.05, 0.04, 0.62)), Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.25), 10, int(mw.get("plate_pad", 28))))
 	_on_main = true
 	var reign: Dictionary = store.rec("reign", {})
 	_has_continue = not reign.is_empty()
@@ -210,7 +219,6 @@ func show_main() -> void:
 			go = func(): bridge.continue_reign(func(_c, _d): _close())
 		# The one thing most players came back to do: the primary choice, in gold.
 		var cont := _big(label, go)
-		var T := preload("res://scripts/theme.gd")
 		cont.add_theme_stylebox_override("normal", T._box(Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.24), Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.6), 8, 10))
 		cont.add_theme_stylebox_override("hover", T._box(Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.36), Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.85), 8, 10))
 		cont.add_theme_color_override("font_color", Color(1, 0.93, 0.78))
@@ -241,26 +249,6 @@ func show_main() -> void:
 		b.custom_minimum_size = Vector2(140, 40)
 		b.add_theme_font_size_override("font_size", 17)
 		b.add_theme_color_override("font_color", MUTED)
-	# A quiet footer, centred under the menu: what Off Grid AI adds, and where to get it.
-	var foot := HBoxContainer.new()
-	foot.alignment = BoxContainer.ALIGNMENT_CENTER
-	foot.add_theme_constant_override("separation", 10)
-	var gap := Control.new()
-	gap.custom_minimum_size.y = 18
-	_body.add_child(gap)
-	_body.add_child(foot)
-	var said := Label.new()
-	said.text = "✦  Hear your lords plead, scheme and threaten you in their own words, and remember every slight. Off Grid AI does it free, on your Mac."
-	said.add_theme_font_size_override("font_size", 14)
-	said.add_theme_color_override("font_color", MUTED)
-	foot.add_child(said)
-	var get_it := LinkButton.new()
-	get_it.text = "Get it"
-	get_it.uri = OFFGRID_URL
-	get_it.underline = LinkButton.UNDERLINE_MODE_ON_HOVER
-	get_it.add_theme_font_size_override("font_size", 14)
-	get_it.add_theme_color_override("font_color", GOLD)
-	foot.add_child(get_it)
 
 
 const HOUSES := ["Wolfholt", "Goldcrest", "Ironreach", "Thornvale", "Stormhold", "Sunspire", "Highfell"]
@@ -1591,39 +1579,57 @@ func _arrive(rid: String) -> void:
 func _where_line(reign: Dictionary) -> void:
 	if reign.is_empty():
 		return
-	var where := _label("", 14, MUTED)
-	where.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	where.autowrap_mode = TextServer.AUTOWRAP_WORD
-	where.visible = false
-	# The King whose reign this is, by his painted face beside the line (CK3's Continue: the ruler's portrait and date).
-	var king = preload("res://scripts/royal_sheet.gd").royals().get("king")
+	var T := preload("res://scripts/theme.gd")
+	var mw: Dictionary = Data.value("reign_end", "menu", {})
+	var r: Dictionary = preload("res://scripts/royal_sheet.gd").royals()
+	var king: Variant = r.get("king")
+	# The reign to go back to as one card (CK3's Continue: the ruler's portrait, name and date): his painted
+	# face, his name, the realm's date and how long he has reigned, then the last thing he ruled.
+	var card := PanelContainer.new()
+	card.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	card.custom_minimum_size.x = 380
+	card.add_theme_stylebox_override("panel", T._box(Color(0.05, 0.04, 0.03, 0.55), Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.35), 8, 12))
+	_body.add_child(card)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 14)
+	card.add_child(row)
 	var face: Texture2D = preload("res://scripts/painted_faces.gd").face({"id": String(king.get("id", "king")), "gender": "female" if bool(king.get("woman", false)) else "male", "age": int(king.get("age", 40))}) if king is Dictionary else null
 	if face:
-		var row := HBoxContainer.new()
-		row.alignment = BoxContainer.ALIGNMENT_CENTER
-		row.add_theme_constant_override("separation", 12)
 		var pic := TextureRect.new()
 		pic.texture = face
 		pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-		pic.custom_minimum_size = Vector2(42, 56)
+		var fs: Array = mw.get("face", [60, 80])
+		pic.custom_minimum_size = Vector2(float(fs[0]), float(fs[1]))
 		row.add_child(pic)
-		row.add_child(where)
-		_body.add_child(row)
-	else:
-		_body.add_child(where)
-	var where_ref: WeakRef = weakref(where)
+	var col := VBoxContainer.new()
+	col.alignment = BoxContainer.ALIGNMENT_CENTER
+	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(col)
+	if king is Dictionary:
+		col.add_child(T.title(String(mw.get("king", "King {name}")).replace("{name}", String(king.get("name", ""))), 22, T.ACCENT))
+	var turn := int(store.rec("turn", 0))
+	var seasons := maxi(0, turn - int(r.get("since", turn)))
+	var held := String(mw.get("reigned_new", "")) if seasons < 4 else (String(mw.get("reigned_one", "")) if seasons < 8 else String(mw.get("reigned", "")).replace("{years}", str(seasons / 4)))
+	var when := T.prose("  ·  ".join(Array([preload("res://scripts/ui.gd").season_of(turn) if turn > 0 else "", held]).filter(func(x): return String(x) != "")), T.SIZE_DESC + 1, T.TEXT_2)
+	col.add_child(when)
+	var last := T.prose("", T.SIZE_DESC, T.TEXT_3)
+	last.autowrap_mode = TextServer.AUTOWRAP_WORD
+	last.custom_minimum_size.x = 260
+	last.visible = false
+	col.add_child(last)
+	var last_ref: WeakRef = weakref(last)
 	var rid := String(reign.get("id", ""))
 	bridge.list_chronicles(func(data):
-		var l: Label = where_ref.get_ref()
+		var l: Label = last_ref.get_ref()
 		if l == null or not data is Dictionary:
 			return
 		for c in data.get("list", []):
 			if String(c.get("id", "")) == rid or (rid == "" and String(c.get("id", "")) == String(data.get("active", ""))):
 				var sv: Dictionary = c.get("save", {}) if c.get("save") is Dictionary else {}
-				var bits := PackedStringArray([String(sv.get("king", "")), String(sv.get("date", "")), ("Last ruling: " + String(sv["lastRuling"])) if String(sv.get("lastRuling", "")) != "" else ""])
-				l.text = "  ·  ".join(Array(bits).filter(func(b): return b != ""))
-				l.visible = l.text != ""
+				if String(sv.get("lastRuling", "")) != "":
+					l.text = String(mw.get("last", "Last ruling: {ruling}")).replace("{ruling}", String(sv["lastRuling"]))
+					l.visible = true
 				return)
 
 
@@ -1665,6 +1671,8 @@ func _clear() -> void:
 	for a in _art:
 		a.visible = not _in_game
 	_body.custom_minimum_size = Vector2(620, 0)
+	if _plate:
+		_plate.add_theme_stylebox_override("panel", StyleBoxEmpty.new())  # forms have the scrim; only the main menu stands on the column
 	_layers.clear()
 	for c in _body.get_children():
 		c.queue_free()

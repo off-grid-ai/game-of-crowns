@@ -13,6 +13,9 @@
   "towns": { "kept": "Kept", "won": "Won", "lost": "Lost" },
   "rulings": "His weightiest rulings"
  },
+ "menu": { "_": "The main menu (title.gd show_main, _where_line; CK3's and Age of Empires II DE's menus): plate, the dark column behind the choices (r, g, b, a) and plate_pad; the Continue card: face (portrait width, height), king ({name}), reigned ({years}), reigned_one in his second year, or reigned_new under a year, last ({ruling}).",
+  "plate": [0.06, 0.05, 0.04, 0.62], "plate_pad": 28,
+  "face": [60, 80], "king": "King {name}", "reigned": "{years} years on the throne", "reigned_one": "a year on the throne", "reigned_new": "newly crowned", "last": "Last ruling: {ruling}" },
  "pause": { "_": "The pause menu Esc opens in play (title.gd show_pause): its head and the words on its own buttons.",
   "title": "The realm waits", "resume": "Back to the realm", "to_title": "To the title", "leave": "Leave the realm" },
  "loading": { "_": "The loading card while a chronicle is laid out (title.gd _loading_card): line under the heading; tip_head over the Hand's counsel; tips, one shown at a time, a new one every tip_seconds.",

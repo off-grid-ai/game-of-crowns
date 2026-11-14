@@ -1,7 +1,7 @@
 extends RefCounted
 ## Aldmere's interface, after the Off Grid design philosophy: quiet, minimal,
-## functional. Geist for text, Geist Mono for small uppercase labels and
-## numbers, one warm accent used sparingly, warm smoked glass with hairline
+## functional. Geist for text, Geist tracked for small uppercase labels, Geist Mono for
+## numbers only, one warm accent used sparingly, warm smoked glass with hairline
 ## edges: the world shows through, so it never feels like a black box. Hierarchy comes from size, weight and tone, not colour. The only
 ## serif is a character's own spoken words: the content, not the chrome.
 
@@ -35,6 +35,7 @@ static var _theme: Theme
 static var sans: FontVariation
 static var sans_light: FontVariation
 static var mono: FontVariation
+static var caps: FontVariation  # small uppercase labels: the sans, a touch heavier and tracked
 static var speech: Font
 static var _glass: ShaderMaterial
 
@@ -63,6 +64,10 @@ static func get_theme() -> Theme:
 	sans_light.base_font = load("res://assets/fonts/Geist.ttf")
 	sans_light.variation_opentype = {"wght": 300}
 	sans_light.spacing_glyph = -1
+	caps = FontVariation.new()
+	caps.base_font = load("res://assets/fonts/Geist.ttf")
+	caps.variation_opentype = {"wght": 500}
+	caps.spacing_glyph = 1
 	mono = FontVariation.new()
 	mono.base_font = load("res://assets/fonts/GeistMono.ttf")
 	mono.variation_opentype = {"wght": 400}
@@ -144,12 +149,12 @@ static func glass(panel: Control) -> void:
 	panel.material = _glass
 
 
-## A whisper: small, uppercase, tracked, mono, muted.
+## A whisper: small, uppercase, tracked, muted, in the sans (a mono here read as a debug console, g38).
 static func label(text: String, color := TEXT_3) -> Label:
 	get_theme()
 	var l := Label.new()
 	l.text = text.to_upper()
-	l.add_theme_font_override("font", mono)
+	l.add_theme_font_override("font", caps)
 	l.add_theme_font_size_override("font_size", SIZE_LABEL + 1)
 	l.add_theme_color_override("font_color", color)
 	return l
@@ -167,7 +172,7 @@ static func datum(text: String, size := SIZE_BODY, color := TEXT) -> Label:
 
 
 ## Prose on a card (what the King is, how the realm stands, what was said of him):
-## the sans face, regular, wrapping. Mono stays for labels and numbers.
+## the sans face, regular (callers set wrapping). Mono stays for numbers only.
 static func prose(text: String, size := SIZE_BODY, color := TEXT) -> Label:
 	var l := datum(text, size, color)
 	l.add_theme_font_override("font", sans)
