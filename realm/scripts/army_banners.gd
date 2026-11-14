@@ -35,6 +35,24 @@ func banner(r: Dictionary) -> void:
 	(r["node"] as Node3D).add_child(mi)
 	r["banner"] = mi
 	r["banner_mat"] = m
+	# Its health bar over the banner while selected (Warcraft III): army.json select.bar.
+	var k: Dictionary = (Data.value("army", "select", {}) as Dictionary).get("bar", {})
+	var bar := MeshInstance3D.new()
+	bar.name = "HealthBar"
+	var q := QuadMesh.new()
+	q.size = Vector2(man * float(k.get("width", 3.0)), man * float(k.get("height", 0.32)))
+	bar.mesh = q
+	var bm := ShaderMaterial.new()
+	bm.shader = preload("res://scripts/army_bar.gdshader")
+	bm.set_shader_parameter("fill_color", Heraldry.field_colour(r.get("house", {}), r["colour"]) if not (r.get("house", {}) as Dictionary).is_empty() else r["colour"])
+	bm.set_shader_parameter("strength", r["strength"])
+	bm.render_priority = 2
+	bar.material_override = bm
+	bar.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	bar.position = Vector3(man * Data.num("army", "banner.width", 1.6) * 0.5, man * float(k.get("above", 2.95)), 0)  # over the flag's middle, above its pole's top
+	bar.visible = false
+	mi.add_child(bar)
+	r["bar"] = bar
 
 
 ## The host's standard over regiment `c` (its commander's), in `house`'s arms (or c's colour with a crown), with
@@ -88,6 +106,7 @@ func rides_with(r: Dictionary) -> bool:
 ## Its banner's pips: its strength (0..1).
 func strength(r: Dictionary) -> void:
 	(r["banner_mat"] as ShaderMaterial).set_shader_parameter("strength", r["strength"])
+	((r["bar"] as MeshInstance3D).material_override as ShaderMaterial).set_shader_parameter("strength", r["strength"])
 
 
 ## Its banner wavers (0 steady .. 1 about to break; army_banner.gdshader's waver).
@@ -98,6 +117,7 @@ func waver(r: Dictionary, w: float) -> void:
 ## Its banner lit (selected) or not.
 func lit(r: Dictionary, on: bool) -> void:
 	(r["banner_mat"] as ShaderMaterial).set_shader_parameter("selected", 1.0 if on else 0.0)
+	(r["bar"] as Node3D).visible = on
 
 
 ## The lens at distance `d`, the host shown far or near: banners hidden from afar (the standard and its strength

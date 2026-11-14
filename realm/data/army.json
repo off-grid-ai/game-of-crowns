@@ -70,7 +70,7 @@
   "shadows": { "near": 18.0 },
   "banner": { "height": 2.6, "width": 1.6, "fixedFrom": 14.0, "pips": 5 },
   "standard": { "scale": 1.7 },
-  "select": { "margin": 0.15, "alpha": 0.9, "idle": 0.0 },
+  "select": { "margin": 0.15, "alpha": 0.9, "idle": 0.0, "bar": { "_": "A selected regiment's health bar over its banner (Warcraft III; army_bar.gdshader), its house's colour filled to its strength: width, height and above (its middle's height over the banner's foot), in men's heights.", "width": 3.0, "height": 0.32, "above": 2.95 } },
   "far": { "at": 34.0, "back": 30.0 },
   "colours": "crown",
   "spike": { "strength": [0.45, 1.0] },
