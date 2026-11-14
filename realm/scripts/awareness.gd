@@ -135,6 +135,13 @@ func banners() -> Array:
 	return v if v is Array else []
 
 
+## The houses' war hosts on the road (/world warhosts, bridge hosts.js warpath without join: a rebel lord's host
+## marching on the King's seat, a house's war on a town): [{owner, units, city, x, y, rebel}], as banners.
+func war_hosts() -> Array:
+	var v: Variant = realm.get_var(&"warhosts", [], false)
+	return v if v is Array else []
+
+
 ## Raids making for a royal work (/world raids, bridge raids.js; the realm blackboard's "raids" slice):
 ## [{town, goal, building, rising, x, y, units}]: the raid's town, the town whose work it goes at, the work, whether
 ## it is still going up, the goal town's tile and the raiders' unit ids.
@@ -365,6 +372,7 @@ func _reduce_hosts(world: Dictionary) -> void:
 	realm.set_var(&"threat", _dict(world.get("crown")).get("threat"))  # the director's live threat, or null (bridge director.js)
 	realm.set_var(&"hosts", world.get("hosts") if world.get("hosts") is Array else [])  # the King's hosts and their orders (bridge hosts.js)
 	realm.set_var(&"banners", world.get("banners") if world.get("banners") is Array else [])  # houses' men on the road to join the King (bridge hosts.js)
+	realm.set_var(&"warhosts", world.get("warhosts") if world.get("warhosts") is Array else [])  # houses' war hosts on the road: a rebel lord's on the King's seat (bridge hosts.js)
 	realm.set_var(&"raids", world.get("raids") if world.get("raids") is Array else [])  # raiders making for a royal work (bridge raids.js)
 	realm.set_var(&"captains", world.get("captains") if world.get("captains") is Dictionary else {})  # each crown company's captain, unit id -> name (bridge captains.js)
 	realm.set_var(&"sieges", world.get("sieges") if world.get("sieges") is Array else [])  # the great houses' sieges and how each now means to take its town (bridge siegecraft.js)

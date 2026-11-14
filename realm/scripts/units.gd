@@ -406,9 +406,12 @@ func field_hosts(store: Node) -> Dictionary:
 	var keep := {}
 	# The banners coming in (/world banners, bridge 775586e5; casebook, the court: every decision is seen): a house's
 	# men answering the King's summons, one column in their house's colours under its standard, marched by the road
-	# to the King's town as Freeciv moves their lead company. Keyed by house and town until they join.
-	for b in store.banners():
-		var key := "banners %d %d" % [int(b.get("owner", -1)), int(b.get("city", -1))]
+	# to the King's town as Freeciv moves their lead company. Keyed by house and town until they join. A house's war
+	# host on the road (/world warhosts, bridge fe1500d0: a rebel lord's host marching on the King's seat; casebook, The
+	# court: a lord's rebellion, CK3's faction war) is drawn the same way, a column in its lord's colours under his
+	# standard, and lays siege at the walls as every war host does.
+	for b in store.banners() + store.war_hosts():
+		var key := "%s %d %d" % ["war" if b.has("rebel") else "banners", int(b.get("owner", -1)), int(b.get("city", -1))]
 		var units: Array = (b.get("units", []) as Array).duplicate()
 		if units.is_empty():
 			continue
