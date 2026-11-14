@@ -854,7 +854,8 @@ static func _low(im: ImporterMesh, H: Dictionary) -> ImporterMesh:
 	var out := ImporterMesh.new()
 	var n := 0
 	for s in im.get_surface_count():
-		var arr: Array = im.get_surface_arrays(s)
+		var arr: Array = im.get_surface_arrays(s).duplicate()  # its own: the surface's arrays come by reference, and a level
+		# written into them was the whole model's own (c27f8136's errors; the whole drew its torn low level)
 		if im.get_surface_lod_count(s) > 0:
 			arr[Mesh.ARRAY_INDEX] = im.get_surface_lod_indices(s, mini(pick, im.get_surface_lod_count(s) - 1))
 		n += (arr[Mesh.ARRAY_INDEX] as PackedInt32Array).size() / 3
@@ -889,7 +890,7 @@ static func _within(im: ImporterMesh, budget: int) -> ImporterMesh:
 			continue
 		var out := ImporterMesh.new()
 		for s in im.get_surface_count():
-			var arr: Array = im.get_surface_arrays(s)
+			var arr: Array = im.get_surface_arrays(s).duplicate()  # its own, as _low's
 			if level < im.get_surface_lod_count(s):
 				arr[Mesh.ARRAY_INDEX] = im.get_surface_lod_indices(s, level)
 			out.add_surface(Mesh.PRIMITIVE_TRIANGLES, arr, [], {}, im.get_surface_material(s))
