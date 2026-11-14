@@ -187,7 +187,7 @@ function load(id) {
   court.spoils = () => meta.spoils ?? [];  // towns taken with allies beside the royal host (campaigns.js; characters.js spoils)
   arcs = new Arcs(P.base, court, record);
   arcsRunning = false;  // a new realm's stories start free of the last one's
-  court.onArcRuling = (arc, beat, option) => arc === "council" ? councilRuled(beat, option) : arc === "siege" ? siegeRuled(beat, option) : arcs.rule(arc, beat, option);
+  court.onArcRuling = (arc, beat, option) => arc === "council" ? councilRuled(beat, option) : arc === "siege" ? siegeRuled(beat, option) : arc === "rival" ? Rivals.ruled(realmCtx(), beat, option) : arcs.rule(arc, beat, option);
   chatter?.stop();
   chatter = new Chatter(P.state, { world: () => world, turn: () => world?.turn ?? 0, minds: () => minds });
   stakes = new Stakes(P.state, record, endReign);

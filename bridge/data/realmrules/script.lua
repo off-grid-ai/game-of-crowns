@@ -617,6 +617,48 @@ end
 -- prey's gates, and marches there by road (casebook, War and sieges: The march feeds the battle). The bridge walks
 -- it (hosts.js warpath) once told who was raised; at the walls the men are their house's AI's again, and it fights.
 -- A house that holds no town has nowhere to march from: its men gather beside the prey, as before.
+-- The rival King beyond the border (bridge rivals.js): a Freeciv player of his own, named for his realm, made the
+-- first time his host comes (as the dead are: the Barbarian nation, never met, so at war with all; not a raider,
+-- raiders_now leaves him out). Kept by name in GOC_RIVAL, which the save keeps.
+GOC_RIVAL = GOC_RIVAL or ""
+function realm_rival(name)
+  GOC_RIVAL = tostring(name)
+  for p in players_iterate() do if p.name == GOC_RIVAL then return p end end
+  return edit.create_player(GOC_RIVAL, find.nation_type("Barbarian"), "classic")
+end
+
+-- His host: raised out steps beyond a town toward his edge (dx, dy a step; the walk stops at the map's edge), and
+-- Freeciv's AI marches it on the town.
+function realm_rival_host(name, city_id, dx, dy, out, kinds, count)
+  local c = find.city(nil, city_id)
+  if not c then log.normal("RIVALHOST no town %s", tostring(city_id)); return end
+  local x, y = c.tile.x, c.tile.y
+  for i = 1, out do
+    local t = find.tile(x + dx, y + dy)
+    if not t then break end
+    x, y = t.x, t.y
+  end
+  local made = realm_host(realm_rival(name), x, y, kinds, count)
+  log.normal("RIVALHOST %s raised %d at (%d,%d) for %s", name, #made, x, y, c.name)
+end
+
+-- A town given to him by the King's word.
+function realm_rival_cede(name, city_id)
+  local c = find.city(nil, city_id)
+  if c then edit.transfer_city(c, realm_rival(name)) end
+end
+
+-- His war over: his men in the field go home (a town he holds keeps its garrison).
+function realm_rival_home(name)
+  for p in players_iterate() do
+    if p.name == tostring(name) then
+      for u in p:units_iterate() do
+        if u.tile:city() == nil then pcall(edit.perform_action, u, find.action("Disband Unit")) end
+      end
+    end
+  end
+end
+
 function realm_war_host(who, city_id, kinds, count)
   local prey = find.city(nil, city_id)
   if not who or not prey then log.normal("WARHOST no house or prey"); return end
@@ -711,7 +753,7 @@ local function raiders_now()
   local ids = {}
   for p in players_iterate() do
     local n = p.nation and p.nation:rule_name() or ""
-    if (n == "Barbarian" or n == "Pirate") and p.name ~= "The Dead" then for u in p:units_iterate() do ids[u.id] = u end end
+    if (n == "Barbarian" or n == "Pirate") and p.name ~= "The Dead" and p.name ~= GOC_RIVAL then for u in p:units_iterate() do ids[u.id] = u end end
   end
   return ids
 end

@@ -1,45 +1,185 @@
 {
- "_": "A rival King beyond the realm (rivals.js; CK3's and Crusader Kings' neighbouring realms, Total War's border probes): one, dealt by the reign's seed from kings, with the edge of the realm he lies beyond and his hostility (0 friend .. 100 at war in all but name, starting at start). It drifts toward rest by drift a season. Each season he may probe the border: with chance raid x hostility/100 his riders raid the realm's town nearest his edge (Freeciv's own raiders, the chronicle names whose they are). His envoys come as event cards (cards, in events.js's shape, drawn with the realm's; when.rival {above, below}: his hostility; a choice's effects rival: how it moves him; text may say {foreign} and {foreignking}).",
- "kings": [["Varrow", "King Osric"], ["the Marches of Hale", "Queen Isolde"], ["Dunmark", "King Aelfric"], ["the Tarn", "Prince Corvin"]],
- "edges": ["north", "south", "east", "west"],
+ "_": "A rival King beyond the realm (rivals.js; CK3's and Crusader Kings' neighbouring realms, Total War's border probes): one, dealt by the reign's seed from kings, with the edge of the realm he lies beyond and his hostility (0 friend .. 100 at war in all but name, starting at start). It drifts toward rest by drift a season. Each season he may probe the border: with chance raid x hostility/100 his riders raid the realm's town nearest his edge (Freeciv's own raiders, the chronicle names whose they are). His envoys with demands come to court (demand); his lesser envoys come as event cards (cards, in events.js's shape, drawn with the realm's; when.rival {above, below}: his hostility; a choice's effects rival: how it moves him; text may say {foreign} and {foreignking}).",
+ "kings": [
+  [
+   "Varrow",
+   "King Osric"
+  ],
+  [
+   "the Marches of Hale",
+   "Queen Isolde"
+  ],
+  [
+   "Dunmark",
+   "King Aelfric"
+  ],
+  [
+   "the Tarn",
+   "Prince Corvin"
+  ]
+ ],
+ "edges": [
+  "north",
+  "south",
+  "east",
+  "west"
+ ],
  "start": 45,
  "rest": 40,
  "drift": 2,
  "raid": 0.25,
  "cards": [
-  { "id": "envoy_tribute", "deck": "rival", "subject": "seat", "weight": 3, "when": { "rival": { "above": 50 } },
-    "title": "An envoy from {foreign}",
-    "text": "{foreignking}'s envoy bows no lower than he must. \"My master asks a gift of friendship from the crown of the realm, Your Grace. A hundred in gold, and his riders stay home.\"",
-    "choices": [
-      { "label": "Pay the gift", "cost": 100, "rival": -15, "favour": { "all": -2 }, "text": ["The gold goes south with the envoy. The lords say nothing to the King's face.", "The envoy rides home heavier. At court, the lords look at their boots."] },
-      { "label": "Send him home with nothing", "rival": 10, "favour": { "all": 2 }, "text": ["The envoy leaves with empty hands and a stiff back. The lords like it.", "No gold for {foreign}. The envoy rides off without a word, and the hall cheers."] },
-      { "label": "Send back his beard in a box", "rival": 25, "favour": { "all": 4 }, "text": ["The envoy goes home shaved. {foreignking} will not forget it, and neither will the lords, who laugh about it for a year."] }
-    ],
-    "ignore": { "rival": 8, "text": "The envoy from {foreign} waits a season for an answer and goes home without one." } },
-  { "id": "envoy_match", "deck": "rival", "subject": "seat", "weight": 2, "when": { "rival": { "below": 60 } },
-    "title": "{foreignking} offers a match",
-    "text": "A letter under {foreign}'s seal: {foreignking} offers a child of the blood to wed the crown's heir. Peace on the border for as long as the marriage lasts.",
-    "choices": [
-      { "label": "Accept the match", "rival": -30, "favour": { "all": -3 }, "text": ["The match is sealed. The border goes quiet, and the great houses mutter that the heir's hand went abroad."] },
-      { "label": "Decline, politely", "rival": 5, "text": ["The crown declines with fine words. {foreignking} reads them twice."] }
-    ],
-    "ignore": { "rival": 5, "text": "{foreignking}'s letter goes unanswered." } },
-  { "id": "border_ford", "deck": "rival", "subject": "seat", "weight": 2, "when": { "rival": { "above": 30 } },
-    "title": "A ford on the border",
-    "text": "Men of {foreign} have set a toll on the ford our drovers have always used. Our side of the river, they say, was always theirs.",
-    "choices": [
-      { "label": "Let them have it", "rival": -10, "favour": { "all": -3 }, "text": ["The drovers pay {foreign}'s toll and curse the King under their breath."] },
-      { "label": "Send men to hold the ford", "cost": 40, "rival": 12, "favour": { "all": 2 }, "text": ["Royal spearmen stand at the ford. {foreign}'s tollmen go back across the water."] }
-    ],
-    "ignore": { "rival": 6, "text": "Nobody holds the ford, so {foreign} does." } },
-  { "id": "foreign_spy", "deck": "rival", "subject": "crown_town", "weight": 2, "when": { "rival": { "above": 40 } },
-    "title": "A spy at {town}",
-    "text": "The reeve of {town} has a man in the cellar who speaks with {foreign}'s accent and carried a map of the walls.",
-    "choices": [
-      { "label": "Hang him", "rival": 10, "text": ["The spy hangs in {town}'s square. {foreignking} sends no one to claim the body."] },
-      { "label": "Send him home", "rival": -5, "text": ["The spy is put on a mule and sent home. {foreign} takes note of the courtesy."] },
-      { "label": "Pay him to lie to his master", "cost": 40, "rival": -5, "text": ["The spy goes home with our gold and a false map. {foreignking} will build his plans on it."] }
-    ],
-    "ignore": { "rival": 3, "text": "The spy at {town} slips his ropes one night, and is gone." } }
- ]
+  {
+   "id": "envoy_match",
+   "deck": "rival",
+   "subject": "seat",
+   "weight": 2,
+   "when": {
+    "rival": {
+     "below": 60
+    }
+   },
+   "title": "{foreignking} offers a match",
+   "text": "A letter under {foreign}'s seal: {foreignking} offers a child of the blood to wed the crown's heir. Peace on the border for as long as the marriage lasts.",
+   "choices": [
+    {
+     "label": "Accept the match",
+     "rival": -30,
+     "favour": {
+      "all": -3
+     },
+     "text": [
+      "The match is sealed. The border goes quiet, and the great houses mutter that the heir's hand went abroad."
+     ]
+    },
+    {
+     "label": "Decline, politely",
+     "rival": 5,
+     "text": [
+      "The crown declines with fine words. {foreignking} reads them twice."
+     ]
+    }
+   ],
+   "ignore": {
+    "rival": 5,
+    "text": "{foreignking}'s letter goes unanswered."
+   }
+  },
+  {
+   "id": "border_ford",
+   "deck": "rival",
+   "subject": "seat",
+   "weight": 2,
+   "when": {
+    "rival": {
+     "above": 30
+    }
+   },
+   "title": "A ford on the border",
+   "text": "Men of {foreign} have set a toll on the ford our drovers have always used. Our side of the river, they say, was always theirs.",
+   "choices": [
+    {
+     "label": "Let them have it",
+     "rival": -10,
+     "favour": {
+      "all": -3
+     },
+     "text": [
+      "The drovers pay {foreign}'s toll and curse the King under their breath."
+     ]
+    },
+    {
+     "label": "Send men to hold the ford",
+     "cost": 40,
+     "rival": 12,
+     "favour": {
+      "all": 2
+     },
+     "text": [
+      "Royal spearmen stand at the ford. {foreign}'s tollmen go back across the water."
+     ]
+    }
+   ],
+   "ignore": {
+    "rival": 6,
+    "text": "Nobody holds the ford, so {foreign} does."
+   }
+  },
+  {
+   "id": "foreign_spy",
+   "deck": "rival",
+   "subject": "crown_town",
+   "weight": 2,
+   "when": {
+    "rival": {
+     "above": 40
+    }
+   },
+   "title": "A spy at {town}",
+   "text": "The reeve of {town} has a man in the cellar who speaks with {foreign}'s accent and carried a map of the walls.",
+   "choices": [
+    {
+     "label": "Hang him",
+     "rival": 10,
+     "text": [
+      "The spy hangs in {town}'s square. {foreignking} sends no one to claim the body."
+     ]
+    },
+    {
+     "label": "Send him home",
+     "rival": -5,
+     "text": [
+      "The spy is put on a mule and sent home. {foreign} takes note of the courtesy."
+     ]
+    },
+    {
+     "label": "Pay him to lie to his master",
+     "cost": 40,
+     "rival": -5,
+     "text": [
+      "The spy goes home with our gold and a false map. {foreignking} will build his plans on it."
+     ]
+    }
+   ],
+   "ignore": {
+    "rival": 3,
+    "text": "The spy at {town} slips his ropes one night, and is gone."
+   }
+  }
+ ],
+ "demand": {
+  "_": "His envoy at court with a demand (rivals.js demand; CK3's demands of a stronger neighbour, Total War's diplomacy screen): when his hostility is past above and every seasons since the last, an envoy comes. Under land, he asks tribute: gold, plus goldPer for each point past above. At land or past it, he asks the realm's town nearest his border; refused, it is war (war). At war, he offers peace for the town or for peaceGold. Each answer moves his hostility: yield, pay, refuse, insult (the envoy sent home shaved); the great houses' favour: favour (yield shames the crown, defiance pleases), cede (the house that held the town ceded).",
+  "above": 55,
+  "every": 6,
+  "gold": 120,
+  "goldPer": 3,
+  "land": 75,
+  "peaceGold": 250,
+  "yield": -25,
+  "pay": -15,
+  "refuse": 12,
+  "insult": 25,
+  "favour": {
+   "yield": -4,
+   "refuse": 2,
+   "insult": 4
+  },
+  "cede": -30
+ },
+ "war": {
+  "_": "His war over the border town (rivals.js war): a refused claim, or his hostility at above, and he declares war: his host (a Freeciv player of his own, script.lua realm_rival) rises out tiles beyond the town toward his edge, host men plus hostPer for each point of hostility, of kinds, and Freeciv's AI marches on the town; another wave every every seasons. The war ends after seasons seasons, or when the town is his, or the King buys peace; his men go home and his hostility falls to peace.",
+  "above": 85,
+  "out": 5,
+  "host": 5,
+  "hostPer": 0.06,
+  "kinds": [
+   "Knights",
+   "Pikemen",
+   "Archers",
+   "Catapult"
+  ],
+  "every": 2,
+  "seasons": 6,
+  "peace": 35
+ }
 }

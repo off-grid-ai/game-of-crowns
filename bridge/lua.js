@@ -15,6 +15,12 @@ export const levy = (cityId, kinds, vet = 1) => `realm_levy(${n(cityId)}, "${kin
 // A host raised beside a tile for a house (realm_host; who: a player id, or "dead" for the dead beyond the wall).
 const whoLua = (who) => (who === "dead" ? "realm_the_dead()" : `realm_find_player(${n(who)})`);
 export const host = (who, x, y, kinds, count) => `realm_host(${whoLua(who)}, ${n(x)}, ${n(y)}, {${kinds.map((k) => `"${k}"`).join(",")}}, ${n(count)})`;
+// The rival King's host (realm_rival_host): count men of kinds raised out tiles beyond a town toward his edge
+// (dx, dy one step), as a Freeciv player of his own named for his realm; Freeciv's AI marches them on the town.
+export const rivalHost = (name, cityId, dx, dy, out, kinds, count) => `realm_rival_host(${JSON.stringify(String(name))}, ${n(cityId)}, ${n(dx)}, ${n(dy)}, ${n(out)}, {${kinds.map((k) => `"${k}"`).join(",")}}, ${n(count)})`;
+// A town given to the rival King (realm_rival_cede), and his men in the field sent home at a war's end (realm_rival_home).
+export const rivalCede = (name, cityId) => `realm_rival_cede(${JSON.stringify(String(name))}, ${n(cityId)})`;
+export const rivalHome = (name) => `realm_rival_home(${JSON.stringify(String(name))})`;
 export const warHost = (who, cityId, kinds, count) => `realm_war_host(${whoLua(who)}, ${n(cityId)}, {${kinds.map((k) => `"${k}"`).join(",")}}, ${n(count)})`;
 export const warMarch = (who, fromId, toId) => `realm_war_march(${whoLua(who)}, ${n(fromId)}, ${n(toId)})`;
 // The banners answered: count of a house's men set out for the King's town (realm_banners), and at its walls join the
