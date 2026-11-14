@@ -561,6 +561,11 @@ func _fight(r: Dictionary, dt: float) -> void:
 		local[s] = v
 	r["local"] = local
 	r["moved"] = true
+	# Dust thrown up along its front where the lines grind (scenes.gd dust, the skirmish's own), raised again as it
+	# thins (field.fight.dustEvery), so the press has weight in the frame (g21: a clean seam).
+	if clock >= float(r.get("dust_t", 0.0)):
+		r["dust_t"] = clock + Data.num(F, "field.fight.dustEvery", 6.0)
+		_dust_at(r)
 	# Its losses: the realm's outcome sets the rate; a flanked regiment bleeds harder.
 	var loss: Dictionary = Data.value(F, "field.fight.loss", {"beaten": 2.4, "victors": 0.9})
 	var rate := float(loss.get("beaten" if int(r["side"]) == loser else "victors", 1.0))
@@ -571,6 +576,21 @@ func _fight(r: Dictionary, dt: float) -> void:
 		var n := int(r["bleed"])
 		r["bleed"] = float(r["bleed"]) - n
 		_fell(r, n, true)
+
+
+## Dust along a regiment's front (scenes.gd dust over each third of its width: the massed front is wider and
+## thicker with men than a skirmish's line).
+func _dust_at(r: Dictionary) -> void:
+	var sc: Node = main.get("scenes")
+	if sc == null:
+		return
+	var node: Node3D = r["node"]
+	var along := node.global_transform.basis.x.normalized()
+	var w := float(r["w"])
+	for k in 3:
+		var p := node.to_global(Vector3(w * (k - 1) / 3.0, 0.0, float(r["d"]) * 0.5 + Data.num(F, "field.contact", 0.12) * 0.5))
+		p.y = main.terrain.height_at(p.x, p.z) + 0.01
+		sc.dust(self, p, along, w / 3.0)
 
 
 ## Horse: round the end of the enemy's line nearest its own wing, wide of it (field.cavalry.wide), then in on his
@@ -624,6 +644,9 @@ func _charge(r: Dictionary, _dt: float) -> void:
 	if Vector2(at.x - spot.x, at.z - spot.z).length() <= Data.num(F, "field.contact", 0.12):
 		r["foe"] = target
 		target["flanked"] = true
+		# The shock of the charge: men go down at once where the horse strikes (Total War's charge impact).
+		if target.get("state_name", "") != "rout" and int(target.get("living", 0)) > 0:
+			_fell(target, int(Data.num(F, "field.cavalry.shock", 12.0)), true)
 		_send(r, &"engage")
 		return
 	Mover.of(r["node"]).toward(spot, Data.num(F, "field.cavalry.charge", 0.55), -side)
