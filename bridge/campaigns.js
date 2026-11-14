@@ -163,7 +163,7 @@ export function siegeRuled(ctx, beat, option) {
   const crown = crownOf();
   c.ruled = true;
   if (option === "press") c.press = true;
-  if (option === "starve") { c.starve = true; c.extra = 1; }
+  if (option === "starve") { c.starve = true; c.extra = 1; c.starveSince = ctx.world?.turn ?? 0; }
   if (option === "tribute") {
     meta.campaigns = meta.campaigns.filter((x) => x !== c);
     const paid = c.tribute ?? 150;

@@ -161,6 +161,8 @@ export function townStates(ctx) {
       celebrating: Boolean(c.rapture ?? x?.celebrating) || scenes.some((s) => s.kind === "feast" && s.city === c.id && s.turn >= turn - 1),
       // The royal host before its walls, or an enemy host at them.
       besieged: (meta?.campaigns ?? []).some((k) => k.city === c.id) || besiegers(c).length >= 3,
+      // The King's siege starving it out (campaigns.js: no cart goes in or out; hungry once hunger bites the garrison).
+      siege: ((k) => k?.starve ? { starve: true, hungry: Boolean(k.hungry), since: k.starveSince ?? k.turn } : null)((meta?.campaigns ?? []).find((k) => k.city === c.id)),
     });
     // The town's house at war with another great house or the crown (Freeciv's diplomacy, wild raiders aside).
     const owner = world.players.find((p) => p.id === c.owner);
