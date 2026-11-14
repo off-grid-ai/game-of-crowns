@@ -11,7 +11,7 @@
   "Trireme",
   "Galleon"
  ],
- "supply": { "_": "The march feeds the battle (hosts.js supply; Bannerlord's food, Total War's attrition): in winter the King's companies farther than reach tiles from a town of the crown or of a sworn house lose winter of their full hit points a season, never the last.", "reach": 6, "winter": 0.2 },
+ "supply": { "_": "The march feeds the battle (hosts.js supply; Bannerlord's food, Total War's attrition): each crown company's supply (0..1) is full within reach tiles of a town of the crown or of a sworn house, and falls by drain a season farther away (winter times that). Under hungry it loses hurt of its full hit points a season, never the last, and up to stragglers of its men fall out of the line as it runs out (/world hosts supply, stragglers).", "reach": 6, "drain": 0.25, "winter": 2, "hungry": 0.5, "hurt": 0.15, "stragglers": 0.3 },
  "ordersPerHost": 1,
  "siegeAssaults": 4,
  "battles": { "_": "The King's battle result cards (battles.js card, CK3's war panel): keep, how many the reign keeps; recent, for how many seasons after a battle /world shows its card.", "keep": 12, "recent": 2 }

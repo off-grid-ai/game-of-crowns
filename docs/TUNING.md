@@ -382,7 +382,7 @@ Switches (`--name`) go after `--` on the game's command line.
 - The heir's match at court (bridge `characters.js` royalwed): the age, the plea's weight and the favour of wed and refuse, `bridge/data/royals.json` `match`.
 - A regency's danger (bridge `royals.js` REGENCY, characters.js rebel): how much more a cold lord weighs rising while a child is King, and a would-be King more again, `bridge/data/royals.json` `minor.rising`, `minor.claim`.
 - A new King's crowning (bridge `royals.js` funeral): how far every house's favour falls back and toward what, `bridge/data/royals.json` `funeral.to` (42), `funeral.pull` (0.35).
-- Winter supply (bridge `hosts.js` supply): how far from a friendly town the King's men may winter, and what a winter away costs them, `bridge/data/hosts.json` `supply.reach` (6), `supply.winter` (0.2).
+- A host's supply on the march (bridge `hosts.js` supply; /world hosts `supply`, `stragglers`): how far from a friendly town it is fed, how fast it runs down (and in winter), when it goes hungry, what hunger costs and how many straggle, `bridge/data/hosts.json` `supply`.
 - Royal traits and the lords' measure of a new King (bridge `royals.js` traits, temper): inheritance chance, warmth per shared trait, coolness per opposed trait, the opposed pairs, `bridge/data/royals.json` `traits`.
 - The King's captains (bridge `captains.js`; /world `captains`, battle card `fell`): how many fallen the reign remembers, `bridge/data/captains.json` `keep` (24).
 - The King's promises at court (bridge `promises.js`; /world `promises`): each kind's seasons to keep it and its favour when made, kept and broken, `bridge/data/promises.json`.

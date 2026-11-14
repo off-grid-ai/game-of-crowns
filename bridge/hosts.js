@@ -67,6 +67,7 @@ export function list(ctx) {
         sea: o.sea ? { phase: o.sea.phase, coast: o.sea.coast, landing: o.sea.landing, ships: o.sea.ships, hulls: o.sea.hulls ?? [] } : null } : null,
       aboard: o?.sea?.phase === "raised" || o?.sea?.phase === "sail",  // at sea in the ships the crown raised (its crossing: hosts.js crossing)
       ordersLeft: ordersLeft(ctx, lead.id),
+      ...supplyOf(meta, g.units),  // supply 0..1 and stragglers, the share of its men fallen out of the line (supply)
       banners: o?.joined ?? null,  // banner men just come in (joined): {owner: their house, from: the ids they marched under, city}  // this host's orders still to give this season (data/hosts.json ordersPerHost)
     };
   }).sort((a, b) => b.companies - a.companies);
@@ -477,27 +478,44 @@ function shipsOff(ctx, turn, L, hulls = null, from = null) {
 
 // Each season (season.js): every host under a marching order moves; one that has arrived stands
 // (a march becomes a hold; a garrison stays a garrison, in the town).
-// The march feeds the battle (Bannerlord's food, Total War's attrition): in winter the King's companies standing farther
-// than data/hosts.json supply.reach from any town of the crown or of a house sworn to it waste away, supply.winter of
-// their full hit points a season, never the last (Freeciv's hit points: the men counted, the wounded look and the next
-// fight's odds all follow). The chronicle says it once a winter, by the town nearest the hungriest company.
+// The march feeds the battle (Bannerlord's food, Total War's attrition): each of the King's companies carries its
+// supply (meta.supply {unit id: 0..1}). Within data/hosts.json supply.reach of a town of the crown or of a sworn house
+// it is fed full; farther, it falls by supply.drain a season (winter times supply.winter). Under supply.hungry the
+// company goes hungry: supply.hurt of its full hit points a season, never the last (Freeciv's hit points, so the men
+// counted, the wounded look and the next fight's odds follow), and its men straggle (list: a host's supply and
+// stragglers). The chronicle says it once a season, by the town nearest the hungriest host.
 function supply(ctx, turn) {
   const { world, meta, send, record } = ctx;
   const S = HOSTS.supply;
   const crown = crownOf(world);
-  if (!S || !crown || calendar(turn).season !== "winter") return;
+  if (!S || !crown) return;
   const fed = world.cities.filter((c) => c.owner === crown.id || sworn(ctx, c.owner));
-  const far = soldiersOf(world, crown.id).filter((u) => !fed.some((c) => cheb(c, u) <= S.reach));
-  let hurt = null;
-  for (const u of far) {
+  const winter = calendar(turn).season === "winter";
+  const was = meta.supply ?? {};
+  const now = {};
+  let hungriest = null;
+  for (const u of soldiersOf(world, crown.id)) {
+    const home = fed.some((c) => cheb(c, u) <= S.reach);
+    const v = home ? 1 : Math.max(0, (was[u.id] ?? 1) - S.drain * (winter ? S.winter : 1));
+    now[u.id] = Math.round(v * 100) / 100;
+    if (v >= S.hungry) continue;
     const full = HITPOINTS[u.type] ?? 10;
-    const loss = Math.min(Math.max(1, Math.round(full * S.winter)), Number(u.hp ?? full) - 1);
-    if (loss > 0) { send(`lua cmd ${Lua.hurt(u.id, -loss)}`); hurt ??= u; }
+    const loss = Math.min(Math.max(1, Math.round(full * S.hurt)), Number(u.hp ?? full) - 1);
+    if (loss > 0) send(`lua cmd ${Lua.hurt(u.id, -loss)}`);
+    if (!hungriest || v < now[hungriest.id]) hungriest = u;
   }
-  if (!hurt || meta.hungryWinter === calendar(turn).year) return;
-  meta.hungryWinter = calendar(turn).year;
-  const near = [...world.cities].sort((a, b) => cheb(a, hurt) - cheb(b, hurt))[0];
-  record({ turn, kind: "battle", text: `Winter finds the King's men far from his granaries${near ? ` near ${cityName(near.id)}` : ""}. No cart reaches them, and they grow thin and sick.`, city: near?.id });
+  meta.supply = now;
+  if (!hungriest) return;
+  const near = [...world.cities].sort((a, b) => cheb(a, hungriest) - cheb(b, hungriest))[0];
+  record({ turn, kind: "battle", text: `The King's men are far from his granaries${near ? ` near ${cityName(near.id)}` : ""}${winter ? ", and it is winter" : ""}. The carts no longer reach them; they grow thin, and men fall out of the line.`, city: near?.id });
+}
+
+// A host's supply (the lowest of its companies') and its stragglers: the share of its men fallen out of the line,
+// up to data/hosts.json supply.stragglers as the supply runs out under supply.hungry.
+function supplyOf(meta, units) {
+  const S = HOSTS.supply;
+  const v = Math.min(...units.map((u) => meta?.supply?.[u.id] ?? 1));
+  return { supply: v, stragglers: v >= S.hungry ? 0 : Math.round(S.stragglers * (1 - v / S.hungry) * 100) / 100 };
 }
 
 export function season(ctx, turn) {
