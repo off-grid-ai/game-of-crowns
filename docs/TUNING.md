@@ -570,3 +570,4 @@ Switches (`--name`) go after `--` on the game's command line.
 - The rival King's raiders in his colours: `realm/data/army.json` `map.raider.rival_tint` (0.6: how far their cloth leans to /world rival.colour).
 - Vassals named under a great house in the Houses drawer before "+N": `realm/data/herald.json` `drawer.vassals_shown` (3).
 - A host's march stops at the shore, never in the sea: `realm/data/army.json` `march.wetStep` (0.2 world units between the water tests along its way).
+- The horse's house colour on the saddle cloth and rider only, the caparison below in linen: `realm/data/army.json` `units.horse.cloth` (undyed [0.8, 0.77, 0.7]; band [0.5, 1.0] of its height).
