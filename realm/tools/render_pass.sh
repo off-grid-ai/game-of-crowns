@@ -345,8 +345,8 @@ if want raid; then
   # (realmrules/script.lua realm_raids_turn, fc9a094c). Raiders are units of a wild player (Freeciv's barbarians: /world
   # players[].house.wild; g22 read them as 'no player's' and found none by Saltkeep, where six stood) new since the stage. Every wait is bounded and reads /world (the realm runs
   # only while a window watches it), closing the court and an interlude as the crossing's wait does.
-  raider() {  # raider <x> <y> <near|out> <from season>: "id x y" of the raider nearest the town, or of the farthest one
-    # 4+ tiles out once the raid's seasons are over; '' when none
+  raider() {  # raider <x> <y> <near|out|any> <from season>: "id x y" of the raider nearest the town, of the farthest one
+    # 4+ tiles out once the raid's seasons are over, or of any still living; '' when none
     curl -s -m 10 "$API/world" | perl -e 'alarm shift; exec @ARGV' 20 python3 -I -c "
 import json,sys; d=json.load(sys.stdin)
 wild={p['id'] for p in d.get('players',[]) if (p.get('house') or {}).get('wild')}
@@ -354,7 +354,9 @@ old={int(x) for x in open('$OUT/raid.before').read().split()}
 x,y=$1,$2
 us=[u for u in d.get('units',[]) if u.get('owner') in wild and u['id'] not in old]
 far=lambda u: max(abs(u['x']-x),abs(u['y']-y))
-if '$3'=='near':
+if '$3'=='any':
+    u=us[0] if us else None
+elif '$3'=='near':
     us=[u for u in us if far(u)<=3]; u=min(us,key=far) if us else None
 else:
     us=[u for u in us if far(u)>=4 and d.get('turn',0)>=$4]; u=max(us,key=far) if us else None
@@ -392,14 +394,21 @@ if r.get('ok'): print(r['city'], r['x'], r['y'], r['name'])" 2>/dev/null)
       side raid $OUT/frames/raid/raid.png $TARGETS/03-army.jpg "raiders at $RNAME (raider $1 at $2,$3)"
       side raid_town $OUT/frames/raid/raid_town.png $TARGETS/03-army.jpg "$RNAME under the raid"
     fi
-    OUTR=""; T0=$SECONDS
-    while [ -z "$OUTR" ] && [ $((SECONDS - T0)) -lt ${RAID_LEAVE:-1200} ]; do
+    # No raider by the town, none to watch leave: skipped at once, not after RAID_LEAVE (g22 sat 16 minutes on the GPU
+    # with nothing to film); and it stops the moment no raider of this raid is left alive.
+    OUTR=""; T0=$SECONDS; LIVE=$AT
+    while [ -n "$AT" ] && [ -n "$LIVE" ] && [ -z "$OUTR" ] && [ $((SECONDS - T0)) -lt ${RAID_LEAVE:-1200} ]; do
       curl -s -m 5 -o /dev/null -X POST $API/court/close
       curl -s -m 5 -o /dev/null -X POST $API/interlude/close
       OUTR=$(raider $RX $RY out $(( ${T_RAID:-0} + ${SEASONS:-8} )))
-      [ -z "$OUTR" ] && sleep 5
+      [ -z "$OUTR" ] && LIVE=$(raider $RX $RY any 0)
+      [ -z "$OUTR" ] && [ -n "$LIVE" ] && sleep 5
     done
-    if [ -z "$OUTR" ]; then
+    if [ -z "$AT" ]; then
+      :  # said above: no raider by the town
+    elif [ -z "$OUTR" ] && [ -z "$LIVE" ]; then
+      say "raid: every raider of $RNAME gone before one was seen on the road out; no frame"
+    elif [ -z "$OUTR" ]; then
       say "raid: no raider on the road out of $RNAME in ${RAID_LEAVE:-1200} s; no frame"
     else
       # Framed on his tile, not his figure: one leaving may be gone (Disband Unit on wild land) before the lens finds him.
