@@ -70,7 +70,7 @@ func _run() -> void:
 	for m in (kit.get("bush", {}) as Dictionary).get("models", []):
 		paths.append("res://assets/" + String(m))
 	var cover: Dictionary = Data.value("forest", "cover", {})
-	for role in ["bush", "grass", "rock"]:
+	for role in ["bush", "grass", "flowers", "rock"]:
 		for m in cover.get(role, []):
 			paths.append("res://assets/" + String(m))
 	for comp in ["castle_shrub", "town_cypress", "castle_cypress", "castle_rock", "milestone", "garden_hedge", "garden_flowers", "hedge_painted", "crop_flax", "crop_beans", "stepping_stone"]:

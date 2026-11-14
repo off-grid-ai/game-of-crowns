@@ -7,7 +7,7 @@ extends SceneTree
 ##   3. the open country is never bare lawn: a copse every 60-100 m, so nearly every 3x3 block of tiles holds trees;
 ##   4. in clumps: almost every tree has another within a few metres;
 ##   5. in a wood the crowns touch: 3-4 trees per 100 m2 of forest (the look audit's spec);
-## and the ground cover's scatter (vegetation.gd) plants no trees of its own (forest.json cover: bush, grass, rock).
+## and the ground cover's scatter (vegetation.gd) plants no trees of its own (forest.json cover: bush, grass, flowers, rock).
 ## Prints CHECK lines; exits 1 on a fail.   arch -arm64 godot --headless --path realm -s res://tools/woods_probe.gd
 
 const FIX := "res://tools/fixtures/town_build_map.json"
@@ -106,7 +106,7 @@ func _run() -> void:
 			alone += 1
 	_check(alone <= trees.size() / 20, "in clumps: %d of %d trees stand alone (none within 1 unit, about 8 m; trunks stand 5-6 m apart)" % [alone, trees.size()])
 	var cover: Dictionary = preload("res://scripts/data.gd").value("forest", "cover", {})
-	_check(not cover.is_empty() and cover.keys().all(func(r): return r in ["bush", "grass", "rock"]), "the ground cover plants no trees of its own (%s)" % [cover.keys()])
+	_check(not cover.is_empty() and cover.keys().all(func(r): return r in ["bush", "grass", "flowers", "rock"]), "the ground cover plants no trees of its own (%s)" % [cover.keys()])
 	_end()
 
 

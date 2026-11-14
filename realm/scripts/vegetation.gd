@@ -37,7 +37,7 @@ var batches: Array[MultiMeshInstance3D] = []
 ## ([kind, transform], for forest.gd to plant) or none when the kit is not here (then the woods are in the scatter).
 func build() -> Array:
 	var builder = preload("res://scripts/house_builder.gd").new()
-	var kinds: Dictionary = Data.value("forest", "cover", {})  # the ground cover by role: bush, grass, rock (files under assets/)
+	var kinds: Dictionary = Data.value("forest", "cover", {})  # the ground cover by role: bush, grass, flowers, rock (files under assets/)
 	var meshes := {}
 	var placed := {}
 	for k in kinds:
@@ -45,7 +45,7 @@ func build() -> Array:
 		for name in kinds[k]:
 			var mesh: Mesh = builder.bake_path("res://assets/" + String(name))
 			for si in (mesh.get_surface_count() if mesh else 0):  # the nature set's leaves turn with the season (forest.gd leaves)
-				mesh.surface_set_material(si, preload("res://scripts/forest.gd").leaves(mesh.surface_get_material(si), "res://assets/" + String(name), "grass" if k == "grass" else "leaves"))
+				mesh.surface_set_material(si, preload("res://scripts/forest.gd").leaves(mesh.surface_get_material(si), "res://assets/" + String(name), "grass" if k in ["grass", "flowers"] else "leaves"))
 			meshes[k].append(mesh)
 			placed["%s:%d" % [k, meshes[k].size() - 1]] = []
 	var rng := RandomNumberGenerator.new()
@@ -71,10 +71,10 @@ func build() -> Array:
 	_woodland(meshes, placed, rng)
 	for key in placed:
 		var parts: PackedStringArray = key.split(":")
-		if not parts[0] in ["grass", "bush"]:
+		if parts[0] == "rock":
 			batches.append(_scatter(meshes[parts[0]][int(parts[1])], placed[key]))
 			continue
-		# Grass and bushes in patches of the map, each drawn only near the
+		# Grass, flowers and bushes in patches of the map, each drawn only near the
 		# camera: one batch for the whole realm was drawn everywhere at once,
 		# eight million triangles of grass nobody could see.
 		var patches := {}
@@ -86,7 +86,7 @@ func build() -> Array:
 		for c in patches:
 			var mmi := _scatter(meshes[parts[0]][int(parts[1])], patches[c])
 			mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-			mmi.visibility_range_end = VEG_REACH if parts[0] == "grass" else BUSH_REACH
+			mmi.visibility_range_end = VEG_REACH if parts[0] in ["grass", "flowers"] else BUSH_REACH
 			mmi.visibility_range_end_margin = 3.0
 			batches.append(mmi)
 	return _pines if _pines_ok else []
@@ -96,7 +96,7 @@ func build() -> Array:
 ## copses of pine, and the open country (grassland, plains) a copse every 60-100 m, so no stretch of it is bare
 ## lawn (the look audit); a town's own land is its fields, hedges and corner clumps (land_use.gd), the woods felled there. A wood is clumps of 3-7 trees (never lone trees or rings, the art
 ## standard), as close as its tile's knob says; its edge follows the land's own warped biome line (terrain.biome_at), so
-## a wood is never a tile's square. Pine on hills and high ground, oak in the lowland woods; a bush under some clumps.
+## a wood is never a tile's square. Pine on hills and high ground, oak in the lowland woods; bushes round some clumps and a fringe of them at the wood's edge.
 ## realm/data/forest.json woods.
 var _pines: Array = []
 var _pines_ok := false
@@ -127,7 +127,7 @@ func _woodland(_meshes: Dictionary, _placed: Dictionary, rng: RandomNumberGenera
 					_clump(Forest, broad, k, r, biome, cx, cz, size, rng)
 
 
-## One clump of a wood (_woodland): its trees round (cx, cz), each on the same biome, a bush under some.
+## One clump of a wood (_woodland): its trees round (cx, cz), each on the same biome, bushes round its rim.
 func _clump(Forest: Variant, broad: bool, k: Dictionary, r: Dictionary, biome: String, cx: float, cz: float, size: Array, rng: RandomNumberGenerator) -> void:
 	var clump: Array = r.get("clump", [3, 7])
 	var reach := float(r.get("r", 0.35))
@@ -148,9 +148,19 @@ func _clump(Forest: Variant, broad: bool, k: Dictionary, r: Dictionary, biome: S
 		if not pine:
 			ps *= 0.85
 		_pines.append([kind, Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(ps, ps * rng.randf_range(0.9, 1.15), ps)), Vector3(wx, y - 0.03, wz))])
-	if rng.randf() < float(r.get("undergrowth", 0.3)):
+	# Bushes round the clump's rim: one now and then (undergrowth), more where the wood meets open land (woods.edge_bushes;
+	# WC3's tree lines end in a fringe of shrubs, never bare trunks on the lawn).
+	var eb: Array = k.get("edge_bushes", [0, 0])
+	var bushes := (1 if rng.randf() < float(r.get("undergrowth", 0.3)) else 0) + (rng.randi_range(int(eb[0]), int(eb[1])) if fringe else 0)
+	for b in bushes:
+		var ba := rng.randf() * TAU
+		var bd := reach * rng.randf_range(0.6, 1.25)
+		var bx := cx + cos(ba) * bd
+		var bz := cz + sin(ba) * bd
+		if not land.is_land(bx, bz) or land.height_at(bx, bz) < SHORE + float(k.get("shore_gap", 0.02)):
+			continue
 		var bsz := rng.randf_range(0.6, 1.1)
-		_pines.append([Forest.bush_kind(rng), Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3.ONE * bsz), Vector3(cx, land.height_at(cx, cz) - 0.02, cz))])
+		_pines.append([Forest.bush_kind(rng), Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3.ONE * bsz), Vector3(bx, land.height_at(bx, bz) - 0.02, bz))])
 
 
 ## Clears the wild plants and rocks within `radius` of `center` (terrain.clear_around, where a town stands).
