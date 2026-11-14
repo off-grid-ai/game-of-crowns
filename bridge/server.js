@@ -70,6 +70,7 @@ import * as Captains from "./captains.js";
 import * as Promises from "./promises.js";
 import * as Siegecraft from "./siegecraft.js";
 import * as Rivals from "./rivals.js";
+import * as Rebels from "./rebels.js";
 import * as Contagion from "./contagion.js";
 import * as Prices from "./prices.js";
 import { TURNING } from "./season.js";
@@ -187,7 +188,7 @@ function load(id) {
   court.spoils = () => meta.spoils ?? [];  // towns taken with allies beside the royal host (campaigns.js; characters.js spoils)
   arcs = new Arcs(P.base, court, record);
   arcsRunning = false;  // a new realm's stories start free of the last one's
-  court.onArcRuling = (arc, beat, option) => arc === "council" ? councilRuled(beat, option) : arc === "siege" ? siegeRuled(beat, option) : arc === "rival" ? Rivals.ruled(realmCtx(), beat, option) : arcs.rule(arc, beat, option);
+  court.onArcRuling = (arc, beat, option) => arc === "council" ? councilRuled(beat, option) : arc === "siege" ? siegeRuled(beat, option) : arc === "rival" ? Rivals.ruled(realmCtx(), beat, option) : arc === "rebel" ? Rebels.ruled(realmCtx(), beat, option) : arcs.rule(arc, beat, option);
   chatter?.stop();
   chatter = new Chatter(P.state, { world: () => world, turn: () => world?.turn ?? 0, minds: () => minds });
   stakes = new Stakes(P.state, record, endReign);
@@ -425,7 +426,7 @@ function applyStartOptions() {
 // The realm as the view sees it (GET /world): built in view.js.
 function worldView() {
   const v = View.worldView(realmCtx()), d = detail();
-  return { ...v, trade: Trade.list(v.cities, world?.turn ?? 0, (a, b) => (d?.players?.[a]?.atWarWith ?? []).includes(b)), hosts: Hosts.list({ world, meta }), banners: Hosts.banners({ world, meta }), warhosts: Hosts.warHosts({ world, meta }), battles: Battles.cards(meta, world?.turn), raids: Raids.list(meta, world), works: Treasury.worksOf(meta, world, crownNow()?.id), harvest: Harvest.view(meta, world?.turn ?? 0), royals: Royals.view(meta, world?.turn ?? 0), captains: Captains.list(meta, world), soldiers: Captains.soldiers(meta, world), promises: Promises.view(meta), trust: Promises.trust(meta), sieges: Siegecraft.list(meta), rival: Rivals.view(meta, world), contagion: Contagion.view(meta), plague: Contagion.history(meta), prices: Prices.view(meta) };  // the King's hosts and their orders, and how many more orders this season (hosts.js)
+  return { ...v, trade: Trade.list(v.cities, world?.turn ?? 0, (a, b) => (d?.players?.[a]?.atWarWith ?? []).includes(b)), hosts: Hosts.list({ world, meta }), banners: Hosts.banners({ world, meta }), warhosts: Hosts.warHosts({ world, meta }), battles: Battles.cards(meta, world?.turn), raids: Raids.list(meta, world), works: Treasury.worksOf(meta, world, crownNow()?.id), harvest: Harvest.view(meta, world?.turn ?? 0), royals: Royals.view(meta, world?.turn ?? 0), captains: Captains.list(meta, world), soldiers: Captains.soldiers(meta, world), promises: Promises.view(meta), trust: Promises.trust(meta), sieges: Siegecraft.list(meta), rival: Rivals.view(meta, world), rebels: Rebels.view(meta, world), contagion: Contagion.view(meta), plague: Contagion.history(meta), prices: Prices.view(meta) };  // the King's hosts and their orders, and how many more orders this season (hosts.js)
 }
 
 // The Hand's matters, read from the realm as it stands now.
@@ -556,7 +557,7 @@ function onEvent(line) {
   }
   if (ev.kind === "turn") return Season.turn(realmCtx(), ev);  // the turn's sequence (season.js)
   if (ev.kind === "attack") return Battles.struck(ev, world?.turn ?? 0);  // who struck where (battles.js)
-  if (ev.kind === "war_host") return Hosts.warpath(realmCtx(), ev, send);
+  if (ev.kind === "war_host") { if (ev.tag === "rebel") Rebels.risen(meta, ev, court); return Hosts.warpath(realmCtx(), ev, send); }  // a rebel's host is a rising too (rebels.js)
   if (ev.kind === "raid_goal") return Raids.goal(meta, ev);  // a raid makes for a royal work (raids.js)
   if (ev.kind === "raid_raised") return Rivals.raised(meta, ev);  // the rival King's raiders (rivals.js)
   if (ev.kind === "banners_joined") return Hosts.joined(realmCtx(), ev);  // banner men at the King's walls are his (hosts.js)  // a house's war host raised at home: it marches (hosts.js)

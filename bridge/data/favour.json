@@ -11,6 +11,8 @@
   "cool": 2
  },
   "turning": {"seasons": 2, "riseIn": 2},
-  "rebel": {"_": "A lord who raises his banners against the crown (characters.js rebel; CK3's faction war, Mount & Blade's rebel lord): his own host, host men plus perTown for each town his house holds, of kinds, raised at his town nearest the King's seat and marched on it by the road (realm_war_host, hosts.js warpath); at the walls it lays siege.", "host": 5, "perTown": 1, "kinds": ["Knights", "Pikemen", "Archers", "Catapult"]},
+  "rebel": {"_": "A lord who raises his banners against the crown (characters.js rebel; CK3's faction war, Mount & Blade's rebel lord): his own host, host men plus perTown for each town his house holds, of kinds, raised at his town nearest the King's seat and marched on it by the road (realm_war_host, hosts.js warpath); at the walls it lays siege.", "host": 5, "perTown": 1, "kinds": ["Knights", "Pikemen", "Archers", "Catapult"],
+    "terms": {"_": "His terms, sent from the road terms.after seasons into the march (rebels.js): his price in gold; granted, his host goes home (favour to his house and to the others, who see a King who can be marched on); refused, the others' favour.", "after": 1, "gold": 120, "grant": {"house": 15, "others": -4}, "refuse": {"others": 2}},
+    "crushed": {"_": "Every man of his host fallen: the lord before the King in chains (rebels.js). Hang (his house, the others), pardon (his house, the others), or ransom (up to gold from his house's chest; his house).", "hang": {"house": -40, "others": 3}, "pardon": {"house": 20, "others": -5}, "ransom": {"gold": 150, "house": -10}}},
   "grudge": {"_": "A grudge into the next reign (reign.js grudgeOf, server.js applyStartOptions): the great house coldest to the crown at a reign's end, if under cooling, starts the next reign this much colder (never under the start floor), and the chronicle says why.", "carry": 12}
 }
