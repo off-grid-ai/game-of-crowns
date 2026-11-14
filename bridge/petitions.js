@@ -11,6 +11,20 @@ import { heir as royalHeir } from "./royals.js";
 import fs from "node:fs";
 
 export const ANSWERS = {
+  // An ally's share of a town taken together (characters.js spoils): the town, gold, or nothing.
+  spoils({ p, c, opt, option, out }) {
+    Object.assign(out.favour, opt.favour ?? {});
+    const s = (this.spoils?.() ?? []).find((x) => x.city === p.city && x.turn === p.spoilTurn);
+    if (s) s.settled = true;
+    const town = cityName(p.city);
+    if (option === "give") {
+      out.lua.push(Lua.transferCity(p.city, c.playerId));
+      out.text = `The King gives ${town} to ${c.house}, for the blood they shed beside his own.`;
+      this.remember(c.id, `The King gave us ${town} for our dead.`);
+    }
+    if (option === "pay") { out.text = `Gold goes to ${c.house} for its dead before ${town}. The town stays the crown's.`; this.remember(c.id, `The King paid us for our dead at ${town}.`); }
+    if (option === "refuse") { out.text = `The King keeps ${town}. ${c.name} rides home with his dead and nothing else.`; this.remember(c.id, `We bled for the King at ${town}, and he kept it all.`); }
+  },
   // A lord's child offered for the King's heir (characters.js royalwed): wed, the child goes to court as the heir's
   // spouse (royals.js keeps the heir's match; crowned, they are the consort), and that house is bound to the crown.
   royalwed({ p, c, opt, option, out }) {

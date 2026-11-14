@@ -1,0 +1,8 @@
+{
+ "_": "Allies are rivals (Bannerlord's shared spoils; game theory's shared rewards): when a town falls to the royal host and sworn houses marched with it (campaigns.js), the lord of the ally who marched comes to court for his share within seasons. give: the town is his house's (him, and every other ally who marched, others); pay: gold (cost) from the crown's chest; refuse: he goes home with nothing. weight: how strongly the plea comes.",
+ "seasons": 4,
+ "weight": 8,
+ "give": { "him": 20, "others": -8 },
+ "pay": { "cost": 120, "him": 8 },
+ "refuse": { "him": -15 }
+}

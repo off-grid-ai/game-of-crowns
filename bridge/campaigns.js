@@ -221,6 +221,8 @@ export function resolveCampaigns(ctx, turn) {
       end();
       shiftFavour({ [c.house]: -20 }, "the royal host");
       shiftFavour(Object.fromEntries((c.allies ?? []).map((id) => [id, 6])), "the royal host");
+      // The allies who marched want their share (characters.js spoils; Bannerlord's allies are rivals).
+      if (town && (c.allies ?? []).length) meta.spoils = [...(meta.spoils ?? []).filter((s) => turn - s.turn < 8), { city: c.city, allies: c.allies, turn, settled: false }];
       deed(kingDeeds.tagsFor("realm", "sack"), { act: false, place: cityName(c.city) });
       record({ turn, kind: "sack", text: `${cityName(c.city)} falls to the royal host: ${why} ${houseFor(foe).name} has learned what the crown's anger costs.`, city: c.city });
       continue;

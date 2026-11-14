@@ -17,6 +17,7 @@ import { decide } from "./claude.js";
 import { calendar, SEASONS_PER_YEAR, yearsIn, isYearEnd } from "./calendar.js";
 import { ANSWERS } from "./petitions.js";
 import { PROMISES as PR } from "./promises.js";
+const SP = JSON.parse(fs.readFileSync(new URL("./data/spoils.json", import.meta.url), "utf8"));
 import { heir as royalHeir, MATCH as RM, REGENCY, isRegency } from "./royals.js";
 import { BANDS } from "./favour.js";
 import * as names from "./names.js";
@@ -999,6 +1000,19 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
         { id: "arrange", label: `Make the match: ${mine.name} and ${theirs.name}`, hint: `${c.house} +${AMB.match.arrange.him} · ${otherLord.house} +${AMB.match.arrange.them} · the two houses bound`, favour: { [c.playerId]: AMB.match.arrange.him, [otherLord.playerId]: AMB.match.arrange.them } },
         { id: "refuse", label: "Refuse the match", hint: `${c.house} ${AMB.match.refuse.him}`, favour: { [c.playerId]: AMB.match.refuse.him } },
       ] }) });
+    // Allies are rivals (data/spoils.json; Bannerlord): a town just taken with this lord's house marching beside the
+    // royal host, and he wants his share of it.
+    const spoil = (this.spoils?.() ?? []).find((s) => !s.settled && s.allies.includes(c.playerId) && turn - s.turn <= SP.seasons && world.cities.some((x) => x.id === s.city && x.owner === crownOf(world)?.id));
+    if (c.rank === "lord" && spoil) candidates.push({ kind: "spoils", weight: SP.weight, make: () => {
+      const town = cityName(spoil.city);
+      const others = spoil.allies.filter((id) => id !== c.playerId);
+      return { kind: "spoils", city: spoil.city, spoilTurn: spoil.turn, text: `${c.name} of ${c.house}: "My men bled under the walls of ${town} beside yours, Your Grace. ${c.house} asks its share: the town itself, or enough gold to bury our dead."`,
+        facts: facts(c.playerId), options: [
+          { id: "give", label: `Give ${town} to ${c.house}`, hint: `${c.house} +${SP.give.him}${others.length ? ` · the other allies ${SP.give.others}` : ""} · the crown loses the town`, favour: { [c.playerId]: SP.give.him, ...Object.fromEntries(others.map((id) => [id, SP.give.others])) } },
+          { id: "pay", label: `Pay them for their dead (${SP.pay.cost} gold)`, hint: `${c.house} +${SP.pay.him}`, cost: SP.pay.cost, favour: { [c.playerId]: SP.pay.him } },
+          { id: "refuse", label: "The spoils are the crown's", hint: `${c.house} ${SP.refuse.him} · they will think twice before marching again`, favour: { [c.playerId]: SP.refuse.him } },
+        ] };
+    } });
     // The King's heir is of age and unwed (royals.js): a great lord offers his own child of the other sex for the heir's
     // hand (CK3's royal match: the crown's marriage binds a house). data/royals.json match.
     const rh = c.rank === "lord" ? this.royals?.() : null;

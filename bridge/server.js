@@ -180,7 +180,8 @@ function load(id) {
   court.deedsOf = (pid) => (deeds[pid] ??= []);
   court.royals = () => meta.royals;
   court.onPromise = (p) => Promises.make(meta, p);
-  court.promiseTrust = () => Promises.trust(meta);  // a pledge is worth what his kept promises make it  // the King's word given at court (promises.js)  // the King's household (royals.js): his heir's match is a court matter
+  court.promiseTrust = () => Promises.trust(meta);
+  court.spoils = () => meta.spoils ?? [];  // towns taken with allies beside the royal host (campaigns.js; characters.js spoils)  // a pledge is worth what his kept promises make it  // the King's word given at court (promises.js)  // the King's household (royals.js): his heir's match is a court matter
   arcs = new Arcs(P.base, court, record);
   arcsRunning = false;  // a new realm's stories start free of the last one's
   court.onArcRuling = (arc, beat, option) => arc === "council" ? councilRuled(beat, option) : arc === "siege" ? siegeRuled(beat, option) : arcs.rule(arc, beat, option);
