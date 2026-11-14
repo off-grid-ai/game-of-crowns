@@ -196,6 +196,7 @@ func _people(d: Dictionary, full := true) -> void:
 		for i in int(wk.get("count", 3)):
 			f["nodes"].append(_walker(d["gate"], colour, wk, scale, i))
 	if not full:
+		_off_unseen(f)
 		return  # MID: the walls and the gate only
 	for p in d["door"]:
 		var g: Node3D = main.scenes.people.make(_rng, "soldier", colour.lerp(Color.WHITE, 0.3), "adult")
@@ -207,6 +208,14 @@ func _people(d: Dictionary, full := true) -> void:
 		main.scenes.people.play(g, "Idle", 1.0)
 		f["nodes"].append(g)
 	preload("res://scripts/castle_folk.gd").dress(self, main, xf, d["sp"], colour, f)
+	_off_unseen(f)
+
+
+## Off screen, nothing of a castle's people runs (view_tier.gd off_when_unseen); props have no Motion and stay.
+static func _off_unseen(f: Dictionary) -> void:
+	for n in f["nodes"]:
+		if n is Node3D and (n as Node3D).get_node_or_null("Motion") != null and (n as Node3D).get_node_or_null("OnScreen") == null:
+			ViewTier.off_when_unseen(n)
 
 
 ## Frees a castle's people (_people), when the camera leaves it or the castle falls.

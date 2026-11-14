@@ -465,6 +465,7 @@ func _spawn(id: int) -> void:
 		# later): never first glimpsed standing inside a house.
 		a["placed"] = false
 		person.visible = false
+		ViewTier.off_when_unseen(person)
 		person.set_meta("folk", {"town": int(id), "i": int(a["i"]), "role": String(a["role"])})  # who they are (who_is)
 		list.append(a)
 		# Everyone gets a mind (npc_mind.gd, LimboAI) that picks their activities by calling, the day and the

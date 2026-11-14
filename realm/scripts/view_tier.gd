@@ -121,3 +121,14 @@ func _seen(at: Vector3, radius: float) -> bool:
 		if pl.distance_to(at) > r:  # Godot's frustum planes face outward
 			return false
 	return true
+
+
+## Off screen is off: a body (a villager, a castle's guard) stops processing while its box, grown by LEAD, is
+## off the screen, and goes on from where it was once it is back (Godot's VisibleOnScreenEnabler3D on the body: its
+## mover, its timers' walks and its mind, which anim_lod.gd skips while it can't process). Not for what the
+## simulation needs to arrive (a company Freeciv marches): those keep their own pace off screen.
+static func off_when_unseen(body: Node3D, box := AABB(Vector3(-0.12, 0.0, -0.12), Vector3(0.24, 0.3, 0.24))) -> void:
+	var e := VisibleOnScreenEnabler3D.new()
+	e.name = "OnScreen"
+	e.aabb = box.grow(LEAD)
+	body.add_child(e)
