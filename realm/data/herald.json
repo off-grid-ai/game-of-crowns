@@ -62,12 +62,15 @@
    { "above": 35, "says": "his master is wary of us" },
    { "above": 0, "says": "his master is friendly" }
   ],
-  "court": { "_": "His demand at court (court_panel.gd; bridge rivals.js, /world rival.demand {kind, town} and war): stakes: what rides on the answer by demand kind ({town}, {realm}, {king}, {waves}: his attacks so far);",
+  "court": { "_": "His demand at court (court_panel.gd; bridge rivals.js, /world rival.demand {kind, town} and war): backed / backed_one / unbacked: what stands behind his words, his companies in the realm ({n}: /world rival raiders and his host's units); stakes: what rides on the answer by demand kind ({town}, {realm}, {king}, {waves}: his attacks so far);",
    "stakes": {
     "tribute": "He asks gold. Refused, his master's anger grows, and an angry neighbour comes back for land.",
     "land": "He asks for {town}. Refused, it is war with {realm} over {town}.",
     "peace": "{realm}'s host has come at {town} {waves}. He offers peace, at a price."
    },
+   "backed": "Behind his words: {n} of his companies in the realm now.",
+   "backed_one": "Behind his words: one of his companies in the realm now.",
+   "unbacked": "Behind his words, for now: nothing but the envoy.",
    "waves_one": "once",
    "waves_many": "{n} times"
   } }

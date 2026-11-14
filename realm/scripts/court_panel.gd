@@ -400,6 +400,22 @@ func _show_audience() -> void:
 			var sl := T.datum(stakes, T.SIZE_DESC, T.DANGER if kind != "tribute" else T.TEXT_2)
 			sl.autowrap_mode = TextServer.AUTOWRAP_WORD
 			v.add_child(sl)
+		# What stands behind his words (casebook, Signals and bluffs: a claim weighs what it costs to make): his men in
+		# the realm now (raiders on the border, his host if it has come), or nothing yet but the envoy's mouth.
+		var ids := {}
+		for r_id in rival.get("raiders", []):
+			ids[int(r_id)] = true
+		var his := int(rival.get("player", -1)) if rival.get("player") != null else -1
+		if his >= 0:
+			for u in st.rec("units", []):
+				if int(u.get("owner", -2)) == his:
+					ids[int(u.get("id", -1))] = true
+		var men := ids.size()
+		var backs := (String(rw.get("backed_one", "")) if men == 1 else String(rw.get("backed", "")).replace("{n}", str(men))) if men > 0 else String(rw.get("unbacked", ""))
+		if backs != "":
+			var bl := T.datum(backs, T.SIZE_DESC, T.TEXT_2 if men > 0 else T.TEXT_3)
+			bl.autowrap_mode = TextServer.AUTOWRAP_WORD
+			v.add_child(bl)
 	# A lord in arms (bridge rebels.js, arc "rebel"; CK3's faction demands, Mount & Blade's lord taken in the field):
 	# his host on the road, or crushed and he in chains (herald.json rebel).
 	if String(p.get("arc", "")) == "rebel":
