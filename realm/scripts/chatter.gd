@@ -7,6 +7,7 @@ const PerfTools := preload("res://scripts/perf_tools.gd")  # the frame-cost prob
 ## SPOKEN, aloud in that person's own voice, quieter further off).
 
 const Settings := preload("res://scripts/settings.gd")
+const Data := preload("res://scripts/data.gd")
 
 var villagers: Node3D  # villagers.gd: who stands in which gathering
 var towns: Node3D
@@ -270,6 +271,9 @@ func mind_line(person: Node3D, better := Callable()) -> Dictionary:
 	var said: Dictionary = _said_by.get(pid, {})
 	if not said.is_empty() and Time.get_ticks_msec() - int(said["ms"]) < SAID_FRESH_MS:
 		return {"trade": trade, "line": said["text"], "own": true}
+	var word := ruling_word(town)
+	if word != "":
+		return {"trade": trade, "line": word, "own": false, "topic": "ruling"}  # the King's ruling here, while it stands
 	var topic := _topic_of(person, town)
 	var group := String(MIND_GROUPS.get(role, "common"))
 	var lines: Array = MIND_LINES[topic].get(group, MIND_LINES[topic]["common"])
@@ -307,6 +311,17 @@ func _topic_of(person: Node3D, town: int) -> String:
 	if season == "autumn":
 		return "harvest"
 	return "everyday"
+
+
+## What a town says of the King's ruling there while it stands (/world's ruling, bridge rulings.js: two seasons), its
+## loudest rumour (/world's thoughts, chatter.js thoughtsOf: the ruling planted one, thoughts.json ruling); "" when no
+## ruling stands there or nobody's talking yet.
+func ruling_word(town: int) -> String:
+	var c: Dictionary = towns.towns.get(town, {}).get("data", {}) if towns else {}
+	var th: Array = c.get("thoughts", []) if c.get("thoughts") is Array else []
+	if not (c.get("ruling") is Dictionary) or th.is_empty():
+		return ""
+	return String(th[0])
 
 
 func _king_of(person: Node3D) -> String:
@@ -386,6 +401,20 @@ func _ask(town: int, g: Dictionary, key: String) -> void:
 func _own_words(town: int, g: Dictionary, key: String) -> void:
 	if not is_inside_tree() or _playing.has(key) or not _talking(town, int(g["key"])):
 		return
+	var who: Array = g["who"]
+	# The King's ruling here, while it stands (the bridge's rulings.js, two seasons): the talk is of it, the town's own
+	# rumour of it first (its thoughts, chatter.js: thoughts.json ruling), and an answer (realm thoughts.json
+	# ruling_replies). RCT's guests think about what was just done to their park.
+	var word := ruling_word(town)
+	if word != "":
+		var replies: Array = Data.value("thoughts", "ruling_replies", [])
+		var n0 := int(_said.get("ruling", randi()))
+		_said["ruling"] = n0 + 1
+		var said := [{"who": int(who[0]), "text": word}]
+		if not replies.is_empty() and who.size() > 1:
+			said.append({"who": int(who[1]), "text": String(replies[n0 % replies.size()])})
+		_play(town, g, key, {"lines": said})
+		return
 	var topic := String(g.get("topic", ""))
 	var set_name := SceneKinds.tone(topic) if topic != "" else ""
 	if not OWN_WORDS.has(set_name):
@@ -393,7 +422,6 @@ func _own_words(town: int, g: Dictionary, key: String) -> void:
 	var sets: Array = OWN_WORDS[set_name]
 	var n := int(_said.get(set_name, randi() % sets.size()))
 	_said[set_name] = n + 1
-	var who: Array = g["who"]
 	var lines := []
 	for k in (sets[n % sets.size()] as Array).size():
 		lines.append({"who": int(who[k % who.size()]), "text": sets[n % sets.size()][k]})

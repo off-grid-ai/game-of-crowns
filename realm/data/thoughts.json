@@ -1,5 +1,8 @@
 {
-  "_": "A town's talk under its name (--thoughts; RCT's guest thoughts): what the town says, shown only near it, one line at a time. The words come from the bridge (bridge/data/thoughts.json, chatter.js). Tune here. width: the line's widest, in points; lines: the most lines it wraps to before an ellipsis.",
-  "width": 300, "lines": 2, "near": 30.0,
-  "cycle_sec": 6.0
+  "_": "A town's talk under its name (--thoughts; RCT's guest thoughts): what the town says, shown only near it, one line at a time. The words come from the bridge (bridge/data/thoughts.json, chatter.js). Tune here. width: the line's widest, in points; lines: the most lines it wraps to before an ellipsis. ruling_replies: the answer when two talk of the King's ruling in their town (chatter.gd: the town's rumour of it first, then one of these).",
+  "width": 300,
+  "lines": 2,
+  "near": 30.0,
+  "cycle_sec": 6.0,
+  "ruling_replies": ["Aye, I heard the same at the well.", "The King knows his own mind, then.", "And who pays for it in the end? Us.", "Well. We'll see if it lasts the winter.", "Keep your voice down. The steward's men are about.", "Good. About time someone at court listened.", "My brother says the same, and he's never right.", "It'll be different by harvest, mark me."]
 }
