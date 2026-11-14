@@ -55,7 +55,7 @@ export function rule(ctx, id, option) {
   }
   if (petition) Royals.ruled(ctx, petition.kind === "arc" ? petition.arc : petition.kind, option);  // against his own nature, it weighs on the King (royals.js)
   // The one who asked remembers what the King answered, in their own words.
-  if (petition && asked) court.remember(petition.from, `I went before the King, and he ruled: ${String(asked.label ?? asked.id).toLowerCase()}.`);
+  if (petition && asked) court.remember(petition.from, `I went before the King, and he ruled: ${lower(String(asked.label ?? asked.id))}.`);
   const crownNow = crownOf(world);
   if (out.cost && (crownNow?.gold ?? 0) < out.cost) return { error: crowns(`the treasury holds ${crownNow?.gold ?? 0} gold`) };
   if (out.cost) {
@@ -72,7 +72,7 @@ export function rule(ctx, id, option) {
   if (asker && asked && court.deedsOf) {
     const d = Number(out.favour?.[asker.playerId] ?? 0);
     const matter = petition.thread ?? null;
-    const what = `heard ${matter ? `us on ${matter}` : "our plea"} at court and ruled: ${String(asked.label ?? asked.id).replace(/ \(.*\)$/, "").toLowerCase()}`;
+    const what = `heard ${matter ? `us on ${matter}` : "our plea"} at court and ruled: ${lower(String(asked.label ?? asked.id).replace(/ \(.*\)$/, ""))}`;
     // Opening v2: the first ruling that slights its asker comes back about five minutes in, as the first setback (opening.js).
     // Opening v2: the first ruling that cools a house comes back about five minutes in, as the first setback
     // (opening.js): from its asker when it slights him, else from the house it cooled most, by its lord.
@@ -81,11 +81,11 @@ export function rule(ctx, id, option) {
     recordRuling(court.deedsOf(asker.playerId), { d, what, by: asker.id, turn: world.turn ?? 0, ...(late != null && d < 0 ? { due: late, setback: true } : {}) });
     if (late != null && d >= 0 && cooled) {
       const lord = court.lordOfHouse(cooled[0]);
-      recordRuling(court.deedsOf(cooled[0]), { d: cooled[1], what: `ruled for ${asker.house} at court, against us: ${String(asked.label ?? asked.id).replace(/ \(.*\)$/, "").toLowerCase()}`, by: lord.id, turn: world.turn ?? 0, due: late, setback: true });
+      recordRuling(court.deedsOf(cooled[0]), { d: cooled[1], what: `ruled for ${asker.house} at court, against us: ${lower(String(asked.label ?? asked.id).replace(/ \(.*\)$/, ""))}`, by: lord.id, turn: world.turn ?? 0, due: late, setback: true });
     }
   }
   // Every ruling is told, even one whose answer has no words of its own written for it.
-  if (!String(out.text ?? "").trim()) out.text = `The King gives his answer${petition ? ` to ${petition.name}` : ""}: ${String(asked?.label ?? option).replace(/ \(.*\)$/, "").toLowerCase()}.`;
+  if (!String(out.text ?? "").trim()) out.text = `The King gives his answer${petition ? ` to ${petition.name}` : ""}: ${lower(String(asked?.label ?? option).replace(/ \(.*\)$/, ""))}.`;
   record({ turn: world.turn, kind: "decree", text: out.text });
   meta.lastRuling = out.text;  // the save card's line (reign.js saveCard)
   rulingScene(ctx, id, option, out);

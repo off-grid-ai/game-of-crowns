@@ -908,9 +908,16 @@ func _see_it(it: Dictionary) -> void:
 		_court_panel.remove_child(c)
 		c.queue_free()
 	_court_panel.visible = true
+	# In a "Scroll" as the audience is, so ui.fit_centre measures the card by its words (CK3's event window, sized to
+	# its text): it was left the audience's full height, mostly empty glass below Close the court (Mac's screenshot).
+	var scroll := ScrollContainer.new()
+	scroll.name = "Scroll"
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_court_panel.add_child(scroll)
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", T.GAP_SECTION)
-	_court_panel.add_child(v)
+	v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(v)
 	ui.ease_in(v)  # the card turns over, eased
 	v.add_child(T.label("The King has ruled"))
 	var what := Label.new()
@@ -927,9 +934,9 @@ func _see_it(it: Dictionary) -> void:
 	result.custom_minimum_size = Vector2(320, 0)
 	result.add_theme_font_size_override("font_size", T.SIZE_BODY)
 	v.add_child(result)
-	var on := ui.btn("Next matter  ·  %d waiting" % _petitions.size() if not _petitions.is_empty() else "Close the court", _after_seeing.bind(it))
+	# The key on the button itself (CK3's and Warcraft III's hotkey on the button), no tooltip over the words.
+	var on := ui.btn(("Next matter  ·  %d waiting" % _petitions.size() if not _petitions.is_empty() else "Close the court") + "   [Enter]", _after_seeing.bind(it))
 	on.focus_mode = Control.FOCUS_ALL  # Enter or Space presses it
-	on.tooltip_text = "Enter or Space"  # the key, in a tooltip, not a strip on the card (no key strips on screen)
 	v.add_child(on)
 	on.grab_focus.call_deferred()
 	# The card fits its words (CK3's event outcome), not the matter's full height before it.
