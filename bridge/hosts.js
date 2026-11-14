@@ -65,7 +65,8 @@ export function list(ctx) {
         seasons: o.x != null ? Math.ceil(Math.max(0, roadTo(lead, o)) / HOSTS.speed) : 0, face: o.face ?? null,
         sea: o.sea ? { phase: o.sea.phase, coast: o.sea.coast, landing: o.sea.landing, ships: o.sea.ships, hulls: o.sea.hulls ?? [] } : null } : null,
       aboard: o?.sea?.phase === "raised" || o?.sea?.phase === "sail",  // at sea in the ships the crown raised (its crossing: hosts.js crossing)
-      ordersLeft: ordersLeft(ctx, lead.id),  // this host's orders still to give this season (data/hosts.json ordersPerHost)
+      ordersLeft: ordersLeft(ctx, lead.id),
+      banners: o?.joined ?? null,  // banner men just come in (joined): {owner: their house, from: the ids they marched under, city}  // this host's orders still to give this season (data/hosts.json ordersPerHost)
     };
   }).sort((a, b) => b.companies - a.companies);
 }
@@ -363,6 +364,28 @@ export function warpath(ctx, ev, send) {
   save(meta, [...rest, { kind: "warpath", owner, units: ids, city, since: Number(ev.turn), raised: true, ...(ev.join ? { join: true } : {}) }]);
 }
 
+// Banner men at the King's walls became his companies there (realmrules realm_banners_join: banners_joined): they
+// stand as a host of their own at the town for a season (a hold, joined: the house and the men who came), so the view
+// marches the column it drew on the road in through the gate (units.gd, a host at a town); then they are the town's.
+export function joined(ctx, ev) {
+  const { meta } = ctx;
+  const ids = String(ev.units ?? "").split(",").map(Number).filter((id) => id > 0);
+  if (!ids.length) return;
+  const from = String(ev.from ?? "").split(",").map(Number).filter((id) => id > 0);
+  save(meta, [...(meta.hostOrders ?? []), { kind: "hold", units: ids, since: Number(ev.turn), raised: true, joined: { owner: Number(ev.owner), from, city: Number(ev.city) } }]);
+}
+
+// Banner men on the road to the King's town (warpath orders with join), for /world: [{owner, units, city, x, y}],
+// x, y the tile of their lead company (its lowest id), units the companies still living. The one owner of the fact.
+export function banners({ world, meta }) {
+  return (meta?.hostOrders ?? []).filter((o) => o.kind === "warpath" && o.join).map((o) => {
+    const byId = new Map(soldiersOf(world, o.owner).map((u) => [u.id, u]));
+    const units = o.units.filter((id) => byId.has(id));
+    const lead = units.length ? byId.get(Math.min(...units)) : null;
+    return lead ? { owner: o.owner, units, city: o.city, x: lead.x, y: lead.y } : null;
+  }).filter(Boolean);
+}
+
 // The seasons a host takes by the road from one place to another at the hosts' speed (cheb distance where no land
 // way is known): a march set off early so it arrives on a given season (director.js: the finale's host).
 export function marchSeasons(from, to) {
@@ -524,6 +547,7 @@ export function season(ctx, turn) {
       next.push({ ...o, units, far });
       continue;
     }
+    if (o.joined && turn > (o.since ?? 0) + 1) continue;  // banner men a season in: the town's men now, one host with them
     if (o.x == null) { next.push({ ...o, units }); continue; }
     if (o.kind === "attack") {
       // The foe's men are followed where they go; gone (fallen, or home behind walls), the host stands.

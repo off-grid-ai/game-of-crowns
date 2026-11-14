@@ -670,20 +670,25 @@ function realm_banners(who, city_id, n)
 end
 
 -- Banner men at the King's walls join the royal host: Freeciv 3.2's Lua can't give a unit to another player, so each
--- is taken off and one of his kind raised in the town for its holder.
+-- is taken off and one of his kind raised in the town for its holder; reports banners_joined (the house, the men who
+-- came, the companies they are now: hosts.js joined).
 function realm_banners_join(ids, city_id)
   local c = find.city(nil, city_id)
   if not c then return end
-  local kinds = {}
+  local owner, from, made = nil, {}, {}
   for id in tostring(ids or ""):gmatch("%d+") do
     local u = find.unit(nil, tonumber(id))
     if u then
-      kinds[#kinds + 1] = u.utype:rule_name()
+      local t = u.utype
+      owner = owner or u.owner.id
+      from[#from + 1] = tostring(u.id)
       edit.unit_kill(u, "disbanded", nil)
+      local n = edit.create_unit(c.owner, c.tile, t, 1, c, -1)
+      if n then made[#made + 1] = tostring(n.id) end
     end
   end
-  if #kinds > 0 then realm_levy(city_id, table.concat(kinds, ","), 1) end
-  log.normal("BANNERS %d men join the host at %s", #kinds, c.name)
+  if #made > 0 then emit("banners_joined", {owner = owner, city = c.id, from = table.concat(from, ","), units = table.concat(made, ",")}) end
+  log.normal("BANNERS %d men join the host at %s", #made, c.name)
 end
 
 -- Men without banners: a raid is an event, not a standing army. Freeciv's own barbarians are raised beside a

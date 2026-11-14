@@ -395,7 +395,7 @@ function applyStartOptions() {
 // What view.js needs to build the /world answer, read fresh on every call.
 // The realm as the view sees it (GET /world): built in view.js.
 function worldView() {
-  return { ...View.worldView(realmCtx()), hosts: Hosts.list({ world, meta }) };  // the King's hosts and their orders, and how many more orders this season (hosts.js)
+  return { ...View.worldView(realmCtx()), hosts: Hosts.list({ world, meta }), banners: Hosts.banners({ world, meta }) };  // the King's hosts and their orders, and how many more orders this season (hosts.js)
 }
 
 // The Hand's matters, read from the realm as it stands now.
@@ -526,7 +526,8 @@ function onEvent(line) {
   }
   if (ev.kind === "turn") return Season.turn(realmCtx(), ev);  // the turn's sequence (season.js)
   if (ev.kind === "attack") return Battles.struck(ev, world?.turn ?? 0);  // who struck where (battles.js)
-  if (ev.kind === "war_host") return Hosts.warpath(realmCtx(), ev, send);  // a house's war host raised at home: it marches (hosts.js)
+  if (ev.kind === "war_host") return Hosts.warpath(realmCtx(), ev, send);
+  if (ev.kind === "banners_joined") return Hosts.joined(realmCtx(), ev);  // banner men at the King's walls are his (hosts.js)  // a house's war host raised at home: it marches (hosts.js)
   // Freeciv fought the King's assault (realm_assault): the view storms the siege and ends it as Freeciv did (campaigns.js).
   if (ev.kind === "assault") { const storm = Camp.stormScene(world, ev, crownNow()?.id); if (storm) scene("storm", storm); return; }
   const town = ev.city !== undefined ? world?.cities?.find((c) => c.id === Number(ev.city)) : null;
