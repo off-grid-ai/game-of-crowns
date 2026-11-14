@@ -498,9 +498,14 @@ func _ready() -> void:
 	ui.petition_answered.connect(func(_id, _o): sound.ui("seal"))  # a ruling is sealed at the click too
 	ui.event_chosen.connect(func(i):
 		sound.ui("seal")
+		# Seen where it lands, as a ruling is: the answer becomes the latest news at the card's town (edge arrow, Space).
+		var up: Dictionary = ui.events._up
+		var at: Vector3 = terrain.world_pos(float(up["x"]), float(up["y"])) if up.get("x") != null and up.get("y") != null else Vector3.INF
 		bridge.event_answer(i, func(ok, text):
 			if not ok:
 				sound.ui("error")
+			elif at != Vector3.INF and String(text) != "":
+				news.point_at(at, String(text), func(): pass)
 			ui.events.result(ok, text)))
 	ui.event_lapsed.connect(func(): sound.ui("lapse"))  # an event's cost landing: a bell, not to be missed
 	ui.event_came.connect(func(): sound.ui("event"))
