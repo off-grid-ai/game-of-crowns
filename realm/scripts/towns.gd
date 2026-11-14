@@ -836,6 +836,17 @@ func _town_wall(root: Node3D, center: Vector3, edge: PackedVector2Array, ways: A
 				var hit: Variant = Geometry2D.segment_intersects_segment(a, b, way[j], way[j + 1])
 				if hit != null and gates.all(func(g): return (g[0] as Vector2).distance_to(hit) > gate_half * 2.0):
 					gates.append([hit, n])
+	# Where a lane crosses the line: a postern, the wall's only other gap. A lane that runs beside the wall or ends
+	# short of it leaves it whole (g38 landuse: a gap round every lane within 2.5 m cut the grid town's wall, whose
+	# edge lanes run along it, into loose stretches standing in the fields).
+	var posterns: Array = []
+	for i in line.size():
+		for way: PackedVector2Array in ways:
+			for j in way.size() - 1:
+				var hit: Variant = Geometry2D.segment_intersects_segment(line[i], line[(i + 1) % line.size()], way[j], way[j + 1])
+				if hit != null:
+					posterns.append(hit)
+	var postern_half := float(k.get("postern_half_m", 2.0)) * S
 	var bays: Array = []
 	var towers: Array = []
 	var turn := deg_to_rad(float(k.get("turn_deg", 20.0)))
@@ -847,7 +858,7 @@ func _town_wall(root: Node3D, center: Vector3, edge: PackedVector2Array, ways: A
 			return false
 		if gates.any(func(g): return (g[0] as Vector2).distance_to(q) < gate_half):
 			return false
-		return not TownPlots.near_ways(q, ways, 0.3)  # a lane's mouth: a gap
+		return posterns.all(func(h): return (h as Vector2).distance_to(q) >= postern_half)
 	for i in line.size():
 		var a: Vector2 = line[i]
 		var b: Vector2 = line[(i + 1) % line.size()]

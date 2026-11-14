@@ -596,3 +596,4 @@ Switches (`--name`) go after `--` on the game's command line.
 - The muster's lens low and along the column (g37; 03-army): `realm/data/army.json` `camera.musterPitch` 28 degrees, `musterHold` 0.4 of the column's length (was 0.75), `musterOff` 0.35 rad off its line (was 0.5).
 - A lord's loyalty in words on his sheet: `realm/data/royal_sheet.json` `lord_loyalty` (bands by above, 0..100) and `lord_loyalty_danger` (30: red below).
 - Event cards that have come before come less often: `bridge/data/events.json` `settings.fade` (1: weight / (1 + fade x times drawn this reign)).
+- A town wall closed round its town (g38 landuse: loose stretches in the fields): `realm/data/towns.json` `town_wall.postern_half_m` (2.0 m): the gap either side of where a lane crosses the wall; a lane beside it leaves it whole.
