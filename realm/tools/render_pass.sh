@@ -33,6 +33,7 @@
 #   face     the same host given a line by a right drag (its own reign: one order a season a host; READY 8)
 #   walls    Kingsmere's walls whole, from outside and low (01-town)
 #   breach   a breached section beside whole ones (--siege --wall-demo, no storm; 04-siege)
+#   winter   Kingsmere under snow at the town view and drawn back (ground, roofs, leaves; the tracks through it)
 #   seasons  the wood's edge and the fields in summer and in autumn (the nature set's seasonal leaves; 01-town)
 #   host5    the host in column at 03-army's framing with all five kinds, 1500 men in the crown's colours (03-army)
 #   castle   Kingsmere's castle close from its gate side (01-town; the Meshy castle set)
@@ -50,7 +51,7 @@ STAMP=$(date +%H%M)
 OUT=${OUT:-/tmp/goc-pass/$STAMP}
 PORT=${PORT:-8789}; FC=${FC:-5558}
 API=localhost:$PORT
-ONLY=${ONLY:-"town landuse realm muster cavalry battle siege command face walls breach seasons host5 castle street cities crossing raid"}
+ONLY=${ONLY:-"town landuse realm muster cavalry battle siege command face walls breach seasons winter host5 castle street cities crossing raid"}
 # The pass runs from its own copy of this script: zsh reads a script as it runs, so a commit to it mid-pass broke the
 # first full pass (2159: 'parse error near fi' at line 229, ten lines added above it at 22:00 while it ran).
 if [ -z "${RENDER_PASS_SELF:-}" ]; then
@@ -244,6 +245,15 @@ if want seasons; then
     shot season_$se 1500 film $SW --season=$se
     side season_$se $OUT/frames/season_$se/$se.png $TARGETS/01-town.jpg "the wood's edge and the fields in $se"
   done
+fi
+# Winter on Kingsmere at the town view and drawn back (--season=winter): snow on the ground, the roofs and the leaves,
+# the roads and paths as trodden lines through it (Look: snow passed; ground.json winter, snow.gdshader).
+if want winter; then
+  { print "wait 30"; print "home Kingsmere"; print "wait 6"; print "home Kingsmere"; print "wait 3"; print "snap town"
+    print "home Kingsmere 0 4"; print "wait 6"; print "snap land"; print "look end"; } > $OUT/winter.play
+  shot winter 1500 film $SW --season=winter
+  side winter $OUT/frames/winter/town.png $TARGETS/01-town.jpg "winter on Kingsmere at the town view"
+  side winter_land $OUT/frames/winter/land.png $TARGETS/01-town.jpg "winter round Kingsmere, drawn back"
 fi
 # The host at 03-army's framing with all five kinds (pikemen, men-at-arms, archers, knights, cavalry): army.json's
 # shares (0.3, 0.25, 0.2, 0.1, 0.15) give every kind a regiment at about ten regiments, so 1500 men, in column on the
