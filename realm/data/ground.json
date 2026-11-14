@@ -32,5 +32,5 @@
   "macro": { "a": [0.66, 0.8, 0.68], "b": [1.06, 1.08, 0.9], "scale": 0.05, "fine": 0.5 },
   "dual": { "_": "land3d.gd: the grass's second, larger scale blended in between near and far (game units from the lens), reduction its size against the first.", "near": 3.0, "far": 12.0, "reduction": 0.3 },
   "peaks": { "_": "land3d.gd _control_from_land, terrain.gd _layers_at: snow on the mountains, from snow[0] game units, whole at snow[1] (7.4 to 9.6: only the peaks, soft-edged over 2.2 units; g34: the snow lay as flat white paper patches; 6.2 to 7.8 in 922ecaa2 spread them further). tiers.to: above it the hills stop stepping, so peaks rise whole.", "snow": [7.4, 9.6] },
-  "wild": { "reach": 24.0 }
+  "wild": { "reach": 24.0, "bush_reach": 60.0, "_bush_reach": "vegetation.gd: bushes drawn out to this from the camera (was reach x 1.5, 36: the middle zoom's open country lost them, WC3's doodads stand at every zoom)." }
 }

@@ -117,15 +117,15 @@
   "Grassland": {
    "bush": 2,
    "grass": 24,
-   "rock": 1
+   "rock": 2
   },
   "Plains": {
    "bush": 2,
    "grass": 18,
-   "rock": 1
+   "rock": 2
   },
   "Hills": {
-   "rock": 4,
+   "rock": 5,
    "bush": 3,
    "grass": 8
   },

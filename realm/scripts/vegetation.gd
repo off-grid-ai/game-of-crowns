@@ -27,6 +27,9 @@ const VEG_SCALE := Units.M
 static var SHORE: float = preload("res://scripts/data.gd").num("ground", "beach.top", 0.035)  # where the beach ends: the woods stand above it
 const VEG_PATCH := 12.0  # game units: grass and bushes are batched by patch of the map
 static var VEG_REACH: float = preload("res://scripts/data.gd").num("ground", "wild.reach", 24.0)  # and drawn only within this of the camera
+## Bushes out to here (ground.json wild.bush_reach): WC3's doodads stand at every playing zoom, so the middle zoom's
+## open country is never bare paint; past 60 the painted overview takes over.
+static var BUSH_REACH: float = preload("res://scripts/data.gd").num("ground", "wild.bush_reach", 36.0)
 var batches: Array[MultiMeshInstance3D] = []
 
 
@@ -83,7 +86,7 @@ func build() -> Array:
 		for c in patches:
 			var mmi := _scatter(meshes[parts[0]][int(parts[1])], patches[c])
 			mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-			mmi.visibility_range_end = VEG_REACH if parts[0] == "grass" else VEG_REACH * 1.5
+			mmi.visibility_range_end = VEG_REACH if parts[0] == "grass" else BUSH_REACH
 			mmi.visibility_range_end_margin = 3.0
 			batches.append(mmi)
 	return _pines if _pines_ok else []
