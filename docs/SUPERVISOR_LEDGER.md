@@ -133,6 +133,7 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- 11-14 13:32 Landed: Ironreach back b69c59e6 (8 powers, crown vassals), King's odds 933cb7d1, feast/pilgrimage f39daf7d, loyalty words + card decay. g37 winter hung 74 min (square, likely 3a6793b2 loop); killed g37, g38 at HEAD on 11 views. Freeciv names 'Lyon, Rouen' leak (bridge). Look was holding for renders: told to judge g38 frames as they land.
 - 11-14 12:40 Landed: baseline borders f8a7a0fe (0 unowned of 1564), rout off the sea 20e1d0b7, bunting/sullen squares a4de8bae, green grain 3a68191b, loop court tags. Decision (delegated): Ironreach returns with Thornvale's 2 northernmost towns (B), crown keeps Saltkeep and gets vassals. g37 frames sent to Mac on ask.
 - 11-14 12:28 Landed: tabard colour 00e04807, muster whole/lens 9a577ea0/41f9f0de, woods cce7abfb, court against/deadline/bluffs dcfd111a/c40254a8/2605a936. g37 battle FAIL: routed troops wade through the sea (army); siege reads (wall cracks, catapult), troops still red (pre-00e04807).
 - 11-14 12:16 Landed: baseline borders f8a7a0fe, hills/rock/snow 4cec9e63, sea and shore 54990f9b/65f6fa10, town poor a9c2c6bf. g37 muster: companies OK, still solid red troops (army); midzoom OK-ish. g38 queued.
