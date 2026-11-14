@@ -80,44 +80,68 @@ func _refresh_life(start: int) -> void:
 			life.update(towns[id]["node"], towns[id]["data"], house)
 
 
-## A town that grew is seen growing: each building its new plan has that the old
-## one didn't rises as a building site (town_life.raise_site: scaffold, builders,
-## a season a step) where it will stand, instead of popping in. A town that
-## changed hands or shrank is simply rebuilt. Only the realistic kit's buildings
-## (one node each); the old stylised houses still appear at once. At most towns.json grow.sites at once in one
-## town; the rest stand at once.
+## A town that grew is seen growing (towns.json grow; Manor Lords' and Banished's plots: a house rises on its plot
+## along the street before it stands): each house its new plan has that the old one didn't (meta homes, by its stable
+## home_id) rises as a building site (town_life.raise_site: scaffold, builders, a season a step) where it will stand,
+## its own model rising, hidden in its batch meanwhile (as fire.gd hides a burnt one) and shown when the site is done
+## or goes. Freeciv's size is the town's prosperity: it grows when it does. A town that changed hands or shrank is
+## simply rebuilt. At most towns.json grow.sites at once in one town; the rest stand at once. The new buildings
+## Freeciv gained (a temple, barracks, a granary) name the first sites.
 func _grow(was: Dictionary, node: Node3D, c: Dictionary) -> void:
 	var old: Dictionary = was.get("data", {})
-	if old.is_empty() or int(old.get("owner", -1)) != int(c.get("owner", -2)) or int(c.get("size", 0)) < int(old.get("size", 0)):
+	if old.is_empty() or int(old.get("owner", -1)) != int(c.get("owner", -2)) or int(c.get("size", 0)) <= int(old.get("size", 0)):
 		return
 	if not life.has_method("raise_site"):
 		return
-	var before: Array = []
-	for ch in (was["node"] as Node3D).get_children():
-		if ch is Node3D and Real.KIT.has(String(ch.name).rstrip("0123456789")):
-			before.append((ch as Node3D).position)
-	# What it gained that's a building (a temple, barracks, a granary): the first new site is that one.
+	var before := {}
+	for h in was.get("homes", []):
+		if (h as Array).size() >= 6:
+			before[String(h[5])] = true
 	var gained: Array = (c.get("buildings", []) as Array).filter(func(b): return not (old.get("buildings", []) as Array).has(b))
 	var sites := 0
 	var most := int(preload("res://scripts/data.gd").num("towns", "grow.sites", 3))
-	for ch in node.get_children():
-		if sites >= most or not (ch is Node3D):
+	for h in node.get_meta("homes", []):
+		if sites >= most:
+			break
+		var ha: Array = h
+		if ha.size() < 6 or before.has(String(ha[5])):
 			continue
-		var kind := String(ch.name).rstrip("0123456789")
-		if not Real.KIT.has(kind) or not Real.KIT[kind][0] in ["house", "hall", "barn", "mill", "church"]:
+		var hidden := _hide_home(node, ha)
+		if hidden.is_empty():
 			continue
-		var at: Vector3 = (ch as Node3D).position
-		if before.any(func(p: Vector3): return Vector2(p.x - at.x, p.z - at.z).length() < 0.3):
-			continue
+		var at: Vector3 = ha[2]
+		var face: Vector3 = ha[1]
+		at.y = _ground_y(node.position, at)
+		var plot := Transform3D(Basis(Vector3.UP, atan2(face.x, face.z)), at)  # raise_site turns its model by PI from the plot's: the house's own yaw
+		var show := func() -> void:
+			for e in hidden:
+				var mm: MultiMesh = e[0]
+				if is_instance_valid(mm) and int(e[1]) < mm.instance_count:
+					mm.set_instance_transform(int(e[1]), e[2])
 		var building: String = String(gained.pop_front()) if not gained.is_empty() else ""
-		var home := ch as Node3D
-		home.visible = false
-		var plot := Transform3D(Basis(Vector3.UP, home.rotation.y + PI), at)
-		if life.raise_site(node, plot, building, 2, func():
-			if is_instance_valid(home):
-				home.visible = true) == null:
-			home.visible = true  # no kit for the site: it simply stands
+		var site: Node3D = life.raise_site(node, plot, building, int(preload("res://scripts/data.gd").num("towns", "grow.seasons", 2)), show, String(ha[3]))
+		if site == null:
+			show.call()  # no room or no kit for the site: it simply stands
+			continue
+		site.tree_exiting.connect(show)  # the town's life redressed, the site gone with it: the house stands
 		sites += 1
+
+
+## Hides a home (meta homes row: [doorstep, face, where, kind, its place in the kind's batch, id]) in every batch of
+## its kind, as fire.gd _char does; returns [[multimesh, index, transform]] to show it again, [] if not found.
+func _hide_home(node: Node3D, h: Array) -> Array:
+	var out := []
+	for g in node.get_children():
+		if not (g is MultiMeshInstance3D and String(g.get_meta("kind", "")) == String(h[3])):
+			continue
+		var mm: MultiMesh = (g as MultiMeshInstance3D).multimesh
+		var idx := int(h[4])
+		if mm == null or idx >= mm.instance_count:
+			continue
+		var t := mm.get_instance_transform(idx)
+		out.append([mm, idx, t])
+		mm.set_instance_transform(idx, Transform3D(Basis.from_scale(Vector3.ONE * 0.0001), t.origin))
+	return out
 
 
 ## Raise a queued town next, for someone who needs it now; await it to have it standing.
@@ -185,15 +209,18 @@ func _raise(best: int, job: Dictionary) -> void:
 	var node: Node3D = await _build_town(job["c"], job["house"])
 	Engine.set_meta("stage", "towns.add")  # each step after the paced build named, for the slow-frame log (perf_tools.gd)
 	add_child(node)
+	var was: Dictionary = {}
 	if towns.has(best):
-		var pt := Time.get_ticks_usec()
-		Engine.set_meta("stage", "towns.grow")
-		_grow(towns[best], node, job["c"])
-		preload("res://scripts/perf_tools.gd").add("town_sites", Time.get_ticks_usec() - pt)
+		was = {"data": towns[best]["data"], "homes": (towns[best]["node"] as Node3D).get_meta("homes", [])}
 		towns[best]["node"].queue_free()
 	towns[best] = {"node": node, "signature": job["sig"], "data": job["c"]}
 	Engine.set_meta("stage", "towns.life")
 	life.update(node, job["c"], job["house"])
+	if not was.is_empty():
+		var pt := Time.get_ticks_usec()
+		Engine.set_meta("stage", "towns.grow")
+		_grow(was, node, job["c"])  # after its life is dressed: a site raised before would go with the old Life
+		preload("res://scripts/perf_tools.gd").add("town_sites", Time.get_ticks_usec() - pt)
 	# Each new town takes the season as it stands (snow on its roofs in winter).
 	Engine.set_meta("stage", "towns.season")
 	terrain.season_on(node)

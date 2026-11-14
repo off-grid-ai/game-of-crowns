@@ -716,15 +716,16 @@ static func _grow(site: Node3D, g: float) -> void:
 ## A new building rising in a town, for towns.gd (builder 2): the same site as
 ## the royal works, at `plot` (town-local), one step higher each season of the
 ## realm (awareness.gd's season_turned, so it waits while the realm waits), and
-## gone when done, `on_done` called so the finished building can stand.
-func raise_site(town_node: Node3D, plot: Transform3D, building: String, seasons: int, on_done := Callable()) -> Node3D:
+## gone when done, `on_done` called so the finished building can stand. `kit_of`: the model that rises (a growing
+## town's new house as itself, towns.gd _grow), else site_kit's for `building`.
+func raise_site(town_node: Node3D, plot: Transform3D, building: String, seasons: int, on_done := Callable(), kit_of := "") -> Node3D:
 	var life: Node3D = town_node.get_node_or_null("Life")
 	if life == null:
 		life = Node3D.new()
 		life.name = "Life"
 		life.set_meta("standing", PackedVector2Array())
 		town_node.add_child(life)
-	var kit := site_kit(building)
+	var kit := kit_of if kit_of != "" and Real.footprint(kit_of) != Vector2.ZERO else site_kit(building)  # a house rising as itself
 	var f: Vector2 = Real.footprint(kit)
 	var ang := plot.basis.get_euler().y - PI
 	var base := plot.origin
