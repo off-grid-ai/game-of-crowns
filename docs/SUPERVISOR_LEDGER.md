@@ -133,6 +133,7 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- 11-14 14:22 Landed: muster/battle lens 22d83dbc, siege engines 5330c824, banks 36703764, defeat chapter 141f86fd. g38 siege: host clips through houses (army). g38 opening FAIL: council panel clipped off the left edge, monospace debug font, no crowning moment (loop). First look at UI screens: they were never judged before 57a2dbd9.
 - 11-14 14:10 Landed: kit by kind 66631287/3a7c6419, battle grass 3e1cdeb4, midzoom fill height 3cc5aecc, King's standard on works 1456087d. g38 battle + muster: real step (textured, no sea), sent to Mac; next: muster lens not taking, density, camera on clash (army). Siege and UI screens rendering.
 - 11-14 14:00 Landed ~14: borders on land f2cb1a52, fill kept d7fd443a, vassal holdings b5b5b510 (reads /world vassals; players.liege path dropped), prices on square 16a68b13, fate odds 1f08d201, hunt odds 44ea3a83, X keepsake ad1c3a57, land remembers f00dfb86, order cursor 208404c2, rout crowd 5b570f21, garrison bc506502, field trees 08d05dc0. g38 realm PASS on continent (sent Mac); midzoom fixes confirmed by look. Bottleneck: army holding items for g38 frames; told to build now.
 - 11-14 13:46 Landed: wall closes 0bc67691, edge houses d8b2629d, busy square 96c05327 (square_r kept 2.1: Mac's 11-12 call), fallow 8c977198. g38 landuse: big step (square, rows, street), sent to Mac. Realm rendering. Bottleneck: GPU.
