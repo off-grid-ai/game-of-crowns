@@ -20,6 +20,7 @@ const S := Units.M  # world units a metre
 
 var main: Node
 const ViewTier := preload("res://scripts/view_tier.gd")
+const Bulk := preload("res://scripts/bulk.gd")  # the one drawer of repeated small things: the outcrop
 var _done := {}  # castle node -> its dressing {torches: [lights and flames]}
 var _rng := RandomNumberGenerator.new()
 
@@ -56,6 +57,7 @@ func _tick() -> void:
 	for c in _done.keys():
 		if not is_instance_valid(c):
 			_unpeople(_done[c])
+			Bulk.remove_owner(_done[c].get("bulk", ""))  # its outcrop's rocks, shrubs and cypresses
 			for n in _done[c]["nodes"]:
 				if is_instance_valid(n):
 					n.queue_free()
@@ -122,7 +124,7 @@ static func frame_of(castle: Node3D) -> Transform3D:
 
 func _dress(id: int, root: Node3D, castle: Node3D) -> void:
 	var sp := spec_of(castle)
-	var d := {"nodes": [], "torches": [], "city": id}
+	var d := {"nodes": [], "torches": [], "city": id, "bulk": "castle:%d" % castle.get_instance_id()}  # bulk: its outcrop's owner key (bulk.gd)
 	_done[castle] = d
 	if sp.is_empty():
 		return  # not our builder's castle (the downloaded one): nothing to read its frame from
@@ -328,20 +330,20 @@ func _outcrop(xf: Transform3D, sp: Dictionary, d: Dictionary) -> void:
 	var out_r: Array = k.get("out", [0.4, 1.3])
 	var size_r: Array = k.get("size", [0.7, 1.3])
 	var clear := Builder.gate_tower_x() + float(k.get("front_clear", 3.0))
+	# Many copies of a few models, drawn in bulk (bulk.gd, Mac: "draw repeated things in bulk"): no node each. Seen as
+	# far as the castle is (castle.json outcrop.reach), casting their shadows as the nodes did.
+	var reach := float(k.get("reach", 1000.0))
 	var put := func(kind: String, local: Vector3, s: Vector3, sink: float) -> void:
-		var n: Node3D = Real.make(kind)
-		if n == null:
+		var parts := Real.parts(kind)
+		if parts.is_empty():
 			return
 		var w: Vector3 = xf * local
 		if not Ground.on_land(w):
-			n.free()
 			return
 		w.y = main.terrain.height_at(w.x, w.z) - sink * S * scale
-		add_child(n)
-		n.global_position = w
-		n.rotation.y = rng.randf() * TAU
-		n.scale = s * scale
-		d["nodes"].append(n)
+		var place := Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled_local(s * scale), w)
+		for pt: Array in parts:
+			Bulk.add(pt[0], place * (pt[1] as Transform3D), d["bulk"], reach, true)
 	for run in Builder.curtain_runs(sp):
 		var a: Vector3 = run["a"]
 		var b: Vector3 = run["b"]
