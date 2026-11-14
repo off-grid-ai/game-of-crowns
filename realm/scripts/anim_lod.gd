@@ -145,6 +145,8 @@ func _animate(delta: float, vp: Viewport, cam: Camera3D) -> void:
 		if n == 0:
 			_owed.erase(id)
 			continue
+		if PerfTools.probing and n != 1:
+			PerfTools.seen_clip(People.clip(body))  # the ring's clips, counted for the VAT bake's list (perf.log)
 		var owed: float = _owed.get(id, 0.0) + delta
 		if n == 1 or (Engine.get_process_frames() + id) % n == 0:  # the same frames moves_now gives the body's mover
 			_move(p, owed)

@@ -49,6 +49,11 @@ var _perf_at := 10.0
 ## since the last perf line, written on it as "jobs=name:ms/calls,...".
 static var probing := OS.get_environment("GOC_PERF_PROBE") != ""
 static var tally := {}  # name -> [microseconds, calls]
+## The probe's clip census (the VAT townsfolk plan, step 1): frames each clip was shown on a body in the ring past
+## anim_lod.NEAR (where a baked crowd would draw them), since the last perf line. anim_lod.gd counts; written below.
+static var ring_clips := {}  # clip -> frames shown
+static func seen_clip(clip: String) -> void:
+	ring_clips[clip] = int(ring_clips.get(clip, 0)) + 1
 static var _frame_cost := {}  # name -> microseconds this frame: a slow frame names what it spent its time on
 static func add(name: String, usec: int) -> void:
 	if not probing:
@@ -203,6 +208,14 @@ func _log_perf(delta: float) -> void:
 			jobs.append("%s:%.1fms/%d" % [k, tally[k][0] / 1000.0, tally[k][1]])
 		f.store_line("    jobs (10 s) " + ", ".join(jobs))
 		f.store_line("    engine " + _engine_counts())
+	if probing and not ring_clips.is_empty():
+		var by := ring_clips.keys()
+		by.sort_custom(func(x, y): return int(ring_clips[x]) > int(ring_clips[y]))
+		var shown := PackedStringArray()
+		for k in by:
+			shown.append("%s:%d" % [k, ring_clips[k]])
+		f.store_line("    ring clips (10 s) " + ", ".join(shown))
+		ring_clips.clear()
 		tally.clear()
 
 
