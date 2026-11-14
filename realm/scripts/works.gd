@@ -237,6 +237,8 @@ static func states_bb(bb: Blackboard) -> Array:
 		out.append("rebuilding")  # sacked and rebuilding (bridge damage.js burnt, falling each season): survivors at the burnt houses
 	if bool(bb.get_var(&"lean", false, false)):
 		out.append("lean")
+	if bool(bb.get_var(&"closed", false, false)):
+		out.append("closed")  # its roads shut against the plague (bridge contagion.js): the watch at a block on each road
 	# Its market's prices (bridge cities[].market, ratios to normal; casebook, The market is a place): bread dear, the
 	# buyers haggle and grumble; goods cheap, they crowd the stalls (towns.json prices).
 	var mk: Dictionary = bb.get_var(&"market", {}, false)
