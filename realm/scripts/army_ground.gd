@@ -2,15 +2,15 @@ extends RefCounted
 ## Where a man can stand on one fight's field, and how he gets from one place on it to another (the army layer,
 ## docs/research/army-layer-2026-11-12.md). Godot's AStarGrid2D (the engine's own grid search, as terrain.gd's
 ## overland paths and towns.gd's street grid use it) over a fine grid of cells round the fight: a cell is shut
-## where it is water (terrain.is_land), or inside a house, a wall, a fence or a stall (town_nav.gd's footprints,
-## which a breached stone wall drops), and open where a breach let the men through, whatever its footprints still
+## where the one ground owner says nobody may stand (ground.gd Footing.is_clear: water, a house, a wall, a fence or
+## a stall; a breached stone wall drops its footprint), and open where a breach let the men through, whatever its footprints still
 ## say. Every man and regiment in the fight stands on it (Mover.on): their routes go round what it shuts, and a
 ## step that would put them in a shut cell puts them at the nearest open one instead. Nobody walks over a lake, a
 ## house or a wall again.
 ##
 ## Laid a few rows a frame (it never freezes the frame); until it is laid, routes are straight lines.
 
-const TownNav := preload("res://scripts/town_nav.gd")
+const Footing := preload("res://scripts/ground.gd")  # the one owner of where a body may stand
 const CELL := 0.08  # world units: about two-thirds of a man's width (a man stands ~0.22 tall)
 const ROWS_A_FRAME := 16
 
@@ -44,52 +44,16 @@ func _lay(main: Node, centre: Vector3, reach: float) -> void:
 
 func _build() -> void:
 	var tree: SceneTree = _main.get_tree() if _main and _main.is_inside_tree() else null
-	var terrain = _main.get("terrain") if _main else null
-	# Water: every cell asked (dry land or a ford, terrain.gd walkable), a few rows a frame.
+	# Every cell asked of the one ground owner (ground.gd Footing.is_clear: walkable land or a ford, in no house,
+	# wall, fence or stall), a few rows a frame.
 	for y in cells:
 		for x in cells:
-			var w := _world(Vector2i(x, y))
-			grid.set_point_solid(Vector2i(x, y), terrain != null and not terrain.walkable(w.x, w.z))
+			grid.set_point_solid(Vector2i(x, y), not Footing.is_clear(_world(Vector2i(x, y))))
 		if tree and y % ROWS_A_FRAME == ROWS_A_FRAME - 1:
 			await tree.process_frame
-	# Buildings, walls, fences and stalls: each footprint of every town the field reaches (town_nav.gd, its own
-	# space: offset from the town's middle) shuts the cells it covers, only those under its bounds tested.
-	var towns = _main.get("towns") if _main else null
-	if towns != null:
-		var seen := {}
-		var half := cells * CELL * 0.5
-		var mid := Vector3(origin.x + half, 0, origin.y + half)
-		for corner in [Vector3.ZERO, Vector3(-half, 0, -half), Vector3(half, 0, -half), Vector3(-half, 0, half), Vector3(half, 0, half)]:
-			for t in TownNav.towns_at(towns, mid + corner):
-				if seen.has(t[0]):
-					continue
-				seen[t[0]] = true
-				var root: Node3D = t[1]
-				for fp: PackedVector2Array in TownNav.footprints(root):
-					_shut(fp, root.global_position)
-				if tree:
-					await tree.process_frame
 	for o in _opened:
 		_open_cells(o[0], o[1])
 	built = true
-
-
-## Shuts the cells whose middles fall inside a footprint `fp` (offset from `c`, world).
-func _shut(fp: PackedVector2Array, c: Vector3) -> void:
-	if fp.size() < 3:
-		return
-	var lo := Vector2(INF, INF)
-	var hi := Vector2(-INF, -INF)
-	for q in fp:
-		lo = lo.min(q)
-		hi = hi.max(q)
-	var a := _cell(Vector3(c.x + lo.x, 0, c.z + lo.y))
-	var b := _cell(Vector3(c.x + hi.x, 0, c.z + hi.y))
-	for y in range(maxi(a.y, 0), mini(b.y, cells - 1) + 1):
-		for x in range(maxi(a.x, 0), mini(b.x, cells - 1) + 1):
-			var q := Vector2(origin.x + (x + 0.5) * CELL - c.x, origin.y + (y + 0.5) * CELL - c.z)
-			if Geometry2D.is_point_in_polygon(q, fp):
-				grid.set_point_solid(Vector2i(x, y), true)
 
 
 ## A breach is open: its gap's cells stand open, `radius` round its middle (world), whatever the footprints say.
