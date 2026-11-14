@@ -73,6 +73,9 @@ export function season(ctx, turn) {
   const r = of(meta);
   r.gate = gate(ctx, r);
   if (r.war) return war(ctx, r, turn);
+  // A treaty holds: no envoys with demands, no riders over the border, until it runs out.
+  if (r.treaty && turn < r.treaty.until) return;
+  if (r.treaty) { ctx.record({ turn, kind: "court", text: `The peace with ${r.realm} has run its years. ${r.king}'s riders are seen on the border hills again.` }); r.treaty = null; }
   r.hostility += Math.sign(R.rest - r.hostility) * Math.min(R.drift, Math.abs(R.rest - r.hostility));
   if (r.hostility >= R.war.above) return declare(ctx, r, border(world, r.edge, r.realm), turn, `${r.king} has waited long enough.`);
   demand(ctx, r, turn);
@@ -149,12 +152,12 @@ export function ruled(ctx, beat, option) {
   const t = (world?.cities ?? []).find((c) => c.id === d.town);
   if (option === "pay") {
     shift(meta, D.pay);
-    if (d.kind === "peace") return peace(ctx, r, turn, `${r.king} takes the crown's gold, and the war is over.`);
+    if (d.kind === "peace") return peace(ctx, r, turn, `${r.king} takes the crown's gold, and the war is over.`, "bought");
   } else if (option === "cede") {
     shift(meta, D.yield);
     if (t) send(`lua cmd ${Lua.rivalCede(r.realm, t.id)}`);
     record({ turn, kind: "battle", text: `By the King's word ${cityName(d.town)} passes to ${r.realm}. ${r.king}'s banner goes up over its gate.`, city: d.town });
-    if (d.kind === "peace") return peace(ctx, r, turn, null);
+    if (d.kind === "peace") return peace(ctx, r, turn, null, "ceded");
   } else if (option === "insult" || option === "ignored") {
     shift(meta, option === "insult" ? D.insult : D.refuse);
     if (option === "ignored") record({ turn, kind: "court", text: `${r.king}'s envoy waits a season for the King's answer and goes home without one.` });
@@ -188,16 +191,26 @@ function war(ctx, r, turn) {
   const w = r.war;
   const t = (world.cities ?? []).find((c) => c.id === w.town);
   const his = !t || (world.players ?? []).find((p) => p.id === t.owner)?.name === r.realm;
-  if (his) return peace(ctx, r, turn, `${cityName(w.town)} has fallen to ${r.realm}. ${r.king} has what he came for, and his host goes home.`);
-  if (turn >= w.until) return peace(ctx, r, turn, `${r.realm}'s war wears itself out before the walls of ${cityName(w.town)}. ${r.king}'s host goes home with nothing.`);
+  if (his) return peace(ctx, r, turn, `${cityName(w.town)} has fallen to ${r.realm}. ${r.king} has what he came for, and his host goes home.`, "lost");
+  // Worn out before the walls: he sues for peace and pays for it (war.reparations to the crown).
+  if (turn >= w.until) {
+    const crown = ctx.crownOf?.();
+    if (crown) ctx.send(`lua cmd ${Lua.gold(crown.id, R.war.reparations)}`);
+    return peace(ctx, r, turn, `${r.realm}'s war wears itself out before the walls of ${cityName(w.town)}. ${r.king} sues for peace and sends ${R.war.reparations} in gold to have it.`, "won");
+  }
   if ((turn - w.since) % R.war.every === 0) { w.waves++; host(ctx, r, t); }
   demand(ctx, r, turn);
 }
 
-function peace(ctx, r, turn, why) {
+// The war over, by how (won: he sued for peace; lost: the town fell; bought; ceded): his men go home, and a treaty
+// keeps the border quiet for war.treaty seasons (no demands, no raids), sealed in the chronicle.
+function peace(ctx, r, turn, why, how) {
   ctx.send(`lua cmd ${Lua.rivalHome(r.realm)}`);
   if (why) ctx.record({ turn, kind: "battle", text: why, city: r.war?.town });
+  ctx.record({ turn, kind: "court", text: `A treaty is sealed with ${r.realm}: ${R.war.treaty / 4} years of peace on the border, sworn on both crowns.` });
+  r.treaty = { since: turn, until: turn + R.war.treaty, how, town: r.war?.town ?? null };
   r.war = null;
+  r.demand = r.demand && !r.demand.answered ? { ...r.demand, answered: "peace" } : r.demand;
   r.hostility = Math.min(r.hostility, R.war.peace);
 }
 
@@ -211,5 +224,6 @@ export function view(meta, world) {
   return { realm: r.realm, king: r.king, edge: r.edge, hostility: Math.round(r.hostility), probes: r.probes, demand: d,
     colour: a.colour, sigil: a.sigil, gate: r.gate ?? null, raiders: (r.raiders ?? []).filter((id) => alive.has(id)),
     player: (world?.players ?? []).find((p) => p.name === r.realm)?.id ?? null,
-    war: r.war ? { town: r.war.town, since: r.war.since, until: r.war.until, waves: r.war.waves } : null };
+    war: r.war ? { town: r.war.town, since: r.war.since, until: r.war.until, waves: r.war.waves } : null,
+    treaty: r.treaty ? { since: r.treaty.since, until: r.treaty.until, how: r.treaty.how, town: r.treaty.town } : null };
 }

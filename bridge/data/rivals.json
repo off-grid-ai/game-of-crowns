@@ -167,7 +167,7 @@
   "cede": -30
  },
  "war": {
-  "_": "His war over the border town (rivals.js war): a refused claim, or his hostility at above, and he declares war: his host (a Freeciv player of his own, script.lua realm_rival) rises out tiles beyond the town toward his edge, host men plus hostPer for each point of hostility, of kinds, and Freeciv's AI marches on the town; another wave every every seasons. The war ends after seasons seasons, or when the town is his, or the King buys peace; his men go home and his hostility falls to peace.",
+  "_": "His war over the border town (rivals.js war): a refused claim, or his hostility at above, and he declares war: his host (a Freeciv player of his own, script.lua realm_rival) rises out tiles beyond the town toward his edge, host men plus hostPer for each point of hostility, of kinds, and Freeciv's AI marches on the town; another wave every every seasons. The war ends after seasons seasons, or when the town is his, or the King buys peace; his men go home and his hostility falls to peace. Every war ends in a treaty (treaty seasons: no demands, no raids over the border); worn out before the walls, he sues for peace and pays the crown reparations in gold.",
   "above": 85,
   "out": 5,
   "host": 5,
@@ -180,7 +180,9 @@
   ],
   "every": 2,
   "seasons": 6,
-  "peace": 35
+  "peace": 35,
+  "treaty": 12,
+  "reparations": 150
  },
  "arms": {
   "_": "Each rival realm's colours and sigil (narrator.js houseFor for his own men; /world rival colour, sigil): his raiders, his host and his envoy's rider wear them.",
