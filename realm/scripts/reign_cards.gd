@@ -363,7 +363,8 @@ func _reign_end(r: Dictionary) -> void:
 	verdict.add_theme_color_override("font_color", Color(0.92, 0.88, 0.8))
 	col.add_child(verdict)
 	# His epitaph (CK3's end of a life; Reigns' last card): the lines the local model wrote from the reign's facts (the
-	# bridge's epitaph, reign.js epitaphOf: lines), cut as on a tomb, and the choices that defined it beneath, small.
+	# bridge's epitaph, reign.js epitaphOf: lines), cut as on a tomb. The choices it was written from were just told,
+	# each at its town, by the flight before this card (_epilogue), so they aren't listed again.
 	var ep_d: Dictionary = r.get("epitaph", {}) if r.get("epitaph") is Dictionary else {}
 	if String(ep_d.get("lines", "")) != "":
 		var ep_l := Label.new()
@@ -375,12 +376,6 @@ func _reign_end(r: Dictionary) -> void:
 		ep_l.add_theme_font_size_override("font_size", T.SIZE_BODY)
 		ep_l.add_theme_color_override("font_color", T.ACCENT)
 		col.add_child(ep_l)
-		for w in (ep_d.get("choices", []) as Array).slice(0, 3):
-			var wl := T.datum(String(w), T.SIZE_DESC, T.TEXT_2)
-			wl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			wl.autowrap_mode = TextServer.AUTOWRAP_WORD
-			wl.custom_minimum_size.x = 640
-			col.add_child(wl)
 	# The reign in numbers.
 	var e: Dictionary = r.get("ended", {}) if r.get("ended") is Dictionary else {}
 	var turns := int(e.get("turn", 0))
