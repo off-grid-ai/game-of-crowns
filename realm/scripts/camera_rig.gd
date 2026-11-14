@@ -62,7 +62,8 @@ var _grab := Vector3.INF  # the ground point held under the cursor while draggin
 var _fling := Vector3.ZERO  # pan velocity carried on after a flick, units per second
 var _keys_v := Vector2.ZERO  # keyboard pan velocity, eased in and out
 var _look_y := 0.0  # the ground height looked at, smoothed so hills don't bob the view
-static var EASE: float = preload("res://scripts/data.gd").num("camera", "rig.ease", 9.0)  # how quickly the view settles on its goal (per second) (camera.json rig.ease)
+static var MAX_STEP: float = preload("res://scripts/data.gd").num("camera", "rig.max_step", 0.1)  # the longest frame the view moves by, seconds (camera.json rig.max_step)
+static var EASE: float = preload("res://scripts/data.gd").num("camera", "rig.ease", 14.0)  # how quickly the view settles on its goal (per second) (camera.json rig.ease)
 @onready var cam := Camera3D.new()
 
 
@@ -930,12 +931,15 @@ func _click(screen: Vector2) -> void:
 
 
 func _process(delta: float) -> void:
+	# Real time, but one long frame (a town built, a save) never throws the view: at most rig.max_step a frame.
+	delta = minf(delta, MAX_STEP)
 	var keys := Vector2(
 		Input.get_axis(&"cam_left", &"cam_right"),
 		Input.get_axis(&"cam_up", &"cam_down"))
-	# Keys ease in and out rather than jolting; Shift runs.
+	# Keys pan at full speed from the first frame (Total War's and Warcraft III's arrow keys) and ease out only on
+	# release; Shift runs.
 	var want := keys.normalized() * goal_distance * (1.8 if Input.is_action_pressed(&"cam_fast") else 0.8) * _speed()
-	_keys_v = _keys_v.lerp(want, 1.0 - exp(-delta * 8.0))
+	_keys_v = want if keys != Vector2.ZERO else _keys_v.lerp(want, 1.0 - exp(-delta * 8.0))
 	if _keys_v.length() > goal_distance * 0.001:
 		_pan(_keys_v * delta)
 	# A flick glides on and slows to a stop.
