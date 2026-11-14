@@ -320,7 +320,7 @@ func _batch(node: Node3D, hedges: Dictionary, reach: float) -> void:
 			mmi.set_meta("xfs", xfs)  # what was placed, for the headless checks (the renderer keeps none there)
 			mmi.visibility_range_end = reach
 			mmi.visibility_range_end_margin = reach * 0.15
-			mmi.lod_bias = Data.num("forest", "lod_bias", 1.0)  # the woods' own (forest.gd): a field-corner clump's crowns hold from the middle zoom (g38: palms)
+			mmi.lod_bias = float((Data.value("forest", "lod_bias", {}) as Dictionary).get("mid", 1.0))  # the woods' own (forest.gd): a field-corner clump's crowns hold from the middle zoom (g38: palms)
 			node.add_child(mmi)
 
 

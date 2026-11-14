@@ -7,7 +7,7 @@
    1.25
   ]
  },
- "lod_bias": 6.0, "_lod_bias": "forest.gd _layer: each tree batch's GeometryInstance3D.lod_bias (1: Godot's default; higher keeps more of a crown's leaf cards further out). g35, g37 midzoom: at 1 the crowns thinned to tufts on bare trunks, palms.",
+ "lod_bias": {"full": 6.0, "mid": 6.0, "card": 3.0, "map": 2.0}, "_lod_bias": "forest.gd _layer: each tree batch's GeometryInstance3D.lod_bias by tier (full 0-near, mid near-mid, card mid-map.from, map past it; 1: Godot's default; higher keeps more of a crown's leaf cards further out). g35, g37 midzoom: at 1 the crowns thinned to tufts on bare trunks, palms, so full and mid stay 6. fps P0 (woods half the frame, vertex-bound): card 3 and map 2, where a crown is a few dozen pixels; raise them back if far crowns thin.",
   "near": 6.0,
  "mid": 24.0,
  "woods": {

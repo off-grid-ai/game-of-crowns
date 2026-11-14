@@ -175,7 +175,9 @@ func _layer(mesh: Mesh, xfs: Array, begin: float, end: float, shadows: bool, tie
 	mmi.gi_mode = GeometryInstance3D.GI_MODE_DISABLED
 	# Godot's import-made detail levels thin a tree with distance, and a leaf-card crown goes first: from the middle zoom
 	# the woods were trunks with a tuft, palms (g35, g37 midzoom). forest.json lod_bias holds more of each crown further out.
-	mmi.lod_bias = Data.num("forest", "lod_bias", 1.0)
+	# By tier (forest.json lod_bias): full crowns held at the near and middle zoom, Godot's own LOD let work further out
+	# where a crown is a few dozen pixels (supervisor fps P0: the woods half of the frame, vertex-bound).
+	mmi.lod_bias = float((Data.value("forest", "lod_bias", {}) as Dictionary).get(tier, 1.0))
 	mmi.set_meta("tier", tier)  # set_reach moves the mid and card tiers' bounds; the map tier keeps its own
 	add_child(mmi)
 
