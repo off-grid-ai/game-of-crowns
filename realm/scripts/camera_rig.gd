@@ -64,6 +64,11 @@ var _keys_v := Vector2.ZERO  # keyboard pan velocity, eased in and out
 var _look_y := 0.0  # the ground height looked at, smoothed so hills don't bob the view
 static var MAX_STEP: float = preload("res://scripts/data.gd").num("camera", "rig.max_step", 0.1)  # the longest frame the view moves by, seconds (camera.json rig.max_step)
 static var EASE: float = preload("res://scripts/data.gd").num("camera", "rig.ease", 14.0)  # how quickly the view settles on its goal (per second) (camera.json rig.ease)
+# The zoom glides on its own, slower ease (Total War's, Anno's: weighty), while a pan stays snappy (camera.json rig.zoom).
+static var ZOOM_EASE: float = preload("res://scripts/data.gd").num("camera", "rig.zoom.ease", 6.0)
+static var ZOOM_STEP: float = preload("res://scripts/data.gd").num("camera", "rig.zoom.step", 0.1)  # one wheel or pinch tick: this share of the distance
+static var ZOOM_LEAD: float = preload("res://scripts/data.gd").num("camera", "rig.zoom.lead", 1.6)  # how far the goal may run ahead of the view (a ratio): a flick can't fly town to realm
+static var ZOOM_SOFT: float = preload("res://scripts/data.gd").num("camera", "rig.zoom.soft", 0.5)  # the last stretch before the nearest and furthest, in log units, where ticks shrink
 @onready var cam := Camera3D.new()
 
 
@@ -353,9 +358,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			# Option + scroll tilts the view, to look up at the hills or down at your feet.
 			goal_tilt = clampf(goal_tilt + (3.0 if event.button_index == MOUSE_BUTTON_WHEEL_UP else -3.0), -40.0, 30.0)
 		elif event.button_index == MOUSE_BUTTON_WHEEL_UP and event.pressed:
-			_zoom_at(event.position, 0.86 if event.factor == 0.0 else pow(0.86, event.factor))
+			_zoom_at(event.position, 1.0 - ZOOM_STEP)
 		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN and event.pressed:
-			_zoom_at(event.position, 1.0 / 0.86 if event.factor == 0.0 else pow(1.0 / 0.86, event.factor))
+			_zoom_at(event.position, 1.0 / (1.0 - ZOOM_STEP))
 		elif event.button_index in [MOUSE_BUTTON_LEFT, MOUSE_BUTTON_RIGHT, MOUSE_BUTTON_MIDDLE]:
 			if event.pressed:
 				_dragging = event.button_index
@@ -390,7 +395,13 @@ func _unhandled_input(event: InputEvent) -> void:
 ## you're pointing at stays where it is while everything else comes closer.
 func _zoom_at(screen: Vector2, f: float) -> void:
 	var before := goal_distance
-	goal_distance = clampf(goal_distance * f, min_distance, max_distance)  # one zoom, out to the land's furthest
+	# One tick is at most ZOOM_STEP of the distance, whatever the trackpad sends; near the nearest and the
+	# furthest the ticks shrink (a soft stop, no wall); and the goal never runs more than ZOOM_LEAD ahead of the view.
+	var lf := clampf(log(f), log(1.0 - ZOOM_STEP), -log(1.0 - ZOOM_STEP))
+	var room := log(max_distance / goal_distance) if lf > 0.0 else log(goal_distance / min_distance)
+	lf *= clampf(room / ZOOM_SOFT, 0.15, 1.0)
+	goal_distance = clampf(goal_distance * exp(lf), maxf(min_distance, distance / ZOOM_LEAD), minf(max_distance, distance * ZOOM_LEAD))
+	goal_distance = clampf(goal_distance, min_distance, max_distance)
 	var p := _ground_under(screen)
 	if p == Vector3.INF:
 		return
@@ -958,10 +969,12 @@ func _process(delta: float) -> void:
 	# The same easing whatever the frame rate; distance eases in log space so a
 	# zoom feels the same at street level as across the realm.
 	var k := 1.0 - exp(-delta * EASE)
-	target = target.lerp(goal_target, k)
+	var kz := 1.0 - exp(-delta * ZOOM_EASE)
+	# While a zoom glides, the ground it leans toward comes at the zoom's pace, so the spot under the pointer holds.
+	target = target.lerp(goal_target, kz if absf(log(goal_distance / distance)) > 0.01 else k)
 	# Zooming in, the eye comes down no faster than the lens can clear the roofs:
 	# while it is still catching up on one, the zoom waits for it.
-	var kd := k * (clampf(1.0 - _lag / (distance * 0.3), 0.15, 1.0) if goal_distance < distance else 1.0)
+	var kd := kz * (clampf(1.0 - _lag / (distance * 0.3), 0.15, 1.0) if goal_distance < distance else 1.0)
 	goal_distance = maxf(goal_distance, floor_now())  # whoever set it (a scene, a film, the director): never under the roofs
 	distance = exp(lerpf(log(distance), log(goal_distance), kd))
 	yaw = lerp_angle(yaw, goal_yaw, k)
