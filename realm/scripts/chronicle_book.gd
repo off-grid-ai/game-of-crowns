@@ -3,6 +3,9 @@ extends RefCounted
 ## a year to a chapter, two pages open at a time, the newest spread first, turned back and forth. The King's
 ## own deeds in gold, his losses in red. Read from the chronicle's entries (chronicle_panel.gd), deciding
 ## nothing. Owned by ui.gd: opened from the bar's book button. Words: realm/data/reign_end.json book.
+## The King keeps the pages that matter (the casebook's "retelling is the product", Boatmurdered's diary): a
+## click marks a line, the kept lines can be read alone and copied as the reign's tale to share. Kept per reign
+## in user://settings.cfg (section "kept").
 
 const Data := preload("res://scripts/data.gd")
 const T := preload("res://scripts/theme.gd")
@@ -14,6 +17,10 @@ var _at := 0  # the left page of the open spread
 var _left: RichTextLabel
 var _right: RichTextLabel
 var _folio: Label
+var _kept := {}  # chronicle seq -> true: the lines the King kept, this reign
+var _only_kept := false  # the book shows only the kept lines
+var _copy_note: Label
+const KEPT := "kept"  # settings.cfg section: reign id -> [seq]
 
 
 func _init(owner: Node) -> void:
@@ -32,7 +39,8 @@ func toggle() -> void:
 
 
 func open() -> void:
-	_paginate(ui.chronicle.entries)
+	_load_kept()
+	_paginate(_lines_shown())
 	if _card == null or not is_instance_valid(_card):
 		_build()
 	_at = maxi(0, (_pages.size() - 1) / 2 * 2)  # the spread that holds the newest page
@@ -63,7 +71,9 @@ func _paginate(all: Array) -> void:
 		var loss: bool = kind in ["civil_war", "betrayal", "rebellion"] or (bool(e.get("crown", false)) and kind in ["city_shrank", "disaster", "city_destroyed", "building_lost", "city_transferred", "raid", "death", "unrest"])
 		var tone := "#e86b5c" if loss else ("#e6c47e" if bool(e.get("crown", false)) else "#ecece8")
 		var season: String = String(ui.season_of(turn)).get_slice(" ", 0)
-		page.append("[font_size=11][color=#8f8a80]%s[/color][/font_size]  [color=%s]%s[/color]" % [season, tone, String(e.get("text", ""))])
+		var seq := int(e.get("seq", -1))
+		var mark := "[color=#c9a45c]◆[/color]" if _kept.has(seq) else "[color=#4a443c]◇[/color]"
+		page.append("[url=keep:%d]%s[/url] [font_size=11][color=#8f8a80]%s[/color][/font_size]  [color=%s]%s[/color]" % [seq, mark, season, tone, String(e.get("text", ""))])
 		if page.size() >= per:
 			_pages.append(page)
 			page = []
@@ -108,6 +118,23 @@ func _build() -> void:
 	_folio = T.label("")
 	foot.add_child(_folio)
 	foot.add_child(ui.btn(String(_w("on", "Turn on")), _turn.bind(2)))
+	# The kept pages: read them alone, or copy them as the reign's tale.
+	var keep_row := HBoxContainer.new()
+	keep_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	keep_row.add_theme_constant_override("separation", T.GAP_WIDE)
+	v.add_child(keep_row)
+	keep_row.add_child(T.label(String(_w("keep_hint", "Click ◇ to keep a moment."))))
+	var only: Button = ui.btn(String(_w("only_kept", "Only what I kept")))
+	only.toggle_mode = true
+	only.toggled.connect(func(on):
+		_only_kept = on
+		_paginate(_lines_shown())
+		_at = 0
+		_show())
+	keep_row.add_child(only)
+	keep_row.add_child(ui.btn(String(_w("copy", "Copy the tale")), _copy_tale))
+	_copy_note = T.label("")
+	keep_row.add_child(_copy_note)
 
 
 func _page() -> RichTextLabel:
@@ -120,7 +147,66 @@ func _page() -> RichTextLabel:
 	r.add_theme_font_override("normal_font", T.speech)
 	r.add_theme_font_size_override("normal_font_size", T.SIZE_BODY)
 	r.add_theme_constant_override("paragraph_separation", 6)
+	r.meta_clicked.connect(_on_meta)
 	return r
+
+
+## A line's mark clicked: kept, or let go.
+func _on_meta(meta) -> void:
+	var m := String(meta)
+	if not m.begins_with("keep:"):
+		return
+	var seq := int(m.get_slice(":", 1))
+	if _kept.has(seq):
+		_kept.erase(seq)
+	else:
+		_kept[seq] = true
+		ui.heard.emit("quill")
+	_save_kept()
+	var at := _at
+	_paginate(_lines_shown())
+	_at = clampi(at, 0, maxi(0, (_pages.size() - 1) / 2 * 2))
+	_show()
+
+
+func _lines_shown() -> Array:
+	var all: Array = ui.chronicle.entries
+	return all.filter(func(e): return _kept.has(int(e.get("seq", -1)))) if _only_kept else all
+
+
+func _reign_id() -> String:
+	return String((ui.reign_now as Dictionary).get("id", ""))
+
+
+func _load_kept() -> void:
+	_kept.clear()
+	var cfg := ConfigFile.new()
+	cfg.load("user://settings.cfg")
+	for s in cfg.get_value(KEPT, _reign_id(), []):
+		_kept[int(s)] = true
+
+
+func _save_kept() -> void:
+	if _reign_id() == "":
+		return
+	var cfg := ConfigFile.new()
+	cfg.load("user://settings.cfg")
+	cfg.set_value(KEPT, _reign_id(), _kept.keys())
+	cfg.save("user://settings.cfg")
+
+
+## The kept lines as plain text, the reign's name over them, ready to paste anywhere.
+func _copy_tale() -> void:
+	var out := PackedStringArray([String(_w("tale_head", "The reign of {name}, as the King kept it")).replace("{name}", String((ui.reign_now as Dictionary).get("name", "Aldmere")))])
+	for e in ui.chronicle.entries:
+		if _kept.has(int(e.get("seq", -1))):
+			out.append("%s: %s" % [ui.season_of(int(e.get("turn", 0))), String(e.get("text", ""))])
+	if out.size() == 1:
+		_copy_note.text = String(_w("copy_none", "Keep a moment first."))
+		return
+	DisplayServer.clipboard_set("\n".join(out))
+	_copy_note.text = String(_w("copied", "Copied."))
+	ui.heard.emit("quill")
 
 
 func _turn(by: int) -> void:
