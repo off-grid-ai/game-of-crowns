@@ -215,6 +215,8 @@ func _raise(best: int, job: Dictionary) -> void:
 		towns[best]["node"].queue_free()
 	towns[best] = {"node": node, "signature": job["sig"], "data": job["c"]}
 	Engine.set_meta("stage", "towns.life")
+	if not was.is_empty() and int((was["data"] as Dictionary).get("owner", -1)) != int(job["c"].get("owner", -2)):
+		banners.taken(node)  # changed hands: the new owner's banners are run up its poles
 	life.update(node, job["c"], job["house"])
 	if not was.is_empty():
 		var pt := Time.get_ticks_usec()

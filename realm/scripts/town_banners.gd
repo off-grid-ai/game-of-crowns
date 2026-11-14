@@ -28,6 +28,8 @@ func stand(root: Node3D, pos: Vector3, color: Color, house: Dictionary, height :
 		flag.set_meta("top", flag.position.y)
 		hoist(flag, _banner_at.get(int(root.get_meta("owner", -1)), 1.0), false)
 		fringe(flag, _sworn.get(int(root.get_meta("owner", -1)), false))
+		if root.has_meta("taken_at"):  # a castle dressed after the town was taken: its banners are raised too
+			run_up(root, flag)
 	return b
 
 
@@ -59,6 +61,31 @@ static func height_for(favour) -> float:
 		return 1.0  # the crown's own towns, and houses with no favour
 	var f := float(favour)
 	return 1.0 if f >= 60.0 else (0.8 if f >= 35.0 else (0.5 if f >= 25.0 else 0.18))
+
+
+## A town just taken (towns.gd: rebuilt under a new owner): every one of its banners, the keep's and towers' with
+## them, starts at the foot of its pole and is run up to its house's height (Total War and Stronghold: the taker's
+## colours raised over the keep), the first after castle.json banners.taken.delay, the rest a beat apart. Banners
+## stood later than taken.window seconds after the taking stand as any other.
+func taken(root: Node3D) -> void:
+	root.set_meta("taken_at", Time.get_ticks_msec())
+	for flag in root.get_meta("banners", []):
+		if is_instance_valid(flag):
+			run_up(root, flag)
+
+
+func run_up(root: Node3D, flag: Node3D) -> void:
+	var k: Dictionary = (preload("res://scripts/data.gd").value("castle", "banners", {}) as Dictionary).get("taken", {})
+	var since := (Time.get_ticks_msec() - int(root.get_meta("taken_at", 0))) / 1000.0
+	if since > float(k.get("window", 30.0)) or not flag.is_inside_tree():
+		return
+	var top: float = flag.get_meta("top", flag.position.y)
+	var frac := float(flag.get_meta("at", 1.0))
+	var n := int(root.get_meta("taken_n", 0))
+	root.set_meta("taken_n", n + 1)
+	flag.position.y = 0.04
+	flag.create_tween().tween_property(flag, "position:y", lerpf(0.04, top, frac), float(k.get("run_s", 6.0))) \
+			.set_delay(maxf(0.0, float(k.get("delay", 1.5)) - since) + n * float(k.get("beat", 0.4))).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 
 
 func hoist(flag: Node3D, frac: float, slide := true) -> void:

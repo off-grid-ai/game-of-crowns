@@ -502,3 +502,4 @@ Switches (`--name`) go after `--` on the game's command line.
 - A host's camp where it holds in the field: which orders camp it, how its tents, cook fires and picket line of horses lie beside its column: `realm/data/army.json` `camp` (when ["hold", ""], tents.rows/every/size/canvas/pennant_every, fires.count/at/sitters, picket.at/half/height/horses/off).
 - A starved town's garrison (once its siege is hungry): the share of the men on the walls who sink down and shoot no more: `realm/data/siege.json` `garrison.hungry.down` (0.45).
 - The besiegers' works growing each season of a siege: `realm/data/siege.json` `works` (first 0.4: the palisade's share in the first season; trench.from 2: the season the first trench is dug; trench.at, span, width, segment).
+- A taken town's banners run up their poles (the new owner's colours raised over the keep): `realm/data/castle.json` `banners.taken` (delay 1.5, beat 0.4, run_s 6.0, window 30.0).
