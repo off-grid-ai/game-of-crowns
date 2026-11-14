@@ -124,6 +124,10 @@ func _ready() -> void:
 		# A render is not the game: say so on its window, so a still being drawn
 		# without the interface is never mistaken for the game losing its panels.
 		DisplayServer.window_set_title("Game of Crowns: rendering a still (not the game)")
+	else:
+		# Godot's debug build (the one we run) puts " (DEBUG)" after the name, and no
+		# project setting turns it off: the window shows the game's name alone.
+		DisplayServer.window_set_title(String(ProjectSettings.get_setting("application/config/name")))
 	# Started from a shell, macOS opens the window behind whatever is in front:
 	# bring it forward so the game is never hidden on launch. A test shot stays
 	# behind, so it never jumps in front of what you're doing.
