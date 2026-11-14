@@ -325,6 +325,38 @@ func _load_land(info) -> void:
 	land_per_unit = int(info.get("perUnit", 4))
 	if ResourceLoader.exists(RIVER_MASK):
 		river_mask = (load(RIVER_MASK) as Texture2D).get_image()
+	_terrace()
+
+
+## The hills stepped into tiers (Warcraft III's cliff levels: a hill reads as a few flat shelves with steep faces
+## between, which the auto shader paints rock), from the eroded heightmap's own heights: above from (game units), every
+## step of height is a shelf whose last ramp share rises to the next. Never by a river (its water levels are fitted to
+## the unstepped valley, rivers.json): the step fades out over rivers-mask.png's reach. ground.json tiers.
+func _terrace() -> void:
+	var t: Dictionary = preload("res://scripts/data.gd").value("ground", "tiers", {})
+	if not bool(t.get("on", false)):
+		return
+	var from := float(t.get("from", 1.8))
+	var step := maxf(0.1, float(t.get("step", 0.9)))
+	var ramp := clampf(float(t.get("ramp", 0.35)), 0.05, 1.0)
+	var over := float(t.get("over", 0.6))  # the stepping fades in over this much height above from
+	var w := land.get_width()
+	var h := land.get_height()
+	var hs := land.get_data().to_float32_array()
+	var rm := river_mask if river_mask and river_mask.get_width() == w and river_mask.get_height() == h else null
+	for i in hs.size():
+		var y := hs[i]
+		if y <= from:
+			continue
+		var k := (y - from) / step
+		var f := floorf(k)
+		var stepped := from + (f + smoothstep(1.0 - ramp, 1.0, k - f)) * step
+		var keep := smoothstep(0.0, over, y - from)
+		if rm:
+			var r := rm.get_pixel(i % w, i / w).r8
+			keep *= 1.0 - (1.0 if r == 255 else r / 255.0)
+		hs[i] = lerpf(y, stepped, keep)
+	land = Image.create_from_data(w, h, false, Image.FORMAT_RF, hs.to_byte_array())
 
 
 ## Where river water lies (255) and how close a river is beside it (fading to 0),

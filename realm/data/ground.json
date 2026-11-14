@@ -21,6 +21,7 @@
     "patches": [{ "layer": 1, "most": 0.75, "from": 0.08, "soft": 0.25, "scale": 0.35 }, { "layer": 8, "most": 0.7, "from": 0.0, "soft": 0.45, "scale": 0.1 }, { "layer": 5, "most": 0.45, "from": 0.2, "soft": 0.4, "scale": 0.16 }]
   },
   "beach": { "top": 0.07, "layer": "dirt", "snow": [0.08, 0.4] },
+  "tiers": { "_": "terrain.gd _terrace: the hills stepped into shelves with steep faces between (WC3's cliff levels), above from (game units): each step of height a shelf, its last ramp share rising to the next; fading in over over; never by a river.", "on": true, "from": 1.8, "step": 0.9, "ramp": 0.35, "over": 0.6 },
   "auto": { "_": "land3d.gd _control_from_land: the auto shader (rock on cliffs, by slope) only where the ground is this steep or bare grass; cliff, the normal's height under which it is a cliff (lower, fewer cliffs).", "cliff": 0.94, "slope": 2.6, "high": 4.0, "_slope": "slope: Terrain3D auto_slope, how soon a slope turns rock (higher: gentler slopes rock; was 1.6, the hills read as grass mounds); high: auto_height_reduction, rock creeping over high ground (4: a quarter of a 7-unit mountain's ground is rock from height alone; was 0.1)." },
   "winter": { "snow": [0.74, 0.78, 0.86], "paint": 0.75 },
   "surf": false,
