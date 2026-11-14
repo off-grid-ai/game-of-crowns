@@ -19,6 +19,7 @@ const Heraldry := preload("res://scripts/heraldry.gd")
 const S := Units.M  # world units a metre
 
 var main: Node
+const ViewTier := preload("res://scripts/view_tier.gd")
 var _done := {}  # castle node -> its dressing {torches: [lights and flames]}
 var _rng := RandomNumberGenerator.new()
 
@@ -62,20 +63,25 @@ func _tick() -> void:
 		if folk.has("drill") and st:
 			var town: Dictionary = st.city(int(_done[c].get("city", -1)))
 			preload("res://scripts/castle_folk.gd").show_lines(folk, preload("res://scripts/castle_folk.gd").garrison_lines(units, Aw.civilian, Aw.ships, town, (folk["drill"] as Array).size()))
-	# The castle's people come and go with the camera, by the villagers' rule (villagers.gd lived_in): one castle
-	# peopled a tick, every far one emptied.
-	var v: Node = main.get("villagers") if main else null
+	# The castle's people come and go with its tier (view_tier.gd, the one decider): NEAR, everyone; MID, only the
+	# walls' guards and the gate's folk walking; FAR, nobody; off screen, as they were. One castle peopled a tick.
 	var peopled := false
 	for c in _done:
 		var d: Dictionary = _done[c]
 		if not d.has("xf"):
 			continue  # not our builder's castle
-		var near: bool = v != null and v.lived_in(c.global_position)
-		if near and not d.has("folk") and not peopled:
-			_people(d)
-			peopled = true
-		elif not near and d.has("folk"):
+		var tier := ViewTier.of(c.global_position, float(d["sp"].get("w", 18)) * Builder.CELL * 0.5 * float(d["scale"]))
+		if tier == ViewTier.OFF:
+			continue
+		var want := 2 if tier == ViewTier.NEAR else (1 if tier == ViewTier.MID else 0)
+		var has := int(d["folk"]["level"]) if d.has("folk") else 0
+		if want == has:
+			continue
+		if has > 0:
 			_unpeople(d)
+		if want > 0 and not peopled:
+			_people(d, want == 2)
+			peopled = true
 	if main == null or main.get("towns") == null:
 		return
 	for id in main.towns.towns:
@@ -176,8 +182,8 @@ func _dress(id: int, root: Node3D, castle: Node3D) -> void:
 ## The castle's people, made when the camera comes near (_tick): a guard on each curtain's walk, the folk through
 ## the gate, the door's guards at the top of the steps, and the bailey lived in (castle_folk.gd: drill, the butts,
 ## the smith, the stores' cart, servants and grooms). All of them kept in d["folk"], freed together by _unpeople.
-func _people(d: Dictionary) -> void:
-	var f := {"nodes": []}
+func _people(d: Dictionary, full := true) -> void:
+	var f := {"nodes": [], "level": 2 if full else 1}
 	d["folk"] = f
 	var xf: Transform3D = d["xf"]
 	var colour: Color = d["colour"]
@@ -189,6 +195,8 @@ func _people(d: Dictionary) -> void:
 	if not (d["gate"] as Array).is_empty():
 		for i in int(wk.get("count", 3)):
 			f["nodes"].append(_walker(d["gate"], colour, wk, scale, i))
+	if not full:
+		return  # MID: the walls and the gate only
 	for p in d["door"]:
 		var g: Node3D = main.scenes.people.make(_rng, "soldier", colour.lerp(Color.WHITE, 0.3), "adult")
 		add_child(g)

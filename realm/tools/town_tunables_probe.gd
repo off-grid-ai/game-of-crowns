@@ -8,7 +8,7 @@ extends SceneTree
 
 const Data := preload("res://scripts/data.gd")
 const KNOBS := [
-	["villagers", "VIEW_RADIUS", "crowd", "villagers.view_radius", 30.0],
+	["villagers", "MID_EVERY", "crowd", "villagers.mid_every", 3],
 	["villagers", "MAX_PER_TOWN", "crowd", "villagers.most_per_town", 40],
 	["villagers", "WALK_SPEED", "crowd", "villagers.walk_speed", 0.17],
 	["villagers", "CHILD_REACH", "crowd", "villagers.child_reach", 0.36],

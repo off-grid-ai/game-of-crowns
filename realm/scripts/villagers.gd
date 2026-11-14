@@ -6,7 +6,9 @@ const Awareness := preload("res://scripts/awareness.gd")  # a mind's part handed
 ## and the fields, stop to work, and go indoors at night. Purely visual: the
 ## simulation of how many people there are belongs to Freeciv (town size).
 
-static var VIEW_RADIUS: float = preload("res://scripts/data.gd").num("crowd", "villagers.view_radius", 30.0)  # only the towns round where you look have their people about: beyond, nobody is drawn
+const ViewTier := preload("res://scripts/view_tier.gd")  # how much of each town is alive (the one decider)
+static var MID_EVERY: int = int(preload("res://scripts/data.gd").num("crowd", "villagers.mid_every", 3))  # at MID one villager in this many walks, the rest stand down
+var _tier := {}  # town id -> its ViewTier tier this second
 static var MAX_PER_TOWN: int = int(preload("res://scripts/data.gd").num("crowd", "villagers.most_per_town", 40))
 ## How often a townsperson far from the camera moves: anim_lod.gd's one set of
 ## distances and strides, shared by how they move and how they animate.
@@ -115,7 +117,11 @@ func _process_timed(delta: float) -> void:
 	# and jumped on the third while its stride played every frame.
 	_frame += 1
 	for id in crowds:
+		if int(_tier.get(id, ViewTier.NEAR)) == ViewTier.OFF:
+			continue  # off screen: nothing of the town processes
 		for a in crowds[id]:
+			if a.get("thin", false):
+				continue  # stood down at MID
 			var owed: float = a.get("owed", 0.0) + delta
 			if not AnimLOD.moves_now(a["node"]):
 				a["owed"] = owed
@@ -226,23 +232,40 @@ func _folk_route(n: Node) -> PackedVector2Array:
 	return PackedVector2Array()
 
 
+## Going (view_tier.gd decides now): kept only for towns.gd _life_near until a town's life reads ViewTier.
 ## Whether a place is close enough to the lens to have its people about: the camera below the realm's height and the
 ## place within VIEW_RADIUS of where it looks. The one rule for every crowd that comes and goes with the camera (the
 ## towns' folk here, the castles' in castle_life.gd, a town's life and scenes in towns.gd): nobody is made or kept
 ## where nobody can see them. `lead`: that much further out, for what is made ahead of the eye (a town's life
 ## staged over frames before it comes into view).
 func lived_in(p: Vector3, lead := 0.0) -> bool:
-	return rig.distance < 60.0 + lead and p.distance_to(rig.target) < VIEW_RADIUS + lead
+	return rig.distance < 60.0 + lead and p.distance_to(rig.target) < Data.num("crowd", "villagers.view_radius", 30.0) + lead
+
+
+## A town's crowd at its tier (view_tier.gd): NEAR, everyone out and thinking; MID, one in MID_EVERY walking on
+## where they were going, nobody thinking, the rest stood down out of sight; OFF, nobody thinking, nothing stepped.
+func _at_tier(id: int, tier: int) -> void:
+	for a in crowds.get(id, []):
+		var n: Node3D = a["node"]
+		var thin: bool = tier == ViewTier.MID and int(a["i"]) % maxi(MID_EVERY, 1) != 0
+		a["thin"] = thin
+		if thin:
+			n.visible = false
+		var mind := n.get_node_or_null("Mind") as BTPlayer
+		if mind:
+			mind.active = tier == ViewTier.NEAR
 
 
 func _refresh() -> void:
 	_rain_pace = Data.num("towns", "wet.hurry", 1.25) if TownLife.wet() else 1.0  # rain: those out hurry (towns.json wet)
 	for id in towns.towns.keys():
 		var node: Node3D = towns.towns[id]["node"]
-		var near := lived_in(node.global_position)
-		if near and not crowds.has(id) and not _spawning.has(id):
+		var tier := ViewTier.of(node.global_position, TownLife.centre_reach(node))
+		var was := int(_tier.get(id, -1))
+		_tier[id] = tier
+		if (tier == ViewTier.NEAR or tier == ViewTier.MID) and not crowds.has(id) and not _spawning.has(id):
 			_spawn(id)
-		elif not near and crowds.has(id):
+		elif tier == ViewTier.FAR and crowds.has(id):
 			for a in crowds[id]:
 				a["node"].queue_free()
 				if a.has("agent"):
@@ -251,16 +274,21 @@ func _refresh() -> void:
 			_forget_others(id)
 			talk.forget(id)
 			nav.forget(id)
+		elif crowds.has(id) and tier != was:
+			_at_tier(id, tier)
 	for id in crowds.keys():
-		if towns.towns.has(id):
+		if towns.towns.has(id) and int(_tier.get(id, ViewTier.NEAR)) != ViewTier.OFF:
 			_keep_up(id)
 	_minds_at -= 1.0
 	if _minds_at <= 0.0:
 		_minds_at = 4.0
 		for id in crowds:
-			_ask_plans(id)
-			_tell_attention(id)
+			if int(_tier.get(id, ViewTier.NEAR)) == ViewTier.NEAR:
+				_ask_plans(id)
+				_tell_attention(id)
 	for id in crowds:
+		if int(_tier.get(id, ViewTier.NEAR)) != ViewTier.NEAR:
+			continue  # only a NEAR town's people think, see and talk
 		_witness(id)
 		talk.prune(id)
 		_follow_parents(id)
@@ -458,10 +486,7 @@ func _spawn(id: int) -> void:
 			mind.active = false  # thinks once the whole crowd is made, as one: its choices read the town's crowd
 	crowds[id] = list
 	_spawning.erase(id)
-	for a in list:
-		var mind := (a["node"] as Node).get_node_or_null("Mind") as BTPlayer
-		if mind:
-			mind.active = true
+	_at_tier(id, int(_tier.get(id, ViewTier.NEAR)))  # the minds wake (NEAR) or the crowd thins (MID), as one
 	# Every child has a parent: the grown-up of the town whose door is nearest theirs.
 	for a in list:
 		if a["role"] != "child":
