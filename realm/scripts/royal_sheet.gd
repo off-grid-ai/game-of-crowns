@@ -167,9 +167,17 @@ func open() -> void:
 		_row(v, _w("kin", "Kin"), "; ".join((r["kin"] as Array).map(func(c): return line_of(c))))
 	# His word: the promises open, and the last kept or broken (bridge promises.js).
 	var ps := promises()
-	if not ps.is_empty():
+	var vows := _vows()
+	if not ps.is_empty() or not vows.is_empty():
 		v.add_child(HSeparator.new())
 		v.add_child(T.label(_w("word", "His word")))
+		# His vows to take back a lost town (casebook, Defeat is a chapter): open, then kept.
+		for tid in vows:
+			var town := String(ui.town_of.call(int(tid)).get("name", ""))
+			if vows[tid] is bool and bool(vows[tid]):
+				_say(v, _w("vow_open", "Sworn to take back {town}").replace("{town}", town), T.TEXT)
+			elif String(vows[tid]) == "kept":
+				_say(v, _w("vow_kept", "Kept: took back {town}").replace("{town}", town), T.ACCENT)
 		# What it is worth now (bridge promises.js trust).
 		var tb := trust_band()
 		if String(tb.get("says", "")) != "":
@@ -547,6 +555,10 @@ func on_chronicle(entries: Array) -> void:
 	for e in entries:
 		if String(e.get("kind", "")) == "rebellion":
 			_rising(e)
+		# A beaten lord's fate, with the odds he rode out under (casebook, Dice that feel like cheating; Battle Brothers).
+		if String(e.get("kind", "")) == "battle" and e.get("odds") is Dictionary:
+			var said := "%s  %s" % [String(e.get("text", "")), odds_line(e["odds"])]
+			ui.toast(said)
 		# A crown town lost, and won back (casebook, Defeat is a chapter: losing opens a thread; Kenshi's march back).
 		if String(e.get("kind", "")) == "city_transferred" and e.get("city") != null:
 			if int(e.get("from", -2)) == crown:
@@ -555,18 +567,27 @@ func on_chronicle(entries: Array) -> void:
 				_won_back(e)
 
 
+## A lord's fate odds in the realm's words (bridge battles.js fateOdds: escaped, wounded, taken, slain, each 0..1):
+## royal_sheet.json fate.odds, "in 100" the way a soldier would say it.
+static func odds_line(o: Dictionary) -> String:
+	var line := String(Data.value("royal_sheet", "fate.odds", ""))
+	for k in ["escaped", "wounded", "taken", "slain"]:
+		line = line.replace("{%s}" % k, str(roundi(float(o.get(k, 0.0)) * 100.0)))
+	return line
+
+
 ## The King's vows to take back a lost town, by town id, for this reign (settings.cfg play.vows).
 func _vows() -> Dictionary:
 	var all: Dictionary = Settings.get_value("vows") if Settings.get_value("vows") is Dictionary else {}
 	return all.get(String((ui.reign_now as Dictionary).get("id", "")), {})
 
 
-func _set_vow(town: int, on: bool) -> void:
+func _set_vow(town: int, on: Variant) -> void:  # true: sworn; "kept": won back as sworn; false: let go
 	var all: Dictionary = Settings.get_value("vows") if Settings.get_value("vows") is Dictionary else {}
 	var rid := String((ui.reign_now as Dictionary).get("id", ""))
 	var mine: Dictionary = all.get(rid, {})
-	if on:
-		mine[str(town)] = true
+	if on is String or bool(on):
+		mine[str(town)] = on
 	else:
 		mine.erase(str(town))
 	all[rid] = mine
@@ -616,9 +637,10 @@ func _lost(e: Dictionary) -> void:
 
 func _won_back(e: Dictionary) -> void:
 	var town_id := int(e["city"])
-	if not _vows().has(str(town_id)):
+	var vow: Variant = _vows().get(str(town_id))
+	if not (vow is bool and bool(vow)):
 		return
-	_set_vow(town_id, false)
+	_set_vow(town_id, "kept")
 	var w: Dictionary = Data.value("royal_sheet", "lost", {})
 	var said := String(w.get("kept", "")).replace("{town}", String(ui.town_of.call(town_id).get("name", "")))
 	ui.toast(said)

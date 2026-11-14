@@ -46,7 +46,7 @@ var _seen := {}  # scene id -> true: each scene is news once
 ## The bridge's records the views draw, as /world sends them (bridge/view.js): the records slice. A view reads one
 ## with `rec`; nobody holds /world itself.
 const RECORDS := ["cities", "players", "units", "roads", "scenes", "date", "reign", "story", "crown", "seatId",
-	"crownId", "sitting", "counsel", "fallen", "effects", "peace", "prosperity", "souls", "goal", "threat", "turn", "royals", "promises", "trust", "rival", "works", "rebels", "vassals", "plague"]
+	"crownId", "sitting", "counsel", "fallen", "effects", "peace", "prosperity", "souls", "goal", "threat", "turn", "royals", "promises", "trust", "rival", "works", "rebels", "vassals", "plague", "fate"]
 var _records := {}
 
 const SceneKinds := preload("res://scripts/scene_kinds.gd")  # reach, power and tone of each kind

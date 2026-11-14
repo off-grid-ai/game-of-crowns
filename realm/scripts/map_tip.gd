@@ -18,7 +18,7 @@ var _wait := 0.0
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	T.glass(self)
-	_line = T.datum("", T.SIZE_DESC, T.TEXT)
+	_line = T.prose("", T.SIZE_DESC, T.TEXT)
 	_line.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_line)
 	visible = false
@@ -121,5 +121,10 @@ func _host_at(p: Vector3) -> String:
 		var n := int(h.get("companies", 1))
 		var order = h.get("order")
 		var doing := String((order as Dictionary).get("kind", "ease")) if order is Dictionary else "ease"
-		return "  ·  ".join(PackedStringArray([who, _w("one_company") if n == 1 else _w("companies", {"n": n}), _w(doing)]))
+		var parts := PackedStringArray([who, _w("one_company") if n == 1 else _w("companies", {"n": n}), _w(doing)])
+		# What its lord risks if it is beaten (bridge /world fate; a lord rides with a great house's host).
+		var fate = main.awareness.rec("fate", {})
+		if doing in ["attack", "besiege"] and fate is Dictionary and not (fate as Dictionary).is_empty() and not house.is_empty():
+			parts.append(_w("lord_risk", {"slain": roundi(float(fate.get("slain", 0.0)) * 100.0), "taken": roundi(float(fate.get("taken", 0.0)) * 100.0)}))
+		return "  ·  ".join(parts)
 	return ""
