@@ -116,7 +116,7 @@ func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 
 	_fields(root, hungry)
 	if kind == "Building" and building != "" and building != "Coinage":
-		_construction(root, life, center, building, progress, rng, int(c["size"]))
+		_construction(root, life, center, building, progress, rng, int(c["size"]), house if bool(c.get("royal", false)) else {})
 	elif kind == "UnitType" and building != "" and not building in Awareness.civilian:  # a soldier's training, not a civilian's (bridge campaigns.js CIVILIAN)
 		_drill(root, life, center, progress, color, building)
 	var states := Works.states(c, _town_id)  # riot, grasping and a rising's side among them (the store's facts)
@@ -375,19 +375,26 @@ func _fields(root: Node3D, hungry: bool) -> void:
 
 
 ## A building site: the structure rises with real progress under scaffolding,
-## with timber stacked beside it and builders at work.
-func _construction(root: Node3D, life: Node3D, center: Vector3, building: String, progress: float, rng: RandomNumberGenerator, size: int) -> void:
+## with timber stacked beside it and builders at work. The King's own works (`royal`: the crown's house, the bridge's
+## royalWorks, /world's royal and progress) rise where the town view sees them, under a crown pennant (Stronghold's and
+## Manor Lords' sites, their lord's flag over the scaffold): towns.json royal_works.
+func _construction(root: Node3D, life: Node3D, center: Vector3, building: String, progress: float, rng: RandomNumberGenerator, size: int, royal := {}) -> void:
 	var kit := site_kit(building)
 	# Sites go up at the edge of town, on the first flat ground found that no
 	# house, wall or fence already stands on (with room round it for the builders).
 	var f: Vector2 = Real.footprint(kit)
 	var reach := clampf(1.6 + size * 0.32, 2.0, 6.0) + 0.7
 	var ang := rng.randf() * TAU
+	var rw: Dictionary = Data.value("towns", "royal_works", {})
+	var seen := _seen_dir(root, float(rw.get("turn", -0.6))) if not royal.is_empty() else Vector2.ZERO
+	if seen != Vector2.ZERO:
+		ang = atan2(seen.y, seen.x)  # the side of the town the lens looks across: tried first, then either side of it
 	var walls: Array = _blocked(root, life)
 	var plot := PackedVector2Array()
 	var found := false
 	for tries in 36:
-		var a := ang + TAU * (tries % 12) / 12.0
+		var o := tries % 12
+		var a := ang + TAU * ((o + 1) / 2 * (1 if o % 2 == 1 else -1)) / 12.0  # outward from `ang`, either side in turn
 		var probe := Vector3(cos(a), 0, sin(a)) * (reach + (tries / 12) * 0.5)
 		var wp := center + probe
 		if not terrain.is_land(wp.x, wp.z) or absf(terrain.height_at(wp.x + 0.4, wp.z) - terrain.height_at(wp.x - 0.4, wp.z)) >= 0.3:
@@ -406,7 +413,15 @@ func _construction(root: Node3D, life: Node3D, center: Vector3, building: String
 	if not found:
 		return  # nowhere to build in sight: the work goes on unseen
 	var off := Vector3((plot[0].x + plot[2].x) / 2.0, 0, (plot[0].y + plot[2].y) / 2.0)
-	_site(root, life, center, off + Vector3(0, _y(center, off), 0), ang, kit, f, plot, clampf(progress, 0.08, 1.0), rng)
+	var site := _site(root, life, center, off + Vector3(0, _y(center, off), 0), ang, kit, f, plot, clampf(progress, 0.08, 1.0), rng)
+	if site and not royal.is_empty():
+		# The crown's pennant over the scaffold, at the poles' top (_site: a pole stands full * 1.05), in the crown's arms.
+		var top := maxf(f.x, f.y) * 0.6 * 1.05
+		var col := Color.from_string(String(royal.get("color", "#c8a040")), Color(0.78, 0.63, 0.25))
+		var pen: Node3D = preload("res://scripts/heraldry.gd").standard(royal, col, float(rw.get("pennant", 0.5)))
+		pen.name = "RoyalPennant"
+		pen.position = off + Vector3(0, _y(center, off) + top, 0)
+		life.add_child(pen)
 	# What's being raised shows under the town's name on the map (map_labels.gd).
 	life.set_meta("doing", doing_line("Building", building, progress))
 
@@ -628,6 +643,18 @@ static func site_kit(building: String) -> String:
 		"City Walls", "Great Wall":
 			return Real.one("fence")
 	return Real.one("house_poor")
+
+
+## Which way out from the square the town view looks across (camera_rig.town_view: the lens on the near side, so the
+## far side is what it sees), turned `turn` radians toward the frame's right (negative: its left). ZERO without a rig.
+func _seen_dir(root: Node3D, turn: float) -> Vector2:
+	var rig: Node = towns_node.get_parent().get("rig") if towns_node and towns_node.get_parent() else null
+	if rig == null or not rig.has_method("town_view"):
+		return Vector2.ZERO
+	var yaw: float = float(rig.town_view(root)[1])
+	var away := -Vector2(sin(yaw), cos(yaw))  # from the square away from the camera
+	var right := Vector2(-away.y, away.x)
+	return away * cos(turn) + right * sin(turn)
 
 
 ## A building site (the royal works and any new building use the same): the
