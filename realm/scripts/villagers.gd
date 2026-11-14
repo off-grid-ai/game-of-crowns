@@ -286,14 +286,20 @@ func _keep_up(id: int) -> void:
 
 ## Raiders at the town (its scope's raid, awareness.gd): everyone out takes fright and runs (their mind's danger),
 ## and is indoors within towns.json raid.indoors seconds, out of sight until the raiders go; then they come out.
+## A plague (its scope's plague): towns.json plague.indoors of them keep to their houses, quietly, while it lasts.
 func _raid_indoors(id: int) -> void:
-	var raid := Engine.has_meta("awareness") and bool(Engine.get_meta("awareness").town(id).get_var(&"raid", false, false))
+	var bb: Variant = Engine.get_meta("awareness").town(id) if Engine.has_meta("awareness") else null
+	var raid := bb != null and bool(bb.get_var(&"raid", false, false))
+	var sick := bb != null and bool(bb.get_var(&"plague", false, false))
+	var share := Data.num("towns", "plague.indoors", 0.7)
 	var within: Array = Data.value("towns", "raid.indoors", [2.0, 5.0])
 	for a in crowds[id]:
-		if raid and not a.has("in_at"):
+		var go_in := raid or (sick and posmod(int(a["i"]) * 7, 10) < int(share * 10.0))
+		if go_in and not a.has("in_at"):
 			a["in_at"] = Time.get_ticks_msec() + int(1000.0 * (a["rng"] as RandomNumberGenerator).randf_range(float(within[0]), float(within[1])))
-			_flee(a, a["center"])
-		elif not raid:
+			if raid:
+				_flee(a, a["center"])
+		elif not go_in:
 			a.erase("in_at")
 
 
