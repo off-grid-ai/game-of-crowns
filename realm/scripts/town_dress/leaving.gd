@@ -41,6 +41,7 @@ func dress(root: Node3D, life: Node3D, _row: Dictionary, rng: RandomNumberGenera
 		plank.rotation = Vector3(PI * 0.5, atan2(face.x, face.z), 0.7 * sgn)  # stood up on the door, slanted across it
 		plank.set_meta("dress", "boarded door")
 		life.add_child(plank)
+	life.set_meta("shut", (life.get_meta("shut", []) as Array) + [step])  # its hearth goes cold (hearths.gd)
 	var path := PackedVector2Array(ways[int(pick[2])])
 	var route: Array = [step + face * 0.1]
 	for i in range(int(pick[3]), path.size()):

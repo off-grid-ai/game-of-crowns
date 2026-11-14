@@ -68,6 +68,12 @@ func _process(delta: float) -> void:
 			if pick >= float(hg.get("share", 0.5)):
 				lit = false  # nothing to cook: this hearth stays cold
 			thin = float(hg.get("thin", 0.35))
+		var life := root.get_node_or_null("Life")
+		if life != null:
+			for q in life.get_meta("shut", []):  # a house left, its door boarded (town_dress/leaving.gd): its hearth cold
+				var sd: Vector3 = root.global_transform * (q as Vector3)
+				if Vector2(sd.x - door.x, sd.z - door.z).length() < float(_d.get("door_match", 0.35)):
+					lit = false
 		smoke.set_meta("thin", thin)  # its share of the smoke; _far thins it again with the lens's distance
 		if smoke.emitting != lit:
 			smoke.emitting = lit
