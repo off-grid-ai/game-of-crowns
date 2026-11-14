@@ -82,24 +82,49 @@ static func marches(aw: Object) -> Array:
 	# ship (ships only carry armies: Mac).
 	if not aw.has_method("rec"):
 		return out
+	_keep(aw)
 	var crown := int(aw.rec("crownId", -1))
-	var civ: Array = preload("res://scripts/awareness.gd").civilian
 	var groups := {}  # Vector3i(owner, goal x, goal y) -> [sum of tiles, count]
-	for u in aw.rec("units", []):
-		var g: Variant = u.get("goto")
-		var kind := String(u.get("type", ""))
-		if not (g is Dictionary) or int(u.get("owner", -1)) == crown or kind in civ or kind in SHIPS:
+	for id in _marching:
+		var m: Array = _marching[id]
+		if int(m[0]) == crown:
 			continue
-		var at := Vector2(float(u.get("x", 0)), float(u.get("y", 0)))
-		var goal := Vector2(float(g.get("x", at.x)), float(g.get("y", at.y)))
-		if at.distance_to(goal) < 0.5:
-			continue
-		var key := Vector3i(int(u.get("owner", -1)), int(goal.x), int(goal.y))
+		var key := Vector3i(int(m[0]), int(m[1].x), int(m[1].y))
 		var gr: Array = groups.get(key, [Vector2.ZERO, 0])
-		groups[key] = [gr[0] + at, gr[1] + 1]
+		groups[key] = [gr[0] + m[2], gr[1] + 1]
 	for key in groups:
 		out.append([groups[key][0] / float(groups[key][1]), Vector2(key.y, key.z)])
 	return out
+
+
+## The soldiers on the march, kept per company as the store reports each change (awareness record_changed), so the
+## overview reads only those on the road instead of walking every unit each sync: id -> [owner, goal tile, tile].
+static var _marching := {}
+static var _kept_by: Object = null
+static func _keep(aw: Object) -> void:
+	if _kept_by == aw or not aw.has_signal("record_changed"):
+		return
+	_kept_by = aw
+	_marching.clear()
+	for u in aw.rec("units", []):  # once, for what came before it was asked
+		_note(u)
+	aw.record_changed.connect(func(kind: String, id: int, now: Dictionary, _was: Dictionary):
+		if kind == "units":
+			_marching.erase(id)
+			if not now.is_empty():
+				_note(now))
+
+
+## A company Freeciv sends somewhere (its goto), not a civilian or a ship (ships only carry armies: Mac), not yet there.
+static func _note(u: Dictionary) -> void:
+	var g: Variant = u.get("goto")
+	var kind := String(u.get("type", ""))
+	if not (g is Dictionary) or kind in (preload("res://scripts/awareness.gd").civilian as Array) or kind in SHIPS:
+		return
+	var at := Vector2(float(u.get("x", 0)), float(u.get("y", 0)))
+	var goal := Vector2(float(g.get("x", at.x)), float(g.get("y", at.y)))
+	if at.distance_to(goal) >= 0.5:
+		_marching[int(u.get("id", -1))] = [int(u.get("owner", -1)), goal, at]
 
 
 ## The towns under siege: their tiles.
