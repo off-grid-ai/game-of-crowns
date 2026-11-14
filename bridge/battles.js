@@ -94,6 +94,15 @@ export function card(meta, world, f, turn, crownId) {
 // men or more (CK3's commanders slain or taken in battle): he escapes, is wounded, taken (ransomed to the victor from
 // his house's chest) or slain (court.die, his heir succeeds), by the fate's weights. Set once on the card: sides[].fled,
 // sides[].lord {name, fate, odds}; the chronicle line of his fate carries odds {escaped, wounded, taken, slain}, 0..1.
+// The odds of a beaten lord's fate, before any battle (/world fate; Loop's battle and court cards): each 0..1, and the
+// men his side must lose for it to be rolled (hosts.json battles.fate).
+export function fateOdds() {
+  const F = HOSTS.battles?.fate;
+  if (!F) return null;
+  const total = Object.values(F.weights).reduce((t, w) => t + w, 0);
+  return { ...Object.fromEntries(Object.entries(F.weights).map(([k, w]) => [k, Math.round((w / total) * 100) / 100])), minLost: F.minLost };
+}
+
 export function season(ctx, turn) {
   const { meta, world, court, send, record } = ctx;
   const F = HOSTS.battles?.fate;
@@ -111,7 +120,7 @@ export function season(ctx, turn) {
       let acc = 0;
       const fate = Object.entries(F.weights).find(([, w]) => (acc += w) > roll)?.[0] ?? "escaped";
       // The roll's odds go with the news (casebook, Dice that feel like cheating; Battle Brothers' shown odds).
-      const odds = Object.fromEntries(Object.entries(F.weights).map(([k, w]) => [k, Math.round((w / total) * 100) / 100]));
+      const { minLost, ...odds } = fateOdds();
       s.lord = { name: lord.name, fate, odds };
       const where = c.place ?? "in the field";
       if (fate === "slain") {
