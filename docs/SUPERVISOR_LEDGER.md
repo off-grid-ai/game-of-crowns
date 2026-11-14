@@ -133,6 +133,7 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- 11-14 06:02 army blocked on banners (no /world field for banner men); bridge (hosts.js owner) asked for banners: [{owner, units, city, x, y}] plus the join as a host at Kingsmere. Army meanwhile: fallen at the seam or men through the breach. Landed army ef61a6b8 (dust, charge shock). Ruling: file owners stay; no cross-edits.
 - 11-14 05:58 g21: battle PASS (grey horse charges into the red block across the lens, standards up). Bridge landed adc544f7 (raid frame), ff91049e (banners march). Army next: dust and fallen at the seam, banners through the gate. g22 (raid town realm) running.
 - 11-14 05:45 round: landed army 403d0d1f (front to front, lens across). g21 started (battle siege). All four idle: look to siege fire and smoke (04-siege), square to gardens and washing lines, bridge to a raid frame in render_pass, army waits on g21. Bottleneck: idle threads, each given work.
 - 11-14 05:41 g20: trees PASS (calm deep-green crowns, no yellow shards: a3be4dfc reached the shot); battle: lines in contact but flank to flank, top-down, a parade: army told front to front, low oblique, fighting at the seam.
