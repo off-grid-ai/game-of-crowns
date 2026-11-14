@@ -337,8 +337,10 @@ func _build_top_bar() -> void:
 	_next_row.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	_next_row.visible = false
 	_next_row.gui_input.connect(func(e: InputEvent):
-		if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT and _next_at >= 0:
-			ui.focus_city.emit(_next_at))
+		if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
+			var at := _next_at_x((e as InputEventMouseButton).global_position.x)
+			if at >= 0:
+				ui.focus_city.emit(at))
 	_seals = Label.new()
 	_seals.add_theme_font_override("font", T.mono)
 	_seals.add_theme_font_size_override("font_size", T.SIZE_LABEL)
@@ -571,6 +573,7 @@ var _next: Label
 var _next_clock: Label
 var _next_fill: ColorRect
 var _next_at := -1  # its town, flown to on a click
+var _next_voices: Array = []  # two councillors' uses for the next seal (next.js voices): each half of the line goes to its own town
 var _next_ends := -1.0  # when its countdown runs out (engine seconds); -1 for a step with no clock
 var _next_key := ""  # what it says, to tell a new one from the same one
 var _last_act_told := ""
@@ -750,7 +753,12 @@ func _show_next(n) -> void:
 	_next_fill.color = col
 	_next_fill.size.x = 48.0 * clampf(float(n.get("frac", 0.0)), 0.0, 1.0)
 	_next_at = int(n["city"]) if n.get("city") != null else -1
-	_next_row.tooltip_text = "What you can do next.%s" % ("\nClick to go there" if _next_at >= 0 else "")
+	_next_voices = n.get("voices", []) if n.get("voices") is Array else []
+	if _next_voices.size() == 2:
+		# Competing needs (KoDP's council): one seal, two uses, each councillor's own; whichever he seals, the other waits.
+		_next_row.tooltip_text = "One seal, two uses: %s wants one, %s the other. Whichever you seal, the other waits.\nClick either to go there" % [String(_next_voices[0].get("who", "")), String(_next_voices[1].get("who", ""))]
+	else:
+		_next_row.tooltip_text = "What you can do next.%s" % ("\nClick to go there" if _next_at >= 0 else "")
 	var key := String(n.get("text", ""))
 	if n.get("seconds") != null:
 		var ends := Time.get_ticks_msec() / 1000.0 + float(n["seconds"])
@@ -762,6 +770,18 @@ func _show_next(n) -> void:
 		_next_clock.text = String(n.get("count", "")) if n.get("count") != null else ""
 	_next_key = key
 	_tick_next()
+
+
+## The town a click on the line goes to: with two voices, the half of the words clicked (the first voice's words
+## end at the line's separator); else the line's own town.
+func _next_at_x(x: float) -> int:
+	if _next_voices.size() != 2:
+		return _next_at
+	var first := _next.text.get_slice("  ·  ", 0)
+	var font := _next.get_theme_font("font")
+	var w := font.get_string_size(first, HORIZONTAL_ALIGNMENT_LEFT, -1, _next.get_theme_font_size("font_size")).x if font else _next.size.x / 2.0
+	var v: Dictionary = _next_voices[1] if x - _next.global_position.x > w else _next_voices[0]
+	return int(v["city"]) if v.get("city") != null else _next_at
 
 
 func _tick_next() -> void:
