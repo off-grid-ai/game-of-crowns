@@ -468,10 +468,36 @@ func lay_lanes(root: Node3D, center: Vector3, main: Array, count: int, square_r:
 	var rings: Array = TownPlots.rings(radii, square_r, tb._ways_grid, land, rng.seed + 19)
 	keep_ways(root, center, rings)
 	root.set_meta("ways_ring", rings.size())
+	var quay := lay_quay(root, center, square_r, land)
+	if not quay.is_empty():
+		rings = rings + [quay]
 	var lanes: Array = TownPlots.lanes(main, count, square_r, float(root.get_meta("plot_edge", square_r + 3.6)), tb._ways_grid, land, rng.seed + 17)
 	keep_ways(root, center, lanes, false, true)
 	tb._ways_grid = null
 	return rings + lanes
+
+
+## A harbour town's quay (towns.json quay; supervisor's queue: Eaglehaven and the island towns): the waterfront laid in
+## the square's setts as a street the houses front (the plot cutter takes it with the town's other ways), its line
+## kept on the root (meta quay) for the fish market and the fishermen (town_dress/quay.gd). Empty inland.
+func lay_quay(root: Node3D, center: Vector3, square_r: float, land: Callable) -> PackedVector2Array:
+	var k: Dictionary = preload("res://scripts/data.gd").value("towns", "quay", {})
+	if k.is_empty():
+		return PackedVector2Array()
+	var edge := float(root.get_meta("plot_edge", square_r + 3.6))
+	var half := float(k.get("width", 0.5)) * 0.5
+	var line := TownPlots.shore(square_r + float(k.get("from_square", 0.3)), edge, land, half + float(k.get("lip", 0.05)), float(k.get("least", 2.0)), root.get_meta("footprints", []))
+	if line.is_empty():
+		return line
+	for i in range(1, line.size()):
+		paint_way(root, center, line[i - 1], line[i], half * 2.0, "paved")
+		tb._note_paved(root, line[i - 1], line[i], half)
+	var kept: Array = root.get_meta("lanes", [])
+	for i in range(1, line.size()):
+		kept.append([line[i - 1], line[i]])
+	root.set_meta("lanes", kept)
+	root.set_meta("quay", line)
+	return line
 
 
 ## `back`: back lanes (TownPlots.lanes), trodden earth worn soft into the ground (towns.json lanes; research

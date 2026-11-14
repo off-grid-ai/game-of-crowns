@@ -394,6 +394,42 @@ static func _noise(seed: int) -> FastNoiseLite:
 
 ## Marks every cell under `polys` (town-local outlines: a castle, a landmark, a stall) solid,
 ## so lanes laid after them go round.
+## A harbour town's waterfront (town-local polyline), the quay's line: round the town every `steps` of a turn, the
+## first water out from `from` within `edge` (`land` takes town-local Vector2); the longest unbroken run of those
+## bearings, each point `inset` back from the water's edge, never inside a footprint (`polys`). Empty when the town's
+## water is shorter than `least` (game units): an inland town, or a pond. Anno's and Stronghold's harbours: the
+## waterfront is a street, the quay, that the houses front.
+static func shore(from: float, edge: float, land: Callable, inset: float, least: float, polys: Array, steps := 64) -> PackedVector2Array:
+	var hits: Array = []
+	for i in steps:
+		var dir := Vector2.from_angle(TAU * i / steps)
+		var found := -1.0
+		var t := from
+		while t <= edge:
+			if not bool(land.call(dir * t)):
+				found = t
+				break
+			t += 0.05
+		var q := dir * (found - inset)
+		if found < 0.0 or found - inset < from or polys.any(func(p): return p is PackedVector2Array and (p as PackedVector2Array).size() >= 3 and Geometry2D.is_point_in_polygon(q, p)):
+			hits.append(null)
+		else:
+			hits.append(q)
+	# The longest run round the circle (it may wrap past bearing 0).
+	var best: Array = []
+	var run: Array = []
+	for i in steps * 2:
+		var h: Variant = hits[i % steps]
+		if h == null:
+			run = []
+			continue
+		run.append(h)
+		if run.size() > best.size() and run.size() <= steps:
+			best = run.duplicate()
+	var line := PackedVector2Array(best)
+	return line if length(line) >= least else PackedVector2Array()
+
+
 static func block(g: AStarGrid2D, polys: Array) -> void:
 	for poly in polys:
 		if not poly is PackedVector2Array or (poly as PackedVector2Array).size() < 3:
