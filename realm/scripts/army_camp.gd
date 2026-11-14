@@ -9,12 +9,11 @@ const Data := preload("res://scripts/data.gd")
 const CampKit := preload("res://scripts/camp_kit.gd")
 const Heraldry := preload("res://scripts/heraldry.gd")
 const Horse := preload("res://scripts/horse.gd")
-const Awareness := preload("res://scripts/awareness.gd")  # the season: a winter camp huddles at more fires
 
 
 ## Pitched beside the column whose middle is `mid`, heading `yaw` (forward (sin, 0, cos)), `length` long, on the
 ## side away from the road's verge it is given (`side` +1 its right, -1 its left).
-func pitch(scenes: Node, mid: Vector3, yaw: float, length: float, side: float, col: Color, house: Dictionary, r: RandomNumberGenerator) -> void:
+func pitch(scenes: Node, mid: Vector3, yaw: float, length: float, side: float, col: Color, house: Dictionary, r: RandomNumberGenerator, hungry := false) -> void:
 	name = "HostCamp"
 	var k: Dictionary = Data.value("army", "camp", {})
 	var fwd := Vector3(sin(yaw), 0, cos(yaw))
@@ -45,12 +44,11 @@ func pitch(scenes: Node, mid: Vector3, yaw: float, length: float, side: float, c
 					tent.add_child(flag)
 				n += 1
 			along += float(t.get("every", 0.38))
-	# Cook fires between the rows; in winter more of them, the men huddled round (The march feeds the battle: a host
-	# wintering in the field; army.json camp.winter).
+	# Cook fires between the rows; a hungry host's more of them, its men huddled round what little there is (The march
+	# feeds the battle; bridge hosts.js hungry; army.json camp.hungry).
 	var f: Dictionary = k.get("fires", {})
-	var winter := String(Awareness.store().realm.get_var(&"season", "", false)) == "winter" if Awareness.store() else false
-	if winter:
-		f = f.merged(k.get("winter", {}), true)
+	if hungry:
+		f = f.merged(k.get("hungry", {}), true)
 	var fires := int(f.get("count", 2))
 	for i in fires:
 		var p: Vector3 = scenes.ground(mid + right * float(f.get("at", 0.62)) + fwd * lerpf(-span * 0.35, span * 0.35, (i + 0.5) / float(fires)))

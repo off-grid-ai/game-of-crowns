@@ -83,7 +83,7 @@ const ArmyCamp := preload("res://scripts/army_camp.gd")  # a field host's camp w
 const Horse := preload("res://scripts/horse.gd")  # the scouts' mounts
 var _order_kind := "?"  # a field host's order now (/world hosts[].order.kind; "" at ease), as units.gd last gave it
 var _camp: Node3D = null  # its camp while it holds (army_camp.gd)
-var _camp_season := ""  # the season it was pitched in: a new season pitches it afresh (winter's fires)
+var _hungry := false  # short of supply (/world hosts[].hungry, bridge hosts.js): its camp huddles at more fires
 var _scouts: Array = []  # a field host's horsemen riding ahead of its column (Horse with a rider)
 var _baggage: Array = []  # a field host's carts behind its column: {node, carter, off, s}
 var _aboard := false  # taken ship (board): its regiments filing to the hulls, then on their decks
@@ -416,10 +416,14 @@ func order_now(o: Variant) -> void:
 ## A field host's hunger now (units.gd each sync: /world hosts[].stragglers, bridge hosts.js supply: the share of its
 ## men out of the line as its supply runs out; The march feeds the battle, Bannerlord's and Total War's attrition): in
 ## each regiment that share of its men, the rearmost first, trail behind and wide of their places (army.json
-## stragglers: back, across, in world units), each always the same man, so a hungry column frays at its tail.
+## stragglers: back, across, in world units), each always the same man, so a hungry column frays at its tail; and
+## while it is hungry (hosts[].hungry) its camp's men huddle at more fires (army_camp.gd, army.json camp.hungry).
 var _stragglers := 0.0
 
 func hunger_now(h: Dictionary) -> void:
+	if bool(h.get("hungry", false)) != _hungry:
+		_hungry = not _hungry
+		_strike_camp()  # pitched again for it (_process): a hungry camp huddles at its fires
 	var share := clampf(float(h.get("stragglers", 0.0)), 0.0, 0.5)
 	if absf(share - _stragglers) < 0.01:
 		return
@@ -451,12 +455,7 @@ func _pitch_camp() -> void:
 	var mid_s := _halt_head() - length * 0.5
 	_camp = ArmyCamp.new()
 	add_child(_camp)
-	_camp.pitch(scenes, _at(mid_s), _heading(mid_s), length, 1.0, _regiments[0]["colour"], _regiments[0].get("house", {}), _rng)
-
-
-func _season_now() -> String:
-	var st: Node = Awareness.store()
-	return String(st.realm.get_var(&"season", "", false)) if st else ""
+	_camp.pitch(scenes, _at(mid_s), _heading(mid_s), length, 1.0, _regiments[0]["colour"], _regiments[0].get("house", {}), _rng, _hungry)
 
 
 func _strike_camp() -> void:
@@ -1526,11 +1525,8 @@ func _process(delta: float) -> void:
 			"halt", "rest":
 				_at_ease(r, delta)
 	_far_view()
-	if _camp != null and _camp_season != _season_now():
-		_strike_camp()  # the season turned: pitched again for it below
 	if _camp == null and not _aboard and battle.has("host") and _camps() and _regiments.all(func(r): return r["state"] == "halt"):
 		_pitch_camp()
-		_camp_season = _season_now()
 	if _then_free and _regiments.all(func(r): return r["state"] == "halt"):
 		queue_free()
 		return

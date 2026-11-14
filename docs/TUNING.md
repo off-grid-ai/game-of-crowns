@@ -535,6 +535,6 @@ Switches (`--name`) go after `--` on the game's command line.
 - How long the victors cheer when the field is won, before they stand at ease: `realm/data/battle.json` `field.play.cheer_s` (4.0, each regiment ±20%).
 - Torches in a night assault: one storming man in so many carries a lit torch when the sky is dark: `realm/data/siege.json` `assault.torch_every` (3).
 - A host's captain on its map plate: `realm/data/map.json` `marks.line.plate_captain` ("Captain {captain} · {men} troops").
-- A host wintering in the field: its camp's cook fires and the men huddled at each in winter: `realm/data/army.json` `camp.winter` (count 4, sitters 5).
+- A hungry host's camp (/world hosts[].hungry): its cook fires and the men huddled at each: `realm/data/army.json` `camp.hungry` (count 4, sitters 5).
 - A hungry host's stragglers trailing its column (the share is the bridge's, hosts.json supply): `realm/data/army.json` `stragglers` (back 0.6, across 0.08).
 - How a great house takes a town after a failed storm: `realm/data/siege.json` `approach` (mine: in 1.5, heap 0.08 + heap_per 0.06 a season dug, sappers 3; starve: posts 10 round the town, skip 0.9 rad of the camp, watch 2; bribe: meet 0.45 of the way from the gate, pace 0.12, talk_s 6, again_s 40).
