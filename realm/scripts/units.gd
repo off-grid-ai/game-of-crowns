@@ -226,8 +226,50 @@ func figure_of(id: int) -> Node3D:
 func field_hosts(store: Node) -> Dictionary:
 	var drawn := {}
 	var keep := {}
+	# The banners coming in (/world banners, bridge 775586e5; casebook, the court: every decision is seen): a house's
+	# men answering the King's summons, one column in their house's colours under its standard, marched by the road
+	# to the King's town as Freeciv moves their lead company. Keyed by house and town until they join.
+	for b in store.banners():
+		var key := "banners %d %d" % [int(b.get("owner", -1)), int(b.get("city", -1))]
+		var units: Array = (b.get("units", []) as Array).duplicate()
+		if units.is_empty():
+			continue
+		units.sort()
+		var tile := Vector2i(int(b.get("x", 0)), int(b.get("y", 0)))
+		var view: Node3D = _hosts.get(key)
+		if view and is_instance_valid(view) and view.get_meta("units", []) != units:
+			view.queue_free()  # one fell on the road: the column is raised again where it stands
+			view = null
+		if view == null or not is_instance_valid(view):
+			var house: Dictionary = store.houses_by_id().get(int(b.get("owner", -1)), {})
+			view = Army.new(get_parent(), 0, {"host": {"id": int(units[0]), "units": units, "companies": units.size(), "men": units.size() * 150, "x": tile.x, "y": tile.y},
+				"quiet": true, "colour": TeamColour.house_colour(house), "house": house})
+			view.set_meta("units", units)
+			view.set_meta("tile", tile)
+			add_child(view)
+			_hosts[key] = view
+		elif view.get_meta("tile") != tile:
+			view.set_meta("tile", tile)
+			view.march_to(terrain.world_pos(float(tile.x), float(tile.y)))
+		keep[key] = true
+		for u in units:
+			drawn[int(u)] = key
 	for h in store.hosts():
 		var id := int(h["id"])
+		# Banner men at the walls (bridge 775586e5: their companies raised again as the crown's, `at` the town, with
+		# banners.from the ids they marched under): the column that came by the road becomes this host's, and marches
+		# in through the gate below (march_in), not raised afresh inside the walls.
+		var joined: Variant = h.get("banners")
+		if joined is Dictionary and not _hosts.has(id):
+			var from: Array = (joined as Dictionary).get("from", [])
+			for k in _hosts.keys():
+				var bv: Node3D = _hosts[k]
+				if k is String and is_instance_valid(bv) and (bv.get_meta("units", []) as Array).any(func(u): return from.has(int(u))):
+					_hosts.erase(k)
+					_hosts[id] = bv
+					keep.erase(k)
+					bv.set_meta("units", h.get("units", []))  # the crown's companies now: none drawn twice inside until it halts
+					break
 		var aboard := bool(h.get("aboard", false))
 		var was_aboard: Node3D = _hosts.get(id)
 		if not aboard and was_aboard and is_instance_valid(was_aboard) and was_aboard.get_meta("aboard", false):

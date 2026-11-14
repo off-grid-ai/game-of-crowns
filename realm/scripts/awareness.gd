@@ -128,6 +128,13 @@ func hosts() -> Array:
 	return v if v is Array else []
 
 
+## The banner men on the road (/world banners, bridge hosts.js; the realm blackboard's "banners" slice): a house's
+## companies answering the King's summons, marching to his town to join him: [{owner, units, city, x, y}].
+func banners() -> Array:
+	var v: Variant = realm.get_var(&"banners", [], false)
+	return v if v is Array else []
+
+
 ## The houses by their Freeciv player id: pid -> the house record (name, colour, sigil, crown...).
 func houses_by_id() -> Dictionary:
 	var out := {}
@@ -261,6 +268,7 @@ func _reduce_land(world: Dictionary) -> void:
 func _reduce_hosts(world: Dictionary) -> void:
 	realm.set_var(&"threat", _dict(world.get("crown")).get("threat"))  # the director's live threat, or null (bridge director.js)
 	realm.set_var(&"hosts", world.get("hosts") if world.get("hosts") is Array else [])  # the King's hosts and their orders (bridge hosts.js)
+	realm.set_var(&"banners", world.get("banners") if world.get("banners") is Array else [])  # houses' men on the road to join the King (bridge hosts.js)
 	realm.set_var(&"armies", _armies(world))  # every house's hosts in the field (the map's banners, map_look.gd)
 
 
