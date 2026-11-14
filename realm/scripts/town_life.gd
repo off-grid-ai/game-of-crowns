@@ -929,6 +929,44 @@ func _works(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, rng: Ran
 	_crews(root, life, center, all, n, rng)
 	if all.has("inn"):
 		_inn(root, life, center, all["inn"], tick, n, rng)
+	_door_lamps(root, life, center, tick, rng)
+
+
+## Lanterns by the doors of the houses round the square, lit at night (works.json night.lamps: the most, the share of
+## the nearest homes, within this many square radii; the light's colour, energy and range): Foundation's and Manor
+## Lords' towns by night, the square ringed with warm doors while the folk are indoors (villagers.gd). Each a wall
+## lantern (props Lantern_Wall) beside the door and a small warm light the works tick shows in the lit hours (Works
+## lit, dark), as the inn's windows.
+func _door_lamps(root: Node3D, life: Node3D, center: Vector3, tick: Works.Tick, rng: RandomNumberGenerator) -> void:
+	var L: Dictionary = Data.value("works", "night.lamps", {})
+	var most := int(L.get("most", 0))
+	if most <= 0:
+		return
+	var within := float(root.get_meta("square_r", 1.0)) * float(L.get("within", 2.5))
+	var homes: Array = (root.get_meta("homes", []) as Array).filter(func(h): return Vector2(h[0].x, h[0].z).length() < within)
+	homes.sort_custom(func(a, b): return Vector2(a[0].x, a[0].z).length() < Vector2(b[0].x, b[0].z).length())
+	var lit := 0
+	for h in homes:
+		if lit >= most:
+			break
+		if rng.randf() > float(L.get("share", 0.6)):
+			continue
+		var step: Vector3 = h[0]
+		var face: Vector3 = h[1]
+		var side := Vector3(-face.z, 0, face.x) * float(L.get("side", 0.07))
+		var at := step - face * float(L.get("in", 0.1)) + side
+		var lamp := _prop(life, center, "Lantern_Wall", at, atan2(face.x, face.z), float(L.get("scale", 1.0)), float(L.get("lift", 0.2)))
+		if lamp == null:
+			continue
+		var light := OmniLight3D.new()
+		light.light_color = Data.colour(L.get("color"), Color(1.0, 0.7, 0.38))
+		light.light_energy = float(L.get("energy", 0.6))
+		light.omni_range = float(L.get("range", 0.5))
+		light.position = Vector3(at.x, _y(center, at) + float(L.get("lift", 0.2)), at.z) + face * 0.04
+		light.visible = false
+		life.add_child(light)
+		tick.lights.append(light)
+		lit += 1
 
 
 ## Each trade's crew at its work front, as works.json crews lists them (the tanner and the dyer at the vats, the
