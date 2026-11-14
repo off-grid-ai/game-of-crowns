@@ -116,7 +116,7 @@ func stage(root: Node3D, life: Node3D, c: Dictionary, states: Array, tl: Object)
 					census["weights"] = float(census["weights"]) + float(w)
 	# Staged over frames, a slice at a time (towns.json life.slice_ms; FPS: a town's whole cast in one frame held it
 	# 5.5 s); a town redressed meanwhile (its Life replaced) ends this one.
-	var slice := float(Data.num("towns", "life.slice_ms", 10.0))
+	var slice := float(Data.num("towns", "life.slice_ms", 4.0))
 	var t0 := Time.get_ticks_msec()
 	for row in _d.get("standing", []):
 		if not _meets(row, root, states, size):

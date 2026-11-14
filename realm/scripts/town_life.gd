@@ -69,7 +69,57 @@ static func minds_on(town: int) -> bool:
 	return LIMBO_ALL or args.has("--limbo=all") or LIMBO_TOWNS.has(town)
 
 
+## One town's life staged at a time (its town, holder and colour are this staging's members): a second waits for the
+## first. Each stage of it takes at most towns.json life.slice_ms of a frame, the rest waiting for the next (FPS:
+## fps4, a new town's life held 278 ms a frame, up to 1.3 s).
+var _staging := false
+var _slice_at := 0
+var _waiting := {}  # town root id -> its newest facts, while another town's staging runs: the latest only is staged
 func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:
+	if _staging:
+		var id := root.get_instance_id()
+		var queued := _waiting.has(id)
+		_waiting[id] = [c, house]  # a later report for the same town replaces the one waiting
+		if queued:
+			return
+		while _staging:
+			await Engine.get_main_loop().process_frame
+		var newest: Array = _waiting.get(id, [c, house])
+		_waiting.erase(id)
+		if not is_instance_valid(root):
+			return
+		c = newest[0]
+		house = newest[1]
+	_staging = true
+	_slice_at = Time.get_ticks_usec()
+	await _stage_town(root, c, house)
+	_staging = false
+
+
+## Waits for the next frame once this frame's share (towns.json life.slice_ms) is spent; each step timed for the
+## frame-cost probe (perf_tools.gd, GOC_PERF_PROBE; off in play) as life.<step>.
+func _pace(step: String) -> void:
+	var now := Time.get_ticks_usec()
+	if PerfTools.probing:
+		PerfTools.add("life." + step, now - _step_at)
+	if now - _slice_at > int(Data.num("towns", "life.slice_ms", 4.0) * 1000.0):
+		await Engine.get_main_loop().process_frame
+		now = Time.get_ticks_usec()
+		_slice_at = now
+	_step_at = now
+
+
+var _step_at := 0
+const PerfTools := preload("res://scripts/perf_tools.gd")
+
+
+## Whether a staging paused over frames should stop: its town gone or dressed anew meanwhile.
+static func _gone(root: Node3D, life: Node3D) -> bool:
+	return not is_instance_valid(root) or not is_instance_valid(life) or root.get_node_or_null("Life") != life
+
+
+func _stage_town(root: Node3D, c: Dictionary, house: Dictionary) -> void:
+	_step_at = Time.get_ticks_usec()
 	_town_on = minds_on(int(c.get("id", -1)))
 	_town_id = int(c.get("id", -1))
 	# Its people dressed as its rank and holder dress them (people.gd cloth_pick).
@@ -94,6 +144,9 @@ func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 	if Dressing.on() and root.get_node_or_null("Dressing") == null:
 		var at := root.position
 		Dressing.dress(root, func(q: Vector3) -> float: return _y(at, q), int(c.get("id", 0)))
+		await _pace("dressing")
+		if not is_instance_valid(root):
+			return
 	var life: Node3D = root.get_node_or_null("Life")
 	if life and life.get_meta("sig", "") == sig:
 		# Only the work moved on: the site grows where it stands, and the
@@ -107,6 +160,14 @@ func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 			life.set_meta("doing", doing_line(kind, building, progress))
 		return
 	if life:
+		if PerfTools.probing:  # what made a standing town's life be staged anew in play (FPS: fps4)
+			var a := String(life.get_meta("sig", "")).split("|")
+			var b := sig.split("|")
+			var moved := PackedStringArray()
+			for i in maxi(a.size(), b.size()):
+				if i >= a.size() or i >= b.size() or a[i] != b[i]:
+					moved.append("%d:%s->%s" % [i, a[i] if i < a.size() else "", b[i] if i < b.size() else ""])
+			print("LIFE-RESTAGE %s: %s" % [root.get_meta("title", ""), ", ".join(moved)])
 		life.free()
 	life = Node3D.new()
 	life.name = "Life"
@@ -120,11 +181,20 @@ func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 	rng.seed = int(c["id"])
 
 	_fields(root, hungry)
+	await _pace("fields")
+	if _gone(root, life):
+		return
 	if kind == "Building" and building != "" and building != "Coinage":
 		_construction(root, life, center, building, progress, rng, int(c["size"]), house if bool(c.get("royal", false)) else {})
 	elif kind == "UnitType" and building != "" and not building in Awareness.civilian:  # a soldier's training, not a civilian's (bridge campaigns.js CIVILIAN)
 		_drill(root, life, center, progress, color, building)
+	await _pace("work_site")
+	if _gone(root, life):
+		return
 	_royal_done(root, life, center, int(c.get("id", -1)), house)
+	await _pace("royal")
+	if _gone(root, life):
+		return
 	var states := _states(c)  # riot, grasping and a rising's side among them (the store's facts), and its market day
 	life.set_meta("states", states)
 	life.set_meta("size", int(c.get("size", 1)))
@@ -133,10 +203,13 @@ func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 	life.set_meta("dress", [String(root.get_meta("rank", "town")), Color.from_string(String(house.get("color", "")), Color(0, 0, 0, 0)), bool(c.get("grief", false))])
 	root.set_meta("keepers", {})
 	_dress(root, life, center, c, rng, house)
-	await Engine.get_main_loop().process_frame  # the town's working life next frame, its scenes after (staged over frames)
-	if not is_instance_valid(root) or not is_instance_valid(life) or root.get_node_or_null("Life") != life:
+	await _pace("dress")  # the town's working life when this frame's share is spent, its scenes after (staged over frames)
+	if _gone(root, life):
 		return  # redressed meanwhile
 	_works(root, life, center, c, rng)
+	await _pace("works")
+	if _gone(root, life):
+		return
 	# What stands so far is the town's working life (its buildings' people, a site's builders, the drill); the
 	# director casts every scene's people, by the rows of realm/data/town_scenes.json.
 	for n in life.get_children():
@@ -144,10 +217,11 @@ func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 			n.set_meta("works", true)
 	if director:
 		await director.stage(root, life, c, states, self)
-		if not is_instance_valid(root) or not is_instance_valid(life) or root.get_node_or_null("Life") != life:
+		if _gone(root, life):
 			return
 	_near_only(life)
 	_pin(life, center)
+	await _pace("pin")
 
 
 const Heraldry := preload("res://scripts/heraldry.gd")
