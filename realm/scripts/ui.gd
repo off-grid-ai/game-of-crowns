@@ -315,6 +315,43 @@ func take_world_click() -> bool:
 	return town_card.take_world_click()
 
 
+## The one close control for a card (CK3's and Total War's panel close): a quiet X in the card's top-right corner,
+## in the card's own muted text colour, lifting on hover; `on_close` puts the card away, as Esc does (_step_back).
+## It sits on a layer of its own named "Close" (no size of its own, clicks pass through), which a card that clears
+## its children keeps.
+func close_x(p: PanelContainer, on_close: Callable) -> void:
+	var layer := Control.new()
+	layer.name = "Close"
+	layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	p.add_child(layer)
+	var b := Button.new()
+	b.icon = icon("x")
+	b.focus_mode = Control.FOCUS_NONE
+	b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	b.add_theme_constant_override("icon_max_width", int(ui_num("close.icon", 16.0)))
+	b.add_theme_color_override("icon_normal_color", T.TEXT_2)
+	b.add_theme_color_override("icon_hover_color", T.TEXT)
+	b.add_theme_color_override("icon_pressed_color", T.ACCENT)
+	b.add_theme_color_override("icon_hover_pressed_color", T.ACCENT)
+	var lift := StyleBoxFlat.new()
+	lift.bg_color = Color(1, 0.97, 0.9, 0.1)
+	lift.set_corner_radius_all(6)
+	for st in ["normal", "focus", "disabled"]:
+		b.add_theme_stylebox_override(st, StyleBoxEmpty.new())
+	b.add_theme_stylebox_override("hover", lift)
+	b.add_theme_stylebox_override("pressed", lift)
+	var size := ui_num("close.size", 28.0)
+	var into := ui_num("close.into", 8.0)  # how far into the card's padding, toward its corner
+	b.anchor_left = 1.0
+	b.anchor_right = 1.0
+	b.offset_left = into - size
+	b.offset_right = into
+	b.offset_top = -into
+	b.offset_bottom = size - into
+	b.pressed.connect(on_close)
+	layer.add_child(b)
+
+
 func glass_panel() -> PanelContainer:
 	var p := PanelContainer.new()
 	T.glass(p)

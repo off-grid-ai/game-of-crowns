@@ -78,6 +78,9 @@ func _build_court() -> void:
 	# The court is the one thing that matters while it sits (a modal, as in CK3
 	# and Civ): drawn above every panel and the minimap, which stay where they are.
 	_court_panel.z_index = 20
+	ui.close_x(_court_panel, func():  # put away as Esc does: the court still sits, reopened from its key
+		_court_panel.visible = false
+		_court_hidden = true)
 	_court_panel.anchor_left = 0.5
 	_court_panel.anchor_right = 0.5
 	_court_panel.offset_left = -330
@@ -259,6 +262,8 @@ func _show_audience() -> void:
 	var pressed := _kings_press
 	_kings_press = false
 	for c in _court_panel.get_children():
+		if c.name == "Close":
+			continue  # the card's one close control (ui.close_x) stays
 		_court_panel.remove_child(c)  # gone at once: the new "Scroll" keeps its name, so the card is measured by it, not left an empty bar
 		c.queue_free()
 	if _petitions.is_empty():
@@ -905,6 +910,8 @@ func _close_doors() -> void:
 func _see_it(it: Dictionary) -> void:
 	_seeing = it
 	for c in _court_panel.get_children():
+		if c.name == "Close":
+			continue
 		_court_panel.remove_child(c)
 		c.queue_free()
 	_court_panel.visible = true

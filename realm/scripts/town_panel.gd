@@ -40,6 +40,7 @@ func _build_town_panel() -> void:
 	_town_panel.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	_town_panel.offset_bottom = -12
 	_town_panel.visible = false
+	ui.close_x(_town_panel, _put_town_away)
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 8)
 	_town_panel.add_child(v)

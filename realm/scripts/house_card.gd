@@ -64,6 +64,8 @@ func show_house(d: Dictionary) -> void:
 		return
 	_house_panel = ui.card(ui.glass_panel())
 	_house_panel.offset_top = 70
+	var shown := _house_panel
+	ui.close_x(_house_panel, func(): shown.visible = false)
 	# Scrolls when a house has more bannermen than the screen holds.
 	var scroll := ScrollContainer.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -85,7 +87,9 @@ func show_house(d: Dictionary) -> void:
 		names.add_child(T.label("“%s”  ·  %s" % [d["words"], d.get("seat", "")], T.TEXT_2))
 	head.add_child(ui.btn("Lore", func(): ui.lore_opened.emit(int(d.get("id", -1)))))
 	head.add_child(ui.btn("Add a character", func(): ui.character_form.emit(int(d.get("id", -1)))))
-	head.add_child(ui.btn("Close", func(): _house_panel.visible = false))
+	var clear := Control.new()  # room for the card's close X (ui.close_x) at the head's right
+	clear.custom_minimum_size = Vector2(UI.ui_num("close.size", 28.0) - UI.ui_num("close.into", 8.0), 0)
+	head.add_child(clear)
 	# The numbers, each with how far it has moved over the last years.
 	var hist: Array = d.get("history", [])
 	var now: Dictionary = hist[-1] if hist.size() > 0 else {}
