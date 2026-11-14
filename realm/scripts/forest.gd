@@ -300,7 +300,7 @@ static func _impostor(path: String, far: Mesh) -> Mesh:
 	var mat := ShaderMaterial.new()
 	mat.shader = IMPOSTOR_SHADER
 	for map: String in ["albedo", "normal", "depth", "orm"]:
-		mat.set_shader_parameter("imposterTexture" + map.capitalize(), load(IMPOSTORS + "base_%s_%s.png" % [name, map])  # PhotoStudio's names: <prefix>_<model>_<map>)
+		mat.set_shader_parameter("imposterTexture" + map.capitalize(), load(IMPOSTORS + "base_%s_%s.png" % [name, map]))  # PhotoStudio's names: <prefix>_<model>_<map>
 	mat.set_shader_parameter("imposterFrames", Vector2(float(n["frames"]), float(n["frames"])))
 	mat.set_shader_parameter("isFullSphere", bool(n["full_sphere"]))
 	mat.set_shader_parameter("scale", float(n["scale"]))
