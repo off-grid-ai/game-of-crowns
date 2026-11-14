@@ -7,5 +7,6 @@
   "cooking": {"meals": [[6.0, 8.5], [11.5, 13.0], [17.5, 20.0]], "at_meals": 0.3, "between": 0.08},
   "far": {"near": 4.0, "far": 10.0, "amount": 0.2, "alpha": 0.4},
   "hunger": {"share": 0.5, "thin": 0.35},
+  "winter": {"_": "In winter (the realm's season) this share of a town's hearths burn for warmth whoever's in (hunger still damps them).", "share": 0.75},
   "look": {"colour": [0.7, 0.68, 0.66], "alpha": [0.38, 0.0], "size": [0.07, 0.14], "spread": 3.2, "rise": [0.06, 0.12], "cone": 8.0, "life": 7.5, "amount": 20, "drift": 0.06}
 }

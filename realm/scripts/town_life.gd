@@ -1625,9 +1625,10 @@ func _states(c: Dictionary) -> Array:
 		s.append("fields")
 	if wet():
 		s.append("wet")
-	var by_season: Variant = (Data.value("towns", "season_states", {}) as Dictionary).get(_season(), "")
-	if String(by_season) != "":
-		s.append(String(by_season))  # autumn's stores laid in at the granary, winter's rations drawn from it
+	var by_season: Variant = (Data.value("towns", "season_states", {}) as Dictionary).get(_season(), [])
+	for st in (by_season if by_season is Array else [by_season]):
+		if String(st) != "":
+			s.append(String(st))  # autumn's stores laid in at the granary, winter's rations drawn from it and its firewood
 	return s
 
 

@@ -58,7 +58,7 @@ func _process(delta: float) -> void:
 		# A cooking fire burns whoever's in (01-town: thin wisps from a few chimneys): hearths.json cooking, a share of
 		# the town's hearths chosen by doorstep, so the same houses keep theirs; more at mealtimes, few between.
 		var pick := float(absi(hash(Vector2i(roundi(door.x * 100.0), roundi(door.z * 100.0)))) % 1000) / 1000.0
-		if pick < _cooking_share():
+		if pick < _cooking_share() or pick < _winter_share():
 			lit = true
 		if not hungry_town.has(id):
 			hungry_town[id] = aw != null and String(aw.town(id).get_var(&"mood", "", false)) == "hunger"
@@ -77,6 +77,14 @@ func _process(delta: float) -> void:
 		smoke.set_meta("thin", thin)  # its share of the smoke; _far thins it again with the lens's distance
 		if smoke.emitting != lit:
 			smoke.emitting = lit
+
+
+## The share of a town's hearths lit for warmth in winter (hearths.json winter.share; casebook, Seasons: winter
+## changes every number, wood burns faster), 0 in the other seasons.
+func _winter_share() -> float:
+	if not Engine.has_meta("awareness") or String(Engine.get_meta("awareness").realm.get_var(&"season", "", false)) != "winter":
+		return 0.0
+	return float((_d.get("winter", {}) as Dictionary).get("share", 0.0))
 
 
 ## The share of a town's hearths cooking now (hearths.json cooking: at_meals inside one of its meals [from, to] hours
