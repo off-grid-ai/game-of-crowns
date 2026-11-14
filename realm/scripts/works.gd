@@ -216,6 +216,8 @@ static func states_bb(bb: Blackboard) -> Array:
 		out.append("levy")
 	if bool(bb.get_var(&"at_war", false, false)):
 		out.append("war")
+	if bool(bb.get_var(&"besieged", false, false)):
+		out.append("siege")  # a host round its walls (bridge view.js besieged): the market shut, the townsmen mustered, the bell
 	if bool(bb.get_var(&"raid", false, false)):
 		out.append("raid")  # raiders at its edge (awareness.gd _raided): folk indoors, the alarm bell, houses burning
 	if bool(bb.get_var(&"granary_low", false, false)):
