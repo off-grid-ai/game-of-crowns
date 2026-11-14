@@ -1,5 +1,5 @@
 {
- "_": "The common folk's households (households.js; Talk of the Town's rules at a season's step). A town holds base + size x perSize households (min..max; Freeciv's size), and one household arrives a season while it holds fewer, one moves away while it holds more than slack over. death: yearly odds of dying by age, [under this age, odds] [est: medieval English life tables, most deaths in infancy and old age]; hard: how much more the very young and old die in a season of famine or plague (the square root of it for the rest). work: the age a child takes up a trade; followTrade: odds it's the parent's. marry: from age to until, chance a season a single man seeks a wife, takesName (Talk of the Town 0.9: one newlywed takes the other's name). remarry: a widow or widower weds again at 1 / (years since + remarry) a year (Talk of the Town). conceive: a married couple try for a child at perYear / (children + 1) a year (Talk of the Town 0.4) while she is from..to. seed: a first household is a married couple at married odds, each year of marriage has a child at childEvery odds every two or three years, an old parent at elder odds. lifeKept: life events kept a person; forgetAfter: seasons the dead and departed stay in the store.",
+ "_": "The common folk's households (households.js; Talk of the Town's rules at a season's step). A town holds base + size x perSize households (min..max; Freeciv's size), and one household arrives a season while it holds fewer, one moves away while it holds more than slack over. death: yearly odds of dying by age, [under this age, odds] [est: medieval English life tables, most deaths in infancy and old age]; hard: how much more the very young and old die in a season of famine or plague (the square root of it for the rest). work: the age a child takes up a trade; followTrade: odds it's the parent's. marry: from age to until, chance a season a single man seeks a wife, takesName (Talk of the Town 0.9: one newlywed takes the other's name). remarry: a widow or widower weds again at 1 / (years since + remarry) a year (Talk of the Town). conceive: a married couple try for a child at perYear / (children + 1) a year (Talk of the Town 0.4) while she is from..to. seed: a first household is a married couple at married odds, each year of marriage has a child at childEvery odds every two or three years, an old parent at elder odds. lifeKept: life events kept a person; forgetAfter: seasons the dead and departed stay in the store. leftKeep: how many households that left a town (for the nearest town not hungry or sick, Ostriv's leavers; /world town lives.leaving) the store remembers.",
  "base": 2,
  "perSize": 1.2,
  "min": 3,
@@ -14,5 +14,6 @@
  "conceive": { "from": 16, "to": 42, "perYear": 0.4 },
  "seed": { "married": 0.75, "childEvery": 0.8, "elder": 0.15 },
  "lifeKept": 6,
- "forgetAfter": 40
+ "forgetAfter": 40,
+ "leftKeep": 24
 }

@@ -65,7 +65,12 @@ export function turn(ctx, ev) {
   // Let the AI finish its start-of-turn moves before dumping the world.
   setTimeout(ctx.snapshot, 1500);
   // The common folk's households take their season (households.js), then their minds theirs.
-  setTimeout(() => { Households.season(ctx.world, Number(ev.turn)); ctx.minds?.tick(Number(ev.turn)); }, 3000);
+  setTimeout(() => {
+    // The folk's season (households.js); the households that left a hungry or sick town are told (Ostriv's leavers).
+    const left = Households.season(ctx.world, Number(ev.turn)) ?? [];
+    for (const l of left.slice(0, 2)) ctx.record({ turn: Number(ev.turn), kind: "unrest", text: `The ${l.family} family loads a cart and leaves ${cityName(l.town)}${l.to != null ? ` for ${cityName(l.to)}` : ""}. ${l.why === "hunger" ? "There is no bread there." : "The sickness has come."}`, city: l.town });
+    ctx.minds?.tick(Number(ev.turn));
+  }, 3000);
   if (isYearStart(ev.turn)) ctx.record({ turn: Number(ev.turn), kind: "year", text: say("event.year", { year: calendar(ev.turn).year }) });
 }
 

@@ -152,7 +152,7 @@ function die(p, turn, why) {
 }
 
 // A town's season: deaths, children grown to a trade, weddings, births, and newcomers or leavers to its size.
-function townSeason(c, turn) {
+function townSeason(c, turn, world = null) {
   const town = c.id;
   const t = (S.towns[town] ??= { size: c.size, turn: null });
   if (t.turn === turn) return;
@@ -220,7 +220,14 @@ function townSeason(c, turn) {
   if (homes.length < want) arrive(town, turn, true);
   else if (homes.length > want + H.slack) {
     const leaving = homes.filter((h) => h.surname).sort((a, b) => membersOf(a.id).length - membersOf(b.id).length)[0];
-    if (leaving) for (const p of membersOf(leaving.id)) p.gone = turn;
+    if (leaving) {
+      // The cold walks them out (Ostriv): the household packs a cart for the nearest town not hungry or sick, and the
+      // town sees it go (lately: leaving); hunger or sickness is said in the chronicle (season's leavers).
+      const to = (world?.cities ?? []).filter((x) => x.id !== town && !x.famine && !x.plague).sort((a, b) => Math.hypot(a.x - c.x, a.y - c.y) - Math.hypot(b.x - c.x, b.y - c.y))[0];
+      const members = membersOf(leaving.id);
+      S.left = [...(S.left ?? []), { town, to: to?.id ?? null, family: leaving.surname, n: members.length, why, turn }].slice(-H.leftKeep);
+      for (const p of members) p.gone = turn;
+    }
   }
   // Homes nobody lives in any more are let go.
   for (const h of homesOf(town)) if (!membersOf(h.id).length) delete S.homes[h.id];
@@ -234,22 +241,25 @@ function townSeason(c, turn) {
 // the map lose their folk with them.
 export function season(world, turn) {
   if (!S || !world?.cities) return;
-  for (const c of world.cities) townSeason(c, turn);
+  for (const c of world.cities) townSeason(c, turn, world);
   const here = new Set(world.cities.map((c) => c.id));
   for (const p of Object.values(S.people)) if (!here.has(p.town) && !p.died && !p.gone) p.gone = turn;
   // The long dead are let go (their names stay in the living's memories): the store keeps to the reign's folk.
   for (const [id, p] of Object.entries(S.people)) if ((p.died ?? p.gone) != null && turn - (p.died ?? p.gone) > H.forgetAfter) delete S.people[id];
   save();
+  return (S.left ?? []).filter((l) => l.turn === turn && l.why);
 }
 
 // What the town lived through this season, for /world (view.js lives): weddings, births and burials of its folk at
-// this turn's step. The view sees them in the town: a wedding procession, the bell, the funeral round the square.
+// this turn's step, and the households that left it (leaving: [{family, n, to: town id, why}]). The view sees them in
+// the town: a wedding procession, the bell, the funeral round the square, a cart going out of the gate.
 export function lately(cityId, turn) {
   if (!S) return null;
   const here = Object.values(S.people).filter((p) => p.town === cityId);
   const out = { weddings: here.filter((p) => p.woman && p.wed === turn).length, births: here.filter((p) => p.born === turn && !p.died).length,
-    burials: here.filter((p) => p.died === turn).length };
-  return out.weddings || out.births || out.burials ? out : null;
+    burials: here.filter((p) => p.died === turn).length,
+    leaving: (S.left ?? []).filter((l) => l.town === cityId && l.turn === turn).map((l) => ({ family: l.family, n: l.n, to: l.to, why: l.why })) };
+  return out.weddings || out.births || out.burials || out.leaving.length ? out : null;
 }
 
 // A town's living folk, the town's own first season made if it has none yet (the crowd and the minds ask before a
