@@ -715,7 +715,7 @@ var _tuft_meshes: Array = []
 ## The nature kit's low plants, and how often each grows: mostly grass, with
 ## clover and wildflowers among it.
 const TUFTS := ["meshy/nt_grass_clump/nt_grass_clump.glb", "meshy/nt_flowers/nt_flowers.glb"]  # under assets/: the nature set's grass clump (0.5 m at scale 1) and wildflowers (0.4 m)
-const TUFT_ODDS := [0.88, 0.12]
+static var TUFT_ODDS := PackedFloat32Array(preload("res://scripts/data.gd").value("countryside", "tuft_odds", [0.88, 0.12]))  # grass, wildflowers (countryside.json; g33: the town's grass one flat green, the target's meadows full of flowers)
 static var TUFT_REACH: float = preload("res://scripts/data.gd").num("countryside", "tuft_reach", 22.0)  # drawn only this near the camera
 const PLANT_WIND := preload("res://scripts/plant_wind.gdshader")
 
