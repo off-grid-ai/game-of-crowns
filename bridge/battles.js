@@ -3,8 +3,11 @@
 // beside that tile were the beaten side, and the nearest other house with men beside it the victors. Many
 // companies killed on one tile in one season are one battle: their scene is kept and its fallen counted up.
 // The view stages it (scenes.gd: a field battle sized from these men, ending as Freeciv decided).
-import { HOSTS } from "./hosts.js";
+import { HOSTS, menOf } from "./hosts.js";
 import { CIVILIAN } from "./campaigns.js";
+import { houseName } from "./realm.js";
+import { cityName } from "./narrator.js";
+import { calendar } from "./calendar.js";
 
 const SHIPS = new Set(HOSTS.ships);
 const cheb = (a, b) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
@@ -49,6 +52,45 @@ export function fields(world, ev) {
     men: [lost * HOSTS.men, Math.max(won.length, victor >= 0 ? 1 : 0) * HOSTS.men],
     kinds: [beaten.length ? beaten.map((u) => u.type) : [ev.unit], won.map((u) => u.type)],
   };
+}
+
+// The King's battles as result cards (CK3's war panel: where and when, each side's men, losses and kinds, who won),
+// for the view to draw when a fight the crown's men were in is over. One card per field a season (a kill within a
+// tile of it, the same season, is the same battle), each company killed folded in, kept with the reign (meta.battles,
+// the last hosts.json battles.keep). A card: {id, turn, date, x, y, place, sides: [{house, name, men, lost, kinds}]
+// (the crown's first; men the most seen on the field, lost the men of its companies killed), victor (a house id: the
+// side that lost the smaller share of its men), crown: "won" | "lost"}.
+export function card(meta, world, f, turn, crownId) {
+  if (crownId == null || (f.owner !== crownId && f.victor !== crownId)) return null;
+  const cards = (meta.battles ??= []);
+  let c = cards.find((b) => b.turn === turn && cheb(b, f) <= 1);
+  if (!c) {
+    const near = (world?.cities ?? []).map((t) => [t, cheb(t, f)]).filter(([, d]) => d <= 4).sort((a, b) => a[1] - b[1])[0];
+    c = { id: `${turn}-${f.x}-${f.y}`, turn, date: calendar(turn).text, x: f.x, y: f.y,
+      place: near ? (near[1] === 0 ? `at ${cityName(near[0].id)}` : `near ${cityName(near[0].id)}`) : "in the open field", sides: [] };
+    meta.battles = [...cards, c].slice(-(HOSTS.battles?.keep ?? 12));
+  }
+  const side = (pid, kinds) => {
+    let s = c.sides.find((x) => x.house === pid);
+    if (!s) { s = { house: pid, name: houseName(world, pid, "Men without banners"), men: 0, lost: 0, kinds: [] }; c.sides.push(s); }
+    s.men = Math.max(s.men, kinds.reduce((t, k) => t + menOf({ type: k }), 0));
+    s.kinds = [...new Set([...s.kinds, ...kinds])];
+    return s;
+  };
+  const beaten = side(f.owner, f.kinds[0]);
+  beaten.lost += menOf({ type: f.unit });
+  beaten.men = Math.max(beaten.men, beaten.lost);
+  if (f.victor >= 0) side(f.victor, f.kinds[1]);
+  c.sides.sort((a, b) => (b.house === crownId) - (a.house === crownId));
+  const share = (s) => s.lost / Math.max(1, s.men);
+  c.victor = [...c.sides].sort((a, b) => share(a) - share(b))[0].house;
+  c.crown = c.victor === crownId ? "won" : "lost";
+  return c;
+}
+
+// The battle cards for /world: the King's battles of the last hosts.json battles.recent seasons, the newest first.
+export function cards(meta, turn) {
+  return (meta?.battles ?? []).filter((b) => b.turn >= (turn ?? 0) - (HOSTS.battles?.recent ?? 2)).slice().reverse();
 }
 
 // The battle already told this season on this tile, if there is one: it takes the new company's fall.

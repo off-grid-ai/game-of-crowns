@@ -397,7 +397,7 @@ function applyStartOptions() {
 // What view.js needs to build the /world answer, read fresh on every call.
 // The realm as the view sees it (GET /world): built in view.js.
 function worldView() {
-  return { ...View.worldView(realmCtx()), hosts: Hosts.list({ world, meta }), banners: Hosts.banners({ world, meta }) };  // the King's hosts and their orders, and how many more orders this season (hosts.js)
+  return { ...View.worldView(realmCtx()), hosts: Hosts.list({ world, meta }), banners: Hosts.banners({ world, meta }), battles: Battles.cards(meta, world?.turn) };  // the King's hosts and their orders, and how many more orders this season (hosts.js)
 }
 
 // The Hand's matters, read from the realm as it stands now.
@@ -538,6 +538,7 @@ function onEvent(line) {
     // Who fought, how many and who won (battles.js); one battle per tile a season.
     const f = Battles.fields(world, ev);
     if (!Battles.merge(scenes, f, world?.turn ?? 0)) scene("battle", { ...f, house: loser ? houseFor(loser).name : null });
+    Battles.card(meta, world, f, world?.turn ?? 0, crownNow()?.id);  // the King's battles as result cards (battles.js)
   }
   if (ev.kind === "city_transferred" && town) scene(ev.reason === "conquest" ? "sack" : "handover", { x: town.x, y: town.y, city: town.id, from: Number(ev.from), to: Number(ev.to) });
   if (ev.kind === "city_destroyed" && town) scene("razed", { x: town.x, y: town.y, city: town.id });

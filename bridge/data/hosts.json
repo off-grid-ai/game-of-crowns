@@ -12,5 +12,6 @@
   "Galleon"
  ],
  "ordersPerHost": 1,
- "siegeAssaults": 4
+ "siegeAssaults": 4,
+ "battles": { "_": "The King's battle result cards (battles.js card, CK3's war panel): keep, how many the reign keeps; recent, for how many seasons after a battle /world shows its card.", "keep": 12, "recent": 2 }
 }
