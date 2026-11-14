@@ -355,15 +355,13 @@ func _house_colour(owner: int) -> Color:
 
 ## Towns whose crowd is being made, a few people a frame (_spawn).
 var _spawning := {}
-## A town's crowd is made ViewTier.STAGE_MS of a frame at a time (camera.json view_tier.stage_ms, the one staging
-## budget): a whole town at once held one frame 400 ms (FPS P0, the supervisor's fps1 run: "spent: villagers 396").
+## A town's crowd is made from the frame's one staging pot (ViewTier.spend_ok; camera.json view_tier.stage_ms): a whole town at once held one frame 400 ms (FPS P0, the supervisor's fps1 run: "spent: villagers 396").
 
 
-## A town's crowd, made ViewTier.STAGE_MS of a frame at a time. Nobody is seen until all are made: each is hidden until set
+## A town's crowd, made from the frame's staging pot (ViewTier.spend_ok). Nobody is seen until all are made: each is hidden until set
 ## down on the walk map, and only a town in `crowds` is set down (_step), so the crowd still appears as one.
 func _spawn(id: int) -> void:
 	_spawning[id] = true
-	var began := Time.get_ticks_msec()
 	var town: Dictionary = towns.towns[id]
 	# Its people dressed as its rank and holder dress them (people.gd cloth_pick; the holder's colour from his banner).
 	var mourning := bool(town["data"].get("grief", false))
@@ -411,9 +409,8 @@ func _spawn(id: int) -> void:
 		if i < jobs.size():
 			calling = jobs[i]
 		var station := "peasant" if calling in ["farmer", "carter", "groom", "porter"] or (calling == "water" and rng.randf() < 0.5) else ("clergy" if calling == "pious" and rng.randf() < 0.6 else ("noble" if calling == "gentry" else "townsfolk"))
-		if Time.get_ticks_msec() - began > ViewTier.STAGE_MS:
+		if not ViewTier.spend_ok():  # the frame's one staging pot (view_tier.gd), never a clock of its own
 			await get_tree().process_frame
-			began = Time.get_ticks_msec()
 			if not towns.towns.has(id) or not is_instance_valid(town["node"]):
 				# The town went while its crowd was being made: hand back what was made.
 				for b in list:

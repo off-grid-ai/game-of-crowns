@@ -40,6 +40,16 @@ func _ready() -> void:
 	add_child(t)
 
 
+## Whether the yards' drill lines are to be counted again on the next tick: a company changed (awareness.gd
+## record_changed) or a yard was peopled (_staged). The tick read every company in the store each second before.
+var _drill_due := true
+
+
+func _on_record(kind: String, _id: int, _now: Dictionary, _was: Dictionary) -> void:
+	if kind == "units":
+		_drill_due = true
+
+
 ## Once a second: a newly raised castle is dressed (one a tick: the frame never waits); the gates' torches
 ## follow the hour.
 func _tick() -> void:
@@ -52,15 +62,19 @@ func _tick() -> void:
 			_done.erase(c)
 	var lit := Works.within(Works.hour(), "lit") and Works.dark()  # lit only when the sky is dark
 	var st: Node = preload("res://scripts/awareness.gd").store()
-	var units: Array = st.rec("units", []) if st else []
+	if st and not st.record_changed.is_connected(_on_record):
+		st.record_changed.connect(_on_record)
 	var Aw := preload("res://scripts/awareness.gd")
+	var drill := _drill_due and st != null  # the companies changed, or a yard was peopled: only then is the store read
+	_drill_due = false
+	var units: Array = st.rec("units", []) if drill else []
 	for c in _done:
 		for t in _done[c]["torches"]:
 			if is_instance_valid(t):
 				t.visible = lit
 		# The training yard drills as many lines as the lord has companies standing in the town (castle_folk.gd).
 		var folk: Dictionary = _done[c].get("folk", {})
-		if folk.has("drill") and st:
+		if folk.has("drill") and drill:
 			var town: Dictionary = st.city(int(_done[c].get("city", -1)))
 			preload("res://scripts/castle_folk.gd").show_lines(folk, preload("res://scripts/castle_folk.gd").garrison_lines(units, Aw.civilian, Aw.ships, town, (folk["drill"] as Array).size()))
 	# The castle's people come and go with its tier (view_tier.gd, the one decider): NEAR, everyone; MID, only the
@@ -214,22 +228,11 @@ func _people(d: Dictionary, full := true) -> void:
 	_staged(d, f)
 
 
-var _stage_frame := -1
-var _stage_until := 0
-
-
-## Waits for the next frame once this frame's staging budget is spent (camera.json view_tier.stage_ms, the one budget
-## every layer makes its people within; view_tier's lead has a castle staged before it shows). Shared by every castle
-## being peopled at once.
+## Waits for the next frame once this frame's one staging pot is spent (ViewTier.spend_ok: every staged loop draws
+## on it; view_tier's lead has a castle staged before it shows). castle_folk.gd's dressing waits here too.
 func paced() -> void:
-	var now := Time.get_ticks_usec()
-	if Engine.get_process_frames() != _stage_frame:
-		_stage_frame = Engine.get_process_frames()
-		_stage_until = now + int(ViewTier.STAGE_MS * 1000.0)
-	elif now > _stage_until:
+	if not ViewTier.spend_ok():
 		await get_tree().process_frame
-		_stage_frame = Engine.get_process_frames()
-		_stage_until = Time.get_ticks_usec() + int(ViewTier.STAGE_MS * 1000.0)
 
 
 ## A castle's people all made: off screen they stop (_off_unseen); if the castle was emptied or fell while they were
@@ -241,6 +244,7 @@ func _staged(d: Dictionary, f: Dictionary) -> void:
 				n.queue_free()
 		return
 	_off_unseen(f)
+	_drill_due = true  # its yard drills its lord's companies (_tick)
 
 
 ## Off screen, nothing of a castle's people runs (view_tier.gd off_when_unseen); props have no Motion and stay.
