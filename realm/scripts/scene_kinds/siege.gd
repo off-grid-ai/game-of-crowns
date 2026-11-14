@@ -98,7 +98,7 @@ func besiege(id: int, at: Vector3, approach: Vector3, size: int, engines: int, f
 	# The camp and its engines (siege_camp.gd): tents, palisade, fires, wagons, and the bridge's engines (Freeciv's
 	# catapults and trebuchets at the walls) built on the spot and worked by their crews.
 	var camp: Node3D = SiegeCamp.new()
-	camp.pitch(stage, root, at, base, camp_r, foe_col, engines, r)
+	camp.pitch(stage, root, at, base, camp_r, foe_col, engines, r, foe)
 	# The garrison on the walls, facing out toward the host: archers and spearmen turn about, up on the wall walk
 	# where the town has a wall (walls.gd walk_toward; 04-siege, Stronghold: bowmen along the battlements), on the
 	# ground behind the line where it has none.

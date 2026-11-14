@@ -20,6 +20,7 @@ const Data := preload("res://scripts/data.gd")
 const Real := preload("res://scripts/realistic.gd")
 const Fire := preload("res://scripts/fire.gd")
 const Particles := preload("res://scripts/particles.gd")
+const Heraldry := preload("res://scripts/heraldry.gd")  # the besieger's pennants over its tents
 const Mover := preload("res://scripts/mover.gd")  # the one way to move (CLAUDE.md): the ram, the tower and their crews
 
 var scenes: Node
@@ -29,6 +30,7 @@ var at: Vector3  # the town
 var base := 0.0  # the camp's middle, as an angle round the town
 var camp_r := 0.0  # where the companies stand
 var col := Color.DARK_RED
+var house := {}  # the besieger's, whose pennants fly over its tents
 var engines := []  # {node, arm, kind, crew: [marks], from, built}
 var _crews := []  # every crewman as the walls' archers see him: {node, alive, rank, kit}
 var _stone_mesh: SphereMesh
@@ -39,13 +41,14 @@ var _rolling := []  # the ram and the tower on their way to the wall: {node, kin
 
 ## The camp pitched for a siege of the town at `town`: `middle` the angle its middle stands at, `line` where
 ## its companies stand (world units from the town), `colour` the besieger's, `count` the bridge's engines.
-func pitch(s: Node, siege: Node3D, town: Vector3, middle: float, line: float, colour: Color, count: int, rng: RandomNumberGenerator) -> void:
+func pitch(s: Node, siege: Node3D, town: Vector3, middle: float, line: float, colour: Color, count: int, rng: RandomNumberGenerator, besieger := {}) -> void:
 	scenes = s
 	root = siege
 	at = town
 	base = middle
 	camp_r = line
 	col = colour
+	house = besieger
 	r = rng
 	name = "SiegeCamp"
 	root.add_child(self)
@@ -137,6 +140,10 @@ func _tents() -> void:
 				t.position = p + Vector3(0, float(sz[1]) * 0.5, 0)
 				t.rotation.y = -(base + a) + r.randf_range(-0.15, 0.15)  # ridge along the row
 				root.add_child(t)
+				if n % int(k.get("pennant_every", 3)) == 0:  # the house's pennant on the ridge's end (WC3's worn colour)
+					var flag := Heraldry.standard(house, col, float(k.get("pennant", 0.14)))
+					flag.position = Vector3(0, float(sz[1]) * 0.5, float(sz[2]) * 0.45)
+					t.add_child(flag)
 			a += step
 			n += 1
 

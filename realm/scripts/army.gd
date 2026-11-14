@@ -402,7 +402,11 @@ func _raise_baggage() -> void:
 	var n := mini(int(k.get("most", 4)), ceili(float(_regiments.size()) / maxf(1.0, float(k.get("per_regiments", 3)))))
 	var tail := Formation.column_length(_regiments)
 	for i in n:
-		var cart: Node3D = scenes.cart(_rng, _regiments[0]["colour"] if not _regiments.is_empty() else Color.GRAY)  # its carter in the house's colour
+		var col: Color = _regiments[0]["colour"] if not _regiments.is_empty() else Color.GRAY
+		var cart: Node3D = scenes.cart(_rng, col)  # its carter in the house's colour
+		var flag := Heraldry.standard(_regiments[0].get("house", {}) if not _regiments.is_empty() else {}, col, float(k.get("flag", 0.16)))
+		flag.position = Vector3(0.025, 0.03, -0.07)  # at the wagon's tail: the house's pennant over its baggage (WC3's worn colour)
+		cart.add_child(flag)
 		add_child(cart)
 		var mo: Node = Mover.of(cart).on(null)  # the realm's navigation, as the regiments
 		mo.clip = ""

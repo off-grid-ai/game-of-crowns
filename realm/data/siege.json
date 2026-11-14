@@ -5,7 +5,7 @@
     "men": [800, 300], "from_wall": 3.6, "holders_back": 0.9, "wave_s": 6.0, "front": 0.1, "queue": 0.35, "holders_at": 0.35, "walk": 0.22, "run": 0.5, "spread": 1.2,
     "breach_fires": 3, "breach_in": 1.0, "arrows": {"every_s": 1.2, "most_flying": 8, "speed": 3.0, "spread": 2.5, "catch": 0.18, "most_burning": 6}},
   "garrison": {"_": "The holder's men along the wall at a siege (scene_kinds/siege.gd): men, how many; every, radians apart along the wall; bows, the share of them archers (the rest spearmen); reach, how far (world units) from the siege's wall line the town's own wall walk may stand for them to go up on it (walls.gd walk_toward); with none in reach they stand on the ground behind the line.", "men": 12, "every": 0.11, "bows": 0.67, "reach": 1.5},
-  "tents": {"rows": [0.75, 1.15], "span": 0.85, "every": 0.38, "canvas": 0.15, "size": [0.26, 0.2, 0.36]},
+  "tents": {"_": "pennant_every: every so many tents flies the besieger's pennant on its ridge, pennant tall (world units).", "pennant_every": 3, "pennant": 0.14, "rows": [0.75, 1.15], "span": 0.85, "every": 0.38, "canvas": 0.15, "size": [0.26, 0.2, 0.36]},
   "palisade": {"at": 0.35, "span": 0.95, "width": 0.22, "gaps": [-0.5, 0.0, 0.5], "gap_half": 0.09},
   "fires": {"count": 4, "at": 0.95, "sitters": 2},
   "wagons": {"count": 3, "at": 1.55, "props": 4},
