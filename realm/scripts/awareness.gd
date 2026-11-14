@@ -369,8 +369,8 @@ static func town_facts(c: Dictionary) -> Dictionary:
 		"celebrating": bool(c.get("celebrating", false)),
 		"at_war": bool(c.get("atWar", false)),
 		"grief": bool(c.get("grief", false)),
-		"plague": bool(c.get("plague", false)),
-		"closed": bool(c.get("closed", false)),  # its roads shut against the plague (bridge contagion.js): town_dress/shut_roads.gd  # sick, the seasons after plague struck (bridge view.js: Freeciv's plague turn, stories.json plagueSeasons)
+		"plague": bool(c.get("plague", false)),  # sick, the seasons after plague struck (bridge view.js: Freeciv's plague turn, stories.json plagueSeasons)
+		"closed": bool(c.get("closed", false)),  # its roads shut against the plague (bridge contagion.js): town_dress/shut_roads.gd
 		"prosperity": bool(c.get("prosperity", false)),
 		"grasping": bool(c.get("grasping", false)),
 		"granary_low": bool(c.get("granaryLow", false)),  # under a quarter full (bridge view.js townStates)
