@@ -28,7 +28,7 @@ func real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds:
 	# stalls, the tavern and the hall facing it, a tight ring of townhouses
 	# around it, houses along the roads leading in, and a palisade with gates
 	# where the roads come through. Seats get more of everything.
-	tb.terrain.flatten(center, Vector2.ONE * square_r * 2.0, 0.0, tb.terrain.height_at(center.x, center.z), 0.6)
+	tb.world("flatten", [center, Vector2.ONE * square_r * 2.0, 0.0, tb.terrain.height_at(center.x, center.z), 0.6])
 	await tb._pace()
 	root.set_meta("square_r", square_r)
 	var lots: Array = [[Vector3.ZERO, square_r * 0.9]]
@@ -111,7 +111,7 @@ func real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds:
 					Ground.open_floor(root, yard)
 					# No wood stands inside its walls or leans over them: felled to
 					# the corners, and a crown's reach (about 0.8) beyond.
-					tb.terrain.clear_around(center + cp, f.length() * 0.5 + 0.8)
+					tb.world("clear", [center + cp, f.length() * 0.5 + 0.8])
 					lots.append([cp, maxf(f.x, f.y) * 0.55])
 					# The castle's standard, to the castle's scale: over the keep, not taller than its towers.
 					tb.banners.stand(root, cp + Vector3(0, cy + 0.9 * scale, 0), tb._house_colour, tb._house, 0.6 * scale)
@@ -568,7 +568,7 @@ func back_lane(root: Node3D, center: Vector3, way: PackedVector2Array) -> void:
 			if at.is_empty():
 				break
 			var q: Vector2 = at[0]
-			tb.terrain.land3d.paint_mud(center + Vector3(q.x, 0, q.y), width * 0.5, n * 31 + way.size())
+			tb.world("mud", [center + Vector3(q.x, 0, q.y), width * 0.5, n * 31 + way.size()])
 			s += step
 			n += 1
 		return

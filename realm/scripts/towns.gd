@@ -294,6 +294,7 @@ func _raise(best: int, job: Dictionary) -> void:
 		var standing: Node3D = towns[best]["node"]
 		var homes_before: Array = standing.get_meta("homes", [])
 		_merge(standing, node)
+		standing.set_meta("imprint", (standing.get_meta("imprint", []) as Array) + (node.get_meta("imprint", []) as Array))  # its new pieces' marks too
 		towns[best]["data"] = job["c"]
 		_grow(job.get("was", {}), homes_before, standing, job["c"])
 		terrain.season_on(standing)
@@ -610,7 +611,7 @@ func _bailey_ground(root: Node3D, cp: Vector3, cy: float, yaw: float, rng: Rando
 		while x <= float(inner[0]) * f.x:
 			var z := -float(inner[1]) * f.y
 			while z <= float(inner[1]) * f.y:
-				terrain.land3d.paint_mud(center + cp + b * Vector3(x, 0, z), r, rng.randi())
+				world("mud", [center + cp + b * Vector3(x, 0, z), r, rng.randi()])
 				z += step
 			x += step
 	var pave: Dictionary = _paving()
@@ -784,7 +785,7 @@ func _yard(root: Node3D, center: Vector3, pl: Array, p: Vector3, face: Vector3, 
 	var tr: Array = green.get("trodden", [])
 	if tr.size() >= 2 and rng.randf() < float(tr[0]) and terrain.land3d and terrain.land3d.land:
 		var yard_mid := (corners[2] + corners[3] + side_from + corners[0].lerp(corners[3], house_part)) * 0.25
-		terrain.land3d.paint_mud(center + Vector3(yard_mid.x, 0, yard_mid.y), TownPlots.YARD * float(tr[1]), rng.randi())
+		world("mud", [center + Vector3(yard_mid.x, 0, yard_mid.y), TownPlots.YARD * float(tr[1]), rng.randi()])
 	if rng.randf() < float(green.get("garden", 0.65)):
 		_croft(root, center, p, face, f, lots, rng, own_lot, true)
 	_yard_thing(root, center, pl, face, lots, rng)  # after the bed (placed first it took the bed's ground: round 9 stood 1-4 gardens of 93), tried in three spots and two sizes
@@ -877,11 +878,48 @@ func _square_trees(root: Node3D, center: Vector3, square_r: float, ways: Array, 
 		stood += 1
 
 
+## What a town's build does to the world beyond its own node, done and kept in one place: ground levelled under its
+## plots (flatten), earth worn into the land (mud), woods felled round it (clear), the realm's roads ended at its setts
+## (roads), its trees' crowns in the woods' sight lines (crown). Each is recorded for the town being raised (_imprint;
+## one is raised at a time) and kept on its root (meta "imprint"), so a town read back from disk marks the world the
+## same way (imprint) without being laid out again.
+var _imprint: Array = []
+func world(op: String, args: Array) -> void:
+	_imprint.append([op, args])
+	_mark(op, args)
+
+
+func _mark(op: String, args: Array) -> void:
+	match op:
+		"flatten":
+			terrain.flatten.callv(args)
+		"mud":
+			if terrain.land3d and terrain.land3d.land:
+				terrain.land3d.paint_mud.callv(args)
+		"clear":
+			terrain.clear_around.callv(args)
+		"roads":
+			var realm_roads = get_parent().get("roads") if get_parent() else null
+			if realm_roads and realm_roads.has_method("clear_in"):
+				realm_roads.clear_in.callv(args)
+		"crown":
+			var woods = terrain.get("forest") if terrain else null
+			if woods and woods.has_method("add_crown"):
+				woods.add_crown.callv(args)
+
+
+## A town's marks on the world (world), made again for a town read back from disk; the ground redrawn once after.
+func imprint(root: Node3D) -> void:
+	terrain.hold_grading = true
+	for e in root.get_meta("imprint", []):
+		_mark(String(e[0]), e[1])
+	terrain.hold_grading = false
+	terrain.commit_grading()
+
+
 ## A town tree's crown into the woods' sight lines (forest.add_crown), so the camera reads it as it does a roof.
 func _crown(center: Vector3, q: Vector3, kind: String, scale: float) -> void:
-	var woods = terrain.get("forest") if terrain else null
-	if woods and woods.has_method("add_crown"):
-		woods.add_crown(Vector3(center.x + q.x, terrain.height_at(center.x + q.x, center.z + q.z), center.z + q.z), Real.height(kind) * scale)
+	world("crown", [Vector3(center.x + q.x, terrain.height_at(center.x + q.x, center.z + q.z), center.z + q.z), Real.height(kind) * scale])
 
 
 ## One of a garden component's models (assets.json town_tree, garden_hedge, garden_flowers), or "".
@@ -1974,7 +2012,7 @@ func _seat(center: Vector3, p: Vector3, f: Vector2, rot: float, most := 1.2, cut
 		# Cut into the hill, never built up on fill: it stands at the plot's low
 		# side, so nothing hangs in the air and no raw bank shows below it.
 		level = lo
-	terrain.flatten(center + p, f * 1.05, rot, level, 0.35, most)
+	world("flatten", [center + p, f * 1.05, rot, level, 0.35, most])
 	return level - center.y
 
 
@@ -2194,6 +2232,7 @@ func _pace() -> void:
 
 
 func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
+	_imprint = []
 	var root := Node3D.new()
 	root.set_meta("owner", int(c["owner"]))  # whose favour its banners show
 	root.set_meta("city", int(c["id"]))  # its Freeciv city: the store's town scope (damage) is read by it
@@ -2234,16 +2273,14 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 	if TownPlots.GRID:
 		pass  # a square on the grid: its setts are its ground, edge to edge (g37 landuse: a round mud ring round a square square)
 	elif terrain.land3d and terrain.land3d.land:
-		terrain.land3d.paint_mud(center, square_r * 1.3, rng.randi())  # in the ground itself
+		world("mud", [center, square_r * 1.3, rng.randi()])  # in the ground itself
 	else:
 		terrain.paint(root, terrain.tiled(ROAD_TEX, reps + 2, reps + 2, "round"), Vector3(0, _ground_y(center, Vector3.ZERO), 0), Vector2.ONE * square_r * 3.2, rng.randf() * TAU, ROAD_TINT)
 	# Laid to the house fronts (towns.json paving: the stone, its tint, how far it reaches; art target town-b).
 	var pave: Dictionary = _paving()
 	var pave_span := square_r * float(pave.get("square", 2.0))
 	_note_paved(root, Vector2.ZERO, Vector2.ZERO, pave_span * 0.5 * 0.9)  # the plaza edge holds whole to about there
-	var realm_roads = get_parent().get("roads") if get_parent() else null
-	if realm_roads and realm_roads.has_method("clear_in"):
-		realm_roads.clear_in(Vector2(center.x, center.z), pave_span * 0.5 * 0.9)  # the realm's roads end at the setts
+	world("roads", [Vector2(center.x, center.z), pave_span * 0.5 * 0.9])  # the realm's roads end at the setts
 	var pave_reps := pave_span / float(pave.get("tile", 0.25))  # every sheet at its own size, a part sheet too (setts_probe)
 	var setts_size := Vector2(pave_span, pave_span * float(pave.get("square_aspect", 0.9)))
 	var setts_yaw := rng.randf() * TAU
@@ -2335,7 +2372,7 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 	root.set_meta("trodden", outer)  # where its people walk: no grass grows within
 	terrain.commit_grading()
 	await _pace()
-	terrain.clear_around(center, outer + 0.6)
+	world("clear", [center, outer + 0.6])
 	await _pace()
 	fields.edge(root, center, rng)  # the orchards by the roads out (town_fields.gd); the fields are land_use.gd's
 	await _pace()
@@ -2345,6 +2382,7 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 	_kerbs(root, center)  # after the houses and stalls stand: the kerb runs only where the paving meets open ground
 	await _pace()
 	_flush(root)
+	root.set_meta("imprint", _imprint)  # what it did to the world beyond itself (world), replayed when it is loaded
 	# Its name on the map is drawn in screen space by map_labels.gd.
 	return root
 
