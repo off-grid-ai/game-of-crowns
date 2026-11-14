@@ -245,7 +245,9 @@ func _stage_town(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 		if n.has_meta("role"):
 			n.set_meta("works", true)
 	if director:
-		await director.stage(root, life, c, states, self)
+		await director.stage(root, life, c, states, self)  # its own slices, over frames (town_scenes.gd)
+		_step_at = Time.get_ticks_usec()  # the pin step timed from here, not across the casting's frames
+		_slice_at = _step_at
 		if _gone(root, life):
 			return
 	_near_only(life)

@@ -1434,8 +1434,7 @@ func _trade_off_plot(root: Node3D, center: Vector3, tr: Dictionary, square_r: fl
 				_walled(root, center, q, face, f, String(tr["component"]), lots)
 			return true
 		tried += 1
-		if tried % 8 == 0:
-			await _pace()
+		await _pace()  # each try its own step (fps6: eight tries in one, 37 ms)
 	return false
 
 
@@ -2230,12 +2229,14 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 
 	# A town's seat raises the stone castle in its lots (town_layout.real_lots); an ordinary town is ruled from its hall.
 	var keep_off := Vector3(cos(base_ang + PI / street_count), 0, sin(base_ang + PI / street_count)) * (square_r + 0.55)
+	await _pace()
 	# A bannerman seated here flies his family's arms over the town; his
 	# liege's banner then stands at the square. A great house's seat, and any
 	# town the Crown holds, fly only their own.
 	var family: Dictionary = {}
 	if c.get("family") is String and not c["capital"] and not house.get("crown", false):
 		family = preload("res://scripts/heraldry.gd").family(String(c["family"]))
+	await _pace()
 	# The house that holds the town flies its banner at the square (a town taken changes it: it is built anew for its
 	# new house); a bannerman's family arms stand beside it.
 	var sq := -keep_off.normalized() * (square_r + 0.15)
@@ -2244,6 +2245,7 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 		var side := Vector3(-sq.z, 0, sq.x).normalized() * 0.18
 		banners.stand(root, sq + side + Vector3(0, _ground_y(center, sq + side), 0), color, family, 0.85).set_meta("arms", "family")  # its own, not its holder's: rehouse leaves it
 
+	await _pace()
 	# The church, hall and tavern stand on the square from the kit (town_layout.real_lots).
 	if "Granary" in buildings and not _trade_of("granary").has("stood"):  # a granary trade stood: it is the store
 		var gp := Vector3(cos(base_ang - 0.5), 0, sin(base_ang - 0.5)) * (reach + 0.5)
@@ -2256,6 +2258,7 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 					var hyaw := rng.randf() * TAU
 					_place(root, Real.one("haystack"), hp + Vector3(0, _foot_y(center, hp, Real.footprint(Real.one("haystack")), hyaw), 0), hyaw)
 
+	await _pace()
 	var outer := reach + 0.35
 	if not ways.is_empty():
 		outer = maxf(outer, float(root.get_meta("edge_r", 0.0)))  # the plots' own edge
