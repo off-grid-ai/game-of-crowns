@@ -79,6 +79,9 @@ var mustered := false
 var _order_face := NAN  # the way its order says its front looks (/world hosts[i].order.face), NAN for its own
 var _seat_root: Node3D = null  # the seat's town (towns.gd), whose edge the muster forms past (_form_on_way)
 var _then_free := false  # marching into a town (march_in): gone once halted there
+const ArmyCamp := preload("res://scripts/army_camp.gd")  # a field host's camp where it holds
+var _order_kind := "?"  # a field host's order now (/world hosts[].order.kind; "" at ease), as units.gd last gave it
+var _camp: Node3D = null  # its camp while it holds (army_camp.gd)
 var _baggage: Array = []  # a field host's carts behind its column: {node, carter, off, s}
 var _aboard := false  # taken ship (board): its regiments filing to the hulls, then on their decks
 var _pending_hulls: Array = []  # hulls to board once mustered
@@ -291,6 +294,7 @@ func _bound_yaw(h: Dictionary, at: Vector3) -> float:
 ## closed up behind it, in column.order.
 func march_to(to: Vector3) -> void:
 	_then_free = false
+	_strike_camp()
 	if not mustered:
 		_pending = to
 		return
@@ -351,6 +355,7 @@ func board(hulls: Array) -> void:
 		return
 	_aboard = true
 	_then_free = false
+	_strike_camp()
 	for c in _baggage:  # the baggage stays ashore: the carts go back to the seat, out of the picture
 		(c["node"] as Node3D).queue_free()
 	_baggage.clear()
@@ -389,6 +394,36 @@ func _exit_tree() -> void:
 		var n: Variant = r.get("node")
 		if n != null and is_instance_valid(n) and not is_ancestor_of(n):
 			(n as Node).queue_free()
+
+
+## A field host's order now (units.gd each sync: /world hosts[].order, null at ease): under one in army.json camp.when
+## it pitches its camp once its column has halted (_process); under any other it strikes it.
+func order_now(o: Variant) -> void:
+	_order_kind = String((o as Dictionary).get("kind", "")) if o is Dictionary else ""
+	if not _camps():
+		_strike_camp()
+
+
+func _camps() -> bool:
+	return (Data.value("army", "camp", {}).get("when", ["hold", ""]) as Array).has(_order_kind)
+
+
+## Its camp pitched beside its halted column, its right side (army_camp.gd), once.
+func _pitch_camp() -> void:
+	var scenes: Node = main.get("scenes")
+	if scenes == null or _regiments.is_empty():
+		return
+	var length := Formation.column_length(_regiments)
+	var mid_s := _halt_head() - length * 0.5
+	_camp = ArmyCamp.new()
+	add_child(_camp)
+	_camp.pitch(scenes, _at(mid_s), _heading(mid_s), length, 1.0, _regiments[0]["colour"], _regiments[0].get("house", {}), _rng)
+
+
+func _strike_camp() -> void:
+	if _camp and is_instance_valid(_camp):
+		_camp.queue_free()
+	_camp = null
 
 
 ## A host in the field's baggage train (03-army; Age of Empires' and Total War's columns: the carts behind the men):
@@ -1404,6 +1439,8 @@ func _process(delta: float) -> void:
 			"halt", "rest":
 				_at_ease(r, delta)
 	_far_view()
+	if _camp == null and not _aboard and battle.has("host") and _camps() and _regiments.all(func(r): return r["state"] == "halt"):
+		_pitch_camp()
 	if _then_free and _regiments.all(func(r): return r["state"] == "halt"):
 		queue_free()
 		return

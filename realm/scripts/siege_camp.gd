@@ -18,9 +18,9 @@ extends Node3D
 
 const Data := preload("res://scripts/data.gd")
 const Real := preload("res://scripts/realistic.gd")
-const Fire := preload("res://scripts/fire.gd")
 const Particles := preload("res://scripts/particles.gd")
 const Heraldry := preload("res://scripts/heraldry.gd")  # the besieger's pennants over its tents
+const CampKit := preload("res://scripts/camp_kit.gd")  # the canvas and the cook fires, as every camp
 const Mover := preload("res://scripts/mover.gd")  # the one way to move (CLAUDE.md): the ram, the tower and their crews
 
 var scenes: Node
@@ -122,8 +122,8 @@ func _tents() -> void:
 	var span := float(k.get("span", 0.85))
 	# Woven canvas (the props kit's banner cloth, laid on in triplanar): the house's own colour, only a little
 	# toward linen (half toward cream read as salmon pink beside a red house, batch 8b), and plain linen.
-	var canvas := _cloth(col.lerp(Color(0.9, 0.85, 0.72), float(k.get("canvas", 0.15))))
-	var plain := _cloth(Color(0.82, 0.76, 0.62))
+	var canvas := CampKit.cloth(col.lerp(Color(0.9, 0.85, 0.72), float(k.get("canvas", 0.15))))
+	var plain := CampKit.cloth(Color(0.82, 0.76, 0.62))
 	var mesh := PrismMesh.new()
 	mesh.size = Vector3(float(sz[0]), float(sz[1]), float(sz[2]))
 	for row in k.get("rows", [0.75]):
@@ -155,52 +155,16 @@ func _timber() -> Material:
 	return _wood
 
 
-## The props kit's banner cloth in `c`, in triplanar (a woven canvas, not a flat colour).
-func _cloth(c: Color) -> StandardMaterial3D:
-	var m: StandardMaterial3D = null
-	var path := "res://assets/props/Banner_1.gltf"
-	if ResourceLoader.exists(path):
-		var n: Node = (load(path) as PackedScene).instantiate()
-		for mi in n.find_children("*", "MeshInstance3D", true, false):
-			var msh: Mesh = (mi as MeshInstance3D).mesh
-			for s in (msh.get_surface_count() if msh else 0):
-				var src := (mi as MeshInstance3D).get_active_material(s)
-				if src is StandardMaterial3D and String(src.resource_name) == "MI_Banner":
-					m = (src as StandardMaterial3D).duplicate()
-		n.free()
-	if m == null:
-		m = StandardMaterial3D.new()
-	m.albedo_color = c
-	m.uv1_triplanar = true
-	m.uv1_scale = Vector3.ONE * 4.0
-	m.roughness = 1.0
-	m.cull_mode = BaseMaterial3D.CULL_DISABLED
-	return m
-
-
 ## Cook fires among the tents, flames and a pit, men sat round them.
 func _fires() -> void:
 	var k: Dictionary = Data.value("siege", "fires", {})
 	var n := int(k.get("count", 4))
-	var pit := Real.one("fire_pit")
 	for i in n:
 		var a := lerpf(-0.7, 0.7, (i + 0.5) / float(n)) + r.randf_range(-0.05, 0.05)
 		var p := _arc(a, camp_r + float(k.get("at", 0.95)))
 		if not scenes._footing(p):
 			continue
-		var model: Node3D = Real.make(pit) if pit != "" else null
-		if model:
-			model.position = p
-			root.add_child(model)
-		Fire.hearth(root, p)
-		for j in int(k.get("sitters", 2)):
-			var ang := r.randf() * TAU
-			var q := p + Vector3(cos(ang), 0, sin(ang)) * 0.12
-			var f: Node3D = scenes.people.make(r, "soldier", col, "adult")
-			f.position = scenes.stand(q)
-			f.rotation.y = atan2(p.x - q.x, p.z - q.z)
-			root.add_child(f)
-			scenes.people.play(f, ["Sitting_Ground", "Sitting_Idle", "Sitting_Cross_Legged"][r.randi() % 3], r.randf_range(0.9, 1.1))
+		CampKit.fire(scenes, root, p, col, int(k.get("sitters", 2)), r)
 
 
 ## The baggage behind the tents: wagons and carts, barrels and crates by them.

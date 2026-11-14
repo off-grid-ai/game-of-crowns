@@ -482,6 +482,7 @@ func field_hosts(store: Node) -> Dictionary:
 			view.set_meta("tile", tile)
 			view.set_meta("entering", false)  # out again before it was in: it marches on and stays
 			view.march_to(terrain.world_pos(float(tile.x), float(tile.y)))
+		view.order_now(h.get("order"))  # holding, it camps (army_camp.gd)
 		keep[id] = true
 		for u in units:
 			drawn[int(u)] = id
