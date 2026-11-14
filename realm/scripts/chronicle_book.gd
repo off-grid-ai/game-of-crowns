@@ -85,7 +85,7 @@ func _paginate(all: Array) -> void:
 func _build() -> void:
 	_card = ui.glass_panel()
 	_card.add_theme_stylebox_override("panel", T._box(Color(0.13, 0.11, 0.09, 0.97), Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.55), 10, 24))
-	_card.set_anchors_preset(Control.PRESET_CENTER)
+	_card.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	_card.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	_card.grow_vertical = Control.GROW_DIRECTION_BOTH
 	_card.custom_minimum_size = Vector2(980, 620)
@@ -209,7 +209,7 @@ func _show_picture(seq: int) -> void:
 	if img == null:
 		return
 	var c: PanelContainer = ui.glass_panel()
-	c.set_anchors_preset(Control.PRESET_CENTER)
+	c.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	c.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	c.grow_vertical = Control.GROW_DIRECTION_BOTH
 	ui.card(c)

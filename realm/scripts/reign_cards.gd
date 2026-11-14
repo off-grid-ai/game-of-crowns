@@ -112,7 +112,7 @@ func _act_moment(il: Dictionary, deed: Dictionary) -> void:
 	if seen:
 		ui.anchor.pin(card, at, true, 0.8)
 	else:
-		card.set_anchors_preset(Control.PRESET_CENTER_TOP)
+		card.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
 		card.offset_top = 70
 		card.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	card.modulate.a = 0.0
@@ -198,6 +198,8 @@ func _epilogue(ep: Dictionary, title := "The reign, as it will be told", wait_cl
 	card.anchor_right = 0.5
 	card.anchor_top = 1.0
 	card.anchor_bottom = 1.0
+	card.offset_left = 0  # set after the anchors, or the card keeps x=0 and grows round the left edge
+	card.offset_right = 0
 	card.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	card.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	card.offset_bottom = -48
@@ -334,7 +336,7 @@ func _reign_end(r: Dictionary) -> void:
 	shade.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	root.add_child(shade)
 	var col := VBoxContainer.new()
-	col.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	col.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
 	col.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	col.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	col.offset_bottom = -90
@@ -349,7 +351,7 @@ func _reign_end(r: Dictionary) -> void:
 	col.add_child(name_l)
 	# Why the realm calls him so: the deeds it remembers (bridge ledger.js).
 	if String(r.get("why", "")) != "":
-		var why := T.datum(String(r["why"]), T.SIZE_BODY, T.TEXT_2)
+		var why := T.prose(String(r["why"]), T.SIZE_BODY, T.TEXT_2)
 		why.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		why.autowrap_mode = TextServer.AUTOWRAP_WORD
 		why.custom_minimum_size.x = 760
@@ -468,7 +470,7 @@ func _inherits(col: VBoxContainer, r: Dictionary) -> void:
 	head.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	col.add_child(head)
 	for l in lines:
-		var lab := T.datum(l, T.SIZE_BODY, T.TEXT_2)
+		var lab := T.prose(l, T.SIZE_BODY, T.TEXT_2)
 		lab.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		lab.autowrap_mode = TextServer.AUTOWRAP_WORD
 		lab.custom_minimum_size.x = 640
@@ -480,7 +482,7 @@ func _inherits(col: VBoxContainer, r: Dictionary) -> void:
 func _ledger_page(l: Dictionary) -> Control:
 	var w: Dictionary = Data.value("reign_end", "ledger", {})
 	var page := PanelContainer.new()
-	page.set_anchors_preset(Control.PRESET_CENTER)
+	page.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	page.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	page.grow_vertical = Control.GROW_DIRECTION_BOTH
 	page.custom_minimum_size = Vector2(620, 0)
@@ -502,7 +504,7 @@ func _ledger_page(l: Dictionary) -> Control:
 	for c in ["", String(w.get("crowned", "When crowned")), String(w.get("now", "When it ended"))]:
 		grid.add_child(T.label(c))
 	for m in [["gold", "Crowns in the treasury"], ["troops", "Companies under arms"], ["towns", "Towns of the crown"]]:
-		grid.add_child(T.datum(String((w.get("measures", {}) as Dictionary).get(m[0], m[1])), T.SIZE_BODY, T.TEXT_2))
+		grid.add_child(T.prose(String((w.get("measures", {}) as Dictionary).get(m[0], m[1])), T.SIZE_BODY, T.TEXT_2))
 		var a := int(from.get(m[0], 0))
 		var b := int(to.get(m[0], 0))
 		if m[0] == "gold":  # the bridge's gold, shown in crowns as the treasury is
@@ -515,7 +517,7 @@ func _ledger_page(l: Dictionary) -> Control:
 		var names: Array = l.get(k[0], []) if l.get(k[0]) is Array else []
 		if names.is_empty():
 			continue
-		var line := T.datum("%s: %s" % [String((w.get("towns", {}) as Dictionary).get(k[0], k[1])), ", ".join(names.map(func(n): return String(n)))], T.SIZE_BODY, T.DANGER if k[0] == "lost" else T.TEXT)
+		var line := T.prose("%s: %s" % [String((w.get("towns", {}) as Dictionary).get(k[0], k[1])), ", ".join(names.map(func(n): return String(n)))], T.SIZE_BODY, T.DANGER if k[0] == "lost" else T.TEXT)
 		line.autowrap_mode = TextServer.AUTOWRAP_WORD
 		col.add_child(line)
 	# The weightiest rulings, as the chronicle wrote them.

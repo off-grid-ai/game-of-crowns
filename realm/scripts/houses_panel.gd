@@ -294,13 +294,13 @@ func _rival_line(st: Node) -> void:
 	var town := func(id: int) -> String: return String(ui.town_of.call(id).get("name", ""))
 	if r.get("war") is Dictionary:
 		var war: Dictionary = r["war"]
-		_houses.add_child(T.datum(String(_dw("rival_war", "")).replace("{realm}", String(r.get("realm", ""))).replace("{town}", town.call(int(war.get("town", -1)))), T.SIZE_DESC, T.DANGER))
+		_houses.add_child(T.prose(String(_dw("rival_war", "")).replace("{realm}", String(r.get("realm", ""))).replace("{town}", town.call(int(war.get("town", -1)))), T.SIZE_DESC, T.DANGER))
 	elif r.get("treaty") is Dictionary:
 		var t: Dictionary = r["treaty"]
-		_houses.add_child(T.datum(String(_dw("rival_treaty", "")).replace("{realm}", String(r.get("realm", ""))).replace("{until}", UI.season_of(int(t.get("until", 0)))), T.SIZE_DESC, T.ACCENT))
+		_houses.add_child(T.prose(String(_dw("rival_treaty", "")).replace("{realm}", String(r.get("realm", ""))).replace("{until}", UI.season_of(int(t.get("until", 0)))), T.SIZE_DESC, T.ACCENT))
 	elif r.get("demand") is Dictionary:
 		var d: Dictionary = r["demand"]
-		_houses.add_child(T.datum(String(_dw("rival_asks", "")).replace("{town}", town.call(int(d.get("town", -1)))), T.SIZE_DESC, T.TEXT_2))
+		_houses.add_child(T.prose(String(_dw("rival_asks", "")).replace("{town}", town.call(int(d.get("town", -1)))), T.SIZE_DESC, T.TEXT_2))
 	for c in _houses.get_children().slice(-2):
 		if c is Label:
 			(c as Label).autowrap_mode = TextServer.AUTOWRAP_WORD

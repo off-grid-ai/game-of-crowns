@@ -166,6 +166,14 @@ static func datum(text: String, size := SIZE_BODY, color := TEXT) -> Label:
 	return l
 
 
+## Prose on a card (what the King is, how the realm stands, what was said of him):
+## the sans face, regular, wrapping. Mono stays for labels and numbers.
+static func prose(text: String, size := SIZE_BODY, color := TEXT) -> Label:
+	var l := datum(text, size, color)
+	l.add_theme_font_override("font", sans)
+	return l
+
+
 ## A title: large, light, slightly tightened.
 static func title(text: String, size := SIZE_TITLE, color := TEXT) -> Label:
 	get_theme()

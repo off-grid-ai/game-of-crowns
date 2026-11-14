@@ -58,7 +58,7 @@ func open() -> void:
 	_done = false
 	_card = ui.glass_panel()
 	_card.custom_minimum_size = Vector2(460, 0)
-	_card.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_card.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
 	_card.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	_card.position.y = 96
 	var v := VBoxContainer.new()
@@ -107,7 +107,7 @@ func open() -> void:
 		# An answer against who the King means to be (bridge royals.js focus; the card's `against`): it will weigh on him.
 		var king: Dictionary = RoyalSheet.royals().get("king", {}) if RoyalSheet.royals().get("king") is Dictionary else {}
 		if king.get("focus") != null and String(king["focus"]) in ch.get("against", []):
-			var tag := T.datum(String(Data.value("royal_sheet", "focus.against", "")), T.SIZE_DESC, T.DANGER)
+			var tag := T.prose(String(Data.value("royal_sheet", "focus.against", "")), T.SIZE_DESC, T.DANGER)
 			tag.autowrap_mode = TextServer.AUTOWRAP_WORD
 			row.add_child(tag)
 		var helps := []
@@ -185,7 +185,7 @@ static func envoy_plate(king: String, realm: String) -> Label:
 		if float(rival.get("hostility", 50)) >= float(b.get("above", 0)):
 			mood = String(b.get("says", ""))
 			break
-	var plate := T.datum(who + (("  ·  " + mood) if mood != "" else ""), T.SIZE_DESC, T.DANGER if float(rival.get("hostility", 0)) >= float(w.get("danger", 60)) else T.TEXT_2)
+	var plate := T.prose(who + (("  ·  " + mood) if mood != "" else ""), T.SIZE_DESC, T.DANGER if float(rival.get("hostility", 0)) >= float(w.get("danger", 60)) else T.TEXT_2)
 	plate.autowrap_mode = TextServer.AUTOWRAP_WORD
 	plate.custom_minimum_size = Vector2(420, 0)
 	return plate
@@ -218,7 +218,7 @@ func _waits(cost: Label) -> Control:
 	var col := VBoxContainer.new()
 	col.add_theme_constant_override("separation", T.GAP_TIGHT)
 	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var w := T.datum(who, T.SIZE_DESC, T.TEXT_2)
+	var w := T.prose(who, T.SIZE_DESC, T.TEXT_2)
 	w.autowrap_mode = TextServer.AUTOWRAP_WORD
 	col.add_child(w)
 	cost.custom_minimum_size = Vector2(360, 0)

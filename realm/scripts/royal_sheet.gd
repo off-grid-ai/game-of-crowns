@@ -104,7 +104,7 @@ func open() -> void:
 		_card.queue_free()
 	_card = ui.glass_panel()
 	_card.add_theme_stylebox_override("panel", T._box(Color(0.13, 0.11, 0.09, 0.97), Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.55), 10, 22))
-	_card.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_card.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
 	_card.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	_card.position.y = 96
 	_card.custom_minimum_size = Vector2(520, 0)
@@ -136,7 +136,7 @@ func open() -> void:
 	_say(v, _w("age", "{age} years old").replace("{age}", str(age)), T.TEXT_2)
 	var t := traits_of(king)
 	if t != "":
-		var nature := T.datum(_w("nature", "By nature {traits}.").replace("{traits}", t), T.SIZE_BODY + 2, T.TEXT)
+		var nature := T.prose(_w("nature", "By nature {traits}.").replace("{traits}", t), T.SIZE_BODY + 2, T.TEXT)
 		nature.add_theme_font_override("font", T.speech)
 		v.add_child(nature)
 		_say(v, _w("nature_tip", ""), T.TEXT_3)
@@ -308,7 +308,7 @@ func _rest_row(v: VBoxContainer, r: Dictionary) -> void:
 func _say(v: VBoxContainer, text: String, colour: Color) -> void:
 	if text == "":
 		return
-	var l := T.datum(text, T.SIZE_DESC + 1, colour)
+	var l := T.prose(text, T.SIZE_DESC + 1, colour)
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD
 	l.custom_minimum_size.x = 470
 	v.add_child(l)
@@ -320,7 +320,7 @@ func _row(v: VBoxContainer, label: String, text: String) -> void:
 	var k := T.label(label)
 	k.custom_minimum_size.x = 90
 	row.add_child(k)
-	var d := T.datum(text, T.SIZE_BODY, T.TEXT)
+	var d := T.prose(text, T.SIZE_BODY, T.TEXT)
 	d.autowrap_mode = TextServer.AUTOWRAP_WORD
 	d.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(d)
@@ -399,7 +399,7 @@ func _first_council() -> void:
 	var king: Dictionary = r["king"]
 	var c: PanelContainer = ui.glass_panel()
 	c.add_theme_stylebox_override("panel", T._box(Color(0.13, 0.11, 0.09, 0.97), Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.6), 10, 22))
-	c.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	c.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
 	c.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	c.position.y = 96
 	c.custom_minimum_size = Vector2(520, 0)
@@ -450,7 +450,7 @@ func _first_council() -> void:
 	lines.append(String(w.get("chest", "")).replace("{crowns}", ui.crowns(ui.purse)))
 	for l in lines:
 		if l != "":
-			var row := T.datum("·  " + l, T.SIZE_BODY, T.TEXT)
+			var row := T.prose("·  " + l, T.SIZE_BODY, T.TEXT)
 			row.autowrap_mode = TextServer.AUTOWRAP_WORD
 			row.custom_minimum_size.x = 470
 			v.add_child(row)
@@ -564,7 +564,7 @@ func _lost(e: Dictionary) -> void:
 	ui.word_news.emit(town_id, said)
 	var c: PanelContainer = ui.glass_panel()
 	c.add_theme_stylebox_override("panel", T._box(Color(0.12, 0.09, 0.08, 0.97), Color(T.DANGER.r, T.DANGER.g, T.DANGER.b, 0.6), 10, 22))
-	c.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	c.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
 	c.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	c.position.y = 96
 	c.custom_minimum_size = Vector2(500, 0)
@@ -573,7 +573,7 @@ func _lost(e: Dictionary) -> void:
 	v.add_theme_constant_override("separation", T.GAP_SECTION)
 	c.add_child(v)
 	v.add_child(T.title(String(w.get("head", "{town} is lost")).replace("{town}", town), 24, T.DANGER))
-	var l := T.datum(said, T.SIZE_BODY, T.TEXT)
+	var l := T.prose(said, T.SIZE_BODY, T.TEXT)
 	l.add_theme_font_override("font", T.speech)
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD
 	l.custom_minimum_size.x = 460
@@ -621,7 +621,7 @@ func _rising(e: Dictionary) -> void:
 		ui.word_news.emit(int(e["city"]), said)
 	var c: PanelContainer = ui.glass_panel()
 	c.add_theme_stylebox_override("panel", T._box(Color(0.13, 0.08, 0.07, 0.97), Color(T.DANGER.r, T.DANGER.g, T.DANGER.b, 0.7), 10, 22))
-	c.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	c.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
 	c.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	c.position.y = 96
 	c.custom_minimum_size = Vector2(500, 0)
@@ -635,7 +635,7 @@ func _rising(e: Dictionary) -> void:
 	if name != "":
 		arms.add_child(ui.sigil_icon(ui.house_by_name.get(name, {}), 40))
 	arms.add_child(T.title(String(w.get("head", "{name}")).replace("{name}", name if name != "" else "A lord"), 24, T.DANGER))
-	var l := T.datum(said, T.SIZE_BODY, T.TEXT)
+	var l := T.prose(said, T.SIZE_BODY, T.TEXT)
 	l.add_theme_font_override("font", T.speech)
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD
 	l.custom_minimum_size.x = 460
@@ -655,7 +655,7 @@ func _rising(e: Dictionary) -> void:
 func _crowned(king: Dictionary, r: Dictionary, was: Dictionary, now: Dictionary) -> void:
 	var c: PanelContainer = ui.glass_panel()
 	c.add_theme_stylebox_override("panel", T._box(Color(0.13, 0.11, 0.09, 0.97), Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.6), 10, 22))
-	c.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	c.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
 	c.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	c.position.y = 96
 	c.custom_minimum_size = Vector2(500, 0)
@@ -682,15 +682,15 @@ func _crowned(king: Dictionary, r: Dictionary, was: Dictionary, now: Dictionary)
 			continue
 		var a: float = was[name]
 		var b: float = now[name]
-		grid.add_child(T.datum(String(name).trim_prefix("House "), T.SIZE_BODY, T.TEXT))
-		grid.add_child(T.datum(Awareness.mood_of(a), T.SIZE_BODY, T.TEXT_3))
-		var to := T.datum("→ " + Awareness.mood_of(b), T.SIZE_BODY, T.ACCENT if b > a + 0.5 else (T.DANGER if b < a - 0.5 else T.TEXT_2))
+		grid.add_child(T.prose(String(name).trim_prefix("House "), T.SIZE_BODY, T.TEXT))
+		grid.add_child(T.prose(Awareness.mood_of(a), T.SIZE_BODY, T.TEXT_3))
+		var to := T.prose("→ " + Awareness.mood_of(b), T.SIZE_BODY, T.ACCENT if b > a + 0.5 else (T.DANGER if b < a - 0.5 else T.TEXT_2))
 		grid.add_child(to)
 	# How the lords take him: the chronicle's own lines from this crowning (bridge royals.js temper).
 	for e in (ui.chronicle.entries as Array).slice(-8):
 		var said := String(e.get("text", ""))
 		if String(e.get("kind", "")) == "court" and said.begins_with("The lords take the measure"):
-			var l := T.datum(said, T.SIZE_BODY, T.TEXT)
+			var l := T.prose(said, T.SIZE_BODY, T.TEXT)
 			l.add_theme_font_override("font", T.speech)
 			l.autowrap_mode = TextServer.AUTOWRAP_WORD
 			l.custom_minimum_size.x = 460

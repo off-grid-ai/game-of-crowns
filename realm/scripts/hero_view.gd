@@ -527,16 +527,16 @@ func _fill_panel(p: Dictionary, house: Dictionary, editing := false) -> void:
 	var line := "%s, %d" % [rank, int(p.get("age", 0))] if rank != "" else "Aged %d" % int(p.get("age", 0))
 	if p.get("seat"):
 		line += "  ·  of %s" % String(p["seat"])
-	v.add_child(T.datum(line, T.SIZE_BODY, T.TEXT_2))
+	v.add_child(T.prose(line, T.SIZE_BODY, T.TEXT_2))
 	if house.get("words"):
-		v.add_child(T.datum("“%s”" % String(house["words"]), T.SIZE_DESC, T.ACCENT))
+		v.add_child(T.prose("“%s”" % String(house["words"]), T.SIZE_DESC, T.ACCENT))
 	v.add_child(HSeparator.new())
 	if editing:
 		_editor(v, p, house)
 		return
 	v.add_child(T.label("Nature"))
 	var nature := ", ".join(p.get("traits", []))
-	v.add_child(T.datum(nature.left(1).to_upper() + nature.substr(1), T.SIZE_BODY))
+	v.add_child(T.prose(nature.left(1).to_upper() + nature.substr(1), T.SIZE_BODY))
 	var loyal := int(p.get("loyalty", 50))
 	v.add_child(T.label("Loyalty to their liege"))
 	# In words, not a bar (casebook, Characters as stat blocks; CK3's opinion said as a relation): royal_sheet.json
@@ -546,7 +546,7 @@ func _fill_panel(p: Dictionary, house: Dictionary, editing := false) -> void:
 		if loyal >= int(b.get("above", 0)):
 			says = String(b.get("says", ""))
 			break
-	var ll := T.datum(says.replace("{liege}", String(house.get("name", "their house"))), T.SIZE_BODY, T.DANGER if loyal < int(Data.num("royal_sheet", "lord_loyalty_danger", 30)) else T.TEXT)
+	var ll := T.prose(says.replace("{liege}", String(house.get("name", "their house"))), T.SIZE_BODY, T.DANGER if loyal < int(Data.num("royal_sheet", "lord_loyalty_danger", 30)) else T.TEXT)
 	ll.autowrap_mode = TextServer.AUTOWRAP_WORD
 	ll.tooltip_text = "%d of 100" % loyal
 	ll.mouse_filter = Control.MOUSE_FILTER_PASS
@@ -608,11 +608,11 @@ func _toward_king(v: VBoxContainer, p: Dictionary, house: Dictionary) -> void:
 	if f == null:
 		return
 	v.add_child(T.label("Toward the King"))
-	var word := T.datum(Aw.mood_of(float(f)), T.SIZE_BODY, T.DANGER if float(f) < float(Aw.bands.get("cooling", 35)) else T.TEXT)
+	var word := T.prose(Aw.mood_of(float(f)), T.SIZE_BODY, T.DANGER if float(f) < float(Aw.bands.get("cooling", 35)) else T.TEXT)
 	v.add_child(word)
 	for w in p.get("why", []):
 		var d := int((w as Dictionary).get("d", 0))
-		v.add_child(T.datum("%s  %s" % ["▲" if d > 0 else "▼", String(w.get("what", ""))], T.SIZE_DESC, Color("#7fb069") if d > 0 else Color("#e86b5c")))
+		v.add_child(T.prose("%s  %s" % ["▲" if d > 0 else "▼", String(w.get("what", ""))], T.SIZE_DESC, Color("#7fb069") if d > 0 else Color("#e86b5c")))
 
 
 ## What they hold (CK3's character window: the holdings and the vassals under them): a great house's lord, the

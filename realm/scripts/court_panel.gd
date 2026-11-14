@@ -397,7 +397,7 @@ func _show_audience() -> void:
 		var stakes := String((rw.get("stakes", {}) as Dictionary).get(kind, ""))
 		stakes = stakes.replace("{town}", String(ui.town_of.call(town_id).get("name", ""))).replace("{realm}", String(rival.get("realm", p.get("house", "")))).replace("{king}", String(rival.get("king", ""))).replace("{waves}", String(rw.get("waves_one", "")) if waves <= 1 else String(rw.get("waves_many", "")).replace("{n}", str(waves)))
 		if stakes != "":
-			var sl := T.datum(stakes, T.SIZE_DESC, T.DANGER if kind != "tribute" else T.TEXT_2)
+			var sl := T.prose(stakes, T.SIZE_DESC, T.DANGER if kind != "tribute" else T.TEXT_2)
 			sl.autowrap_mode = TextServer.AUTOWRAP_WORD
 			v.add_child(sl)
 		# What stands behind his words (casebook, Signals and bluffs: a claim weighs what it costs to make): his men in
@@ -413,7 +413,7 @@ func _show_audience() -> void:
 		var men := ids.size()
 		var backs := (String(rw.get("backed_one", "")) if men == 1 else String(rw.get("backed", "")).replace("{n}", str(men))) if men > 0 else String(rw.get("unbacked", ""))
 		if backs != "":
-			var bl := T.datum(backs, T.SIZE_DESC, T.TEXT_2 if men > 0 else T.TEXT_3)
+			var bl := T.prose(backs, T.SIZE_DESC, T.TEXT_2 if men > 0 else T.TEXT_3)
 			bl.autowrap_mode = TextServer.AUTOWRAP_WORD
 			v.add_child(bl)
 	# A lord in arms (bridge rebels.js, arc "rebel"; CK3's faction demands, Mount & Blade's lord taken in the field):
@@ -469,20 +469,20 @@ func _show_audience() -> void:
 		# An envoy's or a rebel's answers say which way they go (herald.json arc_tags: yield or defy, mercy or the rope).
 		var arc_tag: Array = ((Data.value("herald", "arc_tags", {}) as Dictionary).get(String(p.get("arc", "")), {}) as Dictionary).get(String(o.get("id", "")), [])
 		if arc_tag.size() == 2:
-			row.add_child(T.datum(String(arc_tag[0]), T.SIZE_DESC, T.DANGER if String(arc_tag[1]) == "danger" else T.TEXT_2))
+			row.add_child(T.prose(String(arc_tag[0]), T.SIZE_DESC, T.DANGER if String(arc_tag[1]) == "danger" else T.TEXT_2))
 		# What it goes against in the King himself (bridge court.js against, royals.js: the same rules that weigh on him
 		# when chosen): who he means to be, and his own nature (CK3's tagged choices). The houses it cools show in its chips.
 		var ag: Dictionary = o.get("against") if o.get("against") is Dictionary else {}
 		var king: Dictionary = RoyalSheet.royals().get("king", {}) if RoyalSheet.royals().get("king") is Dictionary else {}
 		if king.get("focus") != null and String(king["focus"]) in ag.get("focus", []):
-			row.add_child(T.datum(String(Data.value("royal_sheet", "focus.against", "")), T.SIZE_DESC, T.DANGER))
+			row.add_child(T.prose(String(Data.value("royal_sheet", "focus.against", "")), T.SIZE_DESC, T.DANGER))
 		var natures: Array = ag.get("traits", [])
 		if not natures.is_empty():
-			row.add_child(T.datum(String(Data.value("royal_sheet", "focus.trait_against", "")).replace("{trait}", " and ".join(natures)), T.SIZE_DESC, T.TEXT_2))
+			row.add_child(T.prose(String(Data.value("royal_sheet", "focus.trait_against", "")).replace("{trait}", " and ".join(natures)), T.SIZE_DESC, T.TEXT_2))
 		# A promise instead of now (bridge promises.js): it says it is his word, and what keeping it means.
 		if String(o.get("id", "")) == "pledge":
 			var tb := RoyalSheet.trust_band()
-			var tag := T.datum(String(tb.get("pledge", Data.value("royal_sheet", "pledge_tag", ""))), T.SIZE_DESC, T.DANGER if bool(tb.get("low", false)) else T.ACCENT)
+			var tag := T.prose(String(tb.get("pledge", Data.value("royal_sheet", "pledge_tag", ""))), T.SIZE_DESC, T.DANGER if bool(tb.get("low", false)) else T.ACCENT)
 			tag.autowrap_mode = TextServer.AUTOWRAP_WORD
 			row.add_child(tag)
 		# An answer the treasury can't pay: greyed, and why, in one line under it.
@@ -583,7 +583,7 @@ func _rebel_plate(v: VBoxContainer, p: Dictionary) -> void:
 	var n := (r.get("units", []) as Array).size()
 	var line := String(w.get("chains" if chained else "terms", "")).replace("{n}", str(n)).replace("{town}", String(ui.town_of.call(int(r.get("city", -1))).get("name", "")))
 	if line != "":
-		var l := T.datum(line, T.SIZE_DESC, T.TEXT_2 if chained else T.DANGER)
+		var l := T.prose(line, T.SIZE_DESC, T.TEXT_2 if chained else T.DANGER)
 		l.autowrap_mode = TextServer.AUTOWRAP_WORD
 		v.add_child(l)
 
@@ -671,7 +671,7 @@ func _realm_matter(v: VBoxContainer, it: Dictionary) -> void:
 	v.add_child(head)
 	# Why it matters, as the realm has it; then the council's two voices on it.
 	if String(it.get("why", "")) != "":
-		var why := T.datum(String(it["why"]), T.SIZE_DESC, T.TEXT_2)
+		var why := T.prose(String(it["why"]), T.SIZE_DESC, T.TEXT_2)
 		why.autowrap_mode = TextServer.AUTOWRAP_WORD
 		why.custom_minimum_size = Vector2(240, 0)
 		v.add_child(why)
