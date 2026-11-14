@@ -18,6 +18,7 @@ func _init(towns: Node) -> void:
 func stand(root: Node3D, pos: Vector3, color: Color, house: Dictionary, height := 0.65) -> Node3D:
 	var b: Node3D = preload("res://scripts/heraldry.gd").standard(house, color, height)
 	b.position = pos
+	b.set_meta("height", height)  # rehouse sets the new holder's standard up the same
 	root.add_child(b)
 	# The house's banners show its favour: kept for raising and lowering.
 	var flag := b.get_node_or_null("Banner")
@@ -31,6 +32,33 @@ func stand(root: Node3D, pos: Vector3, color: Color, house: Dictionary, height :
 		if root.has_meta("taken_at"):  # a castle dressed after the town was taken: its banners are raised too
 			run_up(root, flag)
 	return b
+
+
+## The town changed hands: every standard it flies is struck and the new holder's put up in its place, at its
+## height, run up the pole (taken). The town itself stands as it was: nothing else is rebuilt.
+func rehouse(root: Node3D, house: Dictionary, color: Color, owner: int) -> void:
+	var old: Array = root.get_meta("banners", [])
+	root.set_meta("banners", [])
+	root.set_meta("owner", owner)
+	for flag in old:
+		if not is_instance_valid(flag):
+			continue
+		var b := (flag as Node).get_parent() as Node3D
+		var holder := b.get_parent() as Node3D if b else null
+		if holder == null:
+			continue
+		var at := b.position
+		var h := float(b.get_meta("height", 0.65))
+		b.queue_free()
+		var fresh := stand(holder, at, color, house, h)
+		if holder != root:  # a map seat's standard: kept on the town's list too
+			var f := fresh.get_node_or_null("Banner")
+			if f:
+				var all: Array = root.get_meta("banners", [])
+				all.append(f)
+				root.set_meta("banners", all)
+				holder.set_meta("banners", (holder.get_meta("banners", []) as Array).filter(func(x): return is_instance_valid(x) and x != flag))
+	taken(root)
 
 
 ## A seat as the realm map shows it (map_seat.gd: the castle set's keep under the house's standard, hidden up close,
