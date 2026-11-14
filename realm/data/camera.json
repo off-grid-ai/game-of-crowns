@@ -105,5 +105,6 @@
   }
  },
   "director": {"idle_seconds": 90.0, "shot_seconds": 18.0},
+  "bounds": { "_": "camera_rig.gd _keep_inside (Warcraft III, Age of Empires II, Total War campaign map): the frame's four corners cast onto the ground stay inside the map at every zoom, turn and tilt; the furthest zoom is where they just fit. margin: game units in from the map's edge the footprint stops (Mac: never a zoom where outside the world is seen). reach: a corner at or over the horizon (tilted far up) counts this many camera-distances out.", "margin": 1.0, "reach": 4.0 },
   "rig": {"overview": 60.0, "ease": 9.0, "nearest": 0.35, "steepest": 58.0, "guard": 4.5, "lens_speed": 2.5, "lens_reach": 0.05, "lens_ease": 10.0}
 }

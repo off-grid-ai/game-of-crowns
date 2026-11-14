@@ -98,7 +98,7 @@ func nudge(action: String) -> void:
 	match action:
 		"in": goal_distance = maxf(min_distance, goal_distance * 0.93)
 		"out":
-			if goal_distance >= OVERVIEW * 0.999:
+			if goal_distance >= minf(max_distance, OVERVIEW) * 0.999:  # the furthest the land goes: the painted map takes over
 				overview.emit()
 			goal_distance = minf(minf(max_distance, OVERVIEW), goal_distance * 1.07)
 		"up": _pan(Vector2(0, -1) * goal_distance * 0.04 * _speed())
@@ -245,9 +245,29 @@ func blocked_from(eye: Vector3, at: Vector3) -> int:
 
 ## Where the lens stands looking at `at` from `yaw`, as apply() places it.
 func eye_at(at: Vector3, yaw: float, tilt: float, dist: float) -> Vector3:
-	var t := clampf((dist - min_distance) / (max_distance - min_distance), 0.0, 1.0)
-	var p := deg_to_rad(clampf(lerpf(30.0, 55.0, pow(t, 0.7)) + tilt, 8.0, 89.0))
+	var p := deg_to_rad(above_at(dist, tilt))
 	return at + Vector3(sin(yaw) * cos(p), sin(p), cos(yaw) * cos(p)) * dist
+
+
+## Degrees the view looks down at `dist`, tilt added (about 30 close in to 55 for the whole realm; apply's pitch before
+## the ground view): `top` is the furthest zoom, where it reaches 55.
+func above_at(dist: float, tilt_: float, top := -1.0) -> float:
+	var far := max_distance if top < 0.0 else top
+	var t := 1.0 if dist >= far else clampf((dist - min_distance) / maxf(far - min_distance, 0.001), 0.0, 1.0)
+	return clampf(lerpf(30.0, 55.0, pow(t, 0.7)) + tilt_, 8.0, 89.0)
+
+
+## The lens's place from the point looked at, held oblique: past OBLIQUE degrees down it steps back along its line
+## instead of climbing higher (apply's rule, so the footprint below sees the lens apply places).
+const OBLIQUE := 42.0
+static func oblique(offset: Vector3) -> Vector3:
+	for k in 3:
+		var flat := Vector2(offset.x, offset.z)
+		if flat.length() < 0.001 or offset.y / flat.length() <= tan(deg_to_rad(OBLIQUE)):
+			break
+		var back := flat.normalized() * (offset.y / tan(deg_to_rad(OBLIQUE)))
+		offset = Vector3(back.x, offset.y * 0.9, back.y)
+	return offset
 
 
 ## A side to look at `pos` from with nothing tall in the way: starting at
@@ -372,7 +392,7 @@ func _unhandled_input(event: InputEvent) -> void:
 ## you're pointing at stays where it is while everything else comes closer.
 func _zoom_at(screen: Vector2, f: float) -> void:
 	var before := goal_distance
-	if f > 1.0 and goal_distance >= OVERVIEW * 0.999:
+	if f > 1.0 and goal_distance >= minf(max_distance, OVERVIEW) * 0.999:  # at the land's furthest (its bounds or OVERVIEW)
 		overview.emit()
 		return
 	goal_distance = clampf(goal_distance * f, min_distance, minf(max_distance, OVERVIEW))
@@ -951,39 +971,69 @@ func _process(delta: float) -> void:
 	apply()
 
 
-## The world fills the screen and never more: you can't zoom out past its
-## edges or pan off them. The view's ground footprint is estimated from the
-## camera's field of view, turned with the camera.
+## The world fills the screen and never more (Warcraft III's, Age of Empires II's and Total War's campaign map
+## bounds): the four corners of the frame, cast onto the ground, stay inside the map's rectangle, camera.json
+## bounds.margin in from its edge, at every zoom, turn and tilt. The furthest zoom is where that footprint, at the far
+## pitch, just fits the map; panning stops where a corner would cross the edge, not where the point looked at does.
 func _keep_inside() -> void:
 	if terrain == null or terrain.width == 0:
 		return
+	var m := knob("bounds.margin", 1.0)
 	var world: Vector2 = Vector2(terrain.width, terrain.height) * terrain.TILE
-	var tan_v := tan(deg_to_rad(cam.fov / 2.0))
-	var aspect := get_viewport().get_visible_rect().size.aspect()
-	var c := absf(cos(goal_yaw))
-	var sn := absf(sin(goal_yaw))
-	# Half the ground seen across (screen x) and up-down (screen y), per unit of distance.
-	# The camera is tilted, so the top of the view reaches further than a
-	# straight-down view would; pad for it.
-	var across := tan_v * aspect * 1.25
-	var updown := tan_v * 1.6
-	var half_x := across * c + updown * sn
-	var half_z := across * sn + updown * c
-	var widest := minf(world.x / (2.0 * half_x), world.y / (2.0 * half_z))
-	goal_distance = minf(goal_distance, widest)
-	max_distance = widest
-	var hx := minf(half_x * goal_distance, world.x / 2.0)
-	var hz := minf(half_z * goal_distance, world.y / 2.0)
-	goal_target.x = clampf(goal_target.x, hx, world.x - hx)
-	goal_target.z = clampf(goal_target.z, hz, world.y - hz)
+	var room := Vector2(maxf(world.x - 2.0 * m, 1.0), maxf(world.y - 2.0 * m, 1.0))
+	# At the furthest zoom the pitch is the far one (55 plus the tilt) and the footprint grows with the distance.
+	var unit := _extent(footprint(1.0, goal_yaw, above_at(1.0, goal_tilt, 1.0)))
+	var widest := minf(room.x / maxf(unit.size.x, 0.001), room.y / maxf(unit.size.y, 0.001))
+	max_distance = maxf(widest, min_distance + 0.001)
+	goal_distance = minf(goal_distance, max_distance)
+	var box := _extent(footprint(goal_distance, goal_yaw, above_at(goal_distance, goal_tilt), maxf(_look_y, 0.0)))
+	goal_target.x = _hold(goal_target.x, box.position.x, box.end.x, m, world.x - m)
+	goal_target.z = _hold(goal_target.z, box.position.y, box.end.y, m, world.y - m)
+
+
+## The ground the frame covers, as offsets from the point looked at: its four corners cast from the lens (placed as
+## apply places it, at `above` degrees down, `dist` away) onto the sea's level, `lift` under the point looked at. A
+## corner at or over the horizon reaches camera.json bounds.reach distances, no further.
+func footprint(dist: float, yaw_: float, above: float, lift := 0.0) -> PackedVector2Array:
+	var p := deg_to_rad(above)
+	var eye := oblique(Vector3(sin(yaw_) * cos(p), sin(p), cos(yaw_) * cos(p)) * dist)
+	var f := -eye.normalized()
+	var r := f.cross(Vector3.UP).normalized()
+	var u := r.cross(f)
+	var tv := tan(deg_to_rad(cam.fov * 0.5))
+	var th := tv * get_viewport().get_visible_rect().size.aspect()
+	var reach := dist * knob("bounds.reach", 4.0)
+	var base := Vector2(eye.x, eye.z)
+	var out := PackedVector2Array()
+	for s: Vector2 in [Vector2(-1, -1), Vector2(1, -1), Vector2(1, 1), Vector2(-1, 1)]:
+		var ray := f + r * th * s.x + u * tv * s.y
+		var hit := base + Vector2(ray.x, ray.z).normalized() * reach
+		if ray.y < -0.0001:
+			hit = base + Vector2(ray.x, ray.z) * ((eye.y + lift) / -ray.y)
+		out.append(hit.limit_length(reach))
+	return out
+
+
+static func _extent(pts: PackedVector2Array) -> Rect2:
+	var box := Rect2(pts[0], Vector2.ZERO)
+	for q in pts:
+		box = box.expand(q)
+	return box
+
+
+## A coordinate of the point looked at, held so the footprint's [lo, hi] offsets stay within [from, to]; centred when
+## the footprint is wider than that.
+static func _hold(v: float, lo: float, hi: float, from: float, to: float) -> float:
+	var least := from - lo
+	var most := to - hi
+	return (least + most) * 0.5 if least > most else clampf(v, least, most)
 
 
 func apply() -> void:
-	var t := clampf((distance - min_distance) / (max_distance - min_distance), 0.0, 1.0)
 	# An oblique view at every zoom (about 30° close in to 55° for the whole
 	# realm): looking across the land shows its hills, roads and towns; looking
 	# straight down flattens them.
-	var above := clampf(lerpf(30.0, 55.0, pow(t, 0.7)) + tilt, 8.0, 89.0)
+	var above := above_at(distance, tilt)
 	# Zoomed right in, the camera comes down to a person's eye and looks across
 	# the land rather than down at it; tilt then looks up or down from there.
 	var ground_view := ground_view_at(distance)
@@ -1007,15 +1057,7 @@ func apply() -> void:
 	# Lifted over a roof or a castle wall, the view must stay oblique: past
 	# about 42 degrees down, the camera steps back along its line instead of
 	# climbing higher, and clears the roofs from there.
-	for k in 3:
-		var flat := Vector2(pos.x - look.x, pos.z - look.z)
-		var rise := pos.y - look.y
-		var most := tan(deg_to_rad(42.0))
-		if flat.length() < 0.001 or rise / flat.length() <= most:
-			break
-		var back := flat.normalized() * (rise / most)
-		var to := Vector3(look.x + back.x, look.y + rise * 0.9, look.z + back.y)
-		pos = to
+	pos = look + oblique(pos - look)
 	# Following something through a wood (a convoy on a forest road, a rider):
 	# with tree crowns between the lens and what it shows, the camera rises over
 	# the canopy rather than sitting in the leaves (forest.gd's sight lines).
