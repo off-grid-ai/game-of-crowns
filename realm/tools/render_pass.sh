@@ -37,6 +37,7 @@
 #   host5    the host in column at 03-army's framing with all five kinds, 1500 men in the crown's colours (03-army)
 #   castle   Kingsmere's castle close from its gate side (01-town; the Meshy castle set)
 #   street   the smallest town's street of houses at its town view (01-town; the Meshy house set)
+#   cities   a coastal, a small and a hill town at the town view, for their edge cases (01-town; picked off /map)
 #   crossing the King's host at sea in the cog (08-reinforce): ordered over water (One store's crossing, d70ca994), then
 #            framed once aboard, the reign paused while it is filmed (CROSS_WAIT, 900 s of the wall clock); skipped and
 #            said when no march goes by sea
@@ -49,7 +50,7 @@ STAMP=$(date +%H%M)
 OUT=${OUT:-/tmp/goc-pass/$STAMP}
 PORT=${PORT:-8789}; FC=${FC:-5558}
 API=localhost:$PORT
-ONLY=${ONLY:-"town landuse realm muster cavalry battle siege command face walls breach seasons host5 castle street crossing raid"}
+ONLY=${ONLY:-"town landuse realm muster cavalry battle siege command face walls breach seasons host5 castle street cities crossing raid"}
 # The pass runs from its own copy of this script: zsh reads a script as it runs, so a commit to it mid-pass broke the
 # first full pass (2159: 'parse error near fi' at line 229, ten lines added above it at 22:00 while it ran).
 if [ -z "${RENDER_PASS_SELF:-}" ]; then
@@ -267,6 +268,34 @@ if want street; then
   { print "wait 30"; print "home ${V:-Kingsmere} 0 1"; print "wait 6"; print "home ${V:-Kingsmere} 0 1"; print "wait 3"; print "snap street"; print "look end"; } > $OUT/street.play
   shot street 1500 film $SW
   side street $OUT/frames/street/street.png $TARGETS/01-town.jpg "a village street: ${V:-none found, Kingsmere}"
+fi
+# Other cities at the town view, for their edge cases (Look, PLAN.md section 4): the coastal town with the most sea in its
+# ring, the smallest town after the street's, and the town with the most hills and mountains in its ring (the bridge's
+# /map tiles; a town named in two words is passed over, the play's steps split on spaces).
+if want cities; then
+  PICKS=$(curl -s -m 10 "$API/map" | perl -e 'alarm shift; exec @ARGV' 30 python3 -I -c "
+import json,sys,urllib.request
+m=json.load(sys.stdin)
+T={(t[0],t[1]):t[2].split('|')[0] for t in m.get('tiles',[])}
+d=json.load(urllib.request.urlopen('http://$API/world?peek=1', timeout=10))
+cs=[c for c in d.get('cities',[]) if ' ' not in c.get('title', c.get('name','')) and c.get('title') != 'Kingsmere']
+ring=lambda c,r: [T.get((c['x']+i,c['y']+j),'Ocean') for i in range(-r,r+1) for j in range(-r,r+1)]
+name=lambda c: c.get('title', c.get('name',''))
+sea=max(cs, key=lambda c: (sum(k in ('Ocean','Deep Ocean','Lake') for k in ring(c,1)), -c.get('size',0)))
+small=sorted(cs, key=lambda c: c.get('size',0))[1:2] or cs[:1]
+hill=max(cs, key=lambda c: sum(k in ('Hills','Mountains') for k in ring(c,2)))
+print(name(sea), name(small[0]), name(hill))" 2>/dev/null)
+  set -- ${=PICKS}
+  if [ $# -lt 3 ]; then
+    say "cities: no picks from /map and /world; no frames"
+  else
+    for pair in "coastal $1" "small $2" "hill $3"; do
+      set -- ${=pair}
+      { print "wait 30"; print "home $2"; print "wait 6"; print "home $2"; print "wait 3"; print "snap $1"; print "look end"; } > $OUT/city_$1.play
+      shot city_$1 1500 film $SW
+      side city_$1 $OUT/frames/city_$1/$1.png $TARGETS/01-town.jpg "a $1 town at the town view: $2"
+    done
+  fi
 fi
 if want crossing; then
   new_reign  # its own season of orders
