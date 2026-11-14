@@ -958,6 +958,8 @@ func _use_scenario(sc: Dictionary) -> void:
 func _houses_enabled(row: Control) -> void:
 	for b in row.get_children():
 		b.disabled = _scenario == "aldmere"
+		# A locked choice says what unlocks it (the casebook's silent locked button).
+		(b as Control).tooltip_text = "Nine years in, every great house already holds its seat. Begin in year one or a random realm to choose who sits." if b.disabled else ""
 
 
 func _column(parent: Control) -> VBoxContainer:
