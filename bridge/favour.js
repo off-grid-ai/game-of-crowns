@@ -11,6 +11,8 @@ export const IDLE = { seasons: _bands.idle?.seasons ?? 3, cool: _bands.idle?.coo
 // How a cold house turns against the King (data/favour.json turning: seasons to its ultimatum, riseIn to its host).
 export const TURN = _bands.turning;
 // A grudge carried into the next reign (data/favour.json grudge.carry): how much colder its house starts.
+// A rebel lord's own host (data/favour.json rebel): its size and its kinds.
+export const REBEL = _bands.rebel;
 export const GRUDGE = { carry: _bands.grudge?.carry ?? 12 };
 
 // The band a favour falls in: "loyal", "sworn", "steady", "cooling" or "angry".

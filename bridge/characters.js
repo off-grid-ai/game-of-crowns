@@ -19,7 +19,7 @@ import { ANSWERS } from "./petitions.js";
 import { PROMISES as PR } from "./promises.js";
 const SP = JSON.parse(fs.readFileSync(new URL("./data/spoils.json", import.meta.url), "utf8"));
 import { heir as royalHeir, MATCH as RM, REGENCY, isRegency } from "./royals.js";
-import { BANDS } from "./favour.js";
+import { BANDS, REBEL } from "./favour.js";
 import * as names from "./names.js";
 
 
@@ -690,10 +690,15 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
       case "rebel": {
         const d = await this.ask(c, `Your house has lost faith in the King. You could raise your banners against the crown, or swallow your pride.`, ["rebel", "endure"]);
         if (d && d.choice !== "rebel") return;
-        const seat = world.cities.find((x) => x.id === c.seat);
-        if (seat) ctx.send(Lua.levy(seat.id, Array(3).fill("Knights|Horsemen")));
+        // His own host (data/favour.json rebel), raised at his town nearest the King's seat and marched on it by the
+        // road (realm_war_host, hosts.js warpath): at the walls it lays siege.
+        const crown = crownOf(world);
+        const kingSeat = world.cities.find((x) => x.owner === crown?.id && x.capital) ?? world.cities.find((x) => x.owner === crown?.id);
+        const towns = world.cities.filter((x) => x.owner === c.playerId).length;
+        const men = REBEL.host + REBEL.perTown * towns;
+        if (kingSeat) ctx.send(Lua.warHost(c.playerId, kingSeat.id, REBEL.kinds, men));
         const why = ctx.cause?.(c.playerId);
-        this.record({ turn, kind: "rebellion", text: `${c.name} raises the banners of ${c.house} against the crown!${why ? ` ${c.house} has not forgotten ${why}.` : ""}${d?.line ? ` "${d.line}"` : ""}`, city: c.seat ?? undefined });
+        this.record({ turn, kind: "rebellion", text: `${c.name} raises the banners of ${c.house} against the crown!${why ? ` ${c.house} has not forgotten ${why}.` : ""}${kingSeat ? ` ${men} companies march on ${cityName(kingSeat.id)}.` : ""}${d?.line ? ` "${d.line}"` : ""}`, city: c.seat ?? undefined });
         ctx.rose?.(c.playerId);
         return;
       }
