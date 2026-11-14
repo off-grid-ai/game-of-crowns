@@ -183,7 +183,7 @@ Switches (`--name`) go after `--` on the game's command line.
 - Bannermen's surnames, dealt fresh each real reign: `bridge/data/surnames.json`.
 - One court matter at a time, and how likely a season brings one by the stage of the reign: `bridge/data/court.json`: `one`.
 - How big a ruling's move in a house's favour must be to show two marks on the court card and read 'much warmer' or 'much colder': `realm/data/court.json` `big_move`.
-- The herald: on or off, how many notices wait, how long each is read, its dry voices: `realm/data/herald.json`.
+- The notices in the corner: how many at once, how long each stays, how wide (`stack.most`, `stack.seconds`, `stack.width`), and the herald's dry voices: `realm/data/herald.json`.
 - How often a royal seal comes (0.5: every other season): `bridge/data/seals.json`: `perSeason`.
 - What the tithe brings the crown per town size, what share of its purse a house hands over, and the Royal Court's upkeep: `bridge/data/realmrules/luadata.txt` `[purse]`: `per_size`, `house_pays`, `court_base`, `court_per_town`, `court_share`. Probe: `bridge/tools/purse_probe.mjs`.
 - How often event cards come, and never in a breather (chanceInBreather 0): `bridge/data/events.json`: `settings.chance`, `settings.chanceInBreather`.

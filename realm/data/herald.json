@@ -1,8 +1,7 @@
 {
- "_": "The herald (news_chips.gd; Theme Hospital's announcer, Stronghold's scribe): one notice on screen at a time, the rest wait their turn in order instead of being written over, and the plain refusals get a dry voice. on: the switch (or --herald=on). queue: notices kept waiting at most (the oldest goes). min_read: seconds a notice stays before the next may take its place. voices: a notice that starts with 'starts' may get one of 'say' in place of that start (the rest of the line kept), or one of 'whole' in place of the line, with chance (a dry line where it lands, never on every notice; Mac: professional, nothing gimmicky).",
+ "_": "The herald (news_chips.gd; Theme Hospital's announcer, Stronghold's scribe): the notices stack quietly in the bottom-left corner (Anno's and Total War's notification stack), and the plain refusals get a dry voice. on: the voice's switch (or --herald=on). stack: most, the notices shown at once (the oldest goes); seconds, how long each stays; width, the stack's width in points. voices: a notice that starts with 'starts' may get one of 'say' in place of that start (the rest of the line kept), or one of 'whole' in place of the line, with chance (a dry line where it lands, never on every notice; Mac: professional, nothing gimmicky).",
  "on": true,
- "queue": 3,
- "min_read": 3.0,
+ "stack": { "most": 4, "seconds": 8.0, "width": 320 },
  "voices": [
   {
    "starts": "The crown cannot: ",

@@ -946,7 +946,7 @@ func _clear_ui() -> void:
 	# The notices too (batch 8b: a news message over a feast): the toast, the edge arrow and the ticker.
 	var news: Variant = ui.get("news")
 	if news is Object:
-		for k in ["_toast_box", "_edge", "_offer"]:
+		for k in ["_toast_box", "_stack", "_edge", "_offer"]:
 			var p: Variant = (news as Object).get(k)
 			if p is Control and (p as Control).visible:
 				(p as Control).visible = false

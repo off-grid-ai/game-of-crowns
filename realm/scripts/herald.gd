@@ -1,6 +1,6 @@
 extends RefCounted
-## The herald's switch and voice (realm/data/herald.json): the one owner. One notice on screen
-## at a time, the rest in order, and the plain refusals said with a dry wit (PLAN.md Phase 1:
+## The herald's switch and voice (realm/data/herald.json): the one owner. The notices stack in
+## the corner (news_chips.gd), and the plain refusals said with a dry wit (PLAN.md Phase 1:
 ## Theme Hospital's announcer, Stronghold's scribe).
 
 const Data := preload("res://scripts/data.gd")  # the one loader of realm/data (data.gd)
