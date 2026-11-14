@@ -150,6 +150,7 @@ Switches (`--name`) go after `--` on the game's command line.
 - How soon painted ground (roads, fields, squares, worn paths) fades out on a steep bank (`realm/data/ground.json` paint.normal_fade; 0 never).
 - Lawn variety: `ground.json terrain.patches` (layer, most, from, soft, scale per patch). Raise `most` for fuller patches (blend is most/(1+most)), raise `from` for fewer.
 - Wood edges and doodads: `forest.json woods.edge_bushes` [least, most] bushes round a clump at a wood's edge; `forest.json cover_per_tile` per terrain the bushes, grass, flowers and rocks per tile.
+- Rock on hill crests: `ground.json auto.cliff` (higher: rock on gentler slopes; 0.88 about 28 degrees) and `layers.rock.calm.contrast` (the stone's light and shadow; a repack and --import after).
 - The coast: how far the beach runs above the waterline and which painting it blends through (dirt, no outline), and the surf at the shore: `realm/data/ground.json`: `beach.top`, `surf`.
 - How far out the land keeps its fine shape (Terrain3D's rings round the lens; too coarse and a lake's low shore sinks under the water at the mid zoom): `realm/data/ground.json`: `mesh.size`, `mesh.lods`.
 - From what distance the sea's colour stops reading the depth to its bed (nearer shows clear shallows, but the bed's coarser rings show as seams further out): `realm/data/look.json`: `sea.depth_fade`.
