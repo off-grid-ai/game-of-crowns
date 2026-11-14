@@ -40,31 +40,8 @@
  "clarity": {
   "_": "The player always sees clearly what he looks at (Mac, 2026-11-12: 'I can barely see anything'; Age of Empires IV and Anno 1800 town cameras: no near blur, the lens never in or behind a building, a crisp foreground). on (or --clarity=on; --clarity=old for the before shot): the pitch is the player's or the step's; a roof in the line, the view first swings swingStep degrees either way, up to swingTries steps, to a clear line; failing that it lifts liftStep degrees at a time, at most liftTries steps and never past maxPitch degrees down (batch 8: an unlimited lift made every town shot top-down); then it comes in short of the roof, but never nearer than nearest of its distance (batch 8: d14 collapsed to 6); the sight check also keeps the frame's lower third clear of buildings and street things near the lens (lines to the ground lowerAt of the way to the focus, lowerSide of the distance either side; a hit in the near lowerNear of a line counts); all eased at liftEase a second; and what stands at the lens dissolves only within fade.gone..fade.solid (game units), instead of near_fade's wider ghosting.",
   "on": true,
-  "swingStep": 4.0,
-  "swingTries": 6,
-  "liftStep": 2.0,
-  "liftTries": 3,
-  "maxPitch": 40.0,
-  "nearest": 0.75,
-  "lowerAt": [0.45, 0.7],
-  "lowerSide": 0.25,
-  "lowerNear": 0.6,
-  "liftEase": 4.0,
   "fade": { "gone": 0.5, "solid": 1.0 },
-  "frame": {
-   "_": "The clear frame bottom (batch 9: a ghosted house down the right quarter of Kingsmere, near roofs and chimney pots over the bottom third at d4.5-6). Age of Empires IV's and Anno 1800's closest town zoom: the camera stands over open ground with the frame's bottom clear, and nothing is cut away or see-through. on (0: batch 9's lower-third lines, lowerAt..lowerNear). Rays through a 6x3 grid over the frame's bottom third (aspect: the film's width over height) count what a building, a street thing or a tree's crown (forest.gd's sight lines, as roofs) fills nearer than within of the way to the aim; a frame is clean at allow or less, with no roof or crown on the line to the aim and nothing within gap of the lens (fade.solid is 1.0: nearer, it would ghost). Not clean: the smallest change that is, in order: a swing (swingStep, swingTries), the lens and its aim raised together over the roof line (riseStep of the distance but at least riseLeast units, riseTries; Anno 1800's pivot over the rooftops: the pitch kept, the ground a little lower in the frame), the lens in along its arm (shortStep of the arm, shortTries), a lift (liftStep, liftTries, never past maxPitch), then swings with each rise; none clean, the least bad. Re-chosen when the lens or aim moves or every hold seconds; eased at liftEase.",
-   "on": 1,
-   "aspect": 1.74,
-   "within": 0.5,
-   "allow": 0.08,
-   "gap": 1.15,
-   "riseStep": 0.05,
-   "riseTries": 4,
-   "riseLeast": 0.3,
-   "shortStep": 0.06,
-   "shortTries": 3,
-   "hold": 0.5
-  },
+  "frame": {"_": "The film's width over its height (camera_rig.town_view frames a town for it).", "aspect": 1.74},
   "smoke": {
    "_": "Chimney smoke near the lens fades out (hearths.gd; the smoke material's distance fade): gone nearer than 'gone', whole from 'solid', in game units from the lens (batch 9: smoke drifting across the near houses at d6).",
    "gone": 2.0,
@@ -108,5 +85,5 @@
   "bounds": { "_": "camera_rig.gd _keep_inside (Warcraft III, Age of Empires II, Total War campaign map): the frame's four corners cast onto the ground stay inside the map at every zoom, turn and tilt; the furthest zoom is where they just fit. margin: game units in from the map's edge the footprint stops (Mac: never a zoom where outside the world is seen). reach: a corner at or over the horizon (tilted far up) counts this many camera-distances out.", "margin": 1.0, "reach": 4.0 },
   "_view_tier": "view_tier.gd, the one decider of how much of a place is alive: far_from (lens distance at and above which every place is FAR: towns and castles static, nobody about), near_below (lens distance under which a place within near_reach world units of where it looks is NEAR: everything), lead (world units added round a place when asking if it is on screen, so it is staged in before it shows), stage_ms (ms a frame for staging places in).",
   "view_tier": {"far_from": 60.0, "near_below": 18.0, "near_reach": 30.0, "lead": 4.0, "stage_ms": 4.0},
-  "rig": {"overview": 60.0, "ease": 14.0, "max_step": 0.1, "nearest": 0.35, "steepest": 58.0, "guard": 4.5, "lens_speed": 2.5, "lens_reach": 0.05, "lens_ease": 10.0, "zoom": {"ease": 6.0, "step": 0.1, "lead": 1.6, "soft": 0.5}, "pitch": {"near": 30.0, "far": 55.0, "top_below": 6.0}}
+  "rig": {"overview": 60.0, "ease": 14.0, "max_step": 0.1, "steepest": 58.0, "zoom": {"ease": 6.0, "step": 0.1, "lead": 1.6, "soft": 0.5}, "pitch": {"near": 30.0, "far": 55.0, "top_below": 6.0}}
 }

@@ -15,7 +15,6 @@ signal clicked(ground: Vector3)
 const Data := preload("res://scripts/data.gd")  # the one loader of realm/data (data.gd)
 const Settings := preload("res://scripts/settings.gd")  # the player's camera speed (Settings, the game section)
 static var OVERVIEW: float = preload("res://scripts/data.gd").num("camera", "rig.overview", 60.0)  # camera.json rig.overview
-const NavGround := preload("res://scripts/nav_ground.gd")  # what a town's life has set down
 
 var terrain: Node3D
 var target := Vector3.ZERO
@@ -77,23 +76,9 @@ func _ready() -> void:
 	cam.near = 0.02
 	cam.far = 2000
 	add_child(cam)
-	# The lens never passes through a roof or a wall: Godot's ShapeCast3D sweeps a
-	# small ball from what the camera looks at back toward the lens, against the
-	# towns' buildings (on a layer of their own), updated the moment it's asked
-	# (no stale physics frame), and the lens stops short of the first building.
-	_cast = ShapeCast3D.new()
-	_cast.top_level = true
-	_cast.enabled = false  # cast on demand only
-	_cast.collision_mask = LENS_LAYER
-	_cast.margin = 0.03
-	var ball := SphereShape3D.new()
-	ball.radius = 0.04
-	_cast.shape = ball
-	add_child(_cast)
 
 
 func focus(pos: Vector3, dist := -1.0) -> void:
-	_hit = -1.0  # a jump starts clear: no ease carried over from the last place
 	goal_target = pos
 	if dist > 0:
 		goal_distance = clampf(dist, floor_now(), max_distance)  # the floor and the limits, where the distance is asked
@@ -207,7 +192,6 @@ func tilt_for(pitch: float, dist: float) -> float:
 ## rising between) does the view turn, by the smallest step that clears it, and with
 ## no side clear, to the least blocked one.
 func go_to(at: Vector3, dist: float) -> void:
-	_hit = -1.0
 	goal_target = at
 	goal_distance = maxf(dist, min_distance)
 	goal_tilt = 0.0
@@ -324,7 +308,6 @@ func _blocked(a: Vector3, b: Vector3) -> bool:
 
 func snap(pos: Vector3, dist: float, y := 0.0) -> void:
 	dist = maxf(dist, floor_now())  # nobody brings the lens under the roofs (a film step may ask for its own distance)
-	_hit = -1.0
 	_look_y = _floor_at(pos)  # a cut: the aim starts where it is, not eased in from the last place
 	target = pos
 	goal_target = pos
@@ -499,34 +482,13 @@ static func height_of(fp: PackedVector2Array, tops: Array, i: int) -> float:
 	return top
 
 
-## The towns' buildings and walls as the lens sees them: a static body per
-## building, a prism over each footprint up to its roof, on a layer only the camera's
-## spring arm looks at, for the towns near the camera only. Rebuilt when a town's footprints change.
+## The towns' buildings and walls as the signs' sight line sees them: a prism over each footprint up to its roof, on
+## a layer of their own, for the towns near the view only; rebuilt when a town's footprints change.
 const LENS_LAYER := 1 << 19
-## Street things (stalls, carts, barrels) the lens rises over rather than going
-## through; on a layer of their own, so the roof sweep never pulls the lens in for them.
-const PROP_LAYER := 1 << 18
-const LOW_THING := 0.4  # under this above its ground, a thing the lens rides over, not a building
-const PROP_TOP := 0.32  # a stall's or cart's height, and a little over (game units)
-var _cast: ShapeCast3D
 var _bodies := {}  # town id -> [holder Node3D, signature]
 var _bodies_check := 0.0
-var _hit := -1.0  # set by a cut (snap, focus): the lens's corrections start afresh, not eased in
-var _lag := 0.0  # how far the lens's correction still has to go (the zoom waits on it)
-var _fix := Vector3.ZERO  # the lens's own correction (roofs, crowns), eased toward what is needed
-static var NEAREST: float = preload("res://scripts/data.gd").num("camera", "rig.nearest", 0.35)  # the lens comes in no closer than this share of its distance to what it looks at (camera.json rig.nearest)
 static var STEEPEST: float = preload("res://scripts/data.gd").num("camera", "rig.steepest", 58.0)  # degrees below the horizon the lens may ever look (camera.json rig.steepest)
-static var GUARD: float = preload("res://scripts/data.gd").num("camera", "rig.guard", 4.5)  # camera distance under which the lens looks out for buildings (camera.json rig.guard)
 static var CLEAR: bool = clarity()  # read once: the lens keeps its sight over the roofs
-var _lift := 0.0  # radians the lens is tipped up to see over the roofs (eased; a last resort, a few degrees)
-var _swing := 0.0  # radians the view is swung about what it looks at to find a clear line (eased)
-## The clear frame bottom (camera.json clarity.frame): on with clarity unless frame.on is 0; the frame probe
-## (tools/frame_probe.gd) flips it to measure before and after in one run.
-static var FRAME: bool = CLEAR and knob("clarity.frame.on", 1.0) > 0.5
-var _rise := 0.0  # how far the lens and its aim stand raised over the roof line, the pitch kept (eased; clarity.frame)
-var _short := 0.0  # the share of its arm the lens has come in to clear the frame's bottom (eased; clarity.frame)
-var _pick := [0.0, 0.0, 0.0, 0.0]  # the frame's last choice: swing, lift, rise, short
-var _pick_at := [Vector3.INF, Vector3.INF, 0.0]  # where it was chosen (aim, lens) and how long ago
 ## A film step's own distance under the floor (autoplay asks for d2 at street height): 0 for none, the floor holds.
 var step_floor := 0.0
 
@@ -534,153 +496,6 @@ var step_floor := 0.0
 ## The nearest the lens may come now: the floor, or a film step's own distance under it.
 func floor_now() -> float:
 	return minf(min_distance, step_floor) if step_floor > 0.0 else min_distance
-
-
-## Whether the lens at `pos` sees `look` with no building in the line, and the frame's lower third free of anything
-## near the lens (batch 8b: a stall dithered see-through in the foreground, a house down the left edge): lines from
-## the lens to the ground clarity.lowerAt of the way to what it looks at, in the middle and clarity.lowerSide of its
-## distance either side, against buildings and street things (stalls, carts); a hit in the near clarity.lowerNear of
-## the line counts.
-func _sees(look: Vector3, pos: Vector3) -> bool:
-	if _clear(look, pos).distance_squared_to(pos) >= 0.0001:
-		return false
-	if not is_inside_tree():
-		return true
-	var space := get_world_3d().direct_space_state
-	var flat := Vector3(look.x - pos.x, 0.0, look.z - pos.z)
-	var side := Vector3(-flat.z, 0.0, flat.x).normalized() * flat.length() * knob("clarity.lowerSide", 0.25)
-	var near := knob("clarity.lowerNear", 0.6)
-	var ats: Array = Data.value("camera", "clarity.lowerAt", [0.45, 0.7])
-	var targets: Array[Vector3] = []
-	for t in ats:
-		targets.append(pos + flat * float(t))
-	var last := pos + flat * float(ats[ats.size() - 1]) if not ats.is_empty() else look
-	targets.append(last + side)
-	targets.append(last - side)
-	for g in targets:
-		var to := Vector3(g.x, _floor_at(g) + 0.05, g.z)
-		var q := PhysicsRayQueryParameters3D.create(pos, to, LENS_LAYER | PROP_LAYER)
-		var hit := space.intersect_ray(q)
-		if not hit.is_empty() and pos.distance_to(hit["position"]) < pos.distance_to(to) * near:
-			return false
-	return true
-
-
-## The share of the frame's lower third, seen from `pos` along `fwd` (right and up the frame's own), that a building
-## or a street thing fills nearer than `reach` from the lens: rays through a cols x rows grid over the bottom third
-## (camera.json clarity.frame.aspect: the film's width over its height). Batch 9: near roofs, chimney pots and a
-## half-ghosted house filled the bottom of the d4.5-6 town frames.
-func lower_share(pos: Vector3, fwd: Vector3, right: Vector3, up: Vector3, reach: float, cols := 6, rows := 3) -> float:
-	if not is_inside_tree() or reach <= 0.0:
-		return 0.0
-	var space := get_world_3d().direct_space_state
-	var woods = terrain.get("forest") if terrain else null  # tree crowns count as roofs do (forest.gd's sight lines)
-	if woods and not woods.has_method("blocking"):
-		woods = null
-	var tv := tan(deg_to_rad(cam.fov * 0.5))
-	var aspect := knob("clarity.frame.aspect", 1.74)
-	var hits := 0
-	for j in rows:
-		var sy := -1.0 + (j + 0.5) / float(rows) * (2.0 / 3.0)  # the bottom third of the frame, -1 to -1/3
-		for i in cols:
-			var sx := -1.0 + (i + 0.5) / float(cols) * 2.0
-			var d := (fwd + right * (sx * tv * aspect) + up * (sy * tv)).normalized()
-			if not space.intersect_ray(PhysicsRayQueryParameters3D.create(pos, pos + d * reach, LENS_LAYER | PROP_LAYER)).is_empty():
-				hits += 1
-			elif woods and int(woods.blocking(pos, pos + d * reach)) > 0:
-				hits += 1
-	return float(hits) / float(cols * rows)
-
-
-## Whether a building, a street thing or a tree's crown stands within `r` of the lens at `pos` (there it would
-## dissolve: a ghost). Crowns by forest.gd's sight lines, level with the lens and a little down, four ways.
-func crowded(pos: Vector3, r: float) -> bool:
-	if not is_inside_tree():
-		return false
-	var woods = terrain.get("forest") if terrain else null
-	if woods and woods.has_method("blocking"):
-		for v in [Vector3(r, -r * 0.5, 0), Vector3(-r, -r * 0.5, 0), Vector3(0, -r * 0.5, r), Vector3(0, -r * 0.5, -r)]:
-			if int(woods.blocking(pos, pos + v)) > 0:
-				return true
-	var q := PhysicsShapeQueryParameters3D.new()
-	var ball := SphereShape3D.new()
-	ball.radius = r
-	q.shape = ball
-	q.transform = Transform3D(Basis(), pos)
-	q.collision_mask = LENS_LAYER | PROP_LAYER
-	return not get_world_3d().direct_space_state.intersect_shape(q, 1).is_empty()
-
-
-## How badly the lens at `pos`, aiming at `aim`, frames it (clarity.frame): 0 is clean. The line to the aim must be
-## clear (+2 if not); nothing within frame.gap of the lens (+1: it would ghost); then the share of the lower third
-## filled nearer than frame.within of the way to the aim.
-func _frame_cost(aim: Vector3, pos: Vector3) -> float:
-	var cost := 0.0
-	var woods = terrain.get("forest") if terrain else null
-	if _clear(aim, pos).distance_squared_to(pos) >= 0.0001 or (woods and woods.has_method("blocking") and int(woods.blocking(pos, aim)) > 0):
-		cost += 2.0  # a roof or a tree's crown between the lens and what it looks at
-	if crowded(pos, knob("clarity.frame.gap", 1.15)):
-		cost += 1.0
-	var fwd := (aim - pos).normalized()
-	var right := fwd.cross(Vector3.UP).normalized()
-	return cost + lower_share(pos, fwd, right, right.cross(fwd), pos.distance_to(aim) * knob("clarity.frame.within", 0.5))
-
-
-## The frame's choice for the lens at `base` looking at `look` (clarity.frame; Age of Empires IV's and Anno 1800's
-## closest town zoom: the camera stands over open ground, the frame's bottom clear, and nothing is see-through):
-## [swing, lift, rise, short], the smallest change whose frame is clean (its lower third at most frame.allow filled
-## near the lens), tried in order: none; a swing either way (swingStep, swingTries); the lens and its aim raised
-## together over the roof line (frame.riseStep of the distance, at least riseLeast, riseTries; Anno 1800's pivot over the rooftops: the
-## pitch kept, the ground looked at a little lower in the frame);
-## the lens in along its arm (frame.shortStep, shortTries); a lift (liftStep, liftTries, never past maxPitch); then
-## the swings with each rise. None clean: the least bad. Kept while the lens and the aim hold still (frame.hold s).
-func _frame_pick(look: Vector3, base: Vector3) -> Array:
-	var still := distance * 0.01
-	_pick_at[2] = float(_pick_at[2]) + get_process_delta_time()
-	if (_pick_at[0] as Vector3).distance_to(look) < still and (_pick_at[1] as Vector3).distance_to(base) < still and float(_pick_at[2]) < knob("clarity.frame.hold", 0.5):
-		return _pick
-	var sstep := deg_to_rad(knob("clarity.swingStep", 4.0))
-	var st := int(knob("clarity.swingTries", 6))
-	var lstep := deg_to_rad(knob("clarity.liftStep", 2.0))
-	var lt := int(knob("clarity.liftTries", 3))
-	var rstep := maxf(knob("clarity.frame.riseStep", 0.05) * distance, knob("clarity.frame.riseLeast", 0.3))
-	var rt := int(knob("clarity.frame.riseTries", 4))
-	var kstep := knob("clarity.frame.shortStep", 0.06)
-	var kt := int(knob("clarity.frame.shortTries", 3))
-	var tries: Array = [[0.0, 0.0, 0.0, 0.0]]
-	for k in range(1, maxi(maxi(st, rt), maxi(kt, lt)) + 1):
-		if k <= st:
-			tries.append([sstep * k, 0.0, 0.0, 0.0])
-			tries.append([-sstep * k, 0.0, 0.0, 0.0])
-		if k <= rt:
-			tries.append([0.0, 0.0, rstep * k, 0.0])
-		if k <= kt:
-			tries.append([0.0, 0.0, 0.0, kstep * k])
-		if k <= lt:
-			tries.append([0.0, lstep * k, 0.0, 0.0])
-	for r in range(1, rt + 1):
-		for k in range(1, st + 1):
-			tries.append([sstep * k, 0.0, rstep * r, 0.0])
-			tries.append([-sstep * k, 0.0, rstep * r, 0.0])
-	var allow := knob("clarity.frame.allow", 0.08)
-	var best := [INF, tries[0]]
-	for t in tries:
-		var lens := _framed(look, base, t)
-		var c := _frame_cost(look + Vector3.UP * float(t[2]), lens)
-		if c <= allow:
-			best = [c, t]
-			break
-		if c < float(best[0]) - 0.02:  # a clearly better frame only: the least change wins a tie
-			best = [c, t]
-	_pick = best[1]
-	_pick_at = [look, base, 0.0]
-	return _pick
-
-
-## The lens for a frame choice [swing, lift, rise, short]: rise lifts the lens and its aim together (the pitch kept).
-func _framed(look: Vector3, base: Vector3, t: Array) -> Vector3:
-	var lens := _tipped(look, _swung(look, base, float(t[0])), float(t[1]))
-	return look + (lens - look) * (1.0 - float(t[3])) + Vector3.UP * float(t[2])
 
 
 ## A site's name sign (an inn's: roads.gd, roadside.gd) set clear of its roofs, with clarity (camera.json
@@ -713,6 +528,10 @@ static func sign_over(label: Label3D, holder: Node3D) -> void:
 ## (every clarity.labels.every seconds): never cut by a roof.
 var _signs_check := 0.0
 func _hide_signs() -> void:
+	_bodies_check -= get_process_delta_time()
+	if _bodies_check <= 0.0:
+		_bodies_check = 1.0
+		_lens_bodies()
 	_signs_check -= get_process_delta_time()
 	if _signs_check > 0.0 or not is_inside_tree():
 		return
@@ -730,30 +549,7 @@ func _hide_signs() -> void:
 		sign.visible = space.intersect_ray(PhysicsRayQueryParameters3D.create(eye, at, LENS_LAYER)).is_empty()
 
 
-## The lens at `pos` swung about what it looks at by `turn` radians (its height and arm kept).
-func _swung(look: Vector3, pos: Vector3, turn: float) -> Vector3:
-	if absf(turn) < 0.00001:
-		return pos
-	var arm := pos - look
-	return look + Vector3(arm.x * cos(turn) + arm.z * sin(turn), arm.y, -arm.x * sin(turn) + arm.z * cos(turn))
-
-
-## The lens at `pos` tipped up about what it looks at by `up` radians, its arm's length kept, never steeper than STEEPEST.
-func _tipped(look: Vector3, pos: Vector3, up: float) -> Vector3:
-	if up <= 0.0:
-		return pos
-	var arm := pos - look
-	var flat := Vector2(arm.x, arm.z)
-	var now := atan2(arm.y, flat.length())
-	var pitch := maxf(now, minf(now + up, deg_to_rad(knob("clarity.maxPitch", 40.0))))  # never lifted past the oblique band
-	var dir := flat.normalized() if flat.length() > 0.0001 else Vector2(0, 1)
-	var l := arm.length()
-	return look + Vector3(dir.x * cos(pitch) * l, sin(pitch) * l, dir.y * cos(pitch) * l)
-static var LENS_SPEED: float = preload("res://scripts/data.gd").num("camera", "rig.lens_speed", 2.5)  # the most the lens's correction moves, in camera distances a second (camera.json rig.lens_speed)
-static var LENS_REACH: float = preload("res://scripts/data.gd").num("camera", "rig.lens_reach", 0.05)  # the lens's sweep, as a share of its arm: how early a roof is felt (camera.json rig.lens_reach)
-static var LENS_EASE: float = preload("res://scripts/data.gd").num("camera", "rig.lens_ease", 10.0)  # how quickly the lens's own corrections (roofs, crowns, the ground's rise) settle, per second (camera.json rig.lens_ease)
-
-
+## The towns' buildings and walls near the view as bodies on LENS_LAYER, for the signs' sight line (_hide_signs).
 func _lens_bodies() -> void:
 	if towns == null:
 		return
@@ -782,19 +578,16 @@ func _lens_bodies() -> void:
 		var fps: Array = root.get_meta("footprints", [])
 		var walls: Array = root.get_meta("walls", [])
 		var tops: Array = root.get_meta("tops", [])
-		# The town's street things (stalls, carts, barrels, the fire's ring: town_life.gd's Life), read off what its
-		# life has set down (nav_ground.gd, the outlines its walk map is cut from).
-		var props: Array = NavGround.outlines(root, terrain)["life"]
-		var count := fps.size() + walls.size() + props.size()
+		var count := fps.size() + walls.size()
 		if float(o[0]) > arm or count > budget:
 			_drop_bodies(id)
 			continue
 		budget -= count
-		var sig := hash([fps, tops, walls, props])  # a site growing changes its height, not its count
+		var sig := hash([fps, tops, walls])  # a site growing changes its height, not its count
 		if _bodies.has(id) and _bodies[id][1] == sig and is_instance_valid(_bodies[id][0]):
 			continue
 		_drop_bodies(id)
-		build.append([id, root, fps, walls, tops, props, sig])
+		build.append([id, root, fps, walls, tops, sig])
 	# Built once every town out of reach has let go of its bodies.
 	for b in build:
 		var id: Variant = b[0]
@@ -802,32 +595,13 @@ func _lens_bodies() -> void:
 		var fps: Array = b[2]
 		var walls: Array = b[3]
 		var tops: Array = b[4]
-		var props: Array = b[5]
-		var sig: int = b[6]
+		var sig: int = b[5]
 		var holder := Node3D.new()
 		holder.name = "LensBodies"
 		for i in fps.size():
-			# Something low (a cart, a barrel, a crate set down by the house) the lens
-			# rides over, as it does the street's stalls; a building it keeps out of.
-			var top := height_of(fps[i], tops, i)
-			var mid := Vector2.ZERO
-			for q in fps[i]:
-				mid += q / float(fps[i].size())
-			var ground := _floor_at(root.to_global(Vector3(mid.x, 0, mid.y))) - root.global_position.y
-			if i < tops.size() and float(tops[i]) >= 0.0 and top - ground < LOW_THING:
-				_prism(holder, fps[i], top - ground + 0.04, PROP_LAYER, ground)
-			else:
-				_prism(holder, fps[i], top + 0.12)
+			_prism(holder, fps[i], height_of(fps[i], tops, i) + 0.12)
 		for w in walls:
 			_prism(holder, w[0], float(w[1]) + 0.12)
-		# Each stands on the ground under it (the town's root sits at its own height, not
-		# the street's: measured from the land, as the buildings' tops are).
-		for fp in props:
-			var mid := Vector2.ZERO
-			for q in fp:
-				mid += q / float(fp.size())
-			var world: Vector3 = root.to_global(Vector3(mid.x, 0, mid.y))
-			_prism(holder, fp, PROP_TOP, PROP_LAYER, _floor_at(world) - root.global_position.y)
 		root.add_child(holder)
 		_bodies[id] = [holder, sig]
 
@@ -861,51 +635,6 @@ func _prism(holder: Node3D, fp: PackedVector2Array, h: float, layer := LENS_LAYE
 	cs.shape = shape
 	body.add_child(cs)
 	holder.add_child(body)
-
-
-## Where the lens can stand on its line to `look`: short of the first building
-## in the way (apply() eases the lens there). A building the eye itself stands
-## in (a castle's yard, a doorway) doesn't count.
-func _clear(look: Vector3, pos: Vector3) -> Vector3:
-	var arm := pos - look
-	var full := arm.length()
-	if full < 0.01 or not is_inside_tree():
-		return pos
-	_cast.clear_exceptions()
-	var params := PhysicsPointQueryParameters3D.new()
-	params.position = look
-	params.collision_mask = LENS_LAYER
-	for hit in get_world_3d().direct_space_state.intersect_point(params, 8):
-		_cast.add_exception_rid(hit["rid"])
-	_cast.global_position = look
-	_cast.target_position = arm
-	# A wider ball further out: a roof is felt a little before the line touches it,
-	# so the lens starts in early and gently, not all at once once it's on top of it.
-	(_cast.shape as SphereShape3D).radius = clampf(full * LENS_REACH, 0.04, 0.5)
-	_cast.force_shapecast_update()
-	var free := full * _cast.get_closest_collision_safe_fraction() if _cast.is_colliding() else full
-	# Never right up against what it looks at: there the smallest move swings the
-	# view; what still stands in the way dissolves at the lens instead (fade_near).
-	return look + arm / full * maxf(free, full * NEAREST)
-
-
-## The top of the street thing the lens would stand in (within a small ball of it), or -INF.
-var _prop_ball := SphereShape3D.new()
-func _prop_top(p: Vector3) -> float:
-	if not is_inside_tree():
-		return -INF
-	_prop_ball.radius = 0.08
-	var q := PhysicsShapeQueryParameters3D.new()
-	q.shape = _prop_ball
-	q.transform = Transform3D(Basis(), p)
-	q.collision_mask = PROP_LAYER
-	var top := -INF
-	for hit in get_world_3d().direct_space_state.intersect_shape(q, 4):
-		var body: Object = hit.get("collider")
-		if body and body.has_meta("top"):
-			var b := body as Node3D
-			top = maxf(top, b.global_position.y + float(body.get_meta("top")))
-	return top
 
 
 func _floor_at(p: Vector3) -> float:
