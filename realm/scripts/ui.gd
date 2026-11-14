@@ -318,12 +318,17 @@ func take_world_click() -> bool:
 ## The one close control for a card (CK3's and Total War's panel close): a quiet X in the card's top-right corner,
 ## in the card's own muted text colour, lifting on hover; `on_close` puts the card away, as Esc does (_step_back).
 ## It sits on a layer of its own named "Close" (no size of its own, clicks pass through), which a card that clears
-## its children keeps.
+## its children keeps. The layer stays the card's last child, whatever is added after it: Godot gives a click to the
+## last-drawn control under it, so the card's content (a container that takes the mouse, filled after this call)
+## would otherwise take the X's click (Mac: "clicking the cross is not doing anything").
 func close_x(p: PanelContainer, on_close: Callable) -> void:
 	var layer := Control.new()
 	layer.name = "Close"
 	layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	p.add_child(layer)
+	p.child_order_changed.connect(func():
+		if is_instance_valid(layer) and layer.get_parent() == p and layer.get_index() != p.get_child_count() - 1:
+			p.move_child.call_deferred(layer, -1))
 	var b := Button.new()
 	b.icon = icon("x")
 	b.focus_mode = Control.FOCUS_NONE
