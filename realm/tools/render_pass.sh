@@ -377,6 +377,22 @@ if u:
     dx,dy=u['x']-x,u['y']-y
     print('%d %.2f %.2f %.2f' % (u['id'],u['x'],u['y'],math.atan2(dx,dy) if (dx or dy) else 0.6))" 2>/dev/null
   }
+  # raid_log <when> [lens]: the season and every raider (a wild player's man new since the stage: id, owner, tile, *
+  # for this raid's own, the men found by the town) into the pass log, with the lens's aim when a snap is due; the
+  # evidence for a raid frame that shows none (g25, g26: raid.jpg the same with no raider in it, the walk-off "gone
+  # before one was seen (stepped 0 seasons)").
+  raid_log() {
+    say "raid log, $1: $(curl -s -m 10 "$API/world?peek=1" | perl -e 'alarm shift; exec @ARGV' 20 python3 -I -c "
+import json,sys; d=json.load(sys.stdin)
+wild={p['id'] for p in d.get('players',[]) if (p.get('house') or {}).get('wild')}
+old={int(x) for x in open('$OUT/raid.before').read().split()}
+try:
+    mine={int(i) for i in open('$OUT/raid.ids').read().split()}
+except OSError:
+    mine=set()
+us=[u for u in d.get('units',[]) if u.get('owner') in wild and u['id'] not in old]
+print('season %s; %d raiders: %s' % (d.get('turn'), len(us), ' '.join('%d(%s)@%d,%d%s' % (u['id'], u['owner'], u['x'], u['y'], '*' if u['id'] in mine else '') for u in us) or '-'))" 2>/dev/null)${2:+; lens at $2}"
+  }
   curl -s -m 10 "$API/world?peek=1" | python3 -I -c "
 import json,sys; print(' '.join(str(u['id']) for u in json.load(sys.stdin).get('units',[])))" > $OUT/raid.before 2>/dev/null
   RAID=$(curl -s -m 10 -X POST -H 'X-Test: 1' $API/test/stage -d '{"raid":"crown"}' | python3 -I -c "
@@ -397,6 +413,7 @@ if r.get('ok'): print(r['city'], r['x'], r['y'], r['name'])" 2>/dev/null)
       AT=$(raider $RX $RY near 0)
       [ -z "$AT" ] && sleep 5
     done
+    raid_log "the wait by the town ended ($((SECONDS - T0)) s)"
     if [ -z "$AT" ]; then
       say "raid: no raider by $RNAME in ${RAID_WAIT:-300} s; no frame"
     else
@@ -407,7 +424,9 @@ if r.get('ok'): print(r['city'], r['x'], r['y'], r['name'])" 2>/dev/null)
       # walls, further back, the town behind them.
       MX=$(( ($2 + RX) / 2.0 )); MY=$(( ($3 + RY) / 2.0 ))
       { print "wait 30"; print "tile $2 $3 5 $4"; print "wait 4"; print "snap raid"; print "tile $MX $MY 6.5 $4"; print "wait 4"; print "snap raid_town"; print "look end"; } > $OUT/raid.play
+      raid_log "paused for the snaps" "raid $2,$3 (dist 5, yaw $4), raid_town $MX,$MY (dist 6.5)"
       shot raid 1500 film $SW
+      raid_log "after the snaps, still paused"
       curl -s -m 5 -o /dev/null -X POST $API/resume
       side raid $OUT/frames/raid/raid.png $TARGETS/03-army.jpg "raiders at $RNAME (their midpoint $2,$3)"
       side raid_town $OUT/frames/raid/raid_town.png $TARGETS/03-army.jpg "$RNAME under the raid"
@@ -427,8 +446,10 @@ if r.get('ok'): print(r['city'], r['x'], r['y'], r['name'])" 2>/dev/null)
       curl -s -m 5 -o /dev/null -X POST $API/court/close
       curl -s -m 5 -o /dev/null -X POST $API/interlude/close
       LIVE=$(raider $RX $RY any 0)
+      TL=$(turn_now); [ "$TL" != "${TLOG:-}" ] && { raid_log "running to the leaving"; TLOG=$TL; }
       [ -n "$LIVE" ] && sleep 3
     done
+    [ -n "$AT" ] && raid_log "paused before the leaving (it starts in season $LEAVE_AT)"
     [ -n "$AT" ] && curl -s -m 5 -o /dev/null -X POST $API/pause
     STEP=0
     while [ -n "$AT" ] && [ -n "$LIVE" ] && [ -z "$OUTR" ] && [ $STEP -lt $STEPS ] && [ $((SECONDS - T0)) -lt ${RAID_LEAVE:-1200} ]; do
@@ -442,6 +463,7 @@ if r.get('ok'): print(r['city'], r['x'], r['y'], r['name'])" 2>/dev/null)
       sleep 2  # the season's snapshot (server.js snapshot reads world.json 0.5 s after asking)
       OUTR=$(raider $RX $RY out $LEAVE_AT)
       [ -z "$OUTR" ] && LIVE=$(raider $RX $RY any 0)
+      raid_log "step $STEP"
     done
     if [ -z "$AT" ]; then
       :  # said above: no raider by the town
@@ -455,10 +477,17 @@ if r.get('ok'): print(r['city'], r['x'], r['y'], r['name'])" 2>/dev/null)
       # Framed on his tile, not his figure; the reign still paused from the step that found him.
       set -- ${=OUTR}
       { print "wait 30"; print "tile $2 $3 5 $4"; print "wait 4"; print "snap raid_leave"; print "look end"; } > $OUT/raid_leave.play
+      raid_log "paused for the walk-off snap" "$2,$3 (dist 5, yaw $4)"
       shot raid_leave 1500 film $SW
       curl -s -m 5 -o /dev/null -X POST $API/resume
       side raid_leave $OUT/frames/raid_leave/raid_leave.png $TARGETS/03-army.jpg "a raider walking off from $RNAME to wild land (raider $1 at $2,$3)"
     fi
+  fi
+  # Freeciv's own account (realmrules RAID lines, units lost), kept with the pass: the chronicle's home may be cleared.
+  FCLOG=$(print -l $H/chronicles/render-pass-film-*/state/freeciv.log(N) | head -1)
+  if [ -n "$FCLOG" ]; then
+    cp $FCLOG $OUT/raid.freeciv.log
+    grep -E "RAID|BANNERS|[Bb]arbarian|destroyed|killed|lost" $FCLOG | tail -40 | while read -r l; do say "raid freeciv: $l"; done
   fi
 fi
 say "render pass done: $OUT/side/INDEX.md"
