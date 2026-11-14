@@ -1,0 +1,5 @@
+{
+ "_": "The world gets harsher as the reign wears on (harsh.js): a factor of 1 at the crowning, rising perYear a year to most. It scales the rival King's hostility at rest and his raid chance (rivals.js) and the chance a sickness begins (contagion.js).",
+ "perYear": 0.04,
+ "most": 1.8
+}

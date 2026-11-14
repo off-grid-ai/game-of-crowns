@@ -9,6 +9,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import * as Lua from "./lua.js";
+import { harsh } from "./harsh.js";
 import { cityName, houseFor, FOREIGN } from "./narrator.js";
 
 const STEP = { north: [0, -1], south: [0, 1], west: [-1, 0], east: [1, 0] };
@@ -76,10 +77,12 @@ export function season(ctx, turn) {
   // A treaty holds: no envoys with demands, no riders over the border, until it runs out.
   if (r.treaty && turn < r.treaty.until) return;
   if (r.treaty) { ctx.record({ turn, kind: "court", text: `The peace with ${r.realm} has run its years. ${r.king}'s riders are seen on the border hills again.` }); r.treaty = null; }
-  r.hostility += Math.sign(R.rest - r.hostility) * Math.min(R.drift, Math.abs(R.rest - r.hostility));
+  // His mood at rest rises as the reign wears on (harsh.js), and so do his raids.
+  const h = harsh(meta, turn), rest = Math.min(100, R.rest * h);
+  r.hostility += Math.sign(rest - r.hostility) * Math.min(R.drift, Math.abs(rest - r.hostility));
   if (r.hostility >= R.war.above) return declare(ctx, r, border(world, r.edge, r.realm), turn, `${r.king} has waited long enough.`);
   demand(ctx, r, turn);
-  if (Math.random() >= R.raid * r.hostility / 100) return;
+  if (Math.random() >= R.raid * h * r.hostility / 100) return;
   const t = border(world, r.edge, r.realm);
   if (!t) return;
   send(`lua cmd ${Lua.raid(t.id, "rival")}`);

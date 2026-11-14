@@ -8,6 +8,7 @@ import fs from "node:fs";
 import * as Lua from "./lua.js";
 import * as Trade from "./trade.js";
 import { cityName } from "./narrator.js";
+import { harsh } from "./harsh.js";
 
 export const CONTAGION = JSON.parse(fs.readFileSync(new URL("./data/contagion.json", import.meta.url), "utf8"));
 const C = CONTAGION;
@@ -58,7 +59,7 @@ export function season(ctx, turn) {
   if (!Object.keys(s.towns).length) s.burn = null;
   // It begins: a town Freeciv made sick, or now and then the biggest town in summer.
   for (const c of world.cities) if (c.freecivPlague) fall(ctx, c, turn, null);
-  if (!Object.keys(s.towns).length && Math.random() < C.start) {
+  if (!Object.keys(s.towns).length && Math.random() < C.start * harsh(meta, turn)) {  // likelier as the reign wears on
     const big = [...world.cities].sort((a, b) => (b.size ?? 0) - (a.size ?? 0))[0];
     if (big) fall(ctx, big, turn, null);
   }
