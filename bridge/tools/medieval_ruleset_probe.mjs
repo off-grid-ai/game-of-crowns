@@ -10,7 +10,8 @@ import { bareFreeciv, checker } from "./fc_probe_lib.mjs";
 const { check, done } = checker("MEDIEVAL RULESET");
 const fc = await bareFreeciv({ serv: ["set aifill 4", "set minplayers 0", "set timeout -1", "set saveturns 1", 'set autosaves "TURN|GAMEOVER"', 'set savename "probe"', "set endturn 6", "start"] });
 check(await fc.until(/Game ended as the turn limit/, 120000), "the game didn't run (ruleset failed to load?)");
-const bad = fc.lines.filter((l) => /ruleset|Ruleset/.test(l) && /rror|nknown|nvalid|ailed/.test(l));
+// (a setting the ruleset sets is announced with its description, which may say "unknown": not an error)
+const bad = fc.lines.filter((l) => /ruleset|Ruleset/.test(l) && /rror|nknown|nvalid|ailed/.test(l) && !/has been set to/.test(l));
 check(bad.length === 0, `ruleset errors:\n  ${bad.slice(0, 5).join("\n  ")}`);
 const last = fs.readdirSync(fc.dir).filter((f) => /-auto\.sav\.zst$/.test(f)).sort().pop();
 const save = last ? zlib.zstdDecompressSync(fs.readFileSync(path.join(fc.dir, last))).toString() : "";
