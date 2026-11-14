@@ -8,10 +8,6 @@ const STOREY := 3.0
 const DIR := "res://assets/village/%s.gltf"
 
 var _cache := {}
-## Godot's importer defaults for a mesh's levels of detail (degrees): faces meeting
-## flatter than the first are merged as one smooth face, sharper than the second keep their edge.
-const LOD_MERGE_ANGLE := 60.0
-const LOD_SPLIT_ANGLE := 25.0
 
 
 func _piece(name: String) -> Node3D:
@@ -161,23 +157,18 @@ func _bake(parts: Array, remap := {}) -> ArrayMesh:
 		var accent := "MI_Shutter" if String(p[0]).begins_with("WindowShutters") else ("MI_Door" if String(p[0]).begins_with("Door_") else "")
 		_collect(n, p[1], tools, accent, p[2] if (p as Array).size() > 2 else remap)  # a part's own remap: a dyed cloth (build_pieces)
 		n.free()
-	# Through Godot's ImporterMesh, so the baked mesh gets its far-off levels of detail as an imported
-	# one does (generate_lods, meshoptimizer): a bake through SurfaceTool alone had none, and every
-	# 20-30k-triangle Meshy house drew in full at any distance (perf.log: 75M triangles a frame at the
-	# realm view, 3 fps; Mac's P0 "super laggy").
-	var im := ImporterMesh.new()
+	var mesh := ArrayMesh.new()
 	for key in tools:
 		var st: SurfaceTool = tools[key]["st"]
-		st.index()  # the level-of-detail pass works on indexed triangles
+		st.commit(mesh)
 		# Whatever comes right up to the lens (a wagon on the road, a bush, a cart at
 		# the street) dissolves, dithered, as the realistic kit's models and the
 		# people do: the camera never sits inside a prop (realistic.gd fade_near).
 		var mat = tools[key]["mat"]
 		if mat is BaseMaterial3D:
 			preload("res://scripts/realistic.gd").fade_near(mat)
-		im.add_surface(Mesh.PRIMITIVE_TRIANGLES, st.commit_to_arrays(), [], {}, mat)
-	im.generate_lods(LOD_MERGE_ANGLE, LOD_SPLIT_ANGLE, [])
-	return im.get_mesh()
+		mesh.surface_set_material(mesh.get_surface_count() - 1, mat)
+	return mesh
 
 
 ## spec: {w: cells across (2-4), d: cells deep (2-4), floors: 1-3, style: "plaster"|"timber"|"brick", seed}
