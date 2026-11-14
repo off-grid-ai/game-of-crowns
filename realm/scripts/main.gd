@@ -355,7 +355,15 @@ func _ready() -> void:
 	interior.closed.connect(func(): sound.set_interior(""))
 	bridge.chronicle_added.connect(_on_chronicle)
 	ui.pause_toggled.connect(func(p): bridge.set_paused(p); ui.toast("The realm holds its breath." if p else "The realm stirs again."))
-	ui.open_menu.connect(func(): title.open())
+	# Esc in play: the pause menu, the realm held still behind it until the King goes back (unless he had paused it).
+	ui.open_menu.connect(func():
+		if (awareness.rec("reign", {}) as Dictionary).is_empty() or String(awareness.rec("reign", {}).get("status", "")) == "ended":
+			title.open()
+			return
+		_menu_held = not ui.paused
+		if _menu_held:
+			bridge.set_paused(true)
+		title.open_paused())
 	ui.counsel_answered.connect(func(key): bridge.counsel_answered(key))
 	ui.court_closed.connect(func(): director.soon())  # the doors shut: the camera goes to look
 	ui.last_event.connect(news._to_news)
@@ -433,6 +441,9 @@ func _ready() -> void:
 	# Choosing a chronicle starts the intro at once, as the loading screen,
 	# and wakes the realm to build behind it.
 	title.closed.connect(func():
+		if _menu_held:
+			_menu_held = false
+			bridge.set_paused(false)
 		story._opened_in_intro = true
 		if not bridge.active:
 			bridge.wake()
@@ -597,6 +608,9 @@ func _set_ui_scale(v: float) -> void:
 		f.store_string(str(ui_scale))
 	if ui:
 		ui.toast("Interface size %d%%" % int(ui_scale * 100))
+
+
+var _menu_held := false  # the pause menu holds the realm (the King hadn't paused it himself)
 
 
 func _hook_click(n: Node) -> void:

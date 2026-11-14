@@ -7,5 +7,7 @@
   "measures": { "gold": "Crowns in the treasury", "troops": "Companies under arms", "towns": "Towns of the crown" },
   "towns": { "kept": "Kept", "won": "Won", "lost": "Lost" },
   "rulings": "His weightiest rulings"
- }
+ },
+ "pause": { "_": "The pause menu Esc opens in play (title.gd show_pause): its head and the words on its own buttons.",
+  "title": "The realm waits", "resume": "Back to the realm", "to_title": "To the title", "leave": "Leave the realm" }
 }

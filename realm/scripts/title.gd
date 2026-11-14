@@ -11,12 +11,15 @@ signal read_lore
 const PARCHMENT := Color(0.95, 0.9, 0.8)
 const MUTED := Color(0.72, 0.66, 0.56)
 const GOLD := Color(0.86, 0.68, 0.32)
+const Data := preload("res://scripts/data.gd")  # the one loader of realm/data
 
 var bridge: Node
 var store: Node  # awareness.gd: the realm as the view knows it (the reign, for Continue)
 var _root: Control
 var _body: VBoxContainer
 var _logo: TextureRect
+var _art: Array[Control] = []  # the painted vista and its fade: hidden while the menu pauses a reign in play
+var _in_game := false  # opened from play (Esc): the realm shows dimmed behind, not the painting
 var _minutes := 15  # a 15-minute reign unless the player picks another length
 var _preset := "Balanced"  # the card chosen on the new-chronicle page
 var _more := false  # every other choice unfolded (unused since setup has pages)
@@ -46,6 +49,7 @@ func _ready() -> void:
 		bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 		bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 		_root.add_child(bg)
+		_art.append(bg)
 		var fade := TextureRect.new()
 		var g := Gradient.new()
 		g.set_color(0, Color(0.06, 0.05, 0.04, 0.72))
@@ -60,6 +64,7 @@ func _ready() -> void:
 		fade.stretch_mode = TextureRect.STRETCH_SCALE
 		fade.set_anchors_preset(Control.PRESET_FULL_RECT)
 		_root.add_child(fade)
+		_art.append(fade)
 		# The forms are wide and full of small type: behind them the painting
 		# sinks further back so every line reads.
 		_scrim = ColorRect.new()
@@ -151,12 +156,46 @@ func open() -> void:
 	_start(show_main)
 
 
+## Esc in play (CK3's and Total War's pause menu): the realm holds still behind, dimmed, and the menu is the
+## reign's own: go back to it, save it, settings, another chronicle, the Lore, the Hall, the title, or leave.
+func open_paused() -> void:
+	_in_game = true
+	_start(show_pause)
+
+
+func show_pause() -> void:
+	_clear()
+	var w: Dictionary = Data.value("reign_end", "pause", {})
+	_heading(String(w.get("title", "The realm waits")))
+	var reign: Dictionary = store.rec("reign", {})
+	_where_line(reign)
+	_menu_gap()
+	var T := preload("res://scripts/theme.gd")
+	var back := _big(String(w.get("resume", "Back to the realm")), _close)
+	back.add_theme_stylebox_override("normal", T._box(Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.24), Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.6), 8, 10))
+	back.add_theme_stylebox_override("hover", T._box(Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.36), Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.85), 8, 10))
+	back.add_theme_color_override("font_color", Color(1, 0.93, 0.78))
+	_save_button(reign)
+	_big("Settings", _go.bind(show_settings))
+	_menu_gap()
+	_big("Chronicles", _go.bind(show_list))
+	_big("The Lore of Aldmere", func(): read_lore.emit())
+	_big("Hall of Records", _go.bind(show_records))
+	_menu_gap()
+	_big(String(w.get("to_title", "To the title")), func():
+		_in_game = false
+		_go(show_main))
+	_big(String(w.get("leave", "Leave the realm")), func(): get_tree().quit())
+
+
 func show_main() -> void:
 	_clear()
 	if _logo:
 		_logo.visible = true
 	if _scrim:
 		_scrim.visible = false
+	for a in _art:
+		a.visible = true
 	_on_main = true
 	var reign: Dictionary = store.rec("reign", {})
 	_has_continue = not reign.is_empty()
@@ -174,36 +213,8 @@ func show_main() -> void:
 		cont.add_theme_stylebox_override("normal", T._box(Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.24), Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.6), 8, 10))
 		cont.add_theme_stylebox_override("hover", T._box(Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.36), Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.85), 8, 10))
 		cont.add_theme_color_override("font_color", Color(1, 0.93, 0.78))
-		# Under Continue, where the reign stands (its save card: the King, the realm's date, his last ruling).
-		var where := _label("", 14, MUTED)
-		where.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		where.autowrap_mode = TextServer.AUTOWRAP_WORD
-		where.visible = false
-		_body.add_child(where)
-		var where_ref: WeakRef = weakref(where)
-		var rid := String(reign.get("id", ""))
-		bridge.list_chronicles(func(data):
-			var l: Label = where_ref.get_ref()
-			if l == null or not data is Dictionary:
-				return
-			for c in data.get("list", []):
-				if String(c.get("id", "")) == rid or (rid == "" and String(c.get("id", "")) == String(data.get("active", ""))):
-					var sv: Dictionary = c.get("save", {}) if c.get("save") is Dictionary else {}
-					var bits := PackedStringArray([String(sv.get("king", "")), String(sv.get("date", "")), ("Last ruling: " + String(sv["lastRuling"])) if String(sv.get("lastRuling", "")) != "" else ""])
-					l.text = "  ·  ".join(Array(bits).filter(func(b): return b != ""))
-					l.visible = l.text != ""
-					return)
-		# Save the reign as it stands (saves as reigns; any game's Save): it says so, with the realm's date.
-		if reign.get("status", "") != "ended" and not reign.get("test", false):
-			var held := []  # the button, for its own press (a lambda keeps a copy of a local as it was)
-			held.append(_big("Save the realm", func():
-				var save_b: Button = held[0]
-				save_b.text = "Saving…"
-				bridge.save_chronicle(func(code, d):
-					if not is_instance_valid(save_b):
-						return
-					var card: Dictionary = d.get("save", {}) if d is Dictionary and d.get("save") is Dictionary else {}
-					save_b.text = ("Saved  ·  %s" % String(card.get("date", "now"))) if code == 200 else "Not saved: %s" % String(d.get("error", "the realm didn't answer") if d is Dictionary else "the realm didn't answer"))))
+		_where_line(reign)
+		_save_button(reign)
 	_big("Begin a New Chronicle", func():
 		_new_step = 0  # a new chronicle starts at its first page
 		_name_typed = false
@@ -1475,8 +1486,47 @@ func _arrive(rid: String) -> void:
 	_close()
 
 
+## Where the reign stands, under its first choice (its save card: the King, the realm's date, his last ruling).
+func _where_line(reign: Dictionary) -> void:
+	if reign.is_empty():
+		return
+	var where := _label("", 14, MUTED)
+	where.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	where.autowrap_mode = TextServer.AUTOWRAP_WORD
+	where.visible = false
+	_body.add_child(where)
+	var where_ref: WeakRef = weakref(where)
+	var rid := String(reign.get("id", ""))
+	bridge.list_chronicles(func(data):
+		var l: Label = where_ref.get_ref()
+		if l == null or not data is Dictionary:
+			return
+		for c in data.get("list", []):
+			if String(c.get("id", "")) == rid or (rid == "" and String(c.get("id", "")) == String(data.get("active", ""))):
+				var sv: Dictionary = c.get("save", {}) if c.get("save") is Dictionary else {}
+				var bits := PackedStringArray([String(sv.get("king", "")), String(sv.get("date", "")), ("Last ruling: " + String(sv["lastRuling"])) if String(sv.get("lastRuling", "")) != "" else ""])
+				l.text = "  ·  ".join(Array(bits).filter(func(b): return b != ""))
+				l.visible = l.text != ""
+				return)
+
+
+## Save the reign as it stands (saves as reigns; any game's Save): it says so, with the realm's date.
+func _save_button(reign: Dictionary) -> void:
+	if reign.get("status", "") != "ended" and not reign.get("test", false):
+		var held := []  # the button, for its own press (a lambda keeps a copy of a local as it was)
+		held.append(_big("Save the realm", func():
+			var save_b: Button = held[0]
+			save_b.text = "Saving…"
+			bridge.save_chronicle(func(code, d):
+				if not is_instance_valid(save_b):
+					return
+				var card: Dictionary = d.get("save", {}) if d is Dictionary and d.get("save") is Dictionary else {}
+				save_b.text = ("Saved  ·  %s" % String(card.get("date", "now"))) if code == 200 else "Not saved: %s" % String(d.get("error", "the realm didn't answer") if d is Dictionary else "the realm didn't answer"))))
+
+
 func _close() -> void:
 	visible = false
+	_in_game = false
 	_trail.clear()
 	_here = Callable()
 	closed.emit()
@@ -1488,6 +1538,9 @@ func _clear() -> void:
 		_logo.visible = false
 	if _scrim:
 		_scrim.visible = true
+		_scrim.color.a = 0.55 if _in_game else 0.78  # in play the realm shows through, held still
+	for a in _art:
+		a.visible = not _in_game
 	_body.custom_minimum_size = Vector2(620, 0)
 	_layers.clear()
 	for c in _body.get_children():
