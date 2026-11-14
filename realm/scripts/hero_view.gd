@@ -544,6 +544,7 @@ func _fill_panel(p: Dictionary, house: Dictionary, editing := false) -> void:
 	bar.show_percentage = false
 	bar.custom_minimum_size = Vector2(0, 6)
 	v.add_child(bar)
+	_toward_king(v, p, house)
 	var goals: Array = p.get("goals", [])
 	if not goals.is_empty():
 		v.add_child(T.label("Wants to"))
@@ -582,6 +583,28 @@ func _fill_panel(p: Dictionary, house: Dictionary, editing := false) -> void:
 		v.add_child(T.label("Remembers"))
 		for i in range(mem.size() - 1, -1, -1):
 			v.add_child(_para("[i]“%s”[/i]" % String(mem[i])))
+
+
+## The lord's sheet (CK3's character window: the opinion, its reasons on the sheet): what the head of a great
+## house thinks of the King, as a word, and the deeds that moved it, newest first (the bridge's person `why`:
+## [{d, what}], the favour book's own lines). Only a house's lord speaks for the house.
+func _toward_king(v: VBoxContainer, p: Dictionary, house: Dictionary) -> void:
+	if String(p.get("rank", "")) != "lord":
+		return
+	var Aw := preload("res://scripts/awareness.gd")
+	var st: Node = Aw.store()
+	var f = null
+	for pl in (st.rec("players", []) if st else []):
+		if int(pl.get("id", -2)) == int(house.get("id", -1)):
+			f = pl.get("favour")
+	if f == null:
+		return
+	v.add_child(T.label("Toward the King"))
+	var word := T.datum(Aw.mood_of(float(f)), T.SIZE_BODY, T.DANGER if float(f) < float(Aw.bands.get("cooling", 35)) else T.TEXT)
+	v.add_child(word)
+	for w in p.get("why", []):
+		var d := int((w as Dictionary).get("d", 0))
+		v.add_child(T.datum("%s  %s" % ["▲" if d > 0 else "▼", String(w.get("what", ""))], T.SIZE_DESC, Color("#7fb069") if d > 0 else Color("#e86b5c")))
 
 
 ## Who they are, open to rewrite: their story, what they remember, their nature
