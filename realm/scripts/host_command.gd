@@ -131,6 +131,7 @@ func take_click(ground: Vector3) -> bool:
 	var h := _host_of(int(got.get("unit", -1))) if not got.is_empty() else {}
 	if not h.is_empty():
 		select(int(h["id"]))
+		main.barks.host("select", int(h["id"]))  # its captain answers, curt by the fourth click (barks.gd; Warcraft II)
 		var view: Variant = got.get("view")
 		if view is Node and (view as Node).has_method("select"):
 			(view as Node).select(int(got["unit"]))  # army.gd: that regiment's rectangle and banner
@@ -316,6 +317,7 @@ func _ask(body: Dictionary, done := Callable()) -> void:
 			main.ui.toast(said)
 		if code == 200:
 			main.sound.ordered(String(body.get("order", "")))  # heard as it sets off (sounds.json orders)
+			main.barks.host("order", int(body.get("host", -1)))  # and its captain says he goes (barks.gd)
 			main.bridge._poll()
 		if done.is_valid():
 			done.call(code, said))
