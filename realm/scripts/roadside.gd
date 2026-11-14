@@ -429,7 +429,7 @@ func _hamlet(node: Node3D, s: Dictionary, k: Dictionary, rng: RandomNumberGenera
 		var crop: Decal = main.terrain.paint(node, main.terrain.tiled(tx, roundi(size.x * 1.5), roundi(size.y * 1.5)), Vector3(f.x, main.terrain.height_at(f.x, f.z), f.z), size, yaw)
 		if main.terrain.land3d and main.terrain.land3d.land:
 			Countryside.plough(main.terrain, f, size, yaw)
-			crop.albedo_mix = 0.55
+			crop.albedo_mix = Countryside.FIELD_MIX
 		Countryside.mark_field(crop, kind, f)
 		Countryside.sow(node, main.terrain, Vector3.ZERO, Countryside.crop_for(kind, rng), f, size, yaw, rng)
 		fields.append(f)

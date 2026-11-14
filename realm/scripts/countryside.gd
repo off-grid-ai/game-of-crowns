@@ -329,7 +329,7 @@ func _farmstead(node: Node3D, at: Vector3, rng: RandomNumberGenerator, hedges: A
 		mark_field(crop, field, c)
 		if terrain.land3d and terrain.land3d.land:
 			plough(terrain, c, size, fyaw)  # ploughed soil under the crop
-			crop.albedo_mix = 0.55
+			crop.albedo_mix = FIELD_MIX
 		var grows := crop_for(field, rng)
 		sow(node, terrain, Vector3.ZERO, grows, c, size, fyaw, rng)
 		hedges.append([c, size, fyaw])
@@ -444,6 +444,9 @@ static var CROP_SWAY: float = preload("res://scripts/data.gd").num("countryside"
 static var CROP_CUT: float = preload("res://scripts/data.gd").num("countryside", "crop.cut", 0.32)
 const CROP_ROWS := {"wheat": [0.03, 0.028], "barley": [0.032, 0.026], "flax": [0.05, 0.04], "beans": [0.08, 0.06], "cabbage": [0.09, 0.08]}  # [between rows, along a row]
 const STANDING := ["wheat", "barley", "flax"]  # cut at harvest and left as stubble; the rest are lifted
+## How much a ploughed field's painted crop covers its soil (countryside.json field_mix; was 0.55 in three places): lower,
+## more of the land's own ground shows through, so a field sits in the land, not on it (g37: hard bright blocks).
+static var FIELD_MIX: float = preload("res://scripts/data.gd").num("countryside", "field_mix", 0.55)
 static var CROP_REACH: float = preload("res://scripts/data.gd").num("countryside", "crop.reach", 25.0)  # crops are drawn this near the camera; the field's painted colour does beyond
 static var _crop_meshes := {}
 

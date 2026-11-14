@@ -219,7 +219,7 @@ func _field(rec: Dictionary, node: Node3D, c: Vector3, fsize: Vector2, yaw: floa
 		return
 	if terrain.land3d and terrain.land3d.land:
 		Fields.plough(terrain, c, fsize, yaw)
-		decal.albedo_mix = 0.55
+		decal.albedo_mix = Fields.FIELD_MIX
 		rec["soil"].append([c, fsize, yaw])
 	if kind != "fallow":
 		Fields.sow(node, terrain, Vector3.ZERO, Fields.crop_for(String(crop[0]), rng), c, fsize, yaw, rng)

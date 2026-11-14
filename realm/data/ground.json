@@ -9,7 +9,7 @@
     "rock": { "painting": "rock", "scale": 1.6, "calm": {"contrast": 0.75, "sat": 0.62, "mult": [0.98, 0.94, 0.86]} },
     "forest": { "painting": "forest_floor", "scale": 1.0, "calm": {"contrast": 0.6, "sat": 0.8, "mult": [0.9, 1.0, 0.9]} },
     "mud": { "painting": "mud", "scale": 1.2, "calm": {"contrast": 0.55, "sat": 0.7, "mult": [0.92, 0.92, 0.92]} },
-    "field": { "painting": "field_soil", "scale": 1.6, "calm": {"contrast": 0.75, "sat": 0.75, "mult": [0.95, 0.95, 0.95]} },
+    "field": { "painting": "field_soil", "scale": 1.6, "calm": {"contrast": 0.7, "sat": 0.55, "mult": [0.9, 0.88, 0.86]} },
     "dry_grass": { "painting": "dry_grass", "scale": 1.0, "calm": {"contrast": 0.55, "sat": 0.7, "mult": [0.92, 0.98, 0.88]} },
     "stony": { "painting": "stony", "scale": 1.2, "calm": {"contrast": 0.7, "sat": 0.7, "mult": [0.95, 0.97, 0.97]} }
   },
