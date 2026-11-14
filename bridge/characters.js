@@ -1220,7 +1220,7 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
     const housesIn = [c.playerId, ...["rival", "friend"].filter((r) => (card.needs ?? []).includes(r)).map((r) => roles[r].playerId)];
     return {
       kind: card.id, deck: true, roles: ids,
-      text: this.fill(card.text, roles),
+      text: this.fill(wording(card.id, card.text), roles),  // a plea written as a list: one of its wordings, not one heard lately
       facts: facts(...housesIn),
       options: card.options.map((o) => ({ id: o.id, label: this.fill(o.label, roles), hint: this.withFavour(this.fill(o.hint, roles), o.effects?.favour, roles), ...(o.cost ? { cost: o.cost } : {}) })),
     };

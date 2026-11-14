@@ -1,7 +1,7 @@
 [
   {
     "id": "abduction", "weight": 4, "needs": ["daughter", "rival", "suitor"], "when": { "feud": true },
-    "text": "{me} of {me.house} storms into the hall: \"{suitor} of {rival.house} took my daughter {daughter} off the road at night. Forty riders, no banners. I want her back, and I want his head.\"",
+    "text": ["{me} of {me.house} storms into the hall: \"{suitor} of {rival.house} took my daughter {daughter} off the road at night. Forty riders, no banners. I want her back, and I want his head.\"", "{me} of {me.house} bursts into the hall: \"{suitor} of {rival.house} dragged my daughter {daughter} off the road by night. Forty riders, no banners. Bring her home, and bring me his head.\"", "{me} of {me.house} comes through the doors in a rage: \"Last night {suitor} of {rival.house} seized my daughter {daughter} on the road, with forty riders and no banners. I want her returned, and I want his head with her.\""],
     "options": [
       { "id": "return", "label": "Order her sent back, and punish {suitor}", "hint": "{me.house} +15 · {rival.house} −20 · {rival} will call it the crown meddling in a love match",
         "effects": { "favour": { "me": 15, "rival": -20 }, "opinion": [["rival", "me", -20]], "memory": { "rival": "The King shamed my son {suitor} in front of the whole realm." } },
@@ -16,7 +16,7 @@
   },
   {
     "id": "elopement", "weight": 3, "needs": ["heir", "rival"], "when": { "rivalPeace": true },
-    "text": "{heir}, heir of {me.house}, has run off with a girl of {rival.house}. {me} wants the King's men to bring the young fool home. {rival} says {rival.his} house has been shamed, and wants blood.",
+    "text": ["{heir}, heir of {me.house}, has run off with a girl of {rival.house}. {me} wants the King's men to bring the young fool home. {rival} says {rival.his} house has been shamed, and wants blood.", "{heir}, heir of {me.house}, has slipped away with a girl of {rival.house}. {me} asks the King's men to fetch the runaway home. {rival} says {rival.his} house is shamed and calls for blood.", "A girl of {rival.house} and {heir}, heir of {me.house}, have fled together. {me} begs the King's men to drag the young fool back, while {rival} cries that {rival.his} house is dishonoured and wants blood."],
     "options": [
       { "id": "home", "label": "Bring {heir} home in chains", "hint": "{rival.house} +10 · {heir} never forgives {heir.his} {me.father} or the crown",
         "effects": { "favour": { "rival": 10 }, "memory": { "heir": "The King dragged me home in chains." }, "loyalty": { "heir": -30 } },
@@ -31,7 +31,7 @@
   },
   {
     "id": "seen_with_enemy", "weight": 4, "needs": ["bannerman", "rival"], "when": { "rivalWar": true },
-    "text": "Your spymaster says {bannerman}, sworn to {me.house}, was seen at a border inn with men in {rival.house}'s colours. Money changed hands. {me} doesn't know yet.",
+    "text": ["Your spymaster says {bannerman}, sworn to {me.house}, was seen at a border inn with men in {rival.house}'s colours. Money changed hands. {me} doesn't know yet.", "Word from your spymaster: {bannerman}, sworn to {me.house}, sat in a border inn with men wearing {rival.house}'s colours, and coin passed hands. {me} knows nothing of it yet.", "Your spymaster reports that {bannerman}, a sworn man of {me.house}, met men in {rival.house}'s colours at an inn on the border. Silver changed hands. {me} has not heard."],
     "options": [
       { "id": "tell", "label": "Tell {me}", "hint": "{me.house} +10 · {bannerman}'s fate is in {bannerman.his} liege's hands",
         "effects": { "favour": { "me": 10 }, "opinion": [["me", "bannerman", -50]], "loyalty": { "bannerman": -20 }, "memory": { "bannerman": "Someone told my lord about the inn. I know it was the crown." } },
@@ -46,7 +46,7 @@
   },
   {
     "id": "secret_alliance", "weight": 3, "needs": ["rival", "friend"], "when": { "favourBelow": 55 },
-    "text": "A letter taken from a rider on the King's road: {me} of {me.house} and {friend} of {friend.house} have sworn a pact and sealed it with a marriage contract. The letter doesn't mention the King at all.",
+    "text": ["A letter taken from a rider on the King's road: {me} of {me.house} and {friend} of {friend.house} have sworn a pact and sealed it with a marriage contract. The letter doesn't mention the King at all.", "Your men stopped a rider on the King's road and found a letter. It says {me} of {me.house} and {friend} of {friend.house} have made a pact, sealed by a marriage contract. The King is named nowhere in it.", "A letter came off a rider on the King's road. In it, {me} of {me.house} and {friend} of {friend.house} swear to stand together and seal the oath with a marriage. There is no word about the King."],
     "options": [
       { "id": "bless", "label": "Bless the alliance in public", "hint": "Both +10 · two houses stand together, for or against you",
         "effects": { "favour": { "me": 10, "friend": 10 }, "opinion": [["me", "friend", 20], ["friend", "me", 20]] },
@@ -61,7 +61,7 @@
   },
   {
     "id": "border_war", "weight": 4, "needs": ["rival"], "when": { "feud": true },
-    "text": "{me} of {me.house} asks the King's leave to march on {rivalTown}: \"{rival} burns my villages and laughs at your peace. Let me march, or give me justice.\"",
+    "text": ["{me} of {me.house} asks the King's leave to march on {rivalTown}: \"{rival} burns my villages and laughs at your peace. Let me march, or give me justice.\"", "{me} of {me.house} begs the King's leave to march on {rivalTown}: \"{rival} is burning my villages and laughing at your peace. Give me leave to march, or give me justice.\"", "{me} of {me.house} comes before the King to ask leave to attack {rivalTown}: \"{rival} puts my villages to the torch and mocks your peace. Let me ride, or see me righted.\""],
     "options": [
       { "id": "leave", "label": "Let them march", "hint": "War between {me.house} and {rival.house} · {me.house} +15 · {rival.house} −25",
         "effects": { "war": ["me", "rival"], "favour": { "me": 15, "rival": -25 } },
@@ -76,7 +76,7 @@
   },
   {
     "id": "raid_reprisal", "weight": 3, "needs": ["rival"], "when": { "feud": true, "trait": ["wrathful", "vengeful", "proud", "brave"] },
-    "text": "{me} has already sent riders into {rival.house}'s lands. Now {me} asks the King to look away: \"One night's burning, Your Grace. They struck first.\"",
+    "text": ["{me} has already sent riders into {rival.house}'s lands. Now {me} asks the King to look away: \"One night's burning, Your Grace. They struck first.\"", "{me} has already ridden into {rival.house}'s lands with armed men. Now {me} asks the King to turn a blind eye: \"It was one night's fire, Your Grace. They hit us first.\"", "Riders sent by {me} have already crossed into {rival.house}'s lands. {me} now asks the King to say nothing: \"A single night of burning, Your Grace. They started it.\""],
     "options": [
       { "id": "look_away", "label": "Look the other way", "hint": "{rivalTown} is raided · {me.house} +10 · {rival.house} −15 when they learn of it",
         "effects": { "raid": ["me", "rival"], "favour": { "me": 10, "rival": -15 } },
@@ -91,7 +91,7 @@
   },
   {
     "id": "poisoned_cup", "weight": 2, "needs": ["heir", "rival"], "when": { "feud": true },
-    "text": "{heir}, heir of {me.house}, fell ill at a feast held by {rival.house}. The physician says it was poison. {me} wants {rival} tried for murder. {rival} swears by the gods it was spoiled meat, and nothing worse.",
+    "text": ["{heir}, heir of {me.house}, fell ill at a feast held by {rival.house}. The physician says it was poison. {me} wants {rival} tried for murder. {rival} swears by the gods it was spoiled meat, and nothing worse.", "At a feast of {rival.house}, {heir}, heir of {me.house}, was struck down sick. The physician names poison. {me} demands a trial for {rival}, who swears before the gods it was bad meat and nothing more.", "{heir}, heir of {me.house}, took ill after dining with {rival.house}, and the physician calls it poison. {me} wants {rival} tried for murder. {rival} swears on the gods that the meat had simply turned."],
     "options": [
       { "id": "trial", "label": "Put {rival} on trial", "hint": "{rival.house} −30 · {me.house} +15 · if innocent, the realm sees a tyrant",
         "effects": { "favour": { "rival": -30, "me": 15 }, "memory": { "rival": "The King put me on trial for a sickness no one could prove was poison." } },
@@ -106,7 +106,7 @@
   },
   {
     "id": "bastard", "weight": 2, "needs": ["bannerman"], "when": { "trait": ["proud", "ambitious"] },
-    "text": "A boy of fourteen stands in the hall with {bannerman}'s face but not {bannerman.his} name. {bannerman} asks the King to make him legitimate. {me}'s trueborn family is outraged.",
+    "text": ["A boy of fourteen stands in the hall with {bannerman}'s face but not {bannerman.his} name. {bannerman} asks the King to make him legitimate. {me}'s trueborn family is outraged.", "A boy of fourteen stands in the hall wearing {bannerman}'s face, though he has no right to {bannerman.his} name. {bannerman} asks the King to make him lawful. {me}'s trueborn kin are furious.", "In the hall stands a boy of fourteen who looks just like {bannerman} and has been given none of {bannerman.his} name. {bannerman} begs the King to legitimise him, and {me}'s trueborn family is angry."],
     "options": [
       { "id": "legitimise", "label": "Make him legitimate", "hint": "{bannerman} +loyalty to the crown · {me.house} −10",
         "effects": { "loyalty": { "bannerman": 20 }, "favour": { "me": -10 }, "memory": { "bannerman": "The King gave my child a name." } },
@@ -121,7 +121,7 @@
   },
   {
     "id": "hostage_swap", "weight": 2, "needs": ["heir"], "when": { "favourBelow": 40 },
-    "text": "{me} of {me.house} offers {heir} as a ward at Kingsmere, as proof of loyalty. Your council thinks it's a way to put eyes at court.",
+    "text": ["{me} of {me.house} offers {heir} as a ward at Kingsmere, as proof of loyalty. Your council thinks it's a way to put eyes at court.", "{me} of {me.house} proposes sending {heir} to Kingsmere as a ward, a pledge of loyalty. Your council suspects it is a way to plant eyes at court.", "To show loyalty, {me} of {me.house} would send {heir} to live as a ward at Kingsmere. The council reckons it means a spy in your court."],
     "options": [
       { "id": "accept", "label": "Take {heir} as a ward", "hint": "{me.house} +15 · {me} cannot rise while you hold the child",
         "effects": { "ward": "heir", "favour": { "me": 15 } },
@@ -133,7 +133,7 @@
   },
   {
     "id": "tourney", "weight": 2, "when": { "rich": true },
-    "text": "{me} of {me.house} offers to hold a great tourney at {town} in the King's honour, if the crown pays for the prizes.",
+    "text": ["{me} of {me.house} offers to hold a great tourney at {town} in the King's honour, if the crown pays for the prizes.", "{me} of {me.house} would host a grand tourney at {town} to honour the King, if the crown covers the cost of the prizes.", "A great tourney at {town} in the King's name: {me} of {me.house} will put it on if the crown pays for the prizes."],
     "options": [
       { "id": "fund", "label": "Pay for the tourney (200 gold)", "cost": 200, "hint": "Every house +5 · {me.house} +15 · knights flock to the crown",
         "effects": { "favour": { "all": 5, "me": 10 }, "units": { "crown": { "count": 2, "type": "Knights" } } },
@@ -148,7 +148,7 @@
   },
   {
     "id": "sellsword", "weight": 2, "when": { "atWar": true },
-    "text": "A sellsword captain called the Golden Wolf offers five hundred men to whoever pays first. {me} of {me.house} is already bidding.",
+    "text": ["A sellsword captain called the Golden Wolf offers five hundred men to whoever pays first. {me} of {me.house} is already bidding.", "The Golden Wolf, a captain of sellswords, is selling five hundred men to the first buyer. {me} of {me.house} has already made an offer.", "Five hundred sellswords under a captain called the Golden Wolf will go to whoever pays first, and {me} of {me.house} is already haggling."],
     "options": [
       { "id": "hire", "label": "Outbid {me} (250 gold)", "cost": 250, "hint": "The crown gains a company · {me.house} −10",
         "effects": { "units": { "crown": { "count": 4, "type": "Pikemen" } }, "favour": { "me": -10 } },
@@ -163,7 +163,7 @@
   },
   {
     "id": "plague_town", "weight": 3, "needs": ["town"], "when": { "hungry": true },
-    "text": "Sickness has come to {town}. {me} of {me.house} wants to shut the gates and let it burn itself out. The priests say that's murder.",
+    "text": ["Sickness has come to {town}. {me} of {me.house} wants to shut the gates and let it burn itself out. The priests say that's murder.", "Sickness has reached {town}. {me} of {me.house} would bar the gates and leave the town to burn the fever out. The priests call that murder.", "A plague is loose in {town}. {me} of {me.house} wants the gates locked and the sick left to it, but the priests say that is murder."],
     "options": [
       { "id": "close", "label": "Shut the gates", "hint": "The sickness stays inside {town}, and the poor of {town} never forgive it",
         "effects": { "favour": { "me": 5 }, "memory": { "me": "I shut the gates of {town} on my own people, with the King's leave." } },
@@ -178,7 +178,7 @@
   },
   {
     "id": "heretic_lord", "weight": 2, "when": { "trait": ["pious"] }, "needs": ["rival"],
-    "text": "{me}, a pious lord, accuses {rival} of {rival.house} of keeping the old rites in secret: groves, blood, and offerings by night.",
+    "text": ["{me}, a pious lord, accuses {rival} of {rival.house} of keeping the old rites in secret: groves, blood, and offerings by night.", "{me}, a devout lord, charges {rival} of {rival.house} with keeping the old rites in secret, with blood and offerings in the groves at night.", "Pious {me} accuses {rival} of {rival.house} of practising the old faith in secret, with night offerings and blood among the groves."],
     "options": [
       { "id": "condemn", "label": "Condemn {rival} as a heretic", "hint": "{me.house} +15 · {rival.house} −30, and its people with it",
         "effects": { "favour": { "me": 15, "rival": -30 }, "memory": { "rival": "The King branded me a heretic on the word of a zealot." } },
@@ -190,7 +190,7 @@
   },
   {
     "id": "defector_knight", "weight": 2, "needs": ["rival"], "when": { "rivalWar": true },
-    "text": "A knight of {rival.house} has fled to {me.house} with his whole household, saying {rival} meant to hang him. {rival} wants him back for trial.",
+    "text": ["A knight of {rival.house} has fled to {me.house} with his whole household, saying {rival} meant to hang him. {rival} wants him back for trial.", "A knight of {rival.house} has run to {me.house} bringing his entire household, and says {rival} planned to hang him. {rival} demands him back to stand trial.", "Saying {rival} meant to see him hanged, a knight of {rival.house} has taken his whole household to {me.house}. {rival} wants him sent back for trial."],
     "options": [
       { "id": "protect", "label": "Let {me.house} keep him", "hint": "{me.house} gains men · {rival.house} −20",
         "effects": { "units": { "me": { "count": 2, "type": "Knights" } }, "favour": { "rival": -20, "me": 5 } },
@@ -205,7 +205,7 @@
   },
   {
     "id": "dowry_dispute", "weight": 2, "needs": ["rival"], "when": { "feud": true, "poor": true },
-    "text": "{me} of {me.house} says {rival.house} never paid the dowry it promised for a marriage ten years ago. With interest, {rival.house} owes 200 gold.",
+    "text": ["{me} of {me.house} says {rival.house} never paid the dowry it promised for a marriage ten years ago. With interest, {rival.house} owes 200 gold.", "{me} of {me.house} claims {rival.house} never paid the dowry promised at a wedding ten years back. Counting interest, the debt stands at 200 gold.", "Ten years ago {rival.house} promised a dowry for a marriage and never paid it, says {me} of {me.house}. With interest it comes to 200 gold."],
     "options": [
       { "id": "pay", "label": "Order {rival.house} to pay", "hint": "{rival.house} pays {me.house} 200 · {rival.house} −15",
         "effects": { "gold": { "rival": -200, "me": 200 }, "favour": { "rival": -15, "me": 10 } },
@@ -220,7 +220,7 @@
   },
   {
     "id": "hunting_accident", "weight": 2, "needs": ["bannerman", "rival"], "when": { "feud": true },
-    "text": "{bannerman} of {me.house} was killed on a hunt in {rival.house}'s woods, by an arrow in the back. {rival}'s men say it was a stray. {me} says it was murder.",
+    "text": ["{bannerman} of {me.house} was killed on a hunt in {rival.house}'s woods, by an arrow in the back. {rival}'s men say it was a stray. {me} says it was murder.", "{bannerman} of {me.house} died on a hunt in {rival.house}'s woods with an arrow in the back. {rival}'s men call it a stray shot. {me} calls it murder.", "An arrow in the back killed {bannerman} of {me.house} while hunting in the woods of {rival.house}. The men of {rival} claim it flew astray. {me} swears it was murder."],
     "options": [
       { "id": "blood", "label": "Make {rival.house} pay a blood price", "hint": "{rival.house} pays 120 · {rival.house} −10",
         "effects": { "gold": { "rival": -120, "me": 120 }, "favour": { "rival": -10, "me": 5 } },
@@ -235,7 +235,7 @@
   },
   {
     "id": "harvest_glut", "weight": 2, "when": { "fed": true, "rich": true },
-    "text": "{me.house} has had the best harvest anyone can remember. {me} offers to sell the extra to the crown, or to the highest bidder across the sea.",
+    "text": ["{me.house} has had the best harvest anyone can remember. {me} offers to sell the extra to the crown, or to the highest bidder across the sea.", "Nobody remembers a harvest as good as the one {me.house} just had. {me} would sell the surplus to the crown, or to the best offer from across the sea.", "{me.house} has brought in a record harvest. {me} will sell the extra to the crown, or ship it overseas to whoever pays most."],
     "options": [
       { "id": "buy", "label": "Buy it for the royal granaries (120 gold)", "cost": 120, "hint": "{me.house} +10 · grain for the lean years",
         "effects": { "gold": { "me": 120 }, "favour": { "me": 10 } },
@@ -250,7 +250,7 @@
   },
   {
     "id": "bannerman_slight", "weight": 3, "needs": ["bannerman"], "when": { "disorder": true },
-    "text": "{bannerman}, sworn to {me.house}, goes over {bannerman.his} lord's head to the King: \"{me} took my best fields for {me.his} own child. I served thirty years. Is this my reward?\"",
+    "text": ["{bannerman}, sworn to {me.house}, goes over {bannerman.his} lord's head to the King: \"{me} took my best fields for {me.his} own child. I served thirty years. Is this my reward?\"", "{bannerman}, sworn to {me.house}, skips past {bannerman.his} own lord and goes to the King: \"{me} gave my best fields to {me.his} child. Thirty years I served. Is that how I am repaid?\"", "Going over {bannerman.his} lord's head, {bannerman}, sworn to {me.house}, tells the King: \"{me} handed my finest fields to {me.his} own child after thirty years of my service. Is this what I get?\""],
     "options": [
       { "id": "bannerman", "label": "Rule for {bannerman}", "hint": "{bannerman} turns to the crown · {me.house} −15",
         "effects": { "loyalty": { "bannerman": 10 }, "favour": { "me": -15 }, "memory": { "bannerman": "The King stood by me against my own lord." }, "opinion": [["me", "bannerman", -25]] },
@@ -262,7 +262,7 @@
   },
   {
     "id": "old_lord_dotage", "weight": 2, "needs": ["heir"], "when": { "age": [62, 120] },
-    "text": "{me} of {me.house} is {me.age} and forgets {me.his} own children's names. {heir} asks the King to let them rule now, before the house falls apart.",
+    "text": ["{me} of {me.house} is {me.age} and forgets {me.his} own children's names. {heir} asks the King to let them rule now, before the house falls apart.", "{me} of {me.house} is {me.age} and cannot recall {me.his} own children's names. {heir} asks the King to let them take charge now, before the house comes apart.", "{me} of {me.house} is {me.age} now and calls {me.his} children by the wrong names. {heir} asks the King to hand over the rule today, before {me.house} falls to pieces."],
     "options": [
       { "id": "heir", "label": "Let {heir} rule", "hint": "{heir} owes the crown, but {me} is shamed",
         "effects": { "loyalty": { "heir": 25 }, "memory": { "me": "The King let my own child push me aside." }, "favour": { "me": -10 } },
@@ -274,7 +274,7 @@
   },
   {
     "id": "wildlings", "weight": 2, "when": { "north": true, "raiders": true },
-    "text": "Hill clans have crossed into {me.house}'s lands near {town}. Thousands of them, starving, with children. They say the winter in the high country killed their herds.",
+    "text": ["Hill clans have crossed into {me.house}'s lands near {town}. Thousands of them, starving, with children. They say the winter in the high country killed their herds.", "Thousands of hill clansfolk, starving and bringing their children, have come down onto {me.house}'s lands near {town}. The winter up in the high country killed their herds, they say.", "Near {town}, a hungry crowd of hill clans has crossed into the lands of {me.house}, children with them, thousands strong. Their herds died in the high-country winter, they tell it."],
     "options": [
       { "id": "settle", "label": "Let them settle the empty land", "hint": "{town} grows · {me.house} −10, furious",
         "effects": { "favour": { "me": -10 }, "units": { "me": { "count": 1, "type": "Warriors" } } },
@@ -289,7 +289,7 @@
   },
   {
     "id": "bridge_toll", "weight": 2, "needs": ["rival"], "when": { "towns": 2 },
-    "text": "{rival.house} has put a toll on the only bridge between {me.house}'s lands and the King's road. {me} calls it robbery.",
+    "text": ["{rival.house} has put a toll on the only bridge between {me.house}'s lands and the King's road. {me} calls it robbery.", "{rival.house} now charges a toll at the one bridge linking {me.house}'s lands to the King's road. {me} calls it plain robbery.", "The only bridge from {me.house}'s lands to the King's road now has a toll, set by {rival.house}. {me} says it is theft."],
     "options": [
       { "id": "abolish", "label": "Scrap the toll", "hint": "{me.house} +10 · {rival.house} −15",
         "effects": { "favour": { "me": 10, "rival": -15 } },
@@ -304,7 +304,7 @@
   },
   {
     "id": "dragon_egg", "weight": 1, "when": { "prosperity": true, "chance": 0.25 },
-    "text": "Fishermen in {me.house}'s lands have pulled an old crown from the sea, green with age. The priests say it belonged to the sea-kings. {me} offers it to the King, or to whoever pays most.",
+    "text": ["Fishermen in {me.house}'s lands have pulled an old crown from the sea, green with age. The priests say it belonged to the sea-kings. {me} offers it to the King, or to whoever pays most.", "Fishermen on {me.house}'s lands hauled an ancient crown out of the sea, green with age. The priests say the sea-kings wore it. {me} would give it to the King, or sell it to the highest bidder.", "An old crown, green with age, came up in the nets of {me.house}'s fishermen. The priests name it a sea-king's. {me} offers it first to the King, and otherwise to whoever pays best."],
     "options": [
       { "id": "buy", "label": "Buy it (200 gold)", "cost": 200, "hint": "{me.house} +15 · the realm talks of the old kings",
         "effects": { "gold": { "me": 200 }, "favour": { "me": 15 } },
@@ -319,7 +319,7 @@
   },
   {
     "id": "envoy_insult", "weight": 2, "needs": ["rival"], "when": { "feud": true },
-    "text": "{rival.house}'s envoy mocked {me}'s dead {me.wife} at a feast in your hall. {me} has demanded satisfaction, and both are reaching for their swords.",
+    "text": ["{rival.house}'s envoy mocked {me}'s dead {me.wife} at a feast in your hall. {me} has demanded satisfaction, and both are reaching for their swords.", "At a feast in your hall, the envoy of {rival.house} sneered at {me}'s late {me.wife}. {me} has demanded satisfaction, and now both are gripping their swords.", "{rival.house}'s envoy made a jest of {me}'s dead {me.wife} over the feast in your hall. {me} demands satisfaction, and both have a hand on the hilt."],
     "options": [
       { "id": "duel", "label": "Let them fight it out", "hint": "One may die · the winner's house +10",
         "effects": { "favour": { "me": 10, "rival": -10 }, "opinion": [["rival", "me", -20]] },
@@ -334,7 +334,7 @@
   },
   {
     "id": "mines", "weight": 2, "when": { "towns": 2, "prosperity": true },
-    "text": "Silver has been found in the hills near {town}. {me} of {me.house} asks for the mining rights, which by old law belong to the crown.",
+    "text": ["Silver has been found in the hills near {town}. {me} of {me.house} asks for the mining rights, which by old law belong to the crown.", "Silver turned up in the hills by {town}. {me} of {me.house} asks for the mining rights, though old law gives them to the crown.", "The hills near {town} hold silver, and {me} of {me.house} asks to work it. By old law the rights are the crown's."],
     "options": [
       { "id": "grant", "label": "Give them the rights", "hint": "{me.house} grows rich · {me.house} +15",
         "effects": { "gold": { "me": 200 }, "favour": { "me": 15 } },
@@ -349,7 +349,7 @@
   },
   {
     "id": "deserters", "weight": 2, "needs": ["town"], "when": { "atWar": true },
-    "text": "Forty men ran away from the King's levy and are hiding in {town}. {me} of {me.house} won't hand them over: \"They're my men first.\"",
+    "text": ["Forty men ran away from the King's levy and are hiding in {town}. {me} of {me.house} won't hand them over: \"They're my men first.\"", "Forty men fled the King's levy and now lie hidden in {town}. {me} of {me.house} refuses to give them up: \"They are my men before they are yours.\"", "The forty who deserted the King's levy are sheltering in {town}. {me} of {me.house} will not surrender them: \"They belong to me first.\""],
     "options": [
       { "id": "hang", "label": "Demand them, and hang them", "hint": "{me.house} −15 · every levy hears of it",
         "effects": { "favour": { "me": -15 } },
@@ -364,7 +364,7 @@
   },
   {
     "id": "faithless_wife", "weight": 2, "needs": ["rival"], "when": { "trait": ["paranoid", "proud", "wrathful", "vengeful"] },
-    "text": "{me} of {me.house} thinks {me.his} {me.wife} has been passing {me.house}'s secrets to {rival} of {rival.house}. {me} wants the marriage ended, and {rival} named in front of the court.",
+    "text": ["{me} of {me.house} thinks {me.his} {me.wife} has been passing {me.house}'s secrets to {rival} of {rival.house}. {me} wants the marriage ended, and {rival} named in front of the court.", "{me} of {me.house} believes {me.his} {me.wife} has been feeding {me.house}'s secrets to {rival} of {rival.house}. {me} demands an end to the marriage and {rival} named before the court.", "{me} of {me.house} suspects {me.his} {me.wife} of selling {me.house}'s secrets to {rival} of {rival.house}. The marriage must end, says {me}, and {rival} must be named in open court."],
     "options": [
       { "id": "annul", "label": "End the marriage", "hint": "{me.house} +10 · {rival.house} −15 · the realm gossips",
         "effects": { "favour": { "me": 10, "rival": -15 }, "opinion": [["me", "rival", -40]] },
@@ -379,7 +379,7 @@
   },
   {
     "id": "royal_match", "weight": 2, "needs": ["daughter"], "when": { "favourAbove": 50 },
-    "text": "{me} of {me.house} wants {daughter} to marry into the royal family. It would tie {me.house} to the crown and raise it above every other house.",
+    "text": ["{me} of {me.house} wants {daughter} to marry into the royal family. It would tie {me.house} to the crown and raise it above every other house.", "{me} of {me.house} asks that {daughter} be wed into the royal family, which would bind {me.house} to the crown and lift it over all other houses.", "{me} of {me.house} seeks a royal marriage for {daughter}. Such a match would link {me.house} to the crown and set it above every rival house."],
     "options": [
       { "id": "accept", "label": "Accept the match", "hint": "{me.house} +25 · every other house −5, jealous",
         "effects": { "favour": { "all": -5, "me": 30 } },
@@ -391,7 +391,7 @@
   },
   {
     "id": "levy_refused", "weight": 3, "when": { "favourBelow": 35 },
-    "text": "{me} of {me.house} has refused the King's call for soldiers: \"My men are needed for the harvest.\" Your council says it's a test of your power.",
+    "text": ["{me} of {me.house} has refused the King's call for soldiers: \"My men are needed for the harvest.\" Your council says it's a test of your power.", "{me} of {me.house} turned down the King's call for soldiers: \"I need my men for the harvest.\" Your council reads it as a test of how far your power reaches.", "When the King called for soldiers, {me} of {me.house} answered: \"My men have the harvest to bring in.\" The council says this is a trial of your strength."],
     "options": [
       { "id": "force", "label": "Send royal troops to fetch them", "hint": "War-like · {me.house} −25 · but the levies come",
         "effects": { "favour": { "me": -25 }, "units": { "crown": { "count": 3, "type": "Pikemen" } } },
@@ -406,7 +406,7 @@
   },
   {
     "id": "spy_caught", "weight": 2, "needs": ["rival"], "when": { "rivalWar": true },
-    "text": "A man of {rival.house} was caught copying letters in {me}'s private rooms. Under questioning he says {rival} sent him to find proof that {me} is plotting against the crown.",
+    "text": ["A man of {rival.house} was caught copying letters in {me}'s private rooms. Under questioning he says {rival} sent him to find proof that {me} is plotting against the crown.", "A man of {rival.house} was found copying letters in {me}'s private rooms. He confesses under questioning that {rival} sent him for proof that {me} plots against the crown.", "Guards caught a man of {rival.house} copying papers in {me}'s private chambers. Questioned, he says {rival} sent him to find proof of {me} plotting against the crown."],
     "options": [
       { "id": "believe", "label": "Investigate {me}", "hint": "{me.house} −20 · {rival.house} +10",
         "effects": { "favour": { "me": -20, "rival": 10 }, "opinion": [["me", "rival", -30]] },
@@ -421,7 +421,7 @@
   },
   {
     "id": "great_fire", "weight": 2, "needs": ["town"], "when": { "disorder": true },
-    "text": "Fire has burned out the lower town of {town}. {me} of {me.house} asks for help to rebuild before winter.",
+    "text": ["Fire has burned out the lower town of {town}. {me} of {me.house} asks for help to rebuild before winter.", "The lower town of {town} has burned to the ground. {me} of {me.house} asks for aid to rebuild it before winter.", "A fire gutted the lower part of {town}. {me} of {me.house} wants help raising it again before the cold sets in."],
     "options": [
       { "id": "rebuild", "label": "Rebuild it (180 gold)", "cost": 180, "hint": "{me.house} +15 · {town} rises again",
         "effects": { "gold": { "me": 180 }, "favour": { "me": 15 } },
@@ -436,7 +436,7 @@
   },
   {
     "id": "challenge_heir", "weight": 2, "needs": ["heir", "rival"], "when": { "trait": ["brave", "proud", "wrathful"] },
-    "text": "{heir} of {me.house} has challenged {rival}'s champion to a duel in front of the court, to settle their house's honour.",
+    "text": ["{heir} of {me.house} has challenged {rival}'s champion to a duel in front of the court, to settle their house's honour.", "Before the whole court, {heir} of {me.house} has called out {rival}'s champion to a duel, to settle the honour of the house.", "{heir} of {me.house} stands in court and challenges the champion of {rival} to single combat over their houses' honour."],
     "options": [
       { "id": "allow", "label": "Allow the duel", "hint": "{heir} may win great honour, or die",
         "effects": { "favour": { "me": 10 }, "dies": { "who": "heir", "chance": 0.4, "text": "{heir} of {me.house} falls in the duel in front of the court. {me} carries the body home." } },
@@ -448,7 +448,7 @@
   },
   {
     "id": "pirates", "weight": 2, "when": { "raiders": true },
-    "text": "Island raiders are hitting {me.house}'s coast near {town}. {me} wants the royal fleet, and also wants to know why the crown keeps a fleet at all.",
+    "text": ["Island raiders are hitting {me.house}'s coast near {town}. {me} wants the royal fleet, and also wants to know why the crown keeps a fleet at all.", "Raiders from the islands are attacking {me.house}'s coast near {town}. {me} demands the royal fleet, and wants to know what the crown's fleet is for.", "Along {me.house}'s coast by {town}, island raiders strike again and again. {me} asks for the royal fleet, and for an answer on why the crown keeps one."],
     "options": [
       { "id": "fleet", "label": "Send the fleet (150 gold)", "cost": 150, "hint": "{me.house} +15 · the raiders go elsewhere",
         "effects": { "favour": { "me": 15 } },
@@ -463,7 +463,7 @@
   },
   {
     "id": "lord_sick", "weight": 2, "when": { "age": [55, 120], "chance": 0.5 },
-    "text": "{me} of {me.house} is very ill and asks the King to swear, in front of witnesses, to protect {me.his} house after {me.he} dies.",
+    "text": ["{me} of {me.house} is very ill and asks the King to swear, in front of witnesses, to protect {me.his} house after {me.he} dies.", "{me} of {me.house} is gravely sick, and asks the King to swear before witnesses to guard {me.his} house once {me.he} is gone.", "Gravely ill, {me} of {me.house} asks the King for a sworn promise, with witnesses, that {me.his} house will be protected after {me.he} dies."],
     "options": [
       { "id": "swear", "label": "Swear it", "hint": "{me.house} +20 · and you are bound by it",
         "effects": { "favour": { "me": 20 }, "memory": { "me": "The King swore to protect my house." } },
@@ -475,7 +475,7 @@
   },
   {
     "id": "usurper_letter", "weight": 2, "needs": ["rival"], "when": { "favourAbove": 45 },
-    "text": "{me} of {me.house} brings you a letter: {rival} of {rival.house} asked {me.house} to join a rising against the crown. {me} said no, and came to you.",
+    "text": ["{me} of {me.house} brings you a letter: {rival} of {rival.house} asked {me.house} to join a rising against the crown. {me} said no, and came to you.", "{me} of {me.house} lays a letter before you. {rival} of {rival.house} invited {me.house} to join a rising against the crown. {me} refused and came straight to you.", "Letter in hand, {me} of {me.house} tells you that {rival} of {rival.house} asked {me.house} to rise against the crown. {me} turned it down and brought the matter to you."],
     "options": [
       { "id": "reward", "label": "Reward {me} for staying loyal (100 gold)", "cost": 100, "hint": "{me.house} +20 · {rival.house} learns it was betrayed",
         "effects": { "gold": { "me": 100 }, "favour": { "me": 20, "rival": -10 }, "opinion": [["rival", "me", -40]] },
@@ -490,7 +490,7 @@
   },
   {
     "id": "wet_harvest", "weight": 4, "when": { "wetHarvest": true },
-    "text": "{me} of {me.house} comes in a wet cloak: \"The rain has not stopped since the sowing, Your Grace. The wheat at {town} rotted in the sheaves. My people will be hungry before the spring.\"",
+    "text": ["{me} of {me.house} comes in a wet cloak: \"The rain has not stopped since the sowing, Your Grace. The wheat at {town} rotted in the sheaves. My people will be hungry before the spring.\"", "{me} of {me.house} arrives soaked through: \"It has rained without a break since the sowing, Your Grace. The wheat at {town} has rotted in the sheaf. My people will go hungry before spring.\"", "Dripping from the rain, {me} of {me.house} kneels: \"Since the sowing the rain has never let up, Your Grace. At {town} the wheat rotted in the sheaves. Come spring my people will have nothing to eat.\""],
     "options": [
       { "id": "granaries", "label": "Open the royal granaries to {me.house} (150 gold)", "cost": 150, "hint": "{me.house} +12 · every house +2 · the crown's stores grow thin",
         "effects": { "favour": { "me": 12, "all": 2 }, "memory": { "me": "In the drowned year the King opened his granaries to my people." } },
@@ -505,7 +505,7 @@
   },
   {
     "id": "thin_treasury", "weight": 5, "when": { "thinTreasury": true, "goldAbove": 120 },
-    "text": "{me} of {me.house} waits until the hall has emptied: \"Your Grace, the talk in Kingsmere is that the royal chests ring hollow. {me.house} could help. For a price, or a promise.\"",
+    "text": ["{me} of {me.house} waits until the hall has emptied: \"Your Grace, the talk in Kingsmere is that the royal chests ring hollow. {me.house} could help. For a price, or a promise.\"", "{me} of {me.house} stays until the hall is empty, then says: \"Your Grace, Kingsmere is saying the royal chests are hollow. {me.house} can help, for a price or a promise.\"", "Once everyone has left the hall, {me} of {me.house} speaks quietly: \"Your Grace, they say in Kingsmere that the crown's coffers are bare. {me.house} is willing to help, if you pay or promise something.\""],
     "options": [
       { "id": "borrow", "label": "Borrow 120 gold from {me.house}, repaid in two years", "hint": "The crown owes {me.house} 160 gold in two years · {me.house} +5 · if it isn't paid, your word is broken",
         "effects": { "gold": { "crown": 120, "me": -120 }, "favour": { "me": 5 }, "loan": { "amount": 160, "seasons": 8 }, "memory": { "me": "When the King's chests were empty, my house lent him gold." } },
