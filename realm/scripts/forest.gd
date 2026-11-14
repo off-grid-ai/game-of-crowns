@@ -223,15 +223,23 @@ func _load_kit() -> void:
 		var path := String(kd[0])
 		if not baked.has(path):
 			var mesh: Mesh = builder.bake_path(path) if ResourceLoader.exists(path) else null
+			# Two copies: the near tier's materials dissolve a crown at the lens (a per-pixel dither, realistic.gd
+			# fade_near); the mid and card tiers', past NEAR, never need it. On Apple's tile GPU a material that may
+			# discard turns off its hidden-surface removal, so every tree was shaded in the depth prepass and again
+			# in colour, however far (supervisor, fps P0: the woods half of every frame at Kingsmere).
+			var far: Mesh = mesh.duplicate() if mesh else null
 			if mesh:
+				var kind := "pine" if kd[2] == "pine" else "leaves"
 				for si in mesh.get_surface_count():
-					if mesh.surface_get_material(si):
-						mesh.surface_set_material(si, leaves(_cutout(mesh.surface_get_material(si)), path, "pine" if kd[2] == "pine" else "leaves"))  # a crown at the lens dissolves; its leaves turn with the season
-			baked[path] = mesh
-		var mesh: Mesh = baked[path]
+					var src := mesh.surface_get_material(si)
+					if src:
+						mesh.surface_set_material(si, leaves(_cutout(src), path, kind))  # a crown at the lens dissolves; its leaves turn with the season
+						far.surface_set_material(si, leaves(_cutout(src, false), path, kind))
+			baked[path] = [mesh, far]
+		var mesh: Mesh = baked[path][0]
 		_full.append(mesh)
-		_mid.append(mesh)
-		_card.append(mesh)
+		_mid.append(baked[path][1])
+		_card.append(baked[path][1])
 		var h := mesh.get_aabb().size.y if mesh else 0.0
 		_height.append(h)
 		_kscale.append(float(kd[1]) / h if h > 0.0 else 1.0)
@@ -291,6 +299,7 @@ static func _bark(m: BaseMaterial3D) -> BaseMaterial3D:
 	if not _barks.has(m):
 		var c: BaseMaterial3D = m.duplicate()
 		c.albedo_color = m.albedo_color * Data.colour(Data.value("assets", "woods.kit.bark", []), Color.WHITE)
+		c.transparency = BaseMaterial3D.TRANSPARENCY_DISABLED  # the kit marks its bark MASK too, but a trunk has no holes: no alpha test, so the GPU culls hidden bark before shading it
 		_barks[m] = c
 	return _barks[m]
 
@@ -361,19 +370,20 @@ static func tint(mat: BaseMaterial3D) -> Color:
 ## frame's cost. Cut out instead (a pixel is leaf or not), as foliage in games is; the
 ## temporal upscaler softens the edges, so it reads the same.
 var _cut := {}
-func _cutout(mat: Material) -> Material:
+func _cutout(mat: Material, near := true) -> Material:
 	var m := mat as BaseMaterial3D
 	if m == null:
 		return mat
-	if not _cut.has(mat):
+	var key := [mat, near]
+	if not _cut.has(key):
 		var c: BaseMaterial3D = m.duplicate()
 		if c.transparency == BaseMaterial3D.TRANSPARENCY_ALPHA:
 			c.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
 			c.alpha_scissor_threshold = 0.5
-		# A crown right in front of the lens dissolves (realistic.gd's fade).
-		preload("res://scripts/realistic.gd").fade_near(c, preload("res://scripts/realistic.gd").TREE_GONE, preload("res://scripts/realistic.gd").TREE_SOLID)
-		_cut[mat] = c
-	return _cut[mat]
+		if near:  # a crown right in front of the lens dissolves (realistic.gd's fade); the far tiers never stand there
+			preload("res://scripts/realistic.gd").fade_near(c, preload("res://scripts/realistic.gd").TREE_GONE, preload("res://scripts/realistic.gd").TREE_SOLID)
+		_cut[key] = c
+	return _cut[key]
 
 
 ## How many tree crowns stand between `eye` and `at` (the canopy right over
