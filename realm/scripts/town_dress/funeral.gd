@@ -1,6 +1,6 @@
 extends "res://scripts/town_dress.gd"
-## The funeral's round of the square (the funeral row walks it): twelve points on a ring from the sept, and the
-## bier the bearers carry.
+## A procession's round of the square from the sept: twelve points on a ring, and the bier the bearers carry (the
+## funeral row; a wedding's row walks the same round as `round` "wedding", `bier` false).
 
 
 func dress(root: Node3D, life: Node3D, row: Dictionary, _rng: RandomNumberGenerator) -> Dictionary:
@@ -36,7 +36,9 @@ func dress(root: Node3D, life: Node3D, row: Dictionary, _rng: RandomNumberGenera
 			break
 	if ring.size() < 3:
 		return {}
-	var bier := tl._prop(life, center, "Chest_Wood", ring[0], 0.0, 1.0)
-	if bier:
-		bier.scale = Vector3(0.7, 0.5, 1.5) * tl.PROP_SCALE
-	return {"funeral": {"at": ring[0], "dir": tl.SEEN, "route": ring, "bier": bier}}
+	var bier: Node3D = null
+	if bool(row.get("bier", true)):
+		bier = tl._prop(life, center, "Chest_Wood", ring[0], 0.0, 1.0)
+		if bier:
+			bier.scale = Vector3(0.7, 0.5, 1.5) * tl.PROP_SCALE
+	return {String(row.get("round", "funeral")): {"at": ring[0], "dir": tl.SEEN, "route": ring, "bier": bier}}

@@ -222,6 +222,9 @@ static func states_bb(bb: Blackboard) -> Array:
 		out.append("grief")
 	if bool(bb.get_var(&"plague", false, false)):
 		out.append("plague")  # the town is sick: few about, the sick at the sept (town_scenes.json plague)
+	for life in ["wedding", "birth", "burial"]:  # its folk's season (bridge households.js): a wedding walks, the bell rings
+		if bool(bb.get_var(StringName(life), false, false)):
+			out.append(life)
 	return _ruled(out, String(bb.get_var(&"ruling", "", false)))
 
 

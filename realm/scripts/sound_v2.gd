@@ -242,7 +242,7 @@ func _find(top: Node, eye: Vector3, hear: float, want: Dictionary, calls: Array)
 				want["fire#%d" % n.get_instance_id()] = [at, String(F["sound"] if big else F.get("small", F["sound"])), gain]
 		elif nm == "Tolling" and n3 and near.call(n3):
 			var every: Array = n.get_meta("toll", [9.0, 12.0])
-			calls.append(["toll#%d" % n.get_instance_id(), n3, {"sound": String((S.get("toll", {}) as Dictionary).get("sound", "toll")), "every": every}])  # a town in grief: the bell, slow
+			calls.append(["toll#%d" % n.get_instance_id(), n3, {"sound": String(n.get_meta("sound", (S.get("toll", {}) as Dictionary).get("sound", "toll"))), "every": every}])  # a town in grief: the bell, slow; a wedding's or a birth's its own (town_dress/bell.gd)
 		elif nm == "Leaving" and S.has("levy"):
 			var walking: Array = n.get_meta("walking", [])  # [[man], ...] marching out now (town_scenes.gd _march)
 			if not walking.is_empty() and is_instance_valid(walking[0][0]) and near.call(walking[0][0]):

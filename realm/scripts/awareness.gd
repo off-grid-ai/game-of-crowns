@@ -263,6 +263,9 @@ static func town_facts(c: Dictionary) -> Dictionary:
 		"rising": _dict(c.get("rising")),  # a house split in a rising: {side rebels|lord, house, rebel, claimant}, else {} (bridge risings.js)
 		"damage": c.get("damage") if c.get("damage") is Dictionary else {},  # its walls' wear and burnt share (bridge damage.js): stone walls read it
 		"burnt": float(_dict(c.get("damage")).get("burnt", 0.0)),  # the share of its houses burnt (bridge damage.js)
+		"wedding": int(_dict(c.get("lives")).get("weddings", 0)) > 0,  # this season's weddings, births, burials (bridge households.js)
+		"birth": int(_dict(c.get("lives")).get("births", 0)) > 0,
+		"burial": int(_dict(c.get("lives")).get("burials", 0)) > 0,
 	}
 
 

@@ -242,6 +242,16 @@ export function season(world, turn) {
   save();
 }
 
+// What the town lived through this season, for /world (view.js lives): weddings, births and burials of its folk at
+// this turn's step. The view sees them in the town: a wedding procession, the bell, the funeral round the square.
+export function lately(cityId, turn) {
+  if (!S) return null;
+  const here = Object.values(S.people).filter((p) => p.town === cityId);
+  const out = { weddings: here.filter((p) => p.woman && p.wed === turn).length, births: here.filter((p) => p.born === turn && !p.died).length,
+    burials: here.filter((p) => p.died === turn).length };
+  return out.weddings || out.births || out.burials ? out : null;
+}
+
 // A town's living folk, the town's own first season made if it has none yet (the crowd and the minds ask before a
 // season has passed), each with their age and their household's ties, by place (children have none yet).
 export function folkOf(city, turn) {
