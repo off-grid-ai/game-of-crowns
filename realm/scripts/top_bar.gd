@@ -490,6 +490,7 @@ func _build_top_bar() -> void:
 	_chron_btn = ui.icon_btn("scroll", ui.with_key("Chronicle of the realm", "chronicle"), func(): ui._chron_panel.visible = _chron_btn.button_pressed)
 	_chron_btn.toggle_mode = true
 	act.add_child(ui.named(_chron_btn, "Chronicle"))
+	act.add_child(ui.named(ui.icon_btn("hourglass-medium", "The book of the reign: every year of it, as the chronicle wrote it", func(): ui.book.toggle()), "Reign"))
 	_lore_btn = ui.icon_btn("book-open-text", ui.with_key("The Lore of Aldmere: its houses and people", "lore"), func(): ui.lore_opened.emit(-1))
 	act.add_child(ui.named(_lore_btn, "Lore"))
 	_ledger_btn = ui.icon_btn("chart-line", ui.with_key("The ledger: the realm over time", "ledger"), ui._toggle_ledger)

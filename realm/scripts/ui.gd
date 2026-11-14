@@ -76,6 +76,7 @@ var _houses_panel: PanelContainer:
 	get:
 		return houses_drawer._houses_panel
 var chronicle := ChroniclePanel.new(self)  # the chronicle drawer and the ticker (chronicle_panel.gd): their state lives there
+var book := preload("res://scripts/chronicle_book.gd").new(self)  # the book of the reign (chronicle_book.gd), opened from the bar
 var _chron_panel: PanelContainer:
 	get:
 		return chronicle._chron_panel

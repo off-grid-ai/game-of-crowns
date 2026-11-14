@@ -23,5 +23,8 @@
    "The tithe is set once a year. The houses feel it every season.",
    "A grudge outlives the King who earned it.",
    "Walls hold a town; bread holds its people. A siege is won by whichever runs out last."
-  ] }
+  ] },
+ "book": { "_": "The book of the reign (chronicle_book.gd), from the bar: its title and buttons, a chapter's head ({year}), the folio line ({a}, {b}, {n}), the line on an empty book; per_page: lines a page holds.",
+  "title": "The book of the reign", "close": "Close the book", "back": "Turn back", "on": "Turn on",
+  "chapter": "The year {year}", "folio": "Pages {a} and {b} of {n}", "empty": "Nothing is written yet.", "per_page": 12 }
 }

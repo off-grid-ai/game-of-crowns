@@ -13,6 +13,7 @@ var ui: UI  # the interface that owns this drawer: its signals, its building blo
 var _chron_panel: PanelContainer
 var _chronicle: RichTextLabel
 var _lines: Array[String] = []
+var entries: Array = []  # every line of the reign as the bridge sent it, oldest first: the book of the reign reads these
 var _ticker: VBoxContainer
 var _stories := {}  # chronicle seq -> a story beat's entry, for its link
 
@@ -65,8 +66,9 @@ func _build_ticker() -> void:
 	ui.root.add_child(_ticker)
 
 
-func add_chronicle(entries: Array) -> void:
-	for e in entries:
+func add_chronicle(added: Array) -> void:
+	entries.append_array(added)
+	for e in added:
 		var kind := String(e.get("kind", ""))
 		# Red only for the King's own losses (a rising, a betrayal, or anything that
 		# touches the crown); another house's plague or death reads plain, so red means something.
@@ -153,6 +155,7 @@ static func _dot() -> Texture2D:
 
 func clear_chronicle() -> void:
 	_lines.clear()
+	entries.clear()
 	_chronicle.text = ""
 	for c in _ticker.get_children():
 		c.queue_free()
