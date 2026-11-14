@@ -1,5 +1,5 @@
 extends Node
-## Every click answers (--barks; docs/PLAN.md, fun audit item 2). Copies Warcraft II's unit replies and
+## Every click answers (docs/PLAN.md, fun audit item 2). Copies Warcraft II's unit replies and
 ## Stronghold's lords: click a house's sigil and its lord says one line in the mood their favour puts
 ## them in; keep clicking the same one and they get annoyed. The line shows at once as a caption with a
 ## quill's scratch (under 0.2 s), then is spoken aloud through the game's voices when they're on.
@@ -33,6 +33,14 @@ func lord(pid: int) -> void:
 		var pool: Array = _d.get("annoyed", []) if _pestered("lord%d" % pid) else (_d.get("lord", {}) as Dictionary).get(str(p.get("band", "steady")), [])
 		_say(house, pool, {"name": house})
 		return
+
+
+## The King's host chosen (kind "select") or given an order ("order"): its captain answers; chosen again and
+## again, curt (barks.json host, host_annoyed). Called by host_command.gd.
+func host(kind: String, id: int) -> void:
+	var pestered := kind == "select" and _pestered("host%d" % id)
+	var pool: Array = _d.get("host_annoyed", []) if pestered else (_d.get("host", {}) as Dictionary).get(kind, [])
+	_say("The captain", pool, {"name": "The captain", "gender": "male"})
 
 
 ## A townsman clicked: they say what's on their mind (the line the hover shows), else a greeting;

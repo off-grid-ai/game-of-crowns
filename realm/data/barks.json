@@ -1,70 +1,94 @@
 {
-  "_": "Every click answers (Warcraft II's replies, Stronghold's lords; fun audit item 2), grounded: a lord answers like a lord, by their favour band; pressed again and again they grow curt, in character, never a joke. Tune here, not in code.",
-  "annoyed_after": 3,
-  "click_memory_sec": 8,
-  "no_repeat": 10,
-  "lord": {
-    "loyal": [
-      "My King.",
-      "Command me, Your Grace.",
-      "My sword is yours, as ever.",
-      "The realm is in good hands.",
-      "Say the word, my King.",
-      "Our banners fly beside yours."
-    ],
-    "sworn": [
-      "Your Grace.",
-      "We keep our oath.",
-      "What would the crown have of us?",
-      "We stand ready.",
-      "My King calls; I answer.",
-      "As you say, Your Grace."
-    ],
-    "steady": [
-      "Your Grace.",
-      "The crown has need of us?",
-      "We are listening.",
-      "Speak, my King.",
-      "Our house hears you.",
-      "What is the crown's wish?"
-    ],
-    "cooling": [
-      "Your Grace remembers us now?",
-      "The crown asks much and gives little.",
-      "What does the crown want of us now?",
-      "We hear you. We have not forgotten.",
-      "Another summons.",
-      "Our patience has an end, my King."
-    ],
-    "angry": [
-      "We have nothing to say to the crown.",
-      "The crown sends for us, after all this?",
-      "Our gates are shut to you.",
-      "Say your piece and be gone.",
-      "We remember every slight, Your Grace.",
-      "Not now. Not ever, perhaps."
-    ]
-  },
-  "annoyed": [
-    "Your Grace has my answer already.",
-    "I am still at the crown's service.",
-    "As I said, Your Grace.",
-    "We have spoken, my King.",
-    "My answer has not changed.",
-    "If the crown has a command, I will hear it."
-  ],
-  "folk": [
-    "Your Grace.",
-    "The gods keep the King.",
-    "Long live the King.",
-    "Bless you, Your Grace.",
-    "My King.",
-    "Your Grace honours us."
-  ],
-  "folk_annoyed": [
-    "I've work waiting, Your Grace.",
-    "By your leave, the ovens are hot.",
-    "If it please Your Grace, I must get on.",
-    "Forgive me, my King, the day is short."
-  ]
+"_": "Every click answers (Warcraft II's replies, Stronghold's lords; fun audit item 2), grounded: a lord answers like a lord, by their favour band; pressed again and again they grow curt, in character, never a joke. The King's own host answers too (barks.host): its captain on being chosen (host.select) and on an order (host.order), curt past annoyed_after (host_annoyed). Tune here, not in code.",
+"annoyed_after": 3,
+"click_memory_sec": 8,
+"no_repeat": 10,
+"lord": {
+"loyal": [
+"My King.",
+"Command me, Your Grace.",
+"My sword is yours, as ever.",
+"The realm is in good hands.",
+"Say the word, my King.",
+"Our banners fly beside yours."
+],
+"sworn": [
+"Your Grace.",
+"We keep our oath.",
+"What would the crown have of us?",
+"We stand ready.",
+"My King calls; I answer.",
+"As you say, Your Grace."
+],
+"steady": [
+"Your Grace.",
+"The crown has need of us?",
+"We are listening.",
+"Speak, my King.",
+"Our house hears you.",
+"What is the crown's wish?"
+],
+"cooling": [
+"Your Grace remembers us now?",
+"The crown asks much and gives little.",
+"What does the crown want of us now?",
+"We hear you. We have not forgotten.",
+"Another summons.",
+"Our patience has an end, my King."
+],
+"angry": [
+"We have nothing to say to the crown.",
+"The crown sends for us, after all this?",
+"Our gates are shut to you.",
+"Say your piece and be gone.",
+"We remember every slight, Your Grace.",
+"Not now. Not ever, perhaps."
+]
+},
+"annoyed": [
+"Your Grace has my answer already.",
+"I am still at the crown's service.",
+"As I said, Your Grace.",
+"We have spoken, my King.",
+"My answer has not changed.",
+"If the crown has a command, I will hear it."
+],
+"folk": [
+"Your Grace.",
+"The gods keep the King.",
+"Long live the King.",
+"Bless you, Your Grace.",
+"My King.",
+"Your Grace honours us."
+],
+"folk_annoyed": [
+"I've work waiting, Your Grace.",
+"By your leave, the ovens are hot.",
+"If it please Your Grace, I must get on.",
+"Forgive me, my King, the day is short."
+],
+"host": {
+"select": [
+"Your Grace.",
+"The host stands ready.",
+"Where to, my King?",
+"Awaiting your word.",
+"We're with you, Sire.",
+"Name the road, Your Grace."
+],
+"order": [
+"At once, Your Grace.",
+"We march.",
+"As you command.",
+"Boots on the road, lads.",
+"It will be done, Sire.",
+"Forward, in the King's name."
+]
+},
+"host_annoyed": [
+"We heard you, Sire.",
+"The men are ready, Your Grace. Still.",
+"Your orders stand, my King.",
+"Sire, the men are watching."
+]
 }
