@@ -661,6 +661,11 @@ static func post_activities(post: String) -> Array:
 				seq("weave", [run(["Interact"], 2, 3), once("Looking_Around"), brk(["Weight_Shift"])]),
 				seq("yarn", [once("PickUp_Table"), step(0.1), run(["Interact"], 1, 2), brk(REST)]),
 			]
+		"elder":  # the old folk on the bench by their door, watching the street (town_scenes.json elders): they stay sat
+			return [
+				seq("watch", [run(["Sitting_Idle"], 2, 3), brk(["Sitting_Idle"])]),
+				seq("yarn", [run(["Sitting_Talking"], 2, 3), brk(["Sitting_Idle"])]),
+			]
 		"revel":  # round the feast's bonfire
 			return [
 				seq("dance", [run(["Dance"], 2, 4), brk(["Laughing", "Cheering"])]),
