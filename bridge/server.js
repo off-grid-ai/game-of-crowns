@@ -279,6 +279,12 @@ function startFreeciv() {
     // An unexpected exit takes the bridge down so launchd restarts it cleanly.
     onExit: (code) => { if (!switching) process.exit(code ?? 1); },
   });
+  // A save keeps the barbarian settings it was made with: a realm in play gets the raiders choice and the ruleset's
+  // first-turn onset (raids are Freeciv's barbarians, realm_raid). Sent first, so every command after it (a raid
+  // among them) runs with it: sent 4 s later with the rest, a raid ordered in the realm's first seconds raised nobody
+  // (group render g27, "RAID Saltkeep raised 0" under "No barbarians", the setting arriving just after).
+  send(`set barbarians ${chron.BARBARIANS[chron.cleanOptions(meta.options ?? {}).raiders]}`);
+  send("set onsetbarbs 1");
   // The Crown's soldiers are commanded by Freeciv's AI (the King rules by decree,
   // the AI marshals the host). Older realms saved the Crown as human; hand it over.
   if (save) {
@@ -294,10 +300,6 @@ function startFreeciv() {
     // The Crown's soldiers defend and never take a town unbidden: the ruleset
     // forbids the Normans "Conquer City" (data/realmrules/actions.ruleset).
     send(`set timeout ${timeoutNow()}`);
-    // A save keeps the barbarian settings it was made with: a realm in play gets the raiders choice and the
-    // ruleset's first-turn onset (raids are Freeciv's barbarians, realm_raid).
-    send(`set barbarians ${chron.BARBARIANS[chron.cleanOptions(meta.options ?? {}).raiders]}`);
-    send("set onsetbarbs 1");
     snapshot();
   }, 4000);
 }
