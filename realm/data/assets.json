@@ -7,6 +7,7 @@
     
     "tree_range": [8, 14],
     "kit": {
+      "shade": { "_": "forest.gd shade_at: each tree's leaves a little lighter or darker (light) and warmer or cooler (warm) than its kind's, from where it stands (Warcraft III tree lines: no two crowns one green).", "light": 0.14, "warm": 0.08 },
       "pine": { "models": ["meshy/nt_pine_a/nt_pine_a.glb", "meshy/nt_pine_b/nt_pine_b.glb"], "height": 12.0 },
       "oak": { "models": ["meshy/nt_oak_a/nt_oak_a.glb", "meshy/nt_oak_b/nt_oak_b.glb"], "height": 10.5 },
       "bush": { "models": ["meshy/nt_bush/nt_bush.glb"], "height": 1.6 },
@@ -97,6 +98,9 @@
     "granary": {"heightRange": [6, 14], "kind": "trade", "variants": [], "trade": "granary", "work_front": {"door": [0, 0.3], "sacks": [1.8, 0.6], "queue": [0, 1.2]}},
     "tannery": {"heightRange": [5, 13], "kind": "trade", "variants": [], "trade": "tannery", "work_front": {"vats": [1.3, 0.7], "rack": [-1.5, 0.8]}},
     "dyer": {"heightRange": [5, 16], "kind": "trade", "variants": [], "trade": "dyer", "work_front": {"vats": [-1.2, 0.8], "rack": [1.5, 0.8]}},
+    "bakery": {"heightRange": [5, 10], "kind": "trade", "variants": [], "trade": "bakery", "work_front": {"door": [0.0, 0.5], "bench": [1.3, 0.6]}, "smoke": true},
+    "cooper": {"heightRange": [5, 10], "kind": "trade", "variants": [], "trade": "cooper", "work_front": {"door": [0.0, 0.5], "bench": [1.3, 0.6]}},
+    "weaver": {"heightRange": [5, 10], "kind": "trade", "variants": [], "trade": "weaver", "work_front": {"door": [0.0, 0.5], "bench": [1.3, 0.6]}},
     "windmill": {"heightRange": [9, 22], "kind": "trade", "variants": [], "trade": "windmill", "work_front": {"door": [0, 0.3], "sacks": [1.5, 0.4]}, "rotor": {"model": "town/windmill.glb", "name": "sail", "axis": "z", "out": -1.7, "up": 8.1, "size": 9.0}},
     "town_watermill": {"heightRange": [6, 14], "kind": "trade", "variants": [{"name": "kit_watermill", "builder": "house", "spec": {"tier": "watermill", "seed": 191}, "count": 2}], "trade": "watermill", "work_front": {"door": [-1.6, 0.3], "sacks": [-2.6, 0.6]}, "rotor": {"model": "town/watermill.glb", "name": "wheel", "axis": "z", "from": "back", "out": 0.7, "up": 1.7, "size": 4.6, "across": 1.2}},
     "hall": {"heightRange": [6, 14], "kind": "hall", "variants": []},

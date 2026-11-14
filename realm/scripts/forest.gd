@@ -150,10 +150,14 @@ func _land() -> Node:
 func _layer(mesh: Mesh, xfs: Array, begin: float, end: float, shadows: bool, tier: String) -> void:
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.use_colors = true  # each tree's shade of its leaves (shade_at); leaves() reads it, the trunks don't
 	mm.mesh = mesh
 	mm.instance_count = xfs.size()
+	var light := Data.num("assets", "woods.kit.shade.light", 0.14)
+	var warm := Data.num("assets", "woods.kit.shade.warm", 0.08)
 	for i in xfs.size():
 		mm.set_instance_transform(i, xfs[i])
+		mm.set_instance_color(i, shade_at((xfs[i] as Transform3D).origin, light, warm))
 	var mmi := MultiMeshInstance3D.new()
 	mmi.multimesh = mm
 	mmi.visibility_range_begin = begin
@@ -168,6 +172,16 @@ func _layer(mesh: Mesh, xfs: Array, begin: float, end: float, shadows: bool, tie
 	mmi.gi_mode = GeometryInstance3D.GI_MODE_DISABLED
 	mmi.set_meta("tier", tier)  # set_reach moves the mid and card tiers' bounds; the map tier keeps its own
 	add_child(mmi)
+
+
+## A tree's own shade of its kind's leaves (Warcraft III's tree lines: no two crowns one green), from where it stands, so
+## a wood looks the same each time it is built: lighter or darker by up to light, warmer or cooler by up to warm.
+## realm/data/assets.json woods.kit.shade.
+static func shade_at(p: Vector3, light: float, warm: float) -> Color:
+	var h := absi(hash(Vector2i(roundi(p.x * 10.0), roundi(p.z * 10.0))))
+	var l := light * (float(h % 1000) / 999.0 * 2.0 - 1.0)
+	var w := warm * (float((h / 1000) % 1000) / 999.0 * 2.0 - 1.0)
+	return Color(1.0 + l + w, 1.0 + l + w * 0.4, 1.0 + l - w)
 
 
 ## Each kind's mesh, once.
@@ -212,6 +226,7 @@ static func leaves(mat: Material, path: String, kind: String) -> Material:
 		return mat
 	var c: BaseMaterial3D = m.duplicate()
 	c.set_meta("leaf", kind)
+	c.vertex_color_use_as_albedo = true  # a wood's tree carries its own shade (shade_at); a lone tree's is white
 	var tints: Dictionary = (Data.value("assets", "woods.kit.seasons", {}) as Dictionary).get(path.trim_prefix("res://assets/"), {})
 	var by := {}
 	for s in tints:

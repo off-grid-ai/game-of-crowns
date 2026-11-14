@@ -113,6 +113,7 @@ Switches (`--name`) go after `--` on the game's command line.
 - A yard's working thing in its back corner (a woodshed, a pen, a washing line) and how often: `realm/data/towns.json`: `plots.yard_things`; what they are: `realm/data/assets.json`: `components.yard_shed|yard_pen|yard_washing` (kit pieces and props, `builder` house with `pieces`; a piece's fifth entry dyes its cloth, `{"MI_Banner": [r, g, b]}`: the washing's colours).
 - The town's edge (art target town-a/b): orchards by the roads out (`realm/data/towns.json`), how many by rank (`edge.orchards.<crown|seat|town|village>`), each one's rows, columns, spacing and tree size (`edge.orchard`); the fruit trees: `realm/data/assets.json`: `components.orchard_tree`. The windmill itself is a trade: `towns.json trades.list` windmill.
 - The woods' trees (the nature set, docs/art/nature: each role a list of models, pine, oak, bush): `realm/data/assets.json`: `woods.kit`.
+- How much each tree's leaves differ from the next in a wood, lighter or darker and warmer or cooler: `realm/data/assets.json`: `woods.kit.shade` (`light`, `warm`).
 - The kit's trees, their true heights and how tall young trees and saplings stand: `realm/data/assets.json`: `woods.kit.*`.
 - The grown kit trees' allowed heights (one to two houses; `tools/scale_check.gd` fails outside it): `woods.tree_range`.
 
