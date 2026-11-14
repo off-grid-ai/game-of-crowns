@@ -44,6 +44,8 @@ var _flights: Array = []  # [from, to, start, flight, arc, on_land (Callable), l
 var _rng := RandomNumberGenerator.new()
 var _dist := 0.0  # the test aid's lens distance: the town view's (camera.json town_view.dist), or --dist
 var _focus := Vector3.ZERO
+var _yaw := 0.0  # the battle lens's heading (lens_yaw, followed)
+var _yawed := false
 var _report := 0.0
 var _over := false
 var _formed := 0.0  # seconds both lines have stood formed
@@ -332,7 +334,10 @@ func _frame(delta: float) -> void:
 	_focus = _focus.lerp(lens_aim(_rows(), loser, met(), _focus), minf(1.0, delta * Data.num(F, "field.camera.follow", 1.2)))
 	var crown: Army = sides[0]
 	main.rig.step_floor = _dist if _dist < main.rig.min_distance else 0.0  # the shot's own distance (d4 is d4)
-	main.rig.snap(_focus, _dist, crown.facing() + Data.num(F, "field.camera.quarter", 0.9))
+	_yaw = lerp_angle(_yaw if _yawed else crown.facing() + Data.num(F, "field.camera.quarter", 0.9), lens_yaw(_rows(), loser, crown.facing()),
+			minf(1.0, delta * Data.num(F, "field.camera.follow", 1.2)))
+	_yawed = true
+	main.rig.snap(_focus, _dist, _yaw)
 	main.rig.tilt = main.rig.tilt_for(Data.num("army", "camera.pitch", 38.0), maxf(_dist, main.rig.min_distance))  # 03-army's pitch
 	main.rig.goal_tilt = main.rig.tilt
 
@@ -371,14 +376,7 @@ static func lens_aim(rows: Array, loser: int, met: bool, last: Vector3) -> Vecto
 		# the two, so the frame holds the press itself, front ranks cutting, men falling, both standards over it (g17
 		# battle.jpg: the shakiest regiment and its nearest foe were not the pair fighting; grey horse and red pikes in
 		# frame, apart).
-		var low := INF
-		var pair: Array = []
-		for r in rows[loser]:
-			var f: Variant = r.get("foe")
-			if String(r.get("state_name", "")) == "fight" and f is Dictionary and String((f as Dictionary).get("state_name", "")) != "rout" \
-					and Morale.of(r) < low:
-				low = Morale.of(r)
-				pair = [r, f]
+		var pair := locked_pair(rows, loser)
 		if not pair.is_empty():
 			return ((pair[0]["node"] as Node3D).global_position).lerp((pair[1]["node"] as Node3D).global_position, 0.5)
 		var next := Morale.shakiest(rows, loser)
@@ -402,6 +400,37 @@ static func lens_aim(rows: Array, loser: int, met: bool, last: Vector3) -> Vecto
 				sum += (r["node"] as Node3D).global_position
 				n += 1
 	return sum / n if n > 0 else last
+
+
+## The press the lens holds (rows: [side 0's, side 1's]): the shakiest beaten regiment at blows with its foe,
+## [it, its foe]; a pair front to front (Total War's lines meeting) before one hit in the flank; [] when none fights.
+static func locked_pair(rows: Array, loser: int) -> Array:
+	var low := INF
+	var pair: Array = []
+	for r in rows[loser]:
+		var f: Variant = r.get("foe")
+		if String(r.get("state_name", "")) != "fight" or not f is Dictionary or String((f as Dictionary).get("state_name", "")) == "rout":
+			continue
+		var score := Morale.of(r) + (0.0 if bool(r.get("flanked", false)) == false else 10.0)
+		if score < low:
+			low = score
+			pair = [r, f]
+	return pair
+
+
+## The lens's heading on the battle (the test aid): off the quarter of the locked pair's line of attack, the victor's
+## regiment facing into the beaten one (field.camera.quarter), so the lens looks across both fronts where they meet,
+## not down a line's length (g20 battle.jpg: two thin columns seen straight along); before blows, off the crown's
+## line, as it was.
+static func lens_yaw(rows: Array, loser: int, crown_face: float) -> float:
+	var q := Data.num(F, "field.camera.quarter", 0.9)
+	var pair := locked_pair(rows, loser)
+	if pair.is_empty():
+		return crown_face + q
+	var a: Vector3 = (pair[0]["node"] as Node3D).global_position
+	var b: Vector3 = (pair[1]["node"] as Node3D).global_position
+	var into := a - b if loser == 1 else b - a  # the crown's side's regiment facing into its foe
+	return atan2(into.x, into.z) + q
 
 
 ## How many of the beaten side's regiments have broken (autoplay's `rout` step waits on it, so a film starts at
@@ -470,22 +499,21 @@ func _advance(r: Dictionary, _dt: float) -> void:
 	if foe.is_empty():
 		return
 	var at: Vector3 = (r["node"] as Node3D).global_position
-	var to: Vector3 = (foe["node"] as Node3D).global_position
 	var gap := _front_gap(r, foe)
 	var contact := Data.num(F, "field.contact", 0.12)
-	# At blows only face to face: the fronts within sword's length and overlapping across the line (each block's
-	# width), not merely level with each other (g17/g19 battle.jpg: regiments "at blows" with their nearest foe two
-	# blocks off to the side, the fronts level, a gap of grass between the lines). Off to the side, it closes on the
-	# foe's front itself.
-	var a: Node3D = r["node"]
-	var fwd := a.global_transform.basis.z.normalized()
+	# At blows only face to face (g17/g19: "at blows" with a foe two blocks aside; g20: a line that walked sideways
+	# facing its walk met the foe file to file, two thin columns side by side): it closes square on the foe's front,
+	# facing it, its own front at sword's length; at blows once the fronts are that close and overlap across the line.
 	var b: Node3D = foe["node"]
-	var off := (b.global_position + b.global_transform.basis.z.normalized() * float(foe["d"]) * 0.5) - (at + fwd * float(r["d"]) * 0.5)
-	off.y = 0.0
-	var across := absf(off.dot(fwd.cross(Vector3.UP).normalized()))
-	if across > (float(r["w"]) + float(foe["w"])) * 0.5 * Data.num(F, "field.overlap", 0.6):
-		var aim := off.normalized()
-		Mover.of(r["node"]).toward(at + off - aim * contact, Data.num(F, "field.advance", 0.12), aim)
+	var theirs := b.global_position + b.global_transform.basis.z.normalized() * float(foe["d"]) * 0.5
+	var look := -b.global_transform.basis.z
+	look.y = 0.0
+	look = look.normalized()
+	var spot := theirs - look * (float(r["d"]) * 0.5 + contact)
+	spot.y = at.y
+	var across := absf((spot - at).dot(look.cross(Vector3.UP)))
+	if across > (float(r["w"]) + float(foe["w"])) * 0.5 * (1.0 - Data.num(F, "field.overlap", 0.6)):
+		Mover.of(r["node"]).toward(spot, Data.num(F, "field.advance", 0.12), look)
 		return
 	if gap <= contact:
 		r["foe"] = foe
@@ -494,8 +522,7 @@ func _advance(r: Dictionary, _dt: float) -> void:
 			foe["foe"] = r
 			_send(foe, &"engage")
 		return
-	var way := Vector3(to.x - at.x, 0, to.z - at.z).normalized()
-	Mover.of(r["node"]).toward(at + way * (gap - contact), Data.num(F, "field.advance", 0.12), way)
+	Mover.of(r["node"]).toward(spot, Data.num(F, "field.advance", 0.12), look)
 
 
 ## At blows: the front ranks cut and reel, men fall from the front, the rest stand ready behind; the front surges a
@@ -585,12 +612,21 @@ func _charge(r: Dictionary, _dt: float) -> void:
 	var tn: Node3D = target["node"]
 	var at: Vector3 = (r["node"] as Node3D).global_position
 	var reach := float(target["w"]) * 0.5 + float(r["d"]) * 0.5 + Data.num(F, "field.contact", 0.12)
-	if Vector2(at.x - tn.global_position.x, at.z - tn.global_position.z).length() <= reach:
+	# Square into its side, the riders' front against the block's end (g20: the charge rode at its middle and met it
+	# file to file, a column beside a column).
+	var side := tn.global_transform.basis.x
+	side.y = 0.0
+	side = side.normalized()
+	if (at - tn.global_position).dot(side) < 0.0:
+		side = -side
+	var spot := tn.global_position + side * reach
+	spot.y = at.y
+	if Vector2(at.x - spot.x, at.z - spot.z).length() <= Data.num(F, "field.contact", 0.12):
 		r["foe"] = target
 		target["flanked"] = true
 		_send(r, &"engage")
 		return
-	Mover.of(r["node"]).toward(tn.global_position, Data.num(F, "field.cavalry.charge", 0.55))
+	Mover.of(r["node"]).toward(spot, Data.num(F, "field.cavalry.charge", 0.55), -side)
 
 
 ## It breaks: turns its back on the enemy, runs; its banner wavers its last.

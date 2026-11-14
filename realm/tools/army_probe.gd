@@ -1025,7 +1025,16 @@ func _lens_on_the_rout() -> void:
 	line[1]["foe"] = locked
 	var at_blows: Vector3 = FieldS.call("lens_aim", rows, 1, true, start)
 	_check(at_blows.distance_to(Vector3(0, 0, 0.5)) < 0.01, "at blows the lens looks at the press where the shakiest locked pair fights (%s)" % str(at_blows))
+	# Front to front before a flank: a shakier pair hit in the flank yields to a locked pair face to face (g20).
+	line[1]["flanked"] = true
+	line[0]["foe"] = locked
+	_check((FieldS.call("locked_pair", rows, 1) as Array)[0] == line[0], "the lens holds a pair front to front before one hit in the flank")
+	var yaw: float = FieldS.call("lens_yaw", rows, 1, 0.0)
+	var into: Vector3 = Vector3(-0.85, 0, 0) - Vector3(0, 0, 1.0)
+	_check(absf(angle_difference(yaw, atan2(into.x, into.z) + Data.num("battle", "field.camera.quarter", 0.9))) < 0.01, "the lens looks across the locked pair's line of attack, off its quarter")
 	line[1].erase("foe")
+	line[1].erase("flanked")
+	line[0].erase("foe")
 	line[1]["state_name"] = "rout"
 	aim = FieldS.call("lens_aim", rows, 1, true, aim)
 	_check(aim.distance_to(Vector3(0.85, 0, 0).lerp(Vector3(0, 0, -0.5), 0.5)) < 0.01, "as it breaks, the lens moves along the line to the next (%s)" % str(aim))
