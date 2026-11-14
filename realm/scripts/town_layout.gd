@@ -275,7 +275,8 @@ func square_ring(root: Node3D, center: Vector3, square_r: float, ways: Array, ki
 	var f := Vector2.ZERO
 	var prev_ang := -INF  # the last front stood (its angle, half its width): the alley between it and the next
 	var prev_half := 0.0
-	var gardens := _lens_gardens(root)  # [the way out from the square they stand toward, how many] (_lens_garden)
+	var gardens := _lens_toward(root, "lens_garden")  # [the way out from the square they stand toward, how many] (_lens_garden)
+	var washing := _lens_toward(root, "lens_washing")  # the same for the washing strung across the alleys (_ring_alley)
 	while walked < TAU * ring and placed < budget:
 		var step := 0.0
 		if kind == "" and int(gardens[1]) > 0:
@@ -328,7 +329,7 @@ func square_ring(root: Node3D, center: Vector3, square_r: float, ways: Array, ki
 				stood = true
 				_ring_yard(root, p, kf, k, ways, lots.size() - 1)
 				if prev_ang > -INF:
-					_ring_alley(root, center, ring, prev_ang, prev_half, ang, kf.x * 0.5, ways)
+					_ring_alley(root, center, ring, prev_ang, prev_half, ang, kf.x * 0.5, ways, washing)
 				prev_ang = ang
 				prev_half = kf.x * 0.5
 				break
@@ -781,13 +782,14 @@ func _ring_yard(root: Node3D, p: Vector3, f: Vector2, kind: String, ways: Array,
 		return
 
 
-## Where the square's kitchen gardens go (towns.json plots.lens_garden; art target 01-town: fenced gardens of
-## cabbages beside the near houses, in the frame's lower left; g13-g14: every yard stood behind its house, out of the
-## town view's sight): [the way out from the square toward them, how many], from the lens the town view will take
+## Where the square's kitchen gardens or washing lines go (towns.json plots.lens_garden, plots.lens_washing; art
+## target 01-town: fenced gardens of cabbages beside the near houses, washing strung between them; g13-g14: every yard
+## stood behind its house, out of the town view's sight): [the way out from the square toward them, how many], from
+## the lens the town view will take
 ## (camera_rig.town_view), `turn` radians round from the lens's side toward the frame's right (negative: its left),
 ## as market.<rank>.lens_turns turns a landmark. [Vector2.ZERO, 0] when there's none to lay.
-func _lens_gardens(root: Node3D) -> Array:
-	var lg: Dictionary = tb._plot_knobs().get("lens_garden", {})
+func _lens_toward(root: Node3D, key: String) -> Array:
+	var lg: Dictionary = tb._plot_knobs().get(key, {})
 	var rig: Node = tb.get_parent().get("rig") if tb.get_parent() else null
 	if lg.is_empty() or int(lg.get("most", 0)) <= 0 or rig == null or not rig.has_method("town_view"):
 		return [Vector2.ZERO, 0]
@@ -840,7 +842,11 @@ func _lens_garden(root: Node3D, center: Vector3, ring: float, a: float, toward: 
 ## least towns.json plots.ring_alley[0] and at most [1] wide (game units; wider is a landmark's or the ground's), a
 ## back lane (back_lane: the crown's in setts) runs from inside the square's edge out [2] past the fronts. None
 ## where a street already comes in there.
-func _ring_alley(root: Node3D, center: Vector3, ring: float, a0: float, h0: float, a1: float, h1: float, ways: Array) -> void:
+##
+## Where the alley lies within plots.lens_washing.spread radians of the way `washing` names ([toward, how many left],
+## _lens_toward), a washing line (assets.json yard_washing, the yards' own) is strung across its mouth from wall to
+## wall, `out` past the fronts, stretched to the gap; the yards row's washer works it as a yard's (meta yard_things).
+func _ring_alley(root: Node3D, center: Vector3, ring: float, a0: float, h0: float, a1: float, h1: float, ways: Array, washing: Array) -> void:
 	var al: Array = tb._plot_knobs().get("ring_alley", [])
 	if al.size() < 3:
 		return
@@ -861,6 +867,21 @@ func _ring_alley(root: Node3D, center: Vector3, ring: float, a0: float, h0: floa
 	var alleys: Array = root.get_meta("alleys", [])  # their far ends: where errands go up an alley (town_scenes _stops)
 	alleys.append(to)
 	root.set_meta("alleys", alleys)
+	var lw: Dictionary = tb._plot_knobs().get("lens_washing", {})
+	if int(washing[1]) <= 0 or absf(dir.angle_to(washing[0])) > float(lw.get("spread", 0.5)):
+		return
+	var kind := Real.one("yard_washing")
+	var f: Vector2 = Real.footprint(kind)
+	if kind == "" or f.x <= 0.0:
+		return
+	var q2 := dir * (ring + float(lw.get("out", 0.25)))
+	var q := Vector3(q2.x, 0, q2.y)
+	var yaw := atan2(-dir.x, -dir.y)  # its line runs round the ring, across the alley, post to post wall to wall
+	tb._place(root, kind, q + Vector3(0, tb._ground_y(center, q) - 0.005, 0), yaw, Vector3(clampf((gap + 0.04) / f.x, 0.3, 2.0), 1.0, 1.0))
+	washing[1] = int(washing[1]) - 1
+	var things: Array = root.get_meta("yard_things", [])
+	things.append({"component": "yard_washing", "at": q})  # where the washer hangs the wash (town_dress/yards.gd)
+	root.set_meta("yard_things", things)
 
 
 ## A plot house's outline (town-local): `house` its middle, `face` toward the street.
