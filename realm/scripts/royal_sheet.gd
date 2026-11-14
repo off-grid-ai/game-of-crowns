@@ -158,3 +158,83 @@ func _row(v: VBoxContainer, label: String, text: String) -> void:
 	d.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(d)
 	v.add_child(row)
+
+
+# --- the crown passes: court news (CK2's succession, Old World: oaths sworn to the man, not the crown) ------------
+# When /world royals names a new King, the houses' favour has just been pulled toward the middle (bridge royals.js
+# pass: the funeral) and moved again by what each lord makes of the new King's nature. A card says so: each great
+# house's mood before and after, and the chronicle's lines on how the lords take him.
+var _king_id := ""
+var _favour_was := {}  # house name -> favour at the last reading, to tell the swing
+
+
+## A new chronicle: another realm's King is not a crowning.
+func reset() -> void:
+	_king_id = ""
+	_favour_was = {}
+
+
+func on_synced() -> void:
+	var st := Awareness.store()
+	if st == null:
+		return
+	var r := royals()
+	var king: Dictionary = r.get("king", {}) if r.get("king") is Dictionary else {}
+	var id := String(king.get("id", ""))
+	var now := {}
+	for p in st.rec("players", []):
+		var h: Dictionary = p.get("house", {}) if p.get("house") is Dictionary else {}
+		if p.get("favour") != null and not bool(h.get("crown", false)) and not bool(h.get("wild", false)):
+			now[String(h.get("name", ""))] = float(p["favour"])
+	if _king_id != "" and id != "" and id != _king_id and not _favour_was.is_empty():
+		_crowned(king, r, _favour_was, now)
+	if id != "":
+		_king_id = id
+	_favour_was = now
+
+
+func _crowned(king: Dictionary, r: Dictionary, was: Dictionary, now: Dictionary) -> void:
+	var c: PanelContainer = ui.glass_panel()
+	c.add_theme_stylebox_override("panel", T._box(Color(0.13, 0.11, 0.09, 0.97), Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.6), 10, 22))
+	c.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	c.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	c.position.y = 96
+	c.custom_minimum_size = Vector2(500, 0)
+	ui.card(c)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", T.GAP_SECTION)
+	c.add_child(v)
+	v.add_child(T.title(_w("crowned", "Long live King {name}").replace("{name}", String(king.get("name", ""))), 26, T.ACCENT))
+	var t := traits_of(king)
+	if t != "":
+		_say(v, _w("crowned_nature", "{age}, by nature {traits}.").replace("{age}", str(int(king.get("age", 0)))).replace("{traits}", t), T.TEXT_2)
+	if bool(r.get("regency", false)):
+		_say(v, _w("regency", ""), T.DANGER)
+	_say(v, _w("funeral", ""), T.TEXT)
+	# Each great house: its mood under the old King, and now.
+	var grid := GridContainer.new()
+	grid.columns = 3
+	grid.add_theme_constant_override("h_separation", 28)
+	grid.add_theme_constant_override("v_separation", 4)
+	v.add_child(grid)
+	for name in now:
+		if not was.has(name):
+			continue
+		var a: float = was[name]
+		var b: float = now[name]
+		grid.add_child(T.datum(String(name).trim_prefix("House "), T.SIZE_BODY, T.TEXT))
+		grid.add_child(T.datum(Awareness.mood_of(a), T.SIZE_BODY, T.TEXT_3))
+		var to := T.datum("→ " + Awareness.mood_of(b), T.SIZE_BODY, T.ACCENT if b > a + 0.5 else (T.DANGER if b < a - 0.5 else T.TEXT_2))
+		grid.add_child(to)
+	# How the lords take him: the chronicle's own lines from this crowning (bridge royals.js temper).
+	for e in (ui.chronicle.entries as Array).slice(-8):
+		var said := String(e.get("text", ""))
+		if String(e.get("kind", "")) == "court" and said.begins_with("The lords take the measure"):
+			var l := T.datum(said, T.SIZE_BODY, T.TEXT)
+			l.add_theme_font_override("font", T.speech)
+			l.autowrap_mode = TextServer.AUTOWRAP_WORD
+			l.custom_minimum_size.x = 460
+			v.add_child(l)
+	v.add_child(ui.btn(_w("crowned_ok", "So it begins"), func(): c.visible = false))
+	ui.ease_in(c)
+	ui.heard.emit("event")

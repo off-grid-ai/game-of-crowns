@@ -18,5 +18,9 @@
  "abdicate": "Step down for the heir",
  "abdicate_sure": "Sure? The crown passes now.",
  "abdicate_tip": "The heir is of age. The crown passes to him now, and every lord takes his measure afresh.",
- "abdicating": "The crown is passing."
+ "abdicating": "The crown is passing.",
+ "crowned": "Long live King {name}",
+ "crowned_nature": "{age}, by nature {traits}.",
+ "funeral": "The great houses swore to the old King, not to this one. Old friends wait to be won again, and old grudges are half forgotten.",
+ "crowned_ok": "So it begins"
 }
