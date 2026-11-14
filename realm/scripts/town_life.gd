@@ -84,7 +84,7 @@ func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 	sig += "|%s" % c.get("plague", false)  # a sick town's life changes (town_scenes.json plague)
 	# The working buildings' life changes with a levy and a low granary too, and when the town agent lists its buildings.
 	var now_states := _states(c)
-	sig += "|%s|%s|%s|%s|%s|%s|%d|%s" % [c.get("granaryLow", false), "levy" in now_states, "raid" in now_states, "market" in now_states, "lean" in now_states, "fields" in now_states, hash(root.get_meta("works", {})), (c.get("ruling") as Dictionary).get("kind", "") if c.get("ruling") is Dictionary else ""]
+	sig += "|%s|%s|%s|%s|%s|%s|%s|%d|%s" % [c.get("granaryLow", false), "levy" in now_states, "raid" in now_states, "market" in now_states, "lean" in now_states, "fields" in now_states, "wet" in now_states, hash(root.get_meta("works", {})), (c.get("ruling") as Dictionary).get("kind", "") if c.get("ruling") is Dictionary else ""]
 	# The town dressed in what we own, once (dressing.gd; --dressing=on): gear at the trades' doors,
 	# planters by house doors, bushes, flowers and rocks between the houses.
 	if Dressing.on() and root.get_node_or_null("Dressing") == null:
@@ -1594,7 +1594,18 @@ func _states(c: Dictionary) -> Array:
 		s.append("market")
 	if fields_season():
 		s.append("fields")
+	if wet():
+		s.append("wet")
 	return s
+
+
+## Whether the realm's weather (the store's, bridge weather.js) drives folk indoors (towns.json wet.weather: rain and
+## storm): the square thins, the children go in, those out hurry (villagers.gd), as in Foundation's and Banished's rain.
+static func wet() -> bool:
+	if not Engine.has_meta("awareness"):
+		return false
+	var w := String(Engine.get_meta("awareness").realm.get_var(&"weather", "", false))
+	return w in (Data.value("towns", "wet.weather", []) as Array)
 
 
 ## Whether the realm's season (the store's, bridge date) is one that takes the town to its fields (towns.json

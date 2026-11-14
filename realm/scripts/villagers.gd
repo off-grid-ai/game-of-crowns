@@ -61,6 +61,7 @@ var _asking := {}  # an ask's key (a town's plan) -> true while it is out
 var _minds_at := 0.0
 var _spoken := {}  # town id -> ids spoken to since the bridge was last told
 var _was := {}  # town id -> what the town was showing at the last look, for witnesses
+var _rain_pace := 1.0  # how much faster everyone walks in the weather (towns.json wet.hurry in rain, else 1)
 var _audit := OS.get_cmdline_user_args().has("--talkprobe")
 
 
@@ -210,6 +211,7 @@ func _folk_route(n: Node) -> PackedVector2Array:
 
 
 func _refresh() -> void:
+	_rain_pace = Data.num("towns", "wet.hurry", 1.25) if TownLife.wet() else 1.0  # rain: those out hurry (towns.json wet)
 	var focus: Vector3 = rig.target
 	var close: bool = rig.distance < 60.0
 	for id in towns.towns.keys():
@@ -618,7 +620,7 @@ func _step(a: Dictionary, delta: float, _t: float) -> void:
 				a["gait"] = "Walk"  # v3: the load is set down with the walk's end (as the minds' GoTo does)
 			_set_off(a)  # arrived: straight into what they came for (a talk waits for the others)
 		return
-	var want := to.normalized() * WALK_SPEED * READ * float(a.get("pace", 1.0)) * _mood_pace(a) * _for_the_child(a) * (2.4 if a.get("catch_up", false) else 1.0)
+	var want := to.normalized() * WALK_SPEED * READ * _rain_pace * float(a.get("pace", 1.0)) * _mood_pace(a) * _for_the_child(a) * (2.4 if a.get("catch_up", false) else 1.0)
 	var vel: Vector2 = want
 	if a.has("agent"):
 		NavigationServer2D.agent_set_velocity(a["agent"], want)
