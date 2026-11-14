@@ -376,14 +376,14 @@ func board(hulls: Array) -> void:
 		var along := (float(slot) - (per - 1) * 0.5) * length / per
 		r["state"] = "board"
 		var at: Vector3 = (r["node"] as Node3D).global_position
-		if not main.terrain.is_land(at.x, at.z):
+		if not Footing.on_land(at):
 			_on_deck(r, hull, along)  # already at sea when first drawn: on the deck at once (g11: a host raised aboard stood under the sea)
 			continue
 		# Down to the water's edge toward its hull, by its Mover, then aboard (never walking under the sea).
 		var edge := at
 		for k in 40:
 			var p := at.lerp(hull.global_position, (k + 1) / 40.0)
-			if not main.terrain.is_land(p.x, p.z):
+			if not Footing.on_land(p):
 				break
 			edge = p
 		var mo: Node = Mover.of(r["node"]).on(null)
@@ -1173,7 +1173,7 @@ func _clear_at(mid: Vector3, right3: Vector3, fwd3: Vector3, w: float, d: float,
 	for i in nx:
 		for j in nz:
 			var q := mid + right3 * ((float(i) / (nx - 1) - 0.5) * (w + m * 2.0)) + fwd3 * ((float(j) / (nz - 1) - 0.5) * (d + m * 2.0))
-			if not main.terrain.is_land(q.x, q.z) or not Footing.is_clear(q, 0.05) or (strict and _farmed(q, 0.0)):
+			if not Footing.is_clear(q, 0.05) or (strict and _farmed(q, 0.0)):
 				return false
 			if strict and roads and roads.has_method("on_path") and roads.on_path(q, 0.05):
 				return false
@@ -1278,7 +1278,7 @@ func _road_in(town: Vector3) -> void:
 
 ## War's muster on its way out (03-army: one column on the open road past the walls, regiments nose to tail): out of
 ## the town by the main way (towns.gd ways_main) whose stretch past the town's edge is dry land for the whole column
-## (terrain is_land), the one that best faces `to` among those, and on from there along the realm's road toward `to`
+## (Footing.is_clear), the one that best faces `to` among those, and on from there along the realm's road toward `to`
 ## (roads.route), or straight over the land with none. The host stands on it in column.order, halted, its tail
 ## muster.gateClear past where the way leaves the town (towns.gd edge_outline, where the wall's gate stands), so it
 ## marches on along the way it stands on. Group renders g3/g4: in line on a field with no road out; g5: through the
@@ -1302,7 +1302,7 @@ func _form_on_way(town: Vector3, to: Vector3, root: Node3D) -> void:
 		var side := Vector3(cos(h), 0, -sin(h))
 		for k in 5:
 			var t := q + side * half * (k / 2.0 - 1.0)
-			if not main.terrain.is_land(t.x, t.z) or not Footing.is_clear(t, 0.05) or _farmed(t, 0.05):
+			if not Footing.is_clear(t, 0.05) or _farmed(t, 0.05):
 				return true
 		return false
 	# Every main way out of the town (towns.gd ways_main: where the realm's roads leave it), carried on straight out
@@ -1418,7 +1418,7 @@ func _dry(way: PackedVector3Array, keep: int) -> PackedVector3Array:
 		var n := maxi(1, ceili(a.distance_to(b) / step))
 		for k in range(1, n + 1):
 			var q := a.lerp(b, float(k) / n)
-			if not main.terrain.is_land(q.x, q.z):
+			if not Footing.walkable(q):  # the ground owner: dry land or a ford
 				var last := a.lerp(b, float(k - 1) / n)
 				if last.distance_to(out[out.size() - 1]) > 0.01:
 					out.append(_ground_at(last))
@@ -1810,7 +1810,7 @@ func _ground(p: Vector3, size: float) -> bool:
 	for gx in 5:
 		for gz in 5:
 			var q := Vector3(p.x + (gx / 4.0 - 0.5) * size, 0, p.z + (gz / 4.0 - 0.5) * size)
-			if not main.terrain.is_land(q.x, q.z) or not Footing.is_clear(q, 0.1) or _farmed(q, 0.05):
+			if not Footing.is_clear(q, 0.1) or _farmed(q, 0.05):
 				return false
 			if absf(main.terrain.height_at(q.x, q.z) - h) > slope:
 				return false
