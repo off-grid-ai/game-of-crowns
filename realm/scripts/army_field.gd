@@ -29,6 +29,7 @@ const Morale := preload("res://scripts/army_morale.gd")  # panic spreads: a regi
 const Ground := preload("res://scripts/army_ground.gd")
 const Data := preload("res://scripts/data.gd")
 const Heraldry := preload("res://scripts/heraldry.gd")
+const Awareness := preload("res://scripts/awareness.gd")  # the season's length: the field keeps its dead a season
 const Fire := preload("res://scripts/fire.gd")
 const F := "battle"  # data/battle.json, its field block
 
@@ -50,6 +51,7 @@ var _over := false
 var _formed := 0.0  # seconds both lines have stood formed
 var play := {}  # in play: {at, face, houses: [victors, beaten], kinds: [[types], [types]], men: [victors, beaten], id}; empty for the test aid
 var _over_at := -1.0
+var _after := false  # the battle is over and gone: its fallen and dropped standards lie on the field (_aftermath)
 # The storm (storm() only): the siege's assault (its breach and town) drives it.
 var ai: Node
 var _queue: Array = []  # besieger regiments sent, in order
@@ -243,7 +245,7 @@ func _process(delta: float) -> void:
 	if ai != null:
 		_storm_tick(delta)
 		return
-	if sides.size() < 2:
+	if sides.size() < 2 or _after:
 		return
 	if clock < 0.0:
 		# Both lines formed: a breath, then the battle.
@@ -267,7 +269,7 @@ func _process(delta: float) -> void:
 		if _over and _over_at < 0.0:
 			_over_at = clock
 		if (_over_at >= 0.0 and clock - _over_at > Data.num(F, "field.play.linger", 60.0)) or clock > Data.num(F, "field.longest", 45.0) + 120.0:
-			queue_free()
+			_aftermath()
 		return
 	_frame(delta)
 	_report -= delta
@@ -282,6 +284,37 @@ func _process(delta: float) -> void:
 				left += int(r["living"])
 			s.append("%s %d men %s" % ["crown" if i == 0 else "foe", left, str(states)])
 		print("BATTLE t=%.0f %s; arrows in flight %d; fps=%d" % [clock, " | ".join(s), _flights.size(), Engine.get_frames_per_second()])
+
+
+## The battle is over and gone (casebook, War and sieges: the field remembers): the living march off (they fade), the
+## fallen lie where they fell, and the standard of every regiment that broke lies in the grass where it broke, for
+## field.play.aftermath seasons; then the field is clear.
+func _aftermath() -> void:
+	_after = true
+	remove_from_group(&"field_battles")  # no longer fighting: field.play.most counts the battles still on
+	for a in sides:
+		for r in (a as Army).rows():
+			if not r.has("alive"):
+				continue
+			var alive: PackedByteArray = r["alive"]
+			var vat: VATMultiMeshInstance3D = r["vat"]
+			for s in alive.size():
+				if alive[s] == 1:
+					vat.fade_out_instance(s, 1.5, _rng.randf_range(0.0, 2.0))
+			if r.get("banner") is Node3D:
+				(r["banner"] as Node3D).visible = false
+			if r.has("broke_at"):
+				var std: Node3D = Heraldry.standard(r.get("house", {}), r.get("colour", Color.GRAY), Data.num(F, "field.play.dropped", 0.45))
+				var at: Vector3 = r["broke_at"]
+				add_child(std)
+				std.global_position = Vector3(at.x, main.terrain.height_at(at.x, at.z) + 0.01, at.z)
+				std.rotation = Vector3(0.0, _rng.randf() * TAU, PI * 0.47)  # fallen over, its pole along the ground
+	for a in sides:
+		var b = (a as Army).banners
+		for n in [b.standard, b.label]:
+			if n is Node3D and is_instance_valid(n):
+				(n as Node3D).visible = false  # the host's standard goes with the living
+	get_tree().create_timer(maxf(1.0, Awareness.season_seconds * Data.num(F, "field.play.aftermath", 1.0))).timeout.connect(queue_free)
 
 
 ## Every regiment's men brought back to their stance after a one-shot, and its fallen kept where they fell while it
@@ -649,6 +682,8 @@ func _charge(r: Dictionary, _dt: float) -> void:
 ## It breaks: turns its back on the enemy, runs; its banner wavers its last.
 func _break(r: Dictionary) -> void:
 	var army: Army = r["army"]
+	if not r.has("broke_at"):
+		r["broke_at"] = (r["node"] as Node3D).global_position  # where its standard falls (_aftermath)
 	army.waver(r, 1.0)
 	Morale.broke(_rows(), r)  # those beside it are shaken: the chain
 	army.turn(r, float(r["yaw"]) + PI)
