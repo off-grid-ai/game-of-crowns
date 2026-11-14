@@ -8,29 +8,44 @@
 import fs from "node:fs";
 import { rng } from "./fresh.js";
 import { greatHouses } from "./realm.js";
+import { TRAITS } from "./characters.js";  // read only at run time (characters.js imports this module too)
 
 const R = JSON.parse(fs.readFileSync(new URL("./data/royals.json", import.meta.url), "utf8"));
 const NAMES = JSON.parse(fs.readFileSync(new URL("./data/first-names.json", import.meta.url), "utf8"));
 const between = (r, [a, b]) => a + Math.floor(r() * (b - a + 1));
 
-// A new royal: a first name no living royal has.
-function born(h, r, woman, age) {
+// A royal's two traits (CK3's traits as heirlooms): a child takes each of its parents' traits by data/royals.json
+// traits.inherit, the rest by chance; the first King and his consort, by chance.
+function traitsOf(r, parents = []) {
+  const out = [];
+  for (const t of parents.flatMap((p) => p?.traits ?? [])) if (out.length < 2 && !out.includes(t) && r() < R.traits.inherit) out.push(t);
+  while (out.length < 2) { const t = TRAITS[Math.floor(r() * TRAITS.length)]; if (!out.includes(t)) out.push(t); }
+  return out;
+}
+
+// A new royal: a first name no living royal has, and traits from the parents.
+function born(h, r, woman, age, parents = []) {
   const taken = new Set([h.king, h.consort, ...h.children, ...h.kin].filter((p) => p?.alive).map((p) => p.name));
   const pool = (woman ? NAMES.female : NAMES.male).filter((n) => !taken.has(n));
   h.seq = (h.seq ?? 0) + 1;
-  return { id: `r${h.seq}`, name: pool[Math.floor(r() * pool.length)] ?? "Edric", age, woman, alive: true };
+  return { id: `r${h.seq}`, name: pool[Math.floor(r() * pool.length)] ?? "Edric", age, woman, alive: true, traits: traitsOf(r, parents) };
 }
 
 // The household, seeded once for a reign from its seed (the same seed, the same family).
 export function of(meta) {
-  if (meta.royals) return meta.royals;
+  if (meta.royals) {
+    // A household from before royals had traits: they are dealt now, once.
+    const r = rng((Number(meta.seed ?? 1066) ^ 0x7a17) >>> 0);
+    for (const p of [meta.royals.king, meta.royals.consort, ...meta.royals.children, ...(meta.royals.kin ?? [])]) if (p && !p.traits) p.traits = traitsOf(r);
+    return meta.royals;
+  }
   const r = rng((Number(meta.seed ?? 1066) ^ 0x5eed) >>> 0);
   const h = { children: [], kin: [], line: [] };
   h.king = born(h, r, false, between(r, R.king.age));
   h.consort = born(h, r, true, h.king.age - between(r, R.consort.younger));
   let age = between(r, R.children.age);
   for (let i = between(r, R.children.count); i > 0 && age >= 0; i--) {
-    h.children.push(born(h, r, r() < 0.5, age));
+    h.children.push(born(h, r, r() < 0.5, age, [h.king, h.consort]));
     age -= between(r, R.children.gap);
   }
   h.since = meta.crownedAt ?? 0;
@@ -76,11 +91,34 @@ function pass(ctx, h, how, turn) {
     ctx.shiftFavour(swing, `the oaths sworn to ${old.name}`);
     ctx.record({ turn, kind: "court", text: `The great houses swore to ${old.name}, not to ${next.name}. Old friends wait to be won again, and old grudges are half forgotten.` });
   }
+  temper(ctx, next, turn);
   if (minor) {
     const cool = Object.fromEntries(greatHouses(ctx.world).map((p) => [p.id, R.minor.favour]));
     ctx.shiftFavour(cool, "a child on the throne");
     ctx.record({ turn, kind: "unrest", text: "A child wears the crown. The great houses take note." });
   }
+}
+
+// The great lords take the new King's measure (CK3's opinion of a like or an unlike ruler): each warms by
+// data/royals.json traits.like for every trait he shares with the King and cools by traits.unlike for every trait the
+// King has that is the opposite of one of his. Said for the warmest and the coldest.
+function temper(ctx, king, turn) {
+  const opp = new Map(R.traits.opposed.flatMap(([a, b]) => [[a, b], [b, a]]));
+  const swing = {};
+  for (const p of greatHouses(ctx.world)) {
+    const lord = ctx.court?.lordOfHouse(p.id);
+    if (!lord) continue;
+    const kt = king.traits ?? [];
+    const d = kt.filter((t) => lord.traits.includes(t)).length * R.traits.like - kt.filter((t) => lord.traits.includes(opp.get(t))).length * R.traits.unlike;
+    if (d) swing[p.id] = d;
+  }
+  if (!Object.keys(swing).length) return;
+  ctx.shiftFavour(swing, `what they make of ${king.name}, ${(king.traits ?? []).join(" and ")}`);
+  const by = Object.entries(swing).sort((a, b) => b[1] - a[1]);
+  const name = (pid) => ctx.court.lordOfHouse(Number(pid))?.name;
+  const [hi, lo] = [by[0], by.at(-1)];
+  const words = [hi[1] > 0 ? `${name(hi[0])} is pleased` : null, lo[1] < 0 ? `${name(lo[0])} is not` : null].filter(Boolean);
+  if (words.length) ctx.record({ turn, kind: "court", text: `The lords take the measure of ${king.name}, ${(king.traits ?? []).join(" and ")}. ${words.join("; ")}.` });
 }
 
 // A year turns (season.js, at the year's end): the royals age; the young may die; children are born; the King may die.
@@ -100,7 +138,7 @@ export function year(ctx, turn) {
   }
   const c = h.consort;
   if (c?.alive && c.age <= R.birth.until && h.children.length < R.birth.most && r() < R.birth.chance) {
-    const k = born(h, r, r() < 0.5, 0);
+    const k = born(h, r, r() < 0.5, 0, [h.king, c]);
     h.children.push(k);
     ctx.record({ turn, kind: "birth", text: `${h.king.woman ? `Queen ${h.king.name}` : "The Queen"} is delivered of a ${k.woman ? "daughter" : "son"}, ${k.name}. The bells ring in Kingsmere.` });
   }
@@ -131,7 +169,7 @@ export const isRegency = (h) => Boolean(h?.king && h.king.age < R.majority);
 export function view(meta) {
   const h = meta?.royals;
   if (!h) return null;
-  const who = (p) => p && { id: p.id, name: p.name, age: p.age, woman: p.woman };
+  const who = (p) => p && { id: p.id, name: p.name, age: p.age, woman: p.woman, traits: p.traits ?? [] };
   const next = heir(h);
   return {
     king: who(h.king), consort: h.consort?.alive ? who(h.consort) : null, heir: who(next), match: next?.spouse ? { name: next.spouse.name, house: next.spouse.house } : null,

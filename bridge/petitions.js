@@ -18,7 +18,7 @@ export const ANSWERS = {
     const k = this.people[p.child];
     const prince = this.royals?.() && royalHeir(this.royals());
     if (option === "wed" && k?.alive && !k.spouse && prince && !prince.spouse) {
-      prince.spouse = { id: `w${k.id}`, name: k.name, age: k.age, woman: k.gender === "female", alive: true, house: c.house };
+      prince.spouse = { id: `w${k.id}`, name: k.name, age: k.age, woman: k.gender === "female", alive: true, house: c.house, traits: [...(k.traits ?? [])] };
       k.spouse = "crown";
       this.remember(c.id, `My ${k.gender === "female" ? "daughter" : "son"} ${k.name} wed the King's heir.`);
       this.save(k);

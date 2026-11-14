@@ -10,6 +10,7 @@
  "law": "male-preference",
  "majority": 16,
  "abdicate": { "age": 16 },
+ "traits": { "_": "The royals' traits (royals.js; CK3's traits as heirlooms): a child takes each parent's trait by inherit, the rest by chance (characters.js TRAITS); a consort from a great house brings its own. At a crowning each great lord warms by like for every trait he shares with the new King and cools by unlike for every trait of the King's that is the opposite of his (opposed pairs).", "inherit": 0.5, "like": 6, "unlike": 6, "opposed": [["brave", "craven"], ["honourable", "cunning"], ["generous", "greedy"], ["patient", "wrathful"], ["content", "ambitious"], ["just", "vengeful"], ["pious", "cunning"]] },
  "funeral": { "_": "A new King's crowning (death or abdication): each great house's favour moves pull of the way toward to (oaths were sworn to the old King; CK2's and Old World's succession).", "to": 42, "pull": 0.35 },
  "minor": { "_": "A King under majority: every great house cools by favour once at the crowning; while the regency lasts a rising weighs rising more in a cold lord's choice (characters.js rebel), and claim more again for a lord who wants the crown.", "favour": -6, "rising": 20, "claim": 20 },
  "match": { "_": "A great lord offers his child for the heir's hand at court (characters.js royalwed): both of age; wed binds his house and cools the rest, refuse cools his.", "age": 16, "weight": 3, "wed": { "him": 20, "others": -3 }, "refuse": { "him": -8 } },
