@@ -22,6 +22,7 @@ import { BANDS } from "./favour.js";
 import { calendar } from "./calendar.js";
 import * as chron from "./chronicles.js";
 import * as kingDeeds from "./ledger.js";
+import { think } from "./claude.js";
 
 // The King's ledger (ledger.js): each deed he does goes in, and when it changes
 // the name the realm gives him, the ticker says which deed tipped it.
@@ -480,6 +481,26 @@ export function endReign(ctx, why, outcome = "completed") {
   record({ turn: world?.turn ?? 0, kind: "reign_end", text: `${why} So ends the reign of ${s.title}. ${s.verdict} (Score ${s.score}.)` });
   setPaused(true);
   send("set timeout 0");
+  epitaphLines(meta);
+}
+
+// The epitaph's lines (Loop's ending card, reign_cards.gd: epitaph.lines, then its first three choices): one or two
+// lines the local model writes from the epitaph's facts, in the chronicle's voice, kept in meta.epitaph.lines. While
+// the model is away there are none, and the card shows nothing in their place.
+async function epitaphLines(meta) {
+  const e = meta.epitaph;
+  if (!e) return;
+  const facts = [`${e.title}${e.why ? `, ${e.why}` : ""}.`, e.verdict, `He reigned ${e.years ? `${e.years} years` : `${e.seasons} seasons`}, from ${e.from} to ${e.to}.`,
+    e.choices?.length ? `What he chose: ${e.choices.slice(0, 3).join("; ")}.` : "",
+    e.loved ? `${e.loved.house} loved him best${e.loved.cause ? `, for ${e.loved.cause}` : ""}.` : "",
+    e.hated ? `${e.hated.house} hated him most${e.hated.cause ? `, for ${e.hated.cause}` : ""}.` : ""].filter(Boolean).join(" ");
+  try {
+    const out = await think(
+      "You write the epitaph of a medieval king for the realm's chronicle: plain, dry, a little wry, no modern words, no numbers. One or two short sentences, only the lines.",
+      `What is known of him: ${facts}\nWrite his epitaph.`, "cold", 90);
+    const lines = (String(out ?? "").replace(/^["']|["']$/g, "").match(/[^.!?]+[.!?]+/g) ?? []).map((l) => l.trim()).filter((l) => l.length > 8 && l.length < 200).slice(0, 2);
+    if (lines.length && meta.epitaph === e) { e.lines = lines; chron.saveMeta(meta); }
+  } catch { /* the model is away: no lines */ }
 }
 
 // What the reign's epitaph is written from (Loop's ending: the local model writes the lines, these are its facts;
@@ -561,7 +582,7 @@ export function reignInfo(ctx) {
     id: meta.id, name: meta.name, test: chron.isTest(meta), scenario: meta.scenario, status: meta.status, paused, minutes: meta.minutes,
     elapsedMs: meta.elapsedMs, remainingMs: meta.minutes > 0 ? Math.max(0, meta.minutes * 60000 - meta.elapsedMs) : null,
     score: meta.score, verdict: meta.verdict, title: meta.title, why: meta.why ?? null, outcome: meta.outcome, ended: meta.endedAt,
-    epilogue: meta.epilogue ?? null, lastAct: meta.lastAct ?? null, interlude: meta.interlude && !meta.interlude.seen ? meta.interlude : null, ambitions: meta.ambitions ?? null, aim: winterAim(meta, world) ?? (aim ? { n: Math.min(meta.ladder.i, LADDER.length) + (meta.ladder.n ?? 0) + 1, of: meta.ladder.i < LADDER.length ? LADDER.length : null, text: aim.text, how: aim.how, progress: aimProgress(ctx, aim), at: aimPlace(ctx, aim) } : null), aimDone: meta.ladder?.just && Date.now() - meta.ladder.just.at < 8000 ? meta.ladder.just.text : null, readings: meta.status === "running" ? readings(ctx) : null,
+    epilogue: meta.epilogue ?? null, epitaph: meta.epitaph ?? null, lastAct: meta.lastAct ?? null, interlude: meta.interlude && !meta.interlude.seen ? meta.interlude : null, ambitions: meta.ambitions ?? null, aim: winterAim(meta, world) ?? (aim ? { n: Math.min(meta.ladder.i, LADDER.length) + (meta.ladder.n ?? 0) + 1, of: meta.ladder.i < LADDER.length ? LADDER.length : null, text: aim.text, how: aim.how, progress: aimProgress(ctx, aim), at: aimPlace(ctx, aim) } : null), aimDone: meta.ladder?.just && Date.now() - meta.ladder.just.at < 8000 ? meta.ladder.just.text : null, readings: meta.status === "running" ? readings(ctx) : null,
     souls: world?.cities?.reduce((t, c) => t + soulsOf(c.size), 0) ?? 0,
     next,
     seals: Seals.view(meta),
