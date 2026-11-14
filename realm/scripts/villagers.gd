@@ -346,6 +346,8 @@ func _spawn(id: int) -> void:
 		var agents: Dictionary = preload("res://scripts/data.gd").value("crowd", "square_agents.callings", {}) if TownLife.square_agents_on() and not busy.is_empty() else {}
 		if not agents.is_empty() and rng.randf() < float(preload("res://scripts/data.gd").num("crowd", "square_agents.share", 0.6)):
 			calling = _weighed_key(agents, rng)  # the crown's square's errands: shoppers, water carriers, porters (crowd.json)
+		if calling in ["market", "idler", "crafter"] and TownLife.fields_season() and rng.randf() < float(preload("res://scripts/data.gd").num("towns", "fieldwork.to_fields", 0.4)):
+			calling = "farmer"  # sowing or harvest: they go out to help in the fields (towns.json fieldwork)
 		if i < jobs.size():
 			calling = jobs[i]
 		var station := "peasant" if calling in ["farmer", "carter", "groom", "porter"] or (calling == "water" and rng.randf() < 0.5) else ("clergy" if calling == "pious" and rng.randf() < 0.6 else ("noble" if calling == "gentry" else "townsfolk"))
