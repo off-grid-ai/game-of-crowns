@@ -71,12 +71,11 @@ func build() -> Array:
 	_woodland(meshes, placed, rng)
 	for key in placed:
 		var parts: PackedStringArray = key.split(":")
-		if parts[0] == "rock":
-			batches.append(_scatter(meshes[parts[0]][int(parts[1])], placed[key]))
-			continue
-		# Grass, flowers and bushes in patches of the map, each drawn only near the
+		# Grass, flowers, bushes and rocks in patches of the map, each drawn only near the
 		# camera: one batch for the whole realm was drawn everywhere at once,
-		# eight million triangles of grass nobody could see.
+		# eight million triangles of grass nobody could see (and the rocks, one batch each,
+		# ~3.8M triangles at full detail, cyclevis fps: one realm-wide box is never culled nor
+		# given a lower detail level). Rocks stand as far as bushes.
 		var patches := {}
 		for t: Transform3D in placed[key]:
 			var c := Vector2i(floori(t.origin.x / VEG_PATCH), floori(t.origin.z / VEG_PATCH))
