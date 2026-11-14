@@ -743,7 +743,8 @@ var _tuft_meshes: Array = []
 const TUFTS := ["meshy/nt_grass_clump/nt_grass_clump.glb", "meshy/nt_flowers/nt_flowers.glb"]  # under assets/: the nature set's grass clump (0.5 m at scale 1) and wildflowers (0.4 m)
 static var TUFT_ODDS := PackedFloat32Array(preload("res://scripts/data.gd").value("countryside", "tuft_odds", [0.88, 0.12]))  # grass, wildflowers (countryside.json; g33: the town's grass one flat green, the target's meadows full of flowers)
 static var TUFT_REACH: float = preload("res://scripts/data.gd").num("countryside", "tuft_reach", 22.0)  # drawn only this near the camera
-const PLANT_WIND := preload("res://scripts/plant_wind.gdshader")
+const PLANT_WIND := preload("res://scripts/plant_wind.gdshader")  # cut out by the texture's alpha (cards)
+const PLANT_WIND_SOLID := preload("res://scripts/plant_wind_solid.gdshader")  # whole meshes: no alpha test, early depth culls hidden grass
 
 
 ## A plant mesh that bends in the wind: each surface keeps its own texture and colour.
@@ -752,11 +753,13 @@ static func _windy(mesh: ArrayMesh, bury := -1.0) -> ArrayMesh:
 	for i in out.get_surface_count():
 		var src := out.surface_get_material(i) as BaseMaterial3D
 		var m := ShaderMaterial.new()
-		m.shader = PLANT_WIND
+		var cut := src != null and src.transparency == BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
+		m.shader = PLANT_WIND if cut else PLANT_WIND_SOLID
 		if src:
 			m.set_shader_parameter("albedo_tex", src.albedo_texture)
 			m.set_shader_parameter("albedo_color", src.albedo_color)
-			m.set_shader_parameter("alpha_cut", src.alpha_scissor_threshold if src.transparency == BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR else 0.0)
+			if cut:
+				m.set_shader_parameter("alpha_cut", src.alpha_scissor_threshold)
 		if bury >= 0.0:
 			m.set_shader_parameter("bury", bury)  # under snow: this share of the plants is gone (plant_wind.gdshader)
 		out.surface_set_material(i, m)

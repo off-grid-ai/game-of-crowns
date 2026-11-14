@@ -10,6 +10,6 @@
     "cut": 0.32,
     "reach": 25.0
   },
-  "tuft_reach": 30.0,
+  "tuft_reach": 20.0,
   "tuft_odds": [0.72, 0.28]
 }
