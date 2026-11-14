@@ -73,7 +73,8 @@ func _paginate(all: Array) -> void:
 		var season: String = String(ui.season_of(turn)).get_slice(" ", 0)
 		var seq := int(e.get("seq", -1))
 		var mark := "[color=#c9a45c]◆[/color]" if _kept.has(seq) else "[color=#4a443c]◇[/color]"
-		page.append("[url=keep:%d]%s[/url] [font_size=11][color=#8f8a80]%s[/color][/font_size]  [color=%s]%s[/color]" % [seq, mark, season, tone, String(e.get("text", ""))])
+		var pic := (" [url=pic:%d][color=#c9a45c]▣[/color][/url]" % seq) if FileAccess.file_exists(_picture(seq)) else ""
+		page.append("[url=keep:%d]%s[/url]%s [font_size=11][color=#8f8a80]%s[/color][/font_size]  [color=%s]%s[/color]" % [seq, mark, pic, season, tone, String(e.get("text", ""))])
 		if page.size() >= per:
 			_pages.append(page)
 			page = []
@@ -123,7 +124,7 @@ func _build() -> void:
 	keep_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	keep_row.add_theme_constant_override("separation", T.GAP_WIDE)
 	v.add_child(keep_row)
-	keep_row.add_child(T.label(String(_w("keep_hint", "Click ◇ to keep a moment."))))
+	keep_row.add_child(T.label(String(_w("keep_hint", "Click ◇ to keep a moment.")).replace("{key}", preload("res://scripts/keys.gd").label("keep_moment").get_slice(" / ", 0))))
 	var only: Button = ui.btn(String(_w("only_kept", "Only what I kept")))
 	only.toggle_mode = true
 	only.toggled.connect(func(on):
@@ -133,6 +134,9 @@ func _build() -> void:
 		_show())
 	keep_row.add_child(only)
 	keep_row.add_child(ui.btn(String(_w("copy", "Copy the tale")), _copy_tale))
+	keep_row.add_child(ui.btn(String(_w("pictures", "Show the pictures")), func():
+		DirAccess.make_dir_recursive_absolute(_pictures())
+		OS.shell_open(ProjectSettings.globalize_path(_pictures()))))
 	_copy_note = T.label("")
 	keep_row.add_child(_copy_note)
 
@@ -154,6 +158,9 @@ func _page() -> RichTextLabel:
 ## A line's mark clicked: kept, or let go.
 func _on_meta(meta) -> void:
 	var m := String(meta)
+	if m.begins_with("pic:"):
+		_show_picture(int(m.get_slice(":", 1)))
+		return
 	if not m.begins_with("keep:"):
 		return
 	var seq := int(m.get_slice(":", 1))
@@ -167,6 +174,55 @@ func _on_meta(meta) -> void:
 	_paginate(_lines_shown())
 	_at = clampi(at, 0, maxi(0, (_pages.size() - 1) / 2 * 2))
 	_show()
+
+
+# --- moments kept as pictures (casebook, Retelling is the product: Boatmurdered's diary of screenshots) ------------
+## The reign's kept pictures, one per chronicle line, in the King's own folder (Show the pictures opens it).
+func _pictures() -> String:
+	return "user://moments/%s" % (_reign_id() if _reign_id() != "" else "realm")
+
+
+func _picture(seq: int) -> String:
+	return "%s/%d.png" % [_pictures(), seq]
+
+
+## The keep_moment key (keys.gd): the screen as it is now, kept beside the chronicle's latest line, and that line kept.
+func keep_moment() -> void:
+	var all: Array = ui.chronicle.entries
+	if all.is_empty():
+		return
+	var seq := int(all[-1].get("seq", -1))
+	var img := ui.get_viewport().get_texture().get_image()
+	DirAccess.make_dir_recursive_absolute(_pictures())
+	if img == null or img.save_png(_picture(seq)) != OK:
+		ui.heard.emit("error")
+		return
+	_load_kept()
+	_kept[seq] = true
+	_save_kept()
+	ui.heard.emit("quill")
+	ui.toast(String(_w("kept_moment", "Kept for the book: {text}")).replace("{text}", String(all[-1].get("text", "")).left(90)))
+
+
+func _show_picture(seq: int) -> void:
+	var img := Image.load_from_file(ProjectSettings.globalize_path(_picture(seq)))
+	if img == null:
+		return
+	var c: PanelContainer = ui.glass_panel()
+	c.set_anchors_preset(Control.PRESET_CENTER)
+	c.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	c.grow_vertical = Control.GROW_DIRECTION_BOTH
+	ui.card(c)
+	var v := VBoxContainer.new()
+	c.add_child(v)
+	var t := TextureRect.new()
+	t.texture = ImageTexture.create_from_image(img)
+	t.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	t.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT
+	t.custom_minimum_size = Vector2(960, 540)
+	v.add_child(t)
+	v.add_child(ui.btn(String(_w("picture_close", "Back to the book")), func(): c.queue_free()))
+	ui.ease_in(c)
 
 
 func _lines_shown() -> Array:

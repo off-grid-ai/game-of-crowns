@@ -29,9 +29,12 @@
    "A grudge outlives the King who earned it.",
    "Walls hold a town; bread holds its people. A siege is won by whichever runs out last."
   ] },
- "book": { "_": "The book of the reign (chronicle_book.gd), from the bar: its title and buttons, a chapter's head ({year}), the folio line ({a}, {b}, {n}), the line on an empty book; per_page: lines a page holds; keep_hint, only_kept, copy, copied, copy_none, tale_head ({name}): the kept moments and the copied tale.",
+ "book": { "_": "The book of the reign (chronicle_book.gd), from the bar: its title and buttons, a chapter's head ({year}), the folio line ({a}, {b}, {n}), the line on an empty book; per_page: lines a page holds; keep_hint, only_kept, copy, copied, copy_none, tale_head ({name}): the kept moments and the copied tale; pictures, picture_close, kept_moment ({text}): the moments kept as pictures (the keep_moment key, a ▣ beside the line).",
   "title": "The book of the reign", "close": "Close the book", "back": "Turn back", "on": "Turn on",
   "chapter": "The year {year}", "folio": "Pages {a} and {b} of {n}", "empty": "Nothing is written yet.", "per_page": 12,
-  "keep_hint": "Click ◇ to keep a moment.", "only_kept": "Only what I kept", "copy": "Copy the tale", "copied": "Copied, to share as you like.",
+  "keep_hint": "Click ◇ to keep a moment, or press {key} in the realm to keep a picture of it.",
+  "pictures": "Show the pictures",
+  "picture_close": "Back to the book",
+  "kept_moment": "Kept for the book: {text}", "only_kept": "Only what I kept", "copy": "Copy the tale", "copied": "Copied, to share as you like.",
   "copy_none": "Keep a moment first.", "tale_head": "The reign of {name}, as the King kept it" }
 }

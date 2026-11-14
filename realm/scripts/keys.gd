@@ -27,6 +27,7 @@ const ACTIONS := [
 	["event_back", "Back to where you were", "Camera", [KEY_HOME]],
 	["houses", "The great houses", "The realm", [KEY_H]],
 	["chronicle", "The chronicle", "The realm", [KEY_C]],
+	["keep_moment", "Keep this moment for the book of the reign", "The realm", [KEY_X]],
 	["ledger", "The ledger", "The realm", [KEY_L]],
 	["court", "The court", "The realm", [KEY_K]],
 	["counsel", "The court (the Hand speaks there)", "The realm", [KEY_J]],

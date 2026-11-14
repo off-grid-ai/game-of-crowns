@@ -489,6 +489,8 @@ func _unhandled_key_input(event: InputEvent) -> void:
 	elif event.is_action_pressed(&"chronicle"):
 		_chron_btn.button_pressed = not _chron_btn.button_pressed
 		_chron_panel.visible = _chron_btn.button_pressed
+	elif event.is_action_pressed(&"keep_moment"):
+		book.keep_moment()
 	elif event.is_action_pressed(&"home"):
 		home_view.emit()
 	elif event.is_action_pressed(&"last_event"):
