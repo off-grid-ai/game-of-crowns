@@ -257,7 +257,17 @@ func eye_at(at: Vector3, yaw: float, tilt: float, dist: float) -> Vector3:
 func above_at(dist: float, tilt_: float, top := -1.0) -> float:
 	var far := max_distance if top < 0.0 else top
 	var t := 1.0 if dist >= far else clampf((dist - min_distance) / maxf(far - min_distance, 0.001), 0.0, 1.0)
-	return clampf(lerpf(30.0, 55.0, pow(t, 0.7)) + tilt_, 8.0, 89.0)
+	return clampf(lerpf(PITCH_NEAR, PITCH_FAR, pow(t, 0.7)) + tilt_, least_pitch(), 89.0)
+
+
+## The view looks down from about 30° close in to 55° over the whole realm (camera.json rig.pitch), and never
+## so shallow that the horizon comes into frame: the frame's top edge stays rig.pitch.top_below degrees under
+## it, whatever the tilt, a film or the roof-clearing asks (Warcraft III's and Age of Empires' fixed downward look).
+static var PITCH_NEAR: float = preload("res://scripts/data.gd").num("camera", "rig.pitch.near", 30.0)
+static var PITCH_FAR: float = preload("res://scripts/data.gd").num("camera", "rig.pitch.far", 55.0)
+static var TOP_BELOW: float = preload("res://scripts/data.gd").num("camera", "rig.pitch.top_below", 6.0)
+func least_pitch() -> float:
+	return (cam.fov if cam else 45.0) * 0.5 + TOP_BELOW
 
 
 ## The lens's place from the point looked at, held oblique: past OBLIQUE degrees down it steps back along its line
@@ -1161,6 +1171,12 @@ func apply() -> void:
 	if pos.y - look.y > most_rise and flat_now > 0.001:
 		pos.y = look.y + most_rise
 	cam.fov = lerpf(45.0, 62.0, ground_view)  # wider on the ground, as a person sees
+	# Last: no sky. Whatever moved the lens (a tilt, the roofs, the leaves, a film's step), its look stays at least
+	# least_pitch down, so the land fills the frame to its top edge; only a film's street view (ground_view) looks across.
+	var least := deg_to_rad(lerpf(least_pitch(), level, ground_view / 0.85))
+	flat_now = Vector2(pos.x - look.x, pos.z - look.z).length()
+	if flat_now > 0.001 and pos.y - look.y < flat_now * tan(least):
+		pos.y = look.y + flat_now * tan(least)
 	cam.global_position = pos
 	cam.look_at(look + Vector3(0, distance * 0.02 * (1.0 - ground_view), 0), Vector3.UP)
 	if CLEAR:
