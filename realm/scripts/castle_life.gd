@@ -21,6 +21,7 @@ const S := Units.M  # world units a metre
 var main: Node
 const ViewTier := preload("res://scripts/view_tier.gd")
 const Bulk := preload("res://scripts/bulk.gd")  # the one drawer of repeated small things: the outcrop
+const People := preload("res://scripts/people.gd")  # SEEN_TO: past it no person is drawn
 var _done := {}  # castle node -> its dressing {torches: [lights and flames]}
 var _rng := RandomNumberGenerator.new()
 
@@ -86,10 +87,17 @@ func _tick() -> void:
 		var d: Dictionary = _done[c]
 		if not d.has("xf"):
 			continue  # not our builder's castle
-		var tier := ViewTier.of(c.global_position, float(d["sp"].get("w", 18)) * Builder.CELL * 0.5 * float(d["scale"]))
+		var radius := float(d["sp"].get("w", 18)) * Builder.CELL * 0.5 * float(d["scale"])
+		var tier := ViewTier.of(c.global_position, radius)
 		if tier == ViewTier.OFF:
 			continue
 		var want := 2 if tier == ViewTier.NEAR else (1 if tier == ViewTier.MID else 0)
+		# Nobody where nobody can be drawn: the castle further than People.SEEN_TO from the lens (supervisor's call, as
+		# villagers.gd's crowds; 4 units of margin before they go, so a small pan doesn't make and unmake them).
+		var cam := get_viewport().get_camera_3d()
+		var off := (cam.global_position.distance_to(c.global_position) - radius - People.SEEN_TO) if cam else 0.0
+		if off > (4.0 if d.has("folk") else 0.0):
+			want = 0
 		var has := int(d["folk"]["level"]) if d.has("folk") else 0
 		if want == has:
 			continue

@@ -246,16 +246,24 @@ func _at_tier(id: int, tier: int) -> void:
 			mind.active = tier == ViewTier.NEAR
 
 
+const SEEN_MARGIN := 4.0  # world units past People.SEEN_TO before a town's crowd is unmade (_refresh)
+
+
 func _refresh() -> void:
 	_rain_pace = Data.num("towns", "wet.hurry", 1.25) if TownLife.wet() else 1.0  # rain: those out hurry (towns.json wet)
+	var cam := get_viewport().get_camera_3d()
 	for id in towns.towns.keys():
 		var node: Node3D = towns.towns[id]["node"]
 		var tier := ViewTier.of(node.global_position, TownLife.centre_reach(node))
 		var was := int(_tier.get(id, -1))
 		_tier[id] = tier
-		if (tier == ViewTier.NEAR or tier == ViewTier.MID) and not crowds.has(id) and not _spawning.has(id):
+		# A crowd only where a person can be drawn: some of the town within People.SEEN_TO of the lens (supervisor's
+		# call, Mac delegated: past it nobody was drawn, yet a whole crowd of skeletons stood, 33-49k nodes). Made at
+		# that reach, unmade SEEN_MARGIN past it so a small pan doesn't make and unmake one.
+		var off := (cam.global_position.distance_to(node.global_position) - TownLife.centre_reach(node) - AnimLOD.People.SEEN_TO) if cam else 0.0
+		if (tier == ViewTier.NEAR or tier == ViewTier.MID) and off <= 0.0 and not crowds.has(id) and not _spawning.has(id):
 			_spawn(id)
-		elif tier == ViewTier.FAR and crowds.has(id):
+		elif (tier == ViewTier.FAR or off > SEEN_MARGIN) and crowds.has(id):
 			for a in crowds[id]:
 				a["node"].queue_free()
 				if a.has("agent"):
