@@ -56,6 +56,6 @@
     "hs_cottage_tile": {"src": "houses/cottage_tile/cottage_tile.glb", "replaces": ["house_poor", "house_burgher"], "judged": "judged: passed in the houses set turntable (docs/art/houses/sheet.jpg, 2026-11-12)", "height_m": 8.0, "tris": 25000, "mask": {"hues": [[340, 25]], "sat_min": 0.35, "val_min": 0.2, "up_min": 0.25}},
     "hs_longhouse": {"src": "houses/longhouse/longhouse.glb", "replaces": ["house_burgher"], "judged": "judged: passed in the houses set turntable (docs/art/houses/sheet.jpg, 2026-11-12)", "height_m": 6.0, "tris": 25000, "mask": {"hues": [], "sat_min": 1.1, "val_min": 1.1, "up_min": -1.0}},
     "hs_townhouse_narrow": {"src": "houses/townhouse_narrow/townhouse_narrow.glb", "replaces": ["house_rich", "house_corner"], "judged": "judged: passed in the houses set turntable (docs/art/houses/sheet.jpg, 2026-11-12)", "height_m": 12.0, "tris": 25000, "mask": {"hues": [[340, 25]], "sat_min": 0.35, "val_min": 0.2, "up_min": 0.25}},
-    "hs_workshop": {"src": "houses/workshop/workshop.glb", "replaces": "", "judged": "judged: passed in the houses set turntable (docs/art/houses/sheet.jpg, 2026-11-12)", "height_m": 6.0, "tris": 25000, "mask": {"hues": [[340, 25]], "sat_min": 0.35, "val_min": 0.2, "up_min": 0.25}}
+    "hs_workshop": {"src": "houses/workshop/workshop.glb", "replaces": ["house_burgher"], "judged": "judged: passed in the houses set turntable (docs/art/houses/sheet.jpg, 2026-11-12)", "height_m": 6.0, "tris": 25000, "mask": {"hues": [[340, 25]], "sat_min": 0.35, "val_min": 0.2, "up_min": 0.25}}
   }
 }
