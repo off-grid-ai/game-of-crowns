@@ -11,6 +11,8 @@
     "watermill": [["props/Bag", 1.8, 2.8, 0, 1.0], ["props/Bag", 2.2, 3.0, 40, 1.0], ["props/Crate_Wooden", -1.6, 2.6, 10, 1.0], ["props/Barrel", -2.1, 2.2, 0, 1.0]],
     "granary": [["props/Bag", -2.2, 2.4, 0, 1.0], ["props/Bag", -1.9, 2.7, 30, 1.0], ["props/Bag", -2.5, 2.8, 70, 1.0], ["props/FarmCrate_Empty", 2.6, 2.3, 10, 1.0], ["props/Barrel", 2.9, 1.6, 0, 1.0]],
     "bakery": [["props/Bag", 1.8, 2.2, 0, 1.0], ["props/Bag", 2.1, 2.5, 50, 1.0], ["props/Barrel", -1.9, 2.3, 0, 1.0], ["props/Table_Large", -2.4, 3.0, 90, 0.8]],
+    "cooper": [["props/Barrel", 1.9, 2.3, 0, 1.0], ["props/Barrel", 2.4, 2.0, 0, 1.0], ["props/Barrel_Holder", -2.0, 2.4, 0, 1.0], ["props/Bucket_Wooden_1", 1.5, 2.8, 20, 1.0], ["props/Workbench", -2.6, 1.6, 90, 1.0]],
+    "weaver": [["props/Workbench", -2.2, 2.0, 90, 1.0], ["props/Rope_1", 1.8, 2.4, 0, 1.0], ["props/Rope_3", 2.2, 2.0, 30, 1.0], ["props/Bag", 2.6, 2.6, 0, 1.0], ["props/Shelf_Simple", -2.8, 1.4, 0, 1.0]],
     "barn": [["village/Prop_Wagon", 3.2, 3.6, 70, 1.0], ["props/FarmCrate_Empty", -2.4, 3.0, 10, 1.0], ["props/Bucket_Wooden_1", -2.0, 3.4, 0, 1.0], ["props/Pickaxe_Bronze", 2.4, 2.6, 80, 1.0]],
     "tannery": [["props/Peg_Rack", -2.6, 2.2, 0, 1.0], ["props/Barrel", 2.6, 2.7, 0, 1.0], ["props/Barrel_Holder", 2.9, 1.9, 0, 1.0], ["props/Rope_1", -1.9, 2.9, 0, 1.0], ["props/Bucket_Wooden_1", 1.8, 3.2, 0, 1.0]],
     "dyer": [["props/Peg_Rack", 2.6, 2.2, 0, 1.0], ["props/Barrel", -2.6, 2.7, 0, 1.0], ["props/Pot_1", -2.0, 3.1, 0, 1.0], ["props/Bucket_Wooden_1", 1.9, 3.1, 0, 1.0]],

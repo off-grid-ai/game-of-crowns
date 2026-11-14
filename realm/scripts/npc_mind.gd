@@ -645,6 +645,22 @@ static func post_activities(post: String) -> Array:
 				seq("rest", [run(["Sleeping_Idle"], 1, 1), once("Getting_Up"), brk(["Arm_Stretching", "Weight_Shift"])]),
 				seq("wait", [run(["Defeated", "Looking_Around", "Thinking"], 1, 2), step(0.15), brk(["Crying", "Bored"])]),
 			]
+		# --- the town's trades at their doors (town_scenes.json baker, cooper, weaver; 01-town: trades seen at work) ---
+		"baker":  # loaves out to the table by the door, the oven seen to
+			return [
+				seq("loaves", [once("PickUp_Table"), step(0.15), once("PickUp_Table"), run(["Pointing_Forward", "Idle_Talking"], 1, 2), brk(REST)]),
+				seq("oven", [run(["Interact"], 1, 2), once("Wiping_Sweat"), brk(LOOK)]),
+			]
+		"cooper":  # hoops driven on a barrel at the door
+			return [
+				seq("hoop", [run(["Hammer_Swing"], 2, 4), brk(["Wiping_Sweat", "Weight_Shift"])]),
+				seq("stave", [run(["Fixing_Kneeling"], 1, 2), get_up(), once("PickUp_Table"), brk(REST)]),
+			]
+		"weaver":  # at the bench by the door, the yarn and the cloth
+			return [
+				seq("weave", [run(["Interact"], 2, 3), once("Looking_Around"), brk(["Weight_Shift"])]),
+				seq("yarn", [once("PickUp_Table"), step(0.1), run(["Interact"], 1, 2), brk(REST)]),
+			]
 		"revel":  # round the feast's bonfire
 			return [
 				seq("dance", [run(["Dance"], 2, 4), brk(["Laughing", "Cheering"])]),
