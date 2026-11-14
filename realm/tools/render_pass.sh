@@ -49,13 +49,19 @@
 #   raid     men without banners at the crown's richest town, then one walking off to wild land (Wealth draws the raid;
 #            03-army for the field): staged (bridge /test/stage {raid}), framed at the town (RAID_WAIT, 300 s) and again
 #            once one is on the road out after the raid's seasons (RAID_LEAVE, 1200 s); each skipped and said on time-out
+#   opening  the reign's first council (the new King, the realm as he finds it, his focus; CK3's opening) and his sheet
+#   menu     the title's main menu with Continue, then the new-reign flow's first page (CK3's main menu)
+#   settings the settings screen (Total War: Warhammer III's settings)
+#   lord     a great house's lord on his sheet: nature, toward the King, holds (CK3's character window)
+#   reign_end the reign's end: the clock run out (POST /test/clock reign_end), its telling, then the end card with what
+#            the next King inherits (CK3's death screen). Last of all: the reign is over after it.
 set -u
 R=${RENDER_PASS_R:-$(cd "$(dirname "$0")/../.." && pwd)}  # the shared tree (its copy in $OUT inherits it)
 STAMP=$(date +%H%M)
 OUT=${OUT:-/tmp/goc-pass/$STAMP}
 PORT=${PORT:-8789}; FC=${FC:-5558}
 API=localhost:$PORT
-ONLY=${ONLY:-"town landuse realm midzoom muster cavalry battle siege command face walls breach seasons winter host5 castle street cities court inn sack crossing raid"}
+ONLY=${ONLY:-"town landuse realm midzoom muster cavalry battle siege command face walls breach seasons winter host5 castle street cities court inn sack crossing raid opening menu settings lord reign_end"}
 # The pass runs from its own copy of this script: zsh reads a script as it runs, so a commit to it mid-pass broke the
 # first full pass (2159: 'parse error near fi' at line 229, ten lines added above it at 22:00 while it ran).
 if [ -z "${RENDER_PASS_SELF:-}" ]; then
@@ -616,6 +622,37 @@ if r.get('ok'): print(r['city'], r['x'], r['y'], r['name'])" 2>/dev/null)
     cp $FCLOG $OUT/raid.freeciv.log
     grep -E "RAID|BANNERS|[Bb]arbarian|destroyed|killed|lost" $FCLOG | tail -40 | while read -r l; do say "raid freeciv: $l"; done
   fi
+fi
+# The King's own screens (Loop: the opening, the menu, settings, a lord's sheet, the reign's end): no target painting,
+# each against its named game, so the frame stands alone in the index (solo). autoplay show opens each as a player would.
+solo() { [ -f "$2" ] && echo "| $1 | ${3:-} | ${2#$OUT/} | |" >> $OUT/side/INDEX.md || say "solo $1: no frame ($2)"; }
+if want opening; then
+  { print "wait 30"; print "show council"; print "wait 2"; print "snap council ui"; print "key Escape"; print "show royal"; print "wait 2"; print "snap royal ui"; print "look end"; } > $OUT/opening.play
+  shot opening 1500 film $SW
+  solo opening $OUT/frames/opening/council.png "CK3's opening: ruler, situation, focus"
+  solo opening_royal $OUT/frames/opening/royal.png "CK3's ruler window"
+fi
+if want menu; then
+  { print "wait 30"; print "show menu"; print "wait 2"; print "snap menu ui"; print "show new"; print "wait 2"; print "snap new ui"; print "look end"; } > $OUT/menu.play
+  shot menu 1500 film $SW
+  solo menu $OUT/frames/menu/menu.png "CK3's main menu"
+  solo menu_new $OUT/frames/menu/new.png "CK3's new game: bookmark, ruler"
+fi
+if want settings; then
+  { print "wait 30"; print "show settings"; print "wait 2"; print "snap settings ui"; print "look end"; } > $OUT/settings.play
+  shot settings 1500 film $SW
+  solo settings $OUT/frames/settings/settings.png "Total War: Warhammer III's settings"
+fi
+if want lord; then
+  { print "wait 30"; print "show lord"; print "wait 4"; print "snap lord ui"; print "look end"; } > $OUT/lord.play
+  shot lord 1500 film $SW
+  solo lord $OUT/frames/lord/lord.png "CK3's character window"
+fi
+if want reign_end; then
+  curl -s -m 20 -o /dev/null -X POST -H 'X-Test: 1' $API/test/clock -d '{"to":"reign_end"}'
+  { print "wait 120"; print "snap end ui"; print "wait 10"; print "snap end_late ui"; print "look end"; } > $OUT/reign_end.play
+  shot reign_end 1500 film $SW
+  solo reign_end $OUT/frames/reign_end/end.png "CK3's death screen, Civilization's end"
 fi
 say "render pass done: $OUT/side/INDEX.md"
 exit 0

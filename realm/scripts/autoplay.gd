@@ -891,6 +891,41 @@ func _step(w: PackedStringArray) -> void:
 						break
 				_note("  answered: " + (given if given != "" else "nothing to answer"))
 				await get_tree().create_timer(0.4).timeout
+			"show":
+				# show <menu|settings|pause|new|council|royal|lord|book>: opens one of the King's own screens as a player
+				# would reach it, for a frame of it (render_pass.sh opening, menu, settings, lord; Loop's screens).
+				match w[1] if w.size() > 1 else "":
+					"menu":
+						main.title.visible = true
+						main.title.show_main()
+					"settings":
+						main.title.visible = true
+						main.title.show_settings()
+					"pause":
+						main.title.open_paused()
+					"new":
+						main.title.visible = true
+						main.title.show_new()
+					"council":
+						main.ui.royal._first_council()
+					"royal":
+						main.ui.royal.open()
+					"book":
+						main.ui.book.toggle()
+					"lord":
+						# The first great house's lord, on his sheet (hero_view.gd), as a click on his name opens it.
+						var pid := -1
+						for pl in main.awareness.rec("players", []):
+							var h: Dictionary = pl.get("house", {}) if pl.get("house") is Dictionary else {}
+							if pl.get("favour") != null and not bool(h.get("crown", false)) and not bool(h.get("wild", false)):
+								pid = int(pl.get("id", -1))
+								break
+						if pid >= 0:
+							main.bridge.house(pid, func(d):
+								if d is Dictionary and d.get("lord") is Dictionary:
+									main._open_person(String(d["lord"].get("id", "")), main._houses.get(pid, {})))
+				_note("  show: " + (w[1] if w.size() > 1 else "nothing"))
+				await get_tree().create_timer(2.0).timeout
 			"scroll":
 				# Scroll the longest visible scrolling page to a fraction of its length (0-1).
 				var best: ScrollContainer = null
