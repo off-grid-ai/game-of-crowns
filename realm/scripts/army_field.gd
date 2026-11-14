@@ -827,11 +827,21 @@ func _run(r: Dictionary, dt: float) -> void:
 		(r["banner"] as Node3D).visible = false
 
 
-## The victors hold the field: they stand where they are at ease, ready.
+## The victors hold the field: they raise a cheer where they stand (Warcraft III and Total War: the winners cheer as
+## the beaten run; every action gets a reaction), field.play.cheer_s seconds, then stand at ease.
 func _hold(r: Dictionary) -> void:
 	(r["army"] as Army).waver(r, 0.0)
-	_play(r, "rest")
+	_play(r, "cheer")
 	r["foe"] = null
+	var t := Timer.new()
+	t.one_shot = true
+	t.wait_time = Data.num(F, "field.play.cheer_s", 4.0) * _rng.randf_range(0.8, 1.2)
+	t.timeout.connect(func():
+		if not _after and r.has("alive"):
+			_play(r, "rest")
+		t.queue_free())
+	add_child(t)
+	t.start()
 
 
 # --- Men falling and the fallen ---------------------------------------------------------------------------

@@ -511,3 +511,4 @@ Switches (`--name`) go after `--` on the game's command line.
 - Horsemen scouting ahead of a host's column: `realm/data/army.json` `scouts` (count 2, ahead 0.9, spread 0.25, pace 0.3).
 - A selected regiment's health bar (Warcraft III), its house's colour filled to its strength: `realm/data/army.json` `select.bar` (width 3.0, height 0.32, above 2.95, in men's heights).
 - A cog's crew on deck: `realm/data/army.json` `map.ship_crew` (men 3, tint 0.35, length_m 9.0, clips).
+- How long the victors cheer when the field is won, before they stand at ease: `realm/data/battle.json` `field.play.cheer_s` (4.0, each regiment ±20%).
