@@ -232,6 +232,7 @@ func _reduce_towns(world: Dictionary) -> void:
 	var now_scenes: Array = world.get("scenes", [])
 	var raided := _raided(world)
 	var lean: Array = _dict(world.get("harvest")).get("lean", [])  # towns eating lean after a wet harvest (bridge harvest.js)
+	var mourning := _king_mourned(world, turn)
 	var ids: Array[int] = []
 	for c in world.get("cities", []):
 		var id := int(c["id"])
@@ -245,11 +246,22 @@ func _reduce_towns(world: Dictionary) -> void:
 		# A levy raised here: the muster scene at the town this season or last (bridge crown.js levy).
 		bb.set_var(&"levy", now_scenes.any(func(s): return String(s.get("kind", "")) == "muster" and int(s.get("city", -2)) == id and int(s.get("turn", turn)) >= turn - 1))
 		bb.set_var(&"favour", favour)
+		bb.set_var(&"royal_funeral", mourning and bool(c.get("capital", false)) and int(c.get("owner", -1)) == crown_id)  # the King buried from his seat
 		bb.set_var(&"lean", lean.any(func(t): return int(t) == id))  # a wet harvest and no granary: short rations (harvest.js)
 		bb.set_var(&"raid", raided.has(id))  # raiders at its edge (towns.json raid.near): its folk go in, the bell rings
 		bb.set_var(&"crown_town", int(c.get("owner", -1)) == crown_id)
 		bb.set_var(&"house", String((owner.get("house", {}) as Dictionary).get("name", "")))
 	realm.set_var(&"towns", ids)
+
+
+## Whether the realm mourns its King: the last of the crown's line (/world royals.line, bridge royals.js) died, not
+## abdicated, within towns.json royal_funeral.seasons. His seat buries him (town_scenes.json royal_funeral).
+static func _king_mourned(world: Dictionary, turn: int) -> bool:
+	var line: Array = _dict(world.get("royals")).get("line", []) if _dict(world.get("royals")).get("line") is Array else []
+	if line.is_empty():
+		return false
+	var last: Dictionary = _dict(line[line.size() - 1])
+	return String(last.get("how", "")) == "died" and turn - int(last.get("to", -999)) < int(preload("res://scripts/data.gd").value("towns", "royal_funeral.seasons", 2))
 
 
 ## The towns raiders are at (the raids slice, bridge raids.js): a raid's goal town with any of its men within

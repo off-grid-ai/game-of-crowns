@@ -220,6 +220,8 @@ static func states_bb(bb: Blackboard) -> Array:
 		out.append("raid")  # raiders at its edge (awareness.gd _raided): folk indoors, the alarm bell, houses burning
 	if bool(bb.get_var(&"granary_low", false, false)):
 		out.append("low")
+	if bool(bb.get_var(&"royal_funeral", false, false)):
+		out.append("royal_funeral")  # the King dead, buried from his seat (awareness.gd _king_mourned)
 	if bool(bb.get_var(&"lean", false, false)):
 		out.append("lean")  # a wet harvest and no granary (bridge harvest.js): the queue at the granary, bare stalls
 	if bool(bb.get_var(&"prosperity", false, false)):
