@@ -16,6 +16,7 @@ signal changed(key: Variant, tier: int)
 enum { OFF, FAR, MID, NEAR }
 
 const Data := preload("res://scripts/data.gd")
+const PerfTools := preload("res://scripts/perf_tools.gd")
 static var FAR_FROM: float = Data.num("camera", "view_tier.far_from", 60.0)  # lens distance at and above which all is FAR
 static var NEAR_BELOW: float = Data.num("camera", "view_tier.near_below", 18.0)  # lens distance under which a place may be NEAR
 static var NEAR_REACH: float = Data.num("camera", "view_tier.near_reach", 30.0)  # world units from where the lens looks
@@ -56,7 +57,12 @@ func _exit_tree() -> void:
 static func of(at: Vector3, radius := 0.0) -> int:
 	if _me == null:
 		return NEAR  # no lens to judge by (a headless tool): everything, as before there was one
-	return _me._tier(at, radius)
+	if not PerfTools.probing:
+		return _me._tier(at, radius)
+	var t0 := Time.get_ticks_usec()
+	var t: int = _me._tier(at, radius)
+	PerfTools.add("view_tier", Time.get_ticks_usec() - t0)  # every query's cost and count (GOC_PERF_PROBE)
+	return t
 
 
 ## Whether a place's sphere touches the screen (with the lead).
@@ -83,12 +89,22 @@ func tier_of(key: Variant) -> int:
 
 
 func _process(_delta: float) -> void:
+	var t0 := Time.get_ticks_usec() if PerfTools.probing else 0
+	_watched()
+	if PerfTools.probing:
+		PerfTools.add("view_tier.watch", Time.get_ticks_usec() - t0)
+
+
+func _watched() -> void:
 	for key in _places.keys():
 		var p: Dictionary = _places[key]
 		var t := _tier(_at(p["at"]), float(p["r"]))
 		if t != int(p["tier"]):
 			p["tier"] = t
+			var t0 := Time.get_ticks_usec() if PerfTools.probing else 0
 			changed.emit(key, t)
+			if PerfTools.probing:
+				PerfTools.add("view_tier.changed", Time.get_ticks_usec() - t0)  # what the listeners do with a change (towns.gd disables a whole town)
 
 
 func _at(at: Variant) -> Vector3:
