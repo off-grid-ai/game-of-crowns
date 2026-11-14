@@ -80,6 +80,15 @@ export function priceOf(ctx, action) {
 // (shown as a building site), then stands and works for him as Freeciv's own
 // building does (a market's tax, a barracks' veterans, a granary's food).
 export const WORK_SEASONS = ECONOMY.workSeasons;  // data/economy.json
+// The King's works in his own towns, one a town: the one rising (meta.works), else the newest that stands
+// (meta.royalBuilt, kept as each is finished): [{city, building, rising}]. What a raid makes for (raids.js).
+export function worksOf(meta, world, crownId) {
+  const royal = (id) => world?.cities?.some((c) => c.id === Number(id) && c.owner === crownId);
+  const out = new Map();
+  for (const [cid, w] of Object.entries(meta?.works ?? {})) if (royal(cid)) out.set(Number(cid), { city: Number(cid), building: w.building, rising: true });
+  for (const w of [...(meta?.royalBuilt ?? [])].reverse()) if (royal(w.city) && !out.has(w.city)) out.set(w.city, { city: w.city, building: w.building, rising: false });
+  return [...out.values()];
+}
 export function royalWorks(ctx, turn) {
   const { world, meta, send, record, scene, crownOf } = ctx;
   const crown = crownOf();
@@ -96,9 +105,12 @@ export function royalWorks(ctx, turn) {
       continue;
     }
     send(`lua cmd ${Lua.building(c.id, w.building)}`);
+    (meta.royalBuilt ??= []).push({ city: c.id, building: w.building, turn });
     record({ turn, kind: "works", text: `The King's ${w.building.toLowerCase()} stands finished in ${cityName(c.id)}.`, city: c.id });
     scene("feast", { x: c.x, y: c.y, city: c.id, owner: c.owner });
   }
+  // Freeciv's raids make for the King's works (script.lua raid_goal, raids.js): the towns that have one, each season.
+  send(`lua cmd ${Lua.works(worksOf(meta, world, crown.id).map((w) => w.city))}`);
   // What his finished works bring in.
   const mine = world.cities.filter((x) => x.owner === crown.id);
   const markets = mine.filter((x) => (x.buildings ?? []).includes("Marketplace")).length;

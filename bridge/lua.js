@@ -24,6 +24,8 @@ export const bannersJoin = (ids, cityId) => `realm_banners_join("${ids.map(n).jo
 
 // Men without banners raised beside a town (realm_raid: Freeciv's barbarians, a raid's season).
 export const raid = (cityId) => `realm_raid(${n(cityId)})`;
+// The King's towns with a work rising or standing (realm_royal_works): what a raid makes for first.
+export const works = (cityIds) => `realm_royal_works("${cityIds.map(n).join(",")}")`;
 
 // A building set down in a town, or taken up (realm_building).
 export const building = (cityId, name, on = true) => `realm_building(${n(cityId)}, "${name}", ${on ? "true" : "false"})`;

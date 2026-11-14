@@ -699,6 +699,10 @@ end
 -- Freeciv's own barbarians (a hut's, the wild hordes) get the same season: realm_raids_turn takes in any raider it
 -- hasn't seen, beside the town nearest him. Kept as a plain string ("unit,unit|town|until;..."), which the save keeps.
 GOC_RAIDS = GOC_RAIDS or ""
+-- The King's works (the bridge's royal works, treasury.js: rising or standing in a royal town), as "town,town": what
+-- a raid makes for first (Mount & Blade's raiders on a lord's village, Stronghold's raid on the granary). Saved.
+GOC_WORKS = GOC_WORKS or ""
+function realm_royal_works(towns) GOC_WORKS = tostring(towns or "") end
 local RAID_SPOILS = {"Farmland", "Railroad", "Mine", "Irrigation", "Road", "Fortress", "Fort"}
 
 -- Freeciv's barbarians, land and sea. The dead wear the Barbarian nation too but are a player of their own
@@ -797,7 +801,7 @@ local function raids_take_in()
   end
   local til = game.current_turn() + raid_seasons()
   for _, cid in ipairs(order) do
-    GOC_RAIDS = GOC_RAIDS .. (GOC_RAIDS == "" and "" or ";") .. string.format("%s|%d|%d", table.concat(by_town[cid], ","), cid, til)
+    GOC_RAIDS = GOC_RAIDS .. (GOC_RAIDS == "" and "" or ";") .. string.format("%s|%d|%d|0", table.concat(by_town[cid], ","), cid, til)
     log.normal("RAID wild raiders by %s: %d", find.city(nil, cid).name, #by_town[cid])
   end
 end
@@ -836,7 +840,7 @@ function realm_raid(city_id)
   if #raised > 0 then
     local til = game.current_turn() + raid_seasons()
     for i, id in ipairs(raised) do raised[i] = string.format("%d", id) end
-    GOC_RAIDS = GOC_RAIDS .. (GOC_RAIDS == "" and "" or ";") .. string.format("%s|%d|%d", table.concat(raised, ","), c.id, til)
+    GOC_RAIDS = GOC_RAIDS .. (GOC_RAIDS == "" and "" or ";") .. string.format("%s|%d|%d|0", table.concat(raised, ","), c.id, til)
   end
   log.normal("RAID %s raised %d", c.name, #raised)
 end
@@ -875,11 +879,46 @@ local function raid_season(u, town)
   end
 end
 
+-- The royal work a raid makes for: the King's town with a work, rising or standing, nearest the raid's own town and
+-- within raids.work_reach tiles of it (the raid's town itself first when it has one); nil when none is.
+local function raid_goal(town)
+  if not town then return nil end
+  local best, bd = nil, nil
+  local reach = raid_num("work_reach", 6)
+  for id in GOC_WORKS:gmatch("%d+") do
+    local c = find.city(nil, tonumber(id))
+    if c then
+      local d = c.tile:sq_distance(town.tile)
+      if d <= reach * reach and (not bd or d < bd) then best, bd = c, d end
+    end
+  end
+  return best
+end
+
+-- A raider making for the work: up to raids.march_steps tiles a season over open land, each the open neighbour
+-- nearest the work's town, by Freeciv's own unit_move; true while he is still more than a tile off it.
+local function raid_march(u, goal)
+  for _ = 1, raid_num("march_steps", 2) do
+    if u.tile:sq_distance(goal.tile) <= 2 then return false end
+    local best, bd = nil, u.tile:sq_distance(goal.tile)
+    for t in u.tile:square_iterate(1) do
+      if t ~= u.tile and raid_open(t, u) then
+        local d = t:sq_distance(goal.tile)
+        if d < bd then best, bd = t, d end
+      end
+    end
+    if not best then return true end
+    pcall(edit.unit_move, u, best, 0, nil, false, false, false, false, false)
+    if u.tile ~= best then return true end
+  end
+  return u.tile:sq_distance(goal.tile) > 2
+end
+
 function realm_raids_turn()
   raids_take_in()
   if GOC_RAIDS == "" then return end
   local kept = {}
-  for ids, city_id, til in GOC_RAIDS:gmatch("([%d,]+)|(%d+)|(%d+)") do
+  for ids, city_id, til, was in GOC_RAIDS:gmatch("([%d,]+)|(%d+)|(%d+)|(%d+)") do
     local town = find.city(nil, tonumber(city_id))
     local alive = {}
     for id in ids:gmatch("%d+") do
@@ -895,16 +934,23 @@ function realm_raids_turn()
         local id = u.id
         if raid_leave(u, last) or not find.unit(nil, id) then gone = gone + 1 else left[#left + 1] = string.format("%d", id) end
       end
-      if #left > 0 then kept[#kept + 1] = string.format("%s|%s|%s", table.concat(left, ","), city_id, til) end
+      if #left > 0 then kept[#kept + 1] = string.format("%s|%s|%s|%s", table.concat(left, ","), city_id, til, was) end
       log.normal("RAID over by %s: %d raiders gone, %d on the road out", town and town.name or city_id, gone, #left)
     elseif #alive > 0 then
+      -- A royal work near the raid's town draws it first: the raiders march on its town, then burn the land round it.
+      local goal = raid_goal(town)
+      local gid = goal and goal.id or 0
       local left = {}
       for _, u in ipairs(alive) do
         local id = u.id
-        raid_season(u, town)
+        if not (goal and raid_march(u, goal)) then raid_season(u, goal or town) end
         if find.unit(nil, id) then left[#left + 1] = string.format("%d", id) end
       end
-      if #left > 0 then kept[#kept + 1] = string.format("%s|%s|%s", table.concat(left, ","), city_id, til) end
+      if gid ~= tonumber(was) then
+        emit("raid_goal", {city = tonumber(city_id), goal = gid, units = table.concat(left, ",")})
+        log.normal("RAID by %s makes for %s", town and town.name or city_id, goal and goal.name or "the land")
+      end
+      if #left > 0 then kept[#kept + 1] = string.format("%s|%s|%s|%d", table.concat(left, ","), city_id, til, gid) end
     end
   end
   GOC_RAIDS = table.concat(kept, ";")
