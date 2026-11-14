@@ -545,6 +545,7 @@ func _fill_panel(p: Dictionary, house: Dictionary, editing := false) -> void:
 	bar.custom_minimum_size = Vector2(0, 6)
 	v.add_child(bar)
 	_toward_king(v, p, house)
+	_holdings(v, p, house)
 	var goals: Array = p.get("goals", [])
 	if not goals.is_empty():
 		v.add_child(T.label("Wants to"))
@@ -605,6 +606,43 @@ func _toward_king(v: VBoxContainer, p: Dictionary, house: Dictionary) -> void:
 	for w in p.get("why", []):
 		var d := int((w as Dictionary).get("d", 0))
 		v.add_child(T.datum("%s  %s" % ["▲" if d > 0 else "▼", String(w.get("what", ""))], T.SIZE_DESC, Color("#7fb069") if d > 0 else Color("#e86b5c")))
+
+
+## What they hold (CK3's character window: the holdings and the vassals under them): a great house's lord, the
+## towns his house holds and the minor houses sworn to it; a vassal lord, his seat and the house he is sworn to
+## (bridge /world cities' owner, /world vassals). Words in royal_sheet.json lord_holdings.
+func _holdings(v: VBoxContainer, p: Dictionary, house: Dictionary) -> void:
+	var st: Node = preload("res://scripts/awareness.gd").store()
+	if st == null:
+		return
+	var w: Dictionary = preload("res://scripts/data.gd").value("royal_sheet", "lord_holdings", {})
+	var lines := PackedStringArray()
+	if String(p.get("rank", "")) == "lord":
+		var towns := PackedStringArray()
+		for c in st.rec("cities", []):
+			if int(c.get("owner", -2)) == int(house.get("id", -1)):
+				towns.append(String(c.get("name", "")))
+		if not towns.is_empty():
+			lines.append(String(w.get("towns", "{towns}")).replace("{towns}", ", ".join(towns)))
+		var sworn := PackedStringArray()
+		for vs in st.rec("vassals", []):
+			if int(vs.get("owner", -2)) == int(house.get("id", -1)):
+				sworn.append(String(vs.get("house", "")))
+		if not sworn.is_empty():
+			lines.append(String(w.get("sworn", "{houses}")).replace("{houses}", ", ".join(sworn)))
+	else:
+		for vs in st.rec("vassals", []):
+			if String(vs.get("id", "")) == String(p.get("id", "-")):
+				var town := ""
+				for c in st.rec("cities", []):
+					if int(c.get("id", -2)) == int(vs.get("town", -1)):
+						town = String(c.get("name", ""))
+				lines.append(String(w.get("vassal", "")).replace("{house}", String(vs.get("house", ""))).replace("{town}", town).replace("{liege}", String(vs.get("liege", ""))))
+	if lines.is_empty():
+		return
+	v.add_child(T.label(String(w.get("head", "Holds"))))
+	for l in lines:
+		v.add_child(_para(l))
 
 
 ## Who they are, open to rewrite: their story, what they remember, their nature
