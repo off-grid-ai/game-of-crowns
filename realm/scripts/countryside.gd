@@ -84,7 +84,17 @@ func _update(cities: Array) -> void:
 	# Which farms stand (none too close to a town) and where each one's track
 	# leads, gathered by patch; a patch is redrawn only when that changes.
 	var want := {}
+	# Every farm site against every town, on every reading: paced like the raising below (FPS P0: 'countryside'
+	# held frames up to 360 ms before its first pause in the 6aaf2121 run).
+	var gather := Time.get_ticks_msec()
 	for s in _sites:
+		if Time.get_ticks_msec() - gather > 8:
+			await get_tree().process_frame
+			if realm != _realm_now():
+				if _want == null:
+					_want = cities  # the land changed while gathering: once more
+				return
+			gather = Time.get_ticks_msec()
 		var tile: Vector2i = s["tile"]
 		if _near_town(cities, tile.x, tile.y):
 			continue
