@@ -70,7 +70,9 @@ func pitch(s: Node, siege: Node3D, town: Vector3, middle: float, line: float, co
 	var angles: Array = k.get("angles", [0.0])
 	if OS.get_cmdline_user_args().has("--wall-demo"):
 		count = angles.size()  # the demo's wall falls within a take: every engine at it
-	for e in clampi(maxi(count, 1), 1, angles.size()):
+	# A besieging host builds engines on the spot (Stronghold's and Age of Empires II's carpenters in the camp), at
+	# least engines.least of them whatever Freeciv's companies hold (g37/g38 siege: one catapult against the wall).
+	for e in clampi(maxi(count, int(k.get("least", 1))), 1, angles.size()):
 		_engine(float(angles[e]), k)
 
 
