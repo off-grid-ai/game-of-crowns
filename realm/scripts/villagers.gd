@@ -456,9 +456,15 @@ func _avoid_others() -> void:
 		for a in crowds[id]:
 			walkers[a["node"]] = true
 	var found := {}  # town id -> positions on its walk map
+	# Only walkers within sight of the lens move (anim_lod.gd moves_now), so someone further off than that and
+	# a walker's reach is in nobody's way: not looked for (FPS P0: 1,100 people against every town, four times a second).
+	var cam := get_viewport().get_camera_3d()
+	var reach := AnimLOD.People.SEEN_TO + OTHERS_REACH
 	for p in get_tree().get_nodes_in_group("people"):
 		var n := p as Node3D
 		if n == null or walkers.has(n) or not n.is_visible_in_tree():
+			continue
+		if cam and n.global_position.distance_to(cam.global_position) > reach:
 			continue
 		var g := to_local(n.global_position)
 		for id in crowds:
