@@ -998,14 +998,18 @@ func _on_synced() -> void:
 		return  # the land is still forming; the next report raises the towns on it
 	var tt := Time.get_ticks_msec()
 	Engine.set_meta("stage", "towns.sync")
+	var t_towns_sync := Time.get_ticks_usec()
 	towns.sync(_houses)
 	land_use.sync()  # the land each town works, as Freeciv has it this season (drawn as each town stands)
+	PerfTools.add("towns.sync", Time.get_ticks_usec() - t_towns_sync)
 	if Time.get_ticks_msec() - tt > 500:
 		print_verbose("BUILD towns %d ms" % (Time.get_ticks_msec() - tt))
 	# The companies on the map as soon as the towns stand: the first reading's road and countryside laying below waits
 	# over frames, and companies synced after it had no figure, or figures no company, all that while (reign replay).
 	Engine.set_meta("stage", "units.sync")
+	var t_units_sync := Time.get_ticks_usec()
 	units.sync(_houses)
+	PerfTools.add("units.sync", Time.get_ticks_usec() - t_units_sync)
 	# The land's borders, scars and ruins, from the mirror (awareness.gd), not from /world.
 	var realm_bb: Blackboard = awareness.realm
 	var pt := Time.get_ticks_usec()
@@ -1037,11 +1041,15 @@ func _on_synced() -> void:
 	if not _laying:
 		_laying = true
 		Engine.set_meta("stage", "roads.sync")
+		var t_roads_sync := Time.get_ticks_usec()
 		roads.sync()
+		PerfTools.add("roads.sync", Time.get_ticks_usec() - t_roads_sync)
 		await get_tree().process_frame
 		tt = Time.get_ticks_msec()
 		Engine.set_meta("stage", "kings_road")
+		var t_kings_road := Time.get_ticks_usec()
 		roads.kings_road()
+		PerfTools.add("kings_road", Time.get_ticks_usec() - t_kings_road)
 		await get_tree().process_frame
 		# A road through the woods runs down a lane cut through them, wide enough
 		# that no crown closes over it: what travels it can be watched from above.
@@ -1053,14 +1061,20 @@ func _on_synced() -> void:
 			print("LANES %d trees, %d ms" % [n, Time.get_ticks_msec() - t0])
 			await get_tree().process_frame
 		Engine.set_meta("stage", "countryside")
+		var t_countryside := Time.get_ticks_usec()
 		countryside.build(awareness.rec("cities", []))
+		PerfTools.add("countryside", Time.get_ticks_usec() - t_countryside)
 		if Time.get_ticks_msec() - tt > 500:
 			print_verbose("BUILD roads+countryside %d ms" % (Time.get_ticks_msec() - tt))
 		_laying = false
 	Engine.set_meta("stage", "scenes.sync")
+	var t_scenes_sync := Time.get_ticks_usec()
 	scenes.sync(_houses)
+	PerfTools.add("scenes.sync", Time.get_ticks_usec() - t_scenes_sync)
 	Engine.set_meta("stage", "ui.set_world")
+	var t_ui_set_world := Time.get_ticks_usec()
 	ui.set_world(_houses)
+	PerfTools.add("ui.set_world", Time.get_ticks_usec() - t_ui_set_world)
 	if ui.minimap.terrain == null:
 		ui.minimap.terrain = terrain
 		ui.minimap.rig = rig

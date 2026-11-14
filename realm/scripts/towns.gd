@@ -6,6 +6,7 @@ extends Node3D
 ## when size, owner or buildings change.
 
 const Units := preload("res://scripts/world_units.gd")  # the world's one scale (Units.M)
+const PerfTools := preload("res://scripts/perf_tools.gd")  # the slow-frame log (GOC_PERF_PROBE)
 const Awareness := preload("res://scripts/awareness.gd")  # the view's one store: the realm's records (rec)
 const S := Units.M  # world units per metre: a 6 m house is 0.72 units, a tile is 4
 
@@ -205,8 +206,11 @@ func _process_timed(_delta: float) -> void:
 func _raise(best: int, job: Dictionary) -> void:
 	_raising = true
 	_slice = Time.get_ticks_msec()
+	_step_at = Time.get_ticks_usec()
 	terrain.hold_grading = true
 	var node: Node3D = await _build_town(job["c"], job["house"])
+	var pt0 := Time.get_ticks_usec()
+	PerfTools.add("build@last", pt0 - _step_at)  # the build's last step, after its last _pace
 	Engine.set_meta("stage", "towns.add")  # each step after the paced build named, for the slow-frame log (perf_tools.gd)
 	add_child(node)
 	var was: Dictionary = {}
@@ -214,10 +218,13 @@ func _raise(best: int, job: Dictionary) -> void:
 		was = {"data": towns[best]["data"], "homes": (towns[best]["node"] as Node3D).get_meta("homes", [])}
 		towns[best]["node"].queue_free()
 	towns[best] = {"node": node, "signature": job["sig"], "data": job["c"]}
+	PerfTools.add("towns.add", Time.get_ticks_usec() - pt0)
+	pt0 = Time.get_ticks_usec()
 	Engine.set_meta("stage", "towns.life")
 	if not was.is_empty() and int((was["data"] as Dictionary).get("owner", -1)) != int(job["c"].get("owner", -2)):
 		banners.taken(node)  # changed hands: the new owner's banners are run up its poles
 	life.update(node, job["c"], job["house"])
+	PerfTools.add("towns.life", Time.get_ticks_usec() - pt0)
 	if not was.is_empty():
 		var pt := Time.get_ticks_usec()
 		Engine.set_meta("stage", "towns.grow")
@@ -225,7 +232,9 @@ func _raise(best: int, job: Dictionary) -> void:
 		preload("res://scripts/perf_tools.gd").add("town_sites", Time.get_ticks_usec() - pt)
 	# Each new town takes the season as it stands (snow on its roofs in winter).
 	Engine.set_meta("stage", "towns.season")
+	pt0 = Time.get_ticks_usec()
 	terrain.season_on(node)
+	PerfTools.add("towns.season", Time.get_ticks_usec() - pt0)
 	_raised += 1
 	terrain.hold_grading = false
 	_raising = false
@@ -234,7 +243,9 @@ func _raise(best: int, job: Dictionary) -> void:
 	if _queue.is_empty() or now - _graded_at > 750:
 		_graded_at = now
 		Engine.set_meta("stage", "towns.grade")
-		terrain.commit_grading()
+		pt0 = Time.get_ticks_usec()
+		terrain.commit_grading()  # its ground_changed listeners included
+		PerfTools.add("towns.grade", Time.get_ticks_usec() - pt0)
 	if _queue.is_empty():
 		print_verbose("BUILD towns raised %d in %d ms, a few per frame" % [_raised, now - _raising_since])
 		_raising_since = 0
@@ -1889,10 +1900,17 @@ func _flat_enough(center: Vector3, off: Vector3, r: float) -> bool:
 ## (_raising), as the build keeps its town in members (_center, _house).
 var _slice := 0
 var _raising := false
+var _step_at := 0  # when the last build step ended (GOC_PERF_PROBE: a step over budget is named in the slow-frame log)
 func _pace() -> void:
+	if PerfTools.probing:
+		var now := Time.get_ticks_usec()
+		if _step_at > 0 and now - _step_at > BUILD_BUDGET_MS * 1000:
+			var at: Dictionary = get_stack()[1] if get_stack().size() > 1 else {}
+			PerfTools.add("build@%s:%d" % [String(at.get("source", "?")).get_file(), int(at.get("line", 0))], now - _step_at)
 	if Time.get_ticks_msec() - _slice > BUILD_BUDGET_MS:
 		await get_tree().process_frame
 		_slice = Time.get_ticks_msec()
+	_step_at = Time.get_ticks_usec()
 
 
 func _build_town(c: Dictionary, house: Dictionary) -> Node3D:

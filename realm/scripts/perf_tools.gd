@@ -49,12 +49,28 @@ var _perf_at := 10.0
 ## since the last perf line, written on it as "jobs=name:ms/calls,...".
 static var probing := OS.get_environment("GOC_PERF_PROBE") != ""
 static var tally := {}  # name -> [microseconds, calls]
+static var _frame_cost := {}  # name -> microseconds this frame: a slow frame names what it spent its time on
 static func add(name: String, usec: int) -> void:
 	if not probing:
 		return
 	var t: Array = tally.get(name, [0, 0])
 	tally[name] = [t[0] + usec, t[1] + 1]
+	_frame_cost[name] = int(_frame_cost.get(name, 0)) + usec
 	_mark(name)
+
+
+## What the frame just ended spent over `least` ms on, dearest first, and what no named job accounts for.
+static func _dear(took_usec: int, least := 10.0) -> String:
+	var named := 0
+	var out := PackedStringArray()
+	var keys := _frame_cost.keys()
+	keys.sort_custom(func(a, b): return int(_frame_cost[a]) > int(_frame_cost[b]))
+	for k in keys:
+		named += int(_frame_cost[k])
+		if _frame_cost[k] / 1000.0 >= least:
+			out.append("%s %.0f" % [k, _frame_cost[k] / 1000.0])
+	out.append("unnamed %.0f" % ((took_usec - named) / 1000.0))
+	return ", ".join(out)
 
 
 ## The freeze watch (GOC_PERF_PROBE only): a thread that wakes four times a
@@ -138,7 +154,8 @@ func _log_perf(delta: float) -> void:
 			_mutex.lock()
 			var jobs := _prev_order.duplicate()
 			_mutex.unlock()
-			print("SLOW-FRAME %d ms (stage %s); the frame before's jobs %s" % [int(took * 1000.0), Engine.get_meta("stage", ""), ",".join(jobs)])
+			print("SLOW-FRAME %d ms (stage %s); spent: %s; the frame before's jobs %s" % [int(took * 1000.0), Engine.get_meta("stage", ""), _dear(int(took * 1000000.0)), ",".join(jobs)])
+		_frame_cost.clear()
 		_frame()
 	if delta > 0.5:
 		print_verbose("STALL %.2f s after: %s" % [delta, Engine.get_meta("stage", "")])
