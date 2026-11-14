@@ -614,6 +614,9 @@ func _show_heading(r: Dictionary) -> void:
 		var nature := RoyalSheet.traits_of(k)
 		_earning.text = "%s%s  ·  %s" % [String(k.get("name", "")), (", " + nature) if nature != "" else "", _earning.text]
 		tip.append("King %s, %d: %s.%s Click for the royal family." % [RoyalSheet.line_of(k).get_slice(",", 0), int(k.get("age", 0)), nature if nature != "" else "of no marked nature", "  A child King: a regent holds the realm." if bool(rs.get("regency", false)) else ""])
+		var strain := String(RoyalSheet.stress_band(k).get("says", ""))
+		if strain != "":
+			tip.append(strain)
 	tip.append("If the reign ended today, the realm would remember you as %s%s." % [name, ("; a few would say %s" % next) if next != "" else ""])
 	# The King's three ambitions: a diamond each, filled when met.
 	var am = r.get("ambitions")

@@ -46,7 +46,7 @@ var _seen := {}  # scene id -> true: each scene is news once
 ## The bridge's records the views draw, as /world sends them (bridge/view.js): the records slice. A view reads one
 ## with `rec`; nobody holds /world itself.
 const RECORDS := ["cities", "players", "units", "roads", "scenes", "date", "reign", "story", "crown", "seatId",
-	"crownId", "sitting", "counsel", "fallen", "effects", "peace", "prosperity", "souls", "goal", "threat", "turn", "royals", "promises"]
+	"crownId", "sitting", "counsel", "fallen", "effects", "peace", "prosperity", "souls", "goal", "threat", "turn", "royals", "promises", "trust"]
 var _records := {}
 
 const SceneKinds := preload("res://scripts/scene_kinds.gd")  # reach, power and tone of each kind
@@ -343,6 +343,7 @@ static func town_facts(c: Dictionary) -> Dictionary:
 		"wedding": int(_dict(c.get("lives")).get("weddings", 0)) > 0,  # this season's weddings, births, burials (bridge households.js)
 		"birth": int(_dict(c.get("lives")).get("births", 0)) > 0,
 		"burial": int(_dict(c.get("lives")).get("burials", 0)) > 0,
+		"leaving": not (_dict(c.get("lives")).get("leaving", []) as Array).is_empty(),  # a household packing a cart this season (households.js)
 	}
 
 

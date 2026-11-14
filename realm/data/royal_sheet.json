@@ -1,5 +1,5 @@
 {
- "_": "The King's sheet and his family (royal_sheet.gd; CK3's ruler window), opened from the bar's heading. Each line's words; {name}, {age}, {traits}, {house}, {how} are filled from /world royals (bridge royals.js). nature_tip: why his nature matters at court; regency: while a child is King; no_heir: with none; abdicate_tip: what stepping down does.",
+ "_": "The King's sheet and his family (royal_sheet.gd; CK3's ruler window), opened from the bar's heading. Each line's words; {name}, {age}, {traits}, {house}, {how} are filled from /world royals (bridge royals.js). nature_tip: why his nature matters at court; regency: while a child is King; no_heir: with none; abdicate_tip: what stepping down does. trust: what his word is worth, by bands of the bridge's trust (0..1; the first whose above it clears): says on his sheet, pledge under a promise at court (the council's tone), low in red. stress: how he bears his rulings, by bands of royals.king.stress (from; the bridge's stress.high is 3): says on his sheet, grade the colour laid on his portrait.",
  "none": "The royal house is not yet known.",
  "king": "King {name}",
  "age": "{age} years old",
@@ -32,5 +32,15 @@
  "word_town": "The King's word: {line}",
  "pledge_tag": "Your word. Kept, it is remembered warmly; broken, bitterly.",
  "news_kept": "The King keeps his word: {text}.",
- "news_broken": "The King's word is broken: {text}. They will remember it."
+ "news_broken": "The King's word is broken: {text}. They will remember it.",
+ "trust": [
+  { "above": 0.85, "says": "His word is good. The houses take it at its face.", "pledge": "Your word. Kept, it is remembered warmly; broken, bitterly." },
+  { "above": 0.6, "says": "His word is doubted. A promise warms them less than it did.", "pledge": "Your word, Your Grace. They have heard it before, and weigh it.", "low": false },
+  { "above": 0.0, "says": "His word is wind. The houses hear a promise and wait to see it done.", "pledge": "Your word? The Hand would not lean on it; the houses have learned not to.", "low": true }
+ ],
+ "stress": [
+  { "from": 4, "says": "He sleeps badly. What he has ruled against his own nature is wearing him down, and it may shorten his days.", "grade": [0.62, 0.6, 0.6], "hard": true },
+  { "from": 2, "says": "Some of his rulings sit ill with him.", "grade": [0.82, 0.8, 0.78] },
+  { "from": 0, "says": "", "grade": [1, 1, 1] }
+ ]
 }

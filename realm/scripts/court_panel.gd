@@ -6,6 +6,7 @@ extends RefCounted
 const T := preload("res://scripts/theme.gd")
 const UI := preload("res://scripts/ui.gd")
 const Data := preload("res://scripts/data.gd")
+const RoyalSheet := preload("res://scripts/royal_sheet.gd")  # what the King's word is worth (trust), for the council's tone
 
 var ui: UI  # the interface that owns this card: its signals, its building blocks, its other cards
 
@@ -425,7 +426,8 @@ func _show_audience() -> void:
 		_urged(row, p.get("voices", []), o.get("id"))
 		# A promise instead of now (bridge promises.js): it says it is his word, and what keeping it means.
 		if String(o.get("id", "")) == "pledge":
-			var tag := T.datum(String(Data.value("royal_sheet", "pledge_tag", "")), T.SIZE_DESC, T.ACCENT)
+			var tb := RoyalSheet.trust_band()
+			var tag := T.datum(String(tb.get("pledge", Data.value("royal_sheet", "pledge_tag", ""))), T.SIZE_DESC, T.DANGER if bool(tb.get("low", false)) else T.ACCENT)
 			tag.autowrap_mode = TextServer.AUTOWRAP_WORD
 			row.add_child(tag)
 		# An answer the treasury can't pay: greyed, and why, in one line under it.

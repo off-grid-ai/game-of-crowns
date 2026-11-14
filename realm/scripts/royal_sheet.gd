@@ -9,6 +9,7 @@ extends RefCounted
 const Data := preload("res://scripts/data.gd")
 const T := preload("res://scripts/theme.gd")
 const Awareness := preload("res://scripts/awareness.gd")
+const PaintedFaces := preload("res://scripts/painted_faces.gd")
 
 var ui: Node
 var _card: PanelContainer
@@ -43,6 +44,28 @@ static func promises() -> Array:
 	var st := Awareness.store()
 	var r: Variant = st.rec("promises") if st else null
 	return r if r is Array else []
+
+
+## What the King's word is worth (bridge promises.js trust, 0..1: kept over decided): its band's words from
+## royal_sheet.json trust, the first band whose `above` it clears.
+static func trust_band() -> Dictionary:
+	var st := Awareness.store()
+	var t: Variant = st.rec("trust") if st else null
+	var v := float(t) if t != null else 1.0
+	for b in Data.value("royal_sheet", "trust", []):
+		if v >= float(b.get("above", 0.0)):
+			return b
+	return {}
+
+
+## How the King bears his rulings (bridge royals.js stress; over royal_sheet.json stress.high he sleeps badly):
+## the band's words and the grade on his portrait.
+static func stress_band(king: Dictionary) -> Dictionary:
+	var s := float(king.get("stress", 0))
+	for b in Data.value("royal_sheet", "stress", []):
+		if s >= float(b.get("from", 0.0)):
+			return b
+	return {}
 
 
 ## An open promise in a line: what he promised, to whom, and the seasons left.
@@ -91,6 +114,19 @@ func open() -> void:
 	var head := HBoxContainer.new()
 	v.add_child(head)
 	var king: Dictionary = r["king"]
+	# His painted face (painted_faces.gd), greyer and darker the more his own rulings weigh on him (CK3's stressed
+	# portrait): the stress band's grade.
+	var sb := stress_band(king)
+	var face := PaintedFaces.face({"id": String(king.get("id", "king")), "gender": "female" if bool(king.get("woman", false)) else "male", "age": int(king.get("age", 40))})
+	if face:
+		var pic := TextureRect.new()
+		pic.texture = face
+		pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		pic.custom_minimum_size = Vector2(72, 96)
+		var g: Array = sb.get("grade", [1, 1, 1])
+		pic.modulate = Color(float(g[0]), float(g[1]), float(g[2]))
+		head.add_child(pic)
 	var title := T.title(_w("king", "King {name}").replace("{name}", String(king.get("name", ""))), 26, T.ACCENT)
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	head.add_child(title)
@@ -104,6 +140,9 @@ func open() -> void:
 		nature.add_theme_font_override("font", T.speech)
 		v.add_child(nature)
 		_say(v, _w("nature_tip", ""), T.TEXT_3)
+	# How he bears what he has ruled against his own nature.
+	if String(sb.get("says", "")) != "":
+		_say(v, String(sb["says"]), T.DANGER if bool(sb.get("hard", false)) else T.TEXT_2)
 	if bool(r.get("regency", false)):
 		_say(v, _w("regency", ""), T.DANGER)
 	v.add_child(HSeparator.new())
@@ -128,6 +167,10 @@ func open() -> void:
 	if not ps.is_empty():
 		v.add_child(HSeparator.new())
 		v.add_child(T.label(_w("word", "His word")))
+		# What it is worth now (bridge promises.js trust).
+		var tb := trust_band()
+		if String(tb.get("says", "")) != "":
+			_say(v, String(tb["says"]), T.DANGER if bool(tb.get("low", false)) else T.TEXT_2)
 		for pr in ps:
 			if pr.get("kept") == null and pr.get("broken") == null:
 				_say(v, word_line(pr), T.TEXT)
