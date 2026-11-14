@@ -1,0 +1,11 @@
+{
+ "_": "The reign's ending (reign_cards.gd). ledger: the words of the reign's ledger page on the end card (Civilization's and Total War's end-of-campaign summary, as a chronicle page): its title, the two column heads, each measure's name, the towns' three lines and the rulings' head. The numbers come from the bridge (reign.js ledger).",
+ "ledger": {
+  "title": "The reign's ledger",
+  "crowned": "When crowned",
+  "now": "When it ended",
+  "measures": { "gold": "Crowns in the treasury", "troops": "Companies under arms", "towns": "Towns of the crown" },
+  "towns": { "kept": "Kept", "won": "Won", "lost": "Lost" },
+  "rulings": "His weightiest rulings"
+ }
+}

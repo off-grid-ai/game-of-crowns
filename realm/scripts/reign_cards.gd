@@ -6,6 +6,7 @@ extends RefCounted
 ## here (ui.show_digest, ui._reign_end and the rest) and keeps the signals.
 
 const T := preload("res://scripts/theme.gd")
+const Data := preload("res://scripts/data.gd")
 const UI := preload("res://scripts/ui.gd")
 
 var ui: UI  # the interface that owns these cards: its signals, its building blocks, its other cards
@@ -421,6 +422,18 @@ func _reign_end(r: Dictionary) -> void:
 	on.add_theme_color_override("font_color", Color(1, 0.93, 0.78))
 	on.tooltip_text = "The same realm, with no clock. This reign stays in the Hall of Records."
 	go.add_child(on)
+	# The reign's ledger (Civilization's and Total War's end-of-campaign summary, drawn as a chronicle page): what he
+	# had when crowned and what he left, the towns kept, won and lost, the weightiest rulings (bridge reign.js ledger).
+	if r.get("ledger") is Dictionary:
+		var page := _ledger_page(r["ledger"])
+		page.visible = false
+		root.add_child(page)
+		var read := ui.btn("The reign's ledger", func():
+			page.visible = not page.visible
+			ui.heard.emit("page"))
+		read.custom_minimum_size = Vector2(200, 48)
+		read.add_theme_font_size_override("font_size", T.SIZE_BODY)
+		go.add_child(read)
 	var menu := ui.btn("Back to the menu", func():
 		layer.queue_free()
 		_end_panel = null
@@ -431,3 +444,62 @@ func _reign_end(r: Dictionary) -> void:
 	var tw := root.create_tween()
 	tw.tween_interval(0.6)
 	tw.tween_property(root, "modulate:a", 1.0, 2.2).set_trans(Tween.TRANS_SINE)
+
+
+## The reign's ledger as a chronicle page: wealth, troops and towns, crowned against now; the towns kept, won and
+## lost by name; the weightiest rulings in the order they were made. Words from realm/data/reign_end.json ledger.
+func _ledger_page(l: Dictionary) -> Control:
+	var w: Dictionary = Data.value("reign_end", "ledger", {})
+	var page := PanelContainer.new()
+	page.set_anchors_preset(Control.PRESET_CENTER)
+	page.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	page.grow_vertical = Control.GROW_DIRECTION_BOTH
+	page.custom_minimum_size = Vector2(620, 0)
+	page.add_theme_stylebox_override("panel", T._box(T.SURFACE_SOLID, Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.45), 10, 28))
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", T.GAP_SECTION)
+	page.add_child(col)
+	var head := T.title(String(w.get("title", "The reign's ledger")), 30, T.ACCENT)
+	head.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	col.add_child(head)
+	# Crowned, then now: one row a measure.
+	var from: Dictionary = l.get("from", {}) if l.get("from") is Dictionary else {}
+	var to: Dictionary = l.get("to", {}) if l.get("to") is Dictionary else {}
+	var grid := GridContainer.new()
+	grid.columns = 3
+	grid.add_theme_constant_override("h_separation", 40)
+	grid.add_theme_constant_override("v_separation", 6)
+	col.add_child(grid)
+	for c in ["", String(w.get("crowned", "When crowned")), String(w.get("now", "When it ended"))]:
+		grid.add_child(T.label(c))
+	for m in [["gold", "Crowns in the treasury"], ["troops", "Companies under arms"], ["towns", "Towns of the crown"]]:
+		grid.add_child(T.datum(String((w.get("measures", {}) as Dictionary).get(m[0], m[1])), T.SIZE_BODY, T.TEXT_2))
+		var a := int(from.get(m[0], 0))
+		var b := int(to.get(m[0], 0))
+		if m[0] == "gold":  # the bridge's gold, shown in crowns as the treasury is
+			a *= UI.CROWNS
+			b *= UI.CROWNS
+		grid.add_child(T.datum(str(a)))
+		grid.add_child(T.datum(str(b), T.SIZE_BODY, T.TEXT if b >= a else T.DANGER))
+	# The towns by name: kept, won, lost.
+	for k in [["kept", "Kept"], ["won", "Won"], ["lost", "Lost"]]:
+		var names: Array = l.get(k[0], []) if l.get(k[0]) is Array else []
+		if names.is_empty():
+			continue
+		var line := T.datum("%s: %s" % [String((w.get("towns", {}) as Dictionary).get(k[0], k[1])), ", ".join(names.map(func(n): return String(n)))], T.SIZE_BODY, T.DANGER if k[0] == "lost" else T.TEXT)
+		line.autowrap_mode = TextServer.AUTOWRAP_WORD
+		col.add_child(line)
+	# The weightiest rulings, as the chronicle wrote them.
+	var rulings: Array = l.get("rulings", []) if l.get("rulings") is Array else []
+	if not rulings.is_empty():
+		col.add_child(T.label(String(w.get("rulings", "His weightiest rulings"))))
+		for t in rulings:
+			var r_l := Label.new()
+			r_l.text = "· " + String(t)
+			r_l.autowrap_mode = TextServer.AUTOWRAP_WORD
+			r_l.custom_minimum_size.x = 560
+			r_l.add_theme_font_override("font", T.speech)
+			r_l.add_theme_font_size_override("font_size", T.SIZE_BODY)
+			r_l.add_theme_color_override("font_color", T.TEXT)
+			col.add_child(r_l)
+	return page
