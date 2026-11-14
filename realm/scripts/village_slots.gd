@@ -13,6 +13,9 @@ func _init(owner: Node) -> void:
 	v = owner
 
 
+const Ground := preload("res://scripts/ground.gd")  # the one answer to where a body may stand
+
+
 ## How much room each shared place has: people stand from `near` to `far`
 ## out from its heart, and no more than `room` of them at once.
 ## A square looks busy at 15-25 people with room between them, never shoulder
@@ -151,7 +154,7 @@ func _claim(a: Dictionary, key: String, clear: float) -> Vector3:
 			var q: Vector2 = v.nav.closest(map, want)
 			if q.distance_to(want) > 0.05:
 				continue  # under a stall or a wall
-			if town_node and not v.nav.inside(town_node, Vector3(c.x + q.x, 0, c.z + q.y)).is_empty():
+			if town_node and not Ground.inside(Vector3(c.x + q.x, 0, c.z + q.y)).is_empty():
 				continue  # in a fire, a cart or a table the walk map doesn't know of yet
 			if town_node and v.TownLife.on_lane(town_node, Vector3(c.x + q.x, 0, c.z + q.y)):
 				continue  # on a road's lane: travellers would walk through them
@@ -265,7 +268,7 @@ func _slot(a: Dictionary, key: String, queue := true) -> Vector3:
 		var q: Vector2 = v.nav.closest(a["map"], Vector2(o[0].x, o[0].z))
 		if q.distance_to(Vector2(o[0].x, o[0].z)) > 0.06:
 			continue  # under a stall's counter or a wall
-		if not v.nav.inside(town_node, Vector3(c.x + q.x, 0, c.z + q.y)).is_empty():
+		if not Ground.inside(Vector3(c.x + q.x, 0, c.z + q.y)).is_empty():
 			continue
 		if goals.any(func(g: Vector2) -> bool: return g.distance_to(q) < clear):
 			continue  # someone there, or on their way

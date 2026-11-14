@@ -9,6 +9,7 @@ extends SceneTree
 ##   arch -arm64 godot --headless --path realm --script res://tools/inside_probe.gd
 
 const TownNav := preload("res://scripts/town_nav.gd")
+const Ground := preload("res://scripts/ground.gd")
 
 
 class Towns extends Node3D:
@@ -62,10 +63,10 @@ func _run() -> void:
 		var local: Vector3 = points[name][0]
 		var want: bool = points[name][1]
 		var p := town.to_global(local)
+		Ground.towns = towns
 		var answers := {
-			"town_nav.inside": not TownNav.inside(town, p).is_empty(),
-			"town_nav.in_building": TownNav.in_building(towns, p),
-			"town_nav.clear": not TownNav.clear(towns, p),
+			"ground.inside": not Ground.inside(p).is_empty(),
+			"ground.is_clear": not Ground.is_clear(p),
 		}
 		if has_one:
 			answers["nav_ground.inside_something"] = not (NG.call("inside_something", town, p) as PackedVector2Array).is_empty()

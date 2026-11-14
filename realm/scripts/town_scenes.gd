@@ -563,7 +563,7 @@ func _stops(k: Dictionary) -> Dictionary:
 			pts.append(Vector3((q2 as Vector2).x, 0, (q2 as Vector2).y))
 	var open: Array = []
 	for p in pts:
-		var q: Vector3 = tl.place(root, p, 0.4, false)
+		var q: Vector3 = tl.place(root, p, 0.4)
 		if not is_nan(q.x):
 			open.append({"at": q})
 	var streets: Array = []
@@ -1032,7 +1032,7 @@ func _stage_walkers(k: Dictionary, role: Dictionary, a: Dictionary, does: String
 				var loads: Array = role.get("loads", [["Carrying", "townsfolk", "female"]])
 				var ld: Array = loads[i % loads.size()]
 				var start: Vector3 = stops[rng.randi() % stops.size()]["at"]
-				var p: Vector3 = tl.place(root, start + Vector3(rng.randf_range(-0.2, 0.2), 0, rng.randf_range(-0.2, 0.2)), 0.3, false)
+				var p: Vector3 = tl.place(root, start + Vector3(rng.randf_range(-0.2, 0.2), 0, rng.randf_range(-0.2, 0.2)), 0.3)
 				if is_nan(p.x):
 					continue
 				var man: Node3D = tl.cast(root, p, String(ld[1]), String(ld[0]), rng.randi(), Color.WHITE, "", "", String(ld[2]) if ld.size() > 2 else "")
@@ -1045,7 +1045,7 @@ func _stage_walkers(k: Dictionary, role: Dictionary, a: Dictionary, does: String
 				# Each carrier his own place at each stop, an open spot claimed like anyone's standing: never on another.
 				var order: Array = []
 				for st in stops:
-					var q: Vector3 = tl.place(root, st["at"], 0.25, false)
+					var q: Vector3 = tl.place(root, st["at"], 0.25)
 					if not is_nan(q.x):
 						order.append(q)
 				if order.size() < 2:
@@ -1099,7 +1099,7 @@ func _beat(root: Node3D, tl: Object, r: float, k: int, rng: RandomNumberGenerato
 		return ring
 	var places: Dictionary = root.get_meta("places", {})
 	var mid: Vector3 = places.get("well", Vector3.ZERO)
-	var by_well: Vector3 = tl.place(root, mid + Vector3(rng.randf_range(-1, 1), 0, rng.randf_range(-1, 1)).normalized() * 0.3, 0.4, false)
+	var by_well: Vector3 = tl.place(root, mid + Vector3(rng.randf_range(-1, 1), 0, rng.randf_range(-1, 1)).normalized() * 0.3, 0.4)
 	var gate := Vector3.INF
 	var castle: Array = root.get_meta("castle_frame", [])
 	if castle.size() >= 3 and bool(W.get("gate", true)):
@@ -1110,7 +1110,7 @@ func _beat(root: Node3D, tl: Object, r: float, k: int, rng: RandomNumberGenerato
 		var g2: Vector3 = cp - cb * Vector3(0, 0, half)
 		var g := g1 if g1.length() < g2.length() else g2  # the castle's end toward the square
 		if g.length() < r * 3.0:
-			var q: Vector3 = tl.place(root, g, 0.4, false)
+			var q: Vector3 = tl.place(root, g, 0.4)
 			if not is_nan(q.x):
 				gate = q
 	var route: Array = []
