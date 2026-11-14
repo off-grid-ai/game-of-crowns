@@ -18,6 +18,10 @@
     "content": ["claim.seize", "ambition.back"], "ambitious": ["ambition.forbid"], "vengeful": ["justice.peace"], "wrathful": ["justice.peace", "faith.ignore"],
     "paranoid": ["royalwed.wed"], "proud": ["grain.pledge", "ambition.pledge"]
    } },
+ "rest": { "_": "How the King eases his stress (royals.js rest, POST /king/rest {kind}; CK3's hunts, feasts and pilgrimages): each kind once in every seasons, for its gold from the crown's chest; ease is taken off his stress. hunt: risk, his chance of a fall from the saddle (a wound that adds to his yearly death risk for a year, wound). feast: every great house warms by favour. pilgrimage: the realm's pious lords warm by pious, and the King is away for away seasons (the court still sits under the Hand; noted only).",
+   "hunt": { "gold": 40, "ease": 2, "seasons": 4, "risk": 0.05, "wound": 0.05, "words": "The King rides out to hunt in the royal forest." },
+   "feast": { "gold": 120, "ease": 2, "seasons": 4, "favour": 3, "words": "The King holds a feast in the great hall. Musicians, roast swan, the lords' wives in their best." },
+   "pilgrimage": { "gold": 80, "ease": 4, "seasons": 8, "pious": 6, "words": "The King goes barefoot on pilgrimage to the old shrine, and prays." } },
  "funeral": { "_": "A new King's crowning (death or abdication): each great house's favour moves pull of the way toward to (oaths were sworn to the old King; CK2's and Old World's succession).", "to": 42, "pull": 0.35 },
  "minor": { "_": "A King under majority: every great house cools by favour once at the crowning; while the regency lasts a rising weighs rising more in a cold lord's choice (characters.js rebel), and claim more again for a lord who wants the crown.", "favour": -6, "rising": 20, "claim": 20 },
  "match": { "_": "A great lord offers his child for the heir's hand at court (characters.js royalwed): both of age; wed binds his house and cools the rest, refuse cools his.", "age": 16, "weight": 3, "wed": { "him": 20, "others": -3 }, "refuse": { "him": -8 } },

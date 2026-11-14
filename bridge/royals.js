@@ -8,6 +8,7 @@
 import fs from "node:fs";
 import { rng } from "./fresh.js";
 import { greatHouses } from "./realm.js";
+import * as Lua from "./lua.js";
 import { TRAITS } from "./characters.js";  // read only at run time (characters.js imports this module too)
 
 const R = JSON.parse(fs.readFileSync(new URL("./data/royals.json", import.meta.url), "utf8"));
@@ -155,7 +156,8 @@ export function year(ctx, turn) {
     ctx.record({ turn, kind: "birth", text: `${h.king.woman ? `Queen ${h.king.name}` : "The Queen"} is delivered of a ${k.woman ? "daughter" : "son"}, ${k.name}. The bells ring in Kingsmere.` });
   }
   h.king.stress = Math.max(0, (h.king.stress ?? 0) - R.stress.ease);
-  const risk = (R.death.find(([from]) => h.king.age >= from) ?? [0, 0])[1] + Math.max(0, (h.king.stress ?? 0) - R.stress.high) * R.stress.risk;
+  const risk = (R.death.find(([from]) => h.king.age >= from) ?? [0, 0])[1] + Math.max(0, (h.king.stress ?? 0) - R.stress.high) * R.stress.risk
+    + (h.king.wound != null && turn - h.king.wound < 4 ? R.rest.hunt.wound : 0);
   if (r() < risk) { h.king.alive = false; pass(ctx, h, "died", turn); }
 }
 
@@ -204,8 +206,34 @@ export function ruled(ctx, kind, option) {
   if (was <= S.high && k.stress > S.high) ctx.record({ turn: ctx.world?.turn ?? 0, kind: "court", text: `${k.woman ? "Queen" : "King"} ${k.name} sleeps badly. A ${against[0]} soul made to rule against itself, season after season; the physicians shake their heads.` });
 }
 
+// The King eases his stress (POST /king/rest {kind}; data/royals.json rest: a hunt, a feast, a pilgrimage), each once
+// in its seasons, for gold from the crown's chest. The hunt may wound him (a year's added death risk); the feast warms
+// the great houses; the pilgrimage, the pious lords.
+export function rest(ctx, kind) {
+  const h = of(ctx.meta), k = h.king, Rk = R.rest[kind];
+  const turn = ctx.world?.turn ?? 0;
+  if (!Rk || kind === "_") return { error: "No such rest." };
+  const last = h.rested?.[kind];
+  if (last != null && turn - last < Rk.seasons) return { error: `Not again so soon: in ${Rk.seasons - (turn - last)} seasons.` };
+  const crown = ctx.crownOf?.();
+  if ((crown?.gold ?? 0) < Rk.gold) return { error: `The treasury holds ${crown?.gold ?? 0} gold; it costs ${Rk.gold}.` };
+  ctx.send(`lua cmd ${Lua.gold(crown.id, -Rk.gold)}`);
+  crown.gold -= Rk.gold;
+  (h.rested ??= {})[kind] = turn;
+  k.stress = Math.max(0, (k.stress ?? 0) - Rk.ease);
+  let told = Rk.words;
+  if (kind === "hunt" && Math.random() < Rk.risk) { k.wound = turn; told += ` His horse falls at a ditch, and he is carried home hurt.`; }
+  if (kind === "feast") ctx.shiftFavour(Object.fromEntries(greatHouses(ctx.world).map((p) => [p.id, Rk.favour])), "the King's feast");
+  if (kind === "pilgrimage") {
+    const pious = greatHouses(ctx.world).filter((p) => ctx.court?.lordOfHouse(p.id)?.traits?.includes("pious"));
+    if (pious.length) ctx.shiftFavour(Object.fromEntries(pious.map((p) => [p.id, Rk.pious])), "the King's pilgrimage");
+  }
+  ctx.record({ turn, kind: kind === "feast" ? "feast" : "court", text: told });
+  return { ok: true, stress: k.stress };
+}
+
 // For /world: the King, his consort, his heir and the rest of his children, and the Kings before him.
-export function view(meta) {
+export function view(meta, turn = 0) {
   const h = meta?.royals;
   if (!h) return null;
   const who = (p) => p && { id: p.id, name: p.name, age: p.age, woman: p.woman, traits: p.traits ?? [], ...(p === h.king ? { stress: p.stress ?? 0 } : {}) };
@@ -213,6 +241,6 @@ export function view(meta) {
   return {
     king: who(h.king), consort: h.consort?.alive ? who(h.consort) : null, heir: who(next), match: next?.spouse ? { name: next.spouse.name, house: next.spouse.house } : null,
     children: h.children.filter((k) => k.alive).map(who), kin: h.kin.filter((k) => k.alive).map(who), regency: isRegency(h),
-    line: h.line, abdicate: Boolean(next && next.age >= R.abdicate.age),
+    line: h.line, rest: Object.fromEntries(Object.entries(R.rest).filter(([k]) => k !== "_").map(([k, v]) => [k, { gold: v.gold, ease: v.ease, ready: h.rested?.[k] == null || turn - h.rested[k] >= v.seasons, last: h.rested?.[k] ?? null, seasons: v.seasons }])), abdicate: Boolean(next && next.age >= R.abdicate.age),
   };
 }
