@@ -23,6 +23,16 @@
  "crowned_nature": "{age}, by nature {traits}.",
  "funeral": "The great houses swore to the old King, not to this one. Old friends wait to be won again, and old grudges are half forgotten.",
  "crowned_ok": "So it begins",
+ "focus": { "_": "Who the King means to be (royal_sheet.gd _focus_row; bridge royals.js focus): head over the choice; tips by focus id; once under it; chosen ({focus}: its label from the bridge) once made.",
+  "head": "Who he means to be",
+  "tips": {
+   "war": "A King of the sword. War will find him more often, and buying peace will gnaw at him.",
+   "court": "A King of his lords. Their quarrels will come to him more often, and a hard word to one will gnaw at him.",
+   "faith": "A King of the faith. The church and the poor will come to him more often, and cruelty will gnaw at him.",
+   "coin": "A King of the purse. Trade and the treasury will need him more often, and gold thrown away will gnaw at him."
+  },
+  "once": "He chooses once. The realm will test him on it.",
+  "chosen": "He means to be remembered for {focus}." },
  "lord_holdings": { "_": "A lord's sheet, what he holds (hero_view.gd _holdings; bridge /world cities, vassals): head; towns ({towns}) and sworn ({houses}) for a great house's lord; vassal ({house}, {town}, {liege}) for a sworn lord.",
   "head": "Holds",
   "towns": "{towns}",

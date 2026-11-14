@@ -612,7 +612,8 @@ func _show_heading(r: Dictionary) -> void:
 	if rs.get("king") is Dictionary:
 		var k: Dictionary = rs["king"]
 		var nature := RoyalSheet.traits_of(k)
-		_earning.text = "%s%s  ·  %s" % [String(k.get("name", "")), (", " + nature) if nature != "" else "", _earning.text]
+		var focus := RoyalSheet.focus_label(rs)
+		_earning.text = "%s%s%s  ·  %s" % [String(k.get("name", "")), (", " + nature) if nature != "" else "", ("  ·  " + focus) if focus != "" else "", _earning.text]
 		tip.append("King %s, %d: %s.%s Click for the royal family." % [RoyalSheet.line_of(k).get_slice(",", 0), int(k.get("age", 0)), nature if nature != "" else "of no marked nature", "  A child King: a regent holds the realm." if bool(rs.get("regency", false)) else ""])
 		var strain := String(RoyalSheet.stress_band(k).get("says", ""))
 		if strain != "":

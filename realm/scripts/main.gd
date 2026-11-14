@@ -371,6 +371,7 @@ func _ready() -> void:
 	ui.next_host.connect(_next_host)
 	ui.abdicate_asked.connect(func(cb): bridge.abdicate(cb))
 	ui.rest_asked.connect(func(kind, cb): bridge.king_rest(kind, cb))
+	ui.focus_asked.connect(func(focus, cb): bridge.king_focus(focus, cb))
 	awareness.synced.connect(ui.royal.on_synced)  # the crown passing: court news of how the houses take the new King
 	awareness.cleared.connect(ui.royal.reset)
 	bridge.chronicle_added.connect(ui.royal.on_chronicle)  # a lord rising: the Hand's warning at court

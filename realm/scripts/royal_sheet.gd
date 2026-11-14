@@ -144,6 +144,7 @@ func open() -> void:
 		_say(v, String(sb["says"]), T.DANGER if bool(sb.get("hard", false)) else T.TEXT_2)
 	if bool(r.get("regency", false)):
 		_say(v, _w("regency", ""), T.DANGER)
+	_focus_row(v, r)
 	_rest_row(v, r)
 	v.add_child(HSeparator.new())
 	# The family.
@@ -211,6 +212,51 @@ func open() -> void:
 
 ## Easing his mind (bridge royals.js rest; CK3's hunts, feasts and pilgrimages): one button each, its price in crowns
 ## and how much it eases; one not ready says when it will be, one he can't pay says so (no silent locked button).
+## Who the King means to be (CK3's lifestyle focus; bridge royals.js, /world royals.king.focus and royals.focuses):
+## chosen once a crowning, then said on his sheet, the bar's heading and the crowning card. Words in royal_sheet.json focus.
+static func focus_label(r: Dictionary) -> String:
+	var king: Dictionary = r.get("king", {}) if r.get("king") is Dictionary else {}
+	if king.get("focus") == null:
+		return ""
+	for f in r.get("focuses", []):
+		if String(f.get("id", "")) == String(king["focus"]):
+			return String(f.get("label", ""))
+	return ""
+
+
+func _focus_row(v: VBoxContainer, r: Dictionary) -> void:
+	var words: Dictionary = Data.value("royal_sheet", "focus", {})
+	var chosen := focus_label(r)
+	if chosen != "":
+		_say(v, String(words.get("chosen", "{focus}")).replace("{focus}", chosen.left(1).to_lower() + chosen.substr(1)), T.ACCENT)
+		return
+	var focuses: Array = r.get("focuses", [])
+	if focuses.is_empty() or not (r.get("king") is Dictionary):
+		return
+	v.add_child(T.label(String(words.get("head", ""))))
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", T.GAP)
+	for f in focuses:
+		var id := String(f.get("id", ""))
+		var b: Button = ui.btn(String(f.get("label", id)))
+		b.tooltip_text = String((words.get("tips", {}) as Dictionary).get(id, ""))
+		b.pressed.connect(func():
+			for x in row.get_children():
+				(x as Button).disabled = true
+			ui.focus_asked.emit(id, func(code, d):
+				if code != 200:
+					ui.heard.emit("error")
+					ui.toast(String(d.get("error", "")) if d is Dictionary else "")
+				else:
+					ui.heard.emit("seal")
+					ui.toast(String(d.get("text", "")) if d is Dictionary else "")
+				if is_instance_valid(_card) and _card.visible:
+					open.call_deferred()))
+		row.add_child(b)
+	v.add_child(row)
+	_say(v, String(words.get("once", "")), T.TEXT_3)
+
+
 func _rest_row(v: VBoxContainer, r: Dictionary) -> void:
 	var rest: Dictionary = r.get("rest", {}) if r.get("rest") is Dictionary else {}
 	if rest.is_empty():
@@ -443,6 +489,7 @@ func _crowned(king: Dictionary, r: Dictionary, was: Dictionary, now: Dictionary)
 	if bool(r.get("regency", false)):
 		_say(v, _w("regency", ""), T.DANGER)
 	_say(v, _w("funeral", ""), T.TEXT)
+	_focus_row(v, r)
 	# Each great house: its mood under the old King, and now.
 	var grid := GridContainer.new()
 	grid.columns = 3

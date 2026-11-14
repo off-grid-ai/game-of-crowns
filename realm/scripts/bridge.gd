@@ -323,6 +323,11 @@ func king_rest(kind: String, cb: Callable) -> void:
 	_post("/king/rest", {"kind": kind}, cb)
 
 
+## The King says who he means to be, once a crowning (bridge royals.js setFocus): war, court, faith or coin.
+func king_focus(focus: String, cb: Callable) -> void:
+	_post("/king/focus", {"focus": focus}, cb)
+
+
 func records(cb: Callable) -> void:
 	_http_get("/records", cb)
 
