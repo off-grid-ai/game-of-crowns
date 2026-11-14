@@ -26,6 +26,7 @@ import * as Rivals from "./rivals.js";
 import * as Rebels from "./rebels.js";
 import * as Battles from "./battles.js";
 import * as Peace from "./peace.js";
+import * as Coalition from "./coalition.js";
 import * as Contagion from "./contagion.js";
 import * as Prices from "./prices.js";
 import * as Seals from "./seals.js";
@@ -71,6 +72,7 @@ export function turn(ctx, ev) {
   Rivals.season(ctx, Number(ev.turn));
   Rebels.season(ctx, Number(ev.turn));
   Peace.season(ctx, Number(ev.turn));
+  Coalition.season(ctx, Number(ev.turn));
   Contagion.season(ctx, Number(ev.turn));
   Prices.season(ctx, Number(ev.turn));  // the market's prices follow the harvest, the wars and the roads (prices.js)  // the sickness walks the trade roads (contagion.js)  // the rival King beyond the border probes it (rivals.js)  // the King's named men after last season's battles: some fall, some rise (captains.js)  // the great houses' sieges change approach after a failed storm (siegecraft.js)  // the King's promises kept or broken (promises.js)  // the King's household ages; a King may die and his heir reign (royals.js)
   setTimeout(() => ctx.runArcs(1), 4000);

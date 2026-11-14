@@ -1,0 +1,7 @@
+{
+ "_": "The brake on the blob (coalition.js; EU4's coalitions, CK3's factions against a too-great vassal). A great house holding share of the realm's towns or more (a share of 1) faces a league: up to members great houses, the nearest seats first, swear a pact and go to war on it; the league holds until the house falls under release. A crown holding crown.share or more is feared: every great house loses crown.fear favour each season it stays so.",
+ "share": 0.3,
+ "release": 0.22,
+ "members": 3,
+ "crown": { "share": 0.45, "fear": 1 }
+}
