@@ -506,7 +506,7 @@ func _refresh() -> void:
 		return
 	var at: Variant = h.get("at")
 	_title.text = ("The royal host at %s" % String(at.get("name", ""))).to_upper() if at is Dictionary else "THE ROYAL HOST"
-	_status.text = "%s men · %s" % [main.ui.heads(int(h.get("men", 0))), _doing(h)]
+	_status.text = "%s · %s" % [String(Data.value(FILE, "troops", "{men} troops")).format({"men": main.ui.heads(int(h.get("men", 0)))}), _doing(h)]
 	_card.tooltip_text = "%d companies" % int(h.get("companies", 0))
 	# The host's orders this season (bridge hosts.json ordersPerHost): the card says how many it has left, and with none its
 	# buttons are greyed with the reason rather than looking live and refusing.

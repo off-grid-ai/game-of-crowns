@@ -166,7 +166,7 @@ static func draw_banner(ci: CanvasItem, foot: Vector2, house: Dictionary, men: i
 	if font == null or men <= 0:
 		return
 	var fs := int(num("marks.banner.font", 12.0) * k)
-	var text := String(Data.value(F, "marks.line.plate", "{men} men")).replace("{men}", _men(men))
+	var text := String(Data.value(F, "marks.line.plate", "{men} troops")).replace("{men}", _men(men))
 	var w := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 	var plate := Rect2(foot + Vector2(-w * 0.5 - 4.0, 2.0), Vector2(w + 8.0, fs + 4.0))
 	ci.draw_rect(plate, Color(0.06, 0.05, 0.04, 0.78 * alpha))
@@ -184,7 +184,7 @@ static func flag_arms(house: Dictionary) -> Texture2D:
 static func host_line(g: Dictionary, cities: Array) -> String:
 	var texts: Dictionary = (Data.value(F, "marks.line", {}) as Dictionary)
 	var house: Dictionary = g.get("house", {})
-	var line := String(texts.get("host", "{house}'s host, {men} men")).replace("{house}", String(house.get("name", "A house"))).replace("{men}", _men(int(g.get("men", 0))))
+	var line := String(texts.get("host", "{house}'s host, {men} troops")).replace("{house}", String(house.get("name", "A house"))).replace("{men}", _men(int(g.get("men", 0))))
 	var goal: Variant = g.get("goal")
 	if goal == null:
 		return line + String(texts.get("ease", ", at ease"))

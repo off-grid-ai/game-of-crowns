@@ -99,7 +99,7 @@ func _rank_houses(players: Array, fallen: Array = []) -> void:
 		ember.position = Vector2((slot + 22.0) * 0.5 - 2.0, 3)
 		ember.visible = turning > 0.0
 		ember.modulate.a = 0.55 + 0.45 * turning
-		chip.tooltip_text = "%d. %s\n%d towns  ·  %s men-at-arms  ·  favour %d" % [i + 1, String(p["house"].get("name", "")), int(p.get("cities", 0)), ui.heads(int(p.get("units", 0)) * 200), int(p.get("favour", 0))]
+		chip.tooltip_text = "%d. %s\n%d towns  ·  %s troops  ·  favour %d" % [i + 1, String(p["house"].get("name", "")), int(p.get("cities", 0)), ui.heads(int(p.get("units", 0)) * 200), int(p.get("favour", 0))]
 		if turning > 0.0:
 			chip.tooltip_text += "\n" + ("Turned against you: their ultimatum is on its way." if turning >= 1.0 else "Turning against you. Left under 25, they send an ultimatum before they rise.")
 		var was := _rank_order.find(id)

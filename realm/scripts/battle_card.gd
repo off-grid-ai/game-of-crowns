@@ -97,7 +97,7 @@ func _show(c: Dictionary) -> void:
 		gap.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		gap.custom_minimum_size.x = 24
 		row.add_child(gap)
-		row.add_child(T.datum(String(words.get("men", "{men} men")).format({"men": main.ui.heads(int(s.get("men", 0)))}), T.SIZE_DESC, T.TEXT_2))
+		row.add_child(T.datum(String(words.get("men", "{men} troops")).format({"men": main.ui.heads(int(s.get("men", 0)))}), T.SIZE_DESC, T.TEXT_2))
 		var lost := T.datum(String(words.get("lost", "-{lost}")).format({"lost": main.ui.heads(int(s.get("lost", 0)))}), T.SIZE_DESC, T.DANGER if int(s.get("lost", 0)) > 0 else T.TEXT_3)
 		row.add_child(lost)
 		v.add_child(row)
