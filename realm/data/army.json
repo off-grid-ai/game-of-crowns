@@ -3,7 +3,7 @@
   "units": {
     "spearmen": { "role": "melee", "glyph": "spear", "share": 0.3, "men": 160, "asset": "armies/meshy_town_guard", "freeciv": ["Phalanx", "Pikemen", "Musketeers", "Riflemen", "Alpine Troops"] },
     "men_at_arms": { "role": "melee", "glyph": "sword", "share": 0.25, "men": 150, "asset": "armies/meshy_man_at_arms", "freeciv": ["Fanatics", "Partisan", "Mech. Inf."] },
-    "levy": { "role": "melee", "glyph": "spear", "share": 0.0, "men": 150, "asset": "armies/meshy_town_guard", "spacing": { "file": 0.13, "rank": 0.15 }, "cloth": { "undyed": [0.52, 0.45, 0.35], "band": [0.78, 0.88] }, "freeciv": ["Warriors"] },
+    "levy": { "role": "melee", "glyph": "spear", "share": 0.0, "men": 150, "asset": "armies/levy", "spacing": { "file": 0.13, "rank": 0.15 }, "cloth": { "undyed": [0.52, 0.45, 0.35], "band": [0.78, 0.88] }, "freeciv": ["Warriors"] },
     "archers": { "role": "ranged", "glyph": "bow", "share": 0.2, "men": 150, "asset": "armies/meshy_ranger", "spacing": { "file": 0.18, "rank": 0.26 }, "freeciv": ["Archers"] },
     "knights": { "role": "melee", "glyph": "sword", "share": 0.1, "men": 120, "asset": "armies/meshy_knight", "freeciv": ["Legion"] },
     "horse": { "role": "cavalry", "glyph": "horse", "share": 0.15, "men": 100, "asset": "armies/cavalry", "spacing": { "file": 0.19, "rank": 0.5 }, "freeciv": ["Horsemen", "Chariot", "Knights", "Crusaders", "Elephants", "Dragoons", "Cavalry"] },
@@ -29,6 +29,12 @@
       "tracks": { "idle": "Sword_Idle", "rest": { "Sword_Idle": 0.8, "SS_Block_Idle": 0.2 }, "walk": "Axe_Walk", "run": "Running", "ready": "SS_Block_Idle", "block": "SS_Block_1", "attack": ["SS_Slash_1", "SS_Slash_3", "SS_Slash_5", "Sword_Attack_2"], "hit": ["SS_Impact_1", "SS_Impact_2"], "death": ["SS_Death_2", "SS_Death_1"], "cheer": "Battlecry" }
     },
     "armies/meshy_town_guard": {
+      "body": 1.6,
+      "albedo": "albedo.png",
+      "team": "mask",
+      "tracks": { "idle": "Sword_Idle", "rest": { "Sword_Idle": 0.8, "SS_Block_Idle": 0.2 }, "walk": "SS_Walk", "run": "Running", "ready": "SS_Block_Idle", "block": "SS_Block_1", "attack": ["Pike_Jab_1", "Pike_Jab_2", "SS_Block_1"], "hit": ["SS_Impact_1", "SS_Impact_2"], "death": ["SS_Death_2", "SS_Death_1"], "cheer": "Battlecry" }
+    },
+    "armies/levy": {
       "body": 1.6,
       "albedo": "albedo.png",
       "team": "mask",
