@@ -524,9 +524,88 @@ func on_chronicle(entries: Array) -> void:
 	_chron_seen = true
 	if first:
 		return
+	var st: Node = Awareness.store()
+	var crown := int(st.rec("crownId", -1)) if st else -1
 	for e in entries:
 		if String(e.get("kind", "")) == "rebellion":
 			_rising(e)
+		# A crown town lost, and won back (casebook, Defeat is a chapter: losing opens a thread; Kenshi's march back).
+		if String(e.get("kind", "")) == "city_transferred" and e.get("city") != null:
+			if int(e.get("from", -2)) == crown:
+				_lost(e)
+			elif int(e.get("to", -2)) == crown:
+				_won_back(e)
+
+
+## The King's vows to take back a lost town, by town id, for this reign (settings.cfg play.vows).
+func _vows() -> Dictionary:
+	var all: Dictionary = Settings.get_value("vows") if Settings.get_value("vows") is Dictionary else {}
+	return all.get(String((ui.reign_now as Dictionary).get("id", "")), {})
+
+
+func _set_vow(town: int, on: bool) -> void:
+	var all: Dictionary = Settings.get_value("vows") if Settings.get_value("vows") is Dictionary else {}
+	var rid := String((ui.reign_now as Dictionary).get("id", ""))
+	var mine: Dictionary = all.get(rid, {})
+	if on:
+		mine[str(town)] = true
+	else:
+		mine.erase(str(town))
+	all[rid] = mine
+	Settings.set_value("vows", all)
+
+
+func _lost(e: Dictionary) -> void:
+	var w: Dictionary = Data.value("royal_sheet", "lost", {})
+	var town_id := int(e["city"])
+	var town := String(ui.town_of.call(town_id).get("name", ""))
+	var said := String(e.get("text", ""))
+	var at: Vector3 = ui.town_point.call(ui.town_of.call(town_id))
+	ui.word_news.emit(town_id, said)
+	var c: PanelContainer = ui.glass_panel()
+	c.add_theme_stylebox_override("panel", T._box(Color(0.12, 0.09, 0.08, 0.97), Color(T.DANGER.r, T.DANGER.g, T.DANGER.b, 0.6), 10, 22))
+	c.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	c.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	c.position.y = 96
+	c.custom_minimum_size = Vector2(500, 0)
+	ui.card(c)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", T.GAP_SECTION)
+	c.add_child(v)
+	v.add_child(T.title(String(w.get("head", "{town} is lost")).replace("{town}", town), 24, T.DANGER))
+	var l := T.datum(said, T.SIZE_BODY, T.TEXT)
+	l.add_theme_font_override("font", T.speech)
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD
+	l.custom_minimum_size.x = 460
+	v.add_child(l)
+	_say(v, String(w.get("hand", "")), T.TEXT_2)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", T.GAP)
+	v.add_child(row)
+	row.add_child(ui.btn(String(w.get("vow", "")).replace("{town}", town), func():
+		c.visible = false
+		_set_vow(town_id, true)
+		ui.heard.emit("seal")
+		ui.toast(String(w.get("vowed", "")).replace("{town}", town))))
+	if at != Vector3.INF:
+		row.add_child(ui.btn(String(w.get("look", "")), func():
+			c.visible = false
+			ui.matter_opened.emit(at)))
+	row.add_child(ui.btn(String(w.get("let_go", "")), func(): c.visible = false))
+	ui.ease_in(c)
+	ui.heard.emit("event")
+
+
+func _won_back(e: Dictionary) -> void:
+	var town_id := int(e["city"])
+	if not _vows().has(str(town_id)):
+		return
+	_set_vow(town_id, false)
+	var w: Dictionary = Data.value("royal_sheet", "lost", {})
+	var said := String(w.get("kept", "")).replace("{town}", String(ui.town_of.call(town_id).get("name", "")))
+	ui.toast(said)
+	ui.heard.emit("seal")
+	ui.word_news.emit(town_id, said)
 
 
 func _rising(e: Dictionary) -> void:
