@@ -1,27 +1,92 @@
 {
- "_": "A plague that walks the roads (contagion.js; Banished's and Frostpunk's sickness, Plague Inc's spread along routes, CK3's epidemics with their choices). It begins in a town Freeciv makes sick (its own illness) or, with chance start a season, in the realm's biggest town in summer. Each season it may pass from every sick town whose roads are open to each town it trades with (trade.js routes) by spread; a town is sick for lasts seasons, and while sick it is plague in the realm's eyes (view.js: households die harder, minds fear, moods), its fields half worked (the Blight decree, blight seasons). The King's answers come as event cards (cards, events.js's shape, subject sick_town, when.contagion: a plague is abroad, spread: at least that many towns): close: its roads shut (no carts, no spread out; the town suffers), heal: physicians shorten its sickness by heal seasons, burn: every sick town's sickness ends next season.",
+ "_": "A plague that walks the roads (contagion.js; Banished's and Frostpunk's sickness, Plague Inc's spread along routes, CK3's epidemics with their choices). It begins in a town Freeciv makes sick (its own illness) or, with chance start a season, in the realm's biggest town in summer. Each season it may pass from every sick town whose roads are open to each town it trades with (trade.js routes) by spread; a town is sick for lasts seasons, and while sick it is plague in the realm's eyes (view.js: households die harder, minds fear, moods), its fields half worked (the Blight decree, blight seasons). The King's answers come as event cards (cards, events.js's shape, subject sick_town, when.contagion: a plague is abroad, spread: at least that many towns): close: its roads shut (no carts, no spread out; the town suffers), heal: physicians shorten its sickness by heal seasons, burn: every sick town's sickness ends next season. A town that came through it keeps it off for immune seasons (its survivors; the SIR model's recovered), so a wave burns itself out; when the last sick town is well the chronicle tells the whole wave: how many towns, how long, how many streets it emptied (the towns' size lost).",
  "start": 0.04,
  "spread": 0.35,
  "lasts": 4,
  "blight": 1,
  "heal": 2,
+ "immune": 12,
  "cards": [
-  { "id": "plague_town", "deck": "contagion", "subject": "sick_town", "weight": 6, "rest": 3, "when": { "contagion": true },
-    "title": "Sickness in {town}",
-    "text": "The death-carts go out at night in {town}. The reeve asks what the crown will do before it walks the roads to the next town.",
-    "choices": [
-      { "label": "Close the roads to {town}", "contagion": "close", "favour": { "house": -6 }, "text": ["Spearmen stand on every road out of {town}. No cart leaves, and nobody brings bread in."] },
-      { "label": "Send the King's physicians (60 gold)", "cost": 60, "contagion": "heal", "favour": { "house": 4 }, "text": ["The King's physicians ride into {town} with vinegar and herbs, and some of them come out again."] },
-      { "label": "Pray, and let the roads stay open", "favour": { "house": 2 }, "text": ["Bells ring for {town} in every chapel. The carts keep moving, and so does the sickness."] }
-    ],
-    "ignore": { "text": "No word comes from the crown. {town} buries its dead and the carts keep moving." } },
-  { "id": "plague_burn", "deck": "contagion", "subject": "sick_town", "weight": 4, "rest": 6, "when": { "contagion": true, "spread": 3 },
-    "title": "The sickness is in many towns",
-    "text": "{town} is one of many now. The physicians say fire is the only cure: burn the houses of the dead, bedding and all.",
-    "choices": [
-      { "label": "Burn the houses of the dead", "contagion": "burn", "favour": { "all": -5 }, "text": ["Smoke stands over every sick town. The sickness is burnt out, and so is half the poor quarter."] },
-      { "label": "Let it run its course", "text": ["The crown waits. The sickness does not."] }
-    ],
-    "ignore": { "text": "The crown says nothing, and the sickness walks on." } }
+  {
+   "id": "plague_town",
+   "deck": "contagion",
+   "subject": "sick_town",
+   "weight": 6,
+   "rest": 3,
+   "when": {
+    "contagion": true
+   },
+   "title": "Sickness in {town}",
+   "text": "The death-carts go out at night in {town}. The reeve asks what the crown will do before it walks the roads to the next town.",
+   "choices": [
+    {
+     "label": "Close the roads to {town}",
+     "contagion": "close",
+     "favour": {
+      "house": -6
+     },
+     "text": [
+      "Spearmen stand on every road out of {town}. No cart leaves, and nobody brings bread in."
+     ]
+    },
+    {
+     "label": "Send the King's physicians (60 gold)",
+     "cost": 60,
+     "contagion": "heal",
+     "favour": {
+      "house": 4
+     },
+     "text": [
+      "The King's physicians ride into {town} with vinegar and herbs, and some of them come out again."
+     ]
+    },
+    {
+     "label": "Pray, and let the roads stay open",
+     "favour": {
+      "house": 2
+     },
+     "text": [
+      "Bells ring for {town} in every chapel. The carts keep moving, and so does the sickness."
+     ]
+    }
+   ],
+   "ignore": {
+    "text": "No word comes from the crown. {town} buries its dead and the carts keep moving."
+   }
+  },
+  {
+   "id": "plague_burn",
+   "deck": "contagion",
+   "subject": "sick_town",
+   "weight": 4,
+   "rest": 6,
+   "when": {
+    "contagion": true,
+    "spread": 3
+   },
+   "title": "The sickness is in many towns",
+   "text": "{town} is one of many now. The physicians say fire is the only cure: burn the houses of the dead, bedding and all.",
+   "choices": [
+    {
+     "label": "Burn the houses of the dead",
+     "contagion": "burn",
+     "favour": {
+      "all": -5
+     },
+     "text": [
+      "Smoke stands over every sick town. The sickness is burnt out, and so is half the poor quarter."
+     ]
+    },
+    {
+     "label": "Let it run its course",
+     "text": [
+      "The crown waits. The sickness does not."
+     ]
+    }
+   ],
+   "ignore": {
+    "text": "The crown says nothing, and the sickness walks on."
+   }
+  }
  ]
 }
