@@ -527,14 +527,10 @@ static func _begin(name: String) -> bool:
 	if by_mat != null:
 		var cut: float = FLOOR_CUT.get(name, -INF)
 		var budget: int = BUDGET.get(KIT[name][0], 0)
-		var far := FAR % name.substr(6) if name.begins_with("meshy_") else ""
-		var mats := {}  # the whole model's materials by name (dyed, lit as _no_glow left them): the far mesh wears them
-		for m in by_mat:
-			if m:
-				mats[(m as Material).resource_name] = m
+		var hlod: Dictionary = Data.value("towns", "hlod", {})  # read here: the data's cache is the main thread's
 		task = WorkerThreadPool.add_task(func():
 			out[0] = _lods(by_mat, cut, budget)
-			out.append(_far(far, built_frame, mats, cut) if FileAccess.file_exists(far) else null), false, "merge " + name)
+			out.append(_low(out[0], hlod)), false, "merge " + name)
 	_pending[name] = {"task": task, "out": out, "root": root, "parts": parts, "k": k, "box": box, "frame": built_frame}
 	return true
 
@@ -770,25 +766,43 @@ static func _lods(by_mat: Dictionary, floor_cut: float, budget: int) -> Importer
 	return im
 
 
-## A Meshy building's far mesh, drawn past NEAR in place of the whole one (towns.gd _hlod: Godot's visibility ranges,
-## its built-in HLOD): tools/meshy_far.py's cut (Blender: welded, decimated to meshy.json far_tris; the whole is 20-30k
-## triangles, roof height needs a few thousand), read with Godot's own glTF reader, set in the whole model's frame and
-## dressed in its materials by name, with its own lighter levels. Plain arrays and files only, so a worker runs it.
-const FAR := "res://assets/meshy_far/%s.glb"
-static func _far(path: String, frame: Transform3D, mats: Dictionary, floor_cut: float) -> ImporterMesh:
-	var state := GLTFState.new()
-	if GLTFDocument.new().append_from_file(path, state) != OK:
+## A merged model's low mesh, drawn past NEAR in place of the whole one (towns.gd _flush: Godot's visibility ranges,
+## its built-in HLOD; Meshy buildings are 20-100k triangles, a house seen from the middle zoom needs a few thousand):
+## the first of Godot's generated detail levels at or under towns.json hlod.share of its triangles (or hlod.least),
+## else its lightest; null when no level is under hlod.worth of it (a light model needs none). Plain arrays: a worker.
+static func _low(im: ImporterMesh, H: Dictionary) -> ImporterMesh:
+	if im == null:
 		return null
-	var by_mat := {}
-	for gm: GLTFMesh in state.get_meshes():
-		var im := gm.mesh
+	var full := 0
+	var most := 0
+	for s in im.get_surface_count():
+		full += (im.get_surface_arrays(s)[Mesh.ARRAY_INDEX] as PackedInt32Array).size() / 3
+		most = maxi(most, im.get_surface_lod_count(s))
+	var want := maxf(float(H.get("least", 1500)), full * float(H.get("share", 0.05)))
+	var pick := -1
+	for level in most:
+		pick = level
+		var n := 0
 		for s in im.get_surface_count():
-			var own := im.get_surface_material(s)
-			var mat: Material = mats.get(own.resource_name if own else "", own)
-			if not by_mat.has(mat):
-				by_mat[mat] = []
-			by_mat[mat].append([im.get_surface_arrays(s), frame])
-	return _lods(by_mat, floor_cut, 0)
+			n += (im.get_surface_lod_indices(s, mini(level, im.get_surface_lod_count(s) - 1)).size() / 3) if im.get_surface_lod_count(s) > 0 else (im.get_surface_arrays(s)[Mesh.ARRAY_INDEX] as PackedInt32Array).size() / 3
+		if n <= want:
+			break
+	if pick < 0:
+		return null
+	var out := ImporterMesh.new()
+	var n := 0
+	for s in im.get_surface_count():
+		var arr: Array = im.get_surface_arrays(s)
+		if im.get_surface_lod_count(s) > 0:
+			arr[Mesh.ARRAY_INDEX] = im.get_surface_lod_indices(s, mini(pick, im.get_surface_lod_count(s) - 1))
+		n += (arr[Mesh.ARRAY_INDEX] as PackedInt32Array).size() / 3
+		out.add_surface(Mesh.PRIMITIVE_TRIANGLES, arr, [], {}, im.get_surface_material(s))
+	if n > full * float(H.get("worth", 0.5)):
+		return null
+	# Its own lighter levels in turn, as _within's: without them the low mesh drew all its triangles at any distance,
+	# more than Godot's own levels of the whole model had drawn far out (fps9: 22.3M -> 26.4M at lens 63).
+	out.generate_lods(25.0, 60.0, [])
+	return out
 
 
 ## The first of Godot's generated detail levels whose triangles fit the budget, as
