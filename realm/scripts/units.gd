@@ -95,153 +95,194 @@ var _town_tiles := {}
 var _heading := {}  # tile -> the way the army standing there last marched
 
 
-## A sync goes on making new companies' figures for ViewTier.STAGE_MS (camera.json view_tier.stage_ms, the one
-## staging budget); the rest are made by a sync the next frame (_more), so the first reading's hundreds of soldiers,
-## horses and ships never hold one frame (FPS P0: units.sync 1,858 ms in one frame in the 6aaf2121 run).
-var _more := false  # a sync left companies unmade: one more runs next frame
+## A sync walks the store's companies ViewTier.STAGE_MS a frame (camera.json view_tier.stage_ms, the one staging
+## budget), making, placing and marching them; a walk that runs out of time carries on next frame from where it
+## stopped (_walk_on), so neither the first reading's hundreds of soldiers nor the walk itself hold a frame (FPS P0:
+## units.sync 1,858 ms in one frame in the 6aaf2121 run; Mac's beach ball at 2b194f78, the whole walk re-run each frame).
+## A new sync starts a fresh walk; companies not in it go once it has reached the end.
+var _walk := {}  # the walk under way: houses, store, units, i, seen, per_tile, hosts, work
+var _more := false  # a walk is to go on next frame
+var _placed := {}  # figure key -> [where it was put, where it stands]: ground.gd asked once per place
 
 
 func sync(houses: Dictionary) -> void:
-	var made_until := Time.get_ticks_msec() + int(ViewTier.STAGE_MS)
-	var left := false
 	var store: Node = Awareness.store()
-	var seen := {}
-	var per_tile := {}
 	_town_tiles.clear()
 	for c in store.rec("cities", []):
 		_town_tiles["%d,%d" % [int(c["x"]), int(c["y"])]] = true
-	var in_hosts := field_hosts(store)
-	var at_work := _raid_goals(store)  # raider id -> where on the map the royal work he goes at stands
-	for u in store.rec("units", []):
-		var id := int(u["id"])
-		if in_hosts.has(id):
-			continue  # its host's column draws it
-		seen[id] = true
-		var key := "%d,%d" % [int(u["x"]), int(u["y"])]
-		var slot: int = per_tile.get(key, 0)
-		per_tile[key] = slot + 1
-		if slot >= 6:
-			continue
-		var house: Dictionary = houses.get(int(u["owner"]), {})
-		# A wild player's company is a beast only when it is one (BEASTS); otherwise it is raiders, men without banners
-		# (Freeciv's barbarians: the raids; casebook, Wealth draws the raid). g25 raid.jpg: Saltkeep's raiders drawn as
-		# beasts' blocks, every unit of a wild player taken for an animal.
-		var wild := String(u["type"]) in BEASTS
-		var raider := not wild and bool(house.get("wild", false))
-		# Garrisons stand guard at the town's edge, not in its square; armies in
-		# the field stand in ranks two abreast behind their banner, facing the
-		# way they last marched.
-		var in_town: bool = _town_tiles.has(key)
-		var centre: Vector3 = terrain.world_pos(float(u["x"]), float(u["y"]))
-		var target: Vector3
-		if in_town:
-			var ang := slot * 1.05 + 0.4
-			target = centre + Vector3(cos(ang), 0, sin(ang)) * (1.6 + slot * 0.08)
-		else:
-			var head: float = _heading.get(key, 0.0)
-			var fwd := Vector3(sin(head), 0, cos(head))
-			var across := Vector3(fwd.z, 0, -fwd.x)
-			target = centre - fwd * (int(slot / 2) * 0.16) + across * ((slot % 2) * 0.14 - 0.07 if slot > 0 else 0.0)
-		if raider and at_work.has(id):
-			# A raid making for the King's work (bridge raids.js): once at its town, the band goes at the work's site.
-			var site: Vector3 = at_work[id]
-			if Vector2(site.x - centre.x, site.z - centre.z).length() <= terrain.TILE * 1.5:
-				target = site + Vector3(cos(slot * 2.4), 0, sin(slot * 2.4)) * 0.3
-		target.y = terrain.height_at(target.x, target.z)
-		# Never in a building or the water: on the town's walk map where it has one,
-		# and off every footprint (ground.gd). A ship keeps to its water.
-		var ship := String(u["type"]) in MapLook.SHIPS
-		if not ship:
-			target = Ground.nearest_clear(target, 0.17 if String(u["type"]) in MOUNTED and String(u["type"]) != "Elephants" else 0.0)
-		elif Ground.on_land(target):
-			target = _moor(key, centre, slot)  # a ship in a port town lies at its waterside, never on the square
-			if target == Vector3.INF:
-				# No water out of the town view's sight: the ship isn't drawn while it lies here (g30 street).
-				if _figures.has(id):
-					(_figures[id]["node"] as Node3D).visible = false
-				continue
-		if ship and _figures.has(id):
-			(_figures[id]["node"] as Node3D).visible = true
-		if not _figures.has(id) and Time.get_ticks_msec() > made_until:
-			left = true  # made by the next frame's sync
-			continue
-		if not _figures.has(id):
-			var node: Node3D
-			if wild:
-				var mi := MeshInstance3D.new()
-				mi.mesh = _beast
-				mi.material_override = _mat(Color(0.35, 0.27, 0.2))
-				node = mi
-			elif ship:
-				node = ship_body(house)  # the transport cog (ships only carry armies: Mac)
-				_crew(node, house, id)
-			else:
-				var rng := RandomNumberGenerator.new()
-				rng.seed = id
-				var tint := Color.from_string(String(house.get("color", "#888")), Color.GRAY).lerp(Color.WHITE, 0.35)
-				var kind := String(u["type"])
-				if raider:
-					node = _raider_man(id, _rival_of(id, store))
-				else:
-					node = _people.make(rng, "soldier", tint, "adult")
-				# Horsemen ride (elephants have no beast of their own yet, so go on foot);
-				# knights carry the lance. Raiders go on foot, a band (g29 raid: a mounted raider was one small rider).
-				if kind in MOUNTED and kind != "Elephants" and not raider:
-					var horse: Node3D = Horse.new(rng.randi() % Horse.COATS.size())
-					horse.mount(node)
-					Scenes.arm(node, "lance" if kind in LANCES else "spear")
-					node = horse
-				elif not raider:
-					Scenes.arm(node, "bow" if kind in BOWS else ("spear" if kind in SPEARS or kind in MOUNTED else "sword"))
-			node.position = target
-			add_child(node)
-			var mo: Node = Mover.of(node)
-			if ship:
-				mo.clip = ""
-				mo.ground = func(_p: Vector3) -> float: return terrain.SEA_LEVEL  # it floats on the water
-				node.position.y = terrain.SEA_LEVEL
-			elif wild:
-				mo.clip = ""
-				mo.speed = 0.3
-				mo.ground = func(p: Vector3) -> float: return terrain.height_at(p.x, p.z) + 0.14  # the beast's block stands on the ground
-				node.position.y += 0.14
-			elif node.has_method("mount"):
-				mo.clip = ""  # the horse's gait follows how it is moved
-			else:
-				mo.stride = true  # the stride matches the ground covered
-			mo.keep = _keep.bind(_figures, id)
-			if not wild and not ship and not raider and slot == 0:  # raiders march under no banner
-				# Carried by the rider when the company is mounted.
-				_banner(node.rider if node.get("rider") else node, Color.from_string(String(house.get("color", "#888")), Color.GRAY), house)
-				HostPick.proxy(node, int(id), Vector3(0.22, 0.62, 0.22))  # the bearer and his standard, to click (host_command.gd)
-			_figures[id] = {"node": node, "target": target, "wild": wild, "bow": String(u["type"]) in BOWS, "horse": node.has_method("mount"), "ship": ship, "rivers": String(u["type"]) in RIVER_SHIPS}
-		if _figures[id]["target"].distance_to(target) > 0.01:
-			var moved: Vector3 = target - _figures[id]["node"].position
-			if slot == 0 and Vector2(moved.x, moved.z).length() > 0.3:
-				_heading[key] = atan2(moved.x, moved.z)
-			_figures[id]["target"] = target
-			_march(_figures[id])
-		_figures[id]["target"] = target
-		if raider:
-			_band(id, target, seen)
-		# How the company stands, from Freeciv's own word on it (the save's hp and orders).
-		_figures[id]["hurt"] = u.get("hp") != null and float(u["hp"]) <= WOUNDED_HP
-		_figures[id]["fort"] = u.get("activity") != null and int(u["activity"]) in FORTIFIED
+	_walk = {"houses": houses, "store": store, "units": store.rec("units", []), "i": 0, "seen": {}, "per_tile": {},
+		"hosts": field_hosts(store), "work": _raid_goals(store)}  # raid work: raider id -> where the royal work stands
+	_walk_some()
+
+
+func _walk_some() -> void:
+	var w := _walk
+	var until := Time.get_ticks_usec() + int(ViewTier.STAGE_MS * 1000.0)
+	var units: Array = w["units"]
+	while int(w["i"]) < units.size():
+		if Time.get_ticks_usec() > until:
+			if not _more:
+				_more = true
+				_walk_on.call_deferred()
+			return
+		_company(units[int(w["i"])], w)
+		w["i"] = int(w["i"]) + 1
+	var seen: Dictionary = w["seen"]
 	for id in _figures.keys():
 		if not seen.has(id):
 			_figures[id]["node"].queue_free()
 			_figures.erase(id)
-	if left and not _more:
-		_more = true
-		_make_rest.call_deferred(houses)
+	for id in _placed.keys():
+		if not seen.has(id):
+			_placed.erase(id)
+	_walk = {}
 
 
-## The companies a sync left unmade, made by another sync the next frame (and so on, ViewTier.STAGE_MS a frame).
-func _make_rest(houses: Dictionary) -> void:
+func _walk_on() -> void:
 	await get_tree().process_frame
 	_more = false
-	if is_inside_tree():
-		sync(houses)
+	if is_inside_tree() and not _walk.is_empty():
+		_walk_some()
+
+
+## Where a figure stands for where it was put (`raw`), asked of `stand` only when `raw` changes.
+func _placed_at(key: int, raw: Vector3, stand: Callable) -> Vector3:
+	var p: Array = _placed.get(key, [])
+	if p.is_empty() or p[0] != raw:
+		p = [raw, stand.call()]
+		_placed[key] = p
+	return p[1]
+
+
+## The ground a company put at `raw` stands on: off every building and out of the water (ground.gd), or a ship at its
+## port's waterside (INF: no water in sight).
+func _stand(raw: Vector3, key: String, centre: Vector3, slot: int, ship: bool, body: float) -> Vector3:
+	var t := Vector3(raw.x, terrain.height_at(raw.x, raw.z), raw.z)
+	if not ship:
+		return Ground.nearest_clear(t, body)
+	if Ground.on_land(t):
+		return _moor(key, centre, slot)  # a ship in a port town lies at its waterside, never on the square
+	return t
+
+
+## One company of the walk: placed, made if new, marched if its place moved.
+func _company(u: Dictionary, w: Dictionary) -> void:
+	var houses: Dictionary = w["houses"]
+	var store: Node = w["store"]
+	var seen: Dictionary = w["seen"]
+	var per_tile: Dictionary = w["per_tile"]
+	var in_hosts: Dictionary = w["hosts"]
+	var at_work: Dictionary = w["work"]
+	var id := int(u["id"])
+	if in_hosts.has(id):
+		return  # its host's column draws it
+	seen[id] = true
+	var key := "%d,%d" % [int(u["x"]), int(u["y"])]
+	var slot: int = per_tile.get(key, 0)
+	per_tile[key] = slot + 1
+	if slot >= 6:
+		return
+	var house: Dictionary = houses.get(int(u["owner"]), {})
+	# A wild player's company is a beast only when it is one (BEASTS); otherwise it is raiders, men without banners
+	# (Freeciv's barbarians: the raids; casebook, Wealth draws the raid). g25 raid.jpg: Saltkeep's raiders drawn as
+	# beasts' blocks, every unit of a wild player taken for an animal.
+	var wild := String(u["type"]) in BEASTS
+	var raider := not wild and bool(house.get("wild", false))
+	# Garrisons stand guard at the town's edge, not in its square; armies in
+	# the field stand in ranks two abreast behind their banner, facing the
+	# way they last marched.
+	var in_town: bool = _town_tiles.has(key)
+	var centre: Vector3 = terrain.world_pos(float(u["x"]), float(u["y"]))
+	var target: Vector3
+	if in_town:
+		var ang := slot * 1.05 + 0.4
+		target = centre + Vector3(cos(ang), 0, sin(ang)) * (1.6 + slot * 0.08)
+	else:
+		var head: float = _heading.get(key, 0.0)
+		var fwd := Vector3(sin(head), 0, cos(head))
+		var across := Vector3(fwd.z, 0, -fwd.x)
+		target = centre - fwd * (int(slot / 2) * 0.16) + across * ((slot % 2) * 0.14 - 0.07 if slot > 0 else 0.0)
+	if raider and at_work.has(id):
+		# A raid making for the King's work (bridge raids.js): once at its town, the band goes at the work's site.
+		var site: Vector3 = at_work[id]
+		if Vector2(site.x - centre.x, site.z - centre.z).length() <= terrain.TILE * 1.5:
+			target = site + Vector3(cos(slot * 2.4), 0, sin(slot * 2.4)) * 0.3
+	# Never in a building or the water: on the town's walk map where it has one, and off every footprint
+	# (ground.gd); a ship keeps to its water. Asked once for where the company was put (its tile, slot, heading,
+	# raid site), kept until that changes (FPS P0: every sync asked again for every company).
+	var ship := String(u["type"]) in MapLook.SHIPS
+	var body := 0.17 if String(u["type"]) in MOUNTED and String(u["type"]) != "Elephants" else 0.0
+	var raw := target
+	target = _placed_at(id, raw, func() -> Vector3: return _stand(raw, key, centre, slot, ship, body))
+	if target == Vector3.INF:
+		# No water out of the town view's sight: the ship isn't drawn while it lies here (g30 street).
+		if _figures.has(id):
+			(_figures[id]["node"] as Node3D).visible = false
+		return
+	if ship and _figures.has(id):
+		(_figures[id]["node"] as Node3D).visible = true
+	if not _figures.has(id):
+		var node: Node3D
+		if wild:
+			var mi := MeshInstance3D.new()
+			mi.mesh = _beast
+			mi.material_override = _mat(Color(0.35, 0.27, 0.2))
+			node = mi
+		elif ship:
+			node = ship_body(house)  # the transport cog (ships only carry armies: Mac)
+			_crew(node, house, id)
+		else:
+			var rng := RandomNumberGenerator.new()
+			rng.seed = id
+			var tint := Color.from_string(String(house.get("color", "#888")), Color.GRAY).lerp(Color.WHITE, 0.35)
+			var kind := String(u["type"])
+			if raider:
+				node = _raider_man(id, _rival_of(id, store))
+			else:
+				node = _people.make(rng, "soldier", tint, "adult")
+			# Horsemen ride (elephants have no beast of their own yet, so go on foot);
+			# knights carry the lance. Raiders go on foot, a band (g29 raid: a mounted raider was one small rider).
+			if kind in MOUNTED and kind != "Elephants" and not raider:
+				var horse: Node3D = Horse.new(rng.randi() % Horse.COATS.size())
+				horse.mount(node)
+				Scenes.arm(node, "lance" if kind in LANCES else "spear")
+				node = horse
+			elif not raider:
+				Scenes.arm(node, "bow" if kind in BOWS else ("spear" if kind in SPEARS or kind in MOUNTED else "sword"))
+		node.position = target
+		add_child(node)
+		var mo: Node = Mover.of(node)
+		if ship:
+			mo.clip = ""
+			mo.ground = func(_p: Vector3) -> float: return terrain.SEA_LEVEL  # it floats on the water
+			node.position.y = terrain.SEA_LEVEL
+		elif wild:
+			mo.clip = ""
+			mo.speed = 0.3
+			mo.ground = func(p: Vector3) -> float: return terrain.height_at(p.x, p.z) + 0.14  # the beast's block stands on the ground
+			node.position.y += 0.14
+		elif node.has_method("mount"):
+			mo.clip = ""  # the horse's gait follows how it is moved
+		else:
+			mo.stride = true  # the stride matches the ground covered
+		mo.keep = _keep.bind(_figures, id)
+		if not wild and not ship and not raider and slot == 0:  # raiders march under no banner
+			# Carried by the rider when the company is mounted.
+			_banner(node.rider if node.get("rider") else node, Color.from_string(String(house.get("color", "#888")), Color.GRAY), house)
+			HostPick.proxy(node, int(id), Vector3(0.22, 0.62, 0.22))  # the bearer and his standard, to click (host_command.gd)
+		_figures[id] = {"node": node, "target": target, "wild": wild, "bow": String(u["type"]) in BOWS, "horse": node.has_method("mount"), "ship": ship, "rivers": String(u["type"]) in RIVER_SHIPS}
+	if _figures[id]["target"].distance_to(target) > 0.01:
+		var moved: Vector3 = target - _figures[id]["node"].position
+		if slot == 0 and Vector2(moved.x, moved.z).length() > 0.3:
+			_heading[key] = atan2(moved.x, moved.z)
+		_figures[id]["target"] = target
+		_march(_figures[id])
+	_figures[id]["target"] = target
+	if raider:
+		_band(id, target, seen)
+	# How the company stands, from Freeciv's own word on it (the save's hp and orders).
+	_figures[id]["hurt"] = u.get("hp") != null and float(u["hp"]) <= WOUNDED_HP
+	_figures[id]["fort"] = u.get("activity") != null and int(u["activity"]) in FORTIFIED
 
 
 ## Raiders making for a royal work (store raids, bridge raids.js): each raider's id -> the work's site, the crown's
@@ -309,8 +350,8 @@ func _band(id: int, at: Vector3, seen: Dictionary) -> void:
 		seen[key] = true
 		var ang := k * 2.39996 + float(id % 7)  # the golden angle: loose, never in ranks
 		var off := Vector3(cos(ang), 0, sin(ang)) * spread * sqrt(float(k) / float(r.get("men", 5)))
-		var target := Ground.nearest_clear(at + off)
-		target.y = terrain.height_at(target.x, target.z)
+		var raw := at + off
+		var target := _placed_at(key, raw, func() -> Vector3: return Ground.nearest_clear(raw))
 		if not _figures.has(key):
 			var node := _raider_man(key, _rival_of(id, Awareness.store()))
 			node.position = target
@@ -593,6 +634,8 @@ func _settle() -> void:
 		var n: Node3D = f["node"]
 		if not Ground.is_clear(f["target"], body):
 			f["target"] = Ground.nearest_clear(f["target"], body)
+			if _placed.has(id):
+				_placed[id][1] = f["target"]  # the walk keeps the new ground while the place holds
 			_march(f)
 		elif not Mover.of(n).moving() and not Ground.is_clear(n.position, body):
 			Mover.of(n).shift(Ground.nearest_clear(n.position, body), 0.6)  # a step out of a building that went up round him
