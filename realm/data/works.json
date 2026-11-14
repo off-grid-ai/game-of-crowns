@@ -19,7 +19,7 @@
   "_paddock": "paddock: how far the horses roam from its middle (metres) when the town agent gives no fence; gap: how far apart the horses keep (world units; a horse is about 0.43 long), where each stands and heads, and how near one may come in front before it turns off elsewhere; amble: their walking pace (world units a second; a horse walks at 0.2); rest: seconds each stands between strolls (fewest, most); follow: how far behind the groom a led horse walks (world units); tied_secs: how long a horse waits tied at the inn before it is taken home on its own; lead_most: seconds a horse is led before it is let go whatever happened to its groom. A town with stables but no paddock grazes its horses round the stables' middle spot.",
   "paddock": { "turn_radius": 0.4, "roam": 3.5, "gap": 0.45, "amble": 0.07, "rest": [4.0, 14.0], "follow": 0.16, "tied_secs": 90.0, "lead_most": 120.0 },
   "_counts": "How many work at each building, by the town's state: base, then the first state in priority that the town is in (a feast beats war at the inn). States: hunger and feast (the town's mood), levy (a muster at the town this season or last), war (its house at war), justice, relief, grant, build (a court ruling standing at the town: the bridge's rulings.js; a feast or levy ruled is that state), low (its granary under a quarter full), prosperity. size_per adds one per that many of the town's size; most caps it.",
-  "priority": ["plague", "royal_funeral", "grief", "rebels", "loyal", "hunger", "feast", "levy", "war", "justice", "relief", "grant", "build", "lean", "wet", "market", "fields", "low", "rations", "stores", "prosperity"],
+  "priority": ["plague", "royal_funeral", "grief", "rebels", "loyal", "hunger", "feast", "levy", "war", "justice", "relief", "grant", "build", "lean", "wet", "market", "fields", "low", "promise_broken", "promise_kept", "rations", "stores", "prosperity"],
   "counts": {
     "smiths": { "base": 2, "levy": 2, "war": 2 },
     "horses": { "base": 3, "size_per": 4, "most": 6, "levy": 1, "war": 1, "prosperity": 5 },
@@ -52,6 +52,8 @@
     "war": { "forge": 2.5, "turn": 2.0, "quench": 1.5, "deliver": 3.0, "coal": 1.5, "lead": 0.4, "gate": 2.5, "arm": 2.0, "dismay": 3.0, "cheer": 0.2, "toast": 0.5 },
     "levy": { "forge": 2.5, "turn": 2.0, "deliver": 3.0, "gate": 2.0, "arm": 3.0, "dismay": 2.0, "cheer": 0.5 },
     "low": { "flour": 2.5, "bread": 0.5, "sacks": 2.0, "grumble": 2.5, "dismay": 2.0 },
+    "promise_kept": { "cheer": 2.0, "toast": 1.5, "dismay": 0.5 },
+    "promise_broken": { "grumble": 2.5, "dismay": 2.5, "cheer": 0.3 },
     "stores": { "sacks": 3.0, "flour": 1.5, "deliver": 2.0 },
     "rations": { "bread": 1.5, "sacks": 1.5, "grumble": 1.3 },
     "lean": { "flour": 2.0, "bread": 0.4, "sacks": 2.0, "grumble": 3.0, "dismay": 2.5, "cheer": 0.4 },

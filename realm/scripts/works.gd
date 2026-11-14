@@ -222,6 +222,9 @@ static func states_bb(bb: Blackboard) -> Array:
 		out.append("low")
 	if bool(bb.get_var(&"royal_funeral", false, false)):
 		out.append("royal_funeral")  # the King dead, buried from his seat (awareness.gd _king_mourned)
+	for word in ["promise_kept", "promise_broken"]:  # the King's word kept or broken to this town (bridge promises.js)
+		if bool(bb.get_var(StringName(word), false, false)):
+			out.append(word)
 	if bool(bb.get_var(&"lean", false, false)):
 		out.append("lean")  # a wet harvest and no granary (bridge harvest.js): the queue at the granary, bare stalls
 	if bool(bb.get_var(&"prosperity", false, false)):
