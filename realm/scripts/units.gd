@@ -138,6 +138,13 @@ func sync(houses: Dictionary) -> void:
 			target = _nav.stand(towns, target, 0.17 if String(u["type"]) in MOUNTED and String(u["type"]) != "Elephants" else 0.0)
 		elif terrain.is_land(target.x, target.z):
 			target = _moor(key, centre, slot)  # a ship in a port town lies at its waterside, never on the square
+			if target == Vector3.INF:
+				# No water out of the town view's sight: the ship isn't drawn while it lies here (g30 street).
+				if _figures.has(id):
+					(_figures[id]["node"] as Node3D).visible = false
+				continue
+		if ship and _figures.has(id):
+			(_figures[id]["node"] as Node3D).visible = true
 		if not _figures.has(id):
 			var node: Node3D
 			if wild:
@@ -289,26 +296,51 @@ var _moorings := {}  # tile key -> the nearest water to that town tile's centre 
 
 
 ## Where a ship in a port town lies (g28 street: the crossing's cog stood on Lionreach's square, where its Freeciv tile,
-## the city's, put it): the water nearest the tile's centre (rings out to army.json map.moor_reach world units, the
-## first point off the land), each ship of the tile a hull's length along the shore from the last. The centre where
-## no water is that near.
+## the city's, put it): the nearest water beyond the town's houses (army.json map.moor_from world units out, rings out
+## to map.moor_reach) and never on the town view's side of the town (g30 street: the nearest water lay under its lens,
+## and the cog's hull and sail filled half the frame): only water more than map.moor_off_lens radians round from the
+## lens's side (camera_rig.town_view). Each ship of the tile a hull's length along the shore from the last. INF where
+## no such water is near: the ship isn't drawn there.
 func _moor(key: String, centre: Vector3, slot: int) -> Vector3:
 	if not _moorings.has(key):
 		var at := Vector3.INF
 		var reach := Data.num("army", "map.moor_reach", 4.0)
-		var r := 0.2
+		var r := Data.num("army", "map.moor_from", 1.6)
+		var lens := _lens_side(centre)
+		var clear := cos(Data.num("army", "map.moor_off_lens", 1.9))
 		while r <= reach and at == Vector3.INF:
 			for k in 32:
-				var q := centre + Vector3(cos(k * TAU / 32.0), 0, sin(k * TAU / 32.0)) * r
+				var d := Vector3(cos(k * TAU / 32.0), 0, sin(k * TAU / 32.0))
+				if lens != Vector3.ZERO and d.dot(lens) > clear:
+					continue  # on the camera's side of the town
+				var q := centre + d * r
 				if not terrain.is_land(q.x, q.z) and not terrain.is_land(q.x + (q.x - centre.x) * 0.15, q.z + (q.z - centre.z) * 0.15):
 					at = q + (q - centre).normalized() * Data.num("army", "map.moor_off", 0.25)  # a little off the shore, in the water
 					break
 			r += 0.2
-		_moorings[key] = at if at != Vector3.INF else centre
+		if lens == Vector3.ZERO:
+			return Vector3.INF  # its town not standing yet: no mooring is chosen blind (asked again next sync)
+		_moorings[key] = at
 	var m: Vector3 = _moorings[key]
+	if m == Vector3.INF:
+		return m
 	var along := Vector3(m.z - centre.z, 0, centre.x - m.x).normalized() * Data.num("army", "map.moor_gap", 0.5) * slot
 	var t := m + along
 	return t if not terrain.is_land(t.x, t.z) else m
+
+
+## The way from a town toward the town view's lens (camera_rig.town_view's yaw), for the town nearest `centre`; ZERO
+## without one.
+func _lens_side(centre: Vector3) -> Vector3:
+	var rig: Node = get_parent().get("rig") if get_parent() else null
+	if towns == null or rig == null or not rig.has_method("town_view") or not towns.has_method("nearest"):
+		return Vector3.ZERO
+	var t: Dictionary = towns.nearest(centre, 2.0)
+	var node: Node3D = (towns.towns.get(int(t["id"]), {}) as Dictionary).get("node") if t.has("id") else null
+	if node == null or not is_instance_valid(node):
+		return Vector3.ZERO
+	var yaw: float = float(rig.town_view(node)[1])
+	return Vector3(sin(yaw), 0, cos(yaw))
 
 
 ## A ship's body: look-audit's transport cog (assets/meshy/cog, metres, +Z its bow) at the realm's scale, sunk to its

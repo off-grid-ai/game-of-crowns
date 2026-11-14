@@ -147,10 +147,10 @@ func real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds:
 		var square_trade: Dictionary = tb._trade_of(comp)
 		if not square_trade.is_empty():
 			lm = String(square_trade["model"])
-		# The model a landmark stands in at this rank's square (market.<rank>.landmark_models: the component whose model
-		# it takes; g11: the Meshy tavern's dark shingles, the one building off the square's timber-and-red-tile look,
-		# stands in the trades set's alehouse, which takes the house's roof colour).
-		var lm_from := String((tb._market_knobs().get("landmark_models", {}) as Dictionary).get(comp, ""))
+		# The model a landmark stands in, at every rank's square (towns.json landmark_models: the component whose model it
+		# takes; g11: the Meshy tavern's dark shingles, the one building off the square's timber-and-red-tile look, stands
+		# in the trades set's alehouse, which takes the house's roof colour; g30: per rank, Lionreach, below a town, kept it).
+		var lm_from := String((Data.value("towns", "landmark_models", {}) as Dictionary).get(comp, ""))
 		if lm_from != "" and Real.one(lm_from) != "" and Real.footprint(Real.one(lm_from)) != Vector2.ZERO:
 			lm = Real.one(lm_from)
 			if not square_trade.is_empty():
