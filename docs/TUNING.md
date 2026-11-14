@@ -130,6 +130,7 @@ Switches (`--name`) go after `--` on the game's command line.
 - Rivers: their water's colour (`rivers.shallow`, `rivers.deep`), the white where they run (`rivers.foam`), and the bare earth along their banks (`rivers.bank.layer`, `rivers.bank.strength`): `realm/data/ground.json`.
 - Rock on the hills' and mountains' faces and high ground: `realm/data/ground.json` `auto.slope` (higher: gentler slopes turn rock), `auto.high` (rock creeping over high ground), `auto.cliff` (how steep counts as a cliff).
 - The strip fields' painted crop through the year, past the crops' reach (green, yellowing, gold, stubble, bare in winter): `realm/data/countryside.json` `field_ground_tints.<stage>`.
+- The drawn-back views' air by depth (the far land fades, the subject stays clear): `realm/data/look.json` `v3.haze.depth` (`from`, `to`: camera distance it comes in over; `begin`, `end`: camera-distances past the lens where it starts and is full; `curve`, `most`).
 - The coast: how far the beach runs above the waterline and which painting it blends through (dirt, no outline), and the surf at the shore: `realm/data/ground.json`: `beach.top`, `surf`.
 - How far out the land keeps its fine shape (Terrain3D's rings round the lens; too coarse and a lake's low shore sinks under the water at the mid zoom): `realm/data/ground.json`: `mesh.size`, `mesh.lods`.
 - From what distance the sea's colour stops reading the depth to its bed (nearer shows clear shallows, but the bed's coarser rings show as seams further out): `realm/data/look.json`: `sea.depth_fade`.

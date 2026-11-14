@@ -316,8 +316,21 @@ func _process(_delta: float) -> void:
 	var hz: Dictionary = LOOK.get("haze", {}) if _one else {}
 	main.env.volumetric_fog_density = _haze * near * (1.0 - smoothstep(float(hz.get("fade_from", 30.0)), float(hz.get("fade_to", 70.0)), d))
 	if _air:
-		# The depth fog thinned as the camera pulls back (research #2: d16-30 read grey and hazy, highlights capped).
-		main.env.fog_density = lerpf(float(hz.get("fog", 0.0012)), float(hz.get("fog_far", 0.00015)), smoothstep(float(hz.get("fog_from", 45.0)), float(hz.get("fog_to", 110.0)), d))
+		# Drawn back, the land recedes by depth (look.json haze.depth; WC3's and AoE2's far land fades into the air while
+		# what the camera looks at stays clear): Godot's depth fog, clear to begin camera-distances past the lens and
+		# rising to most by end, coming in between from and to. Below from, the depth fog thinned as the camera pulls
+		# back (research #2: d16-30 read grey and hazy, highlights capped).
+		var dp: Dictionary = hz.get("depth", {})
+		var deep := smoothstep(float(dp.get("from", 45.0)), float(dp.get("to", 70.0)), d) if not dp.is_empty() else 0.0
+		if deep > 0.0:
+			main.env.fog_mode = Environment.FOG_MODE_DEPTH
+			main.env.fog_depth_begin = d * float(dp.get("begin", 1.3))
+			main.env.fog_depth_end = d * float(dp.get("end", 5.0))
+			main.env.fog_depth_curve = float(dp.get("curve", 1.6))
+			main.env.fog_density = float(dp.get("most", 0.45)) * deep
+		else:
+			main.env.fog_mode = Environment.FOG_MODE_EXPONENTIAL
+			main.env.fog_density = lerpf(float(hz.get("fog", 0.0012)), float(hz.get("fog_far", 0.00015)), smoothstep(float(hz.get("fog_from", 45.0)), float(hz.get("fog_to", 110.0)), d))
 	_map_air_at(d)
 
 

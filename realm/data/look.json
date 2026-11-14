@@ -220,7 +220,7 @@
     "horizon_color": [1.0, 0.88, 0.74],
     "fill": { "energy": 0.45, "color": [0.92, 0.95, 1.0] },
     "ssao": { "radius": 0.9, "intensity": 1.6, "power": 1.6, "light_affect": 0.12 },
-    "haze": { "volumetric": 0.0015, "fade_from": 14.0, "fade_to": 40.0, "fog": 0.0003, "fog_far": 0.0001, "fog_from": 20.0, "fog_to": 60.0 },
+    "haze": { "volumetric": 0.0015, "fade_from": 14.0, "fade_to": 40.0, "fog": 0.0003, "fog_far": 0.0001, "fog_from": 20.0, "fog_to": 60.0, "depth": { "_": "look.gd: the drawn-back views' air by depth (WC3, AoE2: the far land fades into the air, the subject stays clear): between from and to (camera distance) Godot's depth fog comes in, clear to begin camera-distances past the lens, rising (curve) to most by end; its colour the haze's (map_air warms it at the map), with the sky's through fog_aerial_perspective.", "from": 40.0, "to": 60.0, "begin": 1.3, "end": 5.0, "curve": 1.6, "most": 0.45 } },
     "clarity": { "hazeTown": 0.08, "contrast": 1.0, "saturation": 1.36, "sun_color": [1.0, 0.96, 0.9], "haze_color": [0.84, 0.89, 0.98] },
     "kit_tints": { "MI_Plaster": [1.05, 1.05, 1.03], "MI_UnevenBrick": [0.97, 0.97, 0.98] },
     "outline": {
