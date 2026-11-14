@@ -28,20 +28,24 @@ func dress(root: Node3D, life: Node3D, _row: Dictionary, rng: RandomNumberGenera
 			tl._prop(life, center, "Bucket_Metal", at + Vector3(-side.z, 0, side.x) * 0.12, 0.0, 1.0, 0.0)
 			out["anvil"] = {"points": [{"at": at, "dir": side}]}
 	var carts: Array = []
-	for i in int(k.get("carts", 1)):
-		# Drawn up on open setts nearest its place across from the anvil, clear of every stall (round 11's square: two
-		# rows of them where the carts used to stand), and of the carts before it.
-		var cp := tl._room_for(center, (-side * 0.62 + toward * (0.2 * i - 0.1)) * square_r, 0.16, walls, root)
+	var n_carts := int(k.get("carts", 1))
+	for i in n_carts:
+		# Drawn up on open setts nearest its place, the first across from the anvil and the rest spread round the square
+		# (g38 landuse: the square read bare for its stalls), clear of every stall (round 11's square: two rows of them
+		# where the carts used to stand), and of the carts before it.
+		var turn := TAU * i / maxf(1.0, n_carts)
+		var cp := tl._room_for(center, (-side * 0.62 + toward * 0.1).rotated(Vector3.UP, turn) * square_r, 0.16, walls, root)
+		var along := toward.rotated(Vector3.UP, turn)
 		if is_nan(cp.x):
 			continue  # no room on the setts: no cart (the market is what fits)
 		var cart: Node3D = tl.Real.meshy_piece("square_cart")  # Meshy's merchant cart
 		if cart:
 			walls.append(PackedVector2Array([Vector2(cp.x - 0.16, cp.z - 0.16), Vector2(cp.x + 0.16, cp.z - 0.16), Vector2(cp.x + 0.16, cp.z + 0.16), Vector2(cp.x - 0.16, cp.z + 0.16)]))
 			cart.position = Vector3(cp.x, tl._y(center, cp), cp.z)
-			cart.rotation.y = atan2(toward.x, toward.z)
+			cart.rotation.y = atan2(along.x, along.z)
 			life.add_child(cart)
 			for g in 2:
-				tl._prop(life, center, ["FarmCrate_Apple", "Barrel_Apples", "FarmCrate_Carrot"][(i + g) % 3], cp + toward * (0.05 - 0.1 * g), rng.randf() * TAU, 1.0, 0.0)
+				tl._prop(life, center, ["FarmCrate_Apple", "Barrel_Apples", "FarmCrate_Carrot"][(i + g) % 3], cp + along * (0.05 - 0.1 * g), rng.randf() * TAU, 1.0, 0.0)
 			carts.append({"at": cp, "dir": side})
 	out["carts"] = {"points": carts}
 	var ends: Array = []

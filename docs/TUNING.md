@@ -597,3 +597,4 @@ Switches (`--name`) go after `--` on the game's command line.
 - A lord's loyalty in words on his sheet: `realm/data/royal_sheet.json` `lord_loyalty` (bands by above, 0..100) and `lord_loyalty_danger` (30: red below).
 - Event cards that have come before come less often: `bridge/data/events.json` `settings.fade` (1: weight / (1 + fade x times drawn this reign)).
 - A town wall closed round its town (g38 landuse: loose stretches in the fields): `realm/data/towns.json` `town_wall.postern_half_m` (2.0 m): the gap either side of where a lane crosses the wall; a lane beside it leaves it whole.
+- The crown's square busy, not bare, at its size (g38 landuse; Mac's 11-12 big square stands): `realm/data/towns.json` `market.crown.strew.third` 180 (was 70: goods and benches all round, not only toward the gate), `strew.most` 24 (was 10), `market.crown.carts` 3 (was 1, spread round the square), `square.cover_most` 14 (was 8: people standing in the open).

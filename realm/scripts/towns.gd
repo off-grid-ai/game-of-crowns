@@ -483,10 +483,23 @@ static func strew_spots(mk: Dictionary, square_r: float, market_ang: float, laid
 	return out
 
 
+## Where a laid stall stands (at angle `a`, `arc` out) and its front toward the square's heart, town-local: on a
+## ring, or on the grid along the square's sides, each stall facing in square to them (the fronts round the square
+## the same: town_layout ring of fronts; g37 landuse: a round ring of stalls). One rule for the stalls and the gaps
+## kept round them (_stall_gap).
+static func stall_place(a: float, arc: float) -> Array:
+	var o2 := Vector2(cos(a), sin(a))
+	if not TownPlots.GRID:
+		return [o2 * arc, -o2]
+	var ax := Vector2.from_angle(TownPlots.AXIS)
+	return [o2 * arc / maxf(absf(o2.dot(ax)), absf(o2.dot(ax.orthogonal()))), TownPlots.squared(-o2)]
+
+
 ## How far a point lies from a laid stall's footprint ([kind, angle, radius], its front toward the heart).
 static func _stall_gap(st: Array, p: Vector2) -> float:
-	var c := Vector2(cos(float(st[1])), sin(float(st[1]))) * float(st[2])
-	var f := -c.normalized()
+	var placed := stall_place(float(st[1]), float(st[2]))
+	var c: Vector2 = placed[0]
+	var f: Vector2 = placed[1]
 	var al := Vector2(-f.y, f.x)
 	var fp := Real.footprint(String(st[0]))
 	var d := p - c
@@ -1524,17 +1537,9 @@ func _plaza(root: Node3D, center: Vector3, square_r: float, size: int, seat: boo
 		var stall: Vector2 = Real.footprint(kind)
 		var a: float = laid["stalls"][i][1]
 		var arc: float = laid["stalls"][i][2]
-		var m := Vector3(cos(a), 0, sin(a)) * arc
-		var inward := -m.normalized()  # the stall's front, toward the square's heart
-		if TownPlots.GRID:
-			# On the grid its rows run straight along the square's sides, each stall facing in square to them (the
-			# fronts round the square the same: town_layout ring of fronts; g37 landuse: a round ring of stalls).
-			var o2 := Vector2(cos(a), sin(a))
-			var ax := Vector2.from_angle(TownPlots.AXIS)
-			var on_side := o2 * arc / maxf(absf(o2.dot(ax)), absf(o2.dot(ax.orthogonal())))
-			var fd := TownPlots.squared(-o2)
-			m = Vector3(on_side.x, 0, on_side.y)
-			inward = Vector3(fd.x, 0, fd.y)
+		var placed := stall_place(a, arc)
+		var m := Vector3(placed[0].x, 0, placed[0].y)
+		var inward := Vector3(placed[1].x, 0, placed[1].y)  # the stall's front, toward the square's heart
 		var yaw := atan2(inward.x, inward.z)
 		if not drop.call(kind, m, yaw):
 			continue
