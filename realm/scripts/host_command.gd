@@ -328,6 +328,10 @@ func _ask(body: Dictionary, done := Callable()) -> void:
 func _set_aim(kind: String) -> void:
 	_aim = kind
 	Input.set_default_cursor_shape(Input.CURSOR_CROSS if kind != "" else Input.CURSOR_ARROW)
+	# Warcraft III's order cursor: while an order waits for its place, the pointer is that order's own icon (the card's),
+	# in the accent for a march or a garrison, red for an attack or a siege, so the King sees what his next click does.
+	Input.set_custom_mouse_cursor(_cursor(kind) if kind != "" else null, Input.CURSOR_ARROW, _cursor_hot())
+	Input.set_custom_mouse_cursor(_cursor(kind) if kind != "" else null, Input.CURSOR_CROSS, _cursor_hot())
 	for k in _buttons:
 		(_buttons[k] as Button).set_pressed_no_signal(k == kind)
 
@@ -416,6 +420,52 @@ func _dots(color: Color, size := -1.0) -> MultiMeshInstance3D:
 	mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(mmi)
 	return mmi
+
+
+var _cursors := {}  # order -> its cursor image
+
+
+## An order's cursor (host_command.json cursor): its card icon at size px, filled in the accent (red for an attack or a
+## siege, as its marker), on a dark rim so it reads on grass and on snow.
+func _cursor(kind: String) -> Texture2D:
+	if _cursors.has(kind):
+		return _cursors[kind]
+	var k: Dictionary = Data.value(FILE, "cursor", {})
+	var px := int(k.get("size", 32))
+	var tex: Texture2D = main.ui.icon(String(_row(kind).get("icon", "play")))
+	var src: Image = tex.get_image() if tex else null
+	if src == null:
+		return null
+	src = src.duplicate()
+	if src.is_compressed():
+		src.decompress()
+	src.convert(Image.FORMAT_RGBA8)
+	var rim := int(k.get("rim", 2))
+	src.resize(px - rim * 2, px - rim * 2, Image.INTERPOLATE_BILINEAR)
+	var fill: Color = T.DANGER if kind in ["attack", "besiege"] else T.ACCENT
+	var out := Image.create(px, px, false, Image.FORMAT_RGBA8)
+	for y in px:
+		for x in px:
+			var a := 0.0
+			var near := 0.0
+			for dy in range(-rim, rim + 1):
+				for dx in range(-rim, rim + 1):
+					var sx := x - rim + dx
+					var sy := y - rim + dy
+					if sx >= 0 and sy >= 0 and sx < src.get_width() and sy < src.get_height():
+						near = maxf(near, src.get_pixel(sx, sy).a)
+			if x - rim >= 0 and y - rim >= 0 and x - rim < src.get_width() and y - rim < src.get_height():
+				a = src.get_pixel(x - rim, y - rim).a
+			var c := Color(0.08, 0.06, 0.05, near).lerp(Color(fill, 1.0), a)
+			out.set_pixel(x, y, c)
+	var made := ImageTexture.create_from_image(out)
+	_cursors[kind] = made
+	return made
+
+
+func _cursor_hot() -> Vector2:
+	var px := float((Data.value(FILE, "cursor", {}) as Dictionary).get("size", 32))
+	return Vector2(px, px) * 0.5
 
 
 ## Where an order was given, a ring flashed on the ground that closes and fades (Warcraft III's command marker):
