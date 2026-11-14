@@ -101,6 +101,15 @@ func _show(c: Dictionary) -> void:
 		var lost := T.datum(String(words.get("lost", "-{lost}")).format({"lost": main.ui.heads(int(s.get("lost", 0)))}), T.SIZE_DESC, T.DANGER if int(s.get("lost", 0)) > 0 else T.TEXT_3)
 		row.add_child(lost)
 		v.add_child(row)
+	# The King's captains who fell there, by name (War, Every soldier has a name: Battle Brothers' fallen; bridge
+	# captains.js: the card's fell).
+	var fell: Array = c.get("fell", []) if c.get("fell") is Array else []
+	if not fell.is_empty():
+		var names := ", ".join(fell.map(func(n): return String(words.get("captain", "Captain {name}")).format({"name": String(n)})))
+		var line := T.label(String(words.get("fell", "Fallen: {names}")).format({"names": names}), T.DANGER)
+		line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		line.custom_minimum_size.x = 260
+		v.add_child(line)
 	main.ui.add_child(_card)
 	_until = Time.get_ticks_msec() / 1000.0 + float(words.get("show_s", 14.0))
 	_card.modulate.a = 0.0
