@@ -130,6 +130,8 @@ func sync(houses: Dictionary) -> void:
 		var ship := String(u["type"]) in MapLook.SHIPS
 		if not ship:
 			target = _nav.stand(towns, target, 0.17 if String(u["type"]) in MOUNTED and String(u["type"]) != "Elephants" else 0.0)
+		elif terrain.is_land(target.x, target.z):
+			target = _moor(key, centre, slot)  # a ship in a port town lies at its waterside, never on the square
 		if not _figures.has(id):
 			var node: Node3D
 			if wild:
@@ -207,6 +209,32 @@ func sync(houses: Dictionary) -> void:
 static var WOUNDED_HP: float = preload("res://scripts/data.gd").num("army", "map.wounded_hp", 4.0)  # (army.json map.wounded_hp)
 ## Freeciv's unit activities for a company dug in: fortified (4) and fortifying (10).
 const FORTIFIED := [4, 10]
+
+
+var _moorings := {}  # tile key -> the nearest water to that town tile's centre (_moor), found once
+
+
+## Where a ship in a port town lies (g28 street: the crossing's cog stood on Lionreach's square, where its Freeciv tile,
+## the city's, put it): the water nearest the tile's centre (rings out to army.json map.moor_reach world units, the
+## first point off the land), each ship of the tile a hull's length along the shore from the last. The centre where
+## no water is that near.
+func _moor(key: String, centre: Vector3, slot: int) -> Vector3:
+	if not _moorings.has(key):
+		var at := Vector3.INF
+		var reach := Data.num("army", "map.moor_reach", 4.0)
+		var r := 0.2
+		while r <= reach and at == Vector3.INF:
+			for k in 32:
+				var q := centre + Vector3(cos(k * TAU / 32.0), 0, sin(k * TAU / 32.0)) * r
+				if not terrain.is_land(q.x, q.z) and not terrain.is_land(q.x + (q.x - centre.x) * 0.15, q.z + (q.z - centre.z) * 0.15):
+					at = q + (q - centre).normalized() * Data.num("army", "map.moor_off", 0.25)  # a little off the shore, in the water
+					break
+			r += 0.2
+		_moorings[key] = at if at != Vector3.INF else centre
+	var m: Vector3 = _moorings[key]
+	var along := Vector3(m.z - centre.z, 0, centre.x - m.x).normalized() * Data.num("army", "map.moor_gap", 0.5) * slot
+	var t := m + along
+	return t if not terrain.is_land(t.x, t.z) else m
 
 
 ## A ship's body: look-audit's transport cog (assets/meshy/cog, metres, +Z its bow) at the realm's scale, sunk to its

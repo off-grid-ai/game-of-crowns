@@ -1087,6 +1087,15 @@ func _yard(root: Node3D, life: Node3D, center: Vector3, b: Dictionary, beasts: i
 	var sp: Dictionary = b["spots"]
 	var pen: Vector3 = sp.get("yard", b["at"] + _front(b) * 0.4)
 	var roam := Data.num("works", "yard.roam", 2.2) * Works.S
+	# Never on the square (g28 street: Lionreach's barn stood by its square and the cows grazed among the tavern's
+	# drinkers): the beasts keep works.json yard.off_square past its edge; a pen that falls on it goes behind the barn,
+	# and if that's on it too, straight out past the edge, toward the fields.
+	var keep := float(root.get_meta("square_r", 0.0)) + Data.num("works", "yard.off_square", 0.4)
+	if Vector2(pen.x, pen.z).length() < keep + roam:
+		pen = b["at"] - _front(b) * 0.4
+	if Vector2(pen.x, pen.z).length() < keep + roam:
+		var out := Vector2(pen.x, pen.z).normalized() if Vector2(pen.x, pen.z).length() > 0.01 else Vector2(1, 0)
+		pen = Vector3(out.x * (keep + roam), pen.y, out.y * (keep + roam))
 	var kinds: Array = Data.value("works", "yard.kinds", [["cow", 3], ["sheep", 4], ["pig", 2]])
 	var taken: PackedVector2Array = life.get_meta("standing")
 	var placed := 0
@@ -1098,6 +1107,8 @@ func _yard(root: Node3D, life: Node3D, center: Vector3, b: Dictionary, beasts: i
 		var kind := _weighed(kinds, rng)
 		var a := rng.randf() * TAU
 		var at := pen + Vector3(cos(a), 0, sin(a)) * sqrt(rng.randf()) * roam
+		if Vector2(at.x, at.z).length() < keep:
+			continue
 		if Array(taken).any(func(q: Vector2) -> bool: return q.distance_to(Vector2(at.x, at.z)) < gap):
 			continue
 		var beast := _beast(kind, rng)
