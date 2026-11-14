@@ -84,7 +84,7 @@ func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 	sig += "|%s" % c.get("plague", false)  # a sick town's life changes (town_scenes.json plague)
 	# The working buildings' life changes with a levy and a low granary too, and when the town agent lists its buildings.
 	var now_states := _states(c)
-	sig += "|%s|%s|%s|%s|%s|%s|%s|%s|%d|%s" % [c.get("granaryLow", false), "levy" in now_states, "raid" in now_states, "market" in now_states, "lean" in now_states, "fields" in now_states, "wet" in now_states, "royal_funeral" in now_states, hash(root.get_meta("works", {})), (c.get("ruling") as Dictionary).get("kind", "") if c.get("ruling") is Dictionary else ""]
+	sig += "|%s|%s|%s|%s|%s|%s|%s|%s|%s|%d|%s" % [c.get("granaryLow", false), "levy" in now_states, "raid" in now_states, "market" in now_states, "lean" in now_states, "fields" in now_states, "wet" in now_states, "royal_funeral" in now_states, _season(), hash(root.get_meta("works", {})), (c.get("ruling") as Dictionary).get("kind", "") if c.get("ruling") is Dictionary else ""]
 	# The town dressed in what we own, once (dressing.gd; --dressing=on): gear at the trades' doors,
 	# planters by house doors, bushes, flowers and rocks between the houses.
 	if Dressing.on() and root.get_node_or_null("Dressing") == null:
@@ -1596,7 +1596,15 @@ func _states(c: Dictionary) -> Array:
 		s.append("fields")
 	if wet():
 		s.append("wet")
+	var by_season: Variant = (Data.value("towns", "season_states", {}) as Dictionary).get(_season(), "")
+	if String(by_season) != "":
+		s.append(String(by_season))  # autumn's stores laid in at the granary, winter's rations drawn from it
 	return s
+
+
+## The realm's season, as the store has it (bridge date), "" before the first look.
+static func _season() -> String:
+	return String(Engine.get_meta("awareness").realm.get_var(&"season", "", false)) if Engine.has_meta("awareness") else ""
 
 
 ## Whether the realm's weather (the store's, bridge weather.js) drives folk indoors (towns.json wet.weather: rain and
@@ -1612,10 +1620,7 @@ static func wet() -> bool:
 ## fieldwork.seasons: sowing and harvest): the square thins as its folk go out to help (the casebook, Living towns:
 ## at planting time people leave their jobs for the fields).
 static func fields_season() -> bool:
-	if not Engine.has_meta("awareness"):
-		return false
-	var season := String(Engine.get_meta("awareness").realm.get_var(&"season", "", false))
-	return season in (Data.value("towns", "fieldwork.seasons", []) as Array)
+	return _season() in (Data.value("towns", "fieldwork.seasons", []) as Array)
 
 
 ## The nearest open spot to `want` (town-local) within `reach`, kept as taken; NAN in x when there's none.
