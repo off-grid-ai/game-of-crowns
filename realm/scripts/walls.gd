@@ -183,6 +183,19 @@ func gate_toward(from: Vector3, reach: float, out: float) -> Array:
 	return best
 
 
+## Every standing town gate: [its middle on the ground, its way out (world, level)] (wear.gd wears the ground before
+## each; gate_toward finds one).
+func gates() -> Array:
+	var out := []
+	for id in _town_walls:
+		var root: Node3D = _town_walls[id]["root"]
+		if not is_instance_valid(root):
+			continue
+		for g in _town_walls[id].get("gates", []):
+			out.append([root.to_global(g[0]), (root.global_basis * (g[1] as Vector3)).normalized()])
+	return out
+
+
 ## The wall walk nearest `from` within `reach` (world units), where the holder's archers stand to shoot at the
 ## besiegers (scene_kinds/siege.gd; 04-siege, Stronghold: bowmen along the walls): on a whole section, the kit
 ## curtain's walk (its storeys high, walls.json walk.in_m in from the outer face); on a worn one, the stacked stones'

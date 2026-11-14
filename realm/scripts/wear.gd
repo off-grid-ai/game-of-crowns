@@ -65,6 +65,11 @@ func _process(delta: float) -> void:
 # the land route each one moved by between two readings (land_paths, roads cheap), and Freeciv's roads (rec roads).
 var HOSTS: Dictionary = Data.value("ground", "wear.hosts", {})
 var ROADS: Dictionary = Data.value("ground", "wear.roads", {})
+## The trodden ground at every town gate (WC3, AoE2: a gate opens on a fan of bare earth where every cart and
+## walker passes): ground.json wear.gates (out: how far the worn path runs out, half: its half-width at the gate,
+## spread: how much wider it fans at its end, worn: how much, hold: grows back no further than this share).
+var GATES: Dictionary = Data.value("ground", "wear.gates", {})
+var _gates_sig := -1
 var _hosts_was: Array = []  # [owner, world point] of each host at the last reading
 var _roads_sig := -1  # the road list's size when last laid
 var _road_queue: Array = []  # road links still to wear: [a, its bow, b]
@@ -92,6 +97,23 @@ func _facts() -> void:
 					_band(route[i], route[i + 1], r * float(HOSTS.get("track", 0.5)), float(HOSTS.get("step", 0.05)) * 3.0, false)
 			now.append([int(h["owner"]), at])
 		_hosts_was = now
+	if not GATES.is_empty() and Engine.has_meta("stone_walls"):
+		var walls: Node = Engine.get_meta("stone_walls")
+		var gs: Array = walls.gates() if is_instance_valid(walls) and walls.has_method("gates") else []
+		if gs.size() != _gates_sig:
+			_gates_sig = gs.size()
+			var out := float(GATES.get("out", 3.0))
+			var half := float(GATES.get("half", 0.5))
+			var worn := float(GATES.get("worn", 0.6))
+			for g in gs:
+				var at: Vector3 = g[0]
+				var n: Vector3 = g[1]
+				_brush(at, half * 1.4, worn, true)
+				var k := 4
+				for i in k:
+					var a := at + n * (out * float(i) / k)
+					var b := at + n * (out * float(i + 1) / k)
+					_band(a, b, half * lerpf(1.0, float(GATES.get("spread", 1.8)), float(i + 1) / k), worn * (1.0 - 0.5 * float(i) / k), true)
 	if not ROADS.is_empty():
 		var roads: Array = aw.rec("roads", [])
 		if roads.size() != _roads_sig:
