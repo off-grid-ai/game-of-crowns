@@ -799,6 +799,9 @@ static func _low(im: ImporterMesh, H: Dictionary) -> ImporterMesh:
 		out.add_surface(Mesh.PRIMITIVE_TRIANGLES, arr, [], {}, im.get_surface_material(s))
 	if n > full * float(H.get("worth", 0.5)):
 		return null
+	# Its own lighter levels in turn, as _within's: without them the low mesh drew all its triangles at any distance,
+	# more than Godot's own levels of the whole model had drawn far out (fps9: 22.3M -> 26.4M at lens 63).
+	out.generate_lods(25.0, 60.0, [])
 	return out
 
 
