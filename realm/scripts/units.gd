@@ -681,6 +681,8 @@ func _banner(soldier: Node3D, color: Color, house: Dictionary) -> void:
 
 
 var _settle_at := 2.0
+const ViewTier := preload("res://scripts/view_tier.gd")
+const FIGURE_R := 0.4  # a company's figure and its standard, its sphere for the screen test
 
 
 func _process(delta: float) -> void:
@@ -702,7 +704,15 @@ func _process_timed(delta: float) -> void:
 	for id in _figures:
 		var f: Dictionary = _figures[id]
 		var n: Node3D = f["node"]
-		if f["wild"]:
+		# Its tier (view_tier.gd, the one decider): at FAR a company is the map's mark (map_marks.gd: its standard and
+		# its men), no body; off screen nothing of it is told. Ships keep their own showing (in port or at sea, sync).
+		var tier := ViewTier.of(n.global_position, FIGURE_R)
+		if not f["ship"]:
+			var body := tier != ViewTier.FAR
+			if n.visible != body:
+				n.visible = body
+				f["playing"] = ""  # told its stance afresh when it shows
+		if f["wild"] or tier <= ViewTier.FAR:
 			continue
 		if Mover.of(n).moving():
 			f["playing"] = ""  # marching: the stance is told afresh when he stops
