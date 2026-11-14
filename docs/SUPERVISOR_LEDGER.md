@@ -133,6 +133,7 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- 11-14 11:04 Landed: Houses vassals dd21ec64, raiders on works ba457efb, crowns de7afa72, banks d2c47546, dead cart 25454701, cold houses e53ca486. g36: town PASS; landuse FAIL (lattice of houses, no streets, 24 lambda-freed errors; is_inside_tree errors gone) to square. Bottleneck: GPU pass (one view per ~7 min); g37 picks up the new landings.
 - 11-14 10:52 Nothing new since 10:50. g36 rendering at 30590540 (town under way). Bottleneck: the GPU pass; threads self-waking on their rows, none idle.
 - 11-14 10:50 Landed: continent held by the 8 (30590540), far-man colour fix 213dbba7, crops muted 0c48c489, vassal borders a48f9861, manor seats 5b89c881, court rebel/peace 43c9b33b. g35 stopped (stale at fe1500d0); g36 renders all of it at HEAD. Bottleneck: unrendered landings; removed by one wide pass. Threads self-wake.
 - 11-14 10:34 g35: siege OK; battle FAIL (the foe's men grey boxy lumps, likely MultiMesh 98e48bc5) -> army, held. 8 commits landed (houses squared to grid 47fe5d96, realm defects 177fc5b3, peace terms, rebels end, plague ends, rival colours). Bottleneck: my messages to threads are paused by the app until Mac types; five messages held (battle failure, siege fields, and a self-wake order for every thread).
