@@ -117,6 +117,46 @@ static func target(near: Vector3, spread: float, rng: RandomNumberGenerator) -> 
 	return picks[rng.randi() % picks.size()] if not picks.is_empty() else Vector3.INF
 
 
+## The wall breached at `near` (world, just inside the gap): the `n` houses nearest it catch, as the stones and fire
+## thrown over the wall find their roofs (04-siege: the houses behind the breach burning; g24: 50 s of fire arrows and
+## not one caught, so the breach itself sets them alight). Each is told to the bridge (damage.kindled) as any house
+## that catches is. Returns how many caught.
+static func breach_fires(near: Vector3, n: int) -> int:
+	return live._breach_fires(near, n) if live != null else 0
+
+
+func _breach_fires(near: Vector3, n: int) -> int:
+	if main == null or main.towns == null or n <= 0:
+		return 0
+	var best = null
+	var far := INF
+	for id in main.towns.towns:
+		var root: Node3D = main.towns.towns[id].get("node")
+		if root == null or not is_instance_valid(root) or (root.get_meta("homes", []) as Array).is_empty():
+			continue
+		var d := Vector2(root.global_position.x - near.x, root.global_position.z - near.z).length()
+		if d < far:
+			far = d
+			best = id
+	if best == null:
+		return 0
+	var root: Node3D = main.towns.towns[best]["node"]
+	var homes: Array = root.get_meta("homes", [])
+	var here := root.to_local(near)
+	var order := range(homes.size())
+	order.sort_custom(func(a, b): return Vector2(_home_at(homes[a]).x - here.x, _home_at(homes[a]).z - here.z).length() < Vector2(_home_at(homes[b]).x - here.x, _home_at(homes[b]).z - here.z).length())
+	var lit := 0
+	for h in order:
+		if lit >= n:
+			break
+		var key := "%d:%d" % [int(best), int(h)]
+		if _burning.has(key) or _burnt.has(key):
+			continue
+		_alight(root, key, homes[h], int(best))
+		lit += 1
+	return lit
+
+
 ## A yard fire's flames (towns.gd _hearth keeps its light and smoke): the same flames, small.
 static func hearth(root: Node3D, pos: Vector3) -> void:
 	var k: Dictionary = knobs().get("hearth", {})

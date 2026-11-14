@@ -56,6 +56,7 @@ var ai: Node
 var _queue: Array = []  # besieger regiments sent, in order
 var _wave_t := 0.0
 var _arrow_t := 0.0
+var _breach_lit := false  # the houses behind the first breach set alight (fire.gd breach_fires)
 var _said := ""  # the phase last printed (--probe: a headless state proof, silent in play)
 var _probe_t := 0.0
 var _ready_sides := 0
@@ -951,6 +952,11 @@ func _storm_tick(delta: float) -> void:
 	var st: Dictionary = ai.breach()
 	var phase := String(st.get("phase", "")) if not st.is_empty() else "wall"
 	_probe(phase, st, delta)
+	if not st.is_empty() and not _breach_lit and st.has("gap"):
+		# The wall opened: the houses just inside the gap catch (siege.json storm_host.breach_fires), a fact told to the bridge.
+		_breach_lit = true
+		var into: Vector3 = st.get("inward", Vector3.ZERO)
+		Fire.breach_fires((st["gap"] as Vector3) + into * k("breach_in", 1.0), int(k("breach_fires", 3)))
 	if phase == "wall":
 		_fire_arrows(delta)
 	elif phase == "hold":
