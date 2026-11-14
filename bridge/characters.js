@@ -696,7 +696,7 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
         const kingSeat = world.cities.find((x) => x.owner === crown?.id && x.capital) ?? world.cities.find((x) => x.owner === crown?.id);
         const towns = world.cities.filter((x) => x.owner === c.playerId).length;
         const men = REBEL.host + REBEL.perTown * towns;
-        if (kingSeat) ctx.send(Lua.warHost(c.playerId, kingSeat.id, REBEL.kinds, men));
+        if (kingSeat) ctx.send(Lua.warHost(c.playerId, kingSeat.id, REBEL.kinds, men, "rebel"));
         const why = ctx.cause?.(c.playerId);
         this.record({ turn, kind: "rebellion", text: `${c.name} raises the banners of ${c.house} against the crown!${why ? ` ${c.house} has not forgotten ${why}.` : ""}${kingSeat ? ` ${men} companies march on ${cityName(kingSeat.id)}.` : ""}${d?.line ? ` "${d.line}"` : ""}`, city: c.seat ?? undefined });
         ctx.rose?.(c.playerId);

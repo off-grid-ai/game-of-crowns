@@ -21,7 +21,8 @@ export const rivalHost = (name, cityId, dx, dy, out, kinds, count) => `realm_riv
 // A town given to the rival King (realm_rival_cede), and his men in the field sent home at a war's end (realm_rival_home).
 export const rivalCede = (name, cityId) => `realm_rival_cede(${JSON.stringify(String(name))}, ${n(cityId)})`;
 export const rivalHome = (name) => `realm_rival_home(${JSON.stringify(String(name))})`;
-export const warHost = (who, cityId, kinds, count) => `realm_war_host(${whoLua(who)}, ${n(cityId)}, {${kinds.map((k) => `"${k}"`).join(",")}}, ${n(count)})`;
+// tag: what the host is, told back with it (war_host): "rebel" for a lord risen against the crown (characters.js).
+export const warHost = (who, cityId, kinds, count, tag) => `realm_war_host(${whoLua(who)}, ${n(cityId)}, {${kinds.map((k) => `"${k}"`).join(",")}}, ${n(count)}${tag ? `, ${JSON.stringify(String(tag))}` : ""})`;
 export const warMarch = (who, fromId, toId) => `realm_war_march(${whoLua(who)}, ${n(fromId)}, ${n(toId)})`;
 // The banners answered: count of a house's men set out for the King's town (realm_banners), and at its walls join the
 // royal host (realm_banners_join: taken off and raised again there for its holder).

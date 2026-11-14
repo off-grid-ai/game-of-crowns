@@ -659,7 +659,7 @@ function realm_rival_home(name)
   end
 end
 
-function realm_war_host(who, city_id, kinds, count)
+function realm_war_host(who, city_id, kinds, count, tag)
   local prey = find.city(nil, city_id)
   if not who or not prey then log.normal("WARHOST no house or prey"); return end
   local home, best = nil, nil
@@ -672,7 +672,7 @@ function realm_war_host(who, city_id, kinds, count)
   if home and #made > 0 then
     local ids = {}
     for i, id in ipairs(made) do ids[i] = tostring(id) end
-    emit("war_host", {owner = who.id, city = prey.id, from = home.id, units = table.concat(ids, ",")})
+    emit("war_host", {owner = who.id, city = prey.id, from = home.id, units = table.concat(ids, ","), tag = tostring(tag or "")})
   end
 end
 

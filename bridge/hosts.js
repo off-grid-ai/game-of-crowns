@@ -370,7 +370,7 @@ export function warpath(ctx, ev, send) {
     return;
   }
   // Banner men answering the King (realm_banners: join) join the royal host at the walls instead of falling on them.
-  save(meta, [...rest, { kind: "warpath", owner, units: ids, city, since: Number(ev.turn), raised: true, ...(ev.join ? { join: true } : {}) }]);
+  save(meta, [...rest, { kind: "warpath", owner, units: ids, city, since: Number(ev.turn), raised: true, ...(ev.join ? { join: true } : {}), ...(ev.tag === "rebel" ? { rebel: true } : {}) }]);
 }
 
 // Banner men at the King's walls became his companies there (realmrules realm_banners_join: banners_joined): they
@@ -387,11 +387,22 @@ export function joined(ctx, ev) {
 // Banner men on the road to the King's town (warpath orders with join), for /world: [{owner, units, city, x, y}],
 // x, y the tile of their lead company (its lowest id), units the companies still living. The one owner of the fact.
 export function banners({ world, meta }) {
-  return (meta?.hostOrders ?? []).filter((o) => o.kind === "warpath" && o.join).map((o) => {
+  return onTheRoad(world, meta, (o) => o.join).map(({ rebel, ...b }) => b);
+}
+
+// A house's war host on the road to a town it falls on (warpath orders without join: a rebel lord's, a story's, a
+// house's war), for /world warhosts: [{owner, units, city, x, y, rebel}], rebel true for a lord risen against the
+// crown (characters.js rebel), false for any other.
+export function warHosts({ world, meta }) {
+  return onTheRoad(world, meta, (o) => !o.join);
+}
+
+function onTheRoad(world, meta, which) {
+  return (meta?.hostOrders ?? []).filter((o) => o.kind === "warpath" && which(o)).map((o) => {
     const byId = new Map(soldiersOf(world, o.owner).map((u) => [u.id, u]));
     const units = o.units.filter((id) => byId.has(id));
     const lead = units.length ? byId.get(Math.min(...units)) : null;
-    return lead ? { owner: o.owner, units, city: o.city, x: lead.x, y: lead.y } : null;
+    return lead ? { owner: o.owner, units, city: o.city, x: lead.x, y: lead.y, rebel: !!o.rebel } : null;
   }).filter(Boolean);
 }
 
