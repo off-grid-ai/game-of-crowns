@@ -303,6 +303,16 @@ func list_chronicles(cb: Callable) -> void:
 	_http_get("/chronicles", cb)
 
 
+## Save now (saves as reigns): Freeciv writes the realm to the reign's saves, and its card with it. cb(code, d).
+func save_chronicle(cb: Callable) -> void:
+	_post("/chronicles/save", {}, cb)
+
+
+## A reign taken off the list (put aside by the bridge, not erased; never the one in play). cb(code, d).
+func delete_chronicle(id: String, cb: Callable) -> void:
+	_post("/chronicles/delete", {"id": id}, cb)
+
+
 func records(cb: Callable) -> void:
 	_http_get("/records", cb)
 

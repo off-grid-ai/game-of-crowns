@@ -174,6 +174,17 @@ func show_main() -> void:
 		cont.add_theme_stylebox_override("normal", T._box(Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.24), Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.6), 8, 10))
 		cont.add_theme_stylebox_override("hover", T._box(Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.36), Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.85), 8, 10))
 		cont.add_theme_color_override("font_color", Color(1, 0.93, 0.78))
+		# Save the reign as it stands (saves as reigns; any game's Save): it says so, with the realm's date.
+		if reign.get("status", "") != "ended" and not reign.get("test", false):
+			var held := []  # the button, for its own press (a lambda keeps a copy of a local as it was)
+			held.append(_big("Save the realm", func():
+				var save_b: Button = held[0]
+				save_b.text = "Saving…"
+				bridge.save_chronicle(func(code, d):
+					if not is_instance_valid(save_b):
+						return
+					var card: Dictionary = d.get("save", {}) if d is Dictionary and d.get("save") is Dictionary else {}
+					save_b.text = ("Saved  ·  %s" % String(card.get("date", "now"))) if code == 200 else "Not saved: %s" % String(d.get("error", "the realm didn't answer") if d is Dictionary else "the realm didn't answer"))))
 	_big("Begin a New Chronicle", func():
 		_new_step = 0  # a new chronicle starts at its first page
 		_name_typed = false
@@ -1208,9 +1219,38 @@ func _on_list(data) -> void:
 			var played := int(c.get("elapsedMs", 0)) / 60000
 			var length := "endless" if int(c.get("minutes", 0)) <= 0 else "a %d-minute reign" % int(c.get("minutes"))
 			lines.append(("In progress, continue where you left off" if is_active else "In progress") + "  ·  %s  ·  %d min played" % [length, played])
-		var d := Time.get_datetime_dict_from_unix_time(int(c.get("created", 0)) / 1000)
-		lines.append("Begun %d %s" % [int(d["day"]), ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"][int(d["month"]) - 1]])
+		# Its save card (CK3's and Total War's save list: the ruler's date, the realm, the playtime): the realm's date, the
+		# crown's seat and towns and its souls, and when it was last played.
+		var sv: Dictionary = c.get("save", {}) if c.get("save") is Dictionary else {}
+		if not sv.is_empty():
+			var towns := int(sv.get("towns", 0))
+			lines.append("%s  ·  %s%s  ·  %s souls" % [String(sv.get("date", "")), String(sv.get("seat", "the crown")), (" and %d more towns" % (towns - 1)) if towns > 2 else (" and one more town" if towns == 2 else ""), _thousands(int(sv.get("souls", 0)))])
+		var months := ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+		var d := Time.get_datetime_dict_from_unix_time(int(sv.get("playedAt", c.get("created", 0))) / 1000)
+		lines.append("%s %d %s" % ["Last played" if sv.has("playedAt") else "Begun", int(d["day"]), months[int(d["month"]) - 1]])
 		var card := _text_card("%s\n%s" % [String(c["name"]), "\n".join(lines)], cards)
+		if not is_active:
+			# Off the list: a second click to be sure (the bridge puts it aside, never erases it).
+			var del := Button.new()
+			del.text = "Delete"
+			del.flat = true
+			del.focus_mode = Control.FOCUS_NONE
+			del.add_theme_font_size_override("font_size", 13)
+			del.add_theme_color_override("font_color", MUTED)
+			del.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+			del.offset_left = -76
+			del.offset_right = -8
+			del.offset_top = 6
+			card.add_child(del)
+			var cid := String(c["id"])
+			del.pressed.connect(func():
+				if del.text == "Delete":
+					del.text = "Sure?"
+					del.add_theme_color_override("font_color", Color(0.91, 0.42, 0.36))
+					return
+				bridge.delete_chronicle(cid, func(code, _d):
+					if code == 200 and is_instance_valid(card):
+						card.queue_free()))
 		card.button_pressed = is_active
 		card.pressed.connect(func():
 			card.set_pressed_no_signal(is_active)
