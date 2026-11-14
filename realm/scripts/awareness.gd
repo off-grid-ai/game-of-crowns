@@ -135,6 +135,14 @@ func banners() -> Array:
 	return v if v is Array else []
 
 
+## Raids making for a royal work (/world raids, bridge raids.js; the realm blackboard's "raids" slice):
+## [{town, goal, building, rising, x, y, units}]: the raid's town, the town whose work it goes at, the work, whether
+## it is still going up, the goal town's tile and the raiders' unit ids.
+func raids() -> Array:
+	var v: Variant = realm.get_var(&"raids", [], false)
+	return v if v is Array else []
+
+
 ## The King's battles as result cards, newest first (/world battles, bridge battles.js; the realm blackboard's "battles"
 ## slice): [{id, turn, date, x, y, place, sides: [{house, name, men, lost, kinds}] the crown's first, victor, crown}].
 func battles() -> Array:
@@ -276,6 +284,7 @@ func _reduce_hosts(world: Dictionary) -> void:
 	realm.set_var(&"threat", _dict(world.get("crown")).get("threat"))  # the director's live threat, or null (bridge director.js)
 	realm.set_var(&"hosts", world.get("hosts") if world.get("hosts") is Array else [])  # the King's hosts and their orders (bridge hosts.js)
 	realm.set_var(&"banners", world.get("banners") if world.get("banners") is Array else [])  # houses' men on the road to join the King (bridge hosts.js)
+	realm.set_var(&"raids", world.get("raids") if world.get("raids") is Array else [])  # raiders making for a royal work (bridge raids.js)
 	realm.set_var(&"battles", world.get("battles") if world.get("battles") is Array else [])  # the King's battles' result cards, newest first (bridge battles.js)
 	realm.set_var(&"armies", _armies(world))  # every house's hosts in the field (the map's banners, map_look.gd)
 

@@ -94,6 +94,7 @@ func sync(houses: Dictionary) -> void:
 	for c in store.rec("cities", []):
 		_town_tiles["%d,%d" % [int(c["x"]), int(c["y"])]] = true
 	var in_hosts := field_hosts(store)
+	var at_work := _raid_goals(store)  # raider id -> where on the map the royal work he goes at stands
 	for u in store.rec("units", []):
 		var id := int(u["id"])
 		if in_hosts.has(id):
@@ -124,6 +125,11 @@ func sync(houses: Dictionary) -> void:
 			var fwd := Vector3(sin(head), 0, cos(head))
 			var across := Vector3(fwd.z, 0, -fwd.x)
 			target = centre - fwd * (int(slot / 2) * 0.16) + across * ((slot % 2) * 0.14 - 0.07 if slot > 0 else 0.0)
+		if raider and at_work.has(id):
+			# A raid making for the King's work (bridge raids.js): once at its town, the band goes at the work's site.
+			var site: Vector3 = at_work[id]
+			if Vector2(site.x - centre.x, site.z - centre.z).length() <= terrain.TILE * 1.5:
+				target = site + Vector3(cos(slot * 2.4), 0, sin(slot * 2.4)) * 0.3
 		target.y = terrain.height_at(target.x, target.z)
 		# Never in a building: on the town's walk map where it has one, and
 		# off every footprint (town_nav.gd). A ship keeps to its water.
@@ -197,6 +203,34 @@ func sync(houses: Dictionary) -> void:
 		if not seen.has(id):
 			_figures[id]["node"].queue_free()
 			_figures.erase(id)
+
+
+## Raiders making for a royal work (store raids, bridge raids.js): each raider's id -> the work's site, the crown's
+## pennant over its scaffold while it rises (town_life.gd _construction), else the goal town's edge on the side the raid
+## comes from (army.json map.raider.at_work, the town's edge radius share).
+func _raid_goals(store: Node) -> Dictionary:
+	var out := {}
+	for r in store.raids():
+		var town: Dictionary = towns.towns.get(int(r.get("goal", -1)), {}) if towns else {}
+		var node = town.get("node")
+		if not (node is Node3D) or not is_instance_valid(node):
+			continue
+		var centre: Vector3 = (node as Node3D).global_position
+		var site := Vector3.INF
+		var pen := (node as Node3D).find_child("RoyalPennant", true, false) as Node3D
+		if pen and bool(r.get("rising", false)):
+			site = pen.global_position
+		else:
+			var from: Dictionary = towns.towns.get(int(r.get("town", -1)), {})
+			var fn = from.get("node")
+			var dir := ((fn as Node3D).global_position - centre) if fn is Node3D and is_instance_valid(fn) else Vector3.FORWARD
+			dir.y = 0.0
+			dir = dir.normalized() if dir.length() > 0.01 else Vector3.FORWARD
+			site = centre + dir * float((node as Node3D).get_meta("edge_r", 3.0)) * Data.num("army", "map.raider.at_work", 0.9)
+		site.y = terrain.height_at(site.x, site.z)
+		for u in r.get("units", []):
+			out[int(u)] = site
+	return out
 
 
 ## A raider: a man in dark cloth (army.json map.raider.cloth) with an axe, and a lit torch in his other hand for one in
