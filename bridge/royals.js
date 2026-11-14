@@ -279,6 +279,6 @@ export function view(meta, turn = 0) {
     king: who(h.king), consort: h.consort?.alive ? who(h.consort) : null, heir: who(next), match: next?.spouse ? { name: next.spouse.name, house: next.spouse.house } : null,
     children: h.children.filter((k) => k.alive).map(who), kin: h.kin.filter((k) => k.alive).map(who), regency: isRegency(h),
     focuses: Object.entries(R.focus.choices).filter(([k]) => k !== "_").map(([id, f]) => ({ id, label: f.label, hint: f.hint })),
-    line: h.line, rest: Object.fromEntries(Object.entries(R.rest).filter(([k]) => k !== "_").map(([k, v]) => [k, { gold: v.gold, ease: v.ease, ready: h.rested?.[k] == null || turn - h.rested[k] >= v.seasons, last: h.rested?.[k] ?? null, seasons: v.seasons }])), abdicate: Boolean(next && next.age >= R.abdicate.age),
+    line: h.line, rest: Object.fromEntries(Object.entries(R.rest).filter(([k]) => k !== "_").map(([k, v]) => [k, { gold: v.gold, ease: v.ease, ...(v.risk != null ? { risk: v.risk } : {}), ready: h.rested?.[k] == null || turn - h.rested[k] >= v.seasons, last: h.rested?.[k] ?? null, seasons: v.seasons }])), abdicate: Boolean(next && next.age >= R.abdicate.age),
   };
 }

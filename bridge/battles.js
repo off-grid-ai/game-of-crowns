@@ -93,7 +93,7 @@ export function card(meta, world, f, turn, crownId) {
 // who were there and did not fall), and a beaten great house's lord's fate when it lost hosts.json battles.fate.minLost
 // men or more (CK3's commanders slain or taken in battle): he escapes, is wounded, taken (ransomed to the victor from
 // his house's chest) or slain (court.die, his heir succeeds), by the fate's weights. Set once on the card: sides[].fled,
-// sides[].lord {name, fate}.
+// sides[].lord {name, fate, odds}; the chronicle line of his fate carries odds {escaped, wounded, taken, slain}, 0..1.
 export function season(ctx, turn) {
   const { meta, world, court, send, record } = ctx;
   const F = HOSTS.battles?.fate;
@@ -106,24 +106,28 @@ export function season(ctx, turn) {
       if (!F || s.lost < F.minLost) continue;
       const lord = court?.lordOfHouse?.(s.house);
       if (!lord?.alive) continue;
-      const roll = Math.random() * Object.values(F.weights).reduce((t, w) => t + w, 0);
+      const total = Object.values(F.weights).reduce((t, w) => t + w, 0);
+      const roll = Math.random() * total;
       let acc = 0;
       const fate = Object.entries(F.weights).find(([, w]) => (acc += w) > roll)?.[0] ?? "escaped";
-      s.lord = { name: lord.name, fate };
+      // The roll's odds go with the news (casebook, Dice that feel like cheating; Battle Brothers' shown odds).
+      const odds = Object.fromEntries(Object.entries(F.weights).map(([k, w]) => [k, Math.round((w / total) * 100) / 100]));
+      s.lord = { name: lord.name, fate, odds };
       const where = c.place ?? "in the field";
       if (fate === "slain") {
-        record({ turn, kind: "battle", text: `${lord.name} of ${lord.house} is cut down ${where}, under his own banner.` });
+        record({ turn, kind: "battle", text: `${lord.name} of ${lord.house} is cut down ${where}, under his own banner.`, odds });
         court.die(lord, turn, world);
       } else if (fate === "taken") {
         const house = world?.players?.find((p) => p.id === s.house);
         const ransom = Math.max(0, Math.min(F.ransom, Math.floor(house?.gold ?? 0)));
         if (ransom > 0) send(`lua cmd ${Lua.pay(s.house, c.victor, ransom)}`);
         court.remember(lord.id, `I was taken ${where}, and my house paid ${ransom} gold to have me back.`);
-        record({ turn, kind: "battle", text: `${lord.name} of ${lord.house} is taken ${where}${ransom ? `, and ransomed home for ${ransom} gold` : ""}.` });
+        record({ turn, kind: "battle", text: `${lord.name} of ${lord.house} is taken ${where}${ransom ? `, and ransomed home for ${ransom} gold` : ""}.`, odds });
       } else if (fate === "wounded") {
         court.remember(lord.id, `I was wounded ${where}. I still feel it when it rains.`);
-        record({ turn, kind: "battle", text: `${lord.name} of ${lord.house} is carried from the field ${where}, wounded.` });
+        record({ turn, kind: "battle", text: `${lord.name} of ${lord.house} is carried from the field ${where}, wounded.`, odds });
       }
+      else record({ turn, kind: "battle", text: `${lord.name} of ${lord.house} escapes ${where}, and rides home with what is left of his host.`, odds });
       if (fate !== "slain") court.save?.(lord);
     }
   }
