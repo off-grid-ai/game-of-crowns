@@ -278,6 +278,7 @@ var _cycle = null
 var _cycle_vis := false
 var _cycle_prims := 0.0
 var _cycle_began := false
+var _cycle_wait := 0.0
 var _cycle_i := -1
 var _cycle_t := 0.0
 var _cycle_sum := 0.0
@@ -286,6 +287,10 @@ var _cycle_n := 0
 func _cycle_step(delta: float) -> void:
 	if _cycle == null or main.towns == null or main.terrain.width == 0 or (main.towns.building() and not _cycle_began):
 		return
+	if not _cycle_began:
+		_cycle_wait += delta
+		if _cycle_wait < 40.0:  # the world keeps streaming in for a while after the towns are built: measure steady play only
+			return
 	_cycle_began = true
 	if _cycle.is_empty():
 		_cycle = [["nothing", null], ["villagers", main.villagers], ["units", main.units], ["scenes", main.scenes], ["towns", main.towns], ["labels", main.labels], ["director", main.director], ["ui", main.ui], ["sound", main.sound], ["countryside", main.countryside], ["roads", main.roads], ["terrain", main.terrain], ["bridge", main.bridge], ["anim", main.get_node_or_null("AnimLOD")], ["chatter", main.get_node_or_null("Chatter")], ["control", main.control], ["awareness", main.get_node_or_null("Awareness")], ["traffic", main.get_node_or_null("Traffic")]]
