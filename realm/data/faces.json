@@ -1,0 +1,25 @@
+{
+ "_": "painted_faces.gd: the only faces the court may wear, by file under assets/portraits/painted (Mac 2026-11-14: a Rembrandt-era hat and lace collar on a medieval court; 'this is medieval age'). Kept: painted before 1500 (sources.json year; the Met's objectBeginDate agrees for its pieces), each looked at: hoods, veils, coifs, caps and bare heads, no ruff, lace collar, brimmed hat or Baroque dress. 20 kept of 199; the 179 later ones are cut from the pool and the folder, and never padded back with later art. A face not on this list is never shown.",
+ "kept": [
+  "nga-25.jpg",
+  "met-435896.jpg",
+  "met-437000.jpg",
+  "nga-19.jpg",
+  "nga-46109.jpg",
+  "nga-46110.jpg",
+  "nga-51.jpg",
+  "met-436490.jpg",
+  "met-436521.jpg",
+  "met-435664.jpg",
+  "nga-46153.jpg",
+  "met-437510.jpg",
+  "met-436985.jpg",
+  "nga-22.jpg",
+  "nga-1177.jpg",
+  "met-436409.jpg",
+  "met-436910.jpg",
+  "nga-41686.jpg",
+  "met-436337.jpg",
+  "met-435615.jpg"
+ ]
+}

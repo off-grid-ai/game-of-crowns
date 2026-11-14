@@ -1,7 +1,7 @@
 extends RefCounted
 ## The court's painted faces (realm/assets/portraits/painted, made by
 ## tools/portraits/build.py from public-domain museum portraits; references CK2
-## and King of Dragon Pass's painted faces). The one owner of who wears which
+## and King of Dragon Pass's painted faces), only those realm/data/faces.json keeps (medieval, before 1500). The one owner of who wears which
 ## face: a person gets the same face every time, drawn from the faces of their
 ## sex and time of life by their id: a child from children's faces (and only a
 ## child), the old from old faces, the rest from young and grown faces.
@@ -18,7 +18,10 @@ static func _load() -> void:
 		return
 	var f := FileAccess.open(DIR + "sources.json", FileAccess.READ)
 	var d = JSON.parse_string(f.get_as_text()) if f else null
-	_pool = (d.get("portraits", []) if d is Dictionary else []) as Array
+	# Only the faces realm/data/faces.json keeps (painted before 1500, each looked at): a cut face never comes back,
+	# whatever the folder or sources.json hold.
+	var kept: Array = preload("res://scripts/data.gd").value("faces", "kept", [])
+	_pool = ((d.get("portraits", []) if d is Dictionary else []) as Array).filter(func(p): return kept.has(String(p.get("file", ""))))
 
 
 ## A person's painted face (person: the bridge's sitter, with id, gender, age), or null.
