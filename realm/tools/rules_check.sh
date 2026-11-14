@@ -88,12 +88,12 @@ for sw in $(grep -hv '^[[:space:]]*#' $launch | grep -oE -- '--[a-z][a-z0-9-]*' 
 done
 #   one-ground: where a body may stand is ground.gd's one answer (Mac: 'OOP, SOLID, SRP, SSOT, DRY'; troops in the
 #   sea and townsfolk in houses were every placer's own idea of clear ground). No script but the ground and the walk
-#   maps it shares footprints with (nav_ground, town_nav, army_ground) reads the footprints off what's standing; and no
+#   maps it shares footprints with (nav_ground, town_nav) reads the footprints off what's standing; and no
 #   script that sets down people, beasts, carts or camps asks the terrain for land or water itself: it asks
 #   Ground.is_clear / nearest_clear / area_clear.
 check "one-ground" 'inside_something\(|NavGround\.all\(|TownNav\.footprints\(' \
-  'scripts/(ground|nav_ground|town_nav|army_ground)\.gd'
-placers=(${(f)"$(print -l scripts/{scenes,units,villagers,control,npc_mind,town_life,town_scenes,castle_life,castle_folk,gold_mines,siege_camp,camp_kit,animals,army,army_*}.gd scripts/scene_kinds/*.gd scripts/town_dress/*.gd(N) | grep -vE 'scripts/(army_ground|town_dress/quay)\.gd')"})  # quay: turns its edge to the water, sets nobody down
+  'scripts/(ground|nav_ground|town_nav)\.gd'
+placers=(${(f)"$(print -l scripts/{scenes,units,villagers,control,npc_mind,town_life,town_scenes,castle_life,castle_folk,gold_mines,siege_camp,camp_kit,animals,army,army_*}.gd scripts/scene_kinds/*.gd scripts/town_dress/*.gd(N) | grep -vE 'scripts/town_dress/quay\.gd')"})  # quay: turns its edge to the water, sets nobody down
 for f in $placers; do
   [[ -f $f ]] || continue
   hits=$(grep -nE 'terrain\.(is_land|walkable)\(' $f)
