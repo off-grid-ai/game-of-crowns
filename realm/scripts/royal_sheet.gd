@@ -124,8 +124,7 @@ func open() -> void:
 		pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 		pic.custom_minimum_size = Vector2(72, 96)
-		var g: Array = sb.get("grade", [1, 1, 1])
-		pic.modulate = Color(float(g[0]), float(g[1]), float(g[2]))
+		pic.modulate = Data.colour(sb.get("grade"), Color.WHITE)
 		head.add_child(pic)
 	var title := T.title(_w("king", "King {name}").replace("{name}", String(king.get("name", ""))), 26, T.ACCENT)
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
