@@ -61,6 +61,7 @@ import * as Garrison from "./garrison.js";
 import * as Rulings from "./rulings.js";
 import * as Hosts from "./hosts.js";
 import * as Battles from "./battles.js";
+import * as Soil from "./soil.js";
 import * as Raids from "./raids.js";
 import * as Households from "./households.js";
 import * as Harvest from "./harvest.js";
@@ -191,7 +192,10 @@ function load(id) {
   court.spoils = () => meta.spoils ?? [];  // towns taken with allies beside the royal host (campaigns.js; characters.js spoils)
   arcs = new Arcs(P.base, court, record);
   arcsRunning = false;  // a new realm's stories start free of the last one's
-  court.onArcRuling = (arc, beat, option) => arc === "council" ? councilRuled(beat, option) : arc === "siege" ? siegeRuled(beat, option) : arc === "rival" ? Rivals.ruled(realmCtx(), beat, option) : arc === "rebel" ? Rebels.ruled(realmCtx(), beat, option) : arc === "peace" ? Peace.ruled(realmCtx(), beat, option) : arcs.rule(arc, beat, option);
+  // The King's answer goes back to the system that asked, by its arc (one row each); any other arc is a story's (arcs.js).
+  const RULED = { council: councilRuled, siege: siegeRuled, rival: (b, o) => Rivals.ruled(realmCtx(), b, o), rebel: (b, o) => Rebels.ruled(realmCtx(), b, o),
+    peace: (b, o) => Peace.ruled(realmCtx(), b, o), soil: (b, o) => Soil.ruled(realmCtx(), b, o) };
+  court.onArcRuling = (arc, beat, option) => (RULED[arc] ? RULED[arc](beat, option) : arcs.rule(arc, beat, option));
   chatter?.stop();
   chatter = new Chatter(P.state, { world: () => world, turn: () => world?.turn ?? 0, minds: () => minds });
   stakes = new Stakes(P.state, record, endReign);
@@ -429,7 +433,7 @@ function applyStartOptions() {
 // The realm as the view sees it (GET /world): built in view.js.
 function worldView() {
   const v = View.worldView(realmCtx()), d = detail();
-  return { ...v, trade: Trade.list(v.cities, world?.turn ?? 0, (a, b) => (d?.players?.[a]?.atWarWith ?? []).includes(b)), hosts: Hosts.list({ world, meta }), banners: Hosts.banners({ world, meta }), warhosts: Hosts.warHosts({ world, meta }), battles: Battles.cards(meta, world?.turn), raids: Raids.list(meta, world), works: Treasury.worksOf(meta, world, crownNow()?.id), harvest: Harvest.view(meta, world?.turn ?? 0), royals: Royals.view(meta, world?.turn ?? 0), captains: Captains.list(meta, world), soldiers: Captains.soldiers(meta, world), promises: Promises.view(meta), trust: Promises.trust(meta), sieges: Siegecraft.list(meta), rival: Rivals.view(meta, world), rebels: Rebels.view(meta, world), wars: Peace.view(meta, world), coalition: Coalition.view(meta), harsh: Math.round(Harsh.harsh(meta, world?.turn ?? 0) * 100) / 100, vassals: court?.vassals(world) ?? [], contagion: Contagion.view(meta), plague: Contagion.history(meta), prices: Prices.view(meta), fate: Battles.fateOdds() };  // the King's hosts and their orders, and how many more orders this season (hosts.js)
+  return { ...v, trade: Trade.list(v.cities, world?.turn ?? 0, (a, b) => (d?.players?.[a]?.atWarWith ?? []).includes(b)), hosts: Hosts.list({ world, meta }), banners: Hosts.banners({ world, meta }), warhosts: Hosts.warHosts({ world, meta }), battles: Battles.cards(meta, world?.turn), raids: Raids.list(meta, world), works: Treasury.worksOf(meta, world, crownNow()?.id), harvest: Harvest.view(meta, world?.turn ?? 0), royals: Royals.view(meta, world?.turn ?? 0), captains: Captains.list(meta, world), soldiers: Captains.soldiers(meta, world), promises: Promises.view(meta), trust: Promises.trust(meta), sieges: Siegecraft.list(meta), rival: Rivals.view(meta, world), rebels: Rebels.view(meta, world), wars: Peace.view(meta, world), coalition: Coalition.view(meta), harsh: Math.round(Harsh.harsh(meta, world?.turn ?? 0) * 100) / 100, vassals: court?.vassals(world) ?? [], contagion: Contagion.view(meta), plague: Contagion.history(meta), prices: Prices.view(meta), fate: Battles.fateOdds(), soil: Soil.view(meta) };  // the King's hosts and their orders, and how many more orders this season (hosts.js)
 }
 
 // The Hand's matters, read from the realm as it stands now.

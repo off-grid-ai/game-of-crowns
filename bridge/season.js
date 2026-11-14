@@ -18,6 +18,7 @@ import * as Opening from "./opening.js";
 import * as Reword from "./reword.js";
 import * as Households from "./households.js";
 import * as Harvest from "./harvest.js";
+import * as Soil from "./soil.js";
 import * as Royals from "./royals.js";
 import * as Promises from "./promises.js";
 import * as Siegecraft from "./siegecraft.js";
@@ -64,6 +65,7 @@ export function turn(ctx, ev) {
   // The season's weather, rolled once as the season turns (weather.js, from the reign's seed).
   Weather.advance(ctx.meta, Number(ev.turn), calendar(Number(ev.turn)).season);
   Harvest.season(ctx, Number(ev.turn));  // a wet autumn's harvest rots: towns without a granary eat lean (harvest.js)
+  Soil.season(ctx, Number(ev.turn));  // each harvest wears the fields; a tired town's lord asks to let them lie fallow (soil.js)
   if (isYearEnd(ev.turn)) Royals.year(ctx, Number(ev.turn));
   Promises.season(ctx, Number(ev.turn));
   Siegecraft.season(ctx, Number(ev.turn));

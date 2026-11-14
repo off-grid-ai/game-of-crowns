@@ -1,0 +1,9 @@
+{
+ "_": "The land remembers (soil.js; casebook, The land remembers: Farthest Frontier's soil that sinks under the same crop, Manor Lords' fallow fields). Each autumn harvest wears a town's fields by perHarvest, plus perSize for each of its size (a big town works its land harder). At tired the town's lord asks the King at court (one town a harvest, the most worn): lie fallow (Freeciv's Blight decree for fallow.seasons now, the fields rested to 0) or press on (nothing now, the fields keep wearing). At failed the fields give out by themselves: Blight for failed.seasons, and the fields fall back to failed.after. favour: what each answer does to the lord's house.",
+ "perHarvest": 0.18,
+ "perSize": 0.015,
+ "tired": 0.7,
+ "fallow": { "seasons": 1 },
+ "failed": { "at": 1, "seasons": 3, "after": 0.5 },
+ "favour": { "fallow": 3, "press": -4 }
+}
