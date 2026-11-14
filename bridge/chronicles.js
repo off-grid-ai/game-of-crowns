@@ -208,9 +208,12 @@ export function create({ name, scenario = "aldmere", minutes = 0, pace, fate = "
     const seed = test ? 1066 : 1 + Math.floor(Math.random() * 2147483646);
     const opening = test ? null : freshStart(p.base, seed);
     // The last reign's grudge (reign.js grudgeOf, in the Hall of Records): a real reign inherits the last real one's.
-    const grudge = test ? null : [...records()].filter((r) => !isTest(r)).sort((a, b) => (b.ended ?? 0) - (a.ended ?? 0))[0]?.grudge ?? null;
+    const last = test ? null : [...records()].filter((r) => !isTest(r)).sort((a, b) => (b.ended ?? 0) - (a.ended ?? 0))[0];
+    const grudge = last?.grudge ?? null;
+    // And its blood (reign.js dynastyOf): the last King's heir takes this crown (royals.js of).
+    const dynasty = last?.dynasty ?? null;
     const meta = {
-      id, name, scenario, seed, opening, grudge, land: base.land ?? null, minutes: Number(minutes) || 0, pace, created: Date.now(), fate, wealth, options: opt,
+      id, name, scenario, seed, opening, grudge, dynasty, land: base.land ?? null, minutes: Number(minutes) || 0, pace, created: Date.now(), fate, wealth, options: opt,
       openingMood: String(mood || "").slice(0, 300), elapsedMs: 0, status: "running", score: null, verdict: null, fromBaseline: base.turn ?? true,
     };
     saveMeta(meta);

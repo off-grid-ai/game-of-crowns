@@ -396,6 +396,8 @@ function applyStartOptions() {
     noteFavour(held.id, -GRUDGE.carry, `a grudge from the last King's reign${meta.grudge.cause ? `: ${meta.grudge.cause}` : ""}`);
     record({ turn: world.turn, kind: "court", text: `${houseFor(held).name} has not forgotten the last King${meta.grudge.cause ? `, nor ${meta.grudge.cause}` : ""}. They bow to the new crown, and keep their grudge.` });
   }
+  // The last King's heir crowned (royals.js, chronicles.create dynasty): the chronicle says whose blood this is.
+  if (meta.dynasty?.king) record({ turn: world.turn, kind: "succession", text: `${meta.dynasty.king.name}, child of ${meta.dynasty.of}, is crowned in Kingsmere. The blood goes on.` });
   // No great house begins under the floor (a resentful realm's floor is just above the rising line).
   const floor = o.trust === "resentful" ? START.resentful : START.floor;
   for (const p of world.players.filter((x) => !houseFor(x).wild && !houseFor(x).crown)) if (favourOf(p.id) < floor) favour[p.id] = floor;

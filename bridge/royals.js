@@ -33,6 +33,18 @@ function born(h, r, woman, age, parents = []) {
 
 // The household, seeded once for a reign from its seed (the same seed, the same family).
 export function of(meta) {
+  if (!meta.royals && meta.dynasty?.king) {
+    // One more generation (CK2): a real reign after one that ended with an heir begins as that heir's (chronicles.js
+    // create, from the Hall of Records): the heir is King, with their traits and their brothers and sisters.
+    const d = meta.dynasty;
+    const h = { children: [], kin: [], line: [{ name: d.of, from: null, to: null, how: "the last reign", age: null }], seq: 0 };
+    const seat = (p) => ({ ...p, id: `r${++h.seq}`, alive: true });
+    h.king = seat(d.king);
+    h.kin = (d.kin ?? []).map(seat);
+    h.consort = null;
+    h.since = meta.crownedAt ?? 0;
+    return (meta.royals = h);
+  }
   if (meta.royals) {
     // A household from before royals had traits: they are dealt now, once.
     const r = rng((Number(meta.seed ?? 1066) ^ 0x7a17) >>> 0);
@@ -155,6 +167,19 @@ export function abdicate(ctx) {
   if (next.age < R.abdicate.age) return { error: `${next.name} is ${next.age}, too young to be crowned.` };
   pass(ctx, h, "abdicated", ctx.world?.turn ?? 0);
   return { ok: true, king: h.king.name };
+}
+
+// The blood a reign hands the next (reign.js endReign, in the Hall of Records; CK2's "one more generation"): its heir
+// now, with traits and kin, and whose child they are; none when the reign ended with the line lost (deposed, fallen,
+// heirless) or no heir lives.
+export function dynastyOf(meta, outcome) {
+  const h = meta.royals;
+  if (!h || ["deposed", "fallen", "heirless"].includes(outcome)) return null;
+  const next = heir(h);
+  if (!next) return null;
+  const who = (p) => ({ name: p.name, age: p.age, woman: p.woman, traits: p.traits ?? [] });
+  const kin = [...h.children, ...(h.kin ?? [])].filter((k) => k.alive && k !== next);
+  return { king: who(next), kin: kin.map(who), of: h.king.name };
 }
 
 // How a reign that ends heirless is judged (reign.js endReign): its score's share and its verdict.

@@ -9,7 +9,7 @@
 // (getters for what it reassigns, setPaused for the clock's hold); server.js
 // keeps wrappers of the same names.
 import { crownOf, houseName } from "./realm.js";
-import { HEIRLESS } from "./royals.js";
+import { HEIRLESS, dynastyOf } from "./royals.js";
 import * as Lua from "./lua.js";
 import * as Opening from "./opening.js";
 import { say } from "./say.js";
@@ -479,7 +479,7 @@ export function endReign(ctx, why, outcome = "completed") {
   meta.outcome = outcome;
   meta.endedAt = { turn: world?.turn ?? 0, peace: s.peace, pop: s.pop, houses: world?.players?.filter((p) => !houseFor(p).wild && !houseFor(p).crown && world.cities.some((c) => c.owner === p.id)).length ?? 0 };
   chron.saveMeta(meta);
-  chron.addRecord({ id: meta.id, name: meta.name, scenario: meta.scenario, minutes: meta.minutes, turns: world?.turn ?? 0, ended: Date.now(), ...s, epitaph: meta.epitaph, grudge });
+  chron.addRecord({ id: meta.id, name: meta.name, scenario: meta.scenario, minutes: meta.minutes, turns: world?.turn ?? 0, ended: Date.now(), ...s, epitaph: meta.epitaph, grudge, dynasty: dynastyOf(meta, outcome) });
   record({ turn: world?.turn ?? 0, kind: "reign_end", text: `${why} So ends the reign of ${s.title}. ${s.verdict} (Score ${s.score}.)` });
   setPaused(true);
   send("set timeout 0");
