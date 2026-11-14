@@ -40,6 +40,7 @@ Switches (`--name`) go after `--` on the game's command line.
 - What the reign's petitions setting (rare, often) shifts: `bridge/data/court.json`: `petitions`, `wantMin`, `wantMax`.
 - How often the Hand may call the King in for a crisis between sittings: `bridge/data/court.json`: `handYear`.
 - How many seasons until a lord comes back about a weighty ruling: `bridge/data/court.json` `rulingDue`.
+- The council's two voices on every matter (the Hand urges his own house's answer under a pretext, the Steward the cheapest or warmest other one): titles, pretexts and the Steward's lines, `bridge/data/court.json` `voices`; the next-thing line's two voices back on, `bridge/data/next.json` `oneVoice` (false).
 
 ## Event cards (Builder 2)
 - On or off for reigns that don't say: `bridge/data/events.json`: `settings.on` (a reign can set `options.events`).

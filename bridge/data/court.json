@@ -91,5 +91,14 @@
   ],
   "noClock": 0.6
  },
-  "rulingDue": 2
+  "rulingDue": 2,
+  "voices": {
+   "_": "Two councillors speak on every matter (court.js voices; KoDP's council, CK3's councillors): the Hand, a lord of the great house warmest to the crown, urges the answer that warms his own house most or cools the house his lord likes least, under a pretext (one of pretexts, by the matter); the Steward, a crown officer, urges a different answer, the cheapest the treasury can pay, then the one that warms the most houses. hand and steward are their titles; free, warms and dear the Steward's lines ({label}, {n} houses, {cost} gold).",
+   "hand": "the Hand",
+   "steward": "The Steward",
+   "pretexts": ["For the realm's peace, Sire", "For the crown's good name, Sire", "If the realm is to hold, Sire", "As your father would have, Sire"],
+   "free": "It costs the treasury nothing, Sire: {label}.",
+   "warms": "{label}, Sire. It warms {n} houses for {cost} gold.",
+   "dear": "{label}, Sire. The treasury can bear {cost} gold."
+  }
 }

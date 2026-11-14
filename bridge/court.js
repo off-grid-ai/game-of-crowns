@@ -16,6 +16,7 @@ import * as Opening from "./opening.js";
 import fs from "node:fs";
 import * as Treasury from "./treasury.js";
 import { houseFor, cityName } from "./narrator.js";
+import * as names from "./names.js";
 import { BANDS } from "./favour.js";
 import { calendar } from "./calendar.js";
 import { matterKey } from "./counsel.js";
@@ -361,6 +362,54 @@ function handLine(ctx, p) {
   return `${h} will remember this, Sire.`;
 }
 
+// The council's two voices on a matter (data/court.json voices; KoDP's council, CK3's councillors): the Hand,
+// a lord of the great house warmest to the crown, urges the answer that does most for his own house (warms it,
+// or cools the house his lord likes least) under a pretext; the Steward urges a different one, the cheapest
+// the treasury can pay, then the one warming the most houses. [{who, house, text, option}]: option is the
+// option id a voice urges (a realm matter's: the index into its acts), null for none. Neither is marked best.
+const V = COURT.voices;
+const plain = (label) => String(label ?? "").split("  ")[0].replace(/\s*\(\d[\d,]* gold\)/, "").trim();
+const lower = (s) => s.charAt(0).toLowerCase() + s.slice(1);
+function councilOf(ctx) {
+  const { world, court, favourOf } = ctx;
+  const great = (world?.players ?? []).filter((p) => !houseFor(p).wild && !houseFor(p).crown && world.cities.some((c) => c.owner === p.id));
+  const own = [...great].sort((a, b) => favourOf(b.id) - favourOf(a.id))[0];
+  const lord = own ? court.lordOfHouse(own.id) : null;
+  if (!lord) return null;
+  // His rival: the house whose lord he likes least.
+  const rival = great.filter((p) => p !== own).map((p) => [p, court.lordOfHouse(p.id)]).filter(([, l]) => l)
+    .sort((a, b) => court.opinion(lord.id, a[1].id) - court.opinion(lord.id, b[1].id))[0]?.[0] ?? null;
+  return { own, rival, lord, name: (p) => p && names.shown(houseFor(p).name) };
+}
+function voices(ctx, p, hand) {
+  const council = councilOf(ctx);
+  const pretext = V.pretexts[[...String(p.id ?? p.key)].reduce((t, ch) => t + ch.charCodeAt(0), 0) % V.pretexts.length];
+  const say = (line, o) => line.replace("{label}", line.startsWith("{label}") ? plain(o.label) : lower(plain(o.label))).replace("{n}", String(o.n ?? 0)).replace("{cost}", String(o.cost ?? 0));
+  const world = ctx.world;
+  // Each answer as {option, label, cost, short, mine, warms}: a petition's options by id, a realm matter's acts by index.
+  const answers = hand
+    ? (p.acts ?? []).map((a, i) => {
+      const owner = world?.cities?.find((c) => c.id === Number(a.city))?.owner;
+      return { option: i, label: a.label, cost: a.cost ?? 0, short: a.short, pick: a.pick,
+        mine: (owner != null && owner === council?.own.id ? 2 : 0) - (owner != null && owner === council?.rival?.id ? 1 : 0), warms: owner != null && !houseFor(world.players.find((x) => x.id === owner) ?? {}).crown ? 1 : 0 };
+    })
+    : (p.options ?? []).map((o) => {
+      const d = (who) => [...(o.weighs?.helps ?? []), ...(o.weighs?.hurts ?? [])].find((r) => r.house === council?.name(who))?.d ?? 0;
+      return { option: o.id, label: o.label, cost: o.cost ?? 0, short: o.short, mine: council ? d(council.own) - d(council.rival) : 0, warms: (o.weighs?.helps?.length ?? 0) - (o.weighs?.hurts?.length ?? 0) };
+    });
+  const out = [];
+  // The Hand: his house's answer under a pretext; on a realm matter where none touches his house, the order
+  // that does most for its cost (counsel.js pick); else his word on the matter (handLine) and no answer.
+  const his = [...answers].filter((a) => a.mine > 0).sort((a, b) => b.mine - a.mine)[0] ?? (hand ? answers.find((a) => a.pick) : null);
+  if (council) out.push({ who: `${council.lord.name}, ${V.hand}`, house: houseFor(council.own).name,
+    text: his ? `${pretext}: ${lower(plain(his.label))}.` : (hand ? p.why ?? "" : handLine(ctx, p)), option: his?.option ?? null });
+  // The Steward: another answer, the cheapest the treasury can pay, then the warmest.
+  const theirs = answers.filter((a) => a !== his && !a.short).sort((a, b) => a.cost - b.cost || b.warms - a.warms)[0];
+  if (theirs) out.push({ who: V.steward, house: null, option: theirs.option,
+    text: say(!theirs.cost ? V.free : theirs.warms >= 2 ? V.warms : V.dear, { ...theirs, n: theirs.warms }) });
+  return out;
+}
+
 // What stands before the King now: a crisis first, then the sitting's own
 // matters (the realm's, then the petitioners). Empty between sittings.
 // Where a matter lives on the map: the town it's about (a deck card's town, a
@@ -402,11 +451,11 @@ export function docket(ctx) {
     const short = Treasury.shortOf(purse, cost);
     return { ...o, cost, label: String(o.label ?? "").replace(/\(\d[\d,]* gold\)/, `(${cost} gold)`), ...(short ? { short } : {}) };
   }).map((o) => ({ ...o, weighs: court.weighOption?.(court.petitions.find((x) => x.id === p.id) ?? p, o, world) ?? null }));  // whom each answer warms and cools, shown before choosing
-  const pets = court.open().filter((p) => p.called != null).map((p) => ({ ...p, options: priced(p), due: null, sitting: p.called, counsel: handLine(ctx, p), push: !!c.push }));
+  const pets = court.open().filter((p) => p.called != null).map((p) => ({ ...p, options: priced(p), due: null, sitting: p.called, push: !!c.push })).map((p) => ({ ...p, voices: voices(ctx, p, false) }));
   // A court with nothing left to show the King is no court: the doors close, the realm moves.
   if (c.sitting != null && !hand.length && !pets.length) { c.hand = {}; closeIfDone(ctx, world?.turn ?? 0, true); }
   // Every matter carries its place, and its petitioner's id for their face (null for the Hand himself).
-  return [...hand.map((x) => ({ ...x, push: !!c.push })), ...pets].map((x) => ({ ...x, place: placeOf(ctx, x.hand ? x : { ...(court.petitions.find((y) => y.id === x.id) ?? {}), ...x }), petitioner: x.from ?? null }));
+  return [...hand.map((x) => ({ ...x, push: !!c.push, voices: voices(ctx, x, true) })), ...pets].map((x) => ({ ...x, place: placeOf(ctx, x.hand ? x : { ...(court.petitions.find((y) => y.id === x.id) ?? {}), ...x }), petitioner: x.from ?? null }));
 }
 
 // --- the court's routes ----------------------------------------------------------
