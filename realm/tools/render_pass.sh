@@ -25,6 +25,7 @@
 #   town     the town view you start with, Kingsmere's square (01-town; READY 1, art step 6)
 #   landuse  Kingsmere and the land round it, the town view drawn back (01-town; One store's land use)
 #   realm    the realm map, standards and flags (02-realm; READY 3, 9)
+#   midzoom  the map's middle zoom over Kingsmere at d25 and d40, beside 02-realm
 #   muster   war's host forming and marching out along the road (03-army; READY 3, 4)
 #   cavalry  a house-coloured host in line, close (03-army; READY 4, the Meshy army set)
 #   battle   two hosts meet, then the rout runs along the line (03-army; READY 5)
@@ -52,7 +53,7 @@ STAMP=$(date +%H%M)
 OUT=${OUT:-/tmp/goc-pass/$STAMP}
 PORT=${PORT:-8789}; FC=${FC:-5558}
 API=localhost:$PORT
-ONLY=${ONLY:-"town landuse realm muster cavalry battle siege command face walls breach seasons winter host5 castle street cities sack crossing raid"}
+ONLY=${ONLY:-"town landuse realm midzoom muster cavalry battle siege command face walls breach seasons winter host5 castle street cities sack crossing raid"}
 # The pass runs from its own copy of this script: zsh reads a script as it runs, so a commit to it mid-pass broke the
 # first full pass (2159: 'parse error near fi' at line 229, ten lines added above it at 22:00 while it ran).
 if [ -z "${RENDER_PASS_SELF:-}" ]; then
@@ -185,6 +186,15 @@ if want realm; then
    print "wait 8"; print "snap realm"; print "snap realm_ui ui"; print "look end"; } > $OUT/realm.play
   shot realm 1500 film $SW
   side realm $OUT/frames/realm/realm_ui.png $TARGETS/02-realm.jpg "READY 3, 9: standards and flags"
+fi
+# The map's middle zoom, between the town drawn back (d9.6) and the realm (d60, the atlas from 54): Kingsmere and the
+# land round it at d25 and d40, the political map, names and hosts as they read there (Look, PLAN.md section 4).
+if want midzoom; then
+  { print "wait 30"; print "city Kingsmere 25 7"; print "wait 6"; print "city Kingsmere 25 7"; print "wait 3"; print "snap d25 ui"
+    print "city Kingsmere 40 9"; print "wait 6"; print "snap d40 ui"; print "look end"; } > $OUT/midzoom.play
+  shot midzoom 1500 film $SW
+  side midzoom $OUT/frames/midzoom/d25.png $TARGETS/02-realm.jpg "the middle zoom, d25 over Kingsmere"
+  side midzoom_40 $OUT/frames/midzoom/d40.png $TARGETS/02-realm.jpg "the middle zoom, d40 over Kingsmere"
 fi
 if want muster; then
   { print "muster formed 150"; print "snap formed"; print "muster out 150"
