@@ -84,6 +84,7 @@
   { "from": 0, "says": "", "grade": [1, 1, 1] }
  ],
  "rest": { "_": "Easing the King's mind on his sheet (bridge royals.js rest: the gold, ease and seasons are the bridge's): each kind's button word, its hover line and what is said when done; again ({n}) and poor on a locked one.",
+  "risk": "One hunt in {n} ends with the King carried home hurt.",
   "head": "Ease his mind",
   "hunt": { "label": "Hunt", "tip": "A day in the royal forest eases him. Once a year; a fall from the saddle is not unknown.", "done": "The King rides out to hunt." },
   "feast": { "label": "Feast", "tip": "A feast in the great hall eases him, and every great house warms a little. Once a year.", "done": "The great hall is made ready for a feast." },

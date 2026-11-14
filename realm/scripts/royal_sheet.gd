@@ -267,6 +267,7 @@ func _rest_row(v: VBoxContainer, r: Dictionary) -> void:
 	row.add_theme_constant_override("separation", T.GAP)
 	var st := Awareness.store()
 	var turn := int(st.rec("turn", 0)) if st else 0
+	var odds := ""
 	for kind in ["hunt", "feast", "pilgrimage"]:
 		if not rest.has(kind):
 			continue
@@ -274,6 +275,11 @@ func _rest_row(v: VBoxContainer, r: Dictionary) -> void:
 		var w: Dictionary = words.get(kind, {})
 		var b: Button = ui.btn("%s  ·  %s" % [String(w.get("label", kind)), ui.crowns(int(k.get("gold", 0)))])
 		b.tooltip_text = String(w.get("tip", ""))
+		# The odds shown before he rides out (casebook, Dice that feel like cheating; Battle Brothers' odds): a hunt
+		# can wound him (bridge /world royals.rest.hunt.risk).
+		if float(k.get("risk", 0)) > 0:
+			odds = String(words.get("risk", "")).replace("{n}", str(maxi(2, roundi(1.0 / float(k["risk"])))))
+			b.tooltip_text += "\n" + odds
 		if not bool(k.get("ready", true)):
 			b.disabled = true
 			var left := int(k.get("seasons", 0)) - (turn - int(k.get("last", turn)))
@@ -295,6 +301,8 @@ func _rest_row(v: VBoxContainer, r: Dictionary) -> void:
 	if row.get_child_count() > 0:
 		v.add_child(T.label(String(words.get("head", "Ease his mind"))))
 		v.add_child(row)
+		if odds != "":
+			_say(v, odds, T.TEXT_3)
 
 
 func _say(v: VBoxContainer, text: String, colour: Color) -> void:
