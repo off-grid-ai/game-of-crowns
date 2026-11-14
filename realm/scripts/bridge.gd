@@ -433,6 +433,18 @@ func _ask_minds(path: String, body: Dictionary, secs: float, cb: Callable) -> vo
 			cb.call(0, null)
 
 
+## A test hook of a film reign (X-Test: /test/court, /test/stage, /test/mark, /test/clock), its body as written:
+## render_pass.sh's one run stages its views through it (autoplay.gd post). cb(code, text).
+func test_hook(path: String, body: String, cb: Callable) -> void:
+	var req := HTTPRequest.new()
+	req.timeout = 30.0
+	add_child(req)
+	req.request_completed.connect(func(_r, code, _h, resp):
+		req.queue_free()
+		cb.call(code, (resp as PackedByteArray).get_string_from_utf8()))
+	req.request(BASE + path, ["Content-Type: application/json", "X-Test: 1"], HTTPClient.METHOD_POST, body)
+
+
 func _post(path: String, body: Dictionary, cb: Callable) -> void:
 	var req := HTTPRequest.new()
 	add_child(req)

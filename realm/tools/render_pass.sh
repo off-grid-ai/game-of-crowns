@@ -21,6 +21,11 @@
 # One private bridge (8789, Freeciv 5558; PORT and FC to change) started fresh from that copy, so /world carries what
 # HEAD's bridge sends (units' men: a1e42ae0); the pass checks it before the first frame and stops the bridge at the end.
 #
+# Runs: the war views (muster, cavalry, battle, siege, breach, host5) each launch a Godot of their own, as their staging is
+# built from launch switches as the realm loads; every other view plays in ONE Godot, booted once, view after view (one
+# play: autoplay.gd's view, post, cue and season steps). Frames and play.logs stay at frames/<view>/; the one run's own
+# Godot log is frames/run.log.
+#
 # Frames (name: what, target, READY line):
 #   town     the town view you start with, Kingsmere's square (01-town; READY 1, art step 6)
 #   landuse  Kingsmere and the land round it, the town view drawn back (01-town; One store's land use)
@@ -151,7 +156,9 @@ B=(--bridge=http://127.0.0.1:$PORT)
 OFF=${OFF:-"--audio-driver Dummy --position 10000,10000"}  # engine flags for every window: off any display
 export RES=1920x1080
 want() { [[ " $ONLY " == *" $1 "* ]]; }
-# shot <name> <limit s> <fps: still|film> <args...>: a still (--wait) or a played take (--play=$OUT/<name>.play)
+# shot <name> <limit s> <fps: still|film> <args...>: a still (--wait) or a played take (--play=$OUT/<name>.play), in a
+# Godot of its own: only the war views, whose staging (an army spike, a field battle, a siege, a muster) is built as the
+# realm loads from their switches. Every other view plays in the pass's one run (below).
 shot() {
   local n=$1 limit=$2 kind=$3; shift 3
   local ga="$OFF"; [ $kind = film ] && ga="$OFF --fixed-fps 24"
@@ -172,38 +179,12 @@ side() {
   ffmpeg -loglevel error -y -i $t -i $f -filter_complex "[0]scale=960:540[a];[1]scale=960:540[b];[a][b]hstack" -q:v 3 $OUT/side/$n.jpg \
     && echo "| $n | $(basename $t) | side/$n.jpg | ${4:-} |" >> $OUT/side/INDEX.md
 }
+# The King's own screens have no target painting: each against its named game, the frame alone in the index.
+solo() { [ -f "$2" ] && echo "| $1 | ${3:-} | ${2#$OUT/} | |" >> $OUT/side/INDEX.md || say "solo $1: no frame ($2)"; }
 echo "| frame | target | side-by-side | log |" > $OUT/side/INDEX.md
 echo "|---|---|---|---|" >> $OUT/side/INDEX.md
 
-if want town; then
-  { print "wait 30"; print "home Kingsmere"; print "wait 6"; print "home Kingsmere"; print "wait 3"; print "snap hero"; print "snap hero_ui ui"
-    print "hold cam_turn_left 0.6"; print "wait 2"; print "snap left"; print "home Kingsmere"; print "wait 4"
-    print "squarelife Kingsmere 60"; print "look end"; } > $OUT/town.play
-  shot town 2100 film $SW
-  # The square's life against 01-town's (towns.json square.targets): the crowd measured on the square the film builds
-  # (a headless run builds Kingsmere a 163 m2 square, the film's 1154 m2: only the pass can measure it).
-  side town $OUT/frames/town/hero.png $TARGETS/01-town.jpg "READY 1, art step 6; $(grep -h 'CHECK square life' $OUT/frames/town/play.log 2>/dev/null | sed 's/.*open setts: //' | cut -c1-160)"
-fi
-if want landuse; then
-  { print "wait 30"; print "home Kingsmere 0 4"; print "wait 6"; print "home Kingsmere 0 4"; print "wait 3"; print "snap land"; print "look end"; } > $OUT/landuse.play
-  shot landuse 1500 film $SW
-  side landuse $OUT/frames/landuse/land.png $TARGETS/01-town.jpg "land use round the town"
-fi
-if want realm; then
-  { print "wait 30"; print "tile 33 74 60 3.14";  # 02-realm: several houses' lands with mountains and the sea: from the north over Stormwatch (47,69) toward Sunspire (42,85) and Rosehall's south, the Belia mountains about (26,80) (bridge/lua/world_setup_azgaar.lua seats; g4: the Kingsmere-Highfell frame was mostly sea and low isles)
-   print "wait 8"; print "snap realm"; print "snap realm_ui ui"; print "look end"; } > $OUT/realm.play
-  shot realm 1500 film $SW
-  side realm $OUT/frames/realm/realm_ui.png $TARGETS/02-realm.jpg "READY 3, 9: standards and flags"
-fi
-# The map's middle zoom, between the town drawn back (d9.6) and the realm (d60, the atlas from 54): Kingsmere and the
-# land round it at d25 and d40, the political map, names and hosts as they read there (Look, PLAN.md section 4).
-if want midzoom; then
-  { print "wait 30"; print "city Kingsmere 25 7"; print "wait 6"; print "city Kingsmere 25 7"; print "wait 3"; print "snap d25 ui"
-    print "city Kingsmere 40 9"; print "wait 6"; print "snap d40 ui"; print "look end"; } > $OUT/midzoom.play
-  shot midzoom 1500 film $SW
-  side midzoom $OUT/frames/midzoom/d25.png $TARGETS/02-realm.jpg "the middle zoom, d25 over Kingsmere"
-  side midzoom_40 $OUT/frames/midzoom/d40.png $TARGETS/02-realm.jpg "the middle zoom, d40 over Kingsmere"
-fi
+# --- the war views, each in its own Godot (their staging is a launch switch) ------------------------------------------
 if want muster; then
   { print "muster formed 150"; print "snap formed"; print "muster out 150"
     for i in $(seq -f "%02g" 1 20); do print "snap m$i"; print "wait 1.5"; done
@@ -229,50 +210,11 @@ if want siege; then
   side siege $OUT/frames/siege/s10.png $TARGETS/04-siege.jpg "READY 6: the breach and storm"
   side siege_taken $OUT/frames/siege/s30.png $TARGETS/04-siege.jpg "READY 7: $(grep -ciE 'taken|changes hands' $OUT/frames/siege.log 2>/dev/null) taken lines"
 fi
-# READY 8: the host in the field in the most open ground (autoplay _open_host: fewest trees round it; g5's command
-# frame took the one farthest from any town, and it stood under a forest's canopy), so its men show.
-if want command; then
-  { print "wait 30"; print "host open 6"; print "wait 3"; print "snap selected ui"; print "order besiege"; print "wait 2"; print "snap ordered ui"
-    print "wait 6"; print "snap marching ui"; print "look end"; } > $OUT/command.play
-  shot command 1500 film $SW
-  side command $OUT/frames/command/ordered.png $TARGETS/03-army.jpg "READY 8: $(grep -hE 'host selected|order besiege' $OUT/frames/command/play.log 2>/dev/null | head -2 | tr '\n' ' ')"
-fi
-if want face; then
-  new_reign  # a new season of orders: Besiege above spent this host's one (bridge/data/hosts.json ordersPerHost)
-  { print "wait 30"; print "host open 6"; print "wait 3"; print "rdrag 0.40 0.62 0.70 0.62"; print "snap faced ui"; print "wait 6"; print "snap formed ui"; print "look end"; } > $OUT/face.play
-  shot face 1500 film $SW
-  side face $OUT/frames/face/faced.png $TARGETS/03-army.jpg "READY 8: $(grep -hE 'host selected' $OUT/frames/face/play.log 2>/dev/null | head -1)"
-fi
-# Kingsmere's walls whole, from outside and low (01-town's walls; walls.gd: the kit curtain where a section is whole).
-if want walls; then
-  { print "wait 30"; print "city Kingsmere 10 -12"; print "wait 6"; print "city Kingsmere 10 -12"; print "wait 3"; print "snap walls"; print "look end"; } > $OUT/walls.play
-  shot walls 1500 film $SW
-  side walls $OUT/frames/walls/walls.png $TARGETS/01-town.jpg "Kingsmere's walls whole"
-fi
 # A breached section beside whole ones (--wall-demo: a wall across a staged siege's front worn by its stones; no storm).
 if want breach; then
   { print "wait 45"; print "breach"; print "wait 3"; print "snap breach"; print "look end"; } > $OUT/breach.play
   shot breach 1800 film --siege --wall-demo --probe
   side breach $OUT/frames/breach/breach.png $TARGETS/04-siege.jpg "a breached section beside whole ones"
-fi
-# The wood's edge and the fields in summer and in autumn (the nature set's seasonal leaves; autoplay field holds the
-# countryside's year at that season and frames the crown's first sown field from over the wood: tilt 7 at d6 is about 38
-# degrees down, eye about 30 m up; pass 2243's "6 -20" was 11 degrees, the lens among the tree crowns).
-if want seasons; then
-  for se in summer autumn; do
-    { print "wait 30"; print "field $se 0.5 0 6 7"; print "wait 6"; print "snap $se"; print "look end"; } > $OUT/season_$se.play
-    shot season_$se 1500 film $SW --season=$se
-    side season_$se $OUT/frames/season_$se/$se.png $TARGETS/01-town.jpg "the wood's edge and the fields in $se"
-  done
-fi
-# Winter on Kingsmere at the town view and drawn back (--season=winter): snow on the ground, the roofs and the leaves,
-# the roads and paths as trodden lines through it (Look: snow passed; ground.json winter, snow.gdshader).
-if want winter; then
-  { print "wait 30"; print "home Kingsmere"; print "wait 6"; print "home Kingsmere"; print "wait 3"; print "snap town"
-    print "home Kingsmere 0 4"; print "wait 6"; print "snap land"; print "look end"; } > $OUT/winter.play
-  shot winter 1500 film $SW --season=winter
-  side winter $OUT/frames/winter/town.png $TARGETS/01-town.jpg "winter on Kingsmere at the town view"
-  side winter_land $OUT/frames/winter/land.png $TARGETS/01-town.jpg "winter round Kingsmere, drawn back"
 fi
 # The host at 03-army's framing with all five kinds (pikemen, men-at-arms, archers, knights, cavalry): army.json's
 # shares (0.3, 0.25, 0.2, 0.1, 0.15) give every kind a regiment at about ten regiments, so 1500 men, in column on the
@@ -281,26 +223,51 @@ if want host5; then
   shot host5 900 still $SW --army-spike=1500 --army-colours=crown --army-shape=march --dist=5 --wait=50
   side host5 $OUT/frames/host5.png $TARGETS/03-army.jpg "all five kinds: $(grep -h 'ARMY mustered' $OUT/frames/host5.log 2>/dev/null | grep -o 'regiments=[0-9]* {[^}]*}' | head -1)"
 fi
-# The rest of the look, each beside its target: the castle from its gate, a village street, a host crossing the sea.
+
+# --- every other view in ONE Godot (Mac, 2026-11-14: "this cannot possibly take so long"; a launch per view was boot) --
+# One play, built here view by view: "view <frames/name>" starts each (autoplay.gd: its own folder and play.log, the
+# screen put back), its steps follow. A view staged in the bridge does it in the play ("post /test/..."); the two that
+# wait on the realm (crossing, raid) are staged by this script beside the run and played from a cue file
+# ("cue <file> <s>"). Frames, play.logs and side-by-sides land where they always did; the run's own log is frames/run.log.
+PLAY=$OUT/pass.play
+VIEWS=()   # the views in the run, in order
+RUN_LIMIT=600  # the run's wall clock: the boot, plus each view's own (below)
+print "wait 30" > $PLAY  # the realm built once
+view() {  # view <name> <seconds it may take> <steps...>
+  local n=$1 s=$2; shift 2
+  VIEWS+=($n); RUN_LIMIT=$((RUN_LIMIT + s))
+  print "view $OUT/frames/$n" >> $PLAY
+  for l in "$@"; do print -r -- "$l" >> $PLAY; done
+}
 world_pick() {  # world_pick village: the smallest town's name, from /world
   curl -s -m 10 "$API/world?peek=1" | python3 -I -c "
 import json,sys; d=json.load(sys.stdin)
 cs=sorted(d.get('cities',[]), key=lambda c: c.get('size',0)); print(cs[0].get('title', cs[0].get('name','')) if cs else '')" 2>/dev/null
 }
-if want castle; then
-  { print "wait 30"; print "castle Kingsmere 4 -20 gate"; print "wait 4"; print "snap castle"; print "look end"; } > $OUT/castle.play
-  shot castle 1500 film $SW
-  side castle $OUT/frames/castle/castle.png $TARGETS/01-town.jpg "the castle from its gate (the Meshy castle set)"
-fi
+want town && view town 300 "home Kingsmere" "wait 6" "home Kingsmere" "wait 3" "snap hero" "snap hero_ui ui" \
+  "hold cam_turn_left 0.6" "wait 2" "snap left" "home Kingsmere" "wait 4" "squarelife Kingsmere 60" "look end"
+want landuse && view landuse 60 "home Kingsmere 0 4" "wait 6" "home Kingsmere 0 4" "wait 3" "snap land" "look end"
+# 02-realm: several houses' lands with mountains and the sea: from the north over Stormwatch (47,69) toward Sunspire
+# (42,85) and Rosehall's south, the Belia mountains about (26,80) (g4: the Kingsmere-Highfell frame was mostly sea).
+want realm && view realm 60 "tile 33 74 60 3.14" "wait 8" "snap realm" "snap realm_ui ui" "look end"
+# The map's middle zoom, between the town drawn back (d9.6) and the realm (d60): Kingsmere at d25 and d40.
+want midzoom && view midzoom 90 "city Kingsmere 25 7" "wait 6" "city Kingsmere 25 7" "wait 3" "snap d25 ui" \
+  "city Kingsmere 40 9" "wait 6" "snap d40 ui" "look end"
+# READY 8: the host in the field in the most open ground (autoplay _open_host), clicked by its standard, then Besiege.
+want command && view command 90 "host open 6" "wait 3" "snap selected ui" "order besiege" "wait 2" "snap ordered ui" \
+  "wait 6" "snap marching ui" "look end"
+# The same host given a line by a right drag: every host may be ordered again first (Besiege above spent its one).
+want face && view face 90 'post /test/stage {"orders":"fresh"}' "host open 6" "wait 3" "rdrag 0.40 0.62 0.70 0.62" \
+  "snap faced ui" "wait 6" "snap formed ui" "look end"
+want walls && view walls 60 "city Kingsmere 10 -12" "wait 6" "city Kingsmere 10 -12" "wait 3" "snap walls" "look end"
+want castle && view castle 60 "castle Kingsmere 4 -20 gate" "wait 4" "snap castle" "look end"
 if want street; then
   V=$(world_pick village)
-  { print "wait 30"; print "home ${V:-Kingsmere} 0 1"; print "wait 6"; print "home ${V:-Kingsmere} 0 1"; print "wait 3"; print "snap street"; print "look end"; } > $OUT/street.play
-  shot street 1500 film $SW
-  side street $OUT/frames/street/street.png $TARGETS/01-town.jpg "a village street: ${V:-none found, Kingsmere}"
+  view street 60 "home ${V:-Kingsmere} 0 1" "wait 6" "home ${V:-Kingsmere} 0 1" "wait 3" "snap street" "look end"
 fi
-# Other cities at the town view, for their edge cases (Look, PLAN.md section 4): the coastal town with the most sea in its
-# ring, the smallest town after the street's, and the town with the most hills and mountains in its ring (the bridge's
-# /map tiles; a town named in two words is passed over, the play's steps split on spaces).
+# Other cities at the town view, for their edge cases: the coastal town with the most sea in its ring, the smallest town
+# after the street's, and the town with the most hills (the bridge's /map; a town named in two words is passed over).
+CITY_PICKS=()
 if want cities; then
   PICKS=$(curl -s -m 10 "$API/map" | perl -e 'alarm shift; exec @ARGV' 30 python3 -I -c "
 import json,sys,urllib.request
@@ -314,71 +281,82 @@ sea=max(cs, key=lambda c: (sum(k in ('Ocean','Deep Ocean','Lake') for k in ring(
 small=sorted(cs, key=lambda c: c.get('size',0))[1:2] or cs[:1]
 hill=max(cs, key=lambda c: sum(k in ('Hills','Mountains') for k in ring(c,2)))
 print(name(sea), name(small[0]), name(hill))" 2>/dev/null)
-  set -- ${=PICKS}
-  if [ $# -lt 3 ]; then
+  CITY_PICKS=(${=PICKS})
+  if [ ${#CITY_PICKS} -lt 3 ]; then
     say "cities: no picks from /map and /world; no frames"
   else
-    for pair in "coastal $1" "small $2" "hill $3"; do
-      set -- ${=pair}
-      { print "wait 30"; print "home $2"; print "wait 6"; print "home $2"; print "wait 3"; print "snap $1"; print "look end"; } > $OUT/city_$1.play
-      shot city_$1 1500 film $SW
-      side city_$1 $OUT/frames/city_$1/$1.png $TARGETS/01-town.jpg "a $1 town at the town view: $2"
-    done
+    view city_coastal 60 "home $CITY_PICKS[1]" "wait 6" "home $CITY_PICKS[1]" "wait 3" "snap coastal" "look end"
+    view city_small 60 "home $CITY_PICKS[2]" "wait 6" "home $CITY_PICKS[2]" "wait 3" "snap small" "look end"
+    view city_hill 60 "home $CITY_PICKS[3]" "wait 6" "home $CITY_PICKS[3]" "wait 3" "snap hill" "look end"
   fi
 fi
-# The court (05-court: a ruling's card, then its result playing out in the town): the court sat now (POST /test/court
-# sit), the card framed over Kingsmere's square, answered, and the town 12 s later. Before the sack: the seat whole.
-if want court; then
-  curl -s -m 20 -o /dev/null -X POST -H 'X-Test: 1' $API/test/court -d '{"sit":true}'
-  { print "wait 30"; print "home Kingsmere"; print "wait 6"; print "home Kingsmere"; print "wait 3"; print "snap card ui"
-    print "answer"; print "wait 12"; print "snap ruled ui"; print "look end"; } > $OUT/court.play
-  shot court 1500 film $SW
-  side court $OUT/frames/court/card.png $TARGETS/05-court.jpg "the court's card over the square: $(grep -h 'answered:' $OUT/frames/court/play.log 2>/dev/null | head -1)"
-  side court_ruled $OUT/frames/court/ruled.png $TARGETS/05-court.jpg "the ruling playing out in the town"
+# The court (05-court): the court sat now, the card framed over Kingsmere's square, answered, and the town 12 s later.
+want court && view court 90 'post /test/court {"sit":true}' "wait 4" "home Kingsmere" "wait 6" "home Kingsmere" "wait 3" \
+  "snap card ui" "answer" "wait 12" "snap ruled ui" "look end"
+# The inn on the great road (06-inn): the roadside's first inn out from the seat, low and close, then drawn back.
+want inn && view inn 90 "site inn 0 3 -20" "wait 6" "site inn 0 3 -20" "wait 3" "snap inn" "site inn 0 6 -10" "wait 6" \
+  "snap inn_road" "look end"
+# The King's own screens (Loop): no target painting, each against its named game. autoplay show opens each as a player would.
+want opening && view opening 60 "show council" "wait 2" "snap council ui" "key Escape" "show royal" "wait 2" "snap royal ui" "look end"
+want menu && view menu 60 "show menu" "wait 2" "snap menu ui" "show new" "wait 2" "snap new ui" "look end"
+want settings && view settings 60 "show settings" "wait 2" "snap settings ui" "look end"
+want lord && view lord 60 "show lord" "wait 4" "snap lord ui" "look end"
+# Winter on Kingsmere at the town view and drawn back: snow on the ground, the roofs and the leaves (season winter).
+want winter && view winter 90 "season winter" "home Kingsmere" "wait 6" "home Kingsmere" "wait 3" "snap town" \
+  "home Kingsmere 0 4" "wait 6" "snap land" "season off" "look end"
+# The wood's edge and the fields in summer and in autumn (field holds the countryside's year at that season and frames
+# the crown's first sown field from over the wood: tilt 7 at d6 is about 38 degrees down, eye about 30 m up).
+if want seasons; then
+  for se in summer autumn; do
+    view season_$se 60 "field $se 0.5 0 6 7" "wait 6" "snap $se" "look end"
+  done
 fi
-# The inn on the great road (06-inn: an inn, horses, soldiers at tables, a merchant, a shrine and a milestone): the
-# roadside's first inn out from the seat (autoplay site, roadside.gd), framed low and close, then drawn back.
-if want inn; then
-  { print "wait 30"; print "site inn 0 3 -20"; print "wait 6"; print "site inn 0 3 -20"; print "wait 3"; print "snap inn"
-    print "site inn 0 6 -10"; print "wait 6"; print "snap inn_road"; print "look end"; } > $OUT/inn.play
-  shot inn 1500 film $SW
-  side inn $OUT/frames/inn/inn.png $TARGETS/06-inn.jpg "the first inn on the road: $(grep -h 'site inn' $OUT/frames/inn/play.log 2>/dev/null | sed -n 2p)"
-  side inn_road $OUT/frames/inn/inn_road.png $TARGETS/06-inn.jpg "the inn and its stretch of road"
-fi
-# A sacked town (Look, PLAN.md section 4; 04-siege's town beyond the breach): Kingsmere's burnt ring and its burnt share
-# staged in the bridge (POST /test/mark sack, /test/stage damage burnt 0.4, as a sack leaves them: damage.json
-# burntOnSack), then put to the torch in the film (autoplay burn), framed while it burns and once the flames are out
-# (the shells charred and smouldering: fire.json char.smoulder). After every other frame of Kingsmere: the seat stays
-# burnt for the rest of the pass.
+# A sacked town (04-siege's town beyond the breach): Kingsmere's burnt ring and its burnt share staged in the bridge (a
+# sack's mark, damage burnt 0.4), then put to the torch in the film, framed burning and once the flames are out. After
+# every other frame of Kingsmere: the seat stays burnt for the rest of the pass.
+SACK=()
 if want sack; then
   SEAT=$(curl -s -m 10 "$API/world?peek=1" | python3 -I -c "
 import json,sys; d=json.load(sys.stdin)
 c=[c for c in d.get('cities',[]) if c['id']==d.get('seatId')]
 print(c[0]['id'], c[0]['x'], c[0]['y'], c[0].get('title', c[0].get('name',''))) if c and ' ' not in c[0].get('title','') else None" 2>/dev/null)
-  set -- ${=SEAT}
-  if [ $# -lt 4 ]; then
+  SACK=(${=SEAT})
+  if [ ${#SACK} -lt 4 ]; then
     say "sack: no seat in /world; no frame"
   else
-    curl -s -m 10 -o /dev/null -X POST -H 'X-Test: 1' $API/test/mark -d "{\"kind\":\"sack\",\"x\":$2,\"y\":$3,\"age\":0}"
-    curl -s -m 10 -o /dev/null -X POST -H 'X-Test: 1' $API/test/stage -d "{\"damage\":{\"city\":$1,\"burnt\":0.4}}"
-    { print "wait 30"; print "home $4 0 2"; print "wait 6"; print "home $4 0 2"; print "burn $4 40"; print "wait 18"; print "snap sack"
-      print "wait 70"; print "snap after"; print "look end"; } > $OUT/sack.play
-    shot sack 1800 film $SW
-    side sack $OUT/frames/sack/sack.png $TARGETS/04-siege.jpg "$4 sacked, burning"
-    side sack_after $OUT/frames/sack/after.png $TARGETS/04-siege.jpg "$4 after the sack: burnt shells, smoulder, the burnt ring"
+    view sack 180 "post /test/mark {\"kind\":\"sack\",\"x\":$SACK[2],\"y\":$SACK[3],\"age\":0}" \
+      "post /test/stage {\"damage\":{\"city\":$SACK[1],\"burnt\":0.4}}" "home $SACK[4] 0 2" "wait 6" "home $SACK[4] 0 2" \
+      "burn $SACK[4] 40" "wait 18" "snap sack" "wait 70" "snap after" "look end"
   fi
 fi
-if want crossing; then
-  new_reign  # its own season of orders
+# The two that wait on the realm: this script stages them beside the run (stage_crossing, stage_raid below) and writes
+# each one's steps to its cue when the realm is ready; the run waits on the cue.
+want crossing && view crossing $(( ${CROSS_ASK:-300} + ${CROSS_WAIT:-900} + 120 )) "cue $OUT/crossing.cue $(( ${CROSS_ASK:-300} + ${CROSS_WAIT:-900} + 60 ))"
+if want raid; then
+  view raid $(( ${RAID_WAIT:-300} + 480 )) "cue $OUT/raid.cue $(( ${RAID_WAIT:-300} + 420 ))"
+  view raid_leave $(( ${RAID_LEAVE:-1200} + 300 )) "cue $OUT/raid_leave.cue $(( ${RAID_LEAVE:-1200} + 240 ))"
+fi
+# The reign's end, last of all (the reign is over after it): the clock run out, its telling, then the end card.
+want reign_end && view reign_end 180 'post /test/clock {"to":"reign_end"}' "wait 120" "snap end ui" "wait 10" "snap end_late ui" "look end"
+print "look pass end" >> $PLAY
+
+# --- the stagers beside the run ---------------------------------------------------------------------------------------
+# at_view <name>: the run has reached that view (its play.log is there); done_view <name>: it has passed it (' done').
+# Each gives up when the run is over ($OUT/run.over). cue <name> <steps...>: the view's steps, written whole at once.
+at_view() { until [ -f $OUT/frames/$1/play.log ]; do [ -e $OUT/run.over ] && return 1; sleep 2; done; }
+done_view() { until grep -q ' done$' $OUT/frames/$1/play.log 2>/dev/null; do [ -e $OUT/run.over ] && return 1; sleep 2; done; }
+cue() { local n=$1; shift; print -l -- "$@" > $OUT/$n.cue.part && mv $OUT/$n.cue.part $OUT/$n.cue; }
+SIDES=$OUT/stage.sides  # side-by-sides the stagers found words for: "name|frame|target|note", drawn after the run
+: > $SIDES
+stage_crossing() {
+  at_view crossing || return
+  curl -s -m 5 -o /dev/null -X POST -H 'X-Test: 1' $API/test/stage -d '{"orders":"fresh"}'  # its own season of orders
   # The King's host takes ship (One store's crossing, d70ca994: a march with no road over land walks to the nearest crown
-  # port, boards the crown's hulls, sails, lands near the goal). The pass asks each march dry first (d94c3c83: by land or
-  # by sea, nothing given) for every host and town, orders the quickest by sea, then waits (CROSS_WAIT, 900 s of the wall clock:
-  # a season at the shore while the crown raises its Triremes, 7b10e42d) until it is aboard, and frames its lead company on
-  # the hull: the cog.
-  # Every wait here is bounded (group test 2 hung 11 h in this block): the dry asks stop after CROSS_ASK s, each call
-  # has its own timeout and the python under perl's alarm, and the whole wait for aboard ends at CROSS_WAIT s of the
-  # wall clock, whatever happens inside it.
-  CROSS=$(curl -s -m 10 "$API/world?peek=1" | perl -e 'alarm shift; exec @ARGV' ${CROSS_ASK:-300} python3 -I -c "
+  # port, boards the crown's hulls, sails, lands near the goal). Each march is asked dry first (d94c3c83: by land or by
+  # sea, nothing given) for every host and town, the quickest by sea ordered, then a wait (CROSS_WAIT, 900 s of the wall
+  # clock) until it is aboard, and its lead company is framed on the hull: the cog. Every wait here is bounded (group
+  # test 2 hung 11 h in this block): the dry asks stop after CROSS_ASK s, each call has its own timeout.
+  local CROSS=$(curl -s -m 10 "$API/world?peek=1" | perl -e 'alarm shift; exec @ARGV' ${CROSS_ASK:-300} python3 -I -c "
 import json,sys,time,urllib.request
 d=json.load(sys.stdin); hs=d.get('hosts',[]); cs=d.get('cities',[])
 end=time.time()+${CROSS_ASK:-300}-20
@@ -388,7 +366,6 @@ def ask(body):
         return json.load(urllib.request.urlopen(req, timeout=20))
     except Exception:
         return {}
-# Every host to every town, asked dry (d94c3c83: by land or by sea, nothing given); the quickest march by sea is ordered.
 best=None
 for h in hs:
     for c in cs:
@@ -404,42 +381,38 @@ if best:
         print(h['id'], c.get('title', c.get('name','')), r.get('text','')[:120])
 " 2>/dev/null)
   set -- ${=CROSS}
-  HID=${1:-}
+  local HID=${1:-}
   if [ -z "$HID" ]; then
     say "crossing: no march of the King's host went by sea (no town across the water, port or free hull); no frame"
-  else
-    say "crossing: host $HID ordered over water: ${CROSS#* }"
-    # The realm only runs while a window watches it (bridge server.js 'away': a /world?peek=1 doesn't count), so this
-    # wait reads /world as a window does; and, as the hasty King does, it closes the court and an interlude that would
-    # hold the season. Pass g2 polled with peek: the reign stood at T39 with the host on the shore, one season short of
-    # its ship, for 11 hours.
-    LEAD=""; T0=$SECONDS
-    while [ -z "$LEAD" ] && [ $((SECONDS - T0)) -lt ${CROSS_WAIT:-900} ]; do
-      curl -s -m 5 -o /dev/null -X POST $API/court/close
-      curl -s -m 5 -o /dev/null -X POST $API/interlude/close
-      LEAD=$(curl -s -m 10 "$API/world" | perl -e 'alarm shift; exec @ARGV' 20 python3 -I -c "
+    cue crossing "look crossing: none by sea"; return
+  fi
+  say "crossing: host $HID ordered over water: ${CROSS#* }"
+  # The run watches the realm, so its seasons run; as the hasty King does, the court and an interlude are closed.
+  local LEAD="" T0=$SECONDS
+  while [ -z "$LEAD" ] && [ $((SECONDS - T0)) -lt ${CROSS_WAIT:-900} ]; do
+    curl -s -m 5 -o /dev/null -X POST $API/court/close
+    curl -s -m 5 -o /dev/null -X POST $API/interlude/close
+    LEAD=$(curl -s -m 10 "$API/world?peek=1" | perl -e 'alarm shift; exec @ARGV' 20 python3 -I -c "
 import json,sys; d=json.load(sys.stdin)
 me=[x for x in d.get('hosts',[]) if str(x.get('id'))=='$HID' and x.get('aboard')]
 print(min(me[0].get('units',[me[0]['id']])) if me else '')" 2>/dev/null)
-      [ -z "$LEAD" ] && sleep 5
-    done
-    if [ -z "$LEAD" ]; then
-      say "crossing: host $HID not aboard in ${CROSS_WAIT:-900} s; no frame"
-    else
-      # Held while it is filmed (bridge POST /pause, as the King's own pause): the window watches the realm, so the
-      # seasons ran on while Godot loaded and its first 30 s passed, and pass g9 framed the strait after the ships had
-      # landed the host and put out to sea (empty water and a point of grass). Paused the season the host is aboard,
-      # the lens finds its lead company on the hull, at the shore it embarked from or under way; let go after.
-      curl -s -m 5 -o /dev/null -X POST $API/pause
-      { print "wait 30"; print "unit $LEAD 3"; print "wait 4"; print "snap crossing"; print "unit $LEAD 1.5"; print "wait 3"; print "snap cog"; print "look end"; } > $OUT/crossing.play
-      shot crossing 1500 film $SW
-      curl -s -m 5 -o /dev/null -X POST $API/resume
-      side crossing $OUT/frames/crossing/crossing.png $TARGETS/08-reinforce.jpg "the King's host at sea in the cog (host $HID, company $LEAD)"
-      side crossing_cog $OUT/frames/crossing/cog.png $TARGETS/08-reinforce.jpg "the cog close"
-    fi
+    [ -z "$LEAD" ] && sleep 5
+  done
+  if [ -z "$LEAD" ]; then
+    say "crossing: host $HID not aboard in ${CROSS_WAIT:-900} s; no frame"
+    cue crossing "look crossing: not aboard in time"; return
   fi
-fi
-if want raid; then
+  # Held while it is filmed (bridge POST /pause, as the King's own pause: g9 framed the strait after the ships had landed).
+  curl -s -m 5 -o /dev/null -X POST $API/pause
+  cue crossing "unit $LEAD 3" "wait 4" "snap crossing" "unit $LEAD 1.5" "wait 3" "snap cog" "look end"
+  print "crossing|$OUT/frames/crossing/crossing.png|$TARGETS/08-reinforce.jpg|the King's host at sea in the cog (host $HID, company $LEAD)" >> $SIDES
+  print "crossing_cog|$OUT/frames/crossing/cog.png|$TARGETS/08-reinforce.jpg|the cog close" >> $SIDES
+  done_view crossing
+  curl -s -m 5 -o /dev/null -X POST $API/resume
+}
+# The raid (Wealth draws the raid), staged beside the run: the run waits in the raid view on its cue, then in raid_leave.
+stage_raid() {
+  at_view raid || return
   # Wealth draws the raid: men without banners fall on the crown's richest town (bridge routes_test.js {raid}, the town a
   # lord's hired raid picks: realm.js richestTown), pillage round it for the raid's seasons, then walk off to wild land
   # (realmrules/script.lua realm_raids_turn, fc9a094c). Raiders are units of a wild player (Freeciv's barbarians: /world
@@ -518,6 +491,7 @@ if r.get('ok'): print(r['city'], r['x'], r['y'], r['name'])" 2>/dev/null)
   set -- ${=RAID}
   if [ -z "${1:-}" ]; then
     say "raid: not staged (the crown holds no town, or the reign isn't a film's); no frame"
+    cue raid "look raid: not staged"; cue raid_leave "look raid_leave: not staged"
   else
     RX=$2; RY=$3; RNAME=${RAID#* * * }
     T_RAID=$(curl -s -m 10 "$API/world?peek=1" | python3 -I -c "import json,sys; print(json.load(sys.stdin).get('turn',0))" 2>/dev/null)
@@ -549,20 +523,21 @@ if r.get('ok'): print(r['city'], r['x'], r['y'], r['name'])" 2>/dev/null)
     fi
     if [ -z "$AT" ]; then
       say "raid: no raider by $RNAME in ${RAID_WAIT:-300} s; no frame"
+      cue raid "look raid: none by the town"
     else
-      # Held while it is filmed (bridge POST /pause), as the crossing is: the seasons would run on while Godot loads.
+      # Held while it is filmed (bridge POST /pause), as the crossing is: the seasons would run on under the snaps.
       set -- ${=AT}
       curl -s -m 5 -o /dev/null -X POST $API/pause
       # The raiders' midpoint, a little back from their side of the town at roof height; then midway between them and the
       # walls, further back, the town behind them.
       MX=$(( ($2 + RX) / 2.0 )); MY=$(( ($3 + RY) / 2.0 ))
-      { print "wait 30"; print "tile $2 $3 5 $4"; print "wait 4"; print "snap raid"; print "tile $MX $MY 6.5 $4"; print "wait 4"; print "snap raid_town"; print "look end"; } > $OUT/raid.play
       raid_log "paused for the snaps" "raid $2,$3 (dist 5, yaw $4), raid_town $MX,$MY (dist 6.5)"
-      shot raid 1500 film $SW
+      print "raid|$OUT/frames/raid/raid.png|$TARGETS/03-army.jpg|raiders at $RNAME (their midpoint $2,$3)" >> $SIDES
+      print "raid_town|$OUT/frames/raid/raid_town.png|$TARGETS/03-army.jpg|$RNAME under the raid" >> $SIDES
+      cue raid "tile $2 $3 5 $4" "wait 4" "snap raid" "tile $MX $MY 6.5 $4" "wait 4" "snap raid_town" "look end"
+      done_view raid
       raid_log "after the snaps, still paused"
       curl -s -m 5 -o /dev/null -X POST $API/resume
-      side raid $OUT/frames/raid/raid.png $TARGETS/03-army.jpg "raiders at $RNAME (their midpoint $2,$3)"
-      side raid_town $OUT/frames/raid/raid_town.png $TARGETS/03-army.jpg "$RNAME under the raid"
     fi
     # The walk-off is a season or two (raids.leave_steps tiles a season to wild land, often near), too quick for a poll
     # (g25: "every raider gone before one was seen on the road out"). So the reign runs to the season before they leave
@@ -599,21 +574,23 @@ if r.get('ok'): print(r['city'], r['x'], r['y'], r['name'])" 2>/dev/null)
       raid_log "step $STEP"
     done
     if [ -z "$AT" ]; then
-      :  # said above: no raider by the town
+      cue raid_leave "look raid_leave: no raid by the town"  # said above: no raider by the town
     elif [ -z "$OUTR" ] && [ -z "$LIVE" ]; then
       curl -s -m 5 -o /dev/null -X POST $API/resume
       say "raid: every raider of $RNAME gone before one was seen on the road out (stepped $STEP seasons); no frame"
+      cue raid_leave "look raid_leave: all gone"
     elif [ -z "$OUTR" ]; then
       curl -s -m 5 -o /dev/null -X POST $API/resume
       say "raid: no raider 2+ tiles out of $RNAME after $STEP seasons stepped (${RAID_LEAVE:-1200} s bound); no frame"
+      cue raid_leave "look raid_leave: none out"
     else
       # Framed on his tile, not his figure; the reign still paused from the step that found him.
       set -- ${=OUTR}
-      { print "wait 30"; print "tile $2 $3 5 $4"; print "wait 4"; print "snap raid_leave"; print "look end"; } > $OUT/raid_leave.play
       raid_log "paused for the walk-off snap" "$2,$3 (dist 5, yaw $4)"
-      shot raid_leave 1500 film $SW
+      print "raid_leave|$OUT/frames/raid_leave/raid_leave.png|$TARGETS/03-army.jpg|a raider walking off from $RNAME to wild land (raider $1 at $2,$3)" >> $SIDES
+      cue raid_leave "tile $2 $3 5 $4" "wait 4" "snap raid_leave" "look end"
+      done_view raid_leave
       curl -s -m 5 -o /dev/null -X POST $API/resume
-      side raid_leave $OUT/frames/raid_leave/raid_leave.png $TARGETS/03-army.jpg "a raider walking off from $RNAME to wild land (raider $1 at $2,$3)"
     fi
   fi
   # Freeciv's own account (realmrules RAID lines, units lost), kept with the pass: the chronicle's home may be cleared.
@@ -622,37 +599,72 @@ if r.get('ok'): print(r['city'], r['x'], r['y'], r['name'])" 2>/dev/null)
     cp $FCLOG $OUT/raid.freeciv.log
     grep -E "RAID|BANNERS|[Bb]arbarian|destroyed|killed|lost" $FCLOG | tail -40 | while read -r l; do say "raid freeciv: $l"; done
   fi
+}
+
+# --- the run ----------------------------------------------------------------------------------------------------------
+if [ ${#VIEWS} -gt 0 ]; then
+  rm -f $OUT/run.over $OUT/*.cue(N)
+  want crossing && stage_crossing &
+  want raid && stage_raid &  # (it starts at the raid view, after the crossing's: both pause and resume the one realm)
+  say "one run: ${#VIEWS} views (${VIEWS[*]}), limit $RUN_LIMIT s"
+  T_RUN=$SECONDS
+  LIMIT=$RUN_LIMIT GODOT_ARGS="$OFF --fixed-fps 24" $F/realm/tools/render.sh $OUT/frames/run.png $B $SW --play=$PLAY --out=$OUT/frames/run > $OUT/run.out 2>&1
+  touch $OUT/run.over
+  wait
+  say "one run: $(( (SECONDS - T_RUN) / 60 )) min, $(grep -c 'SCRIPT ERROR' $OUT/frames/run.log 2>/dev/null) script errors (frames/run.log)"
+  for n in $VIEWS; do
+    say "$n: $(/bin/ls $OUT/frames/$n 2>/dev/null | grep -c png) frames, play $(grep -q ' done$' $OUT/frames/$n/play.log 2>/dev/null && echo done || echo 'cut short')"
+  done
 fi
-# The King's own screens (Loop: the opening, the menu, settings, a lord's sheet, the reign's end): no target painting,
-# each against its named game, so the frame stands alone in the index (solo). autoplay show opens each as a player would.
-solo() { [ -f "$2" ] && echo "| $1 | ${3:-} | ${2#$OUT/} | |" >> $OUT/side/INDEX.md || say "solo $1: no frame ($2)"; }
+
+# --- side by side -----------------------------------------------------------------------------------------------------
+want town && side town $OUT/frames/town/hero.png $TARGETS/01-town.jpg "READY 1, art step 6; $(grep -h 'CHECK square life' $OUT/frames/town/play.log 2>/dev/null | sed 's/.*open setts: //' | cut -c1-160)"
+want landuse && side landuse $OUT/frames/landuse/land.png $TARGETS/01-town.jpg "land use round the town"
+want realm && side realm $OUT/frames/realm/realm_ui.png $TARGETS/02-realm.jpg "READY 3, 9: standards and flags"
+if want midzoom; then
+  side midzoom $OUT/frames/midzoom/d25.png $TARGETS/02-realm.jpg "the middle zoom, d25 over Kingsmere"
+  side midzoom_40 $OUT/frames/midzoom/d40.png $TARGETS/02-realm.jpg "the middle zoom, d40 over Kingsmere"
+fi
+want command && side command $OUT/frames/command/ordered.png $TARGETS/03-army.jpg "READY 8: $(grep -hE 'host selected|order besiege' $OUT/frames/command/play.log 2>/dev/null | head -2 | tr '\n' ' ')"
+want face && side face $OUT/frames/face/faced.png $TARGETS/03-army.jpg "READY 8: $(grep -hE 'host selected' $OUT/frames/face/play.log 2>/dev/null | head -1)"
+want walls && side walls $OUT/frames/walls/walls.png $TARGETS/01-town.jpg "Kingsmere's walls whole"
+want castle && side castle $OUT/frames/castle/castle.png $TARGETS/01-town.jpg "the castle from its gate (the Meshy castle set)"
+want street && side street $OUT/frames/street/street.png $TARGETS/01-town.jpg "a village street: ${V:-none found, Kingsmere}"
+if [ ${#CITY_PICKS} -ge 3 ]; then
+  side city_coastal $OUT/frames/city_coastal/coastal.png $TARGETS/01-town.jpg "a coastal town at the town view: $CITY_PICKS[1]"
+  side city_small $OUT/frames/city_small/small.png $TARGETS/01-town.jpg "a small town at the town view: $CITY_PICKS[2]"
+  side city_hill $OUT/frames/city_hill/hill.png $TARGETS/01-town.jpg "a hill town at the town view: $CITY_PICKS[3]"
+fi
+if want court; then
+  side court $OUT/frames/court/card.png $TARGETS/05-court.jpg "the court's card over the square: $(grep -h 'answered:' $OUT/frames/court/play.log 2>/dev/null | head -1)"
+  side court_ruled $OUT/frames/court/ruled.png $TARGETS/05-court.jpg "the ruling playing out in the town"
+fi
+if want inn; then
+  side inn $OUT/frames/inn/inn.png $TARGETS/06-inn.jpg "the first inn on the road: $(grep -h 'site inn' $OUT/frames/inn/play.log 2>/dev/null | sed -n 2p)"
+  side inn_road $OUT/frames/inn/inn_road.png $TARGETS/06-inn.jpg "the inn and its stretch of road"
+fi
+if want winter; then
+  side winter $OUT/frames/winter/town.png $TARGETS/01-town.jpg "winter on Kingsmere at the town view"
+  side winter_land $OUT/frames/winter/land.png $TARGETS/01-town.jpg "winter round Kingsmere, drawn back"
+fi
+if want seasons; then
+  for se in summer autumn; do side season_$se $OUT/frames/season_$se/$se.png $TARGETS/01-town.jpg "the wood's edge and the fields in $se"; done
+fi
+if [ ${#SACK} -ge 4 ]; then
+  side sack $OUT/frames/sack/sack.png $TARGETS/04-siege.jpg "$SACK[4] sacked, burning"
+  side sack_after $OUT/frames/sack/after.png $TARGETS/04-siege.jpg "$SACK[4] after the sack: burnt shells, smoulder, the burnt ring"
+fi
+while IFS='|' read -r n f t note; do side $n $f $t "$note"; done < $SIDES
 if want opening; then
-  { print "wait 30"; print "show council"; print "wait 2"; print "snap council ui"; print "key Escape"; print "show royal"; print "wait 2"; print "snap royal ui"; print "look end"; } > $OUT/opening.play
-  shot opening 1500 film $SW
   solo opening $OUT/frames/opening/council.png "CK3's opening: ruler, situation, focus"
   solo opening_royal $OUT/frames/opening/royal.png "CK3's ruler window"
 fi
 if want menu; then
-  { print "wait 30"; print "show menu"; print "wait 2"; print "snap menu ui"; print "show new"; print "wait 2"; print "snap new ui"; print "look end"; } > $OUT/menu.play
-  shot menu 1500 film $SW
   solo menu $OUT/frames/menu/menu.png "CK3's main menu"
   solo menu_new $OUT/frames/menu/new.png "CK3's new game: bookmark, ruler"
 fi
-if want settings; then
-  { print "wait 30"; print "show settings"; print "wait 2"; print "snap settings ui"; print "look end"; } > $OUT/settings.play
-  shot settings 1500 film $SW
-  solo settings $OUT/frames/settings/settings.png "Total War: Warhammer III's settings"
-fi
-if want lord; then
-  { print "wait 30"; print "show lord"; print "wait 4"; print "snap lord ui"; print "look end"; } > $OUT/lord.play
-  shot lord 1500 film $SW
-  solo lord $OUT/frames/lord/lord.png "CK3's character window"
-fi
-if want reign_end; then
-  curl -s -m 20 -o /dev/null -X POST -H 'X-Test: 1' $API/test/clock -d '{"to":"reign_end"}'
-  { print "wait 120"; print "snap end ui"; print "wait 10"; print "snap end_late ui"; print "look end"; } > $OUT/reign_end.play
-  shot reign_end 1500 film $SW
-  solo reign_end $OUT/frames/reign_end/end.png "CK3's death screen, Civilization's end"
-fi
+want settings && solo settings $OUT/frames/settings/settings.png "Total War: Warhammer III's settings"
+want lord && solo lord $OUT/frames/lord/lord.png "CK3's character window"
+want reign_end && solo reign_end $OUT/frames/reign_end/end.png "CK3's death screen, Civilization's end"
 say "render pass done: $OUT/side/INDEX.md"
 exit 0

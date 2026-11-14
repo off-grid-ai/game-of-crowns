@@ -31,6 +31,10 @@ extends Node
 ##   answer              give the matter on the court card its first answer
 ##   director            let the camera director run, as it does in play
 ##   rout 120            wait (at most 120 s) for the field battle's first break (--army-battle), so the film starts there
+##   view /out/frames/x  the next view of a render pass in the same run: its own folder and play.log, the screen reset
+##   post /test/court {"sit":true}   a bridge test hook (X-Test), as the pass's curl was
+##   cue /out/raid.cue 600   wait for the pass to stage a view and write its steps there, then play them
+##   season winter       the land held at that season (off: the realm's own)
 
 const Data := preload("res://scripts/data.gd")  # the one loader of realm/data (data.gd)
 var main: Node
@@ -82,28 +86,78 @@ func _run() -> void:
 
 func _play(quit_after: bool) -> void:
 	for raw in _steps:
-		var line := raw.strip_edges()
-		if line == "" or line.begins_with("#"):
-			continue
-		var w := line.split(" ", false)
-		_note("> " + line)
-		# A burst (snap, short wait, snap...) holds the realm's time still between its frames; any other step lets it run.
-		if _burst and not (w[0] == "snap" or (w[0] == "wait" and w.size() > 1 and float(w[1]) <= BURST_GAP)):
-			_burst = false
-			Engine.time_scale = 1.0
-		await _step(w)
-		# A framing step: the next snap waits for the camera to settle (batch 7: frames taken mid-move), and the
-		# log says where it stood (the distance ladder, checkable from play.log).
-		if w[0] in FRAMING:
-			if main.has_method("film_reseason") and not w[0] in ["field"]:  # (field holds the fields' year itself)
-				main.film_reseason()  # each shot in the realm's season as it stands now: the date shown and the land agree
-			await _settle()
+		await _line(raw)
 	Engine.time_scale = 1.0
 	_burst = false
 	if quit_after:
 		_note("done")
 		_log.close()
 		preload("res://scripts/shot_harness.gd").quit_clean(get_tree())
+
+
+## One step of a scenario (or of a cue's steps, render_pass.sh's staged views).
+func _line(raw: String) -> void:
+	var line := raw.strip_edges()
+	if line == "" or line.begins_with("#"):
+		return
+	var w := line.split(" ", false)
+	_note("> " + line)
+	# A burst (snap, short wait, snap...) holds the realm's time still between its frames; any other step lets it run.
+	if _burst and not (w[0] == "snap" or (w[0] == "wait" and w.size() > 1 and float(w[1]) <= BURST_GAP)):
+		_burst = false
+		Engine.time_scale = 1.0
+	await _step(w)
+	# A framing step: the next snap waits for the camera to settle (batch 7: frames taken mid-move), and the
+	# log says where it stood (the distance ladder, checkable from play.log).
+	if w[0] in FRAMING:
+		if main.has_method("film_reseason") and not w[0] in ["field"] and not main._shot.has("season"):  # (field and season hold their own)
+			main.film_reseason()  # each shot in the realm's season as it stands now: the date shown and the land agree
+		await _settle()
+
+
+## view <dir>: the next view of one render pass, in the same run (render_pass.sh: one Godot per pass). The last view's
+## log says done, frames and play.log go to <dir> from here, and the screen is put back as the realm starts: cards,
+## drawers and notices away, the menu and a person's sheet closed, no held season, time running.
+func _view(dir: String) -> void:
+	_note("done")
+	_log.close()
+	out = dir
+	DirAccess.make_dir_recursive_absolute(out)
+	_log = FileAccess.open(out + "/play.log", FileAccess.WRITE)
+	_burst = false
+	Engine.time_scale = 1.0
+	_clear_ui()
+	if main.title and main.title.visible:
+		main.title._in_game = false
+		main.title.visible = false
+	if main.hero and main.hero.visible:
+		main.hero.close()
+	main._shot.erase("season")
+	main.film_reseason()
+	await get_tree().create_timer(1.0).timeout
+
+
+## post <path> <json>: a test hook of the bridge (X-Test), as render_pass.sh's curl did between launches.
+func _post(path: String, body: String) -> void:
+	var got := []
+	main.bridge.test_hook(path, body, func(code, text): got.append_array([code, text]))
+	var t0 := Time.get_ticks_msec()
+	while got.is_empty() and Time.get_ticks_msec() - t0 < 35000:
+		await get_tree().process_frame
+	_note("  post %s: %s" % [path, ("%d %s" % [int(got[0]), String(got[1]).left(160)]) if not got.is_empty() else "no answer"])
+
+
+## cue <file> <seconds>: waits (at most so long) for render_pass.sh to stage a view in the bridge and write the view's
+## steps to <file>, then plays them (a raid's or a crossing's frames wait on the realm, not on a clock).
+func _cue(file: String, most: float) -> void:
+	var t0 := Time.get_ticks_msec()
+	while not FileAccess.file_exists(file) and (Time.get_ticks_msec() - t0) / 1000.0 < most:
+		await get_tree().create_timer(1.0).timeout
+	if not FileAccess.file_exists(file):
+		_note("  cue %s: none in %d s" % [file, int(most)])
+		return
+	for raw in FileAccess.get_file_as_string(file).split("\n"):
+		await _line(raw)
 
 
 ## A burst of frames: time held still between snaps; a wait of at most BURST_GAP seconds advances exactly that much.
@@ -156,6 +210,21 @@ func _settle() -> void:
 
 func _step(w: PackedStringArray) -> void:
 		match w[0]:
+			"view":
+				await _view(w[1])
+			"post":
+				await _post(w[1], " ".join(w.slice(2)) if w.size() > 2 else "{}")
+			"cue":
+				await _cue(w[1], float(w[2]) if w.size() > 2 else 600.0)
+			"season":
+				# season <spring|summer|autumn|winter|off>: the land held at that season from here (as --season was), laid at once.
+				if w[1] == "off":
+					main._shot.erase("season")
+				else:
+					main._shot["season"] = w[1]
+				main.film_reseason()
+				main.look_season()
+				await get_tree().create_timer(2.0).timeout
 			"wait":
 				if _burst and float(w[1]) <= BURST_GAP:
 					await _advance(float(w[1]))

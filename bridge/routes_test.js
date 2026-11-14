@@ -64,6 +64,9 @@ export async function stage(ctx, req, res, url) {
     prosperity: { prosperity: true }, grief: { grief: true }, grasping: { grasping: true },
     calm: { disorder: false, celebrating: false, famine: false, atWar: false, grief: false, grasping: false, prosperity: false } };
   const at = (ctx.meta.stage ??= {});
+  // {orders: "fresh"}: every host may be ordered again this season (render_pass.sh's one run: the face view's host
+  // was ordered by the command view before it, where a new reign used to give it a new season).
+  if (b.orders === "fresh") { delete ctx.meta.hostOrdered; chron.saveMeta(ctx.meta); return json(res, 200, { ok: true }); }
   // {soldiers: wounded|fortified|calm, city}: the crown's three companies nearest the town stand so.
   // {intrigue: [{kind: envoy|pact|marriage, from, to (house ids), secret?, line?}]}: houses' schemes as the map
   // shows them, until builder 1's own intrigue lands (it merges these in); [] clears them.
