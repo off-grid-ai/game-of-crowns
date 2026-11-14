@@ -531,9 +531,15 @@ static func _begin(name: String) -> bool:
 		# The most a low level may stray from the whole (game units): error_px pixels on a screen_px-high screen at the
 		# handover (view_tier.near_below), through the lens's 45-degree field (camera_rig.gd).
 		hlod["max_error"] = float(hlod.get("error_px", 1.0)) * 2.0 * tan(deg_to_rad(22.5)) * Data.num("camera", "view_tier.near_below", 18.0) / float(hlod.get("screen_px", 1600.0))
-		task = WorkerThreadPool.add_task(func():
-			out[0] = _lods(by_mat, cut, budget)
-			out.append(_low(out[0], hlod)), false, "merge " + name)
+		if FileAccess.file_exists(_kept(name)):
+			out = ["kept"]  # made in an earlier game: read on the loader's threads, never merged again
+			ResourceLoader.load_threaded_request(_kept(name))
+			if FileAccess.file_exists(_kept(name, "low")):
+				ResourceLoader.load_threaded_request(_kept(name, "low"))
+		else:
+			task = WorkerThreadPool.add_task(func():
+				out[0] = _lods(by_mat, cut, budget)
+				out.append(_low(out[0], hlod)), false, "merge " + name)
 	_pending[name] = {"task": task, "out": out, "root": root, "parts": parts, "k": k, "box": box, "frame": built_frame}
 	return true
 
@@ -550,11 +556,21 @@ static func _finish(name: String) -> Dictionary:
 	var k: float = p["k"]
 	var box: AABB = p["box"]
 	var built_frame: Transform3D = p["frame"]
-	var im: ImporterMesh = p["out"][0]
-	var merged: ArrayMesh = im.get_mesh() if im else null  # the mesh handed to the renderer on the main thread
-	if merged:
+	var merged: ArrayMesh = null
+	var low: ArrayMesh = null
+	var made := false  # merged in this game (else read back): kept on disk below
+	if p["out"][0] is String:
+		merged = ResourceLoader.load_threaded_get(_kept(name)) as ArrayMesh
+		if FileAccess.file_exists(_kept(name, "low")):
+			low = ResourceLoader.load_threaded_get(_kept(name, "low")) as ArrayMesh
+	else:
+		var im: ImporterMesh = p["out"][0]
+		merged = im.get_mesh() if im else null  # the mesh handed to the renderer on the main thread
 		var low_im: ImporterMesh = p["out"][1] if (p["out"] as Array).size() > 1 else null
-		parts = [[merged, Transform3D.IDENTITY, low_im.get_mesh() if low_im else null]]  # [mesh, place, its low mesh past NEAR]
+		low = low_im.get_mesh() if low_im else null
+		made = merged != null
+	if merged:
+		parts = [[merged, Transform3D.IDENTITY, low]]  # [mesh, place, its low mesh past NEAR]
 		var whole := Node3D.new()
 		whole.name = name
 		var mi := MeshInstance3D.new()
@@ -579,11 +595,29 @@ static func _finish(name: String) -> Dictionary:
 		for g in root.find_children("*", "MeshInstance3D", true, false):
 			if (g as MeshInstance3D).mesh:
 				(g as MeshInstance3D).mesh.set_meta("meshy_piece", name.substr(6))
+	if made:
+		_keep(merged, _kept(name))
+		if low:
+			_keep(low, _kept(name, "low"))
 	var scene := PackedScene.new()
 	scene.pack(root)
 	root.free()
 	_cache[name] = {"scene": scene, "foot": Vector2(box.size.x, box.size.z) * k, "top": box.size.y * k, "parts": parts}
 	return _cache[name]
+
+
+## A model's merged mesh (or its low mesh, `which`), kept on disk once (user://models/), by the scripts' and data's
+## fingerprint (town_store.gd): towns kept on disk point at it rather than each holding a copy, and a later game reads
+## it back instead of merging again. It takes the file's path, so every town packed after shares it.
+const MODELS := "user://models/"
+static func _kept(name: String, which := "whole") -> String:
+	return MODELS + "%s_%s_%s.res" % [name, which, preload("res://scripts/town_store.gd").code()]
+
+
+static func _keep(mesh: ArrayMesh, path: String) -> void:
+	DirAccess.make_dir_recursive_absolute(MODELS)
+	mesh.take_over_path(path)
+	WorkerThreadPool.add_task(func(): ResourceSaver.save(mesh, path), false, "model save")
 
 
 ## Kits whose walls are stone but whose file never says how metallic it is, so

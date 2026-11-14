@@ -20,24 +20,31 @@ static var _land := {}  # the map's tiles -> their hash, for the map last asked
 
 ## The file a town with these facts on this land is kept in.
 static func path_of(c: Dictionary, house: Dictionary, tiles: Array) -> String:
-	if _code == "":
-		_code = _fingerprint()
 	if not _land.has("tiles") or _land["tiles"] != tiles:
 		_land = {"tiles": tiles, "hash": str(tiles.hash())}
 	var facts := [c.get("x"), c.get("y"), c.get("size"), c.get("buildings"), c.get("capital"), c.get("owner"),
 		c.get("family"), c.get("title", c.get("name", "")), house.get("crown", false), house.get("name", ""),
-		house.get("colour", house.get("color", "")), _land["hash"], _code]
-	return DIR + "%d_%s.scn" % [int(c["id"]), str(facts).md5_text()]
+		house.get("colour", house.get("color", "")), _land["hash"], code()]
+	return DIR + "%d_%s_%s.scn" % [int(c["id"]), code(), str(facts).md5_text()]
 
 
-## Every script and data file's md5, as one: a town is read back only by the code and numbers that raised it.
-static func _fingerprint() -> String:
+## Every script and data file's md5, as one, made once: a town (or a model's merged mesh, realistic.gd) is read back
+## only by the code and numbers that made it.
+static func code() -> String:
+	if _code != "":
+		return _code
 	var sums := PackedStringArray()
 	for dir in ["res://scripts/", "res://data/"]:
 		for f in DirAccess.get_files_at(dir):
 			if f.ends_with(".gd") or f.ends_with(".json"):
 				sums.append(f + FileAccess.get_md5(dir + f))
-	return "".join(sums).md5_text()
+	_code = "".join(sums).md5_text().substr(0, 12)
+	# What older code or numbers kept is never read again: gone, so the folders don't grow with every change.
+	for dir in [DIR, "user://models/"]:
+		for f in DirAccess.get_files_at(dir) if DirAccess.dir_exists_absolute(dir) else PackedStringArray():
+			if not f.contains(_code):
+				DirAccess.remove_absolute(dir + f)
+	return _code
 
 
 ## A town just raised, packed and written (the writing on a worker thread). Its metas and groups are made savable on
