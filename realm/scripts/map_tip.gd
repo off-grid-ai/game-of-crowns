@@ -87,6 +87,13 @@ func _town(c: Dictionary) -> String:
 		parts.append(_w("besieged"))
 	if bool(c.get("famine", false)):
 		parts.append(_w("hungry"))
+	if bool(c.get("plague", false)):
+		parts.append(_w("closed") if bool(c.get("closed", false)) else _w("sick"))
+	elif st and st.rec("plague") is Dictionary:  # come through it, and safe from it a while (bridge contagion.js immune)
+		for im in (st.rec("plague") as Dictionary).get("immune", []):
+			if int(im.get("town", -2)) == id:
+				parts.append(_w("immune"))
+				break
 	if st:  # the King's works here: the one his masons raise, else the newest that stands (bridge /world works)
 		for w: Dictionary in st.rec("works", []):
 			if int(w.get("city", -2)) == id:
