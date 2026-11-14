@@ -28,10 +28,30 @@ func _init() -> void:
 			img.resize(SIZE, SIZE, Image.INTERPOLATE_LANCZOS)
 		var w := img.get_width()
 		var h := img.get_height()
+		# Calmed as Warcraft III's tiles are (docs/research/terrain-wc3-method.md; Mac on g30's drawn-back Kingsmere:
+		# one oversaturated yellow-green with high-frequency speckle): ground.json layers.<layer>.calm: contrast,
+		# how much of each texel's difference from the painting's mean colour stays (the speckle's strength; seamless,
+		# no blur), sat, its saturation kept, and mult, a colour multiply (the yellow out of the grass, the orange out of
+		# the dirt). The large soft variation is ground.json macro's, over the tiling.
+		var calm: Dictionary = (layers[layer] as Dictionary).get("calm", {})
+		var mean := Color(0, 0, 0)
+		if not calm.is_empty():
+			var small := img.duplicate() as Image
+			small.resize(1, 1, Image.INTERPOLATE_LANCZOS)
+			mean = small.get_pixel(0, 0)
+		var contrast := float(calm.get("contrast", 1.0))
+		var sat := float(calm.get("sat", 1.0))
+		var mul: Array = calm.get("mult", [1.0, 1.0, 1.0])
 		var normal := Image.create_empty(w, h, false, Image.FORMAT_RGBA8)
 		for y in h:
 			for x in w:
 				var c := img.get_pixel(x, y)
+				if not calm.is_empty():
+					var a := c.a
+					c = mean.lerp(c, contrast)
+					var l := c.get_luminance()
+					c = Color(l, l, l).lerp(c, sat)
+					c = Color(clampf(c.r * float(mul[0]), 0.0, 1.0), clampf(c.g * float(mul[1]), 0.0, 1.0), clampf(c.b * float(mul[2]), 0.0, 1.0), a)
 				c.a = clampf(0.35 + c.get_luminance() * 0.6, 0.0, 1.0)  # a gentle height: lighter paint stands a little higher
 				img.set_pixel(x, y, c)
 				normal.set_pixel(x, y, Color(0.5, 0.5, 1.0, 0.92))  # flat, matte
