@@ -2,10 +2,18 @@
 
 importer="texture"
 type="CompressedTexture2D"
+uid="uid://bgi2yt66e1beb"
+path.bptc="res://.godot/imported/rock-paint.png-9dcf01340a47dbcf3617c4a2464e90b3.bptc.ctex"
+path.astc="res://.godot/imported/rock-paint.png-9dcf01340a47dbcf3617c4a2464e90b3.astc.ctex"
+metadata={
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
+}
 
 [deps]
 
 source_file="res://assets/ground/terrain3d/rock-paint.png"
+dest_files=["res://.godot/imported/rock-paint.png-9dcf01340a47dbcf3617c4a2464e90b3.bptc.ctex", "res://.godot/imported/rock-paint.png-9dcf01340a47dbcf3617c4a2464e90b3.astc.ctex"]
 
 [params]
 

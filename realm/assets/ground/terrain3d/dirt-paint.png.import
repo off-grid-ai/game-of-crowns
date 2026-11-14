@@ -2,10 +2,18 @@
 
 importer="texture"
 type="CompressedTexture2D"
+uid="uid://bltoypy7560cq"
+path.bptc="res://.godot/imported/dirt-paint.png-41c228f14d38bea5256966484861f506.bptc.ctex"
+path.astc="res://.godot/imported/dirt-paint.png-41c228f14d38bea5256966484861f506.astc.ctex"
+metadata={
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
+}
 
 [deps]
 
 source_file="res://assets/ground/terrain3d/dirt-paint.png"
+dest_files=["res://.godot/imported/dirt-paint.png-41c228f14d38bea5256966484861f506.bptc.ctex", "res://.godot/imported/dirt-paint.png-41c228f14d38bea5256966484861f506.astc.ctex"]
 
 [params]
 

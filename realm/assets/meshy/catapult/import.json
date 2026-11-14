@@ -15,5 +15,7 @@
   "Material_0"
  ],
  "cut_faces": 0,
- "arm": true
+ "arm": true,
+ "repainted": 0,
+ "flattened": 0
 }

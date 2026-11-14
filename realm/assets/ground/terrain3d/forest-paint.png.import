@@ -2,10 +2,18 @@
 
 importer="texture"
 type="CompressedTexture2D"
+uid="uid://byqbj3lxi01ej"
+path.bptc="res://.godot/imported/forest-paint.png-7843a722f92271c3c52da503d94a4bb0.bptc.ctex"
+path.astc="res://.godot/imported/forest-paint.png-7843a722f92271c3c52da503d94a4bb0.astc.ctex"
+metadata={
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
+}
 
 [deps]
 
 source_file="res://assets/ground/terrain3d/forest-paint.png"
+dest_files=["res://.godot/imported/forest-paint.png-7843a722f92271c3c52da503d94a4bb0.bptc.ctex", "res://.godot/imported/forest-paint.png-7843a722f92271c3c52da503d94a4bb0.astc.ctex"]
 
 [params]
 

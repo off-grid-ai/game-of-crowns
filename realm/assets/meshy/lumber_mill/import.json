@@ -14,5 +14,9 @@
  "materials": [
   "Material_0",
   "MI_RoundTiles_house"
- ]
+ ],
+ "cut_faces": 0,
+ "arm": false,
+ "repainted": 0,
+ "flattened": 0
 }

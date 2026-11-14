@@ -9,10 +9,14 @@
   16.23,
   11.0
  ],
- "house_share": 0.192,
+ "house_share": 0.196,
  "mask_png": true,
  "materials": [
   "Material_0",
   "MI_RoundTiles_house"
- ]
+ ],
+ "cut_faces": 172,
+ "arm": false,
+ "repainted": 5866,
+ "flattened": 58
 }

@@ -2,10 +2,18 @@
 
 importer="texture"
 type="CompressedTexture2D"
+uid="uid://hmrwrd2lb6mt"
+path.bptc="res://.godot/imported/sand-paint.png-e24c9c03dd0634c9d4fa9d7c8f9790de.bptc.ctex"
+path.astc="res://.godot/imported/sand-paint.png-e24c9c03dd0634c9d4fa9d7c8f9790de.astc.ctex"
+metadata={
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
+}
 
 [deps]
 
 source_file="res://assets/ground/terrain3d/sand-paint.png"
+dest_files=["res://.godot/imported/sand-paint.png-e24c9c03dd0634c9d4fa9d7c8f9790de.bptc.ctex", "res://.godot/imported/sand-paint.png-e24c9c03dd0634c9d4fa9d7c8f9790de.astc.ctex"]
 
 [params]
 

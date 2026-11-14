@@ -2,10 +2,18 @@
 
 importer="texture"
 type="CompressedTexture2D"
+uid="uid://up4dcakp8i4f"
+path.bptc="res://.godot/imported/stony-paint.png-24bcab8e2db0e7b7b0c0fcd8f337f8a2.bptc.ctex"
+path.astc="res://.godot/imported/stony-paint.png-24bcab8e2db0e7b7b0c0fcd8f337f8a2.astc.ctex"
+metadata={
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
+}
 
 [deps]
 
 source_file="res://assets/ground/terrain3d/stony-paint.png"
+dest_files=["res://.godot/imported/stony-paint.png-24bcab8e2db0e7b7b0c0fcd8f337f8a2.bptc.ctex", "res://.godot/imported/stony-paint.png-24bcab8e2db0e7b7b0c0fcd8f337f8a2.astc.ctex"]
 
 [params]
 

@@ -2,10 +2,18 @@
 
 importer="texture"
 type="CompressedTexture2D"
+uid="uid://dq62d1srgxh06"
+path.bptc="res://.godot/imported/mud-paint.png-ae5173b972c6731d2210cecc58cb797c.bptc.ctex"
+path.astc="res://.godot/imported/mud-paint.png-ae5173b972c6731d2210cecc58cb797c.astc.ctex"
+metadata={
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
+}
 
 [deps]
 
 source_file="res://assets/ground/terrain3d/mud-paint.png"
+dest_files=["res://.godot/imported/mud-paint.png-ae5173b972c6731d2210cecc58cb797c.bptc.ctex", "res://.godot/imported/mud-paint.png-ae5173b972c6731d2210cecc58cb797c.astc.ctex"]
 
 [params]
 

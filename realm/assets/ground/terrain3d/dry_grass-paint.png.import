@@ -2,10 +2,18 @@
 
 importer="texture"
 type="CompressedTexture2D"
+uid="uid://mx5ehqxcnw2o"
+path.bptc="res://.godot/imported/dry_grass-paint.png-19987766cebe07fb1c5d5c59b68debf3.bptc.ctex"
+path.astc="res://.godot/imported/dry_grass-paint.png-19987766cebe07fb1c5d5c59b68debf3.astc.ctex"
+metadata={
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
+}
 
 [deps]
 
 source_file="res://assets/ground/terrain3d/dry_grass-paint.png"
+dest_files=["res://.godot/imported/dry_grass-paint.png-19987766cebe07fb1c5d5c59b68debf3.bptc.ctex", "res://.godot/imported/dry_grass-paint.png-19987766cebe07fb1c5d5c59b68debf3.astc.ctex"]
 
 [params]
 

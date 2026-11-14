@@ -16,5 +16,7 @@
   "MI_RoundTiles_house"
  ],
  "cut_faces": 1434,
- "arm": false
+ "arm": false,
+ "repainted": 0,
+ "flattened": 0
 }
