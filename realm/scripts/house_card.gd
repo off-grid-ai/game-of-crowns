@@ -88,7 +88,8 @@ func show_house(d: Dictionary) -> void:
 	head.add_child(ui.btn("Lore", func(): ui.lore_opened.emit(int(d.get("id", -1)))))
 	head.add_child(ui.btn("Add a character", func(): ui.character_form.emit(int(d.get("id", -1)))))
 	var clear := Control.new()  # room for the card's close X (ui.close_x) at the head's right
-	clear.custom_minimum_size = Vector2(UI.ui_num("close.size", 28.0) - UI.ui_num("close.into", 8.0), 0)
+	var pad := float((_house_panel.get_theme_stylebox("panel") as StyleBoxFlat).content_margin_right) if _house_panel.get_theme_stylebox("panel") is StyleBoxFlat else 0.0
+	clear.custom_minimum_size = Vector2(maxf(UI.ui_num("close.size", 28.0) + UI.ui_num("close.inset", 10.0) - pad, 0.0), 0)
 	head.add_child(clear)
 	# The numbers, each with how far it has moved over the last years.
 	var hist: Array = d.get("history", [])

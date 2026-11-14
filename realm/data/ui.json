@@ -3,7 +3,7 @@
  "top": { "maxWidth": 520 },
  "chronicle": { "width": 280, "height": 0.45 },
  "townCard": { "width": 400 },
- "close": { "size": 28, "into": 8, "icon": 16, "_": "ui.gd close_x: the one close X on a card (town, house, court): its button's size, how far into the card's padding toward its top-right corner, the icon's width (CK3's and Total War's panel close)." },
+ "close": { "size": 28, "inset": 10, "icon": 16, "radius_least": 6, "_": "ui.gd close_x: the one close X on a card (town, house, court; CK3's and Total War's panel close): its square box's size, its inset from the card's top and right edges (the same both ways; Mac: 'this is not centered'), the X's width (centred in the box), and the least corner radius of its hover box, which is otherwise the card's own less the inset (concentric with the card's corner)." },
  "toast": { "width": 400 },
   "reign_cards": {"act_seconds": 5.0},
   "folk_tip": {"near": 12.0, "marks_near": 60.0},

@@ -338,21 +338,32 @@ func close_x(p: PanelContainer, on_close: Callable) -> void:
 	b.add_theme_color_override("icon_hover_color", T.TEXT)
 	b.add_theme_color_override("icon_pressed_color", T.ACCENT)
 	b.add_theme_color_override("icon_hover_pressed_color", T.ACCENT)
+	b.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER  # the X in the middle of its box, not at its left
+	b.vertical_icon_alignment = VERTICAL_ALIGNMENT_CENTER
+	# The box sits the same inset from the card's top and right edges (not from its content, whose padding differs
+	# top and side), its corners the card's own, drawn concentric: the card's radius less the inset (ui.json close).
+	var card_box := p.get_theme_stylebox("panel") as StyleBoxFlat
+	var inset := ui_num("close.inset", 10.0)
+	var size := ui_num("close.size", 28.0)
 	var lift := StyleBoxFlat.new()
 	lift.bg_color = Color(1, 0.97, 0.9, 0.1)
-	lift.set_corner_radius_all(6)
+	lift.set_corner_radius_all(int(maxf((card_box.corner_radius_top_right if card_box else 12) - inset, ui_num("close.radius_least", 6.0))))
+	lift.set_content_margin_all(0)
+	var none := StyleBoxEmpty.new()
+	none.set_content_margin_all(0)
 	for st in ["normal", "focus", "disabled"]:
-		b.add_theme_stylebox_override(st, StyleBoxEmpty.new())
+		b.add_theme_stylebox_override(st, none)
 	b.add_theme_stylebox_override("hover", lift)
 	b.add_theme_stylebox_override("pressed", lift)
-	var size := ui_num("close.size", 28.0)
-	var into := ui_num("close.into", 8.0)  # how far into the card's padding, toward its corner
+	var pad_top := card_box.content_margin_top if card_box else 0.0
+	var pad_right := card_box.content_margin_right if card_box else 0.0
 	b.anchor_left = 1.0
 	b.anchor_right = 1.0
-	b.offset_left = into - size
-	b.offset_right = into
-	b.offset_top = -into
-	b.offset_bottom = size - into
+	b.offset_right = pad_right - inset
+	b.offset_left = b.offset_right - size
+	b.offset_top = inset - pad_top
+	b.offset_bottom = b.offset_top + size
+	b.custom_minimum_size = Vector2(size, size)
 	b.pressed.connect(on_close)
 	layer.add_child(b)
 
