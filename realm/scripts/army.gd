@@ -83,6 +83,7 @@ const ArmyCamp := preload("res://scripts/army_camp.gd")  # a field host's camp w
 const Horse := preload("res://scripts/horse.gd")  # the scouts' mounts
 var _order_kind := "?"  # a field host's order now (/world hosts[].order.kind; "" at ease), as units.gd last gave it
 var _camp: Node3D = null  # its camp while it holds (army_camp.gd)
+var _camp_season := ""  # the season it was pitched in: a new season pitches it afresh (winter's fires)
 var _scouts: Array = []  # a field host's horsemen riding ahead of its column (Horse with a rider)
 var _baggage: Array = []  # a field host's carts behind its column: {node, carter, off, s}
 var _aboard := false  # taken ship (board): its regiments filing to the hulls, then on their decks
@@ -426,6 +427,11 @@ func _pitch_camp() -> void:
 	_camp = ArmyCamp.new()
 	add_child(_camp)
 	_camp.pitch(scenes, _at(mid_s), _heading(mid_s), length, 1.0, _regiments[0]["colour"], _regiments[0].get("house", {}), _rng)
+
+
+func _season_now() -> String:
+	var st: Node = Awareness.store()
+	return String(st.realm.get_var(&"season", "", false)) if st else ""
 
 
 func _strike_camp() -> void:
@@ -1494,8 +1500,11 @@ func _process(delta: float) -> void:
 			"halt", "rest":
 				_at_ease(r, delta)
 	_far_view()
+	if _camp != null and _camp_season != _season_now():
+		_strike_camp()  # the season turned: pitched again for it below
 	if _camp == null and not _aboard and battle.has("host") and _camps() and _regiments.all(func(r): return r["state"] == "halt"):
 		_pitch_camp()
+		_camp_season = _season_now()
 	if _then_free and _regiments.all(func(r): return r["state"] == "halt"):
 		queue_free()
 		return
