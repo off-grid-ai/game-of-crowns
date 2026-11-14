@@ -42,6 +42,12 @@ seasons = "8"
 leave_steps = "3"
 leave_reach = "30"
 leave_seasons = "4"
+; Wealth draws the raid: beside Freeciv's own few riders, a band of band + 1 per band_per of the town's size, of
+; kinds in turn (unit types), at veteran level (0 green, 1 veteran, 2 hardened, 3 elite: units.ruleset).
+band = "3"
+band_per = "3"
+kinds = "Legion,Archers,Horsemen"
+veteran = "2"
 
 [risings]
 ; A great house split by Freeciv's civil war (script.lua realm_rising, called by a story beat): the rebels' host

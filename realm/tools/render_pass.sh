@@ -345,7 +345,8 @@ if want raid; then
   # (realmrules/script.lua realm_raids_turn, fc9a094c). Raiders are units of a wild player (Freeciv's barbarians: /world
   # players[].house.wild; g22 read them as 'no player's' and found none by Saltkeep, where six stood) new since the stage. Every wait is bounded and reads /world (the realm runs
   # only while a window watches it), closing the court and an interlude as the crossing's wait does.
-  raider() {  # raider <x> <y> <near|out|any> <from season>: "id x y yaw" for the raiders by the town (x y their midpoint),
+  raider() {  # raider <x> <y> <near|out|any> <from season>: "id x y yaw" for the raiders by the town (x y the middle of
+    # their densest knot: g29's midpoint of two pairs two tiles apart was empty grass),
     # the farthest one 2+ tiles out once the raid's seasons are over, or any still living; '' when none. yaw: the lens
     # on their side of the town looking back at it (camera_rig: the lens sits along (sin yaw, cos yaw) from its aim),
     # so the raiders stand in front with the town behind them, not lost among its roofs (g24 raid.jpg). The men by the
@@ -368,8 +369,12 @@ import math
 if '$3'=='any':
     u=us[0] if us else None
 elif '$3'=='near':
-    us=[u for u in us if far(u)<=3]; u=min(us,key=far) if us else None
-    if u: u={'id':u['id'],'x':sum(v['x'] for v in us)/len(us),'y':sum(v['y'] for v in us)/len(us)}
+    us=[u for u in us if far(u)<=3]; u=None
+    if us:
+        # the densest knot: the man with most raiders within a tile of him (nearest the town on a tie), its middle
+        knot=lambda a: [v for v in us if max(abs(v['x']-a['x']),abs(v['y']-a['y']))<=1]
+        a=max(us,key=lambda a: (len(knot(a)),-far(a))); k=knot(a)
+        u={'id':a['id'],'x':sum(v['x'] for v in k)/len(k),'y':sum(v['y'] for v in k)/len(k)}
     open('$OUT/raid.ids','w').write(' '.join(str(v['id']) for v in us))
 else:
     us=[u for u in us if far(u)>=2 and d.get('turn',0)>=$4]; u=max(us,key=far) if us else None

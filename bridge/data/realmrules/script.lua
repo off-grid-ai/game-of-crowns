@@ -814,9 +814,25 @@ function realm_raid(city_id)
   end
   if #spots == 0 then log.normal("RAID no open ground by %s", c.name); return end
   local before = raiders_now()
-  spots[random(1, #spots)]:unleash_barbarians()
+  local spot = spots[random(1, #spots)]
+  spot:unleash_barbarians()
   local raised = {}
   for id in pairs(raiders_now()) do if not before[id] then raised[#raised + 1] = id end end
+  -- Wealth draws the raid: beside the few riders Freeciv unleashes (its land barbarians are Horsemen, cut down by a
+  -- town's knights in a season or two, g29), a band of hardened men sized by the town's wealth, raids.band plus one
+  -- for every raids.band_per of its size, of raids.kinds in turn at raids.veteran, spread over the open ground two out:
+  -- men who can burn and carry off.
+  local owner = #raised > 0 and find.unit(nil, raised[1]).owner or nil
+  if owner then
+    local kinds = {}
+    for k in tostring(luadata.get_str("raids.kinds") or "Legion"):gmatch("[^,]+") do kinds[#kinds + 1] = find.unit_type(k) end
+    local n = raid_num("band", 3) + math.floor(c.size / raid_num("band_per", 3))
+    for i = 1, (#kinds > 0 and n or 0) do
+      -- one to a tile of the open ground round the town, not stacked: one lost fight kills a stack (killstack)
+      local u = edit.create_unit(owner, spots[(i - 1) % #spots + 1], kinds[(i - 1) % #kinds + 1], raid_num("veteran", 2), nil, -1)
+      if u then raised[#raised + 1] = u.id end
+    end
+  end
   if #raised > 0 then
     local til = game.current_turn() + raid_seasons()
     for i, id in ipairs(raised) do raised[i] = string.format("%d", id) end
