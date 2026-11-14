@@ -505,7 +505,8 @@ function decreeScenes(cmd, result, seat, target) {
     case "alliance": ride(target, "The King's oath"); break;
     case "buyoff": ride(target, "The crown's gold for the pretender"); break;
     case "ward": if (target && target.id !== seat.id) scene("ward", { x: target.x, y: target.y, tx: seat.x, ty: seat.y, city: seat.id }); break;
-    case "banners": case "sellswords": case "back":  // men gather at Kingsmere and march out
+    // The banners: no scene; the houses' own men are seen on the road to Kingsmere (crown.js banners, hosts.js warpath).
+    case "sellswords": case "back":  // men gather at Kingsmere and march out
       scene("muster", { x: seat.x, y: seat.y, tx: target ? target.x : seat.x + 3, ty: target ? target.y : seat.y + 2, city: seat.id });
       // Marched to another town, the company stands there (garrison.js, the one owner; kept with the reign).
       if (target && target.id !== seat.id) Garrison.post(meta, cmd.action, target, world.turn ?? 0, send);

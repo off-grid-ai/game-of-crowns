@@ -359,7 +359,8 @@ export function warpath(ctx, ev, send) {
     ctx.record?.({ turn: Number(ev.turn), kind: "decree", text: `The royal host sets out${ev.from != null ? ` from ${cityName(Number(ev.from))}` : ""} for ${cityName(city)}, and lays siege when it reaches the walls.`, city });
     return;
   }
-  save(meta, [...rest, { kind: "warpath", owner, units: ids, city, since: Number(ev.turn), raised: true }]);
+  // Banner men answering the King (realm_banners: join) join the royal host at the walls instead of falling on them.
+  save(meta, [...rest, { kind: "warpath", owner, units: ids, city, since: Number(ev.turn), raised: true, ...(ev.join ? { join: true } : {}) }]);
 }
 
 // The seasons a host takes by the road from one place to another at the hosts' speed (cheb distance where no land
@@ -370,10 +371,10 @@ export function marchSeasons(from, to) {
   return Math.ceil(Math.max(0, n - 1) / HOSTS.speed);  // it halts a tile out, at the walls
 }
 
-// How many of a house's soldiers are on the road to a town under a war host's order (warpath): a march still
-// coming, not one broken (stakes.js: the usurper's host on its way to Kingsmere).
+// How many of a house's soldiers are on the road to a town under a war host's order (warpath; not banner men coming to
+// join the King): a march still coming, not one broken (stakes.js: the usurper's host on its way to Kingsmere).
 export function marchingOn({ world, meta }, owner, city) {
-  const ids = new Set((meta?.hostOrders ?? []).filter((o) => o.kind === "warpath" && o.owner === owner && o.city === city).flatMap((o) => o.units));
+  const ids = new Set((meta?.hostOrders ?? []).filter((o) => o.kind === "warpath" && !o.join && o.owner === owner && o.city === city).flatMap((o) => o.units));
   return soldiersOf(world, owner).filter((u) => ids.has(u.id)).length;
 }
 
@@ -507,8 +508,13 @@ export function season(ctx, turn) {
       const free = () => send(`lua cmd ${Lua.homewardRelease(units)}`);
       if (!goal || goal.owner === o.owner) { free(); continue; }
       if (units.every((id) => cheb(byId.get(id), goal) <= 1)) {
-        record?.({ turn, kind: "rebellion", text: `${houseName(world, o.owner)}'s host reaches the walls of ${cityName(goal.id)}.`, city: goal.id });
-        free();
+        if (o.join) {
+          send(`lua cmd ${Lua.bannersJoin(units, goal.id)}`);
+          record?.({ turn, kind: "decree", text: `${houseName(world, o.owner)}'s men reach ${cityName(goal.id)} and join the royal host.`, city: goal.id });
+        } else {
+          record?.({ turn, kind: "rebellion", text: `${houseName(world, o.owner)}'s host reaches the walls of ${cityName(goal.id)}.`, city: goal.id });
+          free();
+        }
         continue;
       }
       const steps = stepsTo(goal, new Set([...shut].filter((k) => k !== `${goal.x},${goal.y}`))) ?? stepsTo(goal);

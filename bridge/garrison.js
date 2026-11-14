@@ -1,6 +1,6 @@
 // The King's garrison: the one owner of "a royal company stands at this town" (Total War's
 // reinforcements; docs/review/decisions-in-the-world.md). When the King's men march from his seat to
-// another town (backing a house, the banners, sellswords), the company is kept with the reign
+// another town (backing a house, sellswords), the company is kept with the reign
 // (meta.garrisons, so it survives a restart), its men join the town's defence in Freeciv, and it goes
 // home after its seasons. The view only draws it (cities[].garrison in /world; decisions_world.gd).
 // Numbers: data/garrison.json.

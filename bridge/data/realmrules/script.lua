@@ -652,6 +652,40 @@ function realm_war_march(who, from_id, to_id)
   log.normal("WARMARCH %s %d men from %s on %s", who.name, #ids, from.name, to.name)
 end
 
+-- The banners answered (bridge crown.js banners): n of a house's fighting men, those nearest the King's town first,
+-- set out for it; the bridge walks them there by the road (hosts.js warpath, join) and they join the royal host at
+-- its walls (realm_banners_join).
+function realm_banners(who, city_id, n)
+  local to = find.city(nil, city_id)
+  if not who or not to then log.normal("BANNERS no house or town"); return end
+  local men = {}
+  for u in who:units_iterate() do
+    if not u.utype:has_flag("NonMil") then men[#men + 1] = {id = u.id, d = u.tile:sq_distance(to.tile)} end
+  end
+  table.sort(men, function(a, b) return a.d < b.d end)
+  local ids = {}
+  for i = 1, math.min(n, #men) do ids[i] = tostring(men[i].id) end
+  if #ids > 0 then emit("war_host", {owner = who.id, city = to.id, units = table.concat(ids, ","), join = "1"}) end
+  log.normal("BANNERS %s sends %d men to %s", who.name, #ids, to.name)
+end
+
+-- Banner men at the King's walls join the royal host: Freeciv 3.2's Lua can't give a unit to another player, so each
+-- is taken off and one of his kind raised in the town for its holder.
+function realm_banners_join(ids, city_id)
+  local c = find.city(nil, city_id)
+  if not c then return end
+  local kinds = {}
+  for id in tostring(ids or ""):gmatch("%d+") do
+    local u = find.unit(nil, tonumber(id))
+    if u then
+      kinds[#kinds + 1] = u.utype:rule_name()
+      edit.unit_kill(u, "disbanded", nil)
+    end
+  end
+  if #kinds > 0 then realm_levy(city_id, table.concat(kinds, ","), 1) end
+  log.normal("BANNERS %d men join the host at %s", #kinds, c.name)
+end
+
 -- Men without banners: a raid is an event, not a standing army. Freeciv's own barbarians are raised beside a
 -- town (a paid raid, a story's raid), on an empty land tile two out, never on anyone's men (unleashing wipes the
 -- tile's units). They can't take the town (actions.ruleset); each season they pillage the land around it with

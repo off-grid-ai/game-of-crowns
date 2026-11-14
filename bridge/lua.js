@@ -17,6 +17,10 @@ const whoLua = (who) => (who === "dead" ? "realm_the_dead()" : `realm_find_playe
 export const host = (who, x, y, kinds, count) => `realm_host(${whoLua(who)}, ${n(x)}, ${n(y)}, {${kinds.map((k) => `"${k}"`).join(",")}}, ${n(count)})`;
 export const warHost = (who, cityId, kinds, count) => `realm_war_host(${whoLua(who)}, ${n(cityId)}, {${kinds.map((k) => `"${k}"`).join(",")}}, ${n(count)})`;
 export const warMarch = (who, fromId, toId) => `realm_war_march(${whoLua(who)}, ${n(fromId)}, ${n(toId)})`;
+// The banners answered: count of a house's men set out for the King's town (realm_banners), and at its walls join the
+// royal host (realm_banners_join: taken off and raised again there for its holder).
+export const banners = (who, cityId, count) => `realm_banners(${whoLua(who)}, ${n(cityId)}, ${n(count)})`;
+export const bannersJoin = (ids, cityId) => `realm_banners_join("${ids.map(n).join(",")}", ${n(cityId)})`;
 
 // Men without banners raised beside a town (realm_raid: Freeciv's barbarians, a raid's season).
 export const raid = (cityId) => `realm_raid(${n(cityId)})`;

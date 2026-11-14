@@ -92,12 +92,11 @@ const HANDLERS = {
       favour[p.id] = f >= BANDS.loyal ? 3 : n ? 1 : -3;  // gladly, grudgingly, or not at all
       if (n) {
         men += n;
-        // A transfer, not a loss: these men leave the house and as many join the royal host at Kingsmere
-        // below. Freeciv 3.2's Lua can't give a unit to another player, so they are taken off and raised again.
-        lua.push(Lua.takeMen(p.id, n));
+        // A transfer, not a loss: these men, the house's nearest Kingsmere, march there by the road and join the
+        // royal host at its walls (realm_banners; hosts.js warpath, join), seen on the way.
+        lua.push(Lua.banners(p.id, seat.id, n));
       }
     }
-    if (men) lua.push(Lua.levy(seat.id, Array.from({ length: men }, (_, i) => (i % 2 ? "Knights" : "Pikemen"))));
     const list = (xs) => xs.length > 1 ? `${xs.slice(0, -1).join(", ")} and ${xs.at(-1)}` : xs[0];
     const parts = [];
     const verb = (xs, one, many) => (xs.length > 1 ? many : one);

@@ -1,6 +1,6 @@
 {
  "_": "The King's garrison (garrison.js; Total War's reinforcements; docs/review/decisions-in-the-world.md): when the King's men march from his seat to another town (the decrees in 'on'), a royal company stands at that town for 'seasons'. units: how many men join the town's defence in Freeciv when they're sent (given to the town's holder; 0 for none), of the first of 'types' the ruleset has.",
- "on": ["back", "banners", "sellswords"],
+ "on": ["back", "sellswords"],
  "seasons": 4,
  "units": 2,
  "types": ["Pikemen", "Archers", "Warriors"]
