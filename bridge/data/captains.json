@@ -1,4 +1,7 @@
 {
- "_": "The King's captains (captains.js; Battle Brothers' named men, Total War's generals: small, mortal armies): every company of the crown is led by a named captain, kept for its life; when one falls the chronicle says so and the battle's card names him (fell). keep: how many fallen the reign remembers.",
+ "_": "The King's named men (captains.js; Battle Brothers' named men, Total War's generals: small, mortal armies). Every company of the crown is led by a named captain and carries men named soldiers of its own. After each of the King's battles, every named man of a company at the field has fought one more; he may fall (fall, a chance each battle) or rise: a soldier who has fought rise.sergeant battles is made sergeant, and a new company's captain is the most-fought sergeant of the host if there is one (else a new name). When a company dies, its captain and its men die with it. keep: how many fallen the reign remembers.",
+ "men": 2,
+ "fall": 0.15,
+ "rise": { "sergeant": 2 },
  "keep": 24
 }
