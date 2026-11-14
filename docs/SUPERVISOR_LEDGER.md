@@ -133,6 +133,7 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- 11-14 11:40 Landed: army's 4 g36 fixes (1492e99b shore, 2732f275 horse cloth, 5e6be7bb companies, 7d0c7b47 closer lines), calm grass 3e08b8f8, winter town 3a6793b2. Stopped stale g36; g37 renders 12 views at 7d0c7b47. Bottleneck: Loop polling the bridge (idle); moved Loop onto its bridge-free row and gave Bridge Loop's asks first.
 - 11-14 11:28 Landed: continent from turn 0 3e4bd177, smooth hills 7452d952, siege town 7a593ca8. g36 battle better (textured troops; crown horse still all red, empty lawn); muster FAIL (a regiment in the sea, a red blob not companies), both to army. g37 restarted to add realm and siege. Bottleneck: the GPU.
 - 11-14 11:16 Landed: streets on the grid 2eda9cbe, lambda fix c843d594, field tints badff3cb, plague tooltip 1ec87195. g36 realm FAIL: east two-thirds unclaimed at turn 0 (bridge), terraced cliff stripes and snow sheets (look). g37 queued for landuse/midzoom/town. Bottleneck: the GPU, one view per ~7 min.
 - 11-14 11:04 Landed: Houses vassals dd21ec64, raiders on works ba457efb, crowns de7afa72, banks d2c47546, dead cart 25454701, cold houses e53ca486. g36: town PASS; landuse FAIL (lattice of houses, no streets, 24 lambda-freed errors; is_inside_tree errors gone) to square. Bottleneck: GPU pass (one view per ~7 min); g37 picks up the new landings.
