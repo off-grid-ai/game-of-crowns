@@ -135,6 +135,21 @@ func banners() -> Array:
 	return v if v is Array else []
 
 
+## The rival King beyond the realm as a house record for his men's colours (/world rival, bridge rivals.js: colour,
+## sigil, his realm's name): {name, color, sigil, rival}, or {} while there is none. His raiders, his envoy's rider.
+func rival_house() -> Dictionary:
+	var r: Variant = rec("rival", {})
+	if not r is Dictionary or (r as Dictionary).is_empty():
+		return {}
+	return {"name": String(r.get("realm", "")), "color": String(r.get("colour", "#5a3d6e")), "sigil": r.get("sigil", ""), "rival": true}
+
+
+## The rival King's raiders still in the realm (/world rival.raiders, unit ids).
+func rival_raiders() -> Array:
+	var r: Variant = rec("rival", {})
+	return (r as Dictionary).get("raiders", []) if r is Dictionary else []
+
+
 ## The houses' war hosts on the road (/world warhosts, bridge hosts.js warpath without join: a rebel lord's host
 ## marching on the King's seat, a house's war on a town): [{owner, units, city, x, y, rebel}], as banners.
 func war_hosts() -> Array:

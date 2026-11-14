@@ -556,3 +556,4 @@ Switches (`--name`) go after `--` on the game's command line.
 - How a great house takes a town after a failed storm: `realm/data/siege.json` `approach` (mine: in 1.5, heap 0.08 + heap_per 0.06 a season dug, sappers 3; starve: posts 10 round the town, skip 0.9 rad of the camp, watch 2; bribe: meet 0.45 of the way from the gate, pace 0.12, talk_s 6, again_s 40).
 - A host answering the King's order where it stands: `realm/data/army.json` `ack` (role "cheer", the battlecry; s 1.8 seconds).
 - Beacons on a walled town's wall walk when a foe's host nears: `realm/data/walls.json` `beacons` (reach 16 world units, linger 30 s, smoke, the watchman's clip).
+- The rival King's raiders in his colours: `realm/data/army.json` `map.raider.rival_tint` (0.6: how far their cloth leans to /world rival.colour).

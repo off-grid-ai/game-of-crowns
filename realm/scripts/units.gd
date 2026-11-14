@@ -10,6 +10,7 @@ const PerfTools := preload("res://scripts/perf_tools.gd")  # the frame-cost prob
 var terrain: Node3D
 var towns: Node3D  # towns.gd: inside a town's reach, soldiers keep to its streets
 const Awareness := preload("res://scripts/awareness.gd")  # the realm's rules as the bridge sends them (season length, bands)
+const Heraldry := preload("res://scripts/heraldry.gd")  # the rival King's colours on his raiders
 const TownNav = preload("res://scripts/town_nav.gd")
 var _nav = TownNav.new()
 var _figures := {}  # unit id -> {node, target}
@@ -168,7 +169,7 @@ func sync(houses: Dictionary) -> void:
 				var tint := Color.from_string(String(house.get("color", "#888")), Color.GRAY).lerp(Color.WHITE, 0.35)
 				var kind := String(u["type"])
 				if raider:
-					node = _raider_man(id)
+					node = _raider_man(id, _rival_of(id, store))
 				else:
 					node = _people.make(rng, "soldier", tint, "adult")
 				# Horsemen ride (elephants have no beast of their own yet, so go on foot);
@@ -250,11 +251,14 @@ func _raid_goals(store: Node) -> Dictionary:
 
 ## A raider: a man in dark cloth (army.json map.raider.cloth) with an axe, and a lit torch in his other hand for one in
 ## torch_every of them, held whatever the body plays (motion.gd errand_load). No banner, no standard, nothing to click.
-func _raider_man(key: int) -> Node3D:
+func _raider_man(key: int, of := {}) -> Node3D:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = key
 	var r: Dictionary = (Data.value("army", "map", {}) as Dictionary).get("raider", {})
-	var node: Node3D = _people.make(rng, "soldier", Data.colour(r.get("cloth"), Color(0.22, 0.19, 0.16)), "adult")
+	var cloth := Data.colour(r.get("cloth"), Color(0.22, 0.19, 0.16))
+	if not of.is_empty():
+		cloth = cloth.lerp(Heraldry.colour(of, cloth), float(r.get("rival_tint", 0.6)))  # the rival King's riders wear his colours
+	var node: Node3D = _people.make(rng, "soldier", cloth, "adult")
 	Weapons.arm(node, "axe")
 	if absi(key) % maxi(1, int(r.get("torch_every", 2))) == 0:
 		var mo_t = _people.motion(node)
@@ -263,6 +267,11 @@ func _raider_man(key: int) -> Node3D:
 		else:
 			Weapons.hold_for(node, "Idle_Torch_Loop")
 	return node
+
+
+## The rival King's arms when raider company `id` is one of his (/world rival.raiders, bridge 8aaaa9a4), else {}.
+func _rival_of(id: int, store: Node) -> Dictionary:
+	return store.rival_house() if store and store.rival_raiders().has(id) else {}
 
 
 ## A raiding company is a band, not one figure (g29 raid: four companies read as one small rider; casebook, Wealth
@@ -280,7 +289,7 @@ func _band(id: int, at: Vector3, seen: Dictionary) -> void:
 		var target := _nav.stand(towns, at + off, 0.0)
 		target.y = terrain.height_at(target.x, target.z)
 		if not _figures.has(key):
-			var node := _raider_man(key)
+			var node := _raider_man(key, _rival_of(id, Awareness.store()))
 			node.position = target
 			add_child(node)
 			var mo: Node = Mover.of(node)
