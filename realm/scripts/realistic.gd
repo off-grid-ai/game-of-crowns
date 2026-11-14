@@ -414,6 +414,36 @@ static func warm() -> void:
 		var path := String(_model[n])
 		if ResourceLoader.exists(path) and not ResourceLoader.has_cached(path):
 			ResourceLoader.load_threaded_request(path)
+	_merge_ahead()
+
+
+## Each catalogue model, once read, set up on the main thread one a frame and its merge and detail levels started on
+## Godot's worker threads (WorkerThreadPool), so a town that stands it later finds its mesh made: the merge and
+## meshoptimizer's detail levels were the first landmark's and plaza's seconds (FPS, Mac: "something that should be
+## run on threads but its not"). A model asked for before its merge is done waits for that merge, never makes it twice.
+static func _merge_ahead() -> void:
+	var tree := Engine.get_main_loop() as SceneTree
+	for n in _model.keys():
+		var path := String(_model[n])
+		if _cache.has(n) or _pending.has(n) or not KIT.has(n):
+			continue
+		if not BUILT.has(n):
+			if not ResourceLoader.exists(path):
+				continue
+			while ResourceLoader.load_threaded_get_status(path) == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
+				await tree.process_frame
+		if not (_cache.has(n) or _pending.has(n)):
+			_begin(n)
+		await tree.process_frame
+		_finish_done()
+
+
+## Every model whose merge a worker has finished, made ready (its scene packed) on the main thread.
+static func _finish_done() -> void:
+	for n in _pending.keys():
+		var task: int = _pending[n]["task"]
+		if task < 0 or WorkerThreadPool.is_task_completed(task):
+			_finish(n)
 
 
 static func _path(name: String) -> String:
@@ -423,9 +453,20 @@ static func _path(name: String) -> String:
 static func _template(name: String) -> Dictionary:
 	if _cache.has(name):
 		return _cache[name]
+	if not _pending.has(name) and not _begin(name):
+		return {}
+	return _finish(name)
+
+
+static var _pending := {}  # name -> a model set up whose merge a worker is making (_begin), until _finish packs it
+
+
+## A model set up on the main thread (its scene, stripped, dyed, scaled, as plain parts) and its merge started on a
+## worker thread. False if the catalogue can't make it.
+static func _begin(name: String) -> bool:
 	var path := _path(name)
 	if not KIT.has(name) or not (BUILT.has(name) or ResourceLoader.exists(path)):
-		return {}
+		return false
 	var model: Node3D = _built(name) if BUILT.has(name) else (load(path) as PackedScene).instantiate()
 	still(model, path)  # a skinned figure stood in its pose as plain meshes (assets.json poses)
 	# Some kits carry things that don't belong in this age (cannon and shot).
@@ -480,7 +521,31 @@ static func _template(name: String) -> Dictionary:
 	# pieces (the longhall is 352) costs a draw call for every piece, and on
 	# Metal those calls, not triangles, were what held the frame.
 	var built_frame := Transform3D(Basis.from_scale(Vector3.ONE * k), model.position)  # the builder's metres -> this model (read before the merge frees it)
-	var merged := _merge(parts, FLOOR_CUT.get(name, -INF), BUDGET.get(KIT[name][0], 0))
+	var by_mat: Variant = _gather(parts)
+	var out := [null]
+	var task := -1
+	if by_mat != null:
+		var cut: float = FLOOR_CUT.get(name, -INF)
+		var budget: int = BUDGET.get(KIT[name][0], 0)
+		task = WorkerThreadPool.add_task(func(): out[0] = _lods(by_mat, cut, budget), false, "merge " + name)
+	_pending[name] = {"task": task, "out": out, "root": root, "parts": parts, "k": k, "box": box, "frame": built_frame}
+	return true
+
+
+## A model set up by _begin made ready once its merge is done (waiting for it if not): its parts as the one merged
+## mesh, its scene packed into the cache.
+static func _finish(name: String) -> Dictionary:
+	var p: Dictionary = _pending[name]
+	_pending.erase(name)
+	if int(p["task"]) >= 0:
+		WorkerThreadPool.wait_for_task_completion(int(p["task"]))
+	var root: Node3D = p["root"]
+	var parts: Array = p["parts"]
+	var k: float = p["k"]
+	var box: AABB = p["box"]
+	var built_frame: Transform3D = p["frame"]
+	var im: ImporterMesh = p["out"][0]
+	var merged: ArrayMesh = im.get_mesh() if im else null  # the mesh handed to the renderer on the main thread
 	if merged:
 		parts = [[merged, Transform3D.IDENTITY]]
 		var whole := Node3D.new()
@@ -594,7 +659,9 @@ static func _leaves(root: Node, path: String) -> void:
 const BUDGET := {"stump": 3000, "ruin": 10000}
 
 
-static func _merge(parts: Array, floor_cut := -INF, budget := 0) -> ArrayMesh:
+## The parts' surfaces read out by material on the main thread (a mesh's arrays come from the renderer): material ->
+## [[arrays, transform], ...]. Null if a part can't be merged.
+static func _gather(parts: Array) -> Variant:
 	var by_mat := {}  # material -> [arrays list]
 	for part in parts:
 		var mesh: Mesh = part[0]
@@ -611,6 +678,13 @@ static func _merge(parts: Array, floor_cut := -INF, budget := 0) -> ArrayMesh:
 			if not by_mat.has(mat):
 				by_mat[mat] = []
 			by_mat[mat].append([a, xf])
+	return by_mat
+
+
+## The gathered surfaces merged into one mesh, one surface per material, each vertex moved by its part's place, with
+## Godot's generated detail levels (meshoptimizer): plain arrays only, so it runs on a worker thread; the caller
+## hands the result to the renderer (get_mesh) on the main thread.
+static func _lods(by_mat: Dictionary, floor_cut: float, budget: int) -> ImporterMesh:
 	# Built through the importer's own mesh so the engine can make it lighter
 	# versions for distance, as it did for the pieces on import.
 	var im := ImporterMesh.new()
@@ -683,7 +757,7 @@ static func _merge(parts: Array, floor_cut := -INF, budget := 0) -> ArrayMesh:
 	im.generate_lods(25.0, 60.0, [])
 	if budget > 0:
 		im = _within(im, budget)
-	return im.get_mesh()
+	return im
 
 
 ## The first of Godot's generated detail levels whose triangles fit the budget, as
