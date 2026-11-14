@@ -133,6 +133,7 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- 11-14 13:46 Landed: wall closes 0bc67691, edge houses d8b2629d, busy square 96c05327 (square_r kept 2.1: Mac's 11-12 call), fallow 8c977198. g38 landuse: big step (square, rows, street), sent to Mac. Realm rendering. Bottleneck: GPU.
 - 11-14 13:44 Landed: Aldmere names for every town 1965eb14, woods at army scale 1a9caff2. g38 up at 6fb8c24d: players 8, cities 31 (Mac's 7+crown confirmed live); frames pending. Bottleneck: the GPU.
 - 11-14 13:32 Landed: Ironreach back b69c59e6 (8 powers, crown vassals), King's odds 933cb7d1, feast/pilgrimage f39daf7d, loyalty words + card decay. g37 winter hung 74 min (square, likely 3a6793b2 loop); killed g37, g38 at HEAD on 11 views. Freeciv names 'Lyon, Rouen' leak (bridge). Look was holding for renders: told to judge g38 frames as they land.
 - 11-14 12:40 Landed: baseline borders f8a7a0fe (0 unowned of 1564), rout off the sea 20e1d0b7, bunting/sullen squares a4de8bae, green grain 3a68191b, loop court tags. Decision (delegated): Ironreach returns with Thornvale's 2 northernmost towns (B), crown keeps Saltkeep and gets vassals. g37 frames sent to Mac on ask.
