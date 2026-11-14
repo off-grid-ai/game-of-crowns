@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://wgyv7mstneq8"
-path="res://.godot/imported/flower_bushes_q_Flowers.png-21422835aaca4e3072a8d8b2ced0f796.ctex"
+path.s3tc="res://.godot/imported/flower_bushes_q_Flowers.png-21422835aaca4e3072a8d8b2ced0f796.s3tc.ctex"
+path.etc2="res://.godot/imported/flower_bushes_q_Flowers.png-21422835aaca4e3072a8d8b2ced0f796.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "45566f246bb91ea26e812cac641b494f"
@@ -14,11 +16,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/props/yard/flower_bushes_q_Flowers.png"
-dest_files=["res://.godot/imported/flower_bushes_q_Flowers.png-21422835aaca4e3072a8d8b2ced0f796.ctex"]
+dest_files=["res://.godot/imported/flower_bushes_q_Flowers.png-21422835aaca4e3072a8d8b2ced0f796.s3tc.ctex", "res://.godot/imported/flower_bushes_q_Flowers.png-21422835aaca4e3072a8d8b2ced0f796.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

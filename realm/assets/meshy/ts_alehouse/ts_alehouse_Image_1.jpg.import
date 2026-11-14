@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://ymjjfk6a7epn"
-path="res://.godot/imported/ts_alehouse_Image_1.jpg-5388e123ecd65d21259bd9933b753a7a.ctex"
+path.s3tc="res://.godot/imported/ts_alehouse_Image_1.jpg-5388e123ecd65d21259bd9933b753a7a.s3tc.ctex"
+path.etc2="res://.godot/imported/ts_alehouse_Image_1.jpg-5388e123ecd65d21259bd9933b753a7a.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "6ebaa08f9428c99b5c2174520149a0f3"
@@ -14,11 +16,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/meshy/ts_alehouse/ts_alehouse_Image_1.jpg"
-dest_files=["res://.godot/imported/ts_alehouse_Image_1.jpg-5388e123ecd65d21259bd9933b753a7a.ctex"]
+dest_files=["res://.godot/imported/ts_alehouse_Image_1.jpg-5388e123ecd65d21259bd9933b753a7a.s3tc.ctex", "res://.godot/imported/ts_alehouse_Image_1.jpg-5388e123ecd65d21259bd9933b753a7a.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

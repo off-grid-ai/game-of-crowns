@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dtcu0nijumjbk"
-path="res://.godot/imported/sq_statue_normal.png-d60df0e6e39386f9ce296a5551c88583.ctex"
+path.s3tc="res://.godot/imported/sq_statue_normal.png-d60df0e6e39386f9ce296a5551c88583.s3tc.ctex"
+path.etc2="res://.godot/imported/sq_statue_normal.png-d60df0e6e39386f9ce296a5551c88583.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "5383997f9bd62ae239f04b790cfcfedd"
@@ -14,11 +16,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/meshy/sq_statue/sq_statue_normal.png"
-dest_files=["res://.godot/imported/sq_statue_normal.png-d60df0e6e39386f9ce296a5551c88583.ctex"]
+dest_files=["res://.godot/imported/sq_statue_normal.png-d60df0e6e39386f9ce296a5551c88583.s3tc.ctex", "res://.godot/imported/sq_statue_normal.png-d60df0e6e39386f9ce296a5551c88583.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

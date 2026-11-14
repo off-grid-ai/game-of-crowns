@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://b0wlw8mtthfxm"
-path="res://.godot/imported/giant-0_Atlas.png-70c17a01ffeb335a5b82dfaa83f498b3.ctex"
+path.s3tc="res://.godot/imported/giant-0_Atlas.png-70c17a01ffeb335a5b82dfaa83f498b3.s3tc.ctex"
+path.etc2="res://.godot/imported/giant-0_Atlas.png-70c17a01ffeb335a5b82dfaa83f498b3.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "3795851c85c1d7fbaf0b3b63054ec153"
@@ -14,11 +16,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/q/giant-0_Atlas.png"
-dest_files=["res://.godot/imported/giant-0_Atlas.png-70c17a01ffeb335a5b82dfaa83f498b3.ctex"]
+dest_files=["res://.godot/imported/giant-0_Atlas.png-70c17a01ffeb335a5b82dfaa83f498b3.s3tc.ctex", "res://.godot/imported/giant-0_Atlas.png-70c17a01ffeb335a5b82dfaa83f498b3.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

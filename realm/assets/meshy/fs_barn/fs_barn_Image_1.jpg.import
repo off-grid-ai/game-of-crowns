@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dgqtbqqkcnudk"
-path="res://.godot/imported/fs_barn_Image_1.jpg-0a1282962def56ce37ed0a6e313b49f1.ctex"
+path.s3tc="res://.godot/imported/fs_barn_Image_1.jpg-0a1282962def56ce37ed0a6e313b49f1.s3tc.ctex"
+path.etc2="res://.godot/imported/fs_barn_Image_1.jpg-0a1282962def56ce37ed0a6e313b49f1.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "652b60d5bb5a9ebb60d07387a8967971"
@@ -14,11 +16,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/meshy/fs_barn/fs_barn_Image_1.jpg"
-dest_files=["res://.godot/imported/fs_barn_Image_1.jpg-0a1282962def56ce37ed0a6e313b49f1.ctex"]
+dest_files=["res://.godot/imported/fs_barn_Image_1.jpg-0a1282962def56ce37ed0a6e313b49f1.s3tc.ctex", "res://.godot/imported/fs_barn_Image_1.jpg-0a1282962def56ce37ed0a6e313b49f1.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

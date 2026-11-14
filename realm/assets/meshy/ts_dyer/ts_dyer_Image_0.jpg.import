@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://b5an65hjurfel"
-path="res://.godot/imported/ts_dyer_Image_0.jpg-9cbaa94a381937006c4b2ace641a6cac.ctex"
+path.s3tc="res://.godot/imported/ts_dyer_Image_0.jpg-9cbaa94a381937006c4b2ace641a6cac.s3tc.ctex"
+path.etc2="res://.godot/imported/ts_dyer_Image_0.jpg-9cbaa94a381937006c4b2ace641a6cac.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "24375325bcf6bbf63c3ddfa4c3d14135"
@@ -14,11 +16,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/meshy/ts_dyer/ts_dyer_Image_0.jpg"
-dest_files=["res://.godot/imported/ts_dyer_Image_0.jpg-9cbaa94a381937006c4b2ace641a6cac.ctex"]
+dest_files=["res://.godot/imported/ts_dyer_Image_0.jpg-9cbaa94a381937006c4b2ace641a6cac.s3tc.ctex", "res://.godot/imported/ts_dyer_Image_0.jpg-9cbaa94a381937006c4b2ace641a6cac.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cfh62byiho6cs"
-path="res://.godot/imported/dog_texture_0_metallic_roughness.png-c811ff3cac6fab8b1c1a2b69e15550e7.ctex"
+path.s3tc="res://.godot/imported/dog_texture_0_metallic_roughness.png-c811ff3cac6fab8b1c1a2b69e15550e7.s3tc.ctex"
+path.etc2="res://.godot/imported/dog_texture_0_metallic_roughness.png-c811ff3cac6fab8b1c1a2b69e15550e7.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "71ebefa239eb282c5d83ed24e0260ce7"
@@ -14,11 +16,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/meshy/beasts/dog/dog_texture_0_metallic_roughness.png"
-dest_files=["res://.godot/imported/dog_texture_0_metallic_roughness.png-c811ff3cac6fab8b1c1a2b69e15550e7.ctex"]
+dest_files=["res://.godot/imported/dog_texture_0_metallic_roughness.png-c811ff3cac6fab8b1c1a2b69e15550e7.s3tc.ctex", "res://.godot/imported/dog_texture_0_metallic_roughness.png-c811ff3cac6fab8b1c1a2b69e15550e7.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

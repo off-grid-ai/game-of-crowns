@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://biooq3dd8wv1c"
-path="res://.godot/imported/nt_bush_Image_0.jpg-797b1b1bb16b7663e96289d14bc02b69.ctex"
+path.s3tc="res://.godot/imported/nt_bush_Image_0.jpg-797b1b1bb16b7663e96289d14bc02b69.s3tc.ctex"
+path.etc2="res://.godot/imported/nt_bush_Image_0.jpg-797b1b1bb16b7663e96289d14bc02b69.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "76f57ab8e97354cb7dd62f1d6107fd92"
@@ -14,11 +16,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/meshy/nt_bush/nt_bush_Image_0.jpg"
-dest_files=["res://.godot/imported/nt_bush_Image_0.jpg-797b1b1bb16b7663e96289d14bc02b69.ctex"]
+dest_files=["res://.godot/imported/nt_bush_Image_0.jpg-797b1b1bb16b7663e96289d14bc02b69.s3tc.ctex", "res://.godot/imported/nt_bush_Image_0.jpg-797b1b1bb16b7663e96289d14bc02b69.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

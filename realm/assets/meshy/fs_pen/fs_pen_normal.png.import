@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://m6q8my3dw4ny"
-path="res://.godot/imported/fs_pen_normal.png-1f7838762baf83cf06da220a9df9f355.ctex"
+path.s3tc="res://.godot/imported/fs_pen_normal.png-1f7838762baf83cf06da220a9df9f355.s3tc.ctex"
+path.etc2="res://.godot/imported/fs_pen_normal.png-1f7838762baf83cf06da220a9df9f355.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "8a0866dc7c9b22063539302ae9459416"
@@ -14,11 +16,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/meshy/fs_pen/fs_pen_normal.png"
-dest_files=["res://.godot/imported/fs_pen_normal.png-1f7838762baf83cf06da220a9df9f355.ctex"]
+dest_files=["res://.godot/imported/fs_pen_normal.png-1f7838762baf83cf06da220a9df9f355.s3tc.ctex", "res://.godot/imported/fs_pen_normal.png-1f7838762baf83cf06da220a9df9f355.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

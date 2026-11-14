@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cfsq6jt6ljhf4"
-path="res://.godot/imported/cow_normal.png-a95b3a42f8c59e786a62268adf8bee97.ctex"
+path.s3tc="res://.godot/imported/cow_normal.png-a95b3a42f8c59e786a62268adf8bee97.s3tc.ctex"
+path.etc2="res://.godot/imported/cow_normal.png-a95b3a42f8c59e786a62268adf8bee97.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "ceb9cbc3d1311f6d53ad4f07bdaeb469"
@@ -14,11 +16,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/meshy/beasts/cow/cow_normal.png"
-dest_files=["res://.godot/imported/cow_normal.png-a95b3a42f8c59e786a62268adf8bee97.ctex"]
+dest_files=["res://.godot/imported/cow_normal.png-a95b3a42f8c59e786a62268adf8bee97.s3tc.ctex", "res://.godot/imported/cow_normal.png-a95b3a42f8c59e786a62268adf8bee97.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

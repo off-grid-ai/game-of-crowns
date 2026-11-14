@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://b3xubgp3sgvjh"
-path="res://.godot/imported/pig_Image_0.jpg-5a687ea2b363c2b794955235ce2e4b39.ctex"
+path.s3tc="res://.godot/imported/pig_Image_0.jpg-5a687ea2b363c2b794955235ce2e4b39.s3tc.ctex"
+path.etc2="res://.godot/imported/pig_Image_0.jpg-5a687ea2b363c2b794955235ce2e4b39.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "e4c00e9c7d008d0164812077a76353ba"
@@ -14,11 +16,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/meshy/beasts/pig/pig_Image_0.jpg"
-dest_files=["res://.godot/imported/pig_Image_0.jpg-5a687ea2b363c2b794955235ce2e4b39.ctex"]
+dest_files=["res://.godot/imported/pig_Image_0.jpg-5a687ea2b363c2b794955235ce2e4b39.s3tc.ctex", "res://.godot/imported/pig_Image_0.jpg-5a687ea2b363c2b794955235ce2e4b39.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

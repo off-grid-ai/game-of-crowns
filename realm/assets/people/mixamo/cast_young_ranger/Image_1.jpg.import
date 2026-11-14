@@ -3,20 +3,22 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://d0ml2lko5wila"
-path="res://.godot/imported/Image_1.jpg-dccf4eaba2bea4aefdb29ffb5a97e906.ctex"
+path.s3tc="res://.godot/imported/Image_1.jpg-dccf4eaba2bea4aefdb29ffb5a97e906.s3tc.ctex"
+path.etc2="res://.godot/imported/Image_1.jpg-dccf4eaba2bea4aefdb29ffb5a97e906.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={}
 
 [deps]
 
 source_file="res://assets/people/mixamo/cast_young_ranger/Image_1.jpg"
-dest_files=["res://.godot/imported/Image_1.jpg-dccf4eaba2bea4aefdb29ffb5a97e906.ctex"]
+dest_files=["res://.godot/imported/Image_1.jpg-dccf4eaba2bea4aefdb29ffb5a97e906.s3tc.ctex", "res://.godot/imported/Image_1.jpg-dccf4eaba2bea4aefdb29ffb5a97e906.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

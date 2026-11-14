@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dfip7sea6lm4m"
-path="res://.godot/imported/sq_smithy_texture_0_metallic_roughness.png-1b09365c07a13d6254c4993f242e64dd.ctex"
+path.s3tc="res://.godot/imported/sq_smithy_texture_0_metallic_roughness.png-1b09365c07a13d6254c4993f242e64dd.s3tc.ctex"
+path.etc2="res://.godot/imported/sq_smithy_texture_0_metallic_roughness.png-1b09365c07a13d6254c4993f242e64dd.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "18a41a87b75102954e2c295e49b7afe1"
@@ -14,11 +16,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/meshy/sq_smithy/sq_smithy_texture_0_metallic_roughness.png"
-dest_files=["res://.godot/imported/sq_smithy_texture_0_metallic_roughness.png-1b09365c07a13d6254c4993f242e64dd.ctex"]
+dest_files=["res://.godot/imported/sq_smithy_texture_0_metallic_roughness.png-1b09365c07a13d6254c4993f242e64dd.s3tc.ctex", "res://.godot/imported/sq_smithy_texture_0_metallic_roughness.png-1b09365c07a13d6254c4993f242e64dd.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

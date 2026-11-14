@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dbqvi7hdc5oeo"
-path="res://.godot/imported/sq_merchant_house_texture_0_metallic_roughness.png-068cc6325617120a15dbae75cf505adf.ctex"
+path.s3tc="res://.godot/imported/sq_merchant_house_texture_0_metallic_roughness.png-068cc6325617120a15dbae75cf505adf.s3tc.ctex"
+path.etc2="res://.godot/imported/sq_merchant_house_texture_0_metallic_roughness.png-068cc6325617120a15dbae75cf505adf.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "a5566d6a1b334324adb9955316d5b7bd"
@@ -14,11 +16,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/meshy/sq_merchant_house/sq_merchant_house_texture_0_metallic_roughness.png"
-dest_files=["res://.godot/imported/sq_merchant_house_texture_0_metallic_roughness.png-068cc6325617120a15dbae75cf505adf.ctex"]
+dest_files=["res://.godot/imported/sq_merchant_house_texture_0_metallic_roughness.png-068cc6325617120a15dbae75cf505adf.s3tc.ctex", "res://.godot/imported/sq_merchant_house_texture_0_metallic_roughness.png-068cc6325617120a15dbae75cf505adf.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

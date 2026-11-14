@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://c61ubj36y3ydm"
-path="res://.godot/imported/dog_normal.png-6ab7d9b8ad3cf78336ae0f6e246c3c7d.ctex"
+path.s3tc="res://.godot/imported/dog_normal.png-6ab7d9b8ad3cf78336ae0f6e246c3c7d.s3tc.ctex"
+path.etc2="res://.godot/imported/dog_normal.png-6ab7d9b8ad3cf78336ae0f6e246c3c7d.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "130ef596783afafaeda826a4dae83092"
@@ -14,11 +16,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/meshy/beasts/dog/dog_normal.png"
-dest_files=["res://.godot/imported/dog_normal.png-6ab7d9b8ad3cf78336ae0f6e246c3c7d.ctex"]
+dest_files=["res://.godot/imported/dog_normal.png-6ab7d9b8ad3cf78336ae0f6e246c3c7d.s3tc.ctex", "res://.godot/imported/dog_normal.png-6ab7d9b8ad3cf78336ae0f6e246c3c7d.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

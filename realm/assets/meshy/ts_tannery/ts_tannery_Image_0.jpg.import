@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://c20etqbghkksc"
-path="res://.godot/imported/ts_tannery_Image_0.jpg-dd02afef4f6b4cb74ce20958c2469a72.ctex"
+path.s3tc="res://.godot/imported/ts_tannery_Image_0.jpg-dd02afef4f6b4cb74ce20958c2469a72.s3tc.ctex"
+path.etc2="res://.godot/imported/ts_tannery_Image_0.jpg-dd02afef4f6b4cb74ce20958c2469a72.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "a4fe3db6610b44c607e735db76ea76dd"
@@ -14,11 +16,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/meshy/ts_tannery/ts_tannery_Image_0.jpg"
-dest_files=["res://.godot/imported/ts_tannery_Image_0.jpg-dd02afef4f6b4cb74ce20958c2469a72.ctex"]
+dest_files=["res://.godot/imported/ts_tannery_Image_0.jpg-dd02afef4f6b4cb74ce20958c2469a72.s3tc.ctex", "res://.godot/imported/ts_tannery_Image_0.jpg-dd02afef4f6b4cb74ce20958c2469a72.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

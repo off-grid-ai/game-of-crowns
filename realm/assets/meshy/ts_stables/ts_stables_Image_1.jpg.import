@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://l8jclff25nbx"
-path="res://.godot/imported/ts_stables_Image_1.jpg-42262c4422063c59eb7cf91e144bf959.ctex"
+path.s3tc="res://.godot/imported/ts_stables_Image_1.jpg-42262c4422063c59eb7cf91e144bf959.s3tc.ctex"
+path.etc2="res://.godot/imported/ts_stables_Image_1.jpg-42262c4422063c59eb7cf91e144bf959.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "cf1b18d567d41e6a719d92764c238db1"
@@ -14,11 +16,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/meshy/ts_stables/ts_stables_Image_1.jpg"
-dest_files=["res://.godot/imported/ts_stables_Image_1.jpg-42262c4422063c59eb7cf91e144bf959.ctex"]
+dest_files=["res://.godot/imported/ts_stables_Image_1.jpg-42262c4422063c59eb7cf91e144bf959.s3tc.ctex", "res://.godot/imported/ts_stables_Image_1.jpg-42262c4422063c59eb7cf91e144bf959.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

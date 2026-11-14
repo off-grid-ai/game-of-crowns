@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://b6xro482mhu66"
-path="res://.godot/imported/sq_well_texture_0.png-345eb2b7edd2fd4ad708eb7443566c60.ctex"
+path.s3tc="res://.godot/imported/sq_well_texture_0.png-345eb2b7edd2fd4ad708eb7443566c60.s3tc.ctex"
+path.etc2="res://.godot/imported/sq_well_texture_0.png-345eb2b7edd2fd4ad708eb7443566c60.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "c8b79aa15afc7f362de37349453c67fb"
@@ -14,11 +16,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/meshy/sq_well/sq_well_texture_0.png"
-dest_files=["res://.godot/imported/sq_well_texture_0.png-345eb2b7edd2fd4ad708eb7443566c60.ctex"]
+dest_files=["res://.godot/imported/sq_well_texture_0.png-345eb2b7edd2fd4ad708eb7443566c60.s3tc.ctex", "res://.godot/imported/sq_well_texture_0.png-345eb2b7edd2fd4ad708eb7443566c60.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

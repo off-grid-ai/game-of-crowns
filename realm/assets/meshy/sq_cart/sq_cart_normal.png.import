@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://blb73wbn3mr1e"
-path="res://.godot/imported/sq_cart_normal.png-7346af32e06ef5b69aea1b9103190cd3.ctex"
+path.s3tc="res://.godot/imported/sq_cart_normal.png-7346af32e06ef5b69aea1b9103190cd3.s3tc.ctex"
+path.etc2="res://.godot/imported/sq_cart_normal.png-7346af32e06ef5b69aea1b9103190cd3.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "ac6743cd58c9552e28fb653204bda23e"
@@ -14,11 +16,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/meshy/sq_cart/sq_cart_normal.png"
-dest_files=["res://.godot/imported/sq_cart_normal.png-7346af32e06ef5b69aea1b9103190cd3.ctex"]
+dest_files=["res://.godot/imported/sq_cart_normal.png-7346af32e06ef5b69aea1b9103190cd3.s3tc.ctex", "res://.godot/imported/sq_cart_normal.png-7346af32e06ef5b69aea1b9103190cd3.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

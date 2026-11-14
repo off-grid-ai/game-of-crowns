@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cwtvm5n7smope"
-path="res://.godot/imported/sq_market_stall_normal.png-b66ca7dfeab79fa8eea6399a7dc6cd9f.ctex"
+path.s3tc="res://.godot/imported/sq_market_stall_normal.png-b66ca7dfeab79fa8eea6399a7dc6cd9f.s3tc.ctex"
+path.etc2="res://.godot/imported/sq_market_stall_normal.png-b66ca7dfeab79fa8eea6399a7dc6cd9f.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "41a5bd164e53c0dd13c06b68a65baf83"
@@ -14,11 +16,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/meshy/sq_market_stall/sq_market_stall_normal.png"
-dest_files=["res://.godot/imported/sq_market_stall_normal.png-b66ca7dfeab79fa8eea6399a7dc6cd9f.ctex"]
+dest_files=["res://.godot/imported/sq_market_stall_normal.png-b66ca7dfeab79fa8eea6399a7dc6cd9f.s3tc.ctex", "res://.godot/imported/sq_market_stall_normal.png-b66ca7dfeab79fa8eea6399a7dc6cd9f.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

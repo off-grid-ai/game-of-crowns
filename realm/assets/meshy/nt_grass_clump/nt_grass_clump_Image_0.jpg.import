@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cvdqa6t11lin1"
-path="res://.godot/imported/nt_grass_clump_Image_0.jpg-24f9d77ab440b04d647091553ee242c8.ctex"
+path.s3tc="res://.godot/imported/nt_grass_clump_Image_0.jpg-24f9d77ab440b04d647091553ee242c8.s3tc.ctex"
+path.etc2="res://.godot/imported/nt_grass_clump_Image_0.jpg-24f9d77ab440b04d647091553ee242c8.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "4931ea74bf6ca399358937d6a8772eaf"
@@ -14,11 +16,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/meshy/nt_grass_clump/nt_grass_clump_Image_0.jpg"
-dest_files=["res://.godot/imported/nt_grass_clump_Image_0.jpg-24f9d77ab440b04d647091553ee242c8.ctex"]
+dest_files=["res://.godot/imported/nt_grass_clump_Image_0.jpg-24f9d77ab440b04d647091553ee242c8.s3tc.ctex", "res://.godot/imported/nt_grass_clump_Image_0.jpg-24f9d77ab440b04d647091553ee242c8.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

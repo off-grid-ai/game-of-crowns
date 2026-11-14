@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cfj0ltnexis5n"
-path="res://.godot/imported/goat_Image_0.jpg-842cd927d84a18de6fc8cd8610f0c634.ctex"
+path.s3tc="res://.godot/imported/goat_Image_0.jpg-842cd927d84a18de6fc8cd8610f0c634.s3tc.ctex"
+path.etc2="res://.godot/imported/goat_Image_0.jpg-842cd927d84a18de6fc8cd8610f0c634.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "cb711546a3f4e2034eff829134ade1f9"
@@ -14,11 +16,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/meshy/beasts/goat/goat_Image_0.jpg"
-dest_files=["res://.godot/imported/goat_Image_0.jpg-842cd927d84a18de6fc8cd8610f0c634.ctex"]
+dest_files=["res://.godot/imported/goat_Image_0.jpg-842cd927d84a18de6fc8cd8610f0c634.s3tc.ctex", "res://.godot/imported/goat_Image_0.jpg-842cd927d84a18de6fc8cd8610f0c634.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://c3c665f38wwpy"
-path="res://.godot/imported/sq_well_texture_0_metallic_roughness.png-6e3603b326b4bb97e0df6b55b5364810.ctex"
+path.s3tc="res://.godot/imported/sq_well_texture_0_metallic_roughness.png-6e3603b326b4bb97e0df6b55b5364810.s3tc.ctex"
+path.etc2="res://.godot/imported/sq_well_texture_0_metallic_roughness.png-6e3603b326b4bb97e0df6b55b5364810.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "9e77c021591ed96306e1b606ac2f2d6b"
@@ -14,11 +16,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/meshy/sq_well/sq_well_texture_0_metallic_roughness.png"
-dest_files=["res://.godot/imported/sq_well_texture_0_metallic_roughness.png-6e3603b326b4bb97e0df6b55b5364810.ctex"]
+dest_files=["res://.godot/imported/sq_well_texture_0_metallic_roughness.png-6e3603b326b4bb97e0df6b55b5364810.s3tc.ctex", "res://.godot/imported/sq_well_texture_0_metallic_roughness.png-6e3603b326b4bb97e0df6b55b5364810.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

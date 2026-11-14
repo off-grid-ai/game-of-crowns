@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://qxbqq6g1mquh"
-path="res://.godot/imported/sheep_Image_1.jpg-d38247b91ef3a31728a92297de4ba6b3.ctex"
+path.s3tc="res://.godot/imported/sheep_Image_1.jpg-d38247b91ef3a31728a92297de4ba6b3.s3tc.ctex"
+path.etc2="res://.godot/imported/sheep_Image_1.jpg-d38247b91ef3a31728a92297de4ba6b3.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "b096f8a36fbb0cecf2f7c527dada8a1e"
@@ -14,11 +16,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/meshy/beasts/sheep/sheep_Image_1.jpg"
-dest_files=["res://.godot/imported/sheep_Image_1.jpg-d38247b91ef3a31728a92297de4ba6b3.ctex"]
+dest_files=["res://.godot/imported/sheep_Image_1.jpg-d38247b91ef3a31728a92297de4ba6b3.s3tc.ctex", "res://.godot/imported/sheep_Image_1.jpg-d38247b91ef3a31728a92297de4ba6b3.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

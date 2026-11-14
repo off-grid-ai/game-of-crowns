@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dn43mu5rvkxto"
-path="res://.godot/imported/ts_windmill_Image_1.jpg-d273695f7948a487a98353e1609aa8d5.ctex"
+path.s3tc="res://.godot/imported/ts_windmill_Image_1.jpg-d273695f7948a487a98353e1609aa8d5.s3tc.ctex"
+path.etc2="res://.godot/imported/ts_windmill_Image_1.jpg-d273695f7948a487a98353e1609aa8d5.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "f3db9b5cba20ee679ecfdb4411ecdcd3"
@@ -14,11 +16,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/meshy/ts_windmill/ts_windmill_Image_1.jpg"
-dest_files=["res://.godot/imported/ts_windmill_Image_1.jpg-d273695f7948a487a98353e1609aa8d5.ctex"]
+dest_files=["res://.godot/imported/ts_windmill_Image_1.jpg-d273695f7948a487a98353e1609aa8d5.s3tc.ctex", "res://.godot/imported/ts_windmill_Image_1.jpg-d273695f7948a487a98353e1609aa8d5.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

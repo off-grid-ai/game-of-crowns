@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://ftw3hewb61ss"
-path="res://.godot/imported/fs_armoury_Image_0.jpg-b042ecaf004b8281ca1f2568f6b78bbe.ctex"
+path.s3tc="res://.godot/imported/fs_armoury_Image_0.jpg-b042ecaf004b8281ca1f2568f6b78bbe.s3tc.ctex"
+path.etc2="res://.godot/imported/fs_armoury_Image_0.jpg-b042ecaf004b8281ca1f2568f6b78bbe.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "b744643aba94c70e17c61babce18c4f6"
@@ -14,11 +16,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/meshy/fs_armoury/fs_armoury_Image_0.jpg"
-dest_files=["res://.godot/imported/fs_armoury_Image_0.jpg-b042ecaf004b8281ca1f2568f6b78bbe.ctex"]
+dest_files=["res://.godot/imported/fs_armoury_Image_0.jpg-b042ecaf004b8281ca1f2568f6b78bbe.s3tc.ctex", "res://.godot/imported/fs_armoury_Image_0.jpg-b042ecaf004b8281ca1f2568f6b78bbe.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

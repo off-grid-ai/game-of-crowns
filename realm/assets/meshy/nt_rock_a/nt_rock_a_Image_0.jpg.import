@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://chlm7whkl1m1g"
-path="res://.godot/imported/nt_rock_a_Image_0.jpg-beb811b974fe2219bb291adba9060d44.ctex"
+path.s3tc="res://.godot/imported/nt_rock_a_Image_0.jpg-beb811b974fe2219bb291adba9060d44.s3tc.ctex"
+path.etc2="res://.godot/imported/nt_rock_a_Image_0.jpg-beb811b974fe2219bb291adba9060d44.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "8b97f3a281847eb7e73e63b6e638c0ed"
@@ -14,11 +16,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/meshy/nt_rock_a/nt_rock_a_Image_0.jpg"
-dest_files=["res://.godot/imported/nt_rock_a_Image_0.jpg-beb811b974fe2219bb291adba9060d44.ctex"]
+dest_files=["res://.godot/imported/nt_rock_a_Image_0.jpg-beb811b974fe2219bb291adba9060d44.s3tc.ctex", "res://.godot/imported/nt_rock_a_Image_0.jpg-beb811b974fe2219bb291adba9060d44.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
