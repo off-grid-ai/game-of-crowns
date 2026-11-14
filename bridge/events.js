@@ -10,6 +10,7 @@
 // else data on), the same way as the seals.
 
 import { crownOf } from "./realm.js";
+import * as Rivals from "./rivals.js";
 import * as Lua from "./lua.js";
 import fs from "node:fs";
 import { houseFor, cityName } from "./narrator.js";
@@ -18,6 +19,7 @@ import { pick as wording } from "./say.js";  // a choice's, its later's and a ca
 import * as chron from "./chronicles.js";
 
 export const EVENTS = JSON.parse(fs.readFileSync(new URL("./data/events.json", import.meta.url), "utf8"));
+EVENTS.cards.push(...Rivals.RIVAL.cards);  // the rival King's envoys, drawn with the realm's (rivals.js)
 const S = EVENTS.settings;
 
 export const on = (meta) => Boolean(meta?.options?.events ?? S.on);
@@ -67,6 +69,7 @@ function holds(ctx, when = {}) {
   if (when.peaceAbove != null && peace <= when.peaceAbove) return false;
   if (when.after != null && k < when.after) return false;
   if (when.before != null && k > when.before) return false;
+  if (when.rival && !Rivals.holds(meta, when.rival)) return false;
   if (when.threat && !(meta.director?.threat && (when.threat === true || meta.director.threat.kind === when.threat))) return false;
   return true;
 }
@@ -102,6 +105,7 @@ function draw(ctx, e, turn, resting) {
     if (!holds(ctx, c.when)) continue;
     const sub = subject(ctx, c.subject ?? "realm");
     if (!sub) continue;
+    if (c.deck === "rival") Object.assign(sub, Rivals.words(ctx.meta));
     let w = c.weight ?? 1;
     if (!resting && S.boost[c.deck]) w *= S.boost[c.deck];
     bag.push([c, sub, w]);
@@ -151,6 +155,7 @@ function apply(ctx, fx = {}, sub = {}, turn) {
     ctx.send?.(`lua cmd ${Lua.gold(crown.id, Math.round(fx.gold))}`);
     crown.gold = (crown.gold ?? 0) + Math.round(fx.gold);  // now, as the decree route does, so a second payment can't overdraw before the next reading
   }
+  if (fx.rival) Rivals.shift(ctx.meta, fx.rival);  // the rival King's mood (rivals.js)
   if (fx.ease && ctx.meta.director?.threat) ctx.meta.director.threat.level = Math.max(0, ctx.meta.director.threat.level - fx.ease);
   if (fx.text) ctx.record?.({ turn, kind: "event", text: fill(fx.text, sub), city: sub.city ?? undefined });
 }
