@@ -47,6 +47,24 @@ export function rise(meta, action) {
   return g && meta?.prices?.now?.[g] ? meta.prices.now[g] / P.base[g] : 1;
 }
 
+// A town's market (Square's stalls; Anno's and Manor Lords' local prices): food and goods, each a ratio to normal
+// (1 normal, 1.5 dear, 0.7 cheap), from the realm's grain and cloth prices moved by the town's own state
+// (data/prices.json market): its granary full or low, famine, a siege or roads shut; a big town's market is cheaper
+// in goods. Set on each /world city by view.js after its state.
+export function market(meta, c) {
+  const M = P.market, now = meta?.prices?.now;
+  const realm = (g) => (now?.[g] ? now[g] / P.base[g] : 1);
+  const fill = c.food != null && c.granary > 0 ? c.food / c.granary : 0.5;
+  let food = realm("grain") * (fill >= M.full ? M.fullFood : fill < M.low ? M.lowFood : 1);
+  if (c.famine) food *= M.famine;
+  if (c.besieged || c.siege) food *= M.siege;
+  if (c.closed) food *= M.closed;
+  let goods = realm("cloth") * Math.max(M.bigMost, 1 - M.perSize * Math.max(0, (c.size ?? 1) - 1));
+  if (c.besieged || c.siege || c.closed) goods *= M.cutOff;
+  const r = (v) => Math.round(Math.min(M.most, Math.max(M.least, v)) * 100) / 100;
+  return { food: r(food), goods: r(goods) };
+}
+
 export function view(meta) {
   const p = meta?.prices;
   return p ? Object.fromEntries(Object.keys(P.base).map((g) => [g, { price: p.now[g], was: p.was[g], why: p.why[g] || null }])) : null;

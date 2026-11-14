@@ -6,6 +6,7 @@
 
 import { crownOf, northTowns } from "./realm.js";
 import * as Contagion from "./contagion.js";
+import * as Prices from "./prices.js";
 import * as Risings from "./risings.js";
 import * as Households from "./households.js";
 import { houseFor, cityName, HOUSES } from "./narrator.js";
@@ -186,6 +187,7 @@ export function townStates(ctx) {
     // A harsh ruling given nearby (rulings.js heardOf) leaves the town in dread when nothing stronger stands.
     c.heard = ctx.heardOf?.(c) ?? null;
     c.mood = c.disorder ? "riot" : (c.famine || c.siege?.hungry) ? "hunger" : c.celebrating ? "feast" : c.heard?.mood ?? "";
+    c.market = Prices.market(meta, c);  // what its stalls ask, against normal (prices.js)
     // Why the town looks as it does, in one line (situation.js): the card's first line.
     c.situation = situation({ world, scenes, marks: ctx.marksNow?.() ?? [], besiegers }, c);
     c.thoughts = ctx.thoughtsOf?.(c.id) ?? [];  // what the town is saying (chatter.js; the crowd thinks out loud)
