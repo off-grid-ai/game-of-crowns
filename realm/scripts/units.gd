@@ -95,15 +95,14 @@ var _town_tiles := {}
 var _heading := {}  # tile -> the way the army standing there last marched
 
 
-## Milliseconds of a sync that may go on making new companies' figures (army.json map.make_ms); the rest are made
-## by a sync the next frame (_more), so the first reading's hundreds of soldiers, horses and ships never hold one
-## frame (FPS P0: units.sync 1,858 ms in one frame in the 6aaf2121 run).
-static var MAKE_MS: float = preload("res://scripts/data.gd").num("army", "map.make_ms", 6.0)
+## A sync goes on making new companies' figures for ViewTier.STAGE_MS (camera.json view_tier.stage_ms, the one
+## staging budget); the rest are made by a sync the next frame (_more), so the first reading's hundreds of soldiers,
+## horses and ships never hold one frame (FPS P0: units.sync 1,858 ms in one frame in the 6aaf2121 run).
 var _more := false  # a sync left companies unmade: one more runs next frame
 
 
 func sync(houses: Dictionary) -> void:
-	var made_until := Time.get_ticks_msec() + int(MAKE_MS)
+	var made_until := Time.get_ticks_msec() + int(ViewTier.STAGE_MS)
 	var left := false
 	var store: Node = Awareness.store()
 	var seen := {}
@@ -237,7 +236,7 @@ func sync(houses: Dictionary) -> void:
 		_make_rest.call_deferred(houses)
 
 
-## The companies a sync left unmade, made by another sync the next frame (and so on, MAKE_MS a frame).
+## The companies a sync left unmade, made by another sync the next frame (and so on, ViewTier.STAGE_MS a frame).
 func _make_rest(houses: Dictionary) -> void:
 	await get_tree().process_frame
 	_more = false

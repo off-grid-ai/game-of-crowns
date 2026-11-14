@@ -355,12 +355,11 @@ func _house_colour(owner: int) -> Color:
 
 ## Towns whose crowd is being made, a few people a frame (_spawn).
 var _spawning := {}
-## Milliseconds of a frame a town's crowd may take to be made (crowd.json villagers.spawn_ms): a whole town at
-## once held one frame 400 ms (FPS P0, the supervisor's fps1 run: "spent: villagers 396").
-static var SPAWN_MS: float = preload("res://scripts/data.gd").num("crowd", "villagers.spawn_ms", 6.0)
+## A town's crowd is made ViewTier.STAGE_MS of a frame at a time (camera.json view_tier.stage_ms, the one staging
+## budget): a whole town at once held one frame 400 ms (FPS P0, the supervisor's fps1 run: "spent: villagers 396").
 
 
-## A town's crowd, made SPAWN_MS of a frame at a time. Nobody is seen until all are made: each is hidden until set
+## A town's crowd, made ViewTier.STAGE_MS of a frame at a time. Nobody is seen until all are made: each is hidden until set
 ## down on the walk map, and only a town in `crowds` is set down (_step), so the crowd still appears as one.
 func _spawn(id: int) -> void:
 	_spawning[id] = true
@@ -412,7 +411,7 @@ func _spawn(id: int) -> void:
 		if i < jobs.size():
 			calling = jobs[i]
 		var station := "peasant" if calling in ["farmer", "carter", "groom", "porter"] or (calling == "water" and rng.randf() < 0.5) else ("clergy" if calling == "pious" and rng.randf() < 0.6 else ("noble" if calling == "gentry" else "townsfolk"))
-		if Time.get_ticks_msec() - began > SPAWN_MS:
+		if Time.get_ticks_msec() - began > ViewTier.STAGE_MS:
 			await get_tree().process_frame
 			began = Time.get_ticks_msec()
 			if not towns.towns.has(id) or not is_instance_valid(town["node"]):
