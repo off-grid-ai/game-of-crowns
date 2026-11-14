@@ -9,6 +9,8 @@ extends RefCounted
 ## ui.gd; it reads the realm's state and decides nothing.
 
 const T := preload("res://scripts/theme.gd")
+const Data := preload("res://scripts/data.gd")
+const Awareness := preload("res://scripts/awareness.gd")
 
 var ui: Node
 var _card: PanelContainer
@@ -35,7 +37,14 @@ func show(ev) -> void:
 		if not _done:
 			_close()
 		_up = up
-	ui.top_bar.show_event(up, int(ev.get("seconds", -1)) if ev is Dictionary and ev.get("seconds") != null else -1, open)
+	# Its clock (bridge events.js: a rider brings the matter from its town, then the King has `left` seasons, counting
+	# this one): to the end of the last season he has, none while the rider is on the road.
+	var secs := int(ev.get("seconds", -1)) if ev is Dictionary and ev.get("seconds") != null else -1
+	if bool(up.get("riding", false)):
+		secs = -1
+	elif secs >= 0 and int(up.get("left", 1)) > 1:
+		secs += int((int(up["left"]) - 1) * Awareness.season_seconds)
+	ui.top_bar.show_event(up, secs, open)
 
 
 ## Opened by the King (the line's click): the card at the top centre.
@@ -79,7 +88,10 @@ func open() -> void:
 		var b: Button = ui.btn(label, _choose.bind(int(ch.get("i", 0))))
 		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		b.autowrap_mode = TextServer.AUTOWRAP_WORD  # a long answer wraps, never cut off (the audit)
-		if int(ch.get("cost", 0)) > ui.purse:
+		if bool(_up.get("riding", false)):
+			b.disabled = true  # the bridge answers nothing before the rider reaches the seat
+			b.tooltip_text = _w("riding_tip")
+		elif int(ch.get("cost", 0)) > ui.purse:
 			b.disabled = true
 			b.tooltip_text = "The treasury holds too little for this."
 		row.add_child(b)
@@ -91,7 +103,8 @@ func open() -> void:
 			row.add_child(ui.court._weighs_chips({"helps": helps, "hurts": hurts}))
 		v.add_child(row)
 	var ignore := Label.new()
-	ignore.text = "Left unanswered by the season's end: %s" % String(_up.get("ignore", ""))
+	var left := int(_up.get("left", 1))
+	ignore.text = (_w("ignore_now") if left <= 1 else _w("ignore_in").replace("{n}", str(left))) + " " + String(_up.get("ignore", ""))
 	ignore.autowrap_mode = TextServer.AUTOWRAP_WORD
 	ignore.custom_minimum_size = Vector2(420, 0)
 	ignore.add_theme_color_override("font_color", T.TEXT_3)
@@ -138,3 +151,8 @@ func _close() -> void:
 		ui.ease_out(c, c.queue_free)
 	_card = null
 	_done = false
+
+
+## The card's own words (realm/data/herald.json event_card).
+static func _w(key: String) -> String:
+	return String((Data.value("herald", "event_card", {}) as Dictionary).get(key, ""))

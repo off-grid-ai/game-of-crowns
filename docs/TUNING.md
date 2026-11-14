@@ -169,6 +169,7 @@ Switches (`--name`) go after `--` on the game's command line.
 - How tense the realm must be before the music turns dark, and calm before it settles: `realm/data/juice.json`: `music_tension_above`, `music_calm_below`.
 - How fast + and - let the seasons pass, and what the King hears at each step: `realm/data/juice.json`: `speed.steps` (seconds a season lasts, slowest first), `speed.words`; comma with no host out: `no_host`.
 - The reign's ledger page on the end card (titles, column heads, measure names): `realm/data/reign_end.json`: `ledger`.
+- The event card's rider and deadline words: `realm/data/herald.json`: `event_card` (riding, riding_tip, ignore_now, ignore_in).
 - The Hand's first-reign steps and what he says when they are done: `realm/data/herald.json`: `guide.steps` (order fixed: court, counsel, banners, tithe, host), `guide.done`.
 - The music for each mood (calm, court, feast, unrest, war, siege, battle, dead), its pieces and level: `realm/data/sounds.json`: `music`. Which mood plays is the realm's state: the dead near, a royal town under siege, the crown at war with a great house, unrest, else calm (main.gd).
 - Court results' wordings, and the local model adding more (on, how many per result): `bridge/data/results.json` (and `reword`).

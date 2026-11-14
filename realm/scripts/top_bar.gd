@@ -821,6 +821,9 @@ func show_event(up: Dictionary, seconds: int, open: Callable) -> void:
 		_event_title = ""
 		return
 	var title := String(up.get("title", ""))
+	if bool(up.get("riding", false)):  # the rider still on the road from the matter's town (bridge events.js)
+		var town := String((up.get("subject", {}) as Dictionary).get("town", "")) if up.get("subject") is Dictionary else ""
+		title = String((Data.value("herald", "event_card", {}) as Dictionary).get("riding" if town != "" else "riding_nowhere", "")).replace("{town}", town).replace("{title}", title)
 	if title != _event_title:
 		_event_title = title
 		ui.event_arrived()
