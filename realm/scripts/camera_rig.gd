@@ -96,7 +96,7 @@ func focus(pos: Vector3, dist := -1.0) -> void:
 	_hit = -1.0  # a jump starts clear: no ease carried over from the last place
 	goal_target = pos
 	if dist > 0:
-		goal_distance = dist
+		goal_distance = clampf(dist, floor_now(), max_distance)  # the floor and the limits, where the distance is asked
 
 
 ## One step of the on-screen controls (repeated while a button is held).
@@ -992,9 +992,7 @@ func _process(delta: float) -> void:
 	target = target.lerp(goal_target, kz if absf(log(goal_distance / distance)) > 0.01 else k)
 	# Zooming in, the eye comes down no faster than the lens can clear the roofs:
 	# while it is still catching up on one, the zoom waits for it.
-	var kd := kz * (clampf(1.0 - _lag / (distance * 0.3), 0.15, 1.0) if goal_distance < distance else 1.0)
-	goal_distance = maxf(goal_distance, floor_now())  # whoever set it (a scene, a film, the director): never under the roofs
-	distance = exp(lerpf(log(distance), log(goal_distance), kd))
+	distance = exp(lerpf(log(distance), log(goal_distance), kz))  # the floor and the limits are kept where a zoom is asked, never here
 	yaw = lerp_angle(yaw, goal_yaw, k)
 	tilt = lerpf(tilt, goal_tilt, k)
 	apply()
@@ -1013,8 +1011,7 @@ func _keep_inside() -> void:
 	# At the furthest zoom the pitch is the far one (55 plus the tilt) and the footprint grows with the distance.
 	var unit := _extent(footprint(1.0, goal_yaw, above_at(1.0, goal_tilt, 1.0)))
 	var widest := minf(room.x / maxf(unit.size.x, 0.001), room.y / maxf(unit.size.y, 0.001))
-	max_distance = maxf(widest, min_distance + 0.001)
-	goal_distance = minf(goal_distance, max_distance)
+	max_distance = maxf(widest, min_distance + 0.001)  # the zoom requests are clamped to it (_zoom_at, the keys); the view is never pulled in
 	var box := _extent(footprint(goal_distance, goal_yaw, above_at(goal_distance, goal_tilt), maxf(_look_y, 0.0)))
 	goal_target.x = _hold(goal_target.x, box.position.x, box.end.x, m, world.x - m)
 	goal_target.z = _hold(goal_target.z, box.position.y, box.end.y, m, world.y - m)
@@ -1080,101 +1077,10 @@ func apply() -> void:
 	if terrain and terrain.width > 0:
 		# Never below the ground: far out a good way above it, at the street just under eye height.
 		pos.y = maxf(pos.y, maxf(terrain.height_at(pos.x, pos.z), 0.0) + lerpf(1.5, EYE * 0.6, ground_view / 0.85))
-	_bodies_check -= get_process_delta_time()
-	if _bodies_check <= 0.0:
-		_bodies_check = 1.0
-		_lens_bodies()
-	# Lifted over a roof or a castle wall, the view must stay oblique: past
-	# about 42 degrees down, the camera steps back along its line instead of
-	# climbing higher, and clears the roofs from there.
+	# The lens never re-fits itself (Mac: "the camera needs to stop zooming in and out on its own. you can pan, but
+	# dont zoom in/out"): no lift, rise, swing or pull-in over roofs, leaves or stalls as you pan; what stands at the
+	# lens dissolves (realistic.gd's near fade) instead. Its distance and tilt are the King's alone.
 	pos = look + oblique(pos - look)
-	# Following something through a wood (a convoy on a forest road, a rider):
-	# with tree crowns between the lens and what it shows, the camera rises over
-	# the canopy rather than sitting in the leaves (forest.gd's sight lines).
-	# Last, so it wins over the oblique limit above: leaves are worse than a
-	# steeper view.
-	# What the lens needs: the height clear of the leaves, then (street to town)
-	# short of the first building in the way. The lens eases to it, the one ease
-	# on the lens, at the same rate whatever the frame rate; it snaps only if
-	# easing would leave it standing inside a building.
-	var woods = terrain.get("forest") if terrain else null
-	var need := Vector3.ZERO
-	if woods and woods.has_method("blocking"):
-		for k in 12:
-			if woods.blocking(pos + need, look) == 0:
-				break
-			need.y += 0.3
-	# Over a stall, a cart or a barrel, the lens rides just above it (eased like the rest).
-	var over := _prop_top(pos + need)
-	if over > -INF:
-		need.y = maxf(need.y, over + 0.05 - pos.y)
-	if CLEAR:
-		# Clarity, as Anno 1800, Age of Empires IV and Total War keep a town in view: the pitch is the player's (or
-		# the step's). A roof in the line: first the view swings a little either way to a clear line; failing
-		# that, a few degrees of lift, never past clarity.maxPitch; then the lens comes in short of the roof, but
-		# never nearer than clarity.nearest of its distance; whatever still stands there dissolves at the lens
-		# (clarity.fade, per roof). All eased, so the view never jumps.
-		var base := pos + need
-		var want_swing := 0.0
-		var want_lift := 0.0
-		var want_rise := 0.0
-		var want_short := 0.0
-		if FRAME:
-			var pick := _frame_pick(look, base)
-			want_swing = float(pick[0])
-			want_lift = float(pick[1])
-			want_rise = float(pick[2])
-			want_short = float(pick[3])
-		elif not _sees(look, base):
-			var sstep := deg_to_rad(knob("clarity.swingStep", 4.0))
-			var found := false
-			for k in range(1, int(knob("clarity.swingTries", 6)) + 1):
-				for sgn in [1.0, -1.0]:
-					if _sees(look, _swung(look, base, sstep * k * sgn)):
-						want_swing = sstep * k * sgn
-						found = true
-						break
-				if found:
-					break
-			if not found:
-				var lstep := deg_to_rad(knob("clarity.liftStep", 2.0))
-				for k in range(1, int(knob("clarity.liftTries", 3)) + 1):
-					want_lift = lstep * k
-					if _sees(look, _tipped(look, base, want_lift)):
-						break
-		var ease := 0.0 if _held() else 1.0 - exp(-get_process_delta_time() * knob("clarity.liftEase", 4.0))
-		_swing = lerpf(_swing, want_swing, ease)
-		_lift = lerpf(_lift, want_lift, ease)
-		_rise = lerpf(_rise, want_rise, ease)
-		_short = lerpf(_short, want_short, ease)
-		var seen := _framed(look, base, [_swing, _lift, _rise, _short])
-		look += Vector3.UP * _rise  # lens and aim raised together over the roof line, the pitch kept
-		var arm := seen - look
-		var short := _clear(look, seen) - look
-		var least := arm.length() * knob("clarity.nearest", 0.75)
-		if short.length() < least:
-			short = arm.normalized() * least  # no nearer: what still stands there dissolves at the lens
-		need = look + short - pos
-	elif distance <= GUARD:
-		# Faded in over the last unit before GUARD, so it never starts or stops at a line.
-		var guard := 1.0 - smoothstep(GUARD - 1.0, GUARD, distance)
-		need = need.lerp(_clear(look, pos + need) - pos, guard)
-	if _held():
-		pass  # the lens's corrections wait for the grab-pan's release
-	elif _hit < 0.0:
-		_fix = need
-		_hit = 0.0
-	else:
-		# Letting go (the way clear again, a zoom out) is gentler than closing in.
-		var rate := LENS_EASE if need.length() > _fix.length() else LENS_EASE * 0.4
-		var step := (need - _fix) * (1.0 - exp(-get_process_delta_time() * rate))
-		# And never faster than the view can follow: a long way to clear is taken
-		# over several frames, at most LENS_SPEED camera-distances a second.
-		_fix += step.limit_length(distance * LENS_SPEED * get_process_delta_time())
-		# Passing through a wall on the way in is never seen: what stands at the lens
-		# dissolves (realistic.gd fade_near, house_builder's baked kits). The lens is
-		# never lifted over a roof: that tipped the view to look straight down.
-	pos += _fix
 	# Never top-down (Mac's rule: a low oblique view): whatever lifted the lens (the
 	# leaves, the ground), it looks down at most STEEPEST degrees.
 	var flat_now := Vector2(pos.x - look.x, pos.z - look.z).length()

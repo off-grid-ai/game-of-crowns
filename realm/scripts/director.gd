@@ -40,10 +40,7 @@ func _input(event: InputEvent) -> void:
 		_clear_view(false)  # the King moves: his panels come back
 		if active:
 			active = false
-			_follow = null
-			# The King takes the view back: lift it clear of any treetops it was following through.
-			if rig.goal_distance < 6.0:
-				rig.goal_distance = 6.0
+			_follow = null  # the view stays where it is: its distance is his
 
 
 ## The King took the camera somewhere himself (a sigil, a town): whatever was being
