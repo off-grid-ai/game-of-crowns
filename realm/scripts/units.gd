@@ -95,7 +95,16 @@ var _town_tiles := {}
 var _heading := {}  # tile -> the way the army standing there last marched
 
 
+## Milliseconds of a sync that may go on making new companies' figures (army.json map.make_ms); the rest are made
+## by a sync the next frame (_more), so the first reading's hundreds of soldiers, horses and ships never hold one
+## frame (FPS P0: units.sync 1,858 ms in one frame in the 6aaf2121 run).
+static var MAKE_MS: float = preload("res://scripts/data.gd").num("army", "map.make_ms", 6.0)
+var _more := false  # a sync left companies unmade: one more runs next frame
+
+
 func sync(houses: Dictionary) -> void:
+	var made_until := Time.get_ticks_msec() + int(MAKE_MS)
+	var left := false
 	var store: Node = Awareness.store()
 	var seen := {}
 	var per_tile := {}
@@ -154,6 +163,9 @@ func sync(houses: Dictionary) -> void:
 				continue
 		if ship and _figures.has(id):
 			(_figures[id]["node"] as Node3D).visible = true
+		if not _figures.has(id) and Time.get_ticks_msec() > made_until:
+			left = true  # made by the next frame's sync
+			continue
 		if not _figures.has(id):
 			var node: Node3D
 			if wild:
@@ -220,6 +232,17 @@ func sync(houses: Dictionary) -> void:
 		if not seen.has(id):
 			_figures[id]["node"].queue_free()
 			_figures.erase(id)
+	if left and not _more:
+		_more = true
+		_make_rest.call_deferred(houses)
+
+
+## The companies a sync left unmade, made by another sync the next frame (and so on, MAKE_MS a frame).
+func _make_rest(houses: Dictionary) -> void:
+	await get_tree().process_frame
+	_more = false
+	if is_inside_tree():
+		sync(houses)
 
 
 ## Raiders making for a royal work (store raids, bridge raids.js): each raider's id -> the work's site, the crown's
