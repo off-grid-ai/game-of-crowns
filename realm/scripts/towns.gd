@@ -285,7 +285,22 @@ func _raise(best: int, job: Dictionary) -> void:
 	_raising = true
 	_step_at = Time.get_ticks_usec()
 	terrain.hold_grading = true
-	var node: Node3D = await _build_town(job["c"], job["house"])
+	# Kept on disk (town_store.gd): read back on the loader's threads and its marks made on the world again; else
+	# laid out, and kept as it was built (before its life or a merge touch it) for next time.
+	var path := TownStore.path_of(job["c"], job["house"], terrain.terrain)
+	var node: Node3D = null
+	if not towns.has(best) and TownStore.ask(path):
+		Engine.set_meta("stage", "towns.read")
+		var got: Variant = TownStore.take(path)
+		while got == null:
+			await get_tree().process_frame
+			got = TownStore.take(path)
+		if got is Node3D:
+			node = got
+			imprint(node)
+	if node == null:
+		node = await _build_town(job["c"], job["house"])
+		TownStore.save(node, path)
 	var pt0 := Time.get_ticks_usec()
 	PerfTools.add("build@last", pt0 - _step_at)  # the build's last step, after its last _pace
 	if towns.has(best) and is_instance_valid(towns[best]["node"]):
@@ -908,13 +923,11 @@ func _mark(op: String, args: Array) -> void:
 				woods.add_crown.callv(args)
 
 
-## A town's marks on the world (world), made again for a town read back from disk; the ground redrawn once after.
+## A town's marks on the world (world), made again for a town read back from disk; the ground is redrawn as a raised
+## town's is (_raise's grading step).
 func imprint(root: Node3D) -> void:
-	terrain.hold_grading = true
 	for e in root.get_meta("imprint", []):
 		_mark(String(e[0]), e[1])
-	terrain.hold_grading = false
-	terrain.commit_grading()
 
 
 ## A town tree's crown into the woods' sight lines (forest.add_crown), so the camera reads it as it does a roof.
@@ -2199,6 +2212,7 @@ func _foot_y(center: Vector3, off: Vector3, foot: Vector2, yaw: float) -> float:
 	return lo - PROP_SINK
 const Data := preload("res://scripts/data.gd")
 const ViewTier := preload("res://scripts/view_tier.gd")  # how much of each town is alive (the one decider)
+const TownStore := preload("res://scripts/town_store.gd")  # towns kept on disk, read back instead of laid out
 static var PROP_SINK: float = Data.num("towns", "props.sink", 0.006)
 
 

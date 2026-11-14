@@ -8,10 +8,11 @@ extends Node3D
 
 const Data := preload("res://scripts/data.gd")
 
-var _from := 40.0
-var _ref := 40.0
-var _most := 4.0
-var _base := 1.0
+# Exported so a town kept on disk (town_store.gd) keeps them: what build set, not the defaults.
+@export var _from := 40.0
+@export var _ref := 40.0
+@export var _most := 4.0
+@export var _base := 1.0
 
 
 ## Built over a seat's castle: the keep `keep_h` world units tall (towns.json map_seat.keep), its standard over it.
