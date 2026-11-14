@@ -22,6 +22,7 @@ const Particles := preload("res://scripts/particles.gd")
 const Heraldry := preload("res://scripts/heraldry.gd")  # the besieger's pennants over its tents
 const CampKit := preload("res://scripts/camp_kit.gd")  # the canvas and the cook fires, as every camp
 const Mover := preload("res://scripts/mover.gd")  # the one way to move (CLAUDE.md): the ram, the tower and their crews
+const Works := preload("res://scripts/works.gd")  # the sky's night: a bribed man slips out only after dark
 
 var scenes: Node
 var root: Node3D
@@ -38,6 +39,10 @@ var _stone_mat: StandardMaterial3D
 var _wood: Material
 var _stakes := []  # the palisade's pieces, middle first: [angle off the middle, node] (works() raises them)
 var _trenches := 0  # trench lines dug so far
+var _approach := ""  # how the besieger now means to take the town after a failed storm (bridge siegecraft.js): mine, starve, bribe or ""
+var _ways: Node3D  # what that approach has put on the ground; cleared when it changes
+var _spoil: MeshInstance3D  # mine: the heap of dug earth by the mine's mouth
+var _turncoat := {}  # bribe: {node, home, meet, out}: the man of the town who slips out to the besieger's officer
 var _rolling := []  # the ram and the tower on their way to the wall: {node, kind, crew, to, from, t, beat, rolling, at_wall}
 
 
@@ -84,6 +89,154 @@ func works(seasons: int) -> void:
 	while _trenches < want:
 		_trench(camp_r - float(lines[_trenches]), t)
 		_trenches += 1
+
+
+## How the besieger means to take the town now its storm has failed (bridge /world sieges approach and dug,
+## siegecraft.js; casebook, War and sieges: A siege is a season; Stronghold's tunnellers, Total War's starving out,
+## Medieval II's bribed gate). siege.json approach: mine, a timbered mine mouth dug in the band toward the wall, its
+## spoil heaped higher each season dug, sappers digging and carrying at it; starve, picket posts with their fires
+## closing the town all round, no way in or out; bribe, after dark a man of the town slips out of the gate to the
+## besieger's officer waiting halfway, whispers, and goes back in. Called each season; a new approach clears the old.
+func approach(kind: String, dug: int) -> void:
+	if kind == _approach:
+		if kind == "mine":
+			_heap(dug)
+		return
+	_approach = kind
+	if is_instance_valid(_ways):
+		_ways.queue_free()
+	_spoil = null
+	_turncoat = {}
+	_ways = Node3D.new()
+	root.add_child(_ways)
+	var k: Dictionary = (Data.value("siege", "approach", {}) as Dictionary).get(kind, {})
+	if has_method("_way_" + kind):
+		call("_way_" + kind, k, dug)
+
+
+## The mine: a mouth of timber in the band toward the wall, a dark hole under its lintel, the spoil heaped beside it,
+## sappers digging and carrying the earth out.
+func _way_mine(k: Dictionary, dug: int) -> void:
+	var a := r.randf_range(-0.25, 0.25)
+	var p := _arc(a, camp_r - float(k.get("in", 1.5)))
+	var mouth := Node3D.new()
+	mouth.position = p
+	mouth.rotation.y = _x_to_town(p) + PI  # its open side to the camp, the tunnel running on under the wall
+	_ways.add_child(mouth)
+	var w := float(k.get("width", 0.16))
+	var h := float(k.get("height", 0.16))
+	var hole := StandardMaterial3D.new()
+	hole.albedo_color = Color(0.05, 0.04, 0.03)
+	hole.roughness = 1.0
+	for part in [[Vector3(0.03, h, 0.03), Vector3(0, h * 0.5, -w * 0.5), _timber()], [Vector3(0.03, h, 0.03), Vector3(0, h * 0.5, w * 0.5), _timber()],
+			[Vector3(0.04, 0.03, w + 0.06), Vector3(0, h, 0), _timber()], [Vector3(0.01, h * 0.92, w * 0.95), Vector3(0.02, h * 0.46, 0), hole]]:
+		var m := MeshInstance3D.new()
+		var box := BoxMesh.new()
+		box.size = part[0]
+		m.mesh = box
+		m.position = part[1]
+		m.material_override = part[2]
+		mouth.add_child(m)
+	var side := Vector3(cos(base + a + PI * 0.5), 0, sin(base + a + PI * 0.5))
+	_spoil = MeshInstance3D.new()
+	var heap := SphereMesh.new()
+	heap.radius = 1.0
+	heap.height = 2.0
+	heap.radial_segments = 12
+	heap.rings = 6
+	_spoil.mesh = heap
+	var earth := StandardMaterial3D.new()
+	earth.albedo_color = Color(0.36, 0.28, 0.2)
+	earth.roughness = 1.0
+	_spoil.material_override = earth
+	_spoil.position = scenes.ground(p + side * float(k.get("heap_off", 0.32)))
+	_ways.add_child(_spoil)
+	_heap(dug)
+	var clips: Array = k.get("clips", ["Digging"])
+	for i in int(k.get("sappers", 3)):
+		var q := p + side * r.randf_range(-0.3, 0.3) + Vector3(cos(base + a), 0, sin(base + a)) * r.randf_range(0.1, 0.3)
+		var m: Dictionary = _crewman(q, [clips[i % clips.size()]])
+		(m["node"] as Node3D).reparent(_ways)
+
+
+## The spoil heap's size after `dug` seasons of digging (siege.json approach.mine heap: its radius at the start and
+## added each season, flattened to its rise).
+func _heap(dug: int) -> void:
+	if not is_instance_valid(_spoil):
+		return
+	var k: Dictionary = (Data.value("siege", "approach", {}) as Dictionary).get("mine", {})
+	var rad := float(k.get("heap", 0.08)) + float(k.get("heap_per", 0.06)) * dug
+	_spoil.scale = Vector3(rad, rad * float(k.get("heap_rise", 0.45)), rad)
+
+
+## The starving ring: picket posts all round the town, out of the camp's own arc, each a fire and its watch.
+func _way_starve(k: Dictionary, _dug: int) -> void:
+	var n := int(k.get("posts", 10))
+	var skip := float(k.get("skip", 0.9))
+	var clips: Array = k.get("clips", ["Idle"])
+	for i in n:
+		var a := wrapf(TAU * i / float(n) + r.randf_range(-0.05, 0.05), -PI, PI)
+		if absf(a) < skip:
+			continue  # the camp itself closes that side
+		var p := _arc(a, camp_r + float(k.get("out", 0.0)))
+		if not scenes._footing(p):
+			continue
+		CampKit.fire(scenes, _ways, p, col, int(k.get("sitters", 1)), r)
+		for j in int(k.get("watch", 2)):
+			var q := p + Vector3(cos(base + a), 0, sin(base + a)) * -0.18 + Vector3(r.randf_range(-0.12, 0.12), 0, r.randf_range(-0.12, 0.12))
+			var m: Dictionary = _crewman(q, [clips[r.randi() % clips.size()]])
+			(m["node"] as Node3D).reparent(_ways)
+
+
+## The bribed gate: the besieger's officer waits halfway between the camp and the gate nearest it; after dark the
+## man inside slips out to him and back (_turn_coat).
+func _way_bribe(k: Dictionary, _dug: int) -> void:
+	var g := _gate(middle(), float(k.get("reach", 4.0)))
+	if g.is_empty():
+		return  # no gate on the camp's side: the bargain is struck out of sight
+	var gate: Vector3 = g[0]
+	var meet := gate.lerp(middle(), float(k.get("meet", 0.45)))
+	var officer: Node3D = scenes.people.make(r, "soldier", col, "adult")
+	officer.position = scenes.stand(meet)
+	officer.rotation.y = atan2(gate.x - meet.x, gate.z - meet.z)
+	_ways.add_child(officer)
+	scenes.people.play(officer, "Idle", 1.0)
+	var man: Node3D = scenes.people.make(r, "townsfolk", Color.WHITE, "adult", "", "male")
+	man.position = scenes.stand(gate)
+	man.visible = false
+	_ways.add_child(man)
+	var mv := Mover.of(man)
+	mv.clip = String(k.get("clip", "Sneak"))
+	mv.speed = float(k.get("pace", 0.12))
+	_turncoat = {"node": man, "home": gate, "meet": meet + (gate - meet).normalized() * 0.14, "out": false, "officer": officer}
+
+
+## The bribed man's night: out of the gate once it is dark, to the officer; a whisper (siege.json approach.bribe
+## talk_s) and a purse; back in, unseen by day.
+func _turn_coat() -> void:
+	var t := _turncoat
+	var man: Node3D = t.get("node")
+	if not is_instance_valid(man) or bool(t["out"]) or not Works.dark():
+		return
+	t["out"] = true
+	man.visible = true
+	var k: Dictionary = (Data.value("siege", "approach", {}) as Dictionary).get("bribe", {})
+	Mover.of(man).go(t["meet"], func():
+		if not is_instance_valid(man):
+			return
+		scenes.people.play(man, "Telling_Secret", 1.0)
+		if is_instance_valid(t["officer"]):
+			scenes.people.play(t["officer"], "Nod_Yes", 1.0)
+		get_tree().create_timer(float(k.get("talk_s", 6.0))).timeout.connect(func():
+			if not is_instance_valid(man):
+				return
+			if is_instance_valid(t["officer"]):
+				scenes.people.play(t["officer"], "Idle", 1.0)
+			Mover.of(man).go(t["home"], func():
+				if not is_instance_valid(man):
+					return
+				man.visible = false
+				get_tree().create_timer(float(k.get("again_s", 40.0))).timeout.connect(func(): t["out"] = false))))
 
 
 ## One trench line along the arc at `rad` from the town: dark dug earth in segments, a low bank of spoil behind it.
@@ -600,6 +753,8 @@ func _stone() -> MeshInstance3D:
 ## A held stone follows the arm's tip as it swings; the ram and the tower roll.
 func _process(_delta: float) -> void:
 	_roll(_delta)
+	if not _turncoat.is_empty():
+		_turn_coat()
 	for s in get_children():
 		if s is MeshInstance3D and s.has_meta("held"):
 			var held: Node3D = s.get_meta("held")

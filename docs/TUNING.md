@@ -537,3 +537,4 @@ Switches (`--name`) go after `--` on the game's command line.
 - A host's captain on its map plate: `realm/data/map.json` `marks.line.plate_captain` ("Captain {captain} · {men} troops").
 - A host wintering in the field: its camp's cook fires and the men huddled at each in winter: `realm/data/army.json` `camp.winter` (count 4, sitters 5).
 - A hungry host's stragglers trailing its column (the share is the bridge's, hosts.json supply): `realm/data/army.json` `stragglers` (back 0.6, across 0.08).
+- How a great house takes a town after a failed storm: `realm/data/siege.json` `approach` (mine: in 1.5, heap 0.08 + heap_per 0.06 a season dug, sappers 3; starve: posts 10 round the town, skip 0.9 rad of the camp, watch 2; bribe: meet 0.45 of the way from the gate, pace 0.12, talk_s 6, again_s 40).

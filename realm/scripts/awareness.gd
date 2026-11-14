@@ -149,6 +149,16 @@ func captain(unit_id: int) -> String:
 	return String((v as Dictionary).get(str(unit_id), (v as Dictionary).get(unit_id, ""))) if v is Dictionary else ""
 
 
+## How a great house now means to take town `town_id` it besieges (/world sieges, bridge siegecraft.js):
+## {town, by, since, storms, approach: null|"mine"|"bribe"|"starve", dug}, or {} (no such siege).
+func siege_of(town_id: int) -> Dictionary:
+	var v: Variant = realm.get_var(&"sieges", [], false)
+	for s in (v if v is Array else []):
+		if s is Dictionary and int(s.get("town", -1)) == town_id:
+			return s
+	return {}
+
+
 ## The King's battles as result cards, newest first (/world battles, bridge battles.js; the realm blackboard's "battles"
 ## slice): [{id, turn, date, x, y, place, sides: [{house, name, men, lost, kinds}] the crown's first, victor, crown}].
 func battles() -> Array:
@@ -356,6 +366,7 @@ func _reduce_hosts(world: Dictionary) -> void:
 	realm.set_var(&"banners", world.get("banners") if world.get("banners") is Array else [])  # houses' men on the road to join the King (bridge hosts.js)
 	realm.set_var(&"raids", world.get("raids") if world.get("raids") is Array else [])  # raiders making for a royal work (bridge raids.js)
 	realm.set_var(&"captains", world.get("captains") if world.get("captains") is Dictionary else {})  # each crown company's captain, unit id -> name (bridge captains.js)
+	realm.set_var(&"sieges", world.get("sieges") if world.get("sieges") is Array else [])  # the great houses' sieges and how each now means to take its town (bridge siegecraft.js)
 	realm.set_var(&"battles", world.get("battles") if world.get("battles") is Array else [])  # the King's battles' result cards, newest first (bridge battles.js)
 	realm.set_var(&"armies", _armies(world))  # every house's hosts in the field (the map's banners, map_look.gd)
 

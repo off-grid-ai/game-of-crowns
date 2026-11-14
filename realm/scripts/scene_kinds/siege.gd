@@ -23,6 +23,9 @@ func play(s: Dictionary, at: Vector3, houses: Dictionary) -> Node3D:
 	var turn := int(s.get("turn", 0))
 	besiege(city, at, approach, town_size, int(s.get("engines", 0)), houses.get(int(s.get("owner", -1)), {}), houses.get(int(s.get("defender", -1)), {}), Awareness.season_seconds,
 			maxi(0, turn - int(s.get("since", turn))))  # seasons it has run (bridge campaigns.js since): its works grow
+	var how: Dictionary = Awareness.store().siege_of(city)  # a great house's way at these walls after a failed storm (bridge siegecraft.js)
+	if sieges.has(city) and is_instance_valid(sieges[city].get("camp")):
+		sieges[city]["camp"].approach(String(how.get("approach", "") if how.get("approach") != null else ""), int(how.get("dug", 0)))
 	if String(s["kind"]) == "storm":
 		storm(city, bool(s.get("taken", false)))
 	return null
