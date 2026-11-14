@@ -1595,7 +1595,23 @@ func _where_line(reign: Dictionary) -> void:
 	where.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	where.autowrap_mode = TextServer.AUTOWRAP_WORD
 	where.visible = false
-	_body.add_child(where)
+	# The King whose reign this is, by his painted face beside the line (CK3's Continue: the ruler's portrait and date).
+	var king = preload("res://scripts/royal_sheet.gd").royals().get("king")
+	var face: Texture2D = preload("res://scripts/painted_faces.gd").face({"id": String(king.get("id", "king")), "gender": "female" if bool(king.get("woman", false)) else "male", "age": int(king.get("age", 40))}) if king is Dictionary else null
+	if face:
+		var row := HBoxContainer.new()
+		row.alignment = BoxContainer.ALIGNMENT_CENTER
+		row.add_theme_constant_override("separation", 12)
+		var pic := TextureRect.new()
+		pic.texture = face
+		pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		pic.custom_minimum_size = Vector2(42, 56)
+		row.add_child(pic)
+		row.add_child(where)
+		_body.add_child(row)
+	else:
+		_body.add_child(where)
 	var where_ref: WeakRef = weakref(where)
 	var rid := String(reign.get("id", ""))
 	bridge.list_chronicles(func(data):
