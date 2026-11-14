@@ -468,7 +468,7 @@ func _color_at(wx: float, wz: float, h: float) -> Color:
 # Ground layer weights per terrain: grass, dirt, sand, snow, rock, forest floor.
 ## The ground's layers at a point of the land by Freeciv's terrain (realm/data/ground.json terrain): the four tiles
 ## round it blended smoothly (their edges frayed by _warp), a river tile taking its terrain's, and worn earth through
-## the grass in ragged patches (terrain.patches). Weights in land3d.gd's LAYERS order: grass, dirt, sand, snow, rock,
+## the grass in ragged patches of earth, drier grass and darker floor (terrain.patches, a list). Weights in land3d.gd's LAYERS order: grass, dirt, sand, snow, rock,
 ## forest, mud, field, dry grass, stony. The one reader of the terrain's ground: land3d.gd's control map and _layers_at both ask here.
 static var GROUND: Dictionary = preload("res://scripts/data.gd").value("ground", "terrain", {})
 const MIX_N := 10
@@ -496,12 +496,16 @@ func tile_mix(wx: float, wz: float) -> Array:
 			var t := clampi(z0 + dz, 0, height - 1) * width + clampi(x0 + dx, 0, width - 1)
 			for i in MIX_N:
 				out[i] += _mix[t * MIX_N + i] * w
-	var pt: Dictionary = GROUND.get("patches", {})
-	if not pt.is_empty():
+	# Patches through the grass, each its own ragged noise (WC3's and AoE2's meadows are large soft patches, never one
+	# green): worn earth, drier grass, darker woodland floor. terrain.patches: a list.
+	var grass: float = out[0]
+	var pi := 0
+	for pt: Dictionary in GROUND.get("patches", []):
 		var k := float(pt.get("scale", 0.35)) / _noise.frequency
-		var n := _noise.get_noise_2d(wx * k + 300.0, wz * k - 170.0)
+		var n := _noise.get_noise_2d(wx * k + 300.0 + pi * 911.0, wz * k - 170.0 - pi * 577.0)
 		var from := float(pt.get("from", 0.18))
-		out[int(pt.get("layer", 1))] += out[0] * float(pt.get("most", 0.75)) * smoothstep(from, from + float(pt.get("soft", 0.25)), n)
+		out[int(pt.get("layer", 1))] += grass * float(pt.get("most", 0.75)) * smoothstep(from, from + float(pt.get("soft", 0.25)), n)
+		pi += 1
 	return out
 
 

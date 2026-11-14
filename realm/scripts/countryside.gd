@@ -586,7 +586,18 @@ static func sow(parent: Node3D, land: Node3D, origin: Vector3, kind: String, c: 
 ## Autumn: gold until the field's harvest day, then stubble (or, for cabbages
 ## and beans, bare earth once lifted). Winter: bare, under the snow.
 const Awareness := preload("res://scripts/awareness.gd")  # the realm's rules as the bridge sends them (season length, bands)
-const TINTS := {"green": Color(0.5, 0.95, 0.32), "yellowing": Color(0.85, 0.95, 0.5), "gold": Color.WHITE, "stubble": Color(0.78, 0.66, 0.46)}
+## The standing grain's colour at each stage (data/countryside.json crop.tints; g33 landuse: the old bright lime and
+## full gold read as hard bright blocks beside the calmed ground; WC3's and AoE2's farms sit muted in the land).
+static var TINTS := _tints("crop.tints", {"green": Color(0.5, 0.95, 0.32), "yellowing": Color(0.85, 0.95, 0.5), "gold": Color.WHITE, "stubble": Color(0.78, 0.66, 0.46)})
+
+
+static func _tints(path: String, fallback: Dictionary) -> Dictionary:
+	var D := preload("res://scripts/data.gd")
+	var t: Dictionary = D.value("countryside", path, {})
+	var out := {}
+	for k in fallback:
+		out[k] = D.colour(t.get(k, []), fallback[k])
+	return out
 const FLAX_TINTS := {"green": Color(0.8, 1.0, 0.8), "yellowing": Color(1.0, 0.95, 0.6), "gold": Color(1.25, 0.9, 0.5), "stubble": Color(1.0, 0.8, 0.55)}
 static var _season_name := ""
 static var _season_from := 0

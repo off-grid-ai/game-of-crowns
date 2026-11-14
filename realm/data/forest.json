@@ -20,8 +20,8 @@
    "Forest": {
     "gap": 1.3,
     "clump": [
-     5,
-     8
+     7,
+     10
     ],
     "r": 0.8,
     "pine": 0.35,
@@ -68,24 +68,24 @@
     "undergrowth": 0.0
    },
    "Grassland": {
-    "gap": 5.0,
+    "gap": 7.0,
     "clump": [
-     4,
-     8
+     9,
+     16
     ],
-    "r": 0.5,
+    "r": 1.1,
     "pine": 0.1,
-    "undergrowth": 0.3
+    "undergrowth": 0.5
    },
    "Plains": {
-    "gap": 5.0,
+    "gap": 7.0,
     "clump": [
-     4,
-     8
+     9,
+     16
     ],
-    "r": 0.5,
+    "r": 1.1,
     "pine": 0.1,
-    "undergrowth": 0.3
+    "undergrowth": 0.5
    }
   },
   "jitter": 0.4

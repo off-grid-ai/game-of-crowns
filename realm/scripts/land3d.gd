@@ -769,10 +769,15 @@ func paint_mud(at: Vector3, r: float, seed: int) -> void:
 
 ## A ploughed plot painted into Terrain3D's ground: `size` across and along,
 ## turned by `yaw`, its edge worn soft into the land around it.
+## How far a strip's ploughed soil fades into the grass round it (land_use.json fields.soil_feather, game units; was 0.12:
+## g33 landuse, hard-edged blocks).
+static var _soil_feather: float = maxf(0.05, Data.num("land_use", "fields.soil_feather", 0.12))
+
+
 func paint_field(at: Vector3, size: Vector2, yaw: float) -> void:
 	var b := Basis(Vector3.UP, -yaw)
 	var step := land.vertex_spacing
-	var reach := size.length() * 0.5 + 0.2
+	var reach := size.length() * 0.5 + _soil_feather + 0.1
 	var x := at.x - reach
 	while x <= at.x + reach:
 		var z := at.z - reach
@@ -780,10 +785,10 @@ func paint_field(at: Vector3, size: Vector2, yaw: float) -> void:
 			var p := Vector3(x, 0.0, z)
 			var l := b * (p - Vector3(at.x, 0.0, at.z))
 			var out := maxf(absf(l.x) - size.x * 0.5, absf(l.z) - size.y * 0.5)
-			if out < 0.12 and land.data.has_regionp(p):  # off the land: nothing to plough
+			if out < _soil_feather and land.data.has_regionp(p):  # off the land: nothing to plough
 				land.data.set_control_auto(p, false)
 				land.data.set_control_overlay_id(p, FIELD)
-				land.data.set_control_blend(p, clampf(1.0 - out / 0.12, 0.0, 1.0) if out > 0.0 else 1.0)
+				land.data.set_control_blend(p, clampf(1.0 - out / _soil_feather, 0.0, 1.0) if out > 0.0 else 1.0)
 			z += step
 		x += step
 
