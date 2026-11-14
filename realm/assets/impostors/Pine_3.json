@@ -1,0 +1,18 @@
+{
+ "aabb_max": 2.28655338287354,
+ "frames": 12,
+ "full_sphere": false,
+ "maps": [
+  "albedo",
+  "normal",
+  "depth",
+  "orm"
+ ],
+ "model": "res://assets/nature/Pine_3.gltf",
+ "offset": [
+  -0.308039546012878,
+  3.46101093292236,
+  -0.294436812400818
+ ],
+ "scale": 4.57310676574707
+}

@@ -1,0 +1,18 @@
+{
+ "aabb_max": 4.01960372924805,
+ "frames": 12,
+ "full_sphere": false,
+ "maps": [
+  "albedo",
+  "normal",
+  "depth",
+  "orm"
+ ],
+ "model": "res://assets/nature/DeadTree_3.gltf",
+ "offset": [
+  -0.653782844543457,
+  6.30463838577271,
+  -0.171670913696289
+ ],
+ "scale": 8.03920745849609
+}

@@ -1,0 +1,18 @@
+{
+ "aabb_max": 2.40209484100342,
+ "frames": 12,
+ "full_sphere": false,
+ "maps": [
+  "albedo",
+  "normal",
+  "depth",
+  "orm"
+ ],
+ "model": "res://assets/nature/CommonTree_1.gltf",
+ "offset": [
+  -0.0387473106384277,
+  3.38962078094482,
+  0.0643379688262939
+ ],
+ "scale": 4.80418968200684
+}
