@@ -241,6 +241,8 @@ func _load_kit() -> void:
 ## The one marker of leaves: the woods here, the ground cover in vegetation.gd.
 static func leaves(mat: Material, path: String, kind: String) -> Material:
 	var m := mat as BaseMaterial3D
+	if m != null and String(m.resource_name).begins_with("Bark"):
+		return _bark(m)
 	if m == null or not is_leaf(m):
 		return mat
 	var c: BaseMaterial3D = m.duplicate()
@@ -277,6 +279,17 @@ static func leaves(mat: Material, path: String, kind: String) -> Material:
 		c.albedo_color = c.albedo_color * tint(c)  # made after the land turned (a town built later): in its season at once
 	marked.append(c)
 	return c
+
+
+## A nature-set tree's bark (its Bark_* material) muted toward the land (assets.json woods.kit.bark, a multiply; g36
+## battle: the painted orange-brown trunks read bright orange against the wall), one copy per bark material.
+static var _barks := {}
+static func _bark(m: BaseMaterial3D) -> BaseMaterial3D:
+	if not _barks.has(m):
+		var c: BaseMaterial3D = m.duplicate()
+		c.albedo_color = m.albedo_color * Data.colour(Data.value("assets", "woods.kit.bark", []), Color.WHITE)
+		_barks[m] = c
+	return _barks[m]
 
 
 ## A one-colour texture (a leaf material's turn colour or its mask), changed in place by set_turn.

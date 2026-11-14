@@ -144,6 +144,7 @@ Switches (`--name`) go after `--` on the game's command line.
 - How thin the line between a vassal's land and its liege's is, as a share of a realm's border (`realm/data/look.json` politics.vassal_line).
 - How full the trees' crowns stay from afar: the leaves' cut-out threshold (`realm/data/assets.json` woods.kit.leaf_scissor; lower is fuller).
 - How softly one ground gives way to the next, snow at the peaks most of all (`realm/data/ground.json` blend.sharpness; lower is softer).
+- The trees' trunk colour, a multiply on the painted bark (`realm/data/assets.json` woods.kit.bark).
 - The coast: how far the beach runs above the waterline and which painting it blends through (dirt, no outline), and the surf at the shore: `realm/data/ground.json`: `beach.top`, `surf`.
 - How far out the land keeps its fine shape (Terrain3D's rings round the lens; too coarse and a lake's low shore sinks under the water at the mid zoom): `realm/data/ground.json`: `mesh.size`, `mesh.lods`.
 - From what distance the sea's colour stops reading the depth to its bed (nearer shows clear shallows, but the bed's coarser rings show as seams further out): `realm/data/look.json`: `sea.depth_fade`.
