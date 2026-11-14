@@ -128,7 +128,7 @@ func besiege(id: int, at: Vector3, approach: Vector3, size: int, engines: int, f
 	for party in 2:
 		parties.append(_assault(arc, (party - 0.5) * 0.5, wall))
 	var assault := ArmyAssault.new()
-	assault.start(stage, root, r, foe_col, parties, [3.0, 9.0], held_col, at)  # held_col: the block behind a breach; at: the town the storm torches
+	assault.start(stage, root, r, foe_col, parties, [3.0, 9.0], held_col, at, foe)  # held_col: the block behind a breach; at: the town the storm torches; foe: whose standard goes up once it falls
 	sieges[id]["assault"] = assault
 	var loose := Timer.new()
 	loose.wait_time = 2.6

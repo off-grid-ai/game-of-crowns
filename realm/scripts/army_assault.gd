@@ -36,6 +36,7 @@ const Field := preload("res://scripts/army_field.gd")
 var col: Color
 var parties := []  # arrays of men: {home, foot, node, hsm, alive, out, ...}
 var held := Color(0.6, 0.6, 0.6)  # the holder's colours: the block behind a breach
+var house := {}  # the besiegers' house: its standard goes up over the rubble once the gap is taken
 var town_at := Vector3.INF  # the besieged town (world): where the torch goes once it falls
 var _held_at := {}  # breach key -> {gap, inward, across, men: [defenders], reserve, phase, at}
 var _look := 0.0
@@ -46,8 +47,9 @@ var _wall := Vector3.ZERO
 var _heart := Vector3.ZERO
 
 
-func start(s: Node, siege: Node3D, rng: RandomNumberGenerator, colour: Color, groups: Array, first: Array, holder := Color(0.6, 0.6, 0.6), town := Vector3.INF) -> void:
+func start(s: Node, siege: Node3D, rng: RandomNumberGenerator, colour: Color, groups: Array, first: Array, holder := Color(0.6, 0.6, 0.6), town := Vector3.INF, besieger := {}) -> void:
 	scenes = s
+	house = besieger
 	root = siege
 	r = rng
 	col = colour
@@ -289,6 +291,10 @@ func _pour_in(m: Dictionary, _dt: float) -> void:
 		_play(m, ["Cheering", "Sword_Idle", "Cheering"][r.randi() % 3], r.randf_range(0.9, 1.1))
 		if not st.has("torched"):
 			st["torched"] = true
+			# The town has changed hands: the besiegers' standard goes up on the rubble (READY 7; 04-siege).
+			var flag: Node3D = scenes.standard(root, scenes.stand(st["gap"] + st["inward"] * float(Data.num("walls", "assault.flag_in", 0.4))), col, st["inward"], house)
+			flag.scale = Vector3(1, 0.05, 1)
+			flag.create_tween().tween_property(flag, "scale", Vector3.ONE, 2.0).set_ease(Tween.EASE_OUT)
 			get_tree().create_timer(float(Data.num("walls", "assault.torch_s", 3.0))).timeout.connect(_torch)
 
 
@@ -373,8 +379,11 @@ func _watch_breaches() -> void:
 
 
 ## The holder's men behind a breach: a block in rows, facing out at it.
+## A town Freeciv already gave away holds the gap with assault.taken_defenders, worn and short of men, so it breaks
+## within the storm's first minute (g24-25 siege: the full block outlasted the film and nothing was ever taken).
 func _block(st: Dictionary, k: Dictionary) -> void:
-	var n := int(k.get("defenders", 8))
+	var n := int(k.get("taken_defenders" if _storm and _taken else "defenders", 8))
+	st["full"] = n
 	var rows := maxi(1, int(k.get("rows", 2)))
 	var per := ceili(float(n) / rows)
 	for i in n:
@@ -512,7 +521,7 @@ func _morale() -> void:
 						up["slot"] = d["slot"]
 						d["filled"] = true
 			# Fresh men from the town into the gaps in the rows.
-			var full := int(k.get("defenders", 8))
+			var full := int(st.get("full", k.get("defenders", 8)))
 			while standing.size() < full and int(st["reserve"]) > 0:
 				st["reserve"] = int(st["reserve"]) - 1
 				var dead_slot: Dictionary = {}
@@ -533,8 +542,8 @@ func _morale() -> void:
 					_send(d, &"rout")
 		elif st["phase"] == "broken" and clock - float(st["at"]) > 1.5:
 			st["phase"] = "taken"
-	# A party beaten in the gap falls back to the camp.
-	for p in parties:
+	# A party beaten in the gap falls back to the camp; not in a storm Freeciv won (the town is theirs: they press on).
+	for p in (parties if not _taken else []):
 		var there: Array = p.filter(func(m): return m.get("gap") != null and m.get("in_gap", false) and m["alive"])
 		if there.is_empty():
 			continue
