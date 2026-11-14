@@ -1324,7 +1324,23 @@ func _form_on_way(town: Vector3, to: Vector3, root: Node3D) -> void:
 		var way := PackedVector3Array([town])
 		for q in pw:
 			way.append(town + Vector3(q.x, 0, q.y))
-		way.append(way[way.size() - 1] + Vector3(dir.x, 0, dir.y) * reach)
+		# Carried on along the realm's road toward `to` (03-army: the host packed on the road out), muster.wayReach of
+		# it; straight on over the land where no road leaves this way (g38 muster: every way ran straight on over the
+		# grass, so the column formed on the lawn beside the road).
+		var tail := way[way.size() - 1]
+		var gone := Vector2(tail.x - town.x, tail.z - town.z).length()
+		var left := reach
+		for p in _onward(tail, to):
+			if left <= 0.0:
+				break
+			if Vector2(p.x - town.x, p.z - town.z).length() <= gone:
+				continue  # never back toward the town
+			var last := way[way.size() - 1]
+			var step := last.distance_to(p)
+			way.append(p if step <= left else last.lerp(p, left / step))
+			left -= step
+		if left >= reach:
+			way.append(tail + Vector3(dir.x, 0, dir.y) * reach)
 		_path = way
 		_cum = PackedFloat32Array([0.0])
 		for j in range(1, _path.size()):
