@@ -363,11 +363,11 @@ if want rim; then
   done
 fi
 
-# 52. Grief at the seat: stalls shut, dark wool, candles round the centrepiece, black cloth on doors, the funeral walking round, the bell (with --sound=v2, recorded).
+# 52. Grief at the seat: stalls shut, dark wool, candles round the centrepiece, black cloth on doors, the funeral walking round, the bell (with, recorded).
 if want grief; then
   say "grief at $SEAT: $(stage "{\"city\":$SEATID,\"mood\":\"grief\"}")"
   { print "wait 35"; print "city Kingsmere 6 -25"; print "wait 6"; print "snap grief"; burst grief-clip 40 0.5; print "look grief-end"; } > $OUT/grief.play
-  GODOT_ARGS="" play grief 360 --sound=v2 --record-audio=$OUT/grief.wav
+  GODOT_ARGS="" play grief 360 --record-audio=$OUT/grief.wav
   clip $OUT/grief grief-clip 5
   stage "{\"city\":$SEATID,\"mood\":\"calm\"}" > /dev/null
 fi
@@ -408,7 +408,7 @@ if want night; then
   play night 360 --hour=21
 fi
 
-# 41-48. The realm's sound v2 (--sound=v2), recorded with each clip (--record-audio): the square near and far, the yard and paddock, the mills, a levy, dawn and night. The sack, the siege and the court are heard in their own launches when those run with --sound=v2.
+# 41-48. The realm's sound v2, recorded with each clip (--record-audio): the square near and far, the yard and paddock, the mills, a levy, dawn and night. The sack, the siege and the court are heard in their own launches when those run.
 if want sound; then
   {
     print "wait 30"
@@ -423,11 +423,11 @@ if want sound; then
     print "look sound-end"
   } > $OUT/sound.play
   stage_on sound sound-muster "{\"muster\":$SEATID}"
-  GODOT_ARGS="" play sound 420 --sound=v2 --record-audio=$OUT/sound.wav
+  GODOT_ARGS="" play sound 420 --record-audio=$OUT/sound.wav
   settle_stagers
   for h in 5.5 23; do
     { print "wait 30"; print "city Kingsmere 6 -25"; print "wait 15"; print "snap sound-hour-$h"; print "look sound-hour-$h-end"; } > $OUT/sound-hour-$h.play
-    GODOT_ARGS="" play sound-hour-$h 240 --sound=v2 --hour=$h --record-audio=$OUT/sound-hour-$h.wav
+    GODOT_ARGS="" play sound-hour-$h 240 --hour=$h --record-audio=$OUT/sound-hour-$h.wav
   done
 fi
 
