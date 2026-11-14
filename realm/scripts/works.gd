@@ -183,6 +183,8 @@ static func states(c: Dictionary, town: int) -> Array:
 		bb.set_var(&"levy", bool(Engine.get_meta("awareness").town(town).get_var(&"levy", false, false)))  # a scene fact: the store's
 		bb.set_var(&"raid", bool(Engine.get_meta("awareness").town(town).get_var(&"raid", false, false)))  # raiders at its edge: the store's
 		bb.set_var(&"lean", bool(Engine.get_meta("awareness").town(town).get_var(&"lean", false, false)))  # short rations: the store's
+		bb.set_var(&"favour", float(Engine.get_meta("awareness").town(town).get_var(&"favour", 100.0, false)))  # its lord's with the King: the store's
+		bb.set_var(&"crown_town", bool(Engine.get_meta("awareness").town(town).get_var(&"crown_town", true, false)))
 	return states_bb(bb)
 
 
@@ -231,6 +233,14 @@ static func states_bb(bb: Blackboard) -> Array:
 		out.append("rebuilding")  # sacked and rebuilding (bridge damage.js burnt, falling each season): survivors at the burnt houses
 	if bool(bb.get_var(&"lean", false, false)):
 		out.append("lean")  # a wet harvest and no granary (bridge harvest.js): the queue at the granary, bare stalls
+	if not bool(bb.get_var(&"crown_town", true, false)):
+		# How its lord stands with the King, seen in his town (awareness.mood_of, the bridge's bands; casebook,
+		# Information lives in the world): bunting for a loyal lord, sullen knots for an angry one.
+		var word: String = load("res://scripts/awareness.gd").mood_of(float(bb.get_var(&"favour", 100.0, false)))
+		if word == "Loyal":
+			out.append("devoted")
+		elif word == "Angry":
+			out.append("sullen")
 	if bool(bb.get_var(&"prosperity", false, false)):
 		out.append("prosperity")
 	if bool(bb.get_var(&"grief", false, false)):
