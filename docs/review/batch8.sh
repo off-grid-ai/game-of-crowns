@@ -389,11 +389,11 @@ if want battle; then
   { print "wait 82"; print "snap battle-close"; burst battle-clip 30 0.2; print "look battle-close-end"; } > $OUT/battle-close.play
   play battle-close 420 --dist=4 --army-battle=3000
   clip $OUT/battle-close battle-clip 5
-  # A battle in play (army-ui's 5a47b648, --battles=field): where the bridge reports a battle, one is staged
+  # A battle in play (army-ui's 5a47b648; field battles are always on): where the bridge reports a battle, one is staged
   # on open ground there, sized from the men who fought. It never moves the camera: Space jumps to the latest
   # news. Only shows a battle if this reign has had one by now; play.log and the frame say what it found.
   { print "wait 60"; print "key Space"; print "wait 5"; print "snap battle-in-play"; print "look battle-play-end"; } > $OUT/battle-play.play
-  play battle-play 300 --battles=field
+  play battle-play 300
 fi
 
 # 6b. Commanding a host (3770f00c, --hosts=on): the crown's largest host ordered to march on the war town (through

@@ -325,11 +325,11 @@ fi
 
 # 40. The field battle in play (army-ui's field_battle.gd): Space to the latest news once the reign has had a fight.
 if want battle; then
-  # A battle in play (army-ui's 5a47b648, --battles=field): where the bridge reports a battle, one is staged
+  # A battle in play (army-ui's 5a47b648; field battles are always on): where the bridge reports a battle, one is staged
   # on open ground there, sized from the men who fought. It never moves the camera: Space jumps to the latest
   # news. Only shows a battle if this reign has had one by now; play.log and the frame say what it found.
   { print "wait 60"; print "key Space"; print "wait 5"; print "snap battle-in-play"; print "look battle-play-end"; } > $OUT/battle-play.play
-  play battle-play 300 --battles=field
+  play battle-play 300
 fi
 
 # 49-51, 55. Batch 8b's look follow-ups: horses' coats in the paddock, wheat swaying, chimney smoke leaning, the fields as open fields.
