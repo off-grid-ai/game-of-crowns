@@ -133,6 +133,7 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- 11-14 05:33 round: landed army 18bca2b3 (regiments at blows only face to face), look a3be4dfc + 7237f82f (yellow tree faces counted as leaves). g20 started (battle muster).
 - 11-14 05:30 g19: battle and muster pixel-identical to g17/g18: 1179d536 (lens at blows) misses the side shot's moment; 8d347b51 trees unchanged (wrong piece or cache). Both told to trace from the frame logs before the next fix. Bottleneck: fixes landing blind on the shot path (third time: command, muster, now battle and trees).
 - 11-14 05:21 round: landed army 1179d536 (battle lens holds the press), look 8d347b51 + 30d3bd9b (calm deep-green leaves on every nature tree). g19 started (battle muster); passes now delete their frames too (disk).
 - 11-14 05:15 g18: muster moved at last (three blocks under standards on open ground, clear of houses): ACCEPTED (my call after 6 passes; not the road column). Army to battle contact; look to the faceted near trees in front of every army frame.
