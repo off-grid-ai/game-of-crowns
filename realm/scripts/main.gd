@@ -172,6 +172,7 @@ func _ready() -> void:
 	Real.warm()  # the towns' models read on worker threads while the land forms
 	preload("res://scripts/town_life.gd").warm()  # and the props a town's life sets down
 	preload("res://scripts/dressing.gd").warm()  # and the dressing's meshes baked ahead, their detail levels on worker threads
+	preload("res://scripts/people.gd").warm()  # and the people's one baked library of moves (tools/anim_library_bake.gd)
 	await _boot_step("land and towns set up")
 	ruins = preload("res://scripts/ruins.gd").new()  # what war leaves on the land
 	ruins.terrain = terrain

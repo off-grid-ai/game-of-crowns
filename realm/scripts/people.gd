@@ -156,72 +156,32 @@ const Data := preload("res://scripts/data.gd")
 # Ways a soldier stands ready (all on the shared skeleton), one per man.
 const GUARDS := ["Sword_Idle", "Sword_Idle", "SS_Idle_2", "SS_Block_Idle"]
 
-var _lib: AnimationLibrary
 var _scenes := {}
 var _heights := {}  # Mixamo body -> scale that stands it as tall as an outfit
 var _ok := {}  # Mixamo body -> whether it loads with the shared skeleton
 var _recent: Array[String] = []  # the looks of the last NEIGHBOURS people made: body, or outfit and cloth
 
 
-func _init() -> void:
-	# Mixamo moves, retargeted at import to Godot's humanoid skeleton like the
-	# outfits, so any Mixamo download plays on any townsperson. Each file is one
-	# move, named for what the game asks for ("Walk", "Sword_Idle", "Praying").
-	_lib = AnimationLibrary.new()
-	var dir := DirAccess.open(ANIMS)
-	for f in dir.get_files() if dir else []:
-		if not f.ends_with(".fbx"):
-			continue
-		var packed := load(ANIMS + f) as PackedScene
-		if packed == null:
-			continue
-		var src: Node = packed.instantiate()
-		var players: Array = src.find_children("*", "AnimationPlayer", true, false)
-		if not players.is_empty():
-			var player: AnimationPlayer = players[0]
-			for n in player.get_animation_list():
-				var a: Animation = player.get_animation(n)
-				if a.length > 0.1:
-					_lib.add_animation(f.get_basename(), _in_place(a.duplicate(true)))
-					break
-		src.free()
-	# The UAL set, each clip under its own name unless the crowd has one already.
-	if ResourceLoader.exists(UAL):
-		var ual: Node = (load(UAL) as PackedScene).instantiate()
-		for ap in ual.find_children("*", "AnimationPlayer", true, false):
-			for n in (ap as AnimationPlayer).get_animation_list():
-				var nm := String(n)
-				if _lib.has_animation(nm) or UAL_SKIP.any(func(k): return nm.contains(k)):
-					continue
-				var a: Animation = (ap as AnimationPlayer).get_animation(n)
-				if a.length > 0.1:
-					_lib.add_animation(nm, _in_place(a.duplicate(true)))
-		ual.free()
-	# The close-up's own gestures too (Shake No, Dismiss, Relieved Sigh, Talking
-	# Hands...), retargeted the same way, named with underscores; a move the
-	# crowd already has keeps the crowd's take.
-	var hero_dir := DirAccess.open(HERO_ANIMS)
-	for f in hero_dir.get_files() if hero_dir else []:
-		if not f.ends_with(".fbx"):
-			continue
-		var name: String = String(f).get_basename().replace(" ", "_")
-		if _lib.has_animation(name):
-			continue
-		var packed := load(HERO_ANIMS + f) as PackedScene
-		if packed == null:
-			continue
-		var src: Node = packed.instantiate()
-		var players: Array = src.find_children("*", "AnimationPlayer", true, false)
-		if not players.is_empty():
-			var player: AnimationPlayer = players[0]
-			for n in player.get_animation_list():
-				var a: Animation = player.get_animation(n)
-				if a.length > 0.1:
-					_lib.add_animation(name, _in_place(a.duplicate(true)))
-					break
-		src.free()
-	_plant(_lib)
-	_unturn(_lib)
+## The one library every person plays (assets/anims/library.res), baked by tools/anim_library_bake.gd from the Mixamo
+## moves, the UAL set and the close-up's gestures (in place, planted, the turns unturned): loading the 184 FBX here
+## held the app before its first frame ("application not responding", Mac's P0). warm() starts it on Godot's
+## background loader as the realm boots; library() hands it over, waiting only if it is not done (under the
+## loading screen, as the towns' people are made).
+const LIBRARY := "res://assets/anims/library.res"
+static var _library: AnimationLibrary
+
+
+static func warm() -> void:
+	if _library == null and ResourceLoader.load_threaded_get_status(LIBRARY) == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
+		ResourceLoader.load_threaded_request(LIBRARY)
+
+
+static func library() -> AnimationLibrary:
+	if _library == null:
+		warm()
+		_library = ResourceLoader.load_threaded_get(LIBRARY)
+		TURNED = _library.get_meta("turned", {})  # the turn clips' measured turns, kept by the bake (_unturn)
+	return _library
 
 
 ## The turn-in-place clips (people.json steer.turn_clips: Mixamo's Left Turn and Right Turn) with their hips' own
@@ -366,8 +326,8 @@ func _stand_up(body: String, skeleton: Skeleton3D) -> void:
 		var sum := 0.0
 		var n := 0
 		for c in Data.value("people", "feet.bodyClips", ["Idle", "Walk"]):
-			if _lib.has_animation(String(c)):
-				sum += _sole_drop(skeleton, _lib.get_animation(String(c)))
+			if library().has_animation(String(c)):
+				sum += _sole_drop(skeleton, library().get_animation(String(c)))
 				n += 1
 		_body_lift[body] = maxf(sum / maxi(n, 1), 0.0)
 	skeleton.position += skeleton.transform.basis * Vector3(0, float(_body_lift[body]), 0)
@@ -383,8 +343,8 @@ func strides_of(body: String, skeleton: Skeleton3D) -> Dictionary:
 	if not _strides.has(body):
 		var d := {}
 		for c in Motion.WALKS + Motion.RUNS:
-			if _lib.has_animation(String(c)):
-				d[c] = _stride(skeleton, _lib.get_animation(String(c)))
+			if library().has_animation(String(c)):
+				d[c] = _stride(skeleton, library().get_animation(String(c)))
 		_strides[body] = d
 	return _strides[body]
 
@@ -462,18 +422,18 @@ func _kneel_up(person: Node3D, body: String, skeleton: Skeleton3D) -> void:
 		var by_clip: Dictionary = given if given is Dictionary else {}
 		var clips: Array = Motion.LOW + (Data.value("people", "feet.lowAlso", []) as Array)
 		for c in clips:
-			if not _lib.has_animation(String(c)):
+			if not library().has_animation(String(c)):
 				continue
-			var up := _sole_drop(skeleton, _lib.get_animation(String(c)), true) - float(_body_lift.get(body, 0.0)) + extra + float(by_clip.get(String(c), 0.0)) * per_m
+			var up := _sole_drop(skeleton, library().get_animation(String(c)), true) - float(_body_lift.get(body, 0.0)) + extra + float(by_clip.get(String(c), 0.0)) * per_m
 			if up > 0.01 * per_m:
 				lifts[String(c)] = up
 		# Standing moves whose feet these legs plant deeper than the reference's
 		# (feet.bodyMoves: a crouch's heel-up foot sank 10-12 cm on fuse_civilian_1 and
 		# Medieval Man): measured on this skeleton's standing frames, raised by the rest.
 		for c in Data.value("people", "feet.bodyMoves", []):
-			if not _lib.has_animation(String(c)) or lifts.has(String(c)):
+			if not library().has_animation(String(c)) or lifts.has(String(c)):
 				continue
-			var up := _sole_drop(skeleton, _lib.get_animation(String(c))) - float(_body_lift.get(body, 0.0))
+			var up := _sole_drop(skeleton, library().get_animation(String(c))) - float(_body_lift.get(body, 0.0))
 			if up > 0.01 * per_m:
 				lifts[String(c)] = up
 		_low_lift[body] = lifts
@@ -963,7 +923,7 @@ func _finish(person: Node3D, skeleton: Skeleton3D, rng: RandomNumberGenerator, r
 	var anim := AnimationPlayer.new()
 	anim.name = "Anim"
 	person.add_child(anim)
-	anim.add_animation_library("", _lib)
+	anim.add_animation_library("", library())
 	anim.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
 	# Every move goes through the person's state machine (motion.gd); the player
 	# only holds the moves.
