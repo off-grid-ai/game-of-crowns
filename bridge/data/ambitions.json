@@ -3,7 +3,7 @@
  "boost": 3,
  "drives": {
   "revenge": ["justice"],
-  "marriage": ["match", "royalmatch"],
+  "marriage": ["match", "royalmatch", "royalwed"],
   "land": ["claim", "ambition"],
   "power": ["claim", "ambition"],
   "peace": ["grain", "outlaws", "faith"],

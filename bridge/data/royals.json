@@ -11,5 +11,6 @@
  "majority": 16,
  "abdicate": { "age": 16 },
  "minor": { "favour": -6 },
+ "match": { "_": "A great lord offers his child for the heir's hand at court (characters.js royalwed): both of age; wed binds his house and cools the rest, refuse cools his.", "age": 16, "weight": 3, "wed": { "him": 20, "others": -3 }, "refuse": { "him": -8 } },
  "heirless": { "score": 0.5, "verdict": "The King died without an heir of his blood. The great houses went to war for the empty throne." }
 }

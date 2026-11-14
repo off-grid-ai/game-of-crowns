@@ -60,7 +60,8 @@ function pass(ctx, h, how, turn) {
   h.kin = [...h.children, ...(h.children.includes(next) ? [] : h.kin)].filter((k) => k !== next && k.alive);
   h.children = [];
   h.king = next;
-  h.consort = null;
+  h.consort = next.spouse ?? null;  // the heir's match (characters.js royalwed) is the new consort
+  delete next.spouse;
   h.since = turn;
   const title = next.woman ? "Queen" : "King", was = old.woman ? "Queen" : "King";
   const minor = next.age < R.majority;
@@ -112,6 +113,8 @@ export function abdicate(ctx) {
 
 // How a reign that ends heirless is judged (reign.js endReign): its score's share and its verdict.
 export const HEIRLESS = R.heirless;
+// A great lord's child offered for the heir's hand at court (characters.js royalwed): the age, the plea's weight, the favour.
+export const MATCH = R.match;
 
 // For /world: the King, his consort, his heir and the rest of his children, and the Kings before him.
 export function view(meta) {
@@ -120,7 +123,7 @@ export function view(meta) {
   const who = (p) => p && { id: p.id, name: p.name, age: p.age, woman: p.woman };
   const next = heir(h);
   return {
-    king: who(h.king), consort: h.consort?.alive ? who(h.consort) : null, heir: who(next),
+    king: who(h.king), consort: h.consort?.alive ? who(h.consort) : null, heir: who(next), match: next?.spouse ? { name: next.spouse.name, house: next.spouse.house } : null,
     children: h.children.filter((k) => k.alive).map(who), kin: h.kin.filter((k) => k.alive).map(who), regency: h.king.age < R.majority,
     line: h.line, abdicate: Boolean(next && next.age >= R.abdicate.age),
   };

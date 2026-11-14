@@ -16,6 +16,7 @@ import { decide } from "./claude.js";
 
 import { calendar, SEASONS_PER_YEAR, yearsIn, isYearEnd } from "./calendar.js";
 import { ANSWERS } from "./petitions.js";
+import { heir as royalHeir, MATCH as RM } from "./royals.js";
 import { BANDS } from "./favour.js";
 import * as names from "./names.js";
 
@@ -990,6 +991,21 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
         { id: "arrange", label: `Make the match: ${mine.name} and ${theirs.name}`, hint: `${c.house} +${AMB.match.arrange.him} · ${otherLord.house} +${AMB.match.arrange.them} · the two houses bound`, favour: { [c.playerId]: AMB.match.arrange.him, [otherLord.playerId]: AMB.match.arrange.them } },
         { id: "refuse", label: "Refuse the match", hint: `${c.house} ${AMB.match.refuse.him}`, favour: { [c.playerId]: AMB.match.refuse.him } },
       ] }) });
+    // The King's heir is of age and unwed (royals.js): a great lord offers his own child of the other sex for the heir's
+    // hand (CK3's royal match: the crown's marriage binds a house). data/royals.json match.
+    const rh = c.rank === "lord" ? this.royals?.() : null;
+    const prince = rh && royalHeir(rh);
+    const offered = prince && !prince.spouse && prince.age >= RM.age && c.children.map((id) => this.people[id])
+      .filter((k) => k?.alive && !k.spouse && k.age >= RM.age && (k.gender === "female") === !prince.woman).sort((a, b) => b.age - a.age)[0];
+    if (offered) candidates.push({ kind: "royalwed", weight: RM.weight, make: () => {
+      const others = world.players.filter((x) => !houseFor(x).crown && !houseFor(x).wild && x.id !== c.playerId && world.cities.some((t) => t.owner === x.id));
+      const heir = `${prince.woman ? "Princess" : "Prince"} ${prince.name}`;
+      return { kind: "royalwed", child: offered.id, text: `${c.name} of ${c.house}: "${heir} is ${prince.age}, Your Grace, and unwed. My ${offered.gender === "female" ? "daughter" : "son"} ${offered.name} is ${offered.age}. Let our blood join the crown's, and ${c.house} is yours for good."`,
+        facts: facts(c.playerId), options: [
+          { id: "wed", label: `Wed ${heir} to ${offered.name}`, hint: `${c.house} +${RM.wed.him} · every other great house ${RM.wed.others}: one house raised above the rest`, favour: { [c.playerId]: RM.wed.him, ...Object.fromEntries(others.map((x) => [x.id, RM.wed.others])) } },
+          { id: "refuse", label: "The heir's hand is not given yet", hint: `${c.house} ${RM.refuse.him}`, favour: { [c.playerId]: RM.refuse.him } },
+        ] };
+    } });
     if (want?.target?.kind === "town") candidates.push({ kind: "ambition", weight: AMB.plea.weight, make: () => {
       const t = want.target;
       return { kind: "ambition", city: t.id, holder: t.pid, text: `${c.name} of ${c.house}: "${t.name} should be ours, Your Grace, and ${t.house} holds it badly. Give me your leave and I will take it."`, facts: facts(c.playerId, t.pid), options: [

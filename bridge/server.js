@@ -175,6 +175,7 @@ function load(id) {
   court.onTruce = (pair, seasons) => houseTruce(pair, seasons);  // every truce reaches Freeciv (the one writer)
   court.onWar = (pair) => diplomacyNow([pair[0], pair[1], 0, "War"]);  // and every story's war (arcs.js, characters.js)
   court.deedsOf = (pid) => (deeds[pid] ??= []);
+  court.royals = () => meta.royals;  // the King's household (royals.js): his heir's match is a court matter
   arcs = new Arcs(P.base, court, record);
   arcsRunning = false;  // a new realm's stories start free of the last one's
   court.onArcRuling = (arc, beat, option) => arc === "council" ? councilRuled(beat, option) : arc === "siege" ? siegeRuled(beat, option) : arcs.rule(arc, beat, option);

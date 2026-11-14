@@ -7,11 +7,31 @@ import { crownOf } from "./realm.js";
 import * as Lua from "./lua.js";
 import { cityName, houseFor } from "./narrator.js";
 import { say } from "./say.js";
+import { heir as royalHeir } from "./royals.js";
 import fs from "node:fs";
 
 export const ANSWERS = {
+  // A lord's child offered for the King's heir (characters.js royalwed): wed, the child goes to court as the heir's
+  // spouse (royals.js keeps the heir's match; crowned, they are the consort), and that house is bound to the crown.
+  royalwed({ p, c, opt, option, out }) {
+    Object.assign(out.favour, opt.favour ?? {});
+    const k = this.people[p.child];
+    const prince = this.royals?.() && royalHeir(this.royals());
+    if (option === "wed" && k?.alive && !k.spouse && prince && !prince.spouse) {
+      prince.spouse = { id: `w${k.id}`, name: k.name, age: k.age, woman: k.gender === "female", alive: true, house: c.house };
+      k.spouse = "crown";
+      this.remember(c.id, `My ${k.gender === "female" ? "daughter" : "son"} ${k.name} wed the King's heir.`);
+      this.save(k);
+      out.text = `${k.name} of ${c.house} weds ${prince.woman ? "Princess" : "Prince"} ${prince.name} in Kingsmere. ${c.house}'s blood will sit the throne.`;
+    } else if (option === "wed") out.text = "The match cannot be made: the heir or the bride is wed or gone.";
+    if (option === "refuse") {
+      out.text = `The King keeps his heir's hand for another. ${c.name} bows, and does not forget it.`;
+      this.remember(c.id, "The King would not have my child for his heir.");
+    }
+  },
   // A lord's want of a match made by the King (characters.js royalmatch): the two wed, and the houses are bound.
-  royalmatch({ p, c, option, out, world }) {
+  royalmatch({ p, c, opt, option, out, world }) {
+    Object.assign(out.favour, opt.favour ?? {});
     const a = this.people[p.mine], b = this.people[p.theirs];
     if (option === "arrange" && a?.alive && b?.alive && !a.spouse && !b.spouse) {
       a.spouse = b.id; b.spouse = a.id;
