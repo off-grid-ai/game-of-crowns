@@ -697,11 +697,54 @@ func _drape_sea(mat: ShaderMaterial) -> void:
 	code = code.replace("uniform bool freeze_time", "uniform sampler2D atlas_tex : source_color, filter_linear_mipmap_anisotropic, repeat_disable;\nuniform vec2 atlas_size = vec2(1.0);\nuniform float atlas_mix = 0.0;\nuniform bool freeze_time")
 	var end := code.rfind("}")
 	code = code.left(end) + "\tvec2 auv = world_coordinates.xz / atlas_size;\n\tvec3 chart = all(greaterThanEqual(auv, vec2(0.0))) && all(lessThanEqual(auv, vec2(1.0))) ? texture(atlas_tex, auv).rgb : vec3(0.2, 0.34, 0.53);\n\tALBEDO = mix(ALBEDO, chart, atlas_mix);\n\tEMISSION *= 1.0 - atlas_mix;\n}\n"
+	code = _shore_code(code)
 	var sh := Shader.new()
 	sh.code = code
 	mat.shader = sh
 	mat.set_shader_parameter("atlas_tex", load("res://assets/maps/atlas.png"))
 	mat.set_shader_parameter("atlas_size", Vector2(width * TILE, height * TILE))
+	_shore_params(mat)
+
+
+## The shallows and the surf by the land's own depth under the water (look.json sea.shore; Warcraft III and AoE2 colour
+## their water by depth, a pale turquoise rim and a soft line of foam at every shore, seen at play zoom). Boujie's own
+## shallows and shore foam read the depth buffer, which the view's distance fades (sea.depth_fade, kept against the
+## sea bed's ring seams), so at play zoom neither showed. Here the depth is the realm's eroded heightmap under the
+## water (terrain.gd land), the same at every distance: shallow (depth in game units where the shallow colour has
+## faded out), shallow_colour (alpha: how much), foam (the surf's depth band), foam_colour (alpha: how white),
+## foam_scale (the foam texture's repeats a game unit), foam_speed (how fast the surf breathes in and out).
+func _shore_code(code: String) -> String:
+	code = code.replace("uniform float atlas_mix = 0.0;", "uniform float atlas_mix = 0.0;\nuniform sampler2D shore_land : filter_linear, repeat_disable;\nuniform float shore_on = 0.0;\nuniform float sea_level = -0.15;\nuniform vec4 shore_shallow = vec4(0.22, 0.52, 0.5, 0.7);\nuniform vec4 shore_foam = vec4(0.9, 0.94, 0.92, 0.55);\nuniform vec4 shore_k = vec4(0.5, 0.06, 0.6, 0.4);")
+	var end := code.rfind("}")
+	return code.left(end) + """	if (shore_on > 0.5) {
+		vec2 suv = world_coordinates.xz / atlas_size;
+		float bed = texture(shore_land, suv).r;
+		float depth = max(sea_level - bed, 0.0);
+		float shallow = (1.0 - smoothstep(0.0, shore_k.x, depth)) * shore_shallow.a;
+		ALBEDO = mix(ALBEDO, shore_shallow.rgb, shallow);
+		EMISSION *= 1.0 - shallow;
+		float breathe = 0.75 + 0.25 * sin(TIME * shore_k.w + bed * 40.0);
+		float band = 1.0 - smoothstep(shore_k.y * 0.3, shore_k.y * breathe, depth);
+		float grain = texture(texture_foam, world_coordinates.xz * shore_k.z + vec2(TIME * 0.02, 0.0)).a;
+		float foam = clamp(band * (0.45 + grain), 0.0, 1.0) * shore_foam.a;
+		ALBEDO = mix(ALBEDO, shore_foam.rgb, foam);
+		EMISSION *= 1.0 - foam;
+	}
+}
+"""
+
+
+func _shore_params(mat: ShaderMaterial) -> void:
+	var D := preload("res://scripts/data.gd")
+	var sh: Dictionary = D.value("look", "sea.shore", {})
+	if land == null or sh.is_empty():
+		return
+	mat.set_shader_parameter("shore_land", ImageTexture.create_from_image(land))
+	mat.set_shader_parameter("shore_on", 1.0)
+	mat.set_shader_parameter("sea_level", SEA_LEVEL)
+	mat.set_shader_parameter("shore_shallow", D.colour(sh.get("shallow_colour", [0.22, 0.52, 0.5, 0.7]), Color(0.22, 0.52, 0.5, 0.7)))
+	mat.set_shader_parameter("shore_foam", D.colour(sh.get("foam_colour", [0.9, 0.94, 0.92, 0.55]), Color(0.9, 0.94, 0.92, 0.55)))
+	mat.set_shader_parameter("shore_k", Vector4(float(sh.get("shallow", 0.5)), float(sh.get("foam", 0.06)), float(sh.get("foam_scale", 0.6)), float(sh.get("foam_speed", 0.4))))
 
 
 ## The wild plants (vegetation.gd) and the kit woods (forest.gd) planted where it lays them.
