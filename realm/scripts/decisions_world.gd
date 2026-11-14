@@ -13,13 +13,14 @@ extends Node3D
 ## (scenes.people), the props come from the asset catalogue (realistic.gd), the banners from heraldry.
 ## The moving parts are already others': the muster's column on the road (scenes.gd), the riot of a
 ## town in disorder and the feast's fire (town_life.gd), the levy at the armoury and the crier (works.gd).
-## Numbers and the switch: realm/data/decisions.json (--decisions=on / --decisions=off).
+## Always on: the one way the King's decisions show at the towns they land on. Numbers: realm/data/decisions.json.
 
 const Data := preload("res://scripts/data.gd")  # the one loader of realm/data (data.gd)
 const Realistic := preload("res://scripts/realistic.gd")
 const Heraldry := preload("res://scripts/heraldry.gd")
 const Awareness := preload("res://scripts/awareness.gd")
 const Scenes := preload("res://scripts/scenes.gd")
+const Mover := preload("res://scripts/mover.gd")
 const Particles := preload("res://scripts/particles.gd")
 const Towns := preload("res://scripts/towns.gd")
 const CROWN := {"name": "The Crown", "crown": true}
@@ -39,14 +40,7 @@ static func _read() -> Dictionary:
 	return Data.read("decisions")
 
 
-static func on() -> bool:
-	var args := OS.get_cmdline_user_args()
-	return args.has("--decisions=on") or (bool(CFG.get("on", false)) and not args.has("--decisions=off"))
-
-
 static func apply(m: Node) -> void:
-	if not on():
-		return
 	var d := new()
 	d.name = "Decisions"
 	d.main = m
@@ -182,12 +176,16 @@ func _unrest(root: Node3D, node: Node3D, centre: Vector3, house: Dictionary, lev
 	var speaker_at := centre + Vector3(cos(side), 0, sin(side)) * ring
 	var speaker := _person(root, rng, "peasant", Color.WHITE, speaker_at, centre)
 	_play(speaker, "Yelling", rng)
+	# 07-unrest: a packed crowd shaking fists at him, torches held up among them.
 	var n := int(pick.call("crowd", 6))
+	var torch_every := int(pick.call("torch_every", 0))
 	for k in n:
 		var a := side + PI + (float(k) / maxf(1.0, n - 1) - 0.5) * 2.2
-		var r := ring * rng.randf_range(0.35, 1.0)
+		var r := ring * rng.randf_range(0.35, float(u.get("depth", 1.3)))
 		var p := _person(root, rng, "peasant", Color.WHITE, centre + Vector3(cos(a), 0, sin(a)) * r, speaker_at)
-		_play(p, ["Arguing", "Yelling", "Idle_Talking", "Arguing"][k % 4], rng)
+		if torch_every > 0 and k % torch_every == 0:
+			_torch(p)
+		_play(p, ["Battlecry", "Yelling", "Arguing", "Battlecry", "Yelling", "Idle_Talking"][k % 6], rng)
 	# The house's own banner, lowered and askew, beside the speaker.
 	var banner: Node3D = Heraldry.standard(house, Heraldry.colour(house, Color.GRAY, "#888"), PLANTED * 0.7)
 	banner.position = main.scenes.ground(speaker_at + Vector3(cos(side + 1.2), 0, sin(side + 1.2)) * 0.18)
@@ -223,7 +221,7 @@ func _unrest(root: Node3D, node: Node3D, centre: Vector3, house: Dictionary, lev
 	var col: Color = Heraldry.colour(house, Color.GRAY, "#888")
 	for k in guards:
 		var a := side + (float(k) / maxf(1.0, guards - 1) - 0.5) * 0.9
-		var g := _person(root, rng, "soldier", col, centre + Vector3(cos(a), 0, sin(a)) * ring * 1.6, centre)
+		var g := _person(root, rng, "soldier", col, centre + Vector3(cos(a), 0, sin(a)) * ring * float(u.get("guard_ring", 1.6)), centre)
 		Scenes.arm(g, "spear")
 		_play(g, "Sword_Idle", rng)
 
@@ -295,13 +293,29 @@ func _garrison(root: Node3D, node: Node3D, centre: Vector3, id: int, rng: Random
 	var col := CROWN_RED.lerp(Color.WHITE, 0.25)
 	var n := int(g.get("guards", 6))
 	var gap := float(g.get("spacing", 0.13))
+	# 08-reinforce: the King's men come up the road and in at the gate in two files, then stand to it; the townsfolk
+	# at the gate cheer them in. Each walks by his Mover, the way every body travels.
+	var from := float(g.get("march_from", 2.5))
 	for k in n:
 		var file := k % 2
 		var rank := k / 2
 		var at := gate + side * ((float(file) - 0.5) * gap * 2.4) - out * (rank * gap)  # two files, ranks back toward the town
-		var s := _person(root, rng, "soldier", col, at, gate + out)
+		var s := _person(root, rng, "soldier", col, at + out * (from + rank * gap), at)
 		Scenes.arm(s, "spear")
-		_play(s, "Sword_Idle", rng)
+		var mo: Node = Mover.of(s)
+		mo.speed = float(g.get("march_pace", 0.22))
+		mo.stride = true
+		mo.go(main.scenes.stand(at), func():
+			s.rotation.y = atan2(out.x, out.z)
+			_play(s, "Sword_Idle", rng))
+	var cheer := int(g.get("cheer", 8))
+	for k in cheer:
+		var a := (float(k) / maxf(1.0, cheer - 1) - 0.5) * 2.0
+		var p := _person(root, rng, "peasant", Color.WHITE, gate - out * float(g.get("cheer_back", 0.35)) + side * a * gap * 3.0 + out * rng.randf_range(-0.05, 0.05), gate + out)
+		_play(p, ["Cheering", "Cheering", "Salute", "Cheering"][k % 4], rng)
+		get_tree().create_timer(float(g.get("cheer_s", 25.0)) + rng.randf_range(0.0, 4.0)).timeout.connect(func():
+			if is_instance_valid(p):
+				_play(p, "Idle_Talking" if k % 2 else "Idle", rng))
 	for k in int(g.get("standards", 2)):
 		var std: Node3D = Heraldry.standard(CROWN, col, PLANTED)
 		std.position = main.scenes.ground(gate + side * ((float(k) - 0.5) * gap * 4.5) + out * 0.08)
@@ -342,6 +356,13 @@ func _person(root: Node3D, rng: RandomNumberGenerator, role: String, tint: Color
 		p.rotation.y = atan2(d.x, d.z)
 	root.add_child(p)
 	return p
+
+
+## A lit torch held up in the off hand, whatever the body plays (motion.gd errand_load, as a raider's).
+func _torch(p: Node3D) -> void:
+	var mo = main.scenes.people.motion(p)
+	if mo:
+		mo.errand_load = "Idle_Torch_Loop"
 
 
 func _play(p: Node3D, clip: String, rng: RandomNumberGenerator) -> void:
