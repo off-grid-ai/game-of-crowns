@@ -139,6 +139,7 @@ Switches (`--name`) go after `--` on the game's command line.
 - Mountains: where the snow starts and lies whole (`realm/data/ground.json` peaks.snow, game units), the height above which hills stop stepping into shelves (tiers.to), and how strongly the map zoom shades the relief (`realm/data/map.json` relief.strength).
 - The far sea's swell: how much the drifting light and shade moves the open water from the realm view, its size, speed and the distance it starts (`realm/data/look.json` sea.swell).
 - How far from the camera the wild bushes are drawn (`realm/data/ground.json` wild.bush_reach), and how many rocks, bushes and grass tufts each kind of land holds (`realm/data/forest.json` cover_per_tile).
+- The snow's ragged edge on the peaks: how far the drifts reach in height and their size (`realm/data/ground.json` peaks.ragged, peaks.scale); the border's dark keyline under the political map's bright line (`realm/data/look.json` politics.keyline).
 - The coast: how far the beach runs above the waterline and which painting it blends through (dirt, no outline), and the surf at the shore: `realm/data/ground.json`: `beach.top`, `surf`.
 - How far out the land keeps its fine shape (Terrain3D's rings round the lens; too coarse and a lake's low shore sinks under the water at the mid zoom): `realm/data/ground.json`: `mesh.size`, `mesh.lods`.
 - From what distance the sea's colour stops reading the depth to its bed (nearer shows clear shallows, but the bed's coarser rings show as seams further out): `realm/data/look.json`: `sea.depth_fade`.

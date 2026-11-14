@@ -213,6 +213,12 @@ func _control_from_land(terrain: Node3D) -> Image:
 			enc |= Terrain3DUtil.enc_auto(true)
 		return Terrain3DUtil.as_float(enc)
 	var out := Image.create_empty(w, h, false, Image.FORMAT_RF)
+	# The snow's edge ragged by noise in height (ground.json peaks.ragged, game units; peaks.scale, its size a game
+	# unit), so it lies in drifts on the peaks, never a shelf's flat sheet with a hard rim (g35: white paper patches).
+	var drift := FastNoiseLite.new()
+	drift.seed = 7
+	drift.frequency = float(Data.num("ground", "peaks.scale", 0.2)) / per
+	var ragged := float(Data.num("ground", "peaks.ragged", 1.2))
 	for z in h:
 		for x in w:
 			var y := hm.get_pixel(x, z).r
@@ -226,8 +232,8 @@ func _control_from_land(terrain: Node3D) -> Image:
 				v = over.call(_beach_layer, sand, steep)
 			elif bank > 0.05:
 				v = over.call(_bank_layer, minf(bank, 1.0), steep)  # a river's banks worn to earth (WC3's, AoE2's rivers run between bare banks)
-			elif y > _snow_band[0]:
-				v = over.call(3, smoothstep(_snow_band[0], _snow_band[1], y), steep)  # snow on the peaks (ground.json peaks.snow)
+			elif y + ragged > _snow_band[0] and _drifts(drift, x, z, y, ragged) > 0.02:
+				v = over.call(3, _drifts(drift, x, z, y, ragged), steep)  # snow on the peaks (ground.json peaks.snow), in drifts
 			else:
 				# The terrain's own ground (terrain.tile_mix): its strongest layer laid over the grass.
 				var mix: Array = terrain.tile_mix((x + 0.5) / per, (z + 0.5) / per)
@@ -238,6 +244,11 @@ func _control_from_land(terrain: Node3D) -> Image:
 				v = over.call(top, mix[top] / (mix[0] + mix[top] + 0.0001), steep)
 			out.set_pixel(x, z, Color(v, 0, 0, 1))
 	return out
+
+
+## How much snow lies at a control-map pixel: the peaks' band (ground.json peaks.snow) at its height jittered by the drift noise.
+static func _drifts(drift: FastNoiseLite, x: int, z: int, y: float, ragged: float) -> float:
+	return smoothstep(float(_snow_band[0]), float(_snow_band[1]), y + drift.get_noise_2d(x, z) * ragged)
 
 
 ## A pixel of the control map: the two strongest ground layers and their blend.
@@ -469,6 +480,7 @@ uniform vec4 pol_z = vec4(12.0, 30.0, 0.4, 0.35);  // map_from, map_to: the came
 uniform vec4 relief = vec4(0.0, -0.5, 0.7, -0.5);  // the land's relief at the map's height (data/map.json relief): strength, the light it is shaded from
 uniform vec4 relief_near = vec4(0.0, -0.5, 0.7, -0.5);  // the same below the map's height (data/map.json relief.near): strength, light
 uniform vec4 pol_l = vec4(9.0, 22.0, 0.22, 0.55);  // line_from, line_to (camera height where borders fade in), soft (the painted band's width, tile share), crisp (the fine line's share)
+uniform float pol_key = 0.0;  // the border's dark keyline just inside its bright line (data/look.json politics.keyline)
 float flood_d(vec2 t) {
 	float d = 100000.0;
 	for (int i = 0; i < flood_n; i++) d = min(d, distance(t, flood_at[i]));
@@ -591,6 +603,10 @@ const REALM_WASH := """
 		float glow = politics > 0.5 && other >= 0 && own.a > 0.0 ? 1.0 - smoothstep(px * pol_b.y * 0.8, px * pol_b.y * 1.6 + 0.01, gap) : 0.0;
 		ALBEDO = mix(ALBEDO, mix(line, vec3(1.0), 0.15), pol_b.w * glow * line_zoom);
 		ALBEDO = mix(ALBEDO, line, paint * strength * dash * line_zoom);
+		// A dark keyline just inside the bright line (02-realm: every edge a lit colour line set off by a dark rim),
+		// so a pastel house's line stands out of its own tinted land (g35: yellow on yellow read as a smear).
+		float rim = politics > 0.5 && other >= 0 ? smoothstep(px * pol_b.y * 0.95, px * pol_b.y * 1.1, gap) * (1.0 - smoothstep(px * pol_b.y * 1.3, px * pol_b.y * 1.7, gap)) : 0.0;
+		ALBEDO *= 1.0 - pol_key * rim * line_zoom;
 	}
 """
 var _flood_t := -1.0  # seconds into a flood; -1: none running
@@ -644,6 +660,7 @@ func set_politics(on: bool, hold: PackedFloat32Array, lean: PackedVector3Array, 
 	mat.set_shader_param("pol_b", b)
 	mat.set_shader_param("pol_z", z)
 	mat.set_shader_param("pol_l", l)
+	mat.set_shader_param("pol_key", Data.num("look", "politics.keyline", 0.0))
 	mat.set_shader_param("relief", r)
 
 
