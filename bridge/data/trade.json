@@ -1,0 +1,8 @@
+{
+ "_": "Trade between towns as carts on the roads (trade.js; Banished's and Anno's carts between markets, Settlers' goods on the roads, Manor Lords' traders). Each season every town at peace sends carts to its nearest links towns within reach steps over land; not between houses at war, nor to or from a town under siege. What it carries comes from its buildings (goods: the first it has), else from wares by the town; how many carts by its size (one, and one more per perTown, at most most). /world `trade` is the view's to draw.",
+ "links": 2,
+ "reach": 14,
+ "carts": { "perSize": 4, "most": 3 },
+ "goods": [["Marketplace", "cloth"], ["Granary", "grain"], ["Harbour", "fish"], ["Temple", "candles"], ["Barracks", "iron"], ["Library", "books"]],
+ "wares": ["grain", "wool", "timber", "salt", "ale", "hides"]
+}

@@ -65,6 +65,7 @@ import * as Raids from "./raids.js";
 import * as Households from "./households.js";
 import * as Harvest from "./harvest.js";
 import * as Royals from "./royals.js";
+import * as Trade from "./trade.js";
 import { TURNING } from "./season.js";
 import { intrigueNow } from "./intrigue.js";
 
@@ -410,7 +411,8 @@ function applyStartOptions() {
 // What view.js needs to build the /world answer, read fresh on every call.
 // The realm as the view sees it (GET /world): built in view.js.
 function worldView() {
-  return { ...View.worldView(realmCtx()), hosts: Hosts.list({ world, meta }), banners: Hosts.banners({ world, meta }), battles: Battles.cards(meta, world?.turn), raids: Raids.list(meta, world), works: Treasury.worksOf(meta, world, crownNow()?.id), harvest: Harvest.view(meta, world?.turn ?? 0), royals: Royals.view(meta) };  // the King's hosts and their orders, and how many more orders this season (hosts.js)
+  const v = View.worldView(realmCtx()), d = detail();
+  return { ...v, trade: Trade.list(v.cities, world?.turn ?? 0, (a, b) => (d?.players?.[a]?.atWarWith ?? []).includes(b)), hosts: Hosts.list({ world, meta }), banners: Hosts.banners({ world, meta }), battles: Battles.cards(meta, world?.turn), raids: Raids.list(meta, world), works: Treasury.worksOf(meta, world, crownNow()?.id), harvest: Harvest.view(meta, world?.turn ?? 0), royals: Royals.view(meta) };  // the King's hosts and their orders, and how many more orders this season (hosts.js)
 }
 
 // The Hand's matters, read from the realm as it stands now.

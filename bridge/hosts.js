@@ -253,6 +253,13 @@ function wayOn(steps, from, n, stop = 0) {
   return out;
 }
 
+// The way over land from one tile to another, at most n tiles ([[x, y]...], ending at the goal), or [] when the land
+// doesn't join them (trade.js's carts walk it as a host does).
+export function landWay(from, to, n) {
+  const steps = stepsTo(to);
+  return steps ? wayOn(steps, from, n) : [];
+}
+
 // The eight tiles round (x, y) on the map.
 function round(L, x, y) {
   const out = [];
