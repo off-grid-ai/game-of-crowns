@@ -36,15 +36,18 @@ func stand(root: Node3D, pos: Vector3, color: Color, house: Dictionary, height :
 ## A seat as the realm map shows it (map_seat.gd: the castle set's keep under the house's standard, hidden up close,
 ## grown with the camera's distance at map zoom; docs/art/target/02-realm.jpg), stood at `pos` over the seat's castle.
 ## Its standard joins the town's banners, so it rises and falls with the house's favour and carries the sworn fringe.
-func map_seat(root: Node3D, pos: Vector3, color: Color, house: Dictionary) -> void:
-	var ms: Dictionary = preload("res://scripts/data.gd").value("towns", "map_seat", {})
+## `manor`: a vassal's manor (towns.json map_seat.manor over the seat's own knobs), its manor house in place of the keep.
+func map_seat(root: Node3D, pos: Vector3, color: Color, house: Dictionary, manor := "") -> void:
+	var ms: Dictionary = (preload("res://scripts/data.gd").value("towns", "map_seat", {}) as Dictionary).duplicate()
+	if manor != "":
+		ms.merge(ms.get("manor", {}), true)
 	if float(ms.get("keep", 0.0)) <= 0.0:
 		return
 	var seat: Node3D = preload("res://scripts/map_seat.gd").new()
 	seat.name = "MapSeat"
 	seat.position = pos
 	root.add_child(seat)
-	var top: float = seat.build(float(ms["keep"]))
+	var top: float = seat.build(float(ms["keep"]), ms, manor)
 	stand(seat, Vector3(0, top, 0), color, house, float(ms.get("standard", 2.6)))
 	var all: Array = root.get_meta("banners", [])
 	all.append_array(seat.get_meta("banners", []))

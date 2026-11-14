@@ -15,13 +15,21 @@ var _base := 1.0
 
 
 ## Built over a seat's castle: the keep `keep_h` world units tall (towns.json map_seat.keep), its standard over it.
-func build(keep_h: float) -> float:
-	var ms: Dictionary = Data.value("towns", "map_seat", {})
+## `comp`: a vassal's manor stands as its own manor house instead (towns.json map_seat.manor), the same rule.
+func build(keep_h: float, ms: Dictionary = {}, comp := "") -> float:
+	if ms.is_empty():
+		ms = Data.value("towns", "map_seat", {})
 	_from = float(ms.get("from", 40.0))
 	_ref = maxf(float(ms.get("ref", _from)), 0.01)
 	_most = float(ms.get("most", 4.0))
 	var path := "res://assets/meshy/ck_keep/ck_keep.glb"
-	if ResourceLoader.exists(path):
+	if comp != "":
+		var Real := preload("res://scripts/realistic.gd")
+		var house: Node3D = Real.make(Real.one(comp))
+		if house:
+			house.scale = Vector3.ONE * keep_h / maxf(Real.height(Real.one(comp)), 0.01)
+			add_child(house)
+	elif ResourceLoader.exists(path):
 		var keep: Node3D = (load(path) as PackedScene).instantiate()
 		var tall := 20.0  # metres, the piece as imported (assets/meshy/ck_keep/import.json size_m)
 		var f := FileAccess.open("res://assets/meshy/ck_keep/import.json", FileAccess.READ)

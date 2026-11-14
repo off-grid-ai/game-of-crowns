@@ -1984,6 +1984,14 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 			root.set_meta("lanes", lanes)
 	if not real_houses.is_empty():
 		await layout.real_lots(root, center, square_r, size, real_houses, rng, streets, seat, ways)
+		if _rank == "manor":
+			# A vassal's manor read from the middle zoom (supervisor's queue 4; 02-realm: every seat under its banner):
+			# its manor house grown with the camera's distance under the house's standard, as a seat's keep.
+			for t in root.get_meta("trades", []):
+				if String(t["component"]) == "house_manor":
+					var at: Vector3 = t["at"]
+					banners.map_seat(root, Vector3(at.x, _ground_y(center, Vector3(at.x, 0, at.z)), at.z), color, house, "house_manor")
+					break
 
 	# A town's seat raises the stone castle in its lots (town_layout.real_lots); an ordinary town is ruled from its hall.
 	var keep_off := Vector3(cos(base_ang + PI / street_count), 0, sin(base_ang + PI / street_count)) * (square_r + 0.55)
