@@ -46,6 +46,11 @@ uniform float house_roof_share = 1.0;  // a roof that wears the house colour (th
 uniform float ordinary_share = 0.5;  // a house's trims and shutters take this share of the colour
 uniform float paint_sat = 0.8;  // the house colour toned toward its own grey: warm, painted, not neon
 uniform vec3 paint_warm : source_color = vec3(1.0, 0.93, 0.84);
+// A Meshy piece's own team mask (tools/meshy_import.py mask.png: white where the house colour goes, its red roof
+// tiles); an ordinary house wears mask_ordinary of it, the castle, the hall and the manor all of it.
+uniform sampler2D team_mask : filter_linear_mipmap, repeat_enable;
+uniform bool has_mask = false;
+uniform float mask_ordinary = 0.45;
 varying float v_seed;
 varying vec3 v_mpos;  // the mesh's own frame: a kit roof's ridge runs along z, its slopes fall along x
 varying vec3 v_mnormal;
@@ -115,6 +120,8 @@ void fragment() {
 			base = dark_tile * (0.5 + lum);
 			amt = 0.0;
 		}
+	} else if (has_mask) {
+		amt *= texture(team_mask, UV).r * (team_rank < 1.5 ? mask_ordinary : 1.0);
 	} else if (!is_roof && team_rank < 1.5) {
 		amt *= ordinary_share;
 	}

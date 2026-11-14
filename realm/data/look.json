@@ -128,6 +128,7 @@
    "MI_Banner": 0.95
   },
   "saturation": 1.0,
+  "mask": {"_": "A Meshy building's own team mask (tools/meshy_import.py mask.png: white where the colour goes, by data/meshy.json mask rules, its red roof tiles; team_colour.gd _meshy_mask): amount, how much of the colour the masked parts take; ordinary, the share of that an ordinary house (ranks 0 and 1) wears, the castle, the hall and the manor all of it. The square set's masks are blank, so the crown's Kingsmere keeps its own red roofs.", "amount": 0.85, "ordinary": 0.45},
   "ranks": {
    "house_hovel": 0,
    "house_poor": 0,

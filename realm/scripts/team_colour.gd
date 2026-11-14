@@ -51,11 +51,15 @@ func _mesh_of(g: GeometryInstance3D) -> Mesh:
 
 
 ## A kit material named in team.materials, as the shared team shader (its texture, colour, normal kept).
-func _team_mat(src: BaseMaterial3D, amount: float) -> ShaderMaterial:
+func _team_mat(src: BaseMaterial3D, amount: float, mask: Texture2D = null) -> ShaderMaterial:
 	if _team_of.has(src):
 		return _team_of[src]
 	var m := ShaderMaterial.new()
 	m.shader = SHADER
+	if mask:
+		m.set_shader_parameter("team_mask", mask)
+		m.set_shader_parameter("has_mask", true)
+		m.set_shader_parameter("mask_ordinary", float((cfg().get("mask", {}) as Dictionary).get("ordinary", 0.45)))
 	m.resource_name = src.resource_name
 	m.set_shader_parameter("albedo", src.albedo_color)
 	m.set_shader_parameter("has_albedo_tex", src.albedo_texture != null)
@@ -112,6 +116,11 @@ func _take(g: GeometryInstance3D) -> void:
 				continue
 			if not src is BaseMaterial3D:
 				continue
+			var mask := _meshy_mask(mesh)
+			if mask:
+				mesh.surface_set_material(i, _team_mat(src, float((cfg().get("mask", {}) as Dictionary).get("amount", 0.85)), mask))
+				_done[mesh.get_instance_id()] = true
+				continue
 			for key in want:
 				if String(src.resource_name).begins_with(String(key)):
 					mesh.surface_set_material(i, _team_mat(src, float(want[key])))
@@ -129,6 +138,31 @@ func _take(g: GeometryInstance3D) -> void:
 	var town := _town_of(g)
 	if town >= 0:
 		_members.append([g, town])
+
+
+static var _masks := {}  # Meshy piece name -> its team mask, or null where it has none or a blank one
+
+
+## A Meshy building's team mask (tools/meshy_import.py: realm/assets/meshy/<piece>/mask.png, white where the house
+## colour goes), found by the piece its mesh is tagged with (realistic.gd) or the glb it came from; null for a kit mesh, or a piece whose mask rule marks nothing
+## (data/meshy.json mask: no hues and sat_min over 1, the square set's: its roofs keep their own red).
+static func _meshy_mask(mesh: Mesh) -> Texture2D:
+	var piece := String(mesh.get_meta("meshy_piece", ""))  # realistic.gd tags a Meshy model's meshes
+	if piece == "":
+		var at := mesh.resource_path.find("/assets/meshy/")
+		if at < 0:
+			return null
+		piece = mesh.resource_path.substr(at + 14).get_slice("/", 0)
+	if _masks.has(piece):
+		return _masks[piece]
+	var pieces: Dictionary = Data.value("meshy", "pieces", {})
+	var rule: Dictionary = (Data.value("meshy", "defaults", {}) as Dictionary).get("mask", {}).duplicate()
+	rule.merge((pieces.get(piece, {}) as Dictionary).get("mask", {}) if (pieces.get(piece, {}) as Dictionary).get("mask") is Dictionary else {}, true)
+	var blank := (rule.get("hues", []) as Array).is_empty() and float(rule.get("sat_min", 0.35)) > 1.0
+	var file := "res://assets/meshy/%s/mask.png" % piece
+	var tex: Texture2D = null if blank or not ResourceLoader.exists(file) else load(file)
+	_masks[piece] = tex
+	return tex
 
 
 static var _ranks := {}  # kit model name -> 0 cottage, 1 townhouse or inn

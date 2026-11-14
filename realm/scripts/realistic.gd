@@ -487,6 +487,13 @@ static func _template(name: String) -> Dictionary:
 		# merged mesh, they were gone and the towers' cloth hung cream).
 		root.set_meta("castle_spec", BUILT[name]["spec"])
 		root.set_meta("castle_frame", built_frame)
+	if name.begins_with("meshy_"):
+		# Which Meshy piece its meshes are (the merge drops the glb's path): team_colour.gd finds its team mask by it.
+		for pt in parts:
+			(pt[0] as Mesh).set_meta("meshy_piece", name.substr(6))
+		for g in root.find_children("*", "MeshInstance3D", true, false):
+			if (g as MeshInstance3D).mesh:
+				(g as MeshInstance3D).mesh.set_meta("meshy_piece", name.substr(6))
 	var scene := PackedScene.new()
 	scene.pack(root)
 	root.free()
