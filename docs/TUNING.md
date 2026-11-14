@@ -505,3 +505,4 @@ Switches (`--name`) go after `--` on the game's command line.
 - The besiegers' works growing each season of a siege: `realm/data/siege.json` `works` (first 0.4: the palisade's share in the first season; trench.from 2: the season the first trench is dug; trench.at, span, width, segment).
 - A taken town's banners run up their poles (the new owner's colours raised over the keep): `realm/data/castle.json` `banners.taken` (delay 1.5, beat 0.4, run_s 6.0, window 30.0).
 - Prisoners led away after a battle: `realm/data/battle.json` `field.play.prisoners` (per_regiment 4, most 12, guards 2, gap 0.11, pace 0.12, back 4.0).
+- Horsemen scouting ahead of a host's column: `realm/data/army.json` `scouts` (count 2, ahead 0.9, spread 0.25, pace 0.3).

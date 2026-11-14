@@ -80,8 +80,10 @@ var _order_face := NAN  # the way its order says its front looks (/world hosts[i
 var _seat_root: Node3D = null  # the seat's town (towns.gd), whose edge the muster forms past (_form_on_way)
 var _then_free := false  # marching into a town (march_in): gone once halted there
 const ArmyCamp := preload("res://scripts/army_camp.gd")  # a field host's camp where it holds
+const Horse := preload("res://scripts/horse.gd")  # the scouts' mounts
 var _order_kind := "?"  # a field host's order now (/world hosts[].order.kind; "" at ease), as units.gd last gave it
 var _camp: Node3D = null  # its camp while it holds (army_camp.gd)
+var _scouts: Array = []  # a field host's horsemen riding ahead of its column (Horse with a rider)
 var _baggage: Array = []  # a field host's carts behind its column: {node, carter, off, s}
 var _aboard := false  # taken ship (board): its regiments filing to the hulls, then on their decks
 var _pending_hulls: Array = []  # hulls to board once mustered
@@ -161,6 +163,7 @@ func _ready() -> void:
 	if battle.has("host"):  # a host in the field: in column on its tile, marching where Freeciv moves it (march_to)
 		_raise_baggage()
 		_stand_on_tile(town, _bound_yaw(battle["host"], town))
+		_raise_scouts(town, _bound_yaw(battle["host"], town))
 		for r in _regiments:
 			var mo: Node = Mover.of(r["node"]).on(null)  # the realm's navigation, as every marcher on the map
 			mo.clip = ""
@@ -331,6 +334,7 @@ func march_to(to: Vector3) -> void:
 	for c in _baggage:
 		c["s"] = _along((c["node"] as Node3D).global_position)
 		_cart_on(c, pace)
+	_scouts_ahead(_heading(_cum[_cum.size() - 1]))
 
 
 ## A host come into a town (units.gd field_hosts: the bridge has it `at` a town): its column marches in along the
@@ -356,6 +360,10 @@ func board(hulls: Array) -> void:
 	_aboard = true
 	_then_free = false
 	_strike_camp()
+	for sc in _scouts:  # the scouts ride home: the host sails without them
+		if is_instance_valid(sc):
+			(sc as Node3D).queue_free()
+	_scouts.clear()
 	for c in _baggage:  # the baggage stays ashore: the carts go back to the seat, out of the picture
 		(c["node"] as Node3D).queue_free()
 	_baggage.clear()
@@ -424,6 +432,53 @@ func _strike_camp() -> void:
 	if _camp and is_instance_valid(_camp):
 		_camp.queue_free()
 	_camp = null
+
+
+## A host in the field's horsemen out ahead of it (Age of Empires' scout cavalry, Warcraft III's riders ahead of the
+## column; casebook War and sieges, The march feeds the battle): army.json scouts: count riders in the house's colour,
+## standing ahead of the column's head on its tile; on each march they ride on by their Movers (the realm's
+## navigation) to ahead of where it will halt, faster than it, and wait there.
+func _raise_scouts(at: Vector3, yaw: float) -> void:
+	var k: Dictionary = Data.value("army", "scouts", {})
+	var scenes: Node = main.get("scenes")
+	if scenes == null or _regiments.is_empty():
+		return
+	var col: Color = _regiments[0]["colour"]
+	for i in int(k.get("count", 2)):
+		var horse: Node3D = Horse.new(_rng.randi() % Horse.COATS.size())
+		horse.name = "Scout"
+		var rider: Node3D = scenes.people.make(_rng, "soldier", col, "adult")
+		horse.mount(rider)
+		add_child(horse)
+		var mo: Node = Mover.of(horse).on(null)
+		mo.clip = ""  # the horse keeps its own gaits
+		mo.turn_rate = 3.0
+		_scouts.append(horse)
+	_place_scouts(at, yaw, false)
+
+
+## Each scout's spot ahead of `head` facing `yaw` (army.json scouts.ahead, spread across): put there, or ridden there.
+func _place_scouts(head: Vector3, yaw: float, ride: bool) -> void:
+	var k: Dictionary = Data.value("army", "scouts", {})
+	var fwd := Vector3(sin(yaw), 0, cos(yaw))
+	var right := Vector3(cos(yaw), 0, -sin(yaw))
+	for i in _scouts.size():
+		var h: Node3D = _scouts[i]
+		if not is_instance_valid(h):
+			continue
+		var across := (i - (_scouts.size() - 1) * 0.5) * float(k.get("spread", 0.25))
+		var spot := _ground_at(head + fwd * float(k.get("ahead", 0.9)) + right * across)
+		if ride:
+			var mo: Node = Mover.of(h)
+			mo.speed = float(k.get("pace", 0.3))
+			mo.go(spot)
+		else:
+			h.global_position = spot
+			h.rotation.y = yaw
+
+
+func _scouts_ahead(yaw: float) -> void:
+	_place_scouts(_at(_halt_head()), yaw, true)
 
 
 ## A host in the field's baggage train (03-army; Age of Empires' and Total War's columns: the carts behind the men):
