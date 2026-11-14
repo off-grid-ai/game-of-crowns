@@ -133,6 +133,7 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- 11-14 06:22 g22 stuck 16 min in the raid leave wait after a failed first wait; killed, g23 dropped, g24 started (battle siege raid) with bridge 3190a870 (raiders are Freeciv's barbarian player). Bridge told: no leave wait after a failed first wait. Bottleneck removed: a dead wait holding the GPU.
 - 11-14 06:09 g22 raid FAIL: staged on Saltkeep in season 39, no raider near it in 300 s, no frame: to bridge with its bridge.log. Realm holds (as g15). g23 (battle siege) starting.
 - 11-14 06:05 round: landed bridge 775586e5 (/world banners), army ef0fc7f4 (banners drawn, through the gate), 14f36dba (storm takes one gap), look dc9bbc40 (siege fire and breach dust), square 6a978641 2f820ede (gardens, washing). g22 town PASS (new framing after the pass reign rename: castle wall behind, smoke). g23 (battle siege) queued behind g22's raid.
 - 11-14 06:02 army blocked on banners (no /world field for banner men); bridge (hosts.js owner) asked for banners: [{owner, units, city, x, y}] plus the join as a host at Kingsmere. Army meanwhile: fallen at the seam or men through the breach. Landed army ef61a6b8 (dust, charge shock). Ruling: file owners stay; no cross-edits.
