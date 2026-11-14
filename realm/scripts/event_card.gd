@@ -76,18 +76,7 @@ func open() -> void:
 	# and what mood his master is in, so the King knows whom he is answering.
 	var sub: Dictionary = _up.get("subject", {}) if _up.get("subject") is Dictionary else {}
 	if String(sub.get("foreign", "")) != "":
-		var st := Awareness.store()
-		var rival: Dictionary = st.rec("rival", {}) if st and st.rec("rival") is Dictionary else {}
-		var w: Dictionary = Data.value("herald", "rival", {})
-		var who := String(w.get("from", "")).replace("{king}", String(sub.get("foreignking", ""))).replace("{realm}", String(sub["foreign"])).replace("{edge}", String(rival.get("edge", "")))
-		var mood := ""
-		for b in w.get("moods", []):
-			if float(rival.get("hostility", 50)) >= float(b.get("above", 0)):
-				mood = String(b.get("says", ""))
-				break
-		var plate := T.datum(who + (("  ·  " + mood) if mood != "" else ""), T.SIZE_DESC, T.DANGER if float(rival.get("hostility", 0)) >= float(w.get("danger", 60)) else T.TEXT_2)
-		plate.autowrap_mode = TextServer.AUTOWRAP_WORD
-		plate.custom_minimum_size = Vector2(420, 0)
+		var plate := envoy_plate(String(sub.get("foreignking", "")), String(sub["foreign"]))
 		v.add_child(plate)
 	var text := Label.new()
 	text.text = String(_up.get("text", ""))
@@ -173,3 +162,21 @@ func _close() -> void:
 ## The card's own words (realm/data/herald.json event_card).
 static func _w(key: String) -> String:
 	return String((Data.value("herald", "event_card", {}) as Dictionary).get(key, ""))
+
+
+## Who sent the rival King's envoy, from beyond which border, and his master's mood (herald.json rival; bridge
+## /world rival): one plate, on an event card and on his demand at court (court_panel.gd). Red past rival.danger.
+static func envoy_plate(king: String, realm: String) -> Label:
+	var st := Awareness.store()
+	var rival: Dictionary = st.rec("rival", {}) if st and st.rec("rival") is Dictionary else {}
+	var w: Dictionary = Data.value("herald", "rival", {})
+	var who := String(w.get("from", "")).replace("{king}", king if king != "" else String(rival.get("king", ""))).replace("{realm}", realm).replace("{edge}", String(rival.get("edge", "")))
+	var mood := ""
+	for b in w.get("moods", []):
+		if float(rival.get("hostility", 50)) >= float(b.get("above", 0)):
+			mood = String(b.get("says", ""))
+			break
+	var plate := T.datum(who + (("  ·  " + mood) if mood != "" else ""), T.SIZE_DESC, T.DANGER if float(rival.get("hostility", 0)) >= float(w.get("danger", 60)) else T.TEXT_2)
+	plate.autowrap_mode = TextServer.AUTOWRAP_WORD
+	plate.custom_minimum_size = Vector2(420, 0)
+	return plate

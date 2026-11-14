@@ -42,5 +42,18 @@
    { "above": 55, "says": "his master is hostile" },
    { "above": 35, "says": "his master is wary of us" },
    { "above": 0, "says": "his master is friendly" }
-  ] }
+  ],
+  "court": { "_": "His demand at court (court_panel.gd; bridge rivals.js, /world rival.demand {kind, town} and war): stakes: what rides on the answer by demand kind ({town}, {realm}, {king}, {waves}: his attacks so far); yield / defy: the tag under each answer, by the answer's id (bridge: pay, cede / refuse, insult).",
+   "stakes": {
+    "tribute": "He asks gold. Refused, his master's anger grows, and an angry neighbour comes back for land.",
+    "land": "He asks for {town}. Refused, it is war with {realm} over {town}.",
+    "peace": "{realm}'s host has come at {town} {waves}. He offers peace, at a price."
+   },
+   "yield": "Yield",
+   "defy": "Defy",
+   "yield_ids": ["pay", "cede"],
+   "defy_ids": ["refuse", "insult"],
+   "waves_one": "once",
+   "waves_many": "{n} times"
+  } }
 }

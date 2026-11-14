@@ -6,6 +6,8 @@ extends RefCounted
 const T := preload("res://scripts/theme.gd")
 const UI := preload("res://scripts/ui.gd")
 const Data := preload("res://scripts/data.gd")
+const EventCard := preload("res://scripts/event_card.gd")  # the rival envoy's plate (who sent him, his master's mood)
+const Awareness := preload("res://scripts/awareness.gd")
 const RoyalSheet := preload("res://scripts/royal_sheet.gd")  # what the King's word is worth (trust), for the council's tone
 
 var ui: UI  # the interface that owns this card: its signals, its building blocks, its other cards
@@ -378,6 +380,27 @@ func _show_audience() -> void:
 		named.add_child(pname)
 	if p.get("from") != null:
 		named.add_child(ui.see_btn({"id": p["from"]}, ui.house_by_name.get(String(p.get("house", "")), {})))
+	# The rival King's envoy (bridge rivals.js, arc "rival"; CK3's demands of a stronger neighbour): whose man he
+	# is and his master's mood, then what rides on the answer (herald.json rival.court).
+	var envoy := String(p.get("arc", "")) == "rival"
+	var rw: Dictionary = (Data.value("herald", "rival", {}) as Dictionary).get("court", {})
+	if envoy:
+		var plate: Label = EventCard.envoy_plate("", String(p.get("house", "")))
+		plate.custom_minimum_size = Vector2.ZERO
+		v.add_child(plate)
+		var st := Awareness.store()
+		var rival: Dictionary = st.rec("rival", {}) if st and st.rec("rival") is Dictionary else {}
+		var demand: Dictionary = rival.get("demand") if rival.get("demand") is Dictionary else {}
+		var war: Dictionary = rival.get("war") if rival.get("war") is Dictionary else {}
+		var kind := String(demand.get("kind", "peace" if not war.is_empty() else "tribute"))
+		var town_id := int(demand.get("town", war.get("town", -1)))
+		var waves := int(war.get("waves", 0))
+		var stakes := String((rw.get("stakes", {}) as Dictionary).get(kind, ""))
+		stakes = stakes.replace("{town}", String(ui.town_of.call(town_id).get("name", ""))).replace("{realm}", String(rival.get("realm", p.get("house", "")))).replace("{king}", String(rival.get("king", ""))).replace("{waves}", String(rw.get("waves_one", "")) if waves <= 1 else String(rw.get("waves_many", "")).replace("{n}", str(waves)))
+		if stakes != "":
+			var sl := T.datum(stakes, T.SIZE_DESC, T.DANGER if kind != "tribute" else T.TEXT_2)
+			sl.autowrap_mode = TextServer.AUTOWRAP_WORD
+			v.add_child(sl)
 	# A matter of the realm (a famine, a war, a house growing cold) is answered
 	# with the King's own orders; why it matters, and the council's two voices on it.
 	if p.get("hand", false):
@@ -424,6 +447,12 @@ func _show_audience() -> void:
 		b.pressed.connect(_answer.bind(String(p["id"]), String(o["id"])))
 		row.add_child(b)
 		_urged(row, p.get("voices", []), o.get("id"))
+		# The envoy's answers say which way they go: yield to his master, or defy him.
+		if envoy:
+			var oid := String(o.get("id", ""))
+			var yields: bool = oid in rw.get("yield_ids", [])
+			if yields or oid in rw.get("defy_ids", []):
+				row.add_child(T.datum(String(rw.get("yield" if yields else "defy", "")), T.SIZE_DESC, T.TEXT_2 if yields else T.DANGER))
 		# A promise instead of now (bridge promises.js): it says it is his word, and what keeping it means.
 		if String(o.get("id", "")) == "pledge":
 			var tb := RoyalSheet.trust_band()
