@@ -40,13 +40,16 @@
 #   crossing the King's host at sea in the cog (08-reinforce): ordered over water (One store's crossing, d70ca994), then
 #            framed once aboard, the reign paused while it is filmed (CROSS_WAIT, 900 s of the wall clock); skipped and
 #            said when no march goes by sea
+#   raid     men without banners at the crown's richest town, then one walking off to wild land (Wealth draws the raid;
+#            03-army for the field): staged (bridge /test/stage {raid}), framed at the town (RAID_WAIT, 300 s) and again
+#            once one is on the road out after the raid's seasons (RAID_LEAVE, 1200 s); each skipped and said on time-out
 set -u
 R=${RENDER_PASS_R:-$(cd "$(dirname "$0")/../.." && pwd)}  # the shared tree (its copy in $OUT inherits it)
 STAMP=$(date +%H%M)
 OUT=${OUT:-/tmp/goc-pass/$STAMP}
 PORT=${PORT:-8789}; FC=${FC:-5558}
 API=localhost:$PORT
-ONLY=${ONLY:-"town landuse realm muster cavalry battle siege command face walls breach seasons host5 castle street crossing"}
+ONLY=${ONLY:-"town landuse realm muster cavalry battle siege command face walls breach seasons host5 castle street crossing raid"}
 # The pass runs from its own copy of this script: zsh reads a script as it runs, so a commit to it mid-pass broke the
 # first full pass (2159: 'parse error near fi' at line 229, ten lines added above it at 22:00 while it ran).
 if [ -z "${RENDER_PASS_SELF:-}" ]; then
@@ -110,8 +113,10 @@ cleanup() { P=$(lsof -tiTCP:$PORT -sTCP:LISTEN); [ -n "$P" ] && kill $P; sleep 2
 trap cleanup EXIT
 trap "exit 1" TERM INT
 for i in {1..60}; do curl -s -m 3 -o /dev/null "$API/world?peek=1" && break; sleep 1; done
-new_reign() {  # a fresh reign "Render pass": its own season, so each take's one order a season is its own
-  local r=$(curl -s -m 30 -X POST $API/chronicles -d '{"name":"Render pass","scenario":"aldmere","minutes":60,"wealth":"comfortable","options":{}}')
+new_reign() {  # a fresh reign "Render pass film": its own season, so each take's one order a season is its own; a film
+  # reign (bridge chronicles.isTest) keeps the baseline's dice, so passes repeat, shows no reign name by the clock, and
+  # answers the bridge's test hooks (routes_test.js: the raid frame's raid)
+  local r=$(curl -s -m 30 -X POST $API/chronicles -d '{"name":"Render pass film","scenario":"aldmere","minutes":60,"wealth":"comfortable","options":{}}')
   local id=$(print -r -- "$r" | python3 -I -c "import json,sys; print(json.load(sys.stdin).get('id',''))")
   [ -n "$id" ] || { say "the reign wasn't made: $(print -r -- $r | head -c 200)"; return 1; }
   for i in {1..40}; do curl -s -m 5 $API/chronicles | grep -q "\"active\":\"$id\"" && break; sleep 2; done
@@ -331,6 +336,79 @@ print(min(me[0].get('units',[me[0]['id']])) if me else '')" 2>/dev/null)
       curl -s -m 5 -o /dev/null -X POST $API/resume
       side crossing $OUT/frames/crossing/crossing.png $TARGETS/08-reinforce.jpg "the King's host at sea in the cog (host $HID, company $LEAD)"
       side crossing_cog $OUT/frames/crossing/cog.png $TARGETS/08-reinforce.jpg "the cog close"
+    fi
+  fi
+fi
+if want raid; then
+  # Wealth draws the raid: men without banners fall on the crown's richest town (bridge routes_test.js {raid}, the town a
+  # lord's hired raid picks: realm.js richestTown), pillage round it for the raid's seasons, then walk off to wild land
+  # (realmrules/script.lua realm_raids_turn, fc9a094c). Raiders are units no house owns (Freeciv's barbarians: /world's
+  # players leave them out) that weren't there before the stage. Every wait is bounded and reads /world (the realm runs
+  # only while a window watches it), closing the court and an interlude as the crossing's wait does.
+  raider() {  # raider <x> <y> <near|out> <from season>: "id x y" of the raider nearest the town, or of the farthest one
+    # 4+ tiles out once the raid's seasons are over; '' when none
+    curl -s -m 10 "$API/world" | perl -e 'alarm shift; exec @ARGV' 20 python3 -I -c "
+import json,sys; d=json.load(sys.stdin)
+houses={p['id'] for p in d.get('players',[])}
+old={int(x) for x in open('$OUT/raid.before').read().split()}
+x,y=$1,$2
+us=[u for u in d.get('units',[]) if u.get('owner') not in houses and u['id'] not in old]
+far=lambda u: max(abs(u['x']-x),abs(u['y']-y))
+if '$3'=='near':
+    us=[u for u in us if far(u)<=3]; u=min(us,key=far) if us else None
+else:
+    us=[u for u in us if far(u)>=4 and d.get('turn',0)>=$4]; u=max(us,key=far) if us else None
+print('%d %d %d' % (u['id'],u['x'],u['y']) if u else '')" 2>/dev/null
+  }
+  curl -s -m 10 "$API/world?peek=1" | python3 -I -c "
+import json,sys; print(' '.join(str(u['id']) for u in json.load(sys.stdin).get('units',[])))" > $OUT/raid.before 2>/dev/null
+  RAID=$(curl -s -m 10 -X POST -H 'X-Test: 1' $API/test/stage -d '{"raid":"crown"}' | python3 -I -c "
+import json,sys; r=json.load(sys.stdin)
+if r.get('ok'): print(r['city'], r['x'], r['y'], r['name'])" 2>/dev/null)
+  set -- ${=RAID}
+  if [ -z "${1:-}" ]; then
+    say "raid: not staged (the crown holds no town, or the reign isn't a film's); no frame"
+  else
+    RX=$2; RY=$3; RNAME=${RAID#* * * }
+    T_RAID=$(curl -s -m 10 "$API/world?peek=1" | python3 -I -c "import json,sys; print(json.load(sys.stdin).get('turn',0))" 2>/dev/null)
+    SEASONS=$(sed -n '/^\[raids\]/,/^\[/s/^seasons = "\([0-9]*\)"/\1/p' $F/bridge/data/realmrules/luadata.txt)
+    say "raid: men without banners on $RNAME ($RX,$RY) in season ${T_RAID:-?}; they leave after ${SEASONS:-?} seasons"
+    AT=""; T0=$SECONDS
+    while [ -z "$AT" ] && [ $((SECONDS - T0)) -lt ${RAID_WAIT:-300} ]; do
+      curl -s -m 5 -o /dev/null -X POST $API/court/close
+      curl -s -m 5 -o /dev/null -X POST $API/interlude/close
+      AT=$(raider $RX $RY near 0)
+      [ -z "$AT" ] && sleep 5
+    done
+    if [ -z "$AT" ]; then
+      say "raid: no raider by $RNAME in ${RAID_WAIT:-300} s; no frame"
+    else
+      # Held while it is filmed (bridge POST /pause), as the crossing is: the seasons would run on while Godot loads.
+      set -- ${=AT}
+      curl -s -m 5 -o /dev/null -X POST $API/pause
+      { print "wait 30"; print "unit $1 3"; print "wait 4"; print "snap raid"; print "tile $RX $RY 3 0.8"; print "wait 4"; print "snap raid_town"; print "look end"; } > $OUT/raid.play
+      shot raid 1500 film $SW
+      curl -s -m 5 -o /dev/null -X POST $API/resume
+      side raid $OUT/frames/raid/raid.png $TARGETS/03-army.jpg "raiders at $RNAME (raider $1 at $2,$3)"
+      side raid_town $OUT/frames/raid/raid_town.png $TARGETS/03-army.jpg "$RNAME under the raid"
+    fi
+    OUTR=""; T0=$SECONDS
+    while [ -z "$OUTR" ] && [ $((SECONDS - T0)) -lt ${RAID_LEAVE:-1200} ]; do
+      curl -s -m 5 -o /dev/null -X POST $API/court/close
+      curl -s -m 5 -o /dev/null -X POST $API/interlude/close
+      OUTR=$(raider $RX $RY out $(( ${T_RAID:-0} + ${SEASONS:-8} )))
+      [ -z "$OUTR" ] && sleep 5
+    done
+    if [ -z "$OUTR" ]; then
+      say "raid: no raider on the road out of $RNAME in ${RAID_LEAVE:-1200} s; no frame"
+    else
+      # Framed on his tile, not his figure: one leaving may be gone (Disband Unit on wild land) before the lens finds him.
+      set -- ${=OUTR}
+      curl -s -m 5 -o /dev/null -X POST $API/pause
+      { print "wait 30"; print "tile $2 $3 3 0.8"; print "wait 4"; print "snap raid_leave"; print "look end"; } > $OUT/raid_leave.play
+      shot raid_leave 1500 film $SW
+      curl -s -m 5 -o /dev/null -X POST $API/resume
+      side raid_leave $OUT/frames/raid_leave/raid_leave.png $TARGETS/03-army.jpg "a raider walking off from $RNAME to wild land (raider $1 at $2,$3)"
     fi
   fi
 fi

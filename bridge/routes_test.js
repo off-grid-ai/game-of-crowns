@@ -161,6 +161,16 @@ export async function stage(ctx, req, res, url) {
     ctx.meta.weather = { turn: ctx.world?.turn ?? 0, season: prev?.season ?? "summer", kind: String(b.weather), wet: ["showers", "rain", "storm"].includes(String(b.weather)) ? Math.max(1, (prev?.wet ?? 0)) : 0, held: true };
     return json(res, 200, { ok: true, weather: ctx.meta.weather });
   }
+  // {raid: "crown"}: men without banners fall on the crown's richest town now (realm_raid), the town a lord's hired
+  // raid picks (Wealth draws the raid), and the realm hears of it; the render pass's raid frame.
+  if (b.raid) {
+    const crown = crownOf(ctx.world);
+    const prey = crown && Realm.richestTown(ctx.world, crown.id);
+    if (!prey) return json(res, 400, { error: "the crown holds no town" });
+    ctx.send(`lua cmd ${Lua.raid(prey.id)}`);
+    ctx.record({ turn: ctx.world.turn ?? 0, kind: "raid", text: `Men without banners raid ${prey.title ?? prey.name}.`, city: prey.id });
+    return json(res, 200, { ok: true, city: prey.id, x: prey.x, y: prey.y, name: prey.title ?? prey.name });
+  }
   if (b.soldiers) {
     const c = ctx.world.cities.find((x) => x.id === Number(b.city));
     const crownId = Realm.crownOf(ctx.world)?.id;
