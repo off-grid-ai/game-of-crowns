@@ -205,6 +205,12 @@ export class Court {
     if (list.length > 16) list.splice(0, list.length - 16);
   }
 
+  // The houses bound to one by a pact or a marriage (the intrigue, the one record of them): they join its wars.
+  boundTo(pid) {
+    return (this.intrigue ?? []).filter((s) => (s.kind === "pact" || s.kind === "marriage") && (s.from === Number(pid) || s.to === Number(pid)))
+      .map((s) => (s.from === Number(pid) ? s.to : s.from));
+  }
+
   // A scheme that ended (a match refused, gates opened): off the map.
   unscheme(kind, a, b) {
     const id = `${kind}:${Math.min(a, b)}:${Math.max(a, b)}`;
@@ -658,9 +664,23 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
         const t = m.target;
         const holder = world.cities.find((x) => x.id === t.id)?.owner;
         if (holder == null || holder === c.playerId) return;
-        const d = await this.ask(c, `You want ${t.name}, which ${t.house} holds. You could go to war for it now, without the King's leave, or wait.`, ["war", "wait"]);
+        const sworn = this.boundTo(c.playerId).includes(holder);
+        const d = await this.ask(c, `You want ${t.name}, which ${t.house} holds${sworn ? ", though your houses are bound by a pact" : ""}. You could go to war for it now, without the King's leave, or wait.`, ["war", "wait"]);
         if (d && d.choice !== "war") return;
+        // Betrayal (CK3, Game of Thrones): the pact or the marriage between the two houses is broken, and remembered.
+        if (sworn) {
+          this.unscheme("pact", c.playerId, holder);
+          this.unscheme("marriage", c.playerId, holder);
+          for (const x of this.alive().filter((x) => x.playerId === holder && (x.rank === "lord" || x.rank === "bannerman"))) this.shift(x.id, c.id, -30, `${c.house} broke faith with us.`);
+          this.record({ turn, kind: "scheme", text: `${c.house} breaks faith with ${t.house}. The pact between them is torn, and every house at court counts its friends again.`, city: t.id });
+        }
         this.onWar?.([c.playerId, holder]);
+        // The holder's own allies honour their pacts and marriages: they go to war with him.
+        for (const ally of this.boundTo(holder).filter((x) => x !== c.playerId)) {
+          this.onWar?.([ally, c.playerId]);
+          const al = this.lordOfHouse(ally);
+          this.record({ turn, kind: "battle", text: `${al?.house ?? "An ally"} honours its pact with ${t.house} and calls its banners against ${c.house}.` });
+        }
         const foe = this.lordOfHouse(holder);
         if (foe) { this.shift(foe.id, c.id, -30, `${c.name} came for ${t.name}.`); this.save(foe); }
         this.remember(c.id, `I went to war for ${t.name}.`);

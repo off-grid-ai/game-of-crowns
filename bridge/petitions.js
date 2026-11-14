@@ -54,6 +54,7 @@ export const ANSWERS = {
       if (them) this.shift(them.id, c.id, 15, `Our houses are bound by ${a.name} and ${b.name}'s marriage.`);
       for (const x of [a, b, c, them].filter(Boolean)) this.save(x);
       out.text = `By the King's word, ${a.name} of ${a.house} weds ${b.name} of ${b.house}. Two great houses are bound.`;
+      this.scheme({ kind: "marriage", from: c.playerId, to: p.other, turn: world.turn, line: `${a.name} of ${a.house} weds ${b.name} of ${b.house}, by the King's word: two great houses bound by blood.` });
       this.remember(c.id, `The King made my ${a.gender === "male" ? "son" : "daughter"}'s match into ${b.house}.`);
     } else if (option === "arrange") out.text = `The match between ${a?.name ?? "the heir"} and ${b?.name ?? "the bride"} cannot be made: one is wed or gone.`;
     if (option === "refuse") {
