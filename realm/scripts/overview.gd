@@ -1,8 +1,8 @@
 extends RefCounted
 ## The realm's painted map, past where the land can be read: the far view the
-## camera draws back to (realm_map.gd), opened from the camera rig's overview
-## signal and closed when you zoom past it, press a town, or the game takes the
-## camera down to the land. Owned by main.gd, which sets it up once the bridge
+## realm opens on (realm_map.gd) before the reign frames a town, closed when you
+## zoom past it, press a town, or the game takes the camera down to the land. The
+## camera's own zoom never jumps to it: it draws back over the land itself. Owned by main.gd, which sets it up once the bridge
 ## is in (_overview_setup) and opens it on the whole realm when the map comes.
 
 const Main := preload("res://scripts/main.gd")
@@ -37,7 +37,6 @@ func _overview_setup() -> void:
 		_over_map.max_zoom = MapLook.num("overview.match_most", 7.0)  # it opens at the camera's own scale
 	_over_map.modulate.a = 0.0
 	overview.add_child(_over_map)
-	main.rig.overview.connect(_overview_open)
 	_over_map.zoomed_past.connect(func(c: Vector2): _overview_close(c))
 	_over_map.town_pressed.connect(func(t: Dictionary): _overview_close(Vector2(float(t["x"]), float(t["y"])), int(t.get("size", 4))))
 	main.awareness.synced.connect(func():

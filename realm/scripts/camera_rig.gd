@@ -8,10 +8,10 @@ extends Node3D
 ## whatever the frame rate, and zoom eases evenly at every scale.
 
 signal clicked(ground: Vector3)
-signal overview  # drawn back past OVERVIEW: the painted map takes over from here
 
-## Past this the land can't be read (towns are smudges), so zooming out hands
-## over to the realm's painted map (main._overview) instead of going higher.
+## Past this the land can't be read (towns are smudges): the zoom goes on drawing back, one camera, to the land's
+## furthest (max_distance), the atlas and the houses' tint coming in with distance (Total War's campaign map, Civ VI's
+## strategic view; Mac, 2026-11-14: the jump to a separate map here was "abrupt"). Still the reach of a town's bodies.
 const Data := preload("res://scripts/data.gd")  # the one loader of realm/data (data.gd)
 const Settings := preload("res://scripts/settings.gd")  # the player's camera speed (Settings, the game section)
 static var OVERVIEW: float = preload("res://scripts/data.gd").num("camera", "rig.overview", 60.0)  # camera.json rig.overview
@@ -97,10 +97,7 @@ func focus(pos: Vector3, dist := -1.0) -> void:
 func nudge(action: String) -> void:
 	match action:
 		"in": goal_distance = maxf(min_distance, goal_distance * 0.93)
-		"out":
-			if goal_distance >= minf(max_distance, OVERVIEW) * 0.999:  # the furthest the land goes: the painted map takes over
-				overview.emit()
-			goal_distance = minf(minf(max_distance, OVERVIEW), goal_distance * 1.07)
+		"out": goal_distance = minf(max_distance, goal_distance * 1.07)
 		"up": _pan(Vector2(0, -1) * goal_distance * 0.04 * _speed())
 		"down": _pan(Vector2(0, 1) * goal_distance * 0.04 * _speed())
 		"left": _pan(Vector2(-1, 0) * goal_distance * 0.04 * _speed())
@@ -392,10 +389,7 @@ func _unhandled_input(event: InputEvent) -> void:
 ## you're pointing at stays where it is while everything else comes closer.
 func _zoom_at(screen: Vector2, f: float) -> void:
 	var before := goal_distance
-	if f > 1.0 and goal_distance >= minf(max_distance, OVERVIEW) * 0.999:  # at the land's furthest (its bounds or OVERVIEW)
-		overview.emit()
-		return
-	goal_distance = clampf(goal_distance * f, min_distance, minf(max_distance, OVERVIEW))
+	goal_distance = clampf(goal_distance * f, min_distance, max_distance)  # one zoom, out to the land's furthest
 	var p := _ground_under(screen)
 	if p == Vector3.INF:
 		return
