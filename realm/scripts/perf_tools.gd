@@ -287,7 +287,7 @@ func _cycle_step(delta: float) -> void:
 	if _cycle.is_empty():
 		_cycle = [["nothing", null], ["villagers", main.villagers], ["units", main.units], ["scenes", main.scenes], ["towns", main.towns], ["labels", main.labels], ["director", main.director], ["ui", main.ui], ["sound", main.sound], ["countryside", main.countryside], ["roads", main.roads], ["terrain", main.terrain], ["bridge", main.bridge], ["anim", main.get_node_or_null("AnimLOD")], ["chatter", main.get_node_or_null("Chatter")], ["control", main.control], ["awareness", main.get_node_or_null("Awareness")], ["traffic", main.get_node_or_null("Traffic")]]
 		if _cycle_vis:
-			_cycle = [["nothing", null], ["villagers", main.villagers], ["units", main.units], ["scenes", main.scenes], ["towns", main.towns], ["countryside", main.countryside], ["roads", main.roads], ["forest", main.terrain.forest], ["ground", main.terrain.land3d], ["rivers", main.terrain.get_node_or_null("Rivers")], ["vegetation", main.terrain.vegetation], ["sea", main.terrain.get_node_or_null("Sea")], ["seafloor", main.terrain.get_node_or_null("SeaFloor")], ["terrain", main.terrain]]
+			_cycle = [["nothing", null], ["villagers", main.villagers], ["units", main.units], ["scenes", main.scenes], ["towns", main.towns], ["countryside", main.countryside], ["roads", main.roads], ["forest", main.terrain.forest], ["ground", main.terrain.land3d], ["rivers", main.terrain.get_node_or_null("Rivers")], ["vegetation", main.terrain.vegetation], ["sea", main.terrain.get_node_or_null("Sea")], ["seafloor", main.terrain.get_node_or_null("SeaFloor")], ["grass", main.terrain.get_node_or_null("GrassBatches")], ["wear", main.terrain.get_node_or_null("Wear")], ["terrain", main.terrain]]
 		_cycle_i = 0
 		_cycle_t = 0.0
 	_cycle_t += delta
