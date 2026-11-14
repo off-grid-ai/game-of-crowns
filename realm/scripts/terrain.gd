@@ -215,11 +215,10 @@ func _snow_on(node: Node, on: bool) -> void:
 
 # --- building ground --------------------------------------------------------------
 
-var _graded := false
 ## The ground has changed under `area` (world XZ) and is drawn that way now:
 ## whatever stands there is set back on it (main.gd), in one place for all.
 signal ground_changed(area: Rect2)
-var _graded_area := Rect2()  # all the ground graded since the last commit
+var _graded_areas: Array[Rect2] = []  # the ground graded since the last commit: each place on its own (overlapping ones joined)
 
 
 ## Levels a building's plot the way builders do: cut into the high side, fill
@@ -262,8 +261,12 @@ func flatten(at: Vector3, size: Vector2, yaw: float, h: float, margin := 0.35, m
 			if data:
 				data.set_height(Vector3(x / per, 0, z / per), v)
 	var area := Rect2(at.x - reach, at.z - reach, reach * 2.0, reach * 2.0)
-	_graded_area = area if not _graded else _graded_area.merge(area)
-	_graded = true
+	# Joined only with what it overlaps: two towns graded in one batch stay two small areas, never the land between.
+	for i in _graded_areas.size():
+		if _graded_areas[i].intersects(area):
+			area = area.merge(_graded_areas[i])
+	_graded_areas = _graded_areas.filter(func(g: Rect2): return not g.intersects(area))
+	_graded_areas.append(area)
 
 
 ## Pushes graded ground to Terrain3D once a town is laid out.
@@ -273,34 +276,34 @@ var hold_grading := false  # while towns build in a batch, the land redraws once
 func commit_grading() -> void:
 	if hold_grading:
 		return
-	if _graded and land3d and land3d.land:
-		# Only the regions the grading touched are redrawn (Terrain3D's edited
-		# regions), not the whole realm's maps: that took 1.8 s in one frame.
+	if _graded_areas.is_empty():
+		return
+	if land3d and land3d.land:
+		# Only the regions the grading touched are redrawn (Terrain3D's edited regions), never the whole realm's
+		# maps (that took 1.8 s in one frame); none touched, nothing redrawn.
 		var data = land3d.land.data
 		var touched := []
-		var a := _graded_area
 		var step := 4.0
-		var z := a.position.y
-		while z <= a.end.y + step:
-			var x := a.position.x
-			while x <= a.end.x + step:
-				var r = data.get_regionp(Vector3(minf(x, a.end.x), 0, minf(z, a.end.y)))
-				if r and not touched.has(r):
-					r.set_edited(true)
-					touched.append(r)
-				x += step
-			z += step
-		Engine.set_meta("stage", "terrain.update_maps:%d" % touched.size())
-		if touched.is_empty():
-			data.update_maps()
-		else:
+		for a in _graded_areas:
+			var z := a.position.y
+			while z <= a.end.y + step:
+				var x := a.position.x
+				while x <= a.end.x + step:
+					var r = data.get_regionp(Vector3(minf(x, a.end.x), 0, minf(z, a.end.y)))
+					if r and not touched.has(r):
+						r.set_edited(true)
+						touched.append(r)
+					x += step
+				z += step
+		if not touched.is_empty():
 			data.update_maps(Terrain3DRegion.TYPE_HEIGHT, false, false)
 			for r in touched:
 				r.set_edited(false)
-	if _graded:
-		Engine.set_meta("stage", "terrain.ground_changed")
-		ground_changed.emit(_graded_area)
-	_graded = false
+	# Whatever stands there is set back on it: each graded place on its own, only that place.
+	var areas := _graded_areas
+	_graded_areas = []
+	for a in areas:
+		ground_changed.emit(a)
 
 
 # --- the land's shape ---------------------------------------------------------------
