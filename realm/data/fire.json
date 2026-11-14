@@ -85,7 +85,7 @@
       0.75
     ],
     "glow_out": 20.0,
-    "roofless_share": 0.33, "smoulder": {"_": "fire.gd _char: a burnt shell smoulders after its flames are out (04-siege: a stormed town reads by its smoke): share of shells that do, for seconds of play (each 0.6-1x), as the smoke above with these keys laid over it: a thin, paler wisp.", "share": 0.6, "seconds": 240.0, "amount": 10, "size": [0.3, 0.7], "rise": [0.1, 0.18], "life": 10.0, "colour": [0.16, 0.15, 0.14, 0.6]},
+    "roofless_share": 0.5, "rubble": {"_": "fire.gd _char: the share of burnt shells with a heap of fallen stone beside them (assets.json model; size: its length as a share of the house's; flat: its height kept; sink: game units into the ground; tint: soot over its colour).", "model": "rubble_pile", "share": 0.55, "size": 0.75, "flat": 0.55, "sink": 0.02, "tint": [0.45, 0.42, 0.4]}, "smoulder": {"_": "fire.gd _char: a burnt shell smoulders after its flames are out (04-siege: a stormed town reads by its smoke): share of shells that do, for seconds of play (each 0.6-1x), as the smoke above with these keys laid over it: a thin, paler wisp.", "share": 0.6, "seconds": 240.0, "amount": 10, "size": [0.3, 0.7], "rise": [0.1, 0.18], "life": 10.0, "colour": [0.16, 0.15, 0.14, 0.6]},
     "roofless": [
       0.22,
       0.38

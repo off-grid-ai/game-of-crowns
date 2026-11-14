@@ -802,6 +802,22 @@ func _char(root: Node3D, key: String, h: Array) -> Dictionary:
 	scorch.distance_fade_begin = FAR * 0.8
 	scorch.distance_fade_length = FAR * 0.2
 	shell.add_child(scorch)
+	# The rubble of a burnt house (04-siege: fallen stone and timber round the stormed town's shells; fire.json
+	# char.rubble): a heap of its fallen stone beside a share of the shells, sized to the house, blackened by the fire.
+	var rb: Dictionary = ck.get("rubble", {})
+	if not rb.is_empty() and r.randf() < float(rb.get("share", 0.0)):
+		const Real := preload("res://scripts/realistic.gd")
+		var model := String(rb.get("model", "rubble_pile"))
+		var heap: Node3D = Real.make(model)
+		if heap:
+			var fp: Vector2 = Real.footprint(model)
+			var k := float(rb.get("size", 0.7)) * maxf(box.size.x, box.size.z) / maxf(maxf(fp.x, fp.y), 0.001)
+			var side := 1.0 if r.randf() < 0.5 else -1.0
+			heap.scale = Vector3(k, k * float(rb.get("flat", 0.6)), k)
+			heap.rotation.y = r.randf() * TAU
+			heap.position = Vector3(box.get_center().x + r.randf_range(-0.3, 0.3) * box.size.x, box.position.y - float(rb.get("sink", 0.02)), box.get_center().z + side * 0.5 * box.size.z)
+			_soot(heap, Data.colour(rb.get("tint"), Color(0.45, 0.42, 0.4)))
+			shell.add_child(heap)
 	# A sacked town smoulders after its flames are out (04-siege: the stormed town reads by its smoke; fire.json
 	# char.smoulder): most shells give a thin dark wisp from the fallen roof, for a while, then go cold.
 	var sm: Dictionary = ck.get("smoulder", {})
@@ -816,6 +832,22 @@ func _char(root: Node3D, key: String, h: Array) -> Dictionary:
 				wisp.emitting = false)
 	_burnt[key] = {"shell": shell, "hidden": hidden, "box": box}
 	return _burnt[key]
+
+
+## A model blackened by the fire (a burnt house's rubble): each of its materials once, its colour multiplied by `tint`.
+static var _sooty := {}
+static func _soot(n: Node, tint: Color) -> void:
+	for mi in n.find_children("*", "MeshInstance3D", true, false):
+		var m := mi as MeshInstance3D
+		for s in (m.mesh.get_surface_count() if m.mesh else 0):
+			var src := m.get_active_material(s) as BaseMaterial3D
+			if src == null:
+				continue
+			if not _sooty.has(src):
+				var c: BaseMaterial3D = src.duplicate()
+				c.albedo_color = src.albedo_color * tint
+				_sooty[src] = c
+			m.set_surface_override_material(s, _sooty[src])
 
 
 ## A burnt house rebuilt (the fact says so): the shell gone, the house back in its batch.
