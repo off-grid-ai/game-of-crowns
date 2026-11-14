@@ -599,7 +599,7 @@ func _spots(role: Dictionary, a: Dictionary, n: int, k: Dictionary) -> Array:
 				out.append({"at": at + dir * (float(role.get("start", 0.0)) + float(role.get("gap", 0.2)) * room * i)})
 		"rows":
 			var rows := maxi(1, int(role.get("rows", 2)))
-			var cols := ceili(float(n) / rows)
+			var cols := ceili(float(maxi(1, n - int(role.get("spare", 0)))) / rows)  # as wide as the n who stand: the spares a row behind
 			var gaps: Array = role.get("gaps", [1.25, 1.15])
 			for i in n:
 				out.append({"at": at + dir * (float(role.get("start", 0.2)) + (i / cols) * float(gaps[0]) * room) + side * ((i % cols) - (cols - 1) * 0.5) * float(gaps[1]) * room})
@@ -773,7 +773,9 @@ func _stage_role(k: Dictionary, role: Dictionary, anchors: Dictionary) -> void:
 	var cap := _census_cap(k, role)
 	if cap >= 0 and String(role.get("form", "")) != "each":
 		n = mini(n, cap)
-	var spots := _spots(role, a, n, k)
+	var want_n := n
+	var spare := int(role.get("spare", 0))  # spots beyond n (a row behind): the first n that fit stand (g37: the muster lost 2-8 men a town to stalls and statues)
+	var spots := _spots(role, a, n + spare, k)
 	if cap >= 0 and String(role.get("form", "")) == "each" and spots.size() > cap:
 		# More stalls (seats, carts) than the census stands people at: which of them get someone, by chance.
 		var keep: Array = []
@@ -786,8 +788,8 @@ func _stage_role(k: Dictionary, role: Dictionary, anchors: Dictionary) -> void:
 		for j in idx.slice(0, cap):
 			keep.append(spots[j])
 		spots = keep
-	elif cap >= 0 and spots.size() > cap:
-		spots = spots.slice(0, cap)  # a form of knots places several to each: the census counts people, not knots
+	elif cap >= 0 and spots.size() > cap + spare:
+		spots = spots.slice(0, cap + spare)  # a form of knots places several to each: the census counts people, not knots
 		var last := spots.filter(func(sp): return sp.has("knot") and sp["knot"] == spots[-1].get("knot", -1)) if not spots.is_empty() else []
 		if not last.is_empty() and last.size() < _knot_fewest(role):
 			spots = spots.slice(0, spots.size() - last.size())  # the knot cut short goes whole: nobody left talking to nobody
@@ -799,7 +801,10 @@ func _stage_role(k: Dictionary, role: Dictionary, anchors: Dictionary) -> void:
 	var placed: Array = []
 	var group: Array = []  # a pair walking together (the chase), a funeral's file
 	var i := -1
+	var missed := 0
 	for s in spots:
+		if spare > 0 and placed.size() >= want_n:
+			break  # all stand: the spare spots go unused
 		i += 1
 		var want: Vector3 = s["at"]
 		if bool(role.get("off_centre", false)):
@@ -808,8 +813,10 @@ func _stage_role(k: Dictionary, role: Dictionary, anchors: Dictionary) -> void:
 		if not bool(role.get("exact", false)):
 			pos = tl.place(root, want, float(role.get("reach", 0.2)), bool(role.get("inside", false)))
 			if is_nan(pos.x):
-				var nr: Dictionary = k["tally"]["no_room"]
-				nr[k["row"]["id"]] = int(nr.get(k["row"]["id"], 0)) + 1
+				missed += 1
+				if spare == 0 or missed > spare:
+					var nr: Dictionary = k["tally"]["no_room"]
+					nr[k["row"]["id"]] = int(nr.get(k["row"]["id"], 0)) + 1
 				continue  # no room: the scene is what fits
 		else:
 			pos.y = tl.ground_at(root, pos)
