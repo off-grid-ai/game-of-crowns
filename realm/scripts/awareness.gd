@@ -151,7 +151,8 @@ func rival_raiders() -> Array:
 
 
 ## The houses' war hosts on the road (/world warhosts, bridge hosts.js warpath without join: a rebel lord's host
-## marching on the King's seat, a house's war on a town): [{owner, units, city, x, y, rebel}], as banners.
+## marching on the King's seat, a house's war on a town; home, a host peace sends back to its seat):
+## [{owner, units, city, x, y, rebel, home}], as banners.
 func war_hosts() -> Array:
 	var v: Variant = realm.get_var(&"warhosts", [], false)
 	return v if v is Array else []

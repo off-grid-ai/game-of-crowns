@@ -418,13 +418,15 @@ func field_hosts(store: Node) -> Dictionary:
 	# to the King's town as Freeciv moves their lead company. Keyed by house and town until they join. A house's war
 	# host on the road (/world warhosts, bridge fe1500d0: a rebel lord's host marching on the King's seat; casebook, The
 	# court: a lord's rebellion, CK3's faction war) is drawn the same way, a column in its lord's colours under his
-	# standard, and lays siege at the walls as every war host does.
+	# standard, and lays siege at the walls as every war host does. Peace sends it home (/world warhosts home: the
+	# hosts a truce or the King's terms turn back to their seat, bridge hosts.js homeward): the same column, keyed by
+	# its house and lead company, turns and marches home by the road, so the terms are seen kept.
 	for b in store.banners() + store.war_hosts():
-		var key := "%s %d %d" % ["war" if b.has("rebel") else "banners", int(b.get("owner", -1)), int(b.get("city", -1))]
 		var units: Array = (b.get("units", []) as Array).duplicate()
 		if units.is_empty():
 			continue
 		units.sort()
+		var key := "road %d %d" % [int(b.get("owner", -1)), int(units[0])]
 		var tile := Vector2i(int(b.get("x", 0)), int(b.get("y", 0)))
 		var view: Node3D = _hosts.get(key)
 		if view and is_instance_valid(view) and view.get_meta("units", []) != units:
