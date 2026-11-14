@@ -34,10 +34,17 @@
   "riding_tip": "The rider is still on the road. The King hears him out when he reaches the seat.",
   "ignore_now": "Left unanswered by the season's end:",
   "ignore_in": "Left unanswered {n} seasons from now:" },
- "drawer": { "_": "The great houses drawer (houses_panel.gd): risen: the tag on a house whose host marches on the King (bridge warhosts rebel), risen_tip its hover; rival_war, rival_asks: the line under the rival King's plate ({realm}, {town}).",
+ "arc_tags": { "_": "The tag under each answer on a court matter of an arc (court_panel.gd), by arc and the answer's id (bridge rivals.js, rebels.js): [word, tone]; tone danger is red, plain is muted.",
+  "rival": { "pay": ["Yield", "plain"], "cede": ["Yield", "plain"], "refuse": ["Defy", "danger"], "insult": ["Defy", "danger"] },
+  "rebel": { "grant": ["Yield", "plain"], "refuse": ["Defy", "danger"], "hang": ["The rope", "danger"], "pardon": ["Mercy", "plain"], "ransom": ["Mercy, for gold", "plain"] } },
+ "rebel": { "_": "A rebel lord's matter at court (court_panel.gd; bridge rebels.js, /world rebels): terms: while his host is on the road ({n}: companies, {town}: where it rose); chains: when it is crushed.",
+  "terms": "His host is on the road: {n} companies, out of {town}. Refused, they come on.",
+  "chains": "His host is crushed. He kneels before the throne in chains." },
+ "drawer": { "_": "The great houses drawer (houses_panel.gd): risen: the tag on a house whose host marches on the King (bridge warhosts rebel), risen_tip its hover; rival_war, rival_treaty, rival_asks: the line under the rival King's plate ({realm}, {town}; {until}: the season the treaty runs out).",
   "risen": "RISEN · MARCHING ON THE KING",
   "risen_tip": "In arms against the crown: their host is on the road to the King's seat.",
   "rival_war": "At war with {realm} over {town}.",
+  "rival_treaty": "At peace with {realm} by treaty, until {until}.",
   "rival_asks": "His envoy waits at court for an answer about {town}." },
  "rival": { "_": "The rival King's envoy on an event card (event_card.gd; bridge rivals.js, /world rival): from: who sent him ({king}, {realm}, {edge}); moods: his master's mood by hostility (0..100, the first whose above it clears); danger: from here the line is red.",
   "from": "An envoy of {king} of {realm}, from beyond the {edge} border",
@@ -48,16 +55,12 @@
    { "above": 35, "says": "his master is wary of us" },
    { "above": 0, "says": "his master is friendly" }
   ],
-  "court": { "_": "His demand at court (court_panel.gd; bridge rivals.js, /world rival.demand {kind, town} and war): stakes: what rides on the answer by demand kind ({town}, {realm}, {king}, {waves}: his attacks so far); yield / defy: the tag under each answer, by the answer's id (bridge: pay, cede / refuse, insult).",
+  "court": { "_": "His demand at court (court_panel.gd; bridge rivals.js, /world rival.demand {kind, town} and war): stakes: what rides on the answer by demand kind ({town}, {realm}, {king}, {waves}: his attacks so far);",
    "stakes": {
     "tribute": "He asks gold. Refused, his master's anger grows, and an angry neighbour comes back for land.",
     "land": "He asks for {town}. Refused, it is war with {realm} over {town}.",
     "peace": "{realm}'s host has come at {town} {waves}. He offers peace, at a price."
    },
-   "yield": "Yield",
-   "defy": "Defy",
-   "yield_ids": ["pay", "cede"],
-   "defy_ids": ["refuse", "insult"],
    "waves_one": "once",
    "waves_many": "{n} times"
   } }

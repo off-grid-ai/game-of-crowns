@@ -281,6 +281,9 @@ func _rival_line(st: Node) -> void:
 	if r.get("war") is Dictionary:
 		var war: Dictionary = r["war"]
 		_houses.add_child(T.datum(String(_dw("rival_war", "")).replace("{realm}", String(r.get("realm", ""))).replace("{town}", town.call(int(war.get("town", -1)))), T.SIZE_DESC, T.DANGER))
+	elif r.get("treaty") is Dictionary:
+		var t: Dictionary = r["treaty"]
+		_houses.add_child(T.datum(String(_dw("rival_treaty", "")).replace("{realm}", String(r.get("realm", ""))).replace("{until}", UI.season_of(int(t.get("until", 0)))), T.SIZE_DESC, T.ACCENT))
 	elif r.get("demand") is Dictionary:
 		var d: Dictionary = r["demand"]
 		_houses.add_child(T.datum(String(_dw("rival_asks", "")).replace("{town}", town.call(int(d.get("town", -1)))), T.SIZE_DESC, T.TEXT_2))

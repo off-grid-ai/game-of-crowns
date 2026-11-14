@@ -401,6 +401,10 @@ func _show_audience() -> void:
 			var sl := T.datum(stakes, T.SIZE_DESC, T.DANGER if kind != "tribute" else T.TEXT_2)
 			sl.autowrap_mode = TextServer.AUTOWRAP_WORD
 			v.add_child(sl)
+	# A lord in arms (bridge rebels.js, arc "rebel"; CK3's faction demands, Mount & Blade's lord taken in the field):
+	# his host on the road, or crushed and he in chains (herald.json rebel).
+	if String(p.get("arc", "")) == "rebel":
+		_rebel_plate(v, p)
 	# A matter of the realm (a famine, a war, a house growing cold) is answered
 	# with the King's own orders; why it matters, and the council's two voices on it.
 	if p.get("hand", false):
@@ -447,12 +451,10 @@ func _show_audience() -> void:
 		b.pressed.connect(_answer.bind(String(p["id"]), String(o["id"])))
 		row.add_child(b)
 		_urged(row, p.get("voices", []), o.get("id"))
-		# The envoy's answers say which way they go: yield to his master, or defy him.
-		if envoy:
-			var oid := String(o.get("id", ""))
-			var yields: bool = oid in rw.get("yield_ids", [])
-			if yields or oid in rw.get("defy_ids", []):
-				row.add_child(T.datum(String(rw.get("yield" if yields else "defy", "")), T.SIZE_DESC, T.TEXT_2 if yields else T.DANGER))
+		# An envoy's or a rebel's answers say which way they go (herald.json arc_tags: yield or defy, mercy or the rope).
+		var arc_tag: Array = ((Data.value("herald", "arc_tags", {}) as Dictionary).get(String(p.get("arc", "")), {}) as Dictionary).get(String(o.get("id", "")), [])
+		if arc_tag.size() == 2:
+			row.add_child(T.datum(String(arc_tag[0]), T.SIZE_DESC, T.DANGER if String(arc_tag[1]) == "danger" else T.TEXT_2))
 		# A promise instead of now (bridge promises.js): it says it is his word, and what keeping it means.
 		if String(o.get("id", "")) == "pledge":
 			var tb := RoyalSheet.trust_band()
@@ -540,6 +542,26 @@ func _show_audience() -> void:
 		var choices := ", ".join(p.get("options", []).map(func(o): return String(o.get("text", o.get("label", "")))))
 		preload("res://scripts/spark.gd").attach(own, ui.get_tree().current_scene.get("bridge"), "ruling", func(): return "The petition: %s\nThe rulings on offer: %s" % [String(p.get("text", "")), choices], true)
 	_court_later(v, "They wait while you look at the realm; it holds still while the court sits.")
+
+
+func _rebel_plate(v: VBoxContainer, p: Dictionary) -> void:
+	var w: Dictionary = Data.value("herald", "rebel", {})
+	var st := Awareness.store()
+	var beat := String(p.get("beat", ""))  # rebel-<his player>-<turn>-terms|chains (bridge rebels.js)
+	var pid := int(beat.get_slice("-", 1))
+	var r := {}
+	for x in (st.rec("rebels", []) if st else []):
+		if int(x.get("owner", -2)) == pid:
+			r = x
+	var chained := beat.ends_with("-chains")
+	if r.is_empty() and not chained:
+		return  # his host is no longer on /world: nothing true to say of it
+	var n := (r.get("units", []) as Array).size()
+	var line := String(w.get("chains" if chained else "terms", "")).replace("{n}", str(n)).replace("{town}", String(ui.town_of.call(int(r.get("city", -1))).get("name", "")))
+	if line != "":
+		var l := T.datum(line, T.SIZE_DESC, T.TEXT_2 if chained else T.DANGER)
+		l.autowrap_mode = TextServer.AUTOWRAP_WORD
+		v.add_child(l)
 
 
 ## Later (the card stands aside while he looks at the realm, which holds still
