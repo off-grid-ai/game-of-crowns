@@ -93,6 +93,15 @@ func set_realm(owners: Array, players: Array, intrigue: Array = []) -> void:
 	for p in players:
 		var h: Dictionary = p.get("house", {})
 		by_name["the Crown" if h.get("crown", false) else String(h.get("name", "")).trim_prefix("House ")] = int(p["id"])
+	# A vassal house's land in its liege's colour (/world players' liege: the liege's id or house name), so the realm
+	# reads whole and the seam between them is drawn thin (land3d.gd pol_vassal); every land is some great house's.
+	for p in players:
+		var lg = p.get("liege")
+		if lg == null:
+			continue
+		var lid := int(lg) if (lg is int or lg is float) else int(by_name.get(String(lg).trim_prefix("House "), -1))
+		if colour.has(lid) and lid != int(p["id"]):
+			colour[int(p["id"])] = colour[lid]
 	for p in players:
 		for foe in p.get("wars", []):
 			if by_name.has(String(foe)):

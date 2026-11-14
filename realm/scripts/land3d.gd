@@ -480,6 +480,7 @@ uniform vec4 pol_z = vec4(12.0, 30.0, 0.4, 0.35);  // map_from, map_to: the came
 uniform vec4 relief = vec4(0.0, -0.5, 0.7, -0.5);  // the land's relief at the map's height (data/map.json relief): strength, the light it is shaded from
 uniform vec4 relief_near = vec4(0.0, -0.5, 0.7, -0.5);  // the same below the map's height (data/map.json relief.near): strength, light
 uniform vec4 pol_l = vec4(9.0, 22.0, 0.22, 0.55);  // line_from, line_to (camera height where borders fade in), soft (the painted band's width, tile share), crisp (the fine line's share)
+uniform float pol_vassal = 0.35;  // a vassal's border with its liege (both in the liege's colour): the line's width as a share of a realm's (look.json politics.vassal_line)
 uniform float pol_key = 0.0;  // the border's dark keyline just inside its bright line (data/look.json politics.keyline)
 float flood_d(vec2 t) {
 	float d = 100000.0;
@@ -535,8 +536,12 @@ const REALM_WASH := """
 		float gap = lead - 0.5;
 		float edge = other >= 0 ? 1.0 - smoothstep(px * 1.2, px * 2.6 + 0.01, gap) : 0.0;
 		if (politics > 0.5 && other >= 0) edge = 1.0 - smoothstep(px * pol_b.y * 0.5, px * pol_b.y + 0.01, gap);  // a crisp, bolder line
+		// A vassal's land wears its liege's colour (political_overlay.gd): where two holders share one colour the seam is
+		// within one realm, drawn as a thin inner line, no band, glow or keyline (CK3's vassal borders inside a realm).
+		bool kin = other >= 0 && own.a > 0.0 && o[other].a > 0.0 && distance(o[other].rgb, own.rgb) < 0.004;
+		if (kin) edge = 1.0 - smoothstep(px * pol_b.y * pol_vassal * 0.5, px * pol_b.y * pol_vassal + 0.01, gap);
 		// A band of stronger colour just inside it, as a map would draw a realm's edge.
-		float band = other >= 0 ? 1.0 - smoothstep(0.0, pol_z.z, gap) : 0.0;
+		float band = other >= 0 && !kin ? 1.0 - smoothstep(0.0, pol_z.z, gap) : 0.0;
 		// The two houses' standing across this border (terrain.politics.set_realm): r war, g truce, b sworn.
 		vec4 sa = texelFetch(war_tex, clamp(cs[best], ivec2(0), ivec2(realm_size) - 1), 0);
 		vec4 sb = other >= 0 ? texelFetch(war_tex, clamp(cs[other], ivec2(0), ivec2(realm_size) - 1), 0) : vec4(0.0);
@@ -598,14 +603,14 @@ const REALM_WASH := """
 		// the lens rises, and drawn as a painted border, a soft brush band under a finer line, not a hard rule.
 		float line_zoom = smoothstep(pol_l.x, pol_l.y, CAMERA_POSITION_WORLD.y - v_vertex.y);
 		float soft = other >= 0 ? 1.0 - smoothstep(0.0, pol_l.z, gap) : 0.0;
-		float paint = max(edge * pol_l.w, soft * soft * (1.0 - pol_l.w));
+		float paint = max(edge * pol_l.w, soft * soft * (1.0 - pol_l.w)) * (kin ? 0.75 : 1.0);
 		// A light glow of the line's colour spreading just inside it (02-realm's lit edges; look.json politics.border_glow).
-		float glow = politics > 0.5 && other >= 0 && own.a > 0.0 ? 1.0 - smoothstep(px * pol_b.y * 0.8, px * pol_b.y * 1.6 + 0.01, gap) : 0.0;
+		float glow = politics > 0.5 && other >= 0 && !kin && own.a > 0.0 ? 1.0 - smoothstep(px * pol_b.y * 0.8, px * pol_b.y * 1.6 + 0.01, gap) : 0.0;
 		ALBEDO = mix(ALBEDO, mix(line, vec3(1.0), 0.15), pol_b.w * glow * line_zoom);
 		ALBEDO = mix(ALBEDO, line, paint * strength * dash * line_zoom);
 		// A dark keyline just inside the bright line (02-realm: every edge a lit colour line set off by a dark rim),
 		// so a pastel house's line stands out of its own tinted land (g35: yellow on yellow read as a smear).
-		float rim = politics > 0.5 && other >= 0 ? smoothstep(px * pol_b.y * 0.95, px * pol_b.y * 1.1, gap) * (1.0 - smoothstep(px * pol_b.y * 1.3, px * pol_b.y * 1.7, gap)) : 0.0;
+		float rim = politics > 0.5 && other >= 0 && !kin ? smoothstep(px * pol_b.y * 0.95, px * pol_b.y * 1.1, gap) * (1.0 - smoothstep(px * pol_b.y * 1.3, px * pol_b.y * 1.7, gap)) : 0.0;
 		ALBEDO *= 1.0 - pol_key * rim * line_zoom;
 	}
 """
@@ -661,6 +666,7 @@ func set_politics(on: bool, hold: PackedFloat32Array, lean: PackedVector3Array, 
 	mat.set_shader_param("pol_z", z)
 	mat.set_shader_param("pol_l", l)
 	mat.set_shader_param("pol_key", Data.num("look", "politics.keyline", 0.0))
+	mat.set_shader_param("pol_vassal", Data.num("look", "politics.vassal_line", 0.35))
 	mat.set_shader_param("relief", r)
 
 
