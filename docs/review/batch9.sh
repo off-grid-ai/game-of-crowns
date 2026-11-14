@@ -363,7 +363,7 @@ if want rim; then
   done
 fi
 
-# 52. Grief at the seat: stalls shut, dark wool, candles round the centrepiece, black cloth on doors, the funeral walking round, the bell (with, recorded).
+# 52. Grief at the seat: stalls shut, dark wool, candles round the centrepiece, black cloth on doors, the funeral walking round, the bell (recorded).
 if want grief; then
   say "grief at $SEAT: $(stage "{\"city\":$SEATID,\"mood\":\"grief\"}")"
   { print "wait 35"; print "city Kingsmere 6 -25"; print "wait 6"; print "snap grief"; burst grief-clip 40 0.5; print "look grief-end"; } > $OUT/grief.play
