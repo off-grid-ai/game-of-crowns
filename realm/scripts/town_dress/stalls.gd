@@ -16,7 +16,7 @@ func dress(root: Node3D, life: Node3D, row: Dictionary, rng: RandomNumberGenerat
 		var m: Vector3 = st[0]
 		if open < 1.0 and float(absi(hash(Vector2i(roundi(m.x * 100.0), roundi(m.z * 100.0)))) % 1000) / 1000.0 >= open:
 			continue  # shut: no keeper, no buyers
-		var out := Vector3(m.x, 0, m.z).normalized()  # from the square's heart to the stall
+		var out := preload("res://scripts/town_plots.gd").stall_out(st)  # from the stall's front out back
 		var along := Vector3(-out.z, 0, out.x) * (1.0 if rng.randf() < 0.5 else -1.0)
 		var taken: PackedVector2Array = life.get_meta("standing")
 		var at := Vector3(NAN, 0, 0)

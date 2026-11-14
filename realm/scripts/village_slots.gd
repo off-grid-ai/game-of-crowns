@@ -203,7 +203,7 @@ func _slot(a: Dictionary, key: String, queue := true) -> Vector3:
 				var m: Vector3 = st[0]
 				if not (keepers.get(sti) is Node3D and is_instance_valid(keepers.get(sti))):
 					continue  # nobody to buy from: the buyer's loop runs only with a keeper there
-				var out := Vector3(m.x, 0, m.z).normalized()
+				var out := preload("res://scripts/town_plots.gd").stall_out(st)
 				var along := Vector3(-out.z, 0, out.x)
 				var front := m - out * (float(st[1]) * 0.5 + off)
 				for k in [0.0, -0.32, 0.32]:

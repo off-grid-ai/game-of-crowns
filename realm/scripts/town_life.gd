@@ -827,7 +827,7 @@ func _dress(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, rng: Ran
 		goods = ["FarmCrate_Empty", "Crate_Wooden"]  # shut or sold out
 	for st in stalls:
 		var m: Vector3 = st[0]
-		var out := Vector3(m.x, 0, m.z).normalized()
+		var out := preload("res://scripts/town_plots.gd").stall_out(st)
 		var along := Vector3(-out.z, 0, out.x)
 		for i in goods.size():
 			_prop(life, center, goods[i], m - out * (float(st[1]) * 0.5 + 0.06) + along * ((i - (goods.size() - 1) * 0.5) * 0.07), atan2(out.x, out.z), 1.0, 0.0)

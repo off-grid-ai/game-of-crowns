@@ -1514,29 +1514,38 @@ func _plaza(root: Node3D, center: Vector3, square_r: float, size: int, seat: boo
 		var a: float = laid["stalls"][i][1]
 		var arc: float = laid["stalls"][i][2]
 		var m := Vector3(cos(a), 0, sin(a)) * arc
-		var yaw := atan2(-m.x, -m.z)
+		var inward := -m.normalized()  # the stall's front, toward the square's heart
+		if TownPlots.GRID:
+			# On the grid its rows run straight along the square's sides, each stall facing in square to them (the
+			# fronts round the square the same: town_layout ring of fronts; g37 landuse: a round ring of stalls).
+			var o2 := Vector2(cos(a), sin(a))
+			var ax := Vector2.from_angle(TownPlots.AXIS)
+			var on_side := o2 * arc / maxf(absf(o2.dot(ax)), absf(o2.dot(ax.orthogonal())))
+			var fd := TownPlots.squared(-o2)
+			m = Vector3(on_side.x, 0, on_side.y)
+			inward = Vector3(fd.x, 0, fd.y)
+		var yaw := atan2(inward.x, inward.z)
 		if not drop.call(kind, m, yaw):
 			continue
 		lots.append([m, maxf(stall.x, stall.y) * 0.5])
 		fronts += m * (1.0 - (stall.y * 0.5 + 0.3) / arc)  # where buyers stand
 		n += 1
 		var kept: Array = root.get_meta("stalls", [])
-		kept.append([m, stall.y, stall.x])  # where it stands (its front toward the square), how deep and how wide
+		kept.append([m, stall.y, stall.x, -inward])  # where it stands (its front toward the square), how deep and how wide, which way is out
 		root.set_meta("stalls", kept)
 		# Goods at the stall's ends: a squared pile against each end, running back from its front (Anno 1800's
 		# and Manor Lords' market stalls: the stock stacked at the stall's sides, never out in the walk).
-		var along := Vector3(-sin(a), 0, cos(a))
+		var along := Vector3(inward.z, 0, -inward.x)  # along its row
 		_counter(root, center, kind, m, yaw, along, clutter, rng)
-		var inward := -m.normalized()  # the stall's front, toward the square's heart
 		for e in [-1, 1]:
 			var end: Vector3 = m + along * e * stall.x * 0.5 + inward * stall.y * 0.5
 			_pile(drop, clutter, end, -inward, along * e, rng.randi_range(int(heaps[0]), int(heaps[1])), stall.y, rng)
 		if ResourceLoader.exists("res://assets/realistic/ph/wooden_lantern_01/wooden_lantern_01_1k.gltf") and i % 2 == 0:
-			drop.call("ph/wooden_lantern_01", m - m.normalized() * (stall.y * 0.5 + 0.05) + along * stall.x * 0.45, yaw)
+			drop.call("ph/wooden_lantern_01", m + inward * (stall.y * 0.5 + 0.05) + along * stall.x * 0.45, yaw)
 		# The others a lantern on its post at the front corner (Kenney's town lantern; Mac 2026-11-12, "no
 		# finesse"; 01-town's lit stalls). towns.json market.<rank>.stall_posts.
 		elif bool(mk.get("stall_posts", false)) and Real.one("lamp_post") != "":
-			drop.call(Real.one("lamp_post"), m - m.normalized() * (stall.y * 0.5 + 0.05) - along * stall.x * 0.5, yaw)
+			drop.call(Real.one("lamp_post"), m + inward * (stall.y * 0.5 + 0.05) - along * stall.x * 0.5, yaw)
 	root.set_meta("stalls_stood", n)
 	if n > 0:
 		places["market"] = fronts / n
@@ -1903,7 +1912,9 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 	var reps := roundi(square_r * 4.0)
 	# The square: a cobbled heart laid whole to its edge, and trodden earth
 	# spreading out round it, ragged where it wears into the grass.
-	if terrain.land3d and terrain.land3d.land:
+	if TownPlots.GRID:
+		pass  # a square on the grid: its setts are its ground, edge to edge (g37 landuse: a round mud ring round a square square)
+	elif terrain.land3d and terrain.land3d.land:
 		terrain.land3d.paint_mud(center, square_r * 1.3, rng.randi())  # in the ground itself
 	else:
 		terrain.paint(root, terrain.tiled(ROAD_TEX, reps + 2, reps + 2, "round"), Vector3(0, _ground_y(center, Vector3.ZERO), 0), Vector2.ONE * square_r * 3.2, rng.randf() * TAU, ROAD_TINT)

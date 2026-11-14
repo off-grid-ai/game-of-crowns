@@ -32,6 +32,7 @@ static var LANE_LENGTH := 1.9  # how far a lane runs from its road
 static var RING_WOBBLE := 0.35  # how far a ring street wanders in and out of its circle (game units)
 static var WANDER := 0.0  # how much a street wanders on level ground (a share of a cell's cost, from a gentle noise)
 static var FACE_WINDOW := 0.5  # how far either side of its frontage a house reads its street's line (game units)
+const STRAIGHT_STEP := 0.5  # a straight street's stretch (game units, about 4 m): painted one by one over the ground
 static var GRID := true  # every house stands square to the town's axis (AoE2's and WC3's towns: one grid, rows read from above)
 static var AXIS := 0.0  # the town's axis (radians, town-local XZ angle): its first main road's heading (town_layout lay_ways)
 
@@ -426,6 +427,15 @@ static func path_on(g: AStarGrid2D, a: Vector2, b: Vector2) -> PackedVector2Arra
 	return _chaikin(_simplify(raw, CELL * 0.6))
 
 
+## Which way is out from a market stall's front to its back (town-local), from its record (towns.gd _plaza meta
+## stalls: [where, deep, wide, out]): the grid's way when it has one, else out from the square's heart.
+static func stall_out(st: Array) -> Vector3:
+	if st.size() > 3:
+		return st[3]
+	var m: Vector3 = st[0]
+	return Vector3(m.x, 0, m.z).normalized()
+
+
 ## A straight street from `a` toward `b`, stopped short of the first closed cell (water, a castle, a landmark; the
 ## ends themselves always open), empty when it runs less than two cells.
 static func _straight(g: AStarGrid2D, a: Vector2, b: Vector2) -> PackedVector2Array:
@@ -444,7 +454,13 @@ static func _straight(g: AStarGrid2D, a: Vector2, b: Vector2) -> PackedVector2Ar
 		end = b
 	if a.distance_to(end) < CELL * 2.0:
 		return PackedVector2Array()
-	return PackedVector2Array([a, end])
+	# In short steps (STRAIGHT_STEP): each is painted and kept as its own stretch, so its road follows the ground's
+	# rise and fall (g37 landuse: one decal from end to end, boxed by its two ends' heights, sank under the hill between).
+	var out := PackedVector2Array([a])
+	var steps := maxi(1, ceili(a.distance_to(end) / STRAIGHT_STEP))
+	for i in range(1, steps + 1):
+		out.append(a.lerp(end, float(i) / steps))
+	return out
 
 
 static func _cell(g: AStarGrid2D, p: Vector2) -> Vector2i:
