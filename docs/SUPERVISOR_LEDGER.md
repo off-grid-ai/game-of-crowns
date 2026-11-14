@@ -133,6 +133,7 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- 11-14 14:46 Landed: menu fixes 6781a0ec, four-ground lawns 0838d1b5, wood edges + doodads ebd30d94. g38 settings close (mono labels); lord FAIL: eye-level 3D stage breaks the no-close-up call. Decision (delegated): lord's sheet = CK3 card over the realm with painted portrait, 3D stage cut; also floating ring, Edit buttons, mono face (loop). Look was holding: put on WC3 terrain list.
 - 11-14 14:34 Landed: cards on screen + game face 9b5857a3, opening frames the King e72c7b40, siege host clear of houses 6864a6e5, plague-shut town 784feaa3. g38 menu: art strong; items illegible on art, loose portrait, footer illegible, monospace labels (loop). Settings/lord/reign_end rendering.
 - 11-14 14:22 Landed: muster/battle lens 22d83dbc, siege engines 5330c824, banks 36703764, defeat chapter 141f86fd. g38 siege: host clips through houses (army). g38 opening FAIL: council panel clipped off the left edge, monospace debug font, no crowning moment (loop). First look at UI screens: they were never judged before 57a2dbd9.
 - 11-14 14:10 Landed: kit by kind 66631287/3a7c6419, battle grass 3e1cdeb4, midzoom fill height 3cc5aecc, King's standard on works 1456087d. g38 battle + muster: real step (textured, no sea), sent to Mac; next: muster lens not taking, density, camera on clash (army). Siege and UI screens rendering.
