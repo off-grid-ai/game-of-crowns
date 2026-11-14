@@ -11,6 +11,7 @@
 
 import { crownOf } from "./realm.js";
 import * as Rivals from "./rivals.js";
+import * as Contagion from "./contagion.js";
 import * as Lua from "./lua.js";
 import fs from "node:fs";
 import { houseFor, cityName } from "./narrator.js";
@@ -20,6 +21,7 @@ import * as chron from "./chronicles.js";
 
 export const EVENTS = JSON.parse(fs.readFileSync(new URL("./data/events.json", import.meta.url), "utf8"));
 EVENTS.cards.push(...Rivals.RIVAL.cards);  // the rival King's envoys, drawn with the realm's (rivals.js)
+EVENTS.cards.push(...Contagion.CONTAGION.cards);  // the sickness on the roads and the King's answers (contagion.js)
 const S = EVENTS.settings;
 
 export const on = (meta) => Boolean(meta?.options?.events ?? S.on);
@@ -38,6 +40,7 @@ function subject(ctx, kind) {
   const house = (p) => p && { house: houseFor(p).name, pid: p.id, lord: lord(p.id), town: cityName(world.cities.find((c) => c.owner === p.id && c.capital)?.id ?? -1), city: world.cities.find((c) => c.owner === p.id && c.capital)?.id ?? null };
   switch (kind) {
     case "realm": return { realm: true };
+    case "sick_town": return town(pick(world.cities.filter((c) => Contagion.sick(ctx.meta, c.id) && !Contagion.closed(ctx.meta, c.id))) ?? null);
     case "crown_town": return town(pick(world.cities.filter((c) => c.owner === crown?.id && !c.capital)) ?? null);
     case "seat": return town(world.cities.find((c) => c.owner === crown?.id && c.capital));
     case "hungry_town": return town(pick(world.cities.filter((c) => (c.famine || c.granaryLow) && (c.owner === crown?.id || houses.some((h) => h.id === c.owner)))) ?? null);
@@ -70,6 +73,8 @@ function holds(ctx, when = {}) {
   if (when.after != null && k < when.after) return false;
   if (when.before != null && k > when.before) return false;
   if (when.rival && !Rivals.holds(meta, when.rival)) return false;
+  if (when.contagion && !Contagion.abroad(meta)) return false;
+  if (when.spread != null && Contagion.abroad(meta) < when.spread) return false;
   if (when.threat && !(meta.director?.threat && (when.threat === true || meta.director.threat.kind === when.threat))) return false;
   return true;
 }
@@ -156,6 +161,7 @@ function apply(ctx, fx = {}, sub = {}, turn) {
     crown.gold = (crown.gold ?? 0) + Math.round(fx.gold);  // now, as the decree route does, so a second payment can't overdraw before the next reading
   }
   if (fx.rival) Rivals.shift(ctx.meta, fx.rival);  // the rival King's mood (rivals.js)
+  if (fx.contagion) Contagion.act(ctx.meta, fx.contagion, sub.city, turn);  // the roads shut, physicians, fire (contagion.js)
   if (fx.ease && ctx.meta.director?.threat) ctx.meta.director.threat.level = Math.max(0, ctx.meta.director.threat.level - fx.ease);
   if (fx.text) ctx.record?.({ turn, kind: "event", text: fill(fx.text, sub), city: sub.city ?? undefined });
 }

@@ -5,6 +5,7 @@
 // each call (server.js keeps wrappers of the same names).
 
 import { crownOf, northTowns } from "./realm.js";
+import * as Contagion from "./contagion.js";
 import * as Risings from "./risings.js";
 import * as Households from "./households.js";
 import { houseFor, cityName, HOUSES } from "./narrator.js";
@@ -155,7 +156,10 @@ export function townStates(ctx) {
       famine: Boolean(x?.hadFamine),  // Freeciv's word: the town starved this season
       granaryLow: food != null && store > 0 && food / store < 0.25,
       plagueTurn: x?.plagueTurn ?? null,
-      plague: x?.plagueTurn != null && x.plagueTurn >= 0 && turn - x.plagueTurn <= PLAGUE_SEASONS,
+      // Freeciv's own illness; and plague in the realm's eyes: that, or the sickness walking the roads (contagion.js).
+      freecivPlague: x?.plagueTurn != null && x.plagueTurn >= 0 && turn - x.plagueTurn <= PLAGUE_SEASONS,
+      plague: (x?.plagueTurn != null && x.plagueTurn >= 0 && turn - x.plagueTurn <= PLAGUE_SEASONS) || Contagion.sick(meta, c.id),
+      closed: Contagion.closed(meta, c.id),  // its roads shut against the sickness: no carts (trade.js)
       disorder: Boolean(x?.disorder),
       // Freeciv's rapture, or a feast the King gave there this season or last.
       celebrating: Boolean(c.rapture ?? x?.celebrating) || scenes.some((s) => s.kind === "feast" && s.city === c.id && s.turn >= turn - 1),

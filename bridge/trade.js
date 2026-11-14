@@ -21,7 +21,7 @@ function goodsOf(c) {
 // cities: /world's towns (view.js, with besieged); atWar(a, b): Freeciv's diplomacy.
 export function list(cities, turn, atWar) {
   if (kept.turn === turn) return kept.routes;
-  const towns = (cities ?? []).filter((c) => !c.besieged);
+  const towns = (cities ?? []).filter((c) => !c.besieged && !c.closed);  // nor a town whose roads are shut (contagion.js)
   const seen = new Set(), routes = [];
   for (const a of towns) {
     const near = towns.filter((b) => b !== a && cheb(a, b) <= T.reach && !(a.owner !== b.owner && atWar(a.owner, b.owner)))
