@@ -104,13 +104,22 @@ var _snow: ShaderMaterial
 # Per season: broadleaf leaves, pine needles, grass and ground.
 const SEA_LEVEL := -0.15  # the water's surface
 
-const SEASONS := {
-	"spring": {"leaves": Color(0.82, 1.0, 0.72), "pine": Color(0.9, 1.0, 0.85), "grass": Color(0.78, 1.0, 0.6), "ground": Color(0.95, 1.05, 0.85), "snow": 0.0},
-	"summer": {"leaves": Color.WHITE, "pine": Color.WHITE, "grass": Color.WHITE, "ground": Color(0.95, 1.0, 0.9), "snow": 0.0},
-	"autumn": {"leaves": Color(1.12, 0.9, 0.55),  # warm ochre-green, not red (the target, concept-town-repaint; full red read as solid blobs on the kit trees)
-		 "pine": Color(0.85, 0.85, 0.7), "grass": Color(1.0, 0.93, 0.72), "ground": Color(0.9, 0.93, 0.82), "snow": 0.0},  # the leaves turn; the grass only dulls a little
-	"winter": {"leaves": Color(0.55, 0.47, 0.4), "pine": Color(0.7, 0.75, 0.72), "grass": Color(0.85, 0.85, 0.82), "ground": Color(0.8, 0.82, 0.86), "snow": 0.5},
-}
+## The seasons' tints (realm/data/ground.json seasons: leaves, pine, grass, ground as [r, g, b] multiplies; snow, how
+## much snow the season lays, 0-1: the leaves', roofs' and low plants' cover reads it; the ground's own is
+## ground.json winter.cover).
+static var SEASONS: Dictionary = _seasons()
+static func _seasons() -> Dictionary:
+	var out := {}
+	var rows: Dictionary = preload("res://scripts/data.gd").value("ground", "seasons", {})
+	for name in rows:
+		if String(name).begins_with("_"):
+			continue
+		var row := {}
+		for k in rows[name]:
+			var v = rows[name][k]
+			row[k] = Color(float(v[0]), float(v[1]), float(v[2])) if v is Array else float(v)
+		out[name] = row
+	return out
 
 
 ## Turns the land to the season: leaf colour, grass, the ground, and snow on

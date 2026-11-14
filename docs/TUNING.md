@@ -152,6 +152,7 @@ Switches (`--name`) go after `--` on the game's command line.
 - Wood edges and doodads: `forest.json woods.edge_bushes` [least, most] bushes round a clump at a wood's edge; `forest.json cover_per_tile` per terrain the bushes, grass, flowers and rocks per tile.
 - Rock on hill crests: `ground.json auto.cliff` (higher: rock on gentler slopes; 0.88 about 28 degrees) and `layers.rock.calm.contrast` (the stone's light and shadow; a repack and --import after).
 - Camera bounds: `camera.json bounds.margin` (game units the view's ground footprint stays inside the map edge; higher, less zoom-out) and `bounds.reach` (how far a corner over the horizon counts).
+- Winter: `ground.json seasons.<season>` (tints and snow 0-1), `ground.json winter` (cover: how deep the ground snow lies; patch, patch_scale: in broad patches; high: heights where it lies whole; trod: thinner on roads and squares; paint: how much of a road it hides), `weather.json roof.snow` and `leaves.cover`.
 - The coast: how far the beach runs above the waterline and which painting it blends through (dirt, no outline), and the surf at the shore: `realm/data/ground.json`: `beach.top`, `surf`.
 - How far out the land keeps its fine shape (Terrain3D's rings round the lens; too coarse and a lake's low shore sinks under the water at the mid zoom): `realm/data/ground.json`: `mesh.size`, `mesh.lods`.
 - From what distance the sea's colour stops reading the depth to its bed (nearer shows clear shallows, but the bed's coarser rings show as seams further out): `realm/data/look.json`: `sea.depth_fade`.

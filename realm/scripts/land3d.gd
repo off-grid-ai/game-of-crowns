@@ -106,6 +106,12 @@ func build(terrain: Node3D, ground_layer: int) -> void:
 	var snow: Array = Data.value("ground", "winter.snow", [])
 	if snow.size() == 3:
 		mat.set_shader_param("snow_col", Color(float(snow[0]), float(snow[1]), float(snow[2])))
+	# A mild winter's snow: in patches, whole on the high ground, thin where the town treads (ground.json winter).
+	mat.set_shader_param("snow_patch", Data.num("ground", "winter.patch", 0.0))
+	mat.set_shader_param("snow_patch_scale", Data.num("ground", "winter.patch_scale", 0.12))
+	var high: Array = Data.value("ground", "winter.high", [2.5, 6.0])
+	mat.set_shader_param("snow_high", Vector2(float(high[0]), float(high[1])))
+	mat.set_shader_param("snow_trod", Data.num("ground", "winter.trod", 0.6))
 	# The shore stays bare in winter (ground.json beach.snow: [none below, whole from], heights in game units).
 	var shore: Array = Data.value("ground", "beach.snow", [-1.0, -1.0])
 	mat.set_shader_param("snow_shore", Vector2(float(shore[0]), float(shore[1])))
@@ -286,7 +292,7 @@ func set_grass(tint: Color, snow := false, settle := -1.0) -> void:
 		create_tween().tween_property(ta, "albedo_color", tint, settle)
 	else:
 		ta.albedo_color = tint
-	var goal := 1.0 if snow else 0.0
+	var goal := Data.num("ground", "winter.cover", 1.0) if snow else 0.0  # a mild winter's cover, not a full one
 	if _snow_laid and is_equal_approx(goal, _snow_to):
 		return
 	_snow_to = goal
@@ -342,6 +348,10 @@ func _set_snow(v: float) -> void:
 const SNOW_UNIFORMS := """
 uniform float rain_wet = 0.0;
 uniform float snow_cover = 0.0;
+uniform float snow_patch = 0.0;  // ground.json winter: patch, patch_scale, high, trod (set_grass)
+uniform float snow_patch_scale = 0.12;
+uniform vec2 snow_high = vec2(2.5, 6.0);
+uniform float snow_trod = 0.6;
 uniform vec3 snow_col : source_color = vec3(0.84, 0.86, 0.91);
 uniform vec2 snow_shore = vec2(-1.0, -1.0);  // no snow below x, whole from y (game units of height; ground.json beach.snow)
 uniform float rough_floor = 0.72;  // the dry land is matte: rock and grass never shinier than this
@@ -367,7 +377,12 @@ const SNOW_COVER := """
 			trod += (texture_ids[i].x == %d || texture_ids[i].x == %d ? weights_id_0[i] : 0.0)
 				+ (texture_ids[i].y == %d || texture_ids[i].y == %d ? weights_id_1[i] : 0.0);
 		}
-		float depth = snow_cover * snow_up * (1.0 - 0.6 * clamp(trod, 0.0, 1.0));
+		// A mild winter: snow in broad patches (a slow world-space field, so it lies in some hollows and fields
+		// and not others), whole on the high ground, thin on the trodden earth.
+		float ps = snow_patch_scale;
+		float field = 0.5 + 0.5 * sin(v_vertex.x * ps + sin(v_vertex.z * ps * 0.7) * 2.1) * sin(v_vertex.z * ps * 1.3 + v_vertex.x * ps * 0.4);
+		float lies = max(mix(1.0, smoothstep(0.3, 0.7, field), snow_patch), smoothstep(snow_high.x, snow_high.y, v_vertex.y));
+		float depth = snow_cover * snow_up * lies * (1.0 - snow_trod * clamp(trod, 0.0, 1.0));
 		depth *= smoothstep(snow_shore.x, snow_shore.y, v_vertex.y);  // the tide-washed shore stays bare (g10 crossing: a beach white as snow)
 		float bump = mat.albedo_height.a;
 		snow_k = smoothstep(bump * 0.6, bump * 0.6 + 0.3, depth);
