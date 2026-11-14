@@ -31,6 +31,8 @@ static var FALL: float = preload("res://scripts/data.gd").num("siege", "assault.
 static var WALK_S: float = preload("res://scripts/data.gd").num("siege", "assault.walk", 0.17)  # a man's walk at the wall, units a second (siege.json assault.walk)
 static var RUN_S: float = preload("res://scripts/data.gd").num("siege", "assault.run", 0.45)  # siege.json assault.run
 const Fire := preload("res://scripts/fire.gd")
+const Works := preload("res://scripts/works.gd")  # the sky's night: torches in a night assault
+const Weapons := preload("res://scripts/weapons.gd")  # a torch in the off hand
 const Field := preload("res://scripts/army_field.gd")
 
 var col: Color
@@ -127,6 +129,14 @@ func _man(m: Dictionary) -> void:
 	f.rotation.y = atan2(face.x, face.z)
 	root.add_child(f)
 	scenes.arm(f, "sword")
+	# By night one in siege.json assault.torch_every carries a lit torch in his off hand (Thronefall and Stronghold:
+	# the night assault seen by its torches; works.gd dark, the sky's own night), held whatever he plays.
+	if Works.dark() and r.randi() % maxi(1, int(Data.num("siege", "assault.torch_every", 3))) == 0:
+		var mo_t = scenes.people.motion(f)
+		if mo_t:
+			mo_t.errand_load = "Idle_Torch_Loop"
+		else:
+			Weapons.hold_for(f, "Idle_Torch_Loop")
 	m["node"] = f
 	m["alive"] = true
 	m["down"] = false
