@@ -144,6 +144,7 @@ func open() -> void:
 		_say(v, String(sb["says"]), T.DANGER if bool(sb.get("hard", false)) else T.TEXT_2)
 	if bool(r.get("regency", false)):
 		_say(v, _w("regency", ""), T.DANGER)
+	_rest_row(v, r)
 	v.add_child(HSeparator.new())
 	# The family.
 	if r.get("consort") is Dictionary:
@@ -206,6 +207,47 @@ func open() -> void:
 		v.add_child(held[0])
 	ui.ease_in(_card)
 	ui.heard.emit("page")
+
+
+## Easing his mind (bridge royals.js rest; CK3's hunts, feasts and pilgrimages): one button each, its price in crowns
+## and how much it eases; one not ready says when it will be, one he can't pay says so (no silent locked button).
+func _rest_row(v: VBoxContainer, r: Dictionary) -> void:
+	var rest: Dictionary = r.get("rest", {}) if r.get("rest") is Dictionary else {}
+	if rest.is_empty():
+		return
+	var words: Dictionary = Data.value("royal_sheet", "rest", {})
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", T.GAP)
+	var st := Awareness.store()
+	var turn := int(st.rec("turn", 0)) if st else 0
+	for kind in ["hunt", "feast", "pilgrimage"]:
+		if not rest.has(kind):
+			continue
+		var k: Dictionary = rest[kind]
+		var w: Dictionary = words.get(kind, {})
+		var b: Button = ui.btn("%s  ·  %s" % [String(w.get("label", kind)), ui.crowns(int(k.get("gold", 0)))])
+		b.tooltip_text = String(w.get("tip", ""))
+		if not bool(k.get("ready", true)):
+			b.disabled = true
+			var left := int(k.get("seasons", 0)) - (turn - int(k.get("last", turn)))
+			b.tooltip_text = String(words.get("again", "Again in {n} seasons.")).replace("{n}", str(maxi(1, left)))
+		elif int(k.get("gold", 0)) > ui.purse:
+			b.disabled = true
+			b.tooltip_text = String(words.get("poor", "The treasury holds too little for this."))
+		b.pressed.connect(func():
+			b.disabled = true
+			ui.rest_asked.emit(kind, func(code, d):
+				if code != 200:
+					ui.heard.emit("error")
+					ui.toast(String(d.get("error", "")) if d is Dictionary else "")
+				else:
+					ui.toast(String(w.get("done", "")))
+				if is_instance_valid(_card) and _card.visible:
+					open.call_deferred()))
+		row.add_child(b)
+	if row.get_child_count() > 0:
+		v.add_child(T.label(String(words.get("head", "Ease his mind"))))
+		v.add_child(row)
 
 
 func _say(v: VBoxContainer, text: String, colour: Color) -> void:

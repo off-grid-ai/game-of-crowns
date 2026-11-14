@@ -370,6 +370,7 @@ func _ready() -> void:
 	ui.speed_stepped.connect(_step_speed)
 	ui.next_host.connect(_next_host)
 	ui.abdicate_asked.connect(func(cb): bridge.abdicate(cb))
+	ui.rest_asked.connect(func(kind, cb): bridge.king_rest(kind, cb))
 	awareness.synced.connect(ui.royal.on_synced)  # the crown passing: court news of how the houses take the new King
 	awareness.cleared.connect(ui.royal.reset)
 	ui.word_news.connect(func(town, said):

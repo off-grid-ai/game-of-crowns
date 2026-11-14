@@ -318,6 +318,11 @@ func abdicate(cb: Callable) -> void:
 	_post("/abdicate", {}, cb)
 
 
+## The King eases his stress (bridge royals.js rest): kind hunt | feast | pilgrimage; cb(code, d), 409 with why.
+func king_rest(kind: String, cb: Callable) -> void:
+	_post("/king/rest", {"kind": kind}, cb)
+
+
 func records(cb: Callable) -> void:
 	_http_get("/records", cb)
 
