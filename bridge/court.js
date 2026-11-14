@@ -461,7 +461,9 @@ export function docket(ctx) {
     const cost = Treasury.worn(ctx.meta, `court:${p.kind}:${o.id}`, o.cost, world?.turn ?? 0);
     const short = Treasury.shortOf(purse, cost);
     return { ...o, cost, label: String(o.label ?? "").replace(/\(\d[\d,]* gold\)/, `(${cost} gold)`), ...(short ? { short } : {}) };
-  }).map((o) => ({ ...o, weighs: court.weighOption?.(court.petitions.find((x) => x.id === p.id) ?? p, o, world) ?? null }));  // whom each answer warms and cools, shown before choosing
+  }).map((o) => ({ ...o, weighs: court.weighOption?.(court.petitions.find((x) => x.id === p.id) ?? p, o, world) ?? null,  // whom each answer warms and cools, shown before choosing
+    // what it goes against: the focuses, the King's own traits and the houses it cools (royals.js against)
+    against: Royals.against(ctx.meta, p.kind === "arc" ? p.arc : p.kind, o.id, o.favour, (pid) => { const q = world?.players?.find((x) => x.id === Number(pid)); return q ? houseFor(q).name : null; }) }));
   const pets = court.open().filter((p) => p.called != null).map((p) => ({ ...p, options: priced(p), due: null, sitting: p.called, push: !!c.push })).map((p) => ({ ...p, voices: voices(ctx, p, false) }));
   // A court with nothing left to show the King is no court: the doors close, the realm moves.
   if (c.sitting != null && !hand.length && !pets.length) { c.hand = {}; closeIfDone(ctx, world?.turn ?? 0, true); }

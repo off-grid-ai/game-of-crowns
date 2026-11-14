@@ -175,6 +175,19 @@ export function setFocus(ctx, focus) {
   return { ok: true, focus, text: F.words.replace("{king}", `${k.woman ? "Queen" : "King"} ${k.name}`) };
 }
 
+// What a court answer goes against, before it is chosen (court.js docket, for the court panel's tags): the focuses
+// whose against list holds kind.option (data/royals.json focus), the King's own traits it goes against (stress.against),
+// and the great houses it cools (its favour). {focus: [ids], traits: [names], houses: [names]}.
+export function against(meta, kind, option, favour = {}, houseName = () => null) {
+  const key = `${kind}.${option}`;
+  const k = meta?.royals?.king;
+  return {
+    focus: Object.entries(R.focus.choices).filter(([id, f]) => id !== "_" && f.against.includes(key)).map(([id]) => id),
+    traits: (k?.traits ?? []).filter((t) => (R.stress.against[t] ?? []).includes(key)),
+    houses: Object.entries(favour ?? {}).filter(([, d]) => d < 0).map(([pid]) => houseName(pid)).filter(Boolean),
+  };
+}
+
 // The decks the King's focus draws toward (events.js), and how much more often.
 export const focusDecks = (meta) => R.focus.choices[meta?.royals?.king?.focus]?.decks ?? [];
 export const FOCUS_BOOST = R.focus.boost;
