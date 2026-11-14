@@ -115,10 +115,16 @@ func route(from: Vector3, to: Vector3) -> PackedVector3Array:
 	var out := PackedVector3Array()
 	var a := _cell(from)
 	var b := _cell(to)
-	if not built or not grid.is_in_boundsv(a) or not grid.is_in_boundsv(b):
+	if not built or not grid.is_in_boundsv(a):
 		out.append(to)
 		return out
 	var end := to
+	if not grid.is_in_boundsv(b):
+		# Past the field's edge (a routed regiment running on, a charge carried through): to the field's last cell
+		# that way, never a straight line over whatever lies beyond (g37 battle: Wolfholt's routed men ran out into
+		# the sea). The water and the buildings out there are the field's to refuse.
+		b = Vector2i(clampi(b.x, 0, cells - 1), clampi(b.y, 0, cells - 1))
+		end = _world(b)
 	if grid.is_point_solid(b):
 		b = _nearest_open(b)
 		end = _world(b)
