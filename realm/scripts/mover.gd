@@ -214,7 +214,11 @@ func toward(goal: Vector3, pace: float, look := Vector3.ZERO) -> void:
 		if way.size() > 1 and Vector2(way[0].x - body.global_position.x, way[0].z - body.global_position.z).length() < 0.02:
 			way = way.slice(1)
 		_way = way if not way.is_empty() else PackedVector3Array([goal])
-		_way[_way.size() - 1] = goal  # the mark itself, not its cell's middle
+		# The mark itself, not its cell's middle, where the fight's ground takes it; a mark in water, in a building or
+		# past the field's edge keeps the route's own end, the nearest open cell (g37/g38: a goal in the sea or a
+		# cottage was put back as the last step, and the men walked into it).
+		if field == null or field.takes(goal):
+			_way[_way.size() - 1] = goal
 		_i = 0
 		_then = Callable()
 	_steer = true

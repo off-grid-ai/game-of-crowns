@@ -167,6 +167,13 @@ func open_at(p: Vector3) -> bool:
 	return not built or not grid.is_in_boundsv(c) or not grid.is_point_solid(c)
 
 
+## Whether `p` (world) is a mark a man may be sent to as it is: on this field and open. A goal past the field's edge
+## or in water or a building is not: the route's own end (the nearest open cell) stands for it.
+func takes(p: Vector3) -> bool:
+	var c := _cell(p)
+	return built and grid.is_in_boundsv(c) and not grid.is_point_solid(c)
+
+
 func _cell(p: Vector3) -> Vector2i:
 	return Vector2i(floori((p.x - origin.x) / CELL), floori((p.z - origin.y) / CELL))
 
