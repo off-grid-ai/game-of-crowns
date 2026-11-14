@@ -39,7 +39,7 @@ static func hold_of(player: Dictionary) -> float:
 ## The political map (realm/data/look.json politics): each house's hold from its favour band (the bridge's
 ## reading) and, for a house slipping away, the colour of the first house it's at war with; to the ground's
 ## shader as two uniform arrays by owner id, so a change of mood repaints nothing.
-func _set_politics(players: Array, colour: Dictionary, by_name: Dictionary) -> void:
+func _set_politics(players: Array, colour: Dictionary, by_name: Dictionary, kin: Dictionary = {}) -> void:
 	if _t.land3d == null:
 		return
 	var pol: Dictionary = preload("res://scripts/look.gd").LOOK.get("politics", {})
@@ -60,6 +60,9 @@ func _set_politics(players: Array, colour: Dictionary, by_name: Dictionary) -> v
 		if not foes.is_empty() and colour.has(int(foes[0])):
 			var c: Color = colour[int(foes[0])]
 			lean[id] = Vector3(c.r, c.g, c.b)
+	for vid in kin:  # a vassal's holding stands as firm as his liege's realm
+		hold[vid] = hold[kin[vid]]
+		lean[vid] = lean[kin[vid]]
 	_t.land3d.set_politics(on, hold, lean,
 		Vector4(float(pol.get("wash_near", 0.3)), float(pol.get("wash_far", 0.8)), float(pol.get("own_mix", 0.45)), float(pol.get("stripes_below", 0.4))),
 		Vector4(float(pol.get("border_bright", 1.35)), float(pol.get("border_px", 3.0)), float(pol.get("stripe_width", 1.4)), float(pol.get("border_glow", 0.0))),
@@ -75,7 +78,14 @@ static func _relief() -> Vector4:
 	return Vector4(preload("res://scripts/map_look.gd").num("relief.strength", 0.0), float(l[0]), float(l[1]), float(l[2]))
 
 
-func set_realm(owners: Array, players: Array, intrigue: Array = []) -> void:
+## A great house's sworn vassals (/world vassals, the mirror's: {town, house, lord, id, liege, owner}) hold the land round
+## their seats inside its realm: each of the liege's tiles nearest one of its towns that is a vassal's seat is that
+## vassal's holding, drawn in the liege's colour under its own id (VASSAL_FIRST up), so the ground's shader draws the
+## seam between them as a thin inner line (land3d.gd pol_vassal; CK3's vassal holdings inside a realm).
+const VASSAL_FIRST := 32
+
+
+func set_realm(owners: Array, players: Array, intrigue: Array = [], vassals: Array = [], cities: Array = []) -> void:
 	if _t._land_mat == null or owners.size() != _t.height or _t.land3d == null or _t.land3d.land == null:
 		return  # (the 3D land is still being raised: the next reading paints it)
 	var wars := {}
@@ -93,15 +103,23 @@ func set_realm(owners: Array, players: Array, intrigue: Array = []) -> void:
 	for p in players:
 		var h: Dictionary = p.get("house", {})
 		by_name["the Crown" if h.get("crown", false) else String(h.get("name", "")).trim_prefix("House ")] = int(p["id"])
-	# A vassal house's land in its liege's colour (/world players' liege: the liege's id or house name), so the realm
-	# reads whole and the seam between them is drawn thin (land3d.gd pol_vassal); every land is some great house's.
-	for p in players:
-		var lg = p.get("liege")
-		if lg == null:
+	# The vassals' seats: their own ids, each in its liege's colour (the liege is the town's holder).
+	var seat_of := {}  # city id -> vassal id
+	var kin := {}  # vassal id -> its liege's owner id
+	var vs := vassals.duplicate()
+	vs.sort_custom(func(a, b): return str(a.get("id", "")) < str(b.get("id", "")))
+	var holder := {}
+	for c in cities:
+		holder[int(c.get("id", -1))] = int(c.get("owner", -1))
+	for v in vs:
+		var town := int(v.get("town", -1))
+		var o := int(v.get("owner", -1))
+		if holder.get(town, -2) != o or not colour.has(o) or VASSAL_FIRST + kin.size() >= 64:
 			continue
-		var lid := int(lg) if (lg is int or lg is float) else int(by_name.get(String(lg).trim_prefix("House "), -1))
-		if colour.has(lid) and lid != int(p["id"]):
-			colour[int(p["id"])] = colour[lid]
+		var vid := VASSAL_FIRST + kin.size()
+		seat_of[town] = vid
+		kin[vid] = o
+		colour[vid] = colour[o]
 	for p in players:
 		for foe in p.get("wars", []):
 			if by_name.has(String(foe)):
@@ -117,7 +135,7 @@ func set_realm(owners: Array, players: Array, intrigue: Array = []) -> void:
 		var a := int(it.get("from", -1))
 		var b := int(it.get("to", -1))
 		schemes["%d:%d" % [mini(a, b), maxi(a, b)]] = SCHEME[k]
-	_set_politics(players, colour, by_name)
+	_set_politics(players, colour, by_name, kin)
 	var sig := str(hash(owners)) + str(hash(wars)) + str(hash(truces)) + str(hash(sworn)) + str(hash(schemes))
 	if sig == _realm_sig:
 		return
@@ -128,7 +146,7 @@ func set_realm(owners: Array, players: Array, intrigue: Array = []) -> void:
 	# only if its text changed; a tile is repainted only if its owner changed, it
 	# borders one that did, or (when the houses' standing changed) it lies on a border.
 	# A change of a house's colour or oath repaints the whole map, as before.
-	var look_sig := str(hash(sworn)) + str(hash(colour))
+	var look_sig := str(hash(sworn)) + str(hash(colour)) + str(hash(seat_of)) + str(hash(holder))
 	var rel_sig := str(hash(wars)) + str(hash(truces)) + str(hash(schemes))
 	var full: bool = _realm_img == null or _war_img == null or _realm_ids.size() != _t.height or look_sig != _look_sig
 	var ids: Array = [] if full else _realm_ids.duplicate()
@@ -153,13 +171,38 @@ func set_realm(owners: Array, players: Array, intrigue: Array = []) -> void:
 	_realm_ids = ids
 	var owner_at := func(x: int, y: int) -> int:
 		return ids[y][x] if y >= 0 and y < _t.height and x >= 0 and x < (ids[y] as Array).size() else -1
+	# Each tile of a house with vassals: its nearest town of that house; a vassal's seat makes it his holding.
+	var held := {}  # Vector2i -> vassal id
+	if not seat_of.is_empty():
+		var towns := {}  # owner -> [[x, y, city id]]
+		for c in cities:
+			var o := int(c.get("owner", -1))
+			if o in kin.values():
+				if not towns.has(o):
+					towns[o] = []
+				towns[o].append([int(c.get("x", 0)), int(c.get("y", 0)), int(c.get("id", -1))])
+		for y in _t.height:
+			for x in (ids[y] as Array).size():
+				var o: int = ids[y][x]
+				if not towns.has(o):
+					continue
+				var best := -1
+				var bd := INF
+				for t in towns[o]:
+					var d := float((t[0] - x) * (t[0] - x) + (t[1] - y) * (t[1] - y))
+					if d < bd:
+						bd = d
+						best = t[2]
+				if seat_of.has(best):
+					held[Vector2i(x, y)] = seat_of[best]
 	# The houses' standing, per tile: r = at war with a neighbour across the border,
 	# g = under a truce with one, b = the owner is sworn to the crown, a = a scheme
 	# with that neighbour (SCHEME; 1 for none).
 	var paint := func(realm: Image, war: Image, x: int, y: int) -> void:
 		var o: int = owner_at.call(x, y)
 		var col: Color = colour.get(o, Color(0, 0, 0, 0))
-		realm.set_pixel(x, y, Color(col.r, col.g, col.b, (o + 1) / 64.0) if o >= 0 and col.a > 0.0 else Color(0, 0, 0, 0))
+		var shown: int = held.get(Vector2i(x, y), o)  # a vassal's holding under his own id, in the liege's colour
+		realm.set_pixel(x, y, Color(col.r, col.g, col.b, (shown + 1) / 64.0) if o >= 0 and col.a > 0.0 else Color(0, 0, 0, 0))
 		var st := Color(0, 0, 1.0 if o >= 0 and sworn.get(o, false) else 0.0, 1)
 		var edge := false
 		for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:

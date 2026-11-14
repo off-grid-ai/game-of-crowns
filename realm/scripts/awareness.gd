@@ -394,6 +394,7 @@ func _reduce_land(world: Dictionary) -> void:
 	realm.set_var(&"gold", world.get("gold") if world.get("gold") is Array else [])  # gold seams [x, y, owner] (bridge snapshot.lua; Freeciv owns them): gold_mines.gd
 	realm.set_var(&"spent_seams", world.get("spentSeams") if world.get("spentSeams") is Array else [])  # seams worked out [x, y, turn] (bridge mines.js): the old workings
 	realm.set_var(&"intrigue", world.get("intrigue", []))  # the houses' schemes, seat to seat (bridge intrigue.js)
+	realm.set_var(&"vassals", world.get("vassals") if world.get("vassals") is Array else [])  # the great houses' sworn vassals {town, house, lord, id, liege, owner} (bridge characters.js): political_overlay.gd draws their holdings
 	realm.set_var(&"worked", world.get("worked", []))  # which town works each tile: one "-,297,..." row per map line (Freeciv's worked map; bridge savefile.js): land_use.gd
 	realm.set_var(&"tilled", world.get("tilled", []))  # each tile's tilling: one ".if" string per map line, f farmland, i irrigated (bridge savefile.js): land_use.gd
 
