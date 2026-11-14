@@ -174,6 +174,25 @@ func show_main() -> void:
 		cont.add_theme_stylebox_override("normal", T._box(Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.24), Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.6), 8, 10))
 		cont.add_theme_stylebox_override("hover", T._box(Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.36), Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.85), 8, 10))
 		cont.add_theme_color_override("font_color", Color(1, 0.93, 0.78))
+		# Under Continue, where the reign stands (its save card: the King, the realm's date, his last ruling).
+		var where := _label("", 14, MUTED)
+		where.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		where.autowrap_mode = TextServer.AUTOWRAP_WORD
+		where.visible = false
+		_body.add_child(where)
+		var where_ref: WeakRef = weakref(where)
+		var rid := String(reign.get("id", ""))
+		bridge.list_chronicles(func(data):
+			var l: Label = where_ref.get_ref()
+			if l == null or not data is Dictionary:
+				return
+			for c in data.get("list", []):
+				if String(c.get("id", "")) == rid or (rid == "" and String(c.get("id", "")) == String(data.get("active", ""))):
+					var sv: Dictionary = c.get("save", {}) if c.get("save") is Dictionary else {}
+					var bits := PackedStringArray([String(sv.get("king", "")), String(sv.get("date", "")), ("Last ruling: " + String(sv["lastRuling"])) if String(sv.get("lastRuling", "")) != "" else ""])
+					l.text = "  ·  ".join(Array(bits).filter(func(b): return b != ""))
+					l.visible = l.text != ""
+					return)
 		# Save the reign as it stands (saves as reigns; any game's Save): it says so, with the realm's date.
 		if reign.get("status", "") != "ended" and not reign.get("test", false):
 			var held := []  # the button, for its own press (a lambda keeps a copy of a local as it was)
@@ -1224,9 +1243,13 @@ func _on_list(data) -> void:
 		var sv: Dictionary = c.get("save", {}) if c.get("save") is Dictionary else {}
 		if not sv.is_empty():
 			var towns := int(sv.get("towns", 0))
+			if String(sv.get("king", "")) != "":
+				lines.append(String(sv["king"]))  # the King as the realm calls him now
 			lines.append("%s  ·  %s%s  ·  %s souls" % [String(sv.get("date", "")), String(sv.get("seat", "the crown")), (" and %d more towns" % (towns - 1)) if towns > 2 else (" and one more town" if towns == 2 else ""), _thousands(int(sv.get("souls", 0)))])
 		var months := ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
 		var d := Time.get_datetime_dict_from_unix_time(int(sv.get("playedAt", c.get("created", 0))) / 1000)
+		if String(sv.get("lastRuling", "")) != "":
+			lines.append("Last ruling: %s" % String(sv["lastRuling"]))
 		lines.append("%s %d %s" % ["Last played" if sv.has("playedAt") else "Begun", int(d["day"]), months[int(d["month"]) - 1]])
 		var card := _text_card("%s\n%s" % [String(c["name"]), "\n".join(lines)], cards)
 		if not is_active:
