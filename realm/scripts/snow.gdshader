@@ -8,6 +8,7 @@ uniform float amount : hint_range(0.0, 1.0) = 1.0;
 uniform float dark = 0.34;  // how much a soaked roof darkens
 uniform float sheen = 0.5;  // how glossy a soaked roof gets (its roughness when soaked: never a mirror)
 uniform float spec = 0.4;  // a soaked roof's specular (batch 9: at 0.7 the sun blew it out to white)
+uniform vec3 snow_col : source_color = vec3(0.66, 0.7, 0.79);  // the one snow colour (ground.json winter.snow; g24 raid: 0.9 blew out white)
 global uniform float wet;
 
 varying float up;
@@ -43,7 +44,7 @@ void fragment() {
 	// Wet: everything above the ground darker, the roofs most, and glinting.
 	float soak = clamp(wet, 0.0, 1.0) * lifted * mix(0.55, 1.0, smoothstep(0.2, 0.7, up)) * (0.85 + n * 0.3);
 	float wet_a = soak * dark;
-	ALBEDO = mix(vec3(0.03, 0.03, 0.035), vec3(0.9, 0.91, 0.94), step(wet_a, snow));
+	ALBEDO = mix(vec3(0.03, 0.03, 0.035), snow_col, step(wet_a, snow));
 	ROUGHNESS = snow > wet_a ? 0.85 : mix(1.0, sheen, soak);
 	SPECULAR = snow > wet_a ? 0.3 : mix(0.3, spec, soak);
 	ALPHA = max(snow, wet_a);

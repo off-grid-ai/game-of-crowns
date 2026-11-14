@@ -255,6 +255,8 @@ func _dress_towns() -> void:
 	_roof.set_shader_parameter("dark", float(k.get("dark", 0.34)))
 	_roof.set_shader_parameter("sheen", float(k.get("sheen", 0.5)))
 	_roof.set_shader_parameter("spec", float(k.get("spec", 0.4)))
+	var sc: Array = preload("res://scripts/data.gd").value("ground", "winter.snow", [0.66, 0.7, 0.79])
+	_roof.set_shader_parameter("snow_col", Color(float(sc[0]), float(sc[1]), float(sc[2])))  # the land's snow colour, on the roofs too
 	for b in _roofed.keys():
 		if not is_instance_valid(b):
 			_roofed.erase(b)

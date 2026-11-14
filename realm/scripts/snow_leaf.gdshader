@@ -7,6 +7,7 @@ render_mode blend_mix, depth_draw_never, cull_disabled, diffuse_burley;
 
 uniform sampler2D albedo_tex : source_color, filter_linear_mipmap;
 uniform float alpha_cut = 0.5;
+uniform vec3 snow_col : source_color = vec3(0.66, 0.7, 0.79);  // the one snow colour (ground.json winter.snow)
 uniform float cover = 0.8;  // how white the snowiest leaf gets (data/weather.json leaves.cover)
 global uniform float snow;
 
@@ -37,7 +38,7 @@ void fragment() {
 	float facing = smoothstep(0.2, 0.75, up);
 	float n = cell(world.xz * 3.0 + world.y * 1.7) * 0.6 + cell(world.xz * 11.0) * 0.4;
 	float lie = facing * smoothstep(0.35, 0.75, n + snow * 0.6 - 0.15) * clamp(snow * 1.6, 0.0, 1.0);
-	ALBEDO = vec3(0.86, 0.88, 0.92);
+	ALBEDO = snow_col;
 	ROUGHNESS = 0.9;
 	SPECULAR = 0.2;
 	ALPHA = lie * cover;

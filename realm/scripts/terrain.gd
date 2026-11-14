@@ -193,6 +193,8 @@ func _leaf_snow(mat: StandardMaterial3D, on: bool) -> void:
 		p.set_shader_parameter("albedo_tex", mat.albedo_texture)
 		p.set_shader_parameter("alpha_cut", mat.alpha_scissor_threshold if mat.transparency == BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR else 0.5)
 		p.set_shader_parameter("cover", Data.num("weather", "leaves.cover", 0.8))
+		var sc: Array = Data.value("ground", "winter.snow", [0.66, 0.7, 0.79])
+		p.set_shader_parameter("snow_col", Color(float(sc[0]), float(sc[1]), float(sc[2])))  # the land's snow colour, on the leaves too
 		_leaf_passes[mat] = p
 	if mat.next_pass == null:
 		mat.next_pass = _leaf_passes[mat]
