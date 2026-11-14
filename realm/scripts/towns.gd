@@ -844,7 +844,12 @@ func _town_wall(root: Node3D, center: Vector3, edge: PackedVector2Array, ways: A
 		var a: Vector2 = line[i]
 		var b: Vector2 = line[(i + 1) % line.size()]
 		var n: Vector2 = out_of.call(a, b)
-		for way: PackedVector2Array in main:
+		for way0: PackedVector2Array in main:
+			# The road runs on out of the town past its last point (it leaves for the realm's road): a wall standing
+			# beyond where its painted line stops still gets its gate there.
+			var way := way0.duplicate()
+			if way.size() >= 2:
+				way.append(way[way.size() - 1] + (way[way.size() - 1] - way[way.size() - 2]).normalized() * float(k.get("road_on", 3.0)))
 			for j in way.size() - 1:
 				var hit: Variant = Geometry2D.segment_intersects_segment(a, b, way[j], way[j + 1])
 				if hit != null and gates.all(func(g): return (g[0] as Vector2).distance_to(hit) > gate_half * 2.0):

@@ -622,3 +622,4 @@ Switches (`--name`) go after `--` on the game's command line.
 - A harbour town's quay: `realm/data/towns.json` `quay` (width 0.5, lip 0.05, from_square 0.3, least 2.0: the shortest waterfront that gets one; heap_every 0.9 and fisher_every 1.2: the catch and the porters along it).
 - A great seat's roofs in its house colour: `realm/data/look.json` `team.mask.amount` (0.85: how much of the colour a Meshy building's masked roof takes) and `team.mask.ordinary` (0.45: the share an ordinary house wears; castle, hall, manor all of it).
 - A vassal's manor on the map: `realm/data/towns.json` `map_seat.manor` (keep 1.4: its manor house's height as the marker, standard 1.8, most 3.5: how far it grows with the camera's distance).
+- A town's roads out through its wall: `realm/data/towns.json` `plots.road_past` (2.0: how far past the town's edge its main roads run, was 1.0) and `town_wall.road_on` (3.0: how far a main road is taken on when finding its gate).

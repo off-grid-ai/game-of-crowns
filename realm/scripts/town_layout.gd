@@ -399,7 +399,7 @@ func lay_ways(root: Node3D, center: Vector3, c: Dictionary, size: int, square_r:
 	root.set_meta("plot_edge", edge)
 	var height := func(p: Vector2) -> float: return tb._ground_y(center, Vector3(p.x, 0, p.y))
 	var land := func(p: Vector2) -> bool: return tb.terrain.is_land(center.x + p.x, center.z + p.y)
-	tb._ways_grid = TownPlots.grid(edge + 1.2, height, land, rng.seed + 13)
+	tb._ways_grid = TownPlots.grid(edge + TownPlots.ROAD_PAST + 0.2, height, land, rng.seed + 13)
 	var main: Array = []
 	# 01-town: the main street and one or two lanes into the square, no more (round 4: eleven ways met at
 	# Kingsmere's square and left its fronts no room). At most plots.square_roads.most roads run into the

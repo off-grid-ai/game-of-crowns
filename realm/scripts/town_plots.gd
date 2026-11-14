@@ -33,6 +33,7 @@ static var RING_WOBBLE := 0.35  # how far a ring street wanders in and out of it
 static var WANDER := 0.0  # how much a street wanders on level ground (a share of a cell's cost, from a gentle noise)
 static var FACE_WINDOW := 0.5  # how far either side of its frontage a house reads its street's line (game units)
 const STRAIGHT_STEP := 0.5  # a straight street's stretch (game units, about 4 m): painted one by one over the ground
+static var ROAD_PAST := 2.0  # how far past the town's edge its main roads run (out through the wall's gates)
 static var GRID := true  # every house stands square to the town's axis (AoE2's and WC3's towns: one grid, rows read from above)
 static var AXIS := 0.0  # the town's axis (radians, town-local XZ angle): its first main road's heading (town_layout lay_ways)
 
@@ -59,6 +60,7 @@ static func tune(base: Dictionary, over: Dictionary = {}) -> void:
 	RING_WOBBLE = float(k.get("ring_wobble", 0.35))
 	FACE_WINDOW = float(k.get("face_window", 0.5))
 	GRID = bool(k.get("grid", true))
+	ROAD_PAST = float(k.get("road_past", 2.0))
 
 
 ## The town's main roads (town-local polylines), from the square's edge out
@@ -68,8 +70,8 @@ static func roads(headings: Array, square_r: float, edge: float, g: AStarGrid2D,
 	var out: Array = []
 	for ang: float in headings:
 		var dir := Vector2.from_angle(ang)
-		var goal := dir * (edge + 1.0)
-		var t := edge + 1.0
+		var goal := dir * (edge + ROAD_PAST)
+		var t := edge + ROAD_PAST
 		while t > square_r + 0.6 and not bool(land.call(goal)):
 			t -= CELL * 2.0
 			goal = dir * t  # a road to the water's edge, not into it
