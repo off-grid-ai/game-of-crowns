@@ -12,7 +12,7 @@ const PerfTools := preload("res://scripts/perf_tools.gd")  # the frame-cost prob
 ## going (motion.gd), which drives their legs.
 ##
 ## Minds (npc_mind.gd hands each BTPlayer over): each person decides once every
-## DECIDE_S seconds, seen or not, with the time owed, so their waits and holds keep
+## DECIDE_S seconds while on screen (view_tier.gd: off screen or FAR they wait), with the time owed, so their waits and holds keep
 ## the clock. Staggered by person, so about 1/DECIDE_S of them decide each second and
 ## never all on one frame; a person new to the realm, or one something just happened to
 ## (wake), decides at once (Mac, FPS P0, 2026-11-14: "the reaction time is just too much";
@@ -28,6 +28,8 @@ static var MIND_BUDGET_MS: float = preload("res://scripts/data.gd").num("people"
 var _turn := 0  # where in _minds the next frame's thinking starts
 static var _woken := {}  # mind instance id -> WeakRef: minds something just happened to, decided first next frame (wake)
 const People = preload("res://scripts/people.gd")
+const ViewTier := preload("res://scripts/view_tier.gd")  # on screen and how far out the lens is: the one decider
+const BODY_R := 0.22  # a body's height, its sphere for the screen test (head in view, feet not, still seen)
 
 static var _players: Array[WeakRef] = []
 static var _minds: Array[WeakRef] = []
@@ -120,8 +122,8 @@ static func every(cam: Camera3D, body: Node3D, reach := -1.0) -> int:
 
 static func _every(cam: Camera3D, body: Node3D, reach: float) -> int:
 	var d := (body.global_position + Vector3(0, 0.1, 0)).distance_to(cam.global_position)
-	if d > (reach if reach > 0.0 else People.SEEN_TO) or not in_view(cam, body):
-		return 0
+	if d > (reach if reach > 0.0 else People.SEEN_TO) or ViewTier.of(body.global_position, BODY_R) <= ViewTier.FAR:
+		return 0  # past where a body is drawn, off screen, or the lens out at FAR (view_tier.gd): nothing moves
 	if d < NEAR:
 		return 1
 	return STRIDE
@@ -196,8 +198,8 @@ func _think(delta: float, vp: Viewport, cam: Camera3D) -> void:
 			continue
 		var fresh := not _mind_owed.has(id)
 		var owed: float = delta if fresh else float(_mind_owed[id]) + delta
-		if not fresh and owed < DECIDE_S:
-			_mind_owed[id] = owed
+		if not fresh and (owed < DECIDE_S or ViewTier.of(body.global_position, BODY_R) <= ViewTier.FAR):
+			_mind_owed[id] = owed  # off screen or the lens out at FAR: it thinks with all it is owed once seen
 			continue
 		if not spent and Time.get_ticks_usec() > until:
 			spent = true
@@ -246,9 +248,3 @@ static func _move(p: AnimationMixer, dt: float) -> void:
 static func _advance(p: AnimationMixer, dt: float) -> void:
 	p.advance(dt * float(p.get("speed")) if p is AnimationTree and p.get("speed") != null else dt)
 
-
-## Any of a person in view, feet or head: at the edge of the frame one can be
-## out while the rest stands in shot, and a body never moved shows its T-pose.
-static func in_view(cam: Camera3D, body: Node3D) -> bool:
-	var p := body.global_position
-	return cam.is_position_in_frustum(p) or cam.is_position_in_frustum(p + Vector3(0, 0.22, 0))
