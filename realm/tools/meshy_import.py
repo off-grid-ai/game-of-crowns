@@ -97,13 +97,17 @@ def place(obj, spec):
     zs = [v.co.z for v in obj.data.vertices]
     h = max(zs) - min(zs)
     k = float(spec["height_m"]) / h if h > 0 else 1.0
+    # narrow: the piece's width and depth on top of that, its height kept (meshy.json; Mac on g31's wood, "a pile of
+    # green balloons": Warcraft III's and AoE2's trees stand a house and a half tall and narrow, crowns about 0.6 as
+    # wide as tall).
+    n = k * float(spec.get("narrow", 1.0))
     cx, cy, z0 = (max(xs) + min(xs)) / 2.0, (max(ys) + min(ys)) / 2.0, min(zs)
     for v in obj.data.vertices:
-        v.co.x = (v.co.x - cx) * k
-        v.co.y = (v.co.y - cy) * k
+        v.co.x = (v.co.x - cx) * n
+        v.co.y = (v.co.y - cy) * n
         v.co.z = (v.co.z - z0) * k
     obj.data.update()
-    return k, ((max(xs) - min(xs)) * k, (max(ys) - min(ys)) * k, h * k)
+    return k, ((max(xs) - min(xs)) * n, (max(ys) - min(ys)) * n, h * k)
 
 
 def decimate(obj, budget):
@@ -219,10 +223,23 @@ def split_house(obj, mask, into=None):
     pixels = {}
     house_of = {}  # source slot -> house slot
     moved = 0
+    top = max((v.co.z for v in bm.verts), default=0.0)
     for f in bm.faces:
         src = mats[f.material_index] if f.material_index < len(mats) else None
         rules = [r for r in _rules(mask) if f.normal.z >= float(r.get("up_min", -1.0))]
         if not rules:
+            continue
+        # above: every face higher than this share of the piece's height is in, whatever its paint (a tree's crown is
+        # all leaves: g31's raid wood, the orange and brown bark-painted faces left among the leaves read as litter).
+        if any(r.get("above") is not None and f.calc_center_median().z >= float(r["above"]) * top for r in rules):
+            if f.material_index not in house_of and not (src is not None and src.name.startswith((HOUSE, "MI_Leaves"))):
+                m = src.copy() if src else bpy.data.materials.new(name)
+                m.name = name if not house_of else "%s.%d" % (name, len(house_of))
+                mats.append(m)
+                house_of[f.material_index] = len(mats) - 1
+            if f.material_index in house_of:
+                f.material_index = house_of[f.material_index]
+                moved += 1
             continue
         img = base_image(src)
         if img is not None and uv is not None:

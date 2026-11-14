@@ -5,12 +5,12 @@
  "tris_after": 3000,
  "scale": 5.521430758955525,
  "size_m": [
-  6.97,
-  5.28,
+  6.14,
+  4.65,
   10.5
  ],
  "house_share": 0.0,
- "leaves_share": 0.901,
+ "leaves_share": 0.925,
  "mask_png": true,
  "materials": [
   "Material_0",
@@ -20,7 +20,7 @@
  "arm": false,
  "repainted": 0,
  "flattened": 0,
- "smooth_leaves": 2704,
- "padded": 1441654,
+ "smooth_leaves": 2776,
+ "padded": 1428134,
  "roots_tucked": 99
 }
