@@ -2018,6 +2018,16 @@ static func _reach(k: String, fallback: float) -> float:
 	return preload("res://scripts/camera_rig.gd").knob("map.reach." + k, fallback)
 
 
+## A town's detail (its banners' and standards' cloth): drawn up to the far tier only (camera.json view_tier.far_from,
+## view_tier.gd's own threshold), faded out by Godot's visibility range (its built-in HLOD), so from the far view a
+## town is its merged buildings (Mac: "far, towns are static; mid, low detail; near, full detail").
+static var DETAIL_END: float = preload("res://scripts/camera_rig.gd").knob("view_tier.far_from", 60.0)
+static func detail(g: GeometryInstance3D) -> void:
+	g.visibility_range_end = DETAIL_END
+	g.visibility_range_end_margin = DETAIL_END * 0.1
+	g.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
+
+
 func _fade_beyond(g: GeometryInstance3D, end: float) -> void:
 	g.visibility_range_end = end
 	g.visibility_range_end_margin = end * 0.15

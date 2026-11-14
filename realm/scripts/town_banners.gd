@@ -20,6 +20,9 @@ func stand(root: Node3D, pos: Vector3, color: Color, house: Dictionary, height :
 	b.position = pos
 	b.set_meta("height", height)  # rehouse sets the new holder's standard up the same
 	root.add_child(b)
+	if root.name != "MapSeat":  # a seat's great standard is what the far view reads the realm by: it stays
+		for g in b.find_children("*", "GeometryInstance3D", true, false):
+			t.detail(g)  # a town's or castle's standard, cloth and pole, is detail: gone at the far view (towns.gd detail)
 	# The house's banners show its favour: kept for raising and lowering.
 	var flag := b.get_node_or_null("Banner")
 	if flag:
