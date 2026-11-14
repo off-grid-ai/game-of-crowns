@@ -225,6 +225,8 @@ static func states_bb(bb: Blackboard) -> Array:
 	for word in ["promise_kept", "promise_broken"]:  # the King's word kept or broken to this town (bridge promises.js)
 		if bool(bb.get_var(StringName(word), false, false)):
 			out.append(word)
+	if float(bb.get_var(&"burnt", 0.0, false)) > Data.num("towns", "rebuilding.from", 0.01) and not "raid" in out and not "war" in out:
+		out.append("rebuilding")  # sacked and rebuilding (bridge damage.js burnt, falling each season): survivors at the burnt houses
 	if bool(bb.get_var(&"lean", false, false)):
 		out.append("lean")  # a wet harvest and no granary (bridge harvest.js): the queue at the granary, bare stalls
 	if bool(bb.get_var(&"prosperity", false, false)):
