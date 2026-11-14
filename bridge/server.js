@@ -351,6 +351,7 @@ function applyStartOptions() {
   if (!o || meta.optionsApplied || !world) return;
   meta.optionsApplied = true;
   meta.crownedAt ??= world.turn;  // the reign's chronicle begins here (routes_realm.js chronicle)
+  Reign.ledgerFrom(realmCtx());  // what the crown held when crowned (reign.js ledger)
   chron.saveMeta(meta);
   const lua = [];
   for (const p of world.players.filter((x) => !houseFor(x).wild && !houseFor(x).crown)) {

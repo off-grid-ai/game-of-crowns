@@ -468,6 +468,7 @@ export function endReign(ctx, why, outcome = "completed") {
   { const k = kingName(ctx, outcome); s.title = `The King ${k.name}`; s.why = k.why; }
   meta.epilogue = epilogue(ctx);
   meta.epitaph = epitaphOf(ctx, s, outcome);
+  meta.ledger = ledgerOf(ctx);
   const grudge = grudgeOf(ctx);
   s.outcome = outcome;
   meta.status = "ended";
@@ -523,6 +524,35 @@ function epitaphOf(ctx, s, outcome) {
   };
 }
 
+// The crown's holdings now (the reign's ledger, Loop's end card): its gold, its troops (every unit not a civilian's)
+// and its towns' ids. Taken at the crowning (meta.ledgerFrom) and at the end.
+function holdings(ctx) {
+  const { world, CIVILIAN } = ctx;
+  const crown = crownOf(world);
+  if (!crown) return null;
+  return { gold: crown.gold ?? 0, troops: (world.units ?? []).filter((u) => u.owner === crown.id && !CIVILIAN.has(u.type)).length,
+    towns: world.cities.filter((c) => c.owner === crown.id).map((c) => c.id) };
+}
+
+// The crowning's holdings, once a reign (tick, from its first clock).
+export function ledgerFrom(ctx) {
+  if (!ctx.meta.ledgerFrom && ctx.world?.cities) ctx.meta.ledgerFrom = holdings(ctx);
+}
+
+// The reign's ledger (Loop's end card, reign_cards.gd _ledger_page; Civilization's and Total War's end-of-campaign
+// summary): crowned against ended {gold, troops, towns}, the towns kept, won and lost by name, and the weightiest
+// rulings (the epilogue's, oldest first, at most four).
+function ledgerOf(ctx) {
+  const { meta } = ctx;
+  const a = meta.ledgerFrom, b = holdings(ctx);
+  if (!a || !b) return null;
+  const at = new Set(a.towns), now = new Set(b.towns);
+  const count = (h) => ({ gold: h.gold, troops: h.troops, towns: h.towns.length });
+  return { from: count(a), to: count(b),
+    kept: b.towns.filter((t) => at.has(t)).map(cityName), won: b.towns.filter((t) => !at.has(t)).map(cityName), lost: a.towns.filter((t) => !now.has(t)).map(cityName),
+    rulings: (meta.epilogue?.choices ?? []).filter((c) => c.city !== -1).slice(0, 4).map((c) => c.text) };
+}
+
 // The grudge a reign leaves the next (casebook, the reign: a grudge into the next reign; CK3's inherited hooks and
 // feuds): the great house coldest to the crown at the end, if under cooling, by its key (the house outlives the
 // players' ids), with the cause it keeps; null when no house is that cold.
@@ -539,6 +569,7 @@ function grudgeOf(ctx) {
 export function tick(ctx) {
   const { meta } = ctx;
   meta.elapsedMs += 5000;
+  ledgerFrom(ctx);
   if (meta.minutes > 0 && meta.elapsedMs >= meta.minutes * 60000) endReign(ctx, "The appointed time has passed. The reign ends.");
   else {
     lastAct(ctx);
@@ -586,7 +617,7 @@ export function reignInfo(ctx) {
     id: meta.id, name: meta.name, test: chron.isTest(meta), scenario: meta.scenario, status: meta.status, paused, minutes: meta.minutes,
     elapsedMs: meta.elapsedMs, remainingMs: meta.minutes > 0 ? Math.max(0, meta.minutes * 60000 - meta.elapsedMs) : null,
     score: meta.score, verdict: meta.verdict, title: meta.title, why: meta.why ?? null, outcome: meta.outcome, ended: meta.endedAt,
-    epilogue: meta.epilogue ?? null, epitaph: meta.epitaph ?? null, lastAct: meta.lastAct ?? null, interlude: meta.interlude && !meta.interlude.seen ? meta.interlude : null, ambitions: meta.ambitions ?? null, aim: winterAim(meta, world) ?? (aim ? { n: Math.min(meta.ladder.i, LADDER.length) + (meta.ladder.n ?? 0) + 1, of: meta.ladder.i < LADDER.length ? LADDER.length : null, text: aim.text, how: aim.how, progress: aimProgress(ctx, aim), at: aimPlace(ctx, aim) } : null), aimDone: meta.ladder?.just && Date.now() - meta.ladder.just.at < 8000 ? meta.ladder.just.text : null, readings: meta.status === "running" ? readings(ctx) : null,
+    epilogue: meta.epilogue ?? null, epitaph: meta.epitaph ?? null, ledger: meta.ledger ?? null, lastAct: meta.lastAct ?? null, interlude: meta.interlude && !meta.interlude.seen ? meta.interlude : null, ambitions: meta.ambitions ?? null, aim: winterAim(meta, world) ?? (aim ? { n: Math.min(meta.ladder.i, LADDER.length) + (meta.ladder.n ?? 0) + 1, of: meta.ladder.i < LADDER.length ? LADDER.length : null, text: aim.text, how: aim.how, progress: aimProgress(ctx, aim), at: aimPlace(ctx, aim) } : null), aimDone: meta.ladder?.just && Date.now() - meta.ladder.just.at < 8000 ? meta.ladder.just.text : null, readings: meta.status === "running" ? readings(ctx) : null,
     souls: world?.cities?.reduce((t, c) => t + soulsOf(c.size), 0) ?? 0,
     next,
     seals: Seals.view(meta),
