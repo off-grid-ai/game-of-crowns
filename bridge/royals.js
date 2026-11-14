@@ -69,6 +69,13 @@ function pass(ctx, h, how, turn) {
     ? `${was} ${old.name} lays down the crown. ${next.name}, ${next.age}, is crowned in Kingsmere${minor ? ", and a regency rules until they come of age" : ""}.`
     : `${was} ${old.name} is dead at ${old.age}. Long live ${title} ${next.name}${minor ? `, a child of ${next.age}: a regency rules in their name` : ""}.`;
   ctx.record({ turn, kind: "succession", text: told });
+  // The funeral is the crisis (CK2, Old World: oaths were sworn to the man, not the crown): every great house's favour
+  // falls back toward data/royals.json funeral.to by funeral.pull, the love and the grudges alike; the new King earns his own.
+  const swing = Object.fromEntries(greatHouses(ctx.world).map((p) => [p.id, Math.round((R.funeral.to - ctx.favourOf(p.id)) * R.funeral.pull)]).filter(([, d]) => d));
+  if (Object.keys(swing).length) {
+    ctx.shiftFavour(swing, `the oaths sworn to ${old.name}`);
+    ctx.record({ turn, kind: "court", text: `The great houses swore to ${old.name}, not to ${next.name}. Old friends wait to be won again, and old grudges are half forgotten.` });
+  }
   if (minor) {
     const cool = Object.fromEntries(greatHouses(ctx.world).map((p) => [p.id, R.minor.favour]));
     ctx.shiftFavour(cool, "a child on the throne");
