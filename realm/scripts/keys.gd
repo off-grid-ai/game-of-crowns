@@ -21,6 +21,8 @@ const ACTIONS := [
 	["cam_tilt_down", "Look down", "Camera", [KEY_F]],
 	["home", "Back to Kingsmere", "Camera", [KEY_Z]],
 	["pause", "Pause or resume the realm", "The realm", [KEY_P]],
+	["faster", "Let the seasons pass faster", "The realm", [KEY_EQUAL, KEY_KP_ADD]],
+	["slower", "Let the seasons pass slower", "The realm", [KEY_MINUS, KEY_KP_SUBTRACT]],
 	["last_event", "Go to the latest news (again: back)", "Camera", [KEY_SPACE]],
 	["event_back", "Back to where you were", "Camera", [KEY_HOME]],
 	["houses", "The great houses", "The realm", [KEY_H]],
@@ -33,6 +35,7 @@ const ACTIONS := [
 	["walk_king", "Walk the realm as the King", "The realm", [KEY_G]],
 	["back", "Close, step back", "The realm", [KEY_ESCAPE]],
 	# The command card's cells, left to right (host_command.gd; Warcraft III's grid keys).
+	["next_host", "The next of the King's hosts", "The King's hosts", [KEY_COMMA]],
 	["host_march", "March the selected host", "The King's hosts", [KEY_T]],
 	["host_attack", "Attack a foe's host", "The King's hosts", [KEY_V]],
 	["host_besiege", "Besiege a foe's town", "The King's hosts", [KEY_N]],

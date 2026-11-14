@@ -33,6 +33,8 @@ signal story_opened(entry: Dictionary)
 signal reign_continued  # the reign was scored, and the King rules on
 signal court_closed  # the doors shut: the realm moves, and the camera may go and look
 signal interlude_closed  # the King has read the act just gone: the realm goes on
+signal speed_stepped(dir: int)  # + and -: the seasons pass faster (1) or slower (-1); main.gd asks the bridge
+signal next_host  # comma: the next of the King's hosts, selected and looked at (main.gd)
 signal last_event  # Space: go to the latest news, or back again
 signal event_back  # Home: back to where the King was
 signal house_followed(player_id: int)  # a sigil on the ladder clicked: the camera goes with that house's host
@@ -463,6 +465,12 @@ func _unhandled_key_input(event: InputEvent) -> void:
 	# Every key is an Input Map action (keys.gd), so Settings → Controls can change it.
 	if event.is_action_pressed(&"pause"):
 		_toggle_pause()
+	elif event.is_action_pressed(&"faster"):
+		speed_stepped.emit(1)
+	elif event.is_action_pressed(&"slower"):
+		speed_stepped.emit(-1)
+	elif event.is_action_pressed(&"next_host"):
+		next_host.emit()
 	elif Features.WALKING and event.is_action_pressed(&"walk_king"):
 		walk_as_king.emit()
 	elif event.is_action_pressed(&"houses"):

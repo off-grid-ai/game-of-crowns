@@ -38,6 +38,7 @@ var interior: CanvasLayer  # inside a building
 var _selected := -1
 var _time_of_day := 0.36
 const Awareness := preload("res://scripts/awareness.gd")  # the realm's rules as the bridge sends them (season length, bands)
+const Data := preload("res://scripts/data.gd")  # the view's tunables (realm/data/*.json)
 const ShotHarness := preload("res://scripts/shot_harness.gd")
 var shots := ShotHarness.new(self)  # the test-and-film harness (shot_harness.gd): the flags and the shots
 var _shot: Dictionary:  # the command-line flags, read here wherever a test shot differs from play
@@ -358,6 +359,8 @@ func _ready() -> void:
 	ui.counsel_answered.connect(func(key): bridge.counsel_answered(key))
 	ui.court_closed.connect(func(): director.soon())  # the doors shut: the camera goes to look
 	ui.last_event.connect(news._to_news)
+	ui.speed_stepped.connect(_step_speed)
+	ui.next_host.connect(_next_host)
 	ui.court_waits_at.connect(func(at, caption, id): news.point_at(at, caption, ui.open_matter.bind(id)))
 	ui.event_back.connect(news._back_from_news)
 	ui.house_followed.connect(_follow_house)  # a house's sigil clicked: go with its host
@@ -589,6 +592,46 @@ func _set_ui_scale(v: float) -> void:
 		f.store_string(str(ui_scale))
 	if ui:
 		ui.toast("Interface size %d%%" % int(ui_scale * 100))
+
+
+## + and -, as in Anno and Age of Empires: the seasons pass faster or slower, a step at a time
+## (juice.json speed: the steps in seconds a season lasts, slowest first, and each step's word).
+func _step_speed(dir: int) -> void:
+	var steps: Array = Data.value("juice", "speed", {}).get("steps", [80, 40, 20])
+	var words: Array = Data.value("juice", "speed", {}).get("words", [])
+	if steps.is_empty():
+		return
+	var now := Awareness.season_seconds if Awareness.season_seconds > 0 else float(steps[steps.size() / 2])
+	var at := 0
+	for i in steps.size():
+		if absf(float(steps[i]) - now) < absf(float(steps[at]) - now):
+			at = i
+	var to := clampi(at + dir, 0, steps.size() - 1)
+	if to != at:
+		bridge.set_speed(int(steps[to]))
+	Awareness.season_seconds = float(steps[to])  # the next /world says so too; the next press steps on from here
+	if to < words.size():
+		ui.toast(String(words[to]))
+	sound.ui("click")
+
+
+## Comma, as in Age of Empires' next idle soldier: the next of the King's hosts is selected and looked at.
+var _host_turn := -1
+
+
+func _next_host() -> void:
+	var cmd := get_node_or_null("HostCommand")
+	if cmd == null:
+		return
+	var list: Array = cmd.hosts()
+	if list.is_empty():
+		ui.toast(String(Data.value("juice", "no_host", "")))
+		return
+	_host_turn = (_host_turn + 1) % list.size()
+	var h: Dictionary = list[_host_turn]
+	cmd.select(int(h.get("id", -1)))
+	rig.focus(cmd._ground(h))
+	sound.ui("click")
 
 
 func _input(event: InputEvent) -> void:

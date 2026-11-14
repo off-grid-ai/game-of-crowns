@@ -166,6 +166,7 @@ Switches (`--name`) go after `--` on the game's command line.
 - Each prompt's words, its moment and its delay: `realm/data/opening.json`: `prompts`.
 - How long the treasury counts to its new sum, how big the spent seal swells: `realm/data/juice.json`: `coins_seconds`, `seal_punch`.
 - How tense the realm must be before the music turns dark, and calm before it settles: `realm/data/juice.json`: `music_tension_above`, `music_calm_below`.
+- How fast + and - let the seasons pass, and what the King hears at each step: `realm/data/juice.json`: `speed.steps` (seconds a season lasts, slowest first), `speed.words`; comma with no host out: `no_host`.
 - The music for each mood (calm, court, feast, unrest, war, siege, battle, dead), its pieces and level: `realm/data/sounds.json`: `music`. Which mood plays is the realm's state: the dead near, a royal town under siege, the crown at war with a great house, unrest, else calm (main.gd).
 - Court results' wordings, and the local model adding more (on, how many per result): `bridge/data/results.json` (and `reword`).
 - Bannermen's surnames, dealt fresh each real reign: `bridge/data/surnames.json`.

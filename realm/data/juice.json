@@ -3,5 +3,9 @@
  "coins_seconds": 0.8,
  "seal_punch": 1.6,
  "music_tension_above": 0.55,
- "music_calm_below": 0.35
+ "music_calm_below": 0.35,
+ "speed": { "_": "+ and - (main.gd _step_speed): steps are the seconds a season lasts, slowest first (the bridge holds them within pace.json's fastest and slowest); words: what the King hears at each step; at either end the same word again.",
+  "steps": [120, 80, 40, 20, 10],
+  "words": ["The seasons pass slowly.", "The seasons take their time.", "The seasons keep their pace.", "The seasons hurry.", "The seasons fly."] },
+ "no_host": "The King has no host in the field."
 }
