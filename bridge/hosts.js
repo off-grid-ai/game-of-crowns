@@ -20,6 +20,7 @@ import * as chron from "./chronicles.js";
 import { houseFor, cityName } from "./narrator.js";
 import { CIVILIAN, sworn } from "./campaigns.js";
 import * as Lua from "./lua.js";
+import { calendar } from "./calendar.js";
 import { HITPOINTS, HULLS } from "./rules.js";
 
 export const HOSTS = JSON.parse(fs.readFileSync(new URL("./data/hosts.json", import.meta.url), "utf8"));
@@ -476,9 +477,33 @@ function shipsOff(ctx, turn, L, hulls = null, from = null) {
 
 // Each season (season.js): every host under a marching order moves; one that has arrived stands
 // (a march becomes a hold; a garrison stays a garrison, in the town).
+// The march feeds the battle (Bannerlord's food, Total War's attrition): in winter the King's companies standing farther
+// than data/hosts.json supply.reach from any town of the crown or of a house sworn to it waste away, supply.winter of
+// their full hit points a season, never the last (Freeciv's hit points: the men counted, the wounded look and the next
+// fight's odds all follow). The chronicle says it once a winter, by the town nearest the hungriest company.
+function supply(ctx, turn) {
+  const { world, meta, send, record } = ctx;
+  const S = HOSTS.supply;
+  const crown = crownOf(world);
+  if (!S || !crown || calendar(turn).season !== "winter") return;
+  const fed = world.cities.filter((c) => c.owner === crown.id || sworn(ctx, c.owner));
+  const far = soldiersOf(world, crown.id).filter((u) => !fed.some((c) => cheb(c, u) <= S.reach));
+  let hurt = null;
+  for (const u of far) {
+    const full = HITPOINTS[u.type] ?? 10;
+    const loss = Math.min(Math.max(1, Math.round(full * S.winter)), Number(u.hp ?? full) - 1);
+    if (loss > 0) { send(`lua cmd ${Lua.hurt(u.id, -loss)}`); hurt ??= u; }
+  }
+  if (!hurt || meta.hungryWinter === calendar(turn).year) return;
+  meta.hungryWinter = calendar(turn).year;
+  const near = [...world.cities].sort((a, b) => cheb(a, hurt) - cheb(b, hurt))[0];
+  record({ turn, kind: "battle", text: `Winter finds the King's men far from his granaries${near ? ` near ${cityName(near.id)}` : ""}. No cart reaches them, and they grow thin and sick.`, city: near?.id });
+}
+
 export function season(ctx, turn) {
   const { world, meta, send, record, besiege } = ctx;
   if (!world) return;
+  supply(ctx, turn);
   peaceHome(ctx, turn);
   shipsOff(ctx, turn, landOf());
   // A host under the King's order is the King's, not Freeciv's AI's: the crown is AI-marshalled (realm.serv), and
