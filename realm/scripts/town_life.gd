@@ -1592,6 +1592,8 @@ func _states(c: Dictionary) -> Array:
 	var s := Works.states(c, _town_id)
 	if director and director.market_day(_town_id):
 		s.append("market")
+		if "prosperity" in s and not "feast" in s:
+			s.append("fair")  # a glad town's market day is a fair (town_scenes.json fair)
 	if fields_season():
 		s.append("fields")
 	if wet():

@@ -322,6 +322,7 @@ Switches (`--name`) go after `--` on the game's command line.
 - The day's bells: the work bell at dawn and the curfew at dusk (their hours and how often they strike): `realm/data/sounds.json` `ambient`, the two `bell` rows.
 - The King's word seen in town: how many seasons a kept or broken promise shows, and the scrawls a broken one leaves (how many, how far out, the words, their size and ink): `realm/data/towns.json` `promise`; the cheering knot and peal, the sullen knots (`realm/data/town_scenes.json` the `promise_kept` and `promise_broken` rows, gossip's `n.promise_broken`); what the town's people do (`realm/data/works.json` `weights.promise_kept`, `weights.promise_broken`, `priority`).
 - A household leaving the town: who walks (the father with the barrow, the mother, two children), their pace and spacing: `realm/data/town_scenes.json` the `leaving` row (`walk.pace`, `walk.spacing`, its roles).
+- A fair (a glad town's market day): the dancers round the well and the minstrels, how many, how far out: `realm/data/town_scenes.json` the `fair` row; more children then (`kids_play` `n.fair`); where it ranks (`realm/data/works.json` `priority`).
 - The roadside's people (inns, hamlets, camps, shrines, tolls) now think on the same minds: each `life` row's `post` in `realm/data/roadside.json` (no post: the old clip timer). Check it all with `tools/mind_probe.gd` and `tools/works_probe.gd`.
 
 ## The town as art target town-b (the crown's seat dense, mixed roofs, warm walls, cobbles, green)
