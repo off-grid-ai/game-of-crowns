@@ -680,6 +680,17 @@ static func mind_plan() -> BlackboardPlan:
 	return _plan
 
 
+## The days gone by on the view's clock (villagers.gd counts each dawn): the week the market days fall in.
+static var day := 0
+
+
+## Whether today is `town`'s market day (town_scenes.json week: days in a week; each town keeps its own day of it,
+## by its id, so some town nearby is always at market; Manor Lords' and Banished's market days).
+static func market_day(town: int) -> bool:
+	var w := int(Data.value("town_scenes", "week.days", 7))
+	return w > 0 and town >= 0 and posmod(day, w) == posmod(town, w)
+
+
 ## The part of the day at `hour` (town_scenes.json `day` rows), for someone whose own clock runs `early` hours
 ## ahead (an early riser, a late one). The director owns the day; villagers and minds ask it here.
 static func block(hour: float, early := 0.0) -> String:

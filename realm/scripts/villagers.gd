@@ -18,7 +18,11 @@ var towns: Node3D
 var land_use: Node3D  # the towns' worked fields (land_use.gd), where farmers go to work
 var rig: Node3D
 var night := false
-var hour := 9.0  # the village clock: main.gd keeps it, with or without the sky's day cycle
+var hour := 9.0:  # the village clock: main.gd keeps it, with or without the sky's day cycle
+	set(v):
+		if v < hour - 6.0:
+			TownScenes.day += 1  # past the night: a new day (the market week, town_scenes.gd)
+		hour = v
 var crowds := {}  # town id -> Array of agents
 var _town_places := {}  # town id -> its tavern, sept, market and well
 var _body := CapsuleMesh.new()

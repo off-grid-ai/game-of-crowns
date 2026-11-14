@@ -83,8 +83,8 @@ func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 	var sig := "%s|%s|%s|%s|%s|%s|%s|%s|%s" % [kind, building, hungry, c.get("celebrating", false), c.get("disorder", false), c.get("atWar", false), c.get("grief", false), c.get("prosperity", false), c.get("grasping", false)]
 	sig += "|%s" % c.get("plague", false)  # a sick town's life changes (town_scenes.json plague)
 	# The working buildings' life changes with a levy and a low granary too, and when the town agent lists its buildings.
-	var now_states := Works.states(c, _town_id)
-	sig += "|%s|%s|%s|%d|%s" % [c.get("granaryLow", false), "levy" in now_states, "raid" in now_states, hash(root.get_meta("works", {})), (c.get("ruling") as Dictionary).get("kind", "") if c.get("ruling") is Dictionary else ""]
+	var now_states := _states(c)
+	sig += "|%s|%s|%s|%s|%d|%s" % [c.get("granaryLow", false), "levy" in now_states, "raid" in now_states, "market" in now_states, hash(root.get_meta("works", {})), (c.get("ruling") as Dictionary).get("kind", "") if c.get("ruling") is Dictionary else ""]
 	# The town dressed in what we own, once (dressing.gd; --dressing=on): gear at the trades' doors,
 	# planters by house doors, bushes, flowers and rocks between the houses.
 	if Dressing.on() and root.get_node_or_null("Dressing") == null:
@@ -120,7 +120,7 @@ func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 		_construction(root, life, center, building, progress, rng, int(c["size"]), house if bool(c.get("royal", false)) else {})
 	elif kind == "UnitType" and building != "" and not building in Awareness.civilian:  # a soldier's training, not a civilian's (bridge campaigns.js CIVILIAN)
 		_drill(root, life, center, progress, color, building)
-	var states := Works.states(c, _town_id)  # riot, grasping and a rising's side among them (the store's facts)
+	var states := _states(c)  # riot, grasping and a rising's side among them (the store's facts), and its market day
 	life.set_meta("states", states)
 	life.set_meta("size", int(c.get("size", 1)))
 	life.set_meta("town_id", _town_id)
@@ -1584,6 +1584,15 @@ func _long_table(life: Node3D, center: Vector3, at: Vector3, out: Vector3, seats
 # --- what the director asks of the town (town_scenes.gd: it casts every scene's people) -------------
 
 var director: Node  # town_scenes.gd, the one director (main.gd sets it): it stages each town's scenes as it is dressed
+
+
+## The states the town's life is dressed for: the store's (Works.states), and "market" on its market day (the
+## director's week, town_scenes.gd market_day).
+func _states(c: Dictionary) -> Array:
+	var s := Works.states(c, _town_id)
+	if director and director.market_day(_town_id):
+		s.append("market")
+	return s
 
 
 ## The nearest open spot to `want` (town-local) within `reach`, kept as taken; NAN in x when there's none.
