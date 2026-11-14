@@ -8,6 +8,7 @@ extends CanvasLayer
 ## its own 3D world, so the realm behind it is untouched.
 
 const T := preload("res://scripts/theme.gd")
+const Data := preload("res://scripts/data.gd")
 const Keys := preload("res://scripts/keys.gd")
 const Heraldry := preload("res://scripts/heraldry.gd")
 const People := preload("res://scripts/people.gd")
@@ -538,12 +539,18 @@ func _fill_panel(p: Dictionary, house: Dictionary, editing := false) -> void:
 	v.add_child(T.datum(nature.left(1).to_upper() + nature.substr(1), T.SIZE_BODY))
 	var loyal := int(p.get("loyalty", 50))
 	v.add_child(T.label("Loyalty to their liege"))
-	var bar := ProgressBar.new()
-	bar.max_value = 100
-	bar.value = loyal
-	bar.show_percentage = false
-	bar.custom_minimum_size = Vector2(0, 6)
-	v.add_child(bar)
+	# In words, not a bar (casebook, Characters as stat blocks; CK3's opinion said as a relation): royal_sheet.json
+	# lord_loyalty, the first band whose above it clears.
+	var says := ""
+	for b in Data.value("royal_sheet", "lord_loyalty", []):
+		if loyal >= int(b.get("above", 0)):
+			says = String(b.get("says", ""))
+			break
+	var ll := T.datum(says.replace("{liege}", String(house.get("name", "their house"))), T.SIZE_BODY, T.DANGER if loyal < int(Data.num("royal_sheet", "lord_loyalty_danger", 30)) else T.TEXT)
+	ll.autowrap_mode = TextServer.AUTOWRAP_WORD
+	ll.tooltip_text = "%d of 100" % loyal
+	ll.mouse_filter = Control.MOUSE_FILTER_PASS
+	v.add_child(ll)
 	_toward_king(v, p, house)
 	_holdings(v, p, house)
 	var goals: Array = p.get("goals", [])

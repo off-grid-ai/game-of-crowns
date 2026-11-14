@@ -45,6 +45,13 @@
   "rival": "Beyond the {edge} border, {king} of {realm} watches the new King.",
   "chest": "The royal chest holds {crowns}.",
   "ok": "To court" },
+ "lord_loyalty": [
+  { "above": 85, "says": "Would die for {liege}." },
+  { "above": 65, "says": "Steadfast to {liege}." },
+  { "above": 45, "says": "Loyal to {liege}, for now." },
+  { "above": 30, "says": "Wavering: another house could buy this loyalty." },
+  { "above": 0, "says": "Would sell {liege} for the right price." } ],
+ "lord_loyalty_danger": 30,
  "lord_holdings": { "_": "A lord's sheet, what he holds (hero_view.gd _holdings; bridge /world cities, vassals): head; towns ({towns}) and sworn ({houses}) for a great house's lord; vassal ({house}, {town}, {liege}) for a sworn lord.",
   "head": "Holds",
   "towns": "{towns}",
