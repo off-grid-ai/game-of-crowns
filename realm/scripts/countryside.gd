@@ -667,6 +667,28 @@ func _check_season() -> void:
 	var t := _through()
 	for crop in get_tree().get_nodes_in_group("crops"):
 		_ripen(crop, _season_name, t)
+	for d in get_tree().get_nodes_in_group("field_ground"):
+		_ground_season(d as Decal, _season_name, t)
+
+
+## A strip's painted crop, the field as it reads past the crops' reach (the drawn-back views; WC3's and AoE2's farms
+## turn gold and bare with the year): tinted by the same stage its crop stands at (_stage): green in spring and
+## summer, yellowing, gold, stubble after the harvest, bare earth in winter. A fallow strip keeps its own.
+## data/countryside.json field_ground_tints.<stage>.
+static func _ground_season(d: Decal, season: String, t: float) -> void:
+	if d == null:
+		return
+	var field := String(d.get_meta("ground", ""))
+	var kind := "wheat" if field == "field-wheat" else ("cabbage" if field == "field-green" else "")
+	if kind == "":
+		return
+	var st := _stage(kind, season, t, float(d.get_meta("lag", 0.5)))
+	var stage := String(st[0]) if String(st[0]) != "" else "bare"
+	if d.get_meta("stage", "") == stage:
+		return
+	d.set_meta("stage", stage)
+	var D := preload("res://scripts/data.gd")
+	d.modulate = D.colour((D.value("countryside", "field_ground_tints", {}) as Dictionary).get(stage, []), Color.WHITE)
 
 
 # --- grass ----------------------------------------------------------------------------
