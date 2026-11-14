@@ -763,10 +763,32 @@ static func _lods(by_mat: Dictionary, floor_cut: float, budget: int) -> Importer
 			arr[Mesh.ARRAY_COLOR] = cols
 		arr[Mesh.ARRAY_INDEX] = idx
 		im.add_surface(Mesh.PRIMITIVE_TRIANGLES, arr, [], {}, mat)
-	im.generate_lods(25.0, 60.0, [])
+	im = _lodded(im)
 	if budget > 0:
 		im = _within(im, budget)
 	return im
+
+
+## A mesh with Godot's generated detail levels (meshoptimizer), as the renderer will take it: each surface keeps only
+## the levels with fewer indices than the one before (the renderer refuses a whole surface whose level is not lighter
+## than it: "index_count >= index_array_len", 201 times in Mac's game, and the surface was gone, a tavern's walls with
+## it), and a surface the floor cut left empty is dropped. Plain arrays: a worker.
+static func _lodded(im: ImporterMesh) -> ImporterMesh:
+	im.generate_lods(25.0, 60.0, [])
+	var out := ImporterMesh.new()
+	for s in im.get_surface_count():
+		var arr: Array = im.get_surface_arrays(s)
+		var last := (arr[Mesh.ARRAY_INDEX] as PackedInt32Array).size() if arr[Mesh.ARRAY_INDEX] != null else 0
+		if last == 0:
+			continue
+		var lods := {}
+		for l in im.get_surface_lod_count(s):
+			var idx := im.get_surface_lod_indices(s, l)
+			if idx.size() > 0 and idx.size() < last:
+				lods[im.get_surface_lod_size(s, l)] = idx
+				last = idx.size()
+		out.add_surface(Mesh.PRIMITIVE_TRIANGLES, arr, [], lods, im.get_surface_material(s), im.get_surface_name(s))
+	return out
 
 
 ## A merged model's low mesh, drawn past NEAR in place of the whole one (towns.gd _flush: Godot's visibility ranges,
@@ -807,8 +829,7 @@ static func _low(im: ImporterMesh, H: Dictionary) -> ImporterMesh:
 		return null
 	# Its own lighter levels in turn, as _within's: without them the low mesh drew all its triangles at any distance,
 	# more than Godot's own levels of the whole model had drawn far out (fps9: 22.3M -> 26.4M at lens 63).
-	out.generate_lods(25.0, 60.0, [])
-	return out
+	return _lodded(out)
 
 
 ## The first of Godot's generated detail levels whose triangles fit the budget, as
@@ -838,8 +859,7 @@ static func _within(im: ImporterMesh, budget: int) -> ImporterMesh:
 			if level < im.get_surface_lod_count(s):
 				arr[Mesh.ARRAY_INDEX] = im.get_surface_lod_indices(s, level)
 			out.add_surface(Mesh.PRIMITIVE_TRIANGLES, arr, [], {}, im.get_surface_material(s))
-		out.generate_lods(25.0, 60.0, [])
-		return out
+		return _lodded(out)
 	return im
 
 
