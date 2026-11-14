@@ -108,7 +108,7 @@
    "meshy/nt_rock_b/nt_rock_b.glb"
   ]
  },
- "_cover_per_tile": "Doodads per tile by terrain and role (WC3 scatters rocks, shrubs and flowers over every tile so no patch is bare paint; docs/research/terrain-wc3-method.md 5). Supervisor list 4: open ground was grass tufts alone; now wildflowers (nt_flowers, also the field margins' flowers role), more rocks and shrubs.",
+ "_cover_per_tile": "Doodads per tile by terrain and role (WC3 scatters rocks, shrubs and flowers over every tile so no patch is bare paint; docs/research/terrain-wc3-method.md 5). Supervisor list 4: open ground was grass tufts alone; now wildflowers (nt_flowers, also the field margins' flowers role) and more shrubs; rocks stay 2 a tile on grassland and plains (g40 muster: 4 read as pale specks littering the lawn at mid distance).",
  "cover_per_tile": {
   "Forest": {
    "bush": 8,
@@ -125,13 +125,13 @@
   "Grassland": {
    "bush": 4,
    "grass": 24,
-   "rock": 4,
+   "rock": 2,
    "flowers": 10
   },
   "Plains": {
    "bush": 3,
    "grass": 18,
-   "rock": 3,
+   "rock": 2,
    "flowers": 6
   },
   "Hills": {
