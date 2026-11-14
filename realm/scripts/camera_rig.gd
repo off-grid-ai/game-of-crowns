@@ -423,6 +423,14 @@ func _zoom_at(screen: Vector2, f: float) -> void:
 ## Grab-and-drag: the ground point taken at the press stays under the cursor.
 ## The view follows at once (no easing) so the ground feels held; on release
 ## the last motion carries on as a glide.
+## A left-drag that has the ground (Total War's, CK3's, Google Maps' grab-pan): the point grabbed stays under the
+## cursor and the view only slides. While it lasts, nothing re-fits the lens: the eye's height over the land
+## (_look_y) and the lens's roof, leaf and prop corrections (_fix, _lift, _rise, _swing, _short) hold, and ease on
+## from release; the distance and tilt are never touched. So the grab plane (_grab.y) and the camera stay as one.
+func _held() -> bool:
+	return _dragging == MOUSE_BUTTON_LEFT and _grab != Vector3.INF
+
+
 func _drag_to(screen: Vector2, rel: Vector2, vel: Vector2) -> void:
 	var from := cam.project_ray_origin(screen)
 	var dir := cam.project_ray_normal(screen)
@@ -1064,7 +1072,8 @@ func apply() -> void:
 	# Close in, the eye follows the ground exactly; further out it glides over
 	# the hills instead of bobbing with each one.
 	# Eased at every distance, faster close in, at the same rate whatever the frame rate.
-	_look_y = lerpf(_look_y, ground, 1.0 - exp(-get_process_delta_time() * lerpf(4.0, 14.0, ground_view / 0.85)))
+	if not _held():  # a grab-pan holds the eye's height: only a slide (below)
+		_look_y = lerpf(_look_y, ground, 1.0 - exp(-get_process_delta_time() * lerpf(4.0, 14.0, ground_view / 0.85)))
 	var look := Vector3(target.x, _look_y + EYE * ground_view, target.z)
 	var offset := Vector3(sin(yaw) * cos(pitch), sin(pitch), cos(yaw) * cos(pitch)) * distance
 	var pos := look + offset
@@ -1133,7 +1142,7 @@ func apply() -> void:
 					want_lift = lstep * k
 					if _sees(look, _tipped(look, base, want_lift)):
 						break
-		var ease := 1.0 - exp(-get_process_delta_time() * knob("clarity.liftEase", 4.0))
+		var ease := 0.0 if _held() else 1.0 - exp(-get_process_delta_time() * knob("clarity.liftEase", 4.0))
 		_swing = lerpf(_swing, want_swing, ease)
 		_lift = lerpf(_lift, want_lift, ease)
 		_rise = lerpf(_rise, want_rise, ease)
@@ -1150,7 +1159,9 @@ func apply() -> void:
 		# Faded in over the last unit before GUARD, so it never starts or stops at a line.
 		var guard := 1.0 - smoothstep(GUARD - 1.0, GUARD, distance)
 		need = need.lerp(_clear(look, pos + need) - pos, guard)
-	if _hit < 0.0:
+	if _held():
+		pass  # the lens's corrections wait for the grab-pan's release
+	elif _hit < 0.0:
 		_fix = need
 		_hit = 0.0
 	else:
