@@ -13,6 +13,7 @@ import fs from "node:fs";
 import path from "node:path";
 import * as Sittings from "./court.js";
 import * as chron from "./chronicles.js";
+import * as Royals from "./royals.js";
 import * as names from "./names.js";
 import { speech, transcribe, voiceFor } from "./claude.js";
 import { body, bytes, json } from "./http_util.js";
@@ -64,6 +65,14 @@ export async function closeInterlude(ctx, req, res, url) {
   chron.saveMeta(ctx.meta);
   if (ctx.meta.court?.sitting == null) hold(false);
   return json(res, 200, { ok: true });
+}
+
+// The King lays down the crown for his heir of age (royals.js abdicate); the reign goes on under the new King.
+export async function abdicate(ctx, req, res, url) {
+  const out = Royals.abdicate(ctx);
+  if (out.error) return json(res, 409, out);
+  chron.saveMeta(ctx.meta);
+  return json(res, 200, out);
 }
 
 export async function close(ctx, req, res, url) {

@@ -8,8 +8,8 @@
 // come in as one context argument, built fresh by server.js on each call
 // (getters for what it reassigns, setPaused for the clock's hold); server.js
 // keeps wrappers of the same names.
-
 import { crownOf, houseName } from "./realm.js";
+import { HEIRLESS } from "./royals.js";
 import * as Lua from "./lua.js";
 import * as Opening from "./opening.js";
 import { say } from "./say.js";
@@ -464,6 +464,7 @@ export function endReign(ctx, why, outcome = "completed") {
   if (outcome === "deposed") { s.score = Math.round(s.score * 0.4); s.verdict = "Deposed. The crown passed to another while you watched."; }
   if (outcome === "won") { s.score = Math.round(s.score * 1.5); s.verdict = "The crown held. The tale that came for it is told, and the King is still in his seat."; }
   if (outcome === "fallen") { s.score = Math.round(s.score * 0.3); s.verdict = "The realm fell to the dead. No one is left to remember."; }
+  if (outcome === "heirless") { s.score = Math.round(s.score * HEIRLESS.score); s.verdict = HEIRLESS.verdict; }
   { const k = kingName(ctx, outcome); s.title = `The King ${k.name}`; s.why = k.why; }
   meta.epilogue = epilogue(ctx);
   meta.epitaph = epitaphOf(ctx, s, outcome);

@@ -1,0 +1,15 @@
+{
+ "_": "The King's own household and the crown's succession (royals.js; CK3's dynasty and its heirs, Crusader Kings' 'the game goes on as your heir'). The King, his consort and their children age a year at each year's end; the King dies by his age (death: [from age, chance a year], first match), children are born while the consort is young enough, a King of age without a consort weds (wed.chance a year), and a dead or abdicating King's crown passes by law to the eldest son, else the eldest daughter (male-preference). A King under majority reigns through a regency, and each great house cools by minor.favour. With no heir of his blood the reign ends (outcome heirless). The King may give up the crown to an heir of abdicate.age (POST /abdicate).",
+ "king": { "age": [26, 38] },
+ "consort": { "younger": [0, 8] },
+ "children": { "count": [1, 3], "age": [1, 14], "gap": [1, 4] },
+ "birth": { "chance": 0.3, "until": 42, "most": 6 },
+ "death": [[75, 0.3], [65, 0.12], [55, 0.05], [40, 0.02], [0, 0.006]],
+ "childDeath": 0.02,
+ "wed": { "chance": 0.5 },
+ "law": "male-preference",
+ "majority": 16,
+ "abdicate": { "age": 16 },
+ "minor": { "favour": -6 },
+ "heirless": { "score": 0.5, "verdict": "The King died without an heir of his blood. The great houses went to war for the empty throne." }
+}

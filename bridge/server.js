@@ -64,6 +64,7 @@ import * as Battles from "./battles.js";
 import * as Raids from "./raids.js";
 import * as Households from "./households.js";
 import * as Harvest from "./harvest.js";
+import * as Royals from "./royals.js";
 import { TURNING } from "./season.js";
 import { intrigueNow } from "./intrigue.js";
 
@@ -159,6 +160,7 @@ function load(id) {
   scenes = [];
   arrivals.clear();
   if (world) Weather.advance(meta, Number(world.turn ?? 0), calendar(Number(world.turn ?? 0)).season);  // its sky at once
+  Royals.of(meta);  // the King's household, seeded once from the reign's seed (royals.js)
   effects.length = 0;
   effects.push(...chron.readJson(path.join(P.state, "effects.json"), []));
   effectSeq = effects.reduce((m, e) => Math.max(m, Number(e.seq) || 0), 0);
@@ -408,7 +410,7 @@ function applyStartOptions() {
 // What view.js needs to build the /world answer, read fresh on every call.
 // The realm as the view sees it (GET /world): built in view.js.
 function worldView() {
-  return { ...View.worldView(realmCtx()), hosts: Hosts.list({ world, meta }), banners: Hosts.banners({ world, meta }), battles: Battles.cards(meta, world?.turn), raids: Raids.list(meta, world), works: Treasury.worksOf(meta, world, crownNow()?.id), harvest: Harvest.view(meta, world?.turn ?? 0) };  // the King's hosts and their orders, and how many more orders this season (hosts.js)
+  return { ...View.worldView(realmCtx()), hosts: Hosts.list({ world, meta }), banners: Hosts.banners({ world, meta }), battles: Battles.cards(meta, world?.turn), raids: Raids.list(meta, world), works: Treasury.worksOf(meta, world, crownNow()?.id), harvest: Harvest.view(meta, world?.turn ?? 0), royals: Royals.view(meta) };  // the King's hosts and their orders, and how many more orders this season (hosts.js)
 }
 
 // The Hand's matters, read from the realm as it stands now.
@@ -1007,6 +1009,7 @@ const ROUTES = {
   "POST /voice": (req, res, url) => CourtRoutes.sayAloud(realmCtx(), req, res, url),
   "POST /interlude/close": (req, res, url) => CourtRoutes.closeInterlude(realmCtx(), req, res, url),
   "POST /court/close": (req, res, url) => CourtRoutes.close(realmCtx(), req, res, url),
+  "POST /abdicate": (req, res, url) => CourtRoutes.abdicate(realmCtx(), req, res, url),
   "POST /court/answer": (req, res, url) => CourtRoutes.answer(realmCtx(), req, res, url),
   "POST /court/say": (req, res, url) => CourtRoutes.say(realmCtx(), req, res, url),
   "* /house": (req, res, url) => PeopleRoutes.house(realmCtx(), req, res, url),
