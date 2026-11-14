@@ -656,7 +656,7 @@ func plot_lots(root: Node3D, center: Vector3, square_r: float, ways: Array, kind
 	print("CHECK town plots: %s (size %d, edge %.1f): %d plots cut along %d ways, %d houses stood (and %d round the square), %d left in budget; turned away: %s" % [String(root.get_meta("title", "")), size, float(root.get_meta("plot_edge", 0.0)), all.size(), ways.size(), placed, int(root.get_meta("ring_houses", 0)), budget - placed, str(why)])
 	if OS.get_cmdline_user_args().has("--probe=towns"):
 		probe_dump(root, square_r, ways, all, taken, left)
-	var edge := TownPlots.outline(taken, square_r)
+	var edge := TownPlots.outline(taken, square_r, float(tb._plot_knobs().get("set_back", 0.04)) + TownPlots.ROAD_HALF * 2.0)
 	var far := 0.0
 	for q in edge:
 		far = maxf(far, q.length())

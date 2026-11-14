@@ -266,10 +266,14 @@ static func plots(ways: Array, square_r: float, edge: float, widths: Callable, s
 
 
 ## The edge: the outline round every plot taken, a little out from it.
-static func outline(taken: Array, square_r: float) -> PackedVector2Array:
+static func outline(taken: Array, square_r: float, front := 0.0) -> PackedVector2Array:
 	var pts := PackedVector2Array()
 	for pl in taken:
 		pts.append_array(pl[4])
+		# The far side of the street before its door (`front` past its front wall): a house at the edge facing out
+		# keeps its street inside the town, so the wall or palisade runs beyond it (g38 landuse: the town wall stood
+		# on the edge houses' lane, and they faced a wall instead of a street).
+		pts.append((pl[0] as Vector2) + (pl[1] as Vector2) * (float(pl[3]) * 0.5 + front))
 	for i in 12:
 		pts.append(Vector2.from_angle(TAU * i / 12) * (square_r + 0.6))
 	var hull := Geometry2D.convex_hull(pts)
