@@ -58,8 +58,8 @@
 #   menu     the title's main menu with Continue, then the new-reign flow's first page (CK3's main menu)
 #   settings the settings screen (Total War: Warhammer III's settings)
 #   lord     a great house's lord on his sheet: nature, toward the King, holds (CK3's character window)
-#   reign_end the reign's end: the clock run out (POST /test/clock reign_end), its telling, then the end card with what
-#            the next King inherits (CK3's death screen). Last of all: the reign is over after it.
+#   reign_end the reign's end card with what the next King inherits (CK3's death screen), shown at once on the reign as it
+#            stands (autoplay show end), last of all.
 set -u
 R=${RENDER_PASS_R:-$(cd "$(dirname "$0")/../.." && pwd)}  # the shared tree (its copy in $OUT inherits it)
 STAMP=$(date +%H%M)
@@ -336,8 +336,9 @@ if want raid; then
   view raid $(( ${RAID_WAIT:-300} + 480 )) "cue $OUT/raid.cue $(( ${RAID_WAIT:-300} + 420 ))"
   view raid_leave $(( ${RAID_LEAVE:-1200} + 300 )) "cue $OUT/raid_leave.cue $(( ${RAID_LEAVE:-1200} + 240 ))"
 fi
-# The reign's end, last of all (the reign is over after it): the clock run out, its telling, then the end card.
-want reign_end && view reign_end 180 'post /test/clock {"to":"reign_end"}' "wait 120" "snap end ui" "wait 10" "snap end_late ui" "look end"
+# The reign's end, last of all: its end card at once through autoplay's demo hook (show end), not the clock (g38's waited
+# 15 minutes for a clock that never ran out in a render-length reign).
+want reign_end && view reign_end 60 "show end" "wait 4" "snap end ui" "wait 6" "snap end_late ui" "look end"
 print "look pass end" >> $PLAY
 
 # --- the stagers beside the run ---------------------------------------------------------------------------------------

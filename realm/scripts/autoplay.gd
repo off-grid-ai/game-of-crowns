@@ -981,6 +981,15 @@ func _step(w: PackedStringArray) -> void:
 						main.ui.royal.open()
 					"book":
 						main.ui.book.toggle()
+					"end":
+						# The reign's end card at once, on the reign as it stands (a demo hook, as court's /test/court is:
+						# a render-length reign never reaches its clock's end, g38's reign_end hung 15 min on it). The
+						# telling's flight is left out; the card shows what the bridge has for the reign (why, verdict, heir).
+						var r: Dictionary = (main.awareness.rec("reign", {}) as Dictionary).duplicate()
+						r.erase("epilogue")
+						r["status"] = "ended"
+						r["id"] = String(r.get("id", "")) + "-demo"
+						main.ui.reign_cards._reign_end(r)
 					"lord":
 						# The first great house's lord, on his sheet (hero_view.gd), as a click on his name opens it.
 						var pid := -1
