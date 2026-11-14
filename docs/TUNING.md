@@ -340,6 +340,7 @@ Switches (`--name`) go after `--` on the game's command line.
 - A town under siege: how often its bell tolls, how many townsmen muster on the square (and how many of them soldiers), how many of the watch, how many folk hauling: `realm/data/town_scenes.json` the `siege_bell` row's `bell`; `muster` n.siege, who.soldier.siege; `patrol`, `guards_forge`, `guards_castle`, `errands`, `gossip` n.siege.
 - Winter in town: how many houses by the square get firewood stacked by the door, how far from the door, how often a man splits logs there, how many hearths burn for warmth, how few linger: `realm/data/town_scenes.json` the `winter` row's `piles`, `pile_side`, its role's `chance`; `gossip`, `kids_play`, `chase` n.winter; `realm/data/hearths.json` `winter.share`.
 - The night watch's torch: its light's colour, brightness, reach and height above the hand: `realm/data/town_scenes.json` the `patrol` row's `torch`; when it shows: with the door lamps (`realm/data/works.json` lit hours).
+- Where the sept's folk go (beggars, the sick, the crier, the bell's watchman) in a town whose church found no room: `realm/data/town_scenes.json` `anchors.sept.or` (place:well).
 - The roadside's people (inns, hamlets, camps, shrines, tolls) now think on the same minds: each `life` row's `post` in `realm/data/roadside.json` (no post: the old clip timer). Check it all with `tools/mind_probe.gd` and `tools/works_probe.gd`.
 
 ## The town as art target town-b (the crown's seat dense, mixed roofs, warm walls, cobbles, green)

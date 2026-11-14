@@ -302,9 +302,12 @@ func _anchor(name: String, k: Dictionary, anchors: Dictionary) -> Dictionary:
 	if from.begins_with("place:"):
 		var places: Dictionary = root.get_meta("places", {})
 		var key := from.substr(6)
+		var other := String(d.get("or", "")) if d.get("or") is String else ""
 		if places.has(key):
 			at = places[key]
-		elif d.has("or"):
+		elif other.begins_with("place:") and places.has(other.substr(6)):
+			at = places[other.substr(6)]  # the place that stands in for it (a town whose church found no room: its well)
+		elif d.get("or") is Array:
 			at = Vector3(float(d["or"][0]), float(d["or"][1]), float(d["or"][2]))
 		else:
 			return {}

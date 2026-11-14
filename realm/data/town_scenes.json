@@ -96,7 +96,7 @@
     {"id": "wedding", "needs": ["wedding"], "not": ["grief", "plague", "riot", "hunger", "royal_funeral", "raid"], "square": true, "dress": ["funeral", "bell"], "round": "wedding", "bier": false, "bell": ["bell", [5.0, 8.0]], "rings": [0.72, 0.6, 0.85, 0.5, 0.95], "walk": {"pace": 0.08, "spacing": 0.11}, "roles": [{"who": "clergy", "n": 1, "at": "wedding", "form": "at", "exact": true, "clips": ["Walk"], "does": "procession", "meta": ["procession"]}, {"who": "townsfolk", "n": 2, "at": "wedding", "form": "at", "exact": true, "clips": ["Walk"], "does": "procession", "meta": ["procession", "couple"]}, {"who": ["townsfolk", "peasant"], "n": 7, "at": "wedding", "form": "at", "exact": true, "clips": ["Walk"], "does": "procession", "meta": ["procession"]}]},
     {"id": "birth", "needs": ["birth"], "not": ["grief", "plague", "riot", "wedding"], "square": true, "dress": ["bell"], "bell": ["bell", [14.0, 20.0]], "roles": []}
   ],
-  "_anchors": "anchors: where a standing role's at points when its dressing set nothing down by that name (town_scenes.gd _anchor). at: heart (the square's middle), place:<key> (towns.gd places; or [x, y, z] when the town has none, else no anchor), works:<key> (works.gd building, facing out of its front); turn: radians off the side the camera looks across (SEEN); out: along the way it faces (a number, {row, or}: the row's own value, or {data: [file, path, fallback]}); r: square (the square's radius) or a number; by: castle or stops, worked out from the town's shape.",
+  "_anchors": "anchors: where a standing role's at points when its dressing set nothing down by that name (town_scenes.gd _anchor). at: heart (the square's middle), place:<key> (towns.gd places; or [x, y, z], or another place:<key>, when the town has none, else no anchor; g37: beggars, the sick and the crier found no sept where the church found no room, so the sept's stand-in is the well), works:<key> (works.gd building, facing out of its front); turn: radians off the side the camera looks across (SEEN); out: along the way it faces (a number, {row, or}: the row's own value, or {data: [file, path, fallback]}); r: square (the square's radius) or a number; by: castle or stops, worked out from the town's shape.",
   "anchors": {
     "heart": {"at": "heart", "r": "square"},
     "open": {"by": "open", "cover": true, "within": 0.85}, "seen": {"at": "heart", "r": "square"},
@@ -104,7 +104,7 @@
     "streets": {"at": "heart", "r": "square"},
     "market": {"at": "place:market", "r": 0.5},
     "well": {"at": "place:well", "or": [0.4, 0, 0.4], "r": "square"},
-    "sept": {"at": "place:sept"},
+    "sept": {"at": "place:sept", "or": "place:well"},
     "crier": {"at": "place:well", "or": [0.4, 0, 0.4], "out": {"data": ["works", "crier.from_well", 0.35]}},
     "muster": {"at": "place:well", "or": [0.4, 0, 0.4], "turn": 1.0, "out": {"row": "from_well", "or": 0.45}},
     "kin": {"at": "place:well", "or": [0.4, 0, 0.4], "turn": 1.0, "out": {"row": "from_well", "or": 0.45}},
