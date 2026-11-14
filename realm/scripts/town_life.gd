@@ -1502,7 +1502,7 @@ static func shoulder_sack(p: Node3D, on: bool) -> void:
 
 ## A horse and cart in one piece (scenes.gd's road cart, facing +z as the town's people do): the wagon, the
 ## horse between its shafts and the carter at the horse's head.
-static func horse_cart(people: Object, rng: RandomNumberGenerator) -> Node3D:
+static func horse_cart(people: Object, rng: RandomNumberGenerator, load_key := "cart.load") -> Node3D:
 	if _wagon_mesh == null:
 		_wagon_mesh = preload("res://scripts/house_builder.gd").new().piece_mesh("Prop_Wagon")
 	if _wagon_mesh == null:
@@ -1530,8 +1530,14 @@ static func horse_cart(people: Object, rng: RandomNumberGenerator) -> Node3D:
 	carter.rotation.y = PI
 	rig.add_child(carter)
 	holder.set_meta("carter", carter)
-	# Its load: sacks in the bed (crowd.json cart.load: how many, how high the bed stands, how far it runs back).
-	var L: Dictionary = Data.value("crowd", "cart.load", {})
+	# Its load: sacks in the bed (crowd.json cart.load: how many, how high the bed stands, how far it runs back; another
+	# load_key, its own: the plague's dead cart, the bundles drawn out long and lying along the bed, wrapped in shrouds).
+	var L: Dictionary = Data.value("crowd", load_key, {})
+	var shroud: StandardMaterial3D = null
+	if L.has("tint"):
+		shroud = StandardMaterial3D.new()
+		shroud.albedo_color = Data.colour(L["tint"], Color.WHITE)
+		shroud.roughness = 1.0
 	if ResourceLoader.exists(PROPS % "Bag"):
 		var bag_scene: PackedScene = load(PROPS % "Bag")
 		var nb := int(L.get("sacks", 3))
@@ -1540,6 +1546,13 @@ static func horse_cart(people: Object, rng: RandomNumberGenerator) -> Node3D:
 			bag.scale = Vector3.ONE * PROP_SCALE * big * float(L.get("size", 1.0))
 			bag.position = Vector3(rng.randf_range(-0.02, 0.02), float(L.get("bed", 0.1)), float(L.get("from", 0.02)) + float(L.get("run", 0.08)) * i / maxf(nb - 1, 1)) * big
 			bag.rotation.y = rng.randf() * TAU
+			if L.has("stretch"):
+				var st: Array = L["stretch"]
+				bag.scale *= Vector3(float(st[0]), float(st[1]), float(st[2]))
+				bag.rotation.y = rng.randf_range(-0.1, 0.1)  # laid along the bed
+			if shroud != null:
+				for mi in bag.find_children("*", "MeshInstance3D", true, false):
+					(mi as MeshInstance3D).material_override = shroud
 			rig.add_child(bag)
 	return holder
 

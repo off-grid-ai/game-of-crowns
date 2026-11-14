@@ -1104,7 +1104,7 @@ func _cart(k: Dictionary, role: Dictionary, W: Dictionary, r: float) -> void:
 		if lane.is_empty() or (lane[0] as Vector3).length() > (lane[lane.size() - 1] as Vector3).length():
 			lane.reverse()  # the square's end first
 		lanes.append(lane)
-	var rig: Node3D = TownLife().horse_cart(tl._people, k["rng"])
+	var rig: Node3D = TownLife().horse_cart(tl._people, k["rng"], String(role.get("load", "cart.load")))
 	if rig == null:
 		return
 	# Drawn up at its street's end where nobody stands (the watch's beat can start at that same mouth).
@@ -1144,6 +1144,18 @@ func _cart(k: Dictionary, role: Dictionary, W: Dictionary, r: float) -> void:
 	_walker(rig, Round.new(), {"route": route.map(func(q): return root.to_global(q)), "plan": {"goal": Vector3.INF, "until": 0, "leg": 0}, "lead": true, "side": 0.0,
 		"pause": W.get("stop", [6.0, 12.0]), "rest": [], "waits": waits, "market": root.to_global(mkt), "tail": float(W.get("tail", 0.22)), "town": root,
 		"carter": rig.get_meta("carter", null)}, "", float(W.get("pace", 0.16)))
+	# Someone walking beside it (the role's `beside`: the plague's dead cart, its bell-ringer calling at each stop):
+	# at its side, stopping when it stops, playing one of `rest` there.
+	var bs: Dictionary = role.get("beside", {})
+	if not bs.is_empty():
+		var man: Node3D = tl._people.make(k["rng"], String(bs.get("who", "peasant")), Data.colour(bs.get("tint"), Color.WHITE))
+		if man != null:
+			man.position = rig.position + Vector3(float(bs.get("side", 0.14)), 0, 0)
+			life.add_child(man)
+			man.set_meta("scene", String(k["row"]["id"]))
+			for mk in bs.get("meta", []):
+				man.set_meta(String(mk), true)
+			_walker(man, Follow.new(), {"after": rig, "gap": float(bs.get("gap", 0.0)), "side": float(bs.get("side", 0.14)), "rest": bs.get("rest", ["Looking_Around"])}, "Walk", float(W.get("pace", 0.16)) * 1.3)
 
 
 ## The funeral round the square: its head (the priest) walks the ring; each behind follows the one before at
