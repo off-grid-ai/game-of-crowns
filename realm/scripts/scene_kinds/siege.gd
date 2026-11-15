@@ -172,7 +172,7 @@ func besiege(id: int, at: Vector3, approach: Vector3, size: int, engines: int, f
 		marks = marks.filter(func(m): return is_instance_valid(m["node"]))  # a man fallen and gone is no mark
 		# A man on the walk where the wall has given way under him falls with it.
 		for u in up_top:
-			var f: Node3D = u[0]
+			var f = u[0]  # untyped: a man freed meanwhile can't be handed to a typed var (the error was the assignment)
 			if is_instance_valid(f) and not f.has_meta("dead") and walls and is_instance_valid(walls) \
 					and walls.walk_toward(f.global_position, 0.15) == Vector3.INF:
 				if u[1] != null:
