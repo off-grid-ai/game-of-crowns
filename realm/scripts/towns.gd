@@ -386,8 +386,10 @@ func _raise(best: int, job: Dictionary) -> void:
 		Engine.set_meta("stage", "towns.merge")
 		var standing: Node3D = towns[best]["node"]
 		var homes_before: Array = standing.get_meta("homes", [])
+		# Its new pieces' marks too, read before the merge frees the new layout (reading them after stopped _raise
+		# with _raising still set: no town was raised after it, the loading screen's count stuck).
+		standing.set_meta("imprint", (standing.get_meta("imprint", []) as Array) + (node.get_meta("imprint", []) as Array))
 		_merge(standing, node)
-		standing.set_meta("imprint", (standing.get_meta("imprint", []) as Array) + (node.get_meta("imprint", []) as Array))  # its new pieces' marks too
 		towns[best]["data"] = job["c"]
 		towns[best]["path"] = path  # its new state as kept on disk
 		towns[best]["shell"] = false  # a shell merged with its whole new layout stands whole again
