@@ -2,7 +2,7 @@ extends SceneTree
 ## Headless guard: a battle's held ground moving every frame costs the realm's navigation (nav_world.gd) almost
 ## nothing (supervisor's combined run 4, 2026-11-15: once the battle moved, nav_world took 218 ms every frame, 3-4 fps).
 ## nav_probe's made-up realm (2 x 2 chunks), baked; then 30 regiments' claims (ground.gd claim, kind host) step on every
-## frame for 300 frames (10 ms apart: their chunks are baked afresh round them every nav.claims_settle), while what
+## frame for 300 frames (10 ms apart; moving, they are avoidance obstacles only: nothing is baked round them), while what
 ## stands changes elsewhere in the realm every frame (a town's life put away, a wood's trunks laid: ground.gd
 ## shapes_rev). Asserts the navigation's frame work (its own _process: landing, watching, dispatching) stays
 ## under nav.churn_ms on average and its worst frame under 4x that, and prints what each part cost.
@@ -79,8 +79,8 @@ func _run() -> void:
 	var t_read := Time.get_ticks_usec()
 	NavWorld._inputs(Vector2i(0, 0))  # what a look cost when anything standing anywhere changed (before shapes_rev_in)
 	print("CHURN one chunk's read of what stands, afresh: %.2f ms" % ((Time.get_ticks_usec() - t_read) / 1000.0))
-	print("CHURN per frame: %s; %d layers baked afresh round the moving ground" % [line, NavWorld.baked - baked0])
-	_check(NavWorld.baked > baked0, "the moving ground's chunks were baked afresh round it")
+	print("CHURN per frame: %s" % line)
+	_check(NavWorld.baked == baked0, "nothing is baked round held ground that keeps moving (%d layers)" % (NavWorld.baked - baked0))
 	_check(total / 1000.0 / FRAMES < MEAN_MS, "the navigation's frame work while %d claims move every frame: mean %.3f ms (under %.1f)" % [HOSTS, total / 1000.0 / FRAMES, MEAN_MS])
 	_check(worst / 1000.0 < MEAN_MS * 4.0, "its worst frame %.2f ms (under %.1f)" % [worst / 1000.0, MEAN_MS * 4.0])
 	print("NAV CHURN %s" % ("PASS" if _bad == 0 else "FAIL (%d)" % _bad))
@@ -96,6 +96,7 @@ func _step(parts: Dictionary) -> int:
 	t = Time.get_ticks_usec()
 	if not NavWorld._await.is_empty():
 		NavWorld._confirm()
+	NavWorld._hold()
 	parts["confirm"] = int(parts.get("confirm", 0)) + Time.get_ticks_usec() - t
 	t = Time.get_ticks_usec()
 	NavWorld._watch()

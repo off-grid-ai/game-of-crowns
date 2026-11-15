@@ -162,10 +162,13 @@ func _run() -> void:
 	var rest := NavWorld.closest(Vector3(16.0, -0.15, 26.0), NavWorld.WATER)
 	_check(NavWorld.on_map(rest, NavWorld.WATER) and not _land.is_land(rest.x, rest.z), "a ship's resting spot by the shore is on the water map (%s)" % str(rest))
 	_check(FileAccess.get_file_as_string("res://scripts/units.gd").contains("NavWorld.on_map(q, NavWorld.WATER)"), "units.gd moors a ship on the ships' map")
-	# 2. A regiment's rectangle, held: the route through it bends round once the chunk is baked afresh.
+	# 2. A regiment's rectangle, standing: the route through it bends round once it has held its ground nav.hold_still
+	# seconds and the chunk is baked afresh (a moving block is only an avoidance obstacle: nav_churn_probe).
 	var reg := PackedVector2Array([Vector2(11.0, 4.0), Vector2(13.0, 4.0), Vector2(13.0, 8.0), Vector2(11.0, 8.0)])
 	Ground.claim("probe_regiment", reg, "host")
 	var before := NavWorld.baked
+	await _until(func() -> bool: return NavWorld.carved("probe_regiment"), 30.0)
+	_check(NavWorld.carved("probe_regiment"), "a regiment standing its ground is carved out of the maps")
 	await _until(func() -> bool: return _settled(Vector2i(0, 0)), 30.0)
 	await _landed(Vector2i(0, 0))
 	print("held ground baked in: %d layers since it was claimed" % (NavWorld.baked - before))

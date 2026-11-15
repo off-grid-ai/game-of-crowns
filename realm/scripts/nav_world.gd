@@ -30,7 +30,7 @@ const PerfTools := preload("res://scripts/perf_tools.gd")
 const LAND_KINDS: Array[StringName] = [&"host", &"wide", &"walk", &"engine"]  # baked in this order: the roads and hosts first
 const WATER: StringName = &"water"
 const LAYERS: Array[StringName] = [&"ways", &"open", &"river"]
-const BLOCKING_CLAIMS := ["host", "body", "engine"]  # held ground carved out of the maps (ground.gd claims)
+const BLOCKING_CLAIMS := ["host", "body", "engine"]  # held ground carved out of the maps (ground.gd claims) once it stands
 
 static var terrain: Node3D  # terrain.gd: the land, its water and its Terrain3D
 static var roads: Node  # roads.gd: the ways laid between towns (segments())
@@ -54,6 +54,10 @@ const FACES_KEPT := 24
 static var _base := {}  # chunk -> [what it was read at (key), its base signature, obstacles, ways]: read again only on change
 static var _sweep_key: Variant = null  # what the realm was made of when the watch's round began
 static var _swept_key: Variant = null  # and when its last round ended with every chunk settled: no change, no round
+static var _still := {}  # claim id -> [its outline when last seen, since when (s) it has held it]
+static var _carved := {}  # claim id -> true: held still nav.hold_still seconds, so carved out of the maps
+static var _carved_rev := 0  # counts changes to what is carved: the watch looks again only then
+static var _still_at := 0.0  # when the claims were last looked over (_hold)
 static var _unsettled := false  # a chunk seen this round waits to settle: another round follows
 static var _started := false
 static var _gen := 0  # a start's number: a bake still out from an earlier one is dropped when it comes back
@@ -80,6 +84,8 @@ static func stop() -> void:
 	_town_polys.clear()
 	_land_rev.clear()
 	_base.clear()
+	_still.clear()
+	_carved.clear()
 	_faces_kept.clear()
 	_faces_order.clear()
 	_sweep_key = null
@@ -249,6 +255,7 @@ func _process(_delta: float) -> void:
 	var t1 := Time.get_ticks_usec()
 	if not _await.is_empty():
 		_confirm()
+	_hold()
 	var t2 := Time.get_ticks_usec()
 	_watch()
 	var t3 := Time.get_ticks_usec()
@@ -270,12 +277,51 @@ static func _on_ground_changed(area: Rect2) -> void:
 
 
 ## What the realm's maps are made of, as a few counters: the ground's shapes (ground.gd shapes_rev), the held ground
-## (claims_rev), the roads laid and the land's changes. Unchanged, the watch has nothing to look at.
+## that stands (_carved_rev), the roads laid and the land's changes. Unchanged, the watch has nothing to look at.
 static func _key() -> Array:
 	var land := 0
 	for c in _land_rev:
 		land += int(_land_rev[c])
-	return [Ground.shapes_rev, Ground.claims_rev, _roads_n(), land]
+	return [Ground.shapes_rev, _carved_rev, _roads_n(), land]
+
+
+## Held ground is carved out of the maps only once it stands (Godot's rule: a navmesh is baked for what stays put; what
+## moves is an avoidance obstacle, army_melee.gd _hold_out): a claim (a regiment's block, an engine) that has held the
+## same outline nav.hold_still seconds is carved, and is no longer the moment it moves or goes. A marching or fighting
+## host is never baked round (the battle run: every moving block rebaked on four maps each second, nav_world 5-8 ms a
+## frame and up to 1.4 cores baking). Looked over every nav.hold_scan seconds, and only when the claims changed or one
+## still waits to count as standing.
+static func _hold() -> void:
+	var now := Time.get_ticks_msec() / 1000.0
+	if now - _still_at < Data.num("ground", "nav.hold_scan", 0.25):
+		return
+	_still_at = now
+	var hold := Data.num("ground", "nav.hold_still", 2.0)
+	var span := Rect2(-1.0e6, -1.0e6, 2.0e6, 2.0e6)
+	var claims: Dictionary = Ground.claims_in(span, BLOCKING_CLAIMS)
+	var changed := false
+	for id in _still.keys():
+		if not claims.has(id):
+			_still.erase(id)
+			if _carved.erase(id):
+				changed = true
+	for id in claims:
+		var poly: PackedVector2Array = claims[id][1]
+		var was: Array = _still.get(id, [])
+		if was.is_empty() or was[0] != poly:
+			_still[id] = [poly, now]
+			if _carved.erase(id):
+				changed = true  # it moves: avoidance steps round it now, the maps open again
+		elif not _carved.has(id) and now - float(was[1]) >= hold:
+			_carved[id] = true
+			changed = true
+	if changed:
+		_carved_rev += 1
+
+
+## Whether claim `id` stands carved out of the maps (held still nav.hold_still seconds).
+static func carved(id: Variant) -> bool:
+	return _carved.has(id)
 
 
 static func _roads_n() -> int:
@@ -400,7 +446,7 @@ static func _inputs(c: Vector2i) -> Dictionary:
 		var shapes := Ground.obstacle_shapes(area, mask)
 		var r1 := Time.get_ticks_usec()
 		for e: Dictionary in shapes:
-			var o := _outline(e["shape"], e["xform"])
+			var o := _outline(e["shape"], e["xform"], e.get("bounds", Rect2()))
 			if o.size() >= 3:
 				obstacles.append(o)
 		PerfTools.add("nav_world.shapes", r1 - r0)
@@ -438,7 +484,7 @@ static func _inputs(c: Vector2i) -> Dictionary:
 	var held: Array = []
 	var engines: Array = []  # an engine's ground: a host's block keeps its own half-width off it too (nav.engine_room)
 	var claims: Dictionary = Ground.claims_in(area, BLOCKING_CLAIMS)
-	var ids := claims.keys()
+	var ids := claims.keys().filter(func(id) -> bool: return _carved.has(id))  # only held ground that stands (_hold)
 	ids.sort_custom(func(x, y) -> bool: return str(x) < str(y))
 	for id in ids:
 		(engines if String(claims[id][0]) == "engine" else held).append(claims[id][1])
@@ -450,10 +496,30 @@ static func _inputs(c: Vector2i) -> Dictionary:
 
 ## A shape standing in the ground's space (ground.gd: prisms, boxes, a trunk's cylinder) as its outline on the ground,
 ## world XZ: what Recast carves.
-static func _outline(shape: RID, xf: Transform3D) -> PackedVector2Array:
+## `bounds` (world XZ, as ground.gd made the shape) answers for a trunk and a box without reading the shape back.
+static func _outline(shape: RID, xf: Transform3D, bounds := Rect2()) -> PackedVector2Array:
+	var kind := PhysicsServer3D.shape_get_type(shape)
+	if bounds.has_area():
+		if kind == PhysicsServer3D.SHAPE_CYLINDER:
+			return _disc(bounds.get_center(), bounds.size.x * 0.5)
+		if kind == PhysicsServer3D.SHAPE_BOX:
+			# A box turned by its basis (unit axes): its bounds are |c|hx + |s|hz across and |s|hx + |c|hz deep.
+			var c := absf(xf.basis.x.x)
+			var sn := absf(xf.basis.x.z)
+			var det := c * c - sn * sn
+			if absf(det) > 0.05:
+				var w := bounds.size.x * 0.5
+				var h := bounds.size.y * 0.5
+				var hx := (w * c - h * sn) / det
+				var hz := (h * c - w * sn) / det
+				var out := PackedVector2Array()
+				for v in [Vector3(-hx, 0, -hz), Vector3(hx, 0, -hz), Vector3(hx, 0, hz), Vector3(-hx, 0, hz)]:
+					var p: Vector3 = xf * v
+					out.append(Vector2(p.x, p.z))
+				return out
 	var data: Variant = PhysicsServer3D.shape_get_data(shape)
 	var pts := PackedVector2Array()
-	match PhysicsServer3D.shape_get_type(shape):
+	match kind:
 		PhysicsServer3D.SHAPE_BOX:
 			var h: Vector3 = data
 			for v in [Vector3(-h.x, 0, -h.z), Vector3(h.x, 0, -h.z), Vector3(h.x, 0, h.z), Vector3(-h.x, 0, h.z)]:
