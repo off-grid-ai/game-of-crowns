@@ -407,7 +407,10 @@ function applyStartOptions() {
   const held = meta.grudge && world.players.find((p) => houseFor(p).key === meta.grudge.key && !houseFor(p).wild && !houseFor(p).crown);
   if (held) {
     noteFavour(held.id, -GRUDGE.carry, `a grudge from the last King's reign${meta.grudge.cause ? `: ${meta.grudge.cause}` : ""}`);
-    record({ turn: world.turn, kind: "court", text: `${houseFor(held).name} has not forgotten the last King${meta.grudge.cause ? `, nor ${meta.grudge.cause}` : ""}. They bow to the new crown, and keep their grudge.` });
+    // At their seat, as a grudge (kind revenge): the card offers what wins a cold house back, or a march (Mac: "there
+    // should be something actionable like a feast, or attack").
+    const seat = world.cities?.find((c) => c.owner === held.id && c.capital) ?? world.cities?.find((c) => c.owner === held.id);
+    record({ turn: world.turn, kind: "revenge", city: seat?.id, text: `${houseFor(held).name} has not forgotten the last King${meta.grudge.cause ? `, nor ${meta.grudge.cause}` : ""}. They bow to the new crown, and keep their grudge.` });
   }
   // The last King's heir crowned (royals.js, chronicles.create dynasty): the chronicle says whose blood this is.
   if (meta.dynasty?.king) record({ turn: world.turn, kind: "succession", text: `${meta.dynasty.king.name}, child of ${meta.dynasty.of}, is crowned in Kingsmere. The blood goes on.` });

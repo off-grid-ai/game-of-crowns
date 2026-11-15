@@ -138,12 +138,35 @@ func _banner(h: Dictionary) -> Node3D:
 	return null
 
 
-## Where a host stands on the ground: under its banner as it marches, else its lead company, else its tile.
 ## Where a host stands in the world (its banner, its lead man, else its tile).
 func ground_of(id: int) -> Vector3:
 	return _ground(host(id))
 
 
+## The host's men on screen: the rectangle round every company's drawn bodies (their meshes' bounds, projected), or
+## an empty one when none is in view. The Hand's tour rings this (hand_prompts.gd).
+func screen_rect_of(id: int, cam: Camera3D) -> Rect2:
+	var out := Rect2()
+	var any := false
+	for u in host(id).get("units", []):
+		var f: Node3D = main.units.figure_of(int(u))
+		if f == null or not is_instance_valid(f) or not f.is_visible_in_tree():
+			continue
+		for v in f.find_children("*", "VisualInstance3D", true, false):
+			if not (v as VisualInstance3D).is_visible_in_tree():
+				continue
+			var box: AABB = (v as VisualInstance3D).global_transform * (v as VisualInstance3D).get_aabb()
+			for i in 8:
+				var p := box.get_endpoint(i)
+				if cam.is_position_behind(p):
+					continue
+				var s2 := cam.unproject_position(p)
+				out = Rect2(s2, Vector2.ZERO) if not any else out.expand(s2)
+				any = true
+	return out
+
+
+## Where a host stands on the ground: under its banner as it marches, else its lead company, else its tile.
 func _ground(h: Dictionary) -> Vector3:
 	var at := Vector3.INF
 	var b := _banner(h)

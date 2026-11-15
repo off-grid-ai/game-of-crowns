@@ -247,10 +247,8 @@ func _place_ring() -> void:
 		var cam := get_viewport().get_camera_3d()
 		var hc: Node = main.get_node_or_null("HostCommand")
 		if cam and hc:
-			var at: Vector3 = hc.ground_of(_host)
-			if at != Vector3.INF and not cam.is_position_behind(at):
-				var half := float(Data.value("opening", "tour_host_hole", 90.0))
-				rect = Rect2(cam.unproject_position(at + Vector3(0, 1.0, 0)) - Vector2(half, half), Vector2(half, half) * 2.0)
+			rect = (hc.screen_rect_of(_host, cam) as Rect2).grow(float(Data.value("opening", "tour_host_pad", 16.0)))
+			rect = rect.intersection(get_viewport().get_visible_rect())
 	else:
 		var t := _target()
 		if t != null and is_instance_valid(t) and t.is_visible_in_tree():

@@ -219,6 +219,8 @@ func _now(c: Dictionary) -> Dictionary:
 	var out := {}
 	if not threats.is_empty() or not (_player(crown).get("wars", []) as Array).is_empty():
 		out["war"] = true
+	if int(main.ui.court.waiting()) > 0:
+		out["court_waits"] = true  # To court only when a matter waits there (Mac: "why would that even come up")
 	if c.is_empty():
 		return out
 	if threats.has(int(c["id"])):

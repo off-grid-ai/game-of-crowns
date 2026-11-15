@@ -91,6 +91,11 @@ func _build_court() -> void:
 
 ## The matter before the court with this id ({} if it's gone): read by the v2 opening to
 ## show a ruling where it lands (main.gd).
+## How many matters wait at court now (news_actions.gd: "To court" only when one does).
+func waiting() -> int:
+	return _petitions.size()
+
+
 func matter(id: String) -> Dictionary:
 	for p in _petitions:
 		if String(p.get("id", "")) == id:
