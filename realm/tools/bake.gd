@@ -1,7 +1,8 @@
 extends SceneTree
 ## Bakes what every new game would otherwise make on the player's Mac at first launch, into the game itself (Mac,
 ## 2026-11-15: "cant you just bundle it"): every model's merged mesh and its low level (realistic.gd) and the starting
-## realm's towns and the saved chronicle's as it stands (towns.gd, with the ground, crops and dressing they make), into res://baked/ through kept.gd, the one
+## realm's towns and the saved chronicle's as it stands (towns.gd, with the ground, crops and dressing they make) and their roads
+## (roads.gd: each route and the lanes through the woods), into res://baked/ through kept.gd, the one
 ## loader the game reads them by (an exported game: baked, else the player's own copy, else made and kept there), under
 ## the scripts' and data's fingerprint, stamped in res://baked/code.txt.
 ##
@@ -15,6 +16,7 @@ const BASE := "res://../bridge/baseline/aldmere/"
 const BRIDGE := "res://../bridge"
 const CHRONICLES_OUT := "user://bake/chronicles"  # the chronicles' realms as read for the bake (chronicle-world.mjs)
 const WAIT_S := 1800.0
+const ROADS_WAIT_S := 600.0  # the most one realm's roads may take (the navigation baked, every route asked)
 
 
 func _init() -> void:
@@ -86,11 +88,38 @@ func _realm(world: Dictionary, map: Dictionary) -> int:
 	while towns.building():
 		await process_frame
 	var n: int = towns.towns.size()
+	await _roads(terrain)
 	for n2 in [towns, terrain, store]:
 		root.remove_child(n2)
 		n2.queue_free()
 	await process_frame
 	return n
+
+
+## The realm's roads laid as main.gd lays them, after the towns (they grade the land): Freeciv's network, then the next
+## frame the King's and the lords' roads, each route asked of the navigation and kept (roads.gd _ask), and the lanes
+## through the woods cut and kept by cell (roads.gd _cut_lanes), so a launch reads every one back. The navigation's
+## chunks it bakes on the way are kept too (nav_world.gd).
+func _roads(terrain: Node3D) -> void:
+	var NavWorld := load("res://scripts/nav_world.gd")
+	var nav: Node = NavWorld.new()
+	root.add_child(nav)
+	var roads: Node3D = load("res://scripts/roads.gd").new()
+	roads.terrain = terrain
+	root.add_child(roads)
+	NavWorld.start(terrain, roads)
+	var t0 := Time.get_ticks_msec()
+	roads.sync()
+	await process_frame
+	roads.kings_road()
+	while not roads.laid() and Time.get_ticks_msec() - t0 < ROADS_WAIT_S * 1000.0:
+		await process_frame
+	print("BAKE roads: %s in %.0f s" % ["laid" if roads.laid() else "NOT all laid", (Time.get_ticks_msec() - t0) / 1000.0])
+	NavWorld.stop()
+	for n2 in [roads, nav]:
+		root.remove_child(n2)
+		n2.queue_free()
+	await process_frame
 
 
 ## Everything under a folder of the bake's, gone (an older bake's files are never read again).
