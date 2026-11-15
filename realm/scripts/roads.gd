@@ -402,6 +402,7 @@ func paths_near(p: Vector3, r: float) -> int:
 
 
 func _segment(a: Vector3, b: Vector3, parent: Node3D = null, width := WIDTH, owner := "roads") -> void:
+	var fresh := _painted.size()  # only what this segment paints is trimmed against the setts below
 	var mid: Vector3 = terrain.paths.road_bow(a, b)  # the same bow travellers ride
 	for run in [[a, mid], [mid, b]]:
 		var p: Vector3 = run[0]
@@ -423,8 +424,10 @@ func _segment(a: Vector3, b: Vector3, parent: Node3D = null, width := WIDTH, own
 			continue
 		_remember(owner, p, q, width * 0.5)
 		_painted.append([p, q, width, owner, parent if parent else self, _paint_run(p, q, width, owner, parent)])
+	# Every earlier stretch was trimmed when it was painted or when its disc was laid: rescanning them all for every
+	# segment was segments x towns x stretches (11:01 load, 2 fps for minutes in kings_road; SEGV trace clear_in).
 	for d in _stone_discs:
-		clear_in(d[0], float(d[1]), false)
+		clear_in(d[0], float(d[1]), false, fresh)
 
 
 ## The stretches painted so far: [from, to, width, owner, parent, [its decals]] (clear_in trims them where a town lays
@@ -466,19 +469,22 @@ func in_setts(p: Vector3) -> bool:
 		if q.distance_to(d[0]) < float(d[1]):
 			return true
 	return false
-func clear_in(centre: Vector2, r: float, remember := true) -> void:
+## from: only the stretches from this index on are looked at (a new segment's own); the rest are kept as they are.
+func clear_in(centre: Vector2, r: float, remember := true, from := 0) -> void:
 	if remember:
 		_stone_discs.append([centre, r])
 	# A stretch painted under a town's root went with it when the town was rebuilt (its decals too): its record goes now,
 	# before anything is painted again under a freed node (clip4: 694 errors; tools/roads_probe.gd).
-	_painted = _painted.filter(func(st: Array) -> bool: return is_instance_valid(st[4]))
-	var kept: Array = []
-	for st in _painted:
+	if from == 0:
+		_painted = _painted.filter(func(st: Array) -> bool: return is_instance_valid(st[4]))
+	var verge := Data.num("ground", "roads.verge", 2.4) * 0.5  # the verge's half-width, per unit of track width
+	var kept: Array = _painted.slice(0, from)
+	for st in _painted.slice(from):
 		var p: Vector3 = st[0]
 		var q: Vector3 = st[1]
 		var a := Vector2(p.x, p.z)
 		var b := Vector2(q.x, q.z)
-		var reach := r + float(st[2]) * Data.num("ground", "roads.verge", 2.4) * 0.5  # the verge's half-width as well
+		var reach := r + float(st[2]) * verge  # the verge's half-width as well
 		if Geometry2D.get_closest_point_to_segment(centre, a, b).distance_to(centre) >= reach:
 			kept.append(st)
 			continue
