@@ -425,11 +425,19 @@ func _end() -> void:
 	finished.emit()
 
 
+var _eat_release := false  # the card took a click's press: its release is the card's too, never a click on the land
+
+
 func _input(event: InputEvent) -> void:
+	if _eat_release and event is InputEventMouseButton and not event.pressed:
+		_eat_release = false
+		get_viewport().set_input_as_handled()  # "Click to begin" opened Kingsmere's card under it (the land picks on release)
+		return
 	if not visible:
 		return
 	if (event is InputEventKey and event.pressed and not event.echo) or (event is InputEventMouseButton and event.pressed):
 		get_viewport().set_input_as_handled()
+		_eat_release = event is InputEventMouseButton
 		if watching:
 			if event is InputEventKey and event.keycode == KEY_ESCAPE:
 				_end()
