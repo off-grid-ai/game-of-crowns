@@ -56,7 +56,6 @@ func obstacles(_area: Rect2) -> Array:
 """
 const SCENES := """extends Node
 var terrain: Node3D
-var nav = preload("res://scripts/town_nav.gd").new()
 func ground(p: Vector3) -> Vector3:
 	return Vector3(p.x, 0.0, p.z)
 func _footing(p: Vector3, body := 0.0) -> bool:
@@ -99,10 +98,9 @@ func _run() -> void:
 	root.add_child(main)
 	Footing.terrain = main.terrain
 	Footing.towns = null
-	# The realm's navigation as main sets it up (a mover's route: scenes.nav over the land; no towns' walk maps).
+	# The scenes as main sets them up (the ground's height and footing).
 	main.scenes = _script(SCENES).new()
 	main.scenes.terrain = main.terrain
-	main.scenes.nav.terrain = main.terrain
 	main.add_child(main.scenes)
 	main.towns = _script("extends Node3D\nvar towns := {}\n").new()
 	main.add_child(main.towns)

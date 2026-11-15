@@ -14,7 +14,6 @@ signal arrived(s: Dictionary)
 
 var terrain: Node3D
 var towns: Node3D
-var nav = preload("res://scripts/town_nav.gd").new()  # where people may stand, and the streets they walk
 var people = preload("res://scripts/people.gd").new()
 const Awareness := preload("res://scripts/awareness.gd")  # the realm's rules as the bridge sends them (season length, bands)
 const Heraldry = preload("res://scripts/heraldry.gd")
@@ -41,10 +40,6 @@ var _timber: StandardMaterial3D
 
 
 func _ready() -> void:
-	# Where people may stand and the ways they walk (town_nav.gd), for every Mover from the first frame: the realm's
-	# land and roads as main hands them over, not on the first scene that stands someone.
-	nav.terrain = terrain
-	nav.roads = get_parent().get("roads")
 	var builder = preload("res://scripts/house_builder.gd").new()
 	wagon_mesh = builder.piece_mesh("Prop_Wagon")
 
@@ -190,7 +185,7 @@ const HORSE_BODY := 0.17
 ## streets, never through its houses, and over open land between.
 func route(from: Vector3, to: Vector3) -> PackedVector3Array:
 	stand(from)  # finds the towns and the ground
-	return nav.route(towns, from, to)
+	return TownNav.route(from, to)
 
 
 func ground(p: Vector3) -> Vector3:

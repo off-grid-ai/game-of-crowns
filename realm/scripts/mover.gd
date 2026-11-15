@@ -1,12 +1,12 @@
 extends Node
 ## One way to move (CLAUDE.md, "One way to move"): the one interface every moving thing implements. A
 ## person, cart, horse, soldier or beast gets its Mover with `Mover.of(body)` and travels only with
-## `go(to)`: the route comes from the realm's one navigation (town_nav.gd route: a town's walk map round
-## every building and prop it records, the roads between towns, the land where there are none), walked at
+## `go(to)`: the route comes from the realm's one navigation (nav_world.gd: Godot's NavigationServer3D on navmeshes
+## baked round every building, prop, tree and held ground, the streets and roads cheapest), walked at
 ## the body's pace, turned to face its way, set on the ground as it goes. Nothing else tweens or sets a
 ## position to travel, so nothing can cross a well, a stall or a wall by forgetting to ask for a route.
 ## Arrived (or stopped), it says so: the `arrived` signal and the callable given to go().
-## A route the navigation can't give yet (a town's walk map still baking, a fight's ground still being laid) is
+## A route the navigation can't give yet (its map still being baked at the first start, a fight's ground still laid) is
 ## waited for, the body standing where it is: never a straight line meanwhile (Mac's clip4: a horse and cart
 ## through Kingsmere's well).
 ##
@@ -15,15 +15,14 @@ extends Node
 ## so every route it asks for goes round them; a fighter chasing a moving foe asks `toward()` each frame, and
 ## Godot's avoidance (RVO, `join(crowd)`) turns where he wants to go into a way through the men about him.
 ##
-## A horse or a cart (a body that steers on an arc, turn_radius > 0) walks a town's wide map (town_nav map_for wide:
+## A horse or a cart (a body that steers on an arc, turn_radius > 0) walks the wide map (nav_world.gd bodies.wide:
 ## kept a wagon's half-width off everything standing, so it never squeezes between benches a man can pass), stands in
-## its town's crowd avoidance as an agent the villagers step round (Godot's RVO, high priority), and never dodges
+## the walk map's crowd avoidance as an agent the villagers step round (Godot's RVO, high priority), and never dodges
 ## itself: it waits while any body stands on the arc it is about to drive (towns.json nav.yield), as carts do in a
 ## crowd; held wait_max() it re-routes round the one in its way, and held again it gives up and reports (`gave_up`).
 ## A body standing where it is bound (a led horse's groom) is not in its way: it has come as near as it can.
 
 const People := preload("res://scripts/people.gd")
-const TownNav := preload("res://scripts/town_nav.gd")
 const NavWorld := preload("res://scripts/nav_world.gd")  # the realm's one navigation
 const Data := preload("res://scripts/data.gd")
 const PerfTools := preload("res://scripts/perf_tools.gd")
@@ -108,19 +107,15 @@ func follow(way: PackedVector3Array, then := Callable()) -> void:
 
 
 ## The route from `from` to `to`: on the fight's ground where the body stands on one, else the realm's navigation
-## (town_nav.gd route: a town's walk map, the roads, the land). Empty while it can't be given yet: the fight's ground
-## not yet laid, a town on the way whose walk map is still baking (town_nav.waits), the realm not yet up.
+## (nav_world.gd: the streets, the roads and the land on one navmesh). Empty while it can't be given yet: the fight's
+## ground not yet laid, the navigation still being baked at the first start.
 func _route(from: Vector3, to: Vector3) -> PackedVector3Array:
 	if field != null:
 		return field.route(from, to) if field.built else PackedVector3Array()
 	if nav == NavWorld.WATER:
 		return NavWorld.path(from, to, NavWorld.WATER)  # a ship: the sea's and lakes' map, never the land
-	var main := _main()
-	if main == null or main.scenes == null or main.scenes.get("nav") == null or main.get("towns") == null:
-		return PackedVector3Array()
-	if main.scenes.get("nav").waits(main.get("towns"), from, to, turn_radius > 0.0):
-		return PackedVector3Array()
-	return main.scenes.get("nav").route(main.get("towns"), from, to, turn_radius > 0.0)
+	# A horse or a cart (it steers on an arc) walks the wide map: kept a wagon's half-width off everything standing.
+	return NavWorld.path(from, to, &"wide" if turn_radius > 0.0 else nav)
 
 
 ## A short shift in `secs` without turning (a step back from a blow, a dodge, a shuffle in the ranks), still
@@ -262,15 +257,13 @@ func leave() -> void:
 func _exit_tree() -> void:
 	leave()
 	if _town_agent.is_valid():
-		NavigationServer2D.free_rid(_town_agent)
+		NavigationServer3D.free_rid(_town_agent)
 		_town_agent = RID()
 
 
 # --- A horse or a cart in a town's crowd ---------------------------------------------------------------------
 
-var _town_agent := RID()  # its agent in the town's crowd avoidance (the villagers' RVO, on the town's walk map)
-var _town_map := RID()
-var _town_ask := 0.0  # seconds to the next look for the town it is in
+var _town_agent := RID()  # its agent in the crowd's avoidance (the villagers' RVO, on the realm's walk map)
 var _peek := 0.0  # seconds to the next look for anyone in its way
 var _blocked: Node3D = null
 var _waited := 0.0  # seconds held by a body in its way
@@ -283,41 +276,23 @@ var _owed := 0.0  # walking time not yet given (_due): the walk catches up with 
 static var UNSEEN_S: float = Data.num("people", "lod.move_unseen_s", 1.0)
 
 
-## Tells the town's crowd where the horse or cart is and where it goes, so the villagers' avoidance (Godot's RVO)
-## steps round it: an agent on the town's walk map, at top priority, seeing nobody itself (it never dodges; it waits).
+## Tells the crowd where the horse or cart is and where it goes, so the villagers' avoidance (Godot's RVO on the realm's
+## walk map, villagers.gd) steps round it: an agent at top priority, seeing nobody itself (it never dodges; it waits).
 func _tell_crowd(body: Node3D, vel: Vector3) -> void:
-	_town_ask -= get_process_delta_time()
-	if _town_ask <= 0.0:
-		_town_ask = 0.5
-		var map := RID()
-		var main := _main()
-		if main and main.get("towns") and main.scenes and main.scenes.get("nav"):
-			var ts: Array = TownNav.towns_at(main.get("towns"), body.global_position)
-			if not ts.is_empty() and TownNav.baked(ts[0][0]):
-				map = main.scenes.get("nav").map_for(ts[0][0], ts[0][1])
-		if map != _town_map:
-			_town_map = map
-			if not map.is_valid() and _town_agent.is_valid():
-				NavigationServer2D.free_rid(_town_agent)
-				_town_agent = RID()
-			elif map.is_valid():
-				if not _town_agent.is_valid():
-					_town_agent = NavigationServer2D.agent_create()
-					NavigationServer2D.agent_set_radius(_town_agent, float(Data.num("towns", "nav.wide", 0.1)))
-					NavigationServer2D.agent_set_avoidance_layers(_town_agent, 1)  # seen by the villagers (their mask)
-					NavigationServer2D.agent_set_avoidance_mask(_town_agent, 0)  # sees nobody: it waits, never dodges
-					NavigationServer2D.agent_set_avoidance_priority(_town_agent, 1.0)
-					NavigationServer2D.agent_set_avoidance_enabled(_town_agent, true)
-				NavigationServer2D.agent_set_map(_town_agent, map)
-	if not _town_agent.is_valid():
+	var map := NavWorld.map(&"walk")
+	if not map.is_valid():
 		return
-	var main := _main()
-	var c: Vector3 = body.global_position
-	for t in TownNav.towns_at(main.get("towns"), c) if main and main.get("towns") else []:
-		c = (t[1] as Node3D).global_position  # the walk map is in the town's own space
-		break
-	NavigationServer2D.agent_set_position(_town_agent, Vector2(body.global_position.x - c.x, body.global_position.z - c.z))
-	NavigationServer2D.agent_set_velocity_forced(_town_agent, Vector2(vel.x, vel.z))
+	if not _town_agent.is_valid():
+		_town_agent = NavigationServer3D.agent_create()
+		NavigationServer3D.agent_set_use_3d_avoidance(_town_agent, false)
+		NavigationServer3D.agent_set_radius(_town_agent, float(Data.num("towns", "nav.wide", 0.1)))
+		NavigationServer3D.agent_set_avoidance_layers(_town_agent, 1)  # seen by the villagers (their mask)
+		NavigationServer3D.agent_set_avoidance_mask(_town_agent, 0)  # sees nobody: it waits, never dodges
+		NavigationServer3D.agent_set_avoidance_priority(_town_agent, 1.0)
+		NavigationServer3D.agent_set_avoidance_enabled(_town_agent, true)
+		NavigationServer3D.agent_set_map(_town_agent, map)
+	NavigationServer3D.agent_set_position(_town_agent, body.global_position)
+	NavigationServer3D.agent_set_velocity_forced(_town_agent, Vector3(vel.x, 0, vel.z))
 
 
 ## The body standing on the horse's or cart's way (towns.json nav.yield: how far along it looks, how wide past its own
@@ -613,7 +588,7 @@ static func _main() -> Node:
 
 
 ## A party on a road, in file (a traveller, a cart, a herd behind its herder, a patrol): the way is the one the
-## navigation gave (town_nav.route or roads.route), smoothed and laid on the ground as a Path3D, and Godot's
+## navigation gave (nav_world.gd, roads.route), smoothed and laid on the ground as a Path3D, and Godot's
 ## PathFollow3D carries each member along it, `offset` behind the head (and `side` across). One place for all
 ## road travel. members: [[node, offset, side], ...] (nodes face +z; turned to the follower's -z here).
 ## opts: name (the road's node, so a party can be found on it), start (how far along they begin) or start_share (as a share of the road), min/max (seconds for the whole road), yields (the head waits up to

@@ -968,7 +968,6 @@ func _sound_events(entries: Array) -> void:
 ## the old height, sunk into raised ground or hovering over a cut.
 func _on_ground_changed(area: Rect2) -> void:
 	area = area.grow(0.05)
-	preload("res://scripts/town_nav.gd").forget_shore(area)  # a shore traced over it is traced again
 	for p in get_tree().get_nodes_in_group("people"):
 		if not _stands_on_ground(p):
 			continue

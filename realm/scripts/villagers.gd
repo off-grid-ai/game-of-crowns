@@ -37,9 +37,9 @@ const TownLife := preload("res://scripts/town_life.gd")
 const TownScenes := preload("res://scripts/town_scenes.gd")  # the director: the day's parts (block)
 const Works := preload("res://scripts/works.gd")  # the working buildings and their hands
 const Weapons := preload("res://scripts/weapons.gd")  # what a move needs in hand (can_play)
-const TownNav := preload("res://scripts/town_nav.gd")
+const TownNav := preload("res://scripts/town_nav.gd")  # a town's frame on the realm's navigation
+const NavWorld := preload("res://scripts/nav_world.gd")  # the realm's one navigation: its walk map and its crowd
 const Ground := preload("res://scripts/ground.gd")  # the one answer to where a body may stand
-var nav = preload("res://scripts/town_nav.gd").new()
 var talk = preload("res://scripts/village_talk.gd").new(self)  # who talks with whom (village_talk.gd): chatter.gd and the minds ask it
 var registry = preload("res://scripts/village_registry.gd").new(self)  # who is who and where (village_registry.gd): a click, a name, the homes lit, the feast fire
 var slots = preload("res://scripts/village_slots.gd").new(self)  # where a villager may stand (village_slots.gd): the places' rings, the stall, well, street and cart slots, the square's room
@@ -267,11 +267,10 @@ func _refresh() -> void:
 			for a in crowds[id]:
 				a["node"].queue_free()
 				if a.has("agent"):
-					NavigationServer2D.free_rid(a["agent"])
+					NavigationServer3D.free_rid(a["agent"])
 			crowds.erase(id)
 			_forget_others(id)
 			talk.forget(id)
-			nav.forget(id)
 		elif crowds.has(id) and tier != was:
 			_at_tier(id, tier)
 	for id in crowds.keys():
@@ -297,11 +296,10 @@ func _refresh() -> void:
 			for a in crowds[id]:
 				a["node"].queue_free()
 				if a.has("agent"):
-					NavigationServer2D.free_rid(a["agent"])
+					NavigationServer3D.free_rid(a["agent"])
 			crowds.erase(id)
 			_forget_others(id)
 			talk.forget(id)
-			nav.forget(id)
 
 
 ## Once a second: the town's walk map is baked afresh when the town is rebuilt
@@ -311,24 +309,22 @@ func _refresh() -> void:
 func _keep_up(id: int) -> void:
 	if not towns.towns.has(id) or not crowds.has(id):
 		return  # the town is gone or being rebuilt (taken, razed): its folk go with it
-	var map: RID = nav.map_for(id, towns.towns[id]["node"])
+	var map := TownNav.version()  # the realm's walk map, as it is now
 	_raid_indoors(id)
 	for a in crowds[id]:
 		var n: Node3D = a["node"]
-		if a.get("map", RID()) != map:
+		if int(a.get("map", -1)) != map:
 			a["map"] = map
-			if a.has("agent"):
-				NavigationServer2D.agent_set_map(a["agent"], map)
 			# A building raised where they stood: they step out onto the street.
-			if nav.ready(map):
+			if TownNav.ready():
 				var c0: Vector3 = a["center"]
-				var out := nav.closest(map, Vector2(n.position.x - c0.x, n.position.z - c0.z))
+				var out := TownNav.closest(c0, Vector2(n.position.x - c0.x, n.position.z - c0.z))
 				n.position.x = c0.x + out.x
 				n.position.z = c0.z + out.y
 			var route: PackedVector2Array = a["route"]
 			if not route.is_empty():
 				var c: Vector3 = a["center"]
-				a["route"] = nav.path(map, nav.closest(map, Vector2(n.position.x - c.x, n.position.z - c.z)), nav.closest(map, route[route.size() - 1]))
+				a["route"] = TownNav.path(c, TownNav.closest(c, Vector2(n.position.x - c.x, n.position.z - c.z)), TownNav.closest(c, route[route.size() - 1]))
 		if PackedVector2Array(a["route"]).is_empty():
 			n.position.y = terrain.height_at(n.position.x, n.position.z)
 
@@ -423,7 +419,7 @@ func _spawn(id: int) -> void:
 				# The town went while its crowd was being made: hand back what was made.
 				for b in list:
 					b["node"].queue_free()
-					NavigationServer2D.free_rid(b["agent"])
+					NavigationServer3D.free_rid(b["agent"])
 				_spawning.erase(id)
 				return
 			people.dress_for(dress[0], dress[1], dress[2])  # another town's crowd may have been dressed in between
@@ -450,21 +446,23 @@ func _spawn(id: int) -> void:
 		a["early"] = rng.randf_range(-0.6, 0.6)  # an early riser or a late one, in hours
 		a["block"] = ""
 		person.position = a["home"]
-		nav.terrain = terrain
-		var map: RID = nav.map_for(id, town["node"])
-		# Godot's own crowd avoidance (RVO): each villager steps aside for the others.
-		var agent := NavigationServer2D.agent_create()
-		NavigationServer2D.agent_set_map(agent, map)
-		a["map"] = map
-		NavigationServer2D.agent_set_radius(agent, 0.065)  # two keep about 1.1 m between their middles: passers-by give way, never brush through
-		NavigationServer2D.agent_set_neighbor_distance(agent, 0.5)
-		NavigationServer2D.agent_set_max_neighbors(agent, 16)  # a busy square: everyone near is seen, not the first eight
-		NavigationServer2D.agent_set_time_horizon_agents(agent, 2.5)  # sees a passer-by coming soon enough to give way, not brush past
-		NavigationServer2D.agent_set_max_speed(agent, WALK_SPEED * 1.3)
-		NavigationServer2D.agent_set_avoidance_enabled(agent, true)
+		# Godot's own crowd avoidance (RVO) on the realm's walk map: each villager steps aside for the others, and for
+		# every cart, horse and fighter on it (mover.gd), on the ground's plane (2D avoidance in the 3D server).
+		var agent := NavigationServer3D.agent_create()
+		NavigationServer3D.agent_set_map(agent, NavWorld.map(&"walk"))
+		NavigationServer3D.agent_set_use_3d_avoidance(agent, false)
+		a["map"] = TownNav.version()
+		NavigationServer3D.agent_set_radius(agent, 0.065)  # two keep about 1.1 m between their middles: passers-by give way, never brush through
+		NavigationServer3D.agent_set_neighbor_distance(agent, 0.5)
+		NavigationServer3D.agent_set_max_neighbors(agent, 16)  # a busy square: everyone near is seen, not the first eight
+		NavigationServer3D.agent_set_time_horizon_agents(agent, 2.5)  # sees a passer-by coming soon enough to give way, not brush past
+		NavigationServer3D.agent_set_max_speed(agent, WALK_SPEED * 1.3)
+		NavigationServer3D.agent_set_avoidance_layers(agent, 1)
+		NavigationServer3D.agent_set_avoidance_mask(agent, 1)
+		NavigationServer3D.agent_set_avoidance_enabled(agent, true)
 		a["agent"] = agent
 		a["safe"] = Vector2.ZERO
-		NavigationServer2D.agent_set_avoidance_callback(agent, func(v: Vector2): a["safe"] = v)
+		NavigationServer3D.agent_set_avoidance_callback(agent, func(v: Vector3): a["safe"] = Vector2(v.x, v.z))
 		# Seen only once set down on the town's walk map (it syncs a frame
 		# later): never first glimpsed standing inside a house.
 		a["placed"] = false
@@ -516,7 +514,7 @@ func _exit_tree() -> void:
 	for id in crowds:
 		for a in crowds[id]:
 			if a.has("agent"):
-				NavigationServer2D.free_rid(a["agent"])
+				NavigationServer3D.free_rid(a["agent"])
 	crowds.clear()
 	for id in _others.keys():
 		_forget_others(id)
@@ -553,30 +551,31 @@ func _avoid_others() -> void:
 			if d.length() < OTHERS_REACH:
 				if not found.has(id):
 					found[id] = []
-				found[id].append(d)
+				found[id].append(Vector3(g.x, c.y, g.z))
 				break
 	for id in crowds:
 		if crowds[id].is_empty():
 			continue
-		var map: RID = crowds[id][0]["map"]
 		var pool: Array = _others.get(id, [])
 		var here: Array = found.get(id, [])
 		for i in here.size():
 			if i >= pool.size():
-				var o := NavigationServer2D.obstacle_create()
-				NavigationServer2D.obstacle_set_map(o, map)
-				NavigationServer2D.obstacle_set_radius(o, 0.05)  # a body's width, as a walker's own
-				NavigationServer2D.obstacle_set_avoidance_enabled(o, true)
+				var o := NavigationServer3D.obstacle_create()
+				NavigationServer3D.obstacle_set_map(o, NavWorld.map(&"walk"))
+				NavigationServer3D.obstacle_set_use_3d_avoidance(o, false)
+				NavigationServer3D.obstacle_set_radius(o, 0.05)  # a body's width, as a walker's own
+				NavigationServer3D.obstacle_set_avoidance_layers(o, 1)
+				NavigationServer3D.obstacle_set_avoidance_enabled(o, true)
 				pool.append(o)
-			NavigationServer2D.obstacle_set_position(pool[i], here[i])
+			NavigationServer3D.obstacle_set_position(pool[i], here[i])
 		for i in range(here.size(), pool.size()):
-			NavigationServer2D.obstacle_set_position(pool[i], Vector2(1e5, 1e5))  # nobody there now: out of the way
+			NavigationServer3D.obstacle_set_position(pool[i], Vector3(1e5, 0, 1e5))  # nobody there now: out of the way
 		_others[id] = pool
 
 
 func _forget_others(id: int) -> void:
 	for o in _others.get(id, []):
-		NavigationServer2D.free_rid(o)
+		NavigationServer3D.free_rid(o)
 	_others.erase(id)
 
 
@@ -594,16 +593,15 @@ func _random_spot(center: Vector3, rng: RandomNumberGenerator, rmin: float, rmax
 ## Sets a new villager down at the nearest walkable spot to their home, and
 ## their bench beside it, once the walk map can say where that is.
 func _set_down(a: Dictionary) -> bool:
-	var map: RID = a["map"]
-	if not nav.ready(map):
+	if not TownNav.ready():
 		return false
 	var c: Vector3 = a["center"]
 	var n: Node3D = a["node"]
-	var snap := nav.closest(map, Vector2(a["home"].x - c.x, a["home"].z - c.z))
+	var snap := TownNav.closest(c, Vector2(a["home"].x - c.x, a["home"].z - c.z))
 	n.position = c + Vector3(snap.x, 0, snap.y)
 	n.position.y = terrain.height_at(n.position.x, n.position.z)
 	a["home"] = n.position
-	var bench := nav.closest(map, Vector2(a["bench"].x - c.x, a["bench"].z - c.z))
+	var bench := TownNav.closest(c, Vector2(a["bench"].x - c.x, a["bench"].z - c.z))
 	a["bench"] = c + Vector3(bench.x, 0, bench.y)
 	a["goal"] = snap
 	if _spoken_for(a, snap):
@@ -613,7 +611,7 @@ func _set_down(a: Dictionary) -> bool:
 		# rather than stand inside each other.
 		var free := false
 		for k in 8:
-			var q := nav.closest(map, snap + Vector2.from_angle(a["rng"].randf() * TAU) * (0.12 + 0.06 * k))
+			var q := TownNav.closest(c, snap + Vector2.from_angle(a["rng"].randf() * TAU) * (0.12 + 0.06 * k))
 			if not _spoken_for(a, q):
 				snap = q
 				free = true
@@ -649,9 +647,9 @@ func _set_down(a: Dictionary) -> bool:
 
 func _step(a: Dictionary, delta: float, _t: float) -> void:
 	var n: Node3D = a["node"]
-	if not nav.live(a["map"]):
-		# Another walker (a garrison marching in) had the town's map baked
-		# afresh: everyone here takes the new one before asking anything of it.
+	if int(a.get("map", -1)) != TownNav.version():
+		# The walk map was baked afresh round something new (a building site, a stall, held ground): everyone here
+		# takes the new streets before asking anything of it.
 		if not towns.towns.has(a["town"]):
 			return
 		_keep_up(a["town"])
@@ -680,13 +678,13 @@ func _step(a: Dictionary, delta: float, _t: float) -> void:
 	var route: PackedVector2Array = a["route"]
 	var here := Vector2(n.position.x - center.x, n.position.z - center.z)
 	if a.has("agent"):
-		NavigationServer2D.agent_set_position(a["agent"], here)
+		NavigationServer3D.agent_set_position(a["agent"], n.position)
 	if route.is_empty():
 		a["go_t"] = 0.0  # standing: the next walk starts from a standstill (steer.start)
 		a["vel"] = Vector2.ZERO
 		if a.has("agent"):
-			NavigationServer2D.agent_set_velocity(a["agent"], Vector2.ZERO)
-			NavigationServer2D.agent_set_avoidance_priority(a["agent"], 1.0)  # walkers go round those standing still
+			NavigationServer3D.agent_set_velocity(a["agent"], Vector3.ZERO)
+			NavigationServer3D.agent_set_avoidance_priority(a["agent"], 1.0)  # walkers go round those standing still
 		if a.has("arrive"):
 			_settle(a, delta)
 		return  # their mind plays the moves and picks what's next
@@ -714,16 +712,16 @@ func _step(a: Dictionary, delta: float, _t: float) -> void:
 	var want := to.normalized() * WALK_SPEED * READ * _rain_pace * float(a.get("pace", 1.0)) * _mood_pace(a) * _for_the_child(a) * (2.4 if a.get("catch_up", false) else 1.0)
 	var vel: Vector2 = want
 	if a.has("agent"):
-		NavigationServer2D.agent_set_velocity(a["agent"], want)
+		NavigationServer3D.agent_set_velocity(a["agent"], Vector3(want.x, 0, want.y))
 		# Making way: a commoner steps round their betters, never the other way about (presence.gd STATION).
-		NavigationServer2D.agent_set_avoidance_priority(a["agent"], 1.0 if a.get("catch_up", false) else (0.3 + 0.2 * _presence.station(n) if _presence else 0.5))  # a child hurrying to a parent: the grown step round them
+		NavigationServer3D.agent_set_avoidance_priority(a["agent"], 1.0 if a.get("catch_up", false) else (0.3 + 0.2 * _presence.station(n) if _presence else 0.5))  # a child hurrying to a parent: the grown step round them
 		vel = a["safe"]  # trust the avoidance, even when it says wait
 	var step := vel * delta
 	if step.length() > to.length():
 		step = to
 	# Avoidance steers by people alone: the step is held to the walk map, so a
 	# shove never carries anyone through a wall or a fence.
-	step = nav.closest(a["map"], here + step) - here
+	step = TownNav.closest(center, here + step) - here
 	# Getting nowhere counts as blocked too: pressed against someone, the
 	# avoidance can nudge a walker back and forth on the spot, legs going,
 	# never any nearer (walking in place).
@@ -753,7 +751,7 @@ func _step(a: Dictionary, delta: float, _t: float) -> void:
 				# up (npc_mind GoTo), never does the work here.
 				return
 			var across := Vector2(-to.y, to.x).normalized() * (0.14 if a["rng"].randf() < 0.5 else -0.14)
-			route.insert(0, nav.closest(a["map"], here + across + to.normalized() * 0.05))
+			route.insert(0, TownNav.closest(center, here + across + to.normalized() * 0.05))
 			a["route"] = route
 		if not a.get("held_up", false):
 			a["held_up"] = true
@@ -1105,12 +1103,11 @@ func route_to(a: Dictionary, target: Vector3) -> void:
 	var parent = a.get("parent", null)
 	if parent is Dictionary and (parent["node"] as Node3D).visible:
 		target = parent["node"].position + Vector3(cos(float(a["i"])), 0, sin(float(a["i"]))) * CHILD_SIDE
-	var map: RID = nav.map_for(a["town"], town["node"])
-	if a.get("map", RID()) != map:
+	if int(a.get("map", -1)) != TownNav.version():
 		_keep_up(a["town"])  # baked afresh: the whole town walks its new streets
-	var from := nav.closest(map, Vector2(n.position.x - center.x, n.position.z - center.z))
-	var goal := nav.closest(map, Vector2(target.x - center.x, target.z - center.z))
-	goal = slots.room_in_square(a, goal, map)
+	var from := TownNav.closest(center, Vector2(n.position.x - center.x, n.position.z - center.z))
+	var goal := TownNav.closest(center, Vector2(target.x - center.x, target.z - center.z))
+	goal = slots.room_in_square(a, goal)
 	# Never the very spot someone else is bound for or stands on: the nearest
 	# free spot on rings widening out from it, each on open ground as asked (a
 	# point the walk map would push back onto its edge is no spot: that's how
@@ -1123,7 +1120,7 @@ func route_to(a: Dictionary, target: Vector3) -> void:
 			var slots := 8 + ring * 2
 			for i in slots:
 				var want := goal + Vector2.from_angle(start + TAU * i / slots) * r
-				var q := nav.closest(map, want)
+				var q := TownNav.closest(center, want)
 				if q.distance_to(want) > 0.03 or _spoken_for(a, q) or _on_lane(a, q):
 					continue
 				goal = q
@@ -1132,14 +1129,14 @@ func route_to(a: Dictionary, target: Vector3) -> void:
 			if found:
 				break
 	if parent is Dictionary and Vector2(c_goal(a, goal).x - target.x, c_goal(a, goal).z - target.z).length() > CHILD_REACH:
-		goal = nav.closest(map, Vector2(target.x - center.x, target.z - center.z))  # whatever moved the spot, a child stays by their parent
+		goal = TownNav.closest(center, Vector2(target.x - center.x, target.z - center.z))  # whatever moved the spot, a child stays by their parent
 	a["goal"] = goal
-	a["route"] = nav.path(map, from, goal)
+	a["route"] = TownNav.path(center, from, goal)
 	# A parent setting off takes their children along: the same way, a pace to
 	# their side, not a child chasing after a moving parent.
 	for ch in a.get("children", []):
 		if ch["placed"] and (ch["node"] as Node3D).visible and (ch["node"] as Node3D).position.distance_to(n.position) < CHILD_REACH:
-			_walk_beside(ch, a, map)
+			_walk_beside(ch, a)
 
 
 # --- gatherings: talk is always with someone ----------------------------------
@@ -1292,11 +1289,11 @@ func _ask(key: String, ask: Callable) -> void:
 ## it's open ground nobody stands on. A talker settling a pace off the other
 ## (npc_mind.gd Talk). False when the spot isn't to be had.
 func step_to(a: Dictionary, target: Vector3) -> bool:
-	if not nav.live(a.get("map", RID())):
+	if not TownNav.ready():
 		return false
 	var c: Vector3 = a["center"]
 	var want := Vector2(target.x - c.x, target.z - c.z)
-	var goal := nav.closest(a["map"], want)
+	var goal := TownNav.closest(c, want)
 	if goal.distance_to(want) > 0.03 or _body_at(a, goal):
 		return false
 	a["goal"] = goal
@@ -1339,9 +1336,9 @@ func _hurry(a: Dictionary, on: bool) -> void:
 	a["catch_up"] = on
 	a["gait"] = "Running" if on else "Walk"
 	if a.has("agent"):
-		NavigationServer2D.agent_set_radius(a["agent"], 0.045)  # a child takes less room than a grown man
-		NavigationServer2D.agent_set_max_speed(a["agent"], WALK_SPEED * (2.6 if on else 1.3))
-		NavigationServer2D.agent_set_time_horizon_agents(a["agent"], 0.6 if on else 2.5)
+		NavigationServer3D.agent_set_radius(a["agent"], 0.045)  # a child takes less room than a grown man
+		NavigationServer3D.agent_set_max_speed(a["agent"], WALK_SPEED * (2.6 if on else 1.3))
+		NavigationServer3D.agent_set_time_horizon_agents(a["agent"], 0.6 if on else 2.5)
 
 
 ## One of `moves` at random, of those that can be played as they should be
@@ -1352,14 +1349,14 @@ static func _able(moves: Array, rng: RandomNumberGenerator) -> String:
 
 
 ## `ch` walks `parent`'s route, CHILD_SIDE to their own side all the way.
-func _walk_beside(ch: Dictionary, parent: Dictionary, map: RID) -> void:
+func _walk_beside(ch: Dictionary, parent: Dictionary) -> void:
 	var route: PackedVector2Array = parent["route"]
 	if route.is_empty():
 		return
 	var side := Vector2.from_angle(float(ch["i"])) * CHILD_SIDE
 	var mine := PackedVector2Array()
 	for pt in route:
-		mine.append(nav.closest(map, pt + side))
+		mine.append(TownNav.closest(ch["center"], pt + side))
 	ch["route"] = mine
 	ch["goal"] = mine[mine.size() - 1]
 	_hurry(ch, false)

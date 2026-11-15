@@ -3,7 +3,7 @@ extends RefCounted
 ## cut from footprint lists every placer had to remember to fill, so anything set down without one wasn't there for
 ## paths). Every mesh and every batched instance under the town, sliced at the feet: the outline of what it has on the
 ## ground (a house's walls, a tree's trunk, a stall's legs and counter, a cart's wheels, the well's curb), turned and
-## placed as it stands. Nothing registers: whatever is built is in the way. town_nav.gd bakes its walk map from these.
+## placed as it stands. Nothing registers: whatever is built is in the way. ground.gd lays them as its shapes.
 ##
 ## Left out: people and animals, anything with a skeleton (they step round each other), a cart that rolls (its rig carries meta "carter"),
 ## anything not standing on the ground (apples, banners, roofs, smoke) and anything lower than a shin (flowers and
@@ -69,7 +69,7 @@ static func _grid(out: Dictionary) -> Dictionary:
 
 ## What the town's layout is made of, cheaply: its own pieces and its life's that stand still (people, animals and
 ## rolling carts come and go without changing it). It changes when a building, a stall or a site is added or taken
-## away, or a stone wall is breached: town_nav bakes afresh then.
+## away, or a stone wall is breached.
 static var _layout := {}  # town root instance id -> [frame, layout, child counts]: read at most once a frame unless something was set down
 static func layout(root: Node3D) -> Array:
 	var now := Engine.get_process_frames()

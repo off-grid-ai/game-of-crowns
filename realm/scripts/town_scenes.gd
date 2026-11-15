@@ -26,6 +26,7 @@ const People := preload("res://scripts/people.gd")
 const Works := preload("res://scripts/works.gd")
 const SceneKinds := preload("res://scripts/scene_kinds.gd")
 const Mover := preload("res://scripts/mover.gd")
+const TownNav := preload("res://scripts/town_nav.gd")  # a town's frame on the realm's navigation
 const Mind := preload("res://scripts/npc_mind.gd")
 const Animals := preload("res://scripts/animals.gd")
 const Awareness := preload("res://scripts/awareness.gd")  # a mind's part handed it through the store (assign)
@@ -67,7 +68,7 @@ func _ready() -> void:
 	_rng.randomize()
 	if main and main.awareness:
 		main.awareness.stimulus.connect(_on_stimulus)
-	NavigationServer2D.map_changed.connect(_on_map_changed)  # a town's walk map synced: a held scene can start
+	NavigationServer3D.map_changed.connect(_on_map_changed)  # the walk map synced: a held scene can start
 
 
 func _process(delta: float) -> void:
@@ -1419,21 +1420,12 @@ func _publish(id: int) -> void:
 	bb.set_var(&"claims", running.filter(func(s): return not bool(s["ending"])).map(func(s): return s["key"]))
 
 
-## The town's walk map, if it is still baking (Recast on a worker thread, 0.1-0.2 s after it is asked for); else none.
-func _baking(id: int, root: Node3D) -> RID:
-	var nav: Object = main.scenes.nav
-	if not nav.has_method("map_for"):
-		return RID()
-	var map: RID = nav.map_for(id, root)
-	return map if map.is_valid() and not nav.ready(map) else RID()
-
-
-## A walk map synced: the scene held for it starts now (town_nav ready: its bake landed and the map has synced since).
-func _on_map_changed(map: RID) -> void:
+## A walk map synced: a scene held for it starts now (the realm's walk map, nav_world.gd: baked or read back, and synced).
+func _on_map_changed(_map: RID) -> void:
+	if not TownNav.ready():
+		return
 	for id in _held.keys():
 		var h: Dictionary = _held[id]
-		if h["map"] != map or not main.scenes.nav.ready(map):
-			continue
 		_held.erase(id)
 		var t: Dictionary = main.towns.towns.get(id, {})
 		var root: Node3D = t.get("node") if not t.is_empty() else null
@@ -1511,9 +1503,8 @@ func _start(id: int, root: Node3D, row: Dictionary) -> Dictionary:
 		return {}
 	var last: Array = row.get("last", [30, 60])
 	var enter: Array = _d.get("director", {}).get("enter", [1.2, 2.0])
-	var map := _baking(id, root)
-	if map.is_valid():
-		_held[id] = {"row": row, "map": map}  # its people walk in once the map can route them (_on_map_changed)
+	if not TownNav.ready():
+		_held[id] = {"row": row}  # its people walk in once the walk map can route them (_on_map_changed)
 		return {}
 	_seq += 1
 	var s := {"row": row, "key": "%s:%d" % [row["id"], _seq], "at": at, "cast": [], "ending": false,
@@ -1530,10 +1521,9 @@ func _start(id: int, root: Node3D, row: Dictionary) -> Dictionary:
 			var asked := slot + Vector3(cos(ea), 0, sin(ea)) * _rng.randf_range(float(enter[0]), float(enter[1]))
 			var door: Vector3 = main.scenes.stand(asked)
 			var reach := float(_d.get("director", {}).get("stand_reach", 0.4))
-			# Stood where asked, a walk in from somewhere else: on a walk map that answers nothing, every stand is the town's
-			# middle (town_nav closest() on no polygons: (0, 0)) and both ends are that one point, which waits() lets by.
+			# Stood where asked, a walk in from somewhere else, with a way between them on the walk map.
 			var stood := _flat(slot - want) <= reach and _flat(door - asked) <= reach and _flat(door - slot) > 0.05
-			if not stood or main.scenes.nav.waits(main.towns, door, slot):
+			if not stood or TownNav.route(door, slot).is_empty():
 				_unwalkable(id, root, String(row["id"]))  # a baked map with no way in (a baking one held the scene above)
 				continue
 			var face := at
@@ -1553,7 +1543,7 @@ static func _flat(v: Vector3) -> float:
 
 
 ## A passing person the director didn't cast: the town's walk map, baked, gives no way from their way in to their
-## spot (baked to nothing, as Kingsmere's was in round 13; town_nav.waits). Said in the play log as it
+## spot (baked to nothing, as Kingsmere's was in round 13). Said in the play log as it
 ## starts and every `director.say_every` seconds while it lasts, with the count, so an empty map shows.
 func _unwalkable(id: int, root: Node3D, row_id: String) -> void:
 	var w: Dictionary = _no_walk.get(id, {"n": 0, "rows": {}, "said": -1})

@@ -311,13 +311,8 @@ func _walkable(p: Vector3) -> Vector3:
 	var id := _town_at(p)
 	if id < 0:
 		return p
-	var node: Node3D = towns.towns[id]["node"]
-	var c := node.global_position
-	var map: RID = villagers.nav.map_for(id, node)
-	if not villagers.nav.ready(map):
-		return p
-	var q := NavigationServer2D.map_get_closest_point(map, Vector2(p.x - c.x, p.z - c.z))
-	return Vector3(c.x + q.x, p.y, c.z + q.y)
+	var q := preload("res://scripts/nav_world.gd").closest(p, &"walk")  # the realm's walk map, every building cut out
+	return Vector3(q.x, p.y, q.z)
 
 
 ## Among a town's houses (its trodden ground), not out on the roads and fields.

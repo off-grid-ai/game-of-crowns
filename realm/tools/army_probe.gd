@@ -96,7 +96,6 @@ extends SceneTree
 const Data := preload("res://scripts/data.gd")
 const Ground := preload("res://scripts/army_ground.gd")
 const Mover := preload("res://scripts/mover.gd")
-const TownNav := preload("res://scripts/town_nav.gd")
 
 const OWNERS := {"assault_man": "res://scripts/army_assault.gd", "gap_holder": "res://scripts/army_assault.gd",
 	"regiment": "res://scripts/army_field.gd", "storm_regiment": "res://scripts/army_field.gd"}
@@ -728,7 +727,8 @@ func _no_straight_line_while_baking() -> void:
 			waded += 1
 	_check(waded == 0, "steered before the ground is laid, he never wades (%d of %d frames in the lake)" % [waded, frames])
 	main.queue_free()
-	# A town with a well, its walk map asked for and still baking: a man sent across it never stands in the well.
+	# A town with a well, the realm's walk map still baking (nav_world.gd, not yet started here): a man sent across it
+	# never stands in the well.
 	var town_main = Node3D.new()
 	town_main.set_script(_stub_town_main())
 	town_main.build()
@@ -737,7 +737,6 @@ func _no_straight_line_while_baking() -> void:
 	town_main.add_child(aw)
 	Engine.set_meta("awareness", aw)
 	var town: Node3D = town_main.towns.get_child(0)
-	town_main.scenes.nav.map_for(1, town)  # the town in view: its walk map asked for (town_life does)
 	var walker := Node3D.new()
 	town_main.add_child(walker)
 	walker.global_position = Vector3(-0.8, 0, 0)
@@ -755,7 +754,6 @@ func _no_straight_line_while_baking() -> void:
 	_check(in_well == 0, "while its town's walk map bakes, a man sent across never stands in the well (%d frames in it, moved %.2f)" % [in_well, moved])
 	_check(wm.moving(), "while its town's walk map bakes, he waits for it (still on his way)")
 	wm.stop()
-	town_main.scenes.nav.forget(1)  # its walk map freed with the town
 	Engine.remove_meta("awareness")
 	town_main.queue_free()
 
@@ -1246,12 +1244,7 @@ func build() -> void:
 	town.add_child(well)
 	well.position = Vector3(0, 0.075, 0)
 	scenes = Node.new()
-	var sc := GDScript.new()
-	sc.source_code = "extends Node\\nvar nav = preload(\\"res://scripts/town_nav.gd\\").new()\\n"
-	sc.reload()
-	scenes.set_script(sc)
 	add_child(scenes)
-	scenes.nav.terrain = terrain
 ''' % [WELL_R, WELL_R]
 	t.reload()
 	return t

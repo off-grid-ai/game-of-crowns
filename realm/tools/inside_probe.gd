@@ -8,7 +8,6 @@ extends SceneTree
 ## - nav_ground.inside_something, town_nav.inside and town_nav.in_building give that one answer at every point.
 ##   arch -arm64 godot --headless --path realm --script res://tools/inside_probe.gd
 
-const TownNav := preload("res://scripts/town_nav.gd")
 const Ground := preload("res://scripts/ground.gd")
 
 

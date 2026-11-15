@@ -1,7 +1,7 @@
 extends SceneTree
 ## Headless behaviour probe for town life's one director (docs/TOWN_LIFE.md; town_scenes.gd), no GPU: a made-up
 ## crown town on flat ground with a well, market stalls, a sept, a forge, a castle, two main streets and gardens,
-## dressed in each of the realm's states. The navigation is stood in by straight routes so the Mover walks headless.
+## dressed in each of the realm's states, on the realm's one navigation (nav_world.gd) baked over its flat land.
 ## Rules it checks (each a FAIL line, exit 1):
 ## - one director: everyone and every beast in a town's scenes was cast by it (meta scene, a town_scenes.json row);
 ##   only the working buildings' own people (meta works) are town_life's;
@@ -17,6 +17,7 @@ extends SceneTree
 ##   arch -arm64 godot --headless --path realm --script res://tools/director_probe.gd [-- --only=peace]
 
 const TownLife := preload("res://scripts/town_life.gd")
+const NavWorld := preload("res://scripts/nav_world.gd")
 const Mover := preload("res://scripts/mover.gd")
 const OVERLAP := 0.06  # world units: two bodies' radii at their drawn size; closer is one inside the other
 const STUCK := 2.0  # game seconds two bodies may brush in passing (a funeral's slow walk past a shoulder takes 1.7); longer, one stands inside the other
@@ -26,36 +27,50 @@ const ORIGIN := 0.06  # world units (half a metre): nobody stands at a town's ve
 const KNOT_MOST := 5  # the biggest group a peaceful square's day shows (a crier and his few, a knot of gossips)
 
 
+## The land (terrain.gd's face to the navigation and the town): flat, dry, 32 x 32 units.
 class FlatLand extends Node3D:
+	signal ground_changed(area: Rect2)
+	const TILE := 4.0
+	const SEA_LEVEL := -0.15
+	const DRY_ABOVE := 0.04
+	var width := 8
+	var height := 8
+	var built := true
+	var _fords := {}
+	var land3d: Node3D
 	var season := "summer"
 	func height_at(_x: float, _z: float) -> float:
 		return 0.0
+	func tile_at(_x: int, _y: int) -> String:
+		return "Grassland"
+	func in_river(_x: float, _z: float) -> bool:
+		return false
 	func is_land(_x: float, _z: float) -> bool:
+		return true
+	func walkable(_x: float, _z: float) -> bool:
 		return true
 
 
-## Stands in for the realm's navigation: a straight route (the probe's town has nothing to go round). `empty`: the
-## town's walk map baked to nothing (round 13's Kingsmere): no route anywhere, so a Mover asking waits for ever.
-class Nav extends RefCounted:
-	var empty := false
-	var baking := false  # the town's walk map still baking (Recast on a worker thread): no route yet, not ready
-	var map := RID()  # a real 2D map while a bake is staged, so the engine's map_changed fires as town_nav's does
-	func waits(_towns: Variant, from: Vector3, to: Vector3, _wide := false) -> bool:
-		return baking or (empty and from.distance_to(to) > 0.01)  # town_nav.waits: two ends on one point are no walk to wait for
-	func map_for(_id: int, _root: Node3D, _wide := false) -> RID:
-		return map
-	func ready(m: RID) -> bool:
-		return m.is_valid() and not baking
-	func route(_towns: Variant, from: Vector3, to: Vector3, _wide := false) -> PackedVector3Array:
-		return PackedVector3Array([from, to])
+## terrain.land3d: the node whose `land` is the Terrain3D, its triangles flat every 0.5 units.
+class Land3D extends Node3D:
+	var land: Node3D = self
+	func generate_nav_mesh_source_geometry(box: AABB, _require_nav: bool) -> PackedVector3Array:
+		var out := PackedVector3Array()
+		var x := maxf(box.position.x, 0.0)
+		while x < minf(box.end.x, 32.0) - 0.001:
+			var z := maxf(box.position.z, 0.0)
+			while z < minf(box.end.z, 32.0) - 0.001:
+				out.append_array([Vector3(x, 0, z), Vector3(x + 0.5, 0, z + 0.5), Vector3(x + 0.5, 0, z), Vector3(x, 0, z), Vector3(x, 0, z + 0.5), Vector3(x + 0.5, 0, z + 0.5)])
+				z += 0.5
+			x += 0.5
+		return out
 
 
 class Scenes extends Node3D:
-	var nav := Nav.new()
 	var people = preload("res://scripts/people.gd").new()
-	var middle := Vector3.INF  # with an empty map, every stand answers the town's middle (town_nav closest(): (0, 0))
+	var middle := Vector3.INF  # set: every stand answers the town's middle (a walk map that answers nothing)
 	func stand(p: Vector3) -> Vector3:
-		return middle if nav.empty and middle != Vector3.INF else p
+		return middle if middle != Vector3.INF else p
 
 
 ## The mirror's stand-in: one blackboard per town (the levy is a mirror fact), news never comes.
@@ -145,7 +160,18 @@ func _run() -> void:
 	var world := Node3D.new()
 	root.add_child(world)
 	var land := FlatLand.new()
+	land.land3d = Land3D.new()
 	world.add_child(land)
+	world.add_child(NavWorld.new())
+	NavWorld.start(land, null)
+	var t_nav := Time.get_ticks_msec()
+	while not NavWorld.ready(&"walk") and Time.get_ticks_msec() - t_nav < 60000:
+		NavigationServer3D.map_force_update(NavWorld.map(&"walk"))  # headless: synced at once
+		await process_frame
+	if not NavWorld.ready(&"walk"):
+		print("DIRECTOR FAIL the realm's walk map never baked")
+		quit(1)
+		return
 	var main := Main.new()
 	main.terrain = land
 	main.towns = Towns.new()  # the Mover asks the realm's towns along with its navigation
@@ -376,10 +402,9 @@ func _run() -> void:
 				await process_frame
 			print("DIRECTOR peace   %d passing scenes started and ticked" % started)
 			director._end_town(7)
-			# Round 13: Kingsmere's walk map empty (Godot's 2D bake failed). The navigation then answers every stand with
-			# the town's middle and gives no way anywhere: the director casts nobody it can't walk in, never parks a
-			# body in the well for good, and says so (a CHECK line; its count here).
-			main.scenes.nav.empty = true
+			# Round 13: Kingsmere's walk map empty. The navigation then answers every stand with the town's middle and
+			# gives no way anywhere: the director casts nobody it can't walk in, never parks a body in the well for
+			# good, and says so (a CHECK line; its count here).
 			main.scenes.middle = town.global_position
 			var said := int(director._no_walk.get(7, {}).get("n", 0)) if "_no_walk" in director else 0
 			var none := 0
@@ -396,21 +421,19 @@ func _run() -> void:
 			if told == 0:
 				fail.call("peace, empty walk map: the director cast nobody walkable and said nothing")
 			director._end_town(7)
-			main.scenes.nav.empty = false
 			main.scenes.middle = Vector3.INF
-			# Army-ui, r16: a scene that starts while the town's walk map bakes (0.1-0.2 s) waits for it, then casts; it
-			# isn't dropped for some other scene on a later tick. Started mid-bake, it must be playing within a few
-			# frames of the map landing (the engine's map_changed), with nobody cast before.
-			var nav: RefCounted = main.scenes.nav
-			nav.map = NavigationServer2D.map_create()
-			NavigationServer2D.map_set_active(nav.map, true)
-			nav.baking = true
+			# Army-ui, r16: a scene that starts while the walk map bakes waits for it, then casts; it isn't dropped for
+			# some other scene on a later tick. Started while the navigation starts again (its chunks read back from
+			# their kept files on workers), it must be playing within a few frames of the map landing (the engine's
+			# map_changed), with nobody cast before.
+			NavWorld.stop()
+			NavWorld.start(land, null)
 			var row: Dictionary = director._d.get("scenes", [])[0]
 			var early: Dictionary = director._start(7, town, row)
-			var region := NavigationServer2D.region_create()
-			nav.baking = false
-			NavigationServer2D.region_set_map(region, nav.map)  # the bake lands: the map changes, and syncs
-			NavigationServer2D.region_set_navigation_polygon(region, NavigationPolygon.new())
+			var t_back := Time.get_ticks_msec()
+			while not NavWorld.ready(&"walk") and Time.get_ticks_msec() - t_back < 60000:
+				await physics_frame
+				await process_frame
 			for _f in 4:
 				await physics_frame
 				await process_frame
@@ -419,9 +442,6 @@ func _run() -> void:
 			if not early.is_empty() or not playing:
 				fail.call("peace, mid-bake: %s %s" % [row["id"], "cast before the map could route" if not early.is_empty() else "dropped, not played once the map landed"])
 			director._end_town(7)
-			NavigationServer2D.free_rid(region)
-			NavigationServer2D.free_rid(nav.map)
-			nav.map = RID()
 			main.towns.towns.erase(7)
 		if name == "peace":
 			# The town dressed again as its state turns (a good year): its Life is rebuilt, the director still casts it.

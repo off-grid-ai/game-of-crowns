@@ -374,7 +374,7 @@ func square_ring(root: Node3D, center: Vector3, square_r: float, ways: Array, ki
 ## neighbouring tile Freeciv has a road or a town on (where the realm's roads
 ## come in), at least two (the town's own spokes make up the rest), each the
 ## cheapest way over the land; then lanes off them, more as the town grows.
-## Painted, and kept as the town's lanes (town_nav walks them). Returns the
+## Painted, and kept as the town's lanes (the walk map's cheapest layer, nav_world.gd). Returns the
 ## roads and lanes as town-local polylines.
 func lay_ways(root: Node3D, center: Vector3, c: Dictionary, size: int, square_r: float, reach: float, streets: Array, rng: RandomNumberGenerator) -> Array:
 	var tile := Vector2i(int(c["x"]), int(c["y"]))

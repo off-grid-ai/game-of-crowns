@@ -53,7 +53,7 @@ func hand_over(at: Vector3, old_house: Dictionary, new_house: Dictionary, town: 
 		var goal := spot + dir * (0.35 + (i / 2) * 0.16) + side * ((i % 2) * 0.16 - 0.08)
 		s.position = stage.stand(start)
 		s.rotation.y = atan2(-dir.x, -dir.z)
-		# Up the realm's own way in by the Mover (it asks town_nav: streets, roads, over dry land, never a straight line
+		# Up the realm's own way in by the Mover (it asks the realm's navigation, nav_world.gd: streets, roads, dry land, never a straight line
 		# over a river), at a pace that brings them in as the new banner goes up (about 14 s); then they stand to it.
 		var m: Node = Mover.of(s)
 		m.speed = maxf(0.12, s.position.distance_to(goal) * 1.2 / 14.0)

@@ -14,6 +14,7 @@ func _init(owner: Node) -> void:
 
 
 const Ground := preload("res://scripts/ground.gd")  # the one answer to where a body may stand
+const TownNav := preload("res://scripts/town_nav.gd")  # a town's frame on the realm's navigation
 
 
 ## How much room each shared place has: people stand from `near` to `far`
@@ -136,7 +137,6 @@ func _claim(a: Dictionary, key: String, clear: float) -> Vector3:
 				there += 1
 	if there >= int(room["room"]):
 		return Vector3(NAN, 0, 0)  # full
-	var map: RID = a["map"]
 	var start: float = a["rng"].randf() * TAU
 	# Every ring out from the heart, starting from one at random: filled from
 	# the middle outward, a busy square packed into one tight clump.
@@ -151,7 +151,7 @@ func _claim(a: Dictionary, key: String, clear: float) -> Vector3:
 		var n := maxi(4, int(TAU * r / SHOULDER))
 		for i in n:
 			var want := h + Vector2.from_angle(start + TAU * i / n) * r
-			var q: Vector2 = v.nav.closest(map, want)
+			var q: Vector2 = TownNav.closest(a["center"], want)
 			if q.distance_to(want) > 0.05:
 				continue  # under a stall or a wall
 			if town_node and not Ground.inside(Vector3(c.x + q.x, 0, c.z + q.y)).is_empty():
@@ -265,7 +265,7 @@ func _slot(a: Dictionary, key: String, queue := true) -> Vector3:
 		var sid := "%s:%d:%d" % [key, roundi(o[0].x * 1000.0), roundi(o[0].z * 1000.0)]
 		if now - int(_released.get(sid, -100000)) < cool:
 			continue  # just left: shut a moment
-		var q: Vector2 = v.nav.closest(a["map"], Vector2(o[0].x, o[0].z))
+		var q: Vector2 = TownNav.closest(a["center"], Vector2(o[0].x, o[0].z))
 		if q.distance_to(Vector2(o[0].x, o[0].z)) > 0.06:
 			continue  # under a stall's counter or a wall
 		if not Ground.inside(Vector3(c.x + q.x, 0, c.z + q.y)).is_empty():
@@ -284,7 +284,7 @@ func _slot(a: Dictionary, key: String, queue := true) -> Vector3:
 ## The square holds so many and no more, whatever sends them (an errand, a
 ## talk, a mind's plan, a mourning): bound there when it's full, they keep to
 ## their own door instead, so the square stays busy but never a press.
-func room_in_square(a: Dictionary, goal: Vector2, map: RID) -> Vector2:
+func room_in_square(a: Dictionary, goal: Vector2) -> Vector2:
 	var town: Dictionary = v.towns.towns.get(a["town"], {})
 	if town.is_empty():
 		return goal
@@ -299,12 +299,12 @@ func room_in_square(a: Dictionary, goal: Vector2, map: RID) -> Vector2:
 		var home := Vector2(a["home"].x - c0.x, a["home"].z - c0.z)
 		if home.length() < sq + 0.15:
 			home = home.normalized() * (sq + 0.25) if home.length() > 0.01 else Vector2(sq + 0.25, 0)
-		return v.nav.closest(map, home)
+		return TownNav.closest(c0, home)
 	if not square_full(a):
 		return goal
 	var c: Vector3 = a["center"]
 	var near: Vector3 = v.nearby(a["home"], a["rng"], 0.2)
-	return v.nav.closest(map, Vector2(near.x - c.x, near.z - c.z))
+	return TownNav.closest(c, Vector2(near.x - c.x, near.z - c.z))
 
 
 ## The square and the ring round its edge (town-local): in a small town every

@@ -371,8 +371,7 @@ func _step(w: PackedStringArray) -> void:
 			"wet":
 				# wet: who stands on water, measured (Mac's Crowford note): everyone whose feet
 				# terrain.is_land calls water; near the view, ground the drawn sea covers that is_land
-				# calls land; and the nearest town's traced shore (town_nav._shore, cached once)
-				# against is_land now.
+				# calls land.
 				var tr: Node = main.terrain
 				var folk := get_tree().get_nodes_in_group("people")
 				var wet := 0
@@ -393,28 +392,6 @@ func _step(w: PackedStringArray) -> void:
 						if float(tr.height_at(x, z)) < tr.SEA_LEVEL + 0.021 and tr.is_land(x, z):
 							over += 1
 				_note("  wet: drawn sea over ground is_land calls land, within 6 units of the view: %d of %d" % [over, 121 * 121])
-				var nav: GDScript = load("res://scripts/town_nav.gd")
-				var best = null
-				for key in nav._shore.keys():
-					if best == null or Vector2(key[0].x - c.x, key[0].z - c.z).length() < Vector2(best[0].x - c.x, best[0].z - c.z).length():
-						best = key
-				if best != null:
-					var rects := []
-					for o in nav._shore[best]:
-						rects.append(Rect2((o as PackedVector2Array)[0], (o as PackedVector2Array)[2] - (o as PackedVector2Array)[0]))
-					var missed := 0
-					var cells := 0
-					var at: Vector3 = best[0]
-					var r: float = best[1]
-					for gx in range(-int(r / 0.1), int(r / 0.1) + 1, 2):
-						for gz in range(-int(r / 0.1), int(r / 0.1) + 1, 2):
-							var lp := Vector2(gx * 0.1, gz * 0.1)
-							if tr.is_land(at.x + lp.x, at.z + lp.y):
-								continue
-							cells += 1
-							if not rects.any(func(rc): return (rc as Rect2).grow(0.001).has_point(lp)):
-								missed += 1
-					_note("  wet: the walk map's shore at (%.1f, %.1f) misses %d of %d water spots is_land sees now" % [at.x, at.z, missed, cells])
 			"navprobe":
 				# navprobe Town [n]: n walks across the town's square on its walk map, each segment tested against all
 				# that stands there (town_nav.probe; target 0 crossing).
@@ -427,31 +404,48 @@ func _step(w: PackedStringArray) -> void:
 					var root: Node3D = t.get("node") if not t.is_empty() else null
 					if root == null:
 						break
-					var nav = load("res://scripts/town_nav.gd").new()
-					nav.terrain = main.terrain
-					# Wait for the walk map by the clock, not by frames (round 11: 120 frames at the render's rate ended
-					# before the bake of a few thousand outlines landed, and the probe walked nothing), counting how
-					# often the map is baked afresh meanwhile (the town's layout changing under it).
-					var map: RID = nav.map_for(int(c["id"]), root)
-					var rebakes := 0
+					# Wait for the realm's walk map (nav_world.gd) by the clock, then walk n random crossings of the square.
+					var TNav = load("res://scripts/town_nav.gd")
+					var G = load("res://scripts/ground.gd")
 					var since := Time.get_ticks_msec()
-					while not nav.ready(map) and Time.get_ticks_msec() - since < 90000:
+					while not TNav.ready() and Time.get_ticks_msec() - since < 90000:
 						await get_tree().process_frame
-						var again: RID = nav.map_for(int(c["id"]), root)
-						if again != map:
-							rebakes += 1
-							map = again
 					var waited := (Time.get_ticks_msec() - since) / 1000.0
-					if not nav.ready(map):
-						_note("CHECK nav probe: FAIL %s: its walk map isn't ready after %.0f s (baked afresh %d times while waiting, layout now %s; bakes still out %d)" % [title, waited, rebakes, str(load("res://scripts/nav_ground.gd").layout(root)), int(nav._baking.get(map, 0))])
+					if not TNav.ready():
+						_note("CHECK nav probe: FAIL %s: the realm's walk map isn't ready after %.0f s" % [title, waited])
 						break
 					var rng := RandomNumberGenerator.new()
 					rng.seed = 11
-					var r: Dictionary = nav.probe(int(c["id"]), root, nn, rng)
-					if int(r["paths"]) == 0:
-						_note("CHECK nav probe: FAIL %s: the walk map was ready after %.1f s (%d rebakes) but no walk found a path" % [title, waited, rebakes])
-						_nav_why(nav, root)
-					_note("CHECK nav probe: %s: ready after %.1f s, %d rebakes; %d walks, %d segments, %d crossing something (%d walks), straight lines would cross %d; the cart's routed legs into the market: %d of %d through something; %d outlines; crossed near %s" % [title, waited, rebakes, r["paths"], r["segments"], r["crossing"], r["paths_crossing"], r["straight"], r.get("cart_crossing", 0), r.get("cart_legs", 0), load("res://scripts/town_nav.gd").footprints(root).size(), str(r["what"])])
+					var sq := float(root.get_meta("square_r", 1.0))
+					var cen := root.global_position
+					var walks := 0
+					var segs := 0
+					var crossing := 0
+					var bad_walks := 0
+					var what := {}
+					for i in nn:
+						var a := Vector2.from_angle(rng.randf() * TAU) * sq * rng.randf()
+						var b := Vector2.from_angle(rng.randf() * TAU) * sq * rng.randf()
+						var way: PackedVector2Array = TNav.path(cen, a, b)
+						if way.size() < 2:
+							continue
+						walks += 1
+						var bad := false
+						for k in way.size() - 1:
+							segs += 1
+							for f in 5:
+								var q: Vector2 = way[k].lerp(way[k + 1], f / 4.0)
+								var hit: Array = G.inside(Vector3(cen.x + q.x, 0, cen.z + q.y))
+								if not hit.is_empty():
+									crossing += 1
+									bad = true
+									what[str(hit[0])] = true
+									break
+						if bad:
+							bad_walks += 1
+					if walks == 0:
+						_note("CHECK nav probe: FAIL %s: the walk map was ready after %.1f s but no walk found a path" % [title, waited])
+					_note("CHECK nav probe: %s: ready after %.1f s; %d walks, %d segments, %d crossing something (%d walks); %d outlines; crossed %s" % [title, waited, walks, segs, crossing, bad_walks, TNav.footprints(root).size(), str(what.keys().slice(0, 6))])
 					break
 			"overlapprobe":
 				# overlapprobe Town [secs]: every person, horse and cart in the town's square sampled twice a second for
@@ -467,7 +461,6 @@ func _step(w: PackedStringArray) -> void:
 				if oroot == null:
 					_note("CHECK overlap probe: %s: no town" % otitle)
 				else:
-					var TN = load("res://scripts/town_nav.gd")
 					var reach := float(oroot.get_meta("square_r", 1.0)) * 1.4
 					var hits := {}  # body name -> [kind, times seen inside, where]
 					var samples := 0
@@ -504,7 +497,7 @@ func _step(w: PackedStringArray) -> void:
 								census[b[1]] = kin
 							var q := Vector2(lp.x, lp.z)
 							# Inside something: nav_ground's one answer (villagers' crowd check asks the same).
-							if not TN.inside(oroot, n.global_position).is_empty():
+							if not load("res://scripts/ground.gd").inside(n.global_position).is_empty():
 								var key := "%s#%d" % [b[1], n.get_instance_id()]
 								# Who placed it (town-life asked, round 13: bodies parked at the square's middle): the
 								# director's row id (scene meta), else the parent's name and the body's own.
@@ -1106,31 +1099,6 @@ func _key(code: int, down: bool) -> void:
 	e.physical_keycode = code
 	e.pressed = down
 	_feed(e)
-
-
-## Why a town's walk map answers no paths: its open ground baked again by town_nav's own bake, synchronously, with and without
-## the water town_nav cuts out (its _water), and with nothing cut out at all, each bake's polygon count; the
-## largest obstruction outlines (area, middle). A bake of 0 polygons is an empty map: closest() answers (0, 0).
-func _nav_why(nav, root: Node3D) -> void:
-	var reach := float(root.get_meta("reach", 6.0))
-	var blocks: Array = nav.blocks_of(root, main.terrain)
-	var water: Array = nav._water(root.position, reach)
-	var big: Array = []
-	for o in blocks + water:
-		var poly := PackedVector2Array(o)
-		var area := 0.0
-		for i in poly.size():
-			area += poly[i].cross(poly[(i + 1) % poly.size()]) * 0.5
-		var mid := Vector2.ZERO
-		for q in poly:
-			mid += q / maxf(poly.size(), 1)
-		big.append([absf(area), mid, poly.size(), o in water])
-	big.sort_custom(func(x, y): return x[0] > y[0])
-	var counts := []
-	for set in [[blocks + water, "all"], [blocks, "no water"], [[], "nothing cut"]]:
-		counts.append("%s %d" % [set[1], (nav.bake_open(reach, set[0]) as NavigationPolygon).get_polygon_count()])  # town_nav's own bake
-	_note("  nav why: reach %.1f, %d blocks, %d water outlines; open ground baked: %s; largest outlines: %s" % [reach, blocks.size(), water.size(), ", ".join(counts),
-		", ".join(big.slice(0, 4).map(func(b): return "%.2f at (%.1f, %.1f) %d pts%s" % [b[0], b[1].x, b[1].y, b[2], " water" if b[3] else ""]))])
 
 
 ## A right-drag from one fraction of the screen to another, as a player draws a host's line (host_command.gd).

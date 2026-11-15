@@ -4,7 +4,7 @@ const PerfTools := preload("res://scripts/perf_tools.gd")  # the frame-cost prob
 ## tiles as Freeciv moves them. A King's host in the field is drawn whole instead, as the muster's column (army.gd:
 ## a formed block of men per company under its banner, the figure floor and drawPerMan, 03-army), one per host,
 ## marching where Freeciv moves it (field_hosts); its companies get no figure of their own. Every march goes through the figure's Mover (mover.gd, CLAUDE.md's one way to
-## move): the route the realm's navigation gives (town_nav.gd: a town's streets, the roads, the land), smoothed,
+## move): the route the realm's navigation gives (nav_world.gd: the streets, the roads, the land, round everything standing), smoothed,
 ## followed at a soldier's pace across the season. The army layer's map presence (docs/research/army-layer-2026-11-12.md).
 
 var placed := false  # every unit of the first sync stands (the loading card waits for it, main.gd ready_check)
@@ -12,9 +12,7 @@ var terrain: Node3D
 var towns: Node3D  # towns.gd: inside a town's reach, soldiers keep to its streets
 const Awareness := preload("res://scripts/awareness.gd")  # the realm's rules as the bridge sends them (season length, bands)
 const Heraldry := preload("res://scripts/heraldry.gd")  # the rival King's colours on his raiders
-const TownNav = preload("res://scripts/town_nav.gd")
 const Ground := preload("res://scripts/ground.gd")  # the one answer to where a body may stand
-var _nav = TownNav.new()
 var _figures := {}  # unit id -> {node, target}
 var _hosts := {}  # a King's host in the field (/world hosts, not in a town, not at sea): its id -> its column (army.gd)
 const Army := preload("res://scripts/army.gd")  # a host in the field is drawn as the muster's column: one system
@@ -76,7 +74,6 @@ static var MARCH_SPEED: float = preload("res://scripts/data.gd").num("army", "ma
 func _ready() -> void:
 	if towns == null:
 		towns = get_parent().get("towns")
-	_nav.terrain = terrain
 	_body.radius = 0.12
 	_body.height = 0.5
 	_beast.size = Vector3(0.45, 0.28, 0.22)
@@ -327,7 +324,6 @@ func _company(u: Dictionary, slot: int, w: Dictionary) -> void:
 			mo.clip = ""  # the horse's gait follows how it is moved
 		else:
 			mo.stride = true  # the stride matches the ground covered
-		mo.keep = _keep.bind(_figures, id)
 		if not wild and not ship and not raider and slot == 0:  # raiders march under no banner
 			# Carried by the rider when the company is mounted.
 			_banner(node.rider if node.get("rider") else node, Color.from_string(String(house.get("color", "#888")), Color.GRAY), house)
@@ -419,7 +415,6 @@ func _band(id: int, at: Vector3) -> void:
 			add_child(node)
 			var mo: Node = Mover.of(node)
 			mo.stride = true
-			mo.keep = _keep.bind(_figures, key)
 			_figures[key] = {"node": node, "target": target, "wild": false, "bow": false, "horse": false, "ship": false}
 		var f: Dictionary = _figures[key]
 		if f["target"].distance_to(target) > 0.01:
@@ -719,22 +714,6 @@ func _settle() -> void:
 			Mover.of(n).shift(Ground.nearest_clear(n.position, body), 0.6)  # a step out of a building that went up round him
 
 
-## Where a marcher through a town stands clear of its buildings. The town's walk
-## check is costly (most of this script's frame), and a marcher covers a hair's
-## breadth a frame, so the step aside it found holds until he has gone STAND_AGAIN
-## further, then is looked for afresh.
-const STAND_AGAIN := 0.02
-func _stood(f: Dictionary, at: Vector3) -> Vector3:
-	var was: Vector3 = f.get("stood_at", Vector3.INF)
-	if was == Vector3.INF or Vector2(at.x - was.x, at.z - was.z).length() > STAND_AGAIN:
-		var q := Ground.nearest_clear(at, 0.17 if f.get("horse", false) else 0.0)
-		f["stood_at"] = at
-		f["stood_by"] = q - at
-		return q
-	var by: Vector3 = f["stood_by"]
-	return Vector3(at.x + by.x, terrain.height_at(at.x + by.x, at.z + by.z), at.z + by.z)
-
-
 ## A company marches to its new place: the navigation's route, smoothed as a road is, followed by its Mover across
 ## the whole turn (armies are always visibly on the move), at its steady march, or running when the march can't get
 ## it there within the season (march_pace: a figure never stands tiles from its company). A beast goes the same way,
@@ -780,19 +759,6 @@ func _march(f: Dictionary) -> void:
 static func march_pace(length: float, season: float) -> Dictionary:
 	var need := length / maxf(2.0, season * 0.9)
 	return {"speed": need, "run": need > MARCH_SPEED}
-
-
-## Through a town with no walk map the way is a straight line: a marcher keeps off its buildings as he goes. A ship
-## keeps to its water, and a figure in a town with a walk map follows the route it gave, which already keeps off
-## every building: pushing it off again set it back where it stepped from each frame, pinned while it walked.
-func _keep(at: Vector3, figures: Dictionary, id: int) -> Vector3:
-	var f: Dictionary = figures.get(id, {})
-	if f.is_empty() or f["wild"] or f.get("ship", false):
-		return at
-	var ts: Array = TownNav.towns_at(towns, at)
-	if ts.is_empty() or ts.any(func(t): return TownNav.baked(int(t[0]))):
-		return at
-	return _stood(f, at)
 
 
 ## A company's standard: the house's banner on a pole.

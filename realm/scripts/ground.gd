@@ -191,18 +191,11 @@ static func area_clear(poly: PackedVector2Array) -> bool:
 	return true
 
 
-## The nearest place to `p` (world) a body reaching `radius` may stand, at the ground's height. In a town with a walk
-## map, the map's own nearest point (NavigationServer2D: the map is the town's open ground, every footprint cut out).
-## Elsewhere (the open land, or a town whose map isn't baked), `p` if clear, else the first clear point on SPOKES
+## The nearest place to `p` (world) a body reaching `radius` may stand, at the ground's height: `p` if clear, else the
+## first clear point on SPOKES
 ## points of RINGS rings widening out to `max_dist`: a fixed cost, never a fine search (Mac's 70 s beach ball, 14 Nov).
 ## `p` itself, grounded, when nothing near is clear. `open_kinds`: kinds of claim stood on freely (is_clear).
 static func nearest_clear(p: Vector3, radius := 0.0, max_dist := REACH, open_kinds: Array = []) -> Vector3:
-	for t in TownNav.towns_at(towns, p):
-		var map: RID = TownNav._maps.get(int(t[0]), RID())
-		if map.is_valid() and TownNav.ready(map):
-			var c: Vector3 = (t[1] as Node3D).global_position
-			var m := TownNav.closest(map, Vector2(p.x - c.x, p.z - c.z))
-			return _grounded(Vector3(c.x + m.x, p.y, c.z + m.y), p)
 	if is_clear(p, radius, true, null, open_kinds):
 		return _grounded(p, p)
 	for ring in range(1, RINGS + 1):
