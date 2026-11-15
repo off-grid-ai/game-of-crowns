@@ -688,6 +688,10 @@ func _footprint_rect(root: Node3D, at: Vector3, size: Vector2, rot: float, top :
 	var all: Array = root.get_meta("footprints", [])
 	all.append(pts)
 	root.set_meta("footprints", all)
+	if _batch_tag != "":
+		var edge_fps: Array = root.get_meta("edge_fps", [])
+		edge_fps.append(all.size() - 1)  # the edge's: taken up when the town grows (_grow_town)
+		root.set_meta("edge_fps", edge_fps)
 	_top(root, top)
 
 
@@ -1162,6 +1166,9 @@ func _edge_trees(root: Node3D, center: Vector3, edge: PackedVector2Array, ways: 
 			_place(root, kind, q + Vector3(0, _ground_y(center, q) - 0.01, 0), rng.randf() * TAU, Vector3.ONE * sc, Vector2(0.14, 0.14))
 			_crown(center, q, kind, sc)
 			lots.append([q, 0.14])
+			var edge_lots: Array = root.get_meta("edge_lots", [])
+			edge_lots.append(lots.size() - 1)  # the edge's: taken up when the town grows (_grow_town)
+			root.set_meta("edge_lots", edge_lots)
 
 
 ## One of a yard's working things in its back corner (towns.json plots.yard_things: a woodshed, a pen,
@@ -1887,7 +1894,7 @@ func _put(root: Node3D, center: Vector3, kind: String, p: Vector3, f: Vector2, l
 	if dress:
 		_door(root, p, f, "cottage", "house", face)
 		var homes: Array = root.get_meta("homes", [])
-		homes.append([p + face * (f.y * 0.5 + 0.12), face, p, kind, _batch[kind].size() - 1, home_id(p)])  # its doorstep, which way it looks, where it stands, its kit batch and place in it (fire.gd chars it), and its stable id
+		homes.append([p + face * (f.y * 0.5 + 0.12), face, p, kind, _batch[kind].size() - 1, home_id(p), _batch[kind].size() - 1])  # [6]: its place among the kind's copies (meta batch_raw), whatever batch draws it  # its doorstep, which way it looks, where it stands, its kit batch and place in it (fire.gd chars it), and its stable id
 		root.set_meta("homes", homes)
 		await _pace()  # its path and its dressing their own steps (Mac's game: a front with its dressing, 158-222 ms in one)
 		_footpath(root, center, p + face * (f.y * 0.5 + 0.12))
@@ -2289,7 +2296,10 @@ func _dress(root: Node3D, center: Vector3, hp: Vector3, face: Vector3, out: Vect
 
 # --- building blocks -----------------------------------------------------------
 
-var _batch := {}  # kit model -> transforms in the town being built
+var _batch := {}  # batch key (a kit model, "@edge" after it for the town's edge) -> transforms in the town being built
+## "@edge" while the town's edge is laid (its palisade, the trees round it, its orchards): kept apart (meta batch_raw,
+## edge_fps, edge_lots) so a town that grows takes them up and lays them again round its new edge (_grow_town).
+var _batch_tag := ""
 
 
 ## Queues a kit model for the town being built; _flush draws each model's
@@ -2299,9 +2309,10 @@ var _batch := {}  # kit model -> transforms in the town being built
 ## barrel, a ladder or a woodpile because its caller forgot to say so. `foot` is
 ## the ground it takes when that isn't the model's own (a palisade's thin line).
 func _place(root: Node3D, kind: String, pos: Vector3, yaw: float, scale := Vector3.ONE, foot := Vector2.ZERO) -> void:
-	if not _batch.has(kind):
-		_batch[kind] = []
-	_batch[kind].append(Transform3D(Basis(Vector3.UP, yaw).scaled(scale), pos))
+	var key := kind + _batch_tag
+	if not _batch.has(key):
+		_batch[key] = []
+	_batch[key].append(Transform3D(Basis(Vector3.UP, yaw).scaled(scale), pos))
 	if foot == Vector2.ZERO:
 		foot = Real.footprint(kind) * Vector2(scale.x, scale.z)
 	if foot != Vector2.ZERO:
@@ -2309,9 +2320,12 @@ func _place(root: Node3D, kind: String, pos: Vector3, yaw: float, scale := Vecto
 
 
 func _flush(root: Node3D) -> void:
-	for kind in _batch:
+	var raw := {}  # every copy as placed, by batch key: what a town that grows lays its new copies beside (_grow_town)
+	for key: String in _batch:
 		await _pace()  # each kind's batch its own step (Mac's game: the build's last step, up to 2.7 s)
-		var xfs: Array = _batch[kind]
+		var kind := key.get_slice("@", 0)
+		var xfs: Array = _batch[key]
+		raw[key] = xfs.duplicate()
 		for part in Real.parts(kind):
 			var mmi := Batch.make("", part[0], xfs.map(func(x: Transform3D) -> Transform3D: return x * part[1]))
 			mmi.set_meta("kind", kind)  # which kit model it batches (fire.gd finds a burnt house's place in it)
@@ -2324,6 +2338,7 @@ func _flush(root: Node3D) -> void:
 			if low and not is_detail(kind) and _reach_for(kind) > HLOD_AT:
 				_hlod(root, mmi, low, kind)
 	_batch.clear()
+	root.set_meta("batch_raw", raw)
 	await _pace()
 	# Anything placed whole (the castle, landmarks) carries furthest.
 	for g in root.find_children("*", "GeometryInstance3D", true, false):
@@ -2606,13 +2621,19 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 	await _pace()
 	world("clear", [center, outer + 0.6])
 	await _pace()
-	fields.edge(root, center, rng)  # the orchards by the roads out (town_fields.gd); the fields are land_use.gd's
+	_batch_tag = "@edge"
+	fields.edge(root, center, TownLayout.stage_rng(rng.seed, TownLayout.ORCHARD_SEED))  # the orchards by the roads out (town_fields.gd); the fields are land_use.gd's
+	_batch_tag = ""
 	await _pace()
 	_smoke(root, keep_off + Vector3(0.2, _ground_y(center, keep_off) + 1.2, 0.1))
 	await _pace()
 
 	_kerbs(root, center)  # after the houses and stalls stand: the kerb runs only where the paving meets open ground
 	await _pace()
+	var growth: Dictionary = root.get_meta("growth", {})  # what a town that grows lays its new plots from (_grow_town)
+	growth.merge({"size": size, "rank": _rank, "square_r": square_r, "seat": seat, "capital": bool(c.get("capital", false)),
+		"seed": rng.seed, "base_ang": base_ang, "reach": reach, "buildings": buildings.duplicate()}, true)
+	root.set_meta("growth", growth)
 	await _flush(root)
 	await _pace()
 	root.set_meta("imprint", _imprint)  # what it did to the world beyond itself (world), replayed when it is loaded

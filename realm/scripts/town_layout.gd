@@ -15,6 +15,20 @@ const TownTrades := preload("res://scripts/town_trades.gd")
 var tb: Node  # the towns builder (towns.gd)
 
 
+## Each stage of a town's layout draws from its own sequence (the town's seed and the stage's), so a town that grows
+## carries on each where its last build left it (meta growth: plot_rng, yard_rng; towns.gd _grow_town), never shifted by another stage.
+const PLOT_SEED := 1031
+const YARD_SEED := 1033
+const EDGE_SEED := 1039
+const ORCHARD_SEED := 1049
+static func stage_rng(seed: int, stage: int, state: Variant = null) -> RandomNumberGenerator:
+	var r := RandomNumberGenerator.new()
+	r.seed = seed + stage
+	if state != null:
+		r.state = int(state)  # where its last build left it (a state is any 64 bits: never tested by sign)
+	return r
+
+
 func _init(towns: Node) -> void:
 	tb = towns
 
@@ -261,8 +275,13 @@ func real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds:
 	# along the roads and lanes, the edge where they stop.
 	await tb._pace()
 	ways = ways + await lay_lanes(root, center, ways, clampi(int((size - 2) * float(pk.get("lanes_per_size", 0.5))), 0, int(pk.get("lanes_most", 6))), square_r, rng)
+	root.set_meta("ways_all", ways)  # every street as laid: main, ring, quay, lanes (a town that grows adds to it)
 	await tb._pace()
-	await plot_lots(root, center, square_r, ways, kinds, lots, rng, want - placed, seat)
+	var lanes_n := clampi(int((size - 2) * float(pk.get("lanes_per_size", 0.5))), 0, int(pk.get("lanes_most", 6)))
+	placed += await plot_lots(root, center, square_r, ways, kinds, lots, rng, want - placed, seat)
+	var growth: Dictionary = root.get_meta("growth", {})
+	growth.merge({"want": want, "placed": placed, "lanes": lanes_n}, true)
+	root.set_meta("growth", growth)
 	await tb._pace()
 	tb._square_trees(root, center, square_r, ways, lots, rng)
 	await tb._pace()
@@ -700,6 +719,7 @@ func plot_lots(root: Node3D, center: Vector3, square_r: float, ways: Array, kind
 	# one edge and no house stands alone out on the fields. A plot passed over for that is tried
 	# again once the town has grown toward it.
 	var near := float(tb._plot_knobs().get("near", 0.0))
+	var pr: RandomNumberGenerator = stage_rng(rng.seed, PLOT_SEED)  # the plots' own sequence (towns.gd _stage_rng)
 	var left: Array = all
 	var grew := true
 	while grew and placed < budget and not left.is_empty():
@@ -712,7 +732,7 @@ func plot_lots(root: Node3D, center: Vector3, square_r: float, ways: Array, kind
 			if near > 0.0 and not tb._crowded(lots, Vector3(at.x, 0, at.y), float(pl0[2]) * 0.45 + near):
 				later.append(pl0)  # nothing standing near it yet
 				continue
-			if await plot_one(root, center, pl0, ways, shallow, lots, rng, bodies, taken, stood, why):
+			if await plot_one(root, center, pl0, ways, shallow, lots, pr, bodies, taken, stood, why):
 				placed += 1
 				grew = true
 		left = later
@@ -720,8 +740,9 @@ func plot_lots(root: Node3D, center: Vector3, square_r: float, ways: Array, kind
 		why["alone"] = left.size()
 	# The yards, once every house stands: their fences and kitchen gardens go round the houses,
 	# never take a house's ground.
+	var yr: RandomNumberGenerator = stage_rng(rng.seed, YARD_SEED)
 	for s in stood + (root.get_meta("ring_yards", []) as Array):
-		tb._yard(root, center, s[0], s[1], s[2], s[3], lots, rng, int(s[4]))
+		tb._yard(root, center, s[0], s[1], s[2], s[3], lots, yr, int(s[4]))
 		await tb._pace()  # each yard its own step
 	# CHECK line: how the yards came out (round 6: no gardens, fences or pens read at Kingsmere).
 	var things := {}
@@ -732,20 +753,31 @@ func plot_lots(root: Node3D, center: Vector3, square_r: float, ways: Array, kind
 	print("CHECK town plots: %s (size %d, edge %.1f): %d plots cut along %d ways, %d houses stood (and %d round the square), %d left in budget; turned away: %s" % [String(root.get_meta("title", "")), size, float(root.get_meta("plot_edge", 0.0)), all.size(), ways.size(), placed, int(root.get_meta("ring_houses", 0)), budget - placed, str(why)])
 	if OS.get_cmdline_user_args().has("--probe=towns"):
 		probe_dump(root, square_r, ways, all, taken, left)
+	var growth: Dictionary = root.get_meta("growth", {})
+	growth.merge({"taken": taken, "plot_rng": pr.state, "yard_rng": yr.state}, true)
+	root.set_meta("growth", growth)
+	await edge_round(root, center, square_r, taken, ways, lots, seat, stage_rng(rng.seed, EDGE_SEED))
+	tb._layout_check(root, taken, ways)
+	return placed
+
+
+## The town's edge round every plot taken (`taken`), and what stands on it: the stone wall or the palisade, and the
+## trees round it (laid as the edge's, towns.gd _batch_tag: a town that grows takes them up and lays them anew).
+func edge_round(root: Node3D, center: Vector3, square_r: float, taken: Array, ways: Array, lots: Array, seat: bool, er: RandomNumberGenerator) -> void:
 	var edge := TownPlots.outline(taken, square_r, float(tb._plot_knobs().get("set_back", 0.04)) + TownPlots.ROAD_HALF * 2.0)
 	var far := 0.0
 	for q in edge:
 		far = maxf(far, q.length())
 	root.set_meta("edge_outline", edge)
 	root.set_meta("edge_r", far)
-	if not tb._town_wall(root, center, edge, ways):
+	tb._batch_tag = "@edge"
+	if not root.has_meta("town_wall") and not tb._town_wall(root, center, edge, ways):
 		await tb._pace()
 		tb._palisade_on(root, center, edge, ways, seat)
 	await tb._pace()
-	tb._edge_trees(root, center, edge, ways, lots, rng)
+	tb._edge_trees(root, center, edge, ways, lots, er)
+	tb._batch_tag = ""
 	await tb._pace()
-	tb._layout_check(root, taken, ways)
-	return placed
 
 
 ## --probe=towns (a test aid, off in play): the town's layout as JSON in user://probe/<town>.json, the ways,
