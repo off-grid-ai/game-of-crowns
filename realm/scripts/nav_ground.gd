@@ -107,8 +107,8 @@ static func all(root: Node3D, terrain: Node3D = null) -> Array:
 static func inside_something(root: Node3D, p: Vector3, terrain: Node3D = null, keys: Array = ["town", "life"]) -> PackedVector2Array:
 	if root == null or not is_instance_valid(root):
 		return PackedVector2Array()
-	var c := root.global_position
-	var q := Vector2(p.x - c.x, p.z - c.z)
+	var l := root.global_transform.affine_inverse() * p  # its own frame, turned as it stands (a countryside patch is)
+	var q := Vector2(l.x, l.z)
 	for y in root.get_meta("yards", []):
 		if Geometry2D.is_point_in_polygon(q, y[0]):
 			return PackedVector2Array()

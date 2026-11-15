@@ -36,6 +36,7 @@ const Data := preload("res://scripts/data.gd")
 const Mover := preload("res://scripts/mover.gd")  # the one way to move (CLAUDE.md)
 const Ground := preload("res://scripts/army_ground.gd")
 const Footing := preload("res://scripts/ground.gd")  # the realm's one answer to where a body may stand
+const ViewTier := preload("res://scripts/view_tier.gd")  # the one frame budget staged work draws on
 const Heraldry := preload("res://scripts/heraldry.gd")
 const VAT := preload("res://addons/godot_vat/vat_multi_mesh_instance_3d.gd")
 const Banners := preload("res://scripts/army_banners.gd")  # its banners and standard (READY.md line 4)
@@ -948,9 +949,17 @@ func _dress(r: Dictionary) -> void:
 	var yaws: PackedFloat32Array = r["yaws"]
 	var sizes: PackedFloat32Array = r["sizes"]
 	var lag: Dictionary = r.get("lag", {})  # stragglers out of the line (hunger_now)
+	# Each man on the land at his own spot (Mac 2026-11-15: men half in the ground; the regiment stands at its middle's
+	# height, so on a slope its uphill men sank and its downhill men floated). ground.gd height, the one height.
+	var node: Node3D = r["node"]
+	var xf := node.global_transform if node.is_inside_tree() else Transform3D.IDENTITY
 	for s in at.size():
 		var b := Basis(Vector3.UP, yaws[s]).scaled(Vector3.ONE * tall * sizes[s])
-		vat.multimesh.set_instance_transform(s, Transform3D(b, at[s] + lag.get(s, Vector3.ZERO)))
+		var p: Vector3 = at[s] + lag.get(s, Vector3.ZERO)
+		if node.is_inside_tree():
+			p.y = Footing.height(xf * Vector3(p.x, 0.0, p.z)) - xf.origin.y
+		vat.multimesh.set_instance_transform(s, Transform3D(b, p))
+	r["dressed_at"] = xf.origin
 
 
 ## Takes a regiment's shape at once (its men's places, its banner's pips, its rectangle and block fitted).
@@ -1618,6 +1627,7 @@ func _process(delta: float) -> void:
 			"halt", "rest":
 				_at_ease(r, delta)
 	_far_view()
+	_settle()
 	if _camp == null and not _aboard and battle.has("host") and _camps() and _regiments.all(func(r): return r["state"] == "halt"):
 		_pitch_camp()
 	if _then_free and _regiments.all(func(r): return r["state"] == "halt"):
@@ -1693,6 +1703,17 @@ func _at_ease(r: Dictionary, delta: float) -> void:
 
 ## The men drawn at every distance (their lighter detail levels from afar); banners and the standard keep their
 ## size on screen beyond banner.fixedFrom.
+## Men laid again on the land under them once their regiment has moved (each man's own height; _dress), a few
+## regiments a frame on the frame budget.
+func _settle() -> void:
+	for r in _regiments:
+		var node: Node3D = r["node"]
+		if node.is_inside_tree() and node.global_position.distance_to(r.get("dressed_at", Vector3.INF)) > Data.num("army", "settle", 0.15):
+			if not ViewTier.spend_ok(&"army_settle"):
+				return
+			_dress(r)
+
+
 func _far_view() -> void:
 	_shade_t -= get_process_delta_time()
 	if _shade_t <= 0.0:

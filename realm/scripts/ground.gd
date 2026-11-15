@@ -11,8 +11,14 @@ extends RefCounted
 ##   nearest_clear(p, radius, max_dist): the nearest such place, on the town's walk map where it has one.
 ##   walkable(p), on_land(p): the land under a step, or which way the shore lies; never a place to stand.
 ##   inside(p): the footprint `p` stands in, or an empty one.
+##   height(p): the land's height under `p`, the one every body stands at.
 ##   area_clear(poly): whether a piece set down over `poly` (world) stands on land and over no footprint.
 ##   open_floor(root, poly): a builder says ground inside its own footprint is open floor (a bailey, a forge's).
+##   stands(root, reach), gone(root): a builder outside a town (a countryside farm, a roadside inn, the woods, a camp,
+##     a ruin) says what it set down under `root`, reaching `reach` round it, is in the way; its outlines are read off
+##     it the town's way (nav_ground.gd), so nothing keeps a list beside the pieces (Mac 2026-11-15: "entities need to
+##     stop collision with each other": a host stood in a cottage and through a wood no check knew of).
+##   claim(id, poly), release(id): a body that holds ground while it stands (a regiment's rectangle, world XZ).
 
 const NavGround := preload("res://scripts/nav_ground.gd")
 const TownNav := preload("res://scripts/town_nav.gd")
@@ -25,6 +31,11 @@ const RINGS := 6  # rings nearest_clear tries out to its reach, off a walk map
 const SPOKES := 8  # points on each ring: at most RINGS x SPOKES checks a call
 const KEPT_MAX := 20000  # answers nearest_clear keeps before it starts afresh
 
+const CHUNK := 16.0  # world units to a cell of the places' and claims' lookup
+static var _places := {}  # chunk (Vector2i) -> {root instance id: root}: what builders outside towns set down
+static var _place_area := {}  # root instance id -> [chunks, Rect2 it covers]
+static var _claims := {}  # chunk -> {id: outline (world XZ)}: the ground bodies hold while they stand
+static var _claim_area := {}  # id -> [chunks, Rect2]
 static var _kept := {}  # tile (Vector2i) -> {[point, radius, reach] (Vector4i, hundredths) -> [answer, its towns' layouts]}
 static var _kept_n := 0
 
@@ -32,7 +43,8 @@ static var _kept_n := 0
 ## Whether something reaching `radius` all round may stand at `p` (world): on walkable land and in no footprint.
 ## `props` false: only the buildings keep it out, not the life's own pieces (a keeper behind his stall's counter,
 ## a guest on the feast's bench, an elder on his doorstep's bench is at them, not in a building).
-static func is_clear(p: Vector3, radius := 0.0, props := true) -> bool:
+## `free_of`: a claim that doesn't count (the asker's own).
+static func is_clear(p: Vector3, radius := 0.0, props := true, free_of: Variant = null) -> bool:
 	var keys: Array = ["town", "life"] if props else ["town"]
 	for o in _reach_of(radius):
 		var q: Vector3 = p + o
@@ -41,7 +53,78 @@ static func is_clear(p: Vector3, radius := 0.0, props := true) -> bool:
 		for t in TownNav.towns_at(towns, q):
 			if not NavGround.inside_something(t[1], q, terrain, keys).is_empty():
 				return false
+		var c := _chunk(q)
+		for root in (_places.get(c, {}) as Dictionary).values():
+			if is_instance_valid(root) and (root as Node3D).is_visible_in_tree() and not NavGround.inside_something(root, q, terrain, keys).is_empty():
+				return false
+		var at := Vector2(q.x, q.z)
+		for id in (_claims.get(c, {}) as Dictionary):
+			if id != free_of and Geometry2D.is_point_in_polygon(at, _claims[c][id]):
+				return false
 	return true
+
+
+## A builder outside a town says what it set down under `root` is in the way, within `reach` world units of it.
+static func stands(root: Node3D, reach: float) -> void:
+	gone(root)
+	var c := root.global_position
+	var area := Rect2(c.x - reach, c.z - reach, reach * 2.0, reach * 2.0)
+	var cells := _chunks(area)
+	for k in cells:
+		if not _places.has(k):
+			_places[k] = {}
+		_places[k][root.get_instance_id()] = root
+	_place_area[root.get_instance_id()] = [cells, area]
+	forget(area)
+
+
+## What was set down under `root` is gone (razed, unloaded, rebuilt).
+static func gone(root: Node3D) -> void:
+	var id := root.get_instance_id()
+	if not _place_area.has(id):
+		return
+	for k in _place_area[id][0]:
+		(_places.get(k, {}) as Dictionary).erase(id)
+	forget(_place_area[id][1])
+	_place_area.erase(id)
+
+
+## A body holds `poly` (world XZ) while it stands: no other placement takes that ground. A new claim by `id` replaces its last.
+static func claim(id: Variant, poly: PackedVector2Array) -> void:
+	release(id)
+	var lo := poly[0]
+	var hi := poly[0]
+	for v in poly:
+		lo = lo.min(v)
+		hi = hi.max(v)
+	var area := Rect2(lo, hi - lo)
+	var cells := _chunks(area)
+	for k in cells:
+		if not _claims.has(k):
+			_claims[k] = {}
+		_claims[k][id] = poly
+	_claim_area[id] = [cells, area]
+
+
+## The body has left that ground.
+static func release(id: Variant) -> void:
+	if not _claim_area.has(id):
+		return
+	for k in _claim_area[id][0]:
+		(_claims.get(k, {}) as Dictionary).erase(id)
+	_claim_area.erase(id)
+
+
+static func _chunk(p: Vector3) -> Vector2i:
+	return Vector2i(floori(p.x / CHUNK), floori(p.z / CHUNK))
+
+
+static func _chunks(area: Rect2) -> Array:
+	var out := []
+	for x in range(floori(area.position.x / CHUNK), floori(area.end.x / CHUNK) + 1):
+		for z in range(floori(area.position.y / CHUNK), floori(area.end.y / CHUNK) + 1):
+			out.append(Vector2i(x, z))
+	return out
 
 
 ## Whether a piece set down over `poly` (world XZ: a building site, a camp's tent) stands on walkable land at every
@@ -83,6 +166,11 @@ static func walkable(p: Vector3) -> bool:
 
 ## Whether `p` (world) is dry land, no ford: which way the shore lies, where a ship may not lie, a tile a mine is
 ## dug on. Never a place to stand: that is is_clear.
+## The land's height under `p` (world): the one height every body stands at, each at its own spot.
+static func height(p: Vector3) -> float:
+	return terrain.height_at(p.x, p.z) if terrain else p.y
+
+
 static func on_land(p: Vector3) -> bool:
 	return terrain == null or terrain.is_land(p.x, p.z)
 

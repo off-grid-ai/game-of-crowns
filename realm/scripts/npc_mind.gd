@@ -179,8 +179,9 @@ class Step extends BTAction:
 		var m: Node = Mover.of(agent as Node3D)
 		m.speed = 0.17
 		m.clip = ""  # Walk is already playing
-		var g: Callable = blackboard.get_var(&"ground", Callable(), false)
-		m.ground = (func(w: Vector3) -> float: return float(g.call(parent.to_local(w)))) if g.is_valid() and parent else Callable()
+		# On the land's own height at each step, the one height every body stands at (ground.gd height; Mac
+		# 2026-11-15: townsfolk sank by their town's own height, the blackboard's ground being town-relative).
+		m.ground = Ground.height
 		m.go(parent.to_global(to) if parent else to)
 
 	## Nobody else on the ground within a shoulder's width (0.11, about 0.9 m)
