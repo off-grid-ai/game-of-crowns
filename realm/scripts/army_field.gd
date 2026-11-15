@@ -124,19 +124,8 @@ func _ready() -> void:
 	if crown.rows().is_empty():
 		push_error("BATTLE the crown's host could not be raised")
 		return
-	# The battle turned to fit the ground (batch 8b: the foe formed across a lake): of field.turns bearings round the
-	# crown's muster, the one where the foe's line stands most on ground fit for men; the crown's line turns to face it.
 	var gap := Data.num(F, "field.gap", 9.0)
-	var best_face := crown.facing()
-	var best := -1.0
-	for i in int(Data.num(F, "field.turns", 12)):
-		var a := crown.facing() + TAU * float(i) / Data.num(F, "field.turns", 12)
-		var share := crown.ground_share(crown.field() + Vector3(sin(a), 0, cos(a)) * gap, a + PI, crown.extent())
-		if share > best + 0.001:
-			best = share
-			best_face = a
-	if absf(angle_difference(best_face, crown.facing())) > 0.01:
-		crown.stand_at(crown.field(), best_face)
+	var best := _turn_to_ground(crown, gap)
 	var face := crown.facing()
 	var fwd := Vector3(sin(face), 0, cos(face))
 	var house := _foe_house()
@@ -159,20 +148,21 @@ func _raise_in_play() -> void:
 	_rng.seed = int(play["id"])
 	loser = 1
 	var at: Vector3 = play["at"]
-	var face: float = play["face"]
-	var fwd := Vector3(sin(face), 0, cos(face))
-	var half := Data.num(F, "field.play.gap", 5.0) * 0.5
+	var gap := Data.num(F, "field.play.gap", 5.0)
 	var per := int(Data.num(F, "field.play.perCompany", 150))
 	var most := int(Data.num(F, "field.play.companies", 12))
-	ground = Ground.around(main, at, half + 8.0)
+	ground = Ground.around(main, at, gap + Data.num(F, "field.play.reach", 18.0))
 	var made: Array = []
 	for i in 2:
 		var house: Dictionary = (play["houses"] as Array)[i]
 		var colour := Heraldry.colour(house, Color(0.5, 0.17, 0.15)) if not house.is_empty() else Color(0.5, 0.17, 0.15)
 		if i == 1 and made.size() == 1 and _alike(colour, (made[0] as Army).battle["colour"]):
 			colour = Color(0.22, 0.3, 0.46)  # two houses in like colours: the beaten in steel blue, so the sides read apart
-		var side: Army = Army.new(main, 0, {"side": i, "field": at - fwd * half if i == 0 else at + fwd * half, "face": face if i == 0 else face + PI,
-			"colour": colour, "house": house, "quiet": true, "shape": "auto", "frontage": Data.value(F, "field.frontage", [10, 14]), "ground": ground})
+		# The victors form first at the battle's place, turned to the ground; the beaten form facing them across the gap.
+		var face: float = play["face"] if i == 0 else (made[0] as Army).facing() + PI
+		var field: Vector3 = at if i == 0 else (made[0] as Army).field() - Vector3(sin(face), 0, cos(face)) * gap
+		var side: Army = Army.new(main, 0, {"side": i, "field": field, "face": face, "colour": colour, "house": house, "quiet": true,
+			"shape": "line", "frontage": Data.value(F, "field.frontage", [10, 14]), "ground": ground})
 		var specs: Array = []
 		var kinds: Array = (play["kinds"] as Array)[i]
 		for j in mini(kinds.size(), most):
@@ -180,12 +170,31 @@ func _raise_in_play() -> void:
 		side.battle["specs"] = specs
 		add_child(side)
 		made.append(side)
-	for side in made:
-		if not (side as Army).mustered:
-			await (side as Army).raised
+		if not side.mustered:
+			await side.raised
+		if i == 0:
+			_turn_to_ground(side, gap)
 	sides = made
 	_arrows = _arrow_pool()
-	_focus = at
+	_focus = ((made[0] as Army).field() + (made[1] as Army).field()) * 0.5
+
+
+## The battle turned to fit the ground (batch 8b: the foe formed across a lake): of field.turns bearings round the
+## victors' line, the one where the other line, `gap` ahead, stands most on ground fit for men; the line turns to
+## face it. Returns that share of fit ground.
+func _turn_to_ground(crown: Army, gap: float) -> float:
+	var best_face := crown.facing()
+	var best := -1.0
+	var turns := Data.num(F, "field.turns", 12)
+	for i in int(turns):
+		var a := crown.facing() + TAU * float(i) / turns
+		var share := crown.ground_share(crown.field() + Vector3(sin(a), 0, cos(a)) * gap, a + PI, crown.extent())
+		if share > best + 0.001:
+			best = share
+			best_face = a
+	if absf(angle_difference(best_face, crown.facing())) > 0.01:
+		crown.stand_at(crown.field(), best_face)
+	return best
 
 
 static func _alike(a: Color, b: Color) -> bool:
