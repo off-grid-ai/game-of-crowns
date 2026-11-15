@@ -524,6 +524,11 @@ func _put(body: Node3D, at: Vector3) -> void:
 	body.global_position = at
 
 
+## The point of its way it is walking to now (INF when it walks nowhere): where it is about to go.
+func heading_to() -> Vector3:
+	return _way[_i] if _i < _way.size() and not _steer else Vector3.INF
+
+
 func moving() -> bool:
 	return is_processing()
 

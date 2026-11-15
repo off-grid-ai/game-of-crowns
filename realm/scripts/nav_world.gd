@@ -297,6 +297,13 @@ static func _hold() -> void:
 		return
 	_still_at = now
 	var hold := Data.num("ground", "nav.hold_still", 2.0)
+	# An engine (a camp's built tower or catapult, a parked ram) is carved as soon as it stands (nav.hold_still_engine):
+	# hosts route round it from the start, as they did before moving blocks left the maps (siege_activity_probe: a
+	# regiment through a guard tower carved two seconds late). A rolling one restamps its ground as it goes.
+	var hold_engine := Data.num("ground", "nav.hold_still_engine", 0.0)
+	# A standing regiment shuffles (its men dress the ranks, its block re-claimed as it is drawn): within nav.hold_slop of
+	# where it began to stand it still stands, and it is carved where it began (its first outline: no rebake for a sway).
+	var slop := Data.num("ground", "nav.hold_slop", 0.15)
 	var span := Rect2(-1.0e6, -1.0e6, 2.0e6, 2.0e6)
 	var claims: Dictionary = Ground.claims_in(span, BLOCKING_CLAIMS)
 	var changed := false
@@ -308,15 +315,25 @@ static func _hold() -> void:
 	for id in claims:
 		var poly: PackedVector2Array = claims[id][1]
 		var was: Array = _still.get(id, [])
-		if was.is_empty() or was[0] != poly:
+		if was.is_empty() or _shifted(was[0], poly, slop):
 			_still[id] = [poly, now]
 			if _carved.erase(id):
 				changed = true  # it moves: avoidance steps round it now, the maps open again
-		elif not _carved.has(id) and now - float(was[1]) >= hold:
+		elif not _carved.has(id) and now - float(was[1]) >= (hold_engine if String(claims[id][0]) == "engine" else hold):
 			_carved[id] = true
 			changed = true
 	if changed:
 		_carved_rev += 1
+
+
+## Whether outline `b` lies further than `slop` from `a` at any corner (or has other corners).
+static func _shifted(a: PackedVector2Array, b: PackedVector2Array, slop: float) -> bool:
+	if a.size() != b.size():
+		return true
+	for i in a.size():
+		if a[i].distance_to(b[i]) > slop:
+			return true
+	return false
 
 
 ## Whether claim `id` stands carved out of the maps (held still nav.hold_still seconds).
@@ -486,8 +503,9 @@ static func _inputs(c: Vector2i) -> Dictionary:
 	var claims: Dictionary = Ground.claims_in(area, BLOCKING_CLAIMS)
 	var ids := claims.keys().filter(func(id) -> bool: return _carved.has(id))  # only held ground that stands (_hold)
 	ids.sort_custom(func(x, y) -> bool: return str(x) < str(y))
-	for id in ids:
-		(engines if String(claims[id][0]) == "engine" else held).append(claims[id][1])
+	for id in ids:  # where it began to stand (_hold): a standing block's sway never rebakes
+		var at: PackedVector2Array = (_still[id] as Array)[0] if _still.has(id) else claims[id][1]
+		(engines if String(claims[id][0]) == "engine" else held).append(at)
 	var base: String = kept[1]
 	var sig := base + ":" + str(hash([held, engines]))
 	var was: String = String(_chunks[&"walk"][c]["sig"]) if _chunks.has(&"walk") else ""

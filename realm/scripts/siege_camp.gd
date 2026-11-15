@@ -540,6 +540,7 @@ func _roll(dt: float) -> void:
 				for c in g["crew"]:
 					if c["alive"] and is_instance_valid(c["node"]):
 						Mover.of(c["node"]).clip = "Pushing"
+			_mind_the_way(g, m, pace, dt, k)
 			var j := 0
 			for c in g["crew"]:
 				if c["alive"] and is_instance_valid(c["node"]):
@@ -678,6 +679,52 @@ func _hold(n: Node3D, size: Vector2) -> void:
 	_stamp(n, size)
 	var id := _hold_id(n)
 	n.tree_exiting.connect(func(): Ground.release(id))
+
+
+## A rolling engine never runs into a regiment: a moving block is not baked into the engines' map (nav_world.gd: only
+## held ground that stands is; men step round a moving one by avoidance, and a tower can't), so it looks its own length
+## plus parked.block_look ahead along its way and holds (its Mover at no pace) while a host's block lies there; held
+## parked.block_reroute seconds, it asks its way afresh (a block that stopped is carved out by then: it goes round; a
+## route asked before the block was carved is what ran the tower through it).
+## (siege_activity_probe: a guard tower through regiment 6, once moving blocks went out of the maps.)
+func _mind_the_way(g: Dictionary, m: Node3D, pace: float, dt: float, k: Dictionary) -> void:
+	var mv: Node = Mover.of(m)
+	var next: Vector3 = mv.heading_to()
+	var blocked := false
+	if next != Vector3.INF:
+		var flat := Vector2(next.x - m.global_position.x, next.z - m.global_position.z)
+		if flat.length() > 0.001:
+			var size: Vector2 = g["size"]
+			var ahead := flat.normalized() * float(k.get("block_look", 0.1))
+			var xf := Transform3D(Basis(Vector3.UP, m.global_rotation.y), m.global_position)
+			var poly := PackedVector2Array()
+			for c in [Vector3(-size.x, 0, -size.y), Vector3(size.x, 0, -size.y), Vector3(size.x, 0, size.y), Vector3(-size.x, 0, size.y)]:
+				var w: Vector3 = xf * (c as Vector3)
+				poly.append(Vector2(w.x, w.z) + ahead)
+			var box := Rect2(poly[0], Vector2.ZERO)
+			for q in poly:
+				box = box.expand(q)
+			var now := PackedVector2Array()
+			for q in poly:
+				now.append(q - ahead)
+			var hosts: Dictionary = Ground.claims_in(box, ["host"])
+			for id in hosts:
+				var block: PackedVector2Array = hosts[id][1]
+				# Ahead only: a block that has walked onto where it stands already is the block's to leave.
+				if not Geometry2D.intersect_polygons(poly, block).is_empty() and Geometry2D.intersect_polygons(now, block).is_empty():
+					blocked = true
+					break
+	if not blocked:
+		g["held"] = 0.0
+		mv.speed = pace
+		return
+	mv.speed = 0.0
+	g["held"] = float(g.get("held", 0.0)) + dt
+	if float(g["held"]) >= float(k.get("block_reroute", 2.0)):
+		g["held"] = 0.0
+		mv.go(g["to"], func():
+			g["at_wall"] = true
+			m.remove_meta("way_to"))
 
 
 ## Its ground claimed where it stands now (a new claim by the same id replaces the last: a rolling engine's goes with it).
