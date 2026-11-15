@@ -94,17 +94,15 @@ func _ready() -> void:
 	if number_of_animation_tracks == 0:
 		printerr("VATMultiMeshInstance3D: You have not defined any animation tracks!")
 	else:
-		print_rich("\n[color=cyan]Beginning VAT animation configuration...")
-
+		# Game of Crowns: no console lines per regiment (the plugin printed every track of every regiment raised: 388
+		# lines a run, each a write on the main thread while hosts are raised).
 		var i : int = 0
 		for vat_anim: VATAnimationTrack in vat_animation_tracks:
 			if vat_anim.framerate == 0: vat_anim.framerate = default_fps
 			if !vat_anim.name or vat_anim.name.is_empty():
 				vat_anim.name = str("Track", i)
-			print_rich(str("  🎞️ Animation track: [color=yellow]", vat_anim.name, "[/color]   Start/End Frames: [color=yellow]", vat_anim.startFrame , "-", vat_anim.endFrame, "[/color]   isLooping: [color=yellow]", vat_anim.isLooping ,"[/color]   FPS: [color=yellow]", vat_anim.framerate,"[/color]"))
 			i += 1
 
-		print_rich("[color=cyan]Animation configuration completed.[/color]")
 		
 func _process(delta: float) -> void:
 	pass
