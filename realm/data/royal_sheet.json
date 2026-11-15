@@ -12,8 +12,6 @@
  "no_heir": "There is no heir. If the King dies so, the crown is up for the taking.",
  "children": "Children",
  "kin": "Kin",
- "line": "The Kings before him",
- "line_row": "{name}, {how} at {age}",
  "close": "Close",
  "change": "Change who you are",
  "who": { "_": "A new reign's first question (royal_sheet.gd _who_are_you): the one character form with the reign's King filled in, before the first council. ask: its title; skip: the word to leave him as dealt; then: seconds after it closes before the first council opens (the King's new name has reached the view).", "ask": "Who are you?", "skip": "Skip", "then": 2.5 },

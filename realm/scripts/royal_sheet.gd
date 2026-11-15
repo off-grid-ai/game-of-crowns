@@ -1,7 +1,7 @@
 extends RefCounted
 ## The King's sheet and his family (CK3's ruler and dynasty window): the King, his age and his two traits, and
 ## how the lords take a King of that nature; his consort, his heir and the match made for the heir; his other
-## children and kin; a regency while a child sits the throne; the Kings before him; and, once the heir is of
+## children and kin; a regency while a child sits the throne; and, once the heir is of
 ## age, the choice to step down. Read from /world royals (bridge royals.js view), deciding nothing but the
 ## abdication, which the bridge settles. Owned by ui.gd; opened from the King key in the top bar.
 ## Words: realm/data/royal_sheet.json.
@@ -219,13 +219,6 @@ func open() -> void:
 				_say(v, _w("word_kept", "Kept: {text}").replace("{text}", String(pr.get("text", ""))), T.ACCENT)
 			elif pr.get("broken") != null:
 				_say(v, _w("word_broken", "Broken: {text}").replace("{text}", String(pr.get("text", ""))), T.DANGER)
-	# The Kings before him.
-	var line: Array = r.get("line", []) if r.get("line") is Array else []
-	if not line.is_empty():
-		v.add_child(HSeparator.new())
-		v.add_child(T.label(_w("line", "The Kings before him")))
-		for k in line:
-			_say(v, _w("line_row", "{name}, {how} at {age}").replace("{name}", String(k.get("name", ""))).replace("{how}", String(k.get("how", ""))).replace("{age}", str(int(k.get("age", 0)))), T.TEXT_2)
 	# Stepping down for a grown heir (bridge POST /abdicate): asked twice, as any crown would be.
 	if bool(r.get("abdicate", false)):
 		v.add_child(HSeparator.new())
