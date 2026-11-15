@@ -120,8 +120,8 @@ func landed() -> void:
 
 
 func _moment(on: String) -> void:
-	if not _landed:
-		return
+	if not _landed or not bool(preload("res://scripts/settings.gd").get_value("hand_lessons")):
+		return  # lessons off (Settings): the Hand speaks only when called (Game Accessibility Guidelines: tips can be turned off)
 	for l in _lessons:
 		var id := String(l["id"])
 		if String(l["on"]) == on and not _said.has(id) and not _due.has(id) and not _waiting.has(id):
