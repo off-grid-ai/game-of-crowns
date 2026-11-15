@@ -6,6 +6,7 @@
   "_": "Town building knobs (towns.gd reads them). castle: where a great house's castle may stand when the first, old search (eight headings on the square's ring, all dry) finds no plot: headings around, rings out from the square (0 is the old ring; -1 hugs the square), sizes tried in order, and the share of the plot's edge that may stand over water if the keep's middle is dry.",
   "forge": {"floor_half": 0.09},
   "life": {"linger": 3},
+  "occlude": {"_": "towns.gd _occlude: each building that hides what is behind it gets an occluder prism, kept in the town's file (bump kept.json after a change). min_area: the least footprint (square units) that hides anything worth culling; min_height: the least height over its ground; inset: share each footprint is drawn in toward its middle (inside its walls, nothing pops); height: share of its roof's height it reaches. FPS audit 2026-11-15 item 8.", "min_area": 0.2, "min_height": 0.15, "inset": 0.15, "height": 0.75},
   "stream": {"_": "towns.gd _on_tier: a town FAR from the lens this many seconds has its detail freed (_shell; read back from disk when it comes near); off screen it only stops (the renderer culls it; its visibility ranges hide the detail at FAR). FPS audit 2026-11-15 item 2: a sideways pan freed and reloaded towns, 9.4 ms a tier change.", "shell_after": 8.0},
   "_load_ms": "load_ms: the frame's staging pot (view_tier.gd spend_ok: towns raised, crowds made, companies placed) while the loading screen covers the realm (ViewTier.loading); in play it is camera.json view_tier.stage_ms.",
   "load_ms": 50,

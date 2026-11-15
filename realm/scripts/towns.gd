@@ -392,6 +392,7 @@ func _raise(best: int, job: Dictionary) -> void:
 			_reown(node, job["c"], job["house"])  # whoever holds it now: the file is kept by its shape alone
 	if node == null:
 		node = await _build_town(job["c"], job["house"])
+		_occlude(node)
 		TownStore.save(node, path)
 	var pt0 := Time.get_ticks_usec()
 	PerfTools.add("build@last", pt0 - _step_at)  # the build's last step, after its last _pace
@@ -476,6 +477,8 @@ func _merge(standing: Node3D, fresh: Node3D) -> void:
 		elif n is MultiMeshInstance3D:
 			if not _same_batch(old as MultiMeshInstance3D, n as MultiMeshInstance3D):
 				(old as MultiMeshInstance3D).multimesh = (n as MultiMeshInstance3D).multimesh
+		elif n is OccluderInstance3D:
+			(old as OccluderInstance3D).occluder = (n as OccluderInstance3D).occluder  # the new layout's buildings hide
 		elif _contents(old) != _contents(n):
 			# A holder whose contents grew (its fields, its castle's parts): the new one in its place.
 			standing.add_child(_moved(fresh, n))
@@ -685,6 +688,86 @@ func _footprint_rect(root: Node3D, at: Vector3, size: Vector2, rot: float, top :
 	all.append(pts)
 	root.set_meta("footprints", all)
 	_top(root, top)
+
+
+## What hides what is behind it (FPS audit 2026-11-15 item 8, docs/research/fps-engine-swaps-2026-11-15.md: at the low
+## oblique a town's houses hide the people, props and stalls behind them, and Godot culled none; project.godot
+## rendering/occlusion_culling): one OccluderInstance3D a town, a prism inside each building that stands high enough
+## (its footprint drawn in toward its middle by towns.json occlude.inset, up to occlude.height of its roof's height
+## over its ground) and the castle's (its height from its meshes), made as the town is raised, so it is kept in the
+## town's file. Drawn small, inside the walls, so nothing pops. A batch is culled whole: the win is on bodies and props.
+func _occlude(root: Node3D) -> void:
+	var k: Dictionary = Data.value("towns", "occlude", {})
+	var min_area := float(k.get("min_area", 0.2))
+	var min_h := float(k.get("min_height", 0.15))
+	var inset := float(k.get("inset", 0.15))
+	var share := float(k.get("height", 0.75))
+	var fps: Array = root.get_meta("footprints", [])
+	var tops: Array = root.get_meta("tops", [])
+	var castle_poly: PackedVector2Array = root.get_meta("castle_poly", PackedVector2Array())
+	var castle := root.get_node_or_null("Castle") as Node3D
+	var verts := PackedVector3Array()
+	var idx := PackedInt32Array()
+	for i in fps.size():
+		var fp: PackedVector2Array = fps[i]
+		if fp.size() < 3:
+			continue
+		var top := float(tops[i]) if i < tops.size() else -1.0
+		if castle and fp == castle_poly:
+			top = _mesh_top(castle, root)
+		if top <= 0.0:
+			continue
+		var area := 0.0
+		var mid := Vector2.ZERO
+		for j in fp.size():
+			area += fp[j].cross(fp[(j + 1) % fp.size()])
+			mid += fp[j]
+		mid /= fp.size()
+		if absf(area) * 0.5 < min_area:
+			continue
+		var base := -INF
+		for q in fp:
+			base = maxf(base, (terrain.height_at(root.position.x + q.x, root.position.z + q.y) if terrain else 0.0) - root.position.y)
+		if top - base < min_h:
+			continue
+		var h := base + (top - base) * share
+		var n := fp.size()
+		var first := verts.size()
+		for q in fp:
+			var p := mid + (q - mid) * (1.0 - inset)
+			verts.append(Vector3(p.x, base, p.y))
+			verts.append(Vector3(p.x, h, p.y))
+		for j in n:
+			var a := first + j * 2
+			var b := first + ((j + 1) % n) * 2
+			idx.append_array(PackedInt32Array([a, b, a + 1, b, b + 1, a + 1]))  # a side
+		for j in range(1, n - 1):
+			idx.append_array(PackedInt32Array([first + 1, first + j * 2 + 1, first + (j + 1) * 2 + 1]))  # the top
+	if verts.is_empty():
+		return
+	var occ := ArrayOccluder3D.new()
+	occ.set_arrays(verts, idx)
+	var oi := OccluderInstance3D.new()
+	oi.name = "Occluders"
+	oi.occluder = occ
+	root.add_child(oi)
+
+
+## The top of a node's meshes in `root`'s frame (-1 with none): how high a castle stands.
+static func _mesh_top(node: Node3D, root: Node3D) -> float:
+	var top := -1.0
+	for mi in node.find_children("*", "MeshInstance3D", true, false):
+		var m := mi as MeshInstance3D
+		if m.mesh == null:
+			continue
+		var xf := Transform3D.IDENTITY
+		var p: Node = m
+		while p and p != root:
+			if p is Node3D:
+				xf = (p as Node3D).transform * xf
+			p = p.get_parent()
+		top = maxf(top, (xf * m.get_aabb()).end.y)
+	return top
 
 
 ## How high a footprint's building stands (local to the town), kept beside it
