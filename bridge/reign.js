@@ -488,7 +488,7 @@ export function endReign(ctx, why, outcome = "completed") {
   { const k = kingName(ctx, outcome); s.title = `The King ${k.name}`; s.why = k.why; }
   meta.epilogue = epilogue(ctx);
   meta.epitaph = epitaphOf(ctx, s, outcome);
-  meta.ledger = ledgerOf(ctx);
+  meta.endLedger = ledgerOf(ctx);  // the end card's summary; meta.ledger is the King's deeds (ledger.js), one owner each
   const grudge = grudgeOf(ctx);
   meta.grudgeLeft = grudge;  // the end card names it (Loop, reign_cards.gd): what the next reign inherits
   s.outcome = outcome;
@@ -628,7 +628,7 @@ export function reignInfo(ctx) {
     id: meta.id, name: meta.name, test: chron.isTest(meta), scenario: meta.scenario, status: meta.status, paused, minutes: meta.minutes,
     elapsedMs: meta.elapsedMs, remainingMs: meta.minutes > 0 ? Math.max(0, meta.minutes * 60000 - meta.elapsedMs) : null,
     score: meta.score, verdict: meta.verdict, title: meta.title, why: meta.why ?? null, outcome: meta.outcome, ended: meta.endedAt,
-    epilogue: meta.epilogue ?? null, epitaph: meta.epitaph ?? null, ledger: meta.ledger ?? null, grudge: meta.status === "ended" ? meta.grudgeLeft ?? null : null, lastAct: meta.lastAct ?? null, interlude: meta.interlude && !meta.interlude.seen ? meta.interlude : null, ambitions: meta.ambitions ?? null, aim: aim ? { n: Math.min(meta.ladder.i, LADDER.length) + (meta.ladder.n ?? 0) + 1, of: meta.ladder.i < LADDER.length ? LADDER.length : null, key: aim.key, text: aimText(ctx, aim), how: fill(ctx, aim, aim.how), input: aim.input ? aim.input.map((t) => fill(ctx, aim, t)) : null, progress: aimProgress(ctx, aim), at: aimPlace(ctx, aim) } : null,
+    epilogue: meta.epilogue ?? null, epitaph: meta.epitaph ?? null, ledger: meta.endLedger ?? null, grudge: meta.status === "ended" ? meta.grudgeLeft ?? null : null, lastAct: meta.lastAct ?? null, interlude: meta.interlude && !meta.interlude.seen ? meta.interlude : null, ambitions: meta.ambitions ?? null, aim: aim ? { n: Math.min(meta.ladder.i, LADDER.length) + (meta.ladder.n ?? 0) + 1, of: meta.ladder.i < LADDER.length ? LADDER.length : null, key: aim.key, text: aimText(ctx, aim), how: fill(ctx, aim, aim.how), input: aim.input ? aim.input.map((t) => fill(ctx, aim, t)) : null, progress: aimProgress(ctx, aim), at: aimPlace(ctx, aim) } : null,
     aimDone: meta.ladder?.just && Date.now() - meta.ladder.just.at < 8000 ? { text: meta.ladder.just.text, says: meta.ladder.just.says ?? null } : null, readings: meta.status === "running" ? readings(ctx) : null,
     souls: world?.cities?.reduce((t, c) => t + soulsOf(c.size), 0) ?? 0,
     next,

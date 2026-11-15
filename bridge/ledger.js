@@ -20,7 +20,8 @@ const NAMES = {
 const STRONG = TAGS.strong;  // an axis names the King once its deeds add up to this much, either way (data/ledger.json)
 
 function book(meta) {
-  meta.ledger ??= { sum: { word: 0, mercy: 0, give: 0, peace: 0 }, acts: 0, unheard: 0, favour: {}, deeds: [], name: null };
+  // A reign ended before the end card had its own key (meta.endLedger) holds that summary here: start the deeds afresh.
+  if (!meta.ledger?.sum) meta.ledger = { sum: { word: 0, mercy: 0, give: 0, peace: 0 }, acts: 0, unheard: 0, favour: {}, deeds: [], name: null };
   return meta.ledger;
 }
 
