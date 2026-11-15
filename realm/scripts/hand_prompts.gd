@@ -27,7 +27,8 @@ var _turning_seen := {}  # player id -> their turning when the King landed: a ho
 var _spot := "none"  # the part of the screen the Hand speaks of
 var _ring: Panel  # the ring round it
 var _veil: Veil  # the dim over the screen while he speaks, with a hole on what to do
-var _layer: CanvasLayer  # the tour's own layer over the interface: the veil, the ring, the Hand's words
+var _layer: CanvasLayer  # the tour's own layer over the interface: the Hand's words
+var _under: CanvasLayer  # under his words: the veil and the ring
 var _want := ""  # the task a guided step waits for (select, march, houses, answer), or ""
 var _card: Control  # the card the answer step points at
 var _host := -1  # the host the select step points at
@@ -85,10 +86,17 @@ func _ready() -> void:
 		_layer.process_mode = Node.PROCESS_MODE_ALWAYS
 		_layer.visible = false
 		add_child(_layer)
+		# The veil and the ring on a layer of their own under the Hand's words, so his buttons ("Show me") always take
+		# the click before the veil does (layers order both drawing and clicks; one layer's children don't, reliably).
+		_under = CanvasLayer.new()
+		_under.layer = 19
+		_under.process_mode = Node.PROCESS_MODE_ALWAYS
+		_under.visible = false
+		add_child(_under)
 		_veil = Veil.new()
 		_veil.set_anchors_preset(Control.PRESET_FULL_RECT)
 		_veil.mouse_filter = Control.MOUSE_FILTER_STOP
-		_layer.add_child(_veil)
+		_under.add_child(_veil)
 		_ring = Panel.new()
 		var box := StyleBoxFlat.new()
 		box.bg_color = Color(0, 0, 0, 0)
@@ -98,7 +106,7 @@ func _ready() -> void:
 		_ring.add_theme_stylebox_override("panel", box)
 		_ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_ring.visible = false
-		_layer.add_child(_ring)
+		_under.add_child(_ring)
 		var hc: Node = main.get_node_or_null("HostCommand")
 		if hc:
 			hc.ordered.connect(func(_k): if _want == "march": _did())
@@ -167,6 +175,7 @@ func _tell(id: String) -> void:
 		main.ui.top_bar._toggle_pause()
 	main.ui.tour_up = true
 	_layer.visible = true
+	_under.visible = true
 	_spot = "none"
 	if not dlg.Styles.has_active_layout_node():
 		dlg.Styles.load_style("", _layer)  # the Hand's words in the tour's layer, over the veil
@@ -188,7 +197,7 @@ func _told() -> void:
 	_telling = ""
 	_spot = "none"
 	_want = ""
-	_layer.visible = false
+	_under.visible = false
 	_advance(true)
 	main.ui.tour_up = false
 	if _held_it and main.ui.paused:
@@ -339,3 +348,14 @@ func _nearest_host() -> int:
 			near = d
 			best = int(h["id"])
 	return best
+
+
+## Esc ends the Hand's lesson there and then: the tour never traps him (Mac: "I'm stuck").
+func _input(event: InputEvent) -> void:
+	if _telling == "" or not (event is InputEventKey and (event as InputEventKey).pressed and (event as InputEventKey).keycode == KEY_ESCAPE):
+		return
+	get_viewport().set_input_as_handled()
+	var dlg := get_node_or_null("/root/Dialogic")
+	if dlg:
+		dlg.end_timeline()
+	_told()
