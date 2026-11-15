@@ -18,6 +18,7 @@ var map_slot: HBoxContainer  # the minimap, the camera pad beside it
 var realm_slot: VBoxContainer  # the date and the goal, the treasury under them
 var select_slot: HBoxContainer  # what is selected, one width between the realm and the keys
 var keys_slot: HBoxContainer  # the realm's keys, at the right
+var _select_rule: Control  # the rule before the selected slot, folded with it
 
 
 func _init(owner: Node) -> void:
@@ -53,7 +54,8 @@ func build() -> void:
 	realm_slot.alignment = BoxContainer.ALIGNMENT_CENTER
 	realm_slot.custom_minimum_size.x = Data.num("ui", "plane.realm_width", 340.0)
 	row.add_child(realm_slot)
-	row.add_child(_rule())
+	_select_rule = _rule()
+	row.add_child(_select_rule)
 	select_slot = HBoxContainer.new()
 	select_slot.alignment = BoxContainer.ALIGNMENT_BEGIN
 	select_slot.custom_minimum_size.x = Data.num("ui", "plane.select_width", 600.0)
@@ -62,6 +64,14 @@ func build() -> void:
 	keys_slot = HBoxContainer.new()
 	keys_slot.alignment = BoxContainer.ALIGNMENT_END
 	row.add_child(keys_slot)
+
+
+## Something selected or not (host_command.gd): with nothing, its slot folds away and the strip closes up round the
+## realm and its keys, no empty glass in the middle (oga-ux: no dead space; Age of Empires IV's bar grows with what's picked).
+func selecting(on: bool) -> void:
+	if select_slot and select_slot.visible != on:
+		select_slot.visible = on
+		_select_rule.visible = on
 
 
 ## Where the strip begins, on screen: every card that stands on the land keeps above it.

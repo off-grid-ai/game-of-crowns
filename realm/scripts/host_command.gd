@@ -1050,6 +1050,7 @@ func _build_card() -> void:
 		row.add_child(b)
 		_buttons[kind] = b
 	_card.visible = false
+	main.ui.plane.selecting(false)
 
 
 ## The card says what the host is and what it is doing, in the realm's words.
@@ -1058,6 +1059,7 @@ func _refresh() -> void:
 		return
 	var h := host(selected) if selected >= 0 else {}
 	_card.visible = not h.is_empty()
+	main.ui.plane.selecting(_card.visible)
 	if h.is_empty():
 		return
 	var at: Variant = h.get("at")

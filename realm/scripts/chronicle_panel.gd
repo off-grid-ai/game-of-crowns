@@ -242,6 +242,7 @@ func _fit() -> void:
 		return
 	var top := Data.num("ui", "plane.top", 12.0)
 	var w := UI.ui_num("chronicle.width", 360.0)
+	_chron_panel.grow_horizontal = Control.GROW_DIRECTION_BEGIN  # anything wider grows into the screen, never off it
 	_chron_panel.offset_right = -10.0
 	_chron_panel.offset_left = -10.0 - w
 	_chron_panel.offset_top = top
@@ -486,9 +487,21 @@ func _actions(e: Dictionary) -> HFlowContainer:
 		b.set_meta("go", String(r["verb"]) == "go")
 		b.tooltip_text = String(r["why"]) if String(r["why"]) != "" else String(r["tip"])
 		b.add_theme_font_size_override("font_size", T.SIZE_DESC)
+		_wrap_long(b)
 		flow.add_child(b)
 	_mark_primary(flow)
 	return flow
+
+
+## An answer wider than the drawer (a court ruling in a sentence) wraps onto lines at the drawer's width, never
+## pushing the drawer off the screen (Mac's shot: buttons cut at the right edge).
+func _wrap_long(b: Button) -> void:
+	var most := UI.ui_num("chronicle.width", 360.0) - 56.0  # the card's padding and the scroll bar
+	var font := b.get_theme_font("font")
+	var natural := font.get_string_size(b.text, HORIZONTAL_ALIGNMENT_LEFT, -1, T.SIZE_DESC).x + 28.0 if font else 0.0
+	if natural > most:
+		b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		b.custom_minimum_size.x = most
 
 
 ## The answers look like actions (Mac: "it doesn't feel like an action button"): the rightmost one he can press is
