@@ -32,6 +32,7 @@ uniform float alpha_clamp = 0.5f;
 uniform vec4 turn : source_color = vec4(0.0);
 
 uniform bool dither = false;
+uniform bool orm_on = true;  // Game of Crowns: off in Smooth (forest.gd), the leaves' roughness from the uniform alone
 
 uniform float scale = 1.0f;
 
@@ -347,8 +348,10 @@ vec2 recalculateUV(vec2 uv_f,  vec2 frame, vec2 xy_f, vec2 frame_size, float d_s
 	uv_f = clamp(uv_f, vec2(0), vec2(1));
 	vec2 uv_quad = frame_size * (frame + uv_f);
 	//paralax
-	vec4 n_depth = (textureLod( depthTexture, uv_quad, 0 ));
-	uv_f = xy_f * (0.5-n_depth.r) * d_scale + uv_f;
+	if (d_scale > 0.0) {  // Game of Crowns: no depth read for a card drawn flat (depth_scale 0, ours): 3 reads a pixel saved
+		vec4 n_depth = (textureLod( depthTexture, uv_quad, 0 ));
+		uv_f = xy_f * (0.5-n_depth.r) * d_scale + uv_f;
+	}
 	//clamp parallax offset
 	uv_f = clamp(uv_f, vec2(0), vec2(1));
 	uv_f =  frame_size * (frame + uv_f);
@@ -364,7 +367,7 @@ void fragment()
 	vec2 uv_f3 = recalculateUV(uv_frame3, frame3, xy_frame3, quad_size, depth_scale, imposterTextureDepth);
 
 	vec4 baseTex = blenderColors(uv_f1, uv_f2,  uv_f3, quad_blend_weights, imposterTextureAlbedo);
-	vec4 ormTex = blenderColors(uv_f1, uv_f2, uv_f3, quad_blend_weights, imposterTextureOrm);
+	vec4 ormTex = orm_on ? blenderColors(uv_f1, uv_f2, uv_f3, quad_blend_weights, imposterTextureOrm) : vec4(1.0, 1.0, 0.0, 1.0);  // Game of Crowns: Smooth reads no ORM
 
 	vec3 normalTex = blendedNormals(uv_f1, frame1_normal,
 								uv_f2, frame2_normal,

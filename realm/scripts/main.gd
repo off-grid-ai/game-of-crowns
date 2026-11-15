@@ -810,6 +810,7 @@ func apply_graphics() -> void:
 	# The woods: their leafy middle detail runs out sooner, and painted cards take over.
 	if terrain and terrain.forest and terrain.forest.has_method("set_reach"):
 		terrain.forest.set_reach(14.0 if graphics_smooth else -1.0)
+	preload("res://scripts/forest.gd").orm_set(not graphics_smooth)
 
 
 ## Sky3D (TokisanGames) owns the sky, sun, moon, clouds and day/night cycle;

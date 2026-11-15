@@ -302,6 +302,13 @@ func kit_meshes() -> Dictionary:
 const IMPOSTORS := "res://assets/impostors/"
 const IMPOSTOR_SHADER := preload("res://addons/Imposter/imposter/materials/shaders/ImpostorShader.gdshader")
 static var impostors: Array[ShaderMaterial] = []
+static var _orm := true  # the cards read their leaves' roughness map: Beautiful only (orm_set)
+## Smooth's cards skip the roughness map, 3 of their texture reads a pixel (Mac 2026-11-15, the fps round: the far
+## woods' cards were the dearest pixels after the ground). Every card made later follows too.
+static func orm_set(on: bool) -> void:
+	_orm = on
+	for m in impostors:
+		m.set_shader_parameter("orm_on", on)
 ## Whether the model at `path` has a baked impostor (bulk.gd draws such a model as one past its card distance).
 static func has_impostor(path: String) -> bool:
 	return FileAccess.file_exists(IMPOSTORS + path.get_file().get_basename() + ".json")
@@ -321,6 +328,7 @@ static func impostor(path: String, far: Mesh) -> Mesh:
 	var o: Array = n["offset"]
 	mat.set_shader_parameter("positionOffset", Vector3(float(o[0]), float(o[1]), float(o[2])))
 	mat.set_shader_parameter("metallic", 0.0)
+	mat.set_shader_parameter("orm_on", _orm)
 	for si in far.get_surface_count():  # its leaves' season (leaves()): the kind, the model's own tints and turns
 		var m := far.surface_get_material(si)
 		if m and m.has_meta("leaf"):
