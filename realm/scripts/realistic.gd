@@ -571,6 +571,8 @@ static func _finish(name: String) -> Dictionary:
 		low = low_im.get_mesh() if low_im else null
 		made = merged != null
 	if merged:
+		if not BUILT.has(name):
+			merged.set_meta("path", _path(name))  # its model's file: the one drawer (bulk.gd) draws its impostor far off
 		parts = [[merged, Transform3D.IDENTITY, low]]  # [mesh, place, its low mesh past NEAR]
 		var whole := Node3D.new()
 		whole.name = name

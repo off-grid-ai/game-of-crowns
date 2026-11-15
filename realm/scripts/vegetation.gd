@@ -6,6 +6,7 @@ extends Node3D
 
 const Units := preload("res://scripts/world_units.gd")  # the world's one scale (Units.M)
 const Data := preload("res://scripts/data.gd")  # forest.json: the woods and the ground cover
+const Bulk := preload("res://scripts/bulk.gd")  # the one drawer: the bushes (their card past its distance)
 var land: Node3D  # terrain.gd: the tile map, its size and its ground
 
 
@@ -27,6 +28,7 @@ func _scatter(mesh: Mesh, transforms: Array) -> MultiMeshInstance3D:
 ## is never read back: each get_instance_transform waits on the renderer (supervisor P0: settle's per-plant reads held
 ## the first frame after the towns rose for 105 s). clear and settle read and write here, and set the MultiMesh.
 var xfs := {}
+var handles := {}  # a cover kind drawn by bulk.gd ("bush:<n>") -> its copies' handles, in xfs's order
 
 
 ## Nature MegaKit trees, bushes and rocks, at the same scale as the towns.
@@ -83,6 +85,14 @@ func build() -> Array:
 		# eight million triangles of grass nobody could see (and the rocks, one batch each,
 		# ~3.8M triangles at full detail, cyclevis fps: one realm-wide box is never culled nor
 		# given a lower detail level). Rocks stand as far as bushes.
+		if parts[0] == "bush":  # through the one drawer, a cell at a time, drawn as the bush's card past its distance
+			var mesh: Mesh = meshes[parts[0]][int(parts[1])]
+			var hs := []
+			for t: Transform3D in placed[key]:
+				hs.append(Bulk.add(mesh, t, self, BUSH_REACH))
+			xfs[key] = (placed[key] as Array).duplicate()
+			handles[key] = hs
+			continue
 		var patches := {}
 		for t: Transform3D in placed[key]:
 			var c := Vector2i(floori(t.origin.x / VEG_PATCH), floori(t.origin.z / VEG_PATCH))
@@ -175,16 +185,25 @@ func clear(center: Vector3, radius: float) -> void:
 	# Only the grid cells the circle touches, not every plant in the realm.
 	var lo := Vector2i(floori((center.x - radius) / VEG_CELL), floori((center.z - radius) / VEG_CELL))
 	var hi := Vector2i(floori((center.x + radius) / VEG_CELL), floori((center.z + radius) / VEG_CELL))
-	for mmi in batches:
-		var mm: MultiMesh = mmi.multimesh
-		var cells := _veg_cells_of(mmi)
+	for list in batches + handles.keys():
+		var cells := _veg_cells_of(list)
 		for cy in range(lo.y, hi.y + 1):
 			for cx in range(lo.x, hi.x + 1):
 				for i in cells.get(Vector2i(cx, cy), []):
-					var t: Transform3D = xfs[mmi][i]
-					if Vector2(t.origin.x - center.x, t.origin.z - center.z).length() < radius:
-						xfs[mmi][i] = Transform3D(Basis.from_scale(Vector3.ZERO), t.origin)
-						mm.set_instance_transform(i, xfs[mmi][i])
+					var t: Transform3D = xfs[list][i]
+					if t.basis.determinant() != 0.0 and Vector2(t.origin.x - center.x, t.origin.z - center.z).length() < radius:
+						xfs[list][i] = Transform3D(Basis.from_scale(Vector3.ZERO), t.origin)
+						_place(list, i, xfs[list][i])
+
+
+## One plant set where `xfs` now says: in its own batch, or through bulk.gd (a cleared one taken away).
+func _place(list: Variant, i: int, t: Transform3D) -> void:
+	if list is MultiMeshInstance3D:
+		(list as MultiMeshInstance3D).multimesh.set_instance_transform(i, t)
+	elif t.basis.determinant() == 0.0:
+		Bulk.remove(int(handles[list][i]))
+	else:
+		Bulk.move(int(handles[list][i]), t)
 
 
 ## The order a realm is built in: the land is shaped, then towns grade their
@@ -224,14 +243,17 @@ func settle(more: Dictionary = {}) -> void:
 	var t0 := Time.get_ticks_usec()
 	for li in keys.size():
 		for m: Array in moved[li]:
-			if not is_instance_valid(keys[li]):
+			if keys[li] is Object and not is_instance_valid(keys[li]):
 				break
 			var list: Array = all[keys[li]]
 			var t: Transform3D = m[1]
 			if (list[m[0]] as Transform3D).basis.determinant() == 0.0:
 				continue  # cleared while the heights were worked out
 			list[m[0]] = t
-			(keys[li] as MultiMeshInstance3D).multimesh.set_instance_transform(m[0], t)
+			if keys[li] is MultiMeshInstance3D:
+				(keys[li] as MultiMeshInstance3D).multimesh.set_instance_transform(m[0], t)
+			else:
+				_place(keys[li], m[0], t)
 			done += 1
 			if done % 64 == 0 and Time.get_ticks_usec() - t0 > 4000:
 				await get_tree().process_frame
@@ -240,10 +262,10 @@ func settle(more: Dictionary = {}) -> void:
 
 
 const VEG_CELL := 4.0
-var _veg_cells := {}  # multimesh instance -> {cell: instance indices}
+var _veg_cells := {}  # a batch or a bulk-drawn kind (xfs's key) -> {cell: instance indices}
 
 
-func _veg_cells_of(mmi: MultiMeshInstance3D) -> Dictionary:
+func _veg_cells_of(mmi: Variant) -> Dictionary:
 	if _veg_cells.has(mmi):
 		return _veg_cells[mmi]
 	var cells := {}
