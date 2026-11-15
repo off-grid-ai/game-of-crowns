@@ -597,8 +597,8 @@ func field_hosts(store: Node) -> Dictionary:
 	for h in store.hosts():
 		var id := int(h["id"])
 		# Banner men at the walls (bridge 775586e5: their companies raised again as the crown's, `at` the town, with
-		# banners.from the ids they marched under): the column that came by the road becomes this host's, and marches
-		# in through the gate below (march_in), not raised afresh inside the walls.
+		# banners.from the ids they marched under): the column that came by the road becomes this host's and stands
+		# outside the walls with it, not raised afresh.
 		var joined: Variant = h.get("banners")
 		if joined is Dictionary and not _hosts.has(id):
 			var from: Array = (joined as Dictionary).get("from", [])
@@ -615,19 +615,8 @@ func field_hosts(store: Node) -> Dictionary:
 		if not aboard and was_aboard and is_instance_valid(was_aboard) and was_aboard.get_meta("aboard", false):
 			was_aboard.queue_free()  # ashore: its column is raised afresh where it lands (below)
 			_hosts.erase(id)
-		if h.get("at") != null:
-			# Come into a town (an arrival, or home by road before a Peace: bridge 8c8cb623): its column marches in
-			# through the gate along the road and is gone once halted there (army.gd march_in), not freed on the spot
-			# (the men vanished at the walls). Its companies stay its own until then.
-			var at_view: Node3D = _hosts.get(id)
-			if at_view and is_instance_valid(at_view):
-				if not at_view.get_meta("entering", false):
-					at_view.set_meta("entering", true)
-					at_view.march_in(terrain.world_pos(float(h.get("x", 0)), float(h.get("y", 0))))
-				keep[id] = true
-				for u in at_view.get_meta("units", []):
-					drawn[int(u)] = id
-			continue
+		# A host at a town (an arrival, home by road, the King's own garrison) is drawn like any other: it stands and
+		# camps outside the walls, never inside them (army.gd _outside_walls; Mac: "it makes no sense for it to be inside").
 		var units: Array = (h.get("units", []) as Array).duplicate()
 		units.sort()
 		var view: Node3D = _hosts.get(id)
@@ -671,9 +660,8 @@ func field_hosts(store: Node) -> Dictionary:
 			add_child(view)
 			_hold(id, view)
 			_relieve(was, view)
-		elif view.get_meta("tile") != tile or view.get_meta("entering", false):
+		elif view.get_meta("tile") != tile:
 			view.set_meta("tile", tile)
-			view.set_meta("entering", false)  # out again before it was in: it marches on and stays
 			view.march_to(terrain.world_pos(float(tile.x), float(tile.y)))
 		view.order_now(h.get("order"))  # holding, it camps (army_camp.gd)
 		view.hunger_now(h)  # hungry, its men straggle (bridge hosts.js supply)
@@ -717,8 +705,8 @@ func _road_column(key: String, owner: int, units: Array, tile: Vector2i, store: 
 ## hands; the AI has its men again) stays drawn while its companies stand together in the field: the order ending
 ## moves no man, so neither does the view (Mac 2026-11-16: a blue host in the fields by Bitterford vanished as he
 ## watched; its men were still there, drawn as a few lone figures, hidden at FAR). Companies more than
-## map.together tiles from the lead leave it (drawn as their own figures); all of them in a town, it marches in
-## through the gate (army.gd march_in) as a crown host does; none left, it goes.
+## map.together tiles from the lead leave it (drawn as their own figures); at a town it stands outside the walls
+## (army.gd _outside_walls) as a crown host does; none left, it goes.
 func _linger(store: Node, keep: Dictionary, drawn: Dictionary) -> void:
 	var by_id := {}
 	for k in _hosts.keys():
@@ -732,12 +720,7 @@ func _linger(store: Node, keep: Dictionary, drawn: Dictionary) -> void:
 				continue
 			var lead: Dictionary = by_id[int(left[0])]
 			var tile := Vector2i(int(lead["x"]), int(lead["y"]))
-			var into := left.all(func(u): return _town_tiles.has(_tile(by_id[int(u)])))
-			if into:
-				if not view.get_meta("entering", false):
-					view.set_meta("entering", true)
-					view.march_in(terrain.world_pos(float(tile.x), float(tile.y)))
-			elif left != view.get_meta("units", []):
+			if left != view.get_meta("units", []):
 				var was := view
 				view = _road_column(k, int(view.get_meta("owner", -1)), left, tile, store)
 				_relieve(was, view)
@@ -780,8 +763,7 @@ func _free_view(view: Variant) -> void:
 		(view as Node).queue_free()
 
 
-## Keeps `view` as the column drawn for `key` until it leaves the tree: a column frees itself once halted inside a
-## town (army.gd march_in), and a freed one kept here was read back into a typed var (combined run 2026-11-15: 43
+## Keeps `view` as the column drawn for `key` until it leaves the tree: a column marching out frees itself, and a freed one kept here was read back into a typed var (combined run 2026-11-15: 43
 ## 'previously freed instance' errors at field_hosts).
 func _hold(key: Variant, view: Node3D) -> void:
 	_hosts[key] = view

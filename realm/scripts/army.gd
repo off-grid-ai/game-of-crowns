@@ -79,7 +79,6 @@ var _pending := Vector3.INF  # a field host's march Freeciv gave before its regi
 var mustered := false
 var _order_face := NAN  # the way its order says its front looks (/world hosts[i].order.face), NAN for its own
 var _seat_root: Node3D = null  # the seat's town (towns.gd), whose edge the muster forms past (_form_on_way)
-var _then_free := false  # marching into a town (march_in): gone once halted there
 const ArmyCamp := preload("res://scripts/army_camp.gd")  # a field host's camp where it holds
 const Horse := preload("res://scripts/horse.gd")  # the scouts' mounts
 var _order_kind := "?"  # a field host's order now (/world hosts[].order.kind; "" at ease), as units.gd last gave it
@@ -304,11 +303,40 @@ func march_out(_to: Vector3) -> void:
 		Mover.of(r["node"]).fights(false)
 
 
+## Where a host bound for `at` stands: outside the walls of any town whose ground `at` lies in (Mac: "it makes no
+## sense for it to be inside"; Total War's army camped beside a settlement, never in its streets), its town's reach
+## (towns.gd root meta reach) plus army.json camp.outside further out, on the side it comes from (`from`), turned
+## round the walls to the nearest dry land; anywhere else `at` itself.
+func _outside_walls(at: Vector3, from: Vector3) -> Vector3:
+	var towns: Node = main.get("towns")
+	if towns == null:
+		return at
+	for id in towns.towns:
+		var root: Node3D = towns.towns[id]["node"]
+		if not is_instance_valid(root):
+			continue
+		var c := root.global_position
+		var r := float(root.get_meta("reach", 3.0)) + Data.num("army", "camp.outside", 1.5)
+		if Vector2(at.x - c.x, at.z - c.z).length() >= r:
+			continue
+		var way := Vector2(from.x - c.x, from.z - c.z)
+		var base := atan2(way.x, way.y) if way.length() > 0.01 else 0.0
+		for k in 13:  # its own side first, then a twelfth of the way round either side in turn
+			var a := base + ceili(k / 2.0) * (TAU / 12.0) * (1.0 if k % 2 == 1 else -1.0)
+			var p := Vector3(c.x + sin(a) * r, 0, c.z + cos(a) * r)
+			if Footing.on_land(p):
+				p.y = main.terrain.height_at(p.x, p.z)
+				return p
+		return at
+	return at
+
+
 ## A host in the field stands in column with its head on its lead company's tile, facing `yaw`, closed up behind it
 ## (03-army: a column of regiments, each under its banner), halted and at ease.
 func _stand_on_tile(at: Vector3, yaw: float) -> void:
 	var tail := _baggage_tail() + 1.0
 	_unclaim()  # the whole column stands anew: its old ground is no one's
+	at = _outside_walls(at, at - Vector3(sin(yaw), 0, cos(yaw)))
 	at = Footing.nearest_clear(at, _column_half(), Footing.REACH)
 	yaw = _dry_yaw(at, yaw, tail)
 	var dir := Vector3(sin(yaw), 0, cos(yaw))
@@ -379,7 +407,6 @@ func _bound_yaw(h: Dictionary, at: Vector3) -> float:
 ## the head there within the season (as a company's figure keeps it: never seasons behind its company), and halts
 ## closed up behind it, in column.order.
 func march_to(to: Vector3) -> void:
-	_then_free = false
 	_strike_camp()
 	if not mustered:
 		_pending = to
@@ -392,6 +419,7 @@ func march_to(to: Vector3) -> void:
 	for i in range(order.size() - 1, -1, -1):  # tail to head: the way the column already stands
 		trail.append(_ground_at((order[i]["node"] as Node3D).global_position))
 	var head: Vector3 = trail[trail.size() - 1]
+	to = _outside_walls(to, head)
 	_path = trail
 	_path.append_array(_onward(head, to))
 	_path = _dry(_path, trail.size())
@@ -418,14 +446,6 @@ func march_to(to: Vector3) -> void:
 	_scouts_ahead(_heading(_cum[_cum.size() - 1]))
 
 
-## A host come into a town (units.gd field_hosts: the bridge has it `at` a town): its column marches in along the
-## road through the gate (march_to) and is gone once every regiment has halted there; its companies are the town's
-## figures from then. A host that leaves again first takes a new march_to and stays.
-func march_in(to: Vector3) -> void:
-	march_to(to)
-	_then_free = true
-
-
 ## A host takes ship (units.gd field_hosts: the bridge has it aboard the hulls the crown raised; 08-reinforce, the
 ## column marching down to the ship, men on the deck): its regiments file to the hulls in column order, one every
 ## deck.file seconds, each walking down to its hull by its Mover, and once there it stands on the deck as a small
@@ -439,7 +459,6 @@ func board(hulls: Array) -> void:
 	if _aboard or hulls.is_empty():
 		return
 	_aboard = true
-	_then_free = false
 	_strike_camp()
 	for sc in _scouts:  # the scouts ride home: the host sails without them
 		if is_instance_valid(sc):
@@ -1852,9 +1871,6 @@ func _process_timed(delta: float) -> void:
 	_settle()
 	if _camp == null and not _aboard and battle.has("host") and _camps() and _regiments.all(func(r): return r["state"] == "halt"):
 		_pitch_camp()
-	if _then_free and _regiments.all(func(r): return r["state"] == "halt"):
-		queue_free()
-		return
 	if _out and _regiments.all(func(r): return r["state"] == "halt"):
 		_gone_in += delta
 		if _gone_in > Data.num("army", "march.linger", 40.0):
