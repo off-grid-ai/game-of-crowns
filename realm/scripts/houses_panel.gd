@@ -133,7 +133,7 @@ func _fill_houses() -> void:
 	# One table, every house on one line, the ledger's own measures in columns
 	# (a house's latest row in the ledger, from the bridge), then its favour.
 	var grid := GridContainer.new()
-	grid.columns = 2 + HOUSE_COLUMNS.size() + 1
+	grid.columns = 2 + HOUSE_COLUMNS.size() + 2
 	grid.add_theme_constant_override("h_separation", 12)
 	grid.add_theme_constant_override("v_separation", 4)
 	_houses.add_child(grid)
@@ -149,6 +149,7 @@ func _fill_houses() -> void:
 	fav_head.tooltip_text = "How each house feels toward the crown. Below 25 they may rise against you; gifts, feasts and fair rulings raise it."
 	fav_head.mouse_filter = Control.MOUSE_FILTER_PASS
 	grid.add_child(fav_head)
+	grid.add_child(T.label("Politics", T.TEXT_3))
 	for p in players:
 		var h: Dictionary = p["house"]
 		if h.get("wild", false) or int(p["cities"]) == 0:
@@ -292,7 +293,42 @@ func _fill_houses() -> void:
 				fav.create_tween().tween_property(fav, "modulate", Color.WHITE, 3.0).set_delay(0.6)
 		else:
 			grid.add_child(Control.new())  # the crown has no favour toward itself: keep the column
+		grid.add_child(_politics(p, st))
 	_rival_line(st)
+
+
+## What the King can do with a house, on its row (Mac: "I've still not seen the campaign and the support for politics";
+## CK3's diplomacy on the realm's list, not only on a town): swear an alliance, wage war on it (bridge war.js: its
+## bannermen's towns first, its seat last), or, while a war is on, ask it to join. Each the same decree as the town
+## card's (town_panel.gd names its price and odds), sent at one of the house's towns.
+func _politics(p: Dictionary, st: Node) -> Control:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6)
+	var owner := int(p.get("id", -1))
+	if p.get("favour") == null:
+		return row  # the crown itself
+	var city := -1
+	for c in st.rec("cities", []):
+		if int(c.get("owner", -2)) == owner:
+			if city < 0 or bool(c.get("capital", false)):
+				city = int(c["id"])
+	if city < 0:
+		return row
+	var tc = ui.town_card
+	var add := func(action: String, label: String, tip: String) -> void:
+		var b: Button = ui.btn(label, func(): ui.decree_at.emit(action, city, owner, "", ""))
+		b.tooltip_text = tip
+		b.add_theme_font_size_override("font_size", T.SIZE_DESC)
+		row.add_child(b)
+	if p.get("joinWar") is Dictionary:
+		add.call("join", "Ask to join", "Ask them to join the war on %s  %s  ·  %s" % [String(p["joinWar"].get("on", "")).replace("House ", ""), tc._price("join", 5000), tc._answer(p["joinWar"])])
+	if p.get("sworn") == null:
+		add.call("alliance", "Ally", "Swear an alliance: they fight your wars and won't rise for four years  %s" % tc._price("alliance", 20000))
+	else:
+		row.add_child(T.label("Sworn to you", T.ACCENT))
+	if p.get("warOdds") != null and p.get("sworn") == null:
+		add.call("war", "War", "Wage war on them: their bannermen's towns first, their seat last  %s  ·  %s" % [tc._price("war", 15000), tc._forecast(float(p["warOdds"]))])
+	return row
 
 
 ## Beyond the border: the rival King under the houses (bridge /world rival; CK3's neighbouring realm in the realm
