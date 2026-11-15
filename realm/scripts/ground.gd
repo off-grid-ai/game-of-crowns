@@ -51,7 +51,6 @@ static var terrain: Node3D:
 const REACH := 2.4  # how far nearest_clear looks by default
 const RINGS := 6  # rings nearest_clear tries out to its reach, off a walk map
 const SPOKES := 8  # points on each ring: at most RINGS x SPOKES checks a call
-const KEPT_MAX := 20000  # answers nearest_clear keeps before it starts afresh
 
 const Data := preload("res://scripts/data.gd")
 const CHUNK := 16.0  # world units to a cell of the places' and claims' lookup
@@ -85,10 +84,7 @@ static var _towns_frame := -1  # the frame the realm's towns were last read (Gro
 static var _claims := {}  # chunk -> {id: [kind, outline (world XZ)]}: the ground bodies hold while they stand
 static var _claim_area := {}  # id -> [chunks, Rect2, the map's runs of cells it holds, kind]
 static var _sources: Array = []  # keepers of many small things in the way (the woods): obstacles(area) -> Array
-static var _rev := 0  # counts places set down and claims made: nearest_clear's kept answers are asked afresh after
 static var claims_rev := 0  # counts claims made and released: a fight's grid (army_ground.gd) lays the claimed ground afresh after
-static var _kept := {}  # tile (Vector2i) -> {[point, radius, reach] (Vector4i, hundredths) -> [answer, its towns' layouts]}
-static var _kept_n := 0
 
 
 ## Whether something reaching `radius` all round may stand at `p` (world): on walkable land and in no footprint.
@@ -125,8 +121,6 @@ static func stands(root: Node3D, area: Rect2) -> void:
 	var lo := Vector2(floorf(area.position.x / CHUNK), floorf(area.position.y / CHUNK)) * CHUNK
 	var hi := Vector2(floorf(area.end.x / CHUNK) + 1.0, floorf(area.end.y / CHUNK) + 1.0) * CHUNK
 	_add_root(root, Rect2(lo, hi - lo), false)
-	_rev += 1
-	forget(area)
 
 
 ## What was set down under `root` is gone (razed, unloaded, rebuilt).
@@ -136,7 +130,6 @@ static func gone(root: Node3D) -> void:
 		return
 	_unstamp(rec)
 	_roots.erase(root.get_instance_id())
-	forget(rec["clip"])
 
 
 ## A keeper of many small things in the way (the woods) answers for them: obstacles(area: Rect2) -> Array of discs
@@ -146,13 +139,11 @@ static func blocked_by(source: Object) -> void:
 	if not source in _sources:
 		_sources.append(source)
 		_relay_all()
-		_rev += 1
 
 
 static func unblocked_by(source: Object) -> void:
 	_sources.erase(source)
 	_relay_all()
-	_rev += 1
 
 
 ## A body holds `poly` (world XZ) while it stands: no other placement takes that ground. A new claim by `id` replaces its last.
@@ -173,7 +164,6 @@ static func claim(id: Variant, poly: PackedVector2Array, kind := "body") -> void
 	_poly_spans(poly, _cells_of(area), {}, spans)
 	_hold(spans, id, true)
 	_claim_area[id] = [cells, area, spans, kind]
-	_rev += 1
 	claims_rev += 1
 
 
@@ -185,7 +175,6 @@ static func release(id: Variant) -> void:
 		(_claims.get(k, {}) as Dictionary).erase(id)
 	_hold(_claim_area[id][2], id, false)
 	_claim_area.erase(id)
-	_rev += 1  # nearest_clear's kept answers over it are asked afresh
 	claims_rev += 1
 
 
@@ -272,49 +261,21 @@ static func inside(p: Vector3) -> PackedVector2Array:
 	return PackedVector2Array()
 
 
-## The nearest place to `p` (world) a body reaching `radius` may stand, at the ground's height, kept per tile (the
-## armies' and the townsfolk's one cache): asked afresh once the ground there changes (forget) or a town over it has
-## something set down or taken away (nav_ground.gd layout). In a town with a walk
+## The nearest place to `p` (world) a body reaching `radius` may stand, at the ground's height. In a town with a walk
 ## map, the map's own nearest point (NavigationServer2D: the map is the town's open ground, every footprint cut out).
 ## Elsewhere (the open land, or a town whose map isn't baked), `p` if clear, else the first clear point on SPOKES
 ## points of RINGS rings widening out to `max_dist`: a fixed cost, never a fine search (Mac's 70 s beach ball, 14 Nov:
 ## a company asked to stand in a packed town or the river ran 60 rings x 12 points x 9 reach points). `p` itself,
-## grounded, when nothing near is clear.
+## grounded, when nothing near is clear. Every ring point is a few look-ups on the occupancy map, so nothing is kept.
 ## `open_kinds`: kinds of claim stood on freely (a host's own ground; is_clear).
 static func nearest_clear(p: Vector3, radius := 0.0, max_dist := REACH, open_kinds: Array = []) -> Vector3:
-	var tile := Vector2i(floori(p.x), floori(p.z))
-	var key := [Vector4i(roundi(p.x * 100.0), roundi(p.z * 100.0), roundi(radius * 100.0), roundi(max_dist * 100.0)), open_kinds]
-	var near: Array = TownNav.towns_at(towns, p)
-	var lay := near.map(func(t: Array) -> Array: return NavGround.layout(t[1]) if is_instance_valid(t[1]) else [])
-	lay.append(_rev)  # a place set down or a claim made since: asked afresh
-	var here: Dictionary = _kept.get(tile, {})
-	var k: Array = here.get(key, [])
-	if not k.is_empty() and k[1] == lay:
-		return k[0]  # asked before, and nothing has been set down or taken away in its towns since
-	var t0 := Time.get_ticks_usec()
-	var q := _nearest(p, radius, max_dist, near, open_kinds)
-	PerfTools.add("ground.nearest_miss", Time.get_ticks_usec() - t0)  # a kept answer missed (GOC_PERF_PROBE)
-	if _kept_n >= KEPT_MAX:
-		_kept.clear()
-		_kept_n = 0
-		here = {}
-	if not here.has(key):
-		_kept_n += 1
-	here[key] = [q, lay]
-	_kept[tile] = here
-	return q
+	return _nearest(p, radius, max_dist, TownNav.towns_at(towns, p), open_kinds)
 
 
-## The ground changed in `area` (terrain.ground_changed, main.gd): the map's land over it is read again, and the
-## answers kept over it are asked afresh.
+## The ground changed in `area` (terrain.ground_changed, trees planted or felled): the map's land and sources over it
+## are read again when next asked.
 static func forget(area: Rect2) -> void:
 	_relay(area)
-	for x in range(floori(area.position.x), floori(area.end.x) + 1):
-		for z in range(floori(area.position.y), floori(area.end.y) + 1):
-			var t := Vector2i(x, z)
-			if _kept.has(t):
-				_kept_n -= (_kept[t] as Dictionary).size()
-				_kept.erase(t)
 
 
 static func _nearest(p: Vector3, radius: float, max_dist: float, near: Array, open_kinds: Array = []) -> Vector3:
