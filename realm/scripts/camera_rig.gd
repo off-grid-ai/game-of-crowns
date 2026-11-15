@@ -777,7 +777,12 @@ func _keep_inside() -> void:
 	if not is_finite(widest):
 		PerfTools.trip("camera max_distance", str(widest))
 		return
-	max_distance = maxf(widest, min_distance + 0.001)  # the zoom requests are clamped to it (_zoom_at, the keys); the view is never pulled in
+	max_distance = maxf(widest, min_distance + 0.001)  # the zoom requests are clamped to it (_zoom_at, the keys)
+	# And whatever set the distance straight (a snap, a jump, a film's step, the window resized, a tilt up) is pulled in
+	# to it: past it, the world's edge and the void beyond showed (Mac 2026-11-15, the reign's end: "we've zoomed way
+	# out of the world... we should never do that").
+	goal_distance = minf(goal_distance, max_distance)
+	distance = minf(distance, max_distance)
 	var box := _extent(footprint(goal_distance, goal_yaw, above_at(goal_distance, goal_tilt), maxf(_look_y, 0.0)))
 	goal_target.x = _hold(goal_target.x, box.position.x, box.end.x, m, world.x - m)
 	goal_target.z = _hold(goal_target.z, box.position.y, box.end.y, m, world.y - m)

@@ -350,7 +350,9 @@ func _reign_end(r: Dictionary) -> void:
 	name_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	col.add_child(name_l)
 	# Why the realm calls him so: the deeds it remembers (bridge ledger.js).
-	if String(r.get("why", "")) != "":
+	# Shown once: a verdict that opens with the why says it already (Mac 2026-11-15: "He gave the realm no orders at
+	# all." twice, the second time with "The realm endured.").
+	if String(r.get("why", "")) != "" and not String(r.get("verdict", "")).begins_with(String(r["why"]).strip_edges()):
 		var why := T.prose(String(r["why"]), T.SIZE_BODY, T.TEXT_2)
 		why.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		why.autowrap_mode = TextServer.AUTOWRAP_WORD
@@ -431,9 +433,17 @@ func _reign_end(r: Dictionary) -> void:
 		var page := _ledger_page(r["ledger"])
 		page.visible = false
 		root.add_child(page)
+		# The page takes the card's place and the card comes back with it closed (Mac 2026-11-15: the page lay over the
+		# card, its title showing through); the buttons stay, so the same button closes it.
+		var held := []  # the button, for its own press to relabel (a lambda keeps a local as it was when made)
 		var read := ui.btn("The reign's ledger", func():
 			page.visible = not page.visible
+			for c in col.get_children():
+				if c != go:
+					(c as CanvasItem).visible = not page.visible
+			(held[0] as Button).text = "Back to the card" if page.visible else "The reign's ledger"
 			ui.heard.emit("page"))
+		held.append(read)
 		read.custom_minimum_size = Vector2(200, 48)
 		read.add_theme_font_size_override("font_size", T.SIZE_BODY)
 		go.add_child(read)
@@ -507,11 +517,9 @@ func _ledger_page(l: Dictionary) -> Control:
 		grid.add_child(T.prose(String((w.get("measures", {}) as Dictionary).get(m[0], m[1])), T.SIZE_BODY, T.TEXT_2))
 		var a := int(from.get(m[0], 0))
 		var b := int(to.get(m[0], 0))
-		if m[0] == "gold":  # the bridge's gold, shown in crowns as the treasury is
-			a *= UI.CROWNS
-			b *= UI.CROWNS
-		grid.add_child(T.datum(str(a)))
-		grid.add_child(T.datum(str(b), T.SIZE_BODY, T.TEXT if b >= a else T.DANGER))
+		var say := func(n: int) -> String: return UI.crowns(n).trim_suffix(" crowns") if m[0] == "gold" else str(n)  # the bridge's gold in crowns, written as the treasury is
+		grid.add_child(T.datum(say.call(a)))
+		grid.add_child(T.datum(say.call(b), T.SIZE_BODY, T.TEXT if b >= a else T.DANGER))
 	# The towns by name: kept, won, lost.
 	for k in [["kept", "Kept"], ["won", "Won"], ["lost", "Lost"]]:
 		var names: Array = l.get(k[0], []) if l.get(k[0]) is Array else []
