@@ -5,8 +5,8 @@ extends RefCounted
 ## a town (town_store.gd). One loader for all of them: the game's own copy (res://baked/, made by tools/bake.gd before
 ## every export, read only by an exported game), else the player's (user://kept/), else made and kept there.
 ##
-## Every file is named by the scripts' and data's fingerprint (code()), so what other code or numbers made is never
-## read back; the player's older files are swept the first time it is asked.
+## Every file is named by the kept things' version (code(): realm/data/kept.json, bumped when how a kept thing is made
+## changes), so an older make is never read back; the player's older files are swept the first time it is asked.
 
 const BAKED := "res://baked/"
 const USER := "user://kept/"
@@ -40,20 +40,17 @@ static func keep(res: Resource, path: String) -> void:
 		WorkerThreadPool.add_task(func(): ResourceSaver.save(res, path, ResourceSaver.FLAG_COMPRESS), false, "keep " + path.get_file())
 
 
-## Every script and data file's md5, as one, made once. An exported game's scripts are tokens, not the .gd files the
-## bake hashed, so it takes the fingerprint the bake stamped (STAMP): its scripts are the baked tree's.
+## The kept things' fingerprint, made once from realm/data/kept.json's version. An exported game takes the one the
+## bake stamped (STAMP), so it reads the baked tree's files.
 static func code() -> String:
 	if _code != "":
 		return _code
 	if OS.has_feature("template") and FileAccess.file_exists(STAMP):
 		_code = FileAccess.get_file_as_string(STAMP).strip_edges()
 	else:
-		var sums := PackedStringArray()
-		for dir in ["res://scripts/", "res://data/"]:
-			for f in DirAccess.get_files_at(dir):
-				if f.ends_with(".gd") or f.ends_with(".json"):
-					sums.append(f + FileAccess.get_md5(dir + f))
-		_code = "".join(sums).md5_text().substr(0, 12)
+		# The kept things' version (realm/data/kept.json), never every script's md5: any commit anywhere swept every
+		# kept town, so each start raised all 33 again (supervisor fps, 2026-11-15: towns still building 4 min in).
+		_code = ("v%d" % int(preload("res://scripts/data.gd").num("kept", "version", 1))).md5_text().substr(0, 12)
 	_sweep(USER)
 	return _code
 

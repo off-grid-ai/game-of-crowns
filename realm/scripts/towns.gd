@@ -212,6 +212,7 @@ func _shell(id: int) -> void:
 	if t.get("shell", false) or _queue.has(id) or not FileAccess.file_exists(String(t.get("path", ""))):
 		return
 	var root: Node3D = t["node"]
+	_put_out(root)  # its flames and smoke: never in the file, lit again on revive (relight)
 	for g in root.find_children("*", "GeometryInstance3D", true, false):
 		if is_instance_valid(g) and _detail_only(g, root):
 			g.free()
@@ -261,6 +262,7 @@ func _revive(id: int) -> void:
 	for m in pointing:
 		root.set_meta(m, TownStore.nodes(pointing[m], root))
 	copy.free()
+	relight(root)  # the fires the shell put out (_put_out)
 	terrain.season_on(root)
 	TeamColour.take(root)
 
@@ -377,6 +379,7 @@ func _raise(best: int, job: Dictionary) -> void:
 		if got is Node3D:
 			node = got
 			imprint(node)
+			relight(node)  # its flames and smoke, never kept in the file (_kindle)
 	if node == null:
 		node = await _build_town(job["c"], job["house"])
 		TownStore.save(node, path)
@@ -390,6 +393,11 @@ func _raise(best: int, job: Dictionary) -> void:
 		# Its new pieces' marks too, read before the merge frees the new layout (reading them after stopped _raise
 		# with _raising still set: no town was raised after it, the loading screen's count stuck).
 		standing.set_meta("imprint", (standing.get_meta("imprint", []) as Array) + (node.get_meta("imprint", []) as Array))
+		var fires: Array = standing.get_meta("fires", [])
+		for f in node.get_meta("fires", []):
+			if not fires.has(f):
+				fires = fires + [f]  # a new hearth the merge brings over (its node moves with the merge)
+		standing.set_meta("fires", fires)
 		_merge(standing, node)
 		towns[best]["data"] = job["c"]
 		towns[best]["path"] = path  # its new state as kept on disk
@@ -2583,12 +2591,49 @@ static func smoke_material(unshaded := false) -> StandardMaterial3D:
 ## A yard fire burning low in its pit: small flames, a warm light on the
 ## stones round it, and a thread of smoke.
 func _hearth(root: Node3D, pos: Vector3) -> void:
-	Fire.hearth(root, pos)  # the same shaped flames as a burning house, small
+	_kindle(root, ["flames", pos])  # the same shaped flames as a burning house, small
 	Fire.hearth_light(root, pos)  # warm, low and over the flames (fire.json hearth.light): no glowing orb on the grass
 	_smoke(root, pos + Vector3(0, 0.1, 0))
 
 
+## A town's living flames and smoke are never kept in its file (town_store.gd leaves every particle system out:
+## Mac 2026-11-15, a kept Kingsmere read back drew giant torn sheets of smoke and flame over the land and the GPU
+## hung; with particles hidden the same kept town drew whole). Each is noted on the town's root ("fires": [kind,
+## place, doorstep]) and lit by the one maker, when built and again when read back (relight).
+func _kindle(root: Node3D, fire: Array) -> void:
+	root.set_meta("fires", (root.get_meta("fires", []) as Array) + [fire])
+	_light_one(root, fire)
+
+
+func _light_one(root: Node3D, fire: Array) -> void:
+	var before := root.get_child_count()
+	match String(fire[0]):
+		"flames":
+			Fire.hearth(root, fire[1])
+		"smoke":
+			_make_smoke(root, fire[1], fire[2] if fire.size() > 2 else Vector3.INF)
+	for i in range(before, root.get_child_count()):
+		root.get_child(i).add_to_group("town_fires")  # a shell puts them out, revive lights them again (_shell, _revive)
+
+
+## A town read back from its file lit again: every fire it noted when built (_kindle).
+func relight(root: Node3D) -> void:
+	for f in root.get_meta("fires", []):
+		_light_one(root, f)
+
+
+## A town's lit fires put out (a shell keeps none; relight brings them back).
+func _put_out(root: Node3D) -> void:
+	for c in root.get_children():
+		if c.is_in_group("town_fires"):
+			c.free()
+
+
 func _smoke(root: Node3D, pos: Vector3, door := Vector3.INF) -> void:
+	_kindle(root, ["smoke", pos, door])
+
+
+func _make_smoke(root: Node3D, pos: Vector3, door := Vector3.INF) -> void:
 	# A thread of chimney smoke: thin, grey and drifting, never a pillar.
 	var p := CPUParticles3D.new()
 	p.amount = 10

@@ -76,6 +76,9 @@ static func save(root: Node3D, path: String) -> void:
 ## A node that builds its own insides (a horse: Godot's way, it owns them) is packed alone; it builds them again.
 static func _owned(n: Node, root: Node, out: Array) -> Array:
 	for c in n.get_children():
+		if c is GPUParticles3D or c is CPUParticles3D:
+			c.owner = null  # never kept: a kept town's particles drew giant torn sheets and hung the GPU; towns.gd relights them
+			continue
 		var o := c.owner
 		if o != null and o != root and root.is_ancestor_of(o) and o.get_script() != null:
 			continue
