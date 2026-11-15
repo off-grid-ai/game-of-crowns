@@ -24,6 +24,10 @@ static var NEAR: float = preload("res://scripts/data.gd").num("people", "lod.nea
 ## casting shadows). Switched only when it changes (_shading), so a crowd costs no calls standing still.
 static var SHADOW_NEAR: float = preload("res://scripts/data.gd").num("people", "lod.shadow_near", 6.0)
 static var STRIDE: int = int(preload("res://scripts/data.gd").num("people", "lod.stride", 3))  # further off, one frame in this many (people.json lod.stride)
+## Frames between a body's looks at where it stands (people.json lod.recheck): its every() answer is kept that long,
+## and each frame only that share of the realm's bodies is looked at afresh, so a crowd off screen or past sight costs
+## nothing a frame (fps round 2026-11-15: 6.5 ms a frame walking every body to find the few that move).
+static var RECHECK: int = maxi(1, int(preload("res://scripts/data.gd").num("people", "lod.recheck", 4)))
 static var DECIDE_S: float = preload("res://scripts/data.gd").num("people", "lod.decide_s", 30.0)  # game seconds between a person's decisions (people.json lod.decide_s)
 ## Milliseconds of a frame the minds may take (people.json lod.mind_budget_ms): minds due past it wait for the next
 ## frame, which starts where this one stopped (round robin), so a crowd arriving at once never holds a frame
@@ -35,7 +39,11 @@ const People = preload("res://scripts/people.gd")
 const ViewTier := preload("res://scripts/view_tier.gd")  # on screen and how far out the lens is: the one decider
 const BODY_R := 0.22  # a body's height, its sphere for the screen test (head in view, feet not, still seen)
 
-static var _players: Array[WeakRef] = []
+static var _players: Array[WeakRef] = []  # every body handed over: looked at RECHECK frames apart, a share a frame
+var _scan := 0  # where in _players this frame's share of looks starts
+## Player instance id -> WeakRef: the bodies whose last look found them in sight, so moving (the one answer to "who is
+## in view": presence.gd looks round among these, never the whole realm).
+static var live := {}
 static var _minds: Array[WeakRef] = []
 ## True while a LOD node is in the tree to tick minds; minds handed over without
 ## one keep their own clock (tools, close-up stages built alone).
@@ -80,6 +88,7 @@ func _enter_tree() -> void:
 ## Leaving: every mind goes back to its own clock, so nobody freezes.
 func _exit_tree() -> void:
 	ticking = false
+	live.clear()
 	for w in _minds:
 		var m: BTPlayer = w.get_ref()
 		if m != null:
@@ -96,7 +105,6 @@ func _process(delta: float) -> void:
 	if not PerfTools.probing:
 		_think(delta, vp, cam)
 		_animate(delta, vp, cam)
-		_seen.clear()  # this frame's answers are spent (the movers asked first: process_priority)
 		return
 	var t0 := Time.get_ticks_usec()
 	_think(delta, vp, cam)
@@ -104,24 +112,33 @@ func _process(delta: float) -> void:
 	_animate(delta, vp, cam)
 	PerfTools.add("minds", t1 - t0)  # its shares of the frame (GOC_PERF_PROBE)
 	PerfTools.add("anim_lod", Time.get_ticks_usec() - t1)
-	_seen.clear()
 
 
 ## How often a person at this distance is seen to: 1 every frame, n one frame in
 ## n, 0 out of sight (off screen or past People.SEEN_TO).
 ## Asked up to three times a frame for each person (their mind, their legs, their mover: moves_now),
-## so worked out once a frame and kept (_seen: body id -> [frame, reach, answer]).
+## so worked out once and kept RECHECK frames (_seen: body key -> [frame looked, answer]); the legs and the mover
+## read the same answer, so a stride and the ground it covers stay on the same frames.
 static var _seen := {}
 static func every(cam: Camera3D, body: Node3D, reach := -1.0) -> int:
 	if flat:
 		return 1
-	var key := body.get_instance_id()
-	var frame := Engine.get_process_frames()
+	var key := _key(body, reach)
 	var was: Array = _seen.get(key, [])
-	if not was.is_empty() and was[0] == frame and was[1] == reach:
-		return was[2]
+	if not was.is_empty() and Engine.get_process_frames() - int(was[0]) < RECHECK:
+		return was[1]
+	return _look(cam, body, reach, key)
+
+
+## A body asked about with a reach of its own (a horse, a beast) is kept apart from the same body asked about by its mover.
+static func _key(body: Node3D, reach: float) -> int:
+	var id := body.get_instance_id()
+	return ~id if reach > 0.0 else id
+
+
+static func _look(cam: Camera3D, body: Node3D, reach: float, key: int) -> int:
 	var n := _every(cam, body, reach)
-	_seen[key] = [frame, reach, n]
+	_seen[key] = [Engine.get_process_frames(), n]
 	return n
 
 
@@ -134,42 +151,75 @@ static func _every(cam: Camera3D, body: Node3D, reach: float) -> int:
 	return STRIDE
 
 
+## Each frame a share of the bodies (1 in RECHECK) is looked at afresh: in sight it joins the live ones, out of it
+## it leaves them. Only the live ones are walked every frame, to move on their frames with the time they are owed.
 func _animate(delta: float, vp: Viewport, cam: Camera3D) -> void:
-	var keep: Array[WeakRef] = []
-	for w in _players:
+	var count := _players.size()
+	var share := mini(count, ceili(float(count) / RECHECK))
+	var frame := Engine.get_process_frames()
+	for k in share:
+		if _players.is_empty():
+			break
+		if _scan >= _players.size():
+			_scan = 0
+			_forget(frame)
+		var w: WeakRef = _players[_scan]
 		var p: AnimationMixer = w.get_ref()
 		if p == null:
+			_players[_scan] = _players[-1]  # gone: the last takes its place, looked at in its turn
+			_players.pop_back()
 			continue
-		keep.append(w)
+		_scan += 1
+		var body := p.get_parent() as Node3D
+		var id := p.get_instance_id()
+		if body == null or cam == null or p.get_viewport() != vp:
+			live[id] = w  # a close-up stage's own camera: moved every frame, as before
+			continue
+		var reach := float(p.get_meta("lod_reach", -1.0))
+		if _look(cam, body, reach, _key(body, reach)) > 0:
+			live[id] = w
+		elif live.has(id):
+			live.erase(id)
+			_owed.erase(id)
+	for id in live.keys():
+		var p: AnimationMixer = live[id].get_ref()
+		if p == null:
+			live.erase(id)
+			_owed.erase(id)
+			_shading.erase(id)
+			continue
 		var body := p.get_parent() as Node3D
 		if body == null or not body.is_inside_tree() or not body.is_visible_in_tree() or not p.active:
 			continue
-		var id := p.get_instance_id()
 		# Close-up stages (a lord's portrait, a duel) have cameras of their own.
 		if cam == null or p.get_viewport() != vp:
 			_move(p, delta)
 			continue
 		var n := every(cam, body, float(p.get_meta("lod_reach", -1.0)))
 		if n == 0:
+			live.erase(id)
 			_owed.erase(id)
 			continue
 		_shade(id, body, body.global_position.distance_to(cam.global_position) < SHADOW_NEAR)
 		if PerfTools.probing and n != 1:
 			PerfTools.seen_clip(People.clip(body))  # the ring's clips, counted for the VAT bake's list (perf.log)
 		var owed: float = _owed.get(id, 0.0) + delta
-		if n == 1 or (Engine.get_process_frames() + id) % n == 0:  # the same frames moves_now gives the body's mover
+		if n == 1 or (frame + id) % n == 0:  # the same frames moves_now gives the body's mover
 			_move(p, owed)
 			_owed.erase(id)
 		else:
 			_owed[id] = owed
-	_players = keep
-	if _shading.size() > _players.size():  # the gone are dropped
-		var live := {}
-		for w in _players:
-			live[(w.get_ref() as Object).get_instance_id()] = true
-		for id in _shading.keys():
-			if not live.has(id):
-				_shading.erase(id)
+
+
+## Once round all the bodies: answers no one has asked for in a while (bodies gone) are dropped, and shading kept only
+## for the living.
+func _forget(frame: int) -> void:
+	for key in _seen.keys():
+		if frame - int(_seen[key][0]) > RECHECK * 8:
+			_seen.erase(key)
+	for id in _shading.keys():
+		if not live.has(id) and not is_instance_valid(instance_from_id(id)):
+			_shading.erase(id)
 
 
 ## A body casts a shadow near the lens and none past SHADOW_NEAR; its meshes are found once.

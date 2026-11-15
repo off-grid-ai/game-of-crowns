@@ -194,7 +194,7 @@ Switches (`--name`) go after `--` on the game's command line.
 - Overheard talk: how close the camera must come to a gathering, and a town, to hear it, how long a talk waits for the minds' words, how long a line said stays fresh: `realm/data/crowd.json`: `chatter.*`.
 - Where people keep out of: behind a stall's counter (its keeper), a road's lane, a town's heart, a fire's heat, and how far a building site rises before its building shows: `realm/data/town_scenes.json`: `life.*`.
 - How far a person is drawn: `realm/data/people.json`: `seen_to` (9: Mac 2026-11-15, "people skeletons should only be animated after a zoom in level where they can be seen"; at the playing zoom a town's crowd is not made at all; was 14, 18).
-- How near a person animates every frame, casts a shadow, and how often a further one moves: `realm/data/people.json`: `lod.near`, `lod.shadow_near`, `lod.stride` (3.5, 3.5, 4 since the fps round; were 6, 6, 3).
+- How near a person animates every frame, casts a shadow, and how often a further one moves: `realm/data/people.json`: `lod.near`, `lod.shadow_near`, `lod.stride` (3.5, 3.5, 4 since the fps round; were 6, 6, 3). `lod.recheck` (4): frames between a body's looks at whether it is in sight; a body coming into view starts moving within that many frames, and each frame only 1 in that many bodies is looked at (lower: quicker on a fast pan, dearer).
 - How soon models swap to their simpler versions: `realm/project.godot`: `rendering/mesh_lod/lod_change/threshold_pixels` (16; was 4). Physics steps a second: `physics/common/physics_ticks_per_second` (30; was 60).
 - Where a person fades near the lens (gone nearer than, whole from): `realm/data/people.json`: `near_fade` (gone, solid).
 
