@@ -291,6 +291,12 @@ func _row(e: Dictionary, loss: bool, watch := Callable()) -> Control:
 			(b as Button).pressed.connect(_settle.bind(card), CONNECT_DEFERRED)
 	# Most urgent first (Mac: "not very clear what I should be doing"): a threat to his own above a clock, a clock above
 	# the court, the court above the rest; the newest first within each.
+	# One card per place (Mac: "27 actions that I need to take in such a short time"): the newest word on a town or a
+	# story stands in for the older one.
+	for r in _needs.get_children():
+		var o: Dictionary = r.get_meta("entry", {})
+		if e.get("city") != null and o.get("city") != null and int(o["city"]) == int(e["city"]) or String(e.get("thread", "")) != "" and String(o.get("thread", "")) == String(e.get("thread", "")):
+			_settle(r)
 	var u := _urgency(e, loss)
 	card.set_meta("urgency", u)
 	var at := _needs.get_child_count()

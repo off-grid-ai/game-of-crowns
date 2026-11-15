@@ -76,7 +76,7 @@ func _watch() -> void:
 	for r in aw.raids():
 		var goal := int(r.get("goal", r.get("town", -1)))
 		var c: Dictionary = aw.city(goal)
-		if not c.is_empty() and int(c.get("owner", -2)) == crown and not now.has(goal):
+		if not c.is_empty() and _realm_town(c, crown) and not now.has(goal):
 			now[goal] = {"kind": "raid", "by": -1}
 	for id in now:
 		var was: Dictionary = threats.get(id, {})
@@ -102,6 +102,18 @@ func _watch() -> void:
 func _threat_words(t: Dictionary, c: Dictionary) -> String:
 	var house := String((main.awareness.houses_by_id().get(int(t.get("by", -1)), {}) as Dictionary).get("name", "A foe"))
 	return String(Data.value(FILE, "threat_words." + String(t["kind"]), "{house} marches on {town}")).format({"house": house, "town": _town_name(c)})
+
+
+## A town the crown answers for against raiders (Mac: "defend yourself? or does it auto defend?"; CK3's liege
+## defends his vassals): the King's own, or a house's that isn't at war with the crown and isn't men without banners.
+func _realm_town(c: Dictionary, crown: int) -> bool:
+	var owner := int(c.get("owner", -2))
+	if owner == crown:
+		return true
+	var pl := _player(owner)
+	if pl.is_empty() or (pl.get("house", {}) is Dictionary and bool((pl["house"] as Dictionary).get("wild", false))):
+		return false
+	return not (pl.get("wars", []) as Array).has(String(Data.value(FILE, "crown_word", "the Crown")))
 
 
 ## A threat is news: its line in the corner with its answers open, the horn, and the arrow on the town (news.gd)
@@ -144,7 +156,7 @@ func verbs(entry: Dictionary) -> Array:
 	var stated := []
 	if not kind in (Data.value(FILE, "no_state", []) as Array):
 		for s in Data.value(FILE, "states", []):
-			if s is Dictionary and now.has(String(s.get("when", ""))):
+			if s is Dictionary and now.has(String(s.get("when", ""))) and not kind in ((s as Dictionary).get("skip", []) as Array):
 				stated.append_array(s.get("verbs", []))
 	# The title's theme ("The Pestilence of Thunderhold") only where the place itself says nothing now.
 	if stated.is_empty() and (kind in (Data.value(FILE, "theme_kinds", []) as Array) or not kinds.has(kind)):
@@ -152,7 +164,10 @@ func verbs(entry: Dictionary) -> Array:
 	var answers := _answers(entry)
 	var rows := answers.duplicate()
 	var seen := {}
-	for v in first + stated + list:
+	# A threat's own answers (defend, the levy, the banners) come before what else the place asks (Mac: a rising
+	# offered a feast first); a cold lord's gifts are no answer to raiders (states' skip).
+	var order: Array = first + list + stated if kind in (Data.value(FILE, "threat_kinds", []) as Array) else first + stated + list
+	for v in order:
 		if seen.has(v):
 			continue
 		seen[v] = true
@@ -280,8 +295,6 @@ func _row(verb: String, e: Dictionary, now: Dictionary) -> Dictionary:
 	var r := {"verb": verb, "label": String(words.get("label", verb)), "cost": 0, "enabled": true, "why": "", "tip": String(words.get("tip", "")).format(fill)}
 	match verb:
 		"defend":
-			if not mine:
-				return {}
 			var h := _free_host(city)
 			var on_way := _host_bound(city)
 			if not on_way.is_empty():
@@ -430,7 +443,10 @@ func _defend(city: int) -> void:
 	var h := _free_host(city)
 	if cmd and not h.is_empty():
 		cmd.select(int(h["id"]))
-		cmd.order("garrison", {"city": city})
+		# His own town he garrisons; a house's he can't enter, so the host advances on it and falls on the raiders
+		# it meets there (Warcraft III's attack-move, bridge hosts.js advance).
+		var mine := int(main.awareness.city(city).get("owner", -2)) == int(main.awareness.rec("crownId", -1))
+		cmd.order("garrison" if mine else "advance", {"city": city})
 		return
 	var levy := _row("levy", {"kind": "attack", "city": city}, _now(main.awareness.city(city)))
 	if not levy.is_empty() and bool(levy["enabled"]):
