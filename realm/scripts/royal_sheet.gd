@@ -694,16 +694,19 @@ func _lost(e: Dictionary) -> void:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", T.GAP)
 	v.add_child(row)
-	row.add_child(ui.btn(String(w.get("vow", "")).replace("{town}", town), func():
-		c.visible = false
-		_set_vow(town_id, true)
-		ui.heard.emit("seal")
-		ui.toast(String(w.get("vowed", "")).replace("{town}", town))))
+	# The one we want pressed stands at the right (the vow), the way out at the left, plain.
+	row.add_child(ui.btn(String(w.get("let_go", "")), func(): c.visible = false))
 	if at != Vector3.INF:
 		row.add_child(ui.btn(String(w.get("look", "")), func():
 			c.visible = false
 			ui.matter_opened.emit(at)))
-	row.add_child(ui.btn(String(w.get("let_go", "")), func(): c.visible = false))
+	var vow: Button = ui.btn(String(w.get("vow", "")).replace("{town}", town), func():
+		c.visible = false
+		_set_vow(town_id, true)
+		ui.heard.emit("seal")
+		ui.toast(String(w.get("vowed", "")).replace("{town}", town)))
+	T.primary(vow)
+	row.add_child(vow)
 	ui.ease_in(c)
 	ui.heard.emit("event")
 
