@@ -6,8 +6,8 @@ extends Node
 ## bridge's /decree; each decree verb placed by its data row), the court (ui.open_matter, or ui.counsel_act's court),
 ## the tithe (ui.counsel_act), or the camera's jump-and-back (news.gd go_to). Nothing new is
 ## decided here; the bridge decides and says so.
-##   verbs(entry) -> rows   what can be done about a news entry (a chronicle line, or a threat seen here):
-##                          [{verb, label, cost, enabled, why, tip, call}], left to right; label carries the price
+##   verbs(entry) -> rows   what can be done about a news entry (a chronicle line, or a threat seen here), as the
+##                          place stands now: [{verb, label, cost, enabled, why, tip, call}], best first; label carries the price
 ##                          ("Raise the levy · 20,000 crowns") or why it can't be done ("· the treasury can't pay");
 ##                          call() does it. The ticker and the drawer (chronicle_panel.gd) ask here.
 ##   buttons(entry)         the same rows as one row of buttons, ready to place.
@@ -119,39 +119,60 @@ func _raise(id: int) -> void:
 # --- what can be done about a piece of news ----------------------------------------------------
 
 ## The answers to a news entry ({kind, text, city?, thread?, ...}, as the chronicle has it): rows of
-## {verb, label, cost (crowns, 0 for none), enabled, why, tip, call}, left to right. Only what fits is there.
+## {verb, label, cost (crowns, 0 for none), enabled, why, tip, call}, best first. Only what fits NOW is there:
+##   the Hand's advised decree; a matter waiting at court, its own answers straight on the card (court_panel's options,
+##   answered the one way: ui.petition_answered); what the place's state asks now (the mirror: a threat, a siege,
+##   hunger, sickness, unrest, war with the crown, a cold lord; news_actions.json states); the story's title theme only
+##   when the place says nothing; then the kind's own verbs. A verb whose condition no longer holds (news_actions.json
+##   verbs.needs) is dropped: no Defend when nothing threatens, no Send relief once the plague has passed.
 func verbs(entry: Dictionary) -> Array:
 	var kinds: Dictionary = Data.value(FILE, "kinds", {})
 	var kind := String(entry.get("kind", ""))
 	var list: Array = (kinds.get(kind, kinds.get("other", ["go"])) as Array).duplicate()
-	if kind in (Data.value(FILE, "theme_kinds", []) as Array) or not kinds.has(kind):
-		list = _themed(entry) + list
+	var first := []
 	# The Hand's counsel names the decree it advises (bridge next.js act): that answer first.
 	var act = entry.get("act")
 	if act is Dictionary:
 		var by_act: Dictionary = Data.value(FILE, "acts", {})
 		if by_act.has(String(act.get("action", ""))):
-			list.push_front(String(by_act[String(act["action"])]))
+			first.append(String(by_act[String(act["action"])]))
 		if act.get("city") != null and entry.get("city") == null:
 			entry = entry.duplicate()
 			entry["city"] = act["city"]
-	var rows := []
+	var c: Dictionary = main.awareness.city(int(entry["city"])) if entry.get("city") != null else {}
+	var now := _now(c)
+	var stated := []
+	if not kind in (Data.value(FILE, "no_state", []) as Array):
+		for s in Data.value(FILE, "states", []):
+			if s is Dictionary and now.has(String(s.get("when", ""))):
+				stated.append_array(s.get("verbs", []))
+	# The title's theme ("The Pestilence of Thunderhold") only where the place itself says nothing now.
+	if stated.is_empty() and (kind in (Data.value(FILE, "theme_kinds", []) as Array) or not kinds.has(kind)):
+		first.append_array(_themed(entry))
+	var answers := _answers(entry)
+	var rows := answers.duplicate()
 	var seen := {}
-	for v in list:
+	for v in first + stated + list:
 		if seen.has(v):
 			continue
 		seen[v] = true
-		var r := _row(String(v), entry)
-		if not r.is_empty():
-			rows.append(r)
-	# "To court" stands in for "Rule on it" only where no matter of the story's own waits (news_actions.json court).
-	if rows.any(func(x): return String(x["verb"]) == "rule"):
+		var r := _row(String(v), entry, now)
+		if r.is_empty() or (r.has("key") and seen.has(r["key"])):
+			continue  # one decree once (Send grain and Send relief are both the relief)
+		if r.has("key"):
+			seen[r["key"]] = true
+		rows.append(r)
+	# The matter's answers on the card stand in for "Rule on it" (kept only when they didn't all fit) and "To court".
+	if not answers.is_empty():
+		var whole: bool = answers.size() >= int((main.ui.court.matter(String(answers[0]["matter"])).get("options", []) as Array).size())
+		rows = rows.filter(func(x): return not (String(x["verb"]) == "court" or String(x["verb"]) == "rule" and whole))
+	elif rows.any(func(x): return String(x["verb"]) == "rule"):
 		rows = rows.filter(func(x): return String(x["verb"]) != "court")
 	return rows
 
 
 ## A story's beat speaks of what it is about ("The Pestilence of Thunderhold"): its theme's verbs (news_actions.json
-## themes), matched in its name and its line.
+## themes), matched in its name and its line. The fallback when the place's state says nothing.
 func _themed(entry: Dictionary) -> Array:
 	var said := ("%s %s %s" % [entry.get("thread", ""), entry.get("text", ""), entry.get("label", "")]).to_lower()
 	var out := []
@@ -164,6 +185,71 @@ func _themed(entry: Dictionary) -> Array:
 			if said.contains(String(w)):
 				out.append_array((t as Dictionary).get("verbs", []))
 				break
+	return out
+
+
+## The place's state now, from the mirror: the keys news_actions.json states and verbs.needs ask after. war: the crown
+## at war with anyone, or a foe's host on one of its towns (realm-wide); threat (a foe's host on this town of his:
+## threats), besieged, hungry (starved this season, its granary low, or its siege biting), plague, unrest (disorder),
+## crown_war (the town's house at war with the crown) and cold (its house's favour under cold_below).
+func _now(c: Dictionary) -> Dictionary:
+	var aw: Node = main.awareness
+	var crown := int(aw.rec("crownId", -1))
+	var out := {}
+	if not threats.is_empty() or not (_player(crown).get("wars", []) as Array).is_empty():
+		out["war"] = true
+	if c.is_empty():
+		return out
+	if threats.has(int(c["id"])):
+		out["threat"] = true
+	if bool(c.get("besieged", false)):
+		out["besieged"] = true
+	var siege: Dictionary = c.get("siege") if c.get("siege") is Dictionary else {}
+	if bool(c.get("famine", false)) or bool(c.get("granaryLow", false)) or bool(siege.get("hungry", false)):
+		out["hungry"] = true
+	if bool(c.get("plague", false)):
+		out["plague"] = true
+	if bool(c.get("disorder", false)):
+		out["unrest"] = true
+	var owner := int(c.get("owner", -2))
+	if owner != crown:
+		var pl := _player(owner)
+		if (pl.get("wars", []) as Array).has(String(Data.value(FILE, "crown_word", "the Crown"))):
+			out["crown_war"] = true
+		if pl.get("favour") != null and float(pl["favour"]) < Data.num(FILE, "cold_below", 35.0):
+			out["cold"] = true
+	return out
+
+
+## The court matter this news waits on: a story's by its name (ui.story_matter), or the lord come to court for it (the
+## court line "<name> of <house> comes to court: <thread>"), or "".
+func _matter(e: Dictionary) -> String:
+	var id: String = main.ui.story_matter(e) if e.get("thread") else ""
+	if id != "" or String(e.get("kind", "")) != "court":
+		return id
+	var said := String(e.get("text", ""))
+	for p in main.ui.court._petitions:
+		var th := String(p.get("thread", ""))
+		if String(p.get("name", "")) != "" and said.contains(String(p["name"])) and (th == "" or said.contains(th)):
+			return String(p["id"])
+	return ""
+
+
+## A matter's own answers as the card's buttons (at most answers_most, in the court's order: its first is the one we'd
+## have him give), each answered as the court card answers it (ui.petition_answered: the bridge rules, the court
+## refreshes); one the purse can't pay greyed with why.
+func _answers(e: Dictionary) -> Array:
+	var id := _matter(e)
+	if id == "":
+		return []
+	var out := []
+	for o in main.ui.court.matter(id).get("options", []):
+		if out.size() >= int(Data.num(FILE, "answers_most", 3)):
+			break
+		var opt := String(o.get("id", ""))
+		var short := String(o.get("short", ""))
+		out.append({"verb": "answer", "matter": id, "label": String(o.get("label", o.get("text", opt))), "cost": int(o.get("cost", 0)) * UI.CROWNS,
+			"enabled": short == "", "why": short, "tip": String(o.get("hint", "")), "call": func(): main.ui.petition_answered.emit(id, opt)})
 	return out
 
 
@@ -180,11 +266,16 @@ func buttons(entry: Dictionary) -> HBoxContainer:
 	return row
 
 
-func _row(verb: String, e: Dictionary) -> Dictionary:
+## One verb's row, or {} where it doesn't fit: its condition (verbs.needs: any of the keys of _now) no longer holds,
+## or its place or order is wanting.
+func _row(verb: String, e: Dictionary, now: Dictionary) -> Dictionary:
 	var city := int(e["city"]) if e.get("city") != null else -1
 	var c: Dictionary = main.awareness.city(city) if city >= 0 else {}
 	var mine := not c.is_empty() and int(c.get("owner", -2)) == int(main.awareness.rec("crownId", -1))
 	var words: Dictionary = Data.value(FILE, "verbs." + verb, {})
+	var needs: Array = words.get("needs", [])
+	if not needs.is_empty() and not needs.any(func(k): return now.has(String(k))):
+		return {}
 	var fill := {"town": _town_name(c), "house": _house_name(c)}
 	var r := {"verb": verb, "label": String(words.get("label", verb)), "cost": 0, "enabled": true, "why": "", "tip": String(words.get("tip", "")).format(fill)}
 	match verb:
@@ -204,7 +295,7 @@ func _row(verb: String, e: Dictionary) -> Dictionary:
 				r["tip"] = String(words.get("tip", "")).format({"from": from, "men": UI.heads(int(h.get("men", 0))), "town": fill["town"]})
 				r["call"] = _defend.bind(city)
 		"rule":
-			var id: String = main.ui.story_matter(e) if e.get("thread") else ""
+			var id := _matter(e)
 			if id == "":
 				return {}
 			r["call"] = main.ui.open_matter.bind(id)
@@ -245,6 +336,7 @@ func _decree_row(r: Dictionary, words: Dictionary, verb: String, c: Dictionary, 
 			return {}
 	var at := int(main.awareness.rec("seatId", -1)) if seat else int(c.get("id", -1))
 	_priced(r, words, action, -1 if mine or seat else owner)
+	r["key"] = "%s:%s" % [action, building]
 	r["call"] = _decree.bind(action, at, verb, building)
 	return r
 
@@ -340,7 +432,7 @@ func _defend(city: int) -> void:
 		cmd.select(int(h["id"]))
 		cmd.order("garrison", {"city": city})
 		return
-	var levy := _row("levy", {"kind": "attack", "city": city})
+	var levy := _row("levy", {"kind": "attack", "city": city}, _now(main.awareness.city(city)))
 	if not levy.is_empty() and bool(levy["enabled"]):
 		(levy["call"] as Callable).call()
 	else:

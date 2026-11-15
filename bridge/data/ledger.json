@@ -74,6 +74,12 @@
    },
    "says": "the peace commanded between the houses"
   },
+  "truce": {
+   "axes": {
+    "peace": 2
+   },
+   "says": "the peace made with {house}"
+  },
   "marriage": {
    "axes": {
     "peace": 2

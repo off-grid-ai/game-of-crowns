@@ -122,9 +122,9 @@ const HANDLERS = {
   },
   gift(x) {
     const { cost, pay, owner, lord } = x;
-    if (!owner) return { error: "choose a town or house" };
+    if (!owner || houseFor(owner).crown || houseFor(owner).wild) return { error: "choose a great house's town" };
     return {
-      cost, favour: { [owner.id]: 10 },
+      cost, favour: { [owner.id]: DECREES.gift.favour ?? 8 },
       text: `The King sends a chest of gold to ${lord}.`,
       lua: [pay, Lua.gold(owner.id, cost)],
     };
@@ -364,6 +364,15 @@ const HANDLERS = {
     if (!h) return { error: "the crown has no host to march" };
     return { cost, lua: [pay], favour, hostMarch: { host: h.id, city: c.id, house: owner.id },
       text: `The royal host, ${h.men.toLocaleString("en-US")} troops, marches on ${town}. ${lord} calls every man to its walls, and every house in the realm watches.` };
+  },
+  truce(x) {
+    const { cmd, cost, pay, owner, lord } = x;
+    // The King's own herald sues for peace with a house the crown is at war with (CK3's white peace, bought): the
+    // terms at court (peace.js) wait on the house's pleasure; this is the King's, at a price. Sealed by peace.js seal.
+    if (!owner || houseFor(owner).crown || houseFor(owner).wild) return { error: "choose a great house's town" };
+    if (!(cmd.atWar ?? (() => false))(owner.id)) return { error: `the crown is not at war with ${lord}` };
+    return { cost, lua: [pay], favour: { [owner.id]: DECREES.truce.favour ?? 5 }, truceWith: owner.id,
+      text: `The King's herald rides to ${lord} under a white flag, with gold for its dead. ${lord} takes it: peace between the crown and ${lord}, as things stand.` };
   },
   // The King's war on a house (war.js keeps it) and his envoy asking another house to join it. cmd.war: the war now
   // (war.js current), cmd.joinChance(pid): the house's answer as war.js reckons it; both lent by routes_decree.js.

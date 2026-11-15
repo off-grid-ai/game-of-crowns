@@ -84,10 +84,25 @@ export function ruled(ctx, beat, option) {
   if (!crown || !o) return;
   if (o.town != null) send(`lua cmd ${Lua.transferCity(o.town, o.to)}`);
   if (o.gold > 0) send(`lua cmd ${Lua.pay(pid, crown.id, o.gold)}`);
-  ctx.diplomacy?.([crown.id, pid, P.armistice, "Armistice"]);
   record({ turn: world?.turn ?? 0, kind: "court", text: `Peace between the crown and ${houseFor(world.players.find((p) => p.id === pid)).name}, sealed at Kingsmere.` });
-  delete meta.crownWars[pid];
-  War.ended(ctx, pid);  // the King's war on the house, if it was his, ends here (war.js)
+  seal(ctx, pid);
+}
+
+// Peace between the crown and a house, however it was made (the terms at court above, or the King's own herald: the
+// decree 'truce', routes_decree.js): an armistice in Freeciv (the one diplomacy writer), the war's record gone, and the
+// King's war on the house, if it was his, ended (war.js).
+export function seal(ctx, pid) {
+  const crown = crownOf(ctx.world);
+  if (!crown) return;
+  ctx.diplomacy?.([crown.id, pid, P.armistice, "Armistice"]);
+  if (ctx.meta.crownWars) delete ctx.meta.crownWars[pid];
+  War.ended(ctx, pid);
+}
+
+// Whether the crown is at war with the house now (Freeciv's diplomacy, or the King's own war).
+export function atWar(ctx, pid) {
+  const crown = crownOf(ctx.world);
+  return !!crown && ((ctx.detail?.()?.players?.[crown.id]?.atWarWith ?? []).includes(pid) || War.current(ctx.meta)?.house === pid);
 }
 
 // For /world wars: the crown's wars with the great houses, since when and the towns each side has lost.
