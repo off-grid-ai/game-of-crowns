@@ -168,6 +168,9 @@ export function townStates(ctx) {
       // Freeciv's own illness; and plague in the realm's eyes: that, or the sickness walking the roads (contagion.js).
       freecivPlague: x?.plagueTurn != null && x.plagueTurn >= 0 && turn - x.plagueTurn <= PLAGUE_SEASONS,
       plague: (x?.plagueTurn != null && x.plagueTurn >= 0 && turn - x.plagueTurn <= PLAGUE_SEASONS) || Contagion.sick(meta, c.id),
+      // The season the sickness came (the walking plague's, else Freeciv's), for the town's "now" line; no sick share is
+      // known (Freeciv's illness isn't read), so none is sent.
+      plagueSince: meta?.contagion?.towns?.[c.id]?.since ?? (x?.plagueTurn != null && x.plagueTurn >= 0 && turn - x.plagueTurn <= PLAGUE_SEASONS ? x.plagueTurn : null),
       closed: Contagion.closed(meta, c.id),  // its roads shut against the sickness: no carts (trade.js)
       disorder: Boolean(x?.disorder),
       // Freeciv's rapture, or a feast the King gave there this season or last.
