@@ -483,10 +483,12 @@ func _process(delta: float) -> void:
 ## The time to walk this frame, or 0 to wait (FPS P0, fps4: 330 mover steps a frame, ~5 ms): a person walking a plain
 ## way (no steering, no beast's arc, not on a fight's ground, no route still being asked for) steps by anim_lod.gd's
 ## rule, on the frames their legs move, and out of sight once every UNSEEN_S, each step carrying all it is owed, so
-## nobody seen is ever anywhere but where their walk has brought them. Everyone else steps every frame.
+## nobody seen is ever anywhere but where their walk has brought them. A plain walk on a fight's ground steps every
+## frame in sight and once every UNSEEN_S out of it (far crowds, as Total War's off-screen regiments: ~300 soldiers
+## marched every frame unseen, ~20 ms). Everyone else steps every frame.
 func _due(delta: float) -> float:
 	var body := get_parent() as Node3D
-	if body == null or turn_radius > 0.0 or _steer or _shifting or field != null or _ask_got.is_valid():
+	if body == null or turn_radius > 0.0 or _steer or _shifting or _ask_got.is_valid():
 		return delta + _take_owed()
 	_owed += delta
 	var cam := body.get_viewport().get_camera_3d() if body.get_viewport() else null
@@ -494,7 +496,7 @@ func _due(delta: float) -> float:
 		var n := AnimLOD.every(cam, body)
 		if n == 0 and _owed < UNSEEN_S:
 			return 0.0
-		if n > 1 and not AnimLOD.moves_now(body):
+		if field == null and n > 1 and not AnimLOD.moves_now(body):
 			return 0.0
 	return _take_owed()
 

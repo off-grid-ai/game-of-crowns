@@ -15,7 +15,7 @@ dest_files=["res://.godot/imported/base_CommonTree_3_normal.png-291ae6e142c3a8a2
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

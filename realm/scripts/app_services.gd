@@ -43,6 +43,8 @@ func _listening() -> bool:
 
 
 func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST:
+		preload("res://scripts/kept.gd").flush()  # towns raised this session stay kept
 	if what == NOTIFICATION_WM_CLOSE_REQUEST or what == NOTIFICATION_PREDELETE:
 		_stop()
 

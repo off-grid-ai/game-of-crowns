@@ -15,7 +15,7 @@ dest_files=["res://.godot/imported/base_DeadTree_3_albedo.png-32a517c4078609eeae
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

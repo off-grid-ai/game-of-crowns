@@ -203,6 +203,7 @@ func _arm_wait() -> void:
 ## Quits once the navigation servers have stopped (every film run ended in "libc++abi: recursive_mutex lock
 ## failed": the 2D navigation's region sync was still running as the engine tore down); a few frames later.
 static func quit_clean(tree: SceneTree) -> void:
+	preload("res://scripts/kept.gd").flush()  # towns raised this run stay kept
 	preload("res://scripts/perf_tools.gd").stop_watch()
 	NavigationServer2D.set_active(false)
 	NavigationServer3D.set_active(false)

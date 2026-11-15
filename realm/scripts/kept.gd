@@ -47,14 +47,29 @@ static func keep(res: Resource, path: String) -> void:
 	_to_write.append([res, path])
 
 
-## The oldest file waiting, written (the main thread, once a frame while any wait).
+## Files waiting, written on the main thread: the oldest each frame, then more while the frame's staging pot has
+## time (ViewTier.spend_ok). One a frame alone fell behind at a slow frame rate and the game quit with towns unwritten,
+## so every start raised them again (supervisor fps, v6: 16 towns raised on a load run).
 static func _write_one() -> void:
 	if _to_write.is_empty():
 		var tree := Engine.get_main_loop() as SceneTree
 		if tree and tree.process_frame.is_connected(_write_one):
 			tree.process_frame.disconnect(_write_one)
 		return
-	var next: Array = _to_write.pop_front()
+	var ViewTier := preload("res://scripts/view_tier.gd")
+	var first := true
+	while not _to_write.is_empty() and (first or ViewTier.spend_ok(&"kept.write")):
+		first = false
+		_write(_to_write.pop_front())
+
+
+## Every file still waiting, written now (the game quitting: shot_harness.quit_clean, app_services' close).
+static func flush() -> void:
+	while not _to_write.is_empty():
+		_write(_to_write.pop_front())
+
+
+static func _write(next: Array) -> void:
 	var t0 := Time.get_ticks_usec()
 	ResourceSaver.save(next[0], next[1], ResourceSaver.FLAG_COMPRESS)
 	preload("res://scripts/perf_tools.gd").add("kept.write", Time.get_ticks_usec() - t0)

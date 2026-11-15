@@ -237,6 +237,7 @@ func _log_perf(delta: float) -> void:
 	if probing:
 		f.store_line("    people by holder (all/visible) " + _holders(main.get_tree().get_nodes_in_group("people")))
 		f.store_line("    every frame " + _tickers())
+		f.store_line("    textures " + _textures())
 		var torn := _torn()
 		if torn != "":
 			f.store_line("    TORN " + torn)
@@ -483,6 +484,68 @@ func _torn() -> String:
 
 ## Who runs code every frame (GOC_PERF_PROBE): nodes with _process or _physics_process on, by their script (else their
 ## class), most first, so the frame's time no named job holds can be pinned on someone.
+## Where video memory goes (the Mac swapped 14 GB with the game at 7 GB of it, every frame waiting on paged-out
+## memory): every texture the realm's materials hold, once each, its bytes by folder and the dearest few (Godot 4.7
+## binds no per-texture list; bytes worked from size and format, mipmaps a third more).
+func _textures() -> String:
+	var seen := {}
+	var mats := {}
+	for g in main.get_tree().root.find_children("*", "GeometryInstance3D", true, false):
+		var gi := g as GeometryInstance3D
+		for m in [gi.material_override, gi.material_overlay]:
+			if m:
+				mats[m] = true
+		var mesh: Mesh = gi.get("mesh") if gi is MeshInstance3D else ((gi as MultiMeshInstance3D).multimesh.mesh if gi is MultiMeshInstance3D and (gi as MultiMeshInstance3D).multimesh else null)
+		if mesh:
+			for i in mesh.get_surface_count():
+				var m := mesh.surface_get_material(i)
+				if m:
+					mats[m] = true
+		if gi is MeshInstance3D:
+			for i in (gi as MeshInstance3D).get_surface_override_material_count():
+				var m := (gi as MeshInstance3D).get_surface_override_material(i)
+				if m:
+					mats[m] = true
+	for m: Material in mats:
+		var walk := m
+		while walk:
+			for pr in walk.get_property_list():
+				var v: Variant = walk.get(pr["name"])
+				if v is Texture2D:
+					seen[v] = true
+			walk = walk.next_pass
+	var by := {}
+	var all := 0
+	var top: Array = []
+	for t: Texture2D in seen:
+		var rid := t.get_rid()
+		var fmt := RenderingServer.texture_get_format(rid) if rid.is_valid() else Image.FORMAT_RGBA8
+		var bpp := 4.0
+		if fmt >= Image.FORMAT_DXT1 and fmt <= Image.FORMAT_ASTC_8x8_HDR:
+			bpp = 1.0
+		elif fmt == Image.FORMAT_RGBAH:
+			bpp = 8.0
+		elif fmt == Image.FORMAT_RGBAF:
+			bpp = 16.0
+		elif fmt == Image.FORMAT_L8 or fmt == Image.FORMAT_R8:
+			bpp = 1.0
+		var b := int(t.get_width() * t.get_height() * bpp * 1.33)
+		all += b
+		var p := t.resource_path
+		var k := p.get_base_dir().trim_prefix("res://") if p != "" and not p.contains("::") else "(made in game)"
+		by[k] = int(by.get(k, 0)) + b
+		top.append([b, "%s %dx%d f%d" % [p.get_file() if p != "" else "?", t.get_width(), t.get_height(), fmt]])
+	var keys := by.keys()
+	keys.sort_custom(func(x, y): return by[x] > by[y])
+	var out := PackedStringArray(["%d textures %dMB of video %dMB" % [seen.size(), all >> 20, int(Performance.get_monitor(Performance.RENDER_TEXTURE_MEM_USED)) >> 20]])
+	for k in keys.slice(0, 12):
+		out.append("%s:%dMB" % [k, by[k] >> 20])
+	top.sort_custom(func(x, y): return x[0] > y[0])
+	for x in top.slice(0, 8):
+		out.append("[%s %dMB]" % [x[1], x[0] >> 20])
+	return ", ".join(out)
+
+
 func _tickers() -> String:
 	var by := {}
 	for n in main.get_tree().root.find_children("*", "", true, false):

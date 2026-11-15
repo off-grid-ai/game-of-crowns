@@ -15,7 +15,7 @@ dest_files=["res://.godot/imported/base_Pine_3_albedo.png-cca479b1cbd55e8e5db452
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
