@@ -1139,11 +1139,11 @@ static func _fits(area: PackedVector2Array, c: Vector3, f: Vector2, yaw: float) 
 ## Fence panels from `a` to `b` (town-local), on the ground, walked round;
 ## none where a house stands.
 func _fence_line(root: Node3D, center: Vector3, a: Vector2, b: Vector2, lots: Array, component := "") -> void:
-	# The yards' light fence (data/towns.json plots.fence: a component in assets.json), the palisade's otherwise;
+	# The yards' fence (data/towns.json plots.fence: a component in assets.json), the palisade's otherwise;
 	# or `component` (a churchyard's or a manor's low stone wall).
-	var kind := Real.one(component if component != "" else String(_plot_knobs().get("fence", "fence_yard")))
+	var kind := Real.one(component if component != "" else String(_plot_knobs().get("fence", "fence")))
 	if kind == "" or Real.footprint(kind) == Vector2.ZERO:
-		kind = "wooden_fence_game_ready_asset"
+		kind = Real.one("fence")
 	var f: Vector2 = Real.footprint(kind)
 	if f == Vector2.ZERO or a.distance_to(b) < 0.05:
 		return
@@ -1164,7 +1164,8 @@ func _fence_line(root: Node3D, center: Vector3, a: Vector2, b: Vector2, lots: Ar
 ## The palisade round the plots' edge (an outline, town-local), with a gate
 ## wherever a street or a road goes through.
 func _palisade_on(root: Node3D, center: Vector3, edge: PackedVector2Array, ways: Array, seat: bool) -> void:
-	var f: Vector2 = Real.footprint("wooden_fence_game_ready_asset")
+	var stake := Real.one("fence")  # assets.json components.fence
+	var f: Vector2 = Real.footprint(stake)
 	if f == Vector2.ZERO or edge.size() < 3:
 		return
 	var panel := maxf(f.x, f.y) * 0.95
@@ -1186,7 +1187,7 @@ func _palisade_on(root: Node3D, center: Vector3, edge: PackedVector2Array, ways:
 				continue  # the gate, where a street or a road goes through
 			if castle.size() >= 3 and Geometry2D.is_point_in_polygon(q, castle):
 				continue
-			_place(root, "wooden_fence_game_ready_asset", p + Vector3(0, _ground_y(center, p) - 0.01, 0), yaw, Vector3(1, 1.6, 1) if seat else Vector3.ONE, Vector2(panel * 1.05, 0.08))
+			_place(root, stake, p + Vector3(0, _ground_y(center, p) - 0.01, 0), yaw, Vector3(1, 1.6, 1) if seat else Vector3.ONE, Vector2(panel * 1.05, 0.08))
 
 
 ## Whether a town has a stone wall: Freeciv's City Walls stand in it, or any section of its wall is worn in the
@@ -2154,11 +2155,12 @@ func _seat(center: Vector3, p: Vector3, f: Vector2, rot: float, most := 1.2, cut
 
 func _dress(root: Node3D, center: Vector3, hp: Vector3, face: Vector3, out: Vector3, fw: float, fd: float, rng: RandomNumberGenerator, tight := false) -> void:
 	var along := Vector3(-face.z, 0, face.x)
+	var fence := Real.one("fence")
 	var spots := [
 		["medieval_wooden_cart", hp + face * (fd * 0.5 + 0.12) + along * fw * 0.3, 0.35],
 		["wood_pile_pack", hp + along * (fw * 0.5 + 0.12), 0.4],
 		["haystack_2", hp - face * (fd * 0.5 + 0.15) + along * fw * 0.2, 0.35],
-		["wooden_fence_game_ready_asset", hp - face * (fd * 0.5 + 0.3), 0.45],
+		[fence, hp - face * (fd * 0.5 + 0.3), 0.45],
 	]
 	if tight:
 		# On a plot: the street in front stays clear and the neighbours stand at its sides,
@@ -2185,7 +2187,7 @@ func _dress(root: Node3D, center: Vector3, hp: Vector3, face: Vector3, out: Vect
 		var p: Vector3 = spot[1]
 		if not terrain.is_land(center.x + p.x, center.z + p.z) or _on_road(p, 0.08):
 			continue
-		var yaw := atan2(face.x, face.z) + (PI / 2 if spot[0] == "wooden_fence_game_ready_asset" else rng.randf_range(-0.6, 0.6))
+		var yaw := atan2(face.x, face.z) + (PI / 2 if spot[0] == fence else rng.randf_range(-0.6, 0.6))
 		_place(root, spot[0], p + Vector3(0, _ground_y(center, p), 0), yaw)
 
 
@@ -2236,10 +2238,6 @@ func _flush(root: Node3D) -> void:
 ## stays a town from high up). Godot's own generated detail levels (realistic.gd
 ## _merge) lighten them with distance. Distances: realm/data/camera.json map.reach.
 func _reach_for(kind: String) -> float:
-	# The fence panel is 14k triangles, heavier than a house, and a town rings
-	# itself with dozens: past a dozen units it is a hairline, not worth them.
-	if kind == "wooden_fence_game_ready_asset":
-		return 12.0
 	var m: float = float(Real.KIT.get(kind, ["", 10.0])[1])
 	if m <= 0.0:
 		# A model our builders raise (kit houses, kit castles) has no catalogue length: its measured footprint.
