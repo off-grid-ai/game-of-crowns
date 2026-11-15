@@ -11,7 +11,12 @@ const Heraldry := preload("res://scripts/heraldry.gd")
 const PaintedFaces := preload("res://scripts/painted_faces.gd")
 
 signal closed
+signal name_changed  # the player rewrote who someone is (the Lore and the court read them again)
 var _panel: PanelContainer
+var ui: Node  # the interface (ui.gd): its close X and the one character form (character_form.gd)
+var trait_options := Callable()  # (cb(opts)) -> void: the realm's natures, aims and roles (bridge /characters/options)
+var save_person := Callable()  # (person, spec, cb(code, d)) -> void: the rewrite, through the bridge (main.gd)
+var rename_name := Callable()  # (from, to, cb) -> void: the player's own name for someone of the book as written
 
 
 func _ready() -> void:
@@ -27,12 +32,10 @@ func _ready() -> void:
 	_panel = PanelContainer.new()
 	_panel.theme = T.get_theme()
 	_panel.add_theme_stylebox_override("panel", T._box(Color(0.13, 0.11, 0.09, 0.97), Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.55), 10, 0))
-	_panel.anchor_left = 0.5
-	_panel.anchor_right = 0.5
-	_panel.offset_left = -float(Data.num("royal_sheet", "lord_sheet.width", 560)) / 2.0
-	_panel.offset_right = float(Data.num("royal_sheet", "lord_sheet.width", 560)) / 2.0
-	_panel.offset_top = 48
+	# Wide and centred on the dimmed screen (CK3's character window): the portrait at full height on the left.
+	_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_panel.grow_vertical = Control.GROW_DIRECTION_BOTH
 	add_child(_panel)
 
 
@@ -52,6 +55,8 @@ var back_to := "the realm"
 func open(person: Dictionary, house: Dictionary, from := "the realm") -> void:
 	back_to = from
 	visible = true
+	if ui and _panel.get_node_or_null("Close") == null:
+		ui.close_x(_panel, close)
 	_fill_panel(person, house)
 	_panel.modulate.a = 0.0
 	_panel.create_tween().tween_property(_panel, "modulate:a", 1.0, 0.16).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
@@ -62,80 +67,90 @@ func close() -> void:
 	closed.emit()
 
 
-func _fill_panel(p: Dictionary, house: Dictionary) -> void:
+func _fill_panel(p: Dictionary, house: Dictionary, editing := false) -> void:
 	for c in _panel.get_children():
+		if c.name == "Close":
+			continue
 		_panel.remove_child(c)  # out of the card's measure at once, so it shrinks to what's new
 		c.queue_free()
+	var room := get_viewport().get_visible_rect().size
+	var width := minf(float(Data.num("royal_sheet", "lord_sheet.width", 880)), room.x - 32.0)
+	_panel.custom_minimum_size = Vector2(width, 0)
 	var pad := MarginContainer.new()
 	for side in ["left", "right", "top", "bottom"]:
-		pad.add_theme_constant_override("margin_" + side, 26 if side != "right" else 18)
+		pad.add_theme_constant_override("margin_" + side, 24)
 	_panel.add_child(pad)
-	var outer := VBoxContainer.new()
-	outer.add_theme_constant_override("separation", 12)
-	pad.add_child(outer)
-	var scroll := ScrollContainer.new()
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	outer.add_child(scroll)
-	var v := VBoxContainer.new()
-	v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	v.add_theme_constant_override("separation", 10)
-	scroll.add_child(v)
-	# As tall as everything in it once the words have wrapped, up to the screen's
-	# height; it measures again whenever its content grows.
-	v.minimum_size_changed.connect(func(): _fit_panel(scroll, v))
-	_fit_panel.call_deferred(scroll, v)
-	# Their painted portrait first, their arms and name beside it (CK3's character window).
-	var family := _family(p, house)
-	var head := HBoxContainer.new()
-	head.add_theme_constant_override("separation", 16)
-	v.add_child(head)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 24)
+	pad.add_child(row)
+	# Their painted portrait, large, the card's full height on the left: the one face they wear on every screen.
+	var fs: Array = Data.value("royal_sheet", "lord_sheet.face", [240, 320])
 	var face := PaintedFaces.face(p)
 	if face:
 		var frame := PanelContainer.new()
 		frame.add_theme_stylebox_override("panel", T._box(Color(0, 0, 0, 0.35), Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.8), 6, 3))
-		head.add_child(frame)
+		frame.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+		row.add_child(frame)
 		var pic := TextureRect.new()
 		pic.texture = face
 		pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-		var fs: Array = Data.value("royal_sheet", "lord_sheet.face", [132, 176])
-		pic.custom_minimum_size = Vector2(float(fs[0]), float(fs[1]))
+		# On a narrow screen the portrait gives way, never the name.
+		var share := clampf((width - float(Data.num("royal_sheet", "lord_sheet.name_min", 380)) - 96.0) / float(fs[0]), 0.5, 1.0)
+		pic.custom_minimum_size = Vector2(float(fs[0]), float(fs[1])) * share
 		frame.add_child(pic)
-	var names := VBoxContainer.new()
-	names.add_theme_constant_override("separation", 6)
-	names.alignment = BoxContainer.ALIGNMENT_CENTER
-	names.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	head.add_child(names)
-	var arms := HBoxContainer.new()
-	arms.add_theme_constant_override("separation", 8)
-	names.add_child(arms)
+	var right := VBoxContainer.new()
+	right.add_theme_constant_override("separation", 8)
+	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	right.custom_minimum_size.x = float(Data.num("royal_sheet", "lord_sheet.name_min", 380))
+	row.add_child(right)
+	# The house arms and their name on one line, then rank and age, then the house's words.
+	var family := _family(p, house)
+	var head := HBoxContainer.new()
+	head.add_theme_constant_override("separation", 10)
+	right.add_child(head)
 	if not family.is_empty():
-		arms.add_child(_arms(family, Color.WHITE, 32))
-	var liege := _arms(house, Heraldry.colour(house, Color.GRAY, "#888").lerp(Color.WHITE, 0.25), 32 if family.is_empty() else 20)
+		head.add_child(_arms(family, Color.WHITE, 36))
+	var liege := _arms(house, Heraldry.colour(house, Color.GRAY, "#888").lerp(Color.WHITE, 0.25), 36 if family.is_empty() else 24)
 	if liege.texture:
-		arms.add_child(liege)
-	var house_line := String(house.get("name", p.get("house", "")))
-	if not family.is_empty():
-		house_line = "The %s family  ·  sworn to %s" % [String(family["name"]).trim_prefix("House "), house_line.replace("House ", "")]
-	var hl := T.label(house_line)
-	hl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	hl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	arms.add_child(hl)
+		head.add_child(liege)
 	var title := T.title(String(p.get("name", "")), 28, T.ACCENT)
-	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	names.add_child(title)
+	title.autowrap_mode = TextServer.AUTOWRAP_WORD  # whole words only, never a name broken letter by letter
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head.add_child(title)
 	var rank := str(p["role"]) if p.get("role") else (str(p["rank"]).capitalize() if p.get("rank") else "")
 	if str(p.get("gender", "")) == "female":
 		rank = {"Lord": "Lady", "Bannerman": "Bannerwoman", "Heir": "Heiress"}.get(rank, rank)
 	var line := "%s, %d" % [rank, int(p.get("age", 0))] if rank != "" else "Aged %d" % int(p.get("age", 0))
+	var house_line := String(house.get("name", p.get("house", "")))
+	if not family.is_empty():
+		house_line = "the %s family, sworn to %s" % [String(family["name"]).trim_prefix("House "), house_line.replace("House ", "")]
+	line += "  ·  " + house_line
 	if p.get("seat"):
 		line += "  ·  of %s" % String(p["seat"])
-	names.add_child(T.prose(line, T.SIZE_BODY, T.TEXT_2))
+	var who := T.prose(line, T.SIZE_BODY, T.TEXT_2)
+	who.autowrap_mode = TextServer.AUTOWRAP_WORD
+	right.add_child(who)
 	if house.get("words"):
 		var words := T.prose("“%s”" % String(house["words"]), T.SIZE_DESC, T.ACCENT)
 		words.add_theme_font_override("font", T.speech)  # the house's own words, said: the serif
-		names.add_child(words)
-	v.add_child(HSeparator.new())
+		words.autowrap_mode = TextServer.AUTOWRAP_WORD
+		right.add_child(words)
+	right.add_child(HSeparator.new())
+	var scroll := ScrollContainer.new()
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	right.add_child(scroll)
+	var v := VBoxContainer.new()
+	v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	v.add_theme_constant_override("separation", 10)
+	scroll.add_child(v)
+	# As tall as everything in it once the words have wrapped, up to the screen's height.
+	v.minimum_size_changed.connect(func(): _fit_panel(scroll, v))
+	_fit_panel.call_deferred(scroll, v)
+	if editing:
+		_editor(v, p, house)
+		return
 	v.add_child(T.label("Nature"))
 	var nature := ", ".join(p.get("traits", []))
 	v.add_child(T.prose(nature.left(1).to_upper() + nature.substr(1), T.SIZE_BODY))
@@ -174,13 +189,56 @@ func _fill_panel(p: Dictionary, house: Dictionary) -> void:
 		v.add_child(T.label("Remembers"))
 		for i in range(mem.size() - 1, -1, -1):
 			v.add_child(_para("[i]“%s”[/i]" % String(mem[i])))
-	# Back, on the card itself, so it reads whatever the realm behind is doing.
+	# Change who they are (the one character form, written in place on this card), and Back.
+	var buttons := HBoxContainer.new()
+	buttons.add_theme_constant_override("separation", 12)
+	right.add_child(buttons)
+	if save_person.is_valid() and ui:
+		var change := Button.new()
+		change.text = "Change who they are"
+		change.focus_mode = Control.FOCUS_NONE
+		change.add_theme_color_override("font_color", T.ACCENT)
+		change.pressed.connect(func(): _fill_panel(p, house, true))
+		buttons.add_child(change)
 	var back := Button.new()
 	back.text = "←  Back to %s   (%s)" % [back_to, Keys.label("back").get_slice(" / ", 0)]
-	back.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	back.flat = true
 	back.focus_mode = Control.FOCUS_NONE
 	back.pressed.connect(close)
-	outer.add_child(back)
+	buttons.add_child(back)
+
+
+## The card turned into the one character form (character_form.gd, written in place): name, nature, aim,
+## loyalty, their story and what they remember. Saved through the bridge (main.gd save_person); the card then
+## shows the new self.
+func _editor(v: VBoxContainer, p: Dictionary, house: Dictionary) -> void:
+	var ask := trait_options if trait_options.is_valid() else func(cb): cb.call({})
+	ask.call(func(opts):
+		if not is_instance_valid(v):
+			return
+		var person := p.duplicate()
+		if not person.get("backstory") and person.get("story"):
+			person["backstory"] = person["story"]
+		ui.form_card.show_character_form(int(house.get("id", -1)), String(house.get("name", "")), opts if opts is Dictionary else {}, person, v, func(spec: Dictionary):
+			if spec.is_empty():
+				_fill_panel(p, house)
+				return
+			save_person.call(p, spec, func(code, d):
+				if code != 200:
+					ui.toast(String((d if d is Dictionary else {}).get("error", "That didn't save.")))
+					return
+				var now := p.duplicate()
+				for k in ["name", "gender", "age", "loyalty", "memories"]:
+					if spec.has(k):
+						now[k] = spec[k]
+				if spec.get("past") != null:
+					now["backstory"] = spec["past"]
+					now["story"] = spec["past"]
+				if not (spec.get("traits", []) as Array).is_empty():
+					now["traits"] = spec["traits"]
+				ui.toast("%s is changed." % String(now.get("name", "")))
+				_fill_panel(now, house)
+				name_changed.emit())))
 
 
 ## The lord's sheet (CK3's character window: the opinion, its reasons on the sheet): what the head of a great
@@ -247,7 +305,7 @@ func _holdings(v: VBoxContainer, p: Dictionary, house: Dictionary) -> void:
 func _fit_panel(scroll: ScrollContainer, v: Control) -> void:
 	if not is_instance_valid(v) or not v.is_inside_tree():
 		return
-	var room := get_viewport().get_visible_rect().size.y - 48.0 - 52.0 - 64.0  # the top gap, the card's pads, Back
+	var room := get_viewport().get_visible_rect().size.y - 64.0 - 48.0 - 150.0  # the screen's margin, the card's pads, the header and buttons
 	scroll.custom_minimum_size.y = minf(v.get_combined_minimum_size().y, room)
 	_panel.reset_size()
 

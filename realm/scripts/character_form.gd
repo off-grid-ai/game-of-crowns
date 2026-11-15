@@ -17,20 +17,32 @@ func _init(owner: UI) -> void:
 
 ## Write your own character into a house: name, role, nature and aim. They
 ## join as a sworn member and act on what you gave them, season by season.
-## Given someone already in the realm, the same form reshapes them instead.
-func show_character_form(house_id: int, house_name: String, opts: Dictionary, person := {}) -> void:
+## Given someone already in the realm, the same form reshapes them instead, with what they remember.
+## host: the person's own card (hero_view.gd) to write in place, the form inside it; done(spec) then takes the
+## written spec ({} on Cancel) instead of the signals, and the card saves it.
+func show_character_form(house_id: int, house_name: String, opts: Dictionary, person := {}, host: Control = null, done := Callable()) -> void:
 	var editing := not person.is_empty()
 	# One of the crown's family (the Lore's Edit, bridge royals.js): name, nature and story only; no lord, aim or vow.
 	var royal := bool(person.get("royal", false))
-	if _form_panel:
-		_form_panel.queue_free()
-	_form_panel = ui.card(ui.glass_panel())
-	_form_panel.offset_top = 70
-	if ui._house_panel:
-		ui._house_panel.visible = false
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 10)
-	_form_panel.add_child(v)
+	if host:
+		host.add_child(v)
+	else:
+		if _form_panel:
+			_form_panel.queue_free()
+		_form_panel = ui.card(ui.glass_panel())
+		_form_panel.offset_top = 70
+		if ui._house_panel:
+			ui._house_panel.visible = false
+		_form_panel.add_child(v)
+	# Put away: back to the card that hosts it, or the panel hidden (and the Lore told).
+	var finish := func(spec: Dictionary) -> void:
+		if host:
+			done.call(spec)
+			return
+		_form_panel.visible = false
+		ui.character_form_closed.emit()
 	v.add_child(T.label(("Change who %s is" % String(person.get("name", ""))) if editing else ("A new character for " + house_name)))
 	var name := LineEdit.new()
 	name.placeholder_text = "Their name, e.g. Ser Aldous Crane"
@@ -128,22 +140,58 @@ func show_character_form(house_id: int, house_name: String, opts: Dictionary, pe
 	past.placeholder_text = "Something that happens to them now (they'll remember it)" if editing else "A moment they'll never forget"
 	past.visible = not royal
 	v.add_child(past)
+	# What they remember (their history, as the King rewrites it; bridge characters.js edit / written.js memories):
+	# one line each, forgotten with ×, up to eight.
+	var mems := VBoxContainer.new()
+	mems.add_theme_constant_override("separation", 6)
+	var add_mem := func(text: String) -> void:
+		var r := HBoxContainer.new()
+		var e := LineEdit.new()
+		e.text = text
+		e.placeholder_text = "Something they'll never forget"
+		e.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		r.add_child(e)
+		var x := Button.new()
+		x.text = "×"
+		x.flat = true
+		x.focus_mode = Control.FOCUS_NONE
+		x.tooltip_text = "Forget this"
+		x.pressed.connect(func(): r.queue_free())
+		r.add_child(x)
+		mems.add_child(r)
+	if editing and not royal:
+		v.add_child(T.label("Remembers"))
+		v.add_child(mems)
+		var seen: Array = []
+		for m in person.get("memories", []):
+			if not seen.has(m):
+				seen.append(m)
+				add_mem.call(String(m))
+		var more := Button.new()
+		more.text = "+  Add a memory"
+		more.flat = true
+		more.focus_mode = Control.FOCUS_NONE
+		more.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		more.add_theme_color_override("font_color", T.ACCENT)
+		more.pressed.connect(func():
+			if mems.get_child_count() < 8:
+				add_mem.call(""))
+		v.add_child(more)
 	preload("res://scripts/spark.gd").attach(past, ui.get_tree().current_scene.get("bridge"), "character-past", func(): return "%s of %s; %s." % [name.text if name.text != "" else "A person", house_name, other.text if other.text != "" else "no quirks named"])
 	var go := HBoxContainer.new()
 	go.alignment = BoxContainer.ALIGNMENT_END
 	v.add_child(go)
-	go.add_child(ui.btn("Cancel", func():
-		_form_panel.visible = false
-		ui.character_form_closed.emit()))
+	go.add_child(ui.btn("Cancel", func(): finish.call({})))
 	go.add_child(ui.btn("Make it so" if editing else "Bring them into the realm", func():
 		if name.text.strip_edges() == "":
 			ui.toast("Give them a name first.")
 			return
 		if royal:
-			ui.royal_edited.emit({"id": str(person.get("id", "")), "name": name.text.strip_edges(), "gender": "female" if gender.selected == 1 else "male",
-				"age": int(age.value), "traits": picked, "other": other.text.strip_edges(), "past": story.text.strip_edges().left(300)})
-			_form_panel.visible = false
-			ui.character_form_closed.emit()
+			var rs := {"id": str(person.get("id", "")), "name": name.text.strip_edges(), "gender": "female" if gender.selected == 1 else "male",
+				"age": int(age.value), "traits": picked, "other": other.text.strip_edges(), "past": story.text.strip_edges().left(300)}
+			if not host:
+				ui.royal_edited.emit(rs)
+			finish.call(rs)
 			return
 		var spec := {"house": house_id, "name": name.text.strip_edges(), "gender": "female" if gender.selected == 1 else "male",
 			"age": int(age.value), "traits": picked, "other": other.text.strip_edges(), "goal": goals[goal.selected]["kind"],
@@ -152,8 +200,14 @@ func show_character_form(house_id: int, house_name: String, opts: Dictionary, pe
 			spec["role"] = role_keys[role.selected]
 		if editing:
 			spec["id"] = str(person.get("id", ""))
-			ui.character_edited.emit(spec)
+			var memories: Array = []
+			for r in mems.get_children():
+				if not r.is_queued_for_deletion() and String((r.get_child(0) as LineEdit).text).strip_edges() != "":
+					memories.append(String((r.get_child(0) as LineEdit).text).strip_edges())
+			if not royal:
+				spec["memories"] = memories
+			if not host:
+				ui.character_edited.emit(spec)
 		else:
 			ui.character_created.emit(spec)
-		_form_panel.visible = false
-		ui.character_form_closed.emit()))
+		finish.call(spec)))

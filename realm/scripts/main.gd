@@ -460,6 +460,20 @@ func _ready() -> void:
 	var figures: Node = preload("res://scripts/portrait.gd").new()
 	add_child(figures)
 	lore.portrait = figures.request
+	# A person's card writes them in place (hero_view.gd, the one character form): the starting cast (from the menu's
+	# Lore) through the book's rewrites, a name through the player's names; someone of the reign through /person.
+	hero.ui = ui
+	hero.trait_options = bridge.character_options
+	hero.save_person = func(p: Dictionary, spec: Dictionary, cb: Callable):
+		if p.get("written", false):
+			var was := String(p.get("name", ""))
+			if String(spec.get("name", was)) != was:
+				bridge.rename(was, String(spec["name"]), func(_c, _d): pass)
+			bridge.write_person({"id": spec.get("id", ""), "backstory": spec.get("past", ""), "memories": spec.get("memories", []),
+				"traits": spec.get("traits", []), "loyalty": spec.get("loyalty", 50)}, cb)
+		else:
+			bridge.edit_character(spec, cb)
+	hero.name_changed.connect(lore.refresh)
 	ui.portrait = figures.request  # the petitioner, painted on the court's card
 	add_child(title)
 	title.began.connect(func(): story._intro_due = true)
