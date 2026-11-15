@@ -28,6 +28,15 @@ func ack(id: int) -> void:
 		view.ack()
 
 
+## The King's host `id` sets off for `to` the moment its order is taken (host_command.gd _ask; Warcraft III: the order
+## is obeyed at once): its column turns and marches by its Mover (army.gd march_to). Freeciv's move of its companies
+## (field_hosts) carries it on from where it has got to.
+func march_now(id: int, to: Vector3) -> void:
+	var view: Node = _hosts.get(id)
+	if is_instance_valid(view) and view.has_method("march_to"):
+		view.march_to(to)
+
+
 ## A house's host to follow: soldiers only, the biggest stack in the field
 ## first, then its biggest garrison.
 func army_of(owner: int) -> Node3D:

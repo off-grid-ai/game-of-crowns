@@ -10,7 +10,8 @@ extends Node3D
 ##                             lets it go
 ##   Hold / Go home / Split    at once
 ##   right-drag                the line it marches to and forms on, facing away from the line (Total War's drag
-##                             to face); a right-click marches
+##                             to face); a right-click gives the order what it lands on asks for (_intent): the
+##                             ground marches, a foe's men are attacked, a foe's town besieged, a friendly town relieved
 ## It decides nothing and keeps nothing of the realm's: the hosts and their orders are the bridge's
 ## (bridge/hosts.js), read from the view's one mirror (awareness.gd's realm "hosts"); an order is only
 ## asked of the bridge (POST /host/order), and the host's standard moves as Freeciv moves its companies
@@ -201,13 +202,38 @@ func _input(event: InputEvent) -> void:
 			return
 		var g: Vector3 = main.rig._ground_under(event.position)
 		if g != Vector3.INF:
-			order("march", {"ground": g})
+			var smart := _intent(HostPick.pick(get_viewport().get_camera_3d(), event.position), g)
+			order(String(smart[0]), {"ground": smart[1]})
 	elif event is InputEventMouseMotion and _right_at != Vector2.INF:
 		get_viewport().set_input_as_handled()
 		if not _facing and _right_at.distance_to(event.position) < Data.num(FILE, "face.drag_px", 14.0):
 			return
 		_facing = true
 		_show_line(_right_at, event.position)
+
+
+## What a right-click on `g` asks of the selected host, read from what stands there (Warcraft III's smart order: no
+## menu, the target decides): a foe's company or raiders under the pointer (`picked`, host_pick.gd) is attacked where it
+## stands; a town of the crown's or a sworn house's is relieved (garrisoned); any other town is besieged (the bridge's
+## march on it, siege on arrival); the open ground is marched to. [order, the world point it is given at].
+func _intent(picked: Dictionary, g: Vector3) -> Array:
+	if not picked.is_empty() and _host_of(int(picked["unit"])).is_empty():
+		var f: Node3D = main.units.figure_of(int(picked["unit"]))
+		return ["attack", f.global_position if f and is_instance_valid(f) else g]
+	var town: Dictionary = main.towns.nearest(g, Data.num(FILE, "town_reach", 3.0))
+	if town.is_empty():
+		return ["march", g]
+	return ["garrison" if _friendly(int(town.get("owner", -1)), int(town.get("id", -1))) else "besiege", g]
+
+
+## A town the King's men may enter as friends: the crown's own, or the seat of a bannerman sworn to it (/world vassals).
+func _friendly(owner: int, town: int) -> bool:
+	if owner == int(main.awareness.rec("crownId", -1)):
+		return true
+	for vs in main.awareness.rec("vassals", []):
+		if int((vs as Dictionary).get("town", -2)) == town:
+			return true
+	return false
 
 
 ## A dragged line on the ground, from screen `a` to `b`: [its middle, the way the host faces (a yaw, atan2 of x and
@@ -294,6 +320,7 @@ func order(kind: String, at := {}, done := Callable()) -> bool:
 	if at.has("ground"):
 		var ground: Vector3 = at["ground"]
 		_mark(ground, kind)
+		body["_to"] = ground  # the view's own: the column sets off for it the moment the bridge says yes (_ask)
 		var town: Dictionary = {} if kind == "attack" else main.towns.nearest(ground, Data.num(FILE, "town_reach", 3.0))
 		if not town.is_empty():
 			body["city"] = int(town.get("id", -1))
@@ -312,6 +339,8 @@ func order(kind: String, at := {}, done := Callable()) -> bool:
 
 ## Asks the bridge; it decides, and says so (the toast), and the next /world shows the host's order.
 func _ask(body: Dictionary, done := Callable()) -> void:
+	var to: Variant = body.get("_to")
+	body.erase("_to")
 	main.bridge._post("/host/order", body, func(code: int, d: Dictionary) -> void:
 		var said := String(d.get("text", d.get("error", "")))
 		if said != "" and main.ui:
@@ -320,6 +349,8 @@ func _ask(body: Dictionary, done := Callable()) -> void:
 			main.sound.ordered(String(body.get("order", "")))  # heard as it sets off (sounds.json orders)
 			main.barks.host("order", int(body.get("host", -1)))  # and its captain says he goes (barks.gd)
 			main.units.ack(int(body.get("host", -1)))  # and its men raise a cry where they stand (army.gd ack)
+			if to is Vector3 and String(body.get("order", "")) != "hold":
+				main.units.march_now(int(body.get("host", -1)), to)  # and turn and set off at once (Warcraft III), not at the season's turn
 			main.bridge._poll()
 		if done.is_valid():
 			done.call(code, said))
@@ -469,12 +500,11 @@ func _cursor_hot() -> Vector2:
 
 
 ## Where an order was given, a ring flashed on the ground that closes and fades (Warcraft III's command marker):
-## the accent for a march, red for an attack or a siege (host_command.json marker).
+## green for a march, red for an attack or a siege, gold for a relief (host_command.json marker colors).
 func _mark(at: Vector3, kind: String) -> void:
 	var k: Dictionary = Data.value(FILE, "marker", {})
 	var d := _decal(_ring_texture(), float(k.get("energy", 2.0)))
-	if kind in ["attack", "besiege"]:
-		d.modulate = T.DANGER
+	d.modulate = Color.from_string(String((k.get("colors", {}) as Dictionary).get(kind, k.get("color", "#dbb56e"))), T.ACCENT)
 	d.global_position = at
 	d.visible = true
 	var from := float(k.get("from", 0.7))
