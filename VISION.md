@@ -1,78 +1,57 @@
-# Realm — working vision
+# Game of Crowns: vision
 
-The one place where decisions live. New ideas get added here. They don't replace what's already decided unless we say so explicitly.
+What is decided and what is in scope. New ideas are added here; they replace a decision only when we
+say so. How it plays is [GAME_DESIGN.md](GAME_DESIGN.md).
 
 ## The game in one line
-A living medieval-fantasy world that runs on its own on your laptop. You are its King: you watch it, rule it, and live with what your rulings set in motion.
+A war king's reign over a living medieval realm: command your army, hold seven great houses by sword or
+by oath, and find out what kind of king you'd be.
 
 ## Decided
-- **Our track: win on play, not on pixels (2026-11-11, Mac).** We can't match big-studio graphics, so we
-  stop competing on them. We pick one kind of game and do it really, really well: a short, timed reign
-  where you rule from above (court, seals, houses, the host) and find out what kind of king you'd be. We
-  compete on gameplay: fun, immersive, engaging. Graphics only have to be clear, consistent and
-  readable at roof height and above (the camera cap and "no close-up realism" are part of this). Before
-  any work, ask whether it makes the next ten minutes of a reign more gripping; if it's polish only a
-  close-up would show, it waits. This narrows earlier wishes: the Manor Lords look below, zooming into
-  buildings, and walking among people are no longer goals in their own right.
-- **The King plays with his own hands (2026-11-10, Mac):** playing still wasn't fun; RollerCoaster Tycoon, Civilization and Warcraft II are, because you build and command toward small goals. On top of the court and the houses, the King gets three loops of his own, in this order:
-  - **C, a ladder of royal goals:** always one on screen, each with a reward you can see, each leading to the next.
-  - **A, the Crown's own lands to build:** chosen from the town card and sited by the game, rising over seasons and producing gold, grain and men.
-  - **B, the royal host to command:** one order a season (where to march), then the battle is watched; taking a town turns it to the Crown.
-  
-  Every change is judged by the engagement model in GAME_DESIGN.md as well as the fun bar.
-- **Setting:** Game of Thrones *era and feel* (medieval, great houses, castles), with mythical touches (the dead beyond the wall, wildlings). No dragons: dropped 2026-11-03. It doesn't need to be Westeros or use GoT names.
-- **One age.** Medieval throughout. Tech grows within it (wooden forts become stone castles), but there's no march to industrial or sci-fi.
-- **Self-running.** Villages grow into towns and kingdoms at their own pace. It keeps going while you're away (it catches up when reopened).
-- **You are the King.** The great houses are your vassals and run themselves. Your goal: **keep the peace while the realm prospers.** Royal tools: grain and gold to houses, raise the royal army, grant or strip castles, raise buildings. Famine, plague and the dead are fate testing your reign (with a sandbox "god" mode to trigger them yourself). The HUD shows Peace and Prosperity.
-- **Deep cause and effect.** Famine, abundance, plague, faith, unrest and war ripple through the simulation. Different peoples react differently, and their history changes them.
-- **Look:** like Manor Lords (rich stylized 3D). Top-down by default, zoom smoothly into a city and into buildings to see people working.
-- **People animated** with Mixamo (or an equivalent free library).
-- **We are system integrators.** Every layer, including the simulation itself, comes from an existing open project. Our code is glue: connecting the pieces, translating one's output into another's input, and giving you narrative control. Before writing anything, ask "who has already built this?"
-- **Closest existing game:** WorldBox (right loop, visuals too low quality). Manor Lords is the visual reference, not a substitute.
+- **A war king from minute one (2026-11-15).** The King starts with a royal army at Kingsmere and
+  commands it live: click to select, right-click to march, attack, besiege or relieve. One objective is
+  always on screen, something to act on comes at least every 45 seconds, and every first choice is
+  affordable. The court is a side layer that never stops time.
+- **Win on play, not pixels.** One kind of game done really well. Graphics only need to be clear,
+  consistent and readable from roof height up; the camera stops at roof height and faces are painted
+  portraits on cards.
+- **The player is the King,** not a god. No god powers or sandbox fate buttons.
+- **The Crown has its own people.** The King and his household (commanders, champion, council) are
+  people with stories, and the player can edit the King's story and theirs.
+- **Setting:** around 900 AD, Game of Thrones in era and feel: great houses, castles, shields, mail, axes
+  and bows, gritty war. Mythical touches (the dead beyond the wall, wildlings). No dragons. Not Westeros,
+  no GoT names. One age: tech grows within it (wooden forts become stone castles), never past it.
+- **A world that runs itself.** Houses farm, march, scheme and fight on their own; the King steers it.
+- **Timed reigns only:** 15, 30 or 60 minutes; no endless mode. "Rule on" after the end grants 15 more.
+- **System integrators.** Every layer comes from an existing project; our code is glue. Before building
+  anything, ask who already built it.
+- **Personal use only, so licences don't matter.** Pick on quality and fit.
+- **No model in the app.** The game ships and downloads no model. Lords speak in their own words when
+  Off Grid AI is running; Settings says so.
+- **One player, from above.** Walking as a character is built and switched off; it may return with
+  multiplayer.
 
-- **Personal use only, so licences don't matter.** GPL engines, 0 A.D. art, Sketchfab models and so on are all fair game. Pick on quality and fit alone.
+## In the game
+- The realm: towns, seasons, crops, coast and rivers; the houses on a map in their colours.
+- The royal army and the houses' armies: marching, battles on open ground, sieges that breach walls.
+- **The houses and their people:** lords, bannermen and heirs with names, wants and memory of what you
+  did. You meet them in play, when they matter.
+- **Royal goals:** a ladder of objectives, always one on screen, each with a reward you can see.
+- **The Crown's own lands:** built from the town card, sited by the game, producing crowns, grain and men.
+- **The King's levers:** alliances and oaths that bind a house to your wars, marching on a house,
+  granting and stripping castles, hostages, spies, executing traitors, gifts of grain and crowns. Gifts
+  lose force when repeated, rivals resent favourites, long wars cost the Crown.
+- **Reign stories.** Each reign has a main threat told in acts; survive it and you win. Stories are data
+  made of beats, chosen on the New Chronicle screen by tags (threat, feel, length, hardness), or written
+  by the player beat by beat. Every story is checked before it begins.
+- **Scenarios:** start a new realm any time (map, houses, wealth, temperaments, starting wars).
+- **Release calls:** always day for now (nights later, with lit windows and torches); speech as captions,
+  not voice; any scene that fails the final look check is cut, not patched.
 
-- **Scenarios and restarts.** Start a new realm any time from a scenario: map size, land and climate, which houses exist, how rich and aggressive they are, starting wars or alliances, how often fate strikes. Save scenarios to replay them.
-- **Track everything.** Treasury, food, population, armies and towns per house and for the realm, with history charts over time.
+## Later
+- **Multiplayer:** friends share a realm, likely one King and friends as lords who scheme and march on
+  the throne. Open: who hosts, and a Windows build.
+- **Beyond:** more continents, your own maps and characters, deeper lore, hedge magic. No dragons.
 
-## What it is, underneath (added 2026-11-05)
-- **Westworld in a Game of Thrones world.** An interactive world simulation: the people in it aren't scenery, they're minds. Each one remembers, wants, decides and acts on their own, and talks with you and with each other.
-- **Our edge is the local model (Off Grid AI Desktop).** With no call caps and no cloud cost, every NPC can have a mind of its own, not just the named lords.
-- **You are guest and Ford at once.** You walk among them and talk (they remember you), and you write their narratives (story arcs), which they then live out in their own way.
-
-## v1: what ships
-- **In v1:** the world, towns, seasons, crops, coast and rivers; battles on open ground with no one inside a building, and the mounted messenger; every person a mind (memory, mood, plans, talk with you by voice and with each other, gossip that travels); story arcs, commoners included; the double-click Mac app.
-- **The bar:** one combined check passes (no one inside a building or sunk, no script errors, screenshots look right); Ali plays a session from the app and it holds up (speed as it stands is fine, Ali 2026-11-05); signed with the Off Grid AI Developer ID.
-- **Release calls (2026-11-05, agreed):** always day for v1, with no day/night toggle (nights return in v1.1 with lit windows and torches); no tall grass inside towns; a richer colour grade; conversations as captions, not spoken; arc beats in short fixed lines with one line of colour from the model; any scene that fails the final pass (duel, siege, interiors, close-up battle) stops playing rather than being fixed.
-- **Playing as a character is version 2 (2026-11-05, Ali):** in v1 you are the King on the throne and rule from above: the realm, the court, decrees, the houses, the chronicle, and anyone you click on. Walking as the King or any lord (streets, talking face to face, fighting, riding, interiors) is built and kept, switched off by one flag, `realm/scripts/features.gd` `WALKING`.
-- **The reign is a story, and the King plays politics (2026-11-05, Mac):** in v1 the King can buy every house's love and nothing comes for his throne. This is a gap that blocks shipping, so it goes in v1.
-  - **Reign stories.** Every chronicle has a main story that comes for the throne, told in acts, and the reign ends when it ends: survive it and you win, fail and you fall. Progress shows in play (the act, and how near the threat is to the throne).
-  - **Stories are data made of beats** (the arc engine, `bridge/arcs/`, `~/wednesday/goc-archive/docs/STORY_ARCS.md`). A beat can bring a choice to the King's court, branches follow his ruling, and a story carries a threat meter and can end the reign. There are built-in beats and the player's own beats: on the New Chronicle screen, under "Write your own…", the player adds beats to a story they shaped, one at a time (what happens, who is in it, when it happens by act or condition, and what it does from a short menu); each is checked and saved into their story in the user stories folder, and happens once when its moment comes, the story going on from where it was (2026-11-06). Stories only read the realm through conditions and act through the court's levers: loose coupling, so stories are added without touching code.
-  - **Tags** say what a story is and set the dials of the reign: threat (usurper, rebellion, intrigue, war, faith, plague and famine, the dead, money, invasion, succession), who's against you, feel (fast-paced, slow-burn, gritty, violent, aggressive, cunning, tragic, political, mysterious, epic), length (short, a reign, a dynasty), hardness.
-  - **The New Chronicle screen** offers story cards filtered by tags, "let the realm decide", or **generate your own** from tags, a write-up or both. With Off Grid AI the model casts and words it within the beats; without it, rules assemble one from tags. Every generated story is checked before it begins.
-  - **Powerful politics:** alliances (an oath that binds a house to the King's wars), March on a house (the royal host attacks), stripping titles, hostages, summoning the council, spies, executing traitors. Freeciv has no diplomacy in its scripting, so these are the bridge's own levers, with Freeciv fighting the battles.
-  - **Balance:** decree costs bite against the treasury, gifts lose force when repeated, rivals resent the King's favourites, and long wars cost the crown. Gold is never the answer to everything.
-  - **A catalogue of about 20 stories**, each with versions, starting with The Usurper's Claim.
-- **No model in the app (2026-11-05, Mac):** the game ships no model and downloads none. It plays by its rules, and lords speak in their own words when Off Grid AI (getoffgridai.co/desktop) is running. Settings and, once, the court say so.
-- **v2: multiplayer, first and third person (2026-11-06, Mac):** friends share one realm, playing in first or third person on top of the walking that is built and switched off today; the likely shape is one King and friends as lords who scheme, wed, betray and march on the throne. Open: which machine hosts the world and the minds, and a Windows build so friends can join.
-- **Beyond v2 (2026-11-06, Mac):** more continents to sail to, each with its own kings and gods; bring your own maps and characters; deeper lore; and magic (hedge witches, old blood), widening "mythical touches". Still no dragons unless decided otherwise.
-- **Decisions that matter (2026-11-07, Mac; no version target, we're making the game better):** playing showed decisions stack, cost nothing to ignore and change things silently. This fixes the loop, in this order:
-  1. **Promises with a fuse:** one matter at a time from a petitioner or the Hand, with a visible deadline; grant, refuse or let it lapse (Frostpunk's promises, in our world).
-  2. **Silence has a price:** when the fuse runs out the realm decides, the chronicle says so ("The King said nothing…"), and ignored promises build into rebellion and riots.
-  3. **Every change is seen** (UI rule 13): the houses table flashes and counts, and one line ties cause to effect.
-  4. **The world shows it:** house banners rise and fall with favour; funded buildings appear in the town; carts, feasts and musters play where they land.
-  5. **A running verdict** ("If your reign ended today, history would call you the Meddler"), **act interludes** (a painted card at each act's end tracing two or three choices to what they caused), and **the camera for big moments only**, never while the King is busy.
-  - **Timed reigns only:** 15, 30, 45 or 60 minutes; endless mode goes, and "Rule on" after the end grants another 15 minutes. Acts land at the reign's quarters.
-  - Built in batches and tested together in one filmed run; nothing risks what works today.
-- **v1.1:** mouse-look controls; levies raised from a town's real commoners; live reactions to what happens in front of people; more reverie arcs; 120 fps; the launch kit.
-
-## Approach
-1. Survey existing building blocks properly (codebases, art, sim content, engine kits). *Done: see ~/wednesday/goc-archive/BUILDING_BLOCKS.md.*
-2. Choose the stack from that survey, together. *Proposed: Godot 4 + Quaternius art + Azgaar world seed.*
-3. Proof: one living valley built from those pieces, so you can judge quality before committing.
-4. Then the full realm.
-
-## Open questions
-- Platform: browser (three.js) vs Unity vs Godot. Decide after the survey.
-- Budget for paid art packs (e.g. Synty), if free art isn't good enough.
-- How you steer the narrative: direct events only, or also "story arcs" you set up (e.g. "make House X rise, then betray Y")?
+## Open
+- **The Lore screen:** what it is for in a war-king game, or whether it stays (with Mac).
