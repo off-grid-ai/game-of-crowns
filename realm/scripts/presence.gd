@@ -10,6 +10,7 @@ extends Node
 ## Who stands above whom is data (STATION); the rest is Godot's.
 
 const PerfTools := preload("res://scripts/perf_tools.gd")
+const AnimLOD := preload("res://scripts/anim_lod.gd")  # who is in sight: the one answer (anim_lod.gd live)
 
 const CADENCE := 0.1  # seconds between looks round, near the camera only: a newcomer is noticed within the moment
 static var NEAR_CAM: float = preload("res://scripts/data.gd").num("crowd", "presence.near_cam", 7.0)  # world units from the camera: everyone a street-level view has in it (its focus is ~3 off, and the square ~3.5 round that) (crowd.json presence.near_cam)
@@ -62,6 +63,7 @@ static func fit(person: Node3D) -> void:
 	look.transition_type = Tween.TRANS_SINE
 	look.ease_type = Tween.EASE_IN_OUT
 	look.influence = 0.0
+	person.set_meta("glance", look)  # found at once each look round, never searched for
 	# Up from the head's modifier to the person, then down to the marker.
 	var up := ""
 	var n: Node = sk
@@ -94,18 +96,33 @@ func _look_round() -> void:
 	var cam := get_viewport().get_camera_3d()
 	if cam == null:
 		return
+	# Only those in sight are looked round among (anim_lod.gd's live bodies, a few score), never every person in the
+	# realm (fps round 2026-11-15: the whole "people" group, ~9 ms a look round in a siege).
 	var near: Array[Node3D] = []
-	for p in get_tree().get_nodes_in_group("people"):
-		var n := p as Node3D
-		if n and n.is_visible_in_tree() and n.global_position.distance_to(cam.global_position) < NEAR_CAM and n.find_child("Glance", true, false):
+	var from := cam.global_position
+	var r2 := NEAR_CAM * NEAR_CAM
+	for w in AnimLOD.live.values():
+		var p: Object = (w as WeakRef).get_ref()
+		if p == null:
+			continue
+		var n := (p as Node).get_parent() as Node3D
+		if n and n.has_meta("glance") and n.global_position.distance_squared_to(from) < r2 and n.is_visible_in_tree():
 			near.append(n)
+	# Who stands where, in cells a notice wide: each person looks only at the 3x3 cells round them, never at every
+	# other person near the lens (a packed square or a siege's ranks: hundreds near, n x n checks, 9 ms+ a look round).
+	var cells := {}
+	for n in near:
+		(cells.get_or_add(_cell(n.global_position), []) as Array).append(n)
 	var now := Time.get_ticks_msec() * 0.001
 	_stats["near"] = near.size()
 	_stats["near_sum"] += near.size()
 	for n in near:
 		var mo := n.get_node_or_null("Motion")
 		var busy: bool = mo != null and mo.has_method("body_busy") and mo.body_busy()
-		var look: LookAtModifier3D = n.find_child("Glance", true, false)
+		var held: Variant = n.get_meta("glance")
+		if not is_instance_valid(held):
+			continue
+		var look := held as LookAtModifier3D
 		var st: Dictionary = _looks.get(n.get_instance_id(), {})
 		var who = st.get("who", null)
 		if not is_instance_valid(who):
@@ -114,7 +131,7 @@ func _look_round() -> void:
 			and _flat(n, who).length() < NOTICE * 1.6
 		if keep and now - float(st.get("since", now)) > SWITCH:
 			# Someone new stepping up in front takes the glance from one long looked at.
-			var fresh := _noticed(n, near)
+			var fresh := _noticed(n, cells)
 			if fresh and fresh != who and not _met(n, fresh):
 				st = {"who": fresh, "until": now + randf_range(HOLD.x, HOLD.y), "rested": 0.0, "since": now}
 				_looks[n.get_instance_id()] = st
@@ -122,7 +139,7 @@ func _look_round() -> void:
 		if not keep:
 			who = null
 			if not busy:
-				who = _noticed(n, near)  # someone new is noticed at once; only the same face waits (_met)
+				who = _noticed(n, cells)  # someone new is noticed at once; only the same face waits (_met)
 				if who:
 					st = {"who": who, "until": now + randf_range(HOLD.x, HOLD.y), "rested": 0.0, "since": now}
 			if who == null and st.has("who"):
@@ -140,20 +157,28 @@ func _look_round() -> void:
 			_greet(n, who, now)
 
 
-## The nearest person in front of `n` and within reach of notice, if any.
-func _noticed(n: Node3D, near: Array[Node3D]) -> Node3D:
+## The nearest person in front of `n` and within reach of notice, if any (only the cells round them can hold one).
+func _noticed(n: Node3D, cells: Dictionary) -> Node3D:
 	var face := Vector2(sin(n.rotation.y), cos(n.rotation.y))
 	var best: Node3D = null
 	var best_d := NOTICE
-	for o in near:
-		if o == n:
-			continue
-		var to := _flat(n, o)
-		var d := to.length()
-		if d < best_d and d > 0.001 and face.dot(to / d) > FRONT:
-			best_d = d
-			best = o
+	var c := _cell(n.global_position)
+	for dx in range(-1, 2):
+		for dz in range(-1, 2):
+			for o in cells.get(c + Vector2i(dx, dz), []):
+				if o == n:
+					continue
+				var to := _flat(n, o)
+				var d := to.length()
+				if d < best_d and d > 0.001 and face.dot(to / d) > FRONT:
+					best_d = d
+					best = o
 	return best
+
+
+## The cell a notice wide that a point stands in.
+static func _cell(at: Vector3) -> Vector2i:
+	return Vector2i(floori(at.x / NOTICE), floori(at.z / NOTICE))
 
 
 ## Passing close by: the lower of the two greets the higher, a bow to their
