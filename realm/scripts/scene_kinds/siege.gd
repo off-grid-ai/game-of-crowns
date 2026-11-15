@@ -86,23 +86,8 @@ func besiege(id: int, at: Vector3, approach: Vector3, size: int, engines: int, f
 	# Seen from behind the camp, on the open ground it was pitched on, over the
 	# engines and companies to the walls.
 	stage.framing.emit(sieges[id]["front"], 4.5, PI / 2 - base)
-	# The camp: companies under their standards.
-	for g in 5:
-		var a := (g - 2) * 0.32 + r.randf_range(-0.06, 0.06)
-		var c: Vector3 = arc.call(a, camp_r)
-		var inward := (at - c).normalized()
-		inward.y = 0
-		stage.standard(root, c - inward * 0.45, foe_col, inward, foe)
-		for i in 5:
-			var p := c + Vector3(r.randf_range(-0.35, 0.35), 0, r.randf_range(-0.35, 0.35))
-			if not stage._footing(p):
-				continue
-			var f: Node3D = stage.people.make(r, "soldier", foe_col, "adult")
-			f.position = stage.stand(p)
-			f.rotation.y = atan2(inward.x, inward.z) + r.randf_range(-0.6, 0.6)
-			root.add_child(f)
-			stage.arm(f, "spear" if i % 2 == 0 else "sword")
-			stage.people.play(f, "Sword_Idle" if r.randf() < 0.6 else "Idle", r.randf_range(0.8, 1.1))
+	# The besiegers' companies are the storm's regiments (army_field.gd storm, raised with the assault below) and the
+	# host in the field: no loose men stand about the camp (Mac 2026-11-15: single men scattered between the blocks).
 	# The camp and its engines (siege_camp.gd): tents, palisade, fires, wagons, and the bridge's engines (Freeciv's
 	# catapults and trebuchets at the walls) built on the spot and worked by their crews.
 	var camp: Node3D = SiegeCamp.new()
@@ -239,14 +224,48 @@ func _camp_side(at: Vector3, want: float, wall: float, camp_r: float) -> float:
 ## Six men leave the camp behind their raised shields, run the last stretch,
 ## fight at the foot of the walls and fall back, leaving a man or two there.
 ## The camp sends a fresh man in each one's place before the next rush.
+## Between rushes they wait as one small block (assault.abreast men to a rank, at the army's one spacing, army.json
+## spacing), facing the wall, not strung loose along the arc (Mac 2026-11-15: single men scattered between the
+## regiments): at angle `a`, or the nearest step along the arc (assault.slide, radians, up to assault.slides steps
+## either way) whose ground ground.gd says is free (no engine, camp piece or regiment). It holds no claim: its men
+## are stood at their homes by scenes.stand (ground.gd nearest_clear), which a claim would push off them.
 func _assault(arc: Callable, a: float, wall: float) -> Array:
 	var men := []
 	var home_r := wall + Data.num("siege", "assault.home_from_wall", 1.65)  # behind the engines' line, ahead of the host
+	var abreast := int(Data.num("siege", "assault.abreast", 3))
+	var file := Data.num("army", "spacing.file", 0.18)
+	var rank := Data.num("army", "spacing.rank", 0.26)
+	var ranks := ceili(6.0 / abreast)
+	var hw := abreast * file * 0.5 + 0.05
+	var hd := ranks * rank * 0.5 + 0.05
+	var slide := Data.num("siege", "assault.slide", 0.04)
+	var mid: Vector3 = arc.call(a, home_r)
+	var at := a
+	for k in int(Data.num("siege", "assault.slides", 8)) * 2 + 1:
+		var aa := a + slide * ((k + 1) / 2) * (1.0 if k % 2 == 1 else -1.0)
+		var c: Vector3 = arc.call(aa, home_r)
+		var poly := _block(c, arc.call(aa, wall), hw, hd)
+		if Ground.area_free(poly):
+			mid = c
+			at = aa
+			break
+	var inward: Vector3 = arc.call(at, wall) - mid
+	inward.y = 0.0
+	inward = inward.normalized()
+	var across := Vector3(-inward.z, 0, inward.x)
 	for i in 6:
 		var off := (i - 2.5) * 0.06
-		var home: Vector3 = arc.call(a + off, home_r)
-		men.append({"home": home, "foot": arc.call(a + off, wall + 0.12), "alive": true, "kit": "sword", "rank": 1})
+		var home: Vector3 = stage.ground(mid + across * (float(i % abreast) - (abreast - 1) * 0.5) * file + inward * ((ranks - 1) * 0.5 - float(i / abreast)) * rank)
+		men.append({"home": home, "foot": arc.call(at + off, wall + 0.12), "alive": true, "kit": "sword", "rank": 1})
 	return men  # army_assault.gd raises the men and runs them
+
+
+## A party's block round `c` (world XZ), `hw` across and `hd` deep, its front toward `toward`.
+static func _block(c: Vector3, toward: Vector3, hw: float, hd: float) -> PackedVector2Array:
+	var f := Vector2(toward.x - c.x, toward.z - c.z).normalized()
+	var s := Vector2(-f.y, f.x)
+	var m := Vector2(c.x, c.z)
+	return PackedVector2Array([m - s * hw - f * hd, m + s * hw - f * hd, m + s * hw + f * hd, m - s * hw + f * hd])
 
 
 ## Breaks a camp up once the host has moved on.
