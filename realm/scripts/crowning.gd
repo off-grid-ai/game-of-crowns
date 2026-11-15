@@ -73,7 +73,10 @@ func _raise_standard(seat_id: int) -> void:
 
 ## The line over the realm: in the middle of the sky, a few seconds, then gone.
 func _line() -> void:
-	var name_: String = String(main.awareness.realm.get_var(&"king_name", "", false)) if main.get("awareness") else ""
+	# The King's own name (bridge royals.js, /world royals.king: the name the player may have given him), not the
+	# realm's reading of him.
+	var king = preload("res://scripts/royal_sheet.gd").royals().get("king")
+	var name_: String = String(king.get("name", "")) if king is Dictionary else ""
 	var text := String(Data.value(F, "crowning.line", "Long live %s, King of Aldmere")) % (name_ if name_ != "" else "the King")
 	var box := VBoxContainer.new()
 	box.set_anchors_preset(Control.PRESET_CENTER_TOP)
@@ -91,6 +94,12 @@ func _line() -> void:
 	small.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(small)
 	box.modulate.a = 0.0
+	# One layer at a time: the first card to come up (a lord rising, a town's card) takes the screen, and the line
+	# gives way at once (ui.card_shown).
+	if main.get("ui") and main.ui.has_signal("card_shown"):
+		main.ui.card_shown.connect(func(_c):
+			if is_instance_valid(box):
+				box.create_tween().tween_property(box, "modulate:a", 0.0, Data.num(F, "crowning.yield", 0.25)).finished.connect(queue_free), CONNECT_ONE_SHOT)
 	var tw := box.create_tween()
 	tw.tween_property(box, "modulate:a", 1.0, 0.6)
 	tw.tween_interval(Data.num(F, "crowning.seconds", 4.0))

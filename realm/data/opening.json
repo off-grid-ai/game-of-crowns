@@ -44,6 +44,7 @@
   "line": "Long live %s, King of Aldmere",
   "under": "The realm is yours",
   "seconds": 4.0,
+  "yield": 0.25, "_yield": "seconds the line takes to give way when a card comes up (crowning.gd, ui.card_shown): one layer at a time",
   "top": 150,
   "standard": 1.2,
   "rise": 2.5

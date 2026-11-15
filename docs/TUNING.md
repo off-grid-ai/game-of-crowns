@@ -56,6 +56,7 @@ Switches (`--name`) go after `--` on the game's command line.
 - What a house's favour means (loyal, sworn, steady, cooling): `bridge/data/favour.json`. The houses panel's words, the court, counsel, the reign's goal and the townsfolk's mood all follow it.
 - How long a cold house sits before its lord sends the King an ultimatum, and from a refused ultimatum to its host marching: `bridge/data/favour.json` `turning` (`seasons`, `riseIn`).
 - The King's purse at his crowning, by the reign's wealth (poor 450, comfortable 1000, rich 2500 gold; a crown is 100 to the gold on screen): `bridge/data/economy.json`: `start`.
+- The crowning line giving way to the first card (crowning.gd, ui.card_shown): `realm/data/opening.json` `crowning.yield` (0.25 s).
 - When the treasury counts as thin (the Hand says so, the court may hear of it): `bridge/data/economy.json`: `thin`.
 - How many seasons the King's own works take to rise: `bridge/data/economy.json` `workSeasons`.
 - How much the King's deeds must add up to on an axis before the realm names him by it: `bridge/data/ledger.json` `strong`.

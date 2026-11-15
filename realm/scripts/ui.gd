@@ -33,6 +33,7 @@ signal person_opened(id: String, house: Dictionary)  # the character view
 signal walk_as_king  # step into the King himself, at Kingsmere
 signal story_opened(entry: Dictionary)
 signal reign_continued  # the reign was scored, and the King rules on
+signal card_shown(card: PanelContainer)  # a card came up (ui.card): a line over the realm yields to it (crowning.gd)
 signal court_closed  # the doors shut: the realm moves, and the camera may go and look
 signal interlude_closed  # the King has read the act just gone: the realm goes on
 signal speed_stepped(dir: int)  # + and -: the seasons pass faster (1) or slower (-1); main.gd asks the bridge
@@ -285,6 +286,7 @@ func card(p: PanelContainer) -> PanelContainer:
 func _put_away_all_but(p: PanelContainer) -> void:
 	if not is_instance_valid(p) or not p.visible:
 		return
+	card_shown.emit(p)  # one layer at a time: what is drawn over the realm gives way to a card
 	for c in cards:
 		if c != p and is_instance_valid(c) and c.visible:
 			c.visible = false
@@ -298,6 +300,10 @@ func covered() -> Array[Rect2]:
 	var out: Array[Rect2] = []
 	for c in root.get_children():
 		if c is PanelContainer and (c as Control).is_visible_in_tree():
+			out.append((c as Control).get_global_rect())
+	# Every card, wherever it hangs (a town's card, the court's): a town's name never sits under one.
+	for c in cards:
+		if is_instance_valid(c) and (c as Control).is_visible_in_tree():
 			out.append((c as Control).get_global_rect())
 	return out
 
