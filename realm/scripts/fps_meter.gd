@@ -1,7 +1,7 @@
 extends CanvasLayer
 const DrawCensus := preload("res://scripts/draw_census.gd")  # triangles in view by part, the one count
 ## The frame rate at the screen's top right, under the bar (Mac, 2026-11-15: "render FPS on the top right... that way
-## at least I know what's happening"). Debug builds only (ui.gd adds it): an exported game shows none. Twice a second:
+## at least I know what's happening"). Shown as Settings > Graphics "Frame rate" says (off by default). Twice a second:
 ## frames a second and the frame's milliseconds. A layer of its own over everything, so it shows whatever hides the
 ## interface (a still, the cinema, the title).
 
@@ -38,6 +38,13 @@ func _process(delta: float) -> void:
 	_t -= delta
 	if _t > 0.0:
 		return
+	# Settings > Graphics "Frame rate" (Mac, 2026-11-16): off, the rate alone, or the rate and what is drawn. Off and
+	# not measuring (GOC_PERF_PROBE): nothing worked out at all.
+	var mode := String(preload("res://scripts/settings.gd").get_value("frame_rate"))
+	label.visible = mode != "off"
+	if mode == "off" and not preload("res://scripts/perf_tools.gd").probing:
+		_t = 0.5
+		return
 	_t = 0.5
 	var fps := Engine.get_frames_per_second()
 	var lines := PackedStringArray(["%d fps  ·  %.0f ms  ·  %s" % [fps, 1000.0 / maxf(fps, 1.0), "smooth" if fps >= 60 else "playable" if fps >= 30 else "slow" if fps >= 15 else "very slow"]])
@@ -61,7 +68,7 @@ func _process(delta: float) -> void:
 	var testing := PerfTools.testing  # what the measuring run is trying now (perf_tools cyclevis)
 	if testing != "":
 		lines.append("testing: " + testing)
-	label.text = "\n".join(lines)
+	label.text = lines[0] if mode == "rate" else "\n".join(lines)
 
 
 ## What the frame is drawing (Mac: "log what you are rendering"): objects the renderer drew, towns and people in

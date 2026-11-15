@@ -1191,6 +1191,8 @@ func _voice_settings(right: Control) -> void:
 		if main and main.has_method("apply_graphics"):
 			main.apply_graphics())
 	right.add_child(_label("Smooth runs well on any Mac. Beautiful adds bounce light, soft haze and depth of field, at a cost.", 13, MUTED))
+	_choices(right, "Frame rate", [["Off", "off"], ["Frame rate", "rate"], ["Frame rate and details", "details"]], Settings.get_value("frame_rate"), func(v): Settings.set_value("frame_rate", v))
+	right.add_child(_label("Shown at the top right. Details add what is being drawn and what it costs.", 13, MUTED))
 	_section(right, "Sound")
 	for pair in [["All sound", "vol_master"], ["Music", "vol_music"], ["Sounds of the realm", "vol_ambience"], ["Work and war", "vol_sfx"], ["Seals, coins and clicks", "vol_ui"]]:
 		right.add_child(_label(pair[0], 15, MUTED))

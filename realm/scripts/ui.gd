@@ -230,8 +230,7 @@ func _ready() -> void:
 	omens = preload("res://scripts/omens.gd").new()
 	root.add_child(omens)
 	top_bar._build_top_bar()
-	if OS.is_debug_build():
-		get_parent().add_child.call_deferred(preload("res://scripts/fps_meter.gd").new())  # the frame rate, top right, on its own layer (Mac 2026-11-15); none in an export
+	get_parent().add_child.call_deferred(preload("res://scripts/fps_meter.gd").new())  # the frame rate, top right, on its own layer (Mac 2026-11-15); shown as Settings says (frame_rate)
 	_build_houses()
 	_build_chronicle()
 	_build_ticker()
