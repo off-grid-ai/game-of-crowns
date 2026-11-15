@@ -26,7 +26,6 @@ var sun: DirectionalLight3D
 var env: Environment
 
 var _houses := {}  # player id -> house dict
-var hero: CanvasLayer  # the character view
 var labels: CanvasLayer  # town names on the map
 var intro: CanvasLayer  # the storybook at the start of a reign
 var lore: CanvasLayer  # the book of the realm's houses and people
@@ -265,18 +264,6 @@ func _ready() -> void:
 		return "The towns are rising: %d of %d" % [n.x, n.y] if terrain.built and n.y > 0 else "The realm is forming…"
 	add_child(intro)
 	lore = preload("res://scripts/lore.gd").new()
-	lore.person_written.connect(func(p, house):
-		hero.open(p, house, "the Lore")
-		hero.closed.connect(func(): lore.visible = true, CONNECT_ONE_SHOT))
-	# Met from the Lore, Back returns to the Lore at that house.
-	lore.person_opened.connect(func(id, house):
-		_open_person(id, house, "the Lore")
-		hero.closed.connect(func(): lore.visible = true, CONNECT_ONE_SHOT))
-	# The crown's family written from the Lore: the one character form, then back to the Lore at that house.
-	lore.royal_edit.connect(func(p, house):
-		bridge.character_options(func(opts):
-			ui.show_character_form(int(house.get("id", -1)), String(house.get("name", "")), opts if opts is Dictionary else {}, p)
-			ui.character_form_closed.connect(func(): lore.visible = true, CONNECT_ONE_SHOT)))
 	ui.royal_edited.connect(func(spec):
 		bridge.write_royal(spec, func(code, d):
 			ui.toast(("%s is written." % spec["name"]) if code == 200 else String((d if d is Dictionary else {}).get("error", "That failed.")))
@@ -296,8 +283,6 @@ func _ready() -> void:
 	labels.scenes = scenes
 	labels.houses = _houses
 	add_child(labels)
-	hero = preload("res://scripts/hero_view.gd").new()
-	add_child(hero)
 	ui.person_opened.connect(_open_person)
 	ui.lore_opened.connect(func(id): lore.toggle() if id < 0 else lore.open(id))
 	walking._setup()  # walking as a character (walking.gd): the body, the mic, the interiors
@@ -457,28 +442,33 @@ func _ready() -> void:
 	lore.fetch_map = bridge.lore_map
 	lore.fetch_written = bridge.lore_written
 	lore.rename_name = bridge.rename
-	# A person's card writes them in place (hero_view.gd, the one character form): the starting cast (from the menu's
-	# Lore) through the book's rewrites, a name through the player's names; someone of the reign through /person.
-	hero.ui = ui
-	hero.trait_options = bridge.character_options
-	hero.save_person = func(p: Dictionary, spec: Dictionary, cb: Callable):
-		if p.get("written", false):
-			var was := String(p.get("name", ""))
-			if String(spec.get("name", was)) != was:
-				bridge.rename(was, String(spec["name"]), func(_c, _d): pass)
+	# A person is a page of the Lore (lore.gd _person_page), written on in place with the one character form: the
+	# starting cast (from the menu's Lore) through the book's rewrites and the player's names (the given name only),
+	# the crown's family through /lore/royal, someone of the reign through /person.
+	lore.ui = ui
+	lore.trait_options = bridge.character_options
+	lore.fetch_person = bridge.person
+	lore.save_person = func(p: Dictionary, spec: Dictionary, cb: Callable):
+		if p.get("royal", false):
+			bridge.write_royal(spec, cb)
+		elif p.get("written", false):
+			var was := String(p.get("name", "")).get_slice(" ", 0)
+			var now := String(spec.get("name", was)).get_slice(" ", 0)
+			if now != was:
+				bridge.rename(was, now, func(_c, _d): pass)
 			var change := {"id": spec.get("id", ""), "backstory": spec.get("past", ""), "memories": spec.get("memories", []), "traits": spec.get("traits", [])}
 			if spec.has("loyalty"):
 				change["loyalty"] = spec["loyalty"]  # only when the player moved it
 			bridge.write_person(change, cb)
 		else:
 			bridge.edit_character(spec, cb)
-	hero.name_changed.connect(lore.refresh)
 	add_child(title)
 	title.began.connect(func(): story._intro_due = true)
 	# The player's own portraits (likeness.gd, bridge likeness.js): laid over the dealt faces once a chronicle opens.
 	var likeness: Node = preload("res://scripts/likeness.gd").new()
 	add_child(likeness)
 	title.closed.connect(func():
+		bridge.names(func(_n): pass)  # the player's names, so a renamed house keeps its arms (heraldry.gd)
 		likeness.load_all()
 		get_tree().create_timer(8.0).timeout.connect(likeness.load_all))  # again once a new reign has formed
 	# The menu stands alone: the game's interface hides behind it until a
@@ -1424,11 +1414,9 @@ func _take_control(p: Dictionary, h: Dictionary) -> void:
 	walking._take_control(p, h)
 
 
-func _open_person(id: String, house: Dictionary, from := "the realm") -> void:
-	var h: Dictionary = _houses.get(int(house.get("id", -1)), house) if house.has("id") else house
-	bridge.person(id, func(d):
-		if d is Dictionary and d.has("name"):
-			hero.open(d, h, from))
+## Someone opened from anywhere (the court, the map, a house's card): their page of the Lore.
+func _open_person(id: String, house: Dictionary, _from := "the realm") -> void:
+	lore.open_person(id, _houses.get(int(house.get("id", -1)), house) if house.has("id") else house)
 
 
 ## Where a matter at court belongs in the world: the bridge's own place for it

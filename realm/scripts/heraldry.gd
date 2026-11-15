@@ -99,9 +99,22 @@ static func sigil(house: Dictionary) -> Texture2D:
 	return load(path) if ResourceLoader.exists(path) else null
 
 
-## "House Goldcrest" -> "goldcrest", "The Crown" -> "crown", "The Dead" -> "dead".
+## The player's own names (bridge names.js, {own word: shown word}), turned round: the arms follow the house, not
+## the name the player gave it (House Sharma still flies the Wolfholt wolf). bridge.gd keeps it, at every rename.
+static var _own_of := {}  # shown word (lower case) -> own word (lower case)
+static func known_names(names: Dictionary) -> void:
+	_own_of.clear()
+	for own in names:
+		if String(names[own]) != "":
+			_own_of[String(names[own]).to_lower()] = String(own).to_lower()
+
+
+## "House Goldcrest" -> "goldcrest", "The Crown" -> "crown", "The Dead" -> "dead"; a renamed house by its own word.
 static func slug(house: Dictionary) -> String:
 	var name := String(house.get("name", "")).to_lower()
+	for shown in _own_of:
+		if name.contains(shown):
+			name = name.replace(shown, _own_of[shown])
 	if house.get("crown", false):
 		return "crown"
 	if house.get("sigil", "") == "banner":

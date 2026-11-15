@@ -6,10 +6,7 @@ extends CanvasLayer
 ## from the world bible; the people in each house are the living ones, so the
 ## book changes as the reign goes on. Anyone named can be met face to face.
 
-signal person_opened(id: String, house: Dictionary)
 signal town_opened(title: String)  # go to this town on the map
-signal person_written(person: Dictionary, house: Dictionary)  # meet someone as the book has them
-signal royal_edit(person: Dictionary, house: Dictionary)  # write one of the crown's family (main.gd opens the character form)
 signal closed
 
 const T := preload("res://scripts/theme.gd")
@@ -22,7 +19,13 @@ var _book := {}
 var _chapters: VBoxContainer
 var _page: VBoxContainer
 var _scroll: ScrollContainer
-var _chosen := -2  # -1 = the realm, -3 = the lesser houses, otherwise a house id
+var _chosen: Variant = -2  # -1 = the realm, -3 = the lesser houses, a house id, or "person:<id>" (a person's page)
+## A person's page (Mac 2026-11-15: a person is a page of the book, not a card over it): who they are, by id.
+var _people := {}  # "person:<id>" -> {"p": their record, "h": their house}
+var fetch_person := Callable()  # (id, cb(record)) -> void: someone of the reign as they are now (bridge /person)
+var save_person := Callable()  # (person, spec, cb(code, d)) -> void: their rewrite, through the bridge (main.gd)
+var trait_options := Callable()  # (cb(opts)) -> void: the realm's natures and aims (bridge /characters/options)
+var ui: Node  # the interface (ui.gd): the one character form (character_form.gd), its toasts
 ## Opened from the main menu, the book is the world as written: the houses, their
 ## arms and grudges, the lesser houses. None of the last chronicle's state (its
 ## towns, favour, the fallen, its living people and what they remember).
@@ -42,18 +45,18 @@ func _ready() -> void:
 
 
 ## Opens the book, at a house's chapter when given one.
-func open(house_id := -2, as_written := false) -> void:
+func open(house_id: Variant = -2, as_written := false) -> void:
 	baseline = as_written
 	_back_stack.clear()  # a book opened afresh has no way back yet
 	_fwd_stack.clear()
-	if house_id != -2:
+	if not _same(house_id, -2):
 		_chosen = house_id
 	var ask: Callable = fetch_written if baseline and fetch_written.is_valid() else fetch
 	if ask.is_valid():
 		ask.call(func(d):
 			_book = d if d is Dictionary else {}
 			_build()
-			_show(_chosen if _chosen != -2 else -1))
+			_show(-1 if _same(_chosen, -2) else _chosen))
 	visible = true
 
 
@@ -65,7 +68,7 @@ func refresh() -> void:
 		ask.call(func(d):
 			_book = d if d is Dictionary else {}
 			_build()
-			_show(_chosen if _chosen != -2 else -1))
+			_show(-1 if _same(_chosen, -2) else _chosen))
 
 
 func close() -> void:
@@ -172,10 +175,10 @@ var _fwd_stack: Array = []
 
 
 ## A page the reader chose: the one they leave is kept to come back to.
-func _go(id: int) -> void:
-	if id == _chosen:
+func _go(id: Variant) -> void:
+	if _same(id, _chosen):
 		return
-	if _chosen != -2:
+	if not _same(_chosen, -2):
 		_back_stack.append(_chosen)
 	_fwd_stack.clear()
 	_show(id)
@@ -197,10 +200,15 @@ func go_forward() -> bool:
 	return true
 
 
-func _show(id: int) -> void:
+## Two page keys alike (a chapter's number, or a person's "person:<id>").
+static func _same(a: Variant, b: Variant) -> bool:
+	return typeof(a) == typeof(b) and a == b
+
+
+func _show(id: Variant) -> void:
 	_chosen = id
 	for b in _chapters.get_children():
-		b.button_pressed = int(b.get_meta("id")) == id
+		b.button_pressed = _same(b.get_meta("id"), id) or (id is String and _people.has(id) and _same(b.get_meta("id"), int(_people[id]["h"].get("id", -9))))
 	for c in _page.get_children():
 		c.queue_free()
 	_scroll.scroll_vertical = 0
@@ -219,6 +227,10 @@ func _show(id: int) -> void:
 			var call: Callable = pair[3]
 			nb.pressed.connect(func(): call.call())
 			nav.add_child(nb)
+	if id is String:
+		if _people.has(id):
+			_person_page(_people[id]["p"], _people[id]["h"])
+		return
 	if id == -1:
 		_realm()
 		return
@@ -281,7 +293,7 @@ func _map_page() -> void:
 		if fetch_map.is_valid():
 			fetch_map.call(func(d):
 				_map = d if d is Dictionary else {}
-				if _chosen == MAP and not _map.is_empty():
+				if _same(_chosen, MAP) and not _map.is_empty():
 					_show(MAP))
 		_page.add_child(T.label("Unrolling the map…"))
 		return
@@ -564,29 +576,11 @@ func _person(p: Dictionary, h: Dictionary, into: Node = null) -> void:
 	meet.text = "Meet"
 	meet.flat = true
 	meet.focus_mode = Control.FOCUS_NONE
-	meet.tooltip_text = "Meet them face to face"
+	meet.tooltip_text = "Their page of the book"
 	meet.add_theme_color_override("font_color", T.ACCENT)
-	meet.pressed.connect(func():
-		visible = false  # stepped aside, not closed: Back from the meeting returns here
-		if p.get("written", false):
-			person_written.emit(p, h)  # as every chronicle begins, not as your last reign left them
-		else:
-			person_opened.emit(str(p.get("id", "")), h))
-	if not p.get("royal", false):  # the crown's own family (bridge royals.js) is not met at court
-		top.add_child(meet)
-	else:
-		meet.free()
-		# Yours to write: their name, nature and story (the one character form; bridge POST /lore/royal).
-		var write := Button.new()
-		write.text = "Edit"
-		write.flat = true
-		write.focus_mode = Control.FOCUS_NONE
-		write.tooltip_text = "Write who they are: name, nature, story"
-		write.add_theme_color_override("font_color", T.ACCENT)
-		write.pressed.connect(func():
-			visible = false  # stepped aside: the form returns here
-			royal_edit.emit(p, h))
-		top.add_child(write)
+	# Their own page of the book (as every chronicle begins it, for the book as written; as they are now, in a reign).
+	meet.pressed.connect(func(): _open_person(p, h))
+	top.add_child(meet)
 	var rank: String = String(p.get("role", "")) if p.get("role") != null else RANKS.get(String(p.get("rank", "")), "")
 	if String(p.get("gender", "")) == "female":
 		rank = {"Lord": "Lady", "Bannerman": "Bannerwoman", "Heir": "Heiress", "The King": "The Queen"}.get(rank, rank)
@@ -693,11 +687,9 @@ func _family(f: Dictionary, into: Node = null) -> void:
 			meet.text = "Meet"
 			meet.flat = true
 			meet.focus_mode = Control.FOCUS_NONE
-			meet.tooltip_text = "Meet them face to face"
+			meet.tooltip_text = "Their page of the book"
 			meet.add_theme_color_override("font_color", T.ACCENT)
-			meet.pressed.connect(func():
-				visible = false  # stepped aside: Back from the meeting returns here
-				person_opened.emit(str(head["id"]), liege))
+			meet.pressed.connect(func(): open_person(str(head["id"]), liege))
 			line.add_child(meet)
 
 
@@ -743,8 +735,241 @@ func _input(event: InputEvent) -> void:
 	elif k.meta_pressed and k.keycode == KEY_BRACKETRIGHT:
 		go_forward()
 	elif k.keycode == KEY_ESCAPE:
-		if not go_back():  # Esc steps back through the pages, then closes the book
+		if _editing:
+			_editing = false
+			_show(_chosen)  # Esc puts the pen down first
+		elif not go_back():  # Esc steps back through the pages, then closes the book
 			close()
 	else:
 		return
 	get_viewport().set_input_as_handled()
+
+
+# --- a person -------------------------------------------------------------------------------------------------
+
+## Someone of the reign by id (the court, the map, a sworn family's head): the book opens at their page.
+func open_person(id: String, house: Dictionary) -> void:
+	if not fetch_person.is_valid():
+		return
+	fetch_person.call(id, func(d):
+		if not (d is Dictionary and d.has("name")):
+			return
+		var key := "person:%s" % id
+		_people[key] = {"p": d, "h": house}
+		if visible:
+			_go(key)
+		else:
+			open(key, false))  # the book opens at their page
+
+
+## A person's page, kept in the book's Back and Forward. One of the reign is read fresh from the bridge (the
+## list holds only their headline); the book as written and the crown's family are as the list has them.
+func _open_person(p: Dictionary, h: Dictionary) -> void:
+	var key := "person:%s" % str(p.get("id", p.get("name", "")))
+	var fresh: bool = not p.get("written", false) and not p.get("royal", false) and not p.has("memories") and fetch_person.is_valid()
+	_people[key] = {"p": p, "h": h}
+	if fresh:
+		fetch_person.call(str(p.get("id", "")), func(d):
+			if d is Dictionary and d.has("name"):
+				_people[key] = {"p": d, "h": h}
+				if _same(_chosen, key):
+					_show(key))
+	_go(key)
+
+
+var _editing := false  # the page is being written on (Esc puts the pen down)
+
+
+## A person's page (CK3's character window as a page of the book): their painted portrait large beside their arms
+## and name, like a house's banner; then nature, loyalty, toward the King, what they hold, what they want, their
+## story and what they remember. Edit, beside their name, writes on this page; Save and Cancel at its foot.
+func _person_page(p: Dictionary, h: Dictionary, editing := false) -> void:
+	_editing = editing
+	var head := HBoxContainer.new()
+	head.add_theme_constant_override("separation", 24)
+	_page.add_child(head)
+	var face := preload("res://scripts/painted_faces.gd").face(p)
+	if face:
+		var frame := PanelContainer.new()
+		frame.add_theme_stylebox_override("panel", T._box(Color(0, 0, 0, 0.35), Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.8), 6, 3))
+		frame.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+		head.add_child(frame)
+		var pic := TextureRect.new()
+		pic.texture = face
+		pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		var fs: Array = preload("res://scripts/data.gd").value("royal_sheet", "lord_sheet.face", [240, 320])
+		pic.custom_minimum_size = Vector2(float(fs[0]), float(fs[1]))
+		frame.add_child(pic)
+	var names := VBoxContainer.new()
+	names.add_theme_constant_override("separation", 8)
+	names.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	names.custom_minimum_size.x = 320
+	head.add_child(names)
+	var family := ui_family(p, h)
+	var title_row := HBoxContainer.new()
+	title_row.add_theme_constant_override("separation", 12)
+	names.add_child(title_row)
+	if not family.is_empty():
+		title_row.add_child(_sigil(family, Color.WHITE, 36))
+	title_row.add_child(_sigil(h, _tint(h), 36 if family.is_empty() else 24))
+	var title := T.title(String(p.get("name", "")), 34)
+	title.autowrap_mode = TextServer.AUTOWRAP_WORD
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title_row.add_child(title)
+	if not editing and save_person.is_valid() and ui:
+		var edit := Button.new()
+		edit.text = "Edit"
+		edit.flat = true
+		edit.focus_mode = Control.FOCUS_NONE
+		edit.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		edit.add_theme_color_override("font_color", T.TEXT_3)
+		edit.add_theme_font_size_override("font_size", T.SIZE_DESC)
+		edit.pressed.connect(func():
+			for c in _page.get_children():
+				c.queue_free()
+			_person_page(p, h, true))
+		title_row.add_child(edit)
+	var rank: String = String(p.get("role", "")) if p.get("role") != null else RANKS.get(String(p.get("rank", "")), String(p.get("rank", "")).capitalize())
+	if String(p.get("gender", "")) == "female":
+		rank = {"Lord": "Lady", "Bannerman": "Bannerwoman", "Heir": "Heiress", "The King": "The Queen"}.get(rank, rank)
+	var line := ["%s, %d" % [rank, int(p.get("age", 0))] if rank != "" else "Aged %d" % int(p.get("age", 0)), String(h.get("name", p.get("house", "")))]
+	if p.get("seat") != null:
+		line.append("of %s" % String(p["seat"]))
+	names.add_child(_text("  ·  ".join(line.filter(func(x): return x != "")), T.TEXT_2))
+	if String(h.get("words", "")) != "":
+		var words := T.title("“%s”" % h["words"], 18, T.ACCENT)
+		words.add_theme_font_override("font", T.speech)
+		names.add_child(words)
+	_page.add_child(HSeparator.new())
+	if editing:
+		_person_editor(p, h)
+		return
+	var nature := ", ".join(p.get("traits", []))
+	_fact("Nature", nature)
+	if p.get("loyalty") != null:
+		var loyal := int(p["loyalty"])
+		var says := ""
+		for b in preload("res://scripts/data.gd").value("royal_sheet", "lord_loyalty", []):
+			if loyal >= int(b.get("above", 0)):
+				says = String(b.get("says", ""))
+				break
+		_fact("Loyalty to their liege", says.replace("{liege}", String(h.get("name", "their house"))))
+	_toward_king(p, h)
+	_holds(p, h)
+	var goals: Array = p.get("goals", []) if p.get("goals") is Array else ([p["goal"]] if p.get("goal") is String else [])
+	if not goals.is_empty():
+		_fact("Wants to", "; ".join(goals.map(func(g): return String(g))))
+	var story = p.get("backstory") if p.get("backstory") else p.get("story")
+	if story is String and story != "":
+		_fact("Their story", story)
+	var mem: Array = []
+	for m in p.get("memories", []):
+		if not mem.has(m):
+			mem.append(m)
+	if not mem.is_empty():
+		var box := VBoxContainer.new()
+		box.add_theme_constant_override("separation", 4)
+		box.add_child(T.label("Remembers"))
+		for i in range(mem.size() - 1, -1, -1):
+			box.add_child(_text("“%s”" % String(mem[i]), T.TEXT_2))
+		_page.add_child(box)
+
+
+## Edit on a person's page: the one character form written on the page itself (character_form.gd, host mode; its
+## Cancel and Save at the page's foot). The given name only (the surname is the house's), age and sex as they are
+## (their portrait is painted for them); saved through the bridge (main.gd save_person), then the page shows them.
+func _person_editor(p: Dictionary, h: Dictionary) -> void:
+	var host := VBoxContainer.new()
+	host.add_theme_constant_override("separation", 10)
+	_page.add_child(host)
+	var ask := trait_options if trait_options.is_valid() else func(cb): cb.call({})
+	ask.call(func(opts):
+		if not is_instance_valid(host):
+			return
+		var person := p.duplicate()
+		person["fixed"] = true
+		if not person.get("backstory") and person.get("story"):
+			person["backstory"] = person["story"]
+		ui.form_card.show_character_form(int(h.get("id", -1)), String(h.get("name", "")), opts if opts is Dictionary else {}, person, host, func(spec: Dictionary):
+			if spec.is_empty():
+				_show(_chosen)
+				return
+			save_person.call(p, spec, func(code, d):
+				if code != 200:
+					ui.toast(String((d if d is Dictionary else {}).get("error", "That didn't save.")))
+					return
+				var now := p.duplicate()
+				for k in ["name", "loyalty", "memories"]:
+					if spec.has(k):
+						now[k] = spec[k]
+				if spec.get("past") != null:
+					now["backstory"] = spec["past"]
+					now["story"] = spec["past"]
+				if not (spec.get("traits", []) as Array).is_empty():
+					now["traits"] = spec["traits"]
+				var key := "person:%s" % str(p.get("id", p.get("name", "")))
+				_people[key] = {"p": now, "h": h}
+				ui.toast("%s is changed." % String(now.get("name", "")))
+				refresh())))
+
+
+## The lesser family a person belongs to (from their surname), or {} for the house's own blood.
+static func ui_family(p: Dictionary, h: Dictionary) -> Dictionary:
+	var name := String(p.get("name", "")).strip_edges()
+	var surname := String(p["surname"]) if p.get("surname") is String else name.get_slice(" ", name.get_slice_count(" ") - 1)
+	if "House " + surname == String(h.get("name", p.get("house", ""))):
+		return {}
+	return Heraldry.family(surname)
+
+
+## A lord's page: what the head of a great house thinks of the King, in a word, and the deeds that moved it
+## (bridge /person why; CK3's opinion breakdown). Only a house's lord speaks for the house.
+func _toward_king(p: Dictionary, h: Dictionary) -> void:
+	if String(p.get("rank", "")) != "lord" or baseline:
+		return
+	var Aw := preload("res://scripts/awareness.gd")
+	var st: Node = Aw.store()
+	var f = null
+	for pl in (st.rec("players", []) if st else []):
+		if int(pl.get("id", -2)) == int(h.get("id", -1)):
+			f = pl.get("favour")
+	if f == null:
+		return
+	_fact("Toward the King", Aw.mood_of(float(f)))
+	for w in p.get("why", []):
+		var d := int((w as Dictionary).get("d", 0))
+		_page.add_child(_text("%s  %s" % ["▲" if d > 0 else "▼", String(w.get("what", ""))], Color("#7fb069") if d > 0 else Color("#e86b5c")))
+
+
+## What they hold (CK3's holdings): a great house's lord, its towns and the houses sworn to it; a sworn lord, his
+## seat and his liege (bridge /world cities and vassals). Words in royal_sheet.json lord_holdings.
+func _holds(p: Dictionary, h: Dictionary) -> void:
+	var st: Node = preload("res://scripts/awareness.gd").store()
+	if st == null or baseline:
+		return
+	var w: Dictionary = preload("res://scripts/data.gd").value("royal_sheet", "lord_holdings", {})
+	var lines := PackedStringArray()
+	if String(p.get("rank", "")) == "lord":
+		var towns := PackedStringArray()
+		for c in st.rec("cities", []):
+			if int(c.get("owner", -2)) == int(h.get("id", -1)):
+				towns.append(String(c.get("name", "")))
+		if not towns.is_empty():
+			lines.append(String(w.get("towns", "{towns}")).replace("{towns}", ", ".join(towns)))
+		var sworn := PackedStringArray()
+		for vs in st.rec("vassals", []):
+			if int(vs.get("owner", -2)) == int(h.get("id", -1)):
+				sworn.append(String(vs.get("house", "")))
+		if not sworn.is_empty():
+			lines.append(String(w.get("sworn", "{houses}")).replace("{houses}", ", ".join(sworn)))
+	else:
+		for vs in st.rec("vassals", []):
+			if String(vs.get("id", "")) == String(p.get("id", "-")):
+				var town := ""
+				for c in st.rec("cities", []):
+					if int(c.get("id", -2)) == int(vs.get("town", -1)):
+						town = String(c.get("name", ""))
+				lines.append(String(w.get("vassal", "")).replace("{house}", String(vs.get("house", ""))).replace("{town}", town).replace("{liege}", String(vs.get("liege", ""))))
+	if not lines.is_empty():
+		_fact(String(w.get("head", "Holds")), "  ".join(lines))

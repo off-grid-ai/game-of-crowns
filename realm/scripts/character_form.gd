@@ -18,7 +18,7 @@ func _init(owner: UI) -> void:
 ## Write your own character into a house: name, role, nature and aim. They
 ## join as a sworn member and act on what you gave them, season by season.
 ## Given someone already in the realm, the same form reshapes them instead, with what they remember.
-## host: the person's own card (hero_view.gd) to write in place, the form inside it; done(spec) then takes the
+## host: the person's own page (lore.gd _person_page) to write in place, the form inside it; done(spec) then takes the
 ## written spec ({} on Cancel) instead of the signals, and the card saves it.
 ## Returns the form's action row (Cancel and Make it so), for a host card to pin below its scrolling column.
 func show_character_form(house_id: int, house_name: String, opts: Dictionary, person := {}, host: Control = null, done := Callable()) -> Control:
@@ -46,10 +46,28 @@ func show_character_form(house_id: int, house_name: String, opts: Dictionary, pe
 		ui.character_form_closed.emit()
 	# ask: the form's own question (a new reign's "Who are you?"), skip: its Cancel's word (royal_sheet.gd).
 	v.add_child(T.label(String(person["ask"]) if person.get("ask") else (("Change who %s is" % String(person.get("name", ""))) if editing else ("A new character for " + house_name))))
+	# fixed (a person's page in the Lore): the given name is the King's to change, the surname is the house's (shown
+	# beside it, its own Edit on the house page), and age and sex stay as their portrait is painted (Mac 2026-11-15).
+	var fixed := bool(person.get("fixed", false))
+	var full := String(person.get("name", ""))
+	var surname := ""
+	if fixed and full.contains(" "):
+		surname = String(person["surname"]) if person.get("surname") is String else full.substr(full.find(" ") + 1)
 	var name := LineEdit.new()
-	name.placeholder_text = "Their name, e.g. Ser Aldous Crane"
-	name.text = String(person.get("name", ""))
-	v.add_child(name)
+	name.placeholder_text = "Their given name" if fixed else "Their name, e.g. Ser Aldous Crane"
+	name.text = full.trim_suffix(" " + surname) if surname != "" else full
+	name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	if surname != "":
+		var name_row := HBoxContainer.new()
+		name_row.add_theme_constant_override("separation", 10)
+		v.add_child(name_row)
+		name_row.add_child(name)
+		var sn := T.prose(surname, T.SIZE_BODY, T.TEXT_2)
+		sn.tooltip_text = "The house's name: change it on the house's own page"
+		sn.mouse_filter = Control.MOUSE_FILTER_PASS
+		name_row.add_child(sn)
+	else:
+		v.add_child(name)
 	preload("res://scripts/spark.gd").attach(name, ui.get_tree().current_scene.get("bridge"), "character-name", func(): return "A person of %s, in a medieval realm." % house_name)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 10)
@@ -65,6 +83,10 @@ func show_character_form(house_id: int, house_name: String, opts: Dictionary, pe
 	age.prefix = "Age"
 	gender.selected = 1 if str(person.get("gender", "")) == "female" else 0
 	row.add_child(age)
+	if fixed:
+		gender.visible = false
+		age.visible = false
+		row.add_child(T.prose("%s, %d" % ["A woman" if gender.selected == 1 else "A man", int(age.value)], T.SIZE_BODY, T.TEXT_2))
 	var role := OptionButton.new()
 	var role_keys: Array = opts.get("roles", {}).keys()
 	for k in role_keys:
@@ -203,16 +225,23 @@ func show_character_form(house_id: int, house_name: String, opts: Dictionary, pe
 		if name.text.strip_edges() == "":
 			ui.toast("Give them a name first.")
 			return
+		var named := name.text.strip_edges().get_slice(" ", 0) + " " + surname if surname != "" else name.text.strip_edges()
 		if royal:
-			var rs := {"id": str(person.get("id", "")), "name": name.text.strip_edges(), "gender": "female" if gender.selected == 1 else "male",
+			var rs := {"id": str(person.get("id", "")), "name": named, "gender": "female" if gender.selected == 1 else "male",
 				"age": int(age.value), "traits": picked, "other": other.text.strip_edges(), "past": story.text.strip_edges().left(300)}
+			if fixed:
+				rs.erase("gender")
+				rs.erase("age")
 			if not host:
 				ui.royal_edited.emit(rs)
 			finish.call(rs)
 			return
-		var spec := {"house": house_id, "name": name.text.strip_edges(), "gender": "female" if gender.selected == 1 else "male",
+		var spec := {"house": house_id, "name": named, "gender": "female" if gender.selected == 1 else "male",
 			"age": int(age.value), "traits": picked, "other": other.text.strip_edges(),
 			"backstory": past.text.strip_edges(), "past": story.text.strip_edges().left(300)}
+		if fixed:
+			spec.erase("gender")  # as their portrait is painted: the bridge refuses a change
+			spec.erase("age")
 		# Their aim and loyalty change only when the player moved them (a reshaping never stirs a house on its own).
 		if goals.size() > 0 and (not editing or goal.selected != aim_was):
 			spec["goal"] = goals[goal.selected]["kind"]

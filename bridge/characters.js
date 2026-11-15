@@ -392,9 +392,16 @@ export class Court {
     if (!c || !c.alive) return { error: "no such person" };
     const newGoal = spec.goal && spec.goal !== c.goals?.[0]?.kind ? GOALS.find((g) => g.kind === spec.goal) : null;
     if (spec.goal && spec.goal !== c.goals?.[0]?.kind && !newGoal) return { error: "no such aim" };
-    if (spec.name) c.name = String(spec.name).trim().slice(0, 40) || c.name;
-    if (spec.gender) c.gender = spec.gender === "female" ? "female" : "male";
-    if (spec.age != null) c.age = Math.max(14, Math.min(90, Number(spec.age) || c.age));
+    // The given name is the King's to change; the surname is the house's (its own Edit renames it, names.js), and age and
+    // sex are what their portrait is painted for (Mac 2026-11-15): a change to any of these is refused here, the one owner.
+    const surname = c.surname ?? String(c.name).trim().split(/\s+/).slice(1).join(" ");
+    if (spec.gender && (spec.gender === "female" ? "female" : "male") !== c.gender) return { error: "Their sex is theirs: it stays as it is." };
+    if (spec.age != null && Number(spec.age) !== c.age) return { error: "Their age is theirs: the years change it, not the King." };
+    if (spec.name) {
+      const words = String(spec.name).trim().replace(/\s+/g, " ").slice(0, 40).split(" ");
+      if (surname && words.length > 1 && words.slice(1).join(" ") !== surname) return { error: `The name ${surname} is the house's: change it on the house's own page.` };
+      if (words[0]) c.name = surname ? `${words[0]} ${surname}` : words.join(" ");
+    }
     if (spec.traits || spec.other != null) {
       const own = String(spec.other ?? "").split(",").map((t) => t.trim().toLowerCase().replace(/[^a-z' -]/g, "").slice(0, 30)).filter(Boolean).slice(0, 3);
       const ruled = (spec.traits ?? c.traits.filter((t) => TRAITS.includes(t))).filter((t) => TRAITS.includes(t)).slice(0, 4);

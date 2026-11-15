@@ -122,7 +122,7 @@ func _ready_to_roll() -> bool:
 ## town, the hall's room built around them.
 func _scene_up() -> bool:
 	match clip:
-		"hero": return main.hero.visible
+		"hero": return main.lore.visible
 		"duel", "walk": return main.control.active
 		"hall": return main.interior.visible and main.interior._settled
 	return true

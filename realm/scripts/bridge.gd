@@ -235,12 +235,18 @@ func lore(cb: Callable) -> void:
 ## Give a house or a person a name of the player's own (from: their own word,
 ## to: the player's; empty gives it back). The reply is every name given.
 func rename(from: String, to: String, cb: Callable) -> void:
-	_post("/names", {"from": from, "to": to}, func(c, d): cb.call(c, d))
+	_post("/names", {"from": from, "to": to}, func(c, d):
+		if d is Dictionary and d.get("names") is Dictionary:
+			preload("res://scripts/heraldry.gd").known_names(d["names"])  # the arms stay the house's own
+		cb.call(c, d))
 
 
 ## The player's own names for houses and people: {inner word: shown word}.
 func names(cb: Callable) -> void:
-	_http_get("/names", func(d): cb.call(d.get("names", {}) if d is Dictionary else {}))
+	_http_get("/names", func(d):
+		var n: Dictionary = d.get("names", {}) if d is Dictionary and d.get("names") is Dictionary else {}
+		preload("res://scripts/heraldry.gd").known_names(n)
+		cb.call(n))
 
 
 ## The book as written: the starting cast, read from the baseline realm.

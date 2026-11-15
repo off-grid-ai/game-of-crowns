@@ -130,8 +130,8 @@ func _view(dir: String) -> void:
 	if main.title and main.title.visible:
 		main.title._in_game = false
 		main.title.visible = false
-	if main.hero and main.hero.visible:
-		main.hero.close()
+	if main.lore and main.lore.visible:
+		main.lore.close()
 	main._shot.erase("season")
 	main.film_reseason()
 	await get_tree().create_timer(1.0).timeout
@@ -991,7 +991,7 @@ func _step(w: PackedStringArray) -> void:
 						r["id"] = String(r.get("id", "")) + "-demo"
 						main.ui.reign_cards._reign_end(r)
 					"lord":
-						# The first great house's lord, on his sheet (hero_view.gd), as a click on his name opens it.
+						# The first great house's lord, on his page of the Lore (lore.gd), as a click on his name opens it.
 						var pid := -1
 						for pl in main.awareness.rec("players", []):
 							var h: Dictionary = pl.get("house", {}) if pl.get("house") is Dictionary else {}
@@ -1528,7 +1528,7 @@ func _observe() -> Dictionary:
 	o["menu"] = main.title.visible
 	o["intro"] = main.intro.visible
 	o["lore"] = main.lore.visible
-	o["hero"] = main.hero.visible if main.hero else false
+	o["hero"] = main.lore.visible if main.lore else false
 	var panels := []
 	for n in ["_houses_panel", "_chron_panel", "_court_panel", "_house_panel", "_town_panel", "_ledger_panel", "_digest_panel"]:
 		var p = main.ui.get(n)
