@@ -901,6 +901,7 @@ func _setup_environment() -> void:
 	load("res://scripts/decisions_world.gd").apply.call_deferred(self)  # the King's decisions seen on the map (data/decisions.json)
 	_view_group.call_deferred()
 	load("res://scripts/host_command.gd").apply.call_deferred(self)  # the King's hosts selected and ordered (data/host_command.json)
+	load("res://scripts/news_actions.gd").apply.call_deferred(self)  # what the King can do about each piece of news (data/news_actions.json)
 	load("res://scripts/map_marks.gd").apply.call_deferred(self)  # the realm's marks as the camera draws back to the map (data/map.json, --map=v2)
 	load("res://scripts/fire.gd").apply.call_deferred(self)  # fire v2: shaped flames, smoke and burnt houses (data/fire.json)
 	load("res://scripts/castle_life.gd").apply.call_deferred(self)  # the kit castle lived in: tower banners, guards, gate torches (data/castle.json)

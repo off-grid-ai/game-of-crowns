@@ -51,6 +51,13 @@ func host(kind: String, id: int) -> void:
 	_say("The captain", pool, {"name": "The captain", "gender": "male"})
 
 
+## A decree given from the news (news_actions.gd: the levy, grain, a feast): the steward answers (barks.json steward,
+## by the verb; "any" for the rest).
+func steward(verb: String) -> void:
+	var lines: Dictionary = _d.get("steward", {})
+	_say("The steward", lines.get(verb, lines.get("any", [])), {"name": "The steward", "gender": "male"})
+
+
 ## A townsman clicked: they say what's on their mind (the line the hover shows), else a greeting;
 ## pestered, they'd rather get back to work.
 func folk(node: Node3D, line: String, voice: Dictionary) -> void:

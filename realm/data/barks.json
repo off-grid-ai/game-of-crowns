@@ -126,5 +126,12 @@
 "The men are ready, Your Grace. Still.",
 "Your orders stand, my King.",
 "Sire, the men are watching."
-]
+],
+"steward": {
+"levy": ["The levy is called, Your Grace. They muster at Kingsmere.", "I'll have the bells rung in every village, Sire.", "Six hundred spears, as fast as the roads allow.", "The treasury groans, but the men will come."],
+"grain": ["The wagons roll at first light, Your Grace.", "Grain from the royal stores, Sire. They'll eat this winter.", "I'll see the carts guarded on the road."],
+"relief": ["Physicians and grain, Your Grace. They leave tonight.", "I'll send what the stores can spare, Sire.", "The carts go, and may the sickness spare the drivers."],
+"feast": ["A feast in their honour, Sire. They'll not forget it.", "The cooks are told, Your Grace. Wine from the good cellar.", "A full table mends many a grudge, my King."],
+"any": ["It will be done, Your Grace.", "At once, Sire."]
+}
 }

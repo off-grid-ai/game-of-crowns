@@ -67,8 +67,20 @@ func _on_staged(s: Dictionary, follow: Node3D) -> void:
 ## A court matter waiting at its place (court_panel.gd, through ui.court_waits_at): it
 ## becomes the latest news, so the edge arrow points at it while it's off screen and
 ## Space (or the arrow) opens it there; pressed again, back. Nothing moves by itself.
-func point_at(at: Vector3, caption: String, go: Callable) -> void:
-	_news = {"at": at, "caption": caption, "ms": Time.get_ticks_msec(), "new": true, "tone": "crown", "go": go}
+## until: while it says true the arrow stays past its 40 s (a threat to a royal town, news_actions.gd), in red.
+func point_at(at: Vector3, caption: String, go: Callable, until := Callable()) -> void:
+	_news = {"at": at, "caption": caption, "ms": Time.get_ticks_msec(), "new": true, "tone": "loss" if until.is_valid() else "crown", "go": go, "until": until}
+
+
+## A news item's "Go there" (news_actions.gd): it becomes the latest news and the camera goes, as Space would; Space
+## or Home brings it back to where the King was before the first jump.
+func go_to(at: Vector3, caption: String, go: Callable) -> void:
+	var keep: Callable = _news.get("until", Callable()) if _news.get("at") == at else Callable()
+	point_at(at, caption, go, keep)
+	if not _before_news.is_empty():
+		go.call()  # already away: on to this one, and back still goes to where he began
+		return
+	_to_news()
 
 
 ## One Watch offer at a time; the realm's own news no more than every 20 s,
@@ -109,6 +121,11 @@ func _back_from_news() -> void:
 	_before_news = {}
 
 
+## Nothing fresh is pointed at (none, or older than its 40 s): a standing threat may take the arrow back.
+func idle() -> bool:
+	return _news.is_empty() or Time.get_ticks_msec() - int(_news["ms"]) > 40000
+
+
 ## The edge arrow: the latest news, for 40 s, when it's off screen.
 var _edge_left := 0.0
 
@@ -119,7 +136,8 @@ func _edge_tick(delta: float) -> void:
 		return
 	_edge_left = 0.15
 	var cam := main.get_viewport().get_camera_3d()
-	if _news.is_empty() or cam == null or Time.get_ticks_msec() - int(_news["ms"]) > 40000 or not _before_news.is_empty():
+	var held: bool = _news.get("until") is Callable and (_news["until"] as Callable).is_valid() and bool((_news["until"] as Callable).call())
+	if _news.is_empty() or cam == null or (Time.get_ticks_msec() - int(_news["ms"]) > 40000 and not held) or not _before_news.is_empty():
 		main.ui.edge_arrow(null, 0.0, "", "", false)
 		return
 	var at: Vector3 = _news["at"]

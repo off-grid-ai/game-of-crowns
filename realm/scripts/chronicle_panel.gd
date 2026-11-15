@@ -7,6 +7,7 @@ extends RefCounted
 const Data := preload("res://scripts/data.gd")  # the one loader of realm/data (data.gd)
 const T := preload("res://scripts/theme.gd")
 const UI := preload("res://scripts/ui.gd")
+const NewsActions := preload("res://scripts/news_actions.gd")  # what the King can do about a line (its answers)
 
 var ui: UI  # the interface that owns this drawer: its signals, its building blocks
 
@@ -128,16 +129,40 @@ func _tick(e: Dictionary, loss: bool) -> void:
 	l.add_theme_stylebox_override("normal", chip)
 	l.add_theme_stylebox_override("hover", T._box(Color(T.SURFACE_SOLID.r + 0.05, T.SURFACE_SOLID.g + 0.05, T.SURFACE_SOLID.b + 0.05, 0.9), T.HAIRLINE, 7, 10))
 	l.add_theme_stylebox_override("pressed", chip)
-	if e.has("city") and e["city"] != null:
+	# What the King can do about it (news_actions.gd): one row of answers under the line, open at once for a threat
+	# to his town, else opened by a click on the line; with nothing to do but look, the click goes there.
+	var item: Control = l
+	var acts := NewsActions.one
+	var rows: Array = acts.verbs(e) if acts else []
+	if rows.size() > 1 or (rows.size() == 1 and String(rows[0]["verb"]) != "go"):
+		var box := VBoxContainer.new()
+		box.add_theme_constant_override("separation", 4)
+		box.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+		box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		box.add_child(l)
+		var answers: HBoxContainer = acts.buttons(e)
+		answers.visible = bool(e.get("open", false))
+		box.add_child(answers)
+		l.pressed.connect(func(): answers.visible = not answers.visible)
+		item = box
+	elif rows.size() == 1:
+		l.pressed.connect(rows[0]["call"])
+	elif e.has("city") and e["city"] != null:
 		var id := int(e["city"])
 		l.pressed.connect(func(): ui.focus_city.emit(id))
-	_ticker.add_child(l)
+	_ticker.add_child(item)
 	while _ticker.get_child_count() > 3:
 		_ticker.get_child(0).free()
-	var tw := l.create_tween()
-	tw.tween_interval(14.0)
-	tw.tween_property(l, "modulate:a", 0.0, 1.5)
-	tw.tween_callback(l.queue_free)  # gone, so the notices above settle down
+	var tw := item.create_tween()
+	tw.tween_interval(float(e.get("hold", 14.0)))
+	tw.tween_property(item, "modulate:a", 0.0, 1.5)
+	tw.tween_callback(item.queue_free)  # gone, so the notices above settle down
+
+
+## A piece of news the realm's chronicle doesn't carry (a threat to the King's town, news_actions.gd): a line in
+## the ticker like any other, with its answers.
+func show_news(e: Dictionary, loss: bool) -> void:
+	_tick(e, loss)
 
 
 static var _dot_tex: Texture2D
