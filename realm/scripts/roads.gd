@@ -84,6 +84,8 @@ func sync() -> void:
 			if is_instance_valid(node):
 				node.queue_free()
 			_forget_road("roads", "net:" + key)
+	# Each new edge painted on the frame's budget with the great roads (_paint_jobs, _process), never all in the sync
+	# (live12: roads.sync 1,054 ms in one frame, the first sync laying the whole network).
 	for key: String in want:
 		if _edges.has(key):
 			continue
@@ -93,7 +95,10 @@ func sync() -> void:
 		_edges[key] = node
 		var a: Vector2i = want[key][0]
 		var b: Vector2i = want[key][1]
-		_segment(terrain.world_pos(a.x, a.y), terrain.world_pos(b.x, b.y), node, WIDTH, "roads", "net:" + key)
+		var edge := key
+		_paint_jobs.append(["net:" + key, node, PackedVector3Array([terrain.world_pos(a.x, a.y), terrain.world_pos(b.x, b.y)]), 0, WIDTH, "roads",
+			func() -> Variant: return _edges.get(edge)])
+		set_process(true)
 
 
 var _edges := {}  # Freeciv's network: edge key ("x,y>x,y" tiles) -> its node of painted stretches
@@ -152,12 +157,12 @@ func kings_road() -> void:
 		var owner: String = w[4]
 		_ask(w[1], w[2], func(route: PackedVector3Array) -> void:
 			if (_ways.get(key, {}) as Dictionary).get("node") == node:
-				_paint_jobs.append([key, node, route, 0, width, owner]), _kept_route([key, String(w[0])]))
+				_paint_jobs.append([key, node, route, 0, width, owner, func() -> Variant: return (_ways.get(key, {}) as Dictionary).get("node")]), _kept_route([key, String(w[0])]))
 
 
 var _ways := {}  # road key -> {sig: its ends, node: its painted stretches and verges, owner: its _paths owner, stones}
 var _ways_root: Node3D
-var _paint_jobs: Array = []  # [key, node, route, next stretch, width, owner]: painted a stretch at a time
+var _paint_jobs: Array = []  # [road key, node, route, next stretch, width, owner, now: the node its road is drawn under now]: painted a stretch at a time
 
 
 ## A road no longer wanted (a town changed hands, a seat moved): its stretches, verges and stones go, and its bed.
@@ -183,7 +188,7 @@ func _paint_next() -> void:
 	# A road redrawn or gone meanwhile leaves its job holding a freed node: read it untyped and drop the job (a typed
 	# read of a freed node errors before the check and the job never left the queue: run 7, 405,672 errors).
 	var held: Variant = job[1]
-	if not is_instance_valid(held) or (_ways.get(key, {}) as Dictionary).get("node") != held:
+	if not is_instance_valid(held) or (job[6] as Callable).call() != held:
 		_paint_jobs.pop_front()
 		return
 	var node: Node3D = held
@@ -195,7 +200,7 @@ func _paint_next() -> void:
 		return
 	_paint_jobs.pop_front()
 	if String(job[5]) == "kings":
-		_plant_verges(_roadside(route, key), node)
+		_plant_verges(route, key, node)
 
 
 # --- routes, asked off the main thread ----------------------------------------------------------------------------
@@ -306,6 +311,10 @@ func _roadside(route: PackedVector3Array, key: String) -> Array:
 	rng.seed = int(route[0].x * 31.0 + route[route.size() - 1].z * 17.0)
 	var walked := 0.0
 	for i in route.size() - 1:
+		if not ViewTier.spend_ok(&"roads"):
+			await PerfTools.next_frame(&"roads:verges")
+			if not _ways.has(key):
+				return []  # the road went meanwhile
 		var a: Vector3 = route[i]
 		var b: Vector3 = route[i + 1]
 		var seg := Vector2(b.x - a.x, b.z - a.z)
@@ -356,8 +365,11 @@ func _waystone(at: Vector3, rng: RandomNumberGenerator, key: String) -> void:
 ## Planted once the towns stand and their plots are graded, at the ground's
 ## height then (not before, or they sank where a town levelled its lots), and
 ## never within a town's reach or on a road's bed.
-func _plant_verges(spots: Array, road: Node3D) -> void:
-	if spots.is_empty():
+## A great road's verges and waystones, a piece at a time on the frame's budget (live12: kings_road.paint 551 ms in one
+## frame, a whole road's verge laid as its last stretch was painted).
+func _plant_verges(route: PackedVector3Array, key: String, road: Node3D) -> void:
+	var spots: Array = await _roadside(route, key)
+	if spots.is_empty() or not is_instance_valid(road):
 		return
 	var towns = get_parent().get("towns")
 	while towns and towns.building():
@@ -371,6 +383,10 @@ func _plant_verges(spots: Array, road: Node3D) -> void:
 				places.append([Vector2(t["node"].position.x, t["node"].position.z), float(t["node"].get_meta("reach", 6.0))])
 	var kept: Array = []
 	for q in spots:
+		if not ViewTier.spend_ok(&"roads"):
+			await PerfTools.next_frame(&"roads:verges")
+			if not is_instance_valid(road) or not road.is_inside_tree():
+				return
 		var town := false
 		for pl in places:
 			town = town or Vector2(q.x, q.z).distance_to(pl[0]) < pl[1]
@@ -383,6 +399,10 @@ func _plant_verges(spots: Array, road: Node3D) -> void:
 	# Through the one drawer of repeated things (bulk.gd, a batch a cell of the land, culled a cell at a time): one batch
 	# for every verge of the realm's road was never culled and drew every bush (Mac's fps card, 2026-11-15: 2.3M).
 	for p in kept:
+		if not ViewTier.spend_ok(&"roads"):
+			await PerfTools.next_frame(&"roads:verges")
+			if not is_instance_valid(road) or not road.is_inside_tree():
+				return
 		var k := Units.M * rng.randf_range(0.5, 1.0)  # 0.8-1.7 m: nt_bush is 1.69 m at scale 1
 		Bulk.add(bushes[0], Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(k, k * rng.randf_range(0.8, 1.3), k)), p - Vector3(0, 0.02, 0)), road, 60.0)  # go with the road's node
 
@@ -414,10 +434,10 @@ func track(a: Vector3, b: Vector3, width := WIDTH * 0.7, key := "") -> void:
 		_tracks.add_child(n)
 		_track_keys[key] = n
 	var layer: Node3D = _track_keys[key]
+	# Painted a stretch at a time on the frame's budget with the roads (_paint_jobs), once its route is back.
 	_ask(a, b, func(route: PackedVector3Array) -> void:
 		if is_instance_valid(layer) and _track_keys.get(key) == layer:
-			for i in route.size() - 1:
-				_segment(route[i], route[i + 1], layer, width, "track:" + key), _kept_route(["track:" + key, "%.2f,%.2f>%.2f,%.2f" % [a.x, a.z, b.x, b.z]]))
+			_paint_jobs.append(["", layer, route, 0, width, "track:" + key, func() -> Variant: return _track_keys.get(key)]), _kept_route(["track:" + key, "%.2f,%.2f>%.2f,%.2f" % [a.x, a.z, b.x, b.z]]))
 
 
 ## Where every road and track runs, so grass and the like can keep off them:
