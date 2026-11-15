@@ -1,5 +1,6 @@
 extends Node3D
 const PerfTools := preload("res://scripts/perf_tools.gd")
+const ViewTier := preload("res://scripts/view_tier.gd")  # the one frame budget every staged loop draws on
 ## The land between the towns: farmsteads with their barns and fields, the
 ## hedgerows that divide the fields, crops in the fields and grass underfoot.
 ## Laid out from the map and the towns, the same every time for the same realm,
@@ -127,18 +128,14 @@ func _update(cities: Array) -> void:
 	for key in _patches.keys():
 		if not want.has(key):
 			_drop(key)
-	var slice := Time.get_ticks_msec()
 	for key in want:
 		var sig := str(want[key].map(func(e): return [e[0]["tile"], e[1]]))
 		if _patches.has(key) and _patches[key]["sig"] == sig:
 			continue
 		_drop(key)
-		_raise(key, want[key], sig)
-		if Time.get_ticks_msec() - slice > 8:
-			await PerfTools.next_frame(&"countryside:129")
-			if realm != _realm:
-				return
-			slice = Time.get_ticks_msec()
+		await _raise(key, want[key], sig)  # a farmstead at a time on the frame budget (_turn)
+		if realm != _realm:
+			return
 	_city_sig = city_sig
 	await _grass(cities)
 
@@ -208,24 +205,40 @@ func _drop(key: String) -> void:
 ## Lays out one patch of land's farms, each with a narrow cart track into a
 ## town close by. Farms out on their own make do with the fields: a track from
 ## each to a far town would criss-cross the land with straight lines.
+## A patch is raised a piece at a time on the one frame budget (ViewTier.spend_ok, _turn): each farmstead, then its
+## buildings' batches, its hedgerows and its orchards, then what stands and what is claimed (live12: resume.countryside:129
+## 620 ms and 500 ms in one frame, a whole patch of farms raised between two 8 ms checks). Nothing drawn changes.
 func _raise(key: String, farms: Array, sig: String) -> void:
 	var node := Node3D.new()
 	node.name = "Farms_" + key.replace("|", "_")
 	add_child(node)
+	_batch.clear()  # a patch given up part way left its buildings here
 	var hedges: Array = []
 	var steads: Array = []
 	var trees: Array = []
 	for v in _fruit:
 		trees.append([])
 	for f in farms:
+		await _turn()
+		if not is_instance_valid(node):
+			return
 		var site: Dictionary = f[0]
 		var rng := RandomNumberGenerator.new()
 		rng.seed = site["seed"]
 		steads.append(_farmstead(node, site["at"], rng, hedges, trees))
 		if roads and f[1] != null:
 			roads.track(site["at"], f[1], roads.WIDTH * 0.45, key)
+	await _turn()
+	if not is_instance_valid(node):
+		return
 	_flush(node)
+	await _turn()
+	if not is_instance_valid(node):
+		return
 	_hedgerows(node, hedges, hash(key))
+	await _turn()
+	if not is_instance_valid(node):
+		return
 	for v in trees.size():
 		if trees[v].is_empty() or v >= _fruit.size():
 			continue
@@ -240,6 +253,9 @@ func _raise(key: String, farms: Array, sig: String) -> void:
 		mmi.multimesh = mm
 		_fade(mmi, 45.0)
 		node.add_child(mmi)
+	await _turn()
+	if not is_instance_valid(node):
+		return
 	# What the farms set down is in the way (ground.gd: their houses, barns, stacks, hedges and orchards read off the
 	# patch), and each hedged field held, hedge and all: a muster keeps off it (Mac 2026-11-15: hosts in the cottages).
 	var kc := key.split("|")
@@ -257,6 +273,12 @@ func _raise(key: String, farms: Array, sig: String) -> void:
 			claims.append(id)
 	_patches[key] = {"sig": sig, "node": node, "steads": steads, "claims": claims}
 	_laid += 1
+
+
+## Waits for the next frame when this one's staging pot is spent (ViewTier.spend_ok, the one frame budget).
+func _turn() -> void:
+	if not ViewTier.spend_ok(&"countryside"):
+		await PerfTools.next_frame(&"countryside:129")
 
 
 ## One family's holding: a house, often a barn with hay heaped by it, a
