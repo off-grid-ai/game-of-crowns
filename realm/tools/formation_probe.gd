@@ -96,7 +96,8 @@ func _templates() -> void:
 	for name in ["line", "column", "wedge", "shield_wall", "loose", "square"]:
 		_check((Data.value("formations", "templates", {}) as Dictionary).has(name), "formations.json holds the %s template" % name)
 	var src := FileAccess.get_file_as_string("res://scripts/army_formation.gd")
-	_check(not src.contains("drawPerMan"), "no formation is cut by drawPerMan (the cause of the columns on the field)")
+	# The layout never reads drawPerMan (its doc comment names the old cut; the code must not take the number).
+	_check(not src.contains("\"drawPerMan\""), "no formation is cut by drawPerMan (the cause of the columns on the field)")
 
 
 ## A block standing as army.gd raises one: its Mover with the regiment's wheel (army.gd _wheels), seen (no camera).
