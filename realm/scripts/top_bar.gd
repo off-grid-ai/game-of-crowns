@@ -46,28 +46,32 @@ func _arrange_top() -> void:
 	var act: Control = _top[2]
 	_cap_when(when)
 	var w := ui.get_viewport().get_visible_rect().size.x
+	# Placed by its open width (peace, souls and the tithe shown), opening rightward from a fixed left edge, so
+	# hovering never moves it: it moved out from under the pointer, folded, came back and opened, every frame.
 	var sw := state.get_combined_minimum_size().x
+	if _state_more and not _state_more.visible:
+		sw += _state_more.get_combined_minimum_size().x + 14.0
 	var left := when.position.x + when.get_combined_minimum_size().x + 12.0
 	var right := w - 10.0 - act.get_combined_minimum_size().x - 12.0
 	state.offset_top = 10
 	if w * 0.5 - sw * 0.5 >= left and w * 0.5 + sw * 0.5 <= right:
 		state.anchor_left = 0.5
 		state.anchor_right = 0.5
-		state.grow_horizontal = Control.GROW_DIRECTION_BOTH
+		state.grow_horizontal = Control.GROW_DIRECTION_END
 		state.offset_left = -sw * 0.5
-		state.offset_right = sw * 0.5
+		state.offset_right = -sw * 0.5
 	elif left + sw <= right:
 		state.anchor_left = 0.0
 		state.anchor_right = 0.0
 		state.grow_horizontal = Control.GROW_DIRECTION_END
 		state.offset_left = left
-		state.offset_right = left + sw
+		state.offset_right = left
 	else:
 		state.anchor_left = 0.0
 		state.anchor_right = 0.0
 		state.grow_horizontal = Control.GROW_DIRECTION_END
 		state.offset_left = 10
-		state.offset_right = 10 + sw
+		state.offset_right = 10
 		state.offset_top = 10 + when.get_combined_minimum_size().y + 8
 	# Notices sit just under whatever the top bar takes up, so a bar that wraps
 	# onto a second row on a narrow window never has a notice written over it.
