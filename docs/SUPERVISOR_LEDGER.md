@@ -13,6 +13,8 @@ Where things stand, so any agent can take over. Newest first, short. The full hi
   his. When his game freezes, copy his `godot.log` first, then `kill -SEGV` it for the GDScript backtrace.
 
 ## Now (2026-11-15)
+- TODO after FPS (Mac 2026-11-15): troops never do anything, they just stand. A siege waits for the bridge's assault turn with nothing to do (Oldhall); a host in a town stands still. Every army needs visible work while it waits: engines throwing, archers loosing, the wall taking hits, men drilling, shifting, resting.
+- TODO after FPS (Mac 2026-11-15, Kingsmere square): regiments heaped in a town square, drawn through each other, through a market stall and through townsfolk. The fix in a6242eaf covers field sides and storms, not a host inside a town.
 - **Make the game fun (Mac).** The King is a war king from minute one: a royal army at Kingsmere, click and
   right-click orders that start at once, one objective on screen, something to act on every ~45 s, the court never
   freezes time. Built; not yet played through end to end.
