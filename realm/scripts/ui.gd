@@ -903,12 +903,14 @@ func edge_arrow(at, angle: float, text: String, tone: String, fresh: bool) -> vo
 	news.edge_arrow(at, angle, text, tone, fresh)
 
 
-func toast(text: String) -> void:
-	news.toast(text)
+## entry: what the notice is about (the Hand's counsel), for its answers under the words (news_chips.gd).
+func toast(text: String, entry := {}) -> void:
+	news.toast(text, entry)
 
 
-func caption(text: String) -> void:
-	news.caption(text)
+## entry: what the caption shows (a scene, a story's beat), for its answers under the words (news_chips.gd).
+func caption(text: String, entry := {}) -> void:
+	news.caption(text, entry)
 
 
 var _tithe_asked := -1.0  # a tithe the King set that the realm hasn't reported back yet

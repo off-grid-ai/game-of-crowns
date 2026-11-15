@@ -7,6 +7,7 @@ extends RefCounted
 
 const T := preload("res://scripts/theme.gd")
 const UI := preload("res://scripts/ui.gd")
+const NewsActions := preload("res://scripts/news_actions.gd")  # what the King can do about what a caption shows
 const Herald := preload("res://scripts/herald.gd")  # one notice at a time, in order, with a dry voice (data/herald.json)
 
 var ui: UI  # the interface that owns these notices: its signals, its building blocks, its cards
@@ -23,6 +24,7 @@ var _offer_left := 0.0
 var _toast_top := 78.0  # just under the top bar
 var _toast_time := 0.0
 var _toast_full := 7.0  # the notice's whole time, for its ease in
+var _answers: CenterContainer  # the caption's row of answers (news_actions.gd), when what it shows has any
 
 
 func _init(owner: UI) -> void:
@@ -60,10 +62,18 @@ func _build_toast() -> void:
 	_toast_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_toast_box.modulate.a = 0.0
 	ui.root.add_child(_toast_box)
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", T.GAP)
+	col.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_toast_box.add_child(col)
 	_toast = T.title("", 16, T.TEXT)
 	_toast.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_toast.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART  # a long notice wraps in the middle, never runs off to one side
-	_toast_box.add_child(_toast)
+	col.add_child(_toast)
+	# What the King can do about what the caption shows (news_actions.gd): its row of answers, under the words.
+	_answers = CenterContainer.new()
+	_answers.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	col.add_child(_answers)
 
 
 ## The free band of screen between the card under the top bar and the town
@@ -114,7 +124,9 @@ func _place_notices(delta: float) -> void:
 		ui.fit_centre(_offer, _offer.get_combined_minimum_size().x)  # as wide as its words, centred in the gap
 	# The notice fades on its own clock, offer or not (it sat inside the offer's
 	# block and stayed up for good), and a card with no words is never shown.
-	_toast_time = maxf(0.0, _toast_time - delta)
+	var hovered := ui.get_viewport().gui_get_hovered_control()
+	if not (_answers.visible and hovered and _answers.is_ancestor_of(hovered)):
+		_toast_time = maxf(0.0, _toast_time - delta)  # held while the King's pointer is on its answers
 	if _toast.text.strip_edges() == "":
 		_toast_time = 0.0
 	# In over 160 ms (ui.ease_in's timing: no card pops in), out over its last second.
@@ -222,7 +234,9 @@ func edge_arrow(at, angle: float, text: String, tone: String, fresh: bool) -> vo
 	_edge.visible = show and not holding  # held while a card has the screen (ui.gd)
 
 
-func toast(text: String) -> void:
+## entry: what the notice is about, as the news has it (the Hand's counsel: kind, city, act): its answers
+## (news_actions.gd) stand under the words, and it stays while the King's pointer is on them.
+func toast(text: String, entry := {}) -> void:
 	if text.strip_edges() == "":
 		return  # nothing to say: no empty line
 	var said := Herald.voice(text) if Herald.on() else text
@@ -237,8 +251,19 @@ func toast(text: String) -> void:
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	l.add_theme_font_size_override("font_size", T.SIZE_DESC + 1)
 	l.add_theme_color_override("font_color", T.TEXT)
-	row.add_child(l)
 	var secs := Herald.knob("stack.seconds", 8.0)
+	var acts := NewsActions.one
+	if acts and not entry.is_empty() and not acts.verbs(entry).is_empty():
+		var col := VBoxContainer.new()
+		col.add_theme_constant_override("separation", T.GAP)
+		col.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		col.add_child(l)
+		col.add_child(acts.buttons(entry))
+		row.add_child(col)
+		row.set_meta("answers", true)
+		secs = maxf(secs, NewsActions.caption_seconds())
+	else:
+		row.add_child(l)
 	row.set_meta("text", said)
 	row.set_meta("left", secs)
 	row.set_meta("full", secs)
@@ -276,8 +301,10 @@ func _place_stack(delta: float) -> void:
 		tick.offset_top = tick.offset_bottom - h
 	_stack.offset_bottom = foot
 	_stack.visible = not holding and not ui._interlude_on
+	var hovered := ui.get_viewport().gui_get_hovered_control()
 	for row in _stack.get_children():
-		var left := float(row.get_meta("left", 0.0)) - delta
+		var on_it: bool = row.get_meta("answers", false) and hovered != null and row.is_ancestor_of(hovered)
+		var left := float(row.get_meta("left", 0.0)) - (0.0 if on_it else delta)  # held while the pointer is on its answers
 		row.set_meta("left", left)
 		if left <= 0.0:
 			row.queue_free()
@@ -287,10 +314,19 @@ func _place_stack(delta: float) -> void:
 
 ## A caption for what the camera shows ("The King's rider, bound for Stormwatch"):
 ## never over the result of the King's own order while that is still up.
-func caption(text: String) -> void:
+## entry: what the caption shows, as the news has it (a scene, a story's beat: kind, city, thread): its answers
+## (news_actions.gd) stand under the words, and the caption stays longer for them.
+func caption(text: String, entry := {}) -> void:
 	if holding or text.strip_edges() == "":
 		return
 	_toast.text = text
 	_toast_time = 5.0
+	for c in _answers.get_children():
+		c.queue_free()
+	var acts := NewsActions.one
+	_answers.visible = acts != null and not entry.is_empty() and not acts.verbs(entry).is_empty()
+	if _answers.visible:
+		_answers.add_child(acts.buttons(entry))
+		_toast_time = NewsActions.caption_seconds()
 	_toast_full = _toast_time
 

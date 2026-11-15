@@ -211,7 +211,7 @@ func _frame(s: Dictionary, follow: Node3D) -> void:
 	rig.go_to(follow.global_position if is_instance_valid(follow) else at, _vary(float(how[1])))  # the one framing rule, from a fresh heading
 	rig.goal_tilt = 0.0  # a battle's framing lowers the view; each new shot starts level
 	_clear_sight()
-	ui.caption(caption(s))
+	ui.caption(caption(s), s)  # with what the King can do about it (news_actions.gd)
 
 
 ## Nothing stirring: visit a town, the bigger the likelier.

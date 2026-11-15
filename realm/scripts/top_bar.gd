@@ -700,7 +700,7 @@ func _show_next(n) -> void:
 		when = "  ·  %d:%02d" % [left / 60, left % 60]
 	elif n.get("count") != null and String(n["count"]) != "":
 		when = "  ·  %s" % String(n["count"])
-	ui.toast(text + when)
+	ui.toast(text + when, n)  # with what the King can do about it (news_actions.gd: its act, Go there)
 
 
 func _tick() -> void:
