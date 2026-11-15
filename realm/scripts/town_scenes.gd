@@ -154,6 +154,11 @@ func stage(root: Node3D, life: Node3D, c: Dictionary, states: Array, tl: Object)
 				return
 		if row.has("march") and _meets(row["march"], root, states, size):
 			_begin_march(root, life, row["march"], rng)
+	# Handed back to town_life on a frame of its own: its tail (_near_only, _pin) is then named on this lap, not
+	# charged to the last body's mind or cast (live run 13).
+	await PerfTools.next_frame(&"town_scenes.done")
+	if TownLife()._gone(root, life):
+		return
 	root.set_meta("square_cast", int(census["cast"]))  # the census cast standing there: the villagers' room is what's left (village_slots square_full)
 	print("CHECK town scenes: %s: %d cast; no room for %s; rows whose place wasn't there: %s; square census %d for %.0f m2 of open setts, %d cast to it" % [String(root.get_meta("title", root.name)), int(tally["cast"]), str(tally["no_room"]), str(tally["no_place"]), int(census["budget"]), float(census["m2"]), int(census["cast"])])
 
@@ -795,8 +800,16 @@ func _paced(k: Dictionary, at: StringName) -> bool:
 	return not TownLife()._gone(k["root"], k["life"])  # never into a typed var: either may be freed meanwhile
 
 
+## A stretch of the casting between two waits timed apart (GOC_PERF_PROBE): the lap after a resume names the wait,
+## these name the work (supervisor's live run 13: resume.town_scenes.cast 1825 ms, .mind 1462 ms with the minds 18 ms).
+static func _took(what: String, t0: int) -> void:
+	PerfTools.add("town_scenes." + what, Time.get_ticks_usec() - t0)
+
+
 func _stage_role(k: Dictionary, role: Dictionary, anchors: Dictionary) -> void:
+	var a0 := Time.get_ticks_usec()
 	var a := _anchor(String(role.get("at", "heart")), k, anchors)
+	_took("anchor", a0)
 	if a.is_empty():
 		(k["tally"]["no_place"] as Array).append("%s.%s" % [k["row"]["id"], role.get("at", "heart")])
 		return
@@ -855,8 +868,10 @@ func _stage_role(k: Dictionary, role: Dictionary, anchors: Dictionary) -> void:
 		var pos := want
 		# An exact anchor (a keeper at his counter, a guest on the feast's bench) is kept only where no building and no
 		# water is (ground.gd: the life's own pieces don't count); one that lands in a house is placed like the rest.
+		var p0 := Time.get_ticks_usec()
 		if not bool(role.get("exact", false)) or not Ground.is_clear(root.position + want, 0.0, false):
 			pos = tl.place(root, want, float(role.get("reach", 0.2)))
+			_took("place", p0)
 			if is_nan(pos.x):
 				missed += 1
 				if spare == 0 or missed > spare:
@@ -865,6 +880,10 @@ func _stage_role(k: Dictionary, role: Dictionary, anchors: Dictionary) -> void:
 				continue  # no room: the scene is what fits
 		else:
 			pos.y = tl.ground_at(root, pos)
+			_took("place", p0)
+		if not await _paced(k, &"town_scenes.body"):  # the place found and the body made are two pieces on the pot
+			return
+		var b0 := Time.get_ticks_usec()
 		var body: Node3D
 		if role.has("beast"):
 			body = tl.beast(root, String(role["beast"]), pos, role.get("tints", []), i, rng)
@@ -883,8 +902,10 @@ func _stage_role(k: Dictionary, role: Dictionary, anchors: Dictionary) -> void:
 				if clips.is_empty():
 					return  # nothing they could play in their hands: they aren't there
 			body = tl.cast(root, pos, _who(role, i, k), _pick(clips, i, k, bool(role.get("random", false))), rng.randi(), tint, String(role.get("cast_post", "")), String(role.get("age", "")))
+		_took("body", b0)
 		if body == null:
 			continue
+		var f0 := Time.get_ticks_usec()
 		body.set_meta("scene", String((k["row"] as Dictionary)["id"]))
 		k["tally"]["cast"] = int(k["tally"]["cast"]) + 1
 		_counted(k, role, body)
@@ -915,12 +936,14 @@ func _stage_role(k: Dictionary, role: Dictionary, anchors: Dictionary) -> void:
 			if si > 0 and not keepers.has(si - 1):
 				keepers[si - 1] = body  # the stall before had no keeper of its own: this one keeps both
 			root.set_meta("keepers", keepers)
+		_took("fit", f0)  # armed, faced, counted, registered
 	# Their minds: a posted person's post (npc_mind.gd), a walker's task.
 	for pi in placed.size():
 		if not await _paced(k, &"town_scenes.mind"):
 			return
 		var body: Node3D = placed[pi][0]
 		var s: Dictionary = placed[pi][1]
+		var m0 := Time.get_ticks_usec()
 		match does:
 			"post":
 				var opening: Array = []
@@ -949,10 +972,15 @@ func _stage_role(k: Dictionary, role: Dictionary, anchors: Dictionary) -> void:
 				Animals.live(body, String(role.get("beast", "")), rng)  # its own idle life (a hen pecking about)
 			"procession", "leave":
 				pass
+		_took("mind_" + does, m0)
+	if does in ["procession", "leave"] and not await _paced(k, &"town_scenes.file"):
+		return
+	var w0 := Time.get_ticks_usec()
 	if does == "procession":
 		_procession(k, role, group, a)
 	elif does == "leave":
 		_leave(k, role, group, a)
+	_took("file", w0)
 
 
 func _face_to(body: Node3D, role: Dictionary, s: Dictionary, a: Dictionary, k: Dictionary, first: Node3D) -> void:
@@ -1046,6 +1074,7 @@ func _stage_walkers(k: Dictionary, role: Dictionary, a: Dictionary, does: String
 	for i in n:
 		if not await _paced(k, &"town_scenes.walker"):
 			return
+		var w0 := Time.get_ticks_usec()
 		match does:
 			"beat":
 				var route := _beat(root, tl, r, i, rng, W)
@@ -1107,6 +1136,7 @@ func _stage_walkers(k: Dictionary, role: Dictionary, a: Dictionary, does: String
 					"pause": W.get("pause", [2.0, 6.0]), "rest": [String(W.get("set_down", "PickUp_Table"))], "waits": []}, String(ld[0]), float(W.get("pace", 0.15)))
 			"cart":
 				_cart(k, role, W, r)
+		_took("walker_" + does, w0)
 
 
 ## The watch's torch after dark (a beat row's `torch`: light colour, energy, range; Stronghold's and Manor Lords' night
