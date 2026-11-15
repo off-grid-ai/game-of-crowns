@@ -42,6 +42,8 @@ static func apply(m: Node) -> void:
 
 func _ready() -> void:
 	one = self
+	while main.get("awareness") == null:
+		await get_tree().process_frame  # main.gd makes the mirror a few startup steps after this is added
 	main.awareness.synced.connect(_watch)
 	main.awareness.cleared.connect(func():
 		threats.clear()
