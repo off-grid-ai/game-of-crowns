@@ -74,7 +74,7 @@ static var _spheres := {}  # radius (snapped) -> a sphere shape asked with
 static var _cyls := {}  # radius (snapped) -> a trunk's cylinder, shared by every trunk that size
 static var _ask_box := RID()  # a box asked with (obstacle_shapes' area)
 static var _ask_hull := RID()  # a prism asked with (area_free)
-static var _owner := {}  # body RID -> [what ("town", "life", "tree", "claim"), key]
+static var _owner := {}  # body RID -> [what ("town", "life", "tree", "claim"), key, where its shapes lie (Rect2, world XZ)]
 const NONE: Array[RID] = []
 
 # --- what stands ------------------------------------------------------------------------------------------------------
@@ -89,6 +89,8 @@ static var _sources: Array = []  # keepers of many small things in the way (the 
 static var _src_bodies := {}  # chunk (Vector2i) -> {source instance id: [body, owned shapes]}
 static var _src_dirty := {}  # chunk (Vector2i) -> true: its trunks are read again (before an ask over it, or on the budget)
 static var shapes_rev := 0  # counts bodies filled and freed (what stands changed): the navigation reads again only then (nav_world.gd)
+static var shapes_at := {}  # cell (Vector2i, SHAPES_CELL world units) -> how many times what stands over it changed
+const SHAPES_CELL := 16.0  # nav_world.gd's chunk (ground.json nav.chunk): a chunk asks only its own cells (shapes_rev_in)
 static var claims_rev := 0  # counts claims made and released: a fight's crowd (army_melee.gd) lays the held ground afresh after
 
 # --- the land ---------------------------------------------------------------------------------------------------------
@@ -642,6 +644,7 @@ static func _switch(rec: Dictionary, on: Dictionary) -> void:
 		shapes_rev += 1
 	for bk: Vector3i in rec["bins"]:
 		var body: RID = rec["bins"][bk]["body"]
+		_changed_at(body)
 		var want: bool = on["life" if bk.z == 1 else "town"] and PhysicsServer3D.body_get_shape_count(body) > 0
 		PhysicsServer3D.body_set_space(body, _space if want else RID())
 
@@ -831,7 +834,12 @@ static func _body(layer: int, what: String, key: Variant) -> RID:
 ## A body's shapes set to `shapes` ([Transform3D, shape RID] each) while it is out of the space, so Jolt builds its
 ## compound once; it stands in the space again only with something in it.
 static func _fill(body: RID, shapes: Array, on := true) -> void:
-	_changed(body)
+	_changed(body)  # where it stood
+	if _owner.has(body) and (_owner[body] as Array)[0] != "claim":
+		var o: Array = _owner[body]
+		o.resize(3)
+		o[2] = _shapes_bounds(shapes)
+		_changed_at(body)  # and where it stands now
 	PhysicsServer3D.body_set_space(body, RID())
 	PhysicsServer3D.body_clear_shapes(body)
 	for s: Array in shapes:
@@ -852,6 +860,57 @@ static func _free_body(body: RID, owned: Array) -> void:
 static func _changed(body: RID) -> void:
 	if String((_owner.get(body, [""]) as Array)[0]) != "claim":
 		shapes_rev += 1
+		_changed_at(body)
+
+
+## The cells under where `body`'s shapes lie counted changed (shapes_at): the navigation reads only those chunks again.
+static func _changed_at(body: RID) -> void:
+	var o: Array = _owner.get(body, [])
+	if o.size() < 3 or not (o[2] is Rect2):
+		return
+	var r: Rect2 = o[2]
+	for x in range(floori(r.position.x / SHAPES_CELL), floori(r.end.x / SHAPES_CELL) + 1):
+		for z in range(floori(r.position.y / SHAPES_CELL), floori(r.end.y / SHAPES_CELL) + 1):
+			var c := Vector2i(x, z)
+			shapes_at[c] = int(shapes_at.get(c, 0)) + 1
+
+
+## How many times what stands over `area` (world XZ) changed: a reader keeps what it read while this holds.
+static func shapes_rev_in(area: Rect2) -> int:
+	var n := 0
+	for x in range(floori(area.position.x / SHAPES_CELL), floori(area.end.x / SHAPES_CELL) + 1):
+		for z in range(floori(area.position.y / SHAPES_CELL), floori(area.end.y / SHAPES_CELL) + 1):
+			n += int(shapes_at.get(Vector2i(x, z), 0))
+	return n
+
+
+## Where shapes ([Transform3D, shape RID] each) lie on the ground (world XZ).
+static func _shapes_bounds(shapes: Array) -> Rect2:
+	var r := Rect2()
+	var first := true
+	for s: Array in shapes:
+		var xf: Transform3D = s[0]
+		var data: Variant = PhysicsServer3D.shape_get_data(s[1])
+		var pts: Array = []
+		match PhysicsServer3D.shape_get_type(s[1]):
+			PhysicsServer3D.SHAPE_CONVEX_POLYGON:
+				pts = Array(data as PackedVector3Array)
+			PhysicsServer3D.SHAPE_BOX:
+				var h: Vector3 = data
+				pts = [Vector3(-h.x, 0, -h.z), Vector3(h.x, 0, h.z), Vector3(h.x, 0, -h.z), Vector3(-h.x, 0, h.z)]
+			PhysicsServer3D.SHAPE_CYLINDER, PhysicsServer3D.SHAPE_CAPSULE:
+				var rad := float((data as Dictionary).get("radius", 0.05))
+				pts = [Vector3(-rad, 0, -rad), Vector3(rad, 0, rad)]
+			PhysicsServer3D.SHAPE_SPHERE:
+				pts = [Vector3(-float(data), 0, -float(data)), Vector3(float(data), 0, float(data))]
+		for v: Vector3 in pts:
+			var w := xf * v
+			if first:
+				r = Rect2(w.x, w.z, 0, 0)
+				first = false
+			else:
+				r = r.expand(Vector2(w.x, w.z))
+	return r
 
 
 ## Frees the shapes made for one thing (never a shared trunk's or a sphere asked with).

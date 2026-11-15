@@ -48,6 +48,9 @@ static var _await := {}  # kind -> [[region, its iteration when set]]: every chu
 static var _answers := {}  # kind -> true once the map answers for every chunk (read on any thread)
 static var _land_rev := {}  # chunk -> how many times its land was changed (terrain.ground_changed)
 static var _town_polys := {}  # root instance id -> [signature, [[world poly, its bounds]], [[way poly, bounds]]]
+static var _faces_kept := {}  # chunk -> [its land's change count, its triangles]: the chunks baked lately (_faces)
+static var _faces_order: Array = []  # those chunks, the least lately baked first
+const FACES_KEPT := 24
 static var _base := {}  # chunk -> [what it was read at (key), its base signature, obstacles, ways]: read again only on change
 static var _sweep_key: Variant = null  # what the realm was made of when the watch's round began
 static var _swept_key: Variant = null  # and when its last round ended with every chunk settled: no change, no round
@@ -77,6 +80,8 @@ static func stop() -> void:
 	_town_polys.clear()
 	_land_rev.clear()
 	_base.clear()
+	_faces_kept.clear()
+	_faces_order.clear()
 	_sweep_key = null
 	_swept_key = null
 	_all.clear()
@@ -333,6 +338,24 @@ static func _dispatch() -> void:
 
 ## The land's triangles under chunk `c` and a little round it (Terrain3D, every region, painted navigable or not).
 static func _faces(c: Vector2i) -> PackedVector3Array:
+	# Kept for the chunks baked lately (held ground rebakes a battle's chunks on every map, nav.claims_settle apart):
+	# the land under them asked of Terrain3D again only when it changed there.
+	var rev := int(_land_rev.get(c, 0))
+	var kept: Array = _faces_kept.get(c, [])
+	if not kept.is_empty() and int(kept[0]) == rev:
+		_faces_order.erase(c)
+		_faces_order.append(c)
+		return kept[1]
+	var faces := _land_faces(c)
+	_faces_kept[c] = [rev, faces]
+	_faces_order.erase(c)
+	_faces_order.append(c)
+	while _faces_order.size() > FACES_KEPT:
+		_faces_kept.erase(_faces_order.pop_front())
+	return faces
+
+
+static func _land_faces(c: Vector2i) -> PackedVector3Array:
 	var land: Variant = terrain.land3d.land if terrain.get("land3d") and terrain.land3d.get("land") else null
 	if land == null:
 		return PackedVector3Array()
@@ -350,7 +373,9 @@ static func _inputs(c: Vector2i) -> Dictionary:
 	var chunk := _chunk_size()
 	var area := Rect2(c.x * chunk - 1.0, c.y * chunk - 1.0, chunk + 2.0, chunk + 2.0)
 	# What stands and the ways, read again only when the ground's shapes, the roads or the land there changed.
-	var key := [Ground.shapes_rev, _roads_n(), int(_land_rev.get(c, 0))]
+	# What stands is asked only over this chunk (ground.gd shapes_rev_in): a town's life put away or a wood's trunks laid
+	# elsewhere never has this chunk read again (the battle run: every chunk re-read each look, 218 ms a frame).
+	var key := [Ground.shapes_rev_in(area), _roads_n(), int(_land_rev.get(c, 0))]
 	var kept: Array = _base.get(c, [])
 	if kept.is_empty() or kept[0] != key:
 		var L: Dictionary = Data.value("ground", "physics.layers", {})
@@ -386,7 +411,7 @@ static func _inputs(c: Vector2i) -> Dictionary:
 				if side == Vector2.ZERO:
 					continue
 				ways.append(PackedVector2Array([a + side, b + side, b - side, a - side]))
-		key = [Ground.shapes_rev, _roads_n(), int(_land_rev.get(c, 0))]  # as read: the read itself may lay a wood's trunks
+		key = [Ground.shapes_rev_in(area), _roads_n(), int(_land_rev.get(c, 0))]  # as read: the read itself may lay a wood's trunks
 		kept = [key, str(hash([key[2], obstacles, ways])), obstacles, ways]
 		_base[c] = kept
 	# The held ground (a regiment's block, an engine): the claims' own outlines, cheap to read every look.
