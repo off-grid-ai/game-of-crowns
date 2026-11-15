@@ -18,8 +18,8 @@ extends Node3D
 ## standard over the commander's regiment. Two shapes, chosen by the game: a column 4-6 men wide marching along
 ## the road, then a line at the muster (melee in front, archers behind, cavalry on the wings); ranks loose, each
 ## man a little off his mark. Marching men keep their regiment's step, each a little off it; men at ease shift,
-## turn and change their stance now and then. From afar (far.at) the host shows as coloured blocks with its
-## standard and its strength. select(id) lays a rectangle on the ground under a regiment and lights its banner;
+## turn and change their stance now and then. The men are drawn at every distance, on their lighter levels
+## from afar, with their banners and standard. select(id) lays a rectangle on the ground under a regiment and lights its banner;
 ## regiments() lists them (the command card will call both). Ids follow the bridge: a regiment is a company (its
 ## Freeciv unit id), the host its lead company's; a made-up host's regiments have negative ids.
 ##
@@ -60,7 +60,6 @@ var _face := 0.0  # the line's facing (yaw; the soldier faces +Z)
 var _path := PackedVector3Array()  # the column's road in, ending where it turns off for the muster
 var _cum := PackedFloat32Array()  # distance along _path at each point
 var _goal := "line"  # the shape the game wants: line (form at the muster) or column (stay on the road)
-var _far := false
 var _dist := 12.0
 var _hold := false  # the camera held on the army (the whole take)
 var _focus := Vector3.ZERO
@@ -1012,17 +1011,6 @@ func _ground_marks(r: Dictionary) -> void:
 	d.texture_emission = d.texture_albedo
 	(r["node"] as Node3D).add_child(d)
 	r["ring"] = d
-	var block := MeshInstance3D.new()
-	block.mesh = BoxMesh.new()
-	var m := StandardMaterial3D.new()
-	m.albedo_color = r["colour"]
-	m.emission_enabled = true
-	m.emission = (r["colour"] as Color) * 0.35
-	m.roughness = 0.9
-	block.material_override = m
-	block.visible = false
-	(r["node"] as Node3D).add_child(block)
-	r["block"] = block
 	_mark(r, false)
 
 
@@ -1032,14 +1020,11 @@ func _fit(r: Dictionary) -> void:
 	var man := Data.num("army", "man", 0.22)
 	var d: Decal = r["ring"]
 	d.size = Vector3(float(r["w"]) + margin * 2.0, 1.2, float(r["d"]) + margin * 2.0)
-	var block: MeshInstance3D = r["block"]
-	(block.mesh as BoxMesh).size = Vector3(float(r["w"]), man, float(r["d"]))
 	var tall := man * Data.num("army", "banner.height", 2.6)  # its men and its banner, to click (host_command.gd)
 	if r.has("pick"):
 		HostPick.fit(r["pick"], Vector3(float(r["w"]), tall, float(r["d"])))
 	else:
 		r["pick"] = HostPick.proxy(r["node"], int(r["id"]), Vector3(float(r["w"]), tall, float(r["d"])), self)
-	block.position = Vector3(0.0, man * 0.5, 0.0)
 	if banners.rides_with(r):
 		banners.place()
 
@@ -1066,7 +1051,7 @@ func _mark(r: Dictionary, on: bool) -> void:
 	var d: Decal = r["ring"]
 	var c: Color = r["colour"]
 	d.modulate = Color(c.r, c.g, c.b, a)
-	d.visible = a > 0.0 and not _far
+	d.visible = a > 0.0
 	banners.lit(r, on)
 
 
@@ -1628,7 +1613,7 @@ func _process(delta: float) -> void:
 		var states := {}
 		for r in _regiments:
 			states[r["state"]] = int(states.get(r["state"], 0)) + 1
-		print("ARMY men=%d regiments=%d %s far=%s fps=%d process=%.1fms draws=%d prims=%dk cam=%.1f" % [_men(), _regiments.size(), str(states), str(_far),
+		print("ARMY men=%d regiments=%d %s fps=%d process=%.1fms draws=%d prims=%dk cam=%.1f" % [_men(), _regiments.size(), str(states),
 			Engine.get_frames_per_second(), Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0,
 			Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME), int(Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME) / 1000.0),
 			main.rig.distance if main.rig else 0.0])
@@ -1670,23 +1655,14 @@ func _at_ease(r: Dictionary, delta: float) -> void:
 	_dress(r)
 
 
-## From afar (far.at; back to men under far.back) the host shows as one coloured block per regiment, nose to
-## tail on the march or side by side in line, with its standard and its strength; banners and the standard
-## keep their size on screen beyond banner.fixedFrom.
+## The men drawn at every distance (their lighter detail levels from afar); banners and the standard keep their
+## size on screen beyond banner.fixedFrom.
 func _far_view() -> void:
 	_shade_t -= get_process_delta_time()
 	if _shade_t <= 0.0:
 		_shade_t = 0.5
 		Visual.cast_near(_regiments, get_viewport().get_camera_3d())
-	var d: float = main.rig.distance if main.rig else _dist
-	var far := d > Data.num("army", "far.at", 34.0) if not _far else d > Data.num("army", "far.back", 30.0)
-	if far != _far:
-		_far = far
-		for r in _regiments:
-			(r["vat"] as Node3D).visible = not far
-			(r["block"] as Node3D).visible = far
-			_mark(r, r["selected"])
-	banners.view(_regiments, d, _far)
+	banners.view(_regiments, main.rig.distance if main.rig else _dist)
 
 
 ## The host's middle on the ground: where its regiments stand, on average.

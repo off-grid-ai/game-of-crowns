@@ -104,11 +104,8 @@ func lit(r: Dictionary, on: bool) -> void:
 	(r["bar"] as Node3D).visible = on
 
 
-## The lens at distance `d`, the host shown far or near: banners hidden from afar (the standard
-## stays), and banners and the standard kept their size on screen beyond banner.fixedFrom.
-func view(rows: Array, d: float, far: bool) -> void:
-	for r in rows:
-		(r["banner"] as Node3D).visible = not far
+## The lens at distance `d`: banners and the standard keep their size on screen beyond banner.fixedFrom.
+func view(rows: Array, d: float) -> void:
 	var k := maxf(1.0, d / maxf(Data.num("army", "banner.fixedFrom", 14.0), 0.1))
 	for r in rows:
 		(r["banner"] as Node3D).scale = Vector3.ONE * k
