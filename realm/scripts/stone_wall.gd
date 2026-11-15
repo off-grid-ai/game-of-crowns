@@ -692,6 +692,7 @@ func _loosen(i: int, push: Vector3, physical := true) -> void:
 	PhysicsServer3D.body_set_state(body, PhysicsServer3D.BODY_STATE_ANGULAR_VELOCITY, Vector3(_rng.randf_range(-1, 1), _rng.randf_range(-1, 1), _rng.randf_range(-1, 1)) * spin)
 	_bodies[i] = [body, shape]
 	_since[i] = 0.0
+	set_physics_process(true)  # a stone falls: the wall steps it
 	_lay_loose(i, _laid(i))
 	# The stones round it stand in its way as it falls.
 	for j in _xf.size():
@@ -734,6 +735,7 @@ func set_hot(on: bool) -> void:
 func _warm(at: Vector3) -> void:
 	if not _space.is_valid():
 		_space = PhysicsServer3D.space_create()
+		set_physics_process(true)  # the space cools once quiet (_cool)
 		PhysicsServer3D.space_set_active(_space, true)
 		PhysicsServer3D.area_set_param(_space, PhysicsServer3D.AREA_PARAM_GRAVITY, float(Data.num("walls", "fall.gravity", 9.8)))
 		PhysicsServer3D.area_set_param(_space, PhysicsServer3D.AREA_PARAM_GRAVITY_VECTOR, Vector3.DOWN)
@@ -799,6 +801,8 @@ func _physics_process_timed(delta: float) -> void:
 			_quiet += delta
 			if _quiet > float(Data.num("walls", "fall.cool_s", 12.0)) and not busy():
 				_cool()
+		else:
+			set_physics_process(false)  # nothing falling, no space: a standing wall costs no step (a stone or a space turns it on)
 		return
 	_check += delta
 	if _check > 0.15:
