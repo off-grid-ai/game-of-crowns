@@ -215,8 +215,8 @@ func _input(event: InputEvent) -> void:
 
 ## What a right-click on `g` asks of the selected host, read from what stands there (Warcraft III's smart order: no
 ## menu, the target decides): a foe's company or raiders under the pointer (`picked`, host_pick.gd) is attacked where it
-## stands; a town of the crown's or a sworn house's is relieved (garrisoned); any other town is besieged (the bridge's
-## march on it, siege on arrival); the open ground is marched to. [order, the world point it is given at].
+## stands; a town of the crown's or a sworn house's is relieved; any other town is besieged (bridge hosts.js relieve and
+## besiege, 4cbad5ff); the open ground is marched to. [order, the world point it is given at].
 func _intent(picked: Dictionary, g: Vector3) -> Array:
 	if not picked.is_empty() and _host_of(int(picked["unit"])).is_empty():
 		var f: Node3D = main.units.figure_of(int(picked["unit"]))
@@ -224,7 +224,7 @@ func _intent(picked: Dictionary, g: Vector3) -> Array:
 	var town: Dictionary = main.towns.nearest(g, Data.num(FILE, "town_reach", 3.0))
 	if town.is_empty():
 		return ["march", g]
-	return ["garrison" if _friendly(int(town.get("owner", -1)), int(town.get("id", -1))) else "besiege", g]
+	return ["relieve" if _friendly(int(town.get("owner", -1)), int(town.get("id", -1))) else "besiege", g]
 
 
 ## A town the King's men may enter as friends: the crown's own, or the seat of a bannerman sworn to it (/world vassals).
