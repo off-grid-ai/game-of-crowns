@@ -512,11 +512,15 @@ func dust(root: Node3D, p: Vector3, along: Vector3, width: float) -> void:
 
 # --- sieges ------------------------------------------------------------------------------
 
-## Whether a man could stand here: clear ground (ground.gd: on land, in no building), not a crag.
-func _footing(p: Vector3) -> bool:
-	if not Ground.is_clear(p):
+## Whether a body reaching `body` all round (a man: 0; an engine: half its length) could stand here: clear ground
+## (ground.gd: on land, in no building or claimed ground), not a crag across its whole reach (a rise of 0.4 a unit at
+## most: an engine on a river's bank hung in the air, Mac 2026-11-15).
+func _footing(p: Vector3, body := 0.0) -> bool:
+	if not Ground.is_clear(p, body):
 		return false
-	return absf(terrain.height_at(p.x + 0.15, p.z) - terrain.height_at(p.x - 0.15, p.z)) < 0.12 and absf(terrain.height_at(p.x, p.z + 0.15) - terrain.height_at(p.x, p.z - 0.15)) < 0.12
+	var s := maxf(0.15, body)
+	var most := 0.8 * s
+	return absf(terrain.height_at(p.x + s, p.z) - terrain.height_at(p.x - s, p.z)) < most and absf(terrain.height_at(p.x, p.z + s) - terrain.height_at(p.x, p.z - s)) < most
 
 
 static func _flat_gap(a: Vector3, b: Vector3) -> float:

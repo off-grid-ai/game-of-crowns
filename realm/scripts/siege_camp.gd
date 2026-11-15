@@ -26,6 +26,7 @@ const Works := preload("res://scripts/works.gd")  # the sky's night: a bribed ma
 
 var scenes: Node
 var root: Node3D
+const Ground := preload("res://scripts/ground.gd")  # the one answer to where a body may stand: an engine claims its ground
 const Bulk := preload("res://scripts/bulk.gd")  # the one drawer of repeated small things: trench, tents, baggage
 const REACH := 1000.0  # the camp's bulk-drawn things stand as far as its nodes did (no draw distance of their own)
 var r: RandomNumberGenerator
@@ -419,14 +420,17 @@ func _parked() -> void:
 				to = scenes.ground(g[0] + n * float(k.get("gate_out", 0.45)))
 				out = float(k.get("gate_out", 0.45))
 				yaw = atan2(n.z, -n.x)  # its +X (the ram's head) toward the gate
-		if not scenes._footing(p):
-			continue
 		var m: Node3D = load(Real.path_of(kinds[i])).instantiate()
-		root.add_child(m)
 		scenes._fit(m, float(k.get("height", 0.5)) * (1.6 if kinds[i] == "siege_tower" else 1.0))
+		var size := _ground_size(m)
+		if not scenes._footing(p, maxf(size.x, size.y)):  # its whole body on clear, level ground
+			m.free()
+			continue
+		root.add_child(m)
 		scenes._weather(m)
 		m.position = p
 		m.rotation.y = yaw
+		_hold(m, size)
 		var crew := []
 		for j in int(k.get("crew", 2)):
 			crew.append(_crewman(p + Vector3(r.randf_range(-0.2, 0.2), 0, r.randf_range(-0.2, 0.2)), ["Idle", "Looking_Around", "Weight_Shift"]))
@@ -476,6 +480,7 @@ func _roll(dt: float) -> void:
 			var pace := float(k.get("pace", 0.12))
 			if not g.get("rolling", false):
 				g["rolling"] = true
+				Ground.release(_hold_id(m))  # it leaves its parked ground; its Mover keeps it on the land as it rolls
 				var mv := Mover.of(m)
 				mv.speed = pace
 				mv.clip = ""  # an engine: nothing to play
@@ -545,15 +550,18 @@ func _engine(a: float, k: Dictionary) -> void:
 	# storm host; where its own angle's ground isn't level, the nearest level ground a few steps along the arc or out
 	# and in (near), never dropped (group test 1: of three engines one stood in frame).
 	var rad := camp_r - Data.num("siege", "band", 6.0) + float(k.get("from_wall", 0.75))
-	var p := _level_near(a, rad, k.get("near", [0.06, 0.25, 8]))
-	if p == Vector3.INF:
-		return
 	var node: Node3D = load(Real.path_of("catapult")).instantiate()  # Meshy's catapult (data/meshy.json replaces the catapult)
-	root.add_child(node)
 	scenes._fit(node, float(k.get("height", 0.7)))
+	var size := _ground_size(node)
+	var p := _level_near(a, rad, k.get("near", [0.06, 0.25, 8]), maxf(size.x, size.y))  # its whole body on clear, level ground
+	if p == Vector3.INF:
+		node.free()
+		return
+	root.add_child(node)
 	scenes._weather(node)
 	node.position = p
 	node.rotation.y = _x_to_town(p)
+	_hold(node, size)
 	node.add_to_group("siege_engines")
 	# Its arm, split out by the Meshy import: its own angles and tip (siege.json engines.kinds.catapult).
 	var kk: Dictionary = (k.get("kinds", {}) as Dictionary).get("catapult", {})
@@ -588,24 +596,52 @@ func _engine(a: float, k: Dictionary) -> void:
 			_puff(p + Vector3(0, 0.05, 0), Color(0.55, 0.48, 0.38, 0.2)))
 
 
+## An engine's half length and half width on the ground (world units, its own x and z, as fitted).
+func _ground_size(n: Node3D) -> Vector2:
+	var box := AABB()
+	var first := true
+	for mi in n.find_children("*", "MeshInstance3D", true, false):
+		var b: AABB = (mi as MeshInstance3D).get_aabb()
+		box = b if first else box.merge(b)
+		first = false
+	return Vector2(box.size.x * n.scale.x, box.size.z * n.scale.z) * 0.5 if not first else Vector2(0.2, 0.2)
+
+
+## The ground an engine stands on is held while it stands (ground.gd claim, as a regiment's block): no host, camp or
+## crew is set down through it (Mac 2026-11-15: a catapult inside a regiment). Let go when it goes.
+func _hold(n: Node3D, size: Vector2) -> void:
+	var xf := Transform3D(Basis(Vector3.UP, n.global_rotation.y), n.global_position)
+	var poly := PackedVector2Array()
+	for c in [Vector3(-size.x, 0, -size.y), Vector3(size.x, 0, -size.y), Vector3(size.x, 0, size.y), Vector3(-size.x, 0, size.y)]:
+		var w: Vector3 = xf * (c as Vector3)
+		poly.append(Vector2(w.x, w.z))
+	var id := _hold_id(n)
+	Ground.claim(id, poly, "engine")
+	n.tree_exiting.connect(func(): Ground.release(id))
+
+
+func _hold_id(n: Node3D) -> String:
+	return "engine %d" % n.get_instance_id()
+
+
 ## Level ground for an engine at angle `a`, radius `rad` from the town, or the nearest of the steps round it
 ## (near: [radians along the arc, units out or in, steps]): first along the arc either way, then out and in.
 ## INF when none of them is level ground.
-func _level_near(a: float, rad: float, near: Array) -> Vector3:
+func _level_near(a: float, rad: float, near: Array, body := 0.0) -> Vector3:
 	var da := float(near[0]) if near.size() > 0 else 0.06
 	var dr := float(near[1]) if near.size() > 1 else 0.25
 	var n := int(near[2]) if near.size() > 2 else 8
 	for i in n + 1:
 		for sa in ([0] if i == 0 else [1, -1]):
 			var p := _arc(a + da * i * sa, rad)
-			if scenes._footing(p):
+			if scenes._footing(p, body):
 				return p
 	for i in range(1, n + 1):
 		for sr in [1, -1]:
 			for j in n + 1:
 				for sa in ([0] if j == 0 else [1, -1]):
 					var p := _arc(a + da * j * sa, rad + dr * i * sr)
-					if scenes._footing(p):
+					if scenes._footing(p, body):
 						return p
 	return Vector3.INF
 
