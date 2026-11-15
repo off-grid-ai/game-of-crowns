@@ -18,7 +18,7 @@ dest_files=["res://.godot/imported/tavern_texture_0.png-f9f8737fcc5be58b1109fbfa
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

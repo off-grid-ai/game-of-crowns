@@ -18,7 +18,7 @@ dest_files=["res://.godot/imported/ts_tannery_texture_0.png-259f62f68662f2c4dccf
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

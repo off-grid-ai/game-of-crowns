@@ -18,7 +18,7 @@ dest_files=["res://.godot/imported/hs_townhouse_narrow_texture_0.png-4944da3fca6
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

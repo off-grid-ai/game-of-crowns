@@ -18,7 +18,7 @@ dest_files=["res://.godot/imported/ts_alehouse_texture_0.png-1ee84219081b14bd810
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

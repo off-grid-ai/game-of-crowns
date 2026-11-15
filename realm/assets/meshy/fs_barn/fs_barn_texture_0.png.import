@@ -18,7 +18,7 @@ dest_files=["res://.godot/imported/fs_barn_texture_0.png-8b4b65478dc90530a8ae466
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

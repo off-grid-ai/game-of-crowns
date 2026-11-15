@@ -18,7 +18,7 @@ dest_files=["res://.godot/imported/hs_longhouse_texture_0.png-975309d4009f59f2c2
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

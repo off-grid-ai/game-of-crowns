@@ -18,7 +18,7 @@ dest_files=["res://.godot/imported/ts_dyer_texture_0.png-6b4b9919c7cb09143633d58
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
