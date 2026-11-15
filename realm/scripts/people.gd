@@ -722,10 +722,24 @@ func make_body(rng: RandomNumberGenerator, body: String, tint := Color.WHITE, ag
 
 ## A cast body's front at `bone`'s height (skeleton space): [the bone's rest, the chest's front z, its half width],
 ## read off the body's own vertices (Meshy bodies are bound at rest), or [] when the bone isn't there.
+## The same body always gives the same answer, so it is worked out once per body (its meshes, where they sit, the bone
+## and the band) and kept (_fronts): a soldier's tabard no longer walks every vertex of his body for each man made.
+static var _fronts := {}
 static func _front_at(skeleton: Skeleton3D, bone_name: String, band: float, across := 0.22) -> Array:
 	var bone := skeleton.find_bone(bone_name)
 	if bone < 0:
 		return []
+	var key: Array = [bone_name, band, across]
+	for mi in skeleton.get_children():
+		if mi is MeshInstance3D and (mi as MeshInstance3D).mesh != null:
+			key.append([(mi as MeshInstance3D).mesh.get_instance_id(), (mi as MeshInstance3D).transform])
+	if not _fronts.has(key):
+		_fronts[key] = _front_walk(skeleton, bone, band, across)
+	return _fronts[key]
+
+
+## _front_at's answer, read off the body's vertices.
+static func _front_walk(skeleton: Skeleton3D, bone: int, band: float, across: float) -> Array:
 	var rest := skeleton.get_bone_global_rest(bone)
 	var y := rest.origin.y
 	var front := -INF
