@@ -43,7 +43,8 @@ func show_character_form(house_id: int, house_name: String, opts: Dictionary, pe
 			return
 		_form_panel.visible = false
 		ui.character_form_closed.emit()
-	v.add_child(T.label(("Change who %s is" % String(person.get("name", ""))) if editing else ("A new character for " + house_name)))
+	# ask: the form's own question (a new reign's "Who are you?"), skip: its Cancel's word (royal_sheet.gd).
+	v.add_child(T.label(String(person["ask"]) if person.get("ask") else (("Change who %s is" % String(person.get("name", ""))) if editing else ("A new character for " + house_name))))
 	var name := LineEdit.new()
 	name.placeholder_text = "Their name, e.g. Ser Aldous Crane"
 	name.text = String(person.get("name", ""))
@@ -181,7 +182,12 @@ func show_character_form(house_id: int, house_name: String, opts: Dictionary, pe
 	var go := HBoxContainer.new()
 	go.alignment = BoxContainer.ALIGNMENT_END
 	v.add_child(go)
-	go.add_child(ui.btn("Cancel", func(): finish.call({})))
+	# Their own face from the player's photo (likeness.gd), for someone already in the realm.
+	var Likeness := preload("res://scripts/likeness.gd")
+	if editing and Likeness.one and not person.get("written", false) and str(person.get("id", "")) != "":
+		var pid := str(person["id"])
+		go.add_child(ui.btn("Add your photo", func(): Likeness.one.pick(pid, "a %s of about %d" % ["woman" if gender.selected == 1 else "man", int(age.value)])))
+	go.add_child(ui.btn(String(person.get("skip", "Cancel")), func(): finish.call({})))
 	go.add_child(ui.btn("Make it so" if editing else "Bring them into the realm", func():
 		if name.text.strip_edges() == "":
 			ui.toast("Give them a name first.")

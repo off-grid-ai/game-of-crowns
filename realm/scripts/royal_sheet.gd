@@ -425,7 +425,25 @@ func _council_due(r: Dictionary) -> void:
 	_council_asked = true
 	seen.append(id)
 	Settings.set_value("council_seen", seen.slice(-20))
-	ui.get_tree().create_timer(float(w.get("after", 9.0))).timeout.connect(func(): _first_council())
+	ui.get_tree().create_timer(float(w.get("after", 9.0))).timeout.connect(_who_are_you)
+
+
+## A new reign's first question (Mac 2026-11-15: 'allow people to add their own name etc'): who the King is, in the
+## one character form (royal: name, man or woman, age, nature, story, and a photo), the reign's own King filled in.
+## Skipped, he stays as dealt. Then the first council, with whoever he now is.
+func _who_are_you() -> void:
+	var king: Dictionary = royals().get("king", {}) if royals().get("king") is Dictionary else {}
+	if king.is_empty():
+		_first_council()
+		return
+	var w: Dictionary = Data.value("royal_sheet", "who", {})
+	var me := {"id": String(king.get("id", "")), "name": String(king.get("name", "")), "age": int(king.get("age", 40)), "traits": king.get("traits", []),
+		"gender": "female" if bool(king.get("woman", false)) else "male", "story": king.get("story"), "royal": true,
+		"ask": String(w.get("ask", "Who are you?")), "skip": String(w.get("skip", "Skip"))}
+	ui.character_form_closed.connect(func():
+		ui.get_tree().create_timer(float(w.get("then", 2.5))).timeout.connect(_first_council), CONNECT_ONE_SHOT)
+	ui.get_tree().current_scene.get("bridge").character_options(func(opts):
+		ui.show_character_form(-1, "the Crown", opts if opts is Dictionary else {}, me))
 
 
 func _first_council() -> void:
