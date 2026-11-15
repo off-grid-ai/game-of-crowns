@@ -13,7 +13,7 @@ var main: Main  # the realm being measured: its systems, sky and land
 
 func _init(owner: Main) -> void:
 	main = owner
-	if probing:
+	if probing or OS.is_debug_build():  # the on-screen meter's split too (fps_meter.gd), in every debug build
 		owner.ready.connect(_stage_marks)
 
 
@@ -67,7 +67,22 @@ static func stage(tag: String) -> void:
 			_marks = {"post_draw": now}
 
 
+## The last second's draw, our code and physics, for the on-screen meter (fps_meter.gd); empty unless probing.
+static var _live := {}  # stage -> [microseconds, frames] since the meter last read
+static func live_split() -> String:
+	if _live.is_empty():
+		return ""
+	var f := func(k: String) -> float: return float(_live.get(k, [0, 1])[0]) / 1000.0 / maxf(float(_live.get(k, [0, 1])[1]), 1.0)
+	var out := "draw %.0f ms  ·  code %.0f ms  ·  physics %.0f ms" % [f.call("5 draw"), f.call("3 nodes' _process") + f.call("4 after nodes (deferred, timers, tweens, skeletons, nav)"), f.call("1 physics+input")]
+	_live.clear()
+	return out
+
+
 static func _add_stage(k: String, usec: int) -> void:
+	var lv: Array = _live.get(k, [0, 0])
+	lv[0] += usec
+	lv[1] += 1
+	_live[k] = lv
 	var v: Array = stages.get(k, [0, 0, 0])
 	v[0] += usec
 	v[1] += 1
@@ -485,7 +500,9 @@ func _cycle_step(delta: float) -> void:
 	_cycle_prims = 0.0
 	if _cycle_i >= _cycle.size():
 		_cycle = null
+		Engine.set_meta("perf_testing", "done")
 		return
+	Engine.set_meta("perf_testing", "%s hidden or off (%d of %d)" % [_cycle[_cycle_i][0], _cycle_i, _cycle.size() - 1])
 	var next_e: Variant = _cycle[_cycle_i][1]
 	if next_e is Callable:
 		(next_e as Callable).call(false)
