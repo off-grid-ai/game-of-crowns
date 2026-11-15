@@ -1,8 +1,8 @@
 extends RefCounted
-## The chronicle: the drawer down the right that keeps the realm's story, and the
-## ticker along the bottom-left with the three latest events. Both are fed by the
-## same entries. Owned by ui.gd, which keeps the chronicle key in the bar and
-## forwards its public calls here (ui.add_chronicle and the rest).
+## The chronicle: the drawer down the right, the one place for what happens and what the King can do about it (Mac:
+## "let the chronicle be the source of truth"; no cards in the corner). The realm's story, the herald's notices (the
+## answer to an order, a battle won), a moment worth watching, each a row with its answers; the chronicle key counts
+## what came while the drawer was shut. Owned by ui.gd, which keeps the key in the bar and forwards its calls here.
 
 const Data := preload("res://scripts/data.gd")  # the one loader of realm/data (data.gd)
 const T := preload("res://scripts/theme.gd")
@@ -16,7 +16,7 @@ var _list: VBoxContainer  # the drawer's rows, newest at the top: a line each, i
 var _scroll: ScrollContainer
 var _focused: Control  # the row the camera just went to: its answers open, marked "Here now"
 var entries: Array = []  # every line of the reign as the bridge sent it, oldest first: the book of the reign reads these
-var _ticker: VBoxContainer
+var _unread := 0  # rows of the King's business come while the drawer was shut: the number on its key
 var _stories := {}  # chronicle seq -> a story beat's entry, for its link
 
 
@@ -48,25 +48,14 @@ func _build_chronicle() -> void:
 	v.add_child(_scroll)
 	_list = VBoxContainer.new()
 	_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_list.custom_minimum_size.x = UI.ui_num("chronicle.width", 360.0) - 32.0  # the drawer's width less its padding
+	_chron_panel.visibility_changed.connect(_fit)
+	_chron_panel.visibility_changed.connect(func():
+		if _chron_panel.visible and _unread > 0:
+			_unread = 0
+			ui.top_bar.chronicle_unread(0))
+	ui.get_viewport().size_changed.connect(_fit)
 	_list.add_theme_constant_override("separation", 10)
 	_scroll.add_child(_list)
-
-
-## The three latest events, quietly along the bottom; click one to go there.
-func _build_ticker() -> void:
-	_ticker = VBoxContainer.new()
-	_ticker.anchor_top = 1.0
-	_ticker.anchor_bottom = 1.0
-	_ticker.offset_left = 12  # the corner's column, with the notices (news_chips.gd _place_stack places both)
-	_ticker.offset_top = -12
-	_ticker.offset_bottom = -12
-	_ticker.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	_ticker.alignment = BoxContainer.ALIGNMENT_END
-	_ticker.add_theme_constant_override("separation", 5)
-	_ticker.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_ticker.visible = true  # what just happened (UI.md 2): the chronicle starts closed, so the news lives here
-	ui.root.add_child(_ticker)
 
 
 func add_chronicle(added: Array) -> void:
@@ -82,9 +71,79 @@ func add_chronicle(added: Array) -> void:
 			_stories[int(e.get("seq", 0))] = e
 		_row(e, loss)
 		if kind != "year" and _ticks(e):
-			_tick(e, loss)
+			_count()
+	_trim()
+
+
+## The herald's word (the answer to an order, a battle told, a scene's caption, a moment worth watching) as a row of
+## the chronicle. A newer word about the same thing takes the older one's place (its first sentence less its figures:
+## the tithe at 15%, then 20%). watch: a Watch button on the row (news.gd's offer). Counted on the key.
+func notice(text: String, entry := {}, watch := Callable()) -> void:
+	var said := text.strip_edges()
+	if said == "":
+		return
+	var subject := preload("res://scripts/news_chips.gd")._subject(said)
+	var n := 0
+	for r in _list.get_children():
+		n += 1
+		if n > 12:
+			break
+		if r.get_meta("subject", "") == subject:
+			if r == _focused:
+				_focused = null
+			r.free()
+			break
+	var e := entry.duplicate()
+	e["text"] = said
+	if not e.has("turn"):
+		var main: Node = ui.get_parent()
+		e["turn"] = int(main.awareness.rec("turn", 0)) if main and main.get("awareness") else 0
+	var row := _row(e, bool(e.get("loss", false)))
+	row.set_meta("subject", subject)
+	if watch.is_valid():
+		var b: Button = ui.btn(String(Data.value("ui", "chronicle.watch", "Watch")), watch)
+		b.add_theme_color_override("font_color", T.ACCENT)
+		b.size_flags_horizontal = Control.SIZE_SHRINK_END
+		b.add_theme_font_size_override("font_size", T.SIZE_DESC)
+		row.add_child(b)
+	_count()
+	_trim()
+
+
+func _trim() -> void:
 	while _list.get_child_count() > int(UI.ui_num("chronicle.rows", 150.0)):
-		_list.get_child(_list.get_child_count() - 1).free()
+		var last := _list.get_child(_list.get_child_count() - 1)
+		if last == _focused:
+			_focused = null
+		last.free()
+
+
+## One more row of the King's business: counted on the chronicle key while the drawer is shut.
+func _count() -> void:
+	if _chron_panel.visible:
+		return
+	_unread += 1
+	ui.top_bar.chronicle_unread(_unread)
+
+
+## The drawer stands under the toolbar top-right, exactly as wide (Mac: "make the chronicle as wide as the toolbar on
+## top"); its rows wrap to that width less the drawer's padding.
+func _fit() -> void:
+	if not _chron_panel.visible:
+		return
+	var bar: Control = ui._bar_pill
+	if bar == null or not is_instance_valid(bar):
+		return
+	var r := bar.get_global_rect()
+	var vw := ui.get_viewport().get_visible_rect().size.x
+	_chron_panel.offset_left = r.position.x - vw
+	_chron_panel.offset_right = r.end.x - vw
+	_chron_panel.offset_top = r.end.y + 8.0
+	var pad := 32.0
+	var sb := _chron_panel.get_theme_stylebox("panel")
+	if sb:
+		pad = sb.get_margin(SIDE_LEFT) + sb.get_margin(SIDE_RIGHT)
+	_list.custom_minimum_size.x = maxf(r.size.x - pad - 12.0, 120.0)  # less the scroll bar
 
 
 ## One line of the drawer: its season (and "Loss" in words, not colour alone: Mac is colour-blind), the story's name
@@ -181,13 +240,17 @@ func _open(row: Control, on: bool) -> void:
 			var flow := HFlowContainer.new()
 			flow.add_theme_constant_override("h_separation", 6)
 			flow.add_theme_constant_override("v_separation", 6)
-			for r in acts.verbs(e):
-				if String(r["verb"]) == "go":
-					continue
+			# The answer we'd have him give (news_actions' first) on the right, in the accent (Mac: the right-hand
+			# button is the one we want pressed); the others to its left.
+			var rows: Array = acts.verbs(e).filter(func(r): return String(r["verb"]) != "go")
+			rows.reverse()
+			for r in rows:
 				var b: Button = ui.btn(String(r["label"]), r["call"])
 				b.disabled = not bool(r["enabled"])
 				b.tooltip_text = String(r["why"]) if String(r["why"]) != "" else String(r["tip"])
 				b.add_theme_font_size_override("font_size", T.SIZE_DESC)
+				if r == rows[-1] and bool(r["enabled"]):
+					b.add_theme_color_override("font_color", T.ACCENT)
 				flow.add_child(b)
 			if flow.get_child_count() > 0:
 				ans.add_child(flow)
@@ -226,61 +289,11 @@ static func _ticks(e: Dictionary) -> bool:
 	return kind in (r.get("always", []) as Array) or (bool(e.get("crown", false)) and kind in (r.get("ifCrown", []) as Array))
 
 
-func _tick(e: Dictionary, loss: bool) -> void:
-	# A quiet chip of smoked glass; the dot carries the tone (red for loss), not the text.
-	var l := Button.new()
-	l.text = String(e.get("text", "")).left(120)
-	l.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	l.focus_mode = Control.FOCUS_NONE
-	l.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	l.icon = _dot()
-	l.add_theme_color_override("icon_normal_color", T.DANGER if loss else T.ACCENT)
-	l.add_theme_color_override("icon_hover_color", T.DANGER if loss else T.ACCENT)
-	l.add_theme_constant_override("h_separation", 8)
-	l.add_theme_color_override("font_color", T.TEXT)
-	l.add_theme_color_override("font_hover_color", T.TEXT)
-	l.add_theme_font_size_override("font_size", T.SIZE_DESC + 1)
-	var chip := T._box(T.SURFACE_SOLID, T.HAIRLINE, 7, 10)
-	chip.content_margin_top = 5
-	chip.content_margin_bottom = 5
-	l.add_theme_stylebox_override("normal", chip)
-	l.add_theme_stylebox_override("hover", T._box(Color(T.SURFACE_SOLID.r + 0.05, T.SURFACE_SOLID.g + 0.05, T.SURFACE_SOLID.b + 0.05, 0.9), T.HAIRLINE, 7, 10))
-	l.add_theme_stylebox_override("pressed", chip)
-	# What the King can do about it (news_actions.gd): one row of answers under the line, open at once for a threat
-	# to his town, else opened by a click on the line; with nothing to do but look, the click goes there.
-	# A click: the camera goes there and the chronicle opens at it, its answers on its row (go, focus): one place
-	# for the news and what to do about it.
-	var item: Control = l
-	l.pressed.connect(func(): go(e))
-	_ticker.add_child(item)
-	while _ticker.get_child_count() > 3:
-		_ticker.get_child(0).free()
-	var tw := item.create_tween()
-	tw.tween_interval(float(e.get("hold", 14.0)))
-	tw.tween_property(item, "modulate:a", 0.0, 1.5)
-	tw.tween_callback(item.queue_free)  # gone, so the notices above settle down
-
-
 ## A piece of news the realm's chronicle doesn't carry (a threat to the King's town, news_actions.gd): a line in
 ## the ticker like any other, with its answers.
 func show_news(e: Dictionary, loss: bool) -> void:
-	_tick(e, loss)
 	_row(e, loss)
-
-
-static var _dot_tex: Texture2D
-
-
-## A small round marker, made once.
-static func _dot() -> Texture2D:
-	if _dot_tex == null:
-		var img := Image.create(10, 10, false, Image.FORMAT_RGBA8)
-		for y in 10:
-			for x in 10:
-				var d := Vector2(x - 4.5, y - 4.5).length()
-				img.set_pixel(x, y, Color(1, 1, 1, clampf(4.2 - d, 0.0, 1.0)))
-		_dot_tex = ImageTexture.create_from_image(img)
-	return _dot_tex
+	_count()
 
 
 func clear_chronicle() -> void:
@@ -288,5 +301,5 @@ func clear_chronicle() -> void:
 	_focused = null
 	for r in _list.get_children():
 		r.queue_free()
-	for c in _ticker.get_children():
-		c.queue_free()
+	_unread = 0
+	ui.top_bar.chronicle_unread(0)

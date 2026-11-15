@@ -64,7 +64,6 @@ func show_digest(entries: Array, turns: int) -> void:
 	go.size_flags_horizontal = Control.SIZE_SHRINK_END
 	v.add_child(go)
 	ui._court_panel.visible = false
-	ui._ticker.visible = false
 
 
 var _interlude_told := ""  # "reign id:quarter" of the interlude told

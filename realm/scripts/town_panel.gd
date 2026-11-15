@@ -262,7 +262,6 @@ func show_town(c: Dictionary, house: Dictionary, _player: Dictionary) -> void:
 	if c.is_empty():
 		_town_id = -1
 		_town_panel.visible = false
-		ui._ticker.visible = false  # as before: the chronicle down the right carries the news
 		return
 	# The realm's update for a town whose card is already down refreshes its
 	# words only: it never brings the card back over what the King opened since.
@@ -278,7 +277,6 @@ func show_town(c: Dictionary, house: Dictionary, _player: Dictionary) -> void:
 		if ui._court_panel.visible:
 			ui._court_panel.visible = false
 			ui._court_hidden = true
-	ui._ticker.visible = false
 	_town_title.text = "%s  ·  %s" % [c.get("title", c["name"]), house.get("name", "")]
 	# The town's orders stand by the town itself, following it as the camera moves
 	# (Civilization's unit actions), not in a strip at the bottom of the screen.

@@ -1,167 +1,27 @@
 extends RefCounted
-## The notices: the King's results and the realm's notices stacked quietly in the bottom-left corner (toast;
-## Anno's and Total War's notification stack), the camera's caption under the top bar, the Watch offer for a moment worth seeing, and the arrow at the
-## screen's edge that points to the latest news. Owned by ui.gd, which builds
-## them in _ready, places them each frame and forwards its calls here
-## (ui.toast, ui.caption, ui.offer_watch, ui.edge_arrow).
+## The herald: the King's results and the realm's notices, the camera's caption and the Watch offer, all told as rows
+## of the chronicle (chronicle_panel.gd notice; Mac: "everything should just happen in the chronicle", no cards in the
+## corner or under the bar), and the arrow at the screen's edge that points to the latest news. Owned by ui.gd, which
+## forwards its calls here (ui.toast, ui.caption, ui.offer_watch, ui.edge_arrow).
 
 const T := preload("res://scripts/theme.gd")
 const UI := preload("res://scripts/ui.gd")
-const NewsActions := preload("res://scripts/news_actions.gd")  # what the King can do about what a caption shows
 const Herald := preload("res://scripts/herald.gd")  # one notice at a time, in order, with a dry voice (data/herald.json)
 
 var ui: UI  # the interface that owns these notices: its signals, its building blocks, its cards
 
-var holding := false  # a card has the screen (the court, the digest): no Watch offer, no edge arrow, no caption meanwhile (ui.gd)
-var _stack: VBoxContainer  # the notices in the corner, oldest at the top, newest at the foot (herald.json stack)
-
-var _toast: Label
-var _toast_box: PanelContainer  # the card the notice sits on
-var _toast_style: StyleBox  # its usual glass
-var _toast_solid: StyleBox  # fully opaque, for when it must sit over a card
-var _offer: PanelContainer  # "Watch": the latest moment worth seeing, for a few seconds
-var _offer_left := 0.0
-var _toast_top := 78.0  # just under the top bar
-var _toast_time := 0.0
-var _toast_full := 7.0  # the notice's whole time, for its ease in
-var _answers: CenterContainer  # the caption's row of answers (news_actions.gd), when what it shows has any
+var holding := false  # a card has the screen (the court, the digest): no edge arrow meanwhile (ui.gd)
+var _toast_top := 78.0  # just under the top bar (top_bar.gd _arrange_top keeps it)
 
 
 func _init(owner: UI) -> void:
 	ui = owner
 
 
-## The notice card under the top bar, built once in ui._ready.
-func _build_toast() -> void:
-	# The corner stack: each notice a quiet glass line of its own, fading on its own clock.
-	_stack = VBoxContainer.new()
-	_stack.anchor_top = 1.0
-	_stack.anchor_bottom = 1.0
-	_stack.offset_left = 12
-	_stack.offset_right = 12 + Herald.knob("stack.width", 320.0)
-	_stack.offset_bottom = -12
-	_stack.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	_stack.alignment = BoxContainer.ALIGNMENT_END
-	_stack.add_theme_constant_override("separation", T.GAP)
-	_stack.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	ui.root.add_child(_stack)
-	# The camera's caption: centred between the side panels, under the top bar.
-	_toast_box = PanelContainer.new()
-	_toast_style = T._box(T.SURFACE_SOLID, Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.55), 10, 14)
-	var solid := T.SURFACE_SOLID
-	solid.a = 1.0
-	_toast_solid = T._box(solid, Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.8), 10, 14)
-	_toast_box.add_theme_stylebox_override("panel", _toast_style)
-	_toast_box.anchor_left = 0.5
-	_toast_box.anchor_right = 0.5
-	var half := UI.ui_num("toast.width", 400.0) * 0.5
-	_toast_box.offset_left = -half
-	_toast_box.offset_right = half
-	_toast_box.offset_top = 78
-	_toast_box.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	_toast_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_toast_box.modulate.a = 0.0
-	ui.root.add_child(_toast_box)
-	var col := VBoxContainer.new()
-	col.add_theme_constant_override("separation", T.GAP)
-	col.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_toast_box.add_child(col)
-	_toast = T.title("", 16, T.TEXT)
-	_toast.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_toast.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART  # a long notice wraps in the middle, never runs off to one side
-	col.add_child(_toast)
-	# What the King can do about what the caption shows (news_actions.gd): its row of answers, under the words.
-	_answers = CenterContainer.new()
-	_answers.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	col.add_child(_answers)
-
-
-## The free band of screen between the card under the top bar and the town
-## card at the bottom (x: its top, y: its bottom), where notices may sit.
-func _notice_gap() -> Vector2:
-	var top := _toast_top
-	for c in ui.cards:
-		if is_instance_valid(c) and c.visible:
-			top = maxf(top, c.get_global_rect().end.y + 12.0)
-	var bottom := ui.get_viewport().get_visible_rect().size.y - 16.0
-	if ui._town_panel and ui._town_panel.visible:
-		bottom = minf(bottom, ui._town_panel.get_global_rect().position.y - 12.0)
-	return Vector2(top, bottom)
-
-
-## Where the notices sit and how they fade, each frame (from ui._process).
-func _place_notices(delta: float) -> void:
-	if _toast_time > 0:
-		ui.fit_centre(_toast_box, 500.0)  # a result card never covers the houses table
-	if _offer and _offer.visible:
-		_offer_left -= delta
-		_offer.modulate.a = clampf(_offer_left, 0.0, 1.0)
-		if _offer_left <= 0.0:
-			_offer.visible = false
-	_place_stack(delta)
-	# Notices know where the cards are. They sit in the gap between the card
-	# under the top bar and the town card below; when there is no gap, a passing
-	# notice (a scene's caption, an offer to watch) waits rather than writing over
-	# a card, and the result of the King's own order shows on a solid card.
-	var gap := _notice_gap()
-	if _toast_time > 0:
-		var h := _toast_box.get_combined_minimum_size().y
-		if gap.y - gap.x >= h:
-			_toast_box.offset_top = gap.x
-			_toast_box.add_theme_stylebox_override("panel", _toast_style)
-		else:
-			_toast_time = 0.0  # a caption with nowhere to sit is let go
-		# An offer to watch sits under the caption, never on it.
-		if _offer and _offer.visible and _toast_box.modulate.a > 0.05:
-			_offer.offset_top = _toast_box.get_global_rect().end.y + 10.0
-	if _offer and _offer.visible:
-		var below := _offer.offset_top if _toast_time > 0 else maxf(_offer.offset_top, gap.x)
-		_offer.offset_top = below
-		if below < gap.x - 1.0 or below + _offer.get_combined_minimum_size().y > gap.y:
-			_offer.visible = false  # no room among the cards: the moment passes
-	# The offer, like every notice, sits between the side panels, never over the table.
-	if _offer and _offer.visible:
-		ui.fit_centre(_offer, _offer.get_combined_minimum_size().x)  # as wide as its words, centred in the gap
-	# The notice fades on its own clock, offer or not (it sat inside the offer's
-	# block and stayed up for good), and a card with no words is never shown.
-	var hovered := ui.get_viewport().gui_get_hovered_control()
-	if not (_answers.visible and hovered and _answers.is_ancestor_of(hovered)):
-		_toast_time = maxf(0.0, _toast_time - delta)  # held while the King's pointer is on its answers
-	if _toast.text.strip_edges() == "":
-		_toast_time = 0.0
-	# In over 160 ms (ui.ease_in's timing: no card pops in), out over its last second.
-	_toast_box.modulate.a = minf(clampf(_toast_time, 0.0, 1.0), clampf((_toast_full - _toast_time) / 0.16, 0.0, 1.0))
-	_toast_box.visible = _toast_box.modulate.a > 0.01
-
-
-## Something worth seeing has begun (your convoy on the road, a battle, a
-## story's turn): a line under the top bar with a Watch button, for a while.
-var _held_offer := []  # [text, go, ms]: the latest Watch that came while he was busy, offered once he's done
+## Something worth seeing has begun (your convoy on the road, a battle, a story's turn): a row of the chronicle with
+## a Watch button.
 func offer_watch(text: String, go: Callable) -> void:
-	if ui.cinema_on:
-		return  # one scene at a time
-	if ui.busy() or ui.card_up():
-		# Nothing new while he's using a card: it waits (the latest one) and is offered once he's done.
-		_held_offer = [text, go, Time.get_ticks_msec()]
-		return
-	_held_offer = []
-	if _offer:
-		_offer.queue_free()
-	_offer = ui.glass_panel()
-	_offer.anchor_left = 0.5
-	_offer.anchor_right = 0.5
-	_offer.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	_offer.offset_top = _toast_top + 34.0
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", T.GAP_WIDE)
-	_offer.add_child(row)
-	row.add_child(T.title(text, 15, T.TEXT))
-	var b := ui.btn("Watch", func():
-		_offer.visible = false  # used: gone before the clear view notes what to bring back
-		go.call())
-	b.add_theme_color_override("font_color", T.ACCENT)
-	row.add_child(b)
-	_offer_left = 12.0
+	ui.chronicle.notice(text, {"kind": "watch"}, go)
 
 
 ## An arrow at the screen's edge pointing to the latest news when it's off
@@ -239,45 +99,7 @@ func edge_arrow(at, angle: float, text: String, tone: String, fresh: bool) -> vo
 func toast(text: String, entry := {}) -> void:
 	if text.strip_edges() == "":
 		return  # nothing to say: no empty line
-	var said := Herald.voice(text) if Herald.on() else text
-	var subject := _subject(said)
-	for row in _stack.get_children():
-		if row.get_meta("text", "") == said and float(row.get_meta("left", 0.0)) > 1.0:
-			return  # the same notice twice is said once
-		if row.get_meta("subject", "") == subject:
-			row.queue_free()  # news of the same thing (the tithe at 15%, then 20%): the newer stands alone
-	var row := PanelContainer.new()
-	row.add_theme_stylebox_override("panel", T._box(T.SURFACE_SOLID, Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.3), 8, 10))
-	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var l := Label.new()
-	l.text = said
-	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	l.add_theme_font_size_override("font_size", T.SIZE_DESC + 1)
-	l.add_theme_color_override("font_color", T.TEXT)
-	var secs := Herald.knob("stack.seconds", 8.0)
-	var acts := NewsActions.one
-	if acts and not entry.is_empty() and not acts.verbs(entry).is_empty():
-		var col := VBoxContainer.new()
-		col.add_theme_constant_override("separation", T.GAP)
-		col.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		col.add_child(l)
-		col.add_child(acts.buttons(entry))
-		row.add_child(col)
-		row.set_meta("answers", true)
-		secs = maxf(secs, NewsActions.caption_seconds())
-	else:
-		row.add_child(l)
-	row.set_meta("text", said)
-	row.set_meta("subject", subject)
-	row.set_meta("left", secs)
-	row.set_meta("full", secs)
-	row.modulate.a = 0.0
-	_stack.add_child(row)
-	# At most a few at once: the oldest goes first.
-	var most := int(Herald.knob("stack.most", 4))
-	var rows := _stack.get_children().filter(func(r): return not r.is_queued_for_deletion())
-	while rows.size() > most:
-		rows.pop_front().queue_free()
+	ui.chronicle.notice(Herald.voice(text) if Herald.on() else text, entry)
 
 
 static var _FIGURES := RegEx.create_from_string("[0-9][0-9,.%]*")
@@ -289,57 +111,9 @@ static func _subject(text: String) -> String:
 	return _FIGURES.sub(first, "#", true).strip_edges()
 
 
-## The corner stack each frame: each line in over 160 ms, out over its last second; above the town card when
-## that stands in the corner; hidden while a scene has the screen.
-func _place_stack(delta: float) -> void:
-	var foot := -12.0
-	if ui._town_panel and ui._town_panel.visible:
-		var r := ui._town_panel.get_global_rect()
-		if r.position.x < _stack.offset_right:
-			foot = r.position.y - ui.get_viewport().get_visible_rect().size.y - 10.0
-	# One column in the corner, as CK3's and AoE IV's feed: the realm's news (the ticker,
-	# chronicle_panel.gd) at the foot, newest lowest; the notices stand on top of it, never over it.
-	var tick: VBoxContainer = ui.chronicle._ticker
-	if tick and tick.visible:
-		tick.offset_bottom = foot
-		var h := 0.0
-		var n := 0
-		for c in tick.get_children():
-			if not c.is_queued_for_deletion() and c.modulate.a > 0.01:
-				h += c.get_combined_minimum_size().y
-				n += 1
-		if n > 0:
-			h += tick.get_theme_constant("separation") * (n - 1)
-			foot -= h + T.GAP
-		tick.offset_top = tick.offset_bottom - h
-	_stack.offset_bottom = foot
-	_stack.visible = not holding and not ui._interlude_on
-	var hovered := ui.get_viewport().gui_get_hovered_control()
-	for row in _stack.get_children():
-		var on_it: bool = row.get_meta("answers", false) and hovered != null and row.is_ancestor_of(hovered)
-		var left := float(row.get_meta("left", 0.0)) - (0.0 if on_it else delta)  # held while the pointer is on its answers
-		row.set_meta("left", left)
-		if left <= 0.0:
-			row.queue_free()
-			continue
-		row.modulate.a = minf(clampf(left, 0.0, 1.0), clampf((float(row.get_meta("full", 1.0)) - left) / 0.16, 0.0, 1.0))
-
-
-## A caption for what the camera shows ("The King's rider, bound for Stormwatch"):
-## never over the result of the King's own order while that is still up.
-## entry: what the caption shows, as the news has it (a scene, a story's beat: kind, city, thread): its answers
-## (news_actions.gd) stand under the words, and the caption stays longer for them.
+## A caption for what the camera shows ("The King's rider, bound for Stormwatch"): a row of the chronicle with what
+## the King can do about it (entry: the scene, the story's beat).
 func caption(text: String, entry := {}) -> void:
 	if holding or text.strip_edges() == "":
 		return
-	_toast.text = text
-	_toast_time = 5.0
-	for c in _answers.get_children():
-		c.queue_free()
-	var acts := NewsActions.one
-	_answers.visible = acts != null and not entry.is_empty() and not acts.verbs(entry).is_empty()
-	if _answers.visible:
-		_answers.add_child(acts.buttons(entry))
-		_toast_time = NewsActions.caption_seconds()
-	_toast_full = _toast_time
-
+	ui.chronicle.notice(text, entry)

@@ -90,9 +90,6 @@ var book := preload("res://scripts/chronicle_book.gd").new(self)  # the book of 
 var _chron_panel: PanelContainer:
 	get:
 		return chronicle._chron_panel
-var _ticker: VBoxContainer:  # the latest events along the bottom; the cards hide it while they have the screen
-	get:
-		return chronicle._ticker
 
 var anchor: Node  # world_anchor.gd: pins a card or marker to its place in the world
 ## Where a town, or a matter at court, stands in the world (main.gd sets these;
@@ -206,19 +203,11 @@ var _army_panel: PanelContainer:
 	get:
 		return army_bar._panel
 var news := NewsChips.new(self)  # the notices, the Watch offer and the edge arrow (news_chips.gd): their state lives there
-var _offer: PanelContainer:  # "Watch": the latest moment worth seeing, for a few seconds
-	get:
-		return news._offer
 var _toast_top: float:  # just under the top bar
 	get:
 		return news._toast_top
 	set(v):
 		news._toast_top = v
-var _held_offer: Array:  # [text, go, ms]: the latest Watch that came while he was busy
-	get:
-		return news._held_offer
-	set(v):
-		news._held_offer = v
 
 
 func _ready() -> void:
@@ -234,7 +223,6 @@ func _ready() -> void:
 	get_parent().add_child.call_deferred(preload("res://scripts/fps_meter.gd").new())  # the frame rate, top right, on its own layer (Mac 2026-11-15); shown as Settings says (frame_rate)
 	_build_houses()
 	_build_chronicle()
-	_build_ticker()
 	# Cards and markers that belong to a place stand by it on screen (world_anchor.gd).
 	anchor = preload("res://scripts/world_anchor.gd").new()
 	anchor.name = "WorldAnchor"
@@ -244,7 +232,6 @@ func _ready() -> void:
 	_build_minimap()
 	_build_camera_controls()
 	army_bar._build()
-	news._build_toast()  # what the King's order did, on a card of its own (news_chips.gd)
 
 
 # --- building blocks --------------------------------------------------------------
@@ -267,9 +254,6 @@ func _step_back() -> bool:
 			if c == _ledger_panel and _ledger_btn:
 				_ledger_btn.set_pressed_no_signal(false)
 			return true
-	if _offer and _offer.visible:
-		_offer.visible = false
-		return true
 	return false
 
 
@@ -595,9 +579,6 @@ func _build_chronicle() -> void:
 	chronicle._build_chronicle()
 
 
-func _build_ticker() -> void:
-	chronicle._build_ticker()
-
 
 func _build_town_panel() -> void:
 	town_card._build_town_panel()
@@ -727,7 +708,7 @@ func _process_timed(delta: float) -> void:
 	# the news holds its Watch offer and edge arrow; all come back as they were once it closes.
 	news.holding = holding or _interlude_on  # an act told back is one card: no herald line over it (CK3's interlude)
 	if holding:
-		for d in [_houses_panel, _chron_panel, _pad, _ticker]:
+		for d in [_houses_panel, _chron_panel, _pad]:
 			if d and d.visible:
 				d.visible = false
 				_drawers_away.append(d)
@@ -738,11 +719,9 @@ func _process_timed(delta: float) -> void:
 		_drawers_away = []
 	# The reign's end is the only card while it stands.
 	if _end_panel and _end_panel.visible:
-		for p in [_court_panel, _digest_panel, _offer]:
+		for p in [_court_panel, _digest_panel]:
 			if p and is_instance_valid(p) and p.visible:
 				p.visible = false
-	else:
-		_catch_up()
 	# The houses table sits under the date card however tall it grows (the
 	# story's line and its bar make it taller), never over it.
 	if _date_pill and _houses_panel:
@@ -766,7 +745,6 @@ func _process_timed(delta: float) -> void:
 	fit_centre(_form_panel, 600.0)
 	fit_centre(_court_panel, 680.0)
 	fit_centre(_town_panel, 600.0)
-	news._place_notices(delta)  # the notices know where the cards are (news_chips.gd)
 
 
 ## A small "see" button that opens the character view on a person.
@@ -1005,7 +983,7 @@ func guide_block() -> Control:
 # court waits; all come back as they were when he moves or the scene ends.
 var cinema_on := false
 var cinema_was := {}
-const CINEMA_HIDES := ["_houses_panel", "_chron_panel", "_town_panel", "_court_panel", "_house_panel", "_offer", "_army_panel"]
+const CINEMA_HIDES := ["_houses_panel", "_chron_panel", "_town_panel", "_court_panel", "_house_panel", "_army_panel"]
 
 
 func cinema(on: bool) -> void:
@@ -1054,18 +1032,6 @@ func card_up(but: Control = null) -> bool:
 		if p and is_instance_valid(p) and p.visible and p != but:
 			return true
 	return false
-
-
-## What waited while he was busy, put on screen once he's done.
-func _catch_up() -> void:
-	if busy():
-		return
-	# A deed of his that played while a card was up: offered now, if it's still fresh (a minute).
-	if not _held_offer.is_empty() and not card_up() and not cinema_on:
-		var held := _held_offer
-		_held_offer = []
-		if Time.get_ticks_msec() - int(held[2]) < 60000:
-			offer_watch(held[0], held[1])
 
 
 ## A card is open that the King is reading (the director waits for him).

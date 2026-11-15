@@ -347,26 +347,7 @@ func _build_top_bar() -> void:
 	# its corner, the way an app shows unread messages, never over the crown.
 	for look in ["normal", "hover", "pressed", "hover_pressed", "focus"]:
 		_court_btn.add_theme_color_override("icon_%s_color" % look, T.ACCENT)
-	_court_badge = Label.new()
-	_court_badge.add_theme_font_override("font", T.mono)
-	_court_badge.add_theme_font_size_override("font_size", T.SIZE_LABEL)
-	_court_badge.add_theme_color_override("font_color", Color(0.1, 0.08, 0.06))
-	_court_badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_court_badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	var pill := StyleBoxFlat.new()
-	pill.bg_color = T.ACCENT
-	pill.set_corner_radius_all(9)
-	pill.content_margin_left = 5
-	pill.content_margin_right = 5
-	_court_badge.add_theme_stylebox_override("normal", pill)
-	_court_badge.custom_minimum_size = Vector2(18, 18)
-	_court_badge.anchor_left = 1.0
-	_court_badge.anchor_right = 1.0
-	_court_badge.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	_court_badge.offset_right = 5
-	_court_badge.offset_top = -5
-	_court_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_court_btn.add_child(_court_badge)
+	_court_badge = _badge(_court_btn)
 	act.add_child(ui.named(_court_btn, "Court"))
 	# The King himself (royal_sheet.gd): his nature, the name he is earning, his promises, his family, his line.
 	act.add_child(ui.named(ui.icon_btn("sword", "The King: your nature, the name you are earning, your promises and your family", func(): ui.royal.toggle()), "King"))
@@ -381,6 +362,7 @@ func _build_top_bar() -> void:
 	act.add_child(ui.named(_houses_btn, "Houses"))
 	_chron_btn = ui.icon_btn("scroll", ui.with_key("Chronicle of the realm", "chronicle"), func(): ui._chron_panel.visible = _chron_btn.button_pressed)
 	_chron_btn.toggle_mode = true
+	_chron_badge = _badge(_chron_btn)  # what came while the drawer was shut (chronicle_panel.gd _count)
 	act.add_child(ui.named(_chron_btn, "Chronicle"))
 	act.add_child(ui.named(ui.icon_btn("hourglass-medium", "The book of the reign: every year of it, as the chronicle wrote it", func(): ui.book.toggle()), "Reign"))
 	_lore_btn = ui.icon_btn("book-open-text", ui.with_key("The Lore of Aldmere: its houses and people", "lore"), func(): ui.lore_opened.emit(-1))
@@ -401,6 +383,45 @@ func _toggle_pause() -> void:
 	ui.paused = not ui.paused
 	_pause_btn.button_pressed = ui.paused
 	ui.pause_toggled.emit(ui.paused)
+
+
+## A round badge on a key's corner with a number, the way an app shows unread messages, never over its icon.
+func _badge(btn: Button) -> Label:
+	var b := Label.new()
+	b.add_theme_font_override("font", T.mono)
+	b.add_theme_font_size_override("font_size", T.SIZE_LABEL)
+	b.add_theme_color_override("font_color", Color(0.1, 0.08, 0.06))
+	b.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	b.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	var pill := StyleBoxFlat.new()
+	pill.bg_color = T.ACCENT
+	pill.set_corner_radius_all(9)
+	pill.content_margin_left = 5
+	pill.content_margin_right = 5
+	b.add_theme_stylebox_override("normal", pill)
+	b.custom_minimum_size = Vector2(18, 18)
+	b.anchor_left = 1.0
+	b.anchor_right = 1.0
+	b.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	b.offset_right = 5
+	b.offset_top = -5
+	b.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	b.visible = false
+	btn.add_child(b)
+	return b
+
+
+var _chron_badge: Label
+
+
+## New in the chronicle since the King last looked: the number on its key (Mac: "some indicator that something new is
+## in the chronicle"), its tooltip saying so in words.
+func chronicle_unread(n: int) -> void:
+	if _chron_badge == null:
+		return
+	_chron_badge.visible = n > 0
+	_chron_badge.text = str(n) if n < 100 else "99+"
+	_chron_btn.tooltip_text = ui.with_key(("Chronicle of the realm: %d new" % n) if n > 0 else "Chronicle of the realm", "chronicle")
 
 
 ## The court is always in the bar: full when petitioners wait (the badge counts
