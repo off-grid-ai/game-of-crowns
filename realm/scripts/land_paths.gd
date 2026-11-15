@@ -2,6 +2,8 @@ extends RefCounted
 ## Overland paths (integration audit #13: terrain.gd's paths, split out): Godot's AStarGrid2D over Freeciv's tile map,
 ## the roads that make travel cheap, the bow a road takes between tile centres, and a route as a smooth curve.
 ## terrain.gd builds it with the land (terrain.paths); everything that goes overland asks it.
+const Data := preload("res://scripts/data.gd")
+const Ground := preload("res://scripts/ground.gd")  # the one answer to where a body may stand
 
 var _astar: AStarGrid2D
 var _sea: AStarGrid2D  # the same tile map for ships: water open, land solid
@@ -74,6 +76,30 @@ func land_path(from: Vector3, to: Vector3) -> PackedVector3Array:
 	for i in range(1, ids.size() - 1):
 		out.append(_t.world_pos(ids[i].x, ids[i].y))
 	out.append(to)
+	return _round_what_stands(out)
+
+
+## The tile route walked every land.way_step, each point that falls on something standing (a cottage, a hedge, a
+## tree, another host's ground: ground.gd is_clear) moved to the nearest clear ground, so a body crossing the land
+## goes round what stands on it (Mac 2026-11-15: hosts marched through cottages). Its ends are kept: they are where
+## it was and where it was sent.
+func _round_what_stands(way: PackedVector3Array) -> PackedVector3Array:
+	var step := Data.num("ground", "land.way_step", 0.3)
+	var reach := Data.num("ground", "land.way_body", 0.1)
+	var out := PackedVector3Array([way[0]])
+	for i in way.size() - 1:
+		var a: Vector3 = way[i]
+		var b: Vector3 = way[i + 1]
+		var n := maxi(1, ceili(a.distance_to(b) / step))
+		for k in range(1, n + 1):
+			var p := a.lerp(b, float(k) / n)
+			if i == way.size() - 2 and k == n:
+				out.append(b)
+			elif Ground.is_clear(p, reach):
+				if k == n:
+					out.append(p)
+			else:
+				out.append(Ground.nearest_clear(p, reach))
 	return out
 
 
