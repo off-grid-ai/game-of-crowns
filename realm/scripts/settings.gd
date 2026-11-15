@@ -4,7 +4,7 @@ extends RefCounted
 ## chronicle in the bridge instead; these are just how you like to play.
 
 const PATH := "user://settings.cfg"
-const DEFAULTS := {"voices": true, "voice_volume": 0.85, "talk": "type", "seen_intro": false, "vol_master": 1.0, "vol_music": 0.7, "vol_ambience": 0.8, "vol_sfx": 0.8, "vol_ui": 0.4, "camera_pad": "near", "graphics": "smooth", "camera_speed": 1.0, "frame_rate": "off", "last_king": {}, "pause_when_needed": true, "hand_lessons": true}  # talk: "type" | "speak"; graphics: "smooth" | "beautiful"; camera_pad: "always" | "near" | "never"; frame_rate: "off" | "rate" | "details" (fps_meter.gd); hand_lessons: the Hand teaches as things first happen (off: only when called, the ? or F1); last_king: who you were in the last chronicle begun (title.gd: name, gender, age)
+const DEFAULTS := {"voices": true, "voice_volume": 0.85, "talk": "type", "seen_intro": false, "vol_master": 1.0, "vol_music": 0.7, "vol_ambience": 0.8, "vol_sfx": 0.8, "vol_ui": 0.4, "camera_pad": "near", "graphics": "smooth", "camera_speed": 1.0, "frame_rate": "off", "last_king": {}, "pause_when_needed": true, "hand_lessons": true}  # talk: "type" | "speak"; graphics: "smooth" | "beautiful"; camera_pad: "always" | "near" | "never"; frame_rate: "off" | "rate" | "details" (fps_meter.gd); hand_lessons: the Hand teaches as things first happen (off: only when called, the ? or F122); last_king: who you were in the last chronicle begun (title.gd: name, gender, age)
 
 static var _cfg: ConfigFile
 

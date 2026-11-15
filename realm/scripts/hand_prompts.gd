@@ -3,7 +3,7 @@ extends Node
 ## doing X would be", "easy to access the tour at any time ... like other games do"). Dialogic 2 (the proven Godot
 ## dialogue block, addons/dialogic) speaks; Against the Storm's envoy is the shape: a voice inside the world teaches
 ## each lesson once, at the moment it matters, and Civ's and Anno's help key brings the tour back any time (the top
-## bar's ?, F1). The lessons, their moments and order are data (realm/data/opening.json tour), their words Dialogic
+## bar's ?, F12). The lessons, their moments and order are data (realm/data/opening.json tour), their words Dialogic
 ## timelines (realm/data/tour/*.dtl). This decides when a moment has come, holds the realm still while the Hand
 ## speaks, and rings the part of the screen he speaks of (a timeline's [signal arg="spot:<part>"]). A guided step
 ## ([signal arg="do:<task>"], Mac: "it's not panning the camera, it's not waiting for me", "it's accepting clicks other

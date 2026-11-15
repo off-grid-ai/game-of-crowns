@@ -47,7 +47,7 @@ signal last_event  # Space: go to the latest news, or back again
 signal event_back  # Home: back to where the King was
 signal house_followed(player_id: int)
 signal chronicle_asked(entry: Dictionary, urgent: bool)  # a new card asks him something (chronicle_panel.gd): the Hand may explain it
-signal tour_asked  # the Hand's tour again, from the top bar's ? or F1 (hand_prompts.gd)  # a sigil on the ladder clicked: the camera goes with that house's host
+signal tour_asked  # the Hand's tour again, from the top bar's ? or F12 (hand_prompts.gd)  # a sigil on the ladder clicked: the camera goes with that house's host
 signal matter_opened(at: Vector3)  # a matter's marker clicked: the King looks at its place (his own click)
 signal counsel_answered(key: String)  # the King answered the Hand's matter  # a story's name clicked in the chronicle
 
