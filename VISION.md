@@ -22,7 +22,7 @@ by oath, and find out what kind of king you'd be.
   own household, each with a portrait card and their story, editable by the player. The same card also
   opens when you click that person in the world.
 - **Setting:** around 900 AD, Game of Thrones in era and feel: great houses, castles, shields, mail, axes
-  and bows, gritty war. Mythical touches (the dead beyond the wall, wildlings). No dragons. Not Westeros,
+  and bows, gritty war. Its own history, no copies of Game of Thrones lore. No dragons. Not Westeros,
   no GoT names. One age: tech grows within it (wooden forts become stone castles), never past it.
 - **A world that runs itself.** Houses farm, march, scheme and fight on their own; the King steers it.
 - **Timed reigns only:** 15, 30 or 60 minutes; no endless mode. "Rule on" after the end grants 15 more.

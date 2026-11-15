@@ -18,15 +18,13 @@ houses, places and lore are in [WORLD.md](WORLD.md).
   and wants. Lords age and die; a weak heir invites rebellion.
 - **Bannermen** hold the lesser towns. They can be won by the Crown, bought by a rival, or rise against a
   weak liege.
-- **The Crown's household:** the King, his commanders, champion and small council, each a person with
+- **The Crown's household:** the King, his commanders, champion and council, each a person with
   a story and an agenda.
 - **Favour** is how each house regards the Crown, moved by your orders, gifts, oaths and rulings. Debts
   and grudges are kept for named acts. A house with low favour gives its ultimatum, then rises.
 - **Minds.** Routine choices are scored by simple rules; a major lord's big turns (betrayal, war,
   marriage) can be voiced by the optional local model. Outcomes flow back into the world: married houses
   ally, spurned houses sour, a claimant becomes a rebel.
-- **The Watch** on the old wall in the north lives on the men and grain the houses send; neglected in a
-  long winter, the wall falls.
 
 ## Resources
 - **Crowns:** from taxes and trade, every season. Buy men, walls and favour.

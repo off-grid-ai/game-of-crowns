@@ -1,41 +1,39 @@
 # The Realm of Aldmere: world bible
 
-A long continent running north to south. Snow and pine in the north; rolling hills and gold-bearing rock in the west; a fertile green heartland; storm-wracked eastern cliffs; desert and red sandstone in the south; a ring of high mountains around an inland vale; a cold archipelago off the western coast. At its heart, on a great river delta, sits **Kingsmere**, your seat.
+A long land running north to south. Snow and pine in the north; rolling hills and gold-bearing rock in the west; a green heartland of farms; storm-beaten cliffs in the east; red sand in the south; a ring of high mountains around an inland vale; grey islands off the western coast. At its heart, on a great river delta, sits **Kingsmere**, your seat.
 
-Three hundred years ago the Conqueror united the seven kingdoms under one crown, by sword and by marriage. The crown has held ever since, but the houses remember being kings.
+Kingsmere was a ferry town until the river flooded the year the houses marched on each other. Its lord fed every army that came to the delta, then closed the fords, and the hungry houses swore to him one by one. His crown was a ferryman's ring. Every King since has had to win those oaths again.
 
 ## The Crown: you
 - **Seat:** Kingsmere, the river delta at the heart of the realm.
-- **You inherit:** a modest treasury, a royal host of a few thousand, and a throne the houses respect only as long as it is strong.
-- **Your goal:** a reign of peace and plenty. If enough houses lose faith in you, one will march on Kingsmere.
+- **You inherit:** the royal host, standing at Kingsmere in your colours and yours to command from the first minute, and crowns every season to buy men, walls and favour.
+- **Your household:** your family, your commanders and your council. Each has a story, and you can write it.
+- **Your goal:** win the seven great houses, by sword or by oath. History will name you for how you did it.
 
 ## The seven great houses
 
 | House | Region | Seat | Words | Character | Wants | Old grudge |
 |---|---|---|---|---|---|---|
-| **Wolfholt** | The cold North | *Stonefell* | "Winter Endures" | Honourable, proud, slow to anger and never forgets | Grain from the south in hard winters; to be left alone | **Goldcrest**: a Wolfholt bride died in Goldcrest's care a generation ago |
-| **Goldcrest** | The Western hills | *Goldrock*, a castle over a gold mine | "Gold Remembers" | Rich, cunning, patient; buys what others fight for | The Hand of the King; marriages into every house | **Wolfholt** (as above) and **Stormhold**, who mock their wealth |
-| **Ironreach** | The Iron Isles | *Saltkeep* | "We Take" | Raiders and sailors who despise farming | Plunder; the old right to raid the coasts | Everyone on the western coast, especially **Thornvale** |
-| **Thornvale** | The green Reach | *Rosehall* | "Grown Strong" | The breadbasket of the realm; schemers who smile | Influence at court; a Thornvale queen | **Ironreach**, whose raiders burn their coastal farms |
-| **Stormhold** | The Stormlands | *Stormwatch* on the eastern cliffs | "Ours Is the Fury" | Warlike, fierce and loyal, until they aren't | Glory in battle; a war to fight | **Sunspire**, after centuries of border wars in the marches |
-| **Sunspire** | The southern sands | *Sunspire* | "Unbowed" | Proud, independent, the last to bend the knee | Autonomy; vengeance for an old massacre | **Stormhold** (as above); distrusts the crown itself |
-| **Highfell** | The high Vale | *Highfell*, a fortress on a peak | "As High as Honor" | Isolated, cautious, untouchable in their mountains | To be left out of others' wars | None; the realm's natural peacemakers, or fence-sitters |
-
-## The Faith
-- **The gods:** the realm prays to the old gods, who are older than the crown. Every town has its sept, and every seat a great sept.
-- **The septons and the friars:** septons keep the septs and judge in their courts. Barefoot friars walk the roads and preach to anyone who'll listen. The Faith serves no house, and every house needs it.
-- **Its weight:** a lord who kneels in the sept is believed. A King the Faith calls accursed finds every oath sworn to him void.
+| **Wolfholt** | The cold North | *Stonefell* | "Hold Fast" | Honourable, proud, slow to anger and never forgets | Grain from the south in hard winters; to be left alone | **Goldcrest**: a Wolfholt bride died in Goldcrest's care a generation ago |
+| **Goldcrest** | The Western hills | *Goldrock*, a castle over a gold mine | "Wealth Is Strength" | Rich, cunning, patient; buys what others fight for | A seat at your council; marriages into every house | **Wolfholt** (as above) and **Stormhold**, who mock their wealth |
+| **Ironreach** | The grey islands | *Ironhaven* | "The Sea Provides" | Raiders and sailors who despise farming | Plunder; the old right to raid the coasts | Everyone on the western coast, especially **Thornvale** |
+| **Thornvale** | The green valleys | *Rosehall* | "Root and Thorn" | The breadbasket of the realm; schemers who smile | Your host against the raiders; favour at court | **Ironreach**, whose raiders burn their coastal farms |
+| **Stormhold** | The storm coast | *Stormwatch* on the eastern cliffs | "We Weather All" | Warlike, fierce and loyal, until they aren't | A war to fight at your side | **Sunspire**, after a hundred years of border wars in the marches |
+| **Sunspire** | The southern sands | *Sunspire* | "The Sun Waits" | Proud, independent, the last to bend the knee | The river towns of the marches; to answer to no one | **Stormhold** (as above); distrusts the Crown itself |
+| **Highfell** | The high passes | *Highfell*, a fortress on a peak | "Sworn and Steadfast" | Isolated, cautious, untouchable in their mountains | To be left out of others' wars | None; the realm's peacemakers, or its fence-sitters |
 
 ## Fault lines at the start of your reign
-- **The marches:** Stormhold and Sunspire both claim the river towns between them. Skirmishes every summer.
-- **The western coast:** Ironreach longships raid Thornvale's farms. Thornvale demands the crown act.
-- **The old wound:** Wolfholt has never forgiven Goldcrest. Goldcrest wants a marriage to close it, on its terms.
-- **The northern winter:** a long winter is coming. The North will need southern grain, and Thornvale grows it.
+- **The marches:** Stormhold and Sunspire both claim the river towns between them. Expect sieges there.
+- **The western coast:** Ironreach longships raid Thornvale's farms. Thornvale wants your host to stop them.
+- **The old wound:** Wolfholt has never forgiven Goldcrest. Both will bring it to your court.
+- **The hungry north:** when winter is long, Wolfholt's towns starve unless southern grain reaches them.
 
 ## Fate: what tests a reign
-- **The dead:** in the far north, beyond the old wall, something stirs in long winters.
-- **Plague:** rises in crowded, dirty, hungry towns.
-- **Famine:** follows drought, war and long winters.
+- **Raiders:** sea raiders and outlaws burn towns that no one guards.
+- **Lords' demands:** a house wants something of you, by a set day. Silence is an answer too.
+- **Sieges:** a house marches on a rival, or on you. Relieve the town, or lose it.
+- **Starving towns:** war and hard winters empty the granaries. Grain, or unrest.
+- **A house rising:** a house that has lost faith in you gives its warning, then marches.
 
 ## Tone
-Grounded medieval politics with a thread of the uncanny. Choices are rarely clean; every house is right about something.
+Gritty medieval war and politics. Choices are rarely clean; every house is right about something.
