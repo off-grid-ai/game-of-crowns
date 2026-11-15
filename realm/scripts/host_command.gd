@@ -34,6 +34,7 @@ var _title: Label
 var _status: Label
 var _buttons := {}  # order -> its Button on the card
 var _left: Label  # how many orders are left this season
+var _kinds: Label  # its companies by kind and its morale (Warcraft III's unit panel; Total War's unit cards)
 var _ring: Decal
 var _end: Decal  # the ring where the selected host is bound
 var _glow: OmniLight3D
@@ -570,6 +571,8 @@ func _build_card() -> void:
 	v.add_child(_title)
 	_status = T.datum("", T.SIZE_DESC, T.TEXT)
 	v.add_child(_status)
+	_kinds = T.label("", T.TEXT_2)
+	v.add_child(_kinds)
 	_left = T.label("", T.TEXT_3)
 	v.add_child(_left)
 	var row := HBoxContainer.new()
@@ -608,6 +611,7 @@ func _refresh() -> void:
 	_title.text = ("The royal host at %s" % String(at.get("name", ""))).to_upper() if at is Dictionary else "THE ROYAL HOST"
 	_status.text = "%s · %s" % [String(Data.value(FILE, "troops", "{men} troops")).format({"men": main.ui.heads(int(h.get("men", 0)))}), _doing(h)]
 	_card.tooltip_text = "%d companies" % int(h.get("companies", 0))
+	_kinds.text = _makeup(h)
 	# The host's orders this season (bridge hosts.json ordersPerHost): the card says how many it has left, and with none its
 	# buttons are greyed with the reason rather than looking live and refusing.
 	var left := orders_left()
@@ -618,6 +622,29 @@ func _refresh() -> void:
 		var b: Button = _buttons[k]
 		b.disabled = left == 0
 		b.tooltip_text = String(texts.get("why", "")) if left == 0 else String(b.get_meta("tip", b.tooltip_text))
+
+
+## The host's companies by kind, read from the mirror's units (its type, host_command.json card.kinds naming it), and
+## its morale in a word (/world hosts[].morale 0..1, else its supply; card.morale bands, highest first).
+func _makeup(h: Dictionary) -> String:
+	var k: Dictionary = Data.value(FILE, "card", {})
+	var names: Dictionary = k.get("kinds", {})
+	var ids: Array = h.get("units", [])
+	var count := {}
+	for u in main.awareness.rec("units", []):
+		if ids.has(int(u.get("id", -1))):
+			var t := String(u.get("type", ""))
+			count[t] = int(count.get(t, 0)) + 1
+	var parts := PackedStringArray()
+	for t in count:
+		parts.append("%d %s" % [count[t], String(names.get(t, t))])
+	var m: float = float(h.get("morale", h.get("supply", 1.0)))
+	var word := ""
+	for band in k.get("morale", []):
+		if m >= float(band[0]):
+			word = String(band[1])
+			break
+	return " · ".join(parts) + ("  —  %s" % word if word != "" else "")
 
 
 ## What the host is doing, in the card's words: its order's row in host_command.json doing ({to}, {road}), the
