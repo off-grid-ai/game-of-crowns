@@ -129,14 +129,18 @@ func stage(root: Node3D, life: Node3D, c: Dictionary, states: Array, tl: Object)
 		for dress in row.get("dress", []):
 			var d = _dressing(String(dress), tl)
 			if d != null:
+				var t0 := Time.get_ticks_usec()
 				anchors.merge(d.dress(root, life, row, rng), true)
+				PerfTools.add("scenes.dress." + String(dress), Time.get_ticks_usec() - t0)  # GOC_PERF_PROBE
 		var k := {"root": root, "life": life, "tl": tl, "states": states, "size": size, "rng": rng, "row": row, "lead": null, "cast": [], "tally": tally, "census": census}
 		for role in row.get("roles", []):
 			if not ViewTier.spend_ok(&"town_scenes"):
 				await PerfTools.next_frame(&"town_scenes:135")
 				if not is_instance_valid(root) or not is_instance_valid(life) or root.get_node_or_null("Life") != life:
 					return
+			var t1 := Time.get_ticks_usec()
 			_stage_role(k, role, anchors)
+			PerfTools.add("scenes.role." + String(row.get("id", "?")), Time.get_ticks_usec() - t1)  # GOC_PERF_PROBE
 		if row.has("march") and _meets(row["march"], root, states, size):
 			_begin_march(root, life, row["march"], rng)
 	root.set_meta("square_cast", int(census["cast"]))  # the census cast standing there: the villagers' room is what's left (village_slots square_full)
