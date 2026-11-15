@@ -63,6 +63,7 @@ const WALK := 2  # walkable at every corner: dry land or a ford (a foot may pass
 class Chunk:
 	var cells := PackedInt32Array()  # cell (row-major) -> its bits
 	var laid := PackedByteArray()  # block -> 1 once its land is read
+	var held := {}  # cell -> [claim id]: who holds it, where its CLAIM count isn't 0
 static var _n: int = roundi(CHUNK / Data.num("ground", "occupancy.cell", 0.08))  # cells to a chunk's side
 static var _cell: float = CHUNK / _n  # world units a cell spans
 static var _inv: float = _n / CHUNK
@@ -74,12 +75,15 @@ const TOWN := 1 << 3  # one of a town's or a place's own pieces (nav_ground "tow
 const TOWN_ALL := 511 << 3
 const LIFE := 1 << 12  # one of its life's pieces (nav_ground "life": a stall, a parked cart) touches it: 9 bits
 const LIFE_ALL := 511 << 12
+const CLAIM := 1 << 21  # a claim touches it (its holders in the chunk's side index): 10 bits
+const CLAIM_ALL := 1023 << 21
+const AROUND: Array[Vector2] = [Vector2(0, 0), Vector2(1, 0), Vector2(0.70710678, 0.70710678), Vector2(0, 1), Vector2(-0.70710678, 0.70710678), Vector2(-1, 0), Vector2(-0.70710678, -0.70710678), Vector2(0, -1), Vector2(0.70710678, -0.70710678)]  # a body's middle and eight round it, at its reach
 static var _roots := {}  # root instance id -> {root, clip (world Rect2), town, sig, town_spans, life_spans}: what stands
 static var _dirty := {}  # root instance id -> true: something set down, taken away, turned or hidden under it
 static var _hooked := {}  # instance id -> true: a root (or its Life) whose changes mark it dirty
 static var _towns_frame := -1  # the frame the realm's towns were last read (Ground.towns)
 static var _claims := {}  # chunk -> {id: [kind, outline (world XZ)]}: the ground bodies hold while they stand
-static var _claim_area := {}  # id -> [chunks, Rect2]
+static var _claim_area := {}  # id -> [chunks, Rect2, the map's runs of cells it holds, kind]
 static var _sources: Array = []  # keepers of many small things in the way (the woods): obstacles(area) -> Array
 static var _rev := 0  # counts places set down and claims made: nearest_clear's kept answers are asked afresh after
 static var claims_rev := 0  # counts claims made and released: a fight's grid (army_ground.gd) lays the claimed ground afresh after
@@ -105,17 +109,11 @@ static func _is_clear(p: Vector3, radius := 0.0, props := true, free_of: Variant
 	_fresh()
 	var shut := SRC | TOWN_ALL | (LIFE_ALL if props else 0)  # a town's or a place's own pieces; its life's too unless `props` false
 	var need := WALK if "ford" in open_kinds else DRY  # a ford is passed, never stood on (a fight's grid opens it: "ford")
-	for o in _reach_of(radius):
-		var q: Vector3 = p + o
-		var bits := _bits(q.x, q.z)
-		if bits & need == 0 or bits & shut != 0:
+	if radius <= 0.0:
+		return _ok(p.x, p.z, need, shut, free_of, open_kinds)
+	for o: Vector2 in AROUND:
+		if not _ok(p.x + o.x * radius, p.z + o.y * radius, need, shut, free_of, open_kinds):
 			return false
-		var c := _chunk(q)
-		var at := Vector2(q.x, q.z)
-		for id in (_claims.get(c, {}) as Dictionary):
-			var held: Array = _claims[c][id]
-			if id != free_of and not _open(String(held[0]), open_kinds) and Geometry2D.is_point_in_polygon(at, held[1]):
-				return false
 	return true
 
 
@@ -171,7 +169,10 @@ static func claim(id: Variant, poly: PackedVector2Array, kind := "body") -> void
 		if not _claims.has(k):
 			_claims[k] = {}
 		_claims[k][id] = [kind, poly]
-	_claim_area[id] = [cells, area]
+	var spans := PackedInt32Array()
+	_poly_spans(poly, _cells_of(area), {}, spans)
+	_hold(spans, id, true)
+	_claim_area[id] = [cells, area, spans, kind]
 	_rev += 1
 	claims_rev += 1
 
@@ -182,6 +183,7 @@ static func release(id: Variant) -> void:
 		return
 	for k in _claim_area[id][0]:
 		(_claims.get(k, {}) as Dictionary).erase(id)
+	_hold(_claim_area[id][2], id, false)
 	_claim_area.erase(id)
 	_rev += 1  # nearest_clear's kept answers over it are asked afresh
 	claims_rev += 1
@@ -203,9 +205,6 @@ static func claims_in(area: Rect2, kinds: Array) -> Dictionary:
 static func _open(kind: String, open_kinds: Array) -> bool:
 	return kind in open_kinds or ("host" in open_kinds and kind.begins_with("host "))
 
-
-static func _chunk(p: Vector3) -> Vector2i:
-	return Vector2i(floori(p.x / CHUNK), floori(p.z / CHUNK))
 
 
 static func _chunks(area: Rect2) -> Array:
@@ -339,15 +338,6 @@ static func _grounded(q: Vector3, p: Vector3) -> Vector3:
 	return Vector3(q.x, terrain.height_at(q.x, q.z) if terrain else p.y, q.z)
 
 
-## The points that must be clear for a body of that reach: its centre, and eight round it.
-static func _reach_of(radius: float) -> Array:
-	var out := [Vector3.ZERO]
-	if radius > 0.0:
-		for i in 8:
-			out.append(Vector3(cos(TAU * i / 8.0), 0, sin(TAU * i / 8.0)) * radius)
-	return out
-
-
 # --- the occupancy map ---------------------------------------------------------------------------------------------
 
 ## World units a cell of the map spans (ground.json occupancy.cell): a fight's route grid (army_ground.gd) takes its cells.
@@ -355,8 +345,9 @@ static func cell_size() -> float:
 	return _cell
 
 
-## The bits of the cell under (x, z) (world), its land read first if it hasn't been.
-static func _bits(x: float, z: float) -> int:
+## Whether the cell under (x, z) (world) has the land `need` asks, nothing `shut` names, and no claim but `free_of`'s
+## or of a kind in `open_kinds`; its land read first if it hasn't been.
+static func _ok(x: float, z: float, need: int, shut: int, free_of: Variant, open_kinds: Array) -> bool:
 	var ix := floori(x * _inv)
 	var iz := floori(z * _inv)
 	var lx := posmod(ix, _n)
@@ -367,7 +358,16 @@ static func _bits(x: float, z: float) -> int:
 	var b := (lz / _b) * _nb + lx / _b
 	if ch.laid[b] == 0:
 		_lay(ch, Vector2i((ix - lx) / _n, (iz - lz) / _n), b)
-	return ch.cells[lz * _n + lx]
+	var i := lz * _n + lx
+	var bits := ch.cells[i]
+	if bits & need == 0 or bits & shut != 0:
+		return false
+	if bits & CLAIM_ALL == 0:
+		return true
+	for id in ch.held[i]:
+		if id != free_of and not _open(String(_claim_area[id][3]), open_kinds):
+			return false
+	return true
 
 
 static func _chunk_at(k: Vector2i) -> Chunk:
@@ -677,6 +677,32 @@ static func _across(poly: PackedVector2Array, z: float) -> Vector2:
 			xa = minf(xa, x)
 			xb = maxf(xb, x)
 	return Vector2(xa, xb)
+
+
+## A claim's runs of cells held (`on`) or let go: their CLAIM counts and the chunk's side index of who holds them.
+static func _hold(spans: PackedInt32Array, id: Variant, on: bool) -> void:
+	for s in range(0, spans.size(), 3):
+		var iz := spans[s]
+		var lz := posmod(iz, _n)
+		var kz := (iz - lz) / _n
+		for ix in range(spans[s + 1], spans[s + 2] + 1):
+			var lx := posmod(ix, _n)
+			var k := Vector2i((ix - lx) / _n, kz)
+			var ch: Chunk = _map.get(k)
+			if ch == null:
+				ch = _chunk_at(k)
+			var i := lz * _n + lx
+			if on:
+				ch.cells[i] += CLAIM
+				if not ch.held.has(i):
+					ch.held[i] = []
+				ch.held[i].append(id)
+			else:
+				ch.cells[i] -= CLAIM
+				var who: Array = ch.held.get(i, [])
+				who.erase(id)
+				if who.is_empty():
+					ch.held.erase(i)
 
 
 ## Adds `by` to every cell of the runs (realm-wide [row, first, last]).
