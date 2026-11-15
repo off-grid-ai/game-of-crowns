@@ -56,7 +56,7 @@ func build(map: Dictionary) -> void:
 	rivers.name = "Rivers"
 	add_child(rivers)
 	Engine.set_meta("stage", "rivers")
-	rivers.build(self)
+	await rivers.build(self)
 	await PerfTools.next_frame(&"terrain:59")
 	Engine.set_meta("stage", "vegetation")
 	_plant()

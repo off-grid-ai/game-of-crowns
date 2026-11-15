@@ -21,15 +21,30 @@ static func lines() -> Array:
 	return _lines
 
 
+const PerfTools := preload("res://scripts/perf_tools.gd")
+const ViewTier := preload("res://scripts/view_tier.gd")
+
 var _terrain: Node3D
-var _laid: Array[Dictionary] = []  # each river laid: {mesh: MeshInstance3D, level: its water's own surface, area: Rect2}
+## Each river laid: {mesh: MeshInstance3D, arrays: its surface as made (kept on the CPU: never read back from the
+## renderer), level: its water's own surface, rims: the indices of its bank-side vertices, area: Rect2}.
+var _laid: Array[Dictionary] = []
+var _todo: Array = []  # [river, area to lay on the land again (an empty Rect2: all of it)], oldest first
 
 
+## The rivers made one at a time on the frame's one budget (ViewTier.spend_ok), and laid on the land after, a stretch
+## of rims at a time (supervisor fps 2026-11-15: the 32 rivers made and draped in one frame held the load 9.9 s;
+## before the drape, 3-4 s). Awaited by terrain.gd.
 func build(terrain: Node3D) -> void:
 	_terrain = terrain
+	set_process(false)
 	for r in lines():
+		var t0 := Time.get_ticks_usec()
 		_river(terrain, r["points"])
-	# Land graded later (a town's square, a plot) keeps the water on it: the rivers there are laid on the land again.
+		PerfTools.add("rivers.make", Time.get_ticks_usec() - t0)
+		if not ViewTier.spend_ok(&"rivers"):
+			await PerfTools.next_frame(&"rivers")
+	# Land graded later (a town's square, a plot) keeps the water on it: the rivers there are laid on the land again,
+	# only their rims inside the graded ground, on the frame's budget.
 	if terrain and terrain.has_signal("ground_changed"):
 		terrain.ground_changed.connect(_on_ground_changed)
 
@@ -37,7 +52,26 @@ func build(terrain: Node3D) -> void:
 func _on_ground_changed(area: Rect2) -> void:
 	for r in _laid:
 		if (r["area"] as Rect2).intersects(area):
-			_drape(r)
+			_queue(r, area)
+
+
+func _queue(r: Dictionary, area: Rect2) -> void:
+	for t in _todo:
+		if t[0] == r:
+			t[1] = Rect2() if (t[1] as Rect2).has_area() == false or area.has_area() == false else (t[1] as Rect2).merge(area)
+			return
+	_todo.append([r, area])
+	set_process(true)
+
+
+func _process(_dt: float) -> void:
+	while not _todo.is_empty() and ViewTier.spend_ok(&"rivers"):
+		var t: Array = _todo.pop_front()
+		var t0 := Time.get_ticks_usec()
+		_drape(t[0], t[1])
+		PerfTools.add("rivers.drape", Time.get_ticks_usec() - t0)
+	if _todo.is_empty():
+		set_process(false)
 
 
 ## Each stretch is already fitted to the land (bridge/tools/azgaar_rivers.py):
@@ -123,11 +157,18 @@ func _lay(pts: Array[Vector3], widths: Array[float]) -> void:
 	river.set_materials("i_lod0_distance", 6.0)
 	river.mesh_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	var mi: MeshInstance3D = river.mesh_instance
-	var level: PackedVector3Array = mi.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+	var arrays := (mi.mesh as ArrayMesh).surface_get_arrays(0)  # once, as it is made; every later drape works on this copy
+	var level: PackedVector3Array = (arrays[Mesh.ARRAY_VERTEX] as PackedVector3Array).duplicate()
+	var uv: PackedVector2Array = arrays[Mesh.ARRAY_TEX_UV]
+	var rims := PackedInt32Array()
+	for i in uv.size():
+		if uv[i].x <= 0.001 or uv[i].x >= 0.999:  # a bank-side vertex: only the rims meet the banks
+			rims.append(i)
 	var box := mi.get_aabb()
-	var r := {"mesh": mi, "level": level, "area": Rect2(box.position.x, box.position.z, box.size.x, box.size.z)}
+	var r := {"mesh": mi, "arrays": arrays, "level": level, "rims": rims,
+		"area": Rect2(box.position.x, box.position.z, box.size.x, box.size.z)}
 	_laid.append(r)
-	_drape(r)
+	_queue(r, Rect2())
 
 
 ## The water laid on the land, the way spline-river tools conform their mesh to the terrain (R.A.M.'s and
@@ -136,25 +177,25 @@ func _lay(pts: Array[Vector3], widths: Array[float]) -> void:
 ## side reaches past the next, lower stretch; a graded square beside it), the ribbon stood as a flat slab over the
 ## land with straight cut edges (Mac 2026-11-15). Each rim vertex is sunk to just under the land under it, never
 ## raised: the water meets its bank wherever it runs and slopes with the land across a bend. ground.json rivers.meet.
-func _drape(r: Dictionary) -> void:
+func _drape(r: Dictionary, area: Rect2) -> void:
 	var mi: MeshInstance3D = r["mesh"]
 	if not is_instance_valid(mi) or _terrain == null:
 		return
 	var meet := Data.num("ground", "rivers.meet", 0.01)
 	var mesh := mi.mesh as ArrayMesh
 	var mat := mesh.surface_get_material(0)
-	var arrays := mesh.surface_get_arrays(0)
+	var arrays: Array = r["arrays"]
 	var level: PackedVector3Array = r["level"]
-	var uv: PackedVector2Array = arrays[Mesh.ARRAY_TEX_UV]
-	var v := level.duplicate()
+	var v: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
 	var xf := mi.global_transform if mi.is_inside_tree() else Transform3D.IDENTITY
-	for i in v.size():
-		if uv[i].x > 0.001 and uv[i].x < 0.999:
-			continue  # inside the river: only its rims meet the banks
-		var w := xf * v[i]
+	var inv := xf.affine_inverse()
+	var whole := not area.has_area()
+	for i in (r["rims"] as PackedInt32Array):
+		var w := xf * level[i]
+		if not whole and not area.has_point(Vector2(w.x, w.z)):
+			continue
 		var land: float = _terrain.height_at(w.x, w.z)
-		if land - meet < w.y:
-			v[i] = xf.affine_inverse() * Vector3(w.x, land - meet, w.z)
+		v[i] = inv * Vector3(w.x, land - meet, w.z) if land - meet < w.y else level[i]
 	arrays[Mesh.ARRAY_VERTEX] = v
 	mesh.clear_surfaces()
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
