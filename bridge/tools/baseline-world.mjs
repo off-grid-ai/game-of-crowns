@@ -12,6 +12,7 @@ import path from "node:path";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { houseFor, cityName, rememberNames } from "../narrator.js";
+import { bannerSurname } from "../characters.js";
 
 const DIR = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const BASE = path.join(DIR, "baseline", "aldmere");
@@ -54,10 +55,32 @@ function served(world) {
   rememberNames(world);
   const people = fs.readdirSync(path.join(BASE, "characters")).filter((f) => f.endsWith(".json"))
     .map((f) => JSON.parse(fs.readFileSync(path.join(BASE, "characters", f), "utf8")));
-  const familyAt = (id) => people.find((c) => c.alive && c.rank === "bannerman" && c.seat === id)?.surname ?? null;
+  // Each town's family as a new reign gives it, in the same order and by the same rule (characters.js bannerSurname):
+  // the baseline's bannermen take their towns' surnames (written.js freshMinorNames, sorted by town), then each town of a
+  // house with no lord or bannerman gets one (characters.js populate, house by house). A house's seat is its lord's.
+  const alive = people.filter((x) => x.alive !== false);
+  const bannerKin = new Set(people.filter((x) => x.rank === "bannerman").flatMap((x) => [x.id, x.spouse, ...(x.children ?? [])]));
+  const taken = new Set(people.filter((x) => !bannerKin.has(x.id)).map((x) => x.surname));
+  const family = new Map();
+  const sur = new Map(alive.map((x) => [x.id, x.surname]));
+  for (const bm of people.filter((x) => x.rank === "bannerman").sort((a, b) => (a.seat ?? 1e9) - (b.seat ?? 1e9))) {
+    const was = bm.surname, now = bannerSurname(bm.seat ?? 0, taken);
+    for (const id of [bm.id, bm.spouse, ...(bm.children ?? [])]) if (sur.get(id) === was) sur.set(id, now);
+    if (bm.alive !== false && bm.seat != null) family.set(bm.seat, now);
+  }
+  const seated = new Set(alive.filter((x) => (x.rank === "lord" || x.rank === "bannerman") && x.seat != null).map((x) => x.seat));
+  for (const p of world.players) {
+    if (houseFor(p).wild) continue;
+    for (const c of world.cities.filter((t) => t.owner === p.id && !t.capital && !seated.has(t.id))) {
+      family.set(c.id, bannerSurname(c.id, new Set(sur.values())));
+      sur.set(`town${c.id}`, family.get(c.id));
+      seated.add(c.id);
+    }
+  }
+  const familyAt = (c) => (c.capital ? null : family.get(c.id) ?? null);
   const players = world.players.map((p) => ({ ...p, house: houseFor(p) }));
   const crown = players.find((p) => p.house.crown);
-  const cities = world.cities.map((c) => ({ ...c, name: cityName(c.id), title: cityName(c.id), family: familyAt(c.id) }));
+  const cities = world.cities.map((c) => ({ ...c, name: cityName(c.id), title: cityName(c.id), family: familyAt(c) }));
   const seat = cities.find((c) => c.owner === crown?.id && c.capital);
   fs.writeFileSync(path.join(STATE, "world_served.json"), JSON.stringify({ ...world, players, cities, crownId: crown?.id ?? null, seatId: seat?.id ?? null }));
 }

@@ -5,7 +5,7 @@
 import fs from "fs";
 import path from "path";
 import { HOME } from "./chronicles.js";
-import { TRAITS } from "./characters.js";
+import { TRAITS, bannerSurname } from "./characters.js";
 
 let edits = null;  // id -> { backstory?, memories?, traits?, loyalty? }
 const file = () => path.join(HOME, "written.json");
@@ -95,16 +95,18 @@ export function freshMinorNames(base, pool, surnames) {
   const byId = new Map(cast.map((x) => [x.c.id, x.c]));
   const first = (n) => String(n).split(" ")[0];
   const takenFirst = new Set(cast.map((x) => first(x.c.name)));
-  const takenSur = new Set(cast.map((x) => x.c.surname));
+  // Each bannerman's family takes its town's surname (characters.js bannerSurname), in order of their towns, among the
+  // surnames no lord's or other family's: the same families for the same realm in every reign, so the starting towns'
+  // baked banners hold (the people still get fresh first names).
+  const bannerKin = new Set(cast.filter((x) => x.c.rank === "bannerman").flatMap((x) => [x.c.id, x.c.spouse, ...(x.c.children ?? [])]));
+  const takenSur = new Set(cast.filter((x) => !bannerKin.has(x.c.id)).map((x) => x.c.surname));
   const roll = (list) => list[Math.floor(Math.random() * list.length)];
   const renames = [], surRenames = new Map(), kinSur = new Map();  // kinSur: person id -> [old, new] surname of their family
   const oldSurCount = new Map();
   for (const x of cast) oldSurCount.set(x.c.surname, (oldSurCount.get(x.c.surname) ?? 0) + (x.c.rank === "bannerman" ? 1 : 0));
-  for (const bm of cast.map((x) => x.c).filter((c) => c.rank === "bannerman")) {
-    const freeSur = surnames.filter((s) => !takenSur.has(s));
-    if (!freeSur.length) break;
-    const sur = roll(freeSur);
-    takenSur.add(sur);
+  for (const bm of cast.map((x) => x.c).filter((c) => c.rank === "bannerman").sort((a, b) => (a.seat ?? 1e9) - (b.seat ?? 1e9))) {
+    if (!surnames.some((s) => !takenSur.has(s))) break;
+    const sur = bannerSurname(bm.seat ?? 0, takenSur);
     if (oldSurCount.get(bm.surname) === 1) surRenames.set(bm.surname, sur);  // "the Kettle books": the surname alone, when only one family had it
     const kin = [bm, byId.get(bm.spouse), ...(bm.children ?? []).map((id) => byId.get(id))].filter((c) => c && c.surname === bm.surname);
     for (const c of kin) {

@@ -82,6 +82,21 @@ export const GOALS = [
   { kind: "revenge", text: "settle the old grudge" },
 ];
 
+// The family a bannerman seated in a town bears: the town's own surname from the list (a hash of its id), or the next
+// one along not already `taken`, the same in every reign given the same realm (not the reign's dice), so a fresh
+// realm's starting towns fly the banners the game was baked with (tools/baseline-world.mjs world_served.json; Square
+// bakes each town by its family). Adds the surname to `taken`.
+export function bannerSurname(townId, taken = new Set()) {
+  let h = (Number(townId) * 2654435761 + 0x9e3779b9) >>> 0;
+  h = Math.imul(h ^ (h >>> 15), 2246822507) >>> 0;
+  const at = (h ^ (h >>> 13)) % SURNAMES.length;
+  for (let i = 0; i < SURNAMES.length; i++) {
+    const s = SURNAMES[(at + i) % SURNAMES.length];
+    if (!taken.has(s)) { taken.add(s); return s; }
+  }
+  return SURNAMES[at];
+}
+
 function pick(arr, r) {
   return arr[Math.floor(r() * arr.length)];
 }
@@ -327,7 +342,7 @@ export class Court {
       }
       for (const town of world.cities.filter((c) => c.owner === p.id && !c.capital)) {
         if (this.lordOfTown(town.id)) continue;
-        const surname = pick(SURNAMES, r);
+        const surname = bannerSurname(town.id, new Set(this.alive().map((x) => x.surname)));
         const liege = h.crown ? null : this.lordOfHouse(p.id);
         const bm = this.newPerson({ surname, house: h.name, playerId: p.id, rank: "bannerman", seat: town.id, liege: liege?.id ?? null, age: 25 + Math.floor(r() * 35) }, r);
         bm.goals = [this.goalFor(bm, r)];
