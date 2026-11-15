@@ -168,7 +168,7 @@ func sync(houses: Dictionary) -> void:
 		if not on.has(t):
 			on[t] = []
 		on[t].append(id)
-	_walk = {"houses": houses, "store": store, "tiles": tiles, "i": 0, "hosts": hosts, "work": work, "on": on}
+	_walk = {"houses": houses, "store": store, "tiles": tiles, "i": 0, "j": 0, "slot": 0, "hosts": hosts, "work": work, "on": on}
 	_walk_some()
 
 
@@ -180,10 +180,10 @@ func _walk_some() -> void:
 	# at the company it stopped at (j), its slot count kept.
 	while int(w["i"]) < tiles.size():
 		var ids: Array = w["on"].get(tiles[int(w["i"])], [])
-		if int(w.get("j", 0)) == 0:
+		if int(w["j"]) == 0:
 			ids.sort()
 			w["slot"] = 0
-		while int(w.get("j", 0)) < ids.size():
+		while int(w["j"]) < ids.size():
 			if not ViewTier.spend_ok(&"units"):
 				if not _more:
 					_more = true
