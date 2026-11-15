@@ -92,6 +92,7 @@ var _pending_hulls: Array = []  # hulls to board once mustered
 var _out := false  # marching out (march_out): halted at the road's end, it is gone after march.linger
 var _gone_in := 0.0
 var ground: RefCounted  # army_ground.gd: where its regiments may stand
+var _held := {}  # regiment id -> the rectangle it was set down on (world XZ, _set_down), while it stands there
 var _extent := Vector2.ZERO  # the line's width and depth (for re-placing it: stand_at)  # its regiments raised and its line placed (the battle waits on both sides)
 signal raised
 
@@ -288,8 +289,7 @@ func _stand_on_tile(at: Vector3, yaw: float) -> void:
 	_goal = "column"
 	for r in Formation.column_order(_regiments):
 		r["s"] = _cum[1] - float(r["off"])
-		_shape(r, "column")
-		_set_at(r, _at(r["s"]), yaw)
+		_set_down(r, "column", _at(r["s"]), yaw)
 		r["state"] = "halt"
 		_clips(r, "rest")
 	for c in _baggage:
@@ -353,6 +353,7 @@ func march_to(to: Vector3) -> void:
 		_pending = to
 		return
 	var order := Formation.column_order(_regiments)
+	_held.clear()  # on the march: where its blocks stood is theirs no longer (their claims go with them, _settle)
 	var trail := PackedVector3Array()
 	for i in range(_baggage.size() - 1, -1, -1):  # the baggage at the very tail
 		trail.append(_ground_at((_baggage[i]["node"] as Node3D).global_position))
@@ -1199,7 +1200,9 @@ func _take_field(extent: Vector2) -> void:
 ## is clear: dry land, no building, no farm or field, no road; and no other regiment's ground in `taken`.
 ## A side in the field (a battle's, a storm's: `strict` false) may stand on a road; never on a hedged field, water,
 ## a building or another body's ground (Mac 2026-11-15: a storm's block through a hedge into a ploughed field).
-func _clear_at(mid: Vector3, right3: Vector3, fwd3: Vector3, w: float, d: float, taken: Array, strict := true) -> bool:
+## `own`: this host's blocks already set down (rectangles, world XZ): its own claims are then stood on freely, and only
+## those rectangles themselves refused (a column's blocks stand nose to tail, closer than muster.margin).
+func _clear_at(mid: Vector3, right3: Vector3, fwd3: Vector3, w: float, d: float, taken: Array, strict := true, own: Variant = null) -> bool:
 	var m := Data.num("army", "muster.margin", 0.15)
 	var step := Data.num("army", "muster.probe", 0.35)
 	var gap := Data.num("army", "gap", 0.35) * 0.5
@@ -1216,7 +1219,12 @@ func _clear_at(mid: Vector3, right3: Vector3, fwd3: Vector3, w: float, d: float,
 	for c in [Vector2(-hw, -hd), Vector2(hw, -hd), Vector2(hw, hd), Vector2(-hw, hd)]:
 		var q: Vector3 = mid + right3 * (c as Vector2).x + fwd3 * (c as Vector2).y
 		poly.append(Vector2(q.x, q.z))
-	if not Footing.area_free(poly):
+	if own is Array:
+		var body := _rect_at(mid, right3, fwd3, w, d)
+		for o: PackedVector2Array in own:
+			if not Geometry2D.intersect_polygons(body, o).is_empty():
+				return false
+	if not Footing.area_free(poly, true, null, [_host_kind()] if own is Array else []):
 		return false
 	var roads = main.get("roads")
 	if not (strict and roads and roads.has_method("on_path")):
@@ -1236,50 +1244,85 @@ func _clear_at(mid: Vector3, right3: Vector3, fwd3: Vector3, w: float, d: float,
 ## the line falls on a building, a farm, a field or a road moves to the nearest clear ground round it, keeping
 ## its facing, rings of muster.cell outward up to muster.reach; one that finds none keeps its place.
 func _clear_slots(right3: Vector3, fwd3: Vector3) -> void:
-	var pitch := Data.num("army", "muster.cell", 2.0) * 0.5
 	var strict := battle.is_empty()  # a muster keeps off roads too; a side in the field may stand on one
 	_unclaim()  # the whole line stands anew: its old ground is no one's
-	# rings nearest first, so a side in the field stands as near the place its battle gave it as it can; out to
-	# muster.search for every host (a battle side's 2.5 left regiments where they fell, heaped on another's block or
-	# through a hedge: Mac 2026-11-15)
-	var reach := Data.num("army", "muster.search", 8.0)
 	var taken: Array = []
 	var moved := 0
 	var stuck := 0
 	for r in _regiments:
 		var w := float(r["line"]["w"])
 		var d := float(r["line"]["d"])
-		var at: Vector3 = r["slot"]
-		at.y = 0.0
-		var found := _clear_at(at, right3, fwd3, w, d, taken, strict)
-		if not found:
-			var ring := 1
-			while not found and ring * pitch <= reach:
-				var n := ring * 8
-				for k in n:
-					var a := TAU * float(k) / n
-					var q := at + (right3 * cos(a) + fwd3 * sin(a)) * ring * pitch
-					if _clear_at(q, right3, fwd3, w, d, taken, strict):
-						at = q
-						found = true
-						break
-				ring += 1
-			if found:
-				at.y = main.terrain.height_at(at.x, at.z)
-				moved += 1
-			else:
-				stuck += 1
+		var want: Vector3 = r["slot"]
+		var at := _free_near(want, right3, fwd3, w, d, taken, strict, [])  # its own line kept apart by `taken`
+		if at == Vector3.INF:
+			stuck += 1
+			at = want
+		elif Vector2(at.x - want.x, at.z - want.z).length() > 0.001:
+			moved += 1
 		r["slot"] = Vector3(at.x, main.terrain.height_at(at.x, at.z), at.z)
 		taken.append({"at": Vector3(at.x, 0, at.z), "w": w, "d": d})
+		# Held at once, before its men walk there: a host placed next sees it (Mac 2026-11-15: two hosts in one lump).
+		_claim(r, Transform3D(Basis(Vector3.UP, atan2(fwd3.x, fwd3.z)), r["slot"]), w, d)
 	if moved + stuck > 0 and not battle.get("quiet", false):
 		print("ARMY muster: %d regiments moved to clear ground, %d found none" % [moved, stuck])
 
 
+## The nearest ground to `at` a block `w` wide and `d` deep, turned to (`right3`, `fwd3`), may stand on (_clear_at:
+## ground.gd area_free over its whole rectangle, so no water, town piece, stall, camp or other regiment's claim, and
+## clear of the blocks in `taken`): `at` itself, else rings of muster.cell / 2 outward to muster.search, nearest
+## first. INF when none is (Total War's deployment never stands men in a house or in another regiment).
+func _free_near(at: Vector3, right3: Vector3, fwd3: Vector3, w: float, d: float, taken: Array, strict: bool, own: Variant = null) -> Vector3:
+	var pitch := Data.num("army", "muster.cell", 2.0) * 0.5
+	var reach := Data.num("army", "muster.search", 8.0)
+	at.y = 0.0
+	if _clear_at(at, right3, fwd3, w, d, taken, strict, own):
+		return at
+	var ring := 1
+	while ring * pitch <= reach:
+		var n := ring * 8
+		for k in n:
+			var a := TAU * float(k) / n
+			var q := at + (right3 * cos(a) + fwd3 * sin(a)) * ring * pitch
+			if _clear_at(q, right3, fwd3, w, d, taken, strict, own):
+				return q
+		ring += 1
+	return Vector3.INF
+
+
+## The one way a regiment is set down where it stands (a muster's line, a field host's column on its tile, a column
+## formed on the way out, a column halted at its march's end; Mac 2026-11-15: two hosts drawn through each other at
+## Saltkeep's wall, a heap of hosts through a stall in Kingsmere's square): its `shape`'s rectangle at `at` facing
+## `yaw`, or the nearest free ground round it (_free_near), its old ground let go first; stood there, shaped and its
+## ground claimed in that order, so the claim is where it stands (it was claimed where it last stood, until a later
+## frame's _settle). Returns where it stands.
+func _set_down(r: Dictionary, shape: String, at: Vector3, yaw: float, strict := false) -> Vector3:
+	Footing.release(_claim_id(r))
+	_held.erase(r["id"])
+	var l: Dictionary = r[shape]
+	var right3 := Vector3(cos(yaw), 0, -sin(yaw))
+	var fwd3 := Vector3(sin(yaw), 0, cos(yaw))
+	var q := _free_near(at, right3, fwd3, float(l["w"]), float(l["d"]), [], strict, _held.values())
+	if q == Vector3.INF:
+		q = at
+	_set_at(r, q, yaw)
+	_shape(r, shape)
+	_held[r["id"]] = _rect_at(q, right3, fwd3, float(l["w"]), float(l["d"]))
+	return _ground_at(q)
+
+
+## A block's rectangle (world XZ): `w` wide along `right3` and `d` deep along `fwd3`, round `mid`.
+static func _rect_at(mid: Vector3, right3: Vector3, fwd3: Vector3, w: float, d: float) -> PackedVector2Array:
+	var out := PackedVector2Array()
+	for c in [Vector2(-0.5, -0.5), Vector2(0.5, -0.5), Vector2(0.5, 0.5), Vector2(-0.5, 0.5)]:
+		var q: Vector3 = mid + right3 * (c as Vector2).x * w + fwd3 * (c as Vector2).y * d
+		out.append(Vector2(q.x, q.z))
+	return out
+
+
 ## A regiment stands in its place in the line at once, at ease.
 func _stand_in_line(r: Dictionary) -> void:
-	_shape(r, "line")
+	r["slot"] = _set_down(r, "line", r["slot"], _face, battle.is_empty())
 	r["state"] = "rest"
-	_set_at(r, r["slot"], _face)
 	_clips(r, "rest")
 
 
@@ -1443,8 +1486,7 @@ func _form_on_way(town: Vector3, to: Vector3, root: Node3D) -> void:
 	_face = _heading(head)
 	for r in order:
 		r["s"] = head - float(r["off"])
-		_shape(r, "column")
-		_set_at(r, _at(r["s"]), _heading(r["s"]))
+		_set_down(r, "column", _at(r["s"]), _heading(r["s"]))
 		r["state"] = "halt"
 		_clips(r, "rest")
 
@@ -1517,10 +1559,29 @@ func _march(r: Dictionary) -> void:
 	mo.follow(way, func():
 		r["s"] = end
 		if _goal == "column":
-			r["state"] = "halt"
-			_clips(r, "rest")
+			_halt(r)
 		else:
 			_deploy(r))
+
+
+## A regiment come to its place in the column halts there, or on the nearest free ground by it (_free_near: another
+## host, a stall, a camp already stands there; Mac 2026-11-15, Kingsmere's square), walking the last of the way.
+func _halt(r: Dictionary) -> void:
+	var n: Node3D = r["node"]
+	var yaw := float(r.get("yaw", n.rotation.y))
+	var here := n.global_position
+	Footing.release(_claim_id(r))
+	_held.erase(r["id"])
+	var c: Dictionary = r["column"]
+	var q := _free_near(here, Vector3(cos(yaw), 0, -sin(yaw)), Vector3(sin(yaw), 0, cos(yaw)), float(c["w"]), float(c["d"]), [], false, _held.values())
+	var done := func():
+		_set_down(r, "column", n.global_position, yaw)
+		r["state"] = "halt"
+		_clips(r, "rest")
+	if q == Vector3.INF or Vector2(q.x - here.x, q.z - here.z).length() < 0.05:
+		done.call()
+	else:
+		Mover.of(n).go(_ground_at(q), done)
 
 
 ## Where the column's head halts on a column order: the road's end, or back along the road until no regiment's place
@@ -1743,15 +1804,15 @@ func _at_ease(r: Dictionary, delta: float) -> void:
 ## The ground a regiment holds where it stands (ground.gd claim): its rectangle, turned with it. No other body or
 ## placement may stand on it, its own host's other regiments neither (Mac 2026-11-15: blocks heaped in one lump); a
 ## host placed anew lets all its ground go first (_unclaim). A fight's routes go round it (army_ground.gd).
-func _claim(r: Dictionary, xf: Transform3D) -> void:
-	var hw := float(r.get("w", 0.0)) * 0.5
-	var hd := float(r.get("d", 0.0)) * 0.5
+func _claim(r: Dictionary, xf: Transform3D, w := -1.0, d := -1.0) -> void:
+	var hw := (w if w >= 0.0 else float(r.get("w", 0.0))) * 0.5
+	var hd := (d if d >= 0.0 else float(r.get("d", 0.0))) * 0.5
 	if hw <= 0.0 or hd <= 0.0:
 		return
 	var poly := PackedVector2Array()
 	for c in [Vector3(-hw, 0, -hd), Vector3(hw, 0, -hd), Vector3(hw, 0, hd), Vector3(-hw, 0, hd)]:
-		var w: Vector3 = xf * (c as Vector3)
-		poly.append(Vector2(w.x, w.z))
+		var q: Vector3 = xf * (c as Vector3)
+		poly.append(Vector2(q.x, q.z))
 	Footing.claim(_claim_id(r), poly, _host_kind())
 
 
@@ -1766,6 +1827,7 @@ func _host_kind() -> String:
 
 ## The host's regiments let their ground go: the whole host is about to be placed anew, so where it stood is no one's.
 func _unclaim() -> void:
+	_held.clear()
 	for r in _regiments:
 		Footing.release(_claim_id(r))
 

@@ -47,6 +47,7 @@ var _ways: Node3D  # what that approach has put on the ground; cleared when it c
 var _spoil: MeshInstance3D  # mine: the heap of dug earth by the mine's mouth
 var _turncoat := {}  # bribe: {node, home, meet, out}: the man of the town who slips out to the besieger's officer
 var _rolling := []  # the ram and the tower on their way to the wall: {node, kind, crew, to, from, t, beat, rolling, at_wall}
+var _pieces := 0  # camp pieces holding their ground ("camp <id> <n>" claims, _set_piece), let go with the camp
 
 
 ## The camp pitched for a siege of the town at `town`: `middle` the angle its middle stands at, `line` where
@@ -311,13 +312,13 @@ func _palisade() -> void:
 	while a <= span:
 		if not gaps.any(func(g): return absf(a - float(g)) < half):
 			var p := _arc(a, rad)
-			if scenes._footing(p):
+			var t := Vector3(-sin(base + a), 0, cos(base + a))  # along the line
+			if scenes._footing(p) and _set_piece(p, Vector2(w * 0.5, float(k.get("depth", 0.06)) * 0.5), atan2(-t.z, t.x)):
 				var piece: Node3D = load(Real.path_of("palisade", i % maxi(models.size(), 1))).instantiate()
 				piece.scale = Vector3.ONE * w
 				for mi in piece.find_children("*", "MeshInstance3D", true, false):
 					(mi as MeshInstance3D).material_override = _timber()  # the kit's palette read as flat salmon (batch 8b)
 				piece.position = p
-				var t := Vector3(-sin(base + a), 0, cos(base + a))  # along the line
 				piece.rotation.y = atan2(-t.z, t.x) + r.randf_range(-0.05, 0.05)
 				piece.visible = false  # raised season by season (works)
 				root.add_child(piece)
@@ -348,8 +349,9 @@ func _tents() -> void:
 		var n := 0
 		while a <= span:
 			var p := _arc(a + r.randf_range(-0.02, 0.02), rad + r.randf_range(-0.06, 0.06))
-			if scenes._footing(p):
-				var place := Transform3D(Basis(Vector3.UP, -(base + a) + r.randf_range(-0.15, 0.15)), p + Vector3(0, float(sz[1]) * 0.5, 0))  # ridge along the row
+			var turn := -(base + a) + r.randf_range(-0.15, 0.15)
+			if scenes._footing(p) and _set_piece(p, Vector2(float(sz[0]), float(sz[2])) * 0.5, turn):
+				var place := Transform3D(Basis(Vector3.UP, turn), p + Vector3(0, float(sz[1]) * 0.5, 0))  # ridge along the row
 				Bulk.add(tents[0] if n % 3 != 2 else tents[1], place, root, REACH, true)  # the house's canvas, now and then plain
 				if n % int(k.get("pennant_every", 3)) == 0:  # the house's pennant on the ridge's end (WC3's worn colour)
 					var flag := Heraldry.standard(house, col, float(k.get("pennant", 0.14)))
@@ -357,6 +359,28 @@ func _tents() -> void:
 					root.add_child(flag)
 			a += step
 			n += 1
+
+
+## A camp piece (a stake length, a tent, a wagon and its barrels) set down at `p`, `half` its half size along its own
+## x and z, turned `yaw`: only where ground.gd says that whole ground is free (no regiment, engine, town piece or
+## water), and then it holds it ("camp" claim, as an engine does), so a host set down after keeps off it (Mac
+## 2026-11-15, Sunspire: tents and the stake row drawn through regiment blocks). False where it isn't free.
+func _set_piece(p: Vector3, half: Vector2, yaw: float) -> bool:
+	var poly := PackedVector2Array()
+	for c in [Vector2(-half.x, -half.y), Vector2(half.x, -half.y), Vector2(half.x, half.y), Vector2(-half.x, half.y)]:
+		var q: Vector3 = Transform3D(Basis(Vector3.UP, yaw), p) * Vector3((c as Vector2).x, 0, (c as Vector2).y)
+		poly.append(Vector2(q.x, q.z))
+	if not Ground.area_free(poly):
+		return false
+	Ground.claim("camp %d %d" % [get_instance_id(), _pieces], poly, "camp")
+	_pieces += 1
+	return true
+
+
+func _exit_tree() -> void:
+	for i in _pieces:
+		Ground.release("camp %d %d" % [get_instance_id(), i])
+	_pieces = 0
 
 
 ## The village kit's timber (its fence's wood), laid on in triplanar: the palisade's stakes and planks.
@@ -385,7 +409,8 @@ func _wagons() -> void:
 	for i in n:
 		var a := lerpf(-0.6, 0.6, (i + 0.5) / float(n)) + r.randf_range(-0.08, 0.08)
 		var p := _arc(a, camp_r + float(k.get("at", 1.55)))
-		if not scenes._footing(p):
+		var props := float(k.get("props_reach", 0.3))  # the barrels and crates stand round it within this
+		if not scenes._footing(p) or not _set_piece(p, Vector2(props, props), 0.0):
 			continue
 		var w: Node3D = Real.make(Real.one("wagon" if i % 2 == 0 else "cart"))
 		if w:
@@ -394,7 +419,7 @@ func _wagons() -> void:
 			root.add_child(w)
 		for j in int(k.get("props", 4)) / n + 1:  # barrels and crates by it, drawn in bulk (bulk.gd)
 			var parts := Real.parts(Real.one(["barrel", "crate"][r.randi() % 2]))
-			var place := Transform3D(Basis.IDENTITY, scenes.ground(p + Vector3(r.randf_range(-0.25, 0.25), 0, r.randf_range(-0.25, 0.25))))
+			var place := Transform3D(Basis.IDENTITY, scenes.ground(p + Vector3(r.randf_range(-props, props) * 0.8, 0, r.randf_range(-props, props) * 0.8)))
 			place.basis = Basis(Vector3.UP, r.randf() * TAU)
 			for pt: Array in parts:
 				Bulk.add(pt[0], place * (pt[1] as Transform3D), root, REACH, true)
