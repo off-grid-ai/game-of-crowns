@@ -188,6 +188,7 @@ static func _frame(to_tip: Vector3, to_edge: Vector3) -> Basis:
 
 
 static var HELD: float = preload("res://scripts/data.gd").num("people", "held", 1.0)
+static var HELD_SEEN_TO: float = preload("res://scripts/data.gd").num("people", "held_seen_to", 9.0)  # world units
 static func _hold(skel: Skeleton3D, kind: String, bone: String, socket: Transform3D, role := "Weapon") -> Node3D:
 	if skel.find_bone(bone) < 0:
 		return null
@@ -198,6 +199,16 @@ static func _hold(skel: Skeleton3D, kind: String, bone: String, socket: Transfor
 	# hammer reads at the town view (quality-deep-dive.md #9); grown from the grip, so it stays in the fist.
 	model.transform = socket * Transform3D(Basis().scaled(Vector3.ONE * HELD), Vector3.ZERO) * (fit[1] as Transform3D)
 	model.set_meta("tip_at", fit[2])
+	# What a person holds is drawn only as near as a hand's tool reads (people.json held_seen_to), and casts no shadow:
+	# under its bone it missed the person's own draw range (people.gd SEEN_TO), so a 14,000-triangle bowl drew town-wide.
+	# A weapon as far as its bearer is drawn (a war reads by its blades); a tool nearer.
+	var reach: float = HELD_SEEN_TO if TOOLS.has(kind) else preload("res://scripts/people.gd").SEEN_TO
+	var drawn: Array = model.find_children("*", "GeometryInstance3D", true, false)
+	if model is GeometryInstance3D:
+		drawn.append(model)
+	for g in drawn:
+		(g as GeometryInstance3D).visibility_range_end = reach
+		(g as GeometryInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	var at := BoneAttachment3D.new()
 	at.name = role
 	at.bone_name = bone
