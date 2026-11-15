@@ -8,6 +8,14 @@ extends RefCounted
 
 const CELL := 32.0  # game units a side of a cell's batch
 const ViewTier := preload("res://scripts/view_tier.gd")
+## The most a copy's simpler version may stray from it on screen, in pixels (ground.json bulk.lod_px). Godot picks a
+## batch's detail level by the MultiMesh node's own scale, never its copies': a copy set down at the world's scale
+## (Units.M, 0.12) was judged eight times its size, so a bush 4 px high 60 units off drew all 400 of its triangles (Mac's
+## fps card 2026-11-16: "Bulk (400-tri mesh) 0.9M", everything "full detail"). Each batch's lod_bias carries its
+## largest copy's scale, so the level is picked by the size it is drawn at, to this many pixels (vegetation.gd's bush
+## patches and the towns' batches stand at about 4).
+static var LOD_PX: float = preload("res://scripts/data.gd").num("ground", "bulk.lod_px", 4.0)
+static var _lod_k: float = float(ProjectSettings.get_setting("rendering/mesh_lod/lod_change/threshold_pixels", 1.0)) / maxf(LOD_PX, 0.01)
 
 static var _root: Node3D  # the batches' parent, under the scene tree's root
 static var _sets := {}  # "mesh id:cell x:cell z:reach" -> {mmi, xfs: Array[Transform3D], handles: Array[int]}
@@ -43,6 +51,7 @@ static func _add_one(mesh: Mesh, place: Transform3D, owner: Variant, begin: floa
 	(s["handles"] as Array).append(h)
 	mm.set_instance_transform(i, place)
 	mm.visible_instance_count = xfs.size()
+	_hold(s, mesh, place)
 	_where[h] = [key, i, owner]
 	if not _owned.has(owner):
 		_owned[owner] = {}
@@ -93,7 +102,30 @@ static func move(handle: int, place: Transform3D) -> void:
 		return
 	var s: Dictionary = _sets[w[0]]
 	(s["xfs"] as Array)[w[1]] = place
-	(s["mmi"] as MultiMeshInstance3D).multimesh.set_instance_transform(w[1], place)
+	var mm := (s["mmi"] as MultiMeshInstance3D).multimesh
+	mm.set_instance_transform(w[1], place)
+	_hold(s, mm.mesh, place)
+
+
+## The batch's box and detail made to hold a copy at `place`: its box only as large as its copies (with the land's
+## height under each; the spare copies past visible_instance_count stand at the origin and must not stretch it, or the
+## batch is never culled), and its lod_bias its largest copy's scale (LOD_PX; never over 1, Godot's own pick). A box
+## the height of every hill (-20 to 40) held the lens in each batch round it, and Godot draws a batch whose box holds
+## the lens at full detail; its middle, where the draw distance is measured from, stood 10 units up. Never shrinks: a
+## copy taken away leaves it.
+static func _hold(s: Dictionary, mesh: Mesh, place: Transform3D) -> void:
+	var mmi: MultiMeshInstance3D = s["mmi"]
+	var b: AABB = (place * mesh.get_aabb()).expand(place.origin)
+	var box: AABB = s["box"] if s.has("box") else b
+	if not s.has("box") or not box.encloses(b):
+		box = box.merge(b)
+		s["box"] = box
+		mmi.multimesh.custom_aabb = box
+	var k := place.basis.get_scale()
+	var big := maxf(absf(k.x), maxf(absf(k.y), absf(k.z)))
+	if big > float(s.get("scale", 0.0)):
+		s["scale"] = big
+		mmi.lod_bias = minf(big * _lod_k, 1.0)  # never finer than Godot's own pick
 
 
 static func _make(mesh: Mesh, begin: float, end: float, shadows: bool, cell: Vector2i) -> Dictionary:
@@ -106,11 +138,7 @@ static func _make(mesh: Mesh, begin: float, end: float, shadows: bool, cell: Vec
 	mm.mesh = mesh
 	mm.instance_count = 8
 	mm.visible_instance_count = 0
-	# The cell's box (with the mesh's own reach over its edge, and the land's heights): the spare copies past
-	# visible_instance_count stand at the origin and must not stretch it, or the cell is never culled.
-	var mb := mesh.get_aabb()
-	var r := maxf(absf(mb.position.x), absf(mb.end.x)) + maxf(absf(mb.position.z), absf(mb.end.z))
-	mm.custom_aabb = AABB(Vector3(cell.x * CELL - r, -20.0 + mb.position.y, cell.y * CELL - r), Vector3(CELL + 2.0 * r, 60.0 + mb.size.y, CELL + 2.0 * r))
+	mm.custom_aabb = AABB(Vector3(cell.x * CELL, 0.0, cell.y * CELL), Vector3.ZERO)  # set to its copies' (_hold) as each comes
 	var mmi := MultiMeshInstance3D.new()
 	mmi.multimesh = mm
 	mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if shadows else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
