@@ -16,6 +16,7 @@ const BACKDROP := "res://assets/ui/title-background.png"
 const REALM_TILES := Vector2(56, 88)  # the atlas covers the whole map (bridge/tools/azgaar_world.py)
 const T := preload("res://scripts/theme.gd")
 const Keys := preload("res://scripts/keys.gd")
+const ViewTier := preload("res://scripts/view_tier.gd")
 ## Seconds on a page: long enough to read its words at an easy pace, never
 ## so long it seems stuck.
 static func _hold(words: String) -> float:
@@ -117,6 +118,9 @@ func play(houses: Array, seats: Dictionary) -> void:
 	# The intro covers the screen: the realm behind it need not be drawn while
 	# it builds, which is what made the pages stutter.
 	get_viewport().disable_3d = true
+	# As the loading screen, everything staged behind it (towns raised, crowds made) has most of each frame: the card
+	# owns it, so it holds exactly while the card is up (10:18-10:27: under the card the towns had the play pot).
+	ViewTier.loading = not watching
 	_page = -1
 	_began = Time.get_ticks_msec()
 	_next()
@@ -392,6 +396,7 @@ func _end() -> void:
 		_tween.kill()
 	visible = false
 	get_viewport().disable_3d = false
+	ViewTier.loading = false
 	for c in get_children():
 		c.queue_free()
 	finished.emit()
