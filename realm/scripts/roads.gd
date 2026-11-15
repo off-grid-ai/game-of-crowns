@@ -155,11 +155,14 @@ func _drop(key: String) -> void:
 func _paint_next() -> void:
 	var job: Array = _paint_jobs[0]
 	var key: String = job[0]
-	var node: Node3D = job[1]
-	var route: PackedVector3Array = job[2]
-	if not is_instance_valid(node) or (_ways.get(key, {}) as Dictionary).get("node") != node:
+	# A road redrawn or gone meanwhile leaves its job holding a freed node: read it untyped and drop the job (a typed
+	# read of a freed node errors before the check and the job never left the queue: run 7, 405,672 errors).
+	var held: Variant = job[1]
+	if not is_instance_valid(held) or (_ways.get(key, {}) as Dictionary).get("node") != held:
 		_paint_jobs.pop_front()
 		return
+	var node: Node3D = held
+	var route: PackedVector3Array = job[2]
 	var i: int = job[3]
 	if i < route.size() - 1:
 		_segment(route[i], route[i + 1], node, float(job[4]), String(job[5]), key)

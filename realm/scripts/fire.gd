@@ -392,8 +392,8 @@ static func _burns(h: Array) -> float:
 func _columns(id: int) -> int:
 	var n := 0
 	for key in _burning:
-		var f: Node3D = _burning[key]
-		if String(key).begins_with("%d:" % id) and is_instance_valid(f) and String(f.get_meta("stage", "")) != "smoulder":
+		var f: Variant = _burning[key]  # untyped: a fire put out meanwhile is a freed node (a typed read errors)
+		if String(key).begins_with("%d:" % id) and is_instance_valid(f) and String((f as Node3D).get_meta("stage", "")) != "smoulder":
 			n += 1
 	return n
 
