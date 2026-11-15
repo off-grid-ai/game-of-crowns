@@ -98,11 +98,15 @@ func _place(card: Control) -> void:
 	if float(_pins[card][2]) > 0.0:
 		var side := cam.unproject_position(at + cam.global_transform.basis.x * float(_pins[card][2]))
 		half = absf(side.x - p.x)
-	# On the side with more room, so the card stands over open ground, never over its place.
+	# On the side with more room, so the card stands over open ground, never over its place; once placed it keeps its
+	# side while that side holds it, so a camera drifting about the middle doesn't swing it left and right (Mac,
+	# 2026-11-16: Kingsmere's card bounced between sides).
 	var right_room := screen.x - EDGE - (p.x + half + GAP)
 	var left_room := p.x - half - GAP - EDGE
-	var x := p.x + half + GAP if right_room >= size.x and right_room >= left_room else p.x - half - GAP - size.x
-	if x < EDGE and right_room >= size.x:
-		x = p.x + half + GAP
+	var side: int = int(card.get_meta("anchor_side", 0))  # 1 right, -1 left, 0 not chosen yet
+	if side == 0 or (side == 1 and right_room < size.x and left_room >= size.x) or (side == -1 and left_room < size.x and right_room >= size.x):
+		side = 1 if right_room >= size.x and right_room >= left_room else -1 if left_room >= size.x else (1 if right_room >= left_room else -1)
+		card.set_meta("anchor_side", side)
+	var x := p.x + half + GAP if side == 1 else p.x - half - GAP - size.x
 	var y := p.y - size.y * 0.5
 	card.position = Vector2(clampf(x, EDGE, screen.x - size.x - EDGE), clampf(y, 64.0, screen.y - size.y - EDGE))
