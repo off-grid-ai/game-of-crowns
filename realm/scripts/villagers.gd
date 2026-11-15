@@ -40,6 +40,7 @@ const Weapons := preload("res://scripts/weapons.gd")  # what a move needs in han
 const TownNav := preload("res://scripts/town_nav.gd")  # a town's frame on the realm's navigation
 const NavWorld := preload("res://scripts/nav_world.gd")  # the realm's one navigation: its walk map and its crowd
 const Ground := preload("res://scripts/ground.gd")  # the one answer to where a body may stand
+const Mover := preload("res://scripts/mover.gd")  # the one way to move: each walker's crowd agent and its steps
 var talk = preload("res://scripts/village_talk.gd").new(self)  # who talks with whom (village_talk.gd): chatter.gd and the minds ask it
 var registry = preload("res://scripts/village_registry.gd").new(self)  # who is who and where (village_registry.gd): a click, a name, the homes lit, the feast fire
 var slots = preload("res://scripts/village_slots.gd").new(self)  # where a villager may stand (village_slots.gd): the places' rings, the stall, well, street and cart slots, the square's room
@@ -202,9 +203,7 @@ func _refresh() -> void:
 			_spawn(id)
 		elif (tier == ViewTier.FAR or off > SEEN_MARGIN) and crowds.has(id):
 			for a in crowds[id]:
-				a["node"].queue_free()
-				if a.has("agent"):
-					NavigationServer3D.free_rid(a["agent"])
+				a["node"].queue_free()  # its Mover's crowd agent with it
 			crowds.erase(id)
 			_forget_others(id)
 			talk.forget(id)
@@ -231,9 +230,7 @@ func _refresh() -> void:
 	for id in crowds.keys():
 		if not towns.towns.has(id):
 			for a in crowds[id]:
-				a["node"].queue_free()
-				if a.has("agent"):
-					NavigationServer3D.free_rid(a["agent"])
+				a["node"].queue_free()  # its Mover's crowd agent with it
 			crowds.erase(id)
 			_forget_others(id)
 			talk.forget(id)
@@ -355,8 +352,7 @@ func _spawn(id: int) -> void:
 			if not towns.towns.has(id) or not is_instance_valid(town["node"]):
 				# The town went while its crowd was being made: hand back what was made.
 				for b in list:
-					b["node"].queue_free()
-					NavigationServer3D.free_rid(b["agent"])
+					b["node"].queue_free()  # its Mover's crowd agent with it
 				_spawning.erase(id)
 				return
 			people.dress_for(dress[0], dress[1], dress[2])  # another town's crowd may have been dressed in between
@@ -385,21 +381,9 @@ func _spawn(id: int) -> void:
 		person.position = a["home"]
 		# Godot's own crowd avoidance (RVO) on the realm's walk map: each villager steps aside for the others, and for
 		# every cart, horse and fighter on it (mover.gd), on the ground's plane (2D avoidance in the 3D server).
-		var agent := NavigationServer3D.agent_create()
-		NavigationServer3D.agent_set_map(agent, NavWorld.map(&"walk"))
-		NavigationServer3D.agent_set_use_3d_avoidance(agent, false)
 		a["map"] = TownNav.version()
-		NavigationServer3D.agent_set_radius(agent, 0.065)  # two keep about 1.1 m between their middles: passers-by give way, never brush through
-		NavigationServer3D.agent_set_neighbor_distance(agent, 0.5)
-		NavigationServer3D.agent_set_max_neighbors(agent, 16)  # a busy square: everyone near is seen, not the first eight
-		NavigationServer3D.agent_set_time_horizon_agents(agent, 2.5)  # sees a passer-by coming soon enough to give way, not brush past
-		NavigationServer3D.agent_set_max_speed(agent, WALK_SPEED * 1.3)
-		NavigationServer3D.agent_set_avoidance_layers(agent, 1)
-		NavigationServer3D.agent_set_avoidance_mask(agent, 1)
-		NavigationServer3D.agent_set_avoidance_enabled(agent, true)
-		a["agent"] = agent
-		a["safe"] = Vector2.ZERO
-		NavigationServer3D.agent_set_avoidance_callback(agent, func(v: Vector3): a["safe"] = Vector2(v.x, v.z))
+		a["mover"] = Mover.of(person)  # its crowd agent and its walk (mover.gd: the one way to move)
+		a["mover"].join_walkers(WALK_SPEED * 1.3)
 		# Seen only once set down on the town's walk map (it syncs a frame
 		# later): never first glimpsed standing inside a house.
 		a["placed"] = false
@@ -447,12 +431,7 @@ static func _weighed_key(weights: Dictionary, rng: RandomNumberGenerator) -> Str
 
 
 func _exit_tree() -> void:
-	# Hand the avoidance agents back before the navigation server shuts down.
-	for id in crowds:
-		for a in crowds[id]:
-			if a.has("agent"):
-				NavigationServer3D.free_rid(a["agent"])
-	crowds.clear()
+	crowds.clear()  # each walker's crowd agent goes with its Mover
 	for id in _others.keys():
 		_forget_others(id)
 
@@ -623,14 +602,10 @@ func _step(a: Dictionary, delta: float, _t: float) -> void:
 	var center: Vector3 = a["center"]
 	var route: PackedVector2Array = a["route"]
 	var here := Vector2(n.position.x - center.x, n.position.z - center.z)
-	if a.has("agent"):
-		NavigationServer3D.agent_set_position(a["agent"], n.position)
 	if route.is_empty():
 		a["go_t"] = 0.0  # standing: the next walk starts from a standstill (steer.start)
 		a["vel"] = Vector2.ZERO
-		if a.has("agent"):
-			NavigationServer3D.agent_set_velocity(a["agent"], Vector3.ZERO)
-			NavigationServer3D.agent_set_avoidance_priority(a["agent"], 1.0)  # walkers go round those standing still
+		a["mover"].crowd_want(n.position, Vector2.ZERO, 1.0)  # walkers go round those standing still
 		if a.has("arrive"):
 			_settle(a, delta)
 		return  # their mind plays the moves and picks what's next
@@ -657,11 +632,10 @@ func _step(a: Dictionary, delta: float, _t: float) -> void:
 		return
 	var want := to.normalized() * WALK_SPEED * READ * _rain_pace * float(a.get("pace", 1.0)) * _mood_pace(a) * _for_the_child(a) * (2.4 if a.get("catch_up", false) else 1.0)
 	var vel: Vector2 = want
-	if a.has("agent"):
-		NavigationServer3D.agent_set_velocity(a["agent"], Vector3(want.x, 0, want.y))
-		# Making way: a commoner steps round their betters, never the other way about (presence.gd STATION).
-		NavigationServer3D.agent_set_avoidance_priority(a["agent"], 1.0 if a.get("catch_up", false) else (0.3 + 0.2 * _presence.station(n) if _presence else 0.5))  # a child hurrying to a parent: the grown step round them
-		vel = a["safe"]  # trust the avoidance, even when it says wait
+	# Making way: a commoner steps round their betters, never the other way about (presence.gd STATION); a child
+	# hurrying to a parent: the grown step round them.
+	a["mover"].crowd_want(n.position, want, 1.0 if a.get("catch_up", false) else (0.3 + 0.2 * _presence.station(n) if _presence else 0.5))
+	vel = a["mover"].crowd_safe()  # trust the avoidance, even when it says wait
 	var step := vel * delta
 	if step.length() > to.length():
 		step = to
@@ -1281,10 +1255,8 @@ func _follow_parents(id: int) -> void:
 func _hurry(a: Dictionary, on: bool) -> void:
 	a["catch_up"] = on
 	a["gait"] = "Running" if on else "Walk"
-	if a.has("agent"):
-		NavigationServer3D.agent_set_radius(a["agent"], 0.045)  # a child takes less room than a grown man
-		NavigationServer3D.agent_set_max_speed(a["agent"], WALK_SPEED * (2.6 if on else 1.3))
-		NavigationServer3D.agent_set_time_horizon_agents(a["agent"], 0.6 if on else 2.5)
+	if a.has("mover"):
+		a["mover"].crowd_child(on, WALK_SPEED)  # a child takes less room than a grown man
 
 
 ## One of `moves` at random, of those that can be played as they should be

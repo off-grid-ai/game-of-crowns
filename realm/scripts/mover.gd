@@ -285,6 +285,52 @@ func join(crowd: RID, kind := &"man", top := 0.66) -> void:
 	NavigationServer3D.agent_set_avoidance_callback(_agent, func(v: Vector3): _safe = Vector3(v.x, 0, v.z))
 
 
+## Joins the town's walkers' crowd (Godot's RVO on the realm's walk map: villagers.gd's people step aside for each
+## other, for every horse, cart and fighter on it and for everyone standing, all on layer 1). Two keep about 1.1 m
+## between their middles; a busy square's sixteen nearest are seen; a passer-by is seen coming 2.5 s off. `top`: its
+## fastest (world units a second). Its safe velocity is crowd_safe(); it goes with the body.
+func join_walkers(top: float) -> void:
+	if _agent.is_valid():
+		return
+	_agent = NavigationServer3D.agent_create()
+	NavigationServer3D.agent_set_map(_agent, NavWorld.map(&"walk"))
+	NavigationServer3D.agent_set_use_3d_avoidance(_agent, false)
+	NavigationServer3D.agent_set_radius(_agent, 0.065)
+	NavigationServer3D.agent_set_neighbor_distance(_agent, 0.5)
+	NavigationServer3D.agent_set_max_neighbors(_agent, 16)
+	NavigationServer3D.agent_set_time_horizon_agents(_agent, 2.5)
+	NavigationServer3D.agent_set_max_speed(_agent, top)
+	NavigationServer3D.agent_set_avoidance_layers(_agent, 1)
+	NavigationServer3D.agent_set_avoidance_mask(_agent, 1)
+	NavigationServer3D.agent_set_avoidance_enabled(_agent, true)
+	_safe = Vector3.ZERO
+	NavigationServer3D.agent_set_avoidance_callback(_agent, func(v: Vector3): _safe = Vector3(v.x, 0, v.z))
+
+
+## Where the walker stands, and the velocity (XZ) it wants with how readily it gives way (`priority`, 0-1: a
+## commoner steps round their betters, everyone round one standing still).
+func crowd_want(at: Vector3, v: Vector2, priority: float) -> void:
+	if not _agent.is_valid():
+		return
+	NavigationServer3D.agent_set_position(_agent, at)
+	NavigationServer3D.agent_set_velocity(_agent, Vector3(v.x, 0, v.y))
+	NavigationServer3D.agent_set_avoidance_priority(_agent, priority)
+
+
+## The velocity (XZ) the crowd's avoidance makes safe for it.
+func crowd_safe() -> Vector2:
+	return Vector2(_safe.x, _safe.z)
+
+
+## A child hurrying (`on`) slips through: less room, quicker, a short look ahead; else as a grown walker's.
+func crowd_child(on: bool, walk: float) -> void:
+	if not _agent.is_valid():
+		return
+	NavigationServer3D.agent_set_radius(_agent, 0.045)
+	NavigationServer3D.agent_set_max_speed(_agent, walk * (2.6 if on else 1.3))
+	NavigationServer3D.agent_set_time_horizon_agents(_agent, 0.6 if on else 2.5)
+
+
 ## Leaves the crowd it joined (the fight is over).
 func leave() -> void:
 	if _agent.is_valid():
