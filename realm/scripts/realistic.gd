@@ -452,6 +452,17 @@ static func _path(name: String) -> String:
 	return String(_model.get(name, ""))
 
 
+## Whether a model can be had now without waiting on its merge (a staged build asks before it stands one, and waits a
+## frame while this is false): made, or its merge done on its worker. A model not yet begun is begun (its merge started).
+static func ready(name: String) -> bool:
+	if _cache.has(name):
+		return true
+	if not _pending.has(name) and not _begin(name):
+		return true  # the catalogue can't make it: nothing to wait for
+	var task: int = _pending[name]["task"]
+	return task < 0 or WorkerThreadPool.is_task_completed(task)
+
+
 static func _template(name: String) -> Dictionary:
 	if _cache.has(name):
 		return _cache[name]

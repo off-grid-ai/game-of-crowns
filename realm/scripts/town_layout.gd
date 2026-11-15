@@ -59,6 +59,8 @@ func real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds:
 		# The castle to the seat's rank (data/assets.json castle: the crown's first, a great house's after it).
 		var cv: Array = Real.variants("castle")
 		var castle_kind: String = "" if cv.is_empty() else String(cv[0 if tb._house.get("crown", false) else cv.size() - 1])
+		while castle_kind != "" and not Real.ready(castle_kind):
+			await tb._wait_frame()  # its merge finishing on its worker, never waited for in a frame (480 ms in one, headless)
 		var cf: Vector2 = Real.footprint(castle_kind)
 		if cf != Vector2.ZERO:
 			# Its own ground at the town's edge. First the old search exactly (eight
@@ -82,6 +84,7 @@ func real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds:
 				if cd - f.y * 0.5 < square_r + 0.2:
 					continue  # hugging the square so close its walls would stand on it: the square stays the town's
 				for tries in int(pass_[2]):
+					await tb._pace()  # each heading tried its own step (a seat's ground cut and filled per try: Mac's game, 1.5 s in one)
 					# gate_clear: the headings nearest the one opposite the market first, either side in turn (0, +1, -1,
 					# +2, ...), so a wet or steep heading there falls to its neighbour, not round to the stalls' side.
 					var step := float(tries) if not gate_clear else float((tries + 1) / 2) * (1.0 if tries % 2 == 1 else -1.0)
@@ -93,6 +96,7 @@ func real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds:
 					var cy: float = tb._seat(center, cp, f * 0.8, atan2(-cp.x, -cp.z), 2.2, true, float(pass_[3]))
 					if is_nan(cy):
 						continue
+					await tb._pace()  # its ground cut, then the castle raised, its yard opened and its wood felled: each a step
 					var castle: Node3D = Real.make(castle_kind)
 					castle.name = "Castle"
 					castle.position = Vector3(cp.x, cy, cp.z)
@@ -101,6 +105,7 @@ func real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds:
 					root.add_child(castle)
 					tb._footprint_rect(root, cp, f, castle.rotation.y)
 					root.set_meta("castle_poly", (root.get_meta("footprints") as Array)[-1])  # the palisade stops at its walls
+					await tb._pace()
 					# The front of its bailey, between the gate and the keep, is open
 					# air: the camera may come down into the yard there (camera_rig).
 					var yb := Basis(Vector3.UP, castle.rotation.y)
@@ -109,15 +114,18 @@ func real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds:
 						var w: Vector3 = cp + yb * Vector3(c.x * f.x, 0, c.y * f.y)
 						yard.append(Vector2(w.x, w.z))
 					Ground.open_floor(root, yard)
+					await tb._pace()
 					# No wood stands inside its walls or leans over them: felled to
 					# the corners, and a crown's reach (about 0.8) beyond.
 					tb.world("clear", [center + cp, f.length() * 0.5 + 0.8])
+					await tb._pace()
 					lots.append([cp, maxf(f.x, f.y) * 0.55])
 					# The castle's standard, to the castle's scale: over the keep, not taller than its towers.
 					tb.banners.stand(root, cp + Vector3(0, cy + 0.9 * scale, 0), tb._house_colour, tb._house, 0.6 * scale)
 					tb.banners.map_seat(root, cp + Vector3(0, cy, 0), tb._house_colour, tb._house)  # the seat on the realm map
 					tb._door(root, cp, f, "great_hall", "great hall")
 					root.set_meta("castle_frame", [cp, castle.rotation.y, f, cy])  # the bailey's dressing reads it (dressing.gd bailey)
+					await tb._pace()
 					tb._bailey(root, cp, cy, castle.rotation.y, rng)
 					held = true
 					if float(pass_[3]) == 0.0:
@@ -183,18 +191,19 @@ func real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds:
 		# stood no smithy, its one try crowded, and nothing said so).
 		var stands := false
 		for go in 16:
+			await tb._pace()  # each spot round the edge its own step
 			for turn in (16 if not ways.is_empty() else 0):
 				if not TownPlots.near_ways(Vector2(p.x, p.z), ways, maxf(f.x, f.y) * 0.5 + 0.05):
 					break
 				gap_ang += TAU / 16.0
 				p = Vector3(cos(gap_ang), 0, sin(gap_ang)) * (square_r + maxf(f.x, f.y) * 0.45)
-			if tb._put(root, center, lm, p, f, lots, rng, false, face_at):
+			if await tb._put(root, center, lm, p, f, lots, rng, false, face_at):
 				stands = true
 				break
 			# Then on the ring line the square's fronts stand on (front_ring: their walls flush round its edge), out of the
 			# market's goods and benches at the paving's rim (g10: the forge found no room at 16 spots round the edge).
 			var on_ring: Vector3 = Vector3(cos(gap_ang), 0, sin(gap_ang)) * (float(tb.front_ring(square_r)) + f.y * 0.5)
-			if not TownPlots.near_ways(Vector2(on_ring.x, on_ring.z), ways, maxf(f.x, f.y) * 0.5 + 0.05) and tb._put(root, center, lm, on_ring, f, lots, rng, false, face_at if face_at != Vector3.ZERO else -on_ring.normalized(), true):
+			if not TownPlots.near_ways(Vector2(on_ring.x, on_ring.z), ways, maxf(f.x, f.y) * 0.5 + 0.05) and await tb._put(root, center, lm, on_ring, f, lots, rng, false, face_at if face_at != Vector3.ZERO else -on_ring.normalized(), true):
 				p = on_ring
 				stands = true
 				break
@@ -216,8 +225,10 @@ func real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds:
 			if not square_trade.is_empty():
 				tb._trade_record(root, center, square_trade, p, fc, f)
 				if comp == "forge":
+					await tb._pace()
 					tb._smithy(root, center, p, fc, f, rng)
 			if comp == "church":
+				await tb._pace()
 				tb._walled(root, center, p, -p.normalized(), f, "church", lots)  # the churchyard
 		if lens_turn != null and gap_ang != keep_ang:
 			gap_ang = keep_ang  # the landmarks after it keep the spots they had
@@ -232,7 +243,9 @@ func real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds:
 		var ring_n0: int = await square_ring(root, center, square_r, ways, kinds, lots, rng, want - placed)
 		placed += ring_n0
 		root.set_meta("ring_houses", ring_n0)
+	await tb._pace()
 	tb._square_piles(root, center, square_r, rng)
+	await tb._pace()
 	# The trades that need a particular ground take it before any other house: the armoury by the castle,
 	# the watermill on the water.
 	for tr in tb._trades:
@@ -241,8 +254,10 @@ func real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds:
 	# The square's ring (above), then the lanes (laid now, round the castle and the landmarks), then burgage plots
 	# along the roads and lanes, the edge where they stop.
 	ways = ways + lay_lanes(root, center, ways, clampi(int((size - 2) * float(pk.get("lanes_per_size", 0.5))), 0, int(pk.get("lanes_most", 6))), square_r, rng)
+	await tb._pace()
 	await plot_lots(root, center, square_r, ways, kinds, lots, rng, want - placed, seat)
 	tb._square_trees(root, center, square_r, ways, lots, rng)
+	await tb._pace()
 	await tb._trades_beyond(root, center, square_r, float(root.get_meta("edge_r", square_r + 3.6)), ways, lots, rng)
 
 
@@ -302,6 +317,7 @@ func square_ring(root: Node3D, center: Vector3, square_r: float, ways: Array, ki
 		# frontage (a townhouse or a cottage), as a real square's fronts mix.
 		for attempt in 2:
 			if attempt == 1:
+				await tb._pace()
 				var smaller := TownTiers.front_set(tb._rank, "square", tb._tier_pick(rr, fronts, "lane", 0.0, "square"))  # still the square's set
 				if Real.footprint(smaller).x > kf.x or smaller == k:
 					break
@@ -335,7 +351,7 @@ func square_ring(root: Node3D, center: Vector3, square_r: float, ways: Array, ki
 			if tb._crowded(lots, p, kf.x * 0.45):
 				why["crowded"] += 1  # a stall, the hall, the tavern, the castle
 				continue
-			if tb._put(root, center, k, p, kf, lots, rr, true, Vector3(fd.x, 0, fd.y), true):
+			if await tb._put(root, center, k, p, kf, lots, rr, true, Vector3(fd.x, 0, fd.y), true):
 				placed += 1
 				stood = true
 				_ring_yard(root, p, kf, k, ways, lots.size() - 1)
@@ -673,6 +689,7 @@ func plot_lots(root: Node3D, center: Vector3, square_r: float, ways: Array, kind
 	# never take a house's ground.
 	for s in stood + (root.get_meta("ring_yards", []) as Array):
 		tb._yard(root, center, s[0], s[1], s[2], s[3], lots, rng, int(s[4]))
+		await tb._pace()  # each yard its own step
 	# CHECK line: how the yards came out (round 6: no gardens, fences or pens read at Kingsmere).
 	var things := {}
 	for t in root.get_meta("yard_things", []):
@@ -689,8 +706,11 @@ func plot_lots(root: Node3D, center: Vector3, square_r: float, ways: Array, kind
 	root.set_meta("edge_outline", edge)
 	root.set_meta("edge_r", far)
 	if not tb._town_wall(root, center, edge, ways):
+		await tb._pace()
 		tb._palisade_on(root, center, edge, ways, seat)
+	await tb._pace()
 	tb._edge_trees(root, center, edge, ways, lots, rng)
+	await tb._pace()
 	tb._layout_check(root, taken, ways)
 	return placed
 
@@ -727,6 +747,8 @@ func plot_one(root: Node3D, center: Vector3, pl0: Array, ways: Array, shallow: A
 	var tries: Array = [String(pl[6])] + shallow.filter(func(k): return Real.footprint(k).x <= float(pl[2]) + 0.01 and (Real.footprint(k).y < fd.y - 0.05 or Real.footprint(k).x < fd.x - 0.05))
 	var last := ""
 	for kind: String in tries:
+		if kind != tries[0]:
+			await tb._pace()  # each smaller house tried its own step (Mac's game: a plot turned away took up to 904 ms)
 		var f: Vector2 = Real.footprint(kind)
 		var house: Vector2 = front - face2 * f.y * 0.5
 		var body := plot_body(house, tan, face2, f)
@@ -751,7 +773,7 @@ func plot_one(root: Node3D, center: Vector3, pl0: Array, ways: Array, shallow: A
 			last = "crowded"  # the castle, the square's landmarks and stalls, the houses round the square
 			continue
 		var trade: Dictionary = tb._trade_by_model(kind)
-		if not tb._put(root, center, kind, p, f, lots, rng, trade.is_empty(), Vector3(face2.x, 0, face2.y), true):
+		if not await tb._put(root, center, kind, p, f, lots, rng, trade.is_empty(), Vector3(face2.x, 0, face2.y), true):
 			last = "water or a cliff"
 			continue
 		if not trade.is_empty():

@@ -1638,7 +1638,7 @@ func _trade_off_plot(root: Node3D, center: Vector3, tr: Dictionary, square_r: fl
 		var face: Vector3 = cnd[2]
 		if face == Vector3.ZERO:
 			face = -q.normalized()
-		if _put(root, center, kind, q, f, lots, rng, false, face):
+		if await _put(root, center, kind, q, f, lots, rng, false, face):
 			_trade_record(root, center, tr, q, face, f)
 			var cfg: Dictionary = preload("res://scripts/data.gd").value("assets", "components", {}).get(String(tr["component"]), {})
 			if cfg.has("walled"):
@@ -1786,19 +1786,21 @@ func _put(root: Node3D, center: Vector3, kind: String, p: Vector3, f: Vector2, l
 	# No two houses the same: each a little larger or smaller than the last.
 	var k := (rng.randf_range(0.97, 1.03) if tight else rng.randf_range(0.92, 1.08)) if dress else 1.0
 	_place(root, kind, Vector3(p.x, seat_y, p.z), yaw, Vector3.ONE * k, f * k)
+	lots.append([p, span * 0.42])
 	if dress:
 		_door(root, p, f, "cottage", "house", face)
 		var homes: Array = root.get_meta("homes", [])
 		homes.append([p + face * (f.y * 0.5 + 0.12), face, p, kind, _batch[kind].size() - 1, home_id(p)])  # its doorstep, which way it looks, where it stands, its kit batch and place in it (fire.gd chars it), and its stable id
 		root.set_meta("homes", homes)
+		await _pace()  # its path and its dressing their own steps (Mac's game: a front with its dressing, 158-222 ms in one)
 		_footpath(root, center, p + face * (f.y * 0.5 + 0.12))
+		await _pace()
 		_dress(root, center, p, face, Vector3(-face.z, 0, face.x), f.x, f.y, rng, tight)
 		# A fire in most homes: a thread of smoke from the roof.
 		if Real.KIT[kind][0] == "house" and rng.randf() < float(Data.num("hearths", "chimneys", 0.45)):
 			var top := Real.height(kind) * k
 			var off := Vector3(-face.z, 0, face.x) * f.x * rng.randf_range(-0.2, 0.2) - face * f.y * 0.1
 			_smoke(root, Vector3(p.x, seat_y + top * 0.92, p.z) + off, p + face * (f.y * 0.5 + 0.12))  # its doorstep: lit only while someone's home (hearths.gd)
-	lots.append([p, span * 0.42])
 	return true
 
 
@@ -1998,6 +2000,7 @@ func _plaza(root: Node3D, center: Vector3, square_r: float, size: int, seat: boo
 		var bf := Real.footprint(bench)
 		var heap: Array = sk.get("goods", [2, 3])
 		for c in strew_spots(mk, square_r, market_ang, laid):
+			await _pace()  # each bench and its goods their own step (Mac's game: the plaza's tail, up to 1.2 s in one)
 			var at: Vector3 = c[0]
 			var along := Vector3(cos(float(c[1])), 0, sin(float(c[1])))
 			var across := Vector3(-along.z, 0, along.x)
@@ -2351,6 +2354,12 @@ func _pace() -> void:
 	_step_at = Time.get_ticks_usec()
 
 
+## The build waits for the next frame (a model it needs still merging on its worker: Real.ready).
+func _wait_frame() -> void:
+	await PerfTools.next_frame(&"towns:wait")
+	_step_at = Time.get_ticks_usec()
+
+
 func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 	_imprint = []
 	var root := Node3D.new()
@@ -2415,7 +2424,9 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 	var real_houses: Array = homes_only + homes_only + Real.names_of("house") + Real.names_of("barn")
 	# --towns=plots: the roads come first, laid over the land toward where they
 	# lead, and lanes off them as the town grows; the spokes below stand aside.
+	await _pace()
 	var ways: Array = layout.lay_ways(root, center, c, size, square_r, reach, streets, rng)
+	await _pace()
 	if TownPlots.GRID and not ways.is_empty():
 		# The square's setts square to the town's grid (its axis known once its ways are laid): its fronts stand along them.
 		var ax := Vector2.from_angle(TownPlots.AXIS)
@@ -2476,7 +2487,7 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 	# The church, hall and tavern stand on the square from the kit (town_layout.real_lots).
 	if "Granary" in buildings and not _trade_of("granary").has("stood"):  # a granary trade stood: it is the store
 		var gp := Vector3(cos(base_ang - 0.5), 0, sin(base_ang - 0.5)) * (reach + 0.5)
-		if _put(root, center, "old_wooden_barn", gp, Real.footprint("old_wooden_barn"), [], rng, false):
+		if await _put(root, center, "old_wooden_barn", gp, Real.footprint("old_wooden_barn"), [], rng, false):
 			# Hay stacked by the granary's barn, against the winter: bales (assets.json haystack), not the
 			# scanned loose-hay pile, which lay flat as a pale orange disc from any height.
 			for k in 2:

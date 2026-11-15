@@ -31,15 +31,23 @@ static func has(path: String) -> bool:
 
 
 ## `res` given the file at `path` (every scene packed after points at it) and written there: at once while baking,
-## else one file a frame on the main thread. Never on a worker: saving a mesh reads it back from the renderer, and a
-## read from another thread while the frame draws tore the GPU's copies (Mac 2026-11-15: grey sheets streaked over
-## the land while towns were built and kept, every drawn box whole on the CPU; 'timeout waiting for fence', a hang).
+## else a mesh or a texture on the main thread within the frame budget, and a town (a packed scene) on a worker.
+## A mesh or a texture never on a worker: saving one reads it back from the renderer, and a read from another thread
+## while the frame draws tore the GPU's copies (Mac 2026-11-15: grey sheets streaked over the land while towns were
+## built and kept; 'timeout waiting for fence', a hang). A kept town holds no such data of its own (town_store.gd: its
+## meshes and grounds are kept files it points at, its batches packed empty, its few shapes plain numbers), so its
+## packing and compressing, 76-178 ms a frame in Mac's game (kept.write), are off the frame.
 static var _to_write: Array = []  # [resource, path], oldest first
+static var _writing := {}  # path -> the worker task writing a town there
 static func keep(res: Resource, path: String) -> void:
 	DirAccess.make_dir_recursive_absolute(path.get_base_dir())
 	res.take_over_path(path)
 	if baking:
 		ResourceSaver.save(res, path, ResourceSaver.FLAG_COMPRESS)
+		return
+	if res is PackedScene:
+		_writing[path] = WorkerThreadPool.add_task(_write_whole.bind(res, path), false, "keep " + path.get_file())
+		_reap()
 		return
 	if _to_write.is_empty():
 		var tree := Engine.get_main_loop() as SceneTree
@@ -68,6 +76,32 @@ static func _write_one() -> void:
 static func flush() -> void:
 	while not _to_write.is_empty():
 		_write(_to_write.pop_front())
+	for p in _writing.keys():
+		WorkerThreadPool.wait_for_task_completion(int(_writing[p]))
+	_writing.clear()
+
+
+## Whether anything is still waiting to be written (a mesh or a texture queued, a town on its worker).
+static func pending() -> bool:
+	_reap()
+	return not _to_write.is_empty() or not _writing.is_empty()
+
+
+## The towns' workers that have finished, let go.
+static func _reap() -> void:
+	for p in _writing.keys():
+		if WorkerThreadPool.is_task_completed(int(_writing[p])):
+			WorkerThreadPool.wait_for_task_completion(int(_writing[p]))
+			_writing.erase(p)
+
+
+## A town written beside its file and then put in its place, so nothing reads it half written (town_store.ask).
+static func _write_whole(res: Resource, path: String) -> void:
+	var part := path.get_basename() + ".part." + path.get_extension()
+	if ResourceSaver.save(res, part, ResourceSaver.FLAG_COMPRESS) == OK:
+		DirAccess.rename_absolute(part, path)
+	else:
+		DirAccess.remove_absolute(part)
 
 
 static func _write(next: Array) -> void:
