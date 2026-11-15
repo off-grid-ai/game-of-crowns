@@ -592,25 +592,50 @@ func _volley(r: Dictionary, dt: float) -> void:
 	var node: Node3D = r["node"]
 	var local: PackedVector3Array = r["local"]
 	var alive: PackedByteArray = r["alive"]
-	var shots := int(Data.num(F, "field.volley.arrows", 70))
 	var kills: Array = Data.value(F, "field.volley.kills", [1, 4])
 	var fells := _rng.randi_range(int(kills[0]), int(kills[1])) * (2 if int(foe["side"]) == loser else 1)
-	var flight := Data.num(F, "field.volley.flight", 1.7)
 	var man := Data.num("army", "man", 0.22)
-	for i in shots:
-		var s := _rng.randi() % local.size()
-		if alive[s] == 0:
+	var draw := Data.num(F, "field.volley.draw_s", 0.8)
+	var step := Data.num(F, "field.volley.step", 0.15)
+	var spread := Data.num(F, "field.volley.spread", 0.05)
+	var most := int(Data.num(F, "field.volley.arrows", 70))
+	var fnode: Node3D = foe["node"]
+	var their: PackedVector3Array = foe["local"]
+	var their_alive: PackedByteArray = foe["alive"]
+	# The volley in step (research note step 5; Total War's volleys): every living archer draws at once, and they loose
+	# together draw_s later, within `step` of each other; each arrow on a true ballistic arc (field.volley.angle and
+	# gravity: its flight from its range) onto a man of the target block, a little off him (spread).
+	var shot := 0
+	for s in local.size():
+		if alive[s] == 0 or shot >= most:
 			continue
-		if _rng.randf() < 0.3:  # some of them draw and loose where we can see it
-			vat.update_instance_track(s, army.track(r, "attack"))
-			(r["back"] as Dictionary)[s] = clock + 0.9
+		shot += 1
+		vat.update_instance_track(s, army.track(r, "attack"))
+		vat.update_instance_animation_offset(s, _rng.randf_range(0.0, 0.05))
+		(r["back"] as Dictionary)[s] = clock + draw + 0.6
 		var from := node.to_global(local[s]) + Vector3(0, man * 0.8, 0)
-		var fnode: Node3D = foe["node"]
-		var to := fnode.to_global(Vector3(_rng.randf_range(-0.5, 0.5) * float(foe["w"]), 0.0, _rng.randf_range(-0.5, 0.5) * float(foe["d"])))
+		var aim := _rng.randi() % their.size()
+		for tries in 6:
+			if their_alive[aim] == 1:
+				break
+			aim = _rng.randi() % their.size()
+		var to := fnode.to_global(their[aim]) + Vector3(_rng.randf_range(-spread, spread), 0.0, _rng.randf_range(-spread, spread))
 		to.y = main.terrain.height_at(to.x, to.z)
-		var lands := i < fells
-		_loose(from, to, clock + _rng.randf_range(0.0, 0.5), flight * _rng.randf_range(0.9, 1.1), Data.num(F, "field.volley.arc", 0.45),
+		var arc := ballistic(from, to, Data.num(F, "field.volley.angle", 0.75), Data.num(F, "field.volley.gravity", 3.0))
+		var lands := shot <= fells
+		_loose(from, to, clock + draw + _rng.randf_range(0.0, step), arc.x, arc.y,
 			func(): if lands and foe.get("state_name", "") != "rout": _fell(foe, 1, false))
+
+
+## A shaft's flight from `from` to `to` (world) loosed at `angle` (radians over the flat) under `gravity` (world units a
+## second squared): the speed that carries it there, so (flight seconds, its arc's top over its length as _on_arc
+## draws it: g T^2 / 8 over the range). A parabola in time with the run uniform is the ballistic path without drag.
+static func ballistic(from: Vector3, to: Vector3, angle: float, gravity: float) -> Vector2:
+	var run := maxf(Vector2(to.x - from.x, to.z - from.z).length(), 0.01)
+	var g := maxf(gravity, 0.01)
+	var v := sqrt(g * run / maxf(sin(2.0 * angle), 0.05))
+	var t := 2.0 * v * sin(angle) / g
+	return Vector2(t, g * t * t / 8.0 / maxf(from.distance_to(to), 0.01))
 
 
 ## Foot: forward until its front is at sword's length from the nearest enemy's front; then both fight.

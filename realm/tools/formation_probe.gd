@@ -18,6 +18,8 @@ extends SceneTree
 ##      inside the camp line; the ram's crew stand in two files along its flanks, the ram rolling inside them;
 ##   7. horse charge in a wedge (one man at its point, each rank wider behind) and strike a block's flank or rear,
 ##      never its front, whichever side they come from; the cycle charge's states are in its mind (army.json minds);
+##   8. a volley's arrows fly a true ballistic arc (field.volley angle and gravity): the flight from the range, the
+##      arc's top g T^2 / 8, landing where aimed; every archer draws together and they loose within field.volley.step;
 ##   4. a column marching to its place in the line keeps its column until deploy.range from it (army.gd _deploy cuts
 ##      its way there) and forms its line there; the road in is marched in column (army.gd _column_up).
 ## Prints "FORMATION PROBE …" lines and "FORMATION PROBE PASS" or "FORMATION PROBE FAIL n"; quits with 0 or 1.
@@ -47,6 +49,7 @@ func _run() -> void:
 	_meets_as_a_line()
 	_siege_lanes()
 	_horse()
+	_volley()
 	print("FORMATION PROBE PASS" if _fails == 0 else "FORMATION PROBE FAIL %d" % _fails)
 	quit(0 if _fails == 0 else 1)
 
@@ -268,3 +271,22 @@ func _horse() -> void:
 	var row: Dictionary = Data.value("army", "minds.regiment", {})
 	var go: Array = row.get("go", [])
 	_check(go.has(["fight", "rideout", "rideout"]) and go.has(["rideout", "flank", "flank"]), "the cycle charge: from the press they ride out and round to charge again")
+
+
+## 8. The ballistic arc: loosed at `angle` with the speed that reaches the range, under `gravity`.
+func _volley() -> void:
+	var F: GDScript = load("res://scripts/army_field.gd")
+	var angle := Data.num("battle", "field.volley.angle", 0.0)
+	var g := Data.num("battle", "field.volley.gravity", 0.0)
+	var from := Vector3(0, 0.2, 0)
+	var to := Vector3(0, 0, 8.0)
+	var arc: Vector2 = F.ballistic(from, to, angle, g)
+	var v := sqrt(g * 8.0 / sin(2.0 * angle))
+	var top := v * sin(angle) * arc.x * 0.5 - g * pow(arc.x * 0.5, 2.0) * 0.5  # its height over the chord at half its flight
+	_check(absf(arc.x - 2.0 * v * sin(angle) / g) < 0.001 and absf(arc.y * from.distance_to(to) - top) < 0.01,
+		"an arrow at 8 units flies %.2f s and tops %.2f over its chord, as a shaft loosed at %.2f rad under gravity %.1f" % [arc.x, arc.y * from.distance_to(to), angle, g])
+	var far: Vector2 = F.ballistic(from, Vector3(0, 0, 12.0), angle, g)
+	_check(far.x > arc.x, "a longer shot flies longer (%.2f s at 12 units, %.2f at 8)" % [far.x, arc.x])
+	var src := FileAccess.get_file_as_string("res://scripts/army_field.gd")
+	var body := src.substr(src.find("func _volley("), 3600)
+	_check(body.contains("draw_s") and body.contains("field.volley.step") and body.contains("their_alive"), "every archer draws together, they loose in step, each arrow onto a living man of the target block")
