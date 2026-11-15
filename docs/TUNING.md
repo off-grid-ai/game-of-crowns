@@ -180,6 +180,7 @@ Switches (`--name`) go after `--` on the game's command line.
 ## The opening, first ten minutes (Builder 1; the default; `--opening=v1` for the old one)
 - How long after the King lands in his realm the first court sits: `bridge/data/opening.json`: `firstCourtAfterLandingSec`.
 - When it sits anyway if no landing is heard (the intro skipped): `bridge/data/opening.json`: `firstCourtWithoutLandingSec`.
+- How long every reign's opening stays quiet (no rising, no pretender, no ultimatum), in seasons the King has watched: `bridge/data/opening.json`: `quietSeasons` (4, a year).
 
 ## Townsfolk (Builder 1)
 - Which towns' scene people have minds: `--limbo=none` or `--limbo=<ids>` (only those towns); default every town (`realm/scripts/town_life.gd`: `LIMBO_ALL`). Villagers always have minds (their old rules are gone).

@@ -2,6 +2,8 @@ extends Node
 ## Talks to the bridge (bridge/server.js): polls the world and the chronicle,
 ## and sends the King's decrees and speed changes.
 
+const ViewTier := preload("res://scripts/view_tier.gd")  # ViewTier.loading: the loading card is up (intro.gd)
+
 signal map_loaded(map: Dictionary)
 signal world_updated(world: Dictionary)
 signal chronicle_added(entries: Array)
@@ -56,7 +58,9 @@ func wake() -> void:
 func _poll() -> void:
 	if active and not _map_loaded:
 		_http_get("/map", _on_map)
-	_http_get("/world", _on_world)
+	# Under the loading card the King isn't in his realm yet: the poll peeks, so the bridge holds the realm (its seasons,
+	# its clock, the King's silence) until play starts (routes_realm.js world: only a watching poll runs the realm).
+	_http_get("/world?peek=1" if ViewTier.loading else "/world", _on_world)
 	if active:
 		_http_get("/chronicle?since=%d" % _last_seq, _on_chronicle)
 

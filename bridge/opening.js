@@ -13,8 +13,9 @@ const state = (meta) => (meta.openingState ??= {});
 
 // Each season (season.js): the first winter is seen, then passes.
 export function season(meta, turn) {
-  if (!v2(meta)) return;
   const o = state(meta);
+  if (o.at !== turn) { o.at = turn; o.seasons = (o.seasons ?? 0) + 1; }  // the seasons the King has ruled (they pass only while he watches)
+  if (!v2(meta)) return;
   if (o.wintered) return;
   if (calendar(turn).season === "winter") o.winterSeen = true;
   else if (o.winterSeen) o.wintered = true;
@@ -26,7 +27,8 @@ export const actOf = (meta) => (meta?.minutes ? 1 + Math.max(0, Math.min(3, Math
 const calm = (meta) => meta?.minutes > 0 && (meta.elapsedMs ?? 0) < (OPENING.calmShare ?? 0) * meta.minutes * 60000;
 // The realm is quiet: a v2 reign before its first winter has passed (data: quietToWinter), or any
 // timed reign in its first calm stretch: no threat rises, no house sends an ultimatum.
-export const quiet = (meta) => calm(meta) || (v2(meta) && OPENING.quietToWinter !== false && !meta?.openingState?.wintered);
+// And every reign's first year (data: quietSeasons): no rising, no pretender, no ultimatum before the King has had a year.
+export const quiet = (meta) => (meta?.openingState?.seasons ?? 0) < (OPENING.quietSeasons ?? 4) || calm(meta) || (v2(meta) && OPENING.quietToWinter !== false && !meta?.openingState?.wintered);
 // Whether a pretender may yet whisper of a better claim (data: usurperFromAct).
 export const usurperMay = (meta) => !quiet(meta) && actOf(meta) >= (OPENING.usurperFromAct ?? 1);
 

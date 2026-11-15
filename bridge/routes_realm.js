@@ -27,7 +27,7 @@ import { body, json } from "./http_util.js";
 export async function world(ctx, req, res, url) {
   const { townStates, reignInfo, refreshCounsel, worldView } = ctx;
   townStates();
-  if (url.searchParams.get("peek") !== "1") watched(); // the game window polls this every second while open (a test's peek doesn't count)
+  if (url.searchParams.get("peek") !== "1") watched(); // the game window polls this every second while the King is in his realm (a peek doesn't count: a test's, or the view under its loading card)
   if (!ctx.world) return json(res, 503, { error: "realm still forming", reign: reignInfo() });
   if (ctx.counselStale) refreshCounsel();
   return json(res, 200, worldView());

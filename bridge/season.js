@@ -206,7 +206,7 @@ export function askUltimatum(ctx, pid) {
 // Refused, or two seasons gone since it came with no favour shown: then the rising.
 // After a crisis the realm gets its breather first (director.js resting): the rising waits, it isn't lost.
 export const warded = (ctx, pid) => (ctx.stakes?.s?.wards?.[pid] ?? -1) > (ctx.world?.turn ?? 0);
-export const mayRise = (ctx, pid) => { const { world, meta } = ctx; const t = meta.turning?.[pid]; return !warded(ctx, pid) && !Director.resting(meta) && (t?.state === "refused" || (t?.state === "sent" && (world?.turn ?? 0) - t.at >= 2)); };
+export const mayRise = (ctx, pid) => { const { world, meta } = ctx; const t = meta.turning?.[pid]; return !warded(ctx, pid) && !Director.resting(meta) && !Opening.quiet(meta) && (t?.state === "refused" || (t?.state === "sent" && (world?.turn ?? 0) - t.at >= 2)); };
 export function rose(ctx, pid) {
   const t = ctx.meta.turning?.[pid];
   if (t) { t.state = null; t.seasons = 0; }
