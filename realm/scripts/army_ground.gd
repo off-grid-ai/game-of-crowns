@@ -11,7 +11,7 @@ extends RefCounted
 ##
 ## Laid a few rows a frame (it never freezes the frame); until it is laid, routes are straight lines.
 ##
-## The ground bodies hold (ground.gd claims: a regiment's rectangle where it stands) is shut to routes as it moves
+## The ground bodies hold (ground.gd claims: a regiment's rectangle where it stands, a siege engine's) is shut to routes as it moves
 ## (Mac 2026-11-15: an assault's men walked through both sides' regiment blocks): a route goes round every held
 ## rectangle but the ones it starts or ends in (a regiment leaving its own ground, a man joining his own regiment, a
 ## line closing on its foe). Only routes see it: where a body may stand (keep_out, open_at, takes) is the land's.
@@ -241,7 +241,7 @@ func _sync() -> void:
 	_seen = Footing.claims_rev
 	_synced_frame = Engine.get_process_frames()
 	var span := cells * cell
-	var now: Dictionary = Footing.claims_in(Rect2(origin, Vector2(span, span)), ["host", "body"])
+	var now: Dictionary = Footing.claims_in(Rect2(origin, Vector2(span, span)), ["host", "body", "engine"])  # an engine's too, standing or rolling (siege_camp.gd)
 	for id in _held.keys():
 		if not now.has(id) or now[id][1] != _held[id][0]:
 			_cover_by(_held[id][1], -1)

@@ -464,7 +464,7 @@ func _parked() -> void:
 		if to == Vector3.INF:
 			to = _wall_face(p, out)
 		if to != Vector3.INF:
-			var go := {"node": m, "kind": kinds[i], "crew": crew, "from": p, "to": to, "out": out, "t": -float(k.get("roll_after_s", 10.0)) - i * 4.0, "beat": 0.0}
+			var go := {"node": m, "kind": kinds[i], "size": size, "crew": crew, "from": p, "to": to, "out": out, "t": -float(k.get("roll_after_s", 10.0)) - i * 4.0, "beat": 0.0}
 			_rolling.append(go)
 
 
@@ -501,16 +501,25 @@ func _roll(dt: float) -> void:
 		if float(g["t"]) < 0.0:
 			continue
 		var dir: Vector3 = (g["to"] - g["from"]).normalized()
+		if g.get("rolling", false) and m.global_position.distance_to(g.get("stamped", Vector3.INF)) > 0.05:
+			g["stamped"] = m.global_position
+			_stamp(m, g["size"])
 		if not g.get("at_wall", false):
 			var pace := float(k.get("pace", 0.12))
 			if not g.get("rolling", false):
 				g["rolling"] = true
-				Ground.release(_hold_id(m))  # it leaves its parked ground; its Mover keeps it on the land as it rolls
-				var mv := Mover.of(m)
+				# It keeps its ground as it rolls (the claim goes with it, _stamp), on the fight's own ground (army_ground.gd:
+				# its route goes round every regiment's block; Mac 2026-11-15, Sunspire: a tower through a regiment); a
+				# regiment of its own side in its way opens a lane (army_field.gd _make_way reads way_to and half).
+				m.set_meta("way_to", g["to"])
+				m.set_meta("half", maxf(g["size"].x, g["size"].y))
+				var mv: Node = Mover.of(m).on(_fight_ground())
 				mv.speed = pace
 				mv.clip = ""  # an engine: nothing to play
 				mv.turn_rate = 0.0  # it keeps the camp's aim at the wall
-				Mover.of(m).go(g["to"], func(): g["at_wall"] = true)
+				Mover.of(m).go(g["to"], func():
+					g["at_wall"] = true
+					m.remove_meta("way_to"))
 				for c in g["crew"]:
 					if c["alive"] and is_instance_valid(c["node"]):
 						Mover.of(c["node"]).clip = "Pushing"
@@ -635,14 +644,28 @@ func _ground_size(n: Node3D) -> Vector2:
 ## The ground an engine stands on is held while it stands (ground.gd claim, as a regiment's block): no host, camp or
 ## crew is set down through it (Mac 2026-11-15: a catapult inside a regiment). Let go when it goes.
 func _hold(n: Node3D, size: Vector2) -> void:
+	_stamp(n, size)
+	var id := _hold_id(n)
+	n.tree_exiting.connect(func(): Ground.release(id))
+
+
+## Its ground claimed where it stands now (a new claim by the same id replaces the last: a rolling engine's goes with it).
+func _stamp(n: Node3D, size: Vector2) -> void:
 	var xf := Transform3D(Basis(Vector3.UP, n.global_rotation.y), n.global_position)
 	var poly := PackedVector2Array()
 	for c in [Vector3(-size.x, 0, -size.y), Vector3(size.x, 0, -size.y), Vector3(size.x, 0, size.y), Vector3(-size.x, 0, size.y)]:
 		var w: Vector3 = xf * (c as Vector3)
 		poly.append(Vector2(w.x, w.z))
-	var id := _hold_id(n)
-	Ground.claim(id, poly, "engine")
-	n.tree_exiting.connect(func(): Ground.release(id))
+	Ground.claim(_hold_id(n), poly, "engine")
+
+
+## The fight's ground the siege's assault laid (army_assault.gd, beside this camp under the siege), or null (the realm's).
+func _fight_ground() -> RefCounted:
+	var assault: Script = load("res://scripts/army_assault.gd")  # loaded, not preloaded: it reaches back here through the scene kinds
+	for c in root.get_children():
+		if is_instance_of(c, assault):
+			return c.get("ground")
+	return null
 
 
 func _hold_id(n: Node3D) -> String:
@@ -766,6 +789,12 @@ func _loose(e: Dictionary, stone: MeshInstance3D) -> void:
 		stone.remove_meta("held")
 	var walls: Node = Engine.get_meta("stone_walls") if Engine.has_meta("stone_walls") else null
 	var on_wall: Vector3 = walls.aim(from) if walls else Vector3.INF
+	if on_wall == Vector3.INF and walls and walls.has_method("face_toward"):
+		# Nothing doomed (the wall holds: the bridge reports no damage there): it still comes down on the wall's face and
+		# glances off in dust (walls.gd strike brings down only what the wear doomed), so every throw is seen to land.
+		var face: Vector3 = walls.face_toward(from, 0.0)
+		if face != Vector3.INF:
+			on_wall = face + Vector3(0, float(k.get("glance_h", 0.25)), 0)
 	var spread := float(k.get("spread", 0.8))
 	var land: Vector3 = on_wall if on_wall != Vector3.INF else scenes.ground(at + Vector3(r.randf_range(-spread, spread), 0, r.randf_range(-spread, spread)))
 	var top := maxf(from.y, land.y) + from.distance_to(land) * float(k.get("arc", 0.45))
