@@ -16,8 +16,8 @@ extends RefCounted
 ## new bodies before every query); a body's shapes are set while it is out of the space, so Jolt builds its compound
 ## once, not once a shape.
 ## The land (dry, walkable) is the terrain's own static data (terrain.gd dry_rect, is_land), read once into a mask of
-## physics.land_cell cells a block at a time on the frame's budget, a cell dry only where its four corners are (never on
-## a worker: the terrain is a node, freed at quit and written while towns level their squares); a change to the
+## physics.land_cell cells a block the first time an ask touches it, a cell dry only where its four corners are (never
+## on a worker: the terrain is a node, freed at quit and written while towns level their squares); a change to the
 ## land (terrain.ground_changed: a square levelled, a ford laid) is read again there. tools/rules_check.sh keeps every
 ## other script from asking the terrain or the footprints itself; tools/occupancy_probe.gd guards the answers.
 ##   is_clear(p, radius), area_free(poly), nearest_clear(p, radius, max_dist), obstacle_shapes(area): the asks.
@@ -98,10 +98,7 @@ static var _lw := 0  # land cells across (x)
 static var _lh := 0  # and down (z)
 static var _land := PackedByteArray()  # cell (row-major) -> DRY | WALK; empty until read
 static var _lblocks := PackedByteArray()  # block -> the bits every cell of it has
-static var _reading := false  # the land is being read, a block at a time on the frame's budget (_tick)
-static var _read_cells := PackedByteArray()  # what has been read so far
-static var _read_blocks := PackedByteArray()
-static var _read_at := 0  # the next block to read
+const READ := 4  # a land block's bit: its cells have been read off the terrain
 static var _land_todo: Array = []  # Rect2: land changed since it was read, read again on the main thread
 static var _land_asked := false  # the read has been started
 
@@ -438,8 +435,6 @@ static func _lay_chunk(k: Vector2i) -> void:
 
 ## Every frame: chunks whose things changed are read on the frame's one budget, ahead of any ask.
 static func _tick() -> void:
-	if _reading:
-		_read_land()
 	while not _src_dirty.is_empty() and ViewTier.spend_ok(&"ground"):
 		_lay_chunk(_src_dirty.keys()[0])
 
@@ -469,7 +464,7 @@ static func gone(root: Node3D) -> void:
 static func _fresh() -> void:
 	if not _space.is_valid():
 		_sp()
-	if not _land_asked or (not _reading and not _land_todo.is_empty()):
+	if not _land_asked or not _land_todo.is_empty():
 		_land_fresh()
 	var f := Engine.get_process_frames()
 	if f != _towns_frame:
@@ -485,7 +480,7 @@ static func _fresh() -> void:
 			PerfTools.add("ground.stand", Time.get_ticks_usec() - t0)  # pieces read and their bins refilled: its share of the frame
 
 
-## Whether the land has been read (a guard waits for it: tools/occupancy_probe.gd).
+## Whether the land's mask is laid out (its blocks read as first asked; a guard waits for it: tools/occupancy_probe.gd).
 static func land_ready() -> bool:
 	_fresh()
 	return not _land.is_empty()
@@ -1015,9 +1010,6 @@ static func _realm_rect() -> Rect2:
 static func _land_reset() -> void:
 	_land = PackedByteArray()
 	_lblocks = PackedByteArray()
-	_reading = false
-	_read_cells = PackedByteArray()
-	_read_blocks = PackedByteArray()
 	_land_todo.clear()
 	_land_asked = false
 
@@ -1027,8 +1019,8 @@ static func _land_changed(area: Rect2) -> void:
 	_land_todo.append(area)
 
 
-## Starts the land's read once the terrain is built (_tick reads it on the budget), and reads again what changed
-## since it was read.
+## Lays out the land's mask once the terrain is built (every block unread: a block is read the first time an ask
+## touches it, _blocks_have), and reads again what changed in the blocks already read.
 static func _land_fresh() -> void:
 	if not _land_asked:
 		if terrain == null or not is_instance_valid(terrain) or terrain.get("built") == false:
@@ -1039,48 +1031,13 @@ static func _land_fresh() -> void:
 		_land_asked = true
 		_lw = ceili(r.size.x / _lc)
 		_lh = ceili(r.size.y / _lc)
-		_read_cells = PackedByteArray()
-		_read_cells.resize(_lw * _lh)
-		_read_blocks = PackedByteArray()
-		_read_blocks.resize(ceili(float(_lw) / _lb) * ceili(float(_lh) / _lb))
-		_read_at = 0
-		_reading = true
-		return
-	if _reading:
+		_land.resize(_lw * _lh)
+		_lblocks.resize(ceili(float(_lw) / _lb) * ceili(float(_lh) / _lb))
 		return
 	var todo := _land_todo.duplicate()
 	_land_todo.clear()
 	for a: Rect2 in todo:
 		_land_read(a)
-
-
-## The land's read, a block at a time while the frame's budget lasts; taken in whole when done (until then an ask
-## asks the terrain itself).
-static func _read_land() -> void:
-	if terrain == null or not is_instance_valid(terrain):
-		_land_reset()
-		return
-	var t0 := Time.get_ticks_usec() if PerfTools.probing else 0
-	var cells := _read_cells
-	var blocks := _read_blocks
-	_read_cells = PackedByteArray()  # the writer's own copies while it writes (a static packed array written in place is copied)
-	_read_blocks = PackedByteArray()
-	var bw := ceili(float(_lw) / _lb)
-	while _read_at < blocks.size():
-		blocks[_read_at] = _land_block(terrain, cells, _read_at % bw, _read_at / bw, true)
-		_read_at += 1
-		if not ViewTier.spend_ok(&"ground"):
-			break
-	if PerfTools.probing:
-		PerfTools.add("ground.land", Time.get_ticks_usec() - t0)  # reading the land: its share of the frame (GOC_PERF_PROBE)
-	if _read_at < blocks.size():
-		_read_cells = cells
-		_read_blocks = blocks
-		return
-	_reading = false
-	_land = cells
-	_lblocks = blocks
-	_land_fresh()  # what changed while it was read, read again
 
 
 ## The land of `area` (world XZ) read again, fords and all.
@@ -1095,7 +1052,8 @@ static func _land_read(area: Rect2) -> void:
 	var bs := _lb * _lc
 	for bz in range(maxi(0, floori(area.position.y / bs)), mini(ceili(float(_lh) / _lb) - 1, floori(area.end.y / bs)) + 1):
 		for bx in range(maxi(0, floori(area.position.x / bs)), mini(bw - 1, floori(area.end.x / bs)) + 1):
-			blocks[bz * bw + bx] = _land_block(terrain, cells, bx, bz, true)
+			if blocks[bz * bw + bx] & READ:  # an unread block is read fresh when first asked
+				blocks[bz * bw + bx] = _land_block(terrain, cells, bx, bz, true) | READ
 	_land = cells
 	_lblocks = blocks
 
@@ -1195,10 +1153,34 @@ static func _land_poly_ok(poly: PackedVector2Array, need: int) -> bool:
 
 
 ## Whether every block over cells i0..i1, j0..j1 has `need` in all its cells.
+## Whether every block over cells i0..i1, j0..j1 has `need` in all its cells; a block not read yet is read off the
+## terrain first (once: the land is static but where it is levelled or forded, _land_read). Only the land bodies are
+## asked about is ever read (supervisor's battle run nav7: reading the whole realm on the budget never finished,
+## 3.5 ms a frame: the sea has no fast path, every corner of it asked).
 static func _blocks_have(i0: int, j0: int, i1: int, j1: int, need: int) -> bool:
 	var bw := ceili(float(_lw) / _lb)
+	var ok := true
 	for bz in range(j0 / _lb, j1 / _lb + 1):
 		for bx in range(i0 / _lb, i1 / _lb + 1):
-			if _lblocks[bz * bw + bx] & need == 0:
-				return false
-	return true
+			var b := _lblocks[bz * bw + bx]
+			if b & READ == 0:
+				b = _read_block(bx, bz)
+			if b & need == 0:
+				ok = false
+	return ok
+
+
+## One block read off the terrain into the mask (the writer holds the only copies while it writes).
+static func _read_block(bx: int, bz: int) -> int:
+	var t0 := Time.get_ticks_usec() if PerfTools.probing else 0
+	var cells := _land
+	var blocks := _lblocks
+	_land = PackedByteArray()
+	_lblocks = PackedByteArray()
+	var b := _land_block(terrain, cells, bx, bz, true) | READ
+	blocks[bz * ceili(float(_lw) / _lb) + bx] = b
+	_land = cells
+	_lblocks = blocks
+	if PerfTools.probing:
+		PerfTools.add("ground.land", Time.get_ticks_usec() - t0)  # reading the land: its share of the frame (GOC_PERF_PROBE)
+	return b
