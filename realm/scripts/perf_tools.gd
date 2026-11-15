@@ -479,6 +479,7 @@ var _cycle_t := 0.0
 var _cycle_sum := 0.0
 var _cycle_fps := 0.0
 var _cycle_n := 0
+var _cycle_base := Vector2.ZERO  # the baseline just before: its process ms and fps
 var _fx_was := {}  # the effects as the look had them, put back as each comes on again
 func _cycle_step(delta: float) -> void:
 	if _cycle == null or main.towns == null or main.terrain.width == 0 or (main.towns.building() and not _cycle_began):
@@ -534,6 +535,14 @@ func _cycle_step(delta: float) -> void:
 			var sc := vp.scaling_3d_scale
 			_cycle.append(["fx:render scale 0.5", func(on: bool): vp.scaling_3d_scale = sc if on else 0.5])
 			_fx_was = {"sdfgi": env.sdfgi_enabled, "ssao": env.ssao_enabled, "ssil": env.ssil_enabled, "vol": env.volumetric_fog_enabled, "glow": env.glow_enabled}
+		# A baseline before every system: the realm keeps settling for minutes, so each is read against the one just
+		# before it (cycle39: 137 ms at the start, 25 ms by the end, whatever was off).
+		var paired := []
+		for e in _cycle:
+			if e[0] != "nothing":
+				paired.append(["nothing", null])
+				paired.append(e)
+		_cycle = paired
 		_cycle_i = 0
 		_cycle_t = 0.0
 	_cycle_t += delta
@@ -550,7 +559,12 @@ func _cycle_step(delta: float) -> void:
 	var f := FileAccess.open("user://perf.log", FileAccess.READ_WRITE)
 	if f:
 		f.seek_end()
-		f.store_line("CYCLE %s=%s process=%.1fms draw=%.1fms fps=%.1f prims=%dk" % ["hidden" if _cycle_vis else "off", _cycle[_cycle_i][0], _cycle_sum / maxf(_cycle_n, 1), draw_sum / 1000.0 / maxf(draw_n, 1), _cycle_fps / maxf(_cycle_n, 1), int(_cycle_prims / maxf(_cycle_n, 1) / 1000.0)])
+		var ms := _cycle_sum / maxf(_cycle_n, 1)
+		var fps := _cycle_fps / maxf(_cycle_n, 1)
+		if _cycle[_cycle_i][0] == "nothing":
+			_cycle_base = Vector2(ms, fps)
+		else:
+			f.store_line("CYCLE %s=%s saves=%.1fms (%.1f -> %.1f) fps %.1f -> %.1f draw=%.1fms prims=%dk" % ["hidden" if _cycle_vis else "off", _cycle[_cycle_i][0], _cycle_base.x - ms, _cycle_base.x, ms, _cycle_base.y, fps, draw_sum / 1000.0 / maxf(draw_n, 1), int(_cycle_prims / maxf(_cycle_n, 1) / 1000.0)])
 	var was_e: Variant = _cycle[_cycle_i][1]
 	if was_e is Callable:
 		(was_e as Callable).call(true)
