@@ -43,35 +43,60 @@ func sync() -> void:
 	if sig == _signature:
 		return
 	_signature = sig
-	if _roads:
-		_roads.queue_free()
-	_roads = Node3D.new()
-	_roads.name = "Roads"
-	add_child(_roads)
-	_forget("roads")
+	if _roads == null:
+		_roads = Node3D.new()
+		_roads.name = "Roads"
+		add_child(_roads)
 	# Freeciv paves whole patches of tiles; joining every neighbour would draw a
 	# lattice. Real tracks branch: keep only a spanning tree, straight steps
 	# before diagonals, so each patch becomes a few roads with no loops.
+	# Ties taken in the edges' own order (by key), so the same tiles always give the same tree and a new tile changes
+	# only the edges round it.
 	var edges := []
 	for key in nodes:
 		var a: Vector2i = nodes[key]
 		for d in [Vector2i(1, 0), Vector2i(0, 1), Vector2i(1, 1), Vector2i(-1, 1)]:
 			var b: Vector2i = a + d
 			if nodes.has("%d,%d" % [b.x, b.y]):
-				edges.append([1.0 if d.x == 0 or d.y == 0 else 1.414, a, b])
-	edges.sort_custom(func(x, y): return x[0] < y[0])
+				edges.append([1.0 if d.x == 0 or d.y == 0 else 1.414, a, b, "%d,%d>%d,%d" % [a.x, a.y, b.x, b.y]])
+	edges.sort_custom(func(x, y): return x[0] < y[0] or (x[0] == y[0] and String(x[3]) < String(y[3])))
 	var root := {}
 	var find := func(k: Vector2i) -> Vector2i:
 		while root.get(k, k) != k:
 			k = root[k]
 		return k
+	var want := {}  # edge key -> [from tile, to tile]
 	for e in edges:
 		var ra: Vector2i = find.call(e[1])
 		var rb: Vector2i = find.call(e[2])
 		if ra == rb:
 			continue
 		root[ra] = rb
-		_segment(terrain.world_pos(e[1].x, e[1].y), terrain.world_pos(e[2].x, e[2].y), _roads, WIDTH, "roads")
+		want[e[3]] = [e[1], e[2]]
+	# Each edge kept by its own key, as the great roads are: a worker's new road tile lays only the edges it adds and
+	# takes up only those it ends, the rest stand with their decals and lanes (before: one new tile freed and redrew
+	# every road of the realm).
+	for key: String in _edges.keys():
+		if not want.has(key):
+			var node: Node3D = _edges[key]
+			_edges.erase(key)
+			_painted = _painted.filter(func(p: Array) -> bool: return p[4] != node and is_instance_valid(p[4]))
+			if is_instance_valid(node):
+				node.queue_free()
+			_forget_road("roads", "net:" + key)
+	for key: String in want:
+		if _edges.has(key):
+			continue
+		var node := Node3D.new()
+		node.name = key.validate_node_name()
+		_roads.add_child(node)
+		_edges[key] = node
+		var a: Vector2i = want[key][0]
+		var b: Vector2i = want[key][1]
+		_segment(terrain.world_pos(a.x, a.y), terrain.world_pos(b.x, b.y), node, WIDTH, "roads", "net:" + key)
+
+
+var _edges := {}  # Freeciv's network: edge key ("x,y>x,y" tiles) -> its node of painted stretches
 
 
 ## The King's Road: a broad rutted way from Kingsmere to the seat of every great house, following the land (around
