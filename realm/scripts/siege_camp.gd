@@ -431,7 +431,7 @@ func _parked() -> void:
 	var k: Dictionary = Data.value("siege", "parked", {})
 	var kinds := ["siege_ram", "siege_tower"]
 	var angles: Array = k.get("angles", [])
-	var wall_r: float = camp_r - Data.num("siege", "band", 6.0)
+	var wall_r: float = camp_r - Data.num("siege", "band", 8.0)
 	for i in mini(angles.size(), kinds.size()):
 		var p := _arc(float(angles[i]), wall_r + float(k.get("from_wall", 1.1)))  # in the band, as the engines
 		var yaw := _x_to_town(p)
@@ -457,7 +457,8 @@ func _parked() -> void:
 		m.rotation.y = yaw
 		_hold(m, size)
 		var crew := []
-		for j in int(k.get("crew", 2)):
+		var men := int(k.get("ram_crew", 8)) if kinds[i] == "siege_ram" else int(k.get("crew", 2))
+		for j in men:
 			crew.append(_crewman(p + Vector3(r.randf_range(-0.2, 0.2), 0, r.randf_range(-0.2, 0.2)), ["Idle", "Looking_Around", "Weight_Shift"]))
 		# Then pushed up to the wall (04-siege: the ram at the wall, the tower against it): after roll_after_s,
 		# its crew behind it at pace, the ram to batter the wall's face, the tower to stand against it.
@@ -528,8 +529,7 @@ func _roll(dt: float) -> void:
 			var j := 0
 			for c in g["crew"]:
 				if c["alive"] and is_instance_valid(c["node"]):
-					var side := Vector3(-dir.z, 0, dir.x) * (0.12 * (j - 0.5))
-					Mover.of(c["node"]).toward(m.global_position - dir * float(k.get("behind", 0.35)) + side, pace * 1.1, dir)
+					Mover.of(c["node"]).toward(m.global_position + _crew_spot(g, j, dir, k), pace * 1.1, dir)
 				j += 1
 			if not g.get("at_wall", false):
 				continue
@@ -567,6 +567,20 @@ func _roll(dt: float) -> void:
 					scenes.people.play(c["node"], "Pushing", 1.2)
 
 
+## Where crewman `j` pushes from, off the engine's middle (world, flat): the ram's crew in two files along its flanks,
+## the ram rolling inside them (research note step 8: Total War's ram under its crew; parked.ram_crew men, ram_gap
+## off its sides, ram_file apart along it), the tower's behind it (parked.behind) as before.
+func _crew_spot(g: Dictionary, j: int, dir: Vector3, k: Dictionary) -> Vector3:
+	var across := Vector3(-dir.z, 0, dir.x)
+	if g["kind"] != "siege_ram":
+		return -dir * float(k.get("behind", 0.35)) + across * (0.12 * (j - 0.5))
+	var size: Vector2 = g["size"]  # its half length (its +x, along its way) and half width
+	var per := maxi(1, int(ceil(float((g["crew"] as Array).size()) / 2.0)))
+	var along := (float(j / 2) - (per - 1) * 0.5) * float(k.get("ram_file", 0.12))
+	var off := size.y + float(k.get("ram_gap", 0.06))
+	return dir * along + across * (off if j % 2 == 0 else -off)
+
+
 func _crewman(p: Vector3, idle: Array) -> Dictionary:
 	var f: Node3D = scenes.people.make(r, "soldier", col, "adult")
 	f.position = scenes.stand(p)
@@ -582,14 +596,15 @@ func _crewman(p: Vector3, idle: Array) -> Dictionary:
 
 ## An engine raised where it will stand while carpenters hammer, then worked by its crew.
 func _engine(a: float, k: Dictionary) -> void:
-	# In the band, from_wall out from the wall's foot (the camp line is siege.json band out from it), ahead of the
-	# storm host; where its own angle's ground isn't level, the nearest level ground a few steps along the arc or out
-	# and in (near), never dropped (group test 1: of three engines one stood in frame).
-	var rad := camp_r - Data.num("siege", "band", 6.0) + float(k.get("from_wall", 0.75))
+	# In its own lane behind the storm host (research note step 8; Mac 2026-11-15: a catapult and its crew among the
+	# blocks): engines.behind_host out past the host's middle (storm_host.from_wall from the wall's foot); where its own
+	# angle's ground isn't level, the nearest level ground a few steps along the arc or further out (near), never in
+	# toward the host, never dropped (group test 1: of three engines one stood in frame).
+	var rad := camp_r - Data.num("siege", "band", 8.0) + Data.num("siege", "storm_host.from_wall", 3.6) + float(k.get("behind_host", 2.6))
 	var node: Node3D = load(Real.path_of("catapult")).instantiate()  # Meshy's catapult (data/meshy.json replaces the catapult)
 	scenes._fit(node, float(k.get("height", 0.7)))
 	var size := _ground_size(node)
-	var p := _level_near(a, rad, k.get("near", [0.06, 0.25, 8]), maxf(size.x, size.y))  # its whole body on clear, level ground
+	var p := _level_near(a, rad, k.get("near", [0.06, 0.25, 8]), maxf(size.x, size.y), true)  # its whole body on clear, level ground
 	if p == Vector3.INF:
 		node.free()
 		return
@@ -667,9 +682,9 @@ func _hold_id(n: Node3D) -> String:
 
 
 ## Level ground for an engine at angle `a`, radius `rad` from the town, or the nearest of the steps round it
-## (near: [radians along the arc, units out or in, steps]): first along the arc either way, then out and in.
-## INF when none of them is level ground.
-func _level_near(a: float, rad: float, near: Array, body := 0.0) -> Vector3:
+## (near: [radians along the arc, units out or in, steps]): first along the arc either way, then out and in (out
+## only: never in toward the town, an engine's lane behind the host). INF when none of them is level ground.
+func _level_near(a: float, rad: float, near: Array, body := 0.0, out_only := false) -> Vector3:
 	var da := float(near[0]) if near.size() > 0 else 0.06
 	var dr := float(near[1]) if near.size() > 1 else 0.25
 	var n := int(near[2]) if near.size() > 2 else 8
@@ -679,7 +694,7 @@ func _level_near(a: float, rad: float, near: Array, body := 0.0) -> Vector3:
 			if scenes._footing(p, body):
 				return p
 	for i in range(1, n + 1):
-		for sr in [1, -1]:
+		for sr in ([1] if out_only else [1, -1]):
 			for j in n + 1:
 				for sa in ([0] if j == 0 else [1, -1]):
 					var p := _arc(a + da * j * sa, rad + dr * i * sr)

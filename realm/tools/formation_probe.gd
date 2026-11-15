@@ -14,6 +14,8 @@ extends SceneTree
 ##   5. a field battle's regiments close square to their own side's front (army_field.gd _advance), never squared to
 ##      their own foe's slant: two neighbours against two foes turned differently close to spots along the same front,
 ##      each in front of its foe;
+##   6. siege engines stand in their own lane behind the storm host, clear of its rows (siege.json engines.behind_host),
+##      inside the camp line; the ram's crew stand in two files along its flanks, the ram rolling inside them;
 ##   4. a column marching to its place in the line keeps its column until deploy.range from it (army.gd _deploy cuts
 ##      its way there) and forms its line there; the road in is marched in column (army.gd _column_up).
 ## Prints "FORMATION PROBE …" lines and "FORMATION PROBE PASS" or "FORMATION PROBE FAIL n"; quits with 0 or 1.
@@ -41,6 +43,7 @@ func _run() -> void:
 	await _about_face()
 	_column_then_line()
 	_meets_as_a_line()
+	_siege_lanes()
 	print("FORMATION PROBE PASS" if _fails == 0 else "FORMATION PROBE FAIL %d" % _fails)
 	quit(0 if _fails == 0 else 1)
 
@@ -214,3 +217,24 @@ func _meets_as_a_line() -> void:
 	mine.free()
 	theirs.free()
 	fb.free()
+
+
+## 6. The engines' lane and the ram inside its crew.
+func _siege_lanes() -> void:
+	var line := Formation.layout(_reg("men_at_arms", 150), "line", RandomNumberGenerator.new())
+	var host_half := (float(line["d"]) * 2.0 + Data.num("army", "line.rowGap", 0.7)) * 0.5  # a melee row and a ranged row
+	var engine_half := 0.8  # a catapult fitted 0.7 high is about 1.6 units long
+	var behind := Data.num("siege", "engines.behind_host", 0.0)
+	_check(behind - engine_half >= host_half, "the engines' lane stands behind the storm host: %.2f behind its middle, the host %.2f deep each way" % [behind, host_half])
+	var lane := Data.num("siege", "storm_host.from_wall", 3.6) + behind
+	_check(lane + engine_half <= Data.num("siege", "band", 0.0) + Data.num("siege", "palisade.at", 0.35), "the lane (%.2f from the wall) stands inside the camp's palisade (%.2f)" % [lane, Data.num("siege", "band", 0.0)])
+	var camp: Node = (load("res://scripts/siege_camp.gd") as GDScript).new()
+	var men := int(Data.num("siege", "parked.ram_crew", 0))
+	var g := {"kind": "siege_ram", "size": Vector2(0.4, 0.1), "crew": range(men)}
+	var dir := Vector3(1, 0, 0)
+	var inside := men >= 6
+	for j in men:
+		var at: Vector3 = camp.call("_crew_spot", g, j, dir, Data.value("siege", "parked", {}))
+		inside = inside and absf(at.z) > 0.1 and absf(at.x) <= 0.4 + 0.12
+	_check(inside, "the ram rolls inside its crew: %d men in two files along its flanks" % men)
+	camp.free()
