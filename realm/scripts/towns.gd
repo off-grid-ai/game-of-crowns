@@ -136,7 +136,7 @@ var _raised := 0
 
 ## Town life a few towns at a time, until the frame's budget is spent; only near the camera (_life_near).
 func _refresh_life() -> void:
-	while not _life_queue.is_empty() and ViewTier.spend_ok():
+	while not _life_queue.is_empty() and ViewTier.spend_ok(&"towns"):
 		var id: int = _life_queue.keys()[0]
 		var house: Dictionary = _life_queue[id]
 		_life_queue.erase(id)
@@ -2323,7 +2323,7 @@ func _pace() -> void:
 		if _step_at > 0 and now - _step_at > int(ViewTier.STAGE_MS * 1000.0):
 			var at: Dictionary = get_stack()[1] if get_stack().size() > 1 else {}
 			PerfTools.add("build@%s:%d" % [String(at.get("source", "?")).get_file(), int(at.get("line", 0))], now - _step_at)
-	if not ViewTier.spend_ok():
+	if not ViewTier.spend_ok(&"towns"):
 		await get_tree().process_frame
 	_step_at = Time.get_ticks_usec()
 

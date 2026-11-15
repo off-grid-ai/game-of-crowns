@@ -241,7 +241,7 @@ func _people(d: Dictionary, full := true) -> void:
 ## Waits for the next frame once this frame's one staging pot is spent (ViewTier.spend_ok: every staged loop draws
 ## on it; view_tier's lead has a castle staged before it shows). castle_folk.gd's dressing waits here too.
 func paced() -> void:
-	if not ViewTier.spend_ok():
+	if not ViewTier.spend_ok(&"castle_life"):
 		await get_tree().process_frame
 
 

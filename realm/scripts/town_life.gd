@@ -130,7 +130,7 @@ func _pace(step: String) -> void:
 	var now := Time.get_ticks_usec()
 	if PerfTools.probing:
 		PerfTools.add("life." + step, now - _step_at)
-	if not ViewTier.spend_ok():
+	if not ViewTier.spend_ok(&"town_life"):
 		await Engine.get_main_loop().process_frame
 		now = Time.get_ticks_usec()
 	_step_at = now

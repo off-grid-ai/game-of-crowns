@@ -178,7 +178,7 @@ func _walk_some() -> void:
 	var w := _walk
 	var tiles: Array = w["tiles"]
 	while int(w["i"]) < tiles.size():
-		if not ViewTier.spend_ok():
+		if not ViewTier.spend_ok(&"units"):
 			if not _more:
 				_more = true
 				_walk_on.call_deferred()

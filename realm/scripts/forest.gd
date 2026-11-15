@@ -7,6 +7,7 @@ extends Node3D
 const Units := preload("res://scripts/world_units.gd")  # the world's one scale (Units.M)
 const Real := preload("res://scripts/realistic.gd")  # the asset catalogue (realm/data/assets.json)
 const Data := preload("res://scripts/data.gd")
+const ViewTier := preload("res://scripts/view_tier.gd")  # the one frame budget (spend_ok)
 ## The kit's kinds, from data alone (the pickers run before any mesh loads):
 ## [file, scale on its true height, role] per kind, and role -> [first kind, count]: a role is a list of models.
 static var _kit: Array = []
@@ -555,18 +556,16 @@ func clear(center: Vector3, radius: float) -> void:
 ## Fells every tree for which `standing_on(origin)` is true: the lanes the
 ## roads cut through the woods, so what travels them is seen from above.
 ## A realm's woods are tens of thousands of trees, so the work is spread over
-## frames, `budget_usec` of it in each (it took a second in one frame): await it.
+## frames on the one frame pot (ViewTier.spend_ok, its share guaranteed; it took a second in one frame): await it.
 ## within: only trees in this box (world x/z) are asked about; outside it none can stand on the new road.
-func clear_where(standing_on: Callable, budget_usec := 4000, within := Rect2()) -> int:
+func clear_where(standing_on: Callable, within := Rect2()) -> int:
 	var felled := 0
-	var t0 := Time.get_ticks_usec()
 	var all := not within.has_area()
 	for c in _sight.keys():
 		if _sight.has(c):
 			_sight[c] = _sight[c].filter(func(t: Vector4): return not ((all or within.has_point(Vector2(t.x, t.y))) and standing_on.call(Vector3(t.x, t.z, t.y))))
-		if Time.get_ticks_usec() - t0 > budget_usec:
+		if not ViewTier.spend_ok(&"lanes"):
 			await get_tree().process_frame
-			t0 = Time.get_ticks_usec()
 	for mmi in get_children():
 		if not (mmi is MultiMeshInstance3D):
 			continue
@@ -580,9 +579,8 @@ func clear_where(standing_on: Callable, budget_usec := 4000, within := Rect2()) 
 				mm.set_instance_transform(i, list[i])
 				felled += 1
 			i += 1
-			if i % 16 == 0 and Time.get_ticks_usec() - t0 > budget_usec:
+			if i % 16 == 0 and not ViewTier.spend_ok(&"lanes"):
 				await get_tree().process_frame
-				t0 = Time.get_ticks_usec()
 	return felled
 
 

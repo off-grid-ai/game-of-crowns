@@ -120,7 +120,7 @@ func stage(root: Node3D, life: Node3D, c: Dictionary, states: Array, tl: Object)
 	for row in _d.get("standing", []):
 		if not _meets(row, root, states, size):
 			continue
-		if not ViewTier.spend_ok():
+		if not ViewTier.spend_ok(&"town_scenes"):
 			await get_tree().process_frame
 			if not is_instance_valid(root) or not is_instance_valid(life) or root.get_node_or_null("Life") != life:
 				return
@@ -131,7 +131,7 @@ func stage(root: Node3D, life: Node3D, c: Dictionary, states: Array, tl: Object)
 				anchors.merge(d.dress(root, life, row, rng), true)
 		var k := {"root": root, "life": life, "tl": tl, "states": states, "size": size, "rng": rng, "row": row, "lead": null, "cast": [], "tally": tally, "census": census}
 		for role in row.get("roles", []):
-			if not ViewTier.spend_ok():
+			if not ViewTier.spend_ok(&"town_scenes"):
 				await get_tree().process_frame
 				if not is_instance_valid(root) or not is_instance_valid(life) or root.get_node_or_null("Life") != life:
 					return
