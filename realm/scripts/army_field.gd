@@ -1153,8 +1153,8 @@ func _hold(r: Dictionary) -> void:
 
 ## n men of a regiment fall: from its front at blows, anywhere under arrows. Its figures fall in step with its men
 ## (its figures over its men each: a floor of figures stands for a small regiment, army.json figureFloor): each plays
-## his death and stays where he fell; the regiment's strength (its banner's pips) is its figures standing over its
-## figures.
+## his death and stays where he fell (a horseman, with no fall of his own, fades there: meshes.<dir>.fallen); the
+## regiment's strength (its banner's pips) is its figures standing over its figures.
 func _fell(r: Dictionary, men: int, front: bool) -> void:
 	r["lost"] = int(r.get("lost", 0)) + men
 	var n := int(floor(float(r["lost"]) / maxf(float(r["men"]), 1.0) * int(r["figures"]) + 0.0001)) - (int(r["figures"]) - int(r["living"]))  # figures now due to fall
@@ -1164,6 +1164,7 @@ func _fell(r: Dictionary, men: int, front: bool) -> void:
 	var node: Node3D = r["node"]
 	var local: PackedVector3Array = r["local"]
 	var pool: Array = _front_men(r) if front else []
+	var fade := String(Data.value("army", "meshes.%s.fallen" % String(r["kit"]["asset"]), "lie")) == "fade"
 	for i in n:
 		if int(r["living"]) <= 0:
 			break
@@ -1181,6 +1182,8 @@ func _fell(r: Dictionary, men: int, front: bool) -> void:
 		alive[s] = 0
 		r["living"] = int(r["living"]) - 1
 		vat.update_instance_track(s, army.track(r, "death"))
+		if fade:
+			vat.fade_out_instance(s, 1.0, 0.0)  # no fall of his own (army.json meshes.<dir>.fallen): never left standing
 		(r["dead_at"] as Dictionary)[s] = node.to_global(local[s])
 		(r["swing"] as Dictionary).erase(s)
 		(r["back"] as Dictionary).erase(s)
