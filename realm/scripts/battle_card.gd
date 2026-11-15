@@ -121,7 +121,7 @@ func _show(c: Dictionary) -> void:
 				said.append(String(rows[k]).format({"n": main.ui.heads(int(reward[k])) if (reward[k] is int or reward[k] is float) else String(reward[k])}))
 		if not said.is_empty():
 			v.add_child(T.datum("  ·  ".join(said), T.SIZE_DESC, T.ACCENT))
-	main.ui.add_child(_card)
+	# (ui.glass_panel already stands the card in the interface's layer: adding it again failed every time one was told.)
 	_until = Time.get_ticks_msec() / 1000.0 + float(words.get("show_s", 14.0))
 	_card.modulate.a = 0.0
 	_card.create_tween().tween_property(_card, "modulate:a", 1.0, 0.3)
