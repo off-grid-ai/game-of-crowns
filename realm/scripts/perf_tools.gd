@@ -236,6 +236,9 @@ func _log_perf(delta: float) -> void:
 			Engine.get_frames_per_second(), Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0, render_cpu, render_gpu, folk.size(), minds, main.get_viewport().get_visible_rect().size.x, main.get_viewport().get_visible_rect().size.y, main.get_viewport().scaling_3d_scale, ",".join(tallied), _holders(folk)])
 	if probing:
 		f.store_line("    people by holder (all/visible) " + _holders(main.get_tree().get_nodes_in_group("people")))
+		var torn := _torn()
+		if torn != "":
+			f.store_line("    TORN " + torn)
 	if probing and not tally.is_empty():
 		var jobs := PackedStringArray()
 		for k in tally:
@@ -457,3 +460,21 @@ static func _holders(folk: Array) -> String:
 	for k in keys:
 		out.append("%s:%d/%d" % [k, by[k][0], by[k][1]])
 	return ",".join(out)
+
+
+## Anything drawn whose place or size is absurd (GOC_PERF_PROBE): a world box over TORN_UNITS across or not finite,
+## by its path from main, so a torn frame (Mac 2026-11-15: grey sheets streaked across the land) names what tore.
+const TORN_UNITS := 150.0
+func _torn() -> String:
+	var out := PackedStringArray()
+	for g: GeometryInstance3D in main.find_children("*", "GeometryInstance3D", true, false):
+		if not g.is_visible_in_tree() or g is GPUParticles3D or g is CPUParticles3D:
+			continue
+		var box: AABB = g.global_transform * g.get_aabb()
+		if not box.size.is_finite() or not box.position.is_finite() or box.size.length() > TORN_UNITS:
+			if g.get_parent() == main.terrain or String(g.name).begins_with("Sea") or g.get_class() == "Terrain3D":
+				continue  # the land and the sea are realm-wide by design
+			out.append("%s %s size=%s" % [String(main.get_path_to(g)), g.get_class(), str(box.size)])
+			if out.size() >= 8:
+				break
+	return ", ".join(out)

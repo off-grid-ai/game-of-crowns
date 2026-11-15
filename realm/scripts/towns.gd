@@ -117,7 +117,7 @@ func _changed(t: Dictionary, c: Dictionary, house: Dictionary) -> void:
 	node.set_meta("size", int(c["size"]))
 	node.set_meta("buildings", c["buildings"])  # what the square shows of them (a market's extra stalls), read by its life
 	if int(was.get("owner", -1)) != int(c["owner"]):
-		banners.rehouse(node, house, preload("res://scripts/heraldry.gd").colour(house, Color.GRAY, "#888888"), int(c["owner"]))
+		_reown(node, c, house)
 
 
 ## Whether a change to a standing town shows in what stands: its size (new houses), its buildings (a stone wall, a
@@ -380,6 +380,7 @@ func _raise(best: int, job: Dictionary) -> void:
 			node = got
 			imprint(node)
 			relight(node)  # its flames and smoke, never kept in the file (_kindle)
+			_reown(node, job["c"], job["house"])  # whoever holds it now: the file is kept by its shape alone
 	if node == null:
 		node = await _build_town(job["c"], job["house"])
 		TownStore.save(node, path)
@@ -1363,25 +1364,46 @@ func _smithy(root: Node3D, center: Vector3, p: Vector3, face: Vector3, f: Vector
 
 ## The house's arms as a flat panel (its painted banner, else its colour) centred on `at`, facing along `yaw`.
 func _arms_quad(root: Node3D, at: Vector3, yaw: float, size: Vector2) -> void:
+	var q := QuadMesh.new()
+	q.size = size
+	var mi := MeshInstance3D.new()
+	mi.mesh = q
+	mi.material_override = _arms_paint(_house, _house_colour)
+	mi.set_meta("arms_quad", true)  # repainted for a new holder (_reown)
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	root.add_child(mi)
+	mi.position = at
+	mi.rotation.y = yaw
+
+
+## A house's arms as a panel's paint: its painted banner, else its colour.
+static func _arms_paint(house: Dictionary, colour: Color) -> StandardMaterial3D:
 	var m := StandardMaterial3D.new()
 	m.roughness = 0.9
-	var slug := preload("res://scripts/heraldry.gd").slug(_house)
+	var slug := preload("res://scripts/heraldry.gd").slug(house)
 	var path := "res://assets/heraldry/banner-%s.png" % slug
 	if slug != "" and ResourceLoader.exists(path):
 		m.albedo_texture = load(path)
 		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
 		m.alpha_scissor_threshold = 0.5
 	else:
-		m.albedo_color = _house_colour
-	var q := QuadMesh.new()
-	q.size = size
-	var mi := MeshInstance3D.new()
-	mi.mesh = q
-	mi.material_override = m
-	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	root.add_child(mi)
-	mi.position = at
-	mi.rotation.y = yaw
+		m.albedo_color = colour
+	return m
+
+
+## A town shown for its holder (`c`'s owner and title, `house`'s arms and colour): its banners struck for his and its
+## arms panels repainted. A kept town is kept by its shape alone (town_store.path_of), so whoever holds it now is put
+## on when it is read back, as on a change of hands; its roofs take his colour by themselves (team_colour.gd).
+func _reown(node: Node3D, c: Dictionary, house: Dictionary) -> void:
+	var colour := preload("res://scripts/heraldry.gd").colour(house, Color.GRAY, "#888888")
+	node.set_meta("title", String(c.get("title", c.get("name", ""))))
+	if int(node.get_meta("owner", -1)) == int(c["owner"]) and String(node.get_meta("arms_of", "")) == str(house.get("name", "")):
+		return
+	banners.rehouse(node, house, colour, int(c["owner"]))
+	node.set_meta("arms_of", str(house.get("name", "")))
+	for g in node.find_children("*", "MeshInstance3D", true, false):
+		if g.has_meta("arms_quad"):
+			(g as MeshInstance3D).material_override = _arms_paint(house, colour)
 
 
 ## The planned trade a model draws, not yet standing ({} for a house).
@@ -2333,6 +2355,7 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 	_imprint = []
 	var root := Node3D.new()
 	root.set_meta("owner", int(c["owner"]))  # whose favour its banners show
+	root.set_meta("arms_of", str(house.get("name", "")))  # whose arms its banners and panels bear (_reown)
 	root.set_meta("city", int(c["id"]))  # its Freeciv city: the store's town scope (damage) is read by it
 	var center: Vector3 = terrain.world_pos(float(c["x"]), float(c["y"]))
 	_center = center

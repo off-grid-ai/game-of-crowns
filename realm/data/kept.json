@@ -1,4 +1,4 @@
 {
 	"_doc": "What the game makes once and keeps (kept.gd: towns, merged models, tiled grounds, crops, dressing) is named by this version. Bump it when a change alters how any kept thing is made or looks (towns.gd, town_layout.gd, house_builder.gd, castle_builder.gd, dressing.gd, realistic.gd, terrain.gd tiled, countryside.gd crops, their data); every older kept file is swept on the next start. Any other change keeps them (Mac 2026-11-15: static towns are built once and kept, never re-raised because some unrelated file changed).",
-	"version": 1
+	"version": 2
 }

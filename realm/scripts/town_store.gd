@@ -22,9 +22,11 @@ static var _land := {}  # the map's tiles -> their hash, for the map last asked
 static func path_of(c: Dictionary, house: Dictionary, tiles: Array) -> String:
 	if not _land.has("tiles") or _land["tiles"] != tiles:
 		_land = {"tiles": tiles, "hash": str(tiles.hash())}
-	var facts := [c.get("x"), c.get("y"), c.get("size"), c.get("buildings"), c.get("capital"), c.get("owner"),
-		c.get("family"), c.get("title", c.get("name", "")), house.get("crown", false), house.get("name", ""),
-		house.get("colour", house.get("color", "")), _land["hash"]]
+	# Its shape alone: where it stands, how big, what it has built, its rank and a bannerman's own arms (a seat, the crown's, a family's banner). Who
+	# holds it, his name and colours are put on when it is read back (towns.gd _reown), so a new reign or a change of
+	# hands reads the same file (supervisor fps 2026-11-15: a new reign's houses raised every town afresh).
+	var facts := [c.get("x"), c.get("y"), c.get("size"), c.get("buildings"), c.get("capital"),
+		c.get("family"), house.get("crown", false), _land["hash"]]
 	return Kept.path("towns", "%d_%s" % [int(c["id"]), str(facts).md5_text()], "scn")
 
 
