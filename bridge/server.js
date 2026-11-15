@@ -909,6 +909,7 @@ setInterval(() => {
   // An aim met is met at once, held clock or not: the King never reads "21 of 12".
   if (meta?.status === "running" && Freeciv.proc()) ladder();
   if (!meta || paused || meta.status !== "running" || !Freeciv.proc()) return;
+  Raids.first(realmCtx());  // the reign's first raid near Kingsmere, and its reward (raids.js)
   Reign.tick(realmCtx());  // the clock, and what it brings: the last act, ambitions, the council, an act's end (reign.js)
 }, 5000);
 
