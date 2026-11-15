@@ -103,7 +103,9 @@ func _stage() -> void:
 		var follow: Node3D = null
 		var player = kind(String(s["kind"]))
 		if player:
+			var t0 := Time.get_ticks_usec()
 			follow = player.play(s, at, _houses)
+			PerfTools.add("scenes.play." + String(s["kind"]), Time.get_ticks_usec() - t0)  # GOC_PERF_PROBE: which kind's staging is dear
 		staged.emit(s, follow)
 		if not _due.is_empty():
 			await PerfTools.next_frame(&"scenes:stage")

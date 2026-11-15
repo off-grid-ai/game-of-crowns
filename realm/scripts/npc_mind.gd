@@ -688,9 +688,46 @@ static func post_activities(post: String) -> Array:
 ## first: struck or threatened, they react and get clear, then go back to work.
 ## `ground(p)` gives the ground height at a point. Returns false for an unknown post.
 static func give(person: Node3D, post: String, ground: Callable, seed: int, opening: Array = [], town := -1) -> bool:
+	var shared := _post_tree(post)
+	if shared.is_empty():
+		return false
+	var bt: BehaviorTree = shared[0]
+	if not opening.is_empty():
+		# Once, at once, before the post's own life (a riot pair's scuffle, in step): this body's own tree, the
+		# post's shared life cloned in after its opening (rare: only rows with blows).
+		var root := BTSequence.new()
+		for t in opening:
+			root.add_child(t)
+		var life_root: BTTask = bt.root_task
+		for i in life_root.get_child_count():
+			root.add_child(life_root.get_child(i).clone())
+		bt = BehaviorTree.new()
+		bt.root_task = root
+	var player := BTPlayer.new()
+	player.name = "Mind"
+	player.set_scene_root_hint(person)  # made at runtime, with no owner: LimboAI needs to be told its scene
+	player.behavior_tree = bt
+	Awareness.assign(player, {"post": person.position, "face": person.rotation.y, "ground": ground, "danger": false,
+		"last_activity": "", "last_clip": "", "last_breaker": "", "alert": false, "at_post": true, "choices": int(shared[1]),
+		"weigh_phase": absi(seed)})  # its starting state, through the store (its place in the round: Weigh)
+	person.add_child(player)
+	AnimLOD.add_mind(player)
+	_attach(player, town)
+	return true
+
+
+## One BehaviorTree per post, built once and shared (LimboAI's BehaviorTree is a Resource: each BTPlayer
+## instances its own copy of the tasks from it, so nobody shares a task's state): [tree, how many activities], or
+## [] for a post with none. A body's own place in the round goes on its blackboard (weigh_phase), not in the tree
+## (supervisor's live run 12: resume.town_scenes.mind 1233 ms and 1327 ms frames, every body's tree built anew).
+static var _post_trees := {}
+static func _post_tree(post: String) -> Array:
+	if _post_trees.has(post):
+		return _post_trees[post]
 	var acts := post_activities(post)
 	if acts.is_empty():
-		return false
+		_post_trees[post] = []
+		return []
 	var life := BTDynamicSelector.new()
 	# Danger: someone set danger on them (a riot turning, a raid): react, get clear, then calm.
 	var danger := BTSequence.new()
@@ -716,10 +753,8 @@ static func give(person: Node3D, post: String, ground: Callable, seed: int, open
 	if post == "trade":
 		life.add_child(serve())  # a shopper at the counter: turn to them, talk it over, hand it across
 	# Posted: the post's activities, one at a time, weighed by the town's state.
-	life.add_child(weighed(acts, seed))
+	life.add_child(weighed(acts))
 	var root := BTSequence.new()
-	for t in opening:  # once, at once, before the post's own life (a riot pair's scuffle, in step)
-		root.add_child(t)
 	var first := BTRandomWait.new()  # then each on their own clock
 	first.min_duration = 0.5
 	first.max_duration = 6.0
@@ -730,16 +765,8 @@ static func give(person: Node3D, post: String, ground: Callable, seed: int, open
 	root.add_child(forever)
 	var bt := BehaviorTree.new()
 	bt.root_task = root
-	var player := BTPlayer.new()
-	player.name = "Mind"
-	player.set_scene_root_hint(person)  # made at runtime, with no owner: LimboAI needs to be told its scene
-	player.behavior_tree = bt
-	Awareness.assign(player, {"post": person.position, "face": person.rotation.y, "ground": ground, "danger": false,
-		"last_activity": "", "last_clip": "", "last_breaker": "", "alert": false, "at_post": true, "choices": acts.size()})  # its starting state, through the store
-	person.add_child(player)
-	AnimLOD.add_mind(player)
-	_attach(player, town)
-	return true
+	_post_trees[post] = [bt, acts.size()]
+	return _post_trees[post]
 
 
 ## Joins the town's scope (awareness.gd), when the realm has one.
@@ -923,7 +950,12 @@ class Weigh extends BTComposite:
 			_credit[i] += w
 			_total += w
 			_order.append(i)
-		for k in phase % maxi(1, _order.size() * 2):
+		# Its place in the round: the tree's own (phase) and the body's (weigh_phase on its blackboard: a shared tree,
+		# npc_mind _post_tree), both taken on the first pick only.
+		var ph := phase + int(blackboard.get_var(&"weigh_phase", 0, false))
+		if blackboard.has_var(&"weigh_phase"):
+			blackboard.set_var(&"weigh_phase", 0)
+		for k in ph % maxi(1, _order.size() * 2):
 			var best := _order[0]
 			for i in _order:
 				if _credit[i] > _credit[best]:

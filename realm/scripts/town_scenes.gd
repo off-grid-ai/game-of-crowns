@@ -45,6 +45,7 @@ const MIND_VARS := {
 	"after": null, "with": false, "gap": 0.11, "life": null, "follow": 0.12, "pair": {},
 }
 static var _plan: BlackboardPlan
+static var _passing_tree: BehaviorTree
 
 var main: Node
 var _d: Dictionary
@@ -813,7 +814,9 @@ func _stage_role(k: Dictionary, role: Dictionary, anchors: Dictionary) -> void:
 		n = mini(n, cap)
 	var want_n := n
 	var spare := int(role.get("spare", 0))  # spots beyond n (a row behind): the first n that fit stand (g37: the muster lost 2-8 men a town to stalls and statues)
+	var t0 := Time.get_ticks_usec()
 	var spots := _spots(role, a, n + spare, k)
+	PerfTools.add("town_scenes.spots", Time.get_ticks_usec() - t0)  # GOC_PERF_PROBE: a role's places, worked out whole
 	if cap >= 0 and String(role.get("form", "")) == "each" and spots.size() > cap:
 		# More stalls (seats, carts) than the census stands people at: which of them get someone, by chance.
 		var keep: Array = []
@@ -925,7 +928,9 @@ func _stage_role(k: Dictionary, role: Dictionary, anchors: Dictionary) -> void:
 					var bl: Array = role["blows"]
 					var blows := rng.randi_range(int(bl[0]), int(bl[1]))
 					opening = [Mind.run([_pick(role.get("clips", []), int(s.get("pair", pi)), k)], blows, blows)]
+				var g0 := Time.get_ticks_usec()
 				tl.mind(body, _pick(role.get("post", "listener"), pi, k), root, opening)
+				PerfTools.add("town_scenes.give", Time.get_ticks_usec() - g0)  # GOC_PERF_PROBE: one body's mind, named apart from the lap
 			"dog":
 				_walker(body, Dog.new(), {"life": life, "follow": float(role.get("walk", {}).get("follow", 0.12))}, "", float(role.get("walk", {}).get("trot", 0.2)))
 			"chase":
@@ -994,6 +999,22 @@ func _walker(body: Node3D, task: BTTask, vars: Dictionary, clip: String, pace :=
 	var m: Node = Mover.of(body)
 	m.speed = pace * READ
 	m.clip = clip
+	var player := BTPlayer.new()
+	player.name = "Mind"
+	player.set_scene_root_hint(body)
+	player.behavior_tree = _walk_tree(task)
+	Awareness.assign(player, vars)  # its starting state, through the store
+	body.add_child(player)
+
+
+## One walker's tree per task kind (Round, Follow, Dog, Chase, MarchOut), built once and shared: LimboAI's
+## BehaviorTree is a Resource and each BTPlayer instances its own tasks from it; a walker's own state is on its
+## blackboard (vars), never in the tree. `task` makes the kind's tree the first time and is dropped after.
+static var _walk_trees := {}
+static func _walk_tree(task: BTTask) -> BehaviorTree:
+	var key: Variant = task.get_script()
+	if _walk_trees.has(key):
+		return _walk_trees[key]
 	var rootseq := BTSequence.new()
 	var first := BTRandomWait.new()
 	first.min_duration = 0.1
@@ -1006,12 +1027,8 @@ func _walker(body: Node3D, task: BTTask, vars: Dictionary, clip: String, pace :=
 	var bt := BehaviorTree.new()
 	bt.root_task = rootseq
 	bt.blackboard_plan = mind_plan()
-	var player := BTPlayer.new()
-	player.name = "Mind"
-	player.set_scene_root_hint(body)
-	player.behavior_tree = bt
-	Awareness.assign(player, vars)  # its starting state, through the store
-	body.add_child(player)
+	_walk_trees[key] = bt
+	return bt
 
 
 ## The beat, the errands and the cart: walkers going round places of the square in turn.
@@ -1594,13 +1611,14 @@ func _cast(s: Dictionary, role: Dictionary, spot: Vector3, face: Vector3, door: 
 	person.global_position = door
 	var mover: Node = Mover.of(person)
 	mover.speed = float(D.get("pace", 0.17))
-	var bt := BehaviorTree.new()
-	bt.root_task = _tree()
-	bt.blackboard_plan = mind_plan()
+	if _passing_tree == null:
+		_passing_tree = BehaviorTree.new()  # one tree for every passing person, shared as the walkers' are (_walk_tree)
+		_passing_tree.root_task = _tree()
+		_passing_tree.blackboard_plan = mind_plan()
 	var player := BTPlayer.new()
 	player.name = "Mind"
 	player.set_scene_root_hint(person)
-	player.behavior_tree = bt
+	player.behavior_tree = _passing_tree
 	Awareness.assign(player, {"slot": spot, "face": face, "clips": role.get("clips", ["Idle"]), "exit": person.global_position, "done": _done.bind(s, person)})
 	person.add_child(player)
 	(s["cast"] as Array).append(person)
