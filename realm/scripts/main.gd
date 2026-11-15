@@ -881,6 +881,7 @@ func _setup_environment() -> void:
 		load("res://scripts/look.gd").apply.call_deferred(self)
 	load("res://scripts/team_colour.gd").apply.call_deferred(self)  # every building in its holder's colours (data/look.json team)
 	load("res://scripts/decisions_world.gd").apply.call_deferred(self)  # the King's decisions seen on the map (data/decisions.json)
+	_view_group.call_deferred()
 	load("res://scripts/host_command.gd").apply.call_deferred(self)  # the King's hosts selected and ordered (data/host_command.json)
 	load("res://scripts/map_marks.gd").apply.call_deferred(self)  # the realm's marks as the camera draws back to the map (data/map.json, --map=v2)
 	load("res://scripts/fire.gd").apply.call_deferred(self)  # fire v2: shaped flames, smoke and burnt houses (data/fire.json)
@@ -1246,6 +1247,13 @@ func _on_chronicle(entries: Array) -> void:
 ## The scenes' staged signal: the news decides what the King hears and sees (news.gd).
 func _on_staged(s: Dictionary, follow: Node3D) -> void:
 	news._on_staged(s, follow)
+
+
+## The realm's view (world_cover.gd VIEW): what stops moving and thinking while a still screen covers the window.
+func _view_group() -> void:
+	for n in [terrain, towns, roads, countryside, scenes, units, villagers, labels, get_node_or_null("Traffic"), get_node_or_null("AnimLOD"), get_node_or_null("Decisions")]:
+		if n:
+			n.add_to_group(preload("res://scripts/world_cover.gd").VIEW)
 
 
 ## A test shot saved and the game closed (shot_harness.gd); chatter.gd calls it too.

@@ -972,6 +972,7 @@ func _finish(person: Node3D, skeleton: Skeleton3D, rng: RandomNumberGenerator, r
 		"build": build, "role": role,
 	})
 	preload("res://scripts/presence.gd").fit(person)  # a glance for whoever comes near (presence.gd)
+	preload("res://scripts/on_screen.gd").attach(person)  # off screen it does nothing (on_screen.gd)
 	return person
 
 

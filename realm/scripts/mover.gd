@@ -60,6 +60,7 @@ static func of(body: Node3D) -> Node:
 		m = (load("res://scripts/mover.gd") as GDScript).new()
 		m.name = "Mover"
 		body.add_child(m)
+		preload("res://scripts/on_screen.gd").attach(body)  # off screen it does nothing, its walk with it (on_screen.gd)
 	return m
 
 
