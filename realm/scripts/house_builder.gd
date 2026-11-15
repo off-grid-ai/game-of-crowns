@@ -393,8 +393,12 @@ func piece_mesh(name: String) -> ArrayMesh:
 ## bush, crop and prop baked here drew all its triangles at any distance (perf.log: ~75M triangles a
 ## frame at the realm view, 3 fps; Mac's P0 "super laggy"). Houses and castles (build) get theirs where
 ## the town merges them (realistic.gd _merge).
+## The mesh is tagged with its file ("path"), so the one drawer (bulk.gd) can find the model's impostor.
 func bake_path(path: String) -> ArrayMesh:
-	return _once("path:" + path, _bake_lods.bind(path))
+	var mesh := _once("path:" + path, _bake_lods.bind(path))
+	if mesh:
+		mesh.set_meta("path", path)
+	return mesh
 
 
 func _bake_lods(path: String) -> ImporterMesh:

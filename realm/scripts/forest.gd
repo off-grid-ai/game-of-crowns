@@ -260,7 +260,7 @@ func _load_kit() -> void:
 		var path := String(kd[0])
 		var mesh: Mesh = baked[path][0]
 		if mesh and not far_ones.has(path):
-			far_ones[path] = _impostor(path, baked[path][1])
+			far_ones[path] = impostor(path, baked[path][1])
 		_full.append(mesh)
 		_mid.append(baked[path][1])
 		_card.append(far_ones.get(path))  # past MID: one quad a tree (tools/impostor_bake.gd)
@@ -302,7 +302,12 @@ func kit_meshes() -> Dictionary:
 const IMPOSTORS := "res://assets/impostors/"
 const IMPOSTOR_SHADER := preload("res://addons/Imposter/imposter/materials/shaders/ImpostorShader.gdshader")
 static var impostors: Array[ShaderMaterial] = []
-static func _impostor(path: String, far: Mesh) -> Mesh:
+## Whether the model at `path` has a baked impostor (bulk.gd draws such a model as one past its card distance).
+static func has_impostor(path: String) -> bool:
+	return FileAccess.file_exists(IMPOSTORS + path.get_file().get_basename() + ".json")
+
+
+static func impostor(path: String, far: Mesh) -> Mesh:
 	var name := path.get_file().get_basename()
 	var n: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(IMPOSTORS + name + ".json"))
 	var mat := ShaderMaterial.new()

@@ -18,6 +18,7 @@ var terrain: Node3D
 var roads: Node3D
 var towns: Node3D  # the towns, for their squares, lanes and doors (found beside us if unset)
 var land_use: Node3D  # the towns' worked fields (land_use.gd): no tufts on them
+const Bulk := preload("res://scripts/bulk.gd")  # the one drawer of repeated things
 var _bush: Mesh
 var _fruit: Array = []  # orchard trees: the catalogue's orchard_tree (the nature set's oaks, data/assets.json), grown small
 const FIELDS := ["field-wheat", "field-green", "field-fallow"]  # the kinds of field a farmstead ploughs (field_ground paints each)
@@ -423,19 +424,8 @@ func _hedgerows(node: Node3D, fields: Array, seed: int) -> void:
 					continue
 				var s := 0.11 * rng.randf_range(0.85, 1.25)
 				xf.append(Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(s, s * rng.randf_range(0.9, 1.3), s)), Vector3(p.x, terrain.height_at(p.x, p.z) - 0.02, p.z)))
-	if xf.is_empty():
-		return
-	var mm := MultiMesh.new()
-	mm.transform_format = MultiMesh.TRANSFORM_3D
-	mm.mesh = _bush
-	mm.instance_count = xf.size()
-	for i in xf.size():
-		mm.set_instance_transform(i, xf[i])
-	var mmi := MultiMeshInstance3D.new()
-	mmi.multimesh = mm
-	mmi.name = "Hedgerows"
-	_fade(mmi, 35.0)
-	node.add_child(mmi)
+	for t in xf:  # the one drawer: a cell at a time, the bush's card past its card distance
+		Bulk.add(_bush, t, node, 35.0)
 
 
 # --- fields and crops (towns sow theirs with these too) ------------------------------

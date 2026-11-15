@@ -371,9 +371,10 @@ func _reign_end(r: Dictionary) -> void:
 	# bridge's epitaph, reign.js epitaphOf: lines), cut as on a tomb. The choices it was written from were just told,
 	# each at its town, by the flight before this card (_epilogue), so they aren't listed again.
 	var ep_d: Dictionary = r.get("epitaph", {}) if r.get("epitaph") is Dictionary else {}
-	if String(ep_d.get("lines", "")) != "":
+	var ep_lines: Variant = ep_d.get("lines")  # null while the model hasn't written it
+	if ep_lines is String and ep_lines != "":
 		var ep_l := Label.new()
-		ep_l.text = "“%s”" % String(ep_d["lines"]).strip_edges().replace("\"", "")
+		ep_l.text = "“%s”" % String(ep_lines).strip_edges().replace("\"", "")
 		ep_l.autowrap_mode = TextServer.AUTOWRAP_WORD
 		ep_l.custom_minimum_size.x = 640
 		ep_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
