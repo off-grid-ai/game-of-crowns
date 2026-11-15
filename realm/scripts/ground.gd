@@ -68,8 +68,15 @@ static var _inv: float = _n / CHUNK
 static var _nb: int = maxi(1, roundi(CHUNK / Data.num("ground", "occupancy.block", 2.0)))  # blocks to a chunk's side
 static var _b: int = ceili(float(_n) / _nb)  # cells to a block's side
 static var _map := {}  # chunk (Vector2i) -> Chunk
-static var _places := {}  # chunk (Vector2i) -> {root instance id: root}: what builders outside towns set down
-static var _place_area := {}  # root instance id -> [chunks, Rect2 it covers]
+const SRC := 4  # a source's (the woods') obstacle touches it
+const TOWN := 1 << 3  # one of a town's or a place's own pieces (nav_ground "town") touches it: counted in 9 bits
+const TOWN_ALL := 511 << 3
+const LIFE := 1 << 12  # one of its life's pieces (nav_ground "life": a stall, a parked cart) touches it: 9 bits
+const LIFE_ALL := 511 << 12
+static var _roots := {}  # root instance id -> {root, clip (world Rect2), town, sig, town_spans, life_spans}: what stands
+static var _dirty := {}  # root instance id -> true: something set down, taken away, turned or hidden under it
+static var _hooked := {}  # instance id -> true: a root (or its Life) whose changes mark it dirty
+static var _towns_frame := -1  # the frame the realm's towns were last read (Ground.towns)
 static var _claims := {}  # chunk -> {id: [kind, outline (world XZ)]}: the ground bodies hold while they stand
 static var _claim_area := {}  # id -> [chunks, Rect2]
 static var _sources: Array = []  # keepers of many small things in the way (the woods): in_way(p) -> bool
@@ -94,19 +101,15 @@ static func is_clear(p: Vector3, radius := 0.0, props := true, free_of: Variant 
 
 
 static func _is_clear(p: Vector3, radius := 0.0, props := true, free_of: Variant = null, open_kinds: Array = []) -> bool:
-	var keys: Array = ["town", "life"] if props else ["town"]
+	_fresh()
+	var shut := TOWN_ALL | (LIFE_ALL if props else 0)  # a town's or a place's own pieces; its life's too unless `props` false
 	var need := WALK if "ford" in open_kinds else DRY  # a ford is passed, never stood on (a fight's grid opens it: "ford")
 	for o in _reach_of(radius):
 		var q: Vector3 = p + o
-		if _bits(q.x, q.z) & need == 0:
+		var bits := _bits(q.x, q.z)
+		if bits & need == 0 or bits & shut != 0:
 			return false
-		for t in TownNav.towns_at(towns, q):
-			if not NavGround.inside_something(t[1], q, terrain, keys).is_empty():
-				return false
 		var c := _chunk(q)
-		for root in (_places.get(c, {}) as Dictionary).values():
-			if is_instance_valid(root) and (root as Node3D).is_visible_in_tree() and not NavGround.inside_something(root, q, terrain, keys).is_empty():
-				return false
 		for src in _sources:
 			if is_instance_valid(src) and src.in_way(q):
 				return false
@@ -119,27 +122,25 @@ static func _is_clear(p: Vector3, radius := 0.0, props := true, free_of: Variant
 
 
 ## A builder outside a town says what it set down under `root` is in the way, within `area` (world XZ).
+## Its outlines (nav_ground.gd, read off what it set down) are stamped on the map over the chunks `area` touches, and
+## stamped again whenever it sets something down or takes it away, is turned, hidden or freed.
 static func stands(root: Node3D, area: Rect2) -> void:
 	gone(root)
-	var cells := _chunks(area)
-	for k in cells:
-		if not _places.has(k):
-			_places[k] = {}
-		_places[k][root.get_instance_id()] = root
-	_place_area[root.get_instance_id()] = [cells, area]
+	var lo := Vector2(floorf(area.position.x / CHUNK), floorf(area.position.y / CHUNK)) * CHUNK
+	var hi := Vector2(floorf(area.end.x / CHUNK) + 1.0, floorf(area.end.y / CHUNK) + 1.0) * CHUNK
+	_add_root(root, Rect2(lo, hi - lo), false)
 	_rev += 1
 	forget(area)
 
 
 ## What was set down under `root` is gone (razed, unloaded, rebuilt).
 static func gone(root: Node3D) -> void:
-	var id := root.get_instance_id()
-	if not _place_area.has(id):
+	var rec: Dictionary = _roots.get(root.get_instance_id(), {})
+	if rec.is_empty() or rec["town"]:
 		return
-	for k in _place_area[id][0]:
-		(_places.get(k, {}) as Dictionary).erase(id)
-	forget(_place_area[id][1])
-	_place_area.erase(id)
+	_unstamp(rec)
+	_roots.erase(root.get_instance_id())
+	forget(rec["clip"])
 
 
 ## A keeper of many small things in the way (the woods) answers for them: in_way(p: Vector3) -> bool.
@@ -413,3 +414,253 @@ static func _relay(area: Rect2) -> void:
 			var ch: Chunk = _map.get(Vector2i((bx - lbx) / _nb, (bz - lbz) / _nb))
 			if ch:
 				ch.laid[lbz * _nb + lbx] = 0
+
+
+# --- towns and places on the map ------------------------------------------------------------------------------------
+
+## Brings the map up to date before an ask: the realm's towns read once a frame (a town raised or razed), and every
+## root something was set down under, taken from, turned or hidden since stamped again.
+static func _fresh() -> void:
+	var f := Engine.get_process_frames()
+	if f != _towns_frame:
+		_sync_towns(f)
+	if not _dirty.is_empty():
+		var ids := _dirty.keys()
+		_dirty.clear()
+		for iid in ids:
+			if _roots.has(iid):
+				_stamp(_roots[iid])
+
+
+static func _sync_towns(f: int) -> void:
+	_towns_frame = f
+	var live := {}
+	if towns and is_instance_valid(towns):
+		var reg: Dictionary = towns.get("towns")
+		for id in reg:
+			var r: Variant = (reg[id] as Dictionary).get("node")
+			if r is Node3D and is_instance_valid(r) and (r as Node3D).is_inside_tree():
+				live[(r as Node3D).get_instance_id()] = r
+	for iid in _roots.keys():
+		if _roots[iid]["town"] and not live.has(iid):
+			_unstamp(_roots[iid])
+			_roots.erase(iid)
+	for iid in live:
+		if not _roots.has(iid):
+			var r: Node3D = live[iid]
+			var reach := float(r.get_meta("reach", 6.0)) + 3.0  # town_nav.gd towns_at: its reach and a tile's corner
+			var c := r.global_position
+			_add_root(r, Rect2(c.x - reach, c.z - reach, reach * 2.0, reach * 2.0), true)
+
+
+static func _add_root(root: Node3D, clip: Rect2, town: bool) -> void:
+	var iid := root.get_instance_id()
+	_roots[iid] = {"iid": iid, "root": root, "clip": clip, "town": town, "sig": [], "town_spans": PackedInt32Array(), "life_spans": PackedInt32Array()}
+	_dirty[iid] = true
+	_hook(root, iid)
+
+
+## A root's (or its Life's) children set down or taken away, its showing or leaving the tree: stamped again.
+static func _hook(n: Node, iid: int) -> void:
+	if _hooked.has(n.get_instance_id()):
+		return
+	_hooked[n.get_instance_id()] = true
+	var mark := func(_c: Node = null) -> void: _dirty[iid] = true
+	n.child_entered_tree.connect(mark)
+	n.child_exiting_tree.connect(mark)
+	n.tree_exiting.connect(mark)
+	if n is Node3D:
+		(n as Node3D).visibility_changed.connect(mark)
+
+
+## Stamps a root's outlines on the map afresh if its layout, yards, place or showing changed since: its own pieces
+## (TOWN) only when they did, its life's (LIFE) whenever anything did.
+static func _stamp(rec: Dictionary) -> void:
+	var root: Node3D = rec["root"] if is_instance_valid(rec["root"]) else null
+	var shown := root != null and root.is_inside_tree() and root.is_visible_in_tree()
+	var lay: Array = NavGround.layout(root) if shown else [0, 0, 0]
+	var yards: Array = root.get_meta("yards", []) if shown else []
+	var xf := root.global_transform if shown else Transform3D()
+	var tsig := [shown, lay[0], lay[2], yards.duplicate(), xf]
+	var sig := tsig + [lay[1]]
+	if sig == rec["sig"]:
+		return
+	var redo_town: bool = (rec["sig"] as Array).is_empty() or (rec["sig"] as Array).slice(0, 5) != tsig
+	rec["sig"] = sig
+	if redo_town:
+		_apply(rec["town_spans"], -TOWN)
+		rec["town_spans"] = PackedInt32Array()
+	_apply(rec["life_spans"], -LIFE)
+	rec["life_spans"] = PackedInt32Array()
+	if root == null:
+		_roots.erase(rec["iid"])
+		return
+	if not shown:
+		return
+	var o := NavGround.outlines(root, terrain)
+	var clip := _cells_of(rec["clip"])
+	var skip := _yard_cells(yards, xf)
+	if redo_town:
+		rec["town_spans"] = _spans_of(o["town"], xf, clip, skip)
+		_apply(rec["town_spans"], TOWN)
+	rec["life_spans"] = _spans_of(o["life"], xf, clip, skip)
+	_apply(rec["life_spans"], LIFE)
+	var life := root.get_node_or_null("Life")
+	if life:
+		_hook(life, root.get_instance_id())
+
+
+static func _unstamp(rec: Dictionary) -> void:
+	_apply(rec["town_spans"], -TOWN)
+	_apply(rec["life_spans"], -LIFE)
+	rec["town_spans"] = PackedInt32Array()
+	rec["life_spans"] = PackedInt32Array()
+	rec["sig"] = []
+
+
+## The cells (realm-wide, inclusive) a world rectangle covers.
+static func _cells_of(r: Rect2) -> Rect2i:
+	var a := Vector2i(floori(r.position.x * _inv), floori(r.position.y * _inv))
+	var b := Vector2i(floori(r.end.x * _inv), floori(r.end.y * _inv))
+	return Rect2i(a, b - a)
+
+
+## Runs of cells [row, first, last] (realm-wide) every outline touches, placed by `xf`, within `clip`, less `skip`.
+static func _spans_of(polys: Array, xf: Transform3D, clip: Rect2i, skip: Dictionary) -> PackedInt32Array:
+	var out := PackedInt32Array()
+	for fp: PackedVector2Array in polys:
+		if fp.size() < 3:
+			continue
+		var w := PackedVector2Array()
+		for v in fp:
+			var g := xf * Vector3(v.x, 0.0, v.y)
+			w.append(Vector2(g.x, g.z))
+		_poly_spans(w, clip, skip, out)
+	return out
+
+
+## Appends the runs of cells `poly` (world XZ) touches: every cell whose square it overlaps at all, row by row (a
+## convex piece's extent over the row's band; a concave one cut into convex pieces first).
+static func _poly_spans(poly: PackedVector2Array, clip: Rect2i, skip: Dictionary, out: PackedInt32Array) -> void:
+	if not _convex(poly):
+		for part in Geometry2D.decompose_polygon_in_convex(poly):
+			_poly_spans(part, clip, skip, out)
+		return
+	var lo := poly[0]
+	var hi := poly[0]
+	for v in poly:
+		lo = lo.min(v)
+		hi = hi.max(v)
+	var n := poly.size()
+	for iz in range(maxi(floori(lo.y * _inv), clip.position.y), mini(floori(hi.y * _inv), clip.end.y) + 1):
+		var z0 := iz * _cell
+		var z1 := z0 + _cell
+		var xa := INF
+		var xb := -INF
+		for i in n:
+			var a := poly[i]
+			var b := poly[(i + 1) % n]
+			if a.y >= z0 and a.y <= z1:
+				xa = minf(xa, a.x)
+				xb = maxf(xb, a.x)
+			if (a.y - z0) * (b.y - z0) < 0.0:
+				var x := a.x + (z0 - a.y) / (b.y - a.y) * (b.x - a.x)
+				xa = minf(xa, x)
+				xb = maxf(xb, x)
+			if (a.y - z1) * (b.y - z1) < 0.0:
+				var x := a.x + (z1 - a.y) / (b.y - a.y) * (b.x - a.x)
+				xa = minf(xa, x)
+				xb = maxf(xb, x)
+		if xa > xb:
+			continue
+		_run(iz, maxi(floori(xa * _inv), clip.position.x), mini(floori(xb * _inv), clip.end.x), skip, out)
+
+
+## Appends cells first..last of row `iz`, less any in `skip`.
+static func _run(iz: int, first: int, last: int, skip: Dictionary, out: PackedInt32Array) -> void:
+	if first > last:
+		return
+	if skip.is_empty():
+		out.append_array([iz, first, last])
+		return
+	var from := first
+	for ix in range(first, last + 2):
+		if ix > last or skip.has(Vector2i(ix, iz)):
+			if ix > from:
+				out.append_array([iz, from, ix - 1])
+			from = ix + 1
+
+
+static func _convex(poly: PackedVector2Array) -> bool:
+	var sign := 0
+	var n := poly.size()
+	for i in n:
+		var a := poly[(i + 1) % n] - poly[i]
+		var b := poly[(i + 2) % n] - poly[(i + 1) % n]
+		var c := a.cross(b)
+		if absf(c) < 1e-9:
+			continue
+		var sg := 1 if c > 0.0 else -1
+		if sign != 0 and sg != sign:
+			return false
+		sign = sg
+	return true
+
+
+## The cells wholly inside a root's yards (its open floor: a castle's bailey), realm-wide: what its outlines never shut.
+static func _yard_cells(yards: Array, xf: Transform3D) -> Dictionary:
+	var out := {}
+	for y in yards:
+		var poly := PackedVector2Array()
+		for v: Vector2 in y[0]:
+			var g := xf * Vector3(v.x, 0.0, v.y)
+			poly.append(Vector2(g.x, g.z))
+		var lo := poly[0]
+		var hi := poly[0]
+		for v in poly:
+			lo = lo.min(v)
+			hi = hi.max(v)
+		for iz in range(floori(lo.y * _inv), floori(hi.y * _inv) + 1):
+			var a := _across(poly, iz * _cell)
+			var b := _across(poly, (iz + 1) * _cell)
+			if a.x > a.y or b.x > b.y:
+				continue
+			for ix in range(ceili(maxf(a.x, b.x) * _inv), floori(minf(a.y, b.y) * _inv)):
+				out[Vector2i(ix, iz)] = true
+	return out
+
+
+## Where the line z = `z` enters and leaves a convex polygon (x from, x to), or (INF, -INF) where it misses it.
+static func _across(poly: PackedVector2Array, z: float) -> Vector2:
+	var xa := INF
+	var xb := -INF
+	var n := poly.size()
+	for i in n:
+		var a := poly[i]
+		var b := poly[(i + 1) % n]
+		if (a.y - z) * (b.y - z) <= 0.0 and a.y != b.y:
+			var x := a.x + (z - a.y) / (b.y - a.y) * (b.x - a.x)
+			xa = minf(xa, x)
+			xb = maxf(xb, x)
+	return Vector2(xa, xb)
+
+
+## Adds `by` to every cell of the runs (realm-wide [row, first, last]).
+static func _apply(spans: PackedInt32Array, by: int) -> void:
+	for s in range(0, spans.size(), 3):
+		var iz := spans[s]
+		var lz := posmod(iz, _n)
+		var kz := (iz - lz) / _n
+		var ix := spans[s + 1]
+		var last := spans[s + 2]
+		while ix <= last:
+			var lx := posmod(ix, _n)
+			var k := Vector2i((ix - lx) / _n, kz)
+			var ch: Chunk = _map.get(k)
+			if ch == null:
+				ch = _chunk_at(k)
+			var stop := mini(last, ix + _n - 1 - lx)
+			var at := lz * _n + lx
+			for j in stop - ix + 1:
+				ch.cells[at + j] += by
+			ix = stop + 1
