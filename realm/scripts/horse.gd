@@ -82,6 +82,7 @@ var _idle_life: Array = []  # standing about, the moves of its idle life (animal
 func _init(coat := -1) -> void:
 	_model = (load(MODEL) as PackedScene).instantiate()
 	add_child(_model)
+	_model.owner = self  # its own insides, made again by _init: a kept town (town_store.gd) packs the horse, not its model
 	_model.scale = Vector3.ONE * S * SIZE * READ
 	_skel = _model.find_children("*", "Skeleton3D", true, false)[0]
 	_anim = _model.find_children("*", "AnimationPlayer", true, false)[0]

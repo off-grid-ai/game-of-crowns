@@ -60,8 +60,12 @@ static func save(root: Node3D, path: String) -> void:
 
 ## The town's own nodes, each owned by the town so it is packed. A model placed whole from a file (a mill's sails, the
 ## map seat's keep) is packed as a link to that file, its insides left its own: the town's file never carries a copy.
+## A node that builds its own insides (a horse: Godot's way, it owns them) is packed alone; it builds them again.
 static func _owned(n: Node, root: Node, out: Array) -> Array:
 	for c in n.get_children():
+		var o := c.owner
+		if o != null and o != root and root.is_ancestor_of(o) and o.get_script() != null:
+			continue
 		c.owner = root
 		out.append(c)
 		if c.scene_file_path == "":
