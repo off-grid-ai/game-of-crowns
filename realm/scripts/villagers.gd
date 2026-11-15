@@ -55,10 +55,7 @@ const GAITS := {"Carrying": "PickUp_Table", "Wheelbarrow": "PickUp_Table"}
 const SOCIAL := ["Idle_Talking", "Talking", "Talking_2", "Laughing", "Happy_Gesture", "Telling_Secret", "Arguing", "Whispering", "Nodding", "Yelling", "Cheering"]
 ## What one in a gathering does while another has the floor.
 const LISTEN := ["Nodding", "Idle", "Nodding", "Looking_Around", "Thinking", "Laughing"]
-var _others := {}  # town id -> obstacle RIDs: everyone else standing in the town, for the walkers to step round
-var _others_at := 0.0
-## How far from a town's heart its scene folk, soldiers and riders count as in its streets.
-const OTHERS_REACH := 3.0
+var _others_at := 0.0  # seconds to the next look for road travellers to make way for (_give_way)
 # Minds (docs/MINDS.md): the bridge plans each commoner's day; the rules here
 # are the fallback until it has a plan for them.
 var _asking := {}  # an ask's key (a town's plan) -> true while it is out
@@ -110,7 +107,7 @@ func _process_timed(delta: float) -> void:
 	_others_at -= delta
 	if _others_at <= 0.0:
 		_others_at = 0.25
-		_avoid_others()
+		_give_way()
 	var t := Time.get_ticks_msec() * 0.001
 	# A body moves on the frames its legs step (anim_lod.gd decides, one rule):
 	# every frame near the camera, further off one in AnimLOD.STRIDE with the
@@ -143,7 +140,7 @@ func _hold_load(a: Dictionary) -> void:
 
 
 ## Personal space is the crowd's avoidance alone (Godot's RVO: every villager an agent, every horse, cart and fighter
-## an agent on the same walk map, everyone else an obstacle, _avoid_others). The hand-written pass that eased walkers
+## an agent on the same walk map, everyone else an obstacle: mover.gd stands). The hand-written pass that eased walkers
 ## apart every frame after the avoidance is gone (FPS audit 2026-11-15 item 6, docs/research/fps-engine-swaps-2026-11-15.md:
 ## villagers 0.5-3.3 ms a frame, the people group walked and hashed every frame).
 static var SPACE: float = preload("res://scripts/data.gd").num("crowd", "villagers.space", 0.07)  # about 0.6 m between middles
@@ -151,7 +148,7 @@ const ARRIVE := Mover.TOWN_ARRIVE  # a waypoint this near is reached (the Mover'
 
 
 ## Someone standing with a road traveller inside their space (a carter waiting
-## on them) takes a real step aside, walking, once in a while: never pushed. Asked with the others' pass (_avoid_others),
+## on them) takes a real step aside, walking, once in a while: never pushed. Asked four times a second (_give_way),
 ## the travellers it found.
 func _make_way(a: Dictionary, travellers: Array[Node3D]) -> void:
 	var now := Time.get_ticks_msec()
@@ -205,7 +202,6 @@ func _refresh() -> void:
 			for a in crowds[id]:
 				a["node"].queue_free()  # its Mover's crowd agent with it
 			crowds.erase(id)
-			_forget_others(id)
 			talk.forget(id)
 		elif crowds.has(id) and tier != was:
 			_at_tier(id, tier)
@@ -232,7 +228,6 @@ func _refresh() -> void:
 			for a in crowds[id]:
 				a["node"].queue_free()  # its Mover's crowd agent with it
 			crowds.erase(id)
-			_forget_others(id)
 			talk.forget(id)
 
 
@@ -432,76 +427,17 @@ static func _weighed_key(weights: Dictionary, rng: RandomNumberGenerator) -> Str
 
 func _exit_tree() -> void:
 	crowds.clear()  # each walker's crowd agent goes with its Mover
-	for id in _others.keys():
-		_forget_others(id)
 
 
-## Everyone on the ground in a town who isn't one of its walkers (the scene's
-## stall folk, beggars and rioters, soldiers, riders) goes into the walkers'
-## crowd avoidance as an obstacle (Godot's own RVO), moved to where each one
-## stands now: a walker steps round them, never through them.
-func _avoid_others() -> void:
-	if crowds.is_empty():
-		return
-	var walkers := {}
-	for id in crowds:
-		for a in crowds[id]:
-			walkers[a["node"]] = true
-	var found := {}  # town id -> positions on its walk map
-	# Only walkers within sight of the lens move (anim_lod.gd moves_now), so someone further off than that and
-	# a walker's reach is in nobody's way: not looked for (FPS P0: 1,100 people against every town, four times a second).
-	var cam := get_viewport().get_camera_3d()
-	var reach := AnimLOD.People.SEEN_TO + OTHERS_REACH
-	var travellers: Array[Node3D] = []  # road travellers near: those standing in their way step aside (_make_way)
-	for p in get_tree().get_nodes_in_group("people"):
-		var n := p as Node3D
-		if n == null or walkers.has(n) or not n.is_visible_in_tree():
-			continue
-		if cam and n.global_position.distance_to(cam.global_position) > reach:
-			continue
-		if _travelling(n):
-			travellers.append(n)
-		var g := to_local(n.global_position)
-		for id in crowds:
-			if crowds[id].is_empty():
-				continue
-			var c: Vector3 = crowds[id][0]["center"]
-			var d := Vector2(g.x - c.x, g.z - c.z)
-			if d.length() < OTHERS_REACH:
-				if not found.has(id):
-					found[id] = []
-				found[id].append(Vector3(g.x, c.y, g.z))
-				break
-	for id in crowds:
-		if crowds[id].is_empty():
-			continue
-		var pool: Array = _others.get(id, [])
-		var here: Array = found.get(id, [])
-		for i in here.size():
-			if i >= pool.size():
-				var o := NavigationServer3D.obstacle_create()
-				NavigationServer3D.obstacle_set_map(o, NavWorld.map(&"walk"))
-				NavigationServer3D.obstacle_set_use_3d_avoidance(o, false)
-				NavigationServer3D.obstacle_set_radius(o, 0.05)  # a body's width, as a walker's own
-				NavigationServer3D.obstacle_set_avoidance_layers(o, 1)
-				NavigationServer3D.obstacle_set_avoidance_enabled(o, true)
-				pool.append(o)
-			NavigationServer3D.obstacle_set_position(pool[i], here[i])
-		for i in range(here.size(), pool.size()):
-			NavigationServer3D.obstacle_set_position(pool[i], Vector3(1e5, 0, 1e5))  # nobody there now: out of the way
-		_others[id] = pool
-	if travellers.is_empty():
+## Those standing with a road traveller in their space make way (_make_way): the travellers near the lens are the
+## Mover's (mover.gd keeps everyone standing as the walkers' obstacles, and lists the travellers among them).
+func _give_way() -> void:
+	if Mover.travellers.is_empty():
 		return
 	for id in crowds:
 		for a in crowds[id]:
 			if a["placed"] and (a["node"] as Node3D).visible and PackedVector2Array(a["route"]).is_empty():
-				_make_way(a, travellers)
-
-
-func _forget_others(id: int) -> void:
-	for o in _others.get(id, []):
-		NavigationServer3D.free_rid(o)
-	_others.erase(id)
+				_make_way(a, Mover.travellers)
 
 
 func _random_spot(center: Vector3, rng: RandomNumberGenerator, rmin: float, rmax: float) -> Vector3:

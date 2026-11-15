@@ -921,6 +921,7 @@ func _finish(person: Node3D, skeleton: Skeleton3D, rng: RandomNumberGenerator, r
 			if mat and mat.distance_fade_mode != BaseMaterial3D.DISTANCE_FADE_PIXEL_DITHER:
 				Realistic.fade_near(mat, NEAR_GONE, NEAR_SOLID)
 	person.add_to_group("people")  # everyone who stands on the ground, for the ground check
+	load("res://scripts/mover.gd").stands(person)  # in the town walkers' way where they stand (mover.gd)
 	var anim := AnimationPlayer.new()
 	anim.name = "Anim"
 	person.add_child(anim)

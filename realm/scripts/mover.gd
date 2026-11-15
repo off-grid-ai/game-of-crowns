@@ -273,6 +273,8 @@ func join(crowd: RID, kind := &"man", top := 0.66) -> void:
 	if _agent.is_valid():
 		return
 	var body := get_parent() as Node3D
+	if body:
+		unstand(body)  # an agent of its own now, no obstacle
 	_agent = NavigationServer3D.agent_create()
 	NavigationServer3D.agent_set_map(_agent, crowd)
 	NavigationServer3D.agent_set_avoidance_enabled(_agent, true)
@@ -293,6 +295,7 @@ func join(crowd: RID, kind := &"man", top := 0.66) -> void:
 func join_walkers(top: float) -> void:
 	if _agent.is_valid():
 		return
+	unstand(get_parent() as Node3D)  # an agent of its own now, no obstacle
 	_agent = NavigationServer3D.agent_create()
 	NavigationServer3D.agent_set_map(_agent, NavWorld.map(&"walk"))
 	NavigationServer3D.agent_set_use_3d_avoidance(_agent, false)
@@ -330,6 +333,81 @@ func crowd_child(on: bool, walk: float) -> void:
 	NavigationServer3D.agent_set_radius(_agent, 0.045)
 	NavigationServer3D.agent_set_max_speed(_agent, walk * (2.6 if on else 1.3))
 	NavigationServer3D.agent_set_time_horizon_agents(_agent, 0.6 if on else 2.5)
+
+
+# --- Everyone standing in the walkers' way ----------------------------------------------------------------------------
+
+## Every person who is not a walker in the crowd (a stall's keeper, a beggar, a rioter, the watch, a soldier standing,
+## a rider) is an obstacle in the walkers' avoidance (Godot's RVO on the realm's walk map, layer 1), where they stand
+## now: a walker steps round them, never through them. people.gd hands every body here as it is made; one who joins a
+## crowd as an agent (join_walkers, join) is taken off. Kept where each stands every OTHERS_EVERY seconds, and only
+## within sight of the lens (People.SEEN_TO and a walker's reach: nobody further off walks); the rest parked away.
+## The road travellers among them (on a PathFollow3D) are listed in `travellers` (villagers.gd: the standing make way).
+const OTHERS_EVERY := 0.25
+const OTHERS_REACH := 3.0
+static var _stands := {}  # body instance id -> [weak body, obstacle RID]
+static var travellers: Array[Node3D] = []
+static var _stands_left := 0.0
+
+
+## `body` stands in the walkers' way while it lives (people.gd: every person made).
+static func stands(body: Node3D) -> void:
+	var id := body.get_instance_id()
+	if _stands.has(id):
+		return
+	var o := NavigationServer3D.obstacle_create()
+	NavigationServer3D.obstacle_set_use_3d_avoidance(o, false)
+	NavigationServer3D.obstacle_set_radius(o, 0.05)  # a body's width, as a walker's own
+	NavigationServer3D.obstacle_set_avoidance_layers(o, 1)
+	NavigationServer3D.obstacle_set_position(o, Vector3(1e5, 0, 1e5))
+	NavigationServer3D.obstacle_set_avoidance_enabled(o, true)
+	_stands[id] = [weakref(body), o]
+	var tree := Engine.get_main_loop() as SceneTree
+	if tree and not tree.process_frame.is_connected(_keep_stands):
+		tree.process_frame.connect(_keep_stands)
+
+
+## `body` is no obstacle (it walks in a crowd as an agent of its own).
+static func unstand(body: Node3D) -> void:
+	var e: Array = _stands.get(body.get_instance_id(), [])
+	if e.is_empty():
+		return
+	NavigationServer3D.free_rid(e[1])
+	_stands.erase(body.get_instance_id())
+
+
+static func _keep_stands() -> void:
+	var tree := Engine.get_main_loop() as SceneTree
+	_stands_left -= tree.root.get_process_delta_time() if tree else OTHERS_EVERY
+	if _stands_left > 0.0:
+		return
+	_stands_left = OTHERS_EVERY
+	var map := NavWorld.map(&"walk")
+	var cam := tree.root.get_viewport().get_camera_3d() if tree else null
+	var reach := People.SEEN_TO + OTHERS_REACH
+	travellers.clear()
+	for id in _stands.keys():
+		var e: Array = _stands[id]
+		var n := (e[0] as WeakRef).get_ref() as Node3D
+		if n == null:
+			NavigationServer3D.free_rid(e[1])
+			_stands.erase(id)
+			continue
+		if map.is_valid() and NavigationServer3D.obstacle_get_map(e[1]) != map:
+			NavigationServer3D.obstacle_set_map(e[1], map)
+		var near := n.is_inside_tree() and n.is_visible_in_tree() and (cam == null or n.global_position.distance_to(cam.global_position) <= reach)
+		NavigationServer3D.obstacle_set_position(e[1], n.global_position if near else Vector3(1e5, 0, 1e5))
+		if near and _on_road(n):
+			travellers.append(n)
+
+
+static func _on_road(n: Node) -> bool:
+	var p := n.get_parent()
+	while p:
+		if p is PathFollow3D:
+			return true
+		p = p.get_parent()
+	return false
 
 
 # --- A town walker on its streets (villagers.gd's people) ------------------------------------------------------------
