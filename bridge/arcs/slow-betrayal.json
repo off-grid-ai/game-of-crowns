@@ -4,7 +4,7 @@
   "about": "Another house courts a bannerman who holds a grudge, with letter after letter and cask after cask of gold. His liege grows suspicious. In the end the town changes hands, or its lord loses his head.",
   "kind": "betrayal",
   "weight": 3,
-  "cooldown": 10,
+  "cooldown": 30,
   "title": "The Treason of {town}",
   "roles": {
     "liege": {

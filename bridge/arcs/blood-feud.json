@@ -4,7 +4,7 @@
   "about": "Someone who remembers a wrong swears to pay back whoever did it. Raids, war, a blood price or a broken house follow, depending on which house is stronger.",
   "kind": "revenge",
   "weight": 3,
-  "cooldown": 10,
+  "cooldown": 30,
   "title": "The Feud of {wronged.seat}",
   "roles": {
     "wronged": {

@@ -4,7 +4,7 @@
   "about": "A lord's child born outside marriage comes to court with a token. Whether the lord owns the child or not, they become a rival to the trueborn heir, or take their grudge to an enemy house and come back with its banners.",
   "kind": "claim",
   "weight": 2,
-  "cooldown": 16,
+  "cooldown": 48,
   "title": "The Bastard of {father.seat}",
   "roles": {
     "father": { "rank": ["lord", "bannerman"], "age": [38, 85], "seat": true, "either": [{ "traits": ["proud", "greedy"], "children": true }] },

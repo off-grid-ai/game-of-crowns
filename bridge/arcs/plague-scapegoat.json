@@ -4,7 +4,7 @@
   "about": "Sickness or famine hits a real town. Its people blame one of their own, often a hedge witch, a midwife or a beggar. The lord burns them, protects them or loses the town's love, and the sickness shows whether the fire did any good.",
   "kind": "plague",
   "weight": 3,
-  "cooldown": 12,
+  "cooldown": 36,
   "title": "The Pestilence of {town}",
   "roles": {
     "town": {

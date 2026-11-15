@@ -27,7 +27,7 @@
  "start": 45,
  "rest": 40,
  "drift": 2,
- "raid": 0.25,
+ "raid": 0.083,
  "cards": [
   {
    "id": "envoy_match",
@@ -150,7 +150,7 @@
  "demand": {
   "_": "His envoy at court with a demand (rivals.js demand; CK3's demands of a stronger neighbour, Total War's diplomacy screen): when his hostility is past above and every seasons since the last, an envoy comes. Under land, he asks tribute: gold, plus goldPer for each point past above. At land or past it, he asks the realm's town nearest his border; refused, it is war (war). At war, he offers peace for the town or for peaceGold. Each answer moves his hostility: yield, pay, refuse, insult (the envoy sent home shaved); the great houses' favour: favour (yield shames the crown, defiance pleases), cede (the house that held the town ceded).",
   "above": 55,
-  "every": 6,
+  "every": 18,
   "gold": 120,
   "goldPer": 3,
   "land": 75,

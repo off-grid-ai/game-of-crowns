@@ -4,7 +4,7 @@
   "about": "An old lord falls sick, and his heir is weak or young. An ambitious bannerman circles. The heir is confirmed, ruled for, locked up or driven out, depending on the house's men and how the crown treats them.",
   "kind": "succession",
   "weight": 2,
-  "cooldown": 16,
+  "cooldown": 48,
   "title": "The {old.houseName} Succession",
   "roles": {
     "old": {

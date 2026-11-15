@@ -4,7 +4,7 @@
   "about": "The children of two houses that hate each other fall in love. A parent forbids it, and they either obey, run off or get hunted down, and whichever house is stronger decides who keeps them.",
   "kind": "love",
   "weight": 2,
-  "cooldown": 14,
+  "cooldown": 42,
   "title": "The Forbidden Match of {a.houseName} and {b.houseName}",
   "roles": {
     "elder": {

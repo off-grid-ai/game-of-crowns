@@ -4,7 +4,7 @@
   "about": "Someone starts to notice that their days keep repeating. They count the days they've already lived, defy their lord, ask strangers who is watching, tell a friend, and walk out of town. Or they're bled and prayed over until they go back to the old round.",
   "kind": "reverie",
   "weight": 3,
-  "cooldown": 8,
+  "cooldown": 24,
   "title": "The Waking of {dreamer}",
   "roles": {
     "dreamer": {

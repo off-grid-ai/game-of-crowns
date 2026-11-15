@@ -4,7 +4,7 @@
   "about": "A young commoner, a swineherd or a potboy, catches a lord's eye, fights, gets knighted and wins land of their own. Or a jealous bannerman or the first battle cuts them down.",
   "kind": "rise",
   "weight": 2,
-  "cooldown": 14,
+  "cooldown": 42,
   "title": "The Rise of {upstart}",
   "roles": {
     "patron": {

@@ -4,7 +4,7 @@
   "about": "A barefoot friar tells the hungry that the great are sinners. A lord takes him in or hunts him, rivals call it heresy, and the friar ends up with an order, in exile or dead as a martyr.",
   "kind": "faith",
   "weight": 2,
-  "cooldown": 14,
+  "cooldown": 42,
   "title": "The Preaching of {friar}",
   "roles": {
     "lord": {

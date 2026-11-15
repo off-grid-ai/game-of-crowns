@@ -20,6 +20,8 @@ import { ANSWERS } from "./petitions.js";
 import { CIVILIAN } from "./campaigns.js";
 import { PROMISES as PR } from "./promises.js";
 const SP = JSON.parse(fs.readFileSync(new URL("./data/spoils.json", import.meta.url), "utf8"));
+// How many lords bring petitions and how many moves the lords make a season (data/court.json lords).
+const LORDS = JSON.parse(fs.readFileSync(new URL("./data/court.json", import.meta.url), "utf8")).lords;
 import { heir as royalHeir, MATCH as RM, REGENCY, isRegency } from "./royals.js";
 import { BANDS, REBEL } from "./favour.js";
 import * as names from "./names.js";
@@ -547,12 +549,12 @@ export class Court {
     else {
       // Only lords of houses that hold land (the houses table's rows) bring petitions.
       const lords = this.alive().filter((c) => c.rank === "lord" && (world.players.find((p) => p.id === c.playerId)?.cities ?? 0) > 0);
-      const askers = { rare: 1, normal: 3, often: 5 }[ctx.options?.petitions] ?? 3;
+      const askers = LORDS.askers[ctx.options?.petitions] ?? LORDS.askers.normal;
       for (const l of lords.sort(() => r() - 0.5).slice(0, askers)) await this.petition(l, world, turn, ctx);
     }
     done.add("petition");
     for (const m of moves) {
-      const bold = { quiet: [2, 60], normal: [4, 45], scheming: [7, 30] }[ctx.options?.intrigue] ?? [4, 45];
+      const bold = LORDS.moves[ctx.options?.intrigue] ?? LORDS.moves.normal;
       if (acted >= bold[0] || done.has(m.kind) || (m.score < bold[1] && m.kind !== "petition")) continue;
       done.add(m.kind);
       acted++;

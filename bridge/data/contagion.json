@@ -1,6 +1,6 @@
 {
  "_": "A plague that walks the roads (contagion.js; Banished's and Frostpunk's sickness, Plague Inc's spread along routes, CK3's epidemics with their choices). It begins in a town Freeciv makes sick (its own illness) or, with chance start a season, in the realm's biggest town in summer. Each season it may pass from every sick town whose roads are open to each town it trades with (trade.js routes) by spread; a town is sick for lasts seasons, and while sick it is plague in the realm's eyes (view.js: households die harder, minds fear, moods), its fields half worked (the Blight decree, blight seasons). The King's answers come as event cards (cards, events.js's shape, subject sick_town, when.contagion: a plague is abroad, spread: at least that many towns): close: its roads shut (no carts, no spread out; the town suffers), heal: physicians shorten its sickness by heal seasons, burn: every sick town's sickness ends next season. A town that came through it keeps it off for immune seasons (its survivors; the SIR model's recovered), so a wave burns itself out; when the last sick town is well the chronicle tells the whole wave: how many towns, how long, how many streets it emptied (the towns' size lost).",
- "start": 0.04,
+ "start": 0.0133,
  "spread": 0.35,
  "lasts": 4,
  "blight": 1,
@@ -12,7 +12,7 @@
    "deck": "contagion",
    "subject": "sick_town",
    "weight": 6,
-   "rest": 3,
+   "rest": 9,
    "when": {
     "contagion": true
    },
@@ -59,7 +59,7 @@
    "deck": "contagion",
    "subject": "sick_town",
    "weight": 4,
-   "rest": 6,
+   "rest": 18,
    "when": {
     "contagion": true,
     "spread": 3

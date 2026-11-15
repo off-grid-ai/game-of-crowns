@@ -243,7 +243,7 @@ export class Arcs {
     for (const [k, v] of Object.entries(roles)) arc.roles[k] = v.town ? `town:${v.id}` : v.id;
     arc.title = this.fill(t.title, arc, ctx);
     this.active.push(arc);
-    this.cooldown[t.id] = this.clock + (t.cooldown ?? 12);
+    this.cooldown[t.id] = this.clock + (t.cooldown ?? STORIES.cooldown);
     await this.enter(arc, t, t.beats[0], ctx);
     return arc;
   }
@@ -471,7 +471,7 @@ export class Arcs {
       // The same person doesn't lead the same kind of story twice running.
       const leadKey = keys.find((k) => roles[k] && !roles[k].town);
       const lead = roles[leadKey];
-      if (lead && this.done.some((d) => d.template === t.id && d.roles[leadKey] === lead.id && this.clock - (d.ended ?? 0) < seasonsIn(t.cooldown ?? 12))) continue;
+      if (lead && this.done.some((d) => d.template === t.id && d.roles[leadKey] === lead.id && this.clock - (d.ended ?? 0) < seasonsIn(t.cooldown ?? STORIES.cooldown))) continue;
       const arc = { roles: Object.fromEntries(Object.entries(roles).map(([k, v]) => [k, v.town ? `town:${v.id}` : v.id])), started: this.clock };
       if (this.test(t.when ?? {}, arc, ctx, roles)) {
         // Someone made for the story only joins the realm once it begins.

@@ -19,6 +19,9 @@ func _init(owner: Main) -> void:
 const KINGS_OWN := ["grain", "tribute", "rider", "ward", "muster", "feast", "handover"]
 const WAR := ["battle", "siege", "sack", "razed"]
 var _offered_at := -100000
+## The realm's own news offered and sounded at most this often (ticker.json watch; one third as often as before, Mac 2026-11-16).
+static var OFFER_MS: int = int(1000.0 * preload("res://scripts/data.gd").num("ticker", "watch.offer_seconds", 60.0))
+static var HORN_MS: int = int(1000.0 * preload("res://scripts/data.gd").num("ticker", "watch.horn_seconds", 60.0))
 
 
 ## The latest news the King might want to see, for Space and the edge arrow.
@@ -44,7 +47,7 @@ func _on_staged(s: Dictionary, follow: Node3D) -> void:
 		# A lord's deed sounds once, each kind its own (StarCraft: an attack never sounds
 		# like news): the horn only for what's hostile, the bell for a death, a cheer for
 		# a feast, a letter on the road in silence. Rate-limited with the offers.
-		if s.get("lord", false) and Time.get_ticks_msec() - _horn_at > 20000:
+		if s.get("lord", false) and Time.get_ticks_msec() - _horn_at > HORN_MS:
 			# Which cue, from the one scene table (scene_kinds.gd): hostile a horn, joy a cheer,
 			# grief a bell. A battle or siege already sounds through the chronicle's own stinger.
 			var cue: String = {SceneKinds.HOSTILE: "horn", SceneKinds.JOY: "feast", SceneKinds.GRIEF: "death"}.get(SceneKinds.tone(kind), "") if kind not in WAR or kind in ["sack", "razed"] else ""
@@ -60,7 +63,7 @@ func _on_staged(s: Dictionary, follow: Node3D) -> void:
 		if cam and (cam.is_position_behind(_news["at"]) or not main.get_viewport().get_visible_rect().grow(-40).has_point(cam.unproject_position(_news["at"]))):
 			return
 	if kind in KINGS_OWN or kind in WAR:
-		# The King's own deeds are always offered; what the lords do, at most every 20 s.
+		# The King's own deeds are always offered; what the lords do, at most every OFFER_MS.
 		_offer(main.director.caption(s), _watch.bind(s, follow), kind in KINGS_OWN and not s.get("lord", false))
 
 
@@ -83,12 +86,12 @@ func go_to(at: Vector3, caption: String, go: Callable) -> void:
 	_to_news()
 
 
-## One Watch offer at a time; the realm's own news no more than every 20 s,
+## One Watch offer at a time; the realm's own news no more than every OFFER_MS (ticker.json watch.offer_seconds),
 ## the King's own deeds and a story's turns always.
 func _offer(text: String, go: Callable, always: bool) -> void:
 	if main.control.active or main._shot.has("path"):
 		return
-	if not always and Time.get_ticks_msec() - _offered_at < 20000:
+	if not always and Time.get_ticks_msec() - _offered_at < OFFER_MS:
 		return
 	_offered_at = Time.get_ticks_msec()
 	main.ui.offer_watch(text, go)
