@@ -14,6 +14,7 @@ signal clicked(ground: Vector3)
 ## strategic view; Mac, 2026-11-14: the jump to a separate map here was "abrupt"). Still the reach of a town's bodies.
 const Data := preload("res://scripts/data.gd")  # the one loader of realm/data (data.gd)
 const PerfTools := preload("res://scripts/perf_tools.gd")  # its tripwire names a bad goal's caller
+const ViewTier := preload("res://scripts/view_tier.gd")  # the one frame budget staged work draws on
 const Settings := preload("res://scripts/settings.gd")  # the player's camera speed (Settings, the game section)
 static var OVERVIEW: float = preload("res://scripts/data.gd").num("camera", "rig.overview", 60.0)  # camera.json rig.overview
 
@@ -590,9 +591,11 @@ func _lens_bodies() -> void:
 	# Only the towns the lens can reach have bodies, nearest first, within a budget (Jolt holds at most 10,240 a
 	# space, and every house, wall stretch and cart is one; a body made past the cap never exists, so the camera's
 	# own town once stood without any): a town whose nearest edge lies further from what the camera looks at than
-	# its arm (never counted past OVERVIEW: the realm starts at 120 out, before its first frame) and lens.margin,
+	# its arm (never counted past lens.reach) and lens.margin,
 	# or past lens.budget bodies, has its bodies taken out of the world at once and built again when it comes near.
-	var arm := minf(maxf(distance, goal_distance), OVERVIEW) + knob("lens.margin", 12.0)
+	# The bodies only keep the lens out of roofs near the ground: never reached for past lens.reach (Mac 2026-11-15:
+	# zooming out jolted while every town within 72 units built its thousands of prisms in one frame).
+	var arm := minf(maxf(distance, goal_distance), knob("lens.reach", 30.0)) + knob("lens.margin", 12.0)
 	var order := []
 	for id in towns.towns:
 		var root: Node3D = towns.towns[id]["node"]
@@ -622,8 +625,10 @@ func _lens_bodies() -> void:
 			continue
 		_drop_bodies(id)
 		build.append([id, root, fps, walls, tops, sig])
-	# Built once every town out of reach has let go of its bodies.
+	# Built once every town out of reach has let go of its bodies, on the frame budget (the rest next time round).
 	for b in build:
+		if not ViewTier.spend_ok(&"lens"):
+			break
 		var id: Variant = b[0]
 		var root: Node3D = b[1]
 		var fps: Array = b[2]
@@ -841,7 +846,7 @@ func apply() -> void:
 	# the hills instead of bobbing with each one.
 	# Eased at every distance, faster close in, at the same rate whatever the frame rate.
 	if not _held():  # a grab-pan holds the eye's height: only a slide (below)
-		_look_y = lerpf(_look_y, ground, 1.0 - exp(-get_process_delta_time() * lerpf(4.0, 14.0, ground_view / 0.85)))
+		_look_y = lerpf(_look_y, ground, 1.0 - exp(-minf(get_process_delta_time(), MAX_STEP) * lerpf(4.0, 14.0, ground_view / 0.85)))
 	var look := Vector3(target.x, _look_y + EYE * ground_view, target.z)
 	var offset := Vector3(sin(yaw) * cos(pitch), sin(pitch), cos(yaw) * cos(pitch)) * distance
 	var pos := look + offset

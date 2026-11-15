@@ -20,6 +20,7 @@ enum { OFF, FAR, MID, NEAR }
 const Data := preload("res://scripts/data.gd")
 const PerfTools := preload("res://scripts/perf_tools.gd")
 static var FAR_FROM: float = Data.num("camera", "view_tier.far_from", 60.0)  # lens distance at and above which all is FAR
+static var FAR_BACK: float = Data.num("camera", "view_tier.far_back", 8.0)  # how far under FAR_FROM a FAR place turns back
 static var NEAR_BELOW: float = Data.num("camera", "view_tier.near_below", 18.0)  # lens distance under which a place may be NEAR
 static var NEAR_REACH: float = Data.num("camera", "view_tier.near_reach", 30.0)  # world units from where the lens looks
 static var LEAD: float = Data.num("camera", "view_tier.lead", 4.0)  # world units added to a place's radius on screen
@@ -148,11 +149,16 @@ func _process(_delta: float) -> void:
 		PerfTools.add("view_tier.watch", Time.get_ticks_usec() - t0)
 
 
+## Each place's tier, its changes told on the frame budget (Mac 2026-11-15: zooming out jolted, every town in view
+## stripped or rebuilt in the frame the lens crossed FAR_FROM): a change the budget can't take this frame is told the
+## next, as its place is seen again.
 func _watched() -> void:
 	for key in _places.keys():
 		var p: Dictionary = _places[key]
-		var t := _tier(_at(p["at"]), float(p["r"]))
+		var t := _tier(_at(p["at"]), float(p["r"]), int(p["tier"]))
 		if t != int(p["tier"]):
+			if not spend_ok(&"tiers"):
+				return
 			p["tier"] = t
 			var t0 := Time.get_ticks_usec() if PerfTools.probing else 0
 			changed.emit(key, t)
@@ -164,13 +170,15 @@ func _at(at: Variant) -> Vector3:
 	return (at as Callable).call() if at is Callable else at
 
 
-func _tier(at: Vector3, radius: float) -> int:
+## A place's tier at `at`; `was` its tier now, so a lens resting by FAR_FROM doesn't flip it every frame (it leaves
+## FAR only under FAR_FROM less FAR_BACK).
+func _tier(at: Vector3, radius: float, was := -1) -> int:
 	if rig == null:
 		return NEAR
 	if not _seen(at, radius):
 		return OFF
 	var d: float = rig.distance
-	if d >= FAR_FROM:
+	if d >= FAR_FROM or (was == FAR and d >= FAR_FROM - FAR_BACK):
 		return FAR
 	if d < NEAR_BELOW and Vector2(at.x - rig.target.x, at.z - rig.target.z).length() < NEAR_REACH + radius:
 		return NEAR
