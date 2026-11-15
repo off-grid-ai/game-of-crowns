@@ -1370,6 +1370,10 @@ func _arrow_pool() -> MultiMeshInstance3D:
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
 	mm.mesh = shaft
+	mm.instance_count = maxi(1, int(Data.num(F, "field.loose.most", 2048)))  # a fixed room, never resized in flight
+	mm.visible_instance_count = 0
+	_arrow_buf.resize(mm.instance_count * 12)
+	_arrows_shown = 0
 	var mmi := MultiMeshInstance3D.new()
 	mmi.multimesh = mm
 	mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
@@ -1377,10 +1381,17 @@ func _arrow_pool() -> MultiMeshInstance3D:
 	return mmi
 
 
+var _arrow_buf := PackedFloat32Array()  # our own copy of the arrows' transforms, set on the server in one call
+var _arrows_shown := 0
+
+
 ## Every arrow in the air along its arc, pointing the way it flies (its flame with it); landed, it does what it does.
+## The arrows go to the MultiMesh in one buffer write a frame, its room fixed (battle.json field.loose.most) and only
+## the arrows in the air shown (FPS audit 2026-11-15 item 7: resized and written an arrow a server call each frame).
 func _fly() -> void:
 	var mm := _arrows.multimesh
-	var shown: Array = []
+	var room := mm.instance_count
+	var n := 0
 	for i in range(_flights.size() - 1, -1, -1):
 		var f: Array = _flights[i]
 		var t := (clock - float(f[2])) / float(f[3])
@@ -1393,13 +1404,31 @@ func _fly() -> void:
 			_flights.remove_at(i)
 			continue
 		var p := _on_arc(f, t)
-		var q := _on_arc(f, minf(t + 0.02, 1.0))
-		shown.append(Transform3D(Basis.looking_at(q - p if (q - p).length() > 0.0001 else Vector3.FORWARD, Vector3.UP), p))
 		if f[6] != null and is_instance_valid(f[6]):
 			(f[6] as Node3D).global_position = p  # the flame rides its arrow (an effect, not a traveller)
-	mm.instance_count = shown.size()
-	for i in shown.size():
-		mm.set_instance_transform(i, shown[i])
+		if n >= room:
+			continue  # more in the air than the room: the rest fly unseen and land as ever
+		var q := _on_arc(f, minf(t + 0.02, 1.0))
+		var b := Basis.looking_at(q - p if (q - p).length() > 0.0001 else Vector3.FORWARD, Vector3.UP)
+		var k := n * 12
+		_arrow_buf[k] = b.x.x
+		_arrow_buf[k + 1] = b.y.x
+		_arrow_buf[k + 2] = b.z.x
+		_arrow_buf[k + 3] = p.x
+		_arrow_buf[k + 4] = b.x.y
+		_arrow_buf[k + 5] = b.y.y
+		_arrow_buf[k + 6] = b.z.y
+		_arrow_buf[k + 7] = p.y
+		_arrow_buf[k + 8] = b.x.z
+		_arrow_buf[k + 9] = b.y.z
+		_arrow_buf[k + 10] = b.z.z
+		_arrow_buf[k + 11] = p.z
+		n += 1
+	if n > 0:
+		RenderingServer.multimesh_set_buffer(mm.get_rid(), _arrow_buf)
+	if n != _arrows_shown:
+		mm.visible_instance_count = n
+		_arrows_shown = n
 
 
 func _on_arc(f: Array, t: float) -> Vector3:
