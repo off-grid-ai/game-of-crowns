@@ -11,6 +11,7 @@ extends RefCounted
 
 const Data := preload("res://scripts/data.gd")
 const Batch := preload("res://scripts/batch.gd")
+const MeshCpu := preload("res://scripts/mesh_cpu.gd")
 
 static var _cache := {}  # town root instance id -> [signature, {"town": [...], "life": [...]}]
 static var _foot := {}  # [mesh instance id, slice] -> [the mesh-local foot box (Rect2, XZ), its lowest y, its height]
@@ -200,7 +201,7 @@ static func _foot_of(mesh: Mesh, slice: float) -> Array:
 	var lo := Vector2(INF, INF)
 	var hi := Vector2(-INF, -INF)
 	for s in mesh.get_surface_count():
-		var arrays := mesh.surface_get_arrays(s)
+		var arrays := MeshCpu.arrays(mesh, s)
 		var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
 		for v in verts:
 			if v.y <= cut:
@@ -230,7 +231,7 @@ static func _cells_of(mesh: Mesh, slice: float, cell: float) -> Array:
 	var cut := mesh.get_aabb().position.y + slice
 	var seen := {}
 	for s in mesh.get_surface_count():
-		var arrays := mesh.surface_get_arrays(s)
+		var arrays := MeshCpu.arrays(mesh, s)
 		var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
 		var idx: PackedInt32Array = arrays[Mesh.ARRAY_INDEX] if arrays[Mesh.ARRAY_INDEX] != null else PackedInt32Array()
 		var count := idx.size() if idx.size() > 0 else verts.size()

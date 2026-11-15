@@ -4,6 +4,7 @@ extends RefCounted
 ## beard, hair colour, cloth tint and build all vary, so no two look alike.
 
 const Units := preload("res://scripts/world_units.gd")  # the world's one scale (Units.M)
+const MeshCpu := preload("res://scripts/mesh_cpu.gd")
 const S := Units.M  # same scale as the towns: a 1.8 m person is ~0.22 units
 ## Drawn larger than life, as 01-town draws its people against the houses (people.json readable; look-gap.md:
 ## ours were 1.5-1.7x too small to read): every person, beast, horse and cart, with their stride, pace and room.
@@ -735,7 +736,7 @@ static func _front_at(skeleton: Skeleton3D, bone_name: String, band: float, acro
 		var mesh: Mesh = (mi as MeshInstance3D).mesh
 		var xf: Transform3D = (mi as MeshInstance3D).transform
 		for sfc in mesh.get_surface_count():
-			var verts: PackedVector3Array = mesh.surface_get_arrays(sfc)[Mesh.ARRAY_VERTEX]
+			var verts: PackedVector3Array = MeshCpu.arrays(mesh, sfc)[Mesh.ARRAY_VERTEX]
 			for v in verts:
 				var w := xf * v
 				if absf(w.y - y) < band and absf(w.x - rest.origin.x) < across:  # (across: inside the arms)

@@ -6,6 +6,7 @@ extends RefCounted
 const CELL := 2.0
 const STOREY := 3.0
 const DIR := "res://assets/village/%s.gltf"
+const MeshCpu := preload("res://scripts/mesh_cpu.gd")
 
 var _cache := {}
 
@@ -189,7 +190,11 @@ static func _once(key: String, make: Callable) -> ArrayMesh:
 		var made: Variant = make.call()
 		_baked[key] = made if made is ImporterMesh or made == null else _plain(made)
 	var im: ImporterMesh = _baked[key]
-	return (im.duplicate() as ImporterMesh).get_mesh() if im else null
+	if im == null:
+		return null
+	var mesh := (im.duplicate() as ImporterMesh).get_mesh()
+	MeshCpu.keep(mesh, im)  # measured from the plain arrays (nav_ground), never read back
+	return mesh
 
 
 ## A mesh built straight to the renderer (a house's tiers, its pieces), read back once as plain arrays.
