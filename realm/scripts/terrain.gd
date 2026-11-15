@@ -248,9 +248,18 @@ var _graded_areas: Array[Rect2] = []  # the ground graded since the last commit:
 ## Levels a building's plot the way builders do: cut into the high side, fill
 ## the low side, to height `h`, easing back into the land over `margin`.
 ## Changes the same heights everyone reads (height_at) and what Terrain3D draws.
+## Always from the land as it was before any grading (_ungraded), each pixel taking the strongest levelling laid on it
+## (_graded_k), so levelling the same plot again changes nothing (combined run 9, Mac's shot: a town raised again each
+## time it grew levelled its square and plots again over the already levelled ground; each pass blended the ramps
+## further and, by a river where the levelling eases off, measured a lower plot and cut it lower still, until a wide
+## flat shelf at the river's level stood in cliffs with the river in a channel through it).
 func flatten(at: Vector3, size: Vector2, yaw: float, h: float, margin := 0.35, most := 1.2) -> void:
 	if land == null:
 		return
+	if _ungraded.is_empty():
+		_ungraded = land.get_data().to_float32_array()
+		_graded_k = PackedFloat32Array()
+		_graded_k.resize(_ungraded.size())
 	var b := Basis(Vector3.UP, -yaw)
 	# A plot cut into a slope runs back into the land over a distance that
 	# grows with the height it cut or filled, so it reads as a terrace, not a cliff.
@@ -258,7 +267,7 @@ func flatten(at: Vector3, size: Vector2, yaw: float, h: float, margin := 0.35, m
 	for i in 8:
 		var a := TAU * i / 8.0
 		var edge := at + Vector3(cos(a), 0, sin(a)) * (size.length() * 0.5 + 0.3)
-		drop = maxf(drop, absf(height_at(edge.x, edge.z) - h))
+		drop = maxf(drop, absf(_ungraded_at(edge.x, edge.z) - h))
 	margin = clampf(maxf(margin, drop * 2.5), margin, most)  # not so far it unseats the neighbours
 	var reach := size.length() * 0.5 + margin
 	var per := float(land_per_unit)
@@ -275,11 +284,15 @@ func flatten(at: Vector3, size: Vector2, yaw: float, h: float, margin := 0.35, m
 			if out > margin:
 				continue
 			var k := 1.0 if out <= 0.0 else 1.0 - smoothstep(0.0, margin, out)
-			var old: float = land.get_pixel(x, z).r
+			var i := z * land.get_width() + x
+			var old: float = _ungraded[i]
 			var near := river_near(w.x, w.z)
 			if old <= 0.0 or near >= 1.0:
 				continue  # never raise the sea bed into land, nor fill a river
 			k *= 1.0 - near * near  # beside a river the land keeps its slope down to the water
+			if k <= 0.0 or k < _graded_k[i]:
+				continue  # a stronger levelling (a neighbour's plot) already holds this ground
+			_graded_k[i] = k
 			var v := lerpf(old, h, k)
 			land.set_pixel(x, z, Color(v, 0, 0, 1))
 			if data:
@@ -291,6 +304,30 @@ func flatten(at: Vector3, size: Vector2, yaw: float, h: float, margin := 0.35, m
 			area = area.merge(_graded_areas[i])
 	_graded_areas = _graded_areas.filter(func(g: Rect2): return not g.intersects(area))
 	_graded_areas.append(area)
+
+
+var _ungraded := PackedFloat32Array()  # the land's heights before any levelling (flatten), made at the first one
+var _graded_k := PackedFloat32Array()  # per heightmap pixel: the strongest levelling laid on it so far (0 none, 1 level)
+
+
+## The land's height at a world point before any town levelled it: what a plot is measured on (towns.gd _seat, the
+## square), so a town raised again lays the same levels, never a level measured on its own last levelling.
+func height_before_grading(wx: float, wz: float) -> float:
+	if land == null:
+		return height_at(wx, wz)
+	return _land_height(wx, wz) if _ungraded.is_empty() else _ungraded_at(wx, wz)
+
+
+## The land's height at a world point before any levelling: _land_height's bilinear over _ungraded.
+func _ungraded_at(wx: float, wz: float) -> float:
+	var w := land.get_width()
+	var x := clampf(wx * land_per_unit - 0.5, 0.0, w - 1.001)
+	var z := clampf(wz * land_per_unit - 0.5, 0.0, land.get_height() - 1.001)
+	var x0 := int(x)
+	var z0 := int(z)
+	var top := lerpf(_ungraded[z0 * w + x0], _ungraded[z0 * w + x0 + 1], x - x0)
+	var bottom := lerpf(_ungraded[(z0 + 1) * w + x0], _ungraded[(z0 + 1) * w + x0 + 1], x - x0)
+	return lerpf(top, bottom, z - z0)
 
 
 ## Pushes graded ground to Terrain3D once a town is laid out.
@@ -340,6 +377,8 @@ var land_per_unit := 4
 
 func _load_land(info) -> void:
 	land = null
+	_ungraded = PackedFloat32Array()
+	_graded_k = PackedFloat32Array()
 	if not (info is Dictionary) or not FileAccess.file_exists(String(info.get("file", ""))):
 		return
 	var bytes := FileAccess.get_file_as_bytes(String(info["file"]))

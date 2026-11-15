@@ -28,7 +28,7 @@ func real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds:
 	# stalls, the tavern and the hall facing it, a tight ring of townhouses
 	# around it, houses along the roads leading in, and a palisade with gates
 	# where the roads come through. Seats get more of everything.
-	tb.world("flatten", [center, Vector2.ONE * square_r * 2.0, 0.0, tb.terrain.height_at(center.x, center.z), 0.6])
+	tb.world("flatten", [center, Vector2.ONE * square_r * 2.0, 0.0, tb.terrain.height_before_grading(center.x, center.z), 0.6])
 	await tb._pace()
 	root.set_meta("square_r", square_r)
 	var lots: Array = [[Vector3.ZERO, square_r * 0.9]]

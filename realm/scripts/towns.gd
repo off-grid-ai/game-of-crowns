@@ -2226,7 +2226,7 @@ func _seat(center: Vector3, p: Vector3, f: Vector2, rot: float, most := 1.2, cut
 			wet += 1
 			continue
 		dry += 1
-		var y: float = terrain.height_at(w.x, w.z)
+		var y: float = terrain.height_before_grading(w.x, w.z)  # the land as it was: raised again, the same level
 		lo = minf(lo, y)
 		hi = maxf(hi, y)
 		sum += y
