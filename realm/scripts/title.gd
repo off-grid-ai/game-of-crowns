@@ -324,7 +324,9 @@ func show_new() -> void:
 	# its story, then (if you like) every other choice about the realm. The steps
 	# across the top say where you are and take you to any of them.
 	if _king.is_empty():
-		_king = {"name": _roll_name(false), "age": 34, "gender": "male"}
+		# Who you were last time (Mac: a name once given is the default next time); a dealt name the first time.
+		var last: Dictionary = Settings.get_value("last_king")
+		_king = last.duplicate() if String(last.get("name", "")) != "" else {"name": _roll_name(false), "age": 34, "gender": "male"}
 	var steps := HBoxContainer.new()
 	steps.alignment = BoxContainer.ALIGNMENT_CENTER
 	steps.add_theme_constant_override("separation", 28)
@@ -1626,6 +1628,8 @@ func _begin() -> void:
 		opt["kingType"] = _king_type
 	if not _king.is_empty():
 		opt["king"] = _king.duplicate()
+		if String(_king.get("name", "")) != "":
+			Settings.set_value("last_king", _king.duplicate())  # the next chronicle starts with you
 	bridge.create_chronicle(n, _scenario, _minutes, "normal", _wealth, _mood_edit.text.strip_edges(), opt, func(code, d):
 		if code == 200 and d is Dictionary:
 			began.emit()
