@@ -78,7 +78,7 @@ Every build is signed and notarised by Apple. [All releases](https://github.com/
 
 ## For developers
 
-Decisions live in [VISION.md](VISION.md) and [DESIGN.md](DESIGN.md), and the interface rules in [UI.md](UI.md). Write your own stories as data files: the game checks them and plays them against the live realm ([docs/STORY_ARCS.md](docs/STORY_ARCS.md)).
+Decisions live in [VISION.md](VISION.md) and [DESIGN.md](DESIGN.md), and the interface rules in [UI.md](UI.md). Write your own stories as data files: the game checks them and plays them against the live realm ([docs/STORY_ARCS.md](notes archived: docs/STORY_ARCS.md)).
 
 ### Version 1
 
@@ -116,7 +116,7 @@ v1 is frozen (see "v1: what ships" in [VISION.md](VISION.md)). In v1 you are the
    | --- | --- | --- |
    | `realistic/` | buildings, trees, props | Sketchfab (CC BY, credits in each folder's `license.txt`), Poly Haven (CC0) |
    | `people/` | townsfolk bodies, outfits, hair | Quaternius *Universal Base Characters* + *Fantasy Outfits* (CC0), Mixamo characters |
-   | `anims/mixamo/` | every townsperson's move | Mixamo (Adobe account); list in [MIXAMO_DOWNLOADS.md](MIXAMO_DOWNLOADS.md) |
+   | `anims/mixamo/` | every townsperson's move | Mixamo (Adobe account); list in MIXAMO_DOWNLOADS.md (in the project archive) |
    | `hero/` | close-up characters and their moves | Sketchfab Mixamo-rigged characters + Mixamo |
    | `crops/`, `cavalry/`, `weapons/` | wheat, hay, cabbages; the horse; the lance | Sketchfab and Blend Swap, each with its `license.txt` |
    | `interiors/` | great hall, tavern, chapel, cottage (version 2) | Sketchfab, each with its `license.txt` |
@@ -126,7 +126,7 @@ v1 is frozen (see "v1: what ships" in [VISION.md](VISION.md)). In v1 you are the
 
    The whole `realm/assets/` folder is mirrored in the private R2 bucket `game-of-crowns-assets` under `realm-assets/` (bake-off art under `bakeoff/`): `rclone copy` it back, or run `realm/tools/r2_sync.sh` to push what's new (keys from the env file in `$GOC_R2_ENV`; copy only, never deletes).
 
-   The file names each folder expects are the ones in its `.import` files. Asset hunting is briefed in `ASSET_SHORTLIST.md` and the `CODEX_*` briefs.
+   The file names each folder expects are the ones in its `.import` files. Asset hunting briefs (`ASSET_SHORTLIST.md`, the `CODEX_*` briefs) are in the project archive.
 3. Open the project once so Godot imports everything (Apple Silicon: always native):
    ```bash
    arch -arm64 godot --headless --path realm --import
@@ -147,7 +147,7 @@ Wakes the bridge (which starts Freeciv) and opens the view. `./realm.sh status` 
 
 A new realm starts from the title screen. **Begin a New Chronicle** lets you choose the world (Aldmere nine years in, Aldmere from year one, or a random realm), the length of the reign (endless, 30 minutes or an hour), the royal treasury and host, how many lords come to court, the language people speak to you in, the opening mood in your own words, and on the houses' side their temper, cunning, wealth and faith in the crown, plots, floods and famine, raiders, when the dead come, and whether a usurper may rise. Saved scenarios start you from a set you liked before.
 
-The Mac app (`Game of Crowns.app`, one double-click, everything inside) is built by `packaging/build-mac.sh`; see [docs/SHIPPING.md](docs/SHIPPING.md).
+The Mac app (`Game of Crowns.app`, one double-click, everything inside) is built by `packaging/build-mac.sh`; the shipping notes are in the project archive (docs/SHIPPING.md).
 
 ## Playing
 
@@ -181,10 +181,10 @@ bridge/              the simulation bridge (Node, no dependencies)
   server.js          HTTP API, the Freeciv process, turns, scenes, the Hand's counsel
   app.js             the bridge as the packaged app runs it (bundled Freeciv)
   characters.js      the court: named people, goals, memories, petitions
-  minds.js           every person a mind: mood, plans, bonds (docs/MINDS.md)
+  minds.js           every person a mind: mood, plans, bonds (notes archived: docs/MINDS.md)
   townsfolk.js       commoners: name, trade, family, a past
   chatter.js         what people say to each other
-  arcs.js            story arcs, one JSON file each in arcs/ (docs/STORY_ARCS.md)
+  arcs.js            story arcs, one JSON file each in arcs/ (notes archived: docs/STORY_ARCS.md)
   arcs-check.js      checks every arc file
   crown.js           treasury, tithe, favour, the King's decrees
   god.js             world conditions changed through Freeciv

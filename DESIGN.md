@@ -119,7 +119,7 @@ Parked until the single-player game is good. Freeciv is multiplayer at heart: 2â
 - Buildings are small against a large landscape.
 - Nothing from mismatched packs; placeholder art never ships.
 - **One animation family: Mixamo, for everyone** (decided 2026-11-04, replacing the 2026-11-03 "crowds stay Quaternius" split). Townsfolk and soldiers keep their modular Quaternius bodies (outfits, heads, hair, body shapes), but every model and every clip is retargeted at import to Godot's humanoid skeleton (`realm/assets/retarget/*_map.tres`), so any Mixamo move plays on any person: walking, work, haggling, prayer, grief, fighting. The townsfolk library is `realm/assets/anims/mixamo/`, each file one move named for what the game asks for ("Walk", "Sword_Idle", "Praying"). Quaternius's own Universal Animation Library is retired: its clips don't survive the retarget. The character close-up still uses its own Fuse/Mixamo rigs. The user downloads Mixamo moves (Adobe login); Claude wires them in.
-- Heraldry: every house's banner and sigil lives in `realm/assets/heraldry` (prompts in ASSET_PROMPTS.md).
+- Heraldry: every house's banner and sigil lives in `realm/assets/heraldry` (prompts in ~/wednesday/goc-archive/ASSET_PROMPTS.md).
 
 ## World
 - One hand-shaped continent rather than random noise. Regions with character: cold north, rich western hills, iron isles, green reach, stormlands, southern sands, high vale.

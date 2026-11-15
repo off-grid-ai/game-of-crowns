@@ -92,7 +92,7 @@ Schell, Meier, self-determination theory, Swink, Costikyan and the IKEA effect:
 9. **Open loops.** Things he started and wants to see finish pull him to the next minute.
 10. **The player is the hero.** The best moments happen because of him and are told that way.
 
-What the best designers add (docs/review/designer-top10.md, Mac 2026-11-10: "fix these as well"):
+What the best designers add (~/wednesday/goc-archive/docs/review/designer-top10.md, Mac 2026-11-10: "fix these as well"):
 
 11. **Repetition kills.** A reign has 15 to 60 decisions; each one comes from the realm's state, never a pool,
     and no situation returns within a reign.
