@@ -13,6 +13,7 @@ signal clicked(ground: Vector3)
 ## furthest (max_distance), the atlas and the houses' tint coming in with distance (Total War's campaign map, Civ VI's
 ## strategic view; Mac, 2026-11-14: the jump to a separate map here was "abrupt"). Still the reach of a town's bodies.
 const Data := preload("res://scripts/data.gd")  # the one loader of realm/data (data.gd)
+const PerfTools := preload("res://scripts/perf_tools.gd")  # its tripwire names a bad goal's caller
 const Settings := preload("res://scripts/settings.gd")  # the player's camera speed (Settings, the game section)
 static var OVERVIEW: float = preload("res://scripts/data.gd").num("camera", "rig.overview", 60.0)  # camera.json rig.overview
 
@@ -50,11 +51,34 @@ static func fade_knob(path: String, fallback: float) -> float:
 const EYE := 0.2  # eye height, about 1.7 m
 var max_distance := 260.0
 
-var goal_target := Vector3.ZERO
-var goal_distance := 120.0
-var goal_yaw := 0.0
+# The goals are the one gate onto the view (main, news, films, the director all set them): a non-finite point,
+# distance or angle is never taken, and the first one offered is named with its caller (PerfTools.trip), so a NaN
+# can't reach the lens and tear the frame (Mac's war-king reign: 1,574 non-finite transforms from startup).
+var goal_target := Vector3.ZERO:
+	set(v):
+		if v.is_finite():
+			goal_target = v
+		else:
+			PerfTools.trip("camera goal_target", str(v))
+var goal_distance := 120.0:
+	set(v):
+		if is_finite(v) and v > 0.0:
+			goal_distance = v
+		else:
+			PerfTools.trip("camera goal_distance", str(v))
+var goal_yaw := 0.0:
+	set(v):
+		if is_finite(v):
+			goal_yaw = v
+		else:
+			PerfTools.trip("camera goal_yaw", str(v))
 var tilt := 0.0  # added to the automatic pitch, in degrees
-var goal_tilt := 0.0
+var goal_tilt := 0.0:
+	set(v):
+		if is_finite(v):
+			goal_tilt = v
+		else:
+			PerfTools.trip("camera goal_tilt", str(v))
 var _dragging := 0
 var _drag_moved := 0.0
 var _grab := Vector3.INF  # the ground point held under the cursor while dragging
@@ -134,14 +158,16 @@ func square_view(root: Node3D, dist: float) -> Array:
 ## Returns [where to look, yaw, distance, tilt]. The clarity frame still keeps its foreground clear.
 func town_view(root: Node3D, turn := 0.0, scale := 1.0) -> Array:
 	var at := root.global_position
-	var dist := knob("town_view.dist", 19.0) * scale
-	var t := clampf((dist - min_distance) / (max_distance - min_distance), 0.0, 1.0)
+	var dist := maxf(knob("town_view.dist", 19.0) * scale, min_distance)
+	var t := _zoom_share(dist)
 	var tilt := knob("town_view.pitch", 40.0) - lerpf(30.0, 55.0, pow(t, 0.7))  # apply()'s own pitch, moved to the view's
 	var yaw := 0.6
 	var ahead := knob("town_view.ahead", 0.0) * dist
 	var aim := func(y: float) -> Vector3: return at - Vector3(sin(y), 0, cos(y)) * ahead  # past the square, away from the lens
+	# A town without its castle (a shell town not yet raised, or one whose castle stands nowhere yet) keeps the
+	# plain heading: only a castle placed in the world turns the view.
 	var castle: Node3D = root.get_node_or_null("Castle")
-	if castle:
+	if castle and castle.is_inside_tree() and castle.global_position.is_finite() and at.is_finite():
 		var to := castle.global_position - at
 		if Vector2(to.x, to.z).length() > 0.01:
 			var away := atan2(-to.x, -to.z)  # the lens on the far side of the square from the castle
@@ -154,7 +180,10 @@ func town_view(root: Node3D, turn := 0.0, scale := 1.0) -> Array:
 				var look: Vector3 = aim.call(y)
 				var eye := eye_at(look, y, tilt, dist)
 				var fwd := (look - eye).normalized()
-				var right := fwd.cross(Vector3.UP).normalized()
+				var right := fwd.cross(Vector3.UP)
+				if right.length() < 0.001:
+					continue  # straight down: no left or right to place the castle by
+				right = right.normalized()
 				var c := castle.global_position - eye
 				var x := c.dot(right) / maxf(c.dot(fwd), 0.01) / tv  # -1 the left edge, 1 the right
 				if absf(x - want) < best:
@@ -177,10 +206,15 @@ func siege_view(breach: Vector3, town: Vector3) -> Array:
 	return [breach + out * knob("siege_view.out", 0.4), yaw, dist, tilt]
 
 
+## How far `dist` lies from the nearest zoom to the furthest, 0 to 1; never a division by a zero span.
+func _zoom_share(dist: float) -> float:
+	return clampf((dist - min_distance) / maxf(max_distance - min_distance, 0.001), 0.0, 1.0)
+
+
 ## The tilt that gives `pitch` degrees down at `dist`, as apply() places the lens (its own pitch for the distance, and
 ## the ground view close in): a view that wants an absolute pitch (a siege, the army's lens) asks here.
 func tilt_for(pitch: float, dist: float) -> float:
-	var t := clampf((dist - min_distance) / (max_distance - min_distance), 0.0, 1.0)
+	var t := _zoom_share(dist)
 	var g := ground_view_at(dist)
 	return (pitch - (1.0 - g) * lerpf(30.0, 55.0, pow(t, 0.7)) - 3.0 * g) / ((1.0 - g) + 0.6 * g)
 
@@ -740,6 +774,9 @@ func _keep_inside() -> void:
 	# At the furthest zoom the pitch is the far one (55 plus the tilt) and the footprint grows with the distance.
 	var unit := _extent(footprint(1.0, goal_yaw, above_at(1.0, goal_tilt, 1.0)))
 	var widest := minf(room.x / maxf(unit.size.x, 0.001), room.y / maxf(unit.size.y, 0.001))
+	if not is_finite(widest):
+		PerfTools.trip("camera max_distance", str(widest))
+		return
 	max_distance = maxf(widest, min_distance + 0.001)  # the zoom requests are clamped to it (_zoom_at, the keys); the view is never pulled in
 	var box := _extent(footprint(goal_distance, goal_yaw, above_at(goal_distance, goal_tilt), maxf(_look_y, 0.0)))
 	goal_target.x = _hold(goal_target.x, box.position.x, box.end.x, m, world.x - m)

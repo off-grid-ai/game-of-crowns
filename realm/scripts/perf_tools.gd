@@ -64,6 +64,22 @@ static func mark(step: String) -> void:
 		return
 	f.seek_end()
 	f.store_line("%s LOAD %7.2f s %s" % [Time.get_time_string_from_system(), Time.get_ticks_msec() / 1000.0, step])
+## A tripwire (always on, once per `what`): a value that must never happen was offered and refused. One TRIP line in
+## user://perf.log with who offered it (the stack), and the same as a warning, so the first bad caller is named.
+static var _tripped := {}
+static func trip(what: String, detail: String) -> void:
+	if _tripped.has(what):
+		return
+	_tripped[what] = true
+	var where := "\n".join(get_stack().slice(1).map(func(f): return "  %s:%d %s" % [f.get("source", "?"), int(f.get("line", 0)), f.get("function", "")]))
+	push_warning("TRIP %s: %s\n%s" % [what, detail, where])
+	var f := FileAccess.open("user://perf.log", FileAccess.READ_WRITE if FileAccess.file_exists("user://perf.log") else FileAccess.WRITE)
+	if f == null:
+		return
+	f.seek_end()
+	f.store_line("%s TRIP %s: %s\n%s" % [Time.get_time_string_from_system(), what, detail, where])
+
+
 static var tally := {}  # name -> [microseconds, calls]
 ## The probe's clip census (the VAT townsfolk plan, step 1): frames each clip was shown on a body in the ring past
 ## anim_lod.NEAR (where a baked crowd would draw them), since the last perf line. anim_lod.gd counts; written below.
