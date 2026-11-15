@@ -727,14 +727,19 @@ func _march(f: Dictionary) -> void:
 		if sea.is_empty():
 			push_warning("UNITS a ship has no water to %s: it stays where it is" % str(f["target"]))  # never across the land
 			return
-		var length := 0.0
-		for i in sea.size() - 1:
-			length += sea[i].distance_to(sea[i + 1])
+		# Rounded at the route's corners and steered on an arc (Mac 2026-11-15: 'the ship moves very weirdly, not gradual
+		# and slow at all': it pivoted on the spot at every corner of the sea's grid route).
+		if sea[0].distance_to(n.position) > 0.01:
+			sea.insert(0, n.position)
+		var curve: Curve3D = terrain.paths.smooth_road(sea)
+		var length := curve.get_baked_length()
 		if length < 0.01:
 			return
+		curve.bake_interval = 0.1
 		mo.speed = float(march_pace(length, Awareness.season_seconds)["speed"])
+		mo.turn_radius = Data.num("army", "map.ship_turn", 0.8)
 		mo.clip = ""
-		mo.follow(sea)
+		mo.follow(curve.get_baked_points())
 		return
 	mo.route_to(f["target"], func(way: PackedVector3Array):
 		if way[0].distance_to(n.position) > 0.01:
