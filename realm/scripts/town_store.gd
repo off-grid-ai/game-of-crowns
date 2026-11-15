@@ -71,6 +71,7 @@ static func save(root: Node3D, path: String) -> void:
 		push_warning("TOWNS a town could not be packed (%s): it is raised again next time" % error_string(ok))
 		return
 	Kept.keep(scene, path)
+	root.set_meta("kept_file", path)  # the file it is kept in (kept_name): what is made once for it is kept by it
 
 
 ## The town's own nodes, each owned by the town so it is packed. A model placed whole from a file (a mill's sails, the
@@ -89,6 +90,16 @@ static func _owned(n: Node, root: Node, out: Array) -> Array:
 		if c.scene_file_path == "":
 			_owned(c, root, out)
 	return out
+
+
+## The name what is made once for a kept town (ground.gd's outlines of what stands, dressing.gd's dressing) is kept
+## under (Kept.path): its town file's, so it is made anew whenever the town is. "" for a town not (yet) kept, or one
+## whose layout has moved on from its file (`file`: the file the towns say it stands for now, towns.gd towns[id].path).
+static func kept_name(root: Node3D, file: String) -> String:
+	var at := String(root.get_meta("kept_file", ""))
+	if at == "" or at != file:
+		return ""
+	return at.get_file().get_basename().trim_suffix("_" + Kept.code())
 
 
 ## Whether a town is kept at `path`; if so its reading is started on Godot's loader threads.
@@ -112,6 +123,7 @@ static func take(path: String) -> Variant:
 			DirAccess.remove_absolute(path)  # unreadable: raised again
 		return false
 	var root := scene.instantiate() as Node3D
+	root.set_meta("kept_file", path)  # read back from this file (kept_name)
 	for n in [root] + root.find_children("*", "", true, false):
 		for g in n.get_meta("_groups", PackedStringArray()):
 			n.add_to_group(g)

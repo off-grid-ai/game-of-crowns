@@ -173,7 +173,10 @@ func _stage_town(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 	# planters by house doors, bushes, flowers and rocks between the houses.
 	if Dressing.on() and root.get_node_or_null("Dressing") == null:
 		var at := root.position
-		await Dressing.dress(root, func(q: Vector3) -> float: return _y(at, q), int(c.get("id", 0)), _pace.bind("dressing"))
+		var reg: Dictionary = towns_node.get("towns") if towns_node else {}
+		var file := String((reg.get(int(c.get("id", -1)), {}) as Dictionary).get("path", ""))
+		# A kept town's dressing laid out once and read back after (dressing.gd: by its town file, town_store.gd).
+		await Dressing.dress(root, func(q: Vector3) -> float: return _y(at, q), int(c.get("id", 0)), _pace.bind("dressing"), TownStore.kept_name(root, file))
 		await _pace("dressing")
 		if not is_instance_valid(root):
 			return
@@ -1076,6 +1079,7 @@ func _dress(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, rng: Ran
 
 const Works := preload("res://scripts/works.gd")
 const Dressing := preload("res://scripts/dressing.gd")
+const TownStore := preload("res://scripts/town_store.gd")  # a kept town's file: what is made once for it is kept by it
 const Horse := preload("res://scripts/horse.gd")
 const Data := preload("res://scripts/data.gd")
 const Ground := preload("res://scripts/ground.gd")  # the one answer to where a body may stand

@@ -31,9 +31,16 @@ static func on() -> bool:
 ## only where the ground is clear (ground.gd). Returns what it set down, {kind: count} (the layout probe reads it).
 ## `pace`: awaited after every piece tried (town_life.gd _pace: the frame's 4 ms share), so a town is dressed over
 ## frames, never in one (fps6: 878 ms in one step); none, and it is dressed at once (tools).
-static func dress(root: Node3D, ground: Callable, seed: int, pace := Callable()) -> Dictionary:
+## `kept`: the town's kept name (town_store.gd kept_name): a kept town's dressing is laid out once and kept under it
+## (Kept "dressed"), and read back on every later start, nothing tried again; "" and it is laid out each time.
+static func dress(root: Node3D, ground: Callable, seed: int, pace := Callable(), kept := "") -> Dictionary:
 	if root == null or not is_instance_valid(root) or root.get_node_or_null("Dressing") != null:
 		return {}
+	var file := Kept.path("dressed", kept) if kept != "" else ""
+	if file != "" and Kept.has(file):
+		var got := load(file)
+		if got != null and got.has_meta("placed"):
+			return _lay(root, got.get_meta("placed"), got.get_meta("counts", {}), got.get_meta("fronts", []))
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed
 	var rank := float((Data.value("dressing", "rank", {}) as Dictionary).get(String(root.get_meta("rank", "village")), 0.5))
@@ -234,15 +241,29 @@ static func dress(root: Node3D, ground: Callable, seed: int, pace := Callable())
 						await pace.call()
 						if not is_instance_valid(root):
 							return {}  # the town went meanwhile
-	# Drawn in bulk (bulk.gd, the one drawer of repeated small things), out to 30 from the lens (small things: near the
-	# camera only), owned by the Dressing node (they go when it does). The node keeps where each stands (meta "bulk":
-	# [mesh, place in the town's frame, model]) for the walk map (nav_ground.gd) and the dressing probe.
+	if file != "":
+		var keep := Resource.new()
+		keep.set_meta("placed", placed)
+		keep.set_meta("counts", counts)
+		keep.set_meta("fronts", fronts)
+		Kept.keep(keep, file)  # laid out once: every later start reads it back (written on a worker)
+	return _lay(root, placed, counts, fronts)
+
+
+## The dressing laid out (`placed`: "kit/model" -> [its places in the town's frame]) set down under a "Dressing" node.
+## Drawn in bulk (bulk.gd, the one drawer of repeated small things), out to 30 from the lens (small things: near the
+## camera only), owned by the Dressing node (they go when it does). The node keeps where each stands (meta "bulk":
+## [mesh, place in the town's frame, model]) for the walk map (nav_ground.gd) and the dressing probe.
+static func _lay(root: Node3D, placed: Dictionary, counts: Dictionary, fronts: Array) -> Dictionary:
 	var node := Node3D.new()
 	node.name = "Dressing"
 	root.add_child(node)
 	var bulk: Array = []
 	for model in placed:
-		var mesh: Mesh = mesh_of(model)[0]
+		var m := mesh_of(model)
+		if m.is_empty():
+			continue  # a kit model gone since it was kept
+		var mesh: Mesh = m[0]
 		for xf: Transform3D in placed[model]:
 			Bulk.add(mesh, root.global_transform * xf, node, 30.0, not model.begins_with("meshy/nt_"))
 			bulk.append([mesh, xf, model])
