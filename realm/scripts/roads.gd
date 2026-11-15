@@ -43,7 +43,6 @@ func sync() -> void:
 	if sig == _signature:
 		return
 	_signature = sig
-	terrain.paths.set_roads(st.rec("roads", []))
 	if _roads:
 		_roads.queue_free()
 	_roads = Node3D.new()
@@ -99,23 +98,25 @@ func kings_road() -> void:
 	if hub.is_empty():
 		return
 	var from: Vector3 = terrain.world_pos(float(hub["x"]), float(hub["y"]))
-	# Its parts timed (GOC_PERF_PROBE: kings_road.route, .paint, .roadside, .lords; the whole was 1.5 s a call in one
-	# frame, Mac's game 2026-11-15; tools/kings_road_probe.gd guards the routes' cost).
+	# Each road is routed on a worker (nav_world.gd: the navigation's query is thread-safe) and painted here on the
+	# frame's budget as its route comes back (Mac's game 2026-11-15: the lords' roads 5.2 s in one frame, every route
+	# asked on the main thread). Timed: kings_road.route (on the worker), kings_road.paint.
+	var road := _kings
+	var left := [0]
 	for c in cities:
 		if not c.get("capital", false) or int(c["id"]) == int(hub["id"]):
 			continue
-		var t0 := Time.get_ticks_usec()
-		var route: PackedVector3Array = terrain.paths.land_path(from, terrain.world_pos(float(c["x"]), float(c["y"])))
-		var t1 := Time.get_ticks_usec()
-		PerfTools.add("kings_road.route", t1 - t0)
-		for i in route.size() - 1:
-			_segment(route[i], route[i + 1], _kings, WIDTH * 2.2, "kings")
-		var t2 := Time.get_ticks_usec()
-		PerfTools.add("kings_road.paint", t2 - t1)
-		_roadside(route)
-		PerfTools.add("kings_road.roadside", Time.get_ticks_usec() - t2)
+		left[0] += 1
+		_ask(from, terrain.world_pos(float(c["x"]), float(c["y"])), func(route: PackedVector3Array) -> void:
+			if road != _kings:
+				return  # redrawn meanwhile
+			for i in route.size() - 1:
+				_segment(route[i], route[i + 1], _kings, WIDTH * 2.2, "kings")
+			_roadside(route)
+			left[0] -= 1
+			if left[0] == 0:
+				_plant_verges())
 	# Lords' roads: every town to the seat of the house that holds it.
-	var t3 := Time.get_ticks_usec()
 	clear_tracks("lords")
 	for c in cities:
 		if c.get("capital", false):
@@ -123,8 +124,61 @@ func kings_road() -> void:
 		for seat in cities:
 			if seat.get("capital", false) and int(seat["owner"]) == int(c["owner"]):
 				track(terrain.world_pos(float(c["x"]), float(c["y"])), terrain.world_pos(float(seat["x"]), float(seat["y"])), WIDTH * 1.4, "lords")
-	PerfTools.add("kings_road.lords", Time.get_ticks_usec() - t3)
-	_plant_verges()
+
+
+# --- routes, asked off the main thread ----------------------------------------------------------------------------
+
+var _asks: Array = []  # [from, to, then(route)] waiting for the navigation
+var _routed: Array = []  # [then, route] back from the worker, painted on the budget
+var _routing := -1  # the worker task routing a batch
+var _lock := Mutex.new()
+const NavWorld := preload("res://scripts/nav_world.gd")  # the realm's one navigation
+const ViewTier := preload("res://scripts/view_tier.gd")
+
+
+## The route from `from` to `to` over the land (a cart's and a rider's map: wide), asked on a worker once the
+## navigation is ready; `then` (route) runs on the main thread on the frame's budget. A road with no route isn't drawn.
+func _ask(from: Vector3, to: Vector3, then: Callable) -> void:
+	_asks.append([from, to, then])
+	set_process(true)
+
+
+func _process(_delta: float) -> void:
+	if _routing >= 0 and WorkerThreadPool.is_task_completed(_routing):
+		WorkerThreadPool.wait_for_task_completion(_routing)
+		_routing = -1
+	if _routing < 0 and not _asks.is_empty() and NavWorld.ready(&"wide"):
+		var batch := _asks
+		_asks = []
+		_routing = WorkerThreadPool.add_task(_route_all.bind(batch), false, "roads")
+	_lock.lock()
+	var got := _routed
+	_routed = []
+	_lock.unlock()
+	while not got.is_empty():
+		if not ViewTier.spend_ok(&"roads"):
+			_lock.lock()
+			_routed = got + _routed
+			_lock.unlock()
+			break
+		var e: Array = got.pop_front()
+		PerfTools.add("kings_road.route", int(e[2]))  # timed on the worker
+		var t0 := Time.get_ticks_usec()
+		if (e[1] as PackedVector3Array).size() >= 2:
+			(e[0] as Callable).call(e[1])
+		PerfTools.add("kings_road.paint", Time.get_ticks_usec() - t0)
+	if _routing < 0 and _asks.is_empty() and _routed.is_empty():
+		set_process(false)
+
+
+## On a worker: each asked route, handed back as it is found.
+func _route_all(batch: Array) -> void:
+	for e in batch:
+		var t0 := Time.get_ticks_usec()
+		var way := NavWorld.path(e[0], e[1], &"wide")
+		_lock.lock()
+		_routed.append([e[2], way, Time.get_ticks_usec() - t0])
+		_lock.unlock()
 
 
 ## The life of a great road: bushes and brambles along both verges, a
@@ -247,9 +301,11 @@ func track(a: Vector3, b: Vector3, width := WIDTH * 0.7, key := "") -> void:
 		n.name = "Track_" + key.validate_node_name()
 		_tracks.add_child(n)
 		_track_keys[key] = n
-	var route: PackedVector3Array = terrain.paths.land_path(a, b)
-	for i in route.size() - 1:
-		_segment(route[i], route[i + 1], _track_keys[key], width, "track:" + key)
+	var layer: Node3D = _track_keys[key]
+	_ask(a, b, func(route: PackedVector3Array) -> void:
+		if is_instance_valid(layer) and _track_keys.get(key) == layer:
+			for i in route.size() - 1:
+				_segment(route[i], route[i + 1], layer, width, "track:" + key))
 
 
 ## Where every road and track runs, so grass and the like can keep off them:
@@ -294,48 +350,17 @@ func _cells() -> Dictionary:
 	return _grid
 
 
-## A way along the drawn roads from near `from` to near `to` (world points,
-## the ends included), so carts and riders keep to the road. Empty when either
-## end is far from any road or the roads don't join them: the caller then goes
-## over the land. The great roads and the King's road only, not farm tracks.
-var _graph: AStar3D
-var _graph_version := -1
-static var ROAD_REACH: float = preload("res://scripts/data.gd").num("ground", "roads.reach", 2.5)  # how far an end may be from the road to set out along it
-func route(from: Vector3, to: Vector3, reach := -1.0) -> PackedVector3Array:
-	if _graph == null or _graph_version != version:
-		_graph = AStar3D.new()
-		_graph_version = version
-		var ids := {}
-		var id_of := func(v: Vector2) -> int:
-			var k := Vector2i(roundi(v.x * 200.0), roundi(v.y * 200.0))
-			if not ids.has(k):
-				ids[k] = ids.size()
-				_graph.add_point(ids[k], Vector3(v.x, 0, v.y))
-			return ids[k]
-		for owner in ["roads", "kings"]:
-			for s in _paths.get(owner, []):
-				var a: int = id_of.call(s[0])
-				var b: int = id_of.call(s[1])
-				if a != b and not _graph.are_points_connected(a, b):
-					_graph.connect_points(a, b)
-	var out := PackedVector3Array()
-	if _graph.get_point_count() == 0:
-		return out
-	var a := _graph.get_closest_point(Vector3(from.x, 0, from.z))
-	var b := _graph.get_closest_point(Vector3(to.x, 0, to.z))
-	var pa := _graph.get_point_position(a)
-	var pb := _graph.get_point_position(b)
-	# How far `from` may be off the road to set out along it: roads.reach, or the caller's own (a host mustered on a
-	# field kept off the road walks onto it).
-	if Vector2(pa.x - from.x, pa.z - from.z).length() > (reach if reach >= 0.0 else ROAD_REACH) or Vector2(pb.x - to.x, pb.z - to.z).length() > ROAD_REACH:
-		return out
-	var way := _graph.get_point_path(a, b)
-	if way.is_empty():
-		return out
-	out.append(from)
-	for p in way:
-		out.append(Vector3(p.x, terrain.height_at(p.x, p.z), p.z))
-	out.append(to)
+## A way from `from` to `to` that keeps to the drawn roads where they serve (the navigation's ways layer costs least:
+## nav_world.gd), as a cart or a rider goes; empty while the navigation isn't ready.
+func route(from: Vector3, to: Vector3) -> PackedVector3Array:
+	return NavWorld.path(from, to, &"wide")
+
+
+## Every stretch of road and track laid, as [from, to (world XZ), half width]: the navigation's ways (nav_world.gd).
+func segments() -> Array:
+	var out: Array = []
+	for owner in _paths:
+		out.append_array(_paths[owner])
 	return out
 
 

@@ -77,7 +77,6 @@ const MOVED := [
 	["forest", "NEAR", "forest", "near"],
 	["forest", "MID", "forest", "mid"],
 	["roads", "WIDTH", "ground", "roads.width"],
-	["roads", "ROAD_REACH", "ground", "roads.reach"],
 ]
 
 

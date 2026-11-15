@@ -92,7 +92,7 @@ func _facts() -> void:
 				if int(w[0]) == int(h["owner"]) and (best == null or (w[1] as Vector3).distance_to(at) < (best as Vector3).distance_to(at)):
 					best = w[1]
 			if best != null and (best as Vector3).distance_to(at) > 0.5 and (best as Vector3).distance_to(at) < float(HOSTS.get("track_most", 24.0)):
-				var route: PackedVector3Array = terrain.paths.land_path(best, at)
+				var route: PackedVector3Array = terrain.paths.land_path(best, at, &"host")
 				for i in route.size() - 1:
 					_band(route[i], route[i + 1], r * float(HOSTS.get("track", 0.5)), float(HOSTS.get("step", 0.05)) * 3.0, false)
 			now.append([int(h["owner"]), at])

@@ -61,9 +61,7 @@ extends SceneTree
 ##     52 companies carry a Freeciv goto, and only the crown's orders were drawn): map_look.marches gives a line from
 ##     each house's companies in the field to where Freeciv sends them; not for one dug in where it stands, the
 ##     crown's (its orders draw those), a civilian or a ship;
-## 20. a ship sails the water (the reign replay: Triremes 46 units from their tiles, never set out, as no land route
-##     crosses the sea): the realm's paths give a sea route (land_paths.sea_path) that keeps to water round an island,
-##     and units.gd sends a ship by it;
+## 20. (a ship sails the water: now tools/nav_probe.gd, on the ships' navigation map);
 ## 21. a mover covers its speed whatever the frame rate (the reign replay: every off-tile figure still moving when its
 ##     season ended): along a way baked every 0.05 units (a march's road), one frame of a second at speed 1 carries it
 ##     about 1 unit, through every point it passes, not one point a frame;
@@ -135,7 +133,6 @@ func _run() -> void:
 	_film_waits_for_the_clash()
 	_figure_keeps_up()
 	_house_marches_show()
-	_ship_sails_the_water()
 	_mover_keeps_its_speed()
 	_standards_read()
 	_muster_takes_the_road()
@@ -394,52 +391,6 @@ func _mover_keeps_its_speed() -> void:
 	var went := man.global_position.x
 	_check(absf(went - 1.0) < 0.06, "one frame of 1 s at speed 1 along a road baked every 0.05 carries a mover about 1 unit (%.2f)" % went)
 	man.queue_free()
-
-
-## 20. A ship sails the water: a stand-in tile map 12 x 9 of ocean with an island (land) in the middle, 4 x 3 tiles.
-func _ship_sails_the_water() -> void:
-	var LP: GDScript = load("res://scripts/land_paths.gd")
-	var has := LP.get_script_method_list().any(func(m): return m["name"] == "sea_path")
-	_check(has, "the realm's paths give a sea route (land_paths.sea_path)")
-	_check(FileAccess.get_file_as_string("res://scripts/units.gd").contains("sea_path("), "units.gd sends a ship by the sea route")
-	if not has:
-		return
-	var t := GDScript.new()
-	t.source_code = '''extends Node3D
-const TILE := 4.0
-var width := 12
-var height := 9
-func tile_at(x: int, y: int) -> String:
-	if x == 9 and y == 7:
-		return "Forest|river"  # a river tile, a Trireme's water (the ruleset's River extra: native to Trireme)
-	if y >= 6 and not (x == 10 and y == 6):
-		return "Grassland"  # the shore below, a town at (10, 6), the river at (9, 7) its way inland
-	return "Grassland" if x >= 4 and x <= 7 and y >= 3 and y <= 5 else "Ocean"
-func world_pos(tx: float, ty: float) -> Vector3:
-	return Vector3((tx + 0.5) * TILE, 0, (ty + 0.5) * TILE)
-'''
-	t.reload()
-	var land := Node3D.new()
-	land.set_script(t)
-	var lp: Object = LP.new(land)
-	lp.call("build")
-	var from: Vector3 = land.world_pos(1, 4)
-	var to: Vector3 = land.world_pos(10, 4)
-	var way: PackedVector3Array = lp.call("sea_path", from, to)
-	var wet := true
-	for i in way.size() - 1:
-		for k in 5:
-			var p: Vector3 = way[i].lerp(way[i + 1], k / 4.0)
-			wet = wet and land.tile_at(floori(p.x / 4.0), floori(p.z / 4.0)) == "Ocean"
-	_check(way.size() >= 3 and wet, "a route across goes round the island on water (%d points, all wet: %s)" % [way.size(), wet])
-	# A Trireme sails the river (Freeciv moved one from a coastal town up its river: the reign's five 'straight
-	# line' moves); a ship with no water between its ends gets no route at all, never a line over the land.
-	var up: PackedVector3Array = lp.call("sea_path", land.world_pos(10, 6), land.world_pos(9, 7), true)
-	_check(up.size() >= 2, "a Trireme sails from the coastal town up its river, corner to corner as Freeciv moves it (%d points)" % up.size())
-	var inland: PackedVector3Array = lp.call("sea_path", land.world_pos(1, 4), land.world_pos(2, 8), true)
-	_check(inland.is_empty(), "with no water between its ends a ship gets no route, never a straight line over land (%d points)" % inland.size())
-	_check(FileAccess.get_file_as_string("res://tools/reign_army_probe.gd").contains("ship-no-water"), "the reign probe fails a ship move with no water route")
-	land.free()
 
 
 ## 19. A house's march on the map: a stand-in store with five companies.

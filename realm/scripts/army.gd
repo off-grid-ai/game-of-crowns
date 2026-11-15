@@ -613,8 +613,8 @@ func _on_deck(r: Dictionary, hull: Node3D, along: float) -> void:
 	var node: Node3D = r["node"]
 	node.reparent(hull, false)
 	# The deck over the hull's base, which units.gd ship_body sinks by map.ship_sink under the holder (the waterline).
-	node.position = Vector3(along, (Data.num("army", "deck.y_m", 2.2) - Data.num("army", "map.ship_sink", 1.2)) * preload("res://scripts/world_units.gd").M, 0.0)
-	node.rotation = Vector3(0.0, PI / 2.0, 0.0)  # the cog's length runs along its own x (assets/meshy/cog bounds)
+	node.position = Vector3(0.0, (Data.num("army", "deck.y_m", 2.2) - Data.num("army", "map.ship_sink", 1.2)) * preload("res://scripts/world_units.gd").M, along)
+	node.rotation = Vector3.ZERO  # the hull's length runs along the holder's z, its bow forward (units.gd ship_body)
 	_shape(r, "deck")
 	r["state"] = "halt"
 	_clips(r, "rest")
@@ -1491,12 +1491,11 @@ func _form_on_way(town: Vector3, to: Vector3, root: Node3D) -> void:
 		_clips(r, "rest")
 
 
-## The way on from `from` to `to`, `from` left out: the realm's road (roads.route) where one joins them, else the
-## realm's land route (land_paths.land_path, its A* over the land tiles), ending at `to`.
+## The way on from `from` to `to`, `from` left out: a host's column's route on the realm's navigation (nav_world.gd
+## host map: its whole width kept off what stands, along the roads where they serve), ending at `to`; just `to` while
+## that map is still being baked at the first start.
 func _onward(from: Vector3, to: Vector3) -> PackedVector3Array:
-	var roads = main.get("roads")
-	var road: PackedVector3Array = roads.route(from, to, Data.num("army", "march.roadReach", 12.0)) if roads and roads.has_method("route") else PackedVector3Array()
-	var way: PackedVector3Array = road if road.size() >= 3 else main.terrain.paths.land_path(from, to, _column_half())  # the column's whole width
+	var way: PackedVector3Array = main.terrain.paths.land_path(from, to, &"host")
 	var out := way.slice(1)
 	if out.is_empty() or out[out.size() - 1] != to:
 		out.append(to)

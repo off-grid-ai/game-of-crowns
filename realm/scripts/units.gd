@@ -55,6 +55,7 @@ var _mats := {}
 var _people = preload("res://scripts/people.gd").new()
 const Scenes = preload("res://scripts/scenes.gd")
 const Mover := preload("res://scripts/mover.gd")  # the one way to move (CLAUDE.md)
+const NavWorld := preload("res://scripts/nav_world.gd")  # the realm's one navigation: the ships' map
 const HostPick := preload("res://scripts/host_pick.gd")  # a click on a host picks it by its own body
 const Horse = preload("res://scripts/horse.gd")
 const MapLook := preload("res://scripts/map_look.gd")  # Freeciv's hulls (SHIPS), one list
@@ -63,7 +64,6 @@ const Units := preload("res://scripts/world_units.gd")  # metres to world units
 const Data := preload("res://scripts/data.gd")
 const Weapons := preload("res://scripts/weapons.gd")  # arms and tools in the hand (a raider's axe and torch)
 
-const RIVER_SHIPS := ["Trireme"]  # the ruleset's Trireme class: its River extra is native to it (they sail rivers)
 const MOUNTED := ["Horsemen", "Chariot", "Elephants", "Crusaders", "Knights", "Dragoons", "Cavalry"]
 const LANCES := ["Knights", "Crusaders"]
 const SPEARS := ["Phalanx", "Pikemen", "Legion"]
@@ -214,19 +214,25 @@ func _placed_at(key: int, raw: Vector3, stand: Callable) -> Vector3:
 	var p: Array = _placed.get(key, [])
 	if p.is_empty() or p[0] != raw:
 		p = [raw, stand.call()]
+		if p[1] == Vector3.INF:
+			return p[1]  # nowhere yet (the ships' map still baking): asked again next sync
 		_placed[key] = p
 	return p[1]
 
 
-## The ground a company put at `raw` stands on: off every building and out of the water (ground.gd), or a ship at its
-## port's waterside (INF: no water in sight).
+## The ground a company put at `raw` stands on: off every building and out of the water (ground.gd); a ship on the
+## ships' map (nav_world.gd water: deep enough for its hull), at its port's waterside in a town (INF: no water in
+## sight, or that map still baking).
 func _stand(raw: Vector3, key: String, centre: Vector3, slot: int, ship: bool, body: float) -> Vector3:
 	var t := Vector3(raw.x, terrain.height_at(raw.x, raw.z), raw.z)
 	if not ship:
 		return Ground.nearest_clear(t, body)
-	if Ground.on_land(t):
+	if not NavWorld.ready(NavWorld.WATER):
+		return Vector3.INF
+	if _town_tiles.has(key):
 		return _moor(key, centre, slot)  # a ship in a port town lies at its waterside, never on the square
-	return t
+	var w := NavWorld.closest(Vector3(raw.x, terrain.SEA_LEVEL, raw.z), NavWorld.WATER)  # its tile's water, a hull's depth
+	return Vector3(w.x, terrain.SEA_LEVEL, w.z)
 
 
 ## One company of the walk: placed, made if new, marched if its place moved.
@@ -308,6 +314,8 @@ func _company(u: Dictionary, slot: int, w: Dictionary) -> void:
 		var mo: Node = Mover.of(node)
 		if ship:
 			mo.clip = ""
+			mo.nav = NavWorld.WATER  # its routes are the ships' map's: never over the land
+			mo.turn_radius = Data.num("army", "map.ship_turn", 0.8)  # it steers on an arc, never pivots
 			mo.ground = func(_p: Vector3) -> float: return terrain.SEA_LEVEL  # it floats on the water
 			node.position.y = terrain.SEA_LEVEL
 		elif wild:
@@ -324,7 +332,7 @@ func _company(u: Dictionary, slot: int, w: Dictionary) -> void:
 			# Carried by the rider when the company is mounted.
 			_banner(node.rider if node.get("rider") else node, Color.from_string(String(house.get("color", "#888")), Color.GRAY), house)
 			HostPick.proxy(node, int(id), Vector3(0.22, 0.62, 0.22))  # the bearer and his standard, to click (host_command.gd)
-		_figures[id] = {"node": node, "target": target, "wild": wild, "bow": String(u["type"]) in BOWS, "horse": node.has_method("mount"), "ship": ship, "rivers": String(u["type"]) in RIVER_SHIPS}
+		_figures[id] = {"node": node, "target": target, "wild": wild, "bow": String(u["type"]) in BOWS, "horse": node.has_method("mount"), "ship": ship}
 	if _figures[id]["target"].distance_to(target) > 0.01:
 		var moved: Vector3 = target - _figures[id]["node"].position
 		if slot == 0 and Vector2(moved.x, moved.z).length() > 0.3:
@@ -412,7 +420,7 @@ func _band(id: int, at: Vector3) -> void:
 			var mo: Node = Mover.of(node)
 			mo.stride = true
 			mo.keep = _keep.bind(_figures, key)
-			_figures[key] = {"node": node, "target": target, "wild": false, "bow": false, "horse": false, "ship": false, "rivers": false}
+			_figures[key] = {"node": node, "target": target, "wild": false, "bow": false, "horse": false, "ship": false}
 		var f: Dictionary = _figures[key]
 		if f["target"].distance_to(target) > 0.01:
 			f["target"] = target
@@ -436,31 +444,33 @@ var _moorings := {}  # tile key -> the nearest water to that town tile's centre 
 ## lens's side (camera_rig.town_view). Each ship of the tile a hull's length along the shore from the last. INF where
 ## no such water is near: the ship isn't drawn there.
 func _moor(key: String, centre: Vector3, slot: int) -> Vector3:
+	if not NavWorld.ready(NavWorld.WATER):
+		return Vector3.INF  # the ships' map not yet baked: asked again next sync
 	if not _moorings.has(key):
 		var at := Vector3.INF
 		var reach := Data.num("army", "map.moor_reach", 4.0)
 		var r := Data.num("army", "map.moor_from", 1.6)
 		var lens := _lens_side(centre)
+		if lens == Vector3.ZERO:
+			return Vector3.INF  # its town not standing yet: no mooring is chosen blind (asked again next sync)
 		var clear := cos(Data.num("army", "map.moor_off_lens", 1.9))
 		while r <= reach and at == Vector3.INF:
 			for k in 32:
 				var d := Vector3(cos(k * TAU / 32.0), 0, sin(k * TAU / 32.0))
-				if lens != Vector3.ZERO and d.dot(lens) > clear:
+				if d.dot(lens) > clear:
 					continue  # on the camera's side of the town
 				var q := centre + d * r
-				if not Ground.on_land(q) and not Ground.on_land(q + Vector3(q.x - centre.x, 0, q.z - centre.z) * 0.15):
-					at = q + (q - centre).normalized() * Data.num("army", "map.moor_off", 0.25)  # a little off the shore, in the water
+				if NavWorld.on_map(q, NavWorld.WATER):  # water a hull lies in, its half beam off the shore
+					at = Vector3(q.x, terrain.SEA_LEVEL, q.z)
 					break
 			r += 0.2
-		if lens == Vector3.ZERO:
-			return Vector3.INF  # its town not standing yet: no mooring is chosen blind (asked again next sync)
 		_moorings[key] = at
 	var m: Vector3 = _moorings[key]
 	if m == Vector3.INF:
 		return m
 	var along := Vector3(m.z - centre.z, 0, centre.x - m.x).normalized() * Data.num("army", "map.moor_gap", 0.5) * slot
 	var t := m + along
-	return t if not Ground.on_land(t) else m
+	return t if NavWorld.on_map(t, NavWorld.WATER) else m
 
 
 ## The way from a town toward the town view's lens (camera_rig.town_view's yaw), for the town nearest `centre`; ZERO
@@ -485,7 +495,21 @@ static func ship_body(house: Dictionary) -> Node3D:
 	var cog: Node3D = (load("res://assets/meshy/cog/cog.glb") as PackedScene).instantiate()
 	cog.scale = Vector3.ONE * Units.M
 	cog.position.y = -Data.num("army", "map.ship_sink", 1.2) * Units.M
+	# The model's length runs along its own x: turned so its bow is the holder's +z, the way its Mover steers it (it
+	# sailed broadside before; Mac 2026-11-15: "the ships are very weird"). Upright always; only a slow bob and roll on
+	# the swell (army.json map.ship_yaw, ship_bob, ship_roll, ship_swell), the holder itself never tilted.
+	cog.rotation = Vector3(0.0, Data.num("army", "map.ship_yaw", -PI / 2.0), 0.0)
 	holder.add_child(cog)
+	cog.ready.connect(func() -> void:
+		var swell := maxf(Data.num("army", "map.ship_swell", 4.0), 0.5)
+		var bob := Data.num("army", "map.ship_bob", 0.1) * Units.M
+		var roll := Data.num("army", "map.ship_roll", 0.03)
+		var y0 := cog.position.y
+		var tw := cog.create_tween().set_loops().set_trans(Tween.TRANS_SINE)
+		tw.tween_property(cog, "position:y", y0 + bob, swell * 0.5)
+		tw.parallel().tween_property(cog, "rotation:z", roll, swell * 0.5)
+		tw.tween_property(cog, "position:y", y0 - bob, swell * 0.5)
+		tw.parallel().tween_property(cog, "rotation:z", -roll, swell * 0.5), CONNECT_ONE_SHOT)
 	TeamColour.take(cog)  # its sail's material as the team shader
 	var colour: Color = TeamColour.house_colour(house)
 	for g in cog.find_children("*", "GeometryInstance3D", true, false):
@@ -507,7 +531,7 @@ func _crew(holder: Node3D, house: Dictionary, id: int) -> void:
 	var clips: Array = k.get("clips", ["Looking_Around", "Idle", "Weight_Shift"])
 	for i in n:
 		var man: Node3D = _people.make(rng, "peasant", tint, "adult")
-		man.position = Vector3(lerpf(-0.5, 0.5, (i + 0.5) / float(n)) * length, deck, rng.randf_range(-0.6, 0.6) * Units.M)
+		man.position = Vector3(rng.randf_range(-0.6, 0.6) * Units.M, deck, lerpf(-0.5, 0.5, (i + 0.5) / float(n)) * length)  # along the hull: the holder's z
 		man.rotation.y = rng.randf() * TAU
 		holder.add_child(man)
 		_people.play(man, String(clips[rng.randi() % clips.size()]), rng.randf_range(0.85, 1.1))
@@ -722,24 +746,19 @@ func _march(f: Dictionary) -> void:
 		mo.go(f["target"])
 		return
 	if f.get("ship", false):
-		# Over the water by the sea's route (land_paths.sea_path), at the pace that gets it there within the season.
-		var sea: PackedVector3Array = terrain.paths.sea_path(n.position, f["target"], bool(f.get("rivers", false)))
-		if sea.is_empty():
-			push_warning("UNITS a ship has no water to %s: it stays where it is" % str(f["target"]))  # never across the land
-			return
-		# Rounded at the route's corners and steered on an arc (Mac 2026-11-15: 'the ship moves very weirdly, not gradual
-		# and slow at all': it pivoted on the spot at every corner of the sea's grid route).
-		if sea[0].distance_to(n.position) > 0.01:
-			sea.insert(0, n.position)
-		var curve: Curve3D = terrain.paths.smooth_road(sea)
-		var length := curve.get_baked_length()
-		if length < 0.01:
-			return
-		curve.bake_interval = 0.1
-		mo.speed = float(march_pace(length, Awareness.season_seconds)["speed"])
-		mo.turn_radius = Data.num("army", "map.ship_turn", 0.8)
-		mo.clip = ""
-		mo.follow(curve.get_baked_points())
+		# Over the water by the ships' map (nav_world.gd water: the sea and lakes deep enough for a hull, a half beam off
+		# the shore), asked through its Mover (mo.nav), rounded at the corners and steered on its ship_turn arc, at the
+		# pace that gets it there within the season. Its target is a point of that water (_moor), never the land.
+		mo.route_to(f["target"], func(sea: PackedVector3Array):
+			if sea[0].distance_to(n.position) > 0.01:
+				sea.insert(0, n.position)
+			var curve: Curve3D = terrain.paths.smooth_road(sea)
+			var length := curve.get_baked_length()
+			if length < 0.01:
+				return
+			curve.bake_interval = 0.1
+			mo.speed = float(march_pace(length, Awareness.season_seconds)["speed"])
+			mo.follow(curve.get_baked_points()))
 		return
 	mo.route_to(f["target"], func(way: PackedVector3Array):
 		if way[0].distance_to(n.position) > 0.01:

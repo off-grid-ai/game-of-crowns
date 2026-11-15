@@ -439,9 +439,11 @@ func lay_ways(root: Node3D, center: Vector3, c: Dictionary, size: int, square_r:
 	return main
 
 
-## The tiles next to `c` that the realm's great roads leave it by, as roads.gd kings_road lays
-## them (terrain.land_path, the same call, so the same way): the King's road from Kingsmere to
-## every great house's seat, and the lords' roads from each town to its house's seat.
+## The tiles next to `c` that the realm's great roads leave it by: the King's road from Kingsmere to every great
+## house's seat, and the lords' roads from each town to its house's seat, each leaving by the land tile beside it that
+## faces the other town most nearly. The town lays its main way out there, and the road (roads.gd, on the realm's
+## navigation, whose streets cost least: nav_world.gd) takes that way out. Read off the tile map alone: a town's
+## layout never waits on the navigation, which is baked round the towns.
 func great_ways(c: Dictionary) -> Array:
 	var hub: Dictionary = {}
 	for o in tb._cities:
@@ -451,9 +453,23 @@ func great_ways(c: Dictionary) -> Array:
 	# Each road as roads.gd lays it (from, to): the tile it leaves `c` by is the second of its
 	# path when it starts here, the second last when it ends here.
 	var step := func(from: Dictionary, to: Dictionary) -> void:
-		var path: PackedVector3Array = tb.terrain.paths.land_path(tb.terrain.world_pos(float(from["x"]), float(from["y"])), tb.terrain.world_pos(float(to["x"]), float(to["y"])))
-		if path.size() >= 2:  # [from, the tiles between, to]: a road with no way over the land runs straight
-			out.append(tb.terrain.paths.tile_of(path[1] if int(from["id"]) == int(c["id"]) else path[path.size() - 2]))
+		var here: Dictionary = from if int(from["id"]) == int(c["id"]) else to
+		var there: Dictionary = to if here == from else from
+		var at := Vector2i(int(here["x"]), int(here["y"]))
+		var want := Vector2(float(there["x"]) - at.x, float(there["y"]) - at.y).normalized()
+		var best := Vector2i(-1, -1)
+		var best_dot := -INF
+		for d in [Vector2i(1, 0), Vector2i(1, 1), Vector2i(0, 1), Vector2i(-1, 1), Vector2i(-1, 0), Vector2i(-1, -1), Vector2i(0, -1), Vector2i(1, -1)]:
+			var t: Vector2i = at + d
+			var kind: String = tb.terrain.tile_at(t.x, t.y)
+			if kind.contains("Ocean") or kind == "Lake":
+				continue
+			var dot := Vector2(d).normalized().dot(want)
+			if dot > best_dot:
+				best_dot = dot
+				best = t
+		if best.x >= 0:
+			out.append(best)
 	var capital := bool(c.get("capital", false))
 	for o in tb._cities:
 		if int(o["id"]) == int(c["id"]):

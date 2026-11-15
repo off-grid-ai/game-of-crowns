@@ -24,6 +24,7 @@ extends Node
 
 const People := preload("res://scripts/people.gd")
 const TownNav := preload("res://scripts/town_nav.gd")
+const NavWorld := preload("res://scripts/nav_world.gd")  # the realm's one navigation
 const Data := preload("res://scripts/data.gd")
 const PerfTools := preload("res://scripts/perf_tools.gd")
 const AnimLOD := preload("res://scripts/anim_lod.gd")
@@ -44,6 +45,7 @@ var stride := false  # the walk clip's playback follows the pace (a marcher's le
 var keep := Callable()  # (world point) -> world point: a place's own rule for where a body may stand, each step
 var _walk_at := Vector3.INF  # where its walk along the way has come to: keep moves the body, never this progress
 var field: RefCounted = null  # the fight's ground (army_ground.gd) this body stands on; else the realm's navigation
+var nav: StringName = &"walk"  # which of the realm's navigation maps its routes are asked of (nav_world.gd: water for a ship)
 var _face := true  # turns into its way (off for a step back from a blow, or a dodge)
 var _keep_y := false  # a given way keeps its own heights (a wall walk): no ground under it
 var _way := PackedVector3Array()
@@ -111,6 +113,8 @@ func follow(way: PackedVector3Array, then := Callable()) -> void:
 func _route(from: Vector3, to: Vector3) -> PackedVector3Array:
 	if field != null:
 		return field.route(from, to) if field.built else PackedVector3Array()
+	if nav == NavWorld.WATER:
+		return NavWorld.path(from, to, NavWorld.WATER)  # a ship: the sea's and lakes' map, never the land
 	var main := _main()
 	if main == null or main.scenes == null or main.scenes.get("nav") == null or main.get("towns") == null:
 		return PackedVector3Array()

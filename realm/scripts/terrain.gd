@@ -63,7 +63,6 @@ func build(map: Dictionary) -> void:
 	preload("res://scripts/perf_tools.gd").mark("woods")
 	await PerfTools.next_frame(&"terrain:63")
 	var t2 := Time.get_ticks_msec()
-	paths.build()
 	# Paths worn by real feet (wear.gd; realm/data/ground.json wear.on).
 	if preload("res://scripts/wear.gd").ON and get_node_or_null("Wear") == null:
 		var w := preload("res://scripts/wear.gd").new()
@@ -76,7 +75,7 @@ func build(map: Dictionary) -> void:
 
 
 const LandPaths := preload("res://scripts/land_paths.gd")
-var paths := LandPaths.new(self)  # overland paths over the tile map (land_paths.gd)
+var paths := LandPaths.new(self)  # overland ways, asked of the realm's one navigation (land_paths.gd, nav_world.gd)
 var built := false  # the land, sea, rivers and woods are all in place
 
 

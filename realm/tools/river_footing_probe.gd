@@ -8,13 +8,11 @@ extends SceneTree
 ##      0.05 reach each), is refused at every river point;
 ##   3. a ford (a road through the water) is passed (walkable, and is_clear with "ford" open, as a fight's grid asks)
 ##      but never stood on (is_clear);
-##   4. a route over the land for a body of a column's half width (land_paths.gd land_path) keeps that whole width
-##      off the water at every point but its ends.
+##   (a route over the land and the water it keeps off: tools/nav_probe.gd, on the realm's navigation.)
 ## Prints CHECK lines; exits 1 on a fail.   arch -arm64 godot --headless --path realm -s res://tools/river_footing_probe.gd
 
 const FIX := "res://tools/fixtures/town_build_map.json"
 const Ground := preload("res://scripts/ground.gd")
-const LandPaths := preload("res://scripts/land_paths.gd")
 const Data := preload("res://scripts/data.gd")
 
 var fail := 0
@@ -99,31 +97,6 @@ func _run() -> void:
 	_check(Ground.walkable(fc), "a ford is walked through")
 	_check(Ground.is_clear(fc, 0.0, true, null, ["ford"]), "a fight's grid (ford open) passes a ford")
 	_check(not Ground.is_clear(fc), "nobody stands on a ford's water")
-	# A column's route over the land across rivers: its whole width off the water at every point but its ends.
-	var paths := LandPaths.new(t)
-	paths.build()
-	var half := 0.5
-	var bad := 0
-	var n := 0
-	for k in range(0, samples.size(), maxi(1, samples.size() / 800)):
-		var c: Vector3 = samples[k][0]
-		var ac: Vector3 = samples[k][1]
-		var hw: float = samples[k][2]
-		var from := c + ac * (hw + 2.5)
-		var to := c + ac * (hw + 2.5) + Vector3(ac.z, 0, -ac.x) * 3.0  # along the bank, not across
-		if not (Ground.is_clear(from, half) and Ground.is_clear(to, half)):
-			continue
-		var way: PackedVector3Array = paths.land_path(from, to, half)
-		for j in range(1, way.size() - 1):
-			n += 1
-			var p: Vector3 = way[j]
-			for o in 8:
-				var q := p + Vector3(cos(TAU * o / 8.0), 0, sin(TAU * o / 8.0)) * half
-				if not Ground.on_land(q):
-					bad += 1
-					break
-	print("routes along the banks: %d points, %d with the column's width over water" % [n, bad])
-	_check(n >= 20 and bad == 0, "a column's route keeps its whole width off the water (%d of %d points did not)" % [bad, n])
 	t.free()
 	_end()
 

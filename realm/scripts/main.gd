@@ -179,6 +179,7 @@ func _ready() -> void:
 	roads = preload("res://scripts/roads.gd").new()
 	roads.terrain = terrain
 	add_child(roads)
+	add_child(preload("res://scripts/nav_world.gd").new())  # the realm's one navigation (nav_world.gd), started once the land is built
 	land_use = preload("res://scripts/land_use.gd").new()
 	land_use.name = "LandUse"
 	land_use.main = self
@@ -1093,6 +1094,7 @@ func _on_synced() -> void:
 	_houses.merge(awareness.houses_by_id())  # in place: the views hold this one
 	if not terrain.built:
 		return  # the land is still forming; the next report raises the towns on it
+	preload("res://scripts/nav_world.gd").start(terrain, roads)  # once: every chunk baked on workers, or read back kept
 	var tt := Time.get_ticks_msec()
 	Engine.set_meta("stage", "towns.sync")
 	var t_towns_sync := Time.get_ticks_usec()

@@ -22,7 +22,6 @@ extends SceneTree
 const Awareness := preload("res://scripts/awareness.gd")
 const Mover := preload("res://scripts/mover.gd")
 const MapLook := preload("res://scripts/map_look.gd")  # Freeciv's hulls (SHIPS)
-const UnitsS := preload("res://scripts/units.gd")  # the river ships (RIVER_SHIPS)
 
 const OFF := 4.0  # world units: one tile (terrain.gd TILE); a figure further than this from its tile is off it
 const MOVED := 0.05  # world units: a figure that moved less than this in a season stood still
@@ -249,12 +248,11 @@ func _season(store: Node, turn: int) -> void:
 		now[id] = {"tile": tile, "pos": pos}
 		if _prev.has(id) and _prev[id]["tile"] != tile and pos != Vector3.INF:
 			_moved[id] = pos
-		# Every ship move Freeciv makes has a water route (land_paths.sea_path; a Trireme sails rivers): never a ship
-		# drawn across the land.
+		# Every ship move Freeciv makes has a water route (nav_world.gd's ships' map): never a ship drawn across the land.
 		var kind := String(u.get("type", ""))
 		if _prev.has(id) and _prev[id]["tile"] != tile and kind in MapLook.SHIPS:
 			var from: Vector3 = terrain.world_pos(float(_prev[id]["tile"].x), float(_prev[id]["tile"].y))
-			var way: PackedVector3Array = terrain.paths.sea_path(from, terrain.world_pos(float(tile.x), float(tile.y)), kind in UnitsS.RIVER_SHIPS)
+			var way: PackedVector3Array = preload("res://scripts/nav_world.gd").path(from, terrain.world_pos(float(tile.x), float(tile.y)), &"water")
 			if way.is_empty():
 				_fail("ship-no-water", "%s %d moved %s -> %s with no water route" % [kind, id, _prev[id]["tile"], tile], id)
 	_prev = now

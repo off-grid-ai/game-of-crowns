@@ -1,13 +1,9 @@
 extends RefCounted
-## Overland paths (integration audit #13: terrain.gd's paths, split out): Godot's AStarGrid2D over Freeciv's tile map,
-## the roads that make travel cheap, the bow a road takes between tile centres, and a route as a smooth curve.
-## terrain.gd builds it with the land (terrain.paths); everything that goes overland asks it.
-const Data := preload("res://scripts/data.gd")
-const Ground := preload("res://scripts/ground.gd")  # the one answer to where a body may stand
+## Overland ways (integration audit #13: terrain.gd's paths, split out): the routes over the land and the sea, asked of
+## the realm's one navigation (nav_world.gd: Godot's NavigationServer3D on Recast navmeshes baked from the land), the
+## bow a road takes between tile centres, and a route as a smooth curve. terrain.gd holds it (terrain.paths).
+const NavWorld := preload("res://scripts/nav_world.gd")  # the realm's one navigation
 
-var _astar: AStarGrid2D
-var _sea: AStarGrid2D  # the same tile map for ships: water open, land solid
-var _rivers: Array[Vector2i] = []  # river tiles: water to a ship that can sail them (a Trireme), land to the rest
 var _t: Node3D  # terrain.gd: the tile map, its size and its ground
 
 
@@ -15,143 +11,16 @@ func _init(terrain: Node3D) -> void:
 	_t = terrain
 
 
-## The grid from the tile map: water solid, mountains and rough ground dear.
-func build() -> void:
-	var width: int = _t.width
-	var height: int = _t.height
-	_astar = AStarGrid2D.new()
-	_astar.region = Rect2i(0, 0, width, height)
-	_astar.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_ONLY_IF_NO_OBSTACLES
-	_astar.update()
-	for y in height:
-		for x in width:
-			var n: String = _t.tile_at(x, y)
-			if n.contains("Ocean") or n == "Lake":
-				_astar.set_point_solid(Vector2i(x, y), true)
-			elif n == "Mountains" or n == "Glacier":
-				_astar.set_point_weight_scale(Vector2i(x, y), 4.0)
-			elif n == "Hills" or n == "Forest" or n == "Jungle" or n == "Swamp":
-				_astar.set_point_weight_scale(Vector2i(x, y), 2.0)
-	_sea = AStarGrid2D.new()
-	_sea.region = Rect2i(0, 0, width, height)
-	_sea.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_ALWAYS  # Freeciv moves a ship corner to corner past two shores
-	_sea.update()
-	_rivers.clear()
-	for y in height:
-		for x in width:
-			var n: String = _t.tile_at(x, y)
-			_sea.set_point_solid(Vector2i(x, y), not (n.contains("Ocean") or n == "Lake"))
-			if n.contains("river"):
-				_rivers.append(Vector2i(x, y))
-
-
-## Roads the houses have built make travel cheap; called when the network changes.
-func set_roads(roads: Array) -> void:
-	if _astar == null:
-		return
-	for r in roads:
-		var p := Vector2i(int(r[0]), int(r[1]))
-		if _astar.is_in_boundsv(p) and not _astar.is_point_solid(p):
-			_astar.set_point_weight_scale(p, 0.4)
-
-
 func tile_of(p: Vector3) -> Vector2i:
 	return Vector2i(clampi(floori(p.x / _t.TILE), 0, int(_t.width) - 1), clampi(floori(p.z / _t.TILE), 0, int(_t.height) - 1))
 
 
-## A walkable route over land between two world points, as world points, for a body reaching `body` all round (a
-## column's half width: army.gd; below 0, ground.json land.way_body, one walker). Falls back to the straight line when
-## either end is on water.
-func land_path(from: Vector3, to: Vector3, body := -1.0) -> PackedVector3Array:
-	var out := PackedVector3Array()
-	if _astar == null:
-		out.append_array([from, to])
-		return out
-	var a := tile_of(from)
-	var b := tile_of(to)
-	if _astar.is_point_solid(a) or _astar.is_point_solid(b):
-		out.append_array([from, to])
-		return out
-	var ids := _astar.get_id_path(a, b)
-	out.append(from)
-	for i in range(1, ids.size() - 1):
-		out.append(_t.world_pos(ids[i].x, ids[i].y))
-	out.append(to)
-	return _round_what_stands(out, body if body >= 0.0 else Data.num("ground", "land.way_body", 0.1))
-
-
-## The tile route walked every land.way_step, each point that falls on something standing (a cottage, a hedge, a
-## tree, another host's ground, a river's water: ground.gd is_clear, `reach` all round) moved to the nearest clear
-## ground, so a body crossing the land goes round what stands on it with its whole width (Mac 2026-11-15: hosts
-## marched through cottages; a column's flanks over a river). Its ends are kept: where it was and where it was sent.
-## The points are asked a run of land.way_run at a time as one strip (ground.gd area_free: the cells under all their
-## reaches in one scan); only a run whose strip isn't free is asked point by point (Mac's game 2026-11-15: the King's
-## road, 1.5 s a frame, nine asks every 0.3 of every route).
-func _round_what_stands(way: PackedVector3Array, reach: float) -> PackedVector3Array:
-	var step := Data.num("ground", "land.way_step", 0.3)
-	var run := maxi(1, int(Data.num("ground", "land.way_run", 8)))
-	var out := PackedVector3Array([way[0]])
-	for i in way.size() - 1:
-		var a: Vector3 = way[i]
-		var b: Vector3 = way[i + 1]
-		var n := maxi(1, ceili(a.distance_to(b) / step))
-		var k := 1
-		while k <= n:
-			var last := mini(n, k + run - 1)
-			if last > k and _strip_free(a.lerp(b, float(k) / n), a.lerp(b, float(last) / n), reach):
-				if last == n:
-					out.append(b if i == way.size() - 2 else a.lerp(b, 1.0))
-				k = last + 1
-				continue
-			for j in range(k, last + 1):
-				var p := a.lerp(b, float(j) / n)
-				if i == way.size() - 2 and j == n:
-					out.append(b)
-				elif Ground.is_clear(p, reach):
-					if j == n:
-						out.append(p)
-				else:
-					out.append(Ground.nearest_clear(p, reach))
-			k = last + 1
-	return out
-
-
-## Whether a body reaching `reach` all round may stand at every point from `p` to `q` (a straight run): the strip
-## round them, a little wider than the reach, free on the ground's map (as is_clear answers at each point).
-func _strip_free(p: Vector3, q: Vector3, reach: float) -> bool:
-	var d := Vector2(q.x - p.x, q.z - p.z)
-	var dir := d.normalized() if d.length() > 0.0001 else Vector2.RIGHT
-	var r := reach + 0.001
-	var side := Vector2(-dir.y, dir.x) * r
-	var a := Vector2(p.x, p.z) - dir * r
-	var b := Vector2(q.x, q.z) + dir * r
-	return Ground.area_free(PackedVector2Array([a + side, b + side, b - side, a - side]))
-
-
-## A ship's route over water between two world points (ships only carry armies: Mac), as world points. Its ends may
-## stand on land (a ship in a coastal town's harbour): they are opened for this one route. `rivers`: it sails rivers
-## too (a Trireme: the ruleset's River extra is native to its class). Empty when no water joins them: a ship is
-## never drawn across the land.
-func sea_path(from: Vector3, to: Vector3, rivers := false) -> PackedVector3Array:
-	var out := PackedVector3Array()
-	if _sea == null:
-		return out
-	var a := tile_of(from)
-	var b := tile_of(to)
-	var opened: Array = [a, b] + (_rivers if rivers else [])
-	opened = opened.filter(func(p): return _sea.is_point_solid(p))
-	for p in opened:
-		_sea.set_point_solid(p, false)
-	var ids := _sea.get_id_path(a, b)
-	for p in opened:
-		_sea.set_point_solid(p, true)
-	if ids.is_empty():
-		return out
-	out.append(from)
-	for i in range(1, ids.size() - 1):
-		out.append(_t.world_pos(ids[i].x, ids[i].y))
-	out.append(to)
-	return out
+## A route over land between two world points, as world points, for a body of `kind` (nav_world.gd's maps: wide for a
+## cart, a rider and the roads' planning; host for a host's column, its whole width kept off what stands; walk for one
+## on foot): round the water, what stands, and slopes too steep, keeping to the roads where they serve. Empty while
+## that map is still being baked (the asker waits; never a straight line). Safe on a worker thread.
+func land_path(from: Vector3, to: Vector3, kind: StringName = &"wide") -> PackedVector3Array:
+	return NavWorld.path(from, to, kind)
 
 
 ## Where a road drawn between two tile centres bows at its middle, so roads
