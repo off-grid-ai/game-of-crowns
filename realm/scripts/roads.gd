@@ -195,10 +195,11 @@ func _ask(from: Vector3, to: Vector3, then: Callable, kept: String) -> void:
 		var t0 := Time.get_ticks_usec()
 		var way: Variant = bytes_to_var(FileAccess.get_file_as_bytes(kept))
 		PerfTools.add("roads.read_back", Time.get_ticks_usec() - t0)
-		if way is PackedVector3Array and (way as PackedVector3Array).size() >= 2:
-			_lock.lock()
-			_routed.append([then, way, 0])
-			_lock.unlock()
+		if way is PackedVector3Array:  # an empty one: the navigation found no way, kept so it isn't asked again
+			if (way as PackedVector3Array).size() >= 2:
+				_lock.lock()
+				_routed.append([then, way, 0])
+				_lock.unlock()
 			return
 	_asks.append([from, to, then, kept])
 
@@ -262,8 +263,7 @@ func _route_all(batch: Array) -> void:
 	for e in batch:
 		var t0 := Time.get_ticks_usec()
 		var way := NavWorld.path(e[0], e[1], &"wide")
-		if way.size() >= 2:
-			_keep_bytes(String(e[3]), var_to_bytes(way))  # kept: the next launch reads it back
+		_keep_bytes(String(e[3]), var_to_bytes(way))  # kept, a way or none: the next launch reads it back
 		_lock.lock()
 		_routed.append([e[2], way, Time.get_ticks_usec() - t0])
 		_lock.unlock()
@@ -610,9 +610,12 @@ static func _spot(q: Vector2) -> Vector2i:
 	return Vector2i(roundi(q.x * 100.0), roundi(q.y * 100.0))
 
 
-## Whether the due cells' lanes can be cut now: no great road mid-paint (each cell keyed by its whole roads).
+## Whether the due cells' lanes can be cut now: the great roads asked (kings_road) and none still to route or mid-paint,
+## so each cell is keyed by its whole roads, the same in tools/bake.gd as in play.
 func _lanes_ready() -> bool:
-	if _lanes_due.is_empty() or _laning or not _paint_jobs.is_empty() or not _routed.is_empty():
+	if _lanes_due.is_empty() or _laning or _kings_sig == "" or not _asks.is_empty() or _routing >= 0:
+		return false
+	if not _routed.is_empty() or not _paint_jobs.is_empty():
 		return false
 	var forest: Variant = terrain.get("forest")
 	if forest == null or not (forest as Object).has_method("clear_where"):
