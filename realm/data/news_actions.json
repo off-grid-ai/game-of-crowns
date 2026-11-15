@@ -434,6 +434,8 @@
   "no_purse": "the treasury can't pay",
   "again_in": "again in {n} season{s}",
   "no_answer": "No royal host is free, and the treasury can't pay for a levy.",
+  "no_order": "Your host has no order left this season. Raise new men instead.",
+  "sending": "Sending…",
   "themes": {
     "_": "A story's beat (kinds arc, event, court, other) whose name or line speaks of one of these takes that theme's verbs first: 'The Pestilence of Thunderhold' gets Send relief.",
     "plague": {

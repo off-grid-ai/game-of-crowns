@@ -182,6 +182,31 @@ func _trim() -> void:
 
 
 ## A card done with (answered, or old): it goes; the book of the reign keeps the line.
+## An answer that waits on the bridge (Defend): the button says it is working at once, the card goes only once it is
+## done, and a refusal stays on the card in one line with the button live again (pressed -> working -> done).
+func _answer(b: Button, card: Control) -> void:
+	var label := b.text
+	b.text = String(Data.value("news_actions", "sending", "Sending…"))
+	b.disabled = true
+	var why: Label = card.find_child("Why", true, false)
+	if why:
+		why.visible = false
+	(b.get_meta("answer") as Callable).call(func(ok: bool, said: String) -> void:
+		if not is_instance_valid(b):
+			return
+		if ok:
+			_settle(card)
+			return
+		b.text = label
+		b.disabled = false
+		if why == null:
+			why = _wrap("", T.SIZE_DESC - 1, T.TEXT)
+			why.name = "Why"
+			b.get_parent().get_parent().add_child(why)
+		why.text = said
+		why.visible = said != "")
+
+
 func _settle(r: Control) -> void:
 	if not is_instance_valid(r) or r.get_parent() != _needs:
 		return
@@ -338,7 +363,9 @@ func _card(e: Dictionary, loss: bool, watch := Callable()) -> Control:
 	v.add_child(acts)
 	# Answered: the card goes (the order's word comes back as the line above the cards).
 	for b in acts.get_children():
-		if (b as Button).text != String(Data.value("news_actions", "verbs.go.label", "Go there")):
+		if (b as Button).has_meta("answer"):
+			(b as Button).pressed.connect(_answer.bind(b, card))
+		elif (b as Button).text != String(Data.value("news_actions", "verbs.go.label", "Go there")):
 			(b as Button).pressed.connect(_settle.bind(card), CONNECT_DEFERRED)
 	# Most urgent first (Mac: "not very clear what I should be doing"): a threat to his own above a clock, a clock above
 	# the court, the court above the rest; the newest first within each.
@@ -451,7 +478,10 @@ func _actions(e: Dictionary) -> HFlowContainer:
 	rows = rows.filter(func(r): return String(r["verb"]) != "go")
 	rows.reverse()
 	for r in go_row + rows:
-		var b: Button = ui.btn(String(r["label"]), r["call"])
+		var waits: bool = r.has("answer")
+		var b: Button = ui.btn(String(r["label"]), Callable() if waits else r["call"])
+		if waits:
+			b.set_meta("answer", r["answer"])  # pressed -> working -> done on the card itself (_answer)
 		b.disabled = not bool(r["enabled"])
 		b.set_meta("go", String(r["verb"]) == "go")
 		b.tooltip_text = String(r["why"]) if String(r["why"]) != "" else String(r["tip"])

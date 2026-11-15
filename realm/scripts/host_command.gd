@@ -695,6 +695,8 @@ func order(kind: String, at := {}, done := Callable()) -> bool:
 			body[k] = int(at[k])
 	if at.has("face"):
 		body["face"] = at["face"]
+	if at.get("defend", false):
+		body["defend"] = true  # to a raided town's aid, never a siege of it (bridge hosts.js march)
 	ordered.emit(kind)
 	main.barks.host("order", selected)  # its captain answers at once, as Warcraft III's do (barks.gd)
 	_ask(body, done)

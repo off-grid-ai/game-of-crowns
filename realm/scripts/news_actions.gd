@@ -322,6 +322,7 @@ func _row(verb: String, e: Dictionary, now: Dictionary) -> Dictionary:
 				var from: String = String((h["at"] as Dictionary).get("name", "")) if h.get("at") is Dictionary else "the field"
 				r["tip"] = String(words.get("tip", "")).format({"from": from, "men": UI.heads(int(h.get("men", 0))), "town": fill["town"]})
 				r["call"] = _defend.bind(city)
+				r["answer"] = func(done: Callable): _defend(city, done)  # the card waits for the bridge's word (chronicle_panel.gd _answer)
 		"rule":
 			var id := _matter(e)
 			if id == "":
@@ -453,7 +454,13 @@ func _host_bound(city: int) -> Dictionary:
 ## Defend: the nearest free host is chosen and told to garrison the town, the one way a host is ordered
 ## (host_command.gd select + order: POST /host/order, its captain's answer, the horn, the men's cry).
 ## With none free, the levy is raised in its place; with no purse for it, the King is told so.
-func _defend(city: int) -> void:
+## done(ok, said), when given: the bridge's answer, or why nothing was asked (pressed -> working -> done).
+func _defend(city: int, done := Callable()) -> void:
+	var tell := func(ok: bool, said: String) -> void:
+		if done.is_valid():
+			done.call(ok, said)
+		elif not ok and said != "":
+			main.ui.toast(said)
 	var cmd: Node = main.get_node_or_null("HostCommand")
 	var h := _free_host(city)
 	if cmd and not h.is_empty():
@@ -461,13 +468,16 @@ func _defend(city: int) -> void:
 		# His own town he garrisons; a house's he can't enter, so the host advances on it and falls on the raiders
 		# it meets there (Warcraft III's attack-move, bridge hosts.js advance).
 		var mine := int(main.awareness.city(city).get("owner", -2)) == int(main.awareness.rec("crownId", -1))
-		cmd.order("garrison" if mine else "advance", {"city": city})
+		var asked: bool = cmd.order("garrison" if mine else "advance", {"city": city, "defend": true}, func(code: int, said: String): tell.call(code == 200, said))
+		if not asked:
+			tell.call(false, String(Data.value(FILE, "no_order", "Your host has no order left this season. Raise new men instead.")))
 		return
 	var levy := _row("levy", {"kind": "attack", "city": city}, _now(main.awareness.city(city)))
 	if not levy.is_empty() and bool(levy["enabled"]):
 		(levy["call"] as Callable).call()
+		tell.call(true, "")
 	else:
-		main.ui.toast(String(Data.value(FILE, "no_answer", "No royal host is free, and the treasury can't pay for a levy.")))
+		tell.call(false, String(Data.value(FILE, "no_answer", "No royal host is free, and the treasury can't pay for a levy.")))
 
 
 ## The defend key: the latest threat still standing, answered.

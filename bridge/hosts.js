@@ -178,7 +178,8 @@ function give(ctx, b) {
       // A great house's town not sworn to the crown is marched on: the host lays siege when it arrives,
       // and the house hears of it now (declare: the route moves favour and names the deed).
       const owner = town ? world.players.find((p) => p.id === town.owner) : null;
-      const foe = owner && !houseFor(owner).crown && !houseFor(owner).wild && !sworn?.(owner.id) ? owner : null;
+      // Sent to defend (the chronicle's Defend on a raided town): it falls on the raiders and never on the town's house.
+      const foe = !b.defend && owner && !houseFor(owner).crown && !houseFor(owner).wild && !sworn?.(owner.id) ? owner : null;
       if (b.dry) {
         const seasons = sea ? Math.max(1, Math.ceil(sea.walk / HOSTS.speed) + Math.ceil(sea.sail / sea.speed) + Math.ceil(sea.ashore / HOSTS.speed)) : Math.max(1, Math.ceil(road / HOSTS.speed));
         return [200, { ok: true, dry: true, by: sea ? "sea" : "land", seasons, ...(foe ? { siege: true } : {}), ...(sea ? { sea: { coast: sea.coast, ships: sea.ships, cost: sea.cost, landing: sea.landing } } : {}) }];
