@@ -13,6 +13,7 @@ static func by_part(cam: Camera3D, main: Node) -> Dictionary:
 		return {}
 	var planes := cam.get_frustum()
 	var by := {}
+	var calls := {}  # part -> draw calls (a mesh's surfaces, once per instance node; a batch is one call a surface)
 	var all := 0
 	var wide: Array = []
 	var drawn: Array = main.find_children("*", "GeometryInstance3D", true, false)
@@ -49,9 +50,11 @@ static func by_part(cam: Camera3D, main: Node) -> Dictionary:
 		all += t
 		var k := _part(g, main)
 		by[k] = int(by.get(k, 0)) + t
+		var kc := _where(g, main) if g is MeshInstance3D else k  # single meshes summed by who made them: many small draws show as one dear part
+		calls[kc] = int(calls.get(kc, 0)) + maxi(1, mesh.get_surface_count())
 		if t > WIDE_TRIS and maxf(box.size.x, box.size.z) > WIDE:
 			wide.append("%s %.0f units %.1fM" % [k, maxf(box.size.x, box.size.z), t / 1000000.0])
-	return {"by": by, "all": all, "wide": wide}
+	return {"by": by, "all": all, "wide": wide, "calls": calls}
 
 
 ## The census as one line, the dearest eight parts (the frame-rate card; the shot harness's budget check).
@@ -65,7 +68,17 @@ static func line(cam: Camera3D, main: Node) -> String:
 	var out := PackedStringArray()
 	for k in keys.slice(0, 8):
 		out.append("%s %.1fM" % [k, by[k] / 1000000.0])
-	return "triangles: " + ", ".join(out) + "  (of %.1fM, full detail)" % (int(c["all"]) / 1000000.0)
+	# Draw calls by part, the dearest eight (Metal pays per call on the CPU: 1,200 calls is the frame at Kingsmere).
+	var calls: Dictionary = c["calls"]
+	var ck := calls.keys()
+	ck.sort_custom(func(a, b): return calls[a] > calls[b])
+	var co := PackedStringArray()
+	var sum := 0
+	for k in ck:
+		sum += int(calls[k])
+	for k in ck.slice(0, 8):
+		co.append("%s %d" % [k, calls[k]])
+	return "triangles: " + ", ".join(out) + "  (of %.1fM, full detail) | calls: " % (int(c["all"]) / 1000000.0) + ", ".join(co) + "  (of %d, no shadows)" % sum
 
 
 static var _mesh_tris := {}  # mesh instance id -> its triangles (read once from its index counts)
