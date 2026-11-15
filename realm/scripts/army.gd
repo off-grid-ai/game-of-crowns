@@ -268,6 +268,7 @@ func march_out(_to: Vector3) -> void:
 ## (03-army: a column of regiments, each under its banner), halted and at ease.
 func _stand_on_tile(at: Vector3, yaw: float) -> void:
 	var tail := _baggage_tail() + 1.0
+	at = Footing.nearest_clear(at, _column_half())
 	yaw = _dry_yaw(at, yaw, tail)
 	var dir := Vector3(sin(yaw), 0, cos(yaw))
 	_path = PackedVector3Array([_ground_at(at - dir * tail), _ground_at(at)])
@@ -287,12 +288,20 @@ func _stand_on_tile(at: Vector3, yaw: float) -> void:
 		(c["node"] as Node3D).rotation.y = yaw
 
 
-## A heading for a column standing with its head at `at` whose `tail` behind it lies on land (Mac 2026-11-15: a
-## coastal host stood out over the sea): `yaw` when its whole length is dry, else of field.turns bearings round it
-## the one nearest `yaw` with the most land under it (ground.gd on_land, every march.wetStep).
+## Half a column's width on the march, at its widest (column.files abreast, column.fileMost apart).
+func _column_half() -> float:
+	var files: Array = Data.value("army", "column.files", [8, 10])
+	return float(files[files.size() - 1]) * Data.num("army", "column.fileMost", 0.1) * 0.5
+
+
+## A heading for a column standing with its head at `at` whose `tail` behind it stands clear (Mac 2026-11-15: a
+## coastal host stood out over the sea, another through a cottage): `yaw` when its whole length is clear, else of
+## field.turns bearings round it the one nearest `yaw` with the most clear ground under it (ground.gd is_clear,
+## dry land in no footprint across the column's width, every march.wetStep).
 func _dry_yaw(at: Vector3, yaw: float, tail: float) -> float:
 	var step := maxf(Data.num("army", "march.wetStep", 0.5), 0.1)
 	var turns := int(Data.num("battle", "field.turns", 12))
+	var half := _column_half()
 	var best := yaw
 	var most := -1
 	for i in turns:
@@ -301,7 +310,7 @@ func _dry_yaw(at: Vector3, yaw: float, tail: float) -> float:
 		var dry := 0
 		var d := 0.0
 		while d <= tail:
-			if Footing.on_land(at - dir * d):
+			if Footing.is_clear(at - dir * d, half):
 				dry += 1
 			d += step
 		if dry > most:
