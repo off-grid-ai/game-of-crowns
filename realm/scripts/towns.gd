@@ -742,6 +742,8 @@ func _hide_home(node: Node3D, h: Array) -> Array:
 	for g in node.get_children():
 		if not (g is MultiMeshInstance3D and String(g.get_meta("kind", "")) == String(h[3])):
 			continue
+		if g.has_meta("cell") and g.get_meta("cell") != cell_of(Vector3(h[2])):
+			continue  # another cell's batch of the kind (_flush): its copy at that place is another house
 		var mm: MultiMesh = (g as MultiMeshInstance3D).multimesh
 		var idx := int(h[4])
 		var at: Array = g.get("xfs") if g.get_script() == Batch else []
@@ -2468,24 +2470,50 @@ func _place(root: Node3D, kind: String, pos: Vector3, yaw: float, scale := Vecto
 		_footprint_rect(root, Vector3(pos.x, 0, pos.z), foot, yaw, pos.y + Real.height(kind) * scale.y)
 
 
+## Each kind's copies batched by the cell of the town they stand in (towns.json batch_cell, town-local units), not one
+## batch over the whole town: the whole-to-low handover (_hlod), a prop's reach and Godot's own detail levels are
+## judged per cell, and a cell behind the camera is culled. Each home's place in its batch (homes [4]) is its place in
+## its cell's (meta cell on each batch); [6] keeps its place among the kind's copies (meta batch_raw).
+static var BATCH_CELL: float = maxf(Data.num("towns", "batch_cell", 12.0), 0.5)
+static func cell_of(at: Vector3) -> Vector2i:
+	return Vector2i(floori(at.x / BATCH_CELL), floori(at.z / BATCH_CELL))
+
+
 func _flush(root: Node3D) -> void:
 	var raw := {}  # every copy as placed, by batch key: what a town that grows lays its new copies beside (_grow_town)
+	var in_cell := {}  # kind -> {its copy's place among the kind's: its place in its cell's batch}
 	for key: String in _batch:
-		await _pace()  # each kind's batch its own step (Mac's game: the build's last step, up to 2.7 s)
 		var kind := key.get_slice("@", 0)
 		var xfs: Array = _batch[key]
 		raw[key] = xfs.duplicate()
-		for part in Real.parts(kind):
-			var mmi := Batch.make("", part[0], xfs.map(func(x: Transform3D) -> Transform3D: return x * part[1]))
-			mmi.set_meta("kind", kind)  # which kit model it batches (fire.gd finds a burnt house's place in it)
-			if is_detail(kind):
-				detail(mmi, _reach_for(kind))  # a prop, cart or stall: gone by the far tier, faded
-			else:
-				_fade_beyond(mmi, _reach_for(kind))
-			root.add_child(mmi)
-			var low: Mesh = part[2] if (part as Array).size() > 2 else null
-			if low and not is_detail(kind) and _reach_for(kind) > HLOD_AT:
-				_hlod(root, mmi, low, kind)
+		var cells := {}  # cell -> the places of its copies among the kind's
+		for i in xfs.size():
+			(cells.get_or_add(cell_of((xfs[i] as Transform3D).origin), []) as Array).append(i)
+		if key == kind:
+			in_cell[kind] = {}
+		for cell: Vector2i in cells:
+			await _pace()  # each cell's batch its own step (Mac's game: the build's last step, up to 2.7 s)
+			var at: Array = cells[cell]
+			var cx: Array = at.map(func(i: int) -> Transform3D: return xfs[i])
+			if key == kind:
+				for j in at.size():
+					in_cell[kind][at[j]] = j
+			for part in Real.parts(kind):
+				var mmi := Batch.make("", part[0], cx.map(func(x: Transform3D) -> Transform3D: return x * part[1]))
+				mmi.set_meta("kind", kind)  # which kit model it batches (fire.gd finds a burnt house's place in it)
+				mmi.set_meta("cell", cell)  # which cell of the town (cell_of): a home's batch is its cell's
+				if is_detail(kind):
+					detail(mmi, _reach_for(kind))  # a prop, cart or stall: gone by the far tier, faded
+				else:
+					_fade_beyond(mmi, _reach_for(kind))
+				root.add_child(mmi)
+				var low: Mesh = part[2] if (part as Array).size() > 2 else null
+				if low and not is_detail(kind) and _reach_for(kind) > HLOD_AT:
+					_hlod(root, mmi, low, kind)
+	for h in root.get_meta("homes", []):
+		var row: Array = h
+		if row.size() >= 7 and in_cell.has(String(row[3])) and (in_cell[String(row[3])] as Dictionary).has(int(row[6])):
+			row[4] = int(in_cell[String(row[3])][int(row[6])])
 	_batch.clear()
 	root.set_meta("batch_raw", raw)
 	await _pace()
@@ -2540,6 +2568,8 @@ func _hlod(root: Node3D, high: MultiMeshInstance3D, low: Mesh, kind: String) -> 
 	var fade := float((Data.value("towns", "hlod", {}) as Dictionary).get("fade", 3.0))
 	var far := Batch.make("", low, high.get("xfs"))  # where the whole copies stand, from their own list
 	far.set_meta("kind", kind)  # a burnt or rising house is hidden in it too (fire.gd, _hide_home: every batch of its kind)
+	if high.has_meta("cell"):
+		far.set_meta("cell", high.get_meta("cell"))
 	far.set_meta("hlod", "low")
 	far.visibility_range_begin = HLOD_AT
 	far.visibility_range_begin_margin = fade
