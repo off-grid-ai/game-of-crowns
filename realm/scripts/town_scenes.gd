@@ -79,20 +79,28 @@ func _process(delta: float) -> void:
 	var cam := get_viewport().get_camera_3d()
 	if cam == null or main == null or main.towns == null or main.awareness == null:
 		return
-	var near := float(_d.get("director", {}).get("near", 30.0))
 	for id in main.towns.towns.keys():
 		var t: Dictionary = main.towns.towns[id]
 		var root: Node3D = t.get("node")
 		if root == null or not is_instance_valid(root):
 			_end_town(int(id))
 			continue
-		if cam.global_position.distance_to(root.global_position) > near:
+		if not _lived(root):
 			_end_town(int(id))
 			continue
 		_direct(int(id), root, t.get("data", {}) as Dictionary)
 	for id in _live.keys():
 		if not main.towns.towns.has(id):
 			_end_town(int(id))
+
+
+## Whether a town's life stands (towns.gd _life_near, the one decider by view_tier.gd: staged while it is NEAR, freed
+## once it has been less for a while): its passing scenes play only then, and are put away with it. A distance of
+## its own here kept every town within 30 units of the lens casting, NEAR or not (Mac's long game, 2026-11-15:
+## TownScenes 807 -> 1423 nodes as the lens rose over more towns; tools/town_nodes_probe.gd).
+static func _lived(root: Node3D) -> bool:
+	var life := root.get_node_or_null("Life")
+	return life != null and life.has_meta("sig")
 
 
 # --- the standing scenes: staged when the town is dressed --------------------------------------------

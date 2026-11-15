@@ -13,7 +13,7 @@
   "plan": {"bend": 3.0, "places": {"tavern": ["tavern"], "inn": ["tavern"], "ale": ["tavern"], "sept": ["sept"], "temple": ["sept"], "church": ["sept"], "chapel": ["sept"], "market": ["market", "stall", "cart"], "stall": ["market", "stall", "cart"], "well": ["well", "draw"], "square": ["well", "draw", "street"], "field": ["field"], "farm": ["field"], "plough": ["field"], "home": ["home"], "bench": ["bench"], "work": ["bench"], "shop": ["bench"], "forge": ["bench"]}},
   "_week": "week: days in the market week; each town has its own market day in it (town_scenes.gd market_day), when the market_day row's carts, anvil and porters come, the stalls have three buyers each (one otherwise) and the square more gossip (the rows' market numbers).",
   "week": {"days": 7},
-  "director": {"tick": 2.0, "most": {"base": 3, "per_size": 0.5, "cap": 9}, "near": 30.0, "pace": 0.17, "enter": [1.2, 2.0], "square_size": 6, "square_off": ["riot", "raid"], "say_every": 30.0, "clear": 0.08, "stand_reach": 0.4},
+  "director": {"tick": 2.0, "most": {"base": 3, "per_size": 0.5, "cap": 9}, "pace": 0.17, "enter": [1.2, 2.0], "square_size": 6, "square_off": ["riot", "raid"], "say_every": 30.0, "clear": 0.08, "stand_reach": 0.4},
   "objects": {
     "well": {"place": "well"},
     "market": {"place": "market"},
