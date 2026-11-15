@@ -60,6 +60,7 @@ var _shrink := 0.975
 
 var _whole: MultiMeshInstance3D
 var _loose: MultiMeshInstance3D
+var _lies := {}  # stone -> where its loose copy lies, the wall's own copy (never read back from the renderer)
 var _metres: Node3D
 var _rng := RandomNumberGenerator.new()
 
@@ -589,7 +590,7 @@ func _mend(section: int) -> void:
 		_state[i] = WHOLE
 		_whole.multimesh.set_instance_transform(i, _laid(i))
 		_whole.multimesh.set_instance_color(i, _shade[i])
-		_loose.multimesh.set_instance_transform(i, _hidden())
+		_lay_loose(i, _hidden())
 	_heap.clear()
 	_pending.erase(section)
 	opened.emit()
@@ -667,7 +668,7 @@ func _loosen(i: int, push: Vector3, physical := true) -> void:
 	_whole.multimesh.set_instance_transform(i, _hidden())
 	if not (physical and hot and is_inside_tree()):
 		_state[i] = RUBBLE
-		_loose.multimesh.set_instance_transform(i, _rubble_at(i))
+		_lay_loose(i, _rubble_at(i))
 		return
 	_state[i] = LOOSE
 	_warm(_xf[i].origin)
@@ -690,7 +691,7 @@ func _loosen(i: int, push: Vector3, physical := true) -> void:
 	PhysicsServer3D.body_set_state(body, PhysicsServer3D.BODY_STATE_ANGULAR_VELOCITY, Vector3(_rng.randf_range(-1, 1), _rng.randf_range(-1, 1), _rng.randf_range(-1, 1)) * spin)
 	_bodies[i] = [body, shape]
 	_since[i] = 0.0
-	_loose.multimesh.set_instance_transform(i, _laid(i))
+	_lay_loose(i, _laid(i))
 	# The stones round it stand in its way as it falls.
 	for j in _xf.size():
 		if _state[j] == WHOLE and not _stays.has(j) and _xf[j].origin.distance_to(_xf[i].origin) < 3.0:
@@ -794,11 +795,10 @@ func _physics_process(delta: float) -> void:
 		_check = 0.0
 		_support_live()
 	var settle := float(Data.num("walls", "fall.settle_s", 7.0))
-	var mm := _loose.multimesh
 	for i in _bodies.keys():
 		var body: RID = _bodies[i][0]
 		var t: Transform3D = PhysicsServer3D.body_get_state(body, PhysicsServer3D.BODY_STATE_TRANSFORM)
-		mm.set_instance_transform(i, Transform3D(t.basis * Basis.from_scale(_size[i] * _shrink), t.origin))
+		_lay_loose(i, Transform3D(t.basis * Basis.from_scale(_size[i] * _shrink), t.origin))
 		_since[i] = float(_since[i]) + delta
 		_warm(t.origin)  # the ground goes on under a stone flung far
 		# (A body only just made reads as asleep until its first step.)
@@ -817,7 +817,7 @@ func _physics_process(delta: float) -> void:
 func _settle_all() -> void:
 	for i in _bodies.keys():
 		_state[i] = RUBBLE
-		_loose.multimesh.set_instance_transform(i, _rubble_at(i))
+		_lay_loose(i, _rubble_at(i))
 		_free_pair(_bodies[i])
 	_bodies.clear()
 	_since.clear()
@@ -972,11 +972,10 @@ func rubble_height(world: Vector3) -> float:
 	if now - _rubble_at_ms > 500:
 		_rubble_at_ms = now
 		_rubble_grid.clear()
-		var mm := _loose.multimesh if _loose else null
 		for i in _xf.size():
-			if _state[i] != RUBBLE or mm == null:
+			if _state[i] != RUBBLE or not _lies.has(i):
 				continue
-			var t := mm.get_instance_transform(i)
+			var t: Transform3D = _lies[i]
 			var half := maxf(_size[i].x, _size[i].z) * 0.5
 			var top := t.origin.y + _size[i].y * 0.5
 			for cx in range(floori((t.origin.x - half) / 0.5), floori((t.origin.x + half) / 0.5) + 1):
@@ -1010,3 +1009,9 @@ func breaches() -> Array:
 ## A stable 0..1 from an integer.
 static func _h01(n: int) -> float:
 	return float(hash(n) % 10007) / 10007.0
+
+
+## Stone `i`'s loose copy put at `t`, and the wall keeps where (rubble_height reads it, not the renderer).
+func _lay_loose(i: int, t: Transform3D) -> void:
+	_loose.multimesh.set_instance_transform(i, t)
+	_lies[i] = t
