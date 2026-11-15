@@ -119,10 +119,10 @@ func _loose(from: Vector3, to: Vector3, start: float, flight: float, arc: float,
 	looses += 1
 	super(from, to, start, flight, arc, on_land, light)
 """
-const ASSAULT := """extends Node3D
-var town_at := Vector3.ZERO
-var ground: RefCounted
-var _wall := Vector3.ZERO
+## The siege's assault as the camp and the storm see it (its fight's ground, its town and wall), its parties idle.
+const ASSAULT := """extends "res://scripts/army_assault.gd"
+func _process(_dt: float) -> void:
+	pass
 func breach() -> Dictionary:
 	return {}
 """
@@ -188,7 +188,7 @@ func _run() -> void:
 	siege = Node3D.new()
 	root.add_child(siege)
 	# The fight's ground, as the siege's assault lays it (army_assault.gd _field) and the storm stands on.
-	var ai: Node3D = _script(ASSAULT).new()
+	var ai: Node = _script(ASSAULT).new()
 	ai.town_at = TOWN
 	ai._wall = _arc(0.0, R)
 	ai.ground = ArmyGround.around(main, TOWN, R + 8.0)

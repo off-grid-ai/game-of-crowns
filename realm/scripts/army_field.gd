@@ -28,6 +28,7 @@ const Mover := preload("res://scripts/mover.gd")  # the one way to move (CLAUDE.
 const Mind := preload("res://scripts/army_mind.gd")
 const Morale := preload("res://scripts/army_morale.gd")  # panic spreads: a regiment's nerve, on its mind's blackboard
 const Ground := preload("res://scripts/army_ground.gd")
+const Footing := preload("res://scripts/ground.gd")  # the one owner of where a body may stand: a regiment stepping out asks it
 const Data := preload("res://scripts/data.gd")
 const Heraldry := preload("res://scripts/heraldry.gd")
 const Awareness := preload("res://scripts/awareness.gd")  # the season's length: the field keeps its dead a season
@@ -1150,13 +1151,16 @@ func _storm_tick(delta: float) -> void:
 		Fire.breach_fires((st["gap"] as Vector3) + into * k("breach_in", 1.0), int(k("breach_fires", 3)))
 	if phase == "wall":
 		_fire_arrows(delta)
+		_siege_beats(delta, [0, 1])
 	elif phase == "hold":
 		_fire_arrows(delta)
 		_waves(st, delta)
 		_hold_line(st)
+		_siege_beats(delta, [0])  # the besiegers not yet sent keep their beat
 	else:
 		_fire_arrows(delta)  # the archers keep loosing over the wall while the storm goes in (04-siege: the town burns behind the breach)
 		_pour_in(st)
+	_make_way()
 	_fly()
 	_keep_up()
 
@@ -1210,6 +1214,160 @@ func _waves(st: Dictionary, dt: float) -> void:
 		back += float(r["d"]) + k("queue", 0.35)
 		if (r["goal"] as Vector3).distance_to(goal) > 0.05:
 			_go(r, goal, true, "attack" if i == 0 else "ready", face)
+
+
+## While the wall holds a siege is never still (Stronghold Crusader, Total War: a siege works on a beat; Mac
+## 2026-11-15, Oldhall and Saltkeep: "most of the troops are just standing"). Every standing regiment of `side_list`
+## keeps its own beat from siege.json storm_host.wall.beats (by its unit, else its role): a stance held a while, never
+## the same twice running, each regiment its own lengths and its own start, so no two keep step; now and then a foot
+## regiment steps forward toward the wall with shields up (at most wall.forward_most a side out at once) and back
+## again; archers (wall.volley) loose over the wall at their own cadence, the holder's back at the besiegers. The wall
+## and its breach stay the bridge's: nothing here opens it.
+func _siege_beats(dt: float, side_list: Array) -> void:
+	var every: Array = Data.value("siege", "storm_host.wall.volley_s", [5.0, 7.0])
+	for side in side_list:
+		for r in (sides[side] as Army).rows():
+			if _queue.has(r) or r.get("in", false) or r.get("broke", false) or r.has("aside"):
+				continue
+			if not r.has("beat_t"):
+				r["beat_t"] = _rng.randf_range(0.0, k("wall.first_s", 5.0))
+				r["home"] = (r["node"] as Node3D).global_position
+				r["volley_t"] = _rng.randf_range(0.5, float(every[1]))
+			if r.get("state_name", "") != "stand":
+				continue  # on its way: its beat waits
+			if String(r.get("unit", "")) in (Data.value("siege", "storm_host.wall.volley", ["archers"]) as Array):
+				r["volley_t"] = float(r["volley_t"]) - dt
+				if float(r["volley_t"]) <= 0.0:
+					r["volley_t"] = _rng.randf_range(float(every[0]), float(every[1]))
+					_siege_volley(r)
+					continue
+			r["beat_t"] = float(r["beat_t"]) - dt
+			if float(r["beat_t"]) <= 0.0:
+				_next_beat(r)
+
+
+## A regiment's next beat: back to its place if it stood forward, else a fresh stance, or a step toward the wall.
+func _next_beat(r: Dictionary) -> void:
+	var yaw := float(r["yaw"])
+	if r.get("forward", false):
+		r["forward"] = false
+		var back: Array = Data.value("siege", "storm_host.wall.back_s", [3.0, 5.0])
+		r["beat_t"] = _rng.randf_range(float(back[0]), float(back[1]))
+		_go(r, r["home"], false, "ready", yaw)
+		return
+	var all: Dictionary = Data.value("siege", "storm_host.wall.beats", {})
+	var rows: Array = all.get(String(r.get("unit", "")), all.get(String(r.get("role", "melee")), all.get("melee", [])))
+	if rows.is_empty():
+		return
+	var i := _rng.randi() % rows.size()
+	if String((rows[i] as Dictionary).get("clip", "")) == String(r.get("beat", "")):
+		i = (i + 1) % rows.size()  # never the same twice running
+	var b: Dictionary = rows[i]
+	var s: Array = b.get("s", [4.0, 7.0])
+	r["beat"] = String(b.get("clip", "ready"))
+	r["beat_t"] = _rng.randf_range(float(s[0]), float(s[1]))
+	if b.get("step", false) and _forward_out(int(r["side"])) < int(k("wall.forward_most", 1)):
+		var home: Vector3 = r["home"]
+		var to_wall: Vector3 = ai.get("_wall") - home
+		to_wall.y = 0.0
+		var goal := home + to_wall.normalized() * k("wall.step", 0.6)
+		if _free_for(r, goal, yaw):
+			r["forward"] = true
+			_go(r, goal, false, r["beat"], yaw)
+			return
+	r["stance"] = r["beat"]
+	_play(r, r["beat"])
+
+
+func _forward_out(side: int) -> int:
+	return (sides[side] as Army).rows().filter(func(x): return x.get("forward", false)).size()
+
+
+## Whether a regiment's block would stand free at `at` facing `yaw`: no engine, camp piece, house or water there
+## (the ground owner, ground.gd area_free); other regiments' ground is theirs to mind.
+func _free_for(r: Dictionary, at: Vector3, yaw: float) -> bool:
+	var xf := Transform3D(Basis(Vector3.UP, yaw), at)
+	var hw := float(r["w"]) * 0.5
+	var hd := float(r["d"]) * 0.5
+	var poly := PackedVector2Array()
+	for c in [Vector3(-hw, 0, -hd), Vector3(hw, 0, -hd), Vector3(hw, 0, hd), Vector3(-hw, 0, hd)]:
+		var w: Vector3 = xf * (c as Vector3)
+		poly.append(Vector2(w.x, w.z))
+	return Footing.area_free(poly, false, null, ["host"])
+
+
+## An archer regiment's volley over the wall at the nearest regiment of the other side (both sides loose): its men
+## draw and loose (the attack clip), wall.arrows arrows fly on a high arc, and the regiment they come down on raises
+## its shields (the block clip) a moment: every action gets a reaction. The volleys fell no one: who falls in a siege
+## is the bridge's to say.
+func _siege_volley(r: Dictionary) -> void:
+	var foe := _nearest_foe(r)
+	if foe.is_empty():
+		return
+	r["beat"] = "attack"
+	r["beat_t"] = k("wall.draw_s", 1.6)
+	_play(r, "attack")
+	var node: Node3D = r["node"]
+	var fnode: Node3D = foe["node"]
+	var man := Data.num("army", "man", 0.22)
+	var flight := k("wall.flight", 1.7)
+	for i in int(k("wall.arrows", 30)):
+		var from := node.to_global(Vector3(_rng.randf_range(-0.5, 0.5) * float(r["w"]), man * 0.8, _rng.randf_range(-0.5, 0.5) * float(r["d"])))
+		var to := fnode.to_global(Vector3(_rng.randf_range(-0.5, 0.5) * float(foe["w"]), 0.0, _rng.randf_range(-0.5, 0.5) * float(foe["d"])))
+		to.y = main.terrain.height_at(to.x, to.z)
+		var land := Callable()
+		if i == 0:
+			land = func(): _shields_up(foe)
+		else:
+			land = func(): pass
+		_loose(from, to, clock + _rng.randf_range(0.0, 0.4), flight * _rng.randf_range(0.9, 1.1), k("wall.arc", 0.55), land)
+
+
+## Arrows coming down on a standing regiment: its shields go up for wall.shields_s, then its beat goes on.
+func _shields_up(r: Dictionary) -> void:
+	if r.get("state_name", "") != "stand" or r.get("broke", false) or _queue.has(r):
+		return
+	r["beat"] = "block"
+	r["beat_t"] = maxf(float(r.get("beat_t", 0.0)), k("wall.shields_s", 1.8))
+	_play(r, "block")
+
+
+## A moving siege engine (siege_camp.gd sets "way_to" and "half" on it while it rolls) never goes through a
+## regiment of its own side: one standing in its way steps aside to clear ground by its Mover and, once the engine
+## has gone by and its place is free again, steps back (Total War's units parting for a tower). Its route goes round
+## the rest (army_ground.gd shuts every held block, engines' too).
+func _make_way() -> void:
+	var rolling: Array = get_tree().get_nodes_in_group(&"siege_engines").filter(func(n): return (n as Node).has_meta("way_to"))
+	for r in (sides[0] as Army).rows():
+		if r.has("aside"):
+			var e = r["aside"]
+			if (not is_instance_valid(e) or not (e as Node).has_meta("way_to")) and _free_for(r, r["home"], float(r["yaw"])):
+				r.erase("aside")
+				_go(r, r["home"], false, String(r.get("stance", "ready")), float(r["yaw"]))
+			continue
+		if r.get("state_name", "") != "stand" or _queue.has(r) or r.get("in", false):
+			continue
+		for e: Node3D in rolling:
+			var from := e.global_position
+			var to: Vector3 = e.get_meta("way_to")
+			var half := float(e.get_meta("half", 0.3)) + Data.num("army", "gap", 0.35) * 0.5
+			var at: Vector3 = (r["node"] as Node3D).global_position
+			var along := Vector3(to.x - from.x, 0, to.z - from.z)
+			var length := along.length()
+			if length < 0.01:
+				continue
+			along /= length
+			var across := Vector3(-along.z, 0, along.x)
+			var down := (at - from).dot(along)
+			var side := (at - from).dot(across)
+			var reach := maxf(float(r["w"]), float(r["d"])) * 0.5 + half
+			if down < -reach or down > length + reach or absf(side) > reach:
+				continue
+			if not r.has("home"):
+				r["home"] = at
+			r["aside"] = e
+			_go(r, at + across * ((signf(side) if side != 0.0 else 1.0) * reach - side), false, String(r.get("stance", "ready")), float(r["yaw"]))
+			break
 
 
 ## The holder's regiments meet them on the town side of the gap, their banners wavering more as the fight goes on
