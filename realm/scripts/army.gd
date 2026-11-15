@@ -270,7 +270,8 @@ func march_out(_to: Vector3) -> void:
 ## (03-army: a column of regiments, each under its banner), halted and at ease.
 func _stand_on_tile(at: Vector3, yaw: float) -> void:
 	var tail := _baggage_tail() + 1.0
-	at = Footing.nearest_clear(at, _column_half(), Footing.REACH, [_host_kind()])
+	_unclaim()  # the whole column stands anew: its old ground is no one's
+	at = Footing.nearest_clear(at, _column_half(), Footing.REACH)
 	yaw = _dry_yaw(at, yaw, tail)
 	var dir := Vector3(sin(yaw), 0, cos(yaw))
 	_path = PackedVector3Array([_ground_at(at - dir * tail), _ground_at(at)])
@@ -1113,6 +1114,7 @@ func _mark(r: Dictionary, on: bool) -> void:
 ## ground (cells unsuitable, trees to fell) and its way from the seat (muster.missCost, treeCost, nearCost).
 ## The best is taken; the trees under it are felled (forest.clear, as a town or a battle clears its ground).
 func _field_for(town: Vector3, extent: Vector2) -> bool:
+	_unclaim()
 	var pitch := Data.num("army", "muster.cell", 2.0)
 	var clear := Data.num("army", "muster.clear", 4.5)
 	var reach := Data.num("army", "muster.reach", 40.0)
@@ -1188,8 +1190,8 @@ func _take_field(extent: Vector2) -> void:
 
 ## Whether a regiment's ground (its line's rectangle round `mid`, turned to the line, and muster.margin round it)
 ## is clear: dry land, no building, no farm or field, no road; and no other regiment's ground in `taken`.
-## A side in the field (a battle's, a storm's: `strict` false) keeps off water and buildings only; it may stand on a
-## road or a farm's field, as armies fight over them.
+## A side in the field (a battle's, a storm's: `strict` false) may stand on a road; never on a hedged field, water,
+## a building or another body's ground (Mac 2026-11-15: a storm's block through a hedge into a ploughed field).
 func _clear_at(mid: Vector3, right3: Vector3, fwd3: Vector3, w: float, d: float, taken: Array, strict := true) -> bool:
 	var m := Data.num("army", "muster.margin", 0.15)
 	var step := Data.num("army", "muster.probe", 0.35)
@@ -1205,7 +1207,7 @@ func _clear_at(mid: Vector3, right3: Vector3, fwd3: Vector3, w: float, d: float,
 	for i in nx:
 		for j in nz:
 			var q := mid + right3 * ((float(i) / (nx - 1) - 0.5) * (w + m * 2.0)) + fwd3 * ((float(j) / (nz - 1) - 0.5) * (d + m * 2.0))
-			if not Footing.is_clear(q, 0.05, true, null, [_host_kind()] if strict else [_host_kind(), "field"]):
+			if not Footing.is_clear(q, 0.05):
 				return false
 			if strict and roads and roads.has_method("on_path") and roads.on_path(q, 0.05):
 				return false
@@ -1217,9 +1219,12 @@ func _clear_at(mid: Vector3, right3: Vector3, fwd3: Vector3, w: float, d: float,
 ## its facing, rings of muster.cell outward up to muster.reach; one that finds none keeps its place.
 func _clear_slots(right3: Vector3, fwd3: Vector3) -> void:
 	var pitch := Data.num("army", "muster.cell", 2.0) * 0.5
-	var strict := battle.is_empty()  # a muster keeps off farms and roads too; a side in the field only off houses and water
-	# a side in the field stays near the place its battle gave it (the storm's holders behind their own breach)
-	var reach := Data.num("army", "muster.search" if strict else "muster.fieldSearch", 8.0)
+	var strict := battle.is_empty()  # a muster keeps off roads too; a side in the field may stand on one
+	_unclaim()  # the whole line stands anew: its old ground is no one's
+	# rings nearest first, so a side in the field stands as near the place its battle gave it as it can; out to
+	# muster.search for every host (a battle side's 2.5 left regiments where they fell, heaped on another's block or
+	# through a hedge: Mac 2026-11-15)
+	var reach := Data.num("army", "muster.search", 8.0)
 	var taken: Array = []
 	var moved := 0
 	var stuck := 0
@@ -1316,6 +1321,7 @@ func _road_in(town: Vector3) -> void:
 ## marches on along the way it stands on. Group renders g3/g4: in line on a field with no road out; g5: through the
 ## lanes inside the walls; g6: on the waterside road to Eaglehaven, its blocks over the strait.
 func _form_on_way(town: Vector3, to: Vector3, root: Node3D) -> void:
+	_unclaim()
 	var roads = main.get("roads")
 	var aim := Vector2(to.x - town.x, to.z - town.z).normalized()
 	var reach := Data.num("army", "muster.wayReach", 16.0)
@@ -1334,7 +1340,7 @@ func _form_on_way(town: Vector3, to: Vector3, root: Node3D) -> void:
 		var side := Vector3(cos(h), 0, -sin(h))
 		for k in 5:
 			var t := q + side * half * (k / 2.0 - 1.0)
-			if not Footing.is_clear(t, 0.05, true, null, [_host_kind()]):
+			if not Footing.is_clear(t, 0.05):
 				return true
 		return false
 	# Every main way out of the town (towns.gd ways_main: where the realm's roads leave it), carried on straight out
@@ -1716,8 +1722,9 @@ func _at_ease(r: Dictionary, delta: float) -> void:
 
 ## The men drawn at every distance (their lighter detail levels from afar); banners and the standard keep their
 ## size on screen beyond banner.fixedFrom.
-## The ground a regiment holds where it stands (ground.gd claim): its rectangle, turned with it. Its own host's
-## regiments may stand on it (kind: this host), no other body or placement may (Mac 2026-11-15: hosts overlapping).
+## The ground a regiment holds where it stands (ground.gd claim): its rectangle, turned with it. No other body or
+## placement may stand on it, its own host's other regiments neither (Mac 2026-11-15: blocks heaped in one lump); a
+## host placed anew lets all its ground go first (_unclaim). A fight's routes go round it (army_ground.gd).
 func _claim(r: Dictionary, xf: Transform3D) -> void:
 	var hw := float(r.get("w", 0.0)) * 0.5
 	var hd := float(r.get("d", 0.0)) * 0.5
@@ -1734,9 +1741,15 @@ func _claim_id(r: Dictionary) -> String:
 	return "regiment %d" % (r["node"] as Object).get_instance_id()
 
 
-## The kind this host's regiments claim their ground under: its own regiments stand on it freely.
+## The kind this host's regiments claim their ground under ("host <id>": a fight's grid lays it as it moves).
 func _host_kind() -> String:
 	return "host %d" % get_instance_id()
+
+
+## The host's regiments let their ground go: the whole host is about to be placed anew, so where it stood is no one's.
+func _unclaim() -> void:
+	for r in _regiments:
+		Footing.release(_claim_id(r))
 
 
 ## Men laid again on the land under them once their regiment has moved (each man's own height; _dress), a few
@@ -1882,7 +1895,7 @@ func _ground(p: Vector3, size: float) -> bool:
 	for gx in 5:
 		for gz in 5:
 			var q := Vector3(p.x + (gx / 4.0 - 0.5) * size, 0, p.z + (gz / 4.0 - 0.5) * size)
-			if not Footing.is_clear(q, 0.1, true, null, [_host_kind()]):
+			if not Footing.is_clear(q, 0.1):
 				return false
 			if absf(main.terrain.height_at(q.x, q.z) - h) > slope:
 				return false
