@@ -66,7 +66,7 @@ func _get(property: StringName) -> Variant:
 
 func _set(property: StringName, value: Variant) -> bool:
 	if property == &"hold":
-		_hold = value == true
+		_hold = value is bool and value
 		return true
 	if property == &"pixels":
 		_draw_from(value as Image)
