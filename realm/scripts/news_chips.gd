@@ -84,6 +84,12 @@ func edge_arrow(at, angle: float, text: String, tone: String, fresh: bool) -> vo
 		var view := ui.get_viewport().get_visible_rect().size
 		var p: Vector2 = at
 		var goal := Vector2(clampf(p.x - sz.x * 0.5, 12, view.x - sz.x - 12), clampf(p.y - sz.y * 0.5, 120, ui.plane.top_y() - sz.y - 12)).round()  # never on the control plane
+		# Never on the hosts down the left edge either (army_bar.gd): beside them, so both read.
+		var hosts: Control = ui._army_panel
+		if hosts and hosts.is_visible_in_tree():
+			var r := hosts.get_global_rect().grow(12)
+			if r.intersects(Rect2(goal, sz)):
+				goal.x = minf(r.end.x, view.x - sz.x - 12)
 		_edge.size = sz
 		if fresh or not _edge.visible:
 			# Slides in from its edge, 160 ms, then holds still (UI.md 8).
