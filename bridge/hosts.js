@@ -5,6 +5,10 @@
 //             lays siege (campaigns.js), which the card calls Besiege
 //   attack    on a foe's men in the field: it follows them, and from beside them strikes each season by
 //             Freeciv's Attack (Lua.strike) until they are gone
+//   advance   (Warcraft III's attack-move) a march to a tile or a town that falls on any foe's men it meets on the
+//             way (data/hosts.json advance.reach), as an attack, then takes up the march again; on a foe's town it lays
+//             siege as a march does. Kept as a march with advance: true (so every march rule holds), its fight as an
+//             attack with resume: the march it broke off
 //   face      (march, attack) the way the host forms its line on arrival: a yaw, atan2 of x and z in the
 //             view's world XZ (Total War's drag to face); kept on the order and shown in list()
 //   hold      stop where it is
@@ -62,7 +66,7 @@ export function list(ctx) {
     return {
       id: lead.id, x: lead.x, y: lead.y, companies: g.units.length, men: g.units.reduce((n, u) => n + menOf(u), 0),
       at: town ? { id: town.id, name: cityName(town.id) } : null, units: g.units.map((u) => u.id),
-      order: o ? { kind: o.kind, x: o.x ?? null, y: o.y ?? null, city: o.city ?? null, to: o.city != null ? cityName(o.city) : null,
+      order: o ? { kind: o.advance ? "advance" : o.kind, fighting: o.resume ? true : undefined, x: o.x ?? null, y: o.y ?? null, city: o.city ?? null, to: o.city != null ? cityName(o.city) : null,
         seasons: o.x != null ? Math.ceil(Math.max(0, roadTo(lead, o)) / HOSTS.speed) : 0, face: o.face ?? null,
         sea: o.sea ? { phase: o.sea.phase, coast: o.sea.coast, landing: o.sea.landing, ships: o.sea.ships, hulls: o.sea.hulls ?? [] } : null } : null,
       aboard: o?.sea?.phase === "raised" || o?.sea?.phase === "sail",  // at sea in the ships the crown raised (its crossing: hosts.js crossing)
@@ -88,7 +92,8 @@ function save(meta, orders) {
 }
 
 // POST /host/order {host, order, x?, y?, city?, face?}: returns [code, {ok, text} | {error}]. order: hold, march (x,y or
-// city), besiege (city), relieve (city), attack (x,y: the foe's men there), garrison (city), return, split.
+// city), advance (x,y or city: a march that fights what it meets), besiege (city), relieve (city), attack (x,y: the
+// foe's men there), garrison (city), return, split.
 // dry: true (a march only) answers as the order would, by land or by sea, and gives nothing: no order, none of the
 // season's orders spent, no declaration (GoC's render pass asks before it spends a host's one order).
 export function order(ctx, b) {
@@ -147,6 +152,8 @@ function give(ctx, b) {
     if (kind === "relieve" && !open) return [400, { error: `${cityName(at.id)} is not the crown's, nor a sworn house's, to relieve` }];
     kind = "march";
   }
+  const advance = kind === "advance";  // an attack-move: a march, marked (stepOrder falls on the foes it meets)
+  if (advance) kind = "march";
   if (b.dry && kind !== "march") return [400, { error: "only a march can be asked dry" }];
   // One order a season to each host (data/hosts.json ordersPerHost): another host may still be ordered.
   if (ordersLeft(ctx, h.id) < 1) return [400, { error: "This host has its orders for this season; the next goes with the season's turn. Another host may still be ordered." }];
@@ -176,7 +183,7 @@ function give(ctx, b) {
         const seasons = sea ? Math.max(1, Math.ceil(sea.walk / HOSTS.speed) + Math.ceil(sea.sail / sea.speed) + Math.ceil(sea.ashore / HOSTS.speed)) : Math.max(1, Math.ceil(road / HOSTS.speed));
         return [200, { ok: true, dry: true, by: sea ? "sea" : "land", seasons, ...(foe ? { siege: true } : {}), ...(sea ? { sea: { coast: sea.coast, ships: sea.ships, cost: sea.cost, landing: sea.landing } } : {}) }];
       }
-      save(meta, [...rest, { kind: "march", units: h.units, x: to.x, y: to.y, city: town?.id ?? null, since: world.turn, ...(foe ? { siege: true, house: foe.id } : {}), ...face,
+      save(meta, [...rest, { kind: "march", units: h.units, x: to.x, y: to.y, city: town?.id ?? null, since: world.turn, ...(advance ? { advance: true } : {}), ...(foe ? { siege: true, house: foe.id } : {}), ...face,
         ...(sea ? { sea: { phase: "coast", coast: sea.coast, water: sea.water, ships: sea.ships, cost: sea.cost, landing: sea.landing } } : {}) }]);
       if (sea) {
         const seasons = Math.max(1, Math.ceil(sea.walk / HOSTS.speed) + Math.ceil(sea.sail / sea.speed) + Math.ceil(sea.ashore / HOSTS.speed));
@@ -184,6 +191,8 @@ function give(ctx, b) {
           ...(foe && !b.declared ? { declare: { city: town.id, house: foe.id } } : {}) }];
       }
       const seasons = Math.max(1, Math.ceil(road / HOSTS.speed));
+      if (advance) return [200, { ok: true, text: `${name} advances${town ? ` on ${cityName(town.id)}` : ""}, falling on any foe it meets: ${seasons === 1 ? "a season" : `${seasons} seasons`} on the road${foe ? ", and lays siege when it reaches the walls" : ""}.`,
+        ...(foe && !b.declared ? { declare: { city: town.id, house: foe.id } } : {}) }];
       return [200, { ok: true, text: `${name} marches${town ? ` ${foe ? "on" : "for"} ${cityName(town.id)}` : ""}: ${seasons === 1 ? "a season" : `${seasons} seasons`} on the road${foe ? ", and lays siege when it reaches the walls" : ""}.`,
         ...(foe && !b.declared ? { declare: { city: town.id, house: foe.id } } : {}) }];
     }
@@ -584,9 +593,24 @@ function stepOrder(ctx, o, turn, units, byId, shut) {
   const crown = crownOf(world);
   if (o.joined && turn > (o.since ?? 0) + 1) return [];  // banner men a season in: the town's men now, one host with them
   if (o.x == null) { return [{ ...o, units }]; }
+  // An advance (attack-move) meets a foe's men on its way: it turns to fall on them, an attack that keeps the march.
+  if (o.advance && o.kind === "march" && (!o.sea || o.sea.phase === "landed")) {
+    const met = metOnRoad(ctx, o, units, byId);
+    if (met) {
+      const who = houseFor(world.players.find((p) => p.id === met.owner) ?? {}).name ?? "the foe";
+      record?.({ turn, kind: "decree", text: `The royal host meets ${who}'s men on the road and falls on them.` });
+      const { far, ...march } = o;
+      return stepOrder(ctx, { kind: "attack", units, x: met.x, y: met.y, target: met.id, house: met.owner, since: turn, resume: march, ...(o.face != null ? { face: o.face } : {}) }, turn, units, byId, shut);
+    }
+  }
   if (o.kind === "attack") {
-    // The foe's men are followed where they go; gone (fallen, or home behind walls), the host stands.
+    // The foe's men are followed where they go; gone (fallen, or home behind walls), the host stands, or, met on an
+    // advance, takes up its march again (resume).
     const foe = (world.units ?? []).find((u) => u.id === o.target);
+    if (!foe && o.resume) {
+      record?.({ turn, kind: "decree", text: `The foe met on the road is gone; the royal host takes up its march${o.resume.city != null ? ` on ${cityName(o.resume.city)}` : ""}.`, city: o.resume.city ?? undefined });
+      return stepOrder(ctx, { ...o.resume, units }, turn, units, byId, shut);
+    }
     if (!foe) {
       record?.({ turn, kind: "decree", text: "The foe the royal host marched on is gone from the field; the host makes camp." });
       return [{ kind: "hold", units, since: turn, ...(o.face != null ? { face: o.face } : {}) }];
@@ -691,6 +715,25 @@ function stepOrder(ctx, o, turn, units, byId, shut) {
   }
   if (pinned.length) send(`lua cmd ${Lua.homewardHold(pinned)}`);
   return [{ ...o, units, far }];
+}
+
+// The nearest foe's men an advancing host meets (data/hosts.json advance.reach tiles of any of its companies, or of the
+// lead's road ahead this season): another house's soldiers in the field, not sworn to the crown (the attack order's
+// foes), not in a town (a town is a siege's), on land the host can reach. Null when none.
+function metOnRoad(ctx, o, units, byId) {
+  const { world } = ctx;
+  const crown = crownOf(world);
+  const reach = HOSTS.advance?.reach ?? 2;
+  const lead = byId.get(Math.min(...units));
+  const steps = stepsTo(o);
+  const ahead = [...units.map((id) => byId.get(id)), ...(steps && lead ? wayOn(steps, lead, HOSTS.speed).map(([x, y]) => ({ x, y })) : [])];
+  const towns = new Set((world.cities ?? []).map((c) => `${c.x},${c.y}`));
+  const foes = (world.units ?? []).filter((u) => u.owner !== crown?.id && !CIVILIAN.has(u.type) && !SHIPS.has(u.type) && !towns.has(`${u.x},${u.y}`))
+    .filter((u) => { const p = world.players.find((q) => q.id === u.owner); return p && !houseFor(p).crown && !sworn(ctx, p.id); })
+    .map((u) => ({ u, d: Math.min(...ahead.map((p) => cheb(p, u))) }))
+    .filter(({ u, d }) => d <= reach && roadTo(lead, u) >= 0)
+    .sort((a, b) => a.d - b.d);
+  return foes[0]?.u ?? null;
 }
 
 export function season(ctx, turn) {
