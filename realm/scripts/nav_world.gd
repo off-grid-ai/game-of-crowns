@@ -28,6 +28,7 @@ extends Node
 const Data := preload("res://scripts/data.gd")
 const Kept := preload("res://scripts/kept.gd")
 const ViewTier := preload("res://scripts/view_tier.gd")
+const WorldClock := preload("res://scripts/world_clock.gd")
 const Ground := preload("res://scripts/ground.gd")
 const PerfTools := preload("res://scripts/perf_tools.gd")
 
@@ -68,7 +69,6 @@ static var _still := {}  # claim id -> [its outline when last seen, since when (
 static var _carved := {}  # claim id -> true: held still nav.hold_still seconds, so carved out of the maps
 static var _carved_rev := 0  # counts changes to what is carved: the watch looks again only then
 static var _still_at := 0.0  # when the claims were last looked over (_hold, on the game's clock)
-static var clock := 0.0  # the game's own seconds (scaled by its speed: Engine.time_scale), counted in _process
 static var _unsettled := false  # a chunk seen this round waits to settle: another round follows
 static var _started := false
 static var _gen := 0  # a start's number: a bake still out from an earlier one is dropped when it comes back
@@ -267,8 +267,6 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	if not _started:
 		return
-	if not get_tree().paused:
-		clock += _delta  # scaled by the game's speed already; not while it is paused
 	var t0 := Time.get_ticks_usec()
 	_land_done()
 	var t1 := Time.get_ticks_usec()
@@ -315,7 +313,7 @@ static func _key() -> Array:
 ## frame and up to 1.4 cores baking). Looked over every nav.hold_scan seconds, and only when the claims changed or one
 ## still waits to count as standing.
 static func _hold() -> void:
-	var now := clock  # game time: a player at 4x sees a block stand as long in the game as at 1x
+	var now := WorldClock.seconds()  # game time (world_clock.gd): a player at 4x sees a block stand as long in the game as at 1x
 	if now - _still_at < Data.num("ground", "nav.hold_scan", 0.25):
 		return
 	_still_at = now

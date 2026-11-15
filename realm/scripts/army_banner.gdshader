@@ -9,6 +9,7 @@
 // size on screen from afar. Numbers in data/army.json banner.*.
 shader_type spatial;
 render_mode cull_disabled, diffuse_burley;
+global uniform float world_time;  // the realm's clock, stopped while paused (world_clock.gd)
 
 uniform vec4 field_color : source_color = vec4(0.72, 0.12, 0.12, 1.0);
 uniform vec4 glyph_color : source_color = vec4(0.95, 0.92, 0.84, 1.0);
@@ -35,8 +36,8 @@ varying float ripple;
 
 void vertex() {
 	float t = clamp((UV.x - pole_w) / (1.0 - pole_w), 0.0, 1.0);  // 0 at the pole, 1 at the free edge
-	float a = TIME * 2.3 + UV.x * 7.0 - UV.y * 2.0 + phase;
-	float b = TIME * 4.1 + UV.x * 12.0 + phase * 1.7;
+	float a = world_time * 2.3 + UV.x * 7.0 - UV.y * 2.0 + phase;
+	float b = world_time * 4.1 + UV.x * 12.0 + phase * 1.7;
 	float wave = sin(a) * 0.06 + sin(b) * 0.02;
 	VERTEX.z += wave * t * span;
 	ripple = 0.86 + 0.14 * cos(a) * t;
@@ -126,7 +127,7 @@ void fragment() {
 			vec3 ink = lum > 0.62 ? vec3(0.12, 0.09, 0.07) : glyph_color.rgb;
 			field = mix(field, ink, on);
 		}
-		field = mix(field, vec3(1.0), waver * (0.5 + 0.5 * sin(TIME * 9.0)) * 0.45);
+		field = mix(field, vec3(1.0), waver * (0.5 + 0.5 * sin(world_time * 9.0)) * 0.45);
 		col = mix(field, field * 1.25 + vec3(0.05), selected) * ripple;
 		shown = 1.0;
 	} else if (rim && selected > 0.01) {

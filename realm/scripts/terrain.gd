@@ -885,9 +885,9 @@ func _shore_code(code: String) -> String:
 		float shallow = (1.0 - smoothstep(0.0, shore_k.x, depth)) * shore_shallow.a;
 		ALBEDO = mix(ALBEDO, shore_shallow.rgb, shallow);
 		EMISSION *= 1.0 - shallow;
-		float breathe = 0.75 + 0.25 * sin(TIME * shore_k.w + bed * 40.0);
+		float breathe = 0.75 + 0.25 * sin(world_time * shore_k.w + bed * 40.0);
 		float band = 1.0 - smoothstep(shore_k.y * 0.3, shore_k.y * breathe, depth);
-		float grain = texture(texture_foam, world_coordinates.xz * shore_k.z + vec2(TIME * 0.02, 0.0)).a;
+		float grain = texture(texture_foam, world_coordinates.xz * shore_k.z + vec2(world_time * 0.02, 0.0)).a;
 		float foam = clamp(band * (0.45 + grain), 0.0, 1.0) * shore_foam.a;
 		ALBEDO = mix(ALBEDO, shore_foam.rgb, foam);
 		EMISSION *= 1.0 - foam;
@@ -895,8 +895,8 @@ func _shore_code(code: String) -> String:
 		// open water moves at every zoom): two slow trains of light and shade drifting across each other.
 		float far = smoothstep(shore_swell.w, shore_swell.w * 2.0, distance(CAMERA_POSITION_WORLD, world_coordinates));
 		vec2 sw = world_coordinates.xz * shore_swell.y;
-		float s1 = texture(texture_foam, sw + vec2(TIME * shore_swell.z, TIME * shore_swell.z * 0.4)).a;
-		float s2 = texture(texture_foam, sw * 1.7 + vec2(-TIME * shore_swell.z * 0.6, TIME * shore_swell.z)).a;
+		float s1 = texture(texture_foam, sw + vec2(world_time * shore_swell.z, world_time * shore_swell.z * 0.4)).a;
+		float s2 = texture(texture_foam, sw * 1.7 + vec2(-world_time * shore_swell.z * 0.6, world_time * shore_swell.z)).a;
 		ALBEDO *= 1.0 + (s1 + s2 - 1.0) * shore_swell.x * far * (1.0 - shallow);
 	}
 }

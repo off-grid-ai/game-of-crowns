@@ -3,6 +3,7 @@
 shader_type spatial;
 
 render_mode blend_mix,depth_draw_always,cull_disabled,diffuse_burley,specular_schlick_ggx,world_vertex_coords;
+global uniform float world_time;  // the realm's clock, stopped while paused (world_clock.gd)
 
 #define WORLD_TRIPLANAR
 
@@ -194,7 +195,7 @@ vec3 rotate_to_normal(vec3 point, vec3 normal)
 }
 
 void vertex() {
-	float time = TIME; //TIME;
+	float time = world_time;
 	
 	time = time * float(!freeze_time);
 	

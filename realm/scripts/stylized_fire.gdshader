@@ -11,6 +11,7 @@ shader_type spatial;
 render_mode unshaded, cull_disabled, depth_draw_opaque;
 
 global uniform vec4 wind;  // x, z: where the wind blows (world), w: its strength 0..1 (weather_fx.gd)
+global uniform float world_time;  // the realm's clock, stopped while paused (world_clock.gd)
 
 uniform sampler2D noise_texture : repeat_enable;  // seamless noise (Godot's NoiseTexture2D)
 uniform sampler2D texture_mask : filter_linear_mipmap;  // Kenney's flame tongues, a flipbook strip
@@ -54,7 +55,7 @@ void vertex() {
 
 void fragment() {
 	float mask = texture(texture_mask, UV).a;  // the tongue's shape is the strip's alpha (fire.gd _strip: white, alpha = brightness)
-	vec2 pan = vec2(0.15, 1.0) * (-TIME * time_scale);
+	vec2 pan = vec2(0.15, 1.0) * (-world_time * time_scale);
 	float noise_xy = texture(noise_texture, world_coord.xy * texture_scale + pan).r;
 	float noise_zy = texture(noise_texture, world_coord.zy * texture_scale + pan + vec2(0.7, 0.3)).r;
 	float noise = mix(noise_xy, noise_zy, clamp(world_x_dot, 0.0, 1.0));

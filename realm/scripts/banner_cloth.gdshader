@@ -13,6 +13,7 @@ uniform sampler2D cloth_tex : source_color, filter_linear_mipmap;
 uniform vec4 cloth_color : source_color = vec4(1.0);
 uniform bool use_tex = false;
 global uniform vec4 wind;  // x, z where it blows (world), w its strength 0..1 (weather_fx.gd)
+global uniform float world_time;  // the realm's clock, stopped while paused (world_clock.gd)
 instance uniform float span = 0.2;  // the cloth's width in world units
 instance uniform float phase = 0.0;  // this flag's place in the wind
 instance uniform float fringe = 0.0;  // 1: the house is sworn to the crown, and its banners carry a gold fringe
@@ -22,8 +23,8 @@ void vertex() {
 	float blow = clamp(wind.w, 0.0, 1.0) * 2.2;  // 0 still .. 2.2 a storm
 	float pace = 0.6 + blow * 0.8;
 	float reach = 0.4 + blow * 0.6;
-	float a = TIME * 2.1 * pace + UV.x * 6.0 - UV.y * 1.5 + phase;
-	float b = TIME * 3.9 * pace + UV.x * 11.0 + phase * 1.7;
+	float a = world_time * 2.1 * pace + UV.x * 6.0 - UV.y * 1.5 + phase;
+	float b = world_time * 3.9 * pace + UV.x * 11.0 + phase * 1.7;
 	float wave = (sin(a) * 0.07 + sin(b) * 0.025) * reach;
 	float slope = (cos(a) * 0.07 * 6.0 + cos(b) * 0.025 * 11.0) * reach;
 	VERTEX.z += wave * t * span;

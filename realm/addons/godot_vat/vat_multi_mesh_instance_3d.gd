@@ -314,7 +314,7 @@ func get_track_number_from_instance(instance_id: int) -> int:
 	return get_track_number_from_animation(get_animation_from_instance(instance_id))
 
 func get_current_timestamp() -> float:
-	return fmod((float(Time.get_ticks_msec()) / 1000.0), _rollover_value) - 0.5
+	return fmod(preload("res://scripts/world_clock.gd").seconds(), _rollover_value) - 0.5  # the realm's clock, as army_vat.gdshader's world_time
 #endregion
 
 #region theHoodaloo Custom Code

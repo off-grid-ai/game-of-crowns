@@ -47,6 +47,7 @@ It has total of 4 floats. All renderers supported.
 // ambient occlusion like everything else; the kit has no normal texture, so none is applied unless given.
 shader_type spatial;
 render_mode cull_disabled;
+global uniform float world_time;  // the realm's clock, stopped while paused (world_clock.gd)
 
 uniform sampler2D offset_map: filter_nearest;
 uniform vec4 team_color : source_color = vec4(0.75, 0.12, 0.10, 1.0);  // the regiment's house (each regiment its own material)
@@ -183,7 +184,7 @@ void vertex(){
 	// if start_frame and end_frame are the same - prevents divide by zero
 	num_frames = clamp(num_frames, 0.0001, 8192.0);
 
-	float time_scale_normalized = (TIME - timestamp) * (speed / num_frames);
+	float time_scale_normalized = (world_time - timestamp) * (speed / num_frames);
 	
 	float loop_time  = mod(time_scale_normalized, 1.0);
 	float frame_time = mix(time_scale_normalized, loop_time, use_looping);

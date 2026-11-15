@@ -351,6 +351,7 @@ func _set_snow(v: float) -> void:
 ## as in Manor Lords, filling the ground's hollows first as it settles
 ## (the texture's height), and soft and matte where it lies.
 const SNOW_UNIFORMS := """
+global uniform float world_time;  // the realm's clock, stopped while paused (world_clock.gd)
 uniform float rain_wet = 0.0;
 uniform float snow_cover = 0.0;
 uniform float snow_patch = 0.0;  // ground.json winter: patch, patch_scale, high, trod (set_grass)
@@ -612,7 +613,7 @@ const REALM_WASH := """
 		vec3 line = at_war ? vec3(0.85, 0.12, 0.1) : truce ? vec3(0.62, 0.52, 0.3) : sworn ? vec3(0.79, 0.66, 0.35) : (own.a > 0.0 ? own.rgb * 0.4 : vec3(0.1));
 		float dash = truce ? step(0.45, fract((rt.x + rt.y) * 2.5)) : 1.0;
 		float strength = 0.9;
-		if (envoy) { line = vec3(0.86, 0.86, 0.9); dash = step(0.5, fract((rt.x + rt.y) * 2.0 - TIME * 0.6)); }
+		if (envoy) { line = vec3(0.86, 0.86, 0.9); dash = step(0.5, fract((rt.x + rt.y) * 2.0 - world_time * 0.6)); }
 		else if (pact) { line = vec3(0.22, 0.12, 0.3); strength = 0.5; }
 		else if (wed) { line = step(0.5, fract((rt.x + rt.y) * 1.5)) > 0.5 ? own.rgb : o[other].rgb; }
 		// No outline between two houses at peace (Mac: "we dont need the outlines, just tinted colour"): a line only where

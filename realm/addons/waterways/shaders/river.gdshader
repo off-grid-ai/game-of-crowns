@@ -2,6 +2,7 @@
 // See `LICENSE.md` included in the source distribution for details.
 shader_type spatial;
 render_mode depth_draw_always, specular_schlick_ggx, cull_disabled;
+global uniform float world_time;  // the realm's clock, stopped while paused (world_clock.gd)
 
 // If you are making your own shader, you can customize or add your own
 // parameters below and they will automatically get parsed and displayed in
@@ -145,7 +146,7 @@ void fragment() {
 	vec2 jump1 = vec2(0.24, 0.2083333);
 	vec2 jump2 = vec2(0.20, 0.25);
 	vec2 jump3 = vec2(0.22, 0.27);
-	float time = TIME * flow_speed + flow_foam_noise.a;
+	float time = world_time * flow_speed + flow_foam_noise.a;
 	vec3 flow_uvA = FlowUVW(UV, flow, jump1, uv_scale, time, false);
 	vec3 flow_uvB = FlowUVW(UV, flow, jump1, uv_scale, time, true);
 	vec3 flowx2_uvA = FlowUVW(UV, flow, jump2, uv_scale * 2.0, time, false);

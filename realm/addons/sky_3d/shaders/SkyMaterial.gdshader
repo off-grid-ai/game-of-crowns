@@ -3,6 +3,7 @@
 
 shader_type sky;
 render_mode use_debanding;
+global uniform float world_time;  // the realm's clock, stopped while paused (world_clock.gd)
 
 group_uniforms general;
 uniform bool sky_visible = true;
@@ -487,7 +488,7 @@ void render_grid(vec3 dir, vec3 pole_dir, float rotation_angle, vec4 line_color,
 }
 
 void sky() {
-	float current_time = TIME;
+	float current_time = world_time;
 	vec3 col = vec3(0.0); // Set up the initial sky color which will be added to later to produce the final result.
 	vec3 world_pos = EYEDIR; // Original shader set this up in the vertex() function. For sky shaders the overall equivalent is EYEDIR.
 	vec3 clouds_pos = EYEDIR; // The same is used for cloud rendering.
