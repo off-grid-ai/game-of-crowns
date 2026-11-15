@@ -321,7 +321,6 @@ func order(kind: String, at := {}, done := Callable()) -> bool:
 	if at.has("ground"):
 		var ground: Vector3 = at["ground"]
 		_mark(ground, kind)
-		body["_to"] = ground  # the view's own: the column sets off for it the moment the bridge says yes (_ask)
 		var town: Dictionary = {} if kind == "attack" else main.towns.nearest(ground, Data.num(FILE, "town_reach", 3.0))
 		if not town.is_empty():
 			body["city"] = int(town.get("id", -1))
@@ -340,8 +339,6 @@ func order(kind: String, at := {}, done := Callable()) -> bool:
 
 ## Asks the bridge; it decides, and says so (the toast), and the next /world shows the host's order.
 func _ask(body: Dictionary, done := Callable()) -> void:
-	var to: Variant = body.get("_to")
-	body.erase("_to")
 	main.bridge._post("/host/order", body, func(code: int, d: Dictionary) -> void:
 		var said := String(d.get("text", d.get("error", "")))
 		if said != "" and main.ui:
@@ -350,8 +347,6 @@ func _ask(body: Dictionary, done := Callable()) -> void:
 			main.sound.ordered(String(body.get("order", "")))  # heard as it sets off (sounds.json orders)
 			main.barks.host("order", int(body.get("host", -1)))  # and its captain says he goes (barks.gd)
 			main.units.ack(int(body.get("host", -1)))  # and its men raise a cry where they stand (army.gd ack)
-			if to is Vector3 and String(body.get("order", "")) != "hold":
-				main.units.march_now(int(body.get("host", -1)), to)  # and turn and set off at once (Warcraft III), not at the season's turn
 			main.bridge._poll()
 		if done.is_valid():
 			done.call(code, said))
@@ -624,21 +619,16 @@ func _refresh() -> void:
 		b.tooltip_text = String(texts.get("why", "")) if left == 0 else String(b.get_meta("tip", b.tooltip_text))
 
 
-## The host's companies by kind, read from the mirror's units (its type, host_command.json card.kinds naming it), and
-## its morale in a word (/world hosts[].morale 0..1, else its supply; card.morale bands, highest first).
+## The host's companies by kind (/world hosts[].kinds, {Freeciv type: companies}, bridge ad5b638a; host_command.json
+## card.kinds naming each) and its morale in a word (/world hosts[].morale 0..1; card.morale bands, highest first).
 func _makeup(h: Dictionary) -> String:
 	var k: Dictionary = Data.value(FILE, "card", {})
 	var names: Dictionary = k.get("kinds", {})
-	var ids: Array = h.get("units", [])
-	var count := {}
-	for u in main.awareness.rec("units", []):
-		if ids.has(int(u.get("id", -1))):
-			var t := String(u.get("type", ""))
-			count[t] = int(count.get(t, 0)) + 1
+	var count: Dictionary = h.get("kinds", {}) if h.get("kinds") is Dictionary else {}
 	var parts := PackedStringArray()
 	for t in count:
-		parts.append("%d %s" % [count[t], String(names.get(t, t))])
-	var m: float = float(h.get("morale", h.get("supply", 1.0)))
+		parts.append("%d %s" % [int(count[t]), String(names.get(t, t))])
+	var m: float = float(h.get("morale", 1.0)) if h.get("morale") != null else -1.0
 	var word := ""
 	for band in k.get("morale", []):
 		if m >= float(band[0]):

@@ -111,7 +111,7 @@ func _show(c: Dictionary) -> void:
 		line.custom_minimum_size.x = 260
 		v.add_child(line)
 	# What the King won by it (Warcraft III's and Total War's spoils after the fight; bridge battles.js the card's
-	# reward {gold, renown, captives, town...}): each named in host_command.json result.reward, in the accent.
+	# reward {gold, captives, town}, ad5b638a): each named in host_command.json result.reward, in the accent.
 	var reward: Variant = c.get("reward")
 	if reward is Dictionary and not (reward as Dictionary).is_empty():
 		var said := PackedStringArray()
