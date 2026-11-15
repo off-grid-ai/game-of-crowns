@@ -825,8 +825,10 @@ func _charge(r: Dictionary, _dt: float) -> void:
 
 ## Men break ranks before a rout (Total War and Bannerlord: a wavering unit sheds men from its rear before it
 ## breaks): as a regiment's banner wavers past morale.straggle.from, up to `most` of its living men, the rearmost
-## first, turn their backs and edge away behind it at `pace`, no further than `back`; steadied again (no one left
-## to shed), they walk back to their places and face the foe. Its break takes them along with the rest.
+## first, turn their backs and edge back at `pace`, no further than `back` and never out of their own block's ground
+## (its rectangle, its claim: Mac 2026-11-15, loose single men wandering between the blocks were these, 0.5 behind a
+## block's rear rank in the gap before the next row); steadied again (no one left to shed), they walk back to their
+## places and face the foe. Its break takes them along with the rest: only a broken regiment's men leave its ground.
 func _straggle(r: Dictionary, w: float, dt: float) -> void:
 	var k: Dictionary = Data.value("army", "morale", {}).get("straggle", {})
 	var strag: Dictionary = r.get("strag", {})
@@ -858,7 +860,7 @@ func _straggle(r: Dictionary, w: float, dt: float) -> void:
 			strag.erase(s)  # he fell where he was
 			continue
 		if want > 0:
-			local[s].z = maxf(local[s].z - pace, home.z - float(k.get("back", 0.5)))
+			local[s].z = maxf(local[s].z - pace, maxf(home.z - float(k.get("back", 0.5)), -float(r["d"]) * 0.5))
 		else:
 			local[s] = local[s].move_toward(home, pace)
 			if local[s].is_equal_approx(home):
