@@ -888,6 +888,7 @@ func raise_site(town_node: Node3D, plot: Transform3D, building: String, seasons:
 	var holder := Node3D.new()  # the whole site, freed at once when it's done
 	holder.name = "Raising"
 	holder.set_meta("raising", true)  # kept when the town's life is staged anew or freed (_bare_life)
+	holder.set_meta("standing", (life.get_meta("standing", PackedVector2Array()) as PackedVector2Array).duplicate())  # its builders stand clear of whoever stands in the town (_stand)
 	life.add_child(holder)
 	# Its builders keep their set moves: _mind would join them to whichever town was dressed last.
 	var was_on := _town_on
