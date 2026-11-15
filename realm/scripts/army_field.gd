@@ -128,8 +128,10 @@ func _ready() -> void:
 	var face := crown.facing()
 	var fwd := Vector3(sin(face), 0, cos(face))
 	var house := _foe_house()
+	var foe_col := Heraldry.colour(house, Color(0.72, 0.12, 0.12)) if not house.is_empty() else Color(0.72, 0.12, 0.12)
+	var foe_worn := apart(Heraldry.field_colour(house, foe_col) if not house.is_empty() else foe_col, crown.rows()[0]["worn"])
 	var foe: Army = Army.new(main, men, {"side": 1, "shape": "line", "field": crown.field() + fwd * gap, "face": face + PI,
-		"colour": Heraldry.colour(house, Color(0.72, 0.12, 0.12)) if not house.is_empty() else Color(0.72, 0.12, 0.12), "house": house})
+		"colour": foe_col, "worn": foe_worn, "house": house})
 	add_child(foe)
 	if not foe.mustered:
 		await foe.raised
@@ -153,12 +155,13 @@ func _raise_in_play() -> void:
 	for i in 2:
 		var house: Dictionary = (play["houses"] as Array)[i]
 		var colour := Heraldry.colour(house, Color(0.5, 0.17, 0.15)) if not house.is_empty() else Color(0.5, 0.17, 0.15)
-		if i == 1 and made.size() == 1 and _alike(colour, (made[0] as Army).battle["colour"]):
-			colour = Color(0.22, 0.3, 0.46)  # two houses in like colours: the beaten in steel blue, so the sides read apart
+		var worn := Heraldry.field_colour(house, colour) if not house.is_empty() else colour
+		if i == 1 and made.size() == 1:
+			worn = apart(worn, (made[0] as Army).battle["worn"])  # two houses alike: the beaten in a tone that reads apart
 		# The victors form first at the battle's place, turned to the ground; the beaten form facing them across the gap.
 		var face: float = play["face"] if i == 0 else (made[0] as Army).facing() + PI
 		var field: Vector3 = at if i == 0 else (made[0] as Army).field() - Vector3(sin(face), 0, cos(face)) * gap
-		var side: Army = Army.new(main, 0, {"side": i, "field": field, "face": face, "colour": colour, "house": house, "quiet": true,
+		var side: Army = Army.new(main, 0, {"side": i, "field": field, "face": face, "colour": colour, "worn": worn, "house": house, "quiet": true,
 			"shape": "line"})
 		var specs: Array = []
 		var kinds: Array = (play["kinds"] as Array)[i]
@@ -194,8 +197,29 @@ func _turn_to_ground(crown: Army, gap: float) -> float:
 	return best
 
 
+## Whether two sides' worn colours read alike (Mac is colour-blind: lightness carries the difference, never hue alone):
+## their lightness closer than army.json sides.lightness, or their hue within sides.hue, pale or not (a pale grey-blue
+## beside a blue read as one host).
 static func _alike(a: Color, b: Color) -> bool:
-	return absf(wrapf(a.h - b.h, -0.5, 0.5)) < 0.12 and a.s > 0.25 and b.s > 0.25
+	var k: Dictionary = Data.value("army", "sides", {})
+	return absf(a.get_luminance() - b.get_luminance()) < float(k.get("lightness", 0.3)) \
+		or absf(wrapf(a.h - b.h, -0.5, 0.5)) < float(k.get("hue", 0.08))
+
+
+## The colour a side wears against the other's `other`: its own, unless the two read alike; then of army.json
+## sides.tones (a near-white and a near-black tabard) the one furthest in lightness from the other's.
+static func apart(own: Color, other: Color) -> Color:
+	if not _alike(own, other):
+		return own
+	var best := own
+	var far := -1.0
+	for t in (Data.value("army", "sides.tones", [[0.85, 0.83, 0.76], [0.14, 0.13, 0.12]]) as Array):
+		var c := Data.colour(t, own)
+		var d := absf(c.get_luminance() - other.get_luminance())
+		if d > far:
+			far = d
+			best = c
+	return best
 
 
 ## The foe's house: the first great house with colours that isn't the crown's (the realm's own, as heraldry draws it).
@@ -1114,6 +1138,7 @@ func _storm_up(assault: Node, camp: Vector3, wall: Vector3, town: Vector3, foe_c
 	var face_in := atan2(-out.x, -out.z)  # the soldier faces +Z: toward the town
 	var face_out := atan2(out.x, out.z)
 	var inside: Vector3 = wall - out * k("holders_back", 0.9)
+	held_col = apart(held_col, foe_col)  # the holders read apart from the besiegers by lightness (Mac is colour-blind)
 	for i in 2:
 		var side := {"side": i, "field": camp if i == 0 else inside, "face": face_in if i == 0 else face_out,
 			"colour": foe_col if i == 0 else held_col, "house": {}, "shape": "line", "quiet": true}

@@ -915,7 +915,10 @@ func _regiment(spec: Dictionary, colour: Color, house: Dictionary = {}) -> Dicti
 	vat.exported_mesh = kit["mesh"]
 	# The plugin's own advice: the VAT material in the Material Override slot, one per regiment (its colour).
 	var own := (kit["mat"] as ShaderMaterial).duplicate() as ShaderMaterial
-	own.set_shader_parameter("team_color", Heraldry.field_colour(house, colour) if not house.is_empty() else colour)  # its banner's own field, value and hue
+	# Its banner's own field, value and hue; in a battle the side's worn tone where two sides would read alike
+	# (army_field.gd apart, Mac is colour-blind).
+	var worn: Color = battle.get("worn", Heraldry.field_colour(house, colour) if not house.is_empty() else colour)
+	own.set_shader_parameter("team_color", worn)
 	Visual.wear_arms(own, house)
 	var dress: Dictionary = row.get("cloth", {})  # a kind in plain cloth, its house's colour on a band (the levy)
 	if not dress.is_empty():
@@ -943,7 +946,7 @@ func _regiment(spec: Dictionary, colour: Color, house: Dictionary = {}) -> Dicti
 		"speed": Data.num("army", "march.speed", 0.16) * float(row.get("speed", 1.0)),
 		"yaws": yaws, "sizes": sizes, "local": PackedVector3Array(), "from": PackedVector3Array(), "to": PackedVector3Array(),
 		"shape": "line", "state": "rest", "s": 0.0, "off": 0.0, "slot": Vector3.ZERO, "place": Vector2.ZERO, "t": 0.0,
-		"fidget": _rng.randf_range(0.5, 3.0), "backs": [], "selected": false, "w": 1.0, "d": 1.0, "house": house}
+		"fidget": _rng.randf_range(0.5, 3.0), "backs": [], "selected": false, "w": 1.0, "d": 1.0, "house": house, "worn": worn}
 	# Its shapes (data/formations.json): on the field its role's template, on the road the march's, aboard the deck's.
 	r["line"] = Formation.layout(r, Formation.field_form(r["role"]), _rng)
 	r["column"] = Formation.layout(r, String(Data.value("formations", "march", "column")), _rng)
