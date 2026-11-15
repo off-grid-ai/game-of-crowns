@@ -2,8 +2,9 @@ extends RefCounted
 ## Where a man can stand on one fight's field, and how he gets from one place on it to another (the army layer,
 ## docs/research/army-layer-2026-11-12.md). Godot's AStarGrid2D (the engine's own grid search, as terrain.gd's
 ## overland paths and towns.gd's street grid use it) over a fine grid of cells round the fight: a cell is shut
-## where the one ground owner says nobody may stand (ground.gd Footing.is_clear: water, a house, a wall, a fence or
-## a stall; a breached stone wall drops its footprint), and open where a breach let the men through, whatever its footprints still
+## where the one ground owner's occupancy map says nobody may stand (ground.gd: water, a house, a wall, a fence or
+## a stall; a breached stone wall drops its footprint), its cells the map's own, copied a row at a time
+## (Footing.row_open), and open where a breach let the men through, whatever its footprints still
 ## say. Every man and regiment in the fight stands on it (Mover.on): their routes go round what it shuts, and a
 ## step that would put them in a shut cell puts them at the nearest open one instead. Nobody walks over a lake, a
 ## house or a wall again.
@@ -17,11 +18,7 @@ extends RefCounted
 
 const Footing := preload("res://scripts/ground.gd")  # the one owner of where a body may stand
 const ViewTier := preload("res://scripts/view_tier.gd")
-## World units a cell spans (battle.json grid.cell): a quarter of a regiment's width, a third of a house. At 0.08 a
-## field's grid was 330,000 cells, each asked of the ground owner (32 us an ask): 300 ms a frame while a battle was
-## raised (Mac 2026-11-15, the fps round: a battle at 1 fps).
-const Data := preload("res://scripts/data.gd")
-var cell: float = Data.num("battle", "grid.cell", 0.25)
+var cell: float = Footing.cell_size()  # world units a cell spans: the ground owner's map's (ground.json occupancy.cell)
 
 var grid := AStarGrid2D.new()
 var origin := Vector2.ZERO  # world x, z of the grid's corner
@@ -34,6 +31,7 @@ var _cover := PackedInt32Array()  # cell -> how many held rectangles cover it (g
 var _held := {}  # claim id -> [its outline, its cells (indices)]
 var _seen := -1  # ground.gd claims_rev the held cells were laid at
 var _synced_frame := -1
+var _first := Vector2i.ZERO  # the grid's corner cell on the ground owner's map
 
 
 ## A fight's ground, `reach` world units round `centre`, laid from the frame after.
@@ -46,7 +44,8 @@ static func around(main: Node, centre: Vector3, reach: float) -> RefCounted:
 func _lay(main: Node, centre: Vector3, reach: float) -> void:
 	_main = main
 	cells = maxi(4, ceili(reach * 2.0 / cell))
-	origin = Vector2(centre.x - reach, centre.z - reach)
+	_first = Vector2i(floori((centre.x - reach) / cell), floori((centre.z - reach) / cell))  # on the map's own cells
+	origin = Vector2(_first) * cell
 	grid.region = Rect2i(0, 0, cells, cells)
 	grid.cell_size = Vector2.ONE
 	grid.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_ONLY_IF_NO_OBSTACLES
@@ -58,13 +57,14 @@ func _lay(main: Node, centre: Vector3, reach: float) -> void:
 
 func _build() -> void:
 	var tree: SceneTree = _main.get_tree() if _main and _main.is_inside_tree() else null
-	# Every cell asked of the one ground owner (ground.gd Footing.is_clear: walkable land or a ford, in no house,
-	# wall, fence or stall), a few rows a frame.
+	# The ground owner's map copied a row at a time (walkable land or a ford, in no house, wall, fence, stall or tree),
+	# on the frame's one budget.
 	_base.resize(cells * cells)
 	_cover.resize(cells * cells)
 	for y in cells:
+		var row := Footing.row_open(_first + Vector2i(0, y), cells, ["host", "field", "ford"])  # bodies' ground is laid after (_sync); a ford is passed
 		for x in cells:
-			var shut := not Footing.is_clear(_world(Vector2i(x, y)), 0.0, true, null, ["host", "field", "ford"])  # bodies' ground is laid after (_sync); a ford is passed
+			var shut := row[x] == 0
 			_base[y * cells + x] = 1 if shut else 0
 			grid.set_point_solid(Vector2i(x, y), shut)
 		while tree and not ViewTier.spend_ok(&"battle_ground"):  # on the frame's one budget: the battle never freezes the frame

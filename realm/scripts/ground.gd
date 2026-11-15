@@ -306,6 +306,21 @@ static func cell_size() -> float:
 	return _cell
 
 
+## A row of `n` cells from cell `first` (realm-wide: a world point's cell is its coordinates over cell_size, floored):
+## 1 where a body may stand (is_clear at the cell, `open_kinds` stood on freely), else 0. A fight's route grid copies
+## its cells this way, a row at a time.
+static func row_open(first: Vector2i, n: int, open_kinds: Array = []) -> PackedByteArray:
+	_fresh()
+	var need := WALK if "ford" in open_kinds else DRY
+	var shut := SRC | TOWN_ALL | LIFE_ALL
+	var out := PackedByteArray()
+	out.resize(n)
+	var z := (first.y + 0.5) * _cell
+	for i in n:
+		out[i] = 1 if _ok((first.x + i + 0.5) * _cell, z, need, shut, null, open_kinds) else 0
+	return out
+
+
 ## Whether the cell under (x, z) (world) has the land `need` asks, nothing `shut` names, and no claim but `free_of`'s
 ## or of a kind in `open_kinds`; its land read first if it hasn't been.
 static func _ok(x: float, z: float, need: int, shut: int, free_of: Variant, open_kinds: Array) -> bool:
