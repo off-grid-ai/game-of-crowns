@@ -91,6 +91,11 @@ func show_house(d: Dictionary) -> void:
 	var pad := float((_house_panel.get_theme_stylebox("panel") as StyleBoxFlat).content_margin_right) if _house_panel.get_theme_stylebox("panel") is StyleBoxFlat else 0.0
 	clear.custom_minimum_size = Vector2(maxf(UI.ui_num("close.size", 28.0) + UI.ui_num("close.inset", 10.0) - pad, 0.0), 0)
 	head.add_child(clear)
+	# What he can do with them, under the name (houses_panel.gd politics: the same row as the houses table).
+	var st := Awareness.store()
+	for p in st.rec("players", []):
+		if int(p.get("id", -2)) == int(d.get("id", -1)):
+			v.add_child(ui.houses_drawer.politics(p, st))
 	# The numbers, each with how far it has moved over the last years.
 	var hist: Array = d.get("history", [])
 	var now: Dictionary = hist[-1] if hist.size() > 0 else {}

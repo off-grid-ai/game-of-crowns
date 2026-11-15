@@ -293,40 +293,55 @@ func _fill_houses() -> void:
 				fav.create_tween().tween_property(fav, "modulate", Color.WHITE, 3.0).set_delay(0.6)
 		else:
 			grid.add_child(Control.new())  # the crown has no favour toward itself: keep the column
-		grid.add_child(_politics(p, st))
+		grid.add_child(politics(p, st))
 	_rival_line(st)
 
 
-## What the King can do with a house, on its row (Mac: "I've still not seen the campaign and the support for politics";
-## CK3's diplomacy on the realm's list, not only on a town): swear an alliance, wage war on it (bridge war.js: its
-## bannermen's towns first, its seat last), or, while a war is on, ask it to join. Each the same decree as the town
-## card's (town_panel.gd names its price and odds), sent at one of the house's towns.
-func _politics(p: Dictionary, st: Node) -> Control:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 6)
+## What the King can do with a house (Mac: "when I see the house card ... I should have actions over there to attack,
+## ally, gift"; CK3's diplomacy on the realm's list and on the house's own card): gift crowns, feast in their honour,
+## ask them into a war, swear an alliance, march on their seat, wage war on them (bridge war.js: bannermen's towns
+## first, the seat last), or, at war with the crown, make peace. Each the same decree as the town card's (town_panel.gd
+## names its price and odds), sent at the house's seat. One row for the houses table and the house card; the most
+## telling answer stands rightmost (peace while at war, war otherwise).
+func politics(p: Dictionary, st: Node) -> Control:
+	var row := HFlowContainer.new()
+	row.add_theme_constant_override("h_separation", 6)
+	row.add_theme_constant_override("v_separation", 6)
 	var owner := int(p.get("id", -1))
 	if p.get("favour") == null:
 		return row  # the crown itself
-	var city := -1
+	var seat: Dictionary = {}
 	for c in st.rec("cities", []):
 		if int(c.get("owner", -2)) == owner:
-			if city < 0 or bool(c.get("capital", false)):
-				city = int(c["id"])
-	if city < 0:
+			if seat.is_empty() or bool(c.get("capital", false)):
+				seat = c
+	if seat.is_empty():
 		return row
+	var city := int(seat["id"])
+	var town := String(seat.get("name", ""))
+	var lord := String(p.get("name", ""))
 	var tc = ui.town_card
 	var add := func(action: String, label: String, tip: String) -> void:
 		var b: Button = ui.btn(label, func(): ui.decree_at.emit(action, city, owner, "", ""))
 		b.tooltip_text = tip
 		b.add_theme_font_size_override("font_size", T.SIZE_DESC)
 		row.add_child(b)
+	var at_war := (p.get("wars", []) as Array).has("the Crown")
+	var sworn := p.get("sworn") != null
+	add.call("gift", "Gift", "Gift crowns to %s  %s" % [lord, tc._price("gift", 6000)])
+	add.call("feast", "Feast", "Feast in %s's honour  %s" % [lord, tc._price("feast", 10000)])
 	if p.get("joinWar") is Dictionary:
 		add.call("join", "Ask to join", "Ask them to join the war on %s  %s  ·  %s" % [String(p["joinWar"].get("on", "")).replace("House ", ""), tc._price("join", 5000), tc._answer(p["joinWar"])])
-	if p.get("sworn") == null:
-		add.call("alliance", "Ally", "Swear an alliance: they fight your wars and won't rise for four years  %s" % tc._price("alliance", 20000))
-	else:
+	if sworn:
 		row.add_child(T.label("Sworn to you", T.ACCENT))
-	if p.get("warOdds") != null and p.get("sworn") == null:
+	elif not at_war:
+		add.call("alliance", "Ally", "Swear an alliance: they fight your wars and won't rise for four years  %s" % tc._price("alliance", 20000))
+	if not sworn and not (p.get("besieged", []) as Array).has(city):
+		var odds := "  ·  " + tc._forecast(float(seat["odds"])) if seat.get("odds") != null else ""
+		add.call("march", "Attack %s" % town, "March the royal host on %s  %s%s" % [town, tc._price("march", 25000), odds])
+	if at_war:
+		add.call("truce", "Make peace", "Make peace with %s as things stand  %s" % [lord, tc._price("truce", 20000)])
+	elif p.get("warOdds") != null and not sworn:
 		add.call("war", "War", "Wage war on them: their bannermen's towns first, their seat last  %s  ·  %s" % [tc._price("war", 15000), tc._forecast(float(p["warOdds"]))])
 	return row
 
