@@ -44,7 +44,7 @@ func _process(delta: float) -> void:
 		_log(lines)
 	if _scene != "":
 		lines.append(_scene)
-	var testing := String(Engine.get_meta("perf_testing", ""))  # what the measuring run is trying now (perf_tools cyclevis)
+	var testing := PerfTools.testing  # what the measuring run is trying now (perf_tools cyclevis)
 	if testing != "":
 		lines.append("testing: " + testing)
 	label.text = "\n".join(lines)
@@ -93,4 +93,4 @@ func _log(lines: PackedStringArray) -> void:
 	if f == null:
 		return
 	f.seek_end()
-	f.store_line("%s METER %s | %s | %s" % [Time.get_time_string_from_system(), " | ".join(lines), _scene, String(Engine.get_meta("perf_testing", ""))])
+	f.store_line("%s METER %s | %s | %s" % [Time.get_time_string_from_system(), " | ".join(lines), _scene, preload("res://scripts/perf_tools.gd").testing])

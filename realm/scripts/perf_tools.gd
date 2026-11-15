@@ -27,6 +27,8 @@ class StageMark extends Node:
 		preload("res://scripts/perf_tools.gd").stage(tag)
 
 
+var _walks := 0  # perf lines written: the dear node walks ride every sixth
+static var testing := ""  # what the measuring run is trying now, for the on-screen meter (fps_meter.gd)
 static var draw_sum := 0  # the draw stage's microseconds and frames since the cycle last read them
 static var draw_n := 0
 static var stages := {}  # stage -> [microseconds over the line, frames]
@@ -323,11 +325,13 @@ func _log_perf(delta: float) -> void:
 	if probing:
 		f.store_line("    people by holder (all/visible) " + _holders(main.get_tree().get_nodes_in_group("people")))
 		f.store_line("    stages " + _stages_line())
-		f.store_line("    every frame " + _tickers())
-		f.store_line("    textures " + _textures())
-		var torn := _torn()
-		if torn != "":
-			f.store_line("    TORN " + torn)
+		_walks += 1
+		if _walks % 6 == 1:  # the node walks once a minute: every ten seconds they were the probe's own 250-350 ms hitch
+			f.store_line("    every frame " + _tickers())
+			f.store_line("    textures " + _textures())
+			var torn := _torn()
+			if torn != "":
+				f.store_line("    TORN " + torn)
 	if probing and not tally.is_empty():
 		var jobs := PackedStringArray()
 		for k in tally:
@@ -500,9 +504,9 @@ func _cycle_step(delta: float) -> void:
 	_cycle_prims = 0.0
 	if _cycle_i >= _cycle.size():
 		_cycle = null
-		Engine.set_meta("perf_testing", "done")
+		testing = "done"
 		return
-	Engine.set_meta("perf_testing", "%s hidden or off (%d of %d)" % [_cycle[_cycle_i][0], _cycle_i, _cycle.size() - 1])
+	testing = "%s hidden or off (%d of %d)" % [_cycle[_cycle_i][0], _cycle_i, _cycle.size() - 1]
 	var next_e: Variant = _cycle[_cycle_i][1]
 	if next_e is Callable:
 		(next_e as Callable).call(false)

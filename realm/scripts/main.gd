@@ -793,6 +793,8 @@ func apply_graphics() -> void:
 	if not _film():
 		get_viewport().scaling_3d_scale = float(_shot.get("scale", ProjectSettings.get_setting("rendering/scaling_3d/scale", 0.67)))  # --scale= for a measuring run's A/B
 	sun.directional_shadow_max_distance = minf(_rich["shadow"], 40.0) if graphics_smooth else _rich["shadow"]
+	if terrain and terrain.land3d and terrain.land3d.land:
+		terrain.land3d.land.set("cast_shadows", 0 if graphics_smooth else 1)  # Smooth: the ground casts no shadow (its every split redrew the land)
 	# The woods: their leafy middle detail runs out sooner, and painted cards take over.
 	if terrain and terrain.forest and terrain.forest.has_method("set_reach"):
 		terrain.forest.set_reach(14.0 if graphics_smooth else -1.0)
@@ -1016,8 +1018,10 @@ func _update_labels() -> void:
 		# In steps, not every frame: the camera's easing nudges the distance all
 		# the time, and every change re-fits the shadow map, which made roofs
 		# shimmer even with the camera still.
-		var reach := snappedf(clampf(d * 2.2, 20.0, 90.0), 10.0)
-		if absf(reach - sun.directional_shadow_max_distance) >= 10.0:
+		# Smooth (as played): a shorter reach, and the land itself casts none (the fps cycle, 2026-11-15: shadows were
+		# ~8 ms of a ~22 ms draw and ~4.7M triangles, the ground drawn again into each split).
+		var reach := snappedf(clampf(d * 1.6, 16.0, 30.0), 5.0) if graphics_smooth else snappedf(clampf(d * 2.2, 20.0, 90.0), 10.0)
+		if absf(reach - sun.directional_shadow_max_distance) >= (5.0 if graphics_smooth else 10.0):
 			sun.directional_shadow_max_distance = reach
 	# The flat atlas only at the true map (CK3, Warcraft III): the painted 3D land holds
 	# through every playing height, and the atlas comes in just before the overview
