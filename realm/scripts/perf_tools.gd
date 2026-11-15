@@ -13,6 +13,77 @@ var main: Main  # the realm being measured: its systems, sky and land
 
 func _init(owner: Main) -> void:
 	main = owner
+	if probing:
+		owner.ready.connect(_stage_marks)
+
+
+## The frame cut into the engine's own stages, timed from its own signals and two marker nodes (one processed first,
+## one last), averaged over each perf line (GOC_PERF_PROBE): physics and input (the last draw's end to the frame's
+## process_frame), process_frame's listeners, every node's _process, what runs after them (deferred calls, timers,
+## tweens, skeletons, navigation), and the draw. Names which stage holds the time no job owns.
+class StageMark extends Node:
+	var tag := ""
+	func _process(_d: float) -> void:
+		preload("res://scripts/perf_tools.gd").stage(tag)
+
+
+static var draw_sum := 0  # the draw stage's microseconds and frames since the cycle last read them
+static var draw_n := 0
+static var stages := {}  # stage -> [microseconds over the line, frames]
+static var _marks := {}  # tag -> its time this frame
+func _stage_marks() -> void:
+	for t in [["first", -2147483647], ["last", 2147483647]]:
+		var m := StageMark.new()
+		m.name = "StageMark_" + t[0]
+		m.tag = t[0]
+		m.process_priority = t[1]
+		main.add_child(m)
+	main.get_tree().process_frame.connect(stage.bind("process_frame"))
+	main.get_tree().physics_frame.connect(stage.bind("physics_frame"))
+	RenderingServer.frame_pre_draw.connect(stage.bind("pre_draw"))
+	RenderingServer.frame_post_draw.connect(stage.bind("post_draw"))
+
+
+static func stage(tag: String) -> void:
+	var now := Time.get_ticks_usec()
+	if tag == "process_frame" and _marks.has("post_draw") and not _marks.has("process_frame"):
+		_add_stage("1 physics+input", now - int(_marks["post_draw"]))
+	_marks[tag] = now
+	match tag:
+		"first":
+			if _marks.has("process_frame"):
+				_add_stage("2 process_frame listeners", now - int(_marks["process_frame"]))
+		"last":
+			if _marks.has("first"):
+				_add_stage("3 nodes' _process", now - int(_marks["first"]))
+		"pre_draw":
+			if _marks.has("last"):
+				_add_stage("4 after nodes (deferred, timers, tweens, skeletons, nav)", now - int(_marks["last"]))
+		"post_draw":
+			if _marks.has("pre_draw"):
+				_add_stage("5 draw", now - int(_marks["pre_draw"]))
+				draw_sum += now - int(_marks["pre_draw"])
+				draw_n += 1
+			_marks = {"post_draw": now}
+
+
+static func _add_stage(k: String, usec: int) -> void:
+	var v: Array = stages.get(k, [0, 0, 0])
+	v[0] += usec
+	v[1] += 1
+	v[2] = maxi(int(v[2]), usec)
+	stages[k] = v
+
+
+static func _stages_line() -> String:
+	var keys := stages.keys()
+	keys.sort()
+	var out := PackedStringArray()
+	for k in keys:
+		var v: Array = stages[k]
+		out.append("%s avg %.1fms worst %.0fms" % [k, v[0] / 1000.0 / maxf(v[1], 1), v[2] / 1000.0])
+	stages.clear()
+	return " | ".join(out)
 
 
 ## Trying a look from the shell, for side-by-side renders: GOC_LOOK=filmic,aces,nogi,nossao,nofog.
@@ -236,6 +307,7 @@ func _log_perf(delta: float) -> void:
 			Engine.get_frames_per_second(), Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0, render_cpu, render_gpu, folk.size(), minds, main.get_viewport().get_visible_rect().size.x, main.get_viewport().get_visible_rect().size.y, main.get_viewport().scaling_3d_scale, ",".join(tallied), _holders(folk)])
 	if probing:
 		f.store_line("    people by holder (all/visible) " + _holders(main.get_tree().get_nodes_in_group("people")))
+		f.store_line("    stages " + _stages_line())
 		f.store_line("    every frame " + _tickers())
 		f.store_line("    textures " + _textures())
 		var torn := _torn()
@@ -345,6 +417,7 @@ var _cycle_t := 0.0
 var _cycle_sum := 0.0
 var _cycle_fps := 0.0
 var _cycle_n := 0
+var _fx_was := {}  # the effects as the look had them, put back as each comes on again
 func _cycle_step(delta: float) -> void:
 	if _cycle == null or main.towns == null or main.terrain.width == 0 or (main.towns.building() and not _cycle_began):
 		return
@@ -360,9 +433,22 @@ func _cycle_step(delta: float) -> void:
 			for c in main.terrain.get_children():  # every child of the ground, named or not: hiding all of it doubles fps
 				if c is Node3D and not _cycle.any(func(e): return e[1] == c):
 					_cycle.insert(_cycle.size() - 1, ["t:" + String(c.name), c])
+			# The renderer's own effects, each off in turn (what each costs the draw).
+			var env := main.env
+			var sun := main.sun
+			_cycle.append(["fx:shadows", func(on: bool): sun.shadow_enabled = on])
+			_cycle.append(["fx:sdfgi", func(on: bool): env.sdfgi_enabled = on and bool(_fx_was.get("sdfgi", false))])
+			_cycle.append(["fx:ssao", func(on: bool): env.ssao_enabled = on and bool(_fx_was.get("ssao", false))])
+			_cycle.append(["fx:ssil", func(on: bool): env.ssil_enabled = on and bool(_fx_was.get("ssil", false))])
+			_cycle.append(["fx:volfog", func(on: bool): env.volumetric_fog_enabled = on and bool(_fx_was.get("vol", false))])
+			_cycle.append(["fx:glow", func(on: bool): env.glow_enabled = on and bool(_fx_was.get("glow", false))])
+			_fx_was = {"sdfgi": env.sdfgi_enabled, "ssao": env.ssao_enabled, "ssil": env.ssil_enabled, "vol": env.volumetric_fog_enabled, "glow": env.glow_enabled}
 		_cycle_i = 0
 		_cycle_t = 0.0
 	_cycle_t += delta
+	if _cycle_t <= 2.0:
+		draw_sum = 0
+		draw_n = 0
 	if _cycle_t > 2.0:  # let it settle before measuring
 		_cycle_sum += Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0
 		_cycle_fps += Engine.get_frames_per_second()
@@ -373,8 +459,11 @@ func _cycle_step(delta: float) -> void:
 	var f := FileAccess.open("user://perf.log", FileAccess.READ_WRITE)
 	if f:
 		f.seek_end()
-		f.store_line("CYCLE %s=%s process=%.1fms fps=%.1f prims=%dk" % ["hidden" if _cycle_vis else "off", _cycle[_cycle_i][0], _cycle_sum / maxf(_cycle_n, 1), _cycle_fps / maxf(_cycle_n, 1), int(_cycle_prims / maxf(_cycle_n, 1) / 1000.0)])
-	var was: Node = _cycle[_cycle_i][1]
+		f.store_line("CYCLE %s=%s process=%.1fms draw=%.1fms fps=%.1f prims=%dk" % ["hidden" if _cycle_vis else "off", _cycle[_cycle_i][0], _cycle_sum / maxf(_cycle_n, 1), draw_sum / 1000.0 / maxf(draw_n, 1), _cycle_fps / maxf(_cycle_n, 1), int(_cycle_prims / maxf(_cycle_n, 1) / 1000.0)])
+	var was_e: Variant = _cycle[_cycle_i][1]
+	if was_e is Callable:
+		(was_e as Callable).call(true)
+	var was: Node = was_e if was_e is Node else null
 	if was:
 		if _cycle_vis:
 			was.visible = true
@@ -389,7 +478,10 @@ func _cycle_step(delta: float) -> void:
 	if _cycle_i >= _cycle.size():
 		_cycle = null
 		return
-	var next: Node = _cycle[_cycle_i][1]
+	var next_e: Variant = _cycle[_cycle_i][1]
+	if next_e is Callable:
+		(next_e as Callable).call(false)
+	var next: Node = next_e if next_e is Node else null
 	if next:
 		if _cycle_vis:
 			next.visible = false
