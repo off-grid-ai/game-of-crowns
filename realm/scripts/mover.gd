@@ -26,6 +26,7 @@ extends Node
 
 const People := preload("res://scripts/people.gd")
 const NavWorld := preload("res://scripts/nav_world.gd")  # the realm's one navigation
+const TownNav := preload("res://scripts/town_nav.gd")  # a town's frame on the realm's walk map (a town walker's)
 const Data := preload("res://scripts/data.gd")
 const PerfTools := preload("res://scripts/perf_tools.gd")
 const AnimLOD := preload("res://scripts/anim_lod.gd")
@@ -329,6 +330,112 @@ func crowd_child(on: bool, walk: float) -> void:
 	NavigationServer3D.agent_set_radius(_agent, 0.045)
 	NavigationServer3D.agent_set_max_speed(_agent, walk * (2.6 if on else 1.3))
 	NavigationServer3D.agent_set_time_horizon_agents(_agent, 0.6 if on else 2.5)
+
+
+# --- A town walker on its streets (villagers.gd's people) ------------------------------------------------------------
+
+const TOWN_WALKING := 0  # town_step: a step taken
+const TOWN_ARRIVED := 1  # its last corner reached: the route is empty
+const TOWN_GAVE_UP := 2  # blocked near its goal, or three times: the route is empty, its mind asks again or gives it up
+const TOWN_HELD := 3  # blocked this frame (waiting, or a step aside put in its way)
+const TOWN_SHORE := 4  # the next step was into the water: it stopped, the route is empty
+const TOWN_ARRIVE := 0.03  # a corner this near is reached (about a quarter of a metre)
+var town_route := PackedVector2Array()  # its way: the walk map's corners, town-local XZ round the centre it is given
+var town_legs := 0.0  # how fast it went this step (world units a second): its legs keep time
+var _tw_best := INF  # the nearest it has come to its next corner, and how long since it came nearer
+var _tw_since := 0.0
+var _tw_stuck := 0.0
+var _tw_tries := 0
+var _tw_vel := Vector2.ZERO
+var _tw_go := 0.0  # seconds walking since it last stood
+
+
+## Standing: its next walk starts from a standstill.
+func town_still() -> void:
+	_tw_go = 0.0
+	_tw_vel = Vector2.ZERO
+
+
+## One step along town_route (town-local XZ round `center`, the walk map's corners round the buildings) at `speed`
+## (world units a second), letting the crowd's avoidance (join_walkers) steer round whoever is in the way, giving way
+## by `priority`. people.json steer (`steer`): a corner is taken round, not stood on; the way it faces turns at a
+## walker's rate, a sharp turn made mostly on the spot; a walk eases up from a standstill and down to its stop; the
+## avoidance's nudges smoothed over a few frames. The step is held to the walk map (a shove never carries anyone
+## through a wall) and never into the water. Getting nowhere counts as blocked: held a beat, then a step aside (`rng`
+## picks the side); near the goal, or blocked three times, it gives the way up. Returns TOWN_*.
+func town_step(center: Vector3, speed: float, priority: float, delta: float, steer: Dictionary, rng: RandomNumberGenerator) -> int:
+	var n := get_parent() as Node3D
+	var route := town_route
+	var here := Vector2(n.position.x - center.x, n.position.z - center.z)
+	var to := route[0] - here
+	if route.size() > 1 and to.length() < maxf(TOWN_ARRIVE, float(steer.get("corner", TOWN_ARRIVE))):
+		route.remove_at(0)
+		_tw_best = INF
+		_tw_since = 0.0
+		to = route[0] - here
+	if to.length() < TOWN_ARRIVE:
+		route.remove_at(0)
+		town_route = route
+		_tw_best = INF
+		_tw_since = 0.0
+		return TOWN_ARRIVED if route.is_empty() else TOWN_WALKING
+	var want := to.normalized() * speed
+	crowd_want(n.position, want, priority)
+	var vel := crowd_safe() if _agent.is_valid() else want  # trust the avoidance, even when it says wait
+	var step := vel * delta
+	if step.length() > to.length():
+		step = to
+	step = TownNav.closest(center, here + step) - here
+	var gap := to.length()
+	if gap < _tw_best - 0.02:
+		_tw_best = gap
+		_tw_since = 0.0
+	else:
+		_tw_since += delta
+	var going_nowhere := _tw_since > 1.5  # pressed against someone, nudged back and forth on the spot
+	if going_nowhere:
+		_tw_since = 0.0
+		_tw_best = INF
+		_tw_stuck = 1.3  # straight to stepping aside below
+	if going_nowhere or step.length() < delta * speed * 0.2:
+		_tw_stuck += delta
+		if _tw_stuck > 1.2:
+			_tw_stuck = 0.0
+			_tw_tries += 1
+			var goal: Vector2 = route[route.size() - 1]
+			if (goal - here).length() < 0.35 or _tw_tries > 2:
+				town_route = PackedVector2Array()
+				_tw_tries = 0
+				return TOWN_GAVE_UP
+			var across := Vector2(-to.y, to.x).normalized() * (0.14 if rng.randf() < 0.5 else -0.14)
+			route.insert(0, TownNav.closest(center, here + across + to.normalized() * 0.05))
+		town_route = route
+		return TOWN_HELD
+	_tw_stuck = 0.0
+	if not Ground.walkable(n.position + Vector3(step.x, 0, step.y)):
+		town_route = PackedVector2Array()
+		return TOWN_SHORE
+	var smooth := 1.0 - exp(-delta * float(steer.get("smooth", 8.0)))
+	_tw_vel = _tw_vel.lerp(step / maxf(delta, 0.0001), smooth)
+	var dir := _tw_vel if _tw_vel.length() > 0.0001 else step
+	var off := angle_difference(n.rotation.y, atan2(dir.x, dir.y))
+	var rate := float(steer.get("turn", 5.0))
+	n.rotation.y += clampf(off, -rate * delta, rate * delta)
+	var ease := clampf(cos(off), float(steer.get("turn_slow", 0.15)), 1.0)
+	_tw_go += delta
+	ease *= clampf(float(steer.get("start_from", 0.35)) + _tw_go / maxf(float(steer.get("start", 0.6)), 0.01), 0.0, 1.0)
+	if route.size() == 1:
+		ease *= clampf(to.length() / maxf(float(steer.get("arrive", 0.07)), 0.001), float(steer.get("arrive_from", 0.3)), 1.0)
+	step = step.normalized() * minf(step.length(), _tw_vel.length() * delta) * ease if _tw_vel.length() > 0.0 else step * ease
+	if step.length() > to.length():
+		step = to
+	var at := n.position + Vector3(step.x, 0, step.y)
+	var main := _main()
+	at.y = main.terrain.height_at(at.x, at.z) if main and main.terrain else at.y
+	n.position = at
+	town_route = route
+	town_legs = step.length() / maxf(delta, 0.0001)
+	return TOWN_WALKING
 
 
 ## Leaves the crowd it joined (the fight is over).

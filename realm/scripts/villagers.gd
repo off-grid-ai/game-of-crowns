@@ -147,7 +147,7 @@ func _hold_load(a: Dictionary) -> void:
 ## apart every frame after the avoidance is gone (FPS audit 2026-11-15 item 6, docs/research/fps-engine-swaps-2026-11-15.md:
 ## villagers 0.5-3.3 ms a frame, the people group walked and hashed every frame).
 static var SPACE: float = preload("res://scripts/data.gd").num("crowd", "villagers.space", 0.07)  # about 0.6 m between middles
-const ARRIVE := 0.03  # a waypoint this near is reached (about a quarter of a metre): a step shorter than this barely moves anyone
+const ARRIVE := Mover.TOWN_ARRIVE  # a waypoint this near is reached (the Mover's: npc_mind aims past it)
 
 
 ## Someone standing with a road traveller inside their space (a carter waiting
@@ -601,116 +601,41 @@ func _step(a: Dictionary, delta: float, _t: float) -> void:
 	n.visible = (a["block"] != "night" or (a["role"] == "tavern" and a["phase"] < 2.0)) and Time.get_ticks_msec() < int(a.get("in_at", 1 << 62))
 	var center: Vector3 = a["center"]
 	var route: PackedVector2Array = a["route"]
-	var here := Vector2(n.position.x - center.x, n.position.z - center.z)
+	var mo: Node = a["mover"]
 	if route.is_empty():
-		a["go_t"] = 0.0  # standing: the next walk starts from a standstill (steer.start)
-		a["vel"] = Vector2.ZERO
-		a["mover"].crowd_want(n.position, Vector2.ZERO, 1.0)  # walkers go round those standing still
+		mo.town_still()  # standing: the next walk starts from a standstill (steer.start)
+		mo.crowd_want(n.position, Vector2.ZERO, 1.0)  # walkers go round those standing still
 		if a.has("arrive"):
 			_settle(a, delta)
 		return  # their mind plays the moves and picks what's next
-	# Walk the navmesh path, waypoint by waypoint, around the buildings, letting
-	# the avoidance steer around whoever is in the way.
-	var to := route[0] - here
-	# A corner on the way is taken round, not stood on: the next waypoint is made for from a little before this one
-	# (people.json steer.corner), so the path bends instead of turning sharp at each point.
-	if route.size() > 1 and to.length() < maxf(ARRIVE, float(_steer.get("corner", ARRIVE))):
-		route.remove_at(0)
-		a["route"] = route
-		a["best"] = INF
-		a["since"] = 0.0
-		to = route[0] - here
-	if to.length() < ARRIVE:
-		route.remove_at(0)
-		a["route"] = route
-		a["best"] = INF
-		a["since"] = 0.0
-		if route.is_empty():
+	# Walked by its Mover (mover.gd town_step: the one way to move): along the walk map's corners round the buildings,
+	# at its pace, the crowd's avoidance steering round whoever is in the way, eased and turned, unstuck when blocked.
+	var want := WALK_SPEED * READ * _rain_pace * float(a.get("pace", 1.0)) * _mood_pace(a) * _for_the_child(a) * (2.4 if a.get("catch_up", false) else 1.0)
+	# Making way: a commoner steps round their betters, never the other way about (presence.gd STATION); a child
+	# hurrying to a parent: the grown step round them.
+	var give: float = 1.0 if a.get("catch_up", false) else (0.3 + 0.2 * _presence.station(n) if _presence else 0.5)
+	mo.town_route = route
+	var got: int = mo.town_step(center, want, give, delta, _steer, a["rng"])
+	a["route"] = mo.town_route
+	match got:
+		Mover.TOWN_ARRIVED:
 			if people.motion(a["node"]) and GAITS.has(String(a.get("gait", ""))):
 				a["gait"] = "Walk"  # v3: the load is set down with the walk's end (as the minds' GoTo does)
 			_set_off(a)  # arrived: straight into what they came for (a talk waits for the others)
-		return
-	var want := to.normalized() * WALK_SPEED * READ * _rain_pace * float(a.get("pace", 1.0)) * _mood_pace(a) * _for_the_child(a) * (2.4 if a.get("catch_up", false) else 1.0)
-	var vel: Vector2 = want
-	# Making way: a commoner steps round their betters, never the other way about (presence.gd STATION); a child
-	# hurrying to a parent: the grown step round them.
-	a["mover"].crowd_want(n.position, want, 1.0 if a.get("catch_up", false) else (0.3 + 0.2 * _presence.station(n) if _presence else 0.5))
-	vel = a["mover"].crowd_safe()  # trust the avoidance, even when it says wait
-	var step := vel * delta
-	if step.length() > to.length():
-		step = to
-	# Avoidance steers by people alone: the step is held to the walk map, so a
-	# shove never carries anyone through a wall or a fence.
-	step = TownNav.closest(center, here + step) - here
-	# Getting nowhere counts as blocked too: pressed against someone, the
-	# avoidance can nudge a walker back and forth on the spot, legs going,
-	# never any nearer (walking in place).
-	var gap := to.length()
-	if gap < float(a.get("best", INF)) - 0.02:
-		a["best"] = gap
-		a["since"] = 0.0
-	else:
-		a["since"] = float(a.get("since", 0.0)) + delta
-	var going_nowhere: bool = a["since"] > 1.5
-	if going_nowhere:
-		a["since"] = 0.0
-		a["best"] = INF
-		a["stuck"] = 1.3  # straight to stepping aside below
-	# Blocked? Wait a beat, then step aside; if still blocked, either settle
-	# here when close enough, or give up and go somewhere else.
-	if going_nowhere or step.length() < delta * WALK_SPEED * 0.2:
-		a["stuck"] = float(a.get("stuck", 0.0)) + delta
-		if a["stuck"] > 1.2:
-			a["stuck"] = 0.0
-			a["tries"] = int(a.get("tries", 0)) + 1
-			var goal: Vector2 = route[route.size() - 1]
-			if (goal - here).length() < 0.35 or a["tries"] > 2:
-				a["route"] = PackedVector2Array()
-				a["tries"] = 0
-				# Their mind keeps where they were going: it asks again or gives it
-				# up (npc_mind GoTo), never does the work here.
-				return
-			var across := Vector2(-to.y, to.x).normalized() * (0.14 if a["rng"].randf() < 0.5 else -0.14)
-			route.insert(0, TownNav.closest(center, here + across + to.normalized() * 0.05))
-			a["route"] = route
-		if not a.get("held_up", false):
-			a["held_up"] = true
-			people.play(n, "Idle", 1.0)  # once, as they stop: asked every frame it never lets the legs take over again
-		return
-	a["stuck"] = 0.0
-	if a.get("held_up", false):
-		a["held_up"] = false
-		people.play(n, a.get("gait", "Walk"))  # on the move again: the legs, not a standing pose sliding
-	if not Ground.walkable(n.position + Vector3(step.x, 0, step.y)):
-		people.play(n, "Idle", 1.0)  # the shore: never a step into the water
-		a["route"] = PackedVector2Array()
-		return
-	# Steering (people.json steer; Mac 2026-11-12: "there isn't gradual smooth actions"): the way they face turns
-	# at a walker's rate, never snapping to each step; a sharp turn is made mostly on the spot, slowed by how far
-	# off the way they face (no sliding sideways); a walk starts from a standstill and eases up to pace; the last
-	# stretch to where they're going eases down to a stop; and the avoidance's nudges are smoothed over a few frames.
-	var smooth := 1.0 - exp(-delta * float(_steer.get("smooth", 8.0)))
-	var v_now: Vector2 = a.get("vel", step / maxf(delta, 0.0001))
-	v_now = v_now.lerp(step / maxf(delta, 0.0001), smooth)
-	a["vel"] = v_now
-	var dir := v_now if v_now.length() > 0.0001 else step
-	var want_yaw := atan2(dir.x, dir.y)
-	var off := angle_difference(n.rotation.y, want_yaw)
-	var rate := float(_steer.get("turn", 5.0))
-	n.rotation.y += clampf(off, -rate * delta, rate * delta)
-	var ease := clampf(cos(off), float(_steer.get("turn_slow", 0.15)), 1.0)
-	a["go_t"] = float(a.get("go_t", 0.0)) + delta
-	ease *= clampf(float(_steer.get("start_from", 0.35)) + a["go_t"] / maxf(float(_steer.get("start", 0.6)), 0.01), 0.0, 1.0)
-	if route.size() == 1:
-		ease *= clampf(to.length() / maxf(float(_steer.get("arrive", 0.07)), 0.001), float(_steer.get("arrive_from", 0.3)), 1.0)
-	step = step.normalized() * minf(step.length(), v_now.length() * delta) * ease if v_now.length() > 0.0 else step * ease
-	if step.length() > to.length():
-		step = to
-	n.position.x += step.x
-	n.position.z += step.y
-	n.position.y = terrain.height_at(n.position.x, n.position.z)
-	# The legs keep time with the ground covered: slowed by the press, a turn or a stop, they slow too.
-	people.play(n, a.get("gait", "Walk"), clampf(step.length() / delta / (WALK_SPEED * READ), 0.4, 1.3))
+		Mover.TOWN_GAVE_UP:
+			pass  # their mind keeps where they were going: it asks again or gives it up (npc_mind GoTo)
+		Mover.TOWN_HELD:
+			if not a.get("held_up", false):
+				a["held_up"] = true
+				people.play(n, "Idle", 1.0)  # once, as they stop: asked every frame it never lets the legs take over again
+		Mover.TOWN_SHORE:
+			people.play(n, "Idle", 1.0)  # the shore: never a step into the water
+		Mover.TOWN_WALKING:
+			if a.get("held_up", false):
+				a["held_up"] = false
+				people.play(n, a.get("gait", "Walk"))  # on the move again: the legs, not a standing pose sliding
+			# The legs keep time with the ground covered: slowed by the press, a turn or a stop, they slow too.
+			people.play(n, a.get("gait", "Walk"), clampf(mo.town_legs / (WALK_SPEED * READ), 0.4, 1.3))
 
 
 ## The town's shared places: the tavern's door, the church's, the market
