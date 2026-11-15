@@ -868,17 +868,17 @@ static func _low(im: ImporterMesh, H: Dictionary) -> ImporterMesh:
 
 
 ## The first of Godot's generated detail levels whose triangles fit the budget, as
-## a mesh of its own (with its own lighter levels); the mesh as it is if none fits.
+## a mesh of its own (with its own lighter levels); the mesh as it is if none fits. A surface with fewer levels than
+## `level` stands at its own lightest, as _low's (the barrels: their small third surface had a fourth level, the two
+## big ones three, and at that fourth level both stood whole, 22.5k triangles against a 1500 budget).
 static func _within(im: ImporterMesh, budget: int) -> ImporterMesh:
 	var tris := func(level: int) -> int:
 		var n := 0
 		for s in im.get_surface_count():
-			if level < 0:
+			if level < 0 or im.get_surface_lod_count(s) == 0:
 				n += (im.get_surface_arrays(s)[Mesh.ARRAY_INDEX] as PackedInt32Array).size() / 3
-			elif level < im.get_surface_lod_count(s):
-				n += im.get_surface_lod_indices(s, level).size() / 3
 			else:
-				n += (im.get_surface_arrays(s)[Mesh.ARRAY_INDEX] as PackedInt32Array).size() / 3
+				n += im.get_surface_lod_indices(s, mini(level, im.get_surface_lod_count(s) - 1)).size() / 3
 		return n
 	if tris.call(-1) <= budget:
 		return im
@@ -891,8 +891,8 @@ static func _within(im: ImporterMesh, budget: int) -> ImporterMesh:
 		var out := ImporterMesh.new()
 		for s in im.get_surface_count():
 			var arr: Array = im.get_surface_arrays(s).duplicate()  # its own, as _low's
-			if level < im.get_surface_lod_count(s):
-				arr[Mesh.ARRAY_INDEX] = im.get_surface_lod_indices(s, level)
+			if im.get_surface_lod_count(s) > 0:
+				arr[Mesh.ARRAY_INDEX] = im.get_surface_lod_indices(s, mini(level, im.get_surface_lod_count(s) - 1))
 			out.add_surface(Mesh.PRIMITIVE_TRIANGLES, arr, [], {}, im.get_surface_material(s))
 		return _lodded(out)
 	return im
