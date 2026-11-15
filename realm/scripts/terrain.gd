@@ -187,8 +187,14 @@ func set_season(name: String, towns: Array = [], settle := 10.0) -> void:
 		_leaf_snow(mat, String(mat.get_meta("leaf", "")) != "grass" and s["snow"] > 0.0)
 	for mat in Forest.impostors:  # the far woods (forest.gd _impostor): the same tint and turn over their summer bake
 		if mat.has_meta("leaf"):
-			create_tween().tween_property(mat, "shader_parameter/albedo", Forest.tint(mat), settle)
-			create_tween().tween_property(mat, "shader_parameter/turn", Forest.turn_of(mat), settle)
+			# Only what its shader has (the godot-imposter shader has neither: 324 empty tweens and 18 errors a material).
+			var has := {}
+			for u in (mat.shader.get_shader_uniform_list() if mat.shader else []):
+				has[u["name"]] = true
+			if has.has("albedo"):
+				create_tween().tween_property(mat, "shader_parameter/albedo", Forest.tint(mat), settle)
+			if has.has("turn"):
+				create_tween().tween_property(mat, "shader_parameter/turn", Forest.turn_of(mat), settle)
 	if s["snow"] > 0.0 and OVERLAY_SNOW and vegetation:
 		for mmi in vegetation.batches:
 			mmi.material_overlay = _snow  # left on as it melts; the fade takes it to nothing
