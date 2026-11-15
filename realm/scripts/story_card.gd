@@ -140,19 +140,33 @@ func _build(e: Dictionary) -> void:
 		var b := ui.btn(String(verb["label"]), func():
 			close(false)  # acted on: no mark left behind
 			(verb["do"] as Callable).call())
-		b.add_theme_color_override("font_color", T.ACCENT)
+		if verb["why"] != "":
+			b.disabled = true  # shown, with why not in words (the purse, the year), so the card never stands empty
+			b.tooltip_text = String(verb["why"])
+		else:
+			b.add_theme_color_override("font_color", T.ACCENT)
 		row.add_child(b)
 
 
-## What the King can do about this story, as buttons ({label, do}): news_actions.gd's rows for it (the one owner:
-## Send relief, Hold a feast, Rule on it at court, Go there...), those he can give now; one he can't (the purse, the
-## year) is left off here, and its notice says why.
+## What the King can do about this story, as buttons ({label, do, why}): news_actions.gd's rows for it (the one owner:
+## Send relief, Hold a feast, Rule on it at court...), at its town, else the nearest town to where the camera is
+## (Mac: when the camera gets there, give me a way to act). Not Go there: he is there. One he can't give now (the
+## purse, the year) stands greyed with its reason.
 func _verbs(e: Dictionary) -> Array:
 	var acts: Node = preload("res://scripts/news_actions.gd").one
 	var out := []
-	for r in (acts.verbs(e) if acts else []):
-		if bool(r["enabled"]):
-			out.append({"label": String(r["label"]), "do": r["call"]})
+	if acts == null:
+		return out
+	var at := e
+	if e.get("city") == null and _place != Vector3.INF and main.towns:
+		var c: Dictionary = main.towns.nearest(_place, 4.0)
+		if not c.is_empty():
+			at = e.duplicate()
+			at["city"] = c["id"]
+	for r in acts.verbs(at):
+		if String(r["verb"]) == "go":
+			continue
+		out.append({"label": String(r["label"]), "do": r["call"], "why": "" if bool(r["enabled"]) else String(r["why"])})
 	return out
 
 

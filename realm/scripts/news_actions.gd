@@ -205,8 +205,8 @@ func _row(verb: String, e: Dictionary) -> Dictionary:
 			_priced(r, words, "levy", -1)
 			r["call"] = _decree.bind("levy", int(main.awareness.rec("seatId", -1)), verb)
 		"grain", "relief":
-			if c.is_empty() or bool(c.get("capital", false)) and mine:
-				return {}  # the King's seat feeds itself
+			if c.is_empty() or verb == "grain" and bool(c.get("capital", false)) and mine:
+				return {}  # the King's seat feeds itself (but its sick still need physicians)
 			_priced(r, words, "relief", -1 if mine else int(c.get("owner", -1)))
 			r["call"] = _decree.bind("relief", city, verb)
 		"feast":
