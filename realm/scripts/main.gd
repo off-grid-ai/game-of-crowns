@@ -1072,7 +1072,6 @@ func _on_map(map: Dictionary) -> void:
 		over._overview_open(true)  # the whole realm, painted, until the reign frames a town
 
 
-const LANE_MARGIN := 0.8  # a pine's crown reaches about this far from its trunk
 var roads_laid := false  # the roads and the countryside laid once (the loading card waits for it)
 var _laying := false  # roads and countryside are being laid out, a frame at a time
 func _on_synced() -> void:
@@ -1149,15 +1148,7 @@ func _on_synced() -> void:
 		roads.kings_road()
 		PerfTools.add("kings_road", Time.get_ticks_usec() - t_kings_road)
 		await PerfTools.next_frame(&"main:1151")
-		# A road through the woods runs down a lane cut through them, wide enough
-		# that no crown closes over it: what travels it can be watched from above.
-		# Only for stretches laid since the last cut (roads.uncut_bounds): nothing new, no search of the woods.
-		var fresh: Rect2 = roads.uncut_bounds(LANE_MARGIN) if terrain.forest and terrain.forest.has_method("clear_where") else Rect2()
-		if fresh.has_area():
-			var t0 := Time.get_ticks_msec()
-			var n: int = await terrain.forest.clear_where(func(o: Vector3): return roads.near_road(o, LANE_MARGIN), fresh)  # over frames
-			print("LANES %d trees, %d ms" % [n, Time.get_ticks_msec() - t0])
-			await PerfTools.next_frame(&"main:1160")
+		# The lanes through the woods are the roads' own (roads.gd _cut_lanes: kept by cell, cut once no road is mid-paint).
 		Engine.set_meta("stage", "countryside")
 		var t_countryside := Time.get_ticks_usec()
 		countryside.build(awareness.rec("cities", []))

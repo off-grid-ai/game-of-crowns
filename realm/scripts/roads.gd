@@ -251,7 +251,9 @@ func _process(_delta: float) -> void:
 		var t0 := Time.get_ticks_usec()
 		_paint_next()
 		PerfTools.add("kings_road.paint", Time.get_ticks_usec() - t0)
-	if _routing < 0 and _asks.is_empty() and _routed.is_empty() and _paint_jobs.is_empty():
+	if _lanes_ready():
+		_cut_lanes()  # over frames, on the woods' own budget (forest.gd clear_where)
+	if _routing < 0 and _asks.is_empty() and _routed.is_empty() and _paint_jobs.is_empty() and _lanes_due.is_empty():
 		set_process(false)
 
 
@@ -430,6 +432,8 @@ func _remember(owner: String, a: Vector3, b: Vector3, half: float, road := "") -
 	var st := [Vector2(a.x, a.z), Vector2(b.x, b.z), half, owner, road]
 	_paths[owner].append(st)
 	_index(st)
+	if owner == "roads" or owner == "kings":
+		_lane_due(st)
 	_grid_stale = true
 	version += 1
 
@@ -558,25 +562,117 @@ func near_road(p: Vector3, margin: float) -> bool:
 	return false
 
 
-## Changes when the great roads or the King's road are laid anew (not farm tracks).
-## The great roads' stretches the woods have not yet been cut back for, as one
-## box (world x/z, grown by margin), and marks them cut: empty when nothing new
-## has been laid since, so the forest isn't searched for nothing. One owner of
-## what has been cut: this.
-var _cut := {}  # a stretch's key -> cut back for
-func uncut_bounds(margin: float) -> Rect2:
+# --- lanes through the woods, kept by cell ---------------------------------------------------------------------------
+# A great road (Freeciv's network, the King's roads) through the woods runs down a lane cut through them, wide enough that
+# no crown closes over it: what travels it can be watched from above. Cut here, by WAYS_CELL cell of the land, once no
+# road is mid-paint: each cell's felled trees are kept (kept.gd 'lanes') by the stretches reaching into it and the land,
+# so a launch fells the kept trees by a lookup and never searches the woods round every road again (round 11: the lane
+# cut held the load's roads step ~10 s, LANES 120 trees 6749 ms, 0 trees 2663 ms). One owner of what has been cut: this.
+const LANE_MARGIN := 0.8  # a pine's crown reaches about this far from its trunk
+var _lanes_due := {}  # cell (Vector2i) -> true: a great road laid over it since its lane was cut
+var _lane_done := {}  # cell -> the key its lane was last cut for
+var _laning := false  # a cut is under way (over frames)
+
+
+## A stretch's reach with the lane's margin: the woods it clears.
+func _lane_rect(st: Array) -> Rect2:
+	var g := float(st[2]) + LANE_MARGIN
+	var lo: Vector2 = (st[0] as Vector2).min(st[1]) - Vector2.ONE * g
+	var hi: Vector2 = (st[0] as Vector2).max(st[1]) + Vector2.ONE * g
+	return Rect2(lo, hi - lo)
+
+
+## The cells a great road's stretch clears, due for their lane.
+func _lane_due(st: Array) -> void:
+	var r := _lane_rect(st)
+	for x in range(floori(r.position.x / WAYS_CELL), floori(r.end.x / WAYS_CELL) + 1):
+		for z in range(floori(r.position.y / WAYS_CELL), floori(r.end.y / WAYS_CELL) + 1):
+			_lanes_due[Vector2i(x, z)] = true
+	set_process(true)
+
+
+## What a cell's lane is cut for: every great road's stretch reaching into it, on this land.
+func _lane_key(c: Vector2i, land: String) -> String:
+	var r := Rect2(Vector2(c) * WAYS_CELL, Vector2.ONE * WAYS_CELL)
+	var seen: Array = []
+	for dx in [-1, 0, 1]:
+		for dz in [-1, 0, 1]:
+			for st in _way_cells.get(c + Vector2i(dx, dz), []):
+				if (st[3] == "roads" or st[3] == "kings") and _lane_rect(st).intersects(r):
+					var s := "%s|%s|%s" % [st[0], st[1], st[2]]
+					if not seen.has(s):
+						seen.append(s)
+	seen.sort()
+	return str([c, seen, LANE_MARGIN, land]).md5_text()
+
+
+static func _spot(q: Vector2) -> Vector2i:
+	return Vector2i(roundi(q.x * 100.0), roundi(q.y * 100.0))
+
+
+## Whether the due cells' lanes can be cut now: no great road mid-paint (each cell keyed by its whole roads).
+func _lanes_ready() -> bool:
+	if _lanes_due.is_empty() or _laning or not _paint_jobs.is_empty() or not _routed.is_empty():
+		return false
+	var forest: Variant = terrain.get("forest")
+	if forest == null or not (forest as Object).has_method("clear_where"):
+		_lanes_due.clear()  # no woods to cut
+		return false
+	return true
+
+
+## The due cells' lanes cut in one pass over the woods (forest.gd clear_where, over frames): a cell kept fells its kept
+## trees by a lookup, a cell not kept looks for the trees within LANE_MARGIN of a road (near_road) and keeps them.
+func _cut_lanes() -> void:
+	_laning = true
+	var t0 := Time.get_ticks_msec()
+	var land := _land_key()
+	var kept := {}  # spot -> true: the kept cells' felled trees
+	var fresh := {}  # cell -> [its kept path, {spot: Vector2}]: the cells worked out now
 	var box := Rect2()
-	for owner in ["roads", "kings"]:
-		for st in _paths.get(owner, []):
-			var key := "%s|%s" % [st[0], st[1]]
-			if _cut.has(key):
+	var boxed := false
+	for c: Vector2i in _lanes_due.keys():
+		var key := _lane_key(c, land)
+		if _lane_done.get(c, "") == key:
+			continue
+		_lane_done[c] = key
+		var path := Kept.path("lanes", key, "bin")
+		if Kept.has(path):
+			var at: Variant = bytes_to_var(FileAccess.get_file_as_bytes(path))
+			if at is PackedVector2Array:
+				for p: Vector2 in at:
+					kept[_spot(p)] = true
+					box = box.expand(p) if boxed else Rect2(p, Vector2.ZERO)
+					boxed = true
 				continue
-			_cut[key] = true
-			var lo: Vector2 = (st[0] as Vector2).min(st[1]) - Vector2.ONE * (float(st[2]) + margin)
-			var hi: Vector2 = (st[0] as Vector2).max(st[1]) + Vector2.ONE * (float(st[2]) + margin)
-			var r := Rect2(lo, hi - lo)
-			box = r if not box.has_area() else box.merge(r)
-	return box
+		fresh[c] = [path, {}]
+		var r := Rect2(Vector2(c) * WAYS_CELL, Vector2.ONE * WAYS_CELL)
+		box = box.merge(r) if boxed else r
+		boxed = true
+	_lanes_due.clear()
+	var n := 0
+	if boxed:
+		n = await terrain.forest.clear_where(func(o: Vector3) -> bool:
+			var q := Vector2(o.x, o.z)
+			var c := Vector2i(floori(q.x / WAYS_CELL), floori(q.y / WAYS_CELL))
+			if fresh.has(c):
+				if near_road(o, LANE_MARGIN):
+					(fresh[c][1] as Dictionary)[_spot(q)] = q
+					return true
+				return false
+			return kept.has(_spot(q)), box.grow(0.01))
+	for c in fresh:
+		_keep_bytes(String(fresh[c][0]), var_to_bytes(PackedVector2Array((fresh[c][1] as Dictionary).values())))
+	print_verbose("LANES %d trees, %d cells worked out, %d ms" % [n, fresh.size(), Time.get_ticks_msec() - t0])
+	_laning = false
+	if not _lanes_due.is_empty():
+		set_process(true)
+
+
+## Whether every road asked so far stands: routed (or waiting on the navigation for a route never kept), painted, and
+## its lanes cut (tools/bake.gd waits for it).
+func laid() -> bool:
+	return _asks.is_empty() and _routing < 0 and _routed.is_empty() and _paint_jobs.is_empty() and _lanes_due.is_empty() and not _laning
 
 
 func trunk_sig() -> int:
