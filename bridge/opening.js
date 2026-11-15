@@ -14,7 +14,7 @@ const state = (meta) => (meta.openingState ??= {});
 // Each season (season.js): the first winter is seen, then passes.
 export function season(meta, turn) {
   const o = state(meta);
-  if (o.at !== turn) { o.at = turn; o.seasons = (o.seasons ?? 0) + 1; }  // the seasons the King has ruled (they pass only while he watches)
+  if (o.at !== turn) { o.at = turn; o.seasons = (o.seasons ?? 0) + 1; calmSeason(meta); }  // the seasons the King has ruled (they pass only while he watches)
   if (!v2(meta)) return;
   if (o.wintered) return;
   if (calendar(turn).season === "winter") o.winterSeen = true;
@@ -41,3 +41,58 @@ export function firstSetback(meta, d) {
   state(meta).setback = true;
   return OPENING.firstSetbackSeasons ?? 6;
 }
+
+// --- the calm opening: one trouble at a time, its kinds in order (data/opening.json calm) ---------------------------
+// The one gate every starter of a trouble that asks something of the King asks first (raids.js, rivals.js, court.js,
+// events.js, contagion.js, director.js, the stories in arcs.js, the lords' bold moves in characters.js). Frostpunk's
+// and Anno's onboarding: one system at a time. Kept on meta.openingState.calm {step, stepAt, met, live, freeAt}.
+const CALM = OPENING.calm ?? {};
+const ORDER = CALM.order ?? [];
+// Whether the reign is still in its calm opening (its first CALM.seasons seasons the King watched).
+export const calmNow = (meta) => !!meta && (meta.openingState?.seasons ?? 0) < (CALM.seasons ?? 0);
+const seasonsOf = (meta) => meta.openingState?.seasons ?? 0;
+const calmState = (meta) => (state(meta).calm ??= { step: 0, stepAt: 0, met: [], live: null, freeAt: 0 });
+// When a live trouble is over, by its owner's own state; a starter without one runs on its lease.
+const OVER = {
+  firstRaid: (m) => !m.firstRaid || m.firstRaid.done,
+  court: (m) => m.court?.sitting == null,
+  card: (m) => !m.events?.up,
+  plague: (m) => !Object.keys(m.contagion?.towns ?? {}).length,
+  threat: (m) => !m.director?.threat,
+  demand: (m) => !m.rival?.demand || m.rival.demand.answered,
+};
+// The live trouble, cleared once it is over or has run its seasons.
+function sweep(meta) {
+  const c = calmState(meta), l = c.live;
+  if (!l) return c;
+  const age = seasonsOf(meta) - l.at;
+  const over = OVER[l.what] ? OVER[l.what](meta) : age >= (CALM.leaseSeasons ?? 1);
+  if (over || age >= (CALM.liveSeasons ?? 3)) { c.live = null; c.freeAt = seasonsOf(meta) + (CALM.restSeasons ?? 0); }
+  return c;
+}
+// Whether a trouble of this kind may start now: always after the opening; in it, only a kind whose turn has come,
+// with nothing else live and the rest after the last one over.
+export function may(meta, kind) {
+  if (!calmNow(meta)) return true;
+  const c = sweep(meta), i = ORDER.indexOf(kind);
+  return i >= 0 && i <= c.step && !c.live && seasonsOf(meta) >= c.freeAt;
+}
+// A trouble started (after may): it is the live one, and its kind has had its turn. what: its owner (OVER), for when it ends.
+export function began(meta, kind, what) {
+  if (!calmNow(meta)) return;
+  const c = calmState(meta);
+  c.live = { kind, what, at: seasonsOf(meta) };
+  if (!c.met.includes(kind)) c.met.push(kind);
+  if (ORDER.indexOf(kind) === c.step) { c.step++; c.stepAt = seasonsOf(meta); }
+}
+// Each season: a kind whose turn has waited long enough with nothing of it lets the next come too.
+function calmSeason(meta) {
+  if (!calmNow(meta)) return;
+  const c = sweep(meta);
+  if (c.step < ORDER.length && seasonsOf(meta) - c.stepAt >= (CALM.waitSeasons ?? 2)) { c.step++; c.stepAt = seasonsOf(meta); }
+}
+// The kind of an event card's deck, and of a director's threat (data: calm.decks, calm.threats).
+export const deckKind = (deck) => CALM.decks?.[deck] ?? "court";
+export const threatKind = (kind) => CALM.threats?.[kind] ?? "war";
+// Stories running at once: one in the calm opening, the stories' own number after.
+export const storiesAtOnce = (meta, max) => (calmNow(meta) ? Math.min(max, CALM.stories ?? 1) : max);

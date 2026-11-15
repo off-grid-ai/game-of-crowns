@@ -186,6 +186,7 @@ Switches (`--name`) go after `--` on the game's command line.
 - How long after the King lands in his realm the first court sits: `bridge/data/opening.json`: `firstCourtAfterLandingSec`.
 - When it sits anyway if no landing is heard (the intro skipped): `bridge/data/opening.json`: `firstCourtWithoutLandingSec`.
 - How long every reign's opening stays quiet (no rising, no pretender, no ultimatum), in seasons the King has watched: `bridge/data/opening.json`: `quietSeasons` (4, a year).
+- The calm opening, one trouble at a time with its kinds in order (raiders, court, hunger, scheme, war): `bridge/data/opening.json` `calm`: `seasons` (4, the first year), `order`, `waitSeasons` (2: a kind's turn passes on if none of it came), `liveSeasons` (3: the longest one trouble holds the slot), `leaseSeasons` (1: a border raid or a story with no end of its own), `restSeasons` (0), `stories` (1 at once), `decks` and `threats` (each card deck's and threat's kind).
 
 ## Townsfolk (Builder 1)
 - Which towns' scene people have minds: `--limbo=none` or `--limbo=<ids>` (only those towns); default every town (`realm/scripts/town_life.gd`: `LIMBO_ALL`). Villagers always have minds (their old rules are gone).

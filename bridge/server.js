@@ -78,6 +78,7 @@ import * as Coalition from "./coalition.js";
 import * as Harsh from "./harsh.js";
 import * as Contagion from "./contagion.js";
 import * as Prices from "./prices.js";
+import * as Opening from "./opening.js";
 import { TURNING } from "./season.js";
 import { intrigueNow } from "./intrigue.js";
 
@@ -723,6 +724,8 @@ function arcCtx() {
     usurperStage: () => stakes?.s.usurper.stage ?? "none",
     // How far through its clock the reign is (0-1): a story's acts land at its quarters.
     reignAt: meta.minutes > 0 ? Math.min(1, meta.elapsedMs / (meta.minutes * 60000)) : null,
+    // The calm opening (opening.js): a new story is a house's scheme, one at a time, in its turn.
+    calm: { cap: (max) => Opening.storiesAtOnce(meta, max), may: () => Opening.may(meta, "scheme"), began: () => Opening.began(meta, "scheme", "story") },
     refresh: () => new Promise((r) => { snapshot(); setTimeout(r, 900); }),
   };
 }

@@ -127,7 +127,7 @@ export function raise(ctx, d, turn, want = null, isFinale = false) {
   const big = world.cities.filter((c) => houses.some((h) => h.id === c.owner)).sort((a, b) => b.size - a.size)[0];
   const can = { host: !!border, famine: !!big, pretender: !!border && favourOf(coldest.id) < BANDS.sworn && (ctx.usurper ?? "none") === "none" };
   if (envious) can.famine = false;  // an envious house schemes: it masses men or raises a claim
-  const pool = Object.entries(DIRECTOR.threats).filter(([k]) => can[k] && k !== d.last && (!want || k === want));
+  const pool = Object.entries(DIRECTOR.threats).filter(([k]) => can[k] && k !== d.last && (!want || k === want) && Opening.may(ctx.meta, Opening.threatKind(k)));  // the calm opening (opening.js)
   if (!pool.length) return;
   let roll = Math.random() * pool.reduce((s, [, v]) => s + v.weight, 0);
   const [kind] = pool.find(([, v]) => (roll -= v.weight) < 0) ?? pool[0];
@@ -136,6 +136,7 @@ export function raise(ctx, d, turn, want = null, isFinale = false) {
   d.envious = null;
   d.threat = { kind, city: at.id, x: at.x, y: at.y, house: owner.id, houseName: houseFor(owner).name, townName: cityName(at.id), level: 0, n: 0, since: turn, ...(isFinale ? { finale: true } : {}) };
   d.calm = 0;
+  Opening.began(ctx.meta, Opening.threatKind(kind), "threat");
   grow(ctx, d, turn);
 }
 

@@ -226,6 +226,22 @@ export async function courtSeason(ctx, turn, force = false) {
   // No word of a landing (the intro skipped): it sits FIRST_COURT_LATE_MS after the reign began, as it would anyway.
   const ready = first?.landedAt ? Date.now() - first.landedAt >= FIRST_COURT_MS : Date.now() - (meta.created ?? 0) >= FIRST_COURT_LATE_MS;
   if (!force && c.lastSat == null && first && !ready) { chron.saveMeta(meta); return; }
+  // The calm opening (opening.js): the court's own matters wait their turn and for nothing else to be live. A matter
+  // another trouble brought to the hall (an envoy, a story's beat: started through the same gate) is still heard, alone.
+  if (!force && !Opening.may(meta, "court")) {
+    const brought = court.petitions.find((p) => !p.answered && p.called == null && p.kind === "arc");
+    if (brought) {
+      brought.called = turn;
+      c.sitting = turn;
+      c.push = false;
+      c.forced = false;
+      c.lastSat = turn;
+      c.lastCall = Date.now();
+      record({ turn, kind: "court", text: `The court sits for the ${calendar(turn).season} of ${calendar(turn).year}: 1 matter waits for the King.` });
+    }
+    chron.saveMeta(meta);
+    return;
+  }
   const { every, want: wanted } = pace(ctx, c.lastSat == null);
   const crises = counselNow.filter((o) => isCrisis(o) && o.acts?.length && c.heard[o.key] == null && !c.hand[o.key]);
   // A herald's terms under a siege can't wait for the next sitting: the court sits for them.
@@ -289,6 +305,7 @@ export async function courtSeason(ctx, turn, force = false) {
     const pending = meta.pendingDiplomacy ?? [];
     meta.pendingDiplomacy = [];
     setDiplomacy(pending).catch((e) => console.log("diplomacy:", e.message));  // all of them, one reload
+    if (!force) Opening.began(meta, "court", "court");  // the calm opening's live trouble until the court rises (opening.js)
     record({ turn, kind: "court", text: push ? `The Hand calls the King to court: ${crises[0].text}.` : `The court sits for the ${calendar(turn).season} of ${calendar(turn).year}: ${n} ${n === 1 ? "matter waits" : "matters wait"} for the King.` });
   } else if (due) c.lastSat = turn;
   chron.saveMeta(meta);

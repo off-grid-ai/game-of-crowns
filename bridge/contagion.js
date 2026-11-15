@@ -6,6 +6,7 @@
 // answers with event cards (events.js: contagion.json cards, subject sick_town, effect contagion). /world `contagion`.
 import fs from "node:fs";
 import * as Lua from "./lua.js";
+import * as Opening from "./opening.js";
 import * as Trade from "./trade.js";
 import { cityName } from "./narrator.js";
 import { harsh } from "./harsh.js";
@@ -59,9 +60,9 @@ export function season(ctx, turn) {
   if (!Object.keys(s.towns).length) s.burn = null;
   // It begins: a town Freeciv made sick, or now and then the biggest town in summer.
   for (const c of world.cities) if (c.freecivPlague) fall(ctx, c, turn, null);
-  if (!Object.keys(s.towns).length && Math.random() < C.start * harsh(meta, turn)) {  // likelier as the reign wears on
+  if (!Object.keys(s.towns).length && Math.random() < C.start * harsh(meta, turn) && Opening.may(meta, "hunger")) {  // likelier as the reign wears on; the calm opening's turn (opening.js)
     const big = [...world.cities].sort((a, b) => (b.size ?? 0) - (a.size ?? 0))[0];
-    if (big) fall(ctx, big, turn, null);
+    if (big) { fall(ctx, big, turn, null); Opening.began(meta, "hunger", "plague"); }
   }
   // It walks the roads: from each sick town with its roads open, to the towns it trades with.
   const routes = Trade.list(world.cities, turn, (a, b) => (ctx.detail?.()?.players?.[a]?.atWarWith ?? []).includes(b));

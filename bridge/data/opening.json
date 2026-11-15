@@ -6,5 +6,37 @@
   "firstSetbackSeasons": 6,
   "calmShare": 0.2,
   "usurperFromAct": 2,
-  "quietSeasons": 4
+  "quietSeasons": 4,
+  "calm": {
+    "_": "The calm opening (opening.js may/began; Mac 2026-11-16: 'too chaotic ... not very clear what I should be doing'; Frostpunk's and Anno's onboarding: one system at a time). For the reign's first seasons (counted while the King watches) at most one trouble that asks something of the King is live at a time, and its kinds come in order: a kind may start once every kind before it in order has started, or once its turn has waited waitSeasons. A trouble stays live until its owner says it is over (the raid beaten or gone, the court risen, the card answered, the sickness gone, the threat ended, the envoy answered) or for at most liveSeasons; one with no state of its own (a border raid, a story) for leaseSeasons. restSeasons: quiet seasons after one ends before the next may start. stories: stories running at once in the opening (stories.json maxActive after). decks: the kind of each event card's deck; threats: the kind of each of the director's threats.",
+    "seasons": 4,
+    "order": [
+      "raiders",
+      "court",
+      "hunger",
+      "scheme",
+      "war"
+    ],
+    "waitSeasons": 2,
+    "liveSeasons": 3,
+    "leaseSeasons": 1,
+    "restSeasons": 0,
+    "stories": 1,
+    "decks": {
+      "realm": "court",
+      "faith": "court",
+      "court": "court",
+      "folk": "court",
+      "trade": "court",
+      "famine": "hunger",
+      "house": "scheme",
+      "war": "war",
+      "rival": "war"
+    },
+    "threats": {
+      "host": "war",
+      "famine": "hunger",
+      "pretender": "scheme"
+    }
+  }
 }

@@ -553,7 +553,9 @@ export class Court {
       for (const l of lords.sort(() => r() - 0.5).slice(0, askers)) await this.petition(l, world, turn, ctx);
     }
     done.add("petition");
-    for (const m of moves) {
+    // The calm opening (opening.js through ctx.calmMay): the lords' bold moves are a house's scheme, in its turn, nothing else live.
+    const scheming = ctx.calmMay?.("scheme") ?? true;
+    for (const m of scheming ? moves : []) {
       const bold = LORDS.moves[ctx.options?.intrigue] ?? LORDS.moves.normal;
       if (acted >= bold[0] || done.has(m.kind) || (m.score < bold[1] && m.kind !== "petition")) continue;
       done.add(m.kind);

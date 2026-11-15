@@ -104,7 +104,7 @@ export async function runSeason(ctx) {
       // The crown's purse below one big thing's worth: the court may hear of it (economy.json thin).
       thinTreasury: () => (crownOf(ctx.world)?.gold ?? 0) < Treasury.ECONOMY.thin,
       deed: (key, pid) => ctx.deed(kingDeeds.tagsFor("realm", key), { act: false, place: houseFor(ctx.world?.players?.find((p) => p.id === pid) ?? {}).name ?? "" }),
-      favour: ctx.favourOf, cause: ctx.causeOf, warded: (pid) => (stakes?.s.wards?.[pid] ?? -1) > (ctx.world?.turn ?? 0) || ctx.sworn(pid), send: (l) => send(`lua cmd ${l}`), shift: ctx.shiftFavour, watched: isWatched(), options: meta.options ?? {}, ...ctx.heardCtx(), mayRise: (pid) => mayRise(ctx, pid), rose: (pid) => rose(ctx, pid) });
+      favour: ctx.favourOf, cause: ctx.causeOf, warded: (pid) => (stakes?.s.wards?.[pid] ?? -1) > (ctx.world?.turn ?? 0) || ctx.sworn(pid), send: (l) => send(`lua cmd ${l}`), shift: ctx.shiftFavour, watched: isWatched(), options: meta.options ?? {}, ...ctx.heardCtx(), mayRise: (pid) => mayRise(ctx, pid), rose: (pid) => rose(ctx, pid), calmMay: (kind) => Opening.may(meta, kind) });
   } catch (err) {
     console.error("season:", err);
   } finally {

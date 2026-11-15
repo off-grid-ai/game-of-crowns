@@ -8,6 +8,7 @@ import { worksOf } from "./treasury.js";
 import { crownOf } from "./realm.js";
 import { houseFor, cityName } from "./narrator.js";
 import * as Lua from "./lua.js";
+import * as Opening from "./opening.js";
 
 const RAIDS = JSON.parse(fs.readFileSync(new URL("./data/raids.json", import.meta.url), "utf8"));
 
@@ -42,7 +43,7 @@ export function first(ctx) {
   const cheb = (a, b) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
   const wild = (u) => houseFor(world.players.find((p) => p.id === u.owner) ?? {}).wild;
   if (!meta.firstRaid) {
-    if ((meta.elapsedMs ?? 0) < F.afterS * 1000) return;
+    if ((meta.elapsedMs ?? 0) < F.afterS * 1000 || !Opening.may(meta, "raiders")) return;  // the calm opening: raiders come first, alone (opening.js)
     const seat = world.cities.find((c) => c.owner === crown.id && c.capital);
     if (!seat) return;
     const town = world.cities.filter((c) => c.id !== seat.id && cheb(c, seat) <= F.near && !wild(c))
@@ -50,6 +51,7 @@ export function first(ctx) {
     if (!town) { meta.firstRaid = { done: true }; return; }
     meta.firstRaid = { city: town.id, turn: world.turn, units: [] };
     send(`lua cmd ${Lua.raid(town.id)}`);
+    Opening.began(meta, "raiders", "firstRaid");
     record({ turn: world.turn, kind: "raid", city: town.id, text: `Raiders are burning the fields of ${cityName(town.id)}, a short march from Kingsmere. Send the royal host.` });
     return;
   }

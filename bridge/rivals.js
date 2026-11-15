@@ -9,6 +9,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import * as Lua from "./lua.js";
+import * as Opening from "./opening.js";
 import { harsh } from "./harsh.js";
 import { cityName, houseFor, FOREIGN } from "./narrator.js";
 
@@ -80,12 +81,14 @@ export function season(ctx, turn) {
   // His mood at rest rises as the reign wears on (harsh.js), and so do his raids.
   const h = harsh(meta, turn), rest = Math.min(100, R.rest * h);
   r.hostility += Math.sign(rest - r.hostility) * Math.min(R.drift, Math.abs(rest - r.hostility));
-  if (r.hostility >= R.war.above) return declare(ctx, r, border(world, r.edge, r.realm), turn, `${r.king} has waited long enough.`);
+  // The calm opening (opening.js): war talk comes last, alone; his riders count as raiders.
+  if (r.hostility >= R.war.above && Opening.may(meta, "war")) { Opening.began(meta, "war", "rivalWar"); return declare(ctx, r, border(world, r.edge, r.realm), turn, `${r.king} has waited long enough.`); }
   demand(ctx, r, turn);
   if (Math.random() >= R.raid * h * r.hostility / 100) return;
   const t = border(world, r.edge, r.realm);
-  if (!t) return;
+  if (!t || !Opening.may(meta, "raiders")) return;
   send(`lua cmd ${Lua.raid(t.id, "rival")}`);
+  Opening.began(meta, "raiders", "raid");
   r.probes++;
   record({ turn, kind: "raid", text: `Riders out of ${r.realm} cross the border and fall on the fields of ${cityName(t.id)}. ${r.king} says they are outlaws; nobody believes it.`, city: t.id });
 }
@@ -105,7 +108,7 @@ const signed = (d) => `${d > 0 ? "+" : "−"}${Math.abs(d)}`;
 // border town; else asking tribute. One open demand at a time (meta.rival.demand).
 function demand(ctx, r, turn) {
   const { world, court } = ctx;
-  if ((r.demand && !r.demand.answered) || !court?.arcPetition) return;
+  if ((r.demand && !r.demand.answered) || !court?.arcPetition || !Opening.may(ctx.meta, "war")) return;
   const since = turn - (r.demand?.turn ?? -99);
   if (r.war ? since < R.war.every : (r.hostility < D.above || since < D.every)) return;
   const t = r.war ? (world.cities ?? []).find((c) => c.id === r.war.town) : border(world, r.edge, r.realm);
@@ -142,6 +145,7 @@ function demand(ctx, r, turn) {
       : `${r.king}'s envoy comes under a white flag. "My master is tired of this war, Your Grace, if you are. ${town}, or ${gold} in gold, and his men go home."`;
   court.arcPetition({ arc: "rival", beat, thread: kind === "peace" ? `terms from ${r.realm}` : `an envoy from ${r.realm}`, from: { id: null, name: `${r.king}'s envoy`, house: r.realm }, text, options }, world);
   r.demand = { beat, kind, town: t.id, turn };
+  Opening.began(ctx.meta, "war", "demand");
 }
 
 // The King's answer to the envoy (server.js court.onArcRuling, arc "rival"); ignored is taken as refused.

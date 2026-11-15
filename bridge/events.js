@@ -14,6 +14,7 @@ import * as Rivals from "./rivals.js";
 import * as Royals from "./royals.js";
 import * as Contagion from "./contagion.js";
 import * as Lua from "./lua.js";
+import * as Opening from "./opening.js";
 import fs from "node:fs";
 import { houseFor, cityName } from "./narrator.js";
 import { calendar } from "./calendar.js";
@@ -113,6 +114,7 @@ function draw(ctx, e, turn, resting) {
     if (turn - (e.rested[c.id] ?? -999) < (c.rest ?? S.rest)) continue;
     if (resting && !S.breatherDecks.includes(c.deck)) continue;
     if (!holds(ctx, c.when)) continue;
+    if (!Opening.may(ctx.meta, Opening.deckKind(c.deck))) continue;  // the calm opening: a deck whose kind's turn has come, nothing else live (opening.js)
     const sub = subject(ctx, c.subject ?? "realm");
     if (!sub) continue;
     if (c.deck === "rival") Object.assign(sub, Rivals.words(ctx.meta));
@@ -146,6 +148,7 @@ function draw(ctx, e, turn, resting) {
     x: from?.x ?? null, y: from?.y ?? null, by: card.deck === "rival" ? "rival" : null,
     choices: card.choices.map((ch, i) => ({ i, label: fill(ch.label, sub), cost: ch.cost ?? 0, moves: moves(ctx, ch, sub), against: ch.against ?? [] })), ignore: fill(wording(`event:${card.id}:ignore`, card.ignore?.text), sub) };
   if (from && seat && from.id !== seat.id) ctx.scene?.("rider", { x: from.x, y: from.y, tx: seat.x, ty: seat.y, city: seat.id, label: e.up.title, by: e.up.by });
+  Opening.began(ctx.meta, Opening.deckKind(card.deck), "card");
   ctx.record?.({ turn, kind: "event", text: e.up.title, city: sub.city ?? undefined });
 }
 

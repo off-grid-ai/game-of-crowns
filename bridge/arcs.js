@@ -220,7 +220,11 @@ export class Arcs {
         if (arc) { arc.chosen = true; break; }  // the chronicle's own story: only it can end the reign
       }
     }
-    if (start && this.active.length < MAX_ACTIVE && Math.random() < START_CHANCE) await this.begin(all.filter((t) => !t.reign), ctx);
+    // The calm opening (opening.js through ctx.calm): one story at a time, and only when its turn has come and nothing else is live.
+    const cap = ctx.calm?.cap(MAX_ACTIVE) ?? MAX_ACTIVE;
+    if (start && this.active.length < cap && Math.random() < START_CHANCE && (ctx.calm?.may() ?? true)) {
+      if (await this.begin(all.filter((t) => !t.reign), ctx)) ctx.calm?.began();
+    }
     // Whoever a story touched this season is in it now: their minds think hot.
     if (ctx.minds && this.touched.size) ctx.minds.attend({ cast: [...this.touched] });
     this.save();
