@@ -523,9 +523,9 @@ func add_crown(at: Vector3, height: float) -> void:
 	_moved(Rect2(at.x, at.z, 0, 0))
 
 
-## The trunks in `area` (world XZ) as discs (x, z, forest.json trunk): the ground owner stamps them on its map, so
-## nobody is placed in a tree (Mac 2026-11-15: regiments through the woods). Wherever trees are planted or felled
-## the ground is told (Ground.forget).
+## The trunks in `area` (world XZ) as discs (x, z, forest.json trunk): the ground owner makes each a cylinder in its
+## physics space (ground.gd: Jolt, the tree layer), so nobody is placed in a tree (Mac 2026-11-15: regiments through
+## the woods). Wherever trees are planted or felled the ground is told (Ground.forget) and reads them again there.
 func obstacles(area: Rect2) -> Array:
 	var r := Data.num("forest", "trunk", 0.12)
 	var out: Array = []

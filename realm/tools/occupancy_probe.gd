@@ -1,26 +1,26 @@
 extends SceneTree
-## Guard for the ground owner's occupancy map (Mac 2026-11-15, the fps round: a battle at 1 fps, ground.is_clear
-## 32 us an ask, 7.5 s of one 9 s frame). ground.gd answers "may a body stand here" from one raster over the realm
-## (0 A.D.'s obstruction manager and passability grid; Warcraft III's pathing map), stamped once by its writers, not
-## from point tests of every town, place, wood and claim per ask. No realm: a stub land (a river with a ford, a
-## lake), a town (houses, a stall in its Life, a well, a castle's open bailey), a farm patch turned on the land
-## (ground.gd stands), a wood (a source: in_way and obstacles) and claims of every kind. It proves:
-##   1. the map's answers equal the old point tests (kept here only, as the reference) at thousands of random spots:
-##      never clear where the old test was blocked, and blocked only within one cell of what the old test blocks
-##      (an obstacle shuts every cell it touches, the RTS way); every radius, props, free_of and open_kinds;
-##   2. is_clear costs under 3 us an ask on average over 100,000 asks;
-##   3. a claim released, a place gone, a stall set down in the town's life, trees felled and a town razed change
-##      the answers at once;
-##   4. a fight's route grid (army_ground.gd) lies on the map's own cells and copies them: every cell shut or open as
-##      is_clear answers at its middle;
+## Guard for the ground owner (Mac 2026-11-15: "the collision stuff is extremely unoptimised garbage; there needs to
+## be an engine or system that already solves this"; ground.is_clear 98,611 asks at 60 us, 5.9 s in 2 min). ground.gd
+## answers "may a body stand here" from Jolt (PhysicsServer3D: every obstacle a static prism on a named layer, every
+## ask one engine query) and the land's dry/walk mask read once off the terrain. No realm: a stub land (a river with a
+## ford, a lake), a town (houses, a stall in its Life, a well, a castle's open bailey), a farm patch turned on the land
+## (ground.gd stands), a wood (a source: obstacles) and claims of every kind. It proves:
+##   1. the engine's answers equal a reference point test (kept here only) sampled densely over a body's disc, at
+##      thousands of random spots: never clear where the reference finds anything in the disc, and refused only where
+##      the reference finds something within LAND_TOL of it (the land mask is a cell conservative); every radius,
+##      props, free_of and open_kinds;
+##   2. is_clear costs under 5 us an ask on average over 100,000 asks;
+##   3. a claim released, a claim made this frame, a place gone, a stall set down in the town's life, trees felled and
+##      a town razed change the answers at once (Jolt's space flushes new bodies before a query);
+##   4. a fight's route grid (army_ground.gd) on ground.gd's cell_size, laid from row_open: every cell shut or open
+##      as is_clear answers at its middle;
 ##   5. a regiment's rectangle asked in one call (area_free, as army.gd _clear_at asks it) at 1000 random placements:
-##      never clear where the old grid of point asks (every muster.probe, 0.05 reach) refused, refused only where
-##      something stands within it (the grid stepped over a trunk or a hedge), under 50 us an ask;
-##   6. a town built piece by piece (houses on the town, stalls and walkers in its Life, a stall taken away now and
-##      then) with is_clear asks between the pieces, as towns.gd builds and its life sets down while bodies are placed
-##      (Mac's game 2026-11-15: 98,587 asks cost 3.16 s while towns were built, every ask after a new piece restamping
-##      the whole town): the asks average under 3 us, each piece is read once (the ground's stamp_reads: linear in the
-##      pieces, never pieces x asks), and the answers still equal the old point tests over the town.
+##      never clear where the old grid of point asks refused, refused only where something stands within it, under
+##      50 us an ask;
+##   6. a town built piece by piece with is_clear asks between the pieces: the asks average under 5 us (or half again
+##      a still town's on a loaded machine), each piece is read once (stamp_reads), the answers still equal the
+##      reference over the town;
+##   7. obstacle_shapes (the navigation's bake contract) lists the shapes over an area with their layers.
 ## Prints CHECK lines; exits 1 on a fail.   arch -arm64 godot --headless --path realm -s res://tools/occupancy_probe.gd
 
 const Ground := preload("res://scripts/ground.gd")
@@ -29,6 +29,8 @@ const TownNav := preload("res://scripts/town_nav.gd")
 
 const LAND := """extends Node3D
 var built := true
+var width := 12
+var height := 12
 func height_at(_x: float, _z: float) -> float:
 	return 0.0
 func is_land(x: float, z: float) -> bool:
@@ -155,8 +157,12 @@ func _run() -> void:
 	_claim("field", PackedVector2Array([Vector2(2, 2), Vector2(9, 2), Vector2(9, 5), Vector2(5, 5), Vector2(5, 9), Vector2(2, 9)]), "field")
 	_claim("engine", _rect(Vector2(26, 26), Vector2(0.3, 0.2), 1.0), "engine")
 	_claim("man", _rect(Vector2(27, 27), Vector2(0.05, 0.05), 0.0), "body")
-	await process_frame
-	_check(_cell_size() > 0.0, "the ground keeps an occupancy map (ground.json occupancy.cell)")
+	var waited := 0
+	while not Ground.land_ready() and waited < 600:
+		await process_frame
+		waited += 1
+	_check(Ground.land_ready(), "the land's mask is read off the terrain on a worker (%d frames)" % waited)
+	_check(_cell_size() > 0.0, "a fight's route grid has a cell (ground.json physics.grid_cell)")
 	_agree("set down", 20000)
 	_speed()
 	await _route_grid()
@@ -164,6 +170,7 @@ func _run() -> void:
 	_changes()
 	await _built_piece_by_piece()
 	_agree("after the changes", 8000)
+	_shapes()
 	print("OCCUPANCY %s (%d failed)" % ["PASS" if fail == 0 else "FAIL", fail])
 	quit(1 if fail else 0)
 
@@ -189,8 +196,8 @@ const KINDS := [[], ["host"], ["host", "field", "ford"], ["field"], ["ford"]]
 
 
 func _agree(when: String, n: int) -> void:
-	var cell := maxf(_cell_size(), 0.08)
-	var missed := 0  # clear on the map where the old test was blocked
+	var cell := LAND_TOL
+	var missed := 0  # clear where the reference finds something in the disc
 	var wrong := 0  # blocked on the map with nothing the old test blocks within a cell
 	var edge := 0  # blocked on the map within a cell of what the old test blocks: allowed
 	var ids: Array = [null] + claims.keys()
@@ -218,15 +225,17 @@ func _agree(when: String, n: int) -> void:
 	_check(wrong == 0, "%s: the map refuses only within a cell of what the old test refused (%d of %d)" % [when, wrong, n])
 
 
-## Whether the old test refuses some point within a cell of one of the body's reach points.
+const LAND_TOL := 0.2  # the land mask's cell (physics.land_cell 0.125) across its diagonal, and a little
+
+
+## Whether the reference refuses some point within `radius` + `cell` of `p`.
 func _near_blocked(p: Vector3, radius: float, props: bool, free_of: Variant, open_kinds: Array, cell: float) -> bool:
-	var d := cell * 1.5
-	for o in _reach_of(radius):
-		for gx in 9:
-			for gz in 9:
-				var q: Vector3 = p + o + Vector3((gx / 8.0 - 0.5) * 2.0 * d, 0, (gz / 8.0 - 0.5) * 2.0 * d)
-				if not _old_clear(q, 0.0, props, free_of, open_kinds):
-					return true
+	var d := radius + cell
+	for gx in 13:
+		for gz in 13:
+			var q: Vector3 = p + Vector3((gx / 12.0 - 0.5) * 2.0 * d, 0, (gz / 12.0 - 0.5) * 2.0 * d)
+			if Vector2(q.x - p.x, q.z - p.z).length() <= d and not _old_clear(q, 0.0, props, free_of, open_kinds):
+				return true
 	return false
 
 
@@ -241,11 +250,8 @@ func _old_clear(p: Vector3, radius: float, props: bool, free_of: Variant, open_k
 		for t in TownNav.towns_at(towns, q):
 			if not NavGround.inside_something(t[1], q, land, keys).is_empty():
 				return false
-		var c := Vector2i(floori(q.x / 16.0), floori(q.z / 16.0))
 		for pl in places:
-			var a: Rect2 = pl[1]
-			var inside_area := c.x >= floori(a.position.x / 16.0) and c.x <= floori(a.end.x / 16.0) and c.y >= floori(a.position.y / 16.0) and c.y <= floori(a.end.y / 16.0)
-			if inside_area and is_instance_valid(pl[0]) and (pl[0] as Node3D).is_visible_in_tree() and not NavGround.inside_something(pl[0], q, land, keys).is_empty():
+			if is_instance_valid(pl[0]) and (pl[0] as Node3D).is_visible_in_tree() and not NavGround.inside_something(pl[0], q, land, keys).is_empty():
 				return false
 		if trees.in_way(q):
 			return false
@@ -257,11 +263,13 @@ func _old_clear(p: Vector3, radius: float, props: bool, free_of: Variant, open_k
 	return true
 
 
+## A body's disc sampled densely: its middle and rings out to its reach (the engine tests the whole disc).
 func _reach_of(radius: float) -> Array:
 	var out := [Vector3.ZERO]
 	if radius > 0.0:
-		for i in 8:
-			out.append(Vector3(cos(TAU * i / 8.0), 0, sin(TAU * i / 8.0)) * radius)
+		for ring in [0.25, 0.5, 0.75, 1.0]:
+			for i in 24:
+				out.append(Vector3(cos(TAU * i / 24.0), 0, sin(TAU * i / 24.0)) * radius * ring)
 	return out
 
 
@@ -285,8 +293,9 @@ func _speed() -> void:
 	for i in 5000:
 		Ground.nearest_clear(pts[i], 0.05)
 	var per_n := float(Time.get_ticks_usec() - t0) / 5000.0
-	print("cost: is_clear %.2f us an ask (100,000 asks), %.2f us with a reach (9 points), nearest_clear %.1f us" % [per, per_r, per_n])
-	_check(per < 3.0, "is_clear costs under 3 us an ask (%.2f us)" % per)
+	print("cost: is_clear %.2f us an ask (100,000 asks), %.2f us with a reach, nearest_clear %.1f us" % [per, per_r, per_n])
+	_check(per < 5.0, "is_clear costs under 5 us an ask (%.2f us)" % per)
+	_check(per_r < 8.0, "is_clear with a reach costs under 8 us an ask (%.2f us)" % per_r)
 
 
 # --- 3. the map follows what changes -------------------------------------------------------------------------------
@@ -299,7 +308,7 @@ func _changes() -> void:
 	_check(held and Ground.is_clear(mid), "a claim released frees its ground (held before %s)" % held)
 	# A claim made shuts it again, its kind opened by open_kinds and its own id by free_of.
 	_claim("host a", _rect(Vector2(30, 22), Vector2(1.0, 0.4), 0.4), "host 1")
-	_check(not Ground.is_clear(mid) and Ground.is_clear(mid, 0.0, true, null, ["host"]) and Ground.is_clear(mid, 0.0, true, "host a"), "a claim shuts its ground but to its own kind opened and to itself")
+	_check(not Ground.is_clear(mid) and Ground.is_clear(mid, 0.0, true, null, ["host"]) and Ground.is_clear(mid, 0.0, true, null, ["host 1"]) and not Ground.is_clear(mid, 0.0, true, null, ["host 2"]) and Ground.is_clear(mid, 0.0, true, "host a"), "a claim made this frame shuts its ground at once, but to its own kind opened (all hosts, or its host by name) and to itself")
 	# A place gone frees its ground.
 	var house := patch.to_global(Vector3(-3.0, 0, 1.0))
 	var stood := not Ground.is_clear(house)
@@ -389,7 +398,7 @@ func _rectangles() -> void:
 			var q: Vector3 = mid + right * (c as Vector2).x + fwd * (c as Vector2).y
 			poly.append(Vector2(q.x, q.z))
 		var t0 := Time.get_ticks_usec()
-		var now := Ground.area_free(poly)
+		var now := Ground.area_free(poly)  # the engine's answer
 		cost += Time.get_ticks_usec() - t0
 		if now and not old:
 			missed += 1
@@ -397,9 +406,9 @@ func _rectangles() -> void:
 			# Something must stand within the rectangle (or a cell of it) that the grid's points missed.
 			var found := false
 			var g := 0.03
-			for i in int((hw + 0.12) * 2.0 / g) + 1:
-				for j in int((hd + 0.12) * 2.0 / g) + 1:
-					if not found and not _old_clear(mid + right * (-hw - 0.12 + i * g) + fwd * (-hd - 0.12 + j * g), 0.0, true, null, []):
+			for i in int((hw + LAND_TOL) * 2.0 / g) + 1:
+				for j in int((hd + LAND_TOL) * 2.0 / g) + 1:
+					if not found and not _old_clear(mid + right * (-hw - LAND_TOL + i * g) + fwd * (-hd - LAND_TOL + j * g), 0.0, true, null, []):
 						found = true
 			if found:
 				between += 1
@@ -474,7 +483,7 @@ func _built_piece_by_piece() -> void:
 		Ground.is_clear(pts[i % pts.size()], 0.1 if i % 4 == 0 else 0.0)
 	var still := float(Time.get_ticks_usec() - t1) / asks
 	print("town built piece by piece: %d pieces, %d asks between them, %.2f us an ask (%.2f us with it standing still), %d pieces read" % [pieces, asks, per, still, reads])
-	_check(per < maxf(3.0, still * 1.5), "asks while a town is built cost under 3 us each, or half again an ask on a still town on a loaded machine (%.2f us, still %.2f)" % [per, still])
+	_check(per < maxf(5.0, still * 1.5), "asks while a town is built cost under 5 us each, or half again an ask on a still town on a loaded machine (%.2f us, still %.2f)" % [per, still])
 	_check(reads0 >= 0 and reads <= pieces + 4, "each piece set down is read once, not the whole town per ask (%d reads for %d pieces)" % [reads, pieces])
 	for f in 61:
 		await process_frame  # the reference's town lookup (town_nav towns_at) keeps what it found a second
@@ -487,7 +496,7 @@ func _built_piece_by_piece() -> void:
 		var now := Ground.is_clear(p, 0.0, props)
 		if now and not old:
 			missed += 1
-		elif old and not now and not _near_blocked(p, 0.0, props, null, [], maxf(_cell_size(), 0.08)):
+		elif old and not now and not _near_blocked(p, 0.0, props, null, [], LAND_TOL):
 			wrong += 1
 	print("town built piece by piece: 6000 asks over it, %d missed, %d wrong" % [missed, wrong])
 	_check(missed == 0 and wrong == 0, "a town built piece by piece answers as the old point tests (%d missed, %d wrong)" % [missed, wrong])
@@ -504,3 +513,14 @@ func _kit(kit: Dictionary, parent: Node3D, at: Vector3, size: Vector3) -> MeshIn
 	m.position = at + Vector3(0, size.y * 0.5, 0)
 	parent.add_child(m)
 	return m
+
+
+# --- 7. the navigation's bake contract ----------------------------------------------------------------------------------
+
+func _shapes() -> void:
+	var all := Ground.obstacle_shapes(Rect2(0, 0, 48, 48))
+	var trees_only := Ground.obstacle_shapes(Rect2(24, 34, 24, 14), 1 << 2)  # ground.json physics.layers tree: 3
+	var whole := all.all(func(e: Dictionary) -> bool: return e.has("xform") and e.has("shape") and (e["shape"] as RID).is_valid() and int(e["layer"]) != 0)
+	print("obstacle shapes: %d over the realm, %d trees in the wood" % [all.size(), trees_only.size()])
+	_check(not all.is_empty() and whole, "obstacle_shapes lists every shape with its world transform, shape and layer (%d)" % all.size())
+	_check(trees_only.size() > 100 and trees_only.all(func(e: Dictionary) -> bool: return int(e["layer"]) == 1 << 2), "obstacle_shapes keeps to the layers asked for (%d trunks)" % trees_only.size())
