@@ -344,18 +344,10 @@ func _go(m: Dictionary, to: Vector3, speed: float, then: StringName) -> void:
 ## Once a second: a breach newly open near a party's stretch of wall turns the party to it (and sends it at once),
 ## opens the gap on the ground, and raises the block that holds it.
 func _watch_breaches() -> void:
-	if not Engine.has_meta("stone_walls"):
+	var gap := _gap_now()
+	if gap == Vector3.INF:
 		return
-	var walls: Node = Engine.get_meta("stone_walls")
 	var k: Dictionary = Data.value("walls", "assault", {})
-	# One gap for the whole storm: the open breach nearest the siege's front (the mean of the parties' wall feet),
-	# within assault.reach of it, the same breach the siege's frame shows (autoplay breach); every party funnels into
-	# it (Total War: the whole host goes for the gap). Group render g21 siege.jpg: a breach open at one end of the
-	# front, each party looking only round its own stretch of wall, the host standing in camp as s10 became s30.
-	var found: Array = walls.breaches_near(_wall, float(k.get("reach", 6.0)))
-	if found.is_empty():
-		return
-	var gap: Vector3 = found[0]
 	for p in parties.size():
 		var men: Array = parties[p]
 		if men.is_empty():
@@ -386,6 +378,23 @@ func _watch_breaches() -> void:
 			_block(_held_at[key], k)
 		if fresh:
 			_send_party(p)  # the gap is open: the party goes now, not at its next turn
+
+
+## Where the storm goes in, or INF while it can't: one gap for the whole storm, the open breach nearest the siege's
+## front (the mean of the parties' wall feet) within assault.reach of it, the same breach the siege's frame shows
+## (autoplay breach); every party funnels into it (Total War: the whole host goes for the gap; g21 siege.jpg: each
+## party looking only round its own stretch of wall, the host standing in camp as s10 became s30). A town with no wall
+## at its front (walls.gd walled_near) has no breach to wait for: once Freeciv storms it, the gap is its edge where
+## the parties stand (Mac 2026-11-15, "everyone is waiting": an open town's storm stood at "wall" for ever).
+func _gap_now() -> Vector3:
+	var walls: Node = Engine.get_meta("stone_walls") if Engine.has_meta("stone_walls") else null
+	var reach := float((Data.value("walls", "assault", {}) as Dictionary).get("reach", 6.0))
+	var found: Array = walls.breaches_near(_wall, reach) if walls else []
+	if not found.is_empty():
+		return found[0]
+	if _storm and (walls == null or not walls.walled_near(_wall, reach)):
+		return _wall
+	return Vector3.INF
 
 
 ## The holder's men behind a breach: a block in rows, facing out at it.

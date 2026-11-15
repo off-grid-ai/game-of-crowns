@@ -291,6 +291,20 @@ func breaches_near(at: Vector3, reach: float) -> Array:
 	return out
 
 
+## Whether any town's wall (whole or broken) runs within `reach` (world units) of `at`: a bay of its curtain.
+func walled_near(at: Vector3, reach: float) -> bool:
+	for id in _town_walls:
+		var root = _town_walls[id]["root"]
+		if not is_instance_valid(root):
+			continue
+		for s in _town_walls[id]["bays"]:
+			for b in _town_walls[id]["bays"][s]:
+				var p: Vector3 = (root as Node3D).global_transform * ((b[0] as Vector3) * S)
+				if Vector2(p.x - at.x, p.z - at.z).length() < reach:
+					return true
+	return not _demo.is_empty() and is_instance_valid(_demo["wall"]) and _demo["wall"].distance_to(at) < reach
+
+
 ## The top of any wall's rubble under a world point (world y), or -INF: the ramp
 ## a breach leaves, which men storming it climb (army_assault.gd).
 func rubble_height(at: Vector3) -> float:

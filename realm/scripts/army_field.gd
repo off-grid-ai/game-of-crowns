@@ -389,8 +389,13 @@ func _keep_up() -> void:
 			if not r.has("alive"):
 				continue
 			_backs(r)
-			if r["moved"] or Mover.of(r["node"]).moving():
+			# Any change to where it stands (a move, a turn where it stands, a wheel): its fallen put back where they
+			# fell, each on the land under him (Mac 2026-11-15: a dead man flat in mid-air; a turn swung the fallen
+			# round the block's middle, off the ground they lay on).
+			var xf := (r["node"] as Node3D).global_transform
+			if r["moved"] or Mover.of(r["node"]).moving() or not xf.is_equal_approx(r.get("kept_xf", Transform3D())):
 				_keep_dead(r)
+				r["kept_xf"] = xf
 				r["moved"] = false
 
 
@@ -607,20 +612,44 @@ func _advance(r: Dictionary, _dt: float) -> void:
 	var look := -b.global_transform.basis.z
 	look.y = 0.0
 	look = look.normalized()
-	var spot := theirs - look * (float(r["d"]) * 0.5 + contact)
+	# Its own place on that front: beside any of its side already closing there, never on it (Mac 2026-11-15: three
+	# blocks heaped in one lump, each sent to the same foe's front).
+	var spot := _free_spot(r, theirs - look * (float(r["d"]) * 0.5 + contact), look)
 	spot.y = at.y
-	var across := absf((spot - at).dot(look.cross(Vector3.UP)))
-	if across > (float(r["w"]) + float(foe["w"])) * 0.5 * (1.0 - Data.num(F, "field.overlap", 0.6)):
+	r["spot"] = spot
+	if Vector2(spot.x - at.x, spot.z - at.z).length() > contact or gap > contact * 2.0:
 		Mover.of(r["node"]).toward(spot, Data.num(F, "field.advance", 0.12), look)
 		return
-	if gap <= contact:
-		r["foe"] = foe
-		_send(r, &"engage")
-		if foe.get("state_name", "") in ["stand", "volley", "advance"]:
-			foe["foe"] = r
-			_send(foe, &"engage")
-		return
-	Mover.of(r["node"]).toward(spot, Data.num(F, "field.advance", 0.12), look)
+	r["foe"] = foe
+	_send(r, &"engage")
+	if foe.get("state_name", "") in ["stand", "volley", "advance"]:
+		foe["foe"] = r
+		_send(foe, &"engage")
+
+
+## A regiment's place on a front: `spot` (world, its middle, facing `look`), or the nearest beside it along the
+## front, a regiment's width and army.gap at a time, that no other regiment of its side holds or is closing on (its
+## own spot while it advances or fights, else where it stands). Rectangles side by side, never one over another.
+func _free_spot(r: Dictionary, spot: Vector3, look: Vector3) -> Vector3:
+	var across := look.cross(Vector3.UP).normalized()
+	var w := float(r["w"])
+	var d := float(r["d"])
+	var gap := Data.num("army", "gap", 0.35)
+	for k in 13:
+		var step := float((k + 1) / 2) * (1.0 if k % 2 == 1 else -1.0)
+		var q := spot + across * step * (w + gap)
+		var free := true
+		for x in (sides[int(r["side"])] as Army).rows():
+			if is_same(x, r) or x.get("state_name", "") == "rout" or int(x.get("living", 1)) <= 0:
+				continue
+			var there: Vector3 = x["spot"] if x.has("spot") and x.get("state_name", "") in ["advance", "fight"] else (x["node"] as Node3D).global_position
+			var off := there - q
+			if absf(off.dot(across)) < (w + float(x["w"])) * 0.5 + gap and absf(off.dot(look)) < (d + float(x["d"])) * 0.5 + gap:
+				free = false
+				break
+		if free:
+			return q
+	return spot
 
 
 ## At blows: the front ranks cut and reel, men fall from the front, the rest stand ready behind; the front surges a
@@ -1174,9 +1203,11 @@ func _waves(st: Dictionary, dt: float) -> void:
 				_queue.append(r)
 				break
 	var face := atan2(inward.x, inward.z)
+	var back := k("front", 0.1)  # the front regiment's front this far before the gap; each behind one block and army.gap back
 	for i in _queue.size():
 		var r: Dictionary = _queue[i]
-		var goal := gap - inward * (k("front", 0.1) + i * k("queue", 0.35)) + across * (_rng.randf_range(-0.05, 0.05) if i > 0 else 0.0)
+		var goal := gap - inward * (back + float(r["d"]) * 0.5)
+		back += float(r["d"]) + k("queue", 0.35)
 		if (r["goal"] as Vector3).distance_to(goal) > 0.05:
 			_go(r, goal, true, "attack" if i == 0 else "ready", face)
 
@@ -1193,7 +1224,7 @@ func _hold_line(st: Dictionary) -> void:
 	var full := maxf(1.0, (st["men"] as Array).size())
 	for i in rows.size():
 		var r: Dictionary = rows[i]
-		var goal := gap + inward * (k("holders_at", 0.35) + (i / 3) * 0.3) + across * ((i % 3) - 1) * 0.3
+		var goal := gap + _block_at(r, i, 3, k("holders_at", 0.35), inward, across)
 		if (r["goal"] as Vector3).distance_to(goal) > 0.05:
 			_go(r, goal, false, "attack" if i < 3 else "block", face)
 		(sides[1] as Army).waver(r, 1.0 - standing / full)
@@ -1206,20 +1237,31 @@ func _pour_in(st: Dictionary) -> void:
 		return
 	var gap: Vector3 = st["gap"]
 	var inward: Vector3 = st["inward"]
+	var across: Vector3 = st["across"]
 	var town: Vector3 = ai.town_at if ai.town_at != Vector3.INF else gap + inward * 2.0
+	var j := 0
 	for r in (sides[1] as Army).rows():
 		if not r.get("broke", false):
 			r["broke"] = true
 			(sides[1] as Army).waver(r, 1.0)
-			var away := town + Vector3(_rng.randf_range(-1.0, 1.0), 0, _rng.randf_range(-1.0, 1.0)) * k("spread", 1.2)
-			_go(r, away, true, "rest", float(r["yaw"]))
+			_go(r, town + _block_at(r, j, 3, 0.0, inward, across), true, "rest", float(r["yaw"]))
+		j += 1
 	var i := 0
 	for r in (sides[0] as Army).rows():
 		if not r.get("in", false):
 			r["in"] = true
-			var into := gap + inward * (0.6 + 0.4 * (i % 4)) + Vector3(_rng.randf_range(-1.0, 1.0), 0, _rng.randf_range(-1.0, 1.0)) * k("spread", 1.2) * 0.6
-			_go(r, into, true, "ready", atan2(inward.x, inward.z))
+			_go(r, gap + _block_at(r, i, 4, k("spread", 1.2), inward, across), true, "ready", atan2(inward.x, inward.z))
 		i += 1
+
+
+## Where the `i`th of a side's regiments stands round a point, `abreast` to a row (offset, world): rows from `from`
+## out along `inward`, each a block's depth and army.gap behind the last, blocks side by side across, a block's width
+## and army.gap apart (Mac 2026-11-15: the storm's regiments stood 0.3 apart, heaped in one lump).
+func _block_at(r: Dictionary, i: int, abreast: int, from: float, inward: Vector3, across: Vector3) -> Vector3:
+	var gap := Data.num("army", "gap", 0.35)
+	var w := float(r["w"]) + gap
+	var d := float(r["d"]) + gap
+	return inward * (from + float(r["d"]) * 0.5 + (i / abreast) * d) + across * (float(i % abreast) - (abreast - 1) * 0.5) * w
 
 
 ## The besiegers' archers loose fire arrows over the wall into the town; now and then a roof catches.
