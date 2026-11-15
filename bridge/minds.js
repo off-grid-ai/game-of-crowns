@@ -11,7 +11,7 @@ import { townsfolk } from "./townsfolk.js";
 import { cityName, houseFor } from "./narrator.js";
 import { calendar } from "./calendar.js";
 import { readJson } from "./chronicles.js";
-import { think, modelQueue } from "./claude.js";
+import { modelQueue } from "./claude.js";
 
 const FEELINGS = ["fear", "anger", "joy", "grief", "faith", "hunger"];
 const CALM = { fear: 0.2, anger: 0.15, joy: 0.4, grief: 0.1, faith: 0.4, hunger: 0.2 };
@@ -130,7 +130,6 @@ export class Minds {
     this.hot = {};      // id -> until (ms)
     this.warm = {};     // city -> until (ms)
     this.hours = {};    // city -> { hour, at } as the town last told us
-    this.thinking = new Set();
     this.timer = null;
   }
 
@@ -317,7 +316,6 @@ export class Minds {
     const steps = this.seen.turn ? Math.min(8, Math.max(1, turn - this.seen.turn)) : 1;
     for (let s = 0; s < steps; s++) for (const m of Object.values(this.minds)) if (!m.gone) this.season(m, m.town != null ? this.realm.town(m.town) : null);
     this.seen.turn = turn;
-    this.warmThoughts();
     this.save();
   }
 
@@ -471,10 +469,8 @@ export class Minds {
     }
     for (const i of near) this.hot[`folk:${Number(city)}:${Number(i)}`] = Math.max(this.hot[`folk:${Number(city)}:${Number(i)}`] ?? 0, now + HOT_MS);
     for (const id of [...spoken, ...cast]) this.spoken(String(id));
-    // Hot minds think for themselves: the model plans their next stretch of day.
-    const hot = this.tiers().hot;
-    for (const id of hot) this.thinkPlan(id, "hot");
-    return { hot: hot.length, warm: this.tiers().warm.length };
+    // Minds plan by their rules (rulePlan), never the model (Mac 2026-11-15, the fps round: "remove all those calls").
+    return { hot: this.tiers().hot.length, warm: this.tiers().warm.length };
   }
 
   spoken(id) {
@@ -506,12 +502,6 @@ export class Minds {
     return out;
   }
 
-  // Now and then a warm mind gets a thought of its own, behind the hot ones in the queue.
-  warmThoughts() {
-    const warm = this.tiers().warm;
-    for (const id of warm) if (hash(id + this.now()) % 12 === 0) this.thinkPlan(id, "warm");
-  }
-
   hour(city, asked) {
     if (asked != null && asked !== "" && !Number.isNaN(Number(asked))) return Number(asked);
     const told = this.hours[city];
@@ -531,8 +521,7 @@ export class Minds {
     const out = t.minds.map((m) => {
       // Someone a story took (dead, left, gone into a lord's service) walks no more.
       if (m.gone) return { i: m.i, id: m.id, doing: m.gone, where: "gone", with: [], until: until % 24, mood: round(m.mood), feeling: this.feeling(m), tier: "cold", by: "story", bonds: {} };
-      const own = m.plan && m.plan.part === part && m.plan.turn === this.now() && m.plan.by === "model" ? m.plan : null;
-      const p = own ?? { ...this.rulePlan(m, part, season, place, hour), by: "rules" };
+      const p = { ...this.rulePlan(m, part, season, place, hour), by: "rules" };
       return { i: m.i, id: m.id, doing: p.doing, where: p.where, with: [], until: until % 24, mood: round(m.mood), feeling: this.feeling(m), tier: this.tier(m.id), by: p.by, bonds: m.bonds };
     });
     // Who they're with: those they're bound to at the same place, else whoever stands nearest.
@@ -590,36 +579,6 @@ export class Minds {
     }
   }
 
-  // A hot mind's plan from the model, in their own words: what they'll do this
-  // stretch of the day, and where, from the town's places.
-  async thinkPlan(id, pri) {
-    const m = this.minds[id];
-    if (!m || m.gone || this.thinking.has(id) || m.town == null || !String(id).startsWith("folk:")) return;
-    const hour = this.hour(m.town);
-    const [part] = block(hour);
-    if (part === "night" || (m.plan?.by === "model" && m.plan.part === part && m.plan.turn === this.now())) return;
-    this.thinking.add(id);
-    const asked = Date.now();
-    try {
-      const rule = this.rulePlan(m, part, calendar(this.now()).season, this.realm.town(m.town) ?? {}, hour);
-      const out = await think(
-        `You are ${m.name}, ${m.age}, ${m.station} in ${cityName(m.town)}. By nature ${m.nature.join(", ")}. You feel ${this.feeling(m)}. You want ${m.wants.map((w) => w.text).join("; ")}. You remember: ${m.memories.slice(-3).map((x) => x.text).join(" ")}
-Answer with only: a place, a dash, then what you do there in five to eight plain words. Places: home, bench, field, well, market, tavern, sept.`,
-        `It is ${part === "work2" ? "afternoon" : part === "dawn" ? "dawn" : part === "meal" ? "midday" : part === "work" ? "morning" : "evening"} in ${calendar(this.now()).season}. Your habit would be: ${rule.where} - ${rule.doing}. What do you do now?`,
-        pri,
-        30,
-      );
-      const got = String(out ?? "").toLowerCase().match(/\b(home|bench|field|well|market|tavern|sept)\b\s*[-–—:,]\s*(.{4,60})/);
-      if (got) {
-        const doing = got[2].replace(/[."]+$/, "").replace(/^i\s+/, "").trim();
-        m.plan = { doing, where: got[1], with: [], until: block(hour)[1] % 24, part, turn: this.now(), by: "model", tier: pri, thoughtMs: Date.now() - asked };
-        this.save();
-      }
-    } finally {
-      this.thinking.delete(id);
-    }
-  }
-
   // --- views ---------------------------------------------------------------------
 
   view(id) {
@@ -636,7 +595,7 @@ Answer with only: a place, a dash, then what you do there in five to eight plain
   }
 
   queue() {
-    return { tiers: (({ hot, warm, cold }) => ({ hot: hot.length, warm: warm.length, cold }))(this.tiers()), thinking: this.thinking.size, model: modelQueue() };
+    return { tiers: (({ hot, warm, cold }) => ({ hot: hot.length, warm: warm.length, cold }))(this.tiers()), model: modelQueue() };
   }
 }
 
