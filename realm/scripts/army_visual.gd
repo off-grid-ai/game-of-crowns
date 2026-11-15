@@ -8,6 +8,7 @@ extends RefCounted
 
 const Data := preload("res://scripts/data.gd")
 const MeshLods := preload("res://scripts/mesh_lods.gd")  # the one way detail levels are made
+const Kept := preload("res://scripts/kept.gd")  # what is made once and kept (the baked soldiers' meshes)
 const Heraldry := preload("res://scripts/heraldry.gd")
 const KNIGHT := "armies/meshy_knight"  # the fallback a regiment wears when its folder is not baked yet (the Meshy knight, docs/art/army)
 
@@ -92,6 +93,10 @@ static func row_for_mesh(asset: String, row: Dictionary) -> Dictionary:
 ## (ImporterMesh.generate_lods, meshoptimizer): a level is only a shorter index list over the same vertices, so
 ## every vertex keeps its column; they are kept only when the vertices came back untouched, and Godot picks the
 ## level per regiment by its size on screen (lod.bias), one draw per regiment as before.
+## Made once and kept (kept.gd, folder troops: the game's baked copy, made by bake(), else the player's): the same
+## soldier.glb gives the same mesh every launch, so its arrays and levels are read back, never welded and simplified
+## again. Its file is named by the import's own shape (its box, each surface's vertex and index counts) and the level
+## numbers (lod.least, lod.mergeAngle), so a soldier baked again by tools/vat_bake.py is made afresh.
 static func _soldier_mesh(dir: String, quiet: bool) -> ArrayMesh:
 	var scene: PackedScene = load(dir + "soldier.glb")
 	if scene == null:
@@ -103,8 +108,17 @@ static func _soldier_mesh(dir: String, quiet: bool) -> ArrayMesh:
 		return null
 	var src: Mesh = (mi[0] as MeshInstance3D).mesh
 	root.free()
-	var mesh := ArrayMesh.new()
 	var lod := bool(Data.value("army", "lod.on", true)) and not OS.get_cmdline_user_args().has("--army-lod=off")
+	var shape: Array = [src.get_aabb(), lod, Data.num("army", "lod.least", 400.0), Data.num("army", "lod.mergeAngle", 25.0)]
+	for i in src.get_surface_count():
+		shape.append([(src as ArrayMesh).surface_get_array_len(i), (src as ArrayMesh).surface_get_array_index_len(i)] if src is ArrayMesh else i)
+	var kept := Kept.path("troops", "%s_%s" % [dir.trim_prefix("res://assets/").trim_suffix("/").replace("/", "~"), str(shape).md5_text().substr(0, 12)])
+	if Kept.has(kept):
+		var was := load(kept) as ArrayMesh
+		if was and was.get_surface_count() > 0:
+			return was
+	var mesh := ArrayMesh.new()
+	var plain := ImporterMesh.new()  # the same surfaces as plain arrays: what the kept file is written from (kept_mesh.gd)
 	var tris: Array = []
 	for i in src.get_surface_count():
 		var arrays := src.surface_get_arrays(i)
@@ -114,13 +128,30 @@ static func _soldier_mesh(dir: String, quiet: bool) -> ArrayMesh:
 		arrays[Mesh.ARRAY_TANGENT] = null  # the shader rebuilds its own frame from the baked normals
 		var lods := _lods(arrays) if lod else {}
 		mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays, [], lods)
+		plain.add_surface(Mesh.PRIMITIVE_TRIANGLES, arrays, [], lods)
 		var n: Array = [(arrays[Mesh.ARRAY_INDEX] as PackedInt32Array).size() / 3 if arrays[Mesh.ARRAY_INDEX] != null else (arrays[Mesh.ARRAY_VERTEX] as PackedVector3Array).size() / 3]
 		for k in lods:
 			n.append((lods[k] as PackedInt32Array).size() / 3)
 		tris.append(n)
 	if not quiet:
 		print("ARMY %s triangles by level %s" % [dir.get_base_dir().get_file(), str(tris)])
+	Kept.keep(mesh, kept, plain)  # before its material goes on (soldier()): the file holds the arrays alone
 	return mesh
+
+
+## Every unit's baked soldier made and kept into the game (tools/bake.gd, Kept.baking on): army.json units' meshes
+## and every mesh row, each folder once. The number made.
+static func bake() -> int:
+	var dirs := {}
+	for row in (Data.value("army", "units", {}) as Dictionary).values():
+		dirs[String((row as Dictionary).get("asset", KNIGHT))] = true
+	for asset in (Data.value("army", "meshes", {}) as Dictionary).keys():
+		dirs[String(asset)] = true
+	var made := 0
+	for asset in dirs:
+		if ResourceLoader.exists("res://assets/%s/soldier.glb" % asset) and _soldier_mesh("res://assets/%s/" % asset, true) != null:
+			made += 1
+	return made
 
 
 ## A surface's lighter levels ({screen size: indices}, mesh_lods.gd: welded at its seams, so every vertex keeps its
