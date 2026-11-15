@@ -499,7 +499,7 @@ func _grow_standing(best: int, job: Dictionary) -> void:
 	var standing: Node3D = towns[best]["node"]
 	var homes_before: Array = standing.get_meta("homes", [])
 	var add: Node3D = await _grow_town(standing, job["c"], job["house"])
-	await _occlude(add)
+	await _occlude(add, standing)
 	await _pace()
 	var pt0 := Time.get_ticks_usec()
 	PerfTools.add("build@last", pt0 - _step_at)
@@ -852,7 +852,8 @@ func _footprint_rect(root: Node3D, at: Vector3, size: Vector2, rot: float, top :
 ## (its footprint drawn in toward its middle by towns.json occlude.inset, up to occlude.height of its roof's height
 ## over its ground) and the castle's (its height from its meshes), made as the town is raised, so it is kept in the
 ## town's file. Drawn small, inside the walls, so nothing pops. A batch is culled whole: the win is on bodies and props.
-func _occlude(root: Node3D) -> void:
+## `standing`: the town a grown town's additions (`root`, _grow_town) go onto, where its castle stands.
+func _occlude(root: Node3D, standing: Node3D = null) -> void:
 	var k: Dictionary = Data.value("towns", "occlude", {})
 	var min_area := float(k.get("min_area", 0.2))
 	var min_h := float(k.get("min_height", 0.15))
@@ -861,7 +862,8 @@ func _occlude(root: Node3D) -> void:
 	var fps: Array = root.get_meta("footprints", [])
 	var tops: Array = root.get_meta("tops", [])
 	var castle_poly: PackedVector2Array = root.get_meta("castle_poly", PackedVector2Array())
-	var castle := root.get_node_or_null("Castle") as Node3D
+	var home: Node3D = standing if standing else root
+	var castle := home.get_node_or_null("Castle") as Node3D
 	var verts := PackedVector3Array()
 	var idx := PackedInt32Array()
 	for i in fps.size():
@@ -872,7 +874,7 @@ func _occlude(root: Node3D) -> void:
 			continue
 		var top := float(tops[i]) if i < tops.size() else -1.0
 		if castle and fp == castle_poly:
-			top = _mesh_top(castle, root)
+			top = _mesh_top(castle, home)
 		if top <= 0.0:
 			continue
 		var area := 0.0
