@@ -4,7 +4,8 @@ extends Node3D
 ## in a corner whose orders always sit in the same cell with the same key (its "grid" hotkeys: T Y U I O,
 ## left to right); right-click on the ground or a town marches. From Total War's campaign map: an army is
 ## one thing, its banner glows when selected, and where it is ordered shows as a dotted route on the map.
-##   click a host's standard   select it (the ring and the glow); click the land elsewhere to let it go
+##   click a host's standard   select it (the ring and the glow); click the land elsewhere to let it go;
+##                             shift-click another to add it (or take it out): every order goes to them all
 ##   click one of its regiments select its host, that regiment marked (army.gd's regiments, Total War)
 ##   March / Attack / Besiege / Garrison   then click where (the ground, a foe's host, a town); right-click or Esc
 ##                             lets it go
@@ -29,6 +30,8 @@ const FILE := "host_command"
 
 var main: Node
 var selected := -1  # the selected host's id (bridge/hosts.js: its lowest company's id), or -1
+var also: Array[int] = []  # hosts shift-clicked in beside it: each takes the same orders (Warcraft III's group)
+var _also_rings := {}  # id -> its ring
 var _aim := ""  # an order waiting for the King to click where (its row's aim: march, attack, besiege, garrison)
 var _card: PanelContainer
 var _title: Label
@@ -133,6 +136,15 @@ func take_click(ground: Vector3) -> bool:
 	var got := _pressed
 	_pressed = {}
 	var h := _host_of(int(got.get("unit", -1))) if not got.is_empty() else {}
+	if not h.is_empty() and selected >= 0 and Input.is_key_pressed(KEY_SHIFT) and int(h["id"]) != selected:
+		var id := int(h["id"])
+		if also.has(id):
+			also.erase(id)  # shift-click again: let that one go
+		else:
+			also.append(id)  # shift-click: in beside the selected host
+			main.barks.host("select", id)
+		_refresh()
+		return true
 	if not h.is_empty():
 		select(int(h["id"]))
 		main.barks.host("select", int(h["id"]))  # its captain answers, curt by the fourth click (barks.gd; Warcraft II)
@@ -161,6 +173,7 @@ func _host_of(unit: int) -> Dictionary:
 ## Selects a host (or none, -1): the ring, the glow and the card follow it.
 func select(id: int) -> void:
 	selected = id
+	also.clear()
 	_set_aim("")
 	var h := host(id)
 	if h.is_empty():
@@ -336,6 +349,12 @@ func order(kind: String, at := {}, done := Callable()) -> bool:
 	if at.has("face"):
 		body["face"] = at["face"]
 	_ask(body, done)
+	for id in also:  # the hosts shifted in beside it: the same order, each asked for itself (its own orders this season)
+		var h := host(id)
+		if not h.is_empty() and int(h.get("ordersLeft", 1)) != 0:
+			var b := body.duplicate()
+			b["host"] = id
+			_ask(b)
 	return true
 
 
@@ -372,6 +391,7 @@ func _process(delta: float) -> void:
 	if selected >= 0 and h.is_empty() and not hosts().is_empty():
 		select(-1)  # the host is no more (fallen, or joined another)
 	_ring.visible = not h.is_empty()
+	_rings_also()
 	_glow.visible = false
 	if not h.is_empty():
 		var at := _ground(h)
@@ -390,6 +410,28 @@ func _process(delta: float) -> void:
 		_routes()
 		_refresh()
 		_place_card()
+
+
+## A ring under each host shifted in beside the selected one, in the same colour, a little fainter; gone hosts drop out.
+func _rings_also() -> void:
+	for id in also.duplicate():
+		if host(id).is_empty():
+			also.erase(id)
+	for id in _also_rings.keys():
+		if not also.has(id):
+			(_also_rings[id] as Decal).queue_free()
+			_also_rings.erase(id)
+	for id in also:
+		var d: Decal = _also_rings.get(id)
+		if d == null:
+			d = _decal(_ring_texture(), Data.num(FILE, "ring.energy", 1.6) * 0.75)
+			_also_rings[id] = d
+		var h := host(id)
+		var r := maxf(minf(Data.num(FILE, "ring.max", 1.6), Data.num(FILE, "ring.radius", 0.55) + Data.num(FILE, "ring.per_company", 0.06) * float(h.get("companies", 1))), _seen_at(Data.num(FILE, "ring.screen", 0.0)))
+		d.global_position = _ground(h)
+		d.size = Vector3(r * 2.0, 1.2, r * 2.0)
+		d.modulate = _crown_colour()
+		d.visible = true
 
 
 ## The dotted road to where each host is bound: bright for the selected one, faint for the rest.
@@ -634,6 +676,8 @@ func _refresh() -> void:
 	var o: Variant = h.get("order")
 	_doing_l.add_theme_color_override("font_color", _order_colour(String(o.get("kind", ""))) if o is Dictionary else T.TEXT_2)
 	_card.tooltip_text = "%d companies" % int(h.get("companies", 0))
+	if not also.is_empty():
+		_title.text += String(Data.value(FILE, "also", " +{n}")).format({"n": also.size()})
 	_kinds.text = _makeup(h)
 	# The host's orders this season (bridge hosts.json ordersPerHost): the card says how many it has left, and with none its
 	# buttons are greyed with the reason rather than looking live and refusing.
