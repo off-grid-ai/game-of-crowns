@@ -326,6 +326,13 @@ func crowd_safe() -> Vector2:
 	return Vector2(_safe.x, _safe.z)
 
 
+## The walker in the crowd's sums (`on`) or out of them (its town off screen, or it stood down): an agent out of them
+## costs the avoidance nothing and is in nobody's way.
+func crowd_on(on: bool) -> void:
+	if _agent.is_valid():
+		NavigationServer3D.agent_set_avoidance_enabled(_agent, on)
+
+
 ## A child hurrying (`on`) slips through: less room, quicker, a short look ahead; else as a grown walker's.
 func crowd_child(on: bool, walk: float) -> void:
 	if not _agent.is_valid():
@@ -359,15 +366,13 @@ static func stands(body: Node3D) -> void:
 	NavigationServer3D.obstacle_set_use_3d_avoidance(o, false)
 	NavigationServer3D.obstacle_set_radius(o, 0.05)  # a body's width, as a walker's own
 	NavigationServer3D.obstacle_set_avoidance_layers(o, 1)
-	NavigationServer3D.obstacle_set_position(o, Vector3(1e5, 0, 1e5))
-	NavigationServer3D.obstacle_set_avoidance_enabled(o, true)
-	_stands[id] = [weakref(body), o]
+	NavigationServer3D.obstacle_set_avoidance_enabled(o, false)  # nobody's in its way until it is near the lens
+	_stands[id] = [weakref(body), o, false, Vector3.INF]  # [body, obstacle, near the lens, where it was last put]
 	var tree := Engine.get_main_loop() as SceneTree
 	if tree and not tree.process_frame.is_connected(_keep_stands):
 		tree.process_frame.connect(_keep_stands)
 
 
-## `body` is no obstacle (it walks in a crowd as an agent of its own).
 static func unstand(body: Node3D) -> void:
 	var e: Array = _stands.get(body.get_instance_id(), [])
 	if e.is_empty():
@@ -376,15 +381,20 @@ static func unstand(body: Node3D) -> void:
 	_stands.erase(body.get_instance_id())
 
 
+## Every OTHERS_EVERY seconds: those standing within sight of the lens (People.SEEN_TO and a walker's reach) are in the
+## walkers' way, put where they stand when they have moved; the rest are out of the avoidance altogether (no obstacle
+## in the crowd's sums, nothing asked of the server for them but the once they go out of reach). Timed movers.stands.
 static func _keep_stands() -> void:
 	var tree := Engine.get_main_loop() as SceneTree
 	_stands_left -= tree.root.get_process_delta_time() if tree else OTHERS_EVERY
 	if _stands_left > 0.0:
 		return
 	_stands_left = OTHERS_EVERY
+	var t0 := Time.get_ticks_usec()
 	var map := NavWorld.map(&"walk")
 	var cam := tree.root.get_viewport().get_camera_3d() if tree else null
-	var reach := People.SEEN_TO + OTHERS_REACH
+	var eye := cam.global_position if cam else Vector3.INF
+	var reach2 := (People.SEEN_TO + OTHERS_REACH) * (People.SEEN_TO + OTHERS_REACH)
 	travellers.clear()
 	for id in _stands.keys():
 		var e: Array = _stands[id]
@@ -393,12 +403,22 @@ static func _keep_stands() -> void:
 			NavigationServer3D.free_rid(e[1])
 			_stands.erase(id)
 			continue
-		if map.is_valid() and NavigationServer3D.obstacle_get_map(e[1]) != map:
-			NavigationServer3D.obstacle_set_map(e[1], map)
-		var near := n.is_inside_tree() and n.is_visible_in_tree() and (cam == null or n.global_position.distance_to(cam.global_position) <= reach)
-		NavigationServer3D.obstacle_set_position(e[1], n.global_position if near else Vector3(1e5, 0, 1e5))
-		if near and _on_road(n):
+		var at := n.global_position if n.is_inside_tree() else Vector3.INF
+		var near := at != Vector3.INF and (cam == null or at.distance_squared_to(eye) <= reach2) and n.is_visible_in_tree()
+		if near != bool(e[2]):
+			e[2] = near
+			if near and map.is_valid() and NavigationServer3D.obstacle_get_map(e[1]) != map:
+				NavigationServer3D.obstacle_set_map(e[1], map)
+			NavigationServer3D.obstacle_set_avoidance_enabled(e[1], near)
+			e[3] = Vector3.INF
+		if not near:
+			continue
+		if (e[3] as Vector3).distance_squared_to(at) > 0.0001:
+			e[3] = at
+			NavigationServer3D.obstacle_set_position(e[1], at)
+		if _on_road(n):
 			travellers.append(n)
+	PerfTools.add("movers.stands", Time.get_ticks_usec() - t0)
 
 
 static func _on_road(n: Node) -> bool:
@@ -441,7 +461,17 @@ func town_still() -> void:
 ## avoidance's nudges smoothed over a few frames. The step is held to the walk map (a shove never carries anyone
 ## through a wall) and never into the water. Getting nowhere counts as blocked: held a beat, then a step aside (`rng`
 ## picks the side); near the goal, or blocked three times, it gives the way up. Returns TOWN_*.
+## Probing, timed movers.town_step, and movers.town_nav for its asks of the walk map and the ground.
 func town_step(center: Vector3, speed: float, priority: float, delta: float, steer: Dictionary, rng: RandomNumberGenerator) -> int:
+	if not PerfTools.probing:
+		return _town_step(center, speed, priority, delta, steer, rng)
+	var t0 := Time.get_ticks_usec()
+	var got := _town_step(center, speed, priority, delta, steer, rng)
+	PerfTools.add("movers.town_step", Time.get_ticks_usec() - t0)
+	return got
+
+
+func _town_step(center: Vector3, speed: float, priority: float, delta: float, steer: Dictionary, rng: RandomNumberGenerator) -> int:
 	var n := get_parent() as Node3D
 	var route := town_route
 	var here := Vector2(n.position.x - center.x, n.position.z - center.z)
@@ -463,7 +493,10 @@ func town_step(center: Vector3, speed: float, priority: float, delta: float, ste
 	var step := vel * delta
 	if step.length() > to.length():
 		step = to
+	var tn := Time.get_ticks_usec() if PerfTools.probing else 0
 	step = TownNav.closest(center, here + step) - here
+	if PerfTools.probing:
+		PerfTools.add("movers.town_nav", Time.get_ticks_usec() - tn)
 	var gap := to.length()
 	if gap < _tw_best - 0.02:
 		_tw_best = gap
@@ -742,9 +775,12 @@ func _put(body: Node3D, at: Vector3) -> void:
 	# his radius): the ground's land cells are coarser (physics.land_cell, a cell wet if a corner is), and a route
 	# along a shore runs inside one; asked of them alone, he was set back off his own route each step and never got
 	# past the lake (nav_probe's steered fighter, once the ground's land read was done).
-	if fighting and (_steer or _shifting) and not Ground.is_clear(at, 0.0, true, null, FIGHT_OPEN) \
-			and not NavWorld.on_map(at, &"wide" if turn_radius > 0.0 else nav):
-		at = Ground.nearest_clear(at, 0.0, 0.5, FIGHT_OPEN)  # avoidance pushed him into a house or the water: beside it
+	if fighting and (_steer or _shifting):
+		var t0 := Time.get_ticks_usec() if PerfTools.probing else 0
+		if not Ground.is_clear(at, 0.0, true, null, FIGHT_OPEN) and not NavWorld.on_map(at, &"wide" if turn_radius > 0.0 else nav):
+			at = Ground.nearest_clear(at, 0.0, 0.5, FIGHT_OPEN)  # avoidance pushed him into a house or the water: beside it
+		if PerfTools.probing:
+			PerfTools.add("movers.put_clear", Time.get_ticks_usec() - t0)
 	var main := _main()
 	if _keep_y:
 		pass
@@ -766,16 +802,26 @@ func moving() -> bool:
 
 ## Each frame while walking; every mover's walking timed together for the frame-cost probe (perf_tools.gd
 ## GOC_PERF_PROBE, off in play): "movers" in the slow-frame log.
+## Probing, its parts are timed too: movers.due (whether it steps this frame), and each step by what it is doing:
+## movers.ask (a route asked again), movers.steer (a fighter steered), movers.drive (a horse or a cart), movers.host
+## (a formed block), movers.walk (a plain walk); movers.put_clear (a fighter's step checked against what stands).
 func _process(delta: float) -> void:
-	delta = _due(delta)
-	if delta <= 0.0:
-		return
 	if not PerfTools.probing:
-		_walk(delta)
+		delta = _due(delta)
+		if delta > 0.0:
+			_walk(delta)
 		return
 	var t0 := Time.get_ticks_usec()
+	delta = _due(delta)
+	var t1 := Time.get_ticks_usec()
+	PerfTools.add("movers.due", t1 - t0)
+	if delta <= 0.0:
+		return
+	var part := "movers.ask" if _ask_got.is_valid() else "movers.steer" if _steer else "movers.drive" if turn_radius > 0.0 else "movers.host" if nav == &"host" else "movers.walk"
 	_walk(delta)
-	PerfTools.add("movers", Time.get_ticks_usec() - t0)
+	var dt := Time.get_ticks_usec() - t1
+	PerfTools.add("movers", dt)
+	PerfTools.add(part, dt)
 
 
 ## The time to walk this frame, or 0 to wait (FPS P0, fps4: 330 mover steps a frame, ~5 ms): a person walking a plain

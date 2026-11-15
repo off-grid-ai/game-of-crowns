@@ -176,6 +176,8 @@ func _at_tier(id: int, tier: int) -> void:
 		a["thin"] = thin
 		if thin:
 			n.visible = false
+		if a.get("mover") is Node:
+			(a["mover"] as Node).crowd_on(tier != ViewTier.OFF and not thin)  # out of the crowd's sums: costs nothing
 		var mind := n.get_node_or_null("Mind") as BTPlayer
 		if mind:
 			mind.active = tier == ViewTier.NEAR
