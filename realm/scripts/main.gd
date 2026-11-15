@@ -985,7 +985,6 @@ func _process_timed(_delta: float) -> void:
 		terrain.settle_scatter()
 	perf._cycle_step(_delta)
 	perf._test_hides()
-	perf._profile_once()
 	_heard_at -= _delta
 	if _heard_at <= 0.0:
 		_heard_at = 0.25

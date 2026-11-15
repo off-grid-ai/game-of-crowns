@@ -9,7 +9,7 @@ var _t := 0.0
 var label := Label.new()
 var _scene := ""  # what is being drawn, worked out every two seconds (_drawn)
 var _scene_t := 0.0
-var _tris := ""  # triangles in view by part, the dearest four (_by_part)
+var _tris := ""  # triangles in view by part, the dearest eight (DrawCensus)
 
 
 func _ready() -> void:

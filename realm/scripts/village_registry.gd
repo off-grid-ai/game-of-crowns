@@ -51,9 +51,9 @@ func who_is_home(id: int, reach := 0.3) -> Dictionary:
 
 ## The town's lit feast fire: [where (town-local), how far its reach goes],
 ## or empty. One fire per feast: town_life's bonfire, or a wedding feast's
-## (scenes.gd), each recorded on the town's Life as "fires".
+## (scenes.gd), each recorded on the town's Life as "bonfires".
 func fire_of(town: int) -> Array:
 	var node: Node3D = v.towns.towns.get(town, {}).get("node")
 	var life: Node = node.get_node_or_null("Life") if is_instance_valid(node) else null
-	var fires: Array = life.get_meta("fires", []) if life else []
+	var fires: Array = life.get_meta("bonfires", []) if life else []
 	return fires[0] if not fires.is_empty() else []

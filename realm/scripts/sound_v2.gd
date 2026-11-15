@@ -247,8 +247,8 @@ func _find(top: Node, eye: Vector3, hear: float, want: Dictionary, calls: Array)
 			var walking: Array = n.get_meta("walking", [])  # [[man], ...] marching out now (town_scenes.gd _march)
 			if not walking.is_empty() and is_instance_valid(walking[0][0]) and near.call(walking[0][0]):
 				want["levy#%d" % n.get_instance_id()] = [walking[0][0], String(S["levy"]["sound"]), 1.0]
-		elif n3 and n.has_meta("fires") and S.has("bonfire"):
-			for f in n.get_meta("fires"):
+		elif n3 and n.has_meta("bonfires") and S.has("bonfire"):
+			for f in n.get_meta("bonfires"):
 				var c := n3.to_global(Vector3((f[0] as Vector2).x, 0, (f[0] as Vector2).y))
 				if c.distance_to(eye) < hear:
 					want["bonfire#%d" % n.get_instance_id()] = [n3, String(S["bonfire"]["sound"]), 1.0, Vector3((f[0] as Vector2).x, 0.05, (f[0] as Vector2).y)]

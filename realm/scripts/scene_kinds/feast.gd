@@ -30,9 +30,9 @@ func stage_feast(at: Vector3, house: Dictionary) -> void:
 	var town: Array = TownNav.towns_at(stage.towns, at)
 	var town_root: Node3D = town[0][1] if not town.is_empty() else null
 	var life: Node3D = town_root.get_node_or_null("Life") if town_root else null
-	var lit: bool = life != null and not life.get_meta("fires", []).is_empty()
+	var lit: bool = life != null and not life.get_meta("bonfires", []).is_empty()
 	var keep := TownLife.fire_reach()
-	var added := {"fires": [], "standing": PackedVector2Array()}
+	var added := {"bonfires": [], "standing": PackedVector2Array()}
 	var local := func(p: Vector3) -> Vector2:
 		return Vector2(p.x - town_root.global_position.x, p.z - town_root.global_position.z) if town_root else Vector2(p.x, p.z)
 	# What the feast sets down on the ground (its fire pit, its casks) stands on the town's Life, so it is in the
@@ -55,7 +55,7 @@ func stage_feast(at: Vector3, house: Dictionary) -> void:
 		flame.position = centre + Vector3(0, 0.08, 0)
 		root.add_child(Particles.to_gpu(flame))
 		var mid: Vector2 = local.call(centre)
-		added["fires"].append([mid, keep])
+		added["bonfires"].append([mid, keep])
 	for i in 3:
 		var cask: Node3D = Realistic.make(Realistic.one("cask"))
 		if cask:

@@ -352,16 +352,12 @@ func _log_perf(delta: float) -> void:
 
 
 ## The triangle budget's check (--budget=<millions>, Mac 2026-11-15: "13.5M to 10.3M is nothing", target 2-3M): once
-## the towns stand, DrawCensus counts what the camera draws by part; CHECK lines in perf.log and on stdout say the
+## the shot is taken (shot_harness, the camera framed and the towns standing), DrawCensus counts what the camera draws by part; CHECK lines in perf.log and on stdout say the
 ## total against the budget, the dearest parts, and every batch too wide to be culled. Fails (exit 1) when over.
-var _profiled := false
-func _profile_once() -> void:
-	if not main._shot.has("budget"):
-		return
+func budget_check() -> void:
 	var cam := main.get_viewport().get_camera_3d()
-	if _profiled or cam == null or main.towns == null or main.towns.building() or main.terrain.width == 0:
+	if not main._shot.has("budget") or cam == null:
 		return
-	_profiled = true
 	var c := preload("res://scripts/draw_census.gd").by_part(cam, main)
 	var budget := float(main._shot["budget"]) * 1000000.0
 	var by: Dictionary = c["by"]

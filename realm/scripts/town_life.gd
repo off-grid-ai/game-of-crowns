@@ -295,10 +295,10 @@ static var CLEAR: float = 0.05 * preload("res://scripts/data.gd").num("people", 
 
 
 ## What the life keeps clear beyond the ground's footprints, town-local: each fire's ring and the step of heat past
-## it (the life's "fires"). Buildings, stalls, props and the water are the ground's answer (ground.gd).
+## it (the life's "bonfires"). Buildings, stalls, props and the water are the ground's answer (ground.gd).
 func _fires(life: Node3D) -> Array:
 	var out: Array = []
-	for f in life.get_meta("fires", []):
+	for f in life.get_meta("bonfires", []):
 		out.append(_rect(Vector3(f[0].x, 0, f[0].y), Vector2(f[1], f[1]) * 2.0, 0.0))
 	return out
 
@@ -633,9 +633,9 @@ func _bonfire(life: Node3D, center: Vector3) -> void:
 		ring.scale = Vector3.ONE * RING_SCALE
 		life.add_child(ring)
 	# Nobody stands in the fire: the ring as wide as it really stands, and a
-	# step of heat past its stones, is ground nobody claims (_fires reads "fires").
+	# step of heat past its stones, is ground nobody claims (_fires reads "bonfires").
 	var keep := fire_reach()
-	life.set_meta("fires", [[Vector2(_fire_at.x, _fire_at.z), keep]])
+	life.set_meta("bonfires", [[Vector2(_fire_at.x, _fire_at.z), keep]])
 	var light := OmniLight3D.new()
 	light.light_color = Color(1.0, 0.6, 0.3)
 	light.light_energy = float(B.get("light", 1.6))

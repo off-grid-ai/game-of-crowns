@@ -943,13 +943,13 @@ func _crowd_check() -> void:
 		if n and n.is_visible_in_tree():
 			folk.append(n)
 	_crowd["frames"] = int(_crowd["frames"]) + 1
-	# Nobody inside a lit fire's reach (town_life.gd's "fires": its stones and the heat past them).
+	# Nobody inside a lit fire's reach (town_life.gd's "bonfires": its stones and the heat past them).
 	var fires := []
 	for id in towns.towns:
 		var node: Node3D = towns.towns[id]["node"]
 		var life: Node3D = node.get_node_or_null("Life") if is_instance_valid(node) else null
 		if life:
-			for f in life.get_meta("fires", []):
+			for f in life.get_meta("bonfires", []):
 				fires.append([node.global_position + Vector3(Vector2(f[0]).x, 0, Vector2(f[0]).y), float(f[1])])
 	_crowd["fires"] = fires.size()
 	for n in folk:

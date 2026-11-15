@@ -54,7 +54,7 @@ static func by_part(cam: Camera3D, main: Node) -> Dictionary:
 	return {"by": by, "all": all, "wide": wide}
 
 
-## The census as one line, the dearest six parts (the frame-rate card; the shot harness's budget check).
+## The census as one line, the dearest eight parts (the frame-rate card; the shot harness's budget check).
 static func line(cam: Camera3D, main: Node) -> String:
 	var c := by_part(cam, main)
 	if c.is_empty():
@@ -63,7 +63,7 @@ static func line(cam: Camera3D, main: Node) -> String:
 	var keys := by.keys()
 	keys.sort_custom(func(a, b): return by[a] > by[b])
 	var out := PackedStringArray()
-	for k in keys.slice(0, 6):
+	for k in keys.slice(0, 8):
 		out.append("%s %.1fM" % [k, by[k] / 1000000.0])
 	return "triangles: " + ", ".join(out) + "  (of %.1fM, full detail)" % (int(c["all"]) / 1000000.0)
 
@@ -87,10 +87,25 @@ static func _tris_of(mesh: Mesh) -> int:
 
 ## Where a drawn thing sits, as a reader would name it: the realm's child it is under, then the nearest builder below
 ## it (a node with a script, or a name of its own), so a batch with a made-up name still says who made it.
+## A batch of copies adds its mesh's name (a bush, a wheat sheaf), so the card says which model is dear.
 static func _part(g: Node, main: Node) -> String:
+	var mm := (g as MultiMeshInstance3D).multimesh if g is MultiMeshInstance3D else null
+	var what := (" " + _mesh_name(mm.mesh)) if mm and mm.mesh else ""
+	return _where(g, main) + what
+
+
+## A mesh's name: its own, else its file's, else its weight (a mesh made in code has neither).
+static func _mesh_name(mesh: Mesh) -> String:
+	if mesh.resource_name != "":
+		return mesh.resource_name
+	if mesh.resource_path != "" and not mesh.resource_path.contains("::"):
+		return mesh.resource_path.get_file().get_basename()
+	return "(%d-tri mesh)" % _tris_of(mesh)
+
+
+static func _where(g: Node, main: Node) -> String:
 	if g.get_parent() and g.get_parent().name == "Bulk":
-		var mm := (g as MultiMeshInstance3D).multimesh if g is MultiMeshInstance3D else null
-		return "Bulk/" + (String(mm.mesh.resource_path.get_file().get_basename()) if mm and mm.mesh and mm.mesh.resource_path != "" else "props")
+		return "Bulk"
 	var top := g
 	while top.get_parent() and top.get_parent() != main:
 		top = top.get_parent()
