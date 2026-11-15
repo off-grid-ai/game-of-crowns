@@ -193,8 +193,8 @@ func _lay(t: Vector2i, w: Dictionary, town: Node3D) -> void:
 	# Its hedges and clump trees are in the way (ground.gd, Mac 2026-11-15: entities through hedges and trees).
 	var area := Rect2(t.x * TILE, t.y * TILE, TILE, TILE)
 	for e in node.get_meta("bulk", []):
-		var o: Vector3 = node.global_transform * (e[1] as Transform3D).origin
-		area = area.expand(Vector2(o.x, o.z))
+		var at: Vector3 = node.global_transform * (e[1] as Transform3D).origin
+		area = area.expand(Vector2(at.x, at.z))
 	Ground.stands(node, area.grow(1.0))
 
 
