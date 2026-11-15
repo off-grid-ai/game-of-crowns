@@ -56,6 +56,8 @@ const DRY := 1  # a land cell's bit: dry land at every corner (a body may stand)
 const WALK := 2  # walkable at every corner: dry land or a ford (a foot may pass)
 const AROUND: Array[Vector2] = [Vector2(0, 0), Vector2(1, 0), Vector2(0.70710678, 0.70710678), Vector2(0, 1), Vector2(-0.70710678, 0.70710678), Vector2(-1, 0), Vector2(-0.70710678, -0.70710678), Vector2(0, -1), Vector2(0.70710678, -0.70710678)]  # the land asked before its mask is held: a body's middle and eight round it
 const LandBake := preload("res://scripts/land_bake.gd")
+const TownStore := preload("res://scripts/town_store.gd")  # a kept town's file: its outlines are kept by it
+const Kept := preload("res://scripts/kept.gd")
 
 static var TALL: float = Data.num("ground", "physics.tall", 100.0)  # half the height of every obstacle's prism
 static var CHUNK: float = Data.num("ground", "physics.chunk", 16.0)  # world units of a source's (the woods') body
@@ -117,7 +119,7 @@ static var _bakes_let_go: Array = []  # bakes of an earlier land still running o
 static func is_clear(p: Vector3, radius := 0.0, props := true, free_of: Variant = null, open_kinds: Array = []) -> bool:
 	if not PerfTools.probing:
 		return _is_clear(p, radius, props, free_of, open_kinds)
-	_fresh()  # what stands brought up to date: its own share (ground.stand), not the ask's
+	_fresh(Rect2(p.x - radius, p.z - radius, radius * 2.0, radius * 2.0))  # what stands there brought up to date: its own share (ground.stand), not the ask's
 	var t0 := Time.get_ticks_usec()
 	var ok := _is_clear(p, radius, props, free_of, open_kinds)
 	PerfTools.add("ground.is_clear", Time.get_ticks_usec() - t0)  # its share of the frame (GOC_PERF_PROBE)
@@ -125,7 +127,7 @@ static func is_clear(p: Vector3, radius := 0.0, props := true, free_of: Variant 
 
 
 static func _is_clear(p: Vector3, radius: float, props: bool, free_of: Variant, open_kinds: Array) -> bool:
-	_fresh()
+	_fresh(Rect2(p.x - radius, p.z - radius, radius * 2.0, radius * 2.0))
 	if not _land_ok(p.x, p.z, radius, WALK if "ford" in open_kinds else DRY):
 		return false
 	if not _src_dirty.is_empty():
@@ -150,7 +152,8 @@ static func _is_clear(p: Vector3, radius: float, props: bool, free_of: Variant, 
 static func area_free(poly: PackedVector2Array, props := true, free_of: Variant = null, open_kinds: Array = []) -> bool:
 	if not PerfTools.probing:
 		return _area_free(poly, props, free_of, open_kinds)
-	_fresh()  # its own share (ground.stand)
+	if poly.size() >= 3:
+		_fresh(_bounds(poly))  # its own share (ground.stand)
 	var t0 := Time.get_ticks_usec()
 	var ok := _area_free(poly, props, free_of, open_kinds)
 	PerfTools.add("ground.area_free", Time.get_ticks_usec() - t0)  # its share of the frame (GOC_PERF_PROBE)
@@ -158,9 +161,9 @@ static func area_free(poly: PackedVector2Array, props := true, free_of: Variant 
 
 
 static func _area_free(poly: PackedVector2Array, props: bool, free_of: Variant, open_kinds: Array) -> bool:
-	_fresh()
 	if poly.size() < 3:
 		return true
+	_fresh(_bounds(poly))
 	if not _land_poly_ok(poly, WALK if "ford" in open_kinds else DRY):
 		return false
 	var box := _bounds(poly)
@@ -444,6 +447,21 @@ static func _tick() -> void:
 		_land_fresh()  # the bake started the frame the terrain is built (its images copied before towns level them), then moved on
 	while not _src_dirty.is_empty() and ViewTier.spend_ok(&"ground"):
 		_lay_chunk(_src_dirty.keys()[0])
+	if not _space.is_valid():
+		return  # nothing stands yet
+	var f := Engine.get_process_frames()
+	if f != _towns_frame:
+		_sync_towns(f)
+	# What stands brought up to date a root at a time on the frame's budget, ahead of any ask (an ask brings up only
+	# the roots over its own ground: _fresh), so a town read back is never read in one ask's frame with all the rest.
+	while not _dirty.is_empty() and ViewTier.spend_ok(&"ground"):
+		var t0 := Time.get_ticks_usec() if PerfTools.probing else 0
+		var iid: int = _dirty.keys()[0]
+		_dirty.erase(iid)
+		if _roots.has(iid):
+			_stamp(_roots[iid])
+		if PerfTools.probing:
+			PerfTools.add("ground.stand", Time.get_ticks_usec() - t0)
 
 
 # --- towns and places -------------------------------------------------------------------------------------------------
@@ -464,25 +482,25 @@ static func gone(root: Node3D) -> void:
 	_drop(rec)
 
 
-## Brings what stands up to date before an ask: the land's read started (and what changed re-read), the towns read
-## once a frame (a town raised or razed), and every root something was set down under, taken from, turned or hidden
-## since brought up to date: only the pieces set down since are read, the whole root again only when it was turned,
-## hidden or shown, its yards or its walls changed.
-static func _fresh() -> void:
-	if not _space.is_valid():
-		_sp()
-	if _land.is_empty() or not _land_todo.is_empty():
-		_land_fresh()
+## Brings what stands over `area` (world XZ) up to date before an ask there: the land's read started (and what
+## changed re-read), the towns read once a frame (a town raised or razed), and every root over the area something was
+## set down under, taken from, turned or hidden since brought up to date: only the pieces set down since are read, the
+## whole root again only when it was turned, hidden or shown, its yards or its walls changed. A root elsewhere waits
+## for its turn on the frame's budget (_tick) or an ask over it.
+static func _fresh(area: Rect2) -> void:
+	_fresh_land()
 	var f := Engine.get_process_frames()
 	if f != _towns_frame:
 		_sync_towns(f)
 	if not _dirty.is_empty():
 		var t0 := Time.get_ticks_usec() if PerfTools.probing else 0
-		var ids := _dirty.keys()
-		_dirty.clear()
-		for iid in ids:
-			if _roots.has(iid):
-				_stamp(_roots[iid])
+		for iid: int in _dirty.keys():
+			var rec: Dictionary = _roots.get(iid, {})
+			if not rec.is_empty() and not (rec["clip"] as Rect2).intersects(area, true):
+				continue  # not over the ask's ground
+			_dirty.erase(iid)
+			if not rec.is_empty():
+				_stamp(rec)
 		if PerfTools.probing:
 			PerfTools.add("ground.stand", Time.get_ticks_usec() - t0)  # pieces read and their bins refilled: its share of the frame
 
@@ -490,8 +508,16 @@ static func _fresh() -> void:
 ## Whether the land's mask is held (made on the workers or read back from kept/; a guard waits for it:
 ## tools/occupancy_probe.gd).
 static func land_ready() -> bool:
-	_fresh()
+	_fresh_land()
 	return not _land.is_empty()
+
+
+## The ground's space made and the land's read started (what changed on it re-read).
+static func _fresh_land() -> void:
+	if not _space.is_valid():
+		_sp()
+	if _land.is_empty() or not _land_todo.is_empty():
+		_land_fresh()
 
 
 ## How many pieces have been read off what stands (a guard's count: tools/occupancy_probe.gd keeps it linear in the
@@ -503,12 +529,14 @@ static func stamp_reads() -> int:
 static func _sync_towns(f: int) -> void:
 	_towns_frame = f
 	var live := {}
+	var files := {}  # root instance id -> the file the towns say it stands for (towns.gd towns[id].path)
 	if towns and is_instance_valid(towns):
 		var reg: Dictionary = towns.get("towns")
 		for id in reg:
 			var r: Variant = (reg[id] as Dictionary).get("node")
 			if r is Node3D and is_instance_valid(r) and (r as Node3D).is_inside_tree():
 				live[(r as Node3D).get_instance_id()] = r
+				files[(r as Node3D).get_instance_id()] = String((reg[id] as Dictionary).get("path", ""))
 	for iid in _roots.keys():
 		if _roots[iid]["town"] and not live.has(iid):
 			_drop(_roots[iid])
@@ -517,17 +545,23 @@ static func _sync_towns(f: int) -> void:
 			var r: Node3D = live[iid]
 			var reach := float(r.get_meta("reach", 6.0)) + 3.0  # town_nav.gd towns_at: its reach and a tile's corner
 			var c := r.global_position
-			_add_root(r, Rect2(c.x - reach, c.z - reach, reach * 2.0, reach * 2.0), true)
+			_add_root(r, Rect2(c.x - reach, c.z - reach, reach * 2.0, reach * 2.0), true, TownStore.kept_name(r, files[iid]))
 
 
-static func _add_root(root: Node3D, clip: Rect2, town: bool) -> void:
+## `kept`: a kept town's name (town_store.gd kept_name): the outlines of what its builders set down are read off it
+## once and kept under it (Kept "ground"), read back on every later start (_stamp); its reading starts here, on
+## Godot's loader threads.
+static func _add_root(root: Node3D, clip: Rect2, town: bool, kept := "") -> void:
 	_sp()
 	var iid := root.get_instance_id()
+	var file := Kept.path("ground", kept) if kept != "" else ""
+	if file != "" and Kept.has(file) and ResourceLoader.load_threaded_get_status(file) == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
+		ResourceLoader.load_threaded_request(file)
 	# kids: piece instance id -> ["town" or "life", the bins its shapes lie in]; bins: Vector3i (x, z by BIN, 0 its
 	# builders' or 1 its life's) -> {body, pieces: {piece id: shapes}}; new: pieces set down since, read at the next ask;
 	# on: whether its builders' and its life's bodies stand in the space (shown) or out of it (hidden).
 	_roots[iid] = {"iid": iid, "root": root, "clip": clip, "town": town, "sig": [], "kids": {}, "bins": {}, "new": {},
-		"refill": {}, "on": {"town": false, "life": false}}
+		"refill": {}, "on": {"town": false, "life": false}, "kept": file}
 	_dirty[iid] = true
 	_hook(root, iid)
 
@@ -604,15 +638,30 @@ static func _stamp(rec: Dictionary) -> void:
 	var sig: Array = [int(root.get_meta("stone_walls_rev", 0)), (root.get_meta("yards", []) as Array).duplicate(), root.global_transform]
 	var news: Dictionary = rec["new"]
 	if sig != rec["sig"]:
+		# A kept town read the first time, its walls whole: its builders' outlines as kept (_kept_outlines), each
+		# piece missing from them read off it and the whole kept again.
+		var file: String = rec["kept"] if (rec["sig"] as Array).is_empty() and int(sig[0]) == 0 else ""
+		rec["kept"] = ""  # once: a root read again (turned, its yards or walls changed) is read off itself
+		var got := _kept_outlines(file)
+		var missed := false
 		_unstamp(rec)
 		rec["sig"] = sig
 		rec["on"] = on
 		rec["xf"] = sig[2]
 		rec["yards"] = _yards(sig[1], sig[2])
-		_read(rec, root, root, "town", false)  # what the root itself carries (a place's bulk-drawn dressing)
-		for c in root.get_children():
-			if c != life:
-				_read(rec, root, c, "town")
+		for c in [root] + root.get_children():
+			if c == life:
+				continue
+			var key := "." if c == root else String(c.name)
+			if file != "" and not got.has(key):
+				got[key] = NavGround.piece(c, root, terrain, c != root)
+				missed = missed or not (got[key] as Array).is_empty()  # a piece with nothing in the way (a fire's sparks) never has it kept again
+			# what the root itself carries (a place's bulk-drawn dressing), then each piece under it
+			_read(rec, root, c, "town", c != root, got.get(key, null))
+		if missed:
+			var keep := Resource.new()
+			keep.set_meta("outlines", got)
+			Kept.keep(keep, file)  # read off once: every later start reads it back (written on a worker)
 		if life:
 			_hook(life, rec["iid"])
 			_read(rec, root, life, "life", false)
@@ -655,11 +704,13 @@ static func _switch(rec: Dictionary, on: Dictionary) -> void:
 ## One piece's outlines (nav_ground.gd piece: it and all under it, `deep`) as prisms in its root's bins (BIN world
 ## units a side, by each outline's middle), in place of what it stood on before. An outline outside the root's area
 ## is left out, its open floor (yards) clipped out of it.
-static func _read(rec: Dictionary, root: Node3D, n: Node, what: String, deep := true) -> void:
+## `kept`: its outlines as kept (_kept_outlines), not read off it.
+static func _read(rec: Dictionary, root: Node3D, n: Node, what: String, deep := true, kept: Variant = null) -> void:
 	var k := n.get_instance_id()
 	_lift(rec, k)
-	_reads += 1
-	var polys := NavGround.piece(n, root, terrain, deep)
+	var polys: Array = kept if kept is Array else NavGround.piece(n, root, terrain, deep)
+	if not kept is Array:
+		_reads += 1
 	if polys.is_empty():
 		return
 	var xf: Transform3D = rec["xf"]
@@ -693,6 +744,19 @@ static func _read(rec: Dictionary, root: Node3D, n: Node, what: String, deep := 
 		rec["refill"][bk] = true
 	if not keys.is_empty():
 		rec["kids"][k] = [what, keys]
+
+
+## A kept town's builders' outlines as kept at `file` (_add_root started its reading): piece name ("." the root
+## itself) -> its outlines (town-local XZ, as NavGround.piece reads them). Empty when none is kept yet.
+static func _kept_outlines(file: String) -> Dictionary:
+	if file == "" or not Kept.has(file):
+		return {}
+	if ResourceLoader.load_threaded_get_status(file) == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
+		ResourceLoader.load_threaded_request(file)
+	var got := ResourceLoader.load_threaded_get(file)  # waits only if its read hasn't finished
+	if got == null or not got.has_meta("outlines"):
+		return {}
+	return (got.get_meta("outlines") as Dictionary).duplicate()
 
 
 ## Every bin whose pieces changed filled again with its pieces' shapes, once; standing in the space only while its
@@ -778,7 +842,7 @@ static func _minus(p: PackedVector2Array, y: PackedVector2Array) -> Array:
 ## shape's bounds kept as it was made), never an engine query: one returned 1000+ hits, three server calls each
 ## (supervisor's battle run nav7: nav_world.shapes 3-4 ms a call).
 static func obstacle_shapes(area: Rect2, mask := 0xFFFFFFFF) -> Array:
-	_fresh()
+	_fresh(area)
 	if not _src_dirty.is_empty():
 		_clean_sources(area)
 	var out := []
