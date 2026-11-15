@@ -762,7 +762,6 @@ func _process(delta: float) -> void:
 		_t = 0.0
 		_routes()
 		_refresh()
-		_place_card()
 
 
 ## A ring under each host shifted in beside the selected one, in the same colour, a little fainter; gone hosts drop out.
@@ -1003,13 +1002,15 @@ func _build_card() -> void:
 	if main == null or main.ui == null:
 		return
 	_card = main.ui.glass_panel()
-	_card.anchor_left = 1.0
-	_card.anchor_right = 1.0
+	# The command bar, bottom centre (Mac 2026-11-16: "we need a control plane, where I can take action ... bottom of
+	# the screen"; Warcraft III's console: what is selected and its orders, along the bottom), clear of the chronicle
+	# and the minimap in the right-hand column (it sat over both).
+	_card.anchor_left = 0.5
+	_card.anchor_right = 0.5
 	_card.anchor_top = 1.0
 	_card.anchor_bottom = 1.0
-	_card.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	_card.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	_card.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	_card.offset_right = -12
 	_card.offset_bottom = -12
 	_card.add_theme_stylebox_override("panel", T._box(T.SURFACE_SOLID, T.HAIRLINE, 10, 8))
 	var v := VBoxContainer.new()
@@ -1128,10 +1129,3 @@ static func _doing(h: Dictionary) -> String:
 	return line.format({"to": String(o.get("to")) if o.get("to") != null else "the place you named", "road": road})
 
 
-## Stacked over the minimap and its camera pad, its right edge with theirs.
-func _place_card() -> void:
-	if _card == null or not _card.visible:
-		return
-	var mm: Control = main.ui.get("_minimap_frame")
-	var h := get_viewport().get_visible_rect().size.y
-	_card.offset_bottom = -(h - mm.get_global_rect().position.y + 8.0) if mm and mm.is_visible_in_tree() else -12.0

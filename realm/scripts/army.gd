@@ -304,8 +304,8 @@ func march_out(_to: Vector3) -> void:
 
 
 ## Where a host bound for `at` stands: outside the walls of any town whose ground `at` lies in (Mac: "it makes no
-## sense for it to be inside"; Total War's army camped beside a settlement, never in its streets), its town's reach
-## (towns.gd root meta reach) plus army.json camp.outside plus `beyond` further out, on the side it comes from
+## sense for it to be inside"; Total War's army camped beside a settlement, never in its streets), its town's walls
+## or else its reach (towns.gd root metas town_wall, reach) plus army.json camp.outside plus `beyond` further out, on the side it comes from
 ## (`from`), turned round the walls to the nearest dry land; anywhere else `at` itself.
 func _outside_walls(at: Vector3, from: Vector3, beyond := 0.0) -> Vector3:
 	var towns: Node = main.get("towns")
@@ -316,7 +316,15 @@ func _outside_walls(at: Vector3, from: Vector3, beyond := 0.0) -> Vector3:
 		if not is_instance_valid(root):
 			continue
 		var c := root.global_position
-		var r := float(root.get_meta("reach", 3.0)) + Data.num("army", "camp.outside", 1.5)
+		# Out past its walls where it has them (towns.gd's plan, meta town_wall: every curtain bay), else its reach (Mac:
+		# a host stood in Kingsmere's square, its walls further out than the town's reach).
+		var r := float(root.get_meta("reach", 3.0))
+		var plan: Variant = root.get_meta("town_wall", null)
+		if plan is Dictionary:
+			for bay in (plan as Dictionary).get("bays", []):
+				var w := root.to_global(bay[0] as Vector3)
+				r = maxf(r, Vector2(w.x - c.x, w.z - c.z).length())
+		r += Data.num("army", "camp.outside", 1.5)
 		if Vector2(at.x - c.x, at.z - c.z).length() >= r:
 			continue
 		r += beyond

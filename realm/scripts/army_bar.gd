@@ -2,8 +2,8 @@ extends RefCounted
 ## The armies bar (Total War's army list, Age of Empires IV's army panel): down the left edge under the date card, a
 ## button for each of the King's own hosts, so none has to be hunted for on the map. Each says where the host stands,
 ## its strength and what it is doing (host_command.gd _doing). A click selects it, Shift- or Cmd-click adds it to those
-## selected (or takes it out), a double-click selects it and takes the view there: the King's own click, never the
-## camera on its own. A selected host's button says so in a word and a thicker outline, never by colour alone.
+## selected (or takes it out), a plain click also takes the view there: the King's own click, never the camera on its
+## own. A selected host's button says so in a word and a thicker outline, never by colour alone.
 ## It keeps nothing of the realm's: the hosts are the mirror's (host_command.hosts()), read again when the mirror
 ## syncs and when the selection changes, never every frame. Owned by ui.gd (built in its _ready); host_command.gd
 ## attaches itself once it is up. Words and sizes: realm/data/army_bar.json.
@@ -157,19 +157,18 @@ func _fill(r: Dictionary, h: Dictionary, on: bool) -> void:
 		b.tooltip_text += "\n" + String((Data.value(FILE, "groups", {}) as Dictionary).get("badge", "")).format({"n": n})
 
 
-## A click selects the host; Shift or Cmd adds it to those selected or takes it out; a double-click goes to it.
+## A click selects the host and the camera goes to it (Mac 2026-11-16: "clicking on these guys should pan to them";
+## Total War's army list); Shift or Cmd adds it to those selected or takes it out, where it stands.
 func _clicked(e: InputEvent, id: int) -> void:
 	if _cmd == null or not (e is InputEventMouseButton) or not e.pressed or e.button_index != MOUSE_BUTTON_LEFT:
 		return
 	var m := e as InputEventMouseButton
-	if m.double_click:
+	if m.shift_pressed or m.is_command_or_control_pressed():
+		_cmd.toggle(id)
+	else:
 		if not (int(_cmd.selected) == id or (_cmd.also as Array).has(id)):
 			_cmd.pick(id)
 		_cmd.fly_to([id])
-	elif m.shift_pressed or m.is_command_or_control_pressed():
-		_cmd.toggle(id)
-	else:
-		_cmd.pick(id)
 	ui.heard.emit("click")
 
 
