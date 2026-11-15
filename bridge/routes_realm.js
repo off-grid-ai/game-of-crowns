@@ -21,6 +21,7 @@ import * as chron from "./chronicles.js";
 import { OPENING } from "./court.js";
 import * as names from "./names.js";
 import * as rewrites from "./written.js";
+import { heir as royalHeir } from "./royals.js";
 import { body, json } from "./http_util.js";
 
 export async function world(ctx, req, res, url) {
@@ -263,6 +264,19 @@ export async function loreMap(ctx, req, res, url) {
   return json(res, 200, { tiles: [56, 88], towns: now, land, roads: ctx.world.roads ?? w.roads ?? [], armies });
 }
 
+// The crown's family as Lore cards (royals.js holds them; the player writes their stories): the King, the consort,
+// the heir, the other living children, then the King's brothers and sisters. royal: true marks them (no court meeting).
+function royalsOf(h) {
+  if (!h?.king) return [];
+  const next = royalHeir(h);
+  const card = (p, rank) => p && p.alive !== false && ({
+    id: p.id, name: p.name, key: p.name, gender: p.woman ? "female" : "male", age: p.age, rank, traits: p.traits ?? [],
+    goal: null, role: null, seat: null, written: false, royal: true, story: p.story ?? null,
+  });
+  return [card(h.king, "king"), card(h.consort, "consort"), next && card(next, "heir"),
+    ...h.children.filter((k) => k !== next).map((k) => card(k, "child")), ...(h.kin ?? []).filter((k) => k !== next).map((k) => card(k, "kin"))].filter(Boolean);
+}
+
 export async function lore(ctx, req, res, url) {
   const { DIR, favourOf } = ctx;
   // The book of the realm: its story from the world bible, and each great
@@ -301,11 +315,14 @@ export async function lore(ctx, req, res, url) {
     const lord = people.find((c) => c.rank === "lord");
     const family = lord ? people.filter((c) => c.id === lord.spouse || (c.rank === "heir" && c.parents?.includes(lord.id))) : [];
     const notables = [...(lord ? [lord] : []), ...family, ...people.filter((c) => c.rank === "bannerman").slice(0, 4)];
+    // The Crown's own family (royals.js, meta.royals): the King, his consort, his heir, his other children and his
+    // brothers and sisters, before the knights and officers sworn to him. In play only: the book as written has none.
+    const royal = h.crown && !written ? royalsOf(ctx.meta?.royals) : [];
     return {
       id: p.id, name: h.name, key: h.name, words: h.words, color: h.color, sigil: h.sigil, crown: !!h.crown,
       seat: seat ? cityName(seat.id) : null, towns: ctx.world.cities.filter((c) => c.owner === p.id).length,
       favour: h.crown ? null : favourOf(p.id), lore: b.houses[h.name] ?? rebel(h.name),
-      notables: notables.map((c) => ({
+      notables: [...royal, ...notables.map((c) => ({
         id: c.id, name: c.name, key: c.name, surname: c.surname ?? null, gender: c.gender, age: c.age, rank: c.rank, traits: c.traits,
         goal: c.goals?.[0]?.text ?? null, role: c.role ? ROLES[c.role]?.title : null,
         seat: c.seat != null ? seatName(c.seat) : null, loyalty: c.loyalty, written,
@@ -313,7 +330,7 @@ export async function lore(ctx, req, res, url) {
         // In their own words: their latest memory told as theirs, never a
         // story's beat about other people that they heard.
         story: c.backstory ?? [...new Set(c.memories ?? [])].filter((m) => /\b(I|my|me)\b/.test(m) && !/^[^:]{3,60}: /.test(m)).slice(-1)[0] ?? null,
-      })),
+      }))],
     };
   }).sort((a, c) => (c.crown ? 1 : 0) - (a.crown ? 1 : 0) || (c.lore ? 1 : 0) - (a.lore ? 1 : 0));
   // A great house that has lost every town is not forgotten: it stays in the

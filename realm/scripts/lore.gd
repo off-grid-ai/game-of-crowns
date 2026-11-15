@@ -14,7 +14,7 @@ signal closed
 const T := preload("res://scripts/theme.gd")
 const Keys := preload("res://scripts/keys.gd")
 const Heraldry := preload("res://scripts/heraldry.gd")
-const RANKS := {"lord": "Lord", "spouse": "Consort", "heir": "Heir", "bannerman": "Bannerman", "child": "Child"}
+const RANKS := {"lord": "Lord", "spouse": "Consort", "heir": "Heir", "bannerman": "Bannerman", "child": "Child", "king": "The King", "consort": "The Queen", "kin": "The King's blood"}
 
 var fetch := Callable()  # (cb) -> void: asks the bridge for /lore
 var _book := {}
@@ -570,10 +570,15 @@ func _person(p: Dictionary, h: Dictionary, into: Node = null) -> void:
 			person_written.emit(p, h)  # as every chronicle begins, not as your last reign left them
 		else:
 			person_opened.emit(str(p.get("id", "")), h))
-	top.add_child(meet)
+	if not p.get("royal", false):  # the crown's own family (bridge royals.js) is not met at court
+		top.add_child(meet)
+	else:
+		meet.free()
 	var rank: String = String(p.get("role", "")) if p.get("role") != null else RANKS.get(String(p.get("rank", "")), "")
 	if String(p.get("gender", "")) == "female":
-		rank = {"Lord": "Lady", "Bannerman": "Bannerwoman", "Heir": "Heiress"}.get(rank, rank)
+		rank = {"Lord": "Lady", "Bannerman": "Bannerwoman", "Heir": "Heiress", "The King": "The Queen"}.get(rank, rank)
+	elif String(p.get("rank", "")) == "consort":
+		rank = "The King's consort"
 	var who := [rank, "%d" % int(p.get("age", 0))]
 	if p.get("seat") != null:
 		who.append(String(p["seat"]))
