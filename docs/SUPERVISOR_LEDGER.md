@@ -14,6 +14,7 @@ Where things stand, so any agent can take over. Newest first, short. The full hi
 
 ## Now (2026-11-15)
 - TODO after FPS (Mac 2026-11-15): troops never do anything, they just stand. A siege waits for the bridge's assault turn with nothing to do (Oldhall); a host in a town stands still. Every army needs visible work while it waits: engines throwing, archers loosing, the wall taking hits, men drilling, shifting, resting.
+- In work (Mac 2026-11-15, siege of Sunspire): the siege tower rolls through a regiment; camp tents and the stake row stand inside regiment blocks. Routed to the siege-activity and placement builders.
 - TODO after FPS (Mac 2026-11-15, siege of Saltkeep): a blue regiment drawn through a red one beside the catapults (a walled town's siege; a6242eaf's fix doesn't reach it); only a handful of men by the engines active.
 - TODO after FPS (Mac 2026-11-15, Kingsmere square): regiments heaped in a town square, drawn through each other, through a market stall and through townsfolk. The fix in a6242eaf covers field sides and storms, not a host inside a town.
 - **Make the game fun (Mac).** The King is a war king from minute one: a royal army at Kingsmere, click and
