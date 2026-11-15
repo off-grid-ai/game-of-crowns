@@ -18,10 +18,8 @@ by oath, and find out what kind of king you'd be.
 - **The player is the King,** not a god. No god powers or sandbox fate buttons.
 - **The Crown has its own people.** The King and his household (commanders, champion, council) are
   people with stories, and the player can edit the King's story and theirs.
-- **People are met in play, not in a menu (2026-11-15).** No Lore encyclopedia on the main menu. A
-  person's card opens when you click them in the world: your army's commander, a lord bringing a demand,
-  a rival marching on you (Total War's general, Warcraft III's hero portrait, Crusader Kings 3's sheet).
-  The Crown's people are reached the same way, from your army and your court.
+- **The Lore stays (2026-11-15).** From the main menu: every house's people and the Crown's own
+  household, each with a portrait card and their story, editable by the player.
 - **Setting:** around 900 AD, Game of Thrones in era and feel: great houses, castles, shields, mail, axes
   and bows, gritty war. Mythical touches (the dead beyond the wall, wildlings). No dragons. Not Westeros,
   no GoT names. One age: tech grows within it (wooden forts become stone castles), never past it.
