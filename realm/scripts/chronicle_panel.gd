@@ -48,6 +48,7 @@ func _build_chronicle() -> void:
 	v.add_child(_scroll)
 	_list = VBoxContainer.new()
 	_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_list.custom_minimum_size.x = UI.ui_num("chronicle.width", 360.0) - 32.0  # the drawer's width less its padding
 	_list.add_theme_constant_override("separation", 10)
 	_scroll.add_child(_list)
 
@@ -100,17 +101,23 @@ func _row(e: Dictionary, loss: bool) -> Control:
 		head += "  ·  " + String(e["thread"])
 	var h := T.label(head, T.ACCENT if e.get("thread") else T.TEXT_3)
 	h.add_theme_font_size_override("font_size", T.SIZE_DESC - 1)
+	h.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	h.custom_minimum_size.x = 1.0
 	box.add_child(h)
-	var l := Button.new()
+	# A label, not a button: a button's least width is its whole line unwrapped, which pushed the drawer off the
+	# screen (Mac: "chronicle is out of the desktop"); a label wraps to the drawer's width.
+	var l := Label.new()
 	l.text = String(e.get("text", ""))
-	l.flat = true
-	l.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	l.focus_mode = Control.FOCUS_NONE
+	l.custom_minimum_size.x = 1.0
+	l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	l.mouse_filter = Control.MOUSE_FILTER_STOP
 	l.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	l.add_theme_font_size_override("font_size", T.SIZE_DESC)
 	l.add_theme_color_override("font_color", T.TEXT_2 if String(e.get("kind", "")) == "year" else T.TEXT)
-	l.pressed.connect(func(): go(e))
+	l.gui_input.connect(func(ev: InputEvent):
+		if ev is InputEventMouseButton and (ev as InputEventMouseButton).pressed and (ev as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
+			go(e))
 	box.add_child(l)
 	_list.add_child(box)
 	_list.move_child(box, 0)
@@ -166,6 +173,7 @@ func _open(row: Control, on: bool) -> void:
 		if now != "":
 			var nl := T.label(now, T.TEXT_2)
 			nl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			nl.custom_minimum_size.x = 1.0
 			nl.add_theme_font_size_override("font_size", T.SIZE_DESC - 1)
 			ans.add_child(nl)
 		var acts := NewsActions.one

@@ -1,6 +1,6 @@
 extends CanvasLayer
 const DrawCensus := preload("res://scripts/draw_census.gd")  # triangles in view by part, the one count
-## The frame rate at the screen's top right, under the bar (Mac, 2026-11-15: "render FPS on the top right... that way
+## The frame rate at the screen's top centre, under the bar (Mac, 2026-11-15: "render FPS on the top right... that way
 ## at least I know what's happening"). Shown as Settings > Graphics "Frame rate" says (off by default). Twice a second:
 ## frames a second and the frame's milliseconds. A layer of its own over everything, so it shows whatever hides the
 ## interface (a still, the cinema, the title).
@@ -15,12 +15,12 @@ var _tris := ""  # triangles in view by part, the dearest eight (DrawCensus)
 func _ready() -> void:
 	layer = 120
 	add_child(label)
-	label.anchor_left = 1.0
-	label.anchor_right = 1.0
-	label.offset_right = -14
-	label.offset_top = 104  # under the top bar's buttons and the loading card's line ("The towns are rising")
-	label.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	# Top centre under the realm's numbers: the right side is the chronicle drawer's (Mac: it lay over its heading).
+	label.anchor_left = 0.5
+	label.anchor_right = 0.5
+	label.offset_top = 64
+	label.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	label.add_theme_font_size_override("font_size", 15)
 	# White on a dark panel, never a colour code (Mac is colour-blind: the old green, amber and red read alike).
