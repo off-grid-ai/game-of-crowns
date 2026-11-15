@@ -117,7 +117,7 @@ func play(houses: Array, seats: Dictionary) -> void:
 	visible = true
 	# The intro covers the screen: the realm behind it need not be drawn while
 	# it builds, which is what made the pages stutter.
-	get_viewport().disable_3d = true
+	preload("res://scripts/world_cover.gd").cover("loading", true)
 	# As the loading screen, everything staged behind it (towns raised, crowds made) has most of each frame: the card
 	# owns it, so it holds exactly while the card is up (10:18-10:27: under the card the towns had the play pot).
 	ViewTier.loading = not watching
@@ -395,7 +395,7 @@ func _end() -> void:
 	if _tween:
 		_tween.kill()
 	visible = false
-	get_viewport().disable_3d = false
+	preload("res://scripts/world_cover.gd").cover("loading", false)
 	ViewTier.loading = false
 	for c in get_children():
 		c.queue_free()

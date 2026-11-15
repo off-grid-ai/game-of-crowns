@@ -75,7 +75,7 @@ let running = 0;
 
 function queued(pri, job) {
   return new Promise((resolve) => {
-    queue.push({ pri: RANK[pri] === undefined ? "warm" : pri, at: Date.now(), job, resolve });
+    queue.push({ pri: RANK[pri] === undefined ? "warm" : pri, at: Date.now(), job, resolve, why: caller() });
     pump();
   });
 }
@@ -91,7 +91,7 @@ function pump() {
     running++;
     q.job().catch(() => null).then((out) => {
       running--;
-      timings.push({ pri: q.pri, waitMs: start - q.at, runMs: Date.now() - start, at: start });
+      timings.push({ pri: q.pri, waitMs: start - q.at, runMs: Date.now() - start, at: start, why: q.why });
       if (timings.length > 300) timings.shift();
       q.resolve(out);
       pump();
@@ -99,7 +99,15 @@ function pump() {
   }
 }
 
-// What the queue holds now and how long calls of each level waited lately.
+// Who asked (the first frame outside this file: "chatter.js:350"), so /minds/queue says what the model is spent on
+// (Mac 2026-11-15, the fps round: "profiling of when and why it's called and what's the value add").
+function caller() {
+  const line = (new Error().stack ?? "").split("\n").find((l) => /\.js:\d+/.test(l) && !l.includes("claude.js"));
+  const m = line?.match(/([\w-]+\.js):(\d+)/);
+  return m ? `${m[1]}:${m[2]}` : "?";
+}
+// What the queue holds now and how long calls of each level waited lately, and what each caller spent.
+
 export function modelQueue() {
   const waiting = { hot: 0, warm: 0, cold: 0 };
   for (const q of queue) waiting[q.pri]++;
@@ -110,7 +118,13 @@ export function modelQueue() {
     const avg = (k) => Math.round(t.reduce((a, x) => a + x[k], 0) / t.length);
     levels[pri] = { calls: t.length, waitMs: avg("waitMs"), runMs: avg("runMs"), maxWaitMs: Math.max(...t.map((x) => x.waitMs)) };
   }
-  return { slots: SLOTS, running, waiting, levels, recent: timings.slice(-30) };
+  const by = {};
+  for (const t of timings) {
+    const b = (by[t.why] ??= { calls: 0, runMs: 0 });
+    b.calls++;
+    b.runMs += t.runMs;
+  }
+  return { slots: SLOTS, running, waiting, levels, by, recent: timings.slice(-30) };
 }
 
 // Every line the model writes is for all ages: a medieval court's politics, never its bedrooms.

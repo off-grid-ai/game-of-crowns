@@ -74,6 +74,9 @@ done
 #   "most of it isn't even seen"). batch.gd and town_store.gd make the kept towns' batches. A layer's own MultiMesh
 #   is a batch no camera can cull.
 check "one-drawer" 'MultiMesh\.new\(\)' 'scripts/(bulk|batch|town_store)\.gd'
+#   one-cover: whether the realm is drawn at all has one owner (world_cover.gd): a screen covering the window says so
+#   there; no script sets disable_3d itself (Mac 2026-11-15: the reign's end drew the realm under its painting).
+check "one-cover" 'disable_3d *=' 'scripts/world_cover\.gd'
 #   one-scale: metres to world units is Units.M (scripts/world_units.gd); no script keeps its own 0.12 (audit #17).
 check "one-scale" '^const [A-Z_]*(S|SCALE) := 0\.12\b' 'scripts/world_units\.gd'
 #   one-loader: realm/data is read only through data.gd (Data.read/value/num); one-colour: a data colour becomes a

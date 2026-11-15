@@ -322,6 +322,13 @@ func _reign_end(r: Dictionary) -> void:
 	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	root.add_child(art)
+	# The painting covers the window: the realm under it isn't drawn while it shows (world_cover.gd; the ledger, which
+	# lifts it, draws the realm again).
+	var Cover := preload("res://scripts/world_cover.gd")
+	var covering := func(): Cover.cover("reign end", art.is_visible_in_tree())
+	art.visibility_changed.connect(covering)
+	layer.tree_exiting.connect(Cover.cover.bind("reign end", false))
+	covering.call_deferred()
 	# Dark from below, so the words read over the painting.
 	var shade := TextureRect.new()
 	var g := Gradient.new()

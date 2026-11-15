@@ -8,9 +8,13 @@ extends MultiMeshInstance3D
 
 ## Where each copy stands, in this node's frame. Set through make(); read by everyone else; kept with a kept town.
 @export var xfs: Array[Transform3D] = []
+## Simpler versions this much sooner than Godot's own pick (towns.json batch_lod_bias; Mac 2026-11-15, the fps round:
+## "I don't think we need as much detail"). Set when the batch stands, so a kept town takes it without being made again.
+static var LOD_BIAS: float = preload("res://scripts/data.gd").num("towns", "batch_lod_bias", 1.0)
 
 
 func _ready() -> void:
+	lod_bias = LOD_BIAS
 	if multimesh and multimesh.instance_count != xfs.size():
 		fill()  # read back from a kept town: its MultiMesh was kept empty (town_store.gd)
 

@@ -95,7 +95,7 @@ func _process(delta: float) -> void:
 			# The 4K film only draws from here (its light needs a moment to
 			# settle); the window's own view is never filmed, so it stops.
 			_film.render_target_update_mode = SubViewport.UPDATE_ALWAYS
-			get_tree().root.disable_3d = true
+			preload("res://scripts/world_cover.gd").cover("film", true)
 		if _settle < _lead_in():
 			return
 		_t = 0.0

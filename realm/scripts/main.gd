@@ -793,6 +793,9 @@ func apply_graphics() -> void:
 	if not _film():
 		get_viewport().scaling_3d_scale = float(_shot.get("scale", ProjectSettings.get_setting("rendering/scaling_3d/scale", 0.67)))  # --scale= for a measuring run's A/B
 	sun.directional_shadow_max_distance = minf(_rich["shadow"], 40.0) if graphics_smooth else _rich["shadow"]
+	# Smooth draws no sun shadows (Mac 2026-11-15, the fps round: "at this fidelity do we really need them?"): each
+	# shadow band drew every caster again, a second scene a frame (cyclevis: 5.9M -> 4.0M triangles without them).
+	sun.shadow_enabled = not graphics_smooth
 	if terrain and terrain.land3d and terrain.land3d.land:
 		terrain.land3d.land.set("cast_shadows", 0 if graphics_smooth else 1)  # Smooth: the ground casts no shadow (its every split redrew the land)
 	# The woods: their leafy middle detail runs out sooner, and painted cards take over.
@@ -865,6 +868,8 @@ func _setup_environment() -> void:
 		set_always_day.call_deferred(true)
 	sun = sky3d.sun
 	sun.shadow_enabled = true
+	if sky3d.moon:
+		sky3d.moon.shadow_enabled = false  # always day: a moon's shadow pass is a scene drawn for nothing
 	sun.directional_shadow_max_distance = 220.0
 	sun.directional_shadow_blend_splits = true
 	# Two shadow bands, not four: every band draws all its casters again, and
