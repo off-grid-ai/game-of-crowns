@@ -419,12 +419,13 @@ function applyStartOptions() {
   // shared Aldmere baseline's heap would carry him through a whole reign unfelt.
   const purse = Treasury.ECONOMY.start[meta.wealth] ?? Treasury.ECONOMY.start.comfortable;
   if (crown && crown.gold !== purse) { lua.push(Lua.gold(crown.id, purse - crown.gold)); crown.gold = purse; }
-  if (crown && o.host === "strong") {
-    lua.push(Lua.levy(world.cities.find((c) => c.owner === crown.id && c.capital)?.id ?? -1, ["Knights", "Knights", "Knights", "Pikemen", "Pikemen", "Pikemen", "Pikemen", "Archers", "Archers", "Catapult"]));
-  } else if (crown && o.host === "small") {
+  if (crown && o.host === "small") {
     // Half the royal garrison was never raised.
     lua.push(Lua.takeMen(crown.id, Math.floor((world.units ?? []).filter((u) => u.owner === crown.id && SOLDIER(u)).length / 2)));
   }
+  // The royal host he is crowned with, at Kingsmere (data/hosts.json start): a war king from the first minute.
+  const startHost = Hosts.HOSTS.start?.[o.host] ?? [];
+  if (crown && startHost.length) lua.push(Lua.levy(world.cities.find((c) => c.owner === crown.id && c.capital)?.id ?? -1, startHost));
   lua.forEach((l) => send(`lua cmd ${l}`));
   record({ turn: world.turn, kind: "decree", text: `The realm as the King found it: the great houses ${{ loyal: "loyal to the crown", wary: "wary of the crown", resentful: "resentful of the crown" }[o.trust]}, ${{ peaceful: "slow to war", mixed: "of mixed temper", warlike: "spoiling for war" }[o.temper]}.` });
 }

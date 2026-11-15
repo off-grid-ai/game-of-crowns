@@ -409,6 +409,7 @@ Switches (`--name`) go after `--` on the game's command line.
 - Which interface (`version`: v2, the pass, the default; v1 as before), the date card's widest (`top.maxWidth`), the chronicle drawer's width and greatest height (`chronicle.width`, `chronicle.height`, a share of the screen), a town card's width when it isn't standing by its town (`townCard.width`), a toast's width (`toast.width`): `realm/data/ui.json`. The camera pad in v2: only when the player picks "always" in Settings.
 - Which decrees take a royal seal: every one but an order that answers a matter at court (`bridge/seals.js`; the counts are `bridge/data/seals.json`).
 - How many orders the King's hosts take a season, all hosts together: `bridge/data/hosts.json`: `ordersPerSeason`.
+- The royal host the King is crowned with at Kingsmere, by the reign's host choice (small, standard, strong): its companies, `bridge/data/hosts.json` `start`.
 - The common folk's lasting households (how many a town holds by size, deaths by age, famine and plague, weddings, births, coming of age, newcomers and leavers): `bridge/data/households.json`.
 - What each lord wants and how much it steers his court matters (his plea for a town, the King's three answers): `bridge/data/ambitions.json` (`boost`, `drives`, `lines`, `plea`).
 - How far a harsh ruling (a hanging, a levy) is heard and for how long, the mood it leaves and the words the townsfolk hear: `bridge/data/rulings.json` `echo` (`harsh`, `reach` 6, `seasons` 1, `mood`, `words`).
