@@ -124,7 +124,7 @@ v1 is frozen (see "v1: what ships" in [VISION.md](VISION.md)). In v1 you are the
    | `ground/` | ground and road textures | Poly Haven / ambientCG (CC0) |
    | `audio/` | music and sounds | listed one by one in [CREDITS.md](realm/assets/audio/CREDITS.md) |
 
-   The whole `realm/assets/` folder is mirrored in the private R2 bucket `game-of-crowns-assets` under `realm-assets/` (bake-off art under `bakeoff/`): `rclone copy` it back, or run `realm/tools/r2_sync.sh` to push what's new (keys from the env file in `$GOC_R2_ENV`; copy only, never deletes).
+   All the art lives in the private R2 bucket `game-of-crowns-assets`, not in git: every model, texture, sound and portrait under `realm-assets/`, the concepts and targets under `docs-art/`, and the raw downloads and kits (`downloads/`, `aldmere-downloads/`, `goc-kits/`, `bakeoff/`). Git keeps code, data, Godot's `.import` files and licences. Get the art with `realm/tools/r2_pull.sh` (add `--docs` for the concepts), and push new art with `realm/tools/r2_sync.sh`. Keys come from the env file in `$GOC_R2_ENV`. Both copy only and never delete.
 
    The file names each folder expects are the ones in its `.import` files. Asset hunting briefs (`ASSET_SHORTLIST.md`, the `CODEX_*` briefs) are in the project archive.
 3. Open the project once so Godot imports everything (Apple Silicon: always native):

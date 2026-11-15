@@ -60,6 +60,57 @@ realm/assets/meshy/**
 !realm/assets/**/LICENSE*
 !realm/assets/**/CREDITS*
 
+# --- All art lives in R2 (Mac 2026-11-15: 'all the art needs to go to r2') ---
+# Every model, texture, sound and concept image goes to the bucket game-of-crowns-assets with
+# realm/tools/r2_sync.sh and comes back with realm/tools/r2_pull.sh; git keeps code, data, Godot's .import files
+# and licences.
+realm/assets/**/*.glb
+realm/assets/**/*.gltf
+realm/assets/**/*.bin
+realm/assets/**/*.fbx
+realm/assets/**/*.obj
+realm/assets/**/*.blend
+realm/assets/**/*.png
+realm/assets/**/*.jpg
+realm/assets/**/*.jpeg
+realm/assets/**/*.webp
+realm/assets/**/*.tga
+realm/assets/**/*.exr
+realm/assets/**/*.hdr
+realm/assets/**/*.ktx
+realm/assets/**/*.ktx2
+realm/assets/**/*.dds
+realm/assets/**/*.ogg
+realm/assets/**/*.wav
+realm/assets/**/*.mp3
+realm/assets/**/*.flac
+realm/assets/**/*.mp4
+realm/assets/**/*.webm
+realm/assets/**/*.svg
+docs/art/**/*.glb
+docs/art/**/*.gltf
+docs/art/**/*.bin
+docs/art/**/*.fbx
+docs/art/**/*.obj
+docs/art/**/*.blend
+docs/art/**/*.png
+docs/art/**/*.jpg
+docs/art/**/*.jpeg
+docs/art/**/*.webp
+docs/art/**/*.tga
+docs/art/**/*.exr
+docs/art/**/*.hdr
+docs/art/**/*.ktx
+docs/art/**/*.ktx2
+docs/art/**/*.dds
+docs/art/**/*.ogg
+docs/art/**/*.wav
+docs/art/**/*.mp3
+docs/art/**/*.flac
+docs/art/**/*.mp4
+docs/art/**/*.webm
+docs/art/**/*.svg
+
 # Raw downloads waiting to be sorted into the game.
 /downloads/
 /assets/

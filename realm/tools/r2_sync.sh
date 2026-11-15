@@ -2,8 +2,14 @@
 # Copy the art git does not carry to the R2 bucket game-of-crowns-assets.
 # Copy only: never syncs or deletes on R2; skips files already there at the same size.
 #
-#   realm/assets/          -> realm-assets/   (the whole folder, gitignored third-party art included)
+#   realm/assets/          -> realm-assets/   (the whole folder: every model, texture, sound and portrait the game loads)
+#   docs/art/              -> docs-art/       (concepts, targets, look boards)
+#   downloads/             -> downloads/      (raw downloads waiting to be sorted into the game)
+#   ~/Downloads/Aldmere    -> aldmere-downloads/
+#   ~/code/goc-kits        -> goc-kits/       (asset kits as fetched)
 #   bake-off outputs       -> bakeoff/        (concepts, cutouts, ai3d .glb, renders; logs skipped)
+# Git carries code, data, Godot's .import files and licences; the art itself lives here (Mac 2026-11-15:
+# "all the art needs to go to r2"). realm/tools/r2_pull.sh brings it back to a fresh checkout.
 #
 # Keys come from an env file (R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY); nothing is printed.
 #   GOC_R2_ENV      env file          (default: ~/wednesday/off-grid-ai/mobile/.env.keygen)
@@ -32,6 +38,17 @@ COMMON=(--size-only --transfers 16 --exclude '.DS_Store' --exclude '__pycache__/
 
 echo "r2_sync: realm/assets -> $BUCKET/realm-assets"
 "$RCLONE" copy "$ROOT/realm/assets" "r2:$BUCKET/realm-assets" "${COMMON[@]}" "$@"
+
+_copy() {  # local folder -> bucket prefix, when the folder is there
+  if [ -d "$1" ]; then
+    echo "r2_sync: $1 -> $BUCKET/$2"
+    "$RCLONE" copy "$1" "r2:$BUCKET/$2" "${COMMON[@]}" "${@:3}"
+  fi
+}
+_copy "$ROOT/docs/art" docs-art "$@"
+_copy "$ROOT/downloads" downloads "$@"
+_copy "$HOME/Downloads/Aldmere" aldmere-downloads "$@"
+_copy "$HOME/code/goc-kits" goc-kits "$@"
 
 if [ -d "$BAKEOFF" ]; then
   echo "r2_sync: bake-off -> $BUCKET/bakeoff"
