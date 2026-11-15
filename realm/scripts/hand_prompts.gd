@@ -34,17 +34,12 @@ var _card: Control  # the card the answer step points at
 var _host := -1  # the host the select step points at
 
 
-## The dim over the screen with a hole on the part spoken of; a click passes only through the hole, and only on a
-## guided step (pass_hole). Its own words are none: the Hand says them.
+## The dim over the screen with a hole on the part spoken of. It only draws: which clicks pass is allows() (a
+## veil that took clicks sat over Dialogic's buttons, whose own canvas layers Godot doesn't re-sort for clicks).
 class Veil extends Control:
 	var hole := Rect2()
 	var pass_hole := false
 	var open := false  # the whole realm is his to click (march: anywhere on the land)
-
-	func _has_point(p: Vector2) -> bool:
-		if open:
-			return false
-		return not (pass_hole and hole.has_area() and hole.has_point(p))
 
 	func _draw() -> void:
 		if open:
@@ -95,7 +90,7 @@ func _ready() -> void:
 		add_child(_under)
 		_veil = Veil.new()
 		_veil.set_anchors_preset(Control.PRESET_FULL_RECT)
-		_veil.mouse_filter = Control.MOUSE_FILTER_STOP
+		_veil.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_under.add_child(_veil)
 		_ring = Panel.new()
 		var box := StyleBoxFlat.new()
@@ -244,6 +239,9 @@ func _target() -> Control:
 func _place_ring() -> void:
 	if _ring == null or _telling == "":
 		return
+	var dlg := get_node_or_null("/root/Dialogic")
+	if dlg and dlg.Styles.has_active_layout_node():
+		lift(dlg.Styles.get_layout_node())  # its layers draw over the veil (they set themselves after start)
 	var rect := Rect2()
 	if _spot == "host" and _host >= 0:
 		var cam := get_viewport().get_camera_3d()
@@ -350,12 +348,49 @@ func _nearest_host() -> int:
 	return best
 
 
-## Esc ends the Hand's lesson there and then: the tour never traps him (Mac: "I'm stuck").
+## Dialogic's layout keeps its own canvas layers (its choices on layer 1, under the veil): each is lifted over the
+## veil (tour_layer), so his words and his buttons take the click (tour_click_probe.gd).
+static func lift(layout: Node) -> void:
+	for cl in layout.find_children("*", "CanvasLayer", true, false):
+		if (cl as CanvasLayer).layer < 20:
+			(cl as CanvasLayer).layer += 20
+
+
+## While the Hand speaks only what the tour allows is clicked (Mac: "it's accepting clicks other than what the tour
+## should allow"; "I'm stuck"): his own buttons, and on a guided step the thing to do (the hole; the whole land for a
+## march). Any other click is kept from the realm, and a left click turns his page when no deed is asked. Esc ends
+## the lesson there and then: the tour never traps him.
 func _input(event: InputEvent) -> void:
-	if _telling == "" or not (event is InputEventKey and (event as InputEventKey).pressed and (event as InputEventKey).keycode == KEY_ESCAPE):
+	if _telling == "":
+		return
+	if event is InputEventKey and (event as InputEventKey).pressed and (event as InputEventKey).keycode == KEY_ESCAPE:
+		get_viewport().set_input_as_handled()
+		var dlg := get_node_or_null("/root/Dialogic")
+		if dlg:
+			dlg.end_timeline()
+		_told()
+		return
+	if not event is InputEventMouseButton:
+		return
+	var mb := event as InputEventMouseButton
+	if mb.button_index in [MOUSE_BUTTON_WHEEL_UP, MOUSE_BUTTON_WHEEL_DOWN]:
+		return
+	var dlg := get_node_or_null("/root/Dialogic")
+	var layout: Node = dlg.Styles.get_layout_node() if dlg and dlg.Styles.has_active_layout_node() else null
+	if allows(mb.position, layout, _veil.hole, _want, _want == "march"):
 		return
 	get_viewport().set_input_as_handled()
-	var dlg := get_node_or_null("/root/Dialogic")
-	if dlg:
-		dlg.end_timeline()
-	_told()
+	if _want == "" and mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT and dlg:
+		dlg.Inputs.handle_input()  # the page turns; nothing under it is clicked
+
+
+## Whether a click at `at` may pass: on one of the Hand's own buttons (Dialogic's layout), or, on a guided step, in
+## its hole (or anywhere when the step is open: a march on the land).
+static func allows(at: Vector2, layout: Node, hole: Rect2, want: String, open: bool) -> bool:
+	if layout:
+		for b in layout.find_children("*", "BaseButton", true, false):
+			if (b as Control).is_visible_in_tree() and (b as Control).get_global_rect().has_point(at):
+				return true
+	if want == "":
+		return false
+	return open or hole.has_area() and hole.has_point(at)
