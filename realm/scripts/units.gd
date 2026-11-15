@@ -576,7 +576,7 @@ func field_hosts(store: Node) -> Dictionary:
 			view.set_meta("units", units)
 			view.set_meta("tile", tile)
 			add_child(view)
-			_hosts[key] = view
+			_hold(key, view)
 		elif view.get_meta("tile") != tile:
 			view.set_meta("tile", tile)
 			view.march_to(terrain.world_pos(float(tile.x), float(tile.y)))
@@ -641,7 +641,7 @@ func field_hosts(store: Node) -> Dictionary:
 				view = Army.new(get_parent(), 0, {"host": h, "quiet": true})
 				view.set_meta("units", units)
 				add_child(view)
-				_hosts[id] = view
+				_hold(id, view)
 			view.set_meta("tile", tile)
 			view.visible = view.get_meta("aboard", false) or Ground.on_land(terrain.world_pos(float(tile.x), float(tile.y)))  # never stood on the sea
 			if not hulls.is_empty() and not view.get_meta("aboard", false):
@@ -656,7 +656,7 @@ func field_hosts(store: Node) -> Dictionary:
 			view.set_meta("units", units)
 			view.set_meta("tile", tile)
 			add_child(view)
-			_hosts[id] = view
+			_hold(id, view)
 		elif view.get_meta("tile") != tile or view.get_meta("entering", false):
 			view.set_meta("tile", tile)
 			view.set_meta("entering", false)  # out again before it was in: it marches on and stays
@@ -672,6 +672,21 @@ func field_hosts(store: Node) -> Dictionary:
 				_hosts[id].queue_free()
 			_hosts.erase(id)
 	return drawn
+
+
+## Keeps `view` as the column drawn for `key` until it leaves the tree: a column frees itself once halted inside a
+## town (army.gd march_in), and a freed one kept here was read back into a typed var (combined run 2026-11-15: 43
+## 'previously freed instance' errors at field_hosts).
+func _hold(key: Variant, view: Node3D) -> void:
+	_hosts[key] = view
+	if not view.tree_exiting.is_connected(_let_go):
+		view.tree_exiting.connect(_let_go.bind(view))
+
+
+func _let_go(view: Node3D) -> void:
+	for k in _hosts.keys():
+		if _hosts[k] == view:
+			_hosts.erase(k)
 
 
 ## The ship figures nearest `at` within a tile and a half (a host's hulls before the bridge names them), at most `n`.

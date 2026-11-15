@@ -132,7 +132,7 @@ func stage(root: Node3D, life: Node3D, c: Dictionary, states: Array, tl: Object)
 			continue
 		if not ViewTier.spend_ok(&"town_scenes"):
 			await PerfTools.next_frame(&"town_scenes:124")
-			if not is_instance_valid(root) or not is_instance_valid(life) or root.get_node_or_null("Life") != life:
+			if TownLife()._gone(root, life):
 				return
 		var anchors: Dictionary = (life.get_meta("anchors", {}) as Dictionary).duplicate()  # where town_life's own dressing stands
 		for dress in row.get("dress", []):
@@ -145,10 +145,10 @@ func stage(root: Node3D, life: Node3D, c: Dictionary, states: Array, tl: Object)
 		for role in row.get("roles", []):
 			if not ViewTier.spend_ok(&"town_scenes"):
 				await PerfTools.next_frame(&"town_scenes:135")
-				if not is_instance_valid(root) or not is_instance_valid(life) or root.get_node_or_null("Life") != life:
+				if TownLife()._gone(root, life):
 					return
 			await _stage_role(k, role, anchors)  # body by body on the pot (_paced)
-			if not is_instance_valid(root) or not is_instance_valid(life) or root.get_node_or_null("Life") != life:
+			if TownLife()._gone(root, life):
 				return
 		if row.has("march") and _meets(row["march"], root, states, size):
 			_begin_march(root, life, row["march"], rng)
@@ -790,9 +790,7 @@ func _paced(k: Dictionary, at: StringName) -> bool:
 	if ViewTier.spend_ok(&"town_scenes"):
 		return true
 	await PerfTools.next_frame(at)
-	var root: Node3D = k["root"]
-	var life: Node3D = k["life"]
-	return is_instance_valid(root) and is_instance_valid(life) and root.get_node_or_null("Life") == life
+	return not TownLife()._gone(k["root"], k["life"])  # never into a typed var: either may be freed meanwhile
 
 
 func _stage_role(k: Dictionary, role: Dictionary, anchors: Dictionary) -> void:

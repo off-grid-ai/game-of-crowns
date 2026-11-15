@@ -142,9 +142,10 @@ var _step_at := 0
 const PerfTools := preload("res://scripts/perf_tools.gd")
 
 
-## Whether a staging paused over frames should stop: its town gone or dressed anew meanwhile.
-static func _gone(root: Node3D, life: Node3D) -> bool:
-	return not is_instance_valid(root) or not is_instance_valid(life) or root.get_node_or_null("Life") != life
+## Whether a staging paused over frames should stop: its town gone or dressed anew meanwhile. Untyped: after an await
+## either may already be freed, and a freed node handed to a typed argument is a script error, not a 'gone'.
+static func _gone(root: Variant, life: Variant) -> bool:
+	return not is_instance_valid(root) or not is_instance_valid(life) or (root as Node3D).get_node_or_null("Life") != life
 
 
 func _stage_town(root: Node3D, c: Dictionary, house: Dictionary) -> void:
