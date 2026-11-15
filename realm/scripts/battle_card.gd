@@ -110,6 +110,17 @@ func _show(c: Dictionary) -> void:
 		line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		line.custom_minimum_size.x = 260
 		v.add_child(line)
+	# What the King won by it (Warcraft III's and Total War's spoils after the fight; bridge battles.js the card's
+	# reward {gold, renown, captives, town...}): each named in host_command.json result.reward, in the accent.
+	var reward: Variant = c.get("reward")
+	if reward is Dictionary and not (reward as Dictionary).is_empty():
+		var said := PackedStringArray()
+		var rows: Dictionary = words.get("reward", {})
+		for k in reward:
+			if rows.has(k) and reward[k] != null:
+				said.append(String(rows[k]).format({"n": main.ui.heads(int(reward[k])) if (reward[k] is int or reward[k] is float) else String(reward[k])}))
+		if not said.is_empty():
+			v.add_child(T.datum("  ·  ".join(said), T.SIZE_DESC, T.ACCENT))
 	main.ui.add_child(_card)
 	_until = Time.get_ticks_msec() / 1000.0 + float(words.get("show_s", 14.0))
 	_card.modulate.a = 0.0
