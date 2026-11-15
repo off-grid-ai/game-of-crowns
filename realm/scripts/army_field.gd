@@ -476,6 +476,10 @@ func _ready_in(r: Dictionary) -> void:
 
 func _walk_in(r: Dictionary) -> void:
 	_play(r, "walk")
+	r["gait"] = "walk"
+	r["gait_still"] = 0.0
+	r.erase("gait_at")
+	r.erase("gait_yaw")
 
 
 ## How far the battle's lens stands (the test aid): the town view's distance (camera.json town_view.dist), so a
@@ -656,15 +660,12 @@ func _advance(r: Dictionary, _dt: float) -> void:
 	# faces its host's facing and closes to the foe's front along it, so neighbours stand parallel; only a foe beside
 	# or behind that front (a flank, the line broken through) is met square on his own front instead.
 	var b: Node3D = foe["node"]
-	var look := _line_front(r)
+	var look := _meet_look(r, foe)
 	var theirs: Vector3
-	if (b.global_position - at).dot(look) > 0.0:
+	if look.is_equal_approx(_line_front(r)):
 		var across := look.cross(Vector3.UP).normalized()
 		theirs = at + across * (b.global_position - at).dot(across) + look * ((b.global_position - at).dot(look) - _depth_along(foe, look) * 0.5)
 	else:
-		look = -b.global_transform.basis.z
-		look.y = 0.0
-		look = look.normalized()
 		theirs = b.global_position - look * float(foe["d"]) * 0.5
 	# Its own place on that front: beside any of its side already closing there, never on it (Mac 2026-11-15: three
 	# blocks heaped in one lump, each sent to the same foe's front).
@@ -673,12 +674,62 @@ func _advance(r: Dictionary, _dt: float) -> void:
 	r["spot"] = spot
 	if Vector2(spot.x - at.x, spot.z - at.z).length() > contact or gap > contact * 2.0:
 		Mover.of(r["node"]).toward(spot, Data.num(F, "field.advance", 0.12), look)
+		if _gait(r, _dt) == "ready":
+			_square(r, look, _dt)  # held where it stands (its way blocked, its place taken): its front to the foe, never askew
 		return
 	r["foe"] = foe
 	_send(r, &"engage")
 	if foe.get("state_name", "") in ["stand", "volley", "advance"]:
 		foe["foe"] = r
 		_send(foe, &"engage")
+
+
+## The way a regiment faces to meet `foe` (flat, world; research note step 4): its side's front while the foe stands
+## ahead of it, so neighbours stand parallel and the lines meet as lines; a foe beside or behind that front (a flank,
+## the line broken through) square on his own front instead.
+func _meet_look(r: Dictionary, foe: Dictionary) -> Vector3:
+	var look := _line_front(r)
+	var b: Node3D = foe["node"]
+	if (b.global_position - (r["node"] as Node3D).global_position).dot(look) > 0.0:
+		return look
+	var theirs := -b.global_transform.basis.z
+	theirs.y = 0.0
+	return theirs.normalized()
+
+
+## Turns a regiment where it stands until its front is `look` (flat, world), at formations.json wheel.rate a second,
+## within field.square.slack of it (Mac's run 7: a block that met its foe mid-wheel stood slanted to his line).
+func _square(r: Dictionary, look: Vector3, dt: float) -> void:
+	if look.length() < 0.001:
+		return
+	var yaw := (r["node"] as Node3D).rotation.y
+	var off := angle_difference(yaw, atan2(look.x, look.z))
+	if absf(off) <= Data.num(F, "field.square.slack", 0.03):
+		return
+	var rate := float(Data.value("formations", "wheel.rate", 0.9))
+	(r["army"] as Army).turn(r, yaw + clampf(off, -rate * dt, rate * dt))
+	r["gait_yaw"] = (r["node"] as Node3D).rotation.y  # its own squaring is no move of its Mover's (_gait)
+	r["moved"] = true
+
+
+## Its men's clip by whether its block moves (Mac's run 7: a block standing with its pikes upright, its walk, beside
+## one at the ready): walk while its Mover takes it on more than field.gait.still a second or wheels it more than
+## field.gait.wheel radians a second, ready once it has stood field.gait.hold seconds. Returns the gait it now has.
+func _gait(r: Dictionary, dt: float) -> String:
+	var node: Node3D = r["node"]
+	var at := node.global_position
+	var was: Vector3 = r.get("gait_at", at)
+	var yaw_was := float(r.get("gait_yaw", node.rotation.y))
+	r["gait_at"] = at
+	r["gait_yaw"] = node.rotation.y
+	var goes := dt > 0.0 and (Vector2(at.x - was.x, at.z - was.z).length() / dt > Data.num(F, "field.gait.still", 0.02)
+		or absf(angle_difference(yaw_was, node.rotation.y)) / dt > Data.num(F, "field.gait.wheel", 0.1))
+	r["gait_still"] = 0.0 if goes else float(r.get("gait_still", 0.0)) + dt
+	var want := "walk" if float(r["gait_still"]) < Data.num(F, "field.gait.hold", 0.5) else "ready"
+	if want != String(r.get("gait", "walk")):
+		_play(r, want)
+	r["gait"] = want
+	return want
 
 
 ## Its side's front (flat, world): the way its host's line faces (Army.facing), one for every regiment of the side.
@@ -733,6 +784,8 @@ func _fight(r: Dictionary, dt: float) -> void:
 	if r["role"] == "cavalry" and clock - float(r.get("met_at", clock)) > Data.num(F, "field.cavalry.melee_s", 4.0):
 		_send(r, &"rideout")  # horse never stays stuck in: it rides out to charge again (Total War's cycle charge)
 		return
+	if r["role"] != "cavalry":
+		_square(r, _meet_look(r, foe), dt)  # met mid-wheel (its foe closed on it first): it squares to him where it stands
 	var army: Army = r["army"]
 	var vat: VATMultiMeshInstance3D = r["vat"]
 	var front := _front_men(r)
