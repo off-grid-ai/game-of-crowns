@@ -267,8 +267,10 @@ func march_out(_to: Vector3) -> void:
 ## A host in the field stands in column with its head on its lead company's tile, facing `yaw`, closed up behind it
 ## (03-army: a column of regiments, each under its banner), halted and at ease.
 func _stand_on_tile(at: Vector3, yaw: float) -> void:
+	var tail := _baggage_tail() + 1.0
+	yaw = _dry_yaw(at, yaw, tail)
 	var dir := Vector3(sin(yaw), 0, cos(yaw))
-	_path = PackedVector3Array([_ground_at(at - dir * (_baggage_tail() + 1.0)), _ground_at(at)])
+	_path = PackedVector3Array([_ground_at(at - dir * tail), _ground_at(at)])
 	_cum = PackedFloat32Array([0.0, _path[0].distance_to(_path[1])])
 	_field = _path[1]
 	_face = yaw
@@ -283,6 +285,31 @@ func _stand_on_tile(at: Vector3, yaw: float) -> void:
 		c["s"] = _cum[1] - float(c["off"])
 		(c["node"] as Node3D).global_position = _at(c["s"])
 		(c["node"] as Node3D).rotation.y = yaw
+
+
+## A heading for a column standing with its head at `at` whose `tail` behind it lies on land (Mac 2026-11-15: a
+## coastal host stood out over the sea): `yaw` when its whole length is dry, else of field.turns bearings round it
+## the one nearest `yaw` with the most land under it (ground.gd on_land, every march.wetStep).
+func _dry_yaw(at: Vector3, yaw: float, tail: float) -> float:
+	var step := maxf(Data.num("army", "march.wetStep", 0.5), 0.1)
+	var turns := int(Data.num("battle", "field.turns", 12))
+	var best := yaw
+	var most := -1
+	for i in turns:
+		var a := yaw + TAU * float((i + 1) / 2) / turns * (1.0 if i % 2 == 1 else -1.0)
+		var dir := Vector3(sin(a), 0, cos(a))
+		var dry := 0
+		var d := 0.0
+		while d <= tail:
+			if Footing.on_land(at - dir * d):
+				dry += 1
+			d += step
+		if dry > most:
+			most = dry
+			best = a
+		if dry == int(tail / step) + 1:
+			break
+	return best
 
 
 ## The way a field host faces: toward where its order sends it, else the way it last marched, else north.
