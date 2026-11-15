@@ -26,8 +26,11 @@ walks it. Nothing tweens or sets a position to travel. One base, every mover inh
 through a well by forgetting to ask. `realm/tools/rules_check.sh` checks it before every commit of `realm/scripts` (its known-breach
 list, `tools/rules_known.txt`, only shrinks).
 
-**Frame rate: anything above 10 fps is fine (Mac, 2026-11-11).** Don't trade density or detail for 30 fps; spend
-the headroom on bigger armies, busier towns and finer detail.
+**Smooth play first (Mac, 2026-11-14).** No beach ball, smooth panning and zooming, a fast load, with no loss of
+look. Heavy work never blocks a frame: every staged loop draws on the one frame budget (`ViewTier.spend_ok`), views
+react to the store's `record_changed` instead of re-walking the world, far towns stream, repeated things draw in
+bulk (`bulk.gd`).
 
-Working rules are the project skills in `.claude/skills/` (start with `goc-cpto`). Marketing copy follows
+Where things stand right now is the top of [docs/SUPERVISOR_LEDGER.md](docs/SUPERVISOR_LEDGER.md). Working rules
+are the project skills in `.claude/skills/` (start with `goc-cpto`). Marketing copy follows
 the mac-voice skill: only what the player gets, said the way a person talks.

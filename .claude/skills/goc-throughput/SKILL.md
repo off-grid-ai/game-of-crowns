@@ -31,7 +31,7 @@ Keep the loop alive with `/loop 12m /goc-throughput` (or `ScheduleWakeup` 720 s)
    Don't fix it yourself. Screenshots go to Mac at once, unasked, with the casebook case named.
 4. **Find the bottleneck.** Answer these and pick the worst:
    - Who is waiting? On the GPU, a review, Mac, a file another builder owns, a download.
-   - Who is idle? Give them the next piece from `docs/PLAN.md`.
+   - Who is idle? Give them the next piece from the ledger's "Now" (`docs/SUPERVISOR_LEDGER.md`).
    - What is being done twice? Two threads on one job, or a check repeating one already done.
    - Which step is slower than the code it checks?
    - What keeps failing in the combined pass? A file everyone collides on gets one owner.
