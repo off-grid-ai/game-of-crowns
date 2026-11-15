@@ -246,7 +246,7 @@ func _frame_for_shot() -> void:
 				return
 			var h: Dictionary = main._houses.get(int(d.get("id", _shot["control"])), d)
 			main.bridge.person(str(d["lord"].get("id", "")), func(p):
-				if not p is Dictionary:
+				if not (p is Dictionary and p.has("name")):  # {} when the bridge could not answer
 					return
 				main._take_control(p, h)
 				if _shot.has("duel"):
@@ -579,7 +579,7 @@ func _tour() -> void:
 		if d is Dictionary and d.get("lord") is Dictionary:
 			var h: Dictionary = main._houses.get(int(d.get("id", 0)), d)
 			main.bridge.person(str(d["lord"].get("id", "")), func(p):
-				if p is Dictionary:
+				if p is Dictionary and p.has("name"):
 					lord["p"] = p
 					lord["h"] = h
 					main._take_control(p, h)))

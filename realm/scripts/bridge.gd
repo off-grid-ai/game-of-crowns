@@ -99,7 +99,7 @@ func revoke_decree(id: String, cb: Callable) -> void:
 
 
 func character_options(cb: Callable) -> void:
-	_http_get("/characters/options", cb)
+	_http_get("/characters/options", cb, {})
 
 
 ## What you said into the microphone, as words (Off Grid's Whisper, via the bridge).
@@ -234,7 +234,7 @@ func continue_reign(cb: Callable) -> void:
 
 
 func lore(cb: Callable) -> void:
-	_http_get("/lore", cb)
+	_http_get("/lore", cb, {})
 
 
 ## Give a house or a person a name of the player's own (from: their own word,
@@ -256,7 +256,7 @@ func names(cb: Callable) -> void:
 
 ## The book as written: the starting cast, read from the baseline realm.
 func lore_written(cb: Callable) -> void:
-	_http_get("/lore?as=written", cb)
+	_http_get("/lore?as=written", cb, {})
 
 
 ## Aldmere as every new chronicle finds it: its towns and their houses, for the Lore's map.
@@ -270,7 +270,7 @@ func realm_map(cb: Callable) -> void:
 
 
 func person(id: String, cb: Callable) -> void:
-	_http_get("/person?id=%s" % id.uri_encode(), cb)
+	_http_get("/person?id=%s" % id.uri_encode(), cb, {})
 
 
 func court(cb: Callable) -> void:
@@ -404,21 +404,35 @@ func set_speed(seconds: int) -> void:
 	_post("/speed", {"seconds": seconds}, func(_c, _d): pass)
 
 
-func _http_get(path: String, cb: Callable) -> void:
+## A GET. The realm's polls (no or_else) skip a call while the last of that path is still out, and say nothing when it
+## fails: the next poll answers. A call someone waits on (or_else given: a card, a page, a form) is always sent and
+## always answered: the bridge's reply, or or_else when it fails, is down or restarting. Never silence.
+func _http_get(path: String, cb: Callable, or_else: Variant = null) -> void:
 	var key := path.split("?")[0]
-	if _busy.get(key, false):
-		return
-	_busy[key] = true
+	var waited := or_else != null
+	if not waited:
+		if _busy.get(key, false):
+			return
+		_busy[key] = true
 	var req := HTTPRequest.new()
 	add_child(req)
 	req.request_completed.connect(func(_r, code, _h, body):
-		_busy[key] = false
+		if not waited:
+			_busy[key] = false
 		req.queue_free()
+		var data = null
 		if code == 200 or (code == 503 and key == "/world"):
-			var data = JSON.parse_string(body.get_string_from_utf8())
-			if data != null:
-				cb.call(data))
-	req.request(BASE + path)
+			var j := JSON.new()
+			var text := (body as PackedByteArray).get_string_from_utf8()
+			if text != "" and j.parse(text) == OK:
+				data = j.data
+		if data != null:
+			cb.call(data)
+		elif waited:
+			cb.call(or_else))
+	if req.request(BASE + path) != OK and waited:
+		req.queue_free()
+		cb.call(or_else)
 
 
 ## The King's grain, gold or rider reached its town: the bridge credits it.

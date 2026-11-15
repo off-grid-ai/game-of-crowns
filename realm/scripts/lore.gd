@@ -228,9 +228,12 @@ func _show(id: Variant) -> void:
 			var call: Callable = pair[3]
 			nb.pressed.connect(func(): call.call())
 			nav.add_child(nb)
+	var pen := _pen  # Edit asked for this page written on; any other way here reads it
+	_pen = false
+	_editing = false
 	if id is String:
 		if _people.has(id):
-			_person_page(_people[id]["p"], _people[id]["h"])
+			_person_page(_people[id]["p"], _people[id]["h"], pen)
 		return
 	if id == -1:
 		_realm()
@@ -243,7 +246,7 @@ func _show(id: Variant) -> void:
 		return
 	for h in _book.get("houses", []):
 		if int(h.get("id", -2)) == id:
-			_house(h)
+			_house(h, pen)
 
 
 # --- the realm ------------------------------------------------------------------
@@ -397,9 +400,8 @@ func _house(h: Dictionary, editing := false) -> void:
 		edit.add_theme_color_override("font_color", T.TEXT_3)
 		edit.add_theme_font_size_override("font_size", T.SIZE_DESC)
 		edit.pressed.connect(func():
-			for c in _page.get_children():
-				c.queue_free()
-			_house(h, true))
+			_pen = true
+			_show(_chosen))  # the page again, Back and Forward kept, written on
 		title_row.add_child(edit)
 	if String(h.get("words", "")) != "":
 		names.add_child(T.title("“%s”" % h["words"], 18, T.ACCENT))
@@ -759,6 +761,8 @@ func _open_person(p: Dictionary, h: Dictionary) -> void:
 
 
 var _editing := false  # the page is being written on (Esc puts the pen down)
+var _pen := false  # the next page shown is to be written on (its Edit was pressed)
+var _opts := {}  # the realm's natures, aims and roles for the form (bridge /characters/options), kept once read
 
 
 ## A person's page (CK3's character window as a page of the book): their painted portrait large beside their arms
@@ -794,10 +798,7 @@ func _person_page(p: Dictionary, h: Dictionary, editing := false) -> void:
 	if not family.is_empty():
 		title_row.add_child(_sigil(family, Color.WHITE, 36))
 	title_row.add_child(_sigil(h, _tint(h), 36 if family.is_empty() else 24))
-	var title := T.title(String(p.get("name", "")), 34)
-	title.autowrap_mode = TextServer.AUTOWRAP_WORD
-	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	title_row.add_child(title)
+	title_row.add_child(T.title(String(p.get("name", "")), 34))  # Edit right beside it, as on a house's page
 	if not editing and save_person.is_valid() and ui:
 		var edit := Button.new()
 		edit.text = "Edit"
@@ -807,9 +808,8 @@ func _person_page(p: Dictionary, h: Dictionary, editing := false) -> void:
 		edit.add_theme_color_override("font_color", T.TEXT_3)
 		edit.add_theme_font_size_override("font_size", T.SIZE_DESC)
 		edit.pressed.connect(func():
-			for c in _page.get_children():
-				c.queue_free()
-			_person_page(p, h, true))
+			_pen = true
+			_show(_chosen))  # the page again, Back and Forward kept, written on
 		title_row.add_child(edit)
 	var rank: String = String(p.get("role", "")) if p.get("role") != null else RANKS.get(String(p.get("rank", "")), String(p.get("rank", "")).capitalize())
 	if String(p.get("gender", "")) == "female":
@@ -864,35 +864,46 @@ func _person_editor(p: Dictionary, h: Dictionary) -> void:
 	var host := VBoxContainer.new()
 	host.add_theme_constant_override("separation", 10)
 	_page.add_child(host)
-	var ask := trait_options if trait_options.is_valid() else func(cb): cb.call({})
-	ask.call(func(opts):
-		if not is_instance_valid(host):
+	# Built at once from what the page holds and the natures already read; when they were not yet read, they are asked
+	# for and the form is laid again as they come (only if nothing has been written in it yet).
+	if _opts.is_empty() and trait_options.is_valid():
+		var key: Variant = _chosen
+		trait_options.call(func(opts):
+			if opts is Dictionary and not opts.is_empty():
+				_opts = opts
+				if _editing and _same(_chosen, key) and is_instance_valid(host):
+					for c in host.get_children():
+						c.queue_free()
+					_person_form(p, h, host))
+	_person_form(p, h, host)
+
+
+func _person_form(p: Dictionary, h: Dictionary, host: VBoxContainer) -> void:
+	var person := p.duplicate()
+	person["fixed"] = true
+	if not person.get("backstory") and person.get("story"):
+		person["backstory"] = person["story"]
+	ui.form_card.show_character_form(int(h.get("id", -1)), String(h.get("name", "")), _opts, person, host, func(spec: Dictionary):
+		if spec.is_empty():
+			_show(_chosen)
 			return
-		var person := p.duplicate()
-		person["fixed"] = true
-		if not person.get("backstory") and person.get("story"):
-			person["backstory"] = person["story"]
-		ui.form_card.show_character_form(int(h.get("id", -1)), String(h.get("name", "")), opts if opts is Dictionary else {}, person, host, func(spec: Dictionary):
-			if spec.is_empty():
-				_show(_chosen)
+		save_person.call(p, spec, func(code, d):
+			if code != 200:
+				ui.toast(String((d if d is Dictionary else {}).get("error", "That didn't save.")))
 				return
-			save_person.call(p, spec, func(code, d):
-				if code != 200:
-					ui.toast(String((d if d is Dictionary else {}).get("error", "That didn't save.")))
-					return
-				var now := p.duplicate()
-				for k in ["name", "loyalty", "memories"]:
-					if spec.has(k):
-						now[k] = spec[k]
-				if spec.get("past") != null:
-					now["backstory"] = spec["past"]
-					now["story"] = spec["past"]
-				if not (spec.get("traits", []) as Array).is_empty():
-					now["traits"] = spec["traits"]
-				var key := "person:%s" % str(p.get("id", p.get("name", "")))
-				_people[key] = {"p": now, "h": h}
-				ui.toast("%s is changed." % String(now.get("name", "")))
-				refresh())))
+			var now := p.duplicate()
+			for k in ["name", "loyalty", "memories"]:
+				if spec.has(k):
+					now[k] = spec[k]
+			if spec.get("past") != null:
+				now["backstory"] = spec["past"]
+				now["story"] = spec["past"]
+			if not (spec.get("traits", []) as Array).is_empty():
+				now["traits"] = spec["traits"]
+			var key := "person:%s" % str(p.get("id", p.get("name", "")))
+			_people[key] = {"p": now, "h": h}
+			ui.toast("%s is changed." % String(now.get("name", "")))
+			refresh()))
 
 
 ## The lesser family a person belongs to (from their surname), or {} for the house's own blood.

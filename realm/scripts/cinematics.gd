@@ -193,7 +193,7 @@ func _take_lord() -> void:
 			return
 		var h: Dictionary = main._houses.get(int(d.get("id", lord)), d)
 		main.bridge.person(str(d["lord"].get("id", "")), func(p):
-			if not p is Dictionary:
+			if not (p is Dictionary and p.has("name")):  # {} when the bridge could not answer
 				return
 			main._take_control(p, h)
 			if clip == "hall":
