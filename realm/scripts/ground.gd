@@ -23,6 +23,7 @@ extends RefCounted
 ##   claim(id, poly, kind), release(id): ground held while it lies (world XZ): a regiment's rectangle ("body"), a
 ##     hedged field ("field": a muster keeps off it, a battle may be fought over it).
 
+const PerfTools := preload("res://scripts/perf_tools.gd")  # the frame-cost probe
 const NavGround := preload("res://scripts/nav_ground.gd")
 const TownNav := preload("res://scripts/town_nav.gd")
 
@@ -51,6 +52,15 @@ static var _kept_n := 0
 ## `free_of`: a claim that doesn't count (the asker's own); `open_kinds`: kinds of claim stood on freely (a battle
 ## over fields; "host" for every host's ground, a battle's grid that both sides close over).
 static func is_clear(p: Vector3, radius := 0.0, props := true, free_of: Variant = null, open_kinds: Array = []) -> bool:
+	if not PerfTools.probing:
+		return _is_clear(p, radius, props, free_of, open_kinds)
+	var t0 := Time.get_ticks_usec()
+	var ok := _is_clear(p, radius, props, free_of, open_kinds)
+	PerfTools.add("ground.is_clear", Time.get_ticks_usec() - t0)  # its share of the frame (GOC_PERF_PROBE)
+	return ok
+
+
+static func _is_clear(p: Vector3, radius := 0.0, props := true, free_of: Variant = null, open_kinds: Array = []) -> bool:
 	var keys: Array = ["town", "life"] if props else ["town"]
 	for o in _reach_of(radius):
 		var q: Vector3 = p + o
@@ -230,7 +240,9 @@ static func nearest_clear(p: Vector3, radius := 0.0, max_dist := REACH, open_kin
 	var k: Array = here.get(key, [])
 	if not k.is_empty() and k[1] == lay:
 		return k[0]  # asked before, and nothing has been set down or taken away in its towns since
+	var t0 := Time.get_ticks_usec()
 	var q := _nearest(p, radius, max_dist, near, open_kinds)
+	PerfTools.add("ground.nearest_miss", Time.get_ticks_usec() - t0)  # a kept answer missed (GOC_PERF_PROBE)
 	if _kept_n >= KEPT_MAX:
 		_kept.clear()
 		_kept_n = 0

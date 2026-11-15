@@ -28,6 +28,7 @@ extends Node3D
 ## once it stands). Prints "ARMY …" lines (a test aid). Off in play; nothing else reads it. Numbers in
 ## data/army.json (docs/TUNING.md); units, their roles, meshes and clips are rows there (tools/rig/README.md's hook).
 
+const PerfTools := preload("res://scripts/perf_tools.gd")  # the frame-cost probe
 const Formation := preload("res://scripts/army_formation.gd")  # its shapes: line, column, places, order
 const Visual := preload("res://scripts/army_visual.gd")
 const HostPick := preload("res://scripts/host_pick.gd")  # a click on a regiment picks it by its own body  # its baked soldiers, their look and lighter levels
@@ -1595,6 +1596,15 @@ func _reform(r: Dictionary, shape: String) -> void:
 # --- Each frame -------------------------------------------------------------------------------------------
 
 func _process(delta: float) -> void:
+	if not PerfTools.probing:
+		_process_timed(delta)
+		return
+	var t0 := Time.get_ticks_usec()
+	_process_timed(delta)
+	PerfTools.add("army", Time.get_ticks_usec() - t0)  # its share of the frame (GOC_PERF_PROBE)
+
+
+func _process_timed(delta: float) -> void:
 	if _regiments.is_empty() or banners.standard == null:
 		return
 	for r in _regiments:

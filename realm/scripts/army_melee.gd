@@ -10,6 +10,7 @@ extends Node
 ##    and comes on, or falls the way the blow drives him. The duels' own moves (combat.gd's kits and reels).
 ## Who wins is the realm's (Freeciv decides, the bridge tells): a staging sets each side's chance to land a blow.
 
+const PerfTools := preload("res://scripts/perf_tools.gd")  # the frame-cost probe
 const Mover := preload("res://scripts/mover.gd")  # the one way to move (CLAUDE.md)
 const Mind := preload("res://scripts/army_mind.gd")
 const Ground := preload("res://scripts/army_ground.gd")
@@ -74,6 +75,15 @@ func _send(who: Dictionary, event: StringName) -> void:
 
 
 func _process(dt: float) -> void:
+	if not PerfTools.probing:
+		_process_timed(dt)
+		return
+	var t0 := Time.get_ticks_usec()
+	_process_timed(dt)
+	PerfTools.add("army_melee", Time.get_ticks_usec() - t0)  # its share of the frame (GOC_PERF_PROBE)
+
+
+func _process_timed(dt: float) -> void:
 	clock += dt
 	_mind_the_crowd()
 

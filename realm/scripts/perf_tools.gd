@@ -463,6 +463,9 @@ func _cycle_step(delta: float) -> void:
 			for c in main.terrain.get_children():  # every child of the ground, named or not: hiding all of it doubles fps
 				if c is Node3D and not _cycle.any(func(e): return e[1] == c):
 					_cycle.insert(_cycle.size() - 1, ["t:" + String(c.name), c])
+			for c in main.get_children():  # and every other layer of the realm (a field battle, a siege, the camps)
+				if c is Node3D and c != main.terrain and not _cycle.any(func(e): return e[1] == c):
+					_cycle.insert(_cycle.size() - 1, ["m:" + String(c.name), c])
 			# The renderer's own effects, each off in turn (what each costs the draw).
 			var env := main.env
 			var sun := main.sun

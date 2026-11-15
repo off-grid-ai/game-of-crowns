@@ -22,6 +22,7 @@ extends Node3D
 ## the town side, their banners wavering as the fight goes on. When the holder's block breaks, its regiments run
 ## into the town and the besiegers pour in through the gap and spread out among the houses. Never moves the camera.
 
+const PerfTools := preload("res://scripts/perf_tools.gd")  # the frame-cost probe
 const Army := preload("res://scripts/army.gd")
 const Mover := preload("res://scripts/mover.gd")  # the one way to move (CLAUDE.md)
 const Mind := preload("res://scripts/army_mind.gd")
@@ -252,6 +253,15 @@ func _send(r: Dictionary, ev: StringName) -> void:
 # --- Each frame -------------------------------------------------------------------------------------------
 
 func _process(delta: float) -> void:
+	if not PerfTools.probing:
+		_process_timed(delta)
+		return
+	var t0 := Time.get_ticks_usec()
+	_process_timed(delta)
+	PerfTools.add("army_field", Time.get_ticks_usec() - t0)  # its share of the frame (GOC_PERF_PROBE)
+
+
+func _process_timed(delta: float) -> void:
 	if ai != null:
 		_storm_tick(delta)
 		return
