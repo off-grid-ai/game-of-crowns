@@ -127,7 +127,7 @@ func kings_road() -> void:
 		var owner: String = w[4]
 		_ask(w[1], w[2], func(route: PackedVector3Array) -> void:
 			if (_ways.get(key, {}) as Dictionary).get("node") == node:
-				_paint_jobs.append([key, node, route, 0, width, owner]))
+				_paint_jobs.append([key, node, route, 0, width, owner]), _kept_route([key, String(w[0])]))
 
 
 var _ways := {}  # road key -> {sig: its ends, node: its painted stretches and verges, owner: its _paths owner, stones}
@@ -180,14 +180,55 @@ var _routed: Array = []  # [then, route] back from the worker, painted on the bu
 var _routing := -1  # the worker task routing a batch
 var _lock := Mutex.new()
 const NavWorld := preload("res://scripts/nav_world.gd")  # the realm's one navigation
+const Kept := preload("res://scripts/kept.gd")  # where a road's route and its lanes' felled trees are kept
 const ViewTier := preload("res://scripts/view_tier.gd")
 
 
 ## The route from `from` to `to` over the land (a cart's and a rider's map: wide), asked on a worker once the
 ## navigation is ready; `then` (route) runs on the main thread on the frame's budget. A road with no route isn't drawn.
-func _ask(from: Vector3, to: Vector3, then: Callable) -> void:
-	_asks.append([from, to, then])
+## A route is worked out once and kept at `kept` (_kept_route: by the road and its ends on this land): a launch reads it
+## back at once, never waiting for the navigation (round 11: the great roads were drawn some 80 s in, once the wide map
+## was baked) nor asking it again; tools/bake.gd keeps the starting realm's and the chronicle's into the game.
+func _ask(from: Vector3, to: Vector3, then: Callable, kept: String) -> void:
 	set_process(true)
+	if Kept.has(kept):
+		var t0 := Time.get_ticks_usec()
+		var way: Variant = bytes_to_var(FileAccess.get_file_as_bytes(kept))
+		PerfTools.add("roads.read_back", Time.get_ticks_usec() - t0)
+		if way is PackedVector3Array and (way as PackedVector3Array).size() >= 2:
+			_lock.lock()
+			_routed.append([then, way, 0])
+			_lock.unlock()
+			return
+	_asks.append([from, to, then, kept])
+
+
+## Where a road's route is kept: by what decides it (`what`: its key and its ends) and the land it runs over.
+func _kept_route(what: Array) -> String:
+	return Kept.path("routes", str(what + [_land_key()]).md5_text(), "bin")
+
+
+## The land's fingerprint (its size and every tile's kind): a route or a lane kept on other land is never read back.
+var _land := ""
+var _land_frame := -1
+func _land_key() -> String:
+	if _land_frame != Engine.get_process_frames():
+		_land_frame = Engine.get_process_frames()
+		var img: Variant = terrain.get("land")
+		_land = str(hash([terrain.width, terrain.height, terrain.terrain, (img as Image).get_size() if img is Image else Vector2i.ZERO]))
+	return _land
+
+
+## A file written beside its place and then put there, so nothing reads it half written (kept.gd _write_whole).
+static func _keep_bytes(path: String, bytes: PackedByteArray) -> void:
+	DirAccess.make_dir_recursive_absolute(path.get_base_dir())
+	var part := path.get_basename() + ".part." + path.get_extension()
+	var f := FileAccess.open(part, FileAccess.WRITE)
+	if f == null:
+		return
+	f.store_buffer(bytes)
+	f.close()
+	DirAccess.rename_absolute(part, path)
 
 
 func _process(_delta: float) -> void:
@@ -219,6 +260,8 @@ func _route_all(batch: Array) -> void:
 	for e in batch:
 		var t0 := Time.get_ticks_usec()
 		var way := NavWorld.path(e[0], e[1], &"wide")
+		if way.size() >= 2:
+			_keep_bytes(String(e[3]), var_to_bytes(way))  # kept: the next launch reads it back
 		_lock.lock()
 		_routed.append([e[2], way, Time.get_ticks_usec() - t0])
 		_lock.unlock()
@@ -347,7 +390,7 @@ func track(a: Vector3, b: Vector3, width := WIDTH * 0.7, key := "") -> void:
 	_ask(a, b, func(route: PackedVector3Array) -> void:
 		if is_instance_valid(layer) and _track_keys.get(key) == layer:
 			for i in route.size() - 1:
-				_segment(route[i], route[i + 1], layer, width, "track:" + key))
+				_segment(route[i], route[i + 1], layer, width, "track:" + key), _kept_route(["track:" + key, "%.2f,%.2f>%.2f,%.2f" % [a.x, a.z, b.x, b.z]]))
 
 
 ## Where every road and track runs, so grass and the like can keep off them:
