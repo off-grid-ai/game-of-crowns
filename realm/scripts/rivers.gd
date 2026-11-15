@@ -21,9 +21,23 @@ static func lines() -> Array:
 	return _lines
 
 
+var _terrain: Node3D
+var _laid: Array[Dictionary] = []  # each river laid: {mesh: MeshInstance3D, level: its water's own surface, area: Rect2}
+
+
 func build(terrain: Node3D) -> void:
+	_terrain = terrain
 	for r in lines():
 		_river(terrain, r["points"])
+	# Land graded later (a town's square, a plot) keeps the water on it: the rivers there are laid on the land again.
+	if terrain and terrain.has_signal("ground_changed"):
+		terrain.ground_changed.connect(_on_ground_changed)
+
+
+func _on_ground_changed(area: Rect2) -> void:
+	for r in _laid:
+		if (r["area"] as Rect2).intersects(area):
+			_drape(r)
 
 
 ## Each stretch is already fitted to the land (bridge/tools/azgaar_rivers.py):
@@ -108,3 +122,40 @@ func _lay(pts: Array[Vector3], widths: Array[float]) -> void:
 	river.set_materials("transparency_clarity", 0.15)
 	river.set_materials("i_lod0_distance", 6.0)
 	river.mesh_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var mi: MeshInstance3D = river.mesh_instance
+	var level: PackedVector3Array = mi.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+	var box := mi.get_aabb()
+	var r := {"mesh": mi, "level": level, "area": Rect2(box.position.x, box.position.z, box.size.x, box.size.z)}
+	_laid.append(r)
+	_drape(r)
+
+
+## The water laid on the land, the way spline-river tools conform their mesh to the terrain (R.A.M.'s and
+## Unity Spline Mesh's "snap to terrain"; Waterways has no terrain step): Waterways lays every cross-section level at
+## its centre's height, so where the course bends on a slope or a bank lies lower than the water (a bend's outer
+## side reaches past the next, lower stretch; a graded square beside it), the ribbon stood as a flat slab over the
+## land with straight cut edges (Mac 2026-11-15). Each rim vertex is sunk to just under the land under it, never
+## raised: the water meets its bank wherever it runs and slopes with the land across a bend. ground.json rivers.meet.
+func _drape(r: Dictionary) -> void:
+	var mi: MeshInstance3D = r["mesh"]
+	if not is_instance_valid(mi) or _terrain == null:
+		return
+	var meet := Data.num("ground", "rivers.meet", 0.01)
+	var mesh := mi.mesh as ArrayMesh
+	var mat := mesh.surface_get_material(0)
+	var arrays := mesh.surface_get_arrays(0)
+	var level: PackedVector3Array = r["level"]
+	var uv: PackedVector2Array = arrays[Mesh.ARRAY_TEX_UV]
+	var v := level.duplicate()
+	var xf := mi.global_transform if mi.is_inside_tree() else Transform3D.IDENTITY
+	for i in v.size():
+		if uv[i].x > 0.001 and uv[i].x < 0.999:
+			continue  # inside the river: only its rims meet the banks
+		var w := xf * v[i]
+		var land: float = _terrain.height_at(w.x, w.z)
+		if land - meet < w.y:
+			v[i] = xf.affine_inverse() * Vector3(w.x, land - meet, w.z)
+	arrays[Mesh.ARRAY_VERTEX] = v
+	mesh.clear_surfaces()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	mesh.surface_set_material(0, mat)
