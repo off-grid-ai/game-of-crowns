@@ -16,8 +16,12 @@ extends Node
 ## Kept: each chunk layer is written as its navmesh's vertices and polygons (plain bytes) under kept/nav, named by a hash of what it
 ## was baked from (the land's triangles, what stands, the ways); a restart reads it back instead of baking. A chunk is
 ## baked afresh only where what it is made of changed (terrain.ground_changed, a town's layout, a wood felled, a road
-## laid, a host's ground) and has held still nav.settle seconds; until then its old mesh answers. Moving bodies don't
-## rebake anything: they avoid each other with the server's RVO (agents and obstacles on the walk map, mover.gd).
+## laid, a host's ground) and has then held still nav.settle seconds from its LAST change (a debounce: a town rising
+## step by step, a road painting stretch by stretch, is baked once when it stops, or every nav.settle_most seconds while
+## it never does); until then its old mesh answers. Moving bodies don't rebake anything: they avoid each other with the
+## server's RVO (agents and obstacles on the walk map, mover.gd); held ground is carved only once it stands (_hold).
+## Bakes back from the workers are laid on their maps together, at most once every nav.land_every seconds: each region's
+## new mesh makes the server rebuild its map's edge connections on its next sync (the physics step), so they come in one.
 ##
 ## Every route asks here (path(), query_path: thread-safe, so the roads route on a worker), through mover.gd.
 
@@ -41,7 +45,10 @@ static var _all: Array[Vector2i] = []  # every chunk of the realm
 static var _watch_i := 0
 static var _queue: Array = []  # [kind, chunk] waiting for a worker
 static var _out := 0  # bakes on workers now
-static var _done: Array = []  # bakes back from workers: [kind, chunk, sig, {layer: NavigationMesh}, kept paths to write]
+static var _done: Array = []  # bakes back from workers: [kind, chunk, sig, {layer: NavigationMesh}, worker usec, gen]
+static var _landing: Array = []  # those taken off the workers, waiting to be laid on their maps together (_land_done)
+static var _landed_at := -1.0e9  # when bakes were last laid on their maps (ms)
+static var landings := 0  # how many times bakes were laid on their maps (each a map rebuild on the server's next sync)
 static var _lock := Mutex.new()
 static var _pending := {}  # kind -> chunks not yet landed once
 static var _await := {}  # kind -> {regs: [[region, its iteration when set]], map_at: the map's iteration once all were built}
@@ -85,6 +92,9 @@ static func stop() -> void:
 	_await.clear()
 	_answers.clear()
 	_queue.clear()
+	_landing.clear()
+	_landed_at = -1.0e9
+	landings = 0
 	_town_polys.clear()
 	_town_cells.clear()
 	_town_rev.clear()
@@ -374,13 +384,17 @@ static func _towns_rev_in(area: Rect2) -> int:
 
 
 ## A few chunks a frame (nav.watch), on the frame's budget, in rounds over the realm, and only while something changed
-## (_key): what each is made of, by its signature; a chunk whose signature changed and then held still nav.settle
-## seconds (nav.claims_settle when only held ground moved) is queued.
+## (_key): what each is made of, by its signature. A debounce (Godot's rule: a navmesh is baked for what stays put): a
+## chunk whose signature changed waits until it has held still nav.settle seconds since the LAST change seen
+## (nav.claims_settle when only held ground differs: a block carved or let go, already standing), then is baked once;
+## one whose inputs never stop changing (a town still rising) is baked every nav.settle_most seconds from its first.
+## Held ground that moves is never baked round (_hold carves only what stands; a moving block is avoidance only).
 static func _watch() -> void:
 	if _all.is_empty():
 		return
 	var now := Time.get_ticks_msec() / 1000.0
 	var n := int(Data.num("ground", "nav.watch", 4))
+	var most := Data.num("ground", "nav.settle_most", 20.0)
 	for k in n:
 		if _watch_i == 0:
 			var key := _key()
@@ -403,16 +417,13 @@ static func _watch() -> void:
 				continue
 			_unsettled = true
 			if sig != String(ch["want"]):
-				# Held ground moving on (a battle's regiments never all stand still): baked round where it stands every
-				# nav.claims_settle seconds from its first move, not only once it all holds still. Anything else waits
-				# to hold still nav.settle seconds (a town rising).
-				var moving_on := bool(inputs["claims_only"]) and String(ch["want"]) != String(ch["sig"])
+				if String(ch["want"]) == String(ch["sig"]):
+					ch["first_at"] = now  # a run of changes begins
 				ch["want"] = sig
-				if not moving_on:
-					ch["seen_at"] = now
-					continue
+				ch["seen_at"] = now  # the settle counts from the last change
 			var wait := Data.num("ground", "nav.claims_settle", 1.0) if bool(inputs["claims_only"]) else Data.num("ground", "nav.settle", 3.0)
-			if now - float(ch["seen_at"]) >= wait and not _queue.has([kind, c]):
+			var due := now - float(ch["seen_at"]) >= wait or now - float(ch.get("first_at", now)) >= most
+			if due and not _queue.has([kind, c]):
 				_queue.append([kind, c])
 
 
@@ -431,6 +442,8 @@ static func _dispatch() -> void:
 			continue
 		var faces := _faces(c)
 		var inputs := _inputs(c) if kind != WATER else {"sig": "", "obstacles": [], "engines": [], "ways": [], "claims_only": false}
+		if kind == &"walk":
+			_why(ch, inputs)
 		ch["out"] = true
 		ch["want"] = inputs["sig"]
 		_out += 1
@@ -438,10 +451,27 @@ static func _dispatch() -> void:
 		WorkerThreadPool.add_task(_bake.bind(_gen, kind, c, faces, inputs, fords), false, "nav %s %s" % [kind, c])
 
 
+## What changed in chunk `ch` since its last bake, counted by cause (GOC_PERF_PROBE, nav_world.why.<cause>: shapes what
+## stands, towns a town's ways, roads the roads laid, land the land itself, claims held ground carved or let go; start
+## its first bake or read back): which trigger drives the bakes. Once per chunk (its walk map's bake; the others follow).
+static func _why(ch: Dictionary, inputs: Dictionary) -> void:
+	var from: Dictionary = ch.get("from", {})
+	var parts: Dictionary = inputs["parts"]
+	ch["from"] = parts
+	if not PerfTools.probing:
+		return
+	if from.is_empty():
+		PerfTools.add("nav_world.why.start", 0)
+		return
+	for k in parts:
+		if parts[k] != from.get(k):
+			PerfTools.add("nav_world.why." + String(k), 0)
+
+
 ## The land's triangles under chunk `c` and a little round it (Terrain3D, every region, painted navigable or not).
 static func _faces(c: Vector2i) -> PackedVector3Array:
-	# Kept for the chunks baked lately (held ground rebakes a battle's chunks on every map, nav.claims_settle apart):
-	# the land under them asked of Terrain3D again only when it changed there.
+	# Kept for the chunks baked lately (a chunk is baked on every land map in turn): the land under them asked of
+	# Terrain3D again only when it changed there.
 	var rev := int(_land_rev.get(c, 0))
 	var kept: Array = _faces_kept.get(c, [])
 	if not kept.is_empty() and int(kept[0]) == rev:
@@ -470,7 +500,7 @@ static func _land_faces(c: Vector2i) -> PackedVector3Array:
 ## What a chunk's land maps are made of besides the land: every shape standing over it (ground.gd obstacle_shapes: the
 ## engine's own bodies for the towns' and places' pieces, the woods' trunks, camps, and the ground hosts and engines
 ## hold), as world XZ outlines, the ways over it, and its signature (with the land's changes). claims_only: only the
-## held ground (hosts, bodies, engines) differs from what it was last baked from.
+## held ground (hosts, bodies, engines) differs from what it was last baked from. parts: each input's own hash (_why).
 static func _inputs(c: Vector2i) -> Dictionary:
 	var chunk := _chunk_size()
 	var area := Rect2(c.x * chunk - 1.0, c.y * chunk - 1.0, chunk + 2.0, chunk + 2.0)
@@ -499,7 +529,7 @@ static func _inputs(c: Vector2i) -> Dictionary:
 		PerfTools.add("nav_world.outlines", Time.get_ticks_usec() - r1)
 		var r2 := Time.get_ticks_usec()
 		# The ways kept by cell (the towns' here, the roads' in roads.gd): only this chunk's own cells are read.
-		var ways: Array = []
+		var town_ways: Array = []
 		var a0 := Vector2i(floori(area.position.x / chunk), floori(area.position.y / chunk))
 		for x in range(a0.x, floori(area.end.x / chunk) + 1):
 			for z in range(a0.y, floori(area.end.y / chunk) + 1):
@@ -509,7 +539,8 @@ static func _inputs(c: Vector2i) -> Dictionary:
 						var r: Rect2 = e[1]
 						# once: from the first of its cells inside the area
 						if r.intersects(area) and x == maxi(floori(r.position.x / chunk), a0.x) and z == maxi(floori(r.position.y / chunk), a0.y):
-							ways.append(e[0])
+							town_ways.append(e[0])
+		var road_ways: Array = []
 		if roads and is_instance_valid(roads):
 			for s in roads.segments_in(area):
 				var a: Vector2 = s[0]
@@ -521,11 +552,13 @@ static func _inputs(c: Vector2i) -> Dictionary:
 				var side := (b - a).normalized().orthogonal() * half
 				if side == Vector2.ZERO:
 					continue
-				ways.append(PackedVector2Array([a + side, b + side, b - side, a - side]))
+				road_ways.append(PackedVector2Array([a + side, b + side, b - side, a - side]))
+		var ways: Array = town_ways + road_ways
 		var r3 := Time.get_ticks_usec()
 		PerfTools.add("nav_world.ways", r3 - r2)
 		key = [Ground.shapes_rev_in(area), _roads_rev_in(area), _towns_rev_in(area), int(_land_rev.get(c, 0))]  # as read: the read itself may lay a wood's trunks
-		kept = [key, str(hash([key[3], obstacles, ways])), obstacles, ways]
+		var parts := {"shapes": hash(obstacles), "towns": hash(town_ways), "roads": hash(road_ways), "land": key[3]}
+		kept = [key, str(hash([key[3], obstacles, ways])), obstacles, ways, parts]
 		PerfTools.add("nav_world.hash", Time.get_ticks_usec() - r3)
 		_base[c] = kept
 	# The held ground (a regiment's block, an engine): the claims' own outlines, cheap to read every look.
@@ -540,7 +573,9 @@ static func _inputs(c: Vector2i) -> Dictionary:
 	var base: String = kept[1]
 	var sig := base + ":" + str(hash([held, engines]))
 	var was: String = String(_chunks[&"walk"][c]["sig"]) if _chunks.has(&"walk") else ""
-	return {"sig": sig, "obstacles": (kept[2] as Array) + held, "engines": engines, "ways": kept[3], "claims_only": was.get_slice(":", 0) == base, "held": not (held.is_empty() and engines.is_empty())}
+	var parts: Dictionary = (kept[4] as Dictionary).duplicate()
+	parts["claims"] = hash([held, engines])
+	return {"sig": sig, "obstacles": (kept[2] as Array) + held, "engines": engines, "ways": kept[3], "parts": parts, "claims_only": was.get_slice(":", 0) == base, "held": not (held.is_empty() and engines.is_empty())}
 
 
 ## A shape standing in the ground's space (ground.gd: prisms, boxes, a trunk's cylinder) as its outline on the ground,
@@ -948,6 +983,9 @@ static func _lift(q: Vector2, a: Vector3, b: Vector3, c: Vector3) -> Vector3:
 # --- back on the main thread ---------------------------------------------------------------------------------------
 
 ## Bakes back from the workers laid on their maps, one region per layer at its travel cost; what was baked afresh kept.
+## Taken off the workers at once (another bake may go out), laid on the maps together at most every nav.land_every
+## seconds: every region given a new mesh dirties its map, and the server rebuilds the map's edge connections on its
+## next sync in the physics step (live13: 66-89 bakes landing one by one, physics 162 ms a frame, worst 1.1 s).
 static func _land_done() -> void:
 	_lock.lock()
 	var done := _done.duplicate()
@@ -956,12 +994,19 @@ static func _land_done() -> void:
 	for d in done:
 		if int(d[5]) != _gen:
 			continue  # baked for an earlier start
+		_out -= 1
+		_landing.append(d)
+	var now := float(Time.get_ticks_msec())
+	if _landing.is_empty() or now - _landed_at < Data.num("ground", "nav.land_every", 0.5) * 1000.0:
+		return
+	_landed_at = now
+	landings += 1
+	for d in _landing:
 		var kind: StringName = d[0]
 		var c: Vector2i = d[1]
 		var ch: Dictionary = _chunks[kind][c]
 		ch["out"] = false
 		ch["sig"] = d[2]
-		_out -= 1
 		var regions: Dictionary = ch["regions"]
 		var layers: Dictionary = d[3]
 		for layer: StringName in LAYERS:
@@ -987,6 +1032,7 @@ static func _land_done() -> void:
 				for layer in cd["regions"]:
 					regs.append([cd["regions"][layer], int((cd.get("built", {}) as Dictionary).get(layer, -1))])
 			_await[kind] = {"regs": regs, "map_at": -1}
+	_landing.clear()
 
 
 static func _cost(layer: StringName) -> float:
