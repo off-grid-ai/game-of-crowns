@@ -120,4 +120,11 @@ if [[ -f $manifest ]]; then
     [[ -e $p ]] || { echo "$p: the game loads it and realm/assets hasn't it   <- asset-exists"; fail=1; }
   done < <(grep -v '^#' $manifest | cut -f1 | sed 's#^res://##')
 fi
+#   vat-data-lossless: a soldier's baked motion (assets/armies/*/offsets.exr, normals.png) is data, one texel per vertex
+#   per frame (the VAT plugin's import guide: lossless, no mipmaps). VRAM compression blends neighbours and drops the
+#   negatives, flinging the men's vertices across the land (Mac 2026-11-15, the streaks; a13e3e30 compressed them).
+for f in assets/armies/*/(offsets.exr|normals.png).import(N); do
+  [[ $f == *.bak/* ]] && continue
+  grep -q '^compress/mode=0' $f && grep -q '^mipmaps/generate=false' $f || { echo "$f: baked motion must import lossless without mipmaps   <- vat-data-lossless"; fail=1; }
+done
 exit $fail

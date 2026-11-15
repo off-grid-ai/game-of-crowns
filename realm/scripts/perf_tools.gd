@@ -354,6 +354,57 @@ func _log_perf(delta: float) -> void:
 ## The triangle budget's check (--budget=<millions>, Mac 2026-11-15: "13.5M to 10.3M is nothing", target 2-3M): once
 ## the shot is taken (shot_harness, the camera framed and the towns standing), DrawCensus counts what the camera draws by part; CHECK lines in perf.log and on stdout say the
 ## total against the budget, the dearest parts, and every batch too wide to be culled. Fails (exit 1) when over.
+## Torn frames (Mac 2026-11-15: ground and men stretched into fans across the land): every drawn GeometryInstance3D
+## whose transform, box or (a MultiMesh's) copies hold a number that isn't finite or a place far off the realm, or
+## whose box is far bigger than a thing of its kind. Prints TORN lines; a test aid behind --torn, never in play.
+func torn_check() -> void:
+	if not main._shot.has("torn"):
+		return
+	var bad := func(v: Vector3) -> bool: return not (is_finite(v.x) and is_finite(v.y) and is_finite(v.z)) or v.length() > 5000.0
+	var n := 0
+	for g in main.find_children("*", "GeometryInstance3D", true, false):
+		var gi := g as GeometryInstance3D
+		if not gi.is_visible_in_tree():
+			continue
+		var xf := gi.global_transform
+		var box := gi.get_aabb()
+		var why := ""
+		if bad.call(xf.origin) or bad.call(xf.basis.x) or bad.call(xf.basis.y) or bad.call(xf.basis.z):
+			why = "transform %s" % str(xf)
+		elif bad.call(box.position) or bad.call(box.size):
+			why = "box %s" % str(box)
+		elif gi is MultiMeshInstance3D and (gi as MultiMeshInstance3D).multimesh:
+			var mm := (gi as MultiMeshInstance3D).multimesh
+			var count := mm.visible_instance_count if mm.visible_instance_count >= 0 else mm.instance_count
+			for i in count:
+				var t := mm.get_instance_transform(i)
+				if bad.call(t.origin) or bad.call(t.basis.x) or bad.call(t.basis.y) or bad.call(t.basis.z):
+					why = "copy %d of %d: %s" % [i, count, str(t)]
+					break
+				if mm.use_custom_data:
+					var c := mm.get_instance_custom_data(i)
+					if not (is_finite(c.r) and is_finite(c.g) and is_finite(c.b) and is_finite(c.a)) or absf(c.g) > 100000.0 or absf(c.b) > 100000.0:
+						why = "copy %d custom %s" % [i, str(c)]
+						break
+		if why != "":
+			n += 1
+			print("TORN %s (%s, box %s): %s" % [gi.get_path(), gi.get_class(), str(box.size), why])
+	for line in preload("res://scripts/bulk.gd").torn():  # the batch drawer's copies stand under the tree's root
+		n += 1
+		print("TORN bulk " + line)
+	for sk in main.find_children("*", "Skeleton3D", true, false):
+		var k := sk as Skeleton3D
+		if not k.is_visible_in_tree():
+			continue
+		for b in k.get_bone_count():
+			var t := k.global_transform * k.get_bone_global_pose(b)
+			if bad.call(t.origin) or bad.call(t.basis.x) or bad.call(t.basis.y) or bad.call(t.basis.z) or t.basis.get_scale().length() > 20.0 or t.origin.distance_to(k.global_position) > 20.0:
+				n += 1
+				print("TORN bone %s of %s: %s" % [k.get_bone_name(b), k.get_path(), str(t)])
+				break
+	print("TORN %d drawn things broken" % n)
+
+
 func budget_check() -> void:
 	var cam := main.get_viewport().get_camera_3d()
 	if not main._shot.has("budget") or cam == null:

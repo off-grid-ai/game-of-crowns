@@ -806,6 +806,8 @@ func apply_graphics() -> void:
 		var full: float = ProjectSettings.get_setting("rendering/scaling_3d/scale", 0.67)
 		var scale := Data.num("ui", "smooth_scale", 0.47) if graphics_smooth else full
 		get_viewport().scaling_3d_scale = float(_shot.get("scale", scale))  # --scale= for a measuring run's A/B
+		if _shot.has("bilinear"):
+			get_viewport().scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR
 	sun.directional_shadow_max_distance = minf(_rich["shadow"], 40.0) if graphics_smooth else _rich["shadow"]
 	# Smooth draws no sun shadows (Mac 2026-11-15, the fps round: "at this fidelity do we really need them?"): each
 	# shadow band drew every caster again, a second scene a frame (cyclevis: 5.9M -> 4.0M triangles without them).

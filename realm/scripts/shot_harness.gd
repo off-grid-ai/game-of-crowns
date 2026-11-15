@@ -54,8 +54,12 @@ func _parse_args() -> void:
 			# A measuring run: framed like a shot, drawn as the game is played (no film quality),
 			# in the player's Settings graphics or the one named (--perf=smooth / --perf=beautiful).
 			_shot["perf"] = a.substr(7) if a.begins_with("--perf=") else ""
+		elif a == "--torn":
+			_shot["torn"] = true  # perf_tools.torn_check: every drawn thing with a broken place or size (TORN lines)
 		elif a.begins_with("--budget="):
 			_shot["budget"] = float(a.substr(9))  # perf_tools.budget_check: triangles in view against this many millions (CHECK lines)
+		elif a == "--bilinear":
+			_shot["bilinear"] = true  # a measuring run drawn without MetalFX's temporal upscaler, for the A/B on torn frames
 		elif a.begins_with("--scale="):
 			_shot["scale"] = float(a.substr(8))  # a measuring run's 3D render scale (1.0 = native), for the upscaler A/B
 		elif a.begins_with("--cam="):
@@ -226,6 +230,7 @@ func _take_shot(backstop := false) -> void:
 	img.save_png(_shot["path"])
 	print("Saved screenshot to ", _shot["path"])
 	main.perf.budget_check()  # --budget: the triangles in this very frame against the budget
+	main.perf.torn_check()  # --torn: what is drawn with a broken place or size
 	quit_clean(main.get_tree())
 
 

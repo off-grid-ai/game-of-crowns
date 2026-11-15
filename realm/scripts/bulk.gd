@@ -130,3 +130,25 @@ static func _grow(s: Dictionary, count: int) -> void:
 	for i in xfs.size():
 		mm.set_instance_transform(i, xfs[i])
 	mm.visible_instance_count = xfs.size()
+
+
+## The test aid for torn frames (perf_tools.torn_check, --torn): every batch whose drawn copies, as the renderer
+## holds them, differ from the places kept here, or whose box doesn't hold them. One line each.
+static func torn() -> PackedStringArray:
+	var out := PackedStringArray()
+	for key in _sets:
+		var s: Dictionary = _sets[key]
+		var mm: MultiMesh = (s["mmi"] as MultiMeshInstance3D).multimesh
+		var xfs: Array = s["xfs"]
+		var buf := RenderingServer.multimesh_get_buffer(mm.get_rid())
+		var box: AABB = mm.custom_aabb.grow(1.0)
+		if mm.visible_instance_count != xfs.size() or buf.size() < xfs.size() * 12:
+			out.append("%s: %d copies kept, %d drawn, buffer %d floats of %d" % [key, xfs.size(), mm.visible_instance_count, buf.size(), mm.instance_count * 12])
+			continue
+		for i in xfs.size():
+			var t: Transform3D = xfs[i]
+			var o := Vector3(buf[i * 12 + 3], buf[i * 12 + 7], buf[i * 12 + 11])
+			if not o.is_equal_approx(t.origin) or not box.has_point(t.origin):
+				out.append("%s: copy %d of %d drawn at %s, kept at %s, box %s (buffer %d floats, %d copies room)" % [key, i, xfs.size(), str(o), str(t.origin), str(mm.custom_aabb), buf.size(), mm.instance_count])
+				break
+	return out
