@@ -57,7 +57,10 @@ func show_story(m: Node, e: Dictionary, at: Vector3, follow: Node3D, radius: flo
 	_matter = ui.story_matter(e)
 	_build(e)
 	ui.close_x(self, func(): close())
-	ui.card_shown.connect(_on_card)  # one thing on screen: a card that comes up puts this one away
+	ui.card(self)  # the one card slot: another card coming up puts this one away (and leaves its mark)
+	visibility_changed.connect(func():
+		if not visible and _landed:
+			close())
 	_ask_who(who)
 
 
@@ -261,10 +264,6 @@ func _process(delta: float) -> void:
 		close()  # the camera has left it
 		return
 	ui.anchor.pin(self, _place + Vector3.UP * 0.2, true, _radius)
-
-
-func _on_card(_c) -> void:
-	close()
 
 
 ## Put away (Esc, its X, the camera leaving, another card), with the cards' one ease out; a story still going on

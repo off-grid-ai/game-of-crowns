@@ -56,7 +56,11 @@ func open() -> void:
 		return
 	_close()
 	_done = false
-	_card = ui.glass_panel()
+	_card = ui.card(ui.glass_panel())  # the one card slot (ui.card): another card coming up puts it away
+	var mine := _card
+	mine.visibility_changed.connect(func():
+		if not mine.visible and _card == mine:
+			_close())
 	_card.custom_minimum_size = Vector2(460, 0)
 	_card.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
 	_card.grow_horizontal = Control.GROW_DIRECTION_BOTH

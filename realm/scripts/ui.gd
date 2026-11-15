@@ -251,10 +251,6 @@ var cards: Array = []
 
 ## Closes the topmost thing the King has open; false when nothing was.
 func _step_back() -> bool:
-	var story := root.get_node_or_null("StoryCard")  # a story watched: its card first (story_card.gd)
-	if story and story.visible:
-		story.close()
-		return true
 	if _story_panel and _story_panel.visible:
 		_story_panel.visible = false
 		return true
@@ -266,9 +262,6 @@ func _step_back() -> bool:
 			if c == _ledger_panel and _ledger_btn:
 				_ledger_btn.set_pressed_no_signal(false)
 			return true
-	if _town_panel and _town_panel.visible:
-		_put_town_away()
-		return true
 	if _offer and _offer.visible:
 		_offer.visible = false
 		return true

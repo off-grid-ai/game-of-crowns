@@ -29,7 +29,10 @@ func _init(owner: UI) -> void:
 
 
 func _build_town_panel() -> void:
-	_town_panel = ui.glass_panel()
+	_town_panel = ui.card(ui.glass_panel())  # the one card slot (ui.card): another card coming up puts it away
+	_town_panel.visibility_changed.connect(func():
+		if not _town_panel.visible and _town_id != -1 and not ui.cinema_on:  # a scene watched only sets it aside
+			_put_town_away())
 	_town_panel.anchor_top = 1.0
 	_town_panel.anchor_bottom = 1.0
 	# Not over the middle of the realm: on the left, narrow (CK3's holding window, Anno's building panel).
@@ -112,9 +115,11 @@ func take_world_click() -> bool:
 ## The town card put away for good: the realm's next update refreshes nothing,
 ## so it never comes back over whatever the King opened instead.
 func _put_town_away() -> void:
+	var was := _town_id != -1 or (_town_panel != null and _town_panel.visible)
 	_town_id = -1
 	if _town_panel and _town_panel.visible:
 		_town_panel.visible = false
+	if was:
 		ui.town_closed.emit()
 
 

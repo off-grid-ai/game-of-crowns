@@ -240,9 +240,12 @@ func toast(text: String, entry := {}) -> void:
 	if text.strip_edges() == "":
 		return  # nothing to say: no empty line
 	var said := Herald.voice(text) if Herald.on() else text
+	var subject := _subject(said)
 	for row in _stack.get_children():
 		if row.get_meta("text", "") == said and float(row.get_meta("left", 0.0)) > 1.0:
 			return  # the same notice twice is said once
+		if row.get_meta("subject", "") == subject:
+			row.queue_free()  # news of the same thing (the tithe at 15%, then 20%): the newer stands alone
 	var row := PanelContainer.new()
 	row.add_theme_stylebox_override("panel", T._box(T.SURFACE_SOLID, Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.3), 8, 10))
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -265,6 +268,7 @@ func toast(text: String, entry := {}) -> void:
 	else:
 		row.add_child(l)
 	row.set_meta("text", said)
+	row.set_meta("subject", subject)
 	row.set_meta("left", secs)
 	row.set_meta("full", secs)
 	row.modulate.a = 0.0
@@ -274,6 +278,15 @@ func toast(text: String, entry := {}) -> void:
 	var rows := _stack.get_children().filter(func(r): return not r.is_queued_for_deletion())
 	while rows.size() > most:
 		rows.pop_front().queue_free()
+
+
+static var _FIGURES := RegEx.create_from_string("[0-9][0-9,.%]*")
+
+
+## What a notice is about: its first sentence with the figures taken out ("The royal tithe is now %").
+static func _subject(text: String) -> String:
+	var first := text.get_slice(". ", 0)
+	return _FIGURES.sub(first, "#", true).strip_edges()
 
 
 ## The corner stack each frame: each line in over 160 ms, out over its last second; above the town card when

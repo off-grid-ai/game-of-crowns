@@ -68,7 +68,19 @@ func _process(delta: float) -> void:
 	var testing := PerfTools.testing  # what the measuring run is trying now (perf_tools cyclevis)
 	if testing != "":
 		lines.append("testing: " + testing)
-	label.text = lines[0] if mode == "rate" else "\n".join(lines)
+	# A card up (ui.cards: a town, a story, the court): the rate alone, so the details never lie over the card.
+	label.text = lines[0] if mode == "rate" or _card_up() else "\n".join(lines)
+
+
+## Whether one of the interface's cards is on screen (ui.gd cards, the one card slot).
+func _card_up() -> bool:
+	var ui = get_parent().get("ui") if get_parent() else null
+	if ui == null:
+		return false
+	for c in ui.cards:
+		if is_instance_valid(c) and (c as Control).is_visible_in_tree():
+			return true
+	return false
 
 
 ## What the frame is drawing (Mac: "log what you are rendering"): objects the renderer drew, towns and people in
