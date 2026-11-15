@@ -148,7 +148,7 @@ static func _make(mesh: Mesh, begin: float, end: float, shadows: bool, cell: Vec
 		(Engine.get_main_loop() as SceneTree).root.add_child(_root)
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
-	mm.mesh = mesh
+	mm.mesh = lighter(mesh)
 	mm.instance_count = 8
 	mm.visible_instance_count = 0
 	mm.custom_aabb = AABB(Vector3(cell.x * CELL, 0.0, cell.y * CELL), Vector3.ZERO)  # set to its copies' (_hold) as each comes
@@ -162,6 +162,68 @@ static func _make(mesh: Mesh, begin: float, end: float, shadows: bool, cell: Vec
 	mmi.gi_mode = GeometryInstance3D.GI_MODE_DISABLED
 	_root.add_child(mmi)
 	return {"mmi": mmi, "xfs": [], "handles": []}
+
+
+## A small plant drawn from its own coarser level (ground.json bulk.lighter: a word of its model's path -> the share of
+## its triangles kept). Godot picks a batch's detail level by the batch's nearest corner, so every copy in a cell by the
+## lens drew all of a wildflower's 999 triangles (Mac's fps at Kingsmere 2026-11-16: flowers 0.5M, bushes 0.5M of
+## 1.9M on screen). The level is the mesh's own (meshoptimizer's, made when it was baked: house_builder.gd, kept.gd),
+## made the finest of a copy that keeps the coarser ones after it; one per mesh, kept here. Anything else as it is.
+static var _light := {}  # mesh instance id -> its lighter copy
+static var LIGHTER: Dictionary = preload("res://scripts/data.gd").value("ground", "bulk.lighter", {})
+static func lighter(mesh: Mesh) -> Mesh:
+	if not (mesh is ArrayMesh) or LIGHTER.is_empty():
+		return mesh
+	var path := String(mesh.get_meta("path", "")) + " " + mesh.resource_path + " " + mesh.resource_name
+	var keep := -1.0
+	for word in LIGHTER:
+		if path.contains(String(word)):
+			keep = float(LIGHTER[word])
+	if keep <= 0.0 or keep >= 1.0:
+		return mesh
+	var id := mesh.get_instance_id()
+	if _light.has(id):
+		return _light[id]
+	var am := mesh as ArrayMesh
+	var out := ArrayMesh.new()
+	for i in am.get_surface_count():
+		var arrays := am.surface_get_arrays(i)
+		var base: PackedInt32Array = arrays[Mesh.ARRAY_INDEX] if arrays[Mesh.ARRAY_INDEX] != null else PackedInt32Array()
+		var d: Dictionary = RenderingServer.mesh_get_surface(am.get_rid(), i)
+		var levels: Array = d.get("lods", [])
+		var width := 4 if int(d.get("vertex_count", 0)) > 65535 else 2  # Godot's index size: 16 bits under 65,536 vertices
+		var pick := levels.size() - 1  # none that light: its coarsest (a wildflower's petals keep their open edges)
+		for j in levels.size():
+			if _count((levels[j] as Dictionary)["index_data"], width) <= int(base.size() * keep):
+				pick = j
+				break
+		if base.is_empty() or pick < 0:
+			out.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)  # no levels at all: as it was
+		else:
+			arrays[Mesh.ARRAY_INDEX] = _indices((levels[pick] as Dictionary)["index_data"], width)
+			var after := {}
+			for j in range(pick + 1, levels.size()):
+				after[float((levels[j] as Dictionary)["edge_length"])] = _indices((levels[j] as Dictionary)["index_data"], width)
+			out.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays, [], after)
+		out.surface_set_material(i, am.surface_get_material(i))
+	for k in mesh.get_meta_list():
+		out.set_meta(k, mesh.get_meta(k))
+	_light[id] = out
+	return out
+
+
+static func _count(data: PackedByteArray, width: int) -> int:
+	return data.size() / width
+
+
+static func _indices(data: PackedByteArray, width: int) -> PackedInt32Array:
+	if width == 4:
+		return data.to_int32_array()
+	var out := PackedInt32Array()
+	out.resize(data.size() / 2)
+	for k in out.size():
+		out[k] = data.decode_u16(k * 2)
+	return out
 
 
 ## Room for more copies: the batch's MultiMesh made larger and refilled from the kept places (never read back).

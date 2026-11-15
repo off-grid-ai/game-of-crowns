@@ -792,7 +792,7 @@ func _grass(cities: Array) -> void:
 		for n in TUFTS:
 			var plants: Dictionary = preload("res://scripts/data.gd").value("weather", "plants", {})
 			var bury := float(plants.get("flowers", 1.0)) if n.begins_with("meshy/nt_flowers") else float(plants.get("grass", 0.6))
-			_tuft_meshes.append(_windy(builder.bake_path("res://assets/" + n), bury))
+			_tuft_meshes.append(_windy(Bulk.lighter(builder.bake_path("res://assets/" + n)), bury))  # its lighter level (bulk.gd lighter)
 	if _grass_root == null or not is_instance_valid(_grass_root):
 		_grass_nodes.clear()  # a new realm took the old batches with it
 		_grass_sig = ""
