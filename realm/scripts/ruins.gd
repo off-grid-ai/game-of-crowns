@@ -6,6 +6,7 @@ extends Node3D
 ## Models: the realistic kit (realistic.gd), stumps from Poly Haven, charred.
 
 const Real := preload("res://scripts/realistic.gd")  # the asset catalogue (realm/data/assets.json)
+const Ground := preload("res://scripts/ground.gd")  # the one answer to where a body may stand
 const PoliticalOverlay := preload("res://scripts/political_overlay.gd")  # how long a scar shows
 static var STUMPS: Array = Real.variants("stump")
 const CHAR := Color(0.22, 0.19, 0.17)  # the stump's own wood, blackened
@@ -51,6 +52,8 @@ func _process(_delta: float) -> void:
 	_waiting.erase(key)
 	var pt := Time.get_ticks_usec()
 	_shown[key] = _place(w[0], w[1], w[2], w[3])
+	var c: Vector3 = terrain.world_pos(w[1], w[2])  # its rubble and walls are in the way (ground.gd)
+	Ground.stands(_shown[key], Rect2(c.x - terrain.TILE, c.z - terrain.TILE, terrain.TILE * 2.0, terrain.TILE * 2.0))
 	_shown[key].set_meta("turn", w[4])
 	preload("res://scripts/perf_tools.gd").add("ruin_place", Time.get_ticks_usec() - pt)
 
@@ -84,6 +87,7 @@ func show_marks(marks: Array, turn: int) -> void:
 	for key in _shown.keys():
 		if not want.has(key):
 			if is_instance_valid(_shown[key]):
+				Ground.gone(_shown[key])
 				_shown[key].queue_free()
 			_shown.erase(key)
 		elif is_instance_valid(_shown[key]) and turn - int(_shown[key].get_meta("turn", turn)) >= PoliticalOverlay.RAZED_BURN * 0.85:
