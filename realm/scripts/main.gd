@@ -153,7 +153,6 @@ func _ready() -> void:
 	# The startup order, its one place: the window and a cover first, drawn before anything heavy is made, then each
 	# setup step with a frame between, so the OS never sees the main thread held at launch ("application not
 	# responding", Mac 14 Nov) and perf.log's LOAD lines show what each step took (PerfTools.mark).
-	set_process(false)
 	set_process_input(false)
 	var cover := _boot_cover()
 	await _boot_step("window")
@@ -209,6 +208,7 @@ func _ready() -> void:
 	rig.terrain = terrain
 	rig.towns = towns  # so the camera keeps above roofs
 	add_child(rig)
+	_keep_running(rig)
 	rig.clicked.connect(_on_ground_clicked)
 	preload("res://scripts/view_tier.gd").apply(self)  # how much of each place is alive, by the lens (one decider)
 	villagers = preload("res://scripts/villagers.gd").new()
@@ -227,6 +227,7 @@ func _ready() -> void:
 		add_child(checks)
 	ui = preload("res://scripts/ui.gd").new()
 	add_child(ui)
+	_keep_running(ui)
 	await _boot_step("interface")
 	# The houses' schemes, marked on the way between their seats (scheme_marks.gd).
 	var schemes := preload("res://scripts/scheme_marks.gd").new()
@@ -266,6 +267,7 @@ func _ready() -> void:
 		var n: Vector2i = towns.standing() if towns else Vector2i.ZERO
 		return "The towns are rising: %d of %d" % [n.x, n.y] if terrain.built and n.y > 0 else "The realm is forming…"
 	add_child(intro)
+	_keep_running(intro)
 	lore = preload("res://scripts/lore.gd").new()
 	ui.royal_edited.connect(func(spec):
 		bridge.write_royal(spec, func(code, d):
@@ -279,6 +281,7 @@ func _ready() -> void:
 				return
 		ui.toast("%s is no more." % title))
 	add_child(lore)
+	_keep_running(lore)
 	story._intro_due = _shot.has("intro")
 	labels = preload("res://scripts/map_labels.gd").new()
 	labels.towns = towns
@@ -286,6 +289,7 @@ func _ready() -> void:
 	labels.scenes = scenes
 	labels.houses = _houses
 	add_child(labels)
+	_keep_running(labels)
 	ui.person_opened.connect(_open_person)
 	ui.lore_opened.connect(func(id): lore.toggle() if id < 0 else lore.open(id))
 	walking._setup()  # walking as a character (walking.gd): the body, the mic, the interiors
@@ -316,6 +320,7 @@ func _ready() -> void:
 	director.towns = towns
 	director.ui = ui
 	add_child(director)
+	_keep_running(director)
 	# Battles and musters call their own camera beats while the director (or a test shot) holds the camera.
 	scenes.framing.connect(func(p: Vector3, d: float, y: float):
 		if director.active or _shot.has("battle") or _shot.has("muster") or _shot.has("siege"):
@@ -343,11 +348,13 @@ func _ready() -> void:
 	# is continued or begun (renders without the menu load it at once).
 	bridge.active = _shot.has("path") and not _shot.has("title")
 	add_child(bridge)
+	_keep_running(bridge)
 	bridge.map_loaded.connect(_on_map)
 	bridge.chronicle_added.connect(ui.add_chronicle)
 	# The realm's sound: ambience from the camera, stingers from the chronicle.
 	sound = preload("res://scripts/soundscape.gd").new()
 	add_child(sound)
+	_keep_running(sound)
 	# What the townsfolk know (awareness.gd): the realm and town scopes their
 	# minds read, and the one bus that carries news to them.
 	awareness = preload("res://scripts/awareness.gd").new()
@@ -357,9 +364,12 @@ func _ready() -> void:
 	awareness.villagers = villagers
 	awareness.bridge = bridge  # the store takes /world itself; the view redraws when it has (synced)
 	add_child(awareness)
+	_keep_running(awareness)
 	awareness.synced.connect(_on_synced)
 	awareness.cleared.connect(_on_realm_changed)
+	awareness.synced.connect(func(): _hold_world())  # the realm's own word on whether it is paused (ui.paused, from /world)
 	over._overview_setup()  # its map redraws on the store's synced
+	_keep_running(over.overview)
 	# Town life's one director (town_scenes.gd): it casts every town scene's people from realm/data/town_scenes.json.
 	var town_scenes := preload("res://scripts/town_scenes.gd").new(self)
 	add_child(town_scenes)
@@ -378,7 +388,7 @@ func _ready() -> void:
 	interior.opened.connect(func(room): sound.set_interior(room))
 	interior.closed.connect(func(): sound.set_interior(""))
 	bridge.chronicle_added.connect(_on_chronicle)
-	ui.pause_toggled.connect(func(p): bridge.set_paused(p); ui.toast("The realm holds its breath." if p else "The realm stirs again."))
+	ui.pause_toggled.connect(func(p): bridge.set_paused(p); _hold_world(); ui.toast("The realm holds its breath." if p else "The realm stirs again."))
 	# Esc in play: the pause menu, the realm held still behind it until the King goes back (unless he had paused it).
 	ui.open_menu.connect(func():
 		if (awareness.rec("reign", {}) as Dictionary).is_empty() or String(awareness.rec("reign", {}).get("status", "")) == "ended":
@@ -387,6 +397,7 @@ func _ready() -> void:
 		_menu_held = not ui.paused
 		if _menu_held:
 			bridge.set_paused(true)
+		_hold_world()
 		title.open_paused())
 	ui.counsel_answered.connect(func(key): bridge.counsel_answered(key))
 	ui.court_closed.connect(func(): director.soon())  # the doors shut: the camera goes to look
@@ -409,6 +420,7 @@ func _ready() -> void:
 	# Every click answers (barks.gd, lines in data/barks.json): the house's lord, the host's captain, a townsman.
 	barks = load("res://scripts/barks.gd").new(self)
 	add_child(barks)
+	_keep_running(barks)
 	ui.house_followed.connect(barks.lord)
 	ui.interlude_closed.connect(func(): bridge.close_interlude())  # the act told back: the realm goes on
 	ui.reign_continued.connect(func(): bridge.continue_reign(func(_c, d): if d is Dictionary: ui.set_reign(d)))
@@ -429,6 +441,7 @@ func _ready() -> void:
 	ai_check.wait_time = 30.0
 	ai_check.autostart = true
 	add_child(ai_check)
+	_keep_running(ai_check)
 	ai_check.timeout.connect(func(): bridge.ai_status(func(d): ui.ai_words = d is Dictionary and bool(d.get("words", false))))
 	ui.petition_spoken.connect(func(id, words, confirm):
 		bridge.rule_in_words(id, words, confirm, func(_code, d):
@@ -467,10 +480,12 @@ func _ready() -> void:
 		else:
 			bridge.edit_character(spec, cb)
 	add_child(title)
+	_keep_running(title)
 	title.began.connect(func(): story._intro_due = true)
 	# The player's own portraits (likeness.gd, bridge likeness.js): laid over the dealt faces once a chronicle opens.
 	var likeness: Node = preload("res://scripts/likeness.gd").new()
 	add_child(likeness)
+	_keep_running(likeness)
 	title.closed.connect(func():
 		bridge.names(func(_n): pass)  # the player's names, so a renamed house keeps its arms (heraldry.gd)
 		likeness.load_all()
@@ -491,6 +506,8 @@ func _ready() -> void:
 		if _menu_held:
 			_menu_held = false
 			bridge.set_paused(false)
+			ui.paused = false  # the realm the menu held goes on at once, not a poll later
+		_hold_world()
 		story._opened_in_intro = true
 		if not bridge.active:
 			bridge.wake()
@@ -618,7 +635,7 @@ func _ready() -> void:
 	if Array(OS.get_cmdline_user_args()).any(func(a): return a.begins_with("--ui-coverage=")): add_child(load("res://tools/ui_coverage.gd").new())
 	PerfTools.mark("set up")
 	cover.queue_free()
-	set_process(true)
+	get_tree().process_frame.connect(_frame)  # every frame, paused or not (the view's own work; _process_timed)
 	set_process_input(true)
 
 
@@ -691,6 +708,23 @@ func _set_ui_scale(v: float) -> void:
 
 
 var _menu_held := false  # the pause menu holds the realm (the King hadn't paused it himself)
+
+
+## Pause, the Godot way (Mac 2026-11-16: "the town etc should not move when we say pause"): the whole scene tree stops
+## (SceneTree.paused), so townsfolk, carts, hosts, scenes, flames' particles and every AnimationPlayer hold still with the
+## realm's turns on the bridge. Paused when the King paused it (ui.paused, the realm's own word from /world) or the
+## Esc menu holds it.
+func _hold_world() -> void:
+	get_tree().paused = ui.paused or _menu_held
+
+
+## What goes on while the realm is paused, as in every RTS: the interface and menus, the camera (pan, zoom, turn), the
+## clicks that select and answer, the bridge's polling (so the pause can be lifted) and the interface's sounds and
+## voices. Everything else in the world inherits the pause.
+func _keep_running(n: Node) -> void:
+	if n:
+		n.process_mode = Node.PROCESS_MODE_ALWAYS
+		n.set_meta(&"runs", Node.PROCESS_MODE_ALWAYS)  # world_cover.gd puts it back after a cover
 
 
 func _hook_click(n: Node) -> void:
@@ -904,6 +938,7 @@ func _setup_environment() -> void:
 	load("res://scripts/news_actions.gd").apply.call_deferred(self)  # what the King can do about each piece of news (data/news_actions.json)
 	load("res://scripts/map_marks.gd").apply.call_deferred(self)  # the realm's marks as the camera draws back to the map (data/map.json, --map=v2)
 	load("res://scripts/fire.gd").apply.call_deferred(self)  # fire v2: shaped flames, smoke and burnt houses (data/fire.json)
+	(func(): for n in ["HostCommand", "NewsActions", "MapMarks", "Look"]: _keep_running(get_node_or_null(n))).call_deferred()  # made by the applies above
 	load("res://scripts/castle_life.gd").apply.call_deferred(self)  # the kit castle lived in: tower banners, guards, gate torches (data/castle.json)
 	# Then the player's graphics choice, over the top of it.
 	get_tree().create_timer(0.5).timeout.connect(apply_graphics)
@@ -986,19 +1021,24 @@ func _stands_on_ground(p: Node) -> bool:
 var _settled := false  # the scatter has been seated on the graded ground
 
 
-func _process(_delta: float) -> void:
+## The view's frame: the camera's sound, labels, shadows and haze, the news arrows and the map follow the lens while the
+## realm is paused too (SceneTree.process_frame runs paused or not); the realm's own clocks below stand still then.
+func _frame() -> void:
+	var delta := get_process_delta_time()
 	if not PerfTools.probing:
-		_process_timed(_delta)
+		_process_timed(delta)
 		return
 	var t0 := Time.get_ticks_usec()
-	_process_timed(_delta)
+	_process_timed(delta)
 	PerfTools.add("main", Time.get_ticks_usec() - t0)  # its share of the frame (GOC_PERF_PROBE)
 
 
 func _process_timed(_delta: float) -> void:
 	if ui and rig and terrain:
 		news._edge_tick(_delta)
-	_game_ms += _delta * 1000.0
+	var still := get_tree().paused
+	if not still:
+		_game_ms += _delta * 1000.0
 	# The game took the camera down to the land (a town framed, a battle): the map steps aside.
 	if over._over_open and rig.goal_distance < rig.OVERVIEW * 0.9:
 		over._overview_close()
@@ -1012,7 +1052,7 @@ func _process_timed(_delta: float) -> void:
 	if _heard_at <= 0.0:
 		_heard_at = 0.25
 		_listen()
-	if villagers and sky3d:
+	if villagers and sky3d and not still:
 		villagers.night = sky3d.is_night()
 		# The village keeps its own clock: the sky's, or in always-day light a
 		# working day from dawn to dusk on loop (a day is DAY_SECONDS long).
@@ -1432,6 +1472,7 @@ func _say_aloud(text: String, who: Dictionary, done := Callable()) -> void:
 			_voice.bus = sound.voice_bus() if sound else "Master"
 			_voice.finished.connect(func(): if sound: sound.voice_ended())
 			add_child(_voice)
+			_keep_running(_voice)
 		if sound:
 			sound.voice_started()
 		_voice.stream = stream

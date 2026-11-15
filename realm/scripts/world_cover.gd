@@ -26,7 +26,7 @@ static func cover(who: String, on: bool) -> void:
 	tree.root.disable_3d = not _covers.is_empty()
 	var still := _covers.keys().any(func(k): return not RUNS_BEHIND.has(k))
 	for n in tree.get_nodes_in_group(VIEW):
-		n.process_mode = Node.PROCESS_MODE_DISABLED if still else Node.PROCESS_MODE_INHERIT
+		n.process_mode = Node.PROCESS_MODE_DISABLED if still else int(n.get_meta(&"runs", Node.PROCESS_MODE_INHERIT))  # back to its own (main.gd _keep_running)
 
 
 ## Whether anything covers the window now.
