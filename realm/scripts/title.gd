@@ -29,7 +29,7 @@ var _new_step := 0
 var _name_typed := false  # the player wrote the chronicle's name themself
 ## The pages of setting up a chronicle: what kind of king, who you are, the reign, its story, the realm.
 const NEW_STEPS := ["Your king", "Who you are", "The reign", "Its story", "Your realm"]
-var _king_type := ""  # what kind of king you'd be (bridge data/king_types.json), "" until one is chosen
+var _king_type := ""  # what kind of king you'd be (bridge data/king_types.json): the first kind until he picks
 var _king := {}  # who you are: name, age, man or woman; sent with the chronicle (bridge royals.js crown)
 var _king_types: Array = []  # the kinds of king, as the bridge last gave them (/chronicles/options)
 var _scenario := "aldmere"
@@ -677,7 +677,7 @@ func show_new() -> void:
 
 ## What kind of king you'd be, the first page (Crusader Kings 3's ruler designer, Total War's faction pick): a big card
 ## for each kind, its painted still, the reign it means and what it changes in play (bridge data/king_types.json via
-## /chronicles/options). Pressed again, a card is let go: no kind, and the King comes as he is dealt.
+## /chronicles/options). The first is chosen until he picks another.
 func _king_page(page: VBoxContainer, page_h: float) -> void:
 	page.add_child(_label("What kind of king will you be", 15, MUTED))
 	var row := HBoxContainer.new()
@@ -685,6 +685,10 @@ func _king_page(page: VBoxContainer, page_h: float) -> void:
 	page.add_child(row)
 	var card_h := clampf(page_h - 60.0, 300.0, 560.0)
 	var fill := func(list: Array) -> void:
+		# One already chosen, the first in the bridge's order (Mac 2026-11-16: "it should have a default selected ...
+		# so I can pretty much just keep hitting next"), as every other page has its own already set.
+		if _king_type == "" and not list.is_empty() and list[0] is Dictionary:
+			_king_type = String(list[0].get("id", ""))
 		for c in row.get_children():
 			c.queue_free()
 		for t in list:
@@ -763,7 +767,7 @@ func _king_card(row: HBoxContainer, t: Dictionary, h: float) -> void:
 	gives.add_theme_color_override("font_color", MUTED)
 	box.add_child(gives)
 	card.pressed.connect(func():
-		_king_type = "" if _king_type == id else id
+		_king_type = id  # one is always chosen: a press picks another, never none
 		for c in row.get_children():
 			if c is Button and c.has_meta("king"):
 				var on: bool = String(c.get_meta("king")) == _king_type
