@@ -65,7 +65,7 @@ func _build_town_panel() -> void:
 	v.add_child(T.label("Royal decrees"))
 	var row := HFlowContainer.new()
 	v.add_child(row)
-	for a in ["relief", "gift", "feast", "levy", "banners", "alliance", "march"]:
+	for a in ["relief", "gift", "feast", "levy", "banners", "alliance", "march", "war", "join"]:
 		var act: String = a
 		_decree_btns[act] = ui.btn("", func():
 			if act == "banners":
@@ -150,6 +150,23 @@ func _forecast(odds: float) -> String:
 	return "we'd be thrown back"
 
 
+## A house's likely answer to the King's envoy asking it to join his war (bridge war.js joinChance), as his
+## counsellors would put it: a friend of the foe refuses and warns them.
+func _answer(a: Dictionary) -> String:
+	if a.get("warns", false):
+		return "they'd refuse and warn %s" % String(a.get("on", "them")).replace("House ", "")
+	var p := float(a.get("chance", 0.0))
+	if p >= 0.75:
+		return "they'd come gladly"
+	if p >= 0.5:
+		return "they'd likely come"
+	if p >= 0.25:
+		return "they might come"
+	if p > 0.0:
+		return "they'd likely refuse"
+	return "they'd refuse"
+
+
 func _name_decrees(c: Dictionary, house: Dictionary) -> void:
 	# Only what the town hasn't built is offered; with nothing left, no "Fund" at all.
 	var has: Array = c.get("buildings", [])
@@ -187,11 +204,15 @@ func _name_decrees(c: Dictionary, house: Dictionary) -> void:
 		# Politics with teeth: an oath that binds a house to the crown's wars, and the royal host.
 		"alliance": "" if mine or _town_player.get("sworn") != null else "Swear an alliance with %s  %s" % [lord, _price("alliance", 20000)],
 		"march": "" if mine or (_town_player.get("besieged", []) as Array).has(int(c["id"])) else ("March on %s  %s  ·  %s" % [town, _price("march", 25000), _forecast(float(c["odds"]))] if c.get("odds") != null else "March on %s  %s" % [town, _price("march", 25000)]),
+		# The King's war on the whole house (bridge war.js): its towns one by one, its seat last; and, while a war is
+		# on, his envoy asking this house to join it, with its likely answer.
+		"war": "" if mine or _town_player.get("sworn") != null or _town_player.get("warOdds") == null else "Wage war on %s  %s  ·  %s" % [lord, _price("war", 15000), _forecast(float(_town_player["warOdds"]))],
+		"join": "" if mine or not (_town_player.get("joinWar") is Dictionary) else "Ask %s to join the war on %s  %s  ·  %s" % [lord, String(_town_player["joinWar"].get("on", "")).replace("House ", ""), _price("join", 5000), _answer(_town_player["joinWar"])],
 	}
 	_marriage_menu.text = "Arrange a marriage with…  " + _price("marriage", 40000)
 	# A decree the purse can't pay is greyed, and says why and what to do.
 	var COST := {}
-	for a in ["relief", "gift", "feast", "levy", "banners", "alliance", "march"]:
+	for a in ["relief", "gift", "feast", "levy", "banners", "alliance", "march", "war", "join"]:
 		COST[a] = int(_decrees.get(a, {}).get("cost", 0)) * ui.CROWNS
 	for a in names:
 		_decree_btns[a].text = names[a]
@@ -203,13 +224,15 @@ func _name_decrees(c: Dictionary, house: Dictionary) -> void:
 		# One royal favour to a house a year: grain, crowns or a feast in their honour.
 		if not seat and not mine and a in ["relief", "gift", "feast"]:
 			wait = int(_favour_wait.get(str(int(c.get("owner", -1))), 0))
+		if a == "join" and _town_player.get("joinWar") is Dictionary:
+			wait = int(_town_player["joinWar"].get("wait", 0))  # the house answered the envoy lately
 		if wait > 0 and names[a] != "":
 			_decree_btns[a].text = "%s  ·  again in %d season%s" % [names[a].get_slice("  ", 0), wait, "" if wait == 1 else "s"]
 		elif short and names[a] != "":
 			# Can't be paid: the order says so on its face, not only on hover.
 			_decree_btns[a].text = "%s  ·  the treasury can't pay" % names[a].get_slice("  ", 0)
 		_decree_btns[a].disabled = short or wait > 0
-		_decree_btns[a].tooltip_text = ("Once a year. Again in %d season%s." % [wait, "" if wait == 1 else "s"]) if wait > 0 else (("%s. Raise the tithe (the %% in the top bar) to fill it." % String(_decrees.get(a, {}).get("short", "The treasury holds %s crowns" % ui.heads(ui.purse * 100)))) if short else "")
+		_decree_btns[a].tooltip_text = ("%s Again in %d season%s." % ["They gave your envoy their answer lately." if a == "join" else "Once a year.", wait, "" if wait == 1 else "s"]) if wait > 0 else (("%s. Raise the tithe (the %% in the top bar) to fill it." % String(_decrees.get(a, {}).get("short", "The treasury holds %s crowns" % ui.heads(ui.purse * 100)))) if short else "")
 	_grant_menu.visible = not c.get("capital", false)  # a house's seat is never granted away
 	_marriage_menu.visible = not mine  # a match is made between two great houses
 	# The other great houses, not this one: the names as the houses table has them.
