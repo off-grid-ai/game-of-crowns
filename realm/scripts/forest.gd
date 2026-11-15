@@ -514,6 +514,20 @@ func add_crown(at: Vector3, height: float) -> void:
 	_sight[cell].append(Vector4(at.x, at.z, at.y, height))
 
 
+## Whether a tree's trunk stands at `p` (within forest.json trunk of its foot): ground.gd asks, so nobody is placed
+## in a tree (Mac 2026-11-15: regiments through the woods).
+func in_way(p: Vector3) -> bool:
+	return trees_near(p, Data.num("forest", "trunk", 0.12)) > 0
+
+
+func _enter_tree() -> void:
+	preload("res://scripts/ground.gd").blocked_by(self)
+
+
+func _exit_tree() -> void:
+	preload("res://scripts/ground.gd").unblocked_by(self)
+
+
 ## How many trees stand within `radius` of `center` on the ground plane: the
 ## open ground a host or a camp needs (army.gd keeps its regiments off them).
 func trees_near(center: Vector3, radius: float) -> int:

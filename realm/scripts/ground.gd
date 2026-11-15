@@ -18,6 +18,8 @@ extends RefCounted
 ##     a ruin) says what it set down under `root`, within `area` (world XZ), is in the way; its outlines are read off
 ##     it the town's way (nav_ground.gd), so nothing keeps a list beside the pieces (Mac 2026-11-15: "entities need to
 ##     stop collision with each other": a host stood in a cottage and through a wood no check knew of).
+##   blocked_by(source), unblocked_by(source): a keeper of many small things in the way, too many to read as outlines
+##     (the woods' trunks), answers in_way(p) -> bool from its own index.
 ##   claim(id, poly, kind), release(id): ground held while it lies (world XZ): a regiment's rectangle ("body"), a
 ##     hedged field ("field": a muster keeps off it, a battle may be fought over it).
 
@@ -37,6 +39,7 @@ static var _places := {}  # chunk (Vector2i) -> {root instance id: root}: what b
 static var _place_area := {}  # root instance id -> [chunks, Rect2 it covers]
 static var _claims := {}  # chunk -> {id: [kind, outline (world XZ)]}: the ground bodies hold while they stand
 static var _claim_area := {}  # id -> [chunks, Rect2]
+static var _sources: Array = []  # keepers of many small things in the way (the woods): in_way(p) -> bool
 static var _rev := 0  # counts places set down and claims made: nearest_clear's kept answers are asked afresh after
 static var _kept := {}  # tile (Vector2i) -> {[point, radius, reach] (Vector4i, hundredths) -> [answer, its towns' layouts]}
 static var _kept_n := 0
@@ -59,6 +62,9 @@ static func is_clear(p: Vector3, radius := 0.0, props := true, free_of: Variant 
 		var c := _chunk(q)
 		for root in (_places.get(c, {}) as Dictionary).values():
 			if is_instance_valid(root) and (root as Node3D).is_visible_in_tree() and not NavGround.inside_something(root, q, terrain, keys).is_empty():
+				return false
+		for src in _sources:
+			if is_instance_valid(src) and src.in_way(q):
 				return false
 		var at := Vector2(q.x, q.z)
 		for id in (_claims.get(c, {}) as Dictionary):
@@ -90,6 +96,18 @@ static func gone(root: Node3D) -> void:
 		(_places.get(k, {}) as Dictionary).erase(id)
 	forget(_place_area[id][1])
 	_place_area.erase(id)
+
+
+## A keeper of many small things in the way (the woods) answers for them: in_way(p: Vector3) -> bool.
+static func blocked_by(source: Object) -> void:
+	if not source in _sources:
+		_sources.append(source)
+		_rev += 1
+
+
+static func unblocked_by(source: Object) -> void:
+	_sources.erase(source)
+	_rev += 1
 
 
 ## A body holds `poly` (world XZ) while it stands: no other placement takes that ground. A new claim by `id` replaces its last.
