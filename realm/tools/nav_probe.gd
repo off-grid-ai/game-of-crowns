@@ -49,7 +49,7 @@ class FakeTerrain3D extends Node3D:
 				var b := Vector3(x + s, land.height_at(x + s, z), z)
 				var c := Vector3(x + s, land.height_at(x + s, z + s), z + s)
 				var d := Vector3(x, land.height_at(x, z + s), z + s)
-				out.append_array([a, c, b, a, d, c])
+				out.append_array([a, b, c, a, c, d])  # Godot's winding: clockwise from above
 				z += s
 			x += s
 		return out
@@ -120,14 +120,14 @@ class _Holder extends Node3D:
 func _run() -> void:
 	NavWorld.start(_land, null)
 	await _until(func() -> bool: return _all_ready(), 200.0)
-	_check(_all_ready(), "every map is baked (walk, wide, host, water): %d layers baked" % NavWorld.baked)
+	_check(_all_ready(), "every map is baked (walk, wide, host, engine, water): %d layers baked" % NavWorld.baked)
 	_sync()
 	# 1. Across the realm, round the lake and the cottages.
 	var from := Vector3(2.0, 0.5, 14.5)
 	var to := Vector3(30.0, 0.5, 14.5)
 	var way := NavWorld.path(from, to, &"walk")
 	_check(way.size() >= 3, "a route across the realm on the walk map (%d points)" % way.size())
-	var r := NavWorld.radius(&"walk") * 0.9
+	var r := NavWorld.radius(&"walk") - float(Data.num("ground", "nav.bodies.walk.cell", 0.025))  # to Recast's cell
 	var wet := 0
 	var inside := 0
 	for p in _samples(way, 0.05):
@@ -166,7 +166,9 @@ func _run() -> void:
 	var reg := PackedVector2Array([Vector2(11.0, 4.0), Vector2(13.0, 4.0), Vector2(13.0, 8.0), Vector2(11.0, 8.0)])
 	Ground.claim("probe_regiment", reg, "host")
 	var before := NavWorld.baked
-	await _until(func() -> bool: return NavWorld.baked > before and NavWorld.ready(&"walk"), 30.0)
+	await _until(func() -> bool: return _settled(Vector2i(0, 0)), 30.0)
+	await _landed(Vector2i(0, 0))
+	print("held ground baked in: %d layers since it was claimed" % (NavWorld.baked - before))
 	await _frames(4)
 	_sync()
 	var fight := NavWorld.path(Vector3(9.0, 0.5, 6.0), Vector3(15.0, 0.5, 6.0), &"walk")
@@ -182,6 +184,8 @@ func _run() -> void:
 	_check(not joined.is_empty() and Vector2(joined[joined.size() - 1].x - 12.0, joined[joined.size() - 1].z - 6.0).length() < 0.01,
 		"a man sent into his regiment's block walks on into it (the map's route ends at its edge, %d points; the Mover's at the mark)" % join.size())
 	Ground.release("probe_regiment")
+	await _until(func() -> bool: return _settled(Vector2i(0, 0)), 30.0)  # baked again without it (and kept)
+	await _landed(Vector2i(0, 0))
 	# 6. A fighter steered across the lake, each frame, as a fighter's mind steers him.
 	var man := _man()
 	var a := Vector3(16.0, 0.5, 9.0)
@@ -189,6 +193,11 @@ func _run() -> void:
 	man.global_position = a
 	var mo: Node = Mover.of(man).fights(true)
 	mo.clip = ""
+	var seen := man.get_node_or_null("OnScreen")  # no camera headless: every body counts as seen
+	if seen:
+		man.remove_child(seen)
+		seen.free()
+	man.process_mode = Node.PROCESS_MODE_INHERIT
 	var waded := 0
 	var frames := 0
 	var t0 := Time.get_ticks_msec()
@@ -209,13 +218,35 @@ func _run() -> void:
 	_check(arrived[0], "go() round the lake arrives and says so")
 	man.queue_free()
 	# 5. A second start reads every kept navmesh back.
-	await _until(func() -> bool: return not preload("res://scripts/kept.gd").pending(), 20.0)
 	NavWorld.stop()
 	NavWorld.start(_land, null)
 	await _until(func() -> bool: return _all_ready(), 120.0)
 	_check(_all_ready() and NavWorld.baked == 0 and NavWorld.read_back > 0, "a second start reads the kept navmesh: %d baked, %d read back" % [NavWorld.baked, NavWorld.read_back])
 	print("NAV %s" % ("PASS" if _bad == 0 else "FAIL (%d)" % _bad))
 	quit(0 if _bad == 0 else 1)
+
+
+## Every land map's chunk `c` baked from what it is made of now, and landed on its map.
+func _settled(c: Vector2i) -> bool:
+	var sig := String(NavWorld._inputs(c)["sig"])
+	for k in NavWorld.LAND_KINDS:
+		var ch: Dictionary = NavWorld._chunks[k][c]
+		if ch["out"] or String(ch["sig"]) != sig:
+			return false
+	_sync()
+	return true
+
+
+## The server builds regions and maps asynchronously: chunk `c`'s new meshes built into the walk map.
+func _landed(c: Vector2i) -> void:
+	var ch: Dictionary = NavWorld._chunks[&"walk"][c]
+	await _until(func() -> bool:
+		for layer in ch["regions"]:
+			if NavigationServer3D.region_get_iteration_id(ch["regions"][layer]) <= int((ch.get("built", {}) as Dictionary).get(layer, -1)):
+				return false
+		return true, 10.0)
+	var it := NavigationServer3D.map_get_iteration_id(NavWorld.map(&"walk"))
+	await _until(func() -> bool: return NavigationServer3D.map_get_iteration_id(NavWorld.map(&"walk")) > it, 10.0)
 
 
 func _man() -> Node3D:
@@ -225,7 +256,7 @@ func _man() -> Node3D:
 
 
 func _all_ready() -> bool:
-	for k in [&"walk", &"wide", &"host", NavWorld.WATER]:
+	for k in NavWorld.LAND_KINDS + [NavWorld.WATER]:
 		if not NavWorld.ready(k):
 			_sync()
 			return false
@@ -234,7 +265,7 @@ func _all_ready() -> bool:
 
 ## The server syncs its maps each physics frame in play; asked here at once.
 func _sync() -> void:
-	for k in [&"walk", &"wide", &"host", NavWorld.WATER]:
+	for k in NavWorld.LAND_KINDS + [NavWorld.WATER]:
 		if NavWorld.map(k).is_valid():
 			NavigationServer3D.map_force_update(NavWorld.map(k))
 

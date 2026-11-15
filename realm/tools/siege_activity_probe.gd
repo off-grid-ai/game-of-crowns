@@ -42,7 +42,7 @@ func generate_nav_mesh_source_geometry(box: AABB, _require_nav: bool) -> PackedV
 	while x < minf(box.end.x, 48.0) - 0.001:
 		var z := maxf(box.position.z, 0.0)
 		while z < minf(box.end.z, 48.0) - 0.001:
-			out.append_array([Vector3(x, 0, z), Vector3(x + 0.5, 0, z + 0.5), Vector3(x + 0.5, 0, z), Vector3(x, 0, z), Vector3(x, 0, z + 0.5), Vector3(x + 0.5, 0, z + 0.5)])
+			out.append_array([Vector3(x, 0, z), Vector3(x + 0.5, 0, z), Vector3(x + 0.5, 0, z + 0.5), Vector3(x, 0, z), Vector3(x + 0.5, 0, z + 0.5), Vector3(x, 0, z + 0.5)])
 			z += 0.5
 		x += 0.5
 	return out
@@ -280,6 +280,7 @@ func _reg(a: Node, at: Vector3, unit: String, role: String, w := 1.6, d := 0.6) 
 	a._claim(r, n.global_transform)
 	var mo: Node = Mover.of(n).fights(true)
 	mo.nav = &"host"  # as army.gd stands a battle's regiments
+	mo.keep = a._block_keep(r)  # its block slides clear of what stands, an engine too (army.gd)
 	mo.clip = ""
 	var seen := n.get_node_or_null("OnScreen")  # no camera headless: every body counts as seen
 	if seen:
@@ -358,7 +359,7 @@ func _watch(blocker: Dictionary) -> void:
 	_check(camp.engines.size() >= int(k.get("least", 3)) and low >= 0, "every engine throws at least %.0f a minute once built (%d engines, thrown %s, built at %s)" % [per_min, camp.engines.size(), str(thrown), str(built_at)])
 	_check(low_wall >= 1, "their stones come down on the wall while it holds (on the wall %s of %s)" % [str(on_wall), str(thrown)])
 	# 2. the ram
-	var ram_blows: int = (wall.strikes as Array).filter(func(p): return absf(Vector2(p.x, p.z).length() - R) < 0.6).size() - _sum(on_wall)
+	var ram_blows: int = (wall.strikes as Array).filter(func(p): return absf(Vector2(p.x - TOWN.x, p.z - TOWN.z).length() - R) < 0.6).size() - _sum(on_wall)
 	_check(ram_blows >= 3, "the ram swings at the wall (%d blows)" % ram_blows)
 	# 3. volleys
 	var cadence: Array = w.get("volley_s", [5.0, 7.0])

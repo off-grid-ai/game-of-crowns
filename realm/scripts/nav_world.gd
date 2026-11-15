@@ -1,7 +1,7 @@
 extends Node
 ## The realm's one navigation (Mac 2026-11-15: "replace our hand-written where-can-a-body-go systems with the engine's"):
 ## Godot's NavigationServer3D and its Recast baker, the block Unity, Unreal and Godot games all stand on. One navigation
-## map per body size (Godot's way for agents of different widths: ground.json nav.bodies walk, wide, host) and one for
+## map per body size (Godot's way for agents of different widths: ground.json nav.bodies walk, wide, host, engine) and one for
 ## the ships (nav.water), each made of chunks of nav.chunk world units, baked on worker threads and kept (kept.gd).
 ##
 ## A land chunk is baked from the land itself (Terrain3D's generate_nav_mesh_source_geometry: its triangles), less the
@@ -13,7 +13,7 @@ extends Node
 ## (nav.open_cost) and, for a cart's or a host's map, a river's water where no road fords it (nav.river_cost). A water
 ## chunk is the sea and lakes deeper than nav.water.draft under the waterline, kept a hull's half beam off the shore.
 ##
-## Kept: each chunk layer is written as its NavigationMesh (a plain resource) under kept/nav, named by a hash of what it
+## Kept: each chunk layer is written as its navmesh's vertices and polygons (plain bytes) under kept/nav, named by a hash of what it
 ## was baked from (the land's triangles, what stands, the ways); a restart reads it back instead of baking. A chunk is
 ## baked afresh only where what it is made of changed (terrain.ground_changed, a town's layout, a wood felled, a road
 ## laid, a host's ground) and has held still nav.settle seconds; until then its old mesh answers. Moving bodies don't
@@ -27,7 +27,7 @@ const ViewTier := preload("res://scripts/view_tier.gd")
 const Ground := preload("res://scripts/ground.gd")
 const PerfTools := preload("res://scripts/perf_tools.gd")
 
-const LAND_KINDS: Array[StringName] = [&"host", &"wide", &"walk"]  # baked in this order: the roads and hosts first
+const LAND_KINDS: Array[StringName] = [&"host", &"wide", &"walk", &"engine"]  # baked in this order: the roads and hosts first
 const WATER: StringName = &"water"
 const LAYERS: Array[StringName] = [&"ways", &"open", &"river"]
 const BLOCKING_CLAIMS := ["host", "body", "engine"]  # held ground carved out of the maps (ground.gd claims)
@@ -44,10 +44,14 @@ static var _out := 0  # bakes on workers now
 static var _done: Array = []  # bakes back from workers: [kind, chunk, sig, {layer: NavigationMesh}, kept paths to write]
 static var _lock := Mutex.new()
 static var _pending := {}  # kind -> chunks not yet landed once
-static var _ready_at := {}  # kind -> the map's iteration when its last first-landing came in
+static var _await := {}  # kind -> [[region, its iteration when set]]: every chunk landed, its regions still building
+static var _answers := {}  # kind -> true once the map answers for every chunk (read on any thread)
 static var _land_rev := {}  # chunk -> how many times its land was changed (terrain.ground_changed)
 static var _town_polys := {}  # root instance id -> [signature, [[world poly, its bounds]], [[way poly, bounds]]]
-static var _claims_rev := -1
+static var _base := {}  # chunk -> [what it was read at (key), its base signature, obstacles, ways]: read again only on change
+static var _sweep_key: Variant = null  # what the realm was made of when the watch's round began
+static var _swept_key: Variant = null  # and when its last round ended with every chunk settled: no change, no round
+static var _unsettled := false  # a chunk seen this round waits to settle: another round follows
 static var _started := false
 static var _gen := 0  # a start's number: a bake still out from an earlier one is dropped when it comes back
 static var baked := 0  # chunk layers Recast baked since start (a restart with everything kept bakes none)
@@ -67,10 +71,14 @@ static func stop() -> void:
 	_maps.clear()
 	_chunks.clear()
 	_pending.clear()
-	_ready_at.clear()
+	_await.clear()
+	_answers.clear()
 	_queue.clear()
 	_town_polys.clear()
 	_land_rev.clear()
+	_base.clear()
+	_sweep_key = null
+	_swept_key = null
 	_all.clear()
 	_started = false
 	_out = 0
@@ -140,11 +148,33 @@ static func map(kind: StringName) -> RID:
 	return _maps.get(kind, RID())
 
 
-## Whether `kind`'s map answers for every chunk (each baked or read back once, and synced since).
+## Whether `kind`'s map answers for every chunk: each baked or read back once, its region built (the server builds
+## regions and maps asynchronously) and a map iteration made since that holds them all.
 static func ready(kind: StringName) -> bool:
-	if not _maps.has(kind) or not (_pending[kind] as Dictionary).is_empty():
-		return false
-	return NavigationServer3D.map_get_iteration_id(_maps[kind]) > int(_ready_at.get(kind, 0))
+	return bool(_answers.get(kind, false))
+
+
+## On the main thread: a map whose every chunk has landed waits for its regions' builds (the server builds regions and
+## maps asynchronously), then for the map to hold them: the map's nearest point to each region's middle lies in that
+## region (map iterations alone can't tell a build that began before the last region was built from one after it).
+static func _confirm() -> void:
+	for kind in _await.keys():
+		var regs: Array = _await[kind]
+		if not regs.all(func(e: Array) -> bool: return NavigationServer3D.region_get_iteration_id(e[0]) > int(e[1])):
+			continue
+		var held := true
+		for e: Array in regs:
+			var box: AABB = NavigationServer3D.region_get_bounds(e[0])
+			if box.size == Vector3.ZERO:
+				continue  # nothing to walk in it
+			var mid := box.get_center()
+			var q := NavigationServer3D.map_get_closest_point(_maps[kind], mid)
+			if not Rect2(box.position.x, box.position.z, box.size.x, box.size.z).grow(float(_cells[kind]) * 2.0).has_point(Vector2(q.x, q.z)):
+				held = false
+				break
+		if held:
+			_await.erase(kind)
+			_answers[kind] = true
 
 
 ## The way from `from` to `to` (world) on `kind`'s map: Godot's query on the navmesh, the corridor pulled straight
@@ -159,8 +189,7 @@ static func path(from: Vector3, to: Vector3, kind: StringName = &"walk") -> Pack
 	q.target_position = to
 	q.pathfinding_algorithm = NavigationPathQueryParameters3D.PATHFINDING_ALGORITHM_ASTAR
 	q.path_postprocessing = NavigationPathQueryParameters3D.PATH_POSTPROCESSING_CORRIDORFUNNEL
-	q.simplify_path = true
-	q.simplify_epsilon = float(_cells[kind])
+	q.simplify_path = false  # the funnel's corners are the route; simplifying cut them into what stands
 	var r := NavigationPathQueryResult3D.new()
 	NavigationServer3D.query_path(q, r)
 	return r.path
@@ -171,6 +200,22 @@ static func closest(p: Vector3, kind: StringName = &"walk") -> Vector3:
 	if not ready(kind):
 		return p
 	return NavigationServer3D.map_get_closest_point(_maps[kind], p)
+
+
+## Whether `p` (world) is as far off every siege engine's ground as `kind`'s map keeps a body (a host's: its radius and
+## nav.engine_room, its block being wider than its middle; others: their radius).
+static func off_engines(p: Vector3, kind: StringName) -> bool:
+	var room := radius(kind) + (Data.num("ground", "nav.engine_room", 0.5) if kind == &"host" else 0.0)
+	var q := Vector2(p.x, p.z)
+	var near: Dictionary = Ground.claims_in(Rect2(q - Vector2.ONE * room, Vector2.ONE * room * 2.0), ["engine"])
+	for id in near:
+		var poly: PackedVector2Array = near[id][1]
+		if Geometry2D.is_point_in_polygon(q, poly):
+			return false
+		for i in poly.size():
+			if q.distance_to(Geometry2D.get_closest_point_to_segment(q, poly[i], poly[(i + 1) % poly.size()])) < room:
+				return false
+	return true
 
 
 ## Whether `p` (world, its x and z) lies on `kind`'s map: a body of that kind may stand there as navigation sees it.
@@ -193,6 +238,8 @@ func _process(_delta: float) -> void:
 		return
 	var t0 := Time.get_ticks_usec()
 	_land_done()
+	if not _await.is_empty():
+		_confirm()
 	_watch()
 	_dispatch()
 	PerfTools.add("nav_world", Time.get_ticks_usec() - t0)
@@ -206,28 +253,57 @@ static func _on_ground_changed(area: Rect2) -> void:
 			_land_rev[c] = int(_land_rev.get(c, 0)) + 1
 
 
-## A few chunks a frame (nav.watch), on the frame's budget: what each is made of, by its signature; a chunk whose
-## signature changed and then held still nav.settle seconds (nav.claims_settle when only held ground moved) is queued.
+## What the realm's maps are made of, as a few counters: the ground's shapes (ground.gd shapes_rev), the held ground
+## (claims_rev), the roads laid and the land's changes. Unchanged, the watch has nothing to look at.
+static func _key() -> Array:
+	var land := 0
+	for c in _land_rev:
+		land += int(_land_rev[c])
+	return [Ground.shapes_rev, Ground.claims_rev, _roads_n(), land]
+
+
+static func _roads_n() -> int:
+	return (roads.get("_paths") as Dictionary).size() if roads and is_instance_valid(roads) and roads.get("_paths") is Dictionary else 0
+
+
+## A few chunks a frame (nav.watch), on the frame's budget, in rounds over the realm, and only while something changed
+## (_key): what each is made of, by its signature; a chunk whose signature changed and then held still nav.settle
+## seconds (nav.claims_settle when only held ground moved) is queued.
 static func _watch() -> void:
 	if _all.is_empty():
 		return
 	var now := Time.get_ticks_msec() / 1000.0
 	var n := int(Data.num("ground", "nav.watch", 4))
 	for k in n:
+		if _watch_i == 0:
+			var key := _key()
+			if key == _swept_key:
+				return  # nothing changed since the last round ended settled
+			_sweep_key = key
+			_unsettled = false
 		if not ViewTier.spend_ok(&"nav_world"):
 			return
-		_watch_i = (_watch_i + 1) % _all.size()
 		var c := _all[_watch_i]
+		_watch_i += 1
+		if _watch_i >= _all.size():
+			_watch_i = 0
+			_swept_key = null if _unsettled else _sweep_key
 		var inputs := _inputs(c)
 		var sig := String(inputs["sig"])
 		for kind in LAND_KINDS:
 			var ch: Dictionary = _chunks[kind][c]
 			if ch["out"] or (_pending[kind] as Dictionary).has(c) or sig == String(ch["sig"]):
 				continue
+			_unsettled = true
 			if sig != String(ch["want"]):
+				# Held ground moving on (a battle's regiments never all stand still): baked round where it stands every
+				# nav.claims_settle seconds from its first move, not only once it all holds still. Anything else waits
+				# to hold still nav.settle seconds (a town rising).
+				var moving_on := bool(inputs["claims_only"]) and String(ch["want"]) != String(ch["sig"])
 				ch["want"] = sig
-				ch["seen_at"] = now
-				continue
+				if not moving_on:
+					ch["seen_at"] = now
+					continue
 			var wait := Data.num("ground", "nav.claims_settle", 1.0) if bool(inputs["claims_only"]) else Data.num("ground", "nav.settle", 3.0)
 			if now - float(ch["seen_at"]) >= wait and not _queue.has([kind, c]):
 				_queue.append([kind, c])
@@ -247,7 +323,7 @@ static func _dispatch() -> void:
 		if ch["out"]:
 			continue
 		var faces := _faces(c)
-		var inputs := _inputs(c) if kind != WATER else {"sig": "", "obstacles": [], "ways": [], "claims_only": false}
+		var inputs := _inputs(c) if kind != WATER else {"sig": "", "obstacles": [], "engines": [], "ways": [], "claims_only": false}
 		ch["out"] = true
 		ch["want"] = inputs["sig"]
 		_out += 1
@@ -273,48 +349,58 @@ static func _faces(c: Vector2i) -> PackedVector3Array:
 static func _inputs(c: Vector2i) -> Dictionary:
 	var chunk := _chunk_size()
 	var area := Rect2(c.x * chunk - 1.0, c.y * chunk - 1.0, chunk + 2.0, chunk + 2.0)
-	var L: Dictionary = Data.value("ground", "physics.layers", {})
-	var held_bits := 0
-	var mask := 0
-	for k in L:
-		if String(k).begins_with("_") or String(k) == "field":
-			continue  # a hedged field is walked into by those who work it
-		var bit := 1 << (int(L[k]) - 1)
-		mask |= bit
-		if String(k) in BLOCKING_CLAIMS:
-			held_bits |= bit
-	var obstacles: Array = []
+	# What stands and the ways, read again only when the ground's shapes, the roads or the land there changed.
+	var key := [Ground.shapes_rev, _roads_n(), int(_land_rev.get(c, 0))]
+	var kept: Array = _base.get(c, [])
+	if kept.is_empty() or kept[0] != key:
+		var L: Dictionary = Data.value("ground", "physics.layers", {})
+		var mask := 0
+		for k in L:
+			if String(k).begins_with("_") or String(k) == "field" or String(k) in BLOCKING_CLAIMS:
+				continue  # a hedged field is walked into by those who work it; held ground is read below
+			mask |= 1 << (int(L[k]) - 1)
+		var obstacles: Array = []
+		for e: Dictionary in Ground.obstacle_shapes(area, mask):
+			var o := _outline(e["shape"], e["xform"])
+			if o.size() >= 3:
+				obstacles.append(o)
+		var ways: Array = []
+		var towns: Node = Ground.towns
+		if towns and is_instance_valid(towns):
+			for t: Dictionary in (towns.get("towns") as Dictionary).values():
+				var root: Node3D = t.get("node") if t.get("node") is Node3D and is_instance_valid(t.get("node")) else null
+				if root == null or not root.is_inside_tree():
+					continue
+				for e in _town_ways(root):
+					if (e[1] as Rect2).intersects(area):
+						ways.append(e[0])
+		if roads and is_instance_valid(roads):
+			for s in roads.segments():
+				var a: Vector2 = s[0]
+				var b: Vector2 = s[1]
+				var half := float(s[2])
+				var lo := a.min(b) - Vector2.ONE * half
+				if not Rect2(lo, a.max(b) - lo + Vector2.ONE * half).intersects(area):
+					continue
+				var side := (b - a).normalized().orthogonal() * half
+				if side == Vector2.ZERO:
+					continue
+				ways.append(PackedVector2Array([a + side, b + side, b - side, a - side]))
+		key = [Ground.shapes_rev, _roads_n(), int(_land_rev.get(c, 0))]  # as read: the read itself may lay a wood's trunks
+		kept = [key, str(hash([key[2], obstacles, ways])), obstacles, ways]
+		_base[c] = kept
+	# The held ground (a regiment's block, an engine): the claims' own outlines, cheap to read every look.
 	var held: Array = []
-	for e: Dictionary in Ground.obstacle_shapes(area, mask):
-		var o := _outline(e["shape"], e["xform"])
-		if o.size() >= 3:
-			(held if int(e["layer"]) & held_bits else obstacles).append(o)
-	var ways: Array = []
-	var towns: Node = Ground.towns
-	if towns and is_instance_valid(towns):
-		for t: Dictionary in (towns.get("towns") as Dictionary).values():
-			var root: Node3D = t.get("node") if t.get("node") is Node3D and is_instance_valid(t.get("node")) else null
-			if root == null or not root.is_inside_tree():
-				continue
-			for e in _town_ways(root):
-				if (e[1] as Rect2).intersects(area):
-					ways.append(e[0])
-	if roads and is_instance_valid(roads):
-		for s in roads.segments():
-			var a: Vector2 = s[0]
-			var b: Vector2 = s[1]
-			var half := float(s[2])
-			var lo := a.min(b) - Vector2.ONE * half
-			if not Rect2(lo, a.max(b) - lo + Vector2.ONE * half).intersects(area):
-				continue
-			var side := (b - a).normalized().orthogonal() * half
-			if side == Vector2.ZERO:
-				continue
-			ways.append(PackedVector2Array([a + side, b + side, b - side, a - side]))
-	var base := str(hash([int(_land_rev.get(c, 0)), obstacles, ways]))
-	var sig := base + ":" + str(hash(held))
+	var engines: Array = []  # an engine's ground: a host's block keeps its own half-width off it too (nav.engine_room)
+	var claims: Dictionary = Ground.claims_in(area, BLOCKING_CLAIMS)
+	var ids := claims.keys()
+	ids.sort_custom(func(x, y) -> bool: return str(x) < str(y))
+	for id in ids:
+		(engines if String(claims[id][0]) == "engine" else held).append(claims[id][1])
+	var base: String = kept[1]
+	var sig := base + ":" + str(hash([held, engines]))
 	var was: String = String(_chunks[&"walk"][c]["sig"]) if _chunks.has(&"walk") else ""
-	return {"sig": sig, "obstacles": obstacles + held, "ways": ways, "claims_only": was.get_slice(":", 0) == base, "held": not held.is_empty()}
+	return {"sig": sig, "obstacles": (kept[2] as Array) + held, "engines": engines, "ways": kept[3], "claims_only": was.get_slice(":", 0) == base, "held": not (held.is_empty() and engines.is_empty())}
 
 
 ## A shape standing in the ground's space (ground.gd: prisms, boxes, a trunk's cylinder) as its outline on the ground,
@@ -451,17 +537,16 @@ static func _bake(gen: int, kind: StringName, c: Vector2i, faces: PackedVector3A
 	hc.update(var_to_bytes([String(kind), radius(kind), _cell(kind), String(inputs["sig"]), Data.num("ground", "nav.slope", 40.0), Data.num("ground", "nav.water.draft", 0.12)]))
 	var sig := hc.finish().hex_encode().substr(0, 12)
 	var layers := {}
-	var keep := {}
 	var parts := _split(kind, faces, fords)  # layer -> faces
 	if kind != WATER and not (inputs["ways"] as Array).is_empty():
 		var ways := ways_faces(parts[&"open"], inputs["ways"])
 		if not ways.is_empty():
 			parts[&"ways"] = ways
 	for layer: StringName in parts:
-		var path := Kept.path("nav", "%s_%d_%d_%s_%s" % [kind, c.x, c.y, layer, sig])
-		var nm: NavigationMesh = null
-		if Kept.has(path):
-			nm = ResourceLoader.load(path, "NavigationMesh", ResourceLoader.CACHE_MODE_IGNORE) as NavigationMesh
+		if (parts[layer] as PackedVector3Array).is_empty():
+			continue  # no ground of this layer here (a chunk of dry land on the ships' map)
+		var path := Kept.path("nav", "%s_%d_%d_%s_%s" % [kind, c.x, c.y, layer, sig], "nav")
+		var nm := _read(path, kind, c)
 		if nm != null:
 			_lock.lock()
 			read_back += 1
@@ -477,11 +562,43 @@ static func _bake(gen: int, kind: StringName, c: Vector2i, faces: PackedVector3A
 			baked += 1
 			_lock.unlock()
 			if not bool(inputs.get("held", false)):
-				keep[layer] = path  # held ground comes and goes: a mesh baked round it isn't kept
+				_write(nm, path)  # held ground comes and goes: a mesh baked round it isn't kept
 		layers[layer] = nm
 	_lock.lock()
-	_done.append([kind, c, String(inputs["sig"]), layers, keep, Time.get_ticks_usec() - t0, gen])
+	_done.append([kind, c, String(inputs["sig"]), layers, Time.get_ticks_usec() - t0, gen])
 	_lock.unlock()
+
+
+## A kept chunk layer: the navmesh's own vertices and polygons, as plain bytes (never a resource: the resource cache
+## holds a loaded or saved mesh's path, and a second load from it on a worker comes back empty). Null when none is
+## kept at `path`.
+static func _read(path: String, kind: StringName, c: Vector2i) -> NavigationMesh:
+	if not FileAccess.file_exists(path):
+		return null
+	var data: Variant = bytes_to_var(FileAccess.get_file_as_bytes(path))
+	if not (data is Array and (data as Array).size() == 2):
+		return null
+	var nm := _recast(kind, c)
+	nm.vertices = data[0]
+	for poly: PackedInt32Array in data[1]:
+		nm.add_polygon(poly)
+	return nm
+
+
+## Writes a baked chunk layer at `path` (on the worker that baked it), beside its place first and then moved there, so
+## nothing reads it half written.
+static func _write(nm: NavigationMesh, path: String) -> void:
+	var polys: Array = []
+	for i in nm.get_polygon_count():
+		polys.append(nm.get_polygon(i))
+	DirAccess.make_dir_recursive_absolute(path.get_base_dir())
+	var part := path + ".part"
+	var f := FileAccess.open(part, FileAccess.WRITE)
+	if f == null:
+		return
+	f.store_buffer(var_to_bytes([nm.get_vertices(), polys]))
+	f.close()
+	DirAccess.rename_absolute(part, path)
 
 
 ## The chunk's land triangles sorted by layer: for the land maps, the ways (cut out of the land under them, at the
@@ -553,6 +670,9 @@ static func _carve(src: NavigationMeshSourceGeometryData3D, kind: StringName, la
 	var r := radius(kind)
 	for o: PackedVector2Array in inputs["obstacles"]:
 		_obstruct(src, o, r)
+	var room := r + (Data.num("ground", "nav.engine_room", 0.5) if kind == &"host" else 0.0)
+	for o: PackedVector2Array in inputs.get("engines", []):
+		_obstruct(src, o, room)
 	if layer != &"ways":
 		for w: PackedVector2Array in inputs["ways"]:
 			_obstruct(src, w, 0.0)
@@ -604,7 +724,9 @@ static func ways_faces(open: PackedVector3Array, ways: Array) -> PackedVector3Ar
 					var p0 := _lift(piece[idx[t]], a, b, c)
 					var p1 := _lift(piece[idx[t + 1]], a, b, c)
 					var p2 := _lift(piece[idx[t + 2]], a, b, c)
-					if (p1 - p0).cross(p2 - p0).y < 0.0:
+					# Godot's winding for source faces (as Terrain3D gives them): clockwise seen from above, the right-hand
+					# normal pointing down; the other way Recast takes the face for a ceiling and bakes nothing.
+					if (p1 - p0).cross(p2 - p0).y > 0.0:
 						out.append_array([p0, p2, p1])
 					else:
 						out.append_array([p0, p1, p2])
@@ -626,7 +748,7 @@ static func _land_done() -> void:
 	_done.clear()
 	_lock.unlock()
 	for d in done:
-		if int(d[6]) != _gen:
+		if int(d[5]) != _gen:
 			continue  # baked for an earlier start
 		var kind: StringName = d[0]
 		var c: Vector2i = d[1]
@@ -637,7 +759,7 @@ static func _land_done() -> void:
 		var regions: Dictionary = ch["regions"]
 		var layers: Dictionary = d[3]
 		for layer: StringName in LAYERS:
-			if not layers.has(layer):
+			if not layers.has(layer) or (layers[layer] as NavigationMesh).get_polygon_count() == 0:
 				if regions.has(layer):
 					NavigationServer3D.free_rid(regions[layer])
 					regions.erase(layer)
@@ -647,12 +769,18 @@ static func _land_done() -> void:
 				NavigationServer3D.region_set_map(reg, _maps[kind])
 				NavigationServer3D.region_set_travel_cost(reg, _cost(layer))
 				regions[layer] = reg
+			var built := ch.get("built", {}) as Dictionary  # layer -> the region's iteration before this mesh was set
+			built[layer] = NavigationServer3D.region_get_iteration_id(regions[layer])
+			ch["built"] = built
 			NavigationServer3D.region_set_navigation_mesh(regions[layer], layers[layer])
-		for layer in d[4]:
-			Kept.keep(layers[layer], d[4][layer])
-		PerfTools.add("nav_world.bake", int(d[5]))
-		if (_pending[kind] as Dictionary).erase(c):
-			_ready_at[kind] = NavigationServer3D.map_get_iteration_id(_maps[kind])
+		PerfTools.add("nav_world.bake", int(d[4]))
+		if (_pending[kind] as Dictionary).erase(c) and (_pending[kind] as Dictionary).is_empty():
+			var regs: Array = []
+			for cc in _chunks[kind]:
+				var cd: Dictionary = _chunks[kind][cc]
+				for layer in cd["regions"]:
+					regs.append([cd["regions"][layer], int((cd.get("built", {}) as Dictionary).get(layer, -1))])
+			_await[kind] = regs
 
 
 static func _cost(layer: StringName) -> float:

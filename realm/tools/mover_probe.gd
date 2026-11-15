@@ -57,6 +57,7 @@ func _run() -> void:
 	await _man_in_the_way()
 	await _yield_rule()
 	Engine.remove_meta("awareness")
+	NavWorld.stop()  # no navigation from here on
 	await _no_realm()
 	print("MOVER PROBE PASS" if _fails == 0 else "MOVER PROBE FAIL %d" % _fails)
 	quit(0 if _fails == 0 else 1)
@@ -72,7 +73,17 @@ func _cart(at: Vector3, face: float) -> Node3D:
 	m.clip = ""
 	m.speed = 0.3
 	m.turn_radius = TURN
+	_seen(c)
 	return c
+
+
+## No camera headless: every body counts as seen (on_screen.gd would hold its walk).
+func _seen(n: Node3D) -> void:
+	var seen := n.get_node_or_null("OnScreen")
+	if seen:
+		n.remove_child(seen)
+		seen.free()
+	n.process_mode = Node.PROCESS_MODE_INHERIT
 
 
 ## Time on the clock, not frames: a headless frame is a few ms.
@@ -291,6 +302,7 @@ func _no_realm() -> void:
 	root.add_child(b)
 	b.global_position = Vector3(1, 0, 1)
 	Mover.of(b).go(Vector3(2, 0, 2))
+	_seen(b)
 	await _until(func(): return false, 0.3)
 	_check(b.global_position == Vector3(1, 0, 1), "a body sent with no navigation stands where it is")
 	b.queue_free()
@@ -366,7 +378,7 @@ class FlatTerrain3D extends Node3D:
 		while x < minf(box.end.x, 72.0) - 0.001:
 			var z := maxf(box.position.z, 0.0)
 			while z < minf(box.end.z, 16.0) - 0.001:
-				out.append_array([Vector3(x, 0, z), Vector3(x + s, 0, z + s), Vector3(x + s, 0, z), Vector3(x, 0, z), Vector3(x, 0, z + s), Vector3(x + s, 0, z + s)])
+				out.append_array([Vector3(x, 0, z), Vector3(x + s, 0, z), Vector3(x + s, 0, z + s), Vector3(x, 0, z), Vector3(x + s, 0, z + s), Vector3(x, 0, z + s)])  # Godot's winding
 				z += s
 			x += s
 		return out

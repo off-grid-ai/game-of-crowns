@@ -60,7 +60,7 @@ class Land3D extends Node3D:
 		while x < minf(box.end.x, 32.0) - 0.001:
 			var z := maxf(box.position.z, 0.0)
 			while z < minf(box.end.z, 32.0) - 0.001:
-				out.append_array([Vector3(x, 0, z), Vector3(x + 0.5, 0, z + 0.5), Vector3(x + 0.5, 0, z), Vector3(x, 0, z), Vector3(x, 0, z + 0.5), Vector3(x + 0.5, 0, z + 0.5)])
+				out.append_array([Vector3(x, 0, z), Vector3(x + 0.5, 0, z), Vector3(x + 0.5, 0, z + 0.5), Vector3(x, 0, z), Vector3(x + 0.5, 0, z + 0.5), Vector3(x, 0, z + 0.5)])  # Godot's winding
 				z += 0.5
 			x += 0.5
 		return out
@@ -85,6 +85,8 @@ class Aware extends Node:
 		return boards[id]
 	func attach(_p: Node, _t: int) -> void:
 		pass
+	func rec(_key: String, default: Variant = null) -> Variant:  # the realm's records (awareness.gd rec): none kept here
+		return default
 
 
 class Towns extends Node3D:

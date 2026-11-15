@@ -508,14 +508,14 @@ func _roll(dt: float) -> void:
 			var pace := float(k.get("pace", 0.12))
 			if not g.get("rolling", false):
 				g["rolling"] = true
-				# It keeps its ground as it rolls (the claim goes with it, _stamp), by the host map (nav_world.gd: kept a
-				# host's width off what stands, every regiment's block carved out; Mac 2026-11-15, Sunspire: a tower through
+				# It keeps its ground as it rolls (the claim goes with it, _stamp), by the engines' map (nav_world.gd: kept
+				# its half-width off what stands, every regiment's block carved out; Mac 2026-11-15, Sunspire: a tower through
 				# a regiment), and the fight's men step round its claim (army_melee.gd: held ground in their crowd); a
 				# regiment of its own side in its way opens a lane (army_field.gd _make_way reads way_to and half).
 				m.set_meta("way_to", g["to"])
 				m.set_meta("half", maxf(g["size"].x, g["size"].y))
 				var mv: Node = Mover.of(m)
-				mv.nav = &"host"
+				mv.nav = &"engine"  # kept its own half-width off every block and wall (nav_world.gd bodies.engine)
 				mv.speed = pace
 				mv.clip = ""  # an engine: nothing to play
 				mv.turn_rate = 0.0  # it keeps the camp's aim at the wall

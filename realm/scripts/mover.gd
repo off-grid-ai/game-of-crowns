@@ -71,9 +71,10 @@ func _ready() -> void:
 	set_process(false)
 
 
-## Claims a body may stand on in a fight (ground.gd kinds): its own and its fellows' held ground, a field, a ford.
-## Routes go round held ground (nav_world.gd carves it); standing is the land's (Mac 2026-11-15).
-const FIGHT_OPEN := ["host", "body", "engine", "field", "ford"]
+## Claims a body may stand on in a fight (ground.gd kinds): the hosts' held ground (its own and its fellows'), a field,
+## a ford; never an engine or another body's. Routes go round held ground (nav_world.gd carves it); standing in a host's
+## block is the land's (Mac 2026-11-15).
+const FIGHT_OPEN := ["host", "field", "ford"]
 const Ground := preload("res://scripts/ground.gd")
 
 
@@ -132,14 +133,17 @@ func _route(from: Vector3, to: Vector3) -> PackedVector3Array:
 
 
 ## Whether a body may walk straight from `a` to `b` (world) and stand there: every step of the way on ground nothing
-## stands on (ground.gd, held ground open), within the navigation's reach of the map's end (nav.join_reach).
+## stands on (ground.gd, held ground open) and as far off a siege engine as its map keeps (nav_world.gd off_engines),
+## within the navigation's reach of the map's end (nav.join_reach).
 func _clear_leg(a: Vector3, b: Vector3) -> bool:
 	var d := Vector2(b.x - a.x, b.z - a.z).length()
 	if d > Data.num("ground", "nav.join_reach", 1.5):
 		return false
+	var kind: StringName = &"wide" if turn_radius > 0.0 else nav
 	var n := maxi(1, ceili(d / 0.1))
 	for k in range(1, n + 1):
-		if not Ground.is_clear(a.lerp(b, float(k) / n), 0.0, true, null, FIGHT_OPEN):
+		var q := a.lerp(b, float(k) / n)
+		if not Ground.is_clear(q, 0.0, true, null, FIGHT_OPEN) or not NavWorld.off_engines(q, kind):
 			return false
 	return true
 

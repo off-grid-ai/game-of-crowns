@@ -23,14 +23,37 @@ const Data := preload("res://scripts/data.gd")
 const Mover := preload("res://scripts/mover.gd")
 
 const LAND := """extends Node3D
-var width := 0
-var height := 64
+signal ground_changed(area: Rect2)
+const TILE := 4.0
+const SEA_LEVEL := -0.15
+const DRY_ABOVE := 0.04
+var width := 18
+var height := 10
 var built := true
 var paths = self
-func height_at(_x: float, _z: float) -> float:
-	return 0.0
+var _fords := {}
+var land3d = self
+var land = self
+func height_at(_x: float, z: float) -> float:
+	return -1.0 if not is_land(0.0, z) else 0.0
+func tile_at(_x: int, _y: int) -> String:
+	return "Grassland"
+func in_river(_x: float, _z: float) -> bool:
+	return false
+func generate_nav_mesh_source_geometry(box: AABB, _require_nav: bool) -> PackedVector3Array:
+	var out := PackedVector3Array()
+	var x := maxf(box.position.x, 0.0)
+	while x < minf(box.end.x, 72.0) - 0.001:
+		var z := maxf(box.position.z, 0.0)
+		while z < minf(box.end.z, 40.0) - 0.001:
+			var y0 := height_at(x, z)
+			var y1 := height_at(x, z + 0.5)
+			out.append_array([Vector3(x, y0, z), Vector3(x + 0.5, y0, z), Vector3(x + 0.5, y1, z + 0.5), Vector3(x, y0, z), Vector3(x + 0.5, y1, z + 0.5), Vector3(x, y1, z + 0.5)])
+			z += 0.5
+		x += 0.5
+	return out
 func is_land(_x: float, z: float) -> bool:
-	return not (z > 14.0 and z < 16.0)
+	return not (z > 30.0 and z < 32.0)
 func walkable(x: float, z: float) -> bool:
 	return is_land(x, z)
 func world_pos(tx: float, ty: float) -> Vector3:
@@ -70,7 +93,7 @@ var camp: Node3D
 
 
 func _init() -> void:
-	preload("res://tools/watchdog.gd").arm(self, 120.0)
+	preload("res://tools/watchdog.gd").arm(self, 360.0)  # the navigation's first bake, then the hosts
 	_run.call_deferred()
 
 
@@ -110,6 +133,14 @@ func _run() -> void:
 	var pieces: RefCounted = _script(PIECES).new()
 	_lay_towns(pieces)
 	Footing.blocked_by(pieces)
+	# The realm's one navigation over the land, as main starts it (a marching host's route is its host map's).
+	root.add_child(load("res://scripts/nav_world.gd").new())
+	var NW: GDScript = load("res://scripts/nav_world.gd")
+	NW.start(main.terrain, null)
+	var t_nav := Time.get_ticks_msec()
+	while not NW.ready(&"host") and Time.get_ticks_msec() - t_nav < 200000:
+		await process_frame
+	_check(NW.ready(&"host"), "the realm's host map is baked over the land")
 	_siege()
 	_square()
 	await _march_halt()
@@ -121,9 +152,9 @@ func _run() -> void:
 
 # --- the land ------------------------------------------------------------------------------------------------
 
-const WALLED := Vector3(0, 0, 0)  # Saltkeep: a walled town, its wall a ring WALL_R round it
+const WALLED := Vector3(16, 0, 16)  # Saltkeep: a walled town, its wall a ring WALL_R round it (the land from (0, 0))
 const WALL_R := 5.0
-const SQUARE := Vector3(40, 0, 0)  # Kingsmere's square: open in the middle, stalls round it, houses beyond
+const SQUARE := Vector3(56, 0, 16)  # Kingsmere's square: open in the middle, stalls round it, houses beyond
 
 
 static func _box(c: Vector2, hw: float, hd: float, yaw := 0.0) -> PackedVector2Array:
@@ -137,9 +168,9 @@ func _lay_towns(pieces: RefCounted) -> void:
 	var n := 48
 	for i in n:  # the wall: a ring of stone lengths
 		var a := TAU * i / n
-		pieces.outlines.append(_box(Vector2(cos(a), sin(a)) * WALL_R, 0.4, 0.15, a + PI * 0.5))
+		pieces.outlines.append(_box(Vector2(WALLED.x, WALLED.z) + Vector2(cos(a), sin(a)) * WALL_R, 0.4, 0.15, a + PI * 0.5))
 	for p in [Vector2(-2, -2), Vector2(2, -2), Vector2(-2, 2), Vector2(2, 2), Vector2(0, -3.5), Vector2(-3.5, 0)]:
-		pieces.outlines.append(_box(p, 0.6, 0.5))  # houses inside the wall
+		pieces.outlines.append(_box(Vector2(WALLED.x, WALLED.z) + p, 0.6, 0.5))  # houses inside the wall
 	var sq := Vector2(SQUARE.x, SQUARE.z)
 	for p in [Vector2(-1.2, -0.9), Vector2(1.2, -0.9), Vector2(-1.2, 0.9), Vector2(1.2, 0.9), Vector2(0, 1.6)]:
 		pieces.outlines.append(_box(sq + p, 0.25, 0.2))  # the market's stalls
