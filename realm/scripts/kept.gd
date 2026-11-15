@@ -37,7 +37,7 @@ static func keep(res: Resource, path: String) -> void:
 	if baking:
 		ResourceSaver.save(res, path, ResourceSaver.FLAG_COMPRESS)
 	else:
-		WorkerThreadPool.add_task(func(): ResourceSaver.save(res, path), false, "keep " + path.get_file())
+		WorkerThreadPool.add_task(func(): ResourceSaver.save(res, path, ResourceSaver.FLAG_COMPRESS), false, "keep " + path.get_file())
 
 
 ## Every script and data file's md5, as one, made once. An exported game's scripts are tokens, not the .gd files the

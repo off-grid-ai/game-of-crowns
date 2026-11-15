@@ -966,7 +966,7 @@ func _source_image(path: String) -> Image:
 ## stretching. `edge` softens it: "round" for a worn, ragged patch, "setts" for laid stone, "sides" for a
 ## verge's frayed edges, "track" for a road's (frayed, with wheel ruts), "paved" for a street of setts.
 const Data := preload("res://scripts/data.gd")
-const TILED_VERSION := ":v6"  # raise when how a tile is made changes, so the kept copies on disk are made again
+const Kept := preload("res://scripts/kept.gd")  # each tiled ground made once and kept in a file of its own
 const TILED_MOST := 2048  # px: the longest side of a tiled ground texture
 
 func tiled(path: String, fx: float, fy: float, edge := "") -> Texture2D:
@@ -981,16 +981,17 @@ func tiled(path: String, fx: float, fy: float, edge := "") -> Texture2D:
 	var key := "%s:%.2f:%.2f:%s" % [path, fx, fy, edge]
 	if _tiled.has(key):
 		return _tiled[key]
-	# Made once ever, then kept on disk: building these pixel by pixel is what
-	# stalled a town's first appearance.
-	# The source's own date in the kept copy's name: a repainted texture is made again, never served stale.
-	var cached := "user://tiled/%s.png" % (key + TILED_VERSION + str(FileAccess.get_modified_time(path))).md5_text()
-	if FileAccess.file_exists(cached):
-		var kept := Image.load_from_file(cached)
+	# Made once ever, then kept in a file of its own (kept.gd): building these pixel by pixel is what stalled a town's
+	# first appearance, and a kept town points at the file rather than carrying the pixels (22 MB a town).
+	# The source's own date in the player's copy's name: a repainted texture is made again, never served stale. The
+	# game's baked copy is made from the art it ships with, which an export can't date (its source isn't in it).
+	var dated := "" if Kept.baking or OS.has_feature("template") else str(FileAccess.get_modified_time(path))
+	var cached := Kept.path("tiled", (key + dated).md5_text())
+	if Kept.has(cached):
+		var kept := load(cached) as ImageTexture
 		if kept:
-			_tiled[key] = ImageTexture.create_from_image(kept)
-			_tiled[key].set_meta("copies", Vector2(fx, fy))
-			return _tiled[key]
+			_tiled[key] = kept
+			return kept
 	var N := clampi(TILED_MOST / maxi(nx, ny), 32, 256)
 	var fscale := 256.0 / N  # the edges' noise is sized for 256 pixels a copy: the same on the ground at any N
 	var src := _source_image(path)
@@ -1095,8 +1096,7 @@ func tiled(path: String, fx: float, fy: float, edge := "") -> Texture2D:
 					c = Color(c.r * (1.0 - dark), c.g * (1.0 - dark), c.b * (1.0 - dark), c.a)
 				img.set_pixel(x, y, Color(c, a))
 	img.generate_mipmaps()
-	DirAccess.make_dir_recursive_absolute("user://tiled")
-	img.save_png(cached)
 	_tiled[key] = ImageTexture.create_from_image(img)
 	_tiled[key].set_meta("copies", Vector2(fx, fy))
+	Kept.keep(_tiled[key], cached)
 	return _tiled[key]
