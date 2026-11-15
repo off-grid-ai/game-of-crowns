@@ -578,20 +578,16 @@ func field_hosts(store: Node) -> Dictionary:
 		if units.is_empty():
 			continue
 		units.sort()
-		var key := "road %d %d" % [int(b.get("owner", -1)), int(units[0])]
+		var key := _road_key(int(b.get("owner", -1)), units)
 		var tile := Vector2i(int(b.get("x", 0)), int(b.get("y", 0)))
 		var view: Node3D = _hosts.get(key)
+		var was: Node3D = null
 		if view and is_instance_valid(view) and view.get_meta("units", []) != units:
-			view.queue_free()  # one fell on the road: the column is raised again where it stands
+			was = view  # one fell on the road: the column is raised again where it stands, the old one there till then
 			view = null
 		if view == null or not is_instance_valid(view):
-			var house: Dictionary = store.houses_by_id().get(int(b.get("owner", -1)), {})
-			view = Army.new(get_parent(), 0, {"host": {"id": int(units[0]), "units": units, "companies": units.size(), "men": units.size() * 150, "x": tile.x, "y": tile.y},
-				"quiet": true, "colour": TeamColour.house_colour(house), "house": house})
-			view.set_meta("units", units)
-			view.set_meta("tile", tile)
-			add_child(view)
-			_hold(key, view)
+			view = _road_column(key, int(b.get("owner", -1)), units, tile, store)
+			_relieve(was, view)
 		elif view.get_meta("tile") != tile:
 			view.set_meta("tile", tile)
 			view.march_to(terrain.world_pos(float(tile.x), float(tile.y)))
@@ -635,8 +631,9 @@ func field_hosts(store: Node) -> Dictionary:
 		var units: Array = (h.get("units", []) as Array).duplicate()
 		units.sort()
 		var view: Node3D = _hosts.get(id)
+		var was: Node3D = null
 		if view and is_instance_valid(view) and view.get_meta("units", []) != units:
-			view.queue_free()
+			was = view  # its companies changed: raised again, the old column standing till the new one does
 			view = null
 		var tile := Vector2i(int(h.get("x", 0)), int(h.get("y", 0)))
 		if aboard:
@@ -657,6 +654,7 @@ func field_hosts(store: Node) -> Dictionary:
 				view.set_meta("units", units)
 				add_child(view)
 				_hold(id, view)
+				_relieve(was, view)
 			view.set_meta("tile", tile)
 			view.visible = view.get_meta("aboard", false) or Ground.on_land(terrain.world_pos(float(tile.x), float(tile.y)))  # never stood on the sea
 			if not hulls.is_empty() and not view.get_meta("aboard", false):
@@ -672,6 +670,7 @@ func field_hosts(store: Node) -> Dictionary:
 			view.set_meta("tile", tile)
 			add_child(view)
 			_hold(id, view)
+			_relieve(was, view)
 		elif view.get_meta("tile") != tile or view.get_meta("entering", false):
 			view.set_meta("tile", tile)
 			view.set_meta("entering", false)  # out again before it was in: it marches on and stays
@@ -681,12 +680,104 @@ func field_hosts(store: Node) -> Dictionary:
 		keep[id] = true
 		for u in units:
 			drawn[int(u)] = id
+	_linger(store, keep, drawn)
 	for id in _hosts.keys():
 		if not keep.has(id):
 			if is_instance_valid(_hosts[id]):
 				_hosts[id].queue_free()
 			_hosts.erase(id)
 	return drawn
+
+
+## The key of a house's column on the road: the one already drawn for any of its companies (its lead fell, or its
+## order changed: the same column, never a second raised beside it), else its house and lead company.
+func _road_key(owner: int, units: Array) -> String:
+	for k in _hosts.keys():
+		var v: Node3D = _hosts[k]
+		if k is String and is_instance_valid(v) and int(v.get_meta("owner", -1)) == owner \
+				and (v.get_meta("units", []) as Array).any(func(u): return units.has(int(u))):
+			return k
+	return "road %d %d" % [owner, int(units[0])]
+
+
+## A house's companies drawn as one column in its colours under its standard (army.gd), kept for `key`.
+func _road_column(key: String, owner: int, units: Array, tile: Vector2i, store: Node) -> Node3D:
+	var house: Dictionary = store.houses_by_id().get(owner, {})
+	var view := Army.new(get_parent(), 0, {"host": {"id": int(units[0]), "units": units, "companies": units.size(), "men": units.size() * 150, "x": tile.x, "y": tile.y},
+		"quiet": true, "colour": TeamColour.house_colour(house), "house": house})
+	view.set_meta("units", units)
+	view.set_meta("tile", tile)
+	view.set_meta("owner", owner)
+	add_child(view)
+	_hold(key, view)
+	return view
+
+
+## A house's column whose road order is over (bridge hosts.js warpath: at the walls, no nearer, its goal changed
+## hands; the AI has its men again) stays drawn while its companies stand together in the field: the order ending
+## moves no man, so neither does the view (Mac 2026-11-16: a blue host in the fields by Bitterford vanished as he
+## watched; its men were still there, drawn as a few lone figures, hidden at FAR). Companies more than
+## map.together tiles from the lead leave it (drawn as their own figures); all of them in a town, it marches in
+## through the gate (army.gd march_in) as a crown host does; none left, it goes.
+func _linger(store: Node, keep: Dictionary, drawn: Dictionary) -> void:
+	var by_id := {}
+	for k in _hosts.keys():
+		if k is String and not keep.has(k) and is_instance_valid(_hosts[k]):
+			if by_id.is_empty():
+				for u in store.rec("units", []):
+					by_id[int(u["id"])] = u
+			var view: Node3D = _hosts[k]
+			var left := _together(view.get_meta("units", []) as Array, int(view.get_meta("owner", -1)), by_id)
+			if left.is_empty():
+				continue
+			var lead: Dictionary = by_id[int(left[0])]
+			var tile := Vector2i(int(lead["x"]), int(lead["y"]))
+			var into := left.all(func(u): return _town_tiles.has(_tile(by_id[int(u)])))
+			if into:
+				if not view.get_meta("entering", false):
+					view.set_meta("entering", true)
+					view.march_in(terrain.world_pos(float(tile.x), float(tile.y)))
+			elif left != view.get_meta("units", []):
+				var was := view
+				view = _road_column(k, int(view.get_meta("owner", -1)), left, tile, store)
+				_relieve(was, view)
+			elif view.get_meta("tile") != tile:
+				view.set_meta("tile", tile)
+				view.march_to(terrain.world_pos(float(tile.x), float(tile.y)))
+			keep[k] = true
+			for u in left:
+				drawn[int(u)] = k
+
+
+## Of a column's companies `units`: those still living and the house's own within map.together tiles of the
+## lowest-id one among them (its lead), sorted.
+static func _together(units: Array, owner: int, by_id: Dictionary) -> Array:
+	var alive := units.filter(func(u): return by_id.has(int(u)) and int(by_id[int(u)]["owner"]) == owner)
+	alive.sort()
+	if alive.is_empty():
+		return []
+	var reach := int(Data.num("army", "map.together", 1.0))
+	var lead: Dictionary = by_id[int(alive[0])]
+	return alive.filter(func(u): return maxi(absi(int(by_id[int(u)]["x"]) - int(lead["x"])), absi(int(by_id[int(u)]["y"]) - int(lead["y"]))) <= reach)
+
+
+## `fresh` is raised over `old` (the same companies, changed): the old column stands until the new one does
+## (army.gd raised), so a host never blinks out for the frames its regiments take to raise; gone at map.relief_s
+## if the new one never stands, or with it if it goes first.
+func _relieve(old: Node3D, fresh: Node3D) -> void:
+	if old == null or not is_instance_valid(old) or old == fresh:
+		return
+	for k in _hosts.keys():
+		if _hosts[k] == old:
+			_hosts.erase(k)
+	fresh.raised.connect(_free_view.bind(old), CONNECT_ONE_SHOT)
+	fresh.tree_exiting.connect(_free_view.bind(old), CONNECT_ONE_SHOT)
+	get_tree().create_timer(Data.num("army", "map.relief_s", 20.0)).timeout.connect(_free_view.bind(old))
+
+
+func _free_view(view: Variant) -> void:
+	if is_instance_valid(view):
+		(view as Node).queue_free()
 
 
 ## Keeps `view` as the column drawn for `key` until it leaves the tree: a column frees itself once halted inside a
