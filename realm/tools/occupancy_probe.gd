@@ -2,8 +2,9 @@ extends SceneTree
 ## Guard for the ground owner (Mac 2026-11-15: "the collision stuff is extremely unoptimised garbage; there needs to
 ## be an engine or system that already solves this"; ground.is_clear 98,611 asks at 60 us, 5.9 s in 2 min). ground.gd
 ## answers "may a body stand here" from Jolt (PhysicsServer3D: every obstacle a static prism on a named layer, every
-## ask one engine query) and the land's dry/walk mask read once off the terrain. No realm: a stub land (a river with a
-## ford, a lake), a town (houses, a stall in its Life, a well, a castle's open bailey), a farm patch turned on the land
+## ask one engine query) and the land's dry/walk mask made once from the terrain's images on worker threads and kept
+## (land_bake.gd). No realm: terrain.gd itself over small images (a heightmap with a lake, a river mask with a bank,
+## a Lake tile; a ford laid after, read again off the terrain), its sea round the realm, a town (houses, a stall in its Life, a well, a castle's open bailey), a farm patch turned on the land
 ## (ground.gd stands), a wood (a source: obstacles) and claims of every kind. It proves:
 ##   1. the engine's answers equal a reference point test (kept here only) sampled densely over a body's disc, at
 ##      thousands of random spots: never clear where the reference finds anything in the disc, and refused only where
@@ -29,21 +30,40 @@ const Ground := preload("res://scripts/ground.gd")
 const NavGround := preload("res://scripts/nav_ground.gd")
 const TownNav := preload("res://scripts/town_nav.gd")
 
-const LAND := """extends Node3D
-var built := true
-var width := 12
-var height := 12
-func height_at(_x: float, _z: float) -> float:
-	return 0.0
-func is_land(x: float, z: float) -> bool:
-	if x < 0.0 or z < 0.0 or x > 48.0 or z > 48.0:
+const LAND := """extends "res://scripts/terrain.gd"
+func is_land(wx: float, wz: float) -> bool:
+	if wx < 0.0 or wz < 0.0 or wx > 48.0 or wz > 48.0:
 		return false  # the sea round the realm
-	if z > 30.0 and z < 31.5:
-		return false  # a river across the land
-	return Vector2(x - 40.0, z - 8.0).length() > 4.0  # a lake
-func walkable(x: float, z: float) -> bool:
-	return is_land(x, z) or (z > 29.9 and z < 31.6 and x > 10.0 and x < 10.6)  # a ford through the river
+	return super(wx, wz)
 """
+
+
+## terrain.gd's own land over 12 x 12 tiles (48 units) at 4 samples a unit: dry at 1.0 but a lake round (40, 8) under
+## the sea; a river across z 30-31.5 (the mask's 255) with banks below the water's reading beside it; a Lake tile at
+## (11, 0). The land's mask is made from these by land_bake.gd; the reference asks terrain.gd's is_land.
+func _stub_land(land: Node3D) -> void:
+	var per := 4
+	var n := 48 * per
+	var hs := PackedFloat32Array()
+	hs.resize(n * n)
+	var river := Image.create(n, n, false, Image.FORMAT_R8)
+	for z in n:
+		for x in n:
+			var m := Vector2((x + 0.5) / per, (z + 0.5) / per)
+			hs[z * n + x] = -1.0 if m.distance_to(Vector2(40, 8)) < 4.0 else 1.0
+		var v := 255 if z >= 120 and z <= 125 else (200 if z >= 118 and z <= 127 else 0)
+		for x in n:
+			river.set_pixel(x, z, Color8(v, 0, 0))
+	land.set("land", Image.create_from_data(n, n, false, Image.FORMAT_RF, hs.to_byte_array()))
+	land.set("land_per_unit", per)
+	land.set("river_mask", river)
+	land.set("width", 12)
+	land.set("height", 12)
+	var tiles: Array = []
+	for i in 144:
+		tiles.append("Lake" if i == 11 else "Grassland")
+	land.set("terrain", tiles)
+	land.set("built", true)
 
 
 class Towns extends Node3D:
@@ -120,10 +140,12 @@ func _release(id: String) -> void:
 func _run() -> void:
 	rng.seed = 1115
 	var land: Node3D = _script(LAND).new()
+	_stub_land(land)
 	root.add_child(land)
 	towns = Towns.new()
 	root.add_child(towns)
 	Ground.terrain = land
+	land.ford(Vector3(10.3, 0, 29.9), Vector3(10.3, 0, 31.6), 0.3)  # a ford through the river, laid as the mask is made
 	Ground.towns = towns
 	# A town: houses, a stall in its life, the well's curb, a castle's keep with its open bailey.
 	town = Node3D.new()
@@ -165,7 +187,7 @@ func _run() -> void:
 	while not Ground.land_ready() and waited < 600:
 		await process_frame
 		waited += 1
-	_check(Ground.land_ready(), "the land's mask is read off the terrain on the frame's budget (%d frames)" % waited)
+	_check(Ground.land_ready(), "the land's mask is made on the workers (or read back from kept/) and held (%d frames)" % waited)
 	_agree("set down", 20000)
 	_speed()
 	_rectangles()
