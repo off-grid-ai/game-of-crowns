@@ -15,6 +15,7 @@ signal character_edited(spec: Dictionary)
 signal royal_edited(spec: Dictionary)  # one of the crown's family written (character_form.gd): main.gd sends it to the bridge
 signal character_form_closed  # the form put away, written or not (the Lore comes back)
 signal focus_city(city_id: int)
+signal look_city(city_id: int)  # the camera to a town without picking it (news: Warcraft III's Space goes to the event, it selects nothing)
 signal pause_toggled(paused: bool)
 signal decree(action: String, building: String, to: int)
 signal decree_at(action: String, city: int, to: int, building: String, matter: String)  # a decree straight from the Hand's counsel, at its town (and the other house, or what to build)

@@ -1014,9 +1014,9 @@ func _build_card() -> void:
 	both.add_child(v)
 	_title = T.label("The royal host", T.TEXT_2)
 	v.add_child(_title)
-	_status = T.datum("", T.SIZE_DESC, T.TEXT)
+	_status = T.prose("", T.SIZE_DESC, T.TEXT)
 	v.add_child(_status)
-	_doing_l = T.datum("", T.SIZE_DESC, T.ACCENT)  # what it is doing now, in the accent: the order at first sight
+	_doing_l = T.prose("", T.SIZE_DESC, T.ACCENT)  # what it is doing now, in the accent: the order at first sight
 	v.add_child(_doing_l)
 	_kinds = T.label("", T.TEXT_2)
 	v.add_child(_kinds)
@@ -1036,17 +1036,15 @@ func _build_card() -> void:
 		var action := "host_" + kind
 		var key := Keys.label(action) if InputMap.has_action(StringName(action)) else ""
 		var b: Button = main.ui.icon_btn(String(o.get("icon", "play")), String(o.get("tip", kind.capitalize())) + ("  (%s)" % key if key != "" else ""))
+		# Its word under its icon (Age of Empires IV's command grid): Mac reads the order, not a glyph; its key in the tip.
+		b.text = String(o.get("word", kind.capitalize()))
+		b.vertical_icon_alignment = VERTICAL_ALIGNMENT_TOP
+		b.add_theme_font_size_override("font_size", T.SIZE_LABEL)
+		b.add_theme_constant_override("icon_max_width", 20)
+		b.custom_minimum_size = Vector2(Data.num(FILE, "order_size.x", 68.0), Data.num(FILE, "order_size.y", 52.0))
 		b.set_meta("tip", b.tooltip_text)
 		b.toggle_mode = bool(o.get("aim", false))
 		b.pressed.connect(_press.bind(kind))
-		if key != "":
-			# The key in the button's corner, as Warcraft III's card shows it.
-			var k := T.label(key, T.TEXT_3)
-			k.add_theme_font_size_override("font_size", T.SIZE_LABEL - 2)
-			k.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-			k.position = Vector2(30, 28)
-			k.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			b.add_child(k)
 		row.add_child(b)
 		_buttons[kind] = b
 	_card.visible = false
@@ -1104,7 +1102,8 @@ func _makeup(h: Dictionary) -> String:
 	var count: Dictionary = h.get("kinds", {}) if h.get("kinds") is Dictionary else {}
 	var parts := PackedStringArray()
 	for t in count:
-		parts.append("%d %s" % [int(count[t]), String(names.get(t, t))])
+		var n := int(count[t])
+		parts.append(String((k.get("company", ["{n} company of {kind}", "{n} companies of {kind}"]) as Array)[0 if n == 1 else 1]).format({"n": n, "kind": String(names.get(t, t))}))
 	var m: float = float(h.get("morale", 1.0)) if h.get("morale") != null else -1.0
 	var word := ""
 	for band in k.get("morale", []):

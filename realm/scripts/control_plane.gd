@@ -16,7 +16,7 @@ var ui: Node
 var bar: PanelContainer  # the strip itself, the full width of the screen along its foot
 var map_slot: HBoxContainer  # the minimap, the camera pad beside it
 var realm_slot: VBoxContainer  # the date and the goal, the treasury under them
-var select_slot: HBoxContainer  # what is selected, centred in the room between the realm and the keys
+var select_slot: HBoxContainer  # what is selected, one width between the realm and the keys
 var keys_slot: HBoxContainer  # the realm's keys, at the right
 
 
@@ -27,14 +27,17 @@ func _init(owner: Node) -> void:
 func build() -> void:
 	bar = ui.glass_panel()
 	bar.name = "ControlPlane"
-	bar.anchor_left = 0.0
-	bar.anchor_right = 1.0
+	# Centred on the screen's foot and as wide as what it holds (Age of Empires IV's bar), never a full-width strip of
+	# empty glass; the selected slot keeps one width, so the strip doesn't jump as hosts are picked.
+	bar.anchor_left = 0.5
+	bar.anchor_right = 0.5
 	bar.anchor_top = 1.0
 	bar.anchor_bottom = 1.0
+	bar.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	bar.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	var edge := float(Data.num("ui", "plane.edge", 8.0))
-	bar.offset_left = edge
-	bar.offset_right = -edge
+	bar.offset_left = 0
+	bar.offset_right = 0
 	bar.offset_bottom = -edge
 	bar.mouse_filter = Control.MOUSE_FILTER_STOP  # a click on the strip is the strip's, never the land's under it
 	bar.add_theme_stylebox_override("panel", T._box(T.SURFACE_SOLID, T.HAIRLINE, 12, 8))
@@ -52,8 +55,8 @@ func build() -> void:
 	row.add_child(realm_slot)
 	row.add_child(_rule())
 	select_slot = HBoxContainer.new()
-	select_slot.alignment = BoxContainer.ALIGNMENT_CENTER
-	select_slot.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	select_slot.alignment = BoxContainer.ALIGNMENT_BEGIN
+	select_slot.custom_minimum_size.x = Data.num("ui", "plane.select_width", 600.0)
 	row.add_child(select_slot)
 	row.add_child(_rule())
 	keys_slot = HBoxContainer.new()

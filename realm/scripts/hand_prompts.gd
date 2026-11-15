@@ -164,7 +164,13 @@ func _tell(id: String) -> void:
 		return
 	_telling = id
 	_said[id] = true
-	_held_it = not main.ui.paused
+	var lesson := {}
+	for l in _lessons:
+		if String(l["id"]) == id:
+			lesson = l
+	# A lesson in calm holds the realm; one told under fire (opening.json hold false: the first threat) lets it run, as
+	# Age of Empires IV keeps its lessons out of the fight.
+	_held_it = not main.ui.paused and bool(lesson.get("hold", true))
 	if _held_it:
 		main.ui.top_bar._toggle_pause()
 	main.ui.tour_up = true
@@ -177,6 +183,10 @@ func _tell(id: String) -> void:
 	if layout:
 		layout.process_mode = Node.PROCESS_MODE_ALWAYS
 		_over_plane(layout)
+
+
+## A lesson heard to its end (or ended with Esc) is not told again on this profile; one cut short by a quit is.
+func _remember(id: String) -> void:
 	if OS.get_environment("GOC_HAND") != "" or OS.get_environment("GOC_OPENING_CLOCK") != "":
 		return  # a test run drives the game: the player's own profile keeps its first-reign lessons
 	var cfg := ConfigFile.new()
@@ -189,6 +199,7 @@ func _tell(id: String) -> void:
 func _told() -> void:
 	if _telling == "":
 		return
+	_remember(_telling)
 	_telling = ""
 	_spot = "none"
 	_want = ""
@@ -262,7 +273,7 @@ func _place_ring() -> void:
 		_ring.position = rect.position
 		_ring.size = rect.size
 	_veil.hole = rect
-	_veil.pass_hole = _want != ""
+	_veil.pass_hole = true  # the rung part takes its click on every line, not only on a guided step
 	_veil.open = _want == "march"
 	_veil.queue_redraw()
 	if _want != "" and _done():
@@ -404,6 +415,6 @@ static func allows(at: Vector2, layout: Node, hole: Rect2, want: String, open: b
 		for b in layout.find_children("*", "BaseButton", true, false):
 			if (b as Control).is_visible_in_tree() and (b as Control).get_global_rect().has_point(at):
 				return true
-	if want == "":
-		return false
-	return open or hole.has_area() and hole.has_point(at)
+	if hole.has_area() and hole.has_point(at):
+		return true  # what he points at is always live: a card's answer pressed mid-line is taken (Total War's advisor talks while you play)
+	return want != "" and open

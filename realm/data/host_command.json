@@ -30,40 +30,47 @@
       "order": "march",
       "icon": "play",
       "aim": true,
-      "tip": "March: then click where on the map, or a town (right-click also marches; right-drag to set the line it forms on)"
+      "tip": "March: then click where on the map, or a town (right-click also marches; right-drag to set the line it forms on)",
+      "word": "March"
     },
     {
       "order": "attack",
       "icon": "sword",
       "aim": true,
-      "tip": "Attack: then click a foe's host to fall on it"
+      "tip": "Attack: then click a foe's host to fall on it",
+      "word": "Attack"
     },
     {
       "order": "besiege",
       "icon": "castle-turret",
       "aim": true,
-      "tip": "Besiege: then click a foe's town to lay siege to it and take it"
+      "tip": "Besiege: then click a foe's town to lay siege to it and take it",
+      "word": "Besiege"
     },
     {
       "order": "hold",
       "icon": "pause",
-      "tip": "Hold: stand where it is"
+      "tip": "Hold: stand where it is",
+      "word": "Hold"
     },
     {
       "order": "garrison",
       "icon": "shield",
       "aim": true,
-      "tip": "Garrison: then click a town of yours or of a house sworn to you"
+      "tip": "Garrison: then click a town of yours or of a house sworn to you",
+      "word": "Garrison"
     },
     {
       "order": "return",
       "icon": "house-home",
-      "tip": "Go home: march home to the King's seat"
+      "tip": "Go home: march home to the King's seat",
+      "word": "Go home"
     },
     {
       "order": "split",
       "icon": "users-three",
-      "tip": "Split: half its companies stand apart as a host of their own"
+      "tip": "Split: half its companies stand apart as a host of their own",
+      "word": "Split"
     }
   ],
   "doing": {
@@ -177,6 +184,10 @@
         0.0,
         "breaking"
       ]
+    ],
+    "company": [
+      "{n} company of {kind}",
+      "{n} companies of {kind}"
     ]
   },
   "_group": "group: the card's title while several hosts are selected (shift- or Cmd-click, a Cmd-drag box, a double-click on a standard, F2); {n} how many. The card then counts all their troops and companies.",
@@ -221,5 +232,9 @@
     "idle": "Right-click the land to march, a foe to attack"
   },
   "company_reach": 3.0,
-  "order_columns": 4
+  "order_columns": 4,
+  "order_size": {
+    "x": 68,
+    "y": 52
+  }
 }

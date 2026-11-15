@@ -38,7 +38,8 @@
       "id": "first_threat",
       "on": "first_threat",
       "after_sec": 0,
-      "timeline": "first_threat"
+      "timeline": "first_threat",
+      "hold": false
     },
     {
       "id": "first_card",

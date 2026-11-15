@@ -304,6 +304,7 @@ func _ready() -> void:
 				_open_person(String(spec["id"]), _houses.get(int(spec["house"]), {}))))
 	ui.house_opened.connect(func(owner): bridge.house(owner, func(d): ui.show_house(d if d is Dictionary else {})))
 	ui.focus_city.connect(_focus_city)
+	ui.look_city.connect(_look_city)
 	# Where a town and a matter at court stand, for the cards and markers that stand by them.
 	ui.town_point = func(c: Dictionary) -> Vector3:
 		return terrain.world_pos(float(c["x"]), float(c["y"])) if c.has("x") and terrain.width > 0 else Vector3.INF
@@ -1424,6 +1425,14 @@ func _focus_city(city_id: int) -> void:
 			rig.frame_town(terrain.world_pos(float(c["x"]), float(c["y"])), int(c.get("size", 4)))
 			return
 	ui.toast("That town is no more.")
+
+
+## The camera to a town, its card left shut (news and the chronicle go to a place; picking the town is the King's click).
+func _look_city(city_id: int) -> void:
+	for c in awareness.rec("cities", []):
+		if int(c["id"]) == city_id:
+			rig.frame_town(terrain.world_pos(float(c["x"]), float(c["y"])), int(c.get("size", 4)))
+			return
 
 
 func _focus_house(owner: int) -> void:

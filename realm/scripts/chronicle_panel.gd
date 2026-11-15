@@ -527,7 +527,7 @@ func go(e: Dictionary) -> void:
 		ui.story_opened.emit(e)  # main.gd _follow_story: the camera goes, then focus(e)
 		return
 	if e.get("city") != null:
-		ui.focus_city.emit(int(e["city"]))
+		ui.look_city.emit(int(e["city"]))
 	focus(e)
 
 

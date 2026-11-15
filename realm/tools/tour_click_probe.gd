@@ -52,7 +52,11 @@ func _init() -> void:
 	var lets_button := Hand.allows(at, lay, Rect2(), "", false)
 	var keeps_land := not Hand.allows(Vector2(80, 80), lay, Rect2(), "", false)
 	var lets_hole := Hand.allows(Vector2(80, 80), lay, Rect2(40, 40, 100, 100), "select", false)
-	print("filter: button %s, land kept %s, hole %s" % [lets_button, keeps_land, lets_hole])
+	# A rung card's answer takes its click on a line that only points at it (Mac: "clicking on defend with your host
+	# still doesn't work": first_threat rings the card three lines before its do:answer).
+	var lets_rung := Hand.allows(Vector2(80, 80), lay, Rect2(40, 40, 100, 100), "", false)
+	lets_hole = lets_hole and lets_rung
+	print("filter: button %s, land kept %s, hole %s, rung %s" % [lets_button, keeps_land, lets_hole, lets_rung])
 	var hit := root.gui_get_hovered_control() if root.has_method("gui_get_hovered_control") else null
 	for pressed in [true, false]:
 		var ev := InputEventMouseButton.new()

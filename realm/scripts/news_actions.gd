@@ -486,7 +486,7 @@ func _decree(action: String, city: int, verb: String, building := "") -> void:
 
 
 func _go_call(city: int) -> Callable:
-	return func(): main.ui.focus_city.emit(city)
+	return func(): main.ui.look_city.emit(city)
 
 
 func _at(c: Dictionary) -> Vector3:
