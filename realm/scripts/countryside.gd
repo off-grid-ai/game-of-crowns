@@ -555,8 +555,11 @@ static func sow(parent: Node3D, land: Node3D, origin: Vector3, kind: String, c: 
 	var mesh := crop_mesh(kind)
 	if mesh == null:
 		return
-	var gap: float = CROP_ROWS[kind][0] * grow  # grow: a kitchen garden's crops drawn larger to read from roof height (towns.gd _croft)
-	var step: float = CROP_ROWS[kind][1] * grow
+	# spread (countryside.json crop.spread): plants that many times further apart and that much wider, the field as full
+	# with a ninth of the plants (Mac's fps card, 2026-11-15: wheat every 0.03 units, ~9,000 a field, one tile 2.8M triangles).
+	var spread := float(preload("res://scripts/data.gd").num("countryside", "crop.spread", 1.0))
+	var gap: float = CROP_ROWS[kind][0] * grow * spread  # grow: a kitchen garden's crops drawn larger to read from roof height (towns.gd _croft)
+	var step: float = CROP_ROWS[kind][1] * grow * spread
 	var inset := 0.05
 	var rows := maxi(1, int((size.y - inset * 2.0) / gap))
 	var per := maxi(1, int((size.x - inset * 2.0) / step))
@@ -579,7 +582,8 @@ static func sow(parent: Node3D, land: Node3D, origin: Vector3, kind: String, c: 
 	var xfs: Array = []
 	for i in pts.size():
 		var k := rng.randf_range(0.85, 1.15) * grow
-		xfs.append(Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(k, k * rng.randf_range(0.9, 1.1), k)), pts[i] - at - Vector3(0, 0.01, 0)))
+		var wide := k * lerpf(1.0, spread, 0.85)  # wider, not taller: the stand reads as dense as before
+		xfs.append(Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(wide, k * rng.randf_range(0.9, 1.1), wide)), pts[i] - at - Vector3(0, 0.01, 0)))
 	var mmi := Batch.make("Crop", mesh, xfs)  # it owns where each plant stands: a kept town keeps that, not the renderer's copy
 	mmi.position = at - origin
 	mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF

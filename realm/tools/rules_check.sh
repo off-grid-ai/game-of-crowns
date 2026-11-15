@@ -70,6 +70,10 @@ for f in $(grep -lE 'Engine\.set_meta\(' $srcs); do
     echo "$f:engine-copy   <- fixed: take it off $known"; fail=1
   fi
 done
+#   one-drawer: repeated things are drawn by bulk.gd (cells of CELL units, culled a cell at a time; Mac 2026-11-15:
+#   "most of it isn't even seen"). batch.gd and town_store.gd make the kept towns' batches. A layer's own MultiMesh
+#   is a batch no camera can cull.
+check "one-drawer" 'MultiMesh\.new\(\)' 'scripts/(bulk|batch|town_store)\.gd'
 #   one-scale: metres to world units is Units.M (scripts/world_units.gd); no script keeps its own 0.12 (audit #17).
 check "one-scale" '^const [A-Z_]*(S|SCALE) := 0\.12\b' 'scripts/world_units\.gd'
 #   one-loader: realm/data is read only through data.gd (Data.read/value/num); one-colour: a data colour becomes a
