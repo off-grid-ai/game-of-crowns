@@ -1,22 +1,26 @@
-extends Label
+extends CanvasLayer
 ## The frame rate at the screen's top right, under the bar (Mac, 2026-11-15: "render FPS on the top right... that way
 ## at least I know what's happening"). Debug builds only (ui.gd adds it): an exported game shows none. Twice a second:
-## frames a second and the frame's milliseconds.
+## frames a second and the frame's milliseconds. A layer of its own over everything, so it shows whatever hides the
+## interface (a still, the cinema, the title).
 
 var _t := 0.0
+var label := Label.new()
 
 
 func _ready() -> void:
-	anchor_left = 1.0
-	anchor_right = 1.0
-	offset_right = -14
-	offset_top = 56  # under the top bar's buttons
-	grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_theme_font_size_override("font_size", 15)
-	add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
-	add_theme_constant_override("outline_size", 5)
+	layer = 120
+	add_child(label)
+	label.anchor_left = 1.0
+	label.anchor_right = 1.0
+	label.offset_right = -14
+	label.offset_top = 56  # under the top bar's buttons
+	label.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.add_theme_font_size_override("font_size", 15)
+	label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
+	label.add_theme_constant_override("outline_size", 5)
 
 
 func _process(delta: float) -> void:
@@ -34,5 +38,5 @@ func _process(delta: float) -> void:
 	var testing := String(Engine.get_meta("perf_testing", ""))  # what the measuring run is trying now (perf_tools cyclevis)
 	if testing != "":
 		lines.append("testing: " + testing)
-	text = "\n".join(lines)
-	add_theme_color_override("font_color", Color(0.55, 0.9, 0.5) if fps >= 30 else Color(1.0, 0.82, 0.4) if fps >= 15 else Color(1.0, 0.45, 0.4))
+	label.text = "\n".join(lines)
+	label.add_theme_color_override("font_color", Color(0.55, 0.9, 0.5) if fps >= 30 else Color(1.0, 0.82, 0.4) if fps >= 15 else Color(1.0, 0.45, 0.4))
