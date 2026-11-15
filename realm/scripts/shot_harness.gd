@@ -54,6 +54,8 @@ func _parse_args() -> void:
 			# A measuring run: framed like a shot, drawn as the game is played (no film quality),
 			# in the player's Settings graphics or the one named (--perf=smooth / --perf=beautiful).
 			_shot["perf"] = a.substr(7) if a.begins_with("--perf=") else ""
+		elif a == "--profile":
+			_shot["profile"] = true  # perf_tools._profile_once: what the camera draws, by where it hangs, in perf.log
 		elif a.begins_with("--scale="):
 			_shot["scale"] = float(a.substr(8))  # a measuring run's 3D render scale (1.0 = native), for the upscaler A/B
 		elif a.begins_with("--cam="):

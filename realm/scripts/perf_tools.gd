@@ -255,47 +255,70 @@ func _log_perf(delta: float) -> void:
 		tally.clear()
 
 
-## Once the towns have finished building: triangles and draws by system, as
-## the most they could cost (instances × their mesh, ignoring culling), with
-## how far each is drawn, so the frame's cost can be pinned on something.
+## Once the towns have finished building: what the camera draws, by where it hangs (the scene's first two levels
+## under main, numbers folded): triangles (instances x their mesh's top level, so before automatic LODs) and draws of
+## every geometry in its draw distance and in the frustum, dearest first, so the frame's primitives can be pinned on
+## something.
 var _profiled := false
 func _profile_once() -> void:
-	# A count of every triangle in the realm: seconds of work, so only when asked (--profile).
+	# A count of every triangle in view: seconds of work, so only when asked (--profile).
 	if not main._shot.has("profile"):
 		return
-	if _profiled or main.towns == null or main.towns.building() or main.terrain.width == 0:
+	var cam := main.get_viewport().get_camera_3d()
+	if _profiled or cam == null or main.towns == null or main.towns.building() or main.terrain.width == 0:
 		return
 	_profiled = true
 	var f := FileAccess.open("user://perf.log", FileAccess.READ_WRITE if FileAccess.file_exists("user://perf.log") else FileAccess.WRITE)
 	if f == null:
 		return
 	f.seek_end()
-	for sys in [main.towns, main.countryside, main.roads, main.terrain, main.villagers]:
-		if sys == null:
+	var digits := RegEx.create_from_string("[0-9]+")
+	var tris_of := {}  # mesh id -> its triangles
+	var groups := {}  # where -> [tris, draws, nodes]
+	var planes := cam.get_frustum()
+	for g: GeometryInstance3D in main.find_children("*", "GeometryInstance3D", true, false):
+		if not g.is_visible_in_tree():
 			continue
-		var tris := 0
-		var draws := 0
-		var by_end := {}
-		for g in sys.find_children("*", "GeometryInstance3D", true, false):
-			var mesh: Mesh = null
-			var count := 1
-			if g is MultiMeshInstance3D and g.multimesh:
-				mesh = g.multimesh.mesh
-				count = g.multimesh.visible_instance_count if g.multimesh.visible_instance_count >= 0 else g.multimesh.instance_count
-			elif g is MeshInstance3D:
-				mesh = g.mesh
-			if mesh == null:
-				continue
+		var mesh: Mesh = null
+		var count := 1
+		if g is MultiMeshInstance3D and g.multimesh:
+			mesh = g.multimesh.mesh
+			count = g.multimesh.visible_instance_count if g.multimesh.visible_instance_count >= 0 else g.multimesh.instance_count
+		elif g is MeshInstance3D:
+			mesh = g.mesh
+		if mesh == null or count == 0:
+			continue
+		var box: AABB = g.global_transform * g.get_aabb()
+		var d := cam.global_position.distance_to(box.get_center())
+		if d < g.visibility_range_begin or (g.visibility_range_end > 0.0 and d > g.visibility_range_end):
+			continue
+		var inside := true
+		for pl in planes:
+			if pl.distance_to(box.get_support(pl.normal * -1.0)) > 0.0:
+				inside = false
+				break
+		if not inside:
+			continue
+		var id := mesh.get_instance_id()
+		if not tris_of.has(id):
 			var t := 0
 			for si in mesh.get_surface_count():
 				var arr := mesh.surface_get_arrays(si)
 				var idx = arr[Mesh.ARRAY_INDEX]
 				t += (idx.size() if idx != null else arr[Mesh.ARRAY_VERTEX].size()) / 3
-			tris += t * count
-			draws += mesh.get_surface_count()
-			var e := "%d" % int(g.visibility_range_end)
-			by_end[e] = by_end.get(e, 0) + t * count
-		f.store_line("PROFILE %s: %dk tris, %d draws, tris by draw distance %s" % [sys.name, tris / 1000, draws, str(by_end)])
+			tris_of[id] = t
+		var rel := String(main.get_path_to(g)).split("/")
+		var key := digits.sub("/".join(rel.slice(0, 2)), "#", true) + " " + g.get_class()
+		var row: Array = groups.get(key, [0, 0, 0])
+		groups[key] = [row[0] + int(tris_of[id]) * count, row[1] + mesh.get_surface_count(), row[2] + 1]
+	var keys := groups.keys()
+	keys.sort_custom(func(x, y): return groups[x][0] > groups[y][0])
+	var total := 0
+	for k in keys:
+		total += int(groups[k][0])
+	f.store_line("PROFILE in view: %dk tris (before LODs), camera at %s" % [total / 1000, str(cam.global_position)])
+	for k in keys.slice(0, 30):
+		f.store_line("PROFILE %8dk tris %5d draws %6d nodes  %s" % [int(groups[k][0]) / 1000, groups[k][1], groups[k][2], k])
 
 
 var _no_instancer := false  # test: Terrain3D's instancer switched off
