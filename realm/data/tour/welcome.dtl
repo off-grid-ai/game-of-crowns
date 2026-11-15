@@ -1,5 +1,5 @@
 [signal arg="spot:none"]
-Your Grace, I am your Hand. Let me show you how the realm answers to you.
+Your Grace, I am your Hand. Three things, and the realm is yours.
 - I know the realm
 	[end_timeline]
 - Show me
@@ -7,19 +7,9 @@ Your Grace, I am your Hand. Let me show you how the realm answers to you.
 This is your host. Click it.
 [signal arg="do:march"]
 Now right-click open ground. Your host marches there.
-[signal arg="spot:none"]
-Well done. Press A before you click, and it falls on any foe it meets on the road.
-[signal arg="do:houses"]
-These are the great houses. Open them.
-[signal arg="spot:houses"]
-Swear a house to you and its men fight your wars. A gift or a feast warms a cold lord.
-War takes their towns one by one, their seat last. Every house remembers what you do to one of them.
 [signal arg="spot:chronicle"]
-This is your chronicle. Only what needs you stands here, the gravest first, one new matter at a time.
+What needs you stands here, the gravest first.
 [signal arg="do:answer"]
-Here is a matter for you. The answer on the right is the one I would give. Choose one.
-[signal arg="spot:pause"]
-Pause whenever you need to think. Your orders still go out.
+Here is one. The answer on the right is the one I would give. Choose.
 [signal arg="spot:none"]
-Nothing guards a town but its own men and your hosts. When raiders come, answer, or it burns.
-The realm is yours, Your Grace. Press the question mark above whenever you want me again.
+The realm is yours. The question mark at the bottom right calls me back.
