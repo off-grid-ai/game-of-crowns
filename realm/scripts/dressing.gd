@@ -1,4 +1,5 @@
 extends RefCounted
+const PerfTools := preload("res://scripts/perf_tools.gd")
 ## A town dressed in what we own (art targets docs/art/target/01-town and town-composition/town-b;
 ## docs/research/free-rts-kits.md: the Quaternius Fantasy Props, Village and Stylized Nature MegaKits,
 ## mostly unused). Each trade's building gets its gear at its door (the forge an anvil log, a quench
@@ -318,7 +319,7 @@ static func warm() -> void:
 		var path := String(_kit(model)[0]).replace("%s", String(model).get_slice("/", 1))
 		if ResourceLoader.exists(path) and not Kept.has(_kept(String(model))):
 			_builder.bake_ahead(path)
-			await tree.process_frame
+			await PerfTools.next_frame(&"dressing:321")
 
 
 ## The file a dressing piece's mesh is kept in (kept.gd).

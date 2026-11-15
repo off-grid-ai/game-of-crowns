@@ -1,4 +1,5 @@
 extends Node3D
+const PerfTools := preload("res://scripts/perf_tools.gd")
 ## A horse, and whoever rides it. The horse is fdoss001's "Horse Rigged All
 ## Gaits" on Tarnyloo's "Horse" (BlendSwap), exported for the realm with its
 ## own five loops: idle, walk, trot, canter and gallop
@@ -311,6 +312,15 @@ func _play(clip: String, rate: float) -> void:
 
 
 func _process(delta: float) -> void:
+	if not PerfTools.probing:
+		_process_timed(delta)
+		return
+	var t0 := Time.get_ticks_usec()
+	_process_timed(delta)
+	PerfTools.add("horse", Time.get_ticks_usec() - t0)  # its share of the frame (GOC_PERF_PROBE)
+
+
+func _process_timed(delta: float) -> void:
 	# How fast it was moved, eased so a jerky path doesn't flicker the gait.
 	if _last != Vector3.INF and delta > 0.0:
 		var flat := global_position - _last

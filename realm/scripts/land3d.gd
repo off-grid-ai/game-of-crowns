@@ -1,4 +1,5 @@
 extends Node3D
+const PerfTools := preload("res://scripts/perf_tools.gd")
 ## The land drawn by Terrain3D (TokisanGames, MIT): height-blended ground
 ## textures, rock that appears on its own on slopes, and detail that holds up
 ## close and far. The heights are the same ones the rest of the game asks for
@@ -137,7 +138,7 @@ func build(terrain: Node3D, ground_layer: int) -> void:
 		var out := [null]
 		var task := WorkerThreadPool.add_task(func(): out[0] = _control_from_land(terrain))
 		while not WorkerThreadPool.is_task_completed(task):
-			await get_tree().process_frame
+			await PerfTools.next_frame(&"land3d:140")
 		WorkerThreadPool.wait_for_task_completion(task)
 		control = out[0]
 	else:
@@ -843,7 +844,9 @@ func _soiled(at: Vector3, reach: float) -> void:
 
 func _upload_soil() -> void:
 	if land and not _soil_regions.is_empty():
+		var t0 := Time.get_ticks_usec()
 		land.data.update_maps(Terrain3DRegion.TYPE_CONTROL, false, false)
+		PerfTools.add("land3d.upload_soil", Time.get_ticks_usec() - t0)  # a deferred call: 'process_frame listeners' (GOC_PERF_PROBE)
 	for r in _soil_regions:
 		r.set_edited(false)
 	_soil_regions = []

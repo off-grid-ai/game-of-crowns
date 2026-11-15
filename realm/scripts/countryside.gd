@@ -1,4 +1,5 @@
 extends Node3D
+const PerfTools := preload("res://scripts/perf_tools.gd")
 ## The land between the towns: farmsteads with their barns and fields, the
 ## hedgerows that divide the fields, crops in the fields and grass underfoot.
 ## Laid out from the map and the towns, the same every time for the same realm,
@@ -94,7 +95,7 @@ func _update(cities: Array) -> void:
 	var gather := Time.get_ticks_msec()
 	for s in _sites:
 		if Time.get_ticks_msec() - gather > 8:
-			await get_tree().process_frame
+			await PerfTools.next_frame(&"countryside:97")
 			if realm != _realm_now():
 				if _want == null:
 					_want = cities  # the land changed while gathering: once more
@@ -126,7 +127,7 @@ func _update(cities: Array) -> void:
 		_drop(key)
 		_raise(key, want[key], sig)
 		if Time.get_ticks_msec() - slice > 8:
-			await get_tree().process_frame
+			await PerfTools.next_frame(&"countryside:129")
 			if realm != _realm:
 				return
 			slice = Time.get_ticks_msec()
@@ -141,7 +142,7 @@ func _survey() -> Array:
 	var rng := RandomNumberGenerator.new()
 	for ty in terrain.height:
 		if Time.get_ticks_msec() - slice > 10:
-			await get_tree().process_frame
+			await PerfTools.next_frame(&"countryside:144")
 			slice = Time.get_ticks_msec()
 		for tx in terrain.width:
 			if not (terrain.tile_at(tx, ty) in ["Grassland", "Plains"]):
@@ -802,7 +803,7 @@ func _grass(cities: Array) -> void:
 			continue
 		_grass_nodes[key] = _grow(place[4], place[0], place[1], _bare_ground(place[0], place[1], place[2], place[3]))
 		if Time.get_ticks_msec() - slice > 8:
-			await get_tree().process_frame
+			await PerfTools.next_frame(&"countryside:805")
 			if _grass_root == null or not is_instance_valid(_grass_root):
 				_grass_sig = ""
 				return

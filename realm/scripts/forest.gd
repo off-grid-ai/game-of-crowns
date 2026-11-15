@@ -1,4 +1,5 @@
 extends Node3D
+const PerfTools := preload("res://scripts/perf_tools.gd")
 ## Woods of the nature set's pines, oaks and bushes (docs/art/nature, the painted look; realm/data/assets.json woods.kit),
 ## drawn in blocks of land, each with its near, middle and far batches switched by distance on the GPU (Godot's
 ## import-made detail levels lighten them), so a realm-wide forest costs little. Tree positions come from terrain.gd's
@@ -587,7 +588,7 @@ func clear_where(standing_on: Callable, within := Rect2()) -> int:
 		if _sight.has(c):
 			_sight[c] = _sight[c].filter(func(t: Vector4): return not ((all or within.has_point(Vector2(t.x, t.y))) and standing_on.call(Vector3(t.x, t.z, t.y))))
 		if not ViewTier.spend_ok(&"lanes"):
-			await get_tree().process_frame
+			await PerfTools.next_frame(&"forest:590")
 	for mmi in get_children():
 		if not (mmi is MultiMeshInstance3D):
 			continue
@@ -602,7 +603,7 @@ func clear_where(standing_on: Callable, within := Rect2()) -> int:
 				felled += 1
 			i += 1
 			if i % 16 == 0 and not ViewTier.spend_ok(&"lanes"):
-				await get_tree().process_frame
+				await PerfTools.next_frame(&"forest:605")
 	return felled
 
 

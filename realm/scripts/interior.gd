@@ -1,4 +1,5 @@
 extends CanvasLayer
+const PerfTools := preload("res://scripts/perf_tools.gd")
 ## Inside a building: the great hall, a tavern, the chapel or a cottage, each a
 ## real room (Sketchfab interiors in assets/interiors/<room>/) in its own small
 ## world at true scale, metres not town units. The character you control walks
@@ -153,7 +154,7 @@ func _settle(room: String, model: Node3D, box: AABB, fit: Dictionary, rng: Rando
 			continue
 		(mi as MeshInstance3D).create_trimesh_collision()
 		if Time.get_ticks_usec() - t > 12000:
-			await get_tree().process_frame
+			await PerfTools.next_frame(&"interior:156")
 			t = Time.get_ticks_usec()
 			if body != _body:
 				return  # left, or went elsewhere, while it built

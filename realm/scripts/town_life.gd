@@ -83,7 +83,7 @@ func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 		if queued:
 			return
 		while _staging:
-			await Engine.get_main_loop().process_frame
+			await PerfTools.next_frame(&"town_life:86")
 		var newest: Array = _waiting.get(id, [c, house])
 		_waiting.erase(id)
 		if not is_instance_valid(root):
@@ -131,7 +131,7 @@ func _pace(step: String) -> void:
 	if PerfTools.probing:
 		PerfTools.add("life." + step, now - _step_at)
 	if not ViewTier.spend_ok(&"town_life"):
-		await Engine.get_main_loop().process_frame
+		await PerfTools.next_frame(&"town_life:134")
 		now = Time.get_ticks_usec()
 	_step_at = now
 

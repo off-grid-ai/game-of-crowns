@@ -1,4 +1,5 @@
 extends Node3D
+const PerfTools := preload("res://scripts/perf_tools.gd")
 ## A seat's kit castle lived in (North Star docs/art/target/01-town.jpg; Stronghold's walls walked by their
 ## guards, Total War's banners on the towers): the lord's standard on every corner and gate tower (towns.gd's
 ## standards, so they rise and fall with the house's favour as its other banners do), a guard walking each
@@ -242,7 +243,7 @@ func _people(d: Dictionary, full := true) -> void:
 ## on it; view_tier's lead has a castle staged before it shows). castle_folk.gd's dressing waits here too.
 func paced() -> void:
 	if not ViewTier.spend_ok(&"castle_life"):
-		await get_tree().process_frame
+		await PerfTools.next_frame(&"castle_life:245")
 
 
 ## A castle's people all made: off screen they stop (_off_unseen); if the castle was emptied or fell while they were

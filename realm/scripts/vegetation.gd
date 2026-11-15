@@ -1,4 +1,5 @@
 extends Node3D
+const PerfTools := preload("res://scripts/perf_tools.gd")
 ## The wild plants (integration audit #13: terrain.gd's vegetation, split out): the Nature MegaKit's grass, bushes,
 ## rocks and dead trees scattered over Freeciv's tile map, and where the woods stand (a slow noise gathers them into
 ## woods, copses and lone trees). The kit woods themselves are forest.gd's: build() hands it their placements and
@@ -236,7 +237,7 @@ func settle(more: Dictionary = {}) -> void:
 					out.append([i, t])
 			moved[li] = out)
 	while not WorkerThreadPool.is_task_completed(task):
-		await get_tree().process_frame
+		await PerfTools.next_frame(&"vegetation:239")
 	WorkerThreadPool.wait_for_task_completion(task)
 	var keys := all.keys()
 	var done := 0
@@ -256,7 +257,7 @@ func settle(more: Dictionary = {}) -> void:
 				_place(keys[li], m[0], t)
 			done += 1
 			if done % 64 == 0 and Time.get_ticks_usec() - t0 > 4000:
-				await get_tree().process_frame
+				await PerfTools.next_frame(&"vegetation:259")
 				t0 = Time.get_ticks_usec()
 	print_verbose("SETTLED %d plants and trees on the finished ground" % done)
 

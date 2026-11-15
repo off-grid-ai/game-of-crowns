@@ -418,7 +418,7 @@ func _spawn(id: int) -> void:
 			calling = jobs[i]
 		var station := "peasant" if calling in ["farmer", "carter", "groom", "porter"] or (calling == "water" and rng.randf() < 0.5) else ("clergy" if calling == "pious" and rng.randf() < 0.6 else ("noble" if calling == "gentry" else "townsfolk"))
 		if not ViewTier.spend_ok(&"villagers"):  # the frame's one staging pot (view_tier.gd), never a clock of its own
-			await get_tree().process_frame
+			await PerfTools.next_frame(&"villagers:421")
 			if not towns.towns.has(id) or not is_instance_valid(town["node"]):
 				# The town went while its crowd was being made: hand back what was made.
 				for b in list:

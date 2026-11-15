@@ -1,4 +1,5 @@
 extends Node3D
+const PerfTools := preload("res://scripts/perf_tools.gd")
 ## A wall built of stones (Mac: "the walls need to actually be built of stones
 ## stacked together. Then the stones break, the stones fall."). Dressed blocks
 ## laid in courses with staggered joints, crenellated on top, each face showing
@@ -784,6 +785,15 @@ func _static_box(xf: Transform3D, half: Vector3) -> Array:
 
 
 func _physics_process(delta: float) -> void:
+	if not PerfTools.probing:
+		_physics_process_timed(delta)
+		return
+	var t0 := Time.get_ticks_usec()
+	_physics_process_timed(delta)
+	PerfTools.add("stone_wall", Time.get_ticks_usec() - t0)  # its share of the frame (GOC_PERF_PROBE)
+
+
+func _physics_process_timed(delta: float) -> void:
 	if _bodies.is_empty():
 		if _space.is_valid():
 			_quiet += delta

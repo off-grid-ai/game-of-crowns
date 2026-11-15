@@ -160,7 +160,16 @@ func _send_party(p: int) -> void:
 
 
 func _process(dt: float) -> void:
-	super(dt)
+	super(dt)  # the close fight (army_melee.gd, timed there)
+	if not PerfTools.probing:
+		_assault_tick(dt)
+		return
+	var t0 := Time.get_ticks_usec()
+	_assault_tick(dt)
+	PerfTools.add("army_assault", Time.get_ticks_usec() - t0)  # its share of the frame (GOC_PERF_PROBE)
+
+
+func _assault_tick(dt: float) -> void:
 	_look -= dt
 	if _look <= 0.0:
 		_look = 1.0

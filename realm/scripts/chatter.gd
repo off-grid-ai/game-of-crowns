@@ -490,7 +490,7 @@ func _speak(speaker: Node3D, text: String, line: Dictionary) -> float:
 		got[0] = stream
 		done[0] = true)
 	while not done[0] and Time.get_ticks_msec() - start < 12000:
-		await get_tree().process_frame
+		await PerfTools.next_frame(&"chatter:493")
 	if got[0] == null or not is_instance_valid(speaker):
 		return (Time.get_ticks_msec() - start) * 0.001
 	var voice := AudioStreamPlayer3D.new()

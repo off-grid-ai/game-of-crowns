@@ -1,4 +1,5 @@
 extends Node3D
+const PerfTools := preload("res://scripts/perf_tools.gd")
 ## Town life's director: the one reducer of docs/TOWN_LIFE.md. Every person and beast in a town's scenes is cast
 ## here from the rows of realm/data/town_scenes.json; nothing else places them.
 ## - The town's standing scenes (`standing` rows): staged whenever the town is dressed (town_life.gd update, the
@@ -121,7 +122,7 @@ func stage(root: Node3D, life: Node3D, c: Dictionary, states: Array, tl: Object)
 		if not _meets(row, root, states, size):
 			continue
 		if not ViewTier.spend_ok(&"town_scenes"):
-			await get_tree().process_frame
+			await PerfTools.next_frame(&"town_scenes:124")
 			if not is_instance_valid(root) or not is_instance_valid(life) or root.get_node_or_null("Life") != life:
 				return
 		var anchors: Dictionary = (life.get_meta("anchors", {}) as Dictionary).duplicate()  # where town_life's own dressing stands
@@ -132,7 +133,7 @@ func stage(root: Node3D, life: Node3D, c: Dictionary, states: Array, tl: Object)
 		var k := {"root": root, "life": life, "tl": tl, "states": states, "size": size, "rng": rng, "row": row, "lead": null, "cast": [], "tally": tally, "census": census}
 		for role in row.get("roles", []):
 			if not ViewTier.spend_ok(&"town_scenes"):
-				await get_tree().process_frame
+				await PerfTools.next_frame(&"town_scenes:135")
 				if not is_instance_valid(root) or not is_instance_valid(life) or root.get_node_or_null("Life") != life:
 					return
 			_stage_role(k, role, anchors)

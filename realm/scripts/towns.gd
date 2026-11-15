@@ -229,7 +229,7 @@ func _revive(id: int) -> void:
 		return
 	var got: Variant = TownStore.take(path)
 	while got == null:
-		await get_tree().process_frame
+		await PerfTools.next_frame(&"towns:232")
 		got = TownStore.take(path)
 	var root: Node3D = t["node"] if towns.has(id) and towns[id] == t else null
 	if not (got is Node3D) or root == null or not is_instance_valid(root) or t.get("shell", false):
@@ -288,7 +288,7 @@ func ensure(id: int) -> void:
 	_first = id  # raised next, ahead of nearer ones (it is wanted now)
 	# Await it to have it standing: it is raised over the next few frames.
 	while _queue.has(id) or (_raising and not towns.has(id)):
-		await get_tree().process_frame
+		await PerfTools.next_frame(&"towns:291")
 
 
 ## True while towns are still being raised.
@@ -374,7 +374,7 @@ func _raise(best: int, job: Dictionary) -> void:
 		Engine.set_meta("stage", "towns.read")
 		var got: Variant = TownStore.take(path)
 		while got == null:
-			await get_tree().process_frame
+			await PerfTools.next_frame(&"towns:377")
 			got = TownStore.take(path)
 		if got is Node3D:
 			node = got
@@ -2347,7 +2347,7 @@ func _pace() -> void:
 			var at: Dictionary = get_stack()[1] if get_stack().size() > 1 else {}
 			PerfTools.add("build@%s:%d" % [String(at.get("source", "?")).get_file(), int(at.get("line", 0))], now - _step_at)
 	if not ViewTier.spend_ok(&"towns"):
-		await get_tree().process_frame
+		await PerfTools.next_frame(&"towns:2350")
 	_step_at = Time.get_ticks_usec()
 
 

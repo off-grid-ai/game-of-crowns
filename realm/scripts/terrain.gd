@@ -1,4 +1,5 @@
 extends Node3D
+const PerfTools := preload("res://scripts/perf_tools.gd")
 ## Builds the 3D land from Freeciv's tile map: a smooth heightfield coloured by
 ## terrain, a sea plane, the wild plants and woods (vegetation.gd, forest.gd), the realm map
 ## (political_overlay.gd) and the overland paths (land_paths.gd).
@@ -46,21 +47,21 @@ func build(map: Dictionary) -> void:
 	Engine.set_meta("stage", "land")
 	await _build_land()
 	preload("res://scripts/perf_tools.gd").mark("land")
-	await get_tree().process_frame
+	await PerfTools.next_frame(&"terrain:49")
 	var t1 := Time.get_ticks_msec()
 	Engine.set_meta("stage", "sea")
 	_build_sea()
-	await get_tree().process_frame
+	await PerfTools.next_frame(&"terrain:53")
 	var rivers := preload("res://scripts/rivers.gd").new()
 	rivers.name = "Rivers"
 	add_child(rivers)
 	Engine.set_meta("stage", "rivers")
 	rivers.build(self)
-	await get_tree().process_frame
+	await PerfTools.next_frame(&"terrain:59")
 	Engine.set_meta("stage", "vegetation")
 	_plant()
 	preload("res://scripts/perf_tools.gd").mark("woods")
-	await get_tree().process_frame
+	await PerfTools.next_frame(&"terrain:63")
 	var t2 := Time.get_ticks_msec()
 	paths.build()
 	# Paths worn by real feet (wear.gd; realm/data/ground.json wear.on).

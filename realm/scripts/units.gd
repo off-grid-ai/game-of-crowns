@@ -203,7 +203,7 @@ func _walk_some() -> void:
 
 
 func _walk_on() -> void:
-	await get_tree().process_frame
+	await PerfTools.next_frame(&"units:206")
 	_more = false
 	if is_inside_tree() and not _walk.is_empty():
 		_walk_some()

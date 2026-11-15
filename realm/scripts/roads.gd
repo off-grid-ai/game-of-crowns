@@ -1,4 +1,5 @@
 extends Node3D
+const PerfTools := preload("res://scripts/perf_tools.gd")
 ## Draws the road network Freeciv's workers have actually built: every road tile
 ## (and every town) joins its road-bearing neighbours with a dirt track that
 ## follows the land. Rebuilt only when the network changes.
@@ -184,7 +185,7 @@ func _plant_verges() -> void:
 	var road := _kings
 	var towns = get_parent().get("towns")
 	while towns and towns.building():
-		await get_tree().process_frame
+		await PerfTools.next_frame(&"roads:187")
 		if road != _kings or not is_instance_valid(road):
 			return  # the road was redrawn meanwhile; its own verges follow it
 	var places: Array = []

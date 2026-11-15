@@ -1,4 +1,5 @@
 extends Node3D
+const PerfTools := preload("res://scripts/perf_tools.gd")
 ## A house seat as the realm map shows it (docs/art/target/02-realm.jpg: every seat a castle you can read from map
 ## height under a tall banner in its house's colours and arms; Total War's campaign map grows its settlements as the
 ## camera draws back): the castle set's keep (ck_keep) with the house's standard over it, standing on the seat's own
@@ -44,6 +45,15 @@ func build(keep_h: float, ms: Dictionary = {}, comp := "") -> float:
 
 
 func _process(_delta: float) -> void:
+	if not PerfTools.probing:
+		_process_timed(_delta)
+		return
+	var t0 := Time.get_ticks_usec()
+	_process_timed(_delta)
+	PerfTools.add("map_seat", Time.get_ticks_usec() - t0)  # its share of the frame (GOC_PERF_PROBE)
+
+
+func _process_timed(_delta: float) -> void:
 	var cam := get_viewport().get_camera_3d()
 	if cam == null:
 		return

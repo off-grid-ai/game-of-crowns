@@ -1,4 +1,5 @@
 extends Node3D
+const PerfTools := preload("res://scripts/perf_tools.gd")
 ## Life along the roads between the towns (art target 06-inn): coaching inns at crossroads and a day's
 ## ride apart with their stable yards, signs, smoke, horses and carts; hamlets of a few cottages with
 ## their fields; waystones, wayside shrines, woodcutters' camps; bridges and fords; a water mill; toll
@@ -132,7 +133,7 @@ func _read_rivers() -> void:
 func _lay() -> void:
 	_busy = true
 	while main.towns.building():
-		await get_tree().process_frame
+		await PerfTools.next_frame(&"roadside:135")
 	var terrain: Node3D = main.terrain
 	var roads: Node3D = main.roads
 	var input := {
@@ -160,7 +161,7 @@ func _lay() -> void:
 		_raise(s)
 		_sites.append(s)
 		if Time.get_ticks_msec() - t0 > budget:
-			await get_tree().process_frame
+			await PerfTools.next_frame(&"roadside:163")
 			t0 = Time.get_ticks_msec()
 	_busy = false
 

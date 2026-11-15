@@ -218,8 +218,10 @@ func _landed(region: RID, map: RID, nm: NavigationMesh) -> void:
 	if not _live.has(map):
 		_baking.erase(map)
 		return
+	var t0 := Time.get_ticks_usec()
 	NavigationServer2D.region_set_navigation_polygon(region, flat(nm))
 	_done_one(map)
+	preload("res://scripts/perf_tools.gd").add("town_nav.landed", Time.get_ticks_usec() - t0)  # a deferred call (GOC_PERF_PROBE)
 
 
 func _done_one(map: RID) -> void:

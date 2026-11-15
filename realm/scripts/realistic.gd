@@ -1,4 +1,5 @@
 extends RefCounted
+const PerfTools := preload("res://scripts/perf_tools.gd")
 ## The realistic kit (Sketchfab downloads in assets/realistic): each model
 ## scaled to its real size in metres, then to game units, standing on y = 0.
 ## Each arrives at its own arbitrary scale, so the table gives its true length.
@@ -432,10 +433,10 @@ static func _merge_ahead() -> void:
 			if not ResourceLoader.exists(path):
 				continue
 			while ResourceLoader.load_threaded_get_status(path) == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
-				await tree.process_frame
+				await PerfTools.next_frame(&"realistic:435")
 		if not (_cache.has(n) or _pending.has(n)):
 			_begin(n)
-		await tree.process_frame
+		await PerfTools.next_frame(&"realistic:438")
 		_finish_done()
 
 

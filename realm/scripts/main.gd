@@ -624,7 +624,7 @@ func _ready() -> void:
 ## One step of startup done: its LOAD line (PerfTools.mark), then a frame drawn before the next.
 func _boot_step(step: String) -> void:
 	PerfTools.mark(step)
-	await get_tree().process_frame
+	await PerfTools.next_frame(&"main:627")
 
 
 ## What the window shows while the realm's systems are set up, before the title: the dark of the loading screen and
@@ -1142,13 +1142,13 @@ func _on_synced() -> void:
 		var t_roads_sync := Time.get_ticks_usec()
 		roads.sync()
 		PerfTools.add("roads.sync", Time.get_ticks_usec() - t_roads_sync)
-		await get_tree().process_frame
+		await PerfTools.next_frame(&"main:1145")
 		tt = Time.get_ticks_msec()
 		Engine.set_meta("stage", "kings_road")
 		var t_kings_road := Time.get_ticks_usec()
 		roads.kings_road()
 		PerfTools.add("kings_road", Time.get_ticks_usec() - t_kings_road)
-		await get_tree().process_frame
+		await PerfTools.next_frame(&"main:1151")
 		# A road through the woods runs down a lane cut through them, wide enough
 		# that no crown closes over it: what travels it can be watched from above.
 		# Only for stretches laid since the last cut (roads.uncut_bounds): nothing new, no search of the woods.
@@ -1157,7 +1157,7 @@ func _on_synced() -> void:
 			var t0 := Time.get_ticks_msec()
 			var n: int = await terrain.forest.clear_where(func(o: Vector3): return roads.near_road(o, LANE_MARGIN), fresh)  # over frames
 			print("LANES %d trees, %d ms" % [n, Time.get_ticks_msec() - t0])
-			await get_tree().process_frame
+			await PerfTools.next_frame(&"main:1160")
 		Engine.set_meta("stage", "countryside")
 		var t_countryside := Time.get_ticks_usec()
 		countryside.build(awareness.rec("cities", []))

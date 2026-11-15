@@ -53,6 +53,7 @@ static func stage(tag: String) -> void:
 	_marks[tag] = now
 	match tag:
 		"first":
+			_close_lap()  # the last coroutine resumed this frame ends here (with the deferred calls after it)
 			if _marks.has("process_frame"):
 				_add_stage("2 process_frame listeners", now - int(_marks["process_frame"]))
 		"last":
@@ -184,6 +185,35 @@ static func add(name: String, usec: int) -> void:
 	_mark(name)
 
 
+## A staged coroutine's wait for the next frame (the one way any of ours waits on process_frame): its pieces between
+## frames are tallied as `who` (GOC_PERF_PROBE), so the time spent in 'process_frame listeners' is named.
+static var _lap_who := &""
+static var _lap_at := 0
+static func next_frame(who: StringName) -> void:
+	_close_lap()
+	await (Engine.get_main_loop() as SceneTree).process_frame
+	if probing:
+		_close_lap()
+		_lap_who = who
+		_lap_at = Time.get_ticks_usec()
+
+
+static func _close_lap() -> void:
+	if _lap_who != &"":
+		add("resume." + _lap_who, Time.get_ticks_usec() - _lap_at)
+		_lap_who = &""
+
+
+## A per-frame call of ours timed (GOC_PERF_PROBE) as `who`: `f` called either way.
+static func timed(who: String, f: Callable) -> void:
+	if not probing:
+		f.call()
+		return
+	var t0 := Time.get_ticks_usec()
+	f.call()
+	add(who, Time.get_ticks_usec() - t0)
+
+
 ## What the frame just ended spent over `least` ms on, dearest first, and what no named job accounts for.
 static func _dear(took_usec: int, least := 10.0) -> String:
 	var named := 0
@@ -288,7 +318,7 @@ func _log_perf(delta: float) -> void:
 			_mutex.lock()
 			var jobs := _prev_order.duplicate()
 			_mutex.unlock()
-			print("SLOW-FRAME %d ms (stage %s); spent: %s; the frame before's jobs %s" % [int(took * 1000.0), Engine.get_meta("stage", ""), _dear(int(took * 1000000.0)), ",".join(jobs)])
+			print("SLOW-FRAME %d ms at %.1f s (stage %s); spent: %s; the frame before's jobs %s" % [int(took * 1000.0), Time.get_ticks_msec() / 1000.0, Engine.get_meta("stage", ""), _dear(int(took * 1000000.0)), ",".join(jobs)])
 		_frame_cost.clear()
 		_frame()
 	if delta > 0.5:
