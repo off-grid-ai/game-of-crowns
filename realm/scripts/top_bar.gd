@@ -1,7 +1,8 @@
 extends RefCounted
-## The top bar: the date card top-left (Anno 1800's quest tracker: the date, the one goal with its count, and one
-## button for the step he is on), the realm's numbers in the middle (treasury, seals, peace, souls, tithe) and the
-## King's keys top-right, with the story so far that opens from the date. What the card no longer holds goes where it
+## The realm's bar, in the control plane along the screen's foot (control_plane.gd): the date card (Anno 1800's quest
+## tracker: the date, the one goal with its count, and one button for the step he is on) with the realm's numbers
+## under it (treasury, seals, peace, souls, tithe) in the plane's realm slot, and the King's keys in its right slot,
+## with the story so far that opens from the date. What the card no longer holds goes where it
 ## belongs: the counsel comes and goes as a notice, the act's name is told when it begins, the King's nature, name
 ## and promises are on his own card (royal_sheet.gd). Owned by ui.gd, which builds it in _ready and forwards its
 ## calls here (ui._show_heading, ui._toggle_pause and the rest).
@@ -31,57 +32,22 @@ func _init(owner: UI) -> void:
 	ui = owner
 
 
-var _top: Array = []  # the date, state and actions pills
+var _top: Array = []  # the date, the state and the keys, in the control plane
 
 
-## Keeps the top bar from overlapping on smaller screens: the realm's state sits
-## centred when there's room, else just right of the date, else on a second row.
-func _arrange_top() -> void:
-	if _top.size() < 3:
+## The date card kept to its width in the plane's realm slot, and the notices at the top of the screen (the top is
+## free now the bar is in the control plane).
+func _fit_realm() -> void:
+	if _top.is_empty():
 		return
-	var when: Control = _top[0]
-	var state: Control = _top[1]
-	var act: Control = _top[2]
-	_cap_when(when)
-	var w := ui.get_viewport().get_visible_rect().size.x
-	# Placed by its open width (peace, souls and the tithe shown), opening rightward from a fixed left edge, so
-	# hovering never moves it: it moved out from under the pointer, folded, came back and opened, every frame.
-	var sw := state.get_combined_minimum_size().x
-	if _state_more and not _state_more.visible:
-		sw += _state_more.get_combined_minimum_size().x + 14.0
-	var left := when.position.x + when.get_combined_minimum_size().x + 12.0
-	var right := w - 10.0 - act.get_combined_minimum_size().x - 12.0
-	state.offset_top = 10
-	if w * 0.5 - sw * 0.5 >= left and w * 0.5 + sw * 0.5 <= right:
-		state.anchor_left = 0.5
-		state.anchor_right = 0.5
-		state.grow_horizontal = Control.GROW_DIRECTION_END
-		state.offset_left = -sw * 0.5
-		state.offset_right = -sw * 0.5
-	elif left + sw <= right:
-		state.anchor_left = 0.0
-		state.anchor_right = 0.0
-		state.grow_horizontal = Control.GROW_DIRECTION_END
-		state.offset_left = left
-		state.offset_right = left
-	else:
-		state.anchor_left = 0.0
-		state.anchor_right = 0.0
-		state.grow_horizontal = Control.GROW_DIRECTION_END
-		state.offset_left = 10
-		state.offset_right = 10
-		state.offset_top = 10 + when.get_combined_minimum_size().y + 8
-	# Notices sit just under whatever the top bar takes up, so a bar that wraps
-	# onto a second row on a narrow window never has a notice written over it.
-	var bottom := 10.0 + maxf(when.get_combined_minimum_size().y, act.get_combined_minimum_size().y)
-	bottom = maxf(bottom, state.offset_top + state.get_combined_minimum_size().y)
-	ui._toast_top = bottom + 12.0
+	_cap_when(_top[0])
+	ui._toast_top = Data.num("ui", "plane.toast_top", 14.0)
 
 
-## The finesse pass: the date card no wider than ui.json top.maxWidth (AoE IV's compact time chip): each line keeps
+## The finesse pass: the date card no wider than the plane's realm slot, ui.json plane.realm_width (AoE IV's compact time chip): each line keeps
 ## its own width up to the cap, then ends in an ellipsis rather than widening the card across the realm.
 func _cap_when(when: Control) -> void:
-	var most := UI.ui_num("top.maxWidth", 520.0) - 32.0
+	var most := Data.num("ui", "plane.realm_width", 340.0) - 8.0  # the plane's realm slot
 	for l in when.find_children("*", "Label", true, false):
 		var label := l as Label
 		if label.autowrap_mode != TextServer.AUTOWRAP_OFF:
@@ -95,19 +61,10 @@ func _cap_when(when: Control) -> void:
 		label.tooltip_text = label.text if natural > most else ""
 
 
-func _pill(anchor_x: float, grow: int) -> HBoxContainer:
-	var p := ui.glass_panel()
-	p.anchor_left = anchor_x
-	p.anchor_right = anchor_x
-	p.grow_horizontal = grow
-	p.offset_top = 10
-	var sb: StyleBoxFlat = T.get_theme().get_stylebox("panel", "PanelContainer").duplicate()
-	sb.content_margin_left = 12
-	sb.content_margin_right = 12
-	sb.content_margin_top = 6
-	sb.content_margin_bottom = 6
-	sb.set_corner_radius_all(10)
-	p.add_theme_stylebox_override("panel", sb)
+## A piece of the bar in a slot of the control plane (control_plane.gd): no box of its own, the strip is the box.
+func _pill(slot: Container) -> HBoxContainer:
+	var p := ui.ControlPlane.bare(PanelContainer.new())
+	slot.add_child(p)
 	var h := HBoxContainer.new()
 	h.add_theme_constant_override("separation", 14)
 	p.add_child(h)
@@ -130,7 +87,7 @@ func _hover_check() -> void:
 
 
 var _date_pill: Control  # the date card, top-left: the houses table keeps below it
-var _bar_pill: Control  # the buttons, top-right: the cards under the top bar keep below it
+var _bar_pill: Control  # the realm's keys, in the control plane's right slot
 var _story: Dictionary = {}  # the reign's story as the world last told it
 var _story_panel: PanelContainer
 var _story_sig := ""
@@ -149,8 +106,12 @@ func _toggle_story(pill: Control) -> void:
 		_story_panel = ui.glass_panel()
 		_story_panel.z_index = 20  # over the houses table while it's open
 		_story_panel.custom_minimum_size = Vector2(440, 0)
+	# Above the date in the control plane, rising from the strip's top.
+	_story_panel.anchor_top = 1.0
+	_story_panel.anchor_bottom = 1.0
+	_story_panel.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	_story_panel.offset_left = pill.get_global_rect().position.x
-	_story_panel.offset_top = pill.get_global_rect().end.y + 8.0
+	_story_panel.offset_bottom = -(ui.plane.room() + 8.0)
 	_story_sig = ""
 	_fill_story()
 	_story_panel.visible = true
@@ -230,10 +191,9 @@ func _fill_story() -> void:
 
 
 func _build_top_bar() -> void:
-	# Top-left: the date and the one goal (Anno 1800's quest tracker): the goal's line with its count inline, and
+	# The plane's realm slot: the date and the one goal (Anno 1800's quest tracker): the goal's line with its count inline, and
 	# under it one button for the step he is on. Nothing else rests here (Mac: six things he couldn't read).
-	var when := _pill(0.0, Control.GROW_DIRECTION_END)
-	when.get_parent().offset_left = 10
+	var when := _pill(ui.plane.realm_slot)
 	var who := VBoxContainer.new()
 	who.add_theme_constant_override("separation", 4)
 	var line := HBoxContainer.new()
@@ -297,9 +257,8 @@ func _build_top_bar() -> void:
 	date_pill.gui_input.connect(func(e: InputEvent):
 		if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
 			_toggle_story(date_pill))
-	# Top-centre: the state of the realm (beside the date instead, on a screen
-	# too narrow for both it and the actions; see _arrange_top).
-	var state := _pill(0.5, Control.GROW_DIRECTION_BOTH)
+	# Under the date in the plane's realm slot: the state of the realm.
+	var state := _pill(ui.plane.realm_slot)
 	_top = [when.get_parent(), state.get_parent()]
 	_gold = ui.gauge(state, "coins", "Royal treasury, in crowns. The figure after it is what the tithe brings each season, less the court and the castles.", "Treasury")
 	# The royal seals in hand, beside the treasury at rest: a filled pip for each, a hollow one for each he could hold.
@@ -331,14 +290,16 @@ func _build_top_bar() -> void:
 	# Opened while the pointer is on the pill (polled: its children take the pointer).
 	_state_pill = state.get_parent()
 	ui.get_tree().process_frame.connect(_hover_check)
-	# Top-right: what you can do.
-	var act := _pill(1.0, Control.GROW_DIRECTION_BEGIN)
-	_bar_pill = act.get_parent()
-	act.get_parent().offset_right = -10
-	_top.append(act.get_parent())
-	ui.get_viewport().size_changed.connect(_arrange_top)
-	_arrange_top.call_deferred()
-	act.add_theme_constant_override("separation", 6)  # each key stands on its own
+	# The plane's right: what you can do, in a grid (Age of Empires IV's and Warcraft III's command grid).
+	var act := GridContainer.new()
+	act.columns = int(Data.num("ui", "plane.key_columns", 5.0))
+	act.add_theme_constant_override("h_separation", 6)
+	act.add_theme_constant_override("v_separation", 6)
+	ui.plane.keys_slot.add_child(act)
+	_bar_pill = act
+	_top.append(act)
+	ui.get_viewport().size_changed.connect(_fit_realm)
+	_fit_realm.call_deferred()
 	# No court key of its own: its matters are the chronicle's cards (court_panel.gd _as_card; Mac 2026-11-16).
 	# The King himself (royal_sheet.gd): his nature, the name he is earning, his promises, his family, his line.
 	act.add_child(ui.named(ui.icon_btn("sword", "The King: your nature, the name you are earning, your promises and your family", func(): ui.royal.toggle()), "King"))
@@ -361,11 +322,9 @@ func _build_top_bar() -> void:
 	_ledger_btn = ui.icon_btn("chart-line", ui.with_key("The ledger: the realm over time", "ledger"), ui._toggle_ledger)
 	_ledger_btn.toggle_mode = true
 	act.add_child(ui.named(_ledger_btn, "Ledger"))
-	ui.divider(act)
 	_pause_btn = ui.icon_btn("pause", ui.with_key("Pause", "pause"), _toggle_pause)
 	_pause_btn.toggle_mode = true
 	act.add_child(ui.named(_pause_btn, "Pause"))
-	ui.divider(act)
 	act.add_child(ui.named(ui.icon_btn("question", ui.with_key("The Hand's tour: how the realm answers you", "tour"), func(): ui.tour_asked.emit()), "Tour"))
 	act.add_child(ui.named(ui.icon_btn("gear-six", "Settings: this reign, voices, the local model", func(): ui.open_settings.emit()), "Settings"))
 	act.add_child(ui.named(ui.icon_btn("list", "Chronicles, new realms, records", func(): ui.open_menu.emit()), "Menu"))

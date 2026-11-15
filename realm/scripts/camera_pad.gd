@@ -16,23 +16,13 @@ func _init(owner: UI) -> void:
 	ui = owner
 
 
-## Camera controls down the right edge: zoom, pan, turn, tilt and home.
+## Camera controls beside the minimap: zoom, pan, turn, tilt and home.
 ## Each button repeats while held, so you can glide rather than click-click.
 func _build_camera_controls() -> void:
-	# Bottom right, beside the minimap and the same height: everything for
-	# finding your way sits together.
-	var frame := ui.glass_panel()
-	frame.anchor_left = 1.0
-	frame.anchor_right = 1.0
-	frame.anchor_top = 1.0
-	frame.anchor_bottom = 1.0
-	frame.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	frame.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	frame.offset_right = -12
-	frame.offset_bottom = -12
-	frame.custom_minimum_size.y = UI.MINIMAP_SIZE.y + 8  # the minimap's frame
+	# Beside the minimap in the control plane: everything for finding your way sits together.
+	var frame := ui.ControlPlane.bare(PanelContainer.new())
+	ui.plane.map_slot.add_child(frame)  # in the control plane, by the minimap (control_plane.gd)
 	_pad = frame
-	frame.add_theme_stylebox_override("panel", T._box(T.SURFACE_SOLID, T.HAIRLINE, 10, 6))
 	var v := VBoxContainer.new()
 	v.alignment = BoxContainer.ALIGNMENT_CENTER
 	v.add_theme_constant_override("separation", 2)
@@ -89,6 +79,7 @@ func _reveal_pad(delta: float) -> void:
 	var mode := String(preload("res://scripts/settings.gd").get_value("camera_pad"))
 	if mode != "always":
 		mode = "never"  # the finesse pass: no camera buttons on screen unless the player asks for them in Settings
+	_pad.visible = mode == "always"  # in the plane's row: hidden, it takes no room beside the map
 	var near := mode == "always" or (mode == "near" and _pad.get_global_rect().grow(140).has_point(ui.get_viewport().get_mouse_position()))
 	_pad.modulate.a = move_toward(_pad.modulate.a, 1.0 if near else 0.0, delta * (6.0 if near else 2.5))
 	_pad.mouse_filter = Control.MOUSE_FILTER_STOP if _pad.modulate.a > 0.3 else Control.MOUSE_FILTER_IGNORE

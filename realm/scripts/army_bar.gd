@@ -172,20 +172,17 @@ func _clicked(e: InputEvent, id: int) -> void:
 	ui.heard.emit("click")
 
 
-## Under the date card, or under the great houses while they are open; never down into the town card or the news.
+## Top-left, or under the great houses while they are open; never down into the control plane.
 func _place() -> void:
 	if _panel == null or not _panel.visible:
 		return
-	var top := 62.0
-	var date: Control = ui._date_pill
-	if date and date.is_visible_in_tree():
-		top = date.get_global_rect().end.y
+	var top := Data.num("ui", "plane.top", 12.0)  # the top-left is free: the date is in the control plane
 	var houses: Control = ui._houses_panel
 	if houses and houses.is_visible_in_tree():
 		top = maxf(top, houses.get_global_rect().end.y)
 	top += Data.num(FILE, "gap", 8.0)
 	_panel.offset_top = top
-	var room := ui.get_viewport().get_visible_rect().size.y - top - Data.num(FILE, "keep_bottom", 230.0)
+	var room := ui.plane.top_y() - top - Data.num(FILE, "gap", 8.0)  # down to the control plane, never into it
 	_scroll.custom_minimum_size = Vector2(_list.get_combined_minimum_size().x, clampf(_list.get_combined_minimum_size().y, 0.0, maxf(60.0, room)))
 	_panel.size = Vector2.ZERO  # shrink to the list again after a host is gone
 

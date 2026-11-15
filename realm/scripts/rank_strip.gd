@@ -30,7 +30,7 @@ func _rank_houses(players: Array, fallen: Array = []) -> void:
 	var order := great.map(func(p): return int(p["id"]))
 	var most := maxf(1.0, float(power.call(great[0]))) if not great.is_empty() else 1.0
 	# The strip's width shared by every chip it shows, the fallen included.
-	var slot := UI.MINIMAP_SIZE.x / maxf(1.0, float(mini(7, order.size() + fallen.size())))
+	var slot := UI.RANKS_WIDTH / maxf(1.0, float(mini(7, order.size() + fallen.size())))
 	for id in _rank_chips.keys():
 		if not order.has(id):
 			_rank_chips[id].queue_free()

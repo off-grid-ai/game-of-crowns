@@ -11,7 +11,7 @@ const Herald := preload("res://scripts/herald.gd")  # one notice at a time, in o
 var ui: UI  # the interface that owns these notices: its signals, its building blocks, its cards
 
 var holding := false  # a card has the screen (the court, the digest): no edge arrow meanwhile (ui.gd)
-var _toast_top := 78.0  # just under the top bar (top_bar.gd _arrange_top keeps it)
+var _toast_top := 14.0  # the top of the screen (the bar is in the control plane: top_bar.gd _fit_realm)
 
 
 func _init(owner: UI) -> void:
@@ -83,7 +83,7 @@ func edge_arrow(at, angle: float, text: String, tone: String, fresh: bool) -> vo
 		var sz := _edge.get_combined_minimum_size()
 		var view := ui.get_viewport().get_visible_rect().size
 		var p: Vector2 = at
-		var goal := Vector2(clampf(p.x - sz.x * 0.5, 12, view.x - sz.x - 12), clampf(p.y - sz.y * 0.5, 120, view.y - sz.y - 12)).round()
+		var goal := Vector2(clampf(p.x - sz.x * 0.5, 12, view.x - sz.x - 12), clampf(p.y - sz.y * 0.5, 120, ui.plane.top_y() - sz.y - 12)).round()  # never on the control plane
 		_edge.size = sz
 		if fresh or not _edge.visible:
 			# Slides in from its edge, 160 ms, then holds still (UI.md 8).

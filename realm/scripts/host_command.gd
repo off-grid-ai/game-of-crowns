@@ -1001,21 +1001,17 @@ func _draw_box() -> void:
 func _build_card() -> void:
 	if main == null or main.ui == null:
 		return
-	_card = main.ui.glass_panel()
-	# The command bar, bottom centre (Mac 2026-11-16: "we need a control plane, where I can take action ... bottom of
-	# the screen"; Warcraft III's console: what is selected and its orders, along the bottom), clear of the chronicle
-	# and the minimap in the right-hand column (it sat over both).
-	_card.anchor_left = 0.5
-	_card.anchor_right = 0.5
-	_card.anchor_top = 1.0
-	_card.anchor_bottom = 1.0
-	_card.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	_card.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	_card.offset_bottom = -12
-	_card.add_theme_stylebox_override("panel", T._box(T.SURFACE_SOLID, T.HAIRLINE, 10, 8))
+	# What is selected, in the control plane's middle (Mac 2026-11-16: "we need a control plane, where I can take action
+	# ... bottom of the screen"; Warcraft III's console: the selected unit's name and state, its command card beside).
+	_card = main.ui.ControlPlane.bare(PanelContainer.new())
+	main.ui.plane.select_slot.add_child(_card)
+	var both := HBoxContainer.new()
+	both.add_theme_constant_override("separation", T.GAP * 2)
+	_card.add_child(both)
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", T.GAP_TIGHT)
-	_card.add_child(v)
+	v.alignment = BoxContainer.ALIGNMENT_CENTER
+	both.add_child(v)
 	_title = T.label("The royal host", T.TEXT_2)
 	v.add_child(_title)
 	_status = T.datum("", T.SIZE_DESC, T.TEXT)
@@ -1028,9 +1024,13 @@ func _build_card() -> void:
 	v.add_child(_left)
 	_hint = T.label("", T.TEXT)  # what a right-click on the land does right now (_hover_read), in words
 	v.add_child(_hint)
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", T.GAP_TIGHT)
-	v.add_child(row)
+	# Its orders, a grid beside it (Warcraft III's command card).
+	var row := GridContainer.new()
+	row.columns = int(Data.num(FILE, "order_columns", 4.0))
+	row.add_theme_constant_override("h_separation", T.GAP_TIGHT)
+	row.add_theme_constant_override("v_separation", T.GAP_TIGHT)
+	row.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	both.add_child(row)
 	for o in Data.value(FILE, "orders", []):
 		var kind := String(o.get("order", ""))
 		var action := "host_" + kind

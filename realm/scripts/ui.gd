@@ -72,6 +72,7 @@ const CameraPad := preload("res://scripts/camera_pad.gd")
 const ChroniclePanel := preload("res://scripts/chronicle_panel.gd")
 const HouseCard := preload("res://scripts/house_card.gd")
 const TopBar := preload("res://scripts/top_bar.gd")
+const ControlPlane := preload("res://scripts/control_plane.gd")
 const CharacterForm := preload("res://scripts/character_form.gd")
 const NewsChips := preload("res://scripts/news_chips.gd")
 
@@ -162,7 +163,8 @@ var ledger := LedgerPanel.new(self)  # the ledger card (ledger_panel.gd): its st
 var _ledger_panel: PanelContainer:
 	get:
 		return ledger._ledger_panel
-var top_bar := TopBar.new(self)  # the top bar and the story so far (top_bar.gd): its state lives there
+var top_bar := TopBar.new(self)  # the realm's date, goal, treasury and keys, and the story so far (top_bar.gd): its state lives there
+var plane := ControlPlane.new(self)  # the control plane along the screen's foot (control_plane.gd): the bar's pieces stand in it
 # The bar's pieces, read here by the keys, the cards and the realm's report.
 var _tithe_l: Label:
 	get:
@@ -182,10 +184,10 @@ var _ledger_btn: Button:
 var _top: Array:  # the date, state and actions pills
 	get:
 		return top_bar._top
-var _date_pill: Control:  # the date card, top-left: the houses table keeps below it
+var _date_pill: Control:  # the date card, in the control plane's realm slot
 	get:
 		return top_bar._date_pill
-var _bar_pill: Control:  # the buttons, top-right: the cards under the top bar keep below it
+var _bar_pill: Control:  # the realm's keys, in the control plane's right slot
 	get:
 		return top_bar._bar_pill
 var _story_panel: PanelContainer:
@@ -201,7 +203,7 @@ var _army_panel: PanelContainer:
 	get:
 		return army_bar._panel
 var news := NewsChips.new(self)  # the notices, the Watch offer and the edge arrow (news_chips.gd): their state lives there
-var _toast_top: float:  # just under the top bar
+var _toast_top: float:  # the notices' top, at the top of the screen
 	get:
 		return news._toast_top
 	set(v):
@@ -217,6 +219,7 @@ func _ready() -> void:
 	# The signs of a bad reign at the screen's edge: first, so every card is drawn over them.
 	omens = preload("res://scripts/omens.gd").new()
 	root.add_child(omens)
+	plane.build()  # first: the bar, the minimap and the host card each take their slot in it
 	top_bar._build_top_bar()
 	get_parent().add_child.call_deferred(preload("res://scripts/fps_meter.gd").new())  # the frame rate, top right, on its own layer (Mac 2026-11-15); shown as Settings says (frame_rate)
 	_build_houses()
@@ -482,10 +485,10 @@ func gauge(parent: Control, icon_name: String, tip: String, word := "") -> Label
 	return d
 
 
-## The top bar lives in top_bar.gd; these forward to it, so the keys, the court
+## The bar's pieces live in top_bar.gd; these forward to it, so the keys, the court
 ## and the realm's report call the interface as before.
-func _arrange_top() -> void:
-	top_bar._arrange_top()
+func _fit_realm() -> void:
+	top_bar._fit_realm()
 
 
 func _toggle_pause() -> void:
@@ -595,34 +598,32 @@ var _pad: Control:
 
 ## The realm in the bottom-right corner, left of the camera pad and as tall:
 ## territory, seats, and where you're looking (the realm's own shape, 224 × 352).
-const MINIMAP_SIZE := Vector2(180, 284)  # the realm's own shape; small at rest (UI.md 1: under a tenth of the screen)
+const MINIMAP_SIZE := Vector2(124, 196)  # the realm's own shape, as tall as the control plane's slot (control_plane.gd)
+const RANKS_WIDTH := 240.0  # the houses' ladder shown over the map on hover (rank_strip.gd)
 
 
 var _minimap_frame: Control  # the minimap's card: panels keep clear of it (the professional audit)
 
 
 func _build_minimap() -> void:
-	var frame := glass_panel()
+	# The control plane's left slot (Warcraft III's and Age of Empires IV's minimap, bottom left).
+	var frame := ControlPlane.bare(PanelContainer.new())
 	_minimap_frame = frame
-	frame.anchor_left = 1.0
-	frame.anchor_right = 1.0
-	frame.anchor_top = 1.0
-	frame.anchor_bottom = 1.0
-	frame.offset_right = -12  # flush to the edge, no camera pad beside it
-	frame.offset_bottom = -12
-	frame.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	frame.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	frame.add_theme_stylebox_override("panel", T._box(T.SURFACE_SOLID, T.HAIRLINE, 8, 4))
+	plane.map_slot.add_child(frame)
 	var stack := VBoxContainer.new()
 	stack.add_theme_constant_override("separation", 4)
 	frame.add_child(stack)
 	_ranks = Control.new()
-	_ranks.custom_minimum_size = Vector2(MINIMAP_SIZE.x, 40)
+	_ranks.custom_minimum_size = Vector2(RANKS_WIDTH, 40)
 	_ranks.mouse_filter = Control.MOUSE_FILTER_PASS
 	stack.add_child(_ranks)
 	# The houses' ladder shows on hover over the map: at rest the banners and the land carry it.
+	# Over the strip, above the map (top_level: the strip never grows to hold it).
 	_ranks.visible = false
-	frame.mouse_entered.connect(func(): _ranks.visible = true)
+	_ranks.top_level = true
+	frame.mouse_entered.connect(func():
+		_ranks.global_position = frame.global_position - Vector2(0, _ranks.custom_minimum_size.y + 6)
+		_ranks.visible = true)
 	frame.mouse_exited.connect(func():
 		if not frame.get_global_rect().has_point(frame.get_global_mouse_position()):
 			_ranks.visible = false)
@@ -716,23 +717,17 @@ func _process_timed(delta: float) -> void:
 		for p in [_court_panel, _digest_panel]:
 			if p and is_instance_valid(p) and p.visible:
 				p.visible = false
-	# The houses table sits under the date card however tall it grows (the
-	# story's line and its bar make it taller), never over it.
-	if _date_pill and _houses_panel:
-		_houses_panel.offset_top = _date_pill.get_global_rect().end.y + 8.0
-	# Every card that hangs under the top bar starts below its lowest piece (the
-	# buttons grew taller with their names), never over it.
-	if _bar_pill and _date_pill:
-		var below := maxf(_bar_pill.get_global_rect().end.y, _date_pill.get_global_rect().end.y) + 10.0
-		# The realm's numbers too, wherever the bar put them (beside the date on a narrow screen).
-		if _top.size() > 1 and (_top[1] as Control).visible:
-			below = maxf(below, (_top[1] as Control).get_global_rect().end.y + 10.0)
-		for c in [_court_panel, _house_panel, _form_panel, _ledger_panel, _digest_panel]:
-			if c and is_instance_valid(c):
-				c.offset_top = maxf(70.0, below)
-		if _chron_panel:
-			_chron_panel.offset_top = maxf(84.0, _bar_pill.get_global_rect().end.y + 10.0)
-	_arrange_top()  # the date line grows (a usurper marches…), so keep the bar from overlapping
+	# The bar is in the control plane along the foot (control_plane.gd): the top of the screen is the cards'. The houses
+	# table hangs from the top-left, the cards from the top centre (under the notices); the town card stands on the
+	# strip at the left; none reaches into the strip.
+	var top := Data.num("ui", "plane.top", 12.0)
+	if _houses_panel:
+		_houses_panel.offset_top = top
+	for c in [_court_panel, _house_panel, _form_panel, _ledger_panel, _digest_panel]:
+		if c and is_instance_valid(c):
+			c.offset_top = Data.num("ui", "plane.cards_top", 56.0)
+	if _town_panel:
+		_town_panel.offset_bottom = -(plane.room() + 8.0)
 	fit_centre(_digest_panel, 620.0)
 	fit_centre(_house_panel, 640.0)
 	fit_centre(_ledger_panel, 820.0)
@@ -831,16 +826,6 @@ func fit_centre(panel: Control, widest: float) -> void:
 		left = _houses_panel.get_global_rect().end.x + 12.0
 	if _chron_panel.visible:
 		right = _chron_panel.get_global_rect().position.x - 12.0
-	# A panel along the bottom (the town), or one tall enough to reach the
-	# minimap (the court), stops short of it.
-	var map_frame := minimap.get_parent() as Control if minimap else null
-	var reaches := panel.anchor_top == 1.0 or (map_frame != null and panel.get_global_rect().end.y > map_frame.get_global_rect().position.y)
-	if reaches and map_frame and map_frame.is_visible_in_tree():
-		# Only when centred it would run into the minimap: a short card stays
-		# centred with the cards above it.
-		var w0 := minf(widest, right - left)
-		if (left + right + w0) / 2.0 > map_frame.get_global_rect().position.x - 12.0:
-			right = minf(right, map_frame.get_global_rect().position.x - 12.0)
 	var w := minf(widest, right - left)
 	var x := (left + right - w) / 2.0
 	panel.anchor_left = 0.0
@@ -857,7 +842,7 @@ func _fit_height(panel: Control) -> void:
 	var scroll: ScrollContainer = panel.get_node_or_null("Scroll")
 	if scroll and scroll.get_child_count() > 0:
 		var body := scroll.get_child(0) as Control
-		var room := get_viewport().get_visible_rect().size.y - maxf(panel.position.y, 64.0) - 24.0
+		var room := plane.top_y() - maxf(panel.position.y, 64.0) - 16.0  # down to the control plane, never into it
 		body.size.x = scroll.size.x if scroll.size.x > 0.0 else panel.size.x - 32.0
 		scroll.custom_minimum_size.y = minf(body.get_combined_minimum_size().y, room)
 		panel.reset_size()

@@ -1,13 +1,23 @@
 {
- "_": "The armies bar down the left edge (realm/scripts/army_bar.gd; Total War's army list, Age of Empires IV's army panel): a button per host of the King's own, under the date card (and under the great houses while they are open). gap: px between it and what is above it; keep_bottom: px kept clear at the screen's foot (the town card, the news); width: each button's width in px. Words: place, the host's top line ({town} where it stands); field, with no town under it; troops, its strength ({men}); tip, the button's words on hover; selected, the word on a selected host's button (with the thicker outline: never colour alone).",
+ "_": "The armies bar down the left edge (realm/scripts/army_bar.gd; Total War's army list, Age of Empires IV's army panel): a button per host of the King's own, top-left (under the great houses while they are open), down to the control plane at most. gap: px between it and what is above it, and kept clear above the plane; width: each button's width in px. Words: place, the host's top line ({town} where it stands); field, with no town under it; troops, its strength ({men}); tip, the button's words on hover; selected, the word on a selected host's button (with the thicker outline: never colour alone).",
  "gap": 8,
- "keep_bottom": 230,
  "width": 220,
  "place": "At {town}",
  "field": "In the field",
  "troops": "{men} troops",
  "selected": "Selected",
  "tip": "Click: select this host. Shift- or Cmd-click: add it to those selected. Double-click: go to it.",
- "groups": {"_": "Groups of hosts (host_command.gd; StarCraft's and Age of Empires' control groups, keys.gd group_1..group_9, changeable in Settings): Cmd+number makes group n of the hosts selected, the number selects them, twice within twice_s seconds the view goes there too. Kept for this sitting only. Words ({n} the number, {count} how many hosts): one / some when a group is made, cleared when Cmd+number is pressed with none selected, empty when a number has no host left in it, badge the line on a host's button.", "twice_s": 0.4, "one": "Group {n}: this host. Press {n} to select it, twice to go there.", "some": "Group {n}: {count} hosts. Press {n} to select them, twice to go there.", "cleared": "Group {n} is empty.", "empty": "No host in group {n}. Select some and press Cmd+{n}.", "badge": "In group {n}: press {n} to select, twice to go there."},
- "idle": {"_": "The idle key (host_command.gd _next_idle; keys.gd next_idle, F3 or /, changeable in Settings; Age of Empires' idle soldier): the next host with no orders is selected and looked at. none: what the King hears when every host has its orders.", "none": "Every host has its orders."}
+ "groups": {
+  "_": "Groups of hosts (host_command.gd; StarCraft's and Age of Empires' control groups, keys.gd group_1..group_9, changeable in Settings): Cmd+number makes group n of the hosts selected, the number selects them, twice within twice_s seconds the view goes there too. Kept for this sitting only. Words ({n} the number, {count} how many hosts): one / some when a group is made, cleared when Cmd+number is pressed with none selected, empty when a number has no host left in it, badge the line on a host's button.",
+  "twice_s": 0.4,
+  "one": "Group {n}: this host. Press {n} to select it, twice to go there.",
+  "some": "Group {n}: {count} hosts. Press {n} to select them, twice to go there.",
+  "cleared": "Group {n} is empty.",
+  "empty": "No host in group {n}. Select some and press Cmd+{n}.",
+  "badge": "In group {n}: press {n} to select, twice to go there."
+ },
+ "idle": {
+  "_": "The idle key (host_command.gd _next_idle; keys.gd next_idle, F3 or /, changeable in Settings; Age of Empires' idle soldier): the next host with no orders is selected and looked at. none: what the King hears when every host has its orders.",
+  "none": "Every host has its orders."
+ }
 }

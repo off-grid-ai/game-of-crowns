@@ -34,13 +34,9 @@ func _build_chronicle() -> void:
 	_chron_panel = ui.glass_panel()
 	_chron_panel.anchor_left = 1.0
 	_chron_panel.anchor_right = 1.0
-	_chron_panel.offset_right = -10
-	_chron_panel.offset_top = 84  # under the named toolbar keys
 	_chron_panel.visible = false
-	# Compact, from the top right, never floor to ceiling (CK3's message log, Anno's feed).
-	_chron_panel.offset_left = -10 - UI.ui_num("chronicle.width", 280.0)
-	_chron_panel.anchor_bottom = UI.ui_num("chronicle.height", 0.45)
-	_chron_panel.offset_bottom = 0
+	# From the top right, as tall as its cards and no taller, never into the control plane (CK3's message log,
+	# Anno's feed; Mac: a drawer of empty glass under one card). _fit sizes it.
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 10)
 	_chron_panel.add_child(v)
@@ -214,24 +210,25 @@ func _count() -> void:
 	ui.top_bar.chronicle_unread(_unread)
 
 
-## The drawer stands under the toolbar top-right, exactly as wide (Mac: "make the chronicle as wide as the toolbar on
-## top"); its rows wrap to that width less the drawer's padding.
+## The drawer stands at the top right, chronicle.width wide (the bar is in the control plane), as tall as its cards up
+## to the plane's top: it scrolls past that, and an empty drawer is one line, not a column of glass.
 func _fit() -> void:
 	if not _chron_panel.visible:
 		return
-	var bar: Control = ui._bar_pill
-	if bar == null or not is_instance_valid(bar):
-		return
-	var r := bar.get_global_rect()
-	var vw := ui.get_viewport().get_visible_rect().size.x
-	_chron_panel.offset_left = r.position.x - vw
-	_chron_panel.offset_right = r.end.x - vw
-	_chron_panel.offset_top = r.end.y + 8.0
+	var top := Data.num("ui", "plane.top", 12.0)
+	var w := UI.ui_num("chronicle.width", 360.0)
+	_chron_panel.offset_right = -10.0
+	_chron_panel.offset_left = -10.0 - w
+	_chron_panel.offset_top = top
 	var pad := 32.0
 	var sb := _chron_panel.get_theme_stylebox("panel")
 	if sb:
 		pad = sb.get_margin(SIDE_LEFT) + sb.get_margin(SIDE_RIGHT)
-	_list.custom_minimum_size.x = maxf(r.size.x - pad - 12.0, 120.0)  # less the scroll bar
+	_list.custom_minimum_size.x = maxf(w - pad - 12.0, 120.0)  # less the scroll bar
+	var most := ui.plane.top_y() - 10.0 - top - 48.0  # less its title and padding
+	_scroll.custom_minimum_size.y = clampf(_list.get_combined_minimum_size().y, 24.0, maxf(most, 60.0))
+	_chron_panel.offset_bottom = top
+	_chron_panel.reset_size()
 
 
 ## The pace of his business (Mac: "reduce the number of decisions significantly ... 1 per 90 seconds"; RimWorld's
@@ -399,6 +396,7 @@ func _fold() -> void:
 		_list.add_child(_more)
 	_more.visible = n > shown
 	_more.text = ("Fewer" if _more.button_pressed else "%d more" % (n - shown))
+	_fit.call_deferred()  # as tall as its cards now
 
 
 ## Something that threatens his own (urgency at chronicle.pause_at): the realm waits for him (RimWorld's and Total
@@ -571,6 +569,7 @@ func _open(row: Control, on: bool) -> void:
 		if now != "":
 			here.add_child(_wrap(now, T.SIZE_DESC - 1, T.TEXT_2))
 	here.visible = on
+	_fit.call_deferred()  # its "Here now" lines make it taller
 
 
 ## What is happening at the line's town now, as the map's hover says it (map_tip.gd).

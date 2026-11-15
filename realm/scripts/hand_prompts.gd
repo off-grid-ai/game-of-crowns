@@ -176,6 +176,7 @@ func _tell(id: String) -> void:
 	var layout: Node = dlg.start(timeline)
 	if layout:
 		layout.process_mode = Node.PROCESS_MODE_ALWAYS
+		_over_plane(layout)
 	if OS.get_environment("GOC_HAND") != "" or OS.get_environment("GOC_OPENING_CLOCK") != "":
 		return  # a test run drives the game: the player's own profile keeps its first-reign lessons
 	var cfg := ConfigFile.new()
@@ -229,7 +230,7 @@ func _target() -> Control:
 		"pause":
 			return ui.top_bar._pause_btn
 		"top":
-			return ui._bar_pill
+			return ui.plane.bar  # the control plane: the realm and its keys
 	return null
 
 
@@ -348,6 +349,17 @@ func _nearest_host() -> int:
 			best = int(h["id"])
 	return best
 
+
+
+## The Hand's words stand above the control plane, never over it (Mac: the plane is where he acts; Dialogic's text box
+## sits at the screen's foot): its text box layer's own bottom margin (vn_textbox_layer.gd box_margin_bottom) raised by
+## the plane's height.
+func _over_plane(layout: Node) -> void:
+	var room: float = main.ui.plane.room()
+	for n in layout.find_children("*", "", true, false):
+		if n.get("box_margin_bottom") != null and n.has_method("_apply_export_overrides"):
+			n.set("box_margin_bottom", int(room) + 15)
+			n.call("_apply_export_overrides")
 
 ## Dialogic's layout keeps its own canvas layers (its choices on layer 1, under the veil): each is lifted over the
 ## veil (tour_layer), so his words and his buttons take the click (tour_click_probe.gd).
