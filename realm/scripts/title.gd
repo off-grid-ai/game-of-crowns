@@ -26,8 +26,12 @@ var _preset := "Balanced"  # the card chosen on the new-chronicle page
 var _more := false  # every other choice unfolded (unused since setup has pages)
 var _new_show_step: Callable  # the page shown on New Chronicle; Esc steps back through them
 var _new_step := 0
-var _name_typed := false  # the player wrote the chronicle's name themself  # which page of setting up a chronicle: 0 the reign, 1 its story, 2 the realm
-const NEW_STEPS := ["The reign", "Its story", "Your realm"]
+var _name_typed := false  # the player wrote the chronicle's name themself
+## The pages of setting up a chronicle: what kind of king, who you are, the reign, its story, the realm.
+const NEW_STEPS := ["Your king", "Who you are", "The reign", "Its story", "Your realm"]
+var _king_type := ""  # what kind of king you'd be (bridge data/king_types.json), "" until one is chosen
+var _king := {}  # who you are: name, age, man or woman; sent with the chronicle (bridge royals.js crown)
+var _king_types: Array = []  # the kinds of king, as the bridge last gave them (/chronicles/options)
 var _scenario := "aldmere"
 var _wealth := "comfortable"
 var _mood_edit: LineEdit
@@ -227,6 +231,8 @@ func show_main() -> void:
 	_big("Begin a New Chronicle", func():
 		_new_step = 0  # a new chronicle starts at its first page
 		_name_typed = false
+		_king_type = ""
+		_king = {}
 		_go(show_new))
 	_big("Chronicles", _go.bind(show_list))
 	# The realm: its story and its past. These open over the menu and come back
@@ -314,9 +320,11 @@ func show_new() -> void:
 	var room := _root.get_viewport_rect().size
 	_body.custom_minimum_size = Vector2(minf(1560.0, room.x - 160.0), 0)
 	_heading("A New Chronicle")
-	# Three pages, one decision each: the reign, its story, then (if you like)
-	# every other choice about the realm. The steps across the top say where
-	# you are and take you to any of them.
+	# Five pages, one decision each: what kind of king, who you are, the reign,
+	# its story, then (if you like) every other choice about the realm. The steps
+	# across the top say where you are and take you to any of them.
+	if _king.is_empty():
+		_king = {"name": _roll_name(false), "age": 34, "gender": "male"}
 	var steps := HBoxContainer.new()
 	steps.alignment = BoxContainer.ALIGNMENT_CENTER
 	steps.add_theme_constant_override("separation", 28)
@@ -332,10 +340,12 @@ func show_new() -> void:
 	# Every page takes the same height, so the buttons stay put as you step through.
 	for pg in pages:
 		pg.custom_minimum_size.y = page_h
-	pages[0].add_theme_constant_override("separation", 22)
+	_king_page(pages[0], page_h)
+	_who_page(pages[1])
+	pages[2].add_theme_constant_override("separation", 22)
 	var saved := HFlowContainer.new()
 	saved.add_theme_constant_override("h_separation", 6)
-	pages[0].add_child(saved)
+	pages[2].add_child(saved)
 	# Held weakly: the reply can come after this page has gone.
 	var saved_ref: WeakRef = weakref(saved)
 	bridge.scenarios(func(list):
@@ -349,10 +359,10 @@ func show_new() -> void:
 			b.pressed.connect(_use_scenario.bind(sc)))
 	# How hard a reign: one press sets every choice below (each can still be changed).
 	# How hard a reign, as three cards: the one decision most players need.
-	pages[0].add_child(_label("How hard a reign", 15, MUTED))
+	pages[2].add_child(_label("How hard a reign", 15, MUTED))
 	var presets := HBoxContainer.new()
 	presets.add_theme_constant_override("separation", 12)
-	pages[0].add_child(presets)
+	pages[2].add_child(presets)
 	for name in PRESETS:
 		var card := _text_card("%s\n%s" % [name, PRESETS[name]["about"]], presets)
 		card.toggle_mode = true
@@ -361,16 +371,16 @@ func show_new() -> void:
 		card.pressed.connect(_use_preset.bind(String(name)))
 	# How long a sitting: whatever the story, every player chooses it, so it
 	# stands up here rather than among the customised choices.
-	_choices(pages[0], "Length of the reign", [["15 minutes", 15], ["30 minutes", 30], ["An hour", 60]], _minutes, func(v): _minutes = v)
+	_choices(pages[2], "Length of the reign", [["15 minutes", 15], ["30 minutes", 30], ["An hour", 60]], _minutes, func(v): _minutes = v)
 	# What comes for the throne: the reign's story, or the realm's own choice.
-	pages[1].add_child(_label("What comes for the throne", 15, MUTED))
+	pages[3].add_child(_label("What comes for the throne", 15, MUTED))
 	# The cards scroll within a band of the page: there are a score of stories,
 	# and the name and Begin must stay on the screen beneath them.
 	var tales_scroll := ScrollContainer.new()
 	tales_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	# Every bit of height the heading, the presets, the name and Begin leave.
 	tales_scroll.custom_minimum_size = Vector2(0, page_h - 110.0)  # room for the name beneath
-	pages[1].add_child(tales_scroll)
+	pages[3].add_child(tales_scroll)
 	var tales := HFlowContainer.new()
 	tales.add_theme_constant_override("h_separation", 12)
 	tales.add_theme_constant_override("v_separation", 8)
@@ -415,7 +425,7 @@ func show_new() -> void:
 	maker_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	maker_scroll.custom_minimum_size = Vector2(0, page_h - 110.0)
 	maker_scroll.visible = false
-	pages[1].add_child(maker_scroll)
+	pages[3].add_child(maker_scroll)
 	var maker := VBoxContainer.new()
 	maker.add_theme_constant_override("separation", 8)
 	maker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -533,8 +543,8 @@ func show_new() -> void:
 	name_edit.text = _reign_name()
 	# Named once its story is chosen: under the cards, and it takes the story's
 	# name until you write one of your own.
-	pages[1].add_child(_label("Its name", 15, MUTED))
-	pages[1].add_child(name_edit)
+	pages[3].add_child(_label("Its name", 15, MUTED))
+	pages[3].add_child(name_edit)
 	_name_edit = name_edit
 	name_edit.text_changed.connect(func(_t): _name_typed = true)
 	preload("res://scripts/spark.gd").attach(name_edit, bridge, "chronicle-name", func(): return "A chronicle of a medieval reign. Its story: %s." % String(_opt.get("story", "chosen by the realm")).replace("-", " "))
@@ -542,7 +552,7 @@ func show_new() -> void:
 	var scroll := ScrollContainer.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.custom_minimum_size = Vector2(0, page_h)
-	pages[2].add_child(scroll)
+	pages[4].add_child(scroll)
 	# Breathing room inside the scroll: off the edges, and clear of the scrollbar.
 	var pad := MarginContainer.new()
 	pad.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -644,14 +654,14 @@ func show_new() -> void:
 			var st: Button = steps.get_child(k)
 			st.add_theme_color_override("font_color", GOLD if k == _new_step else MUTED)
 		next.visible = _new_step < NEW_STEPS.size() - 1
-		next.text = "Next: its story" if _new_step == 0 else "Customise the realm"
+		next.text = ["Next: who you are", "Next: the reign", "Next: its story", "Customise the realm", ""][_new_step]
 		begin.visible = true  # Begin from the first page, the rest at their defaults (Reigns, Frostpunk: no setup before play)
 		back.text = "Back" if _new_step > 0 else "Cancel"
 	for i in NEW_STEPS.size():
 		var st := Button.new()
 		st.flat = true
 		st.focus_mode = Control.FOCUS_NONE
-		st.text = "%d   %s%s" % [i + 1, NEW_STEPS[i], "  (optional)" if i == 2 else ""]
+		st.text = "%d   %s%s" % [i + 1, NEW_STEPS[i], "  (optional)" if i == NEW_STEPS.size() - 1 else ""]
 		st.add_theme_font_size_override("font_size", 16)
 		st.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 		st.pressed.connect(func(): show_step.call(i))
@@ -664,6 +674,148 @@ func show_new() -> void:
 			_back())
 	_new_show_step = show_step
 	show_step.call(_new_step)
+
+
+## What kind of king you'd be, the first page (Crusader Kings 3's ruler designer, Total War's faction pick): a big card
+## for each kind, its painted still, the reign it means and what it changes in play (bridge data/king_types.json via
+## /chronicles/options). Pressed again, a card is let go: no kind, and the King comes as he is dealt.
+func _king_page(page: VBoxContainer, page_h: float) -> void:
+	page.add_child(_label("What kind of king will you be", 15, MUTED))
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 14)
+	page.add_child(row)
+	var card_h := clampf(page_h - 60.0, 300.0, 560.0)
+	var fill := func(list: Array) -> void:
+		for c in row.get_children():
+			c.queue_free()
+		for t in list:
+			if t is Dictionary:
+				_king_card(row, t, card_h)
+	if not _king_types.is_empty():
+		fill.call(_king_types)
+	# Held weakly: the reply can come after this page has gone.
+	var row_ref: WeakRef = weakref(row)
+	bridge.chronicle_options(func(d):
+		if not (d is Dictionary) or not (d.get("kingTypes") is Array):
+			return
+		var had := not _king_types.is_empty()
+		_king_types = d["kingTypes"]
+		if row_ref.get_ref() != null and not had:
+			fill.call(_king_types))
+
+
+## One kind of king as a card: the still on top, its name, the reign it means, what it changes. The chosen card says
+## so in words as well as gold (Mac reads no meaning in colour alone).
+func _king_card(row: HBoxContainer, t: Dictionary, h: float) -> void:
+	var id := String(t.get("id", ""))
+	var card := _toggle("", row)
+	card.set_meta("king", id)
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	card.custom_minimum_size = Vector2(0, h)
+	card.button_pressed = id == _king_type
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 8)
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	for side in ["left", "top"]:
+		box.set("offset_" + side, 10.0)
+	for side in ["right", "bottom"]:
+		box.set("offset_" + side, -10.0)
+	card.add_child(box)
+	var art := String(t.get("art", ""))
+	if art != "" and ResourceLoader.exists(art):
+		var pic := TextureRect.new()
+		pic.texture = load(art)
+		pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		pic.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		pic.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		box.add_child(pic)
+	var head := HBoxContainer.new()
+	head.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_child(head)
+	var called := Label.new()
+	called.text = String(t.get("name", id))
+	called.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	called.add_theme_font_override("font", _semibold())
+	called.add_theme_font_size_override("font_size", 22)
+	called.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head.add_child(called)
+	var mark := Label.new()
+	mark.text = "Your choice"
+	mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	mark.add_theme_font_size_override("font_size", 14)
+	mark.add_theme_color_override("font_color", GOLD)
+	mark.visible = card.button_pressed
+	head.add_child(mark)
+	card.set_meta("mark", mark)
+	var line := Label.new()
+	line.text = String(t.get("line", ""))
+	line.autowrap_mode = TextServer.AUTOWRAP_WORD
+	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	line.add_theme_font_size_override("font_size", 15)
+	line.add_theme_color_override("font_color", PARCHMENT)
+	box.add_child(line)
+	var gives := Label.new()
+	gives.text = String(t.get("gives", ""))
+	gives.autowrap_mode = TextServer.AUTOWRAP_WORD
+	gives.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	gives.add_theme_font_size_override("font_size", 14)
+	gives.add_theme_color_override("font_color", MUTED)
+	box.add_child(gives)
+	card.pressed.connect(func():
+		_king_type = "" if _king_type == id else id
+		for c in row.get_children():
+			if c is Button and c.has_meta("king"):
+				var on: bool = String(c.get_meta("king")) == _king_type
+				c.set_pressed_no_signal(on)
+				var m = c.get_meta("mark")
+				if m is Label and is_instance_valid(m):
+					(m as Label).visible = on)
+
+
+## Names for a King or a Queen of about 900 AD, offered on the second page (Another name deals one more).
+const KING_NAMES := ["Aldric", "Edmund", "Osric", "Leofric", "Godwin", "Edgar", "Wulfric", "Cenric", "Athelstan", "Eadred", "Oswin", "Harold"]
+const QUEEN_NAMES := ["Aethelflaed", "Edith", "Hilda", "Ealdgyth", "Emma", "Aelfgifu", "Wynflaed", "Eadgifu", "Cyneburg", "Mildred"]
+
+
+func _roll_name(woman: bool) -> String:
+	var pool: Array = QUEEN_NAMES if woman else KING_NAMES
+	var was := String(_king.get("name", ""))
+	var free := pool.filter(func(n): return n != was)
+	return String(free[randi() % free.size()])
+
+
+## Who you are, the second page (CK3's ruler designer, kept small): your name, King or Queen, and your age. Your house
+## and arms are the Crown's. Sent with the chronicle and written on the first King (bridge royals.js crown).
+func _who_page(page: VBoxContainer) -> void:
+	page.add_child(_label("Your name", 15, MUTED))
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	page.add_child(row)
+	var edit := LineEdit.new()
+	edit.text = String(_king.get("name", ""))
+	edit.placeholder_text = "Your name"
+	edit.max_length = 24
+	edit.custom_minimum_size = Vector2(420, 52)
+	edit.add_theme_font_size_override("font_size", 22)
+	row.add_child(edit)
+	edit.text_changed.connect(func(t: String): _king["name"] = t.strip_edges())
+	var roll := _toggle("Another name", row)
+	roll.toggle_mode = false
+	roll.custom_minimum_size = Vector2(160, 52)
+	roll.pressed.connect(func():
+		edit.text = _roll_name(String(_king.get("gender", "male")) == "female")
+		_king["name"] = edit.text)
+	_choices(page, "King or Queen", [["King", "male"], ["Queen", "female"]], String(_king.get("gender", "male")), func(v):
+		_king["gender"] = v
+		# A name dealt from the other list follows; one you typed stays.
+		var n := String(_king.get("name", ""))
+		if (v == "female" and KING_NAMES.has(n)) or (v == "male" and QUEEN_NAMES.has(n)):
+			edit.text = _roll_name(v == "female")
+			_king["name"] = edit.text)
+	_choices(page, "Your age", [["Young · 24", 24], ["In your prime · 34", 34], ["Grey · 48", 48]], int(_king.get("age", 34)), func(v): _king["age"] = v)
+	page.add_child(_label("Your house is the Crown: its arms, Kingsmere and the royal host are yours. Add your own face from your card once you reign.", 14, MUTED))
 
 
 var _own_story := ""  # the story of your own that beats are added to
@@ -1469,6 +1621,11 @@ func _begin() -> void:
 		n = "The Realm of %s" % ("Strangers" if _scenario == "random" else "Aldmere")
 	var opt := _opt.duplicate()
 	opt["opening"] = "v2"  # the first court waits for the King in his realm (court.js)
+	# What kind of king, and who you are (bridge chronicles.js kingType, royals.js crown).
+	if _king_type != "":
+		opt["kingType"] = _king_type
+	if not _king.is_empty():
+		opt["king"] = _king.duplicate()
 	bridge.create_chronicle(n, _scenario, _minutes, "normal", _wealth, _mood_edit.text.strip_edges(), opt, func(code, d):
 		if code == 200 and d is Dictionary:
 			began.emit()

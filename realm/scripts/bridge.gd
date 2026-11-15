@@ -106,6 +106,11 @@ func character_options(cb: Callable) -> void:
 	_http_get("/characters/options", cb, {})
 
 
+## What a new chronicle may be begun with: the kinds of king (bridge data/king_types.json), the defaults, the houses.
+func chronicle_options(cb: Callable) -> void:
+	_http_get("/chronicles/options", cb, {})
+
+
 ## What you said into the microphone, as words (Off Grid's Whisper, via the bridge).
 func reign_options(cb: Callable) -> void:
 	_http_get("/reign/options", cb)

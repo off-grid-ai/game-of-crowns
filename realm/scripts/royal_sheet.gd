@@ -466,7 +466,8 @@ func _council_due(r: Dictionary) -> void:
 ## Skipped, he stays as dealt. Then the first council, with whoever he now is.
 func _who_are_you() -> void:
 	var king: Dictionary = royals().get("king", {}) if royals().get("king") is Dictionary else {}
-	if king.is_empty():
+	# Answered already: the King was made on the new chronicle's pages (title.gd who you are; bridge royals.js crown).
+	if king.is_empty() or bool(king.get("named", false)):
 		_first_council()
 		return
 	var w: Dictionary = Data.value("royal_sheet", "who", {})
