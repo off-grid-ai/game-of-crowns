@@ -188,8 +188,6 @@ func _lay(t: Vector2i, w: Dictionary, town: Node3D) -> void:
 	if corner != Vector3.INF and rng.randf() < float(k.get("clump", 0.25)):
 		_clump(hedges, corner, k.get("clump_trees", [3, 7]), rng)
 	_batch(node, hedges, float(k.get("hedge_reach", 30.0)))
-	if terrain.land3d and terrain.land3d.land:
-		terrain.land3d.land.data.update_maps()  # the new soil, into the ground
 
 
 ## The crops a tile's strips take in turn: [ground texture, tint, the crop that grows].
@@ -344,7 +342,6 @@ func _take_up(t: Vector2i) -> void:
 	if terrain.land3d and terrain.land3d.land and not (rec["soil"] as Array).is_empty():
 		for s in rec["soil"]:
 			terrain.land3d.unpaint_field(s[0], Fields._soil(s[1]), float(s[2]))
-		terrain.land3d.land.data.update_maps()
 
 
 ## The tiles drawn and what each is (for the checks): Vector2i -> {town, kind, fields}.

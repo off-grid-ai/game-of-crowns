@@ -116,21 +116,17 @@ func _update(cities: Array) -> void:
 		if not want.has(key):
 			_drop(key)
 	var slice := Time.get_ticks_msec()
-	var ploughed := false
 	for key in want:
 		var sig := str(want[key].map(func(e): return [e[0]["tile"], e[1]]))
 		if _patches.has(key) and _patches[key]["sig"] == sig:
 			continue
 		_drop(key)
 		_raise(key, want[key], sig)
-		ploughed = true
 		if Time.get_ticks_msec() - slice > 8:
 			await get_tree().process_frame
 			if realm != _realm:
 				return
 			slice = Time.get_ticks_msec()
-	if ploughed and terrain.land3d and terrain.land3d.land:
-		terrain.land3d.land.data.update_maps()  # the new fields' soil, into the ground
 	await _grass(cities)
 
 

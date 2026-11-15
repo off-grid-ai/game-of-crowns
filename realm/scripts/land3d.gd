@@ -805,6 +805,7 @@ func paint_field(at: Vector3, size: Vector2, yaw: float) -> void:
 	var b := Basis(Vector3.UP, -yaw)
 	var step := land.vertex_spacing
 	var reach := size.length() * 0.5 + _soil_feather + 0.1
+	_soiled(at, reach)
 	var x := at.x - reach
 	while x <= at.x + reach:
 		var z := at.z - reach
@@ -820,12 +821,37 @@ func paint_field(at: Vector3, size: Vector2, yaw: float) -> void:
 		x += step
 
 
+var _soil_regions: Array = []  # the regions whose soil changed since the ground last took it
+
+
+## The regions a field `reach` round `at` lies in, marked for the ground to take their new soil: once, after this
+## frame's painting, and only those regions' control maps (one upload, never the realm's maps per field: run 3's
+## 'timeout waiting for fence' in land_use._lay).
+func _soiled(at: Vector3, reach: float) -> void:
+	if _soil_regions.is_empty():
+		_upload_soil.call_deferred()
+	for c in [Vector3(-1, 0, -1), Vector3(1, 0, -1), Vector3(-1, 0, 1), Vector3(1, 0, 1)]:
+		var r = land.data.get_regionp(at + c * reach)
+		if r and not _soil_regions.has(r):
+			r.set_edited(true)
+			_soil_regions.append(r)
+
+
+func _upload_soil() -> void:
+	if land and not _soil_regions.is_empty():
+		land.data.update_maps(Terrain3DRegion.TYPE_CONTROL, false, false)
+	for r in _soil_regions:
+		r.set_edited(false)
+	_soil_regions = []
+
+
 ## Ploughed soil taken back out of the ground (land_use.gd: a tile no longer worked, or worked another way): the
 ## ground under the field goes back to the land's own layers.
 func unpaint_field(at: Vector3, size: Vector2, yaw: float) -> void:
 	var b := Basis(Vector3.UP, -yaw)
 	var step := land.vertex_spacing
 	var reach := size.length() * 0.5 + 0.2
+	_soiled(at, reach)
 	var x := at.x - reach
 	while x <= at.x + reach:
 		var z := at.z - reach
