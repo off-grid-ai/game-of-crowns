@@ -367,16 +367,16 @@ func _build_top_bar() -> void:
 	_next.add_theme_font_size_override("font_size", T.SIZE_LABEL)
 	_next.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_next_row.add_child(_next)
-	var next_track := ColorRect.new()
-	next_track.color = Color(T.TEXT, 0.14)
-	next_track.custom_minimum_size = Vector2(48, 2)
-	next_track.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	next_track.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_next_track = ColorRect.new()
+	_next_track.color = Color(T.TEXT, 0.14)
+	_next_track.custom_minimum_size = Vector2(48, 2)
+	_next_track.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_next_track.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_next_fill = ColorRect.new()
 	_next_fill.size = Vector2(0, 2)
 	_next_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	next_track.add_child(_next_fill)
-	_next_row.add_child(next_track)
+	_next_track.add_child(_next_fill)
+	_next_row.add_child(_next_track)
 	_next_clock = Label.new()
 	_next_clock.add_theme_font_override("font", T.mono)
 	_next_clock.add_theme_font_size_override("font_size", T.SIZE_LABEL)
@@ -589,6 +589,7 @@ var _next_row: HBoxContainer  # the next thing, a minute away (bridge next.js): 
 var _next: Label
 var _next_clock: Label
 var _next_fill: ColorRect
+var _next_track: ColorRect  # the next line's thin clock track
 var _next_at := -1  # its town, flown to on a click
 var _next_voices: Array = []  # two councillors' uses for the next seal (next.js voices): each half of the line goes to its own town
 var _next_ends := -1.0  # when its countdown runs out (engine seconds); -1 for a step with no clock
@@ -793,8 +794,14 @@ func _show_world(c: Dictionary) -> void:
 
 ## The next thing from the bridge (next.js): its words, its tone, its clock or count.
 func _show_next(n) -> void:
-	_next_row.visible = n is Dictionary
-	if not n is Dictionary:
+	# One thing to do at a time (Mac: 'I should know what the hell to do'): the line speaks only for what the
+	# objective doesn't (ui.json next.quiet: the ladder's step is the objective's own line, the court's sitting its
+	# badge); the seals stay.
+	var said: bool = n is Dictionary and not String(n.get("kind", "")) in (Data.value("ui", "next.quiet", ["ladder", "court"]) as Array)
+	for c in [_next, _next_track, _next_clock]:
+		c.visible = said
+	_next_row.visible = said or _seals.visible
+	if not said:
 		return
 	var tone := String(n.get("tone", "quiet"))
 	var col: Color = T.DANGER if tone == "loss" else T.ACCENT if tone == "act" else Color(T.TEXT, 0.7)
@@ -847,6 +854,7 @@ func _tick_next() -> void:
 ## hold; one just spent fades out of its pip so the press is seen.
 func _show_seals(sl) -> void:
 	_seals.visible = sl is Dictionary
+	_next_row.visible = _next.visible or _seals.visible
 	if not sl is Dictionary:
 		return
 	var n := int(sl.get("n", 0))
