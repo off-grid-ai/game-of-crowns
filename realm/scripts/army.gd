@@ -305,9 +305,9 @@ func march_out(_to: Vector3) -> void:
 
 ## Where a host bound for `at` stands: outside the walls of any town whose ground `at` lies in (Mac: "it makes no
 ## sense for it to be inside"; Total War's army camped beside a settlement, never in its streets), its town's reach
-## (towns.gd root meta reach) plus army.json camp.outside further out, on the side it comes from (`from`), turned
-## round the walls to the nearest dry land; anywhere else `at` itself.
-func _outside_walls(at: Vector3, from: Vector3) -> Vector3:
+## (towns.gd root meta reach) plus army.json camp.outside plus `beyond` further out, on the side it comes from
+## (`from`), turned round the walls to the nearest dry land; anywhere else `at` itself.
+func _outside_walls(at: Vector3, from: Vector3, beyond := 0.0) -> Vector3:
 	var towns: Node = main.get("towns")
 	if towns == null:
 		return at
@@ -319,6 +319,7 @@ func _outside_walls(at: Vector3, from: Vector3) -> Vector3:
 		var r := float(root.get_meta("reach", 3.0)) + Data.num("army", "camp.outside", 1.5)
 		if Vector2(at.x - c.x, at.z - c.z).length() >= r:
 			continue
+		r += beyond
 		var way := Vector2(from.x - c.x, from.z - c.z)
 		var base := atan2(way.x, way.y) if way.length() > 0.01 else 0.0
 		for k in 13:  # its own side first, then a twelfth of the way round either side in turn
@@ -336,7 +337,12 @@ func _outside_walls(at: Vector3, from: Vector3) -> Vector3:
 func _stand_on_tile(at: Vector3, yaw: float) -> void:
 	var tail := _baggage_tail() + 1.0
 	_unclaim()  # the whole column stands anew: its old ground is no one's
-	at = _outside_walls(at, at - Vector3(sin(yaw), 0, cos(yaw)))
+	# At a town: the whole column outside its walls, its head a column's length further out, facing away from the town
+	# (Mac: the head stood outside, its tail ran back through the gate into the square).
+	var out := _outside_walls(at, at - Vector3(sin(yaw), 0, cos(yaw)), tail + _column_half() * 2.0)
+	if out != at:
+		yaw = atan2(out.x - at.x, out.z - at.z)
+		at = out
 	at = Footing.nearest_clear(at, _column_half(), Footing.REACH)
 	yaw = _dry_yaw(at, yaw, tail)
 	var dir := Vector3(sin(yaw), 0, cos(yaw))
