@@ -14,11 +14,12 @@ extends RefCounted
 ##   height(p): the land's height under `p`, the one every body stands at.
 ##   area_clear(poly): whether a piece set down over `poly` (world) stands on land and over no footprint.
 ##   open_floor(root, poly): a builder says ground inside its own footprint is open floor (a bailey, a forge's).
-##   stands(root, reach), gone(root): a builder outside a town (a countryside farm, a roadside inn, the woods, a camp,
-##     a ruin) says what it set down under `root`, reaching `reach` round it, is in the way; its outlines are read off
+##   stands(root, area), gone(root): a builder outside a town (a countryside farm, a roadside inn, the woods, a camp,
+##     a ruin) says what it set down under `root`, within `area` (world XZ), is in the way; its outlines are read off
 ##     it the town's way (nav_ground.gd), so nothing keeps a list beside the pieces (Mac 2026-11-15: "entities need to
 ##     stop collision with each other": a host stood in a cottage and through a wood no check knew of).
-##   claim(id, poly), release(id): a body that holds ground while it stands (a regiment's rectangle, world XZ).
+##   claim(id, poly, kind), release(id): ground held while it lies (world XZ): a regiment's rectangle ("body"), a
+##     hedged field ("field": a muster keeps off it, a battle may be fought over it).
 
 const NavGround := preload("res://scripts/nav_ground.gd")
 const TownNav := preload("res://scripts/town_nav.gd")
@@ -34,7 +35,7 @@ const KEPT_MAX := 20000  # answers nearest_clear keeps before it starts afresh
 const CHUNK := 16.0  # world units to a cell of the places' and claims' lookup
 static var _places := {}  # chunk (Vector2i) -> {root instance id: root}: what builders outside towns set down
 static var _place_area := {}  # root instance id -> [chunks, Rect2 it covers]
-static var _claims := {}  # chunk -> {id: outline (world XZ)}: the ground bodies hold while they stand
+static var _claims := {}  # chunk -> {id: [kind, outline (world XZ)]}: the ground bodies hold while they stand
 static var _claim_area := {}  # id -> [chunks, Rect2]
 static var _kept := {}  # tile (Vector2i) -> {[point, radius, reach] (Vector4i, hundredths) -> [answer, its towns' layouts]}
 static var _kept_n := 0
@@ -43,8 +44,9 @@ static var _kept_n := 0
 ## Whether something reaching `radius` all round may stand at `p` (world): on walkable land and in no footprint.
 ## `props` false: only the buildings keep it out, not the life's own pieces (a keeper behind his stall's counter,
 ## a guest on the feast's bench, an elder on his doorstep's bench is at them, not in a building).
-## `free_of`: a claim that doesn't count (the asker's own).
-static func is_clear(p: Vector3, radius := 0.0, props := true, free_of: Variant = null) -> bool:
+## `free_of`: a claim that doesn't count (the asker's own); `open_kinds`: kinds of claim stood on freely (a battle
+## over fields).
+static func is_clear(p: Vector3, radius := 0.0, props := true, free_of: Variant = null, open_kinds: Array = []) -> bool:
 	var keys: Array = ["town", "life"] if props else ["town"]
 	for o in _reach_of(radius):
 		var q: Vector3 = p + o
@@ -59,16 +61,15 @@ static func is_clear(p: Vector3, radius := 0.0, props := true, free_of: Variant 
 				return false
 		var at := Vector2(q.x, q.z)
 		for id in (_claims.get(c, {}) as Dictionary):
-			if id != free_of and Geometry2D.is_point_in_polygon(at, _claims[c][id]):
+			var held: Array = _claims[c][id]
+			if id != free_of and not (held[0] in open_kinds) and Geometry2D.is_point_in_polygon(at, held[1]):
 				return false
 	return true
 
 
-## A builder outside a town says what it set down under `root` is in the way, within `reach` world units of it.
-static func stands(root: Node3D, reach: float) -> void:
+## A builder outside a town says what it set down under `root` is in the way, within `area` (world XZ).
+static func stands(root: Node3D, area: Rect2) -> void:
 	gone(root)
-	var c := root.global_position
-	var area := Rect2(c.x - reach, c.z - reach, reach * 2.0, reach * 2.0)
 	var cells := _chunks(area)
 	for k in cells:
 		if not _places.has(k):
@@ -90,7 +91,7 @@ static func gone(root: Node3D) -> void:
 
 
 ## A body holds `poly` (world XZ) while it stands: no other placement takes that ground. A new claim by `id` replaces its last.
-static func claim(id: Variant, poly: PackedVector2Array) -> void:
+static func claim(id: Variant, poly: PackedVector2Array, kind := "body") -> void:
 	release(id)
 	var lo := poly[0]
 	var hi := poly[0]
@@ -102,7 +103,7 @@ static func claim(id: Variant, poly: PackedVector2Array) -> void:
 	for k in cells:
 		if not _claims.has(k):
 			_claims[k] = {}
-		_claims[k][id] = poly
+		_claims[k][id] = [kind, poly]
 	_claim_area[id] = [cells, area]
 
 

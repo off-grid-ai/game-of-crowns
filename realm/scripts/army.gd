@@ -1181,12 +1181,6 @@ func _take_field(extent: Vector2) -> void:
 	_clear_slots(right3, fwd3)  # a battle's or a storm's side too (g38 siege: the storm host stood through two houses)
 
 
-## A farm's yard or hedged field at q (countryside.occupied): what a muster keeps off.
-func _farmed(q: Vector3, r: float) -> bool:
-	var land = main.get("countryside")
-	return land != null and land.has_method("occupied") and land.occupied(q, r)
-
-
 ## Whether a regiment's ground (its line's rectangle round `mid`, turned to the line, and muster.margin round it)
 ## is clear: dry land, no building, no farm or field, no road; and no other regiment's ground in `taken`.
 ## A side in the field (a battle's, a storm's: `strict` false) keeps off water and buildings only; it may stand on a
@@ -1206,7 +1200,7 @@ func _clear_at(mid: Vector3, right3: Vector3, fwd3: Vector3, w: float, d: float,
 	for i in nx:
 		for j in nz:
 			var q := mid + right3 * ((float(i) / (nx - 1) - 0.5) * (w + m * 2.0)) + fwd3 * ((float(j) / (nz - 1) - 0.5) * (d + m * 2.0))
-			if not Footing.is_clear(q, 0.05) or (strict and _farmed(q, 0.0)):
+			if not Footing.is_clear(q, 0.05, true, null, [] if strict else ["field"]):
 				return false
 			if strict and roads and roads.has_method("on_path") and roads.on_path(q, 0.05):
 				return false
@@ -1327,7 +1321,7 @@ func _form_on_way(town: Vector3, to: Vector3, root: Node3D) -> void:
 		half = maxf(half, float((r["column"] as Dictionary).get("w", 0.0)) * 0.5)
 	half += Data.num("army", "muster.roadClear", 0.3)
 	# Ground the whole column may stand on: dry land, no building, wall, fence or stall of any town
-	# (ground.gd is_clear) and no farm, field, hedge or cottage of the countryside (countryside occupied), across each
+	# (ground.gd is_clear: the countryside's farms, fields, hedges and cottages too), across each
 	# block's half width and muster.roadClear more either side: the ground a muster's line asks for (_clear_at).
 	var blocked := func(at: float) -> bool:
 		var q := _at(at)
@@ -1335,7 +1329,7 @@ func _form_on_way(town: Vector3, to: Vector3, root: Node3D) -> void:
 		var side := Vector3(cos(h), 0, -sin(h))
 		for k in 5:
 			var t := q + side * half * (k / 2.0 - 1.0)
-			if not Footing.is_clear(t, 0.05) or _farmed(t, 0.05):
+			if not Footing.is_clear(t, 0.05):
 				return true
 		return false
 	# Every main way out of the town (towns.gd ways_main: where the realm's roads leave it), carried on straight out
@@ -1846,7 +1840,7 @@ func _ground(p: Vector3, size: float) -> bool:
 	for gx in 5:
 		for gz in 5:
 			var q := Vector3(p.x + (gx / 4.0 - 0.5) * size, 0, p.z + (gz / 4.0 - 0.5) * size)
-			if not Footing.is_clear(q, 0.1) or _farmed(q, 0.05):
+			if not Footing.is_clear(q, 0.1):
 				return false
 			if absf(main.terrain.height_at(q.x, q.z) - h) > slope:
 				return false

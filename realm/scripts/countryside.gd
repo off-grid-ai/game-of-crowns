@@ -12,6 +12,7 @@ const Kept := preload("res://scripts/kept.gd")
 const Batch := preload("res://scripts/batch.gd")
 const S := Units.M  # game units per metre
 static var NEAR_TOWN: float = preload("res://scripts/data.gd").num("countryside", "near_town", 2.4)  # tiles kept clear around a town for its own fields
+const Ground := preload("res://scripts/ground.gd")  # the one answer to where a body may stand
 const CHUNK := 20.0  # farms are kept and batched by patch of land, so distant ones still cull
 
 var terrain: Node3D
@@ -179,37 +180,15 @@ func fallow_near(p: Vector2, r: float) -> Array:
 	return out
 
 
-## Whether a farm holds the ground at `p` (within `r`): a farmstead's yard (its house, barn, stacks, orchard)
-## or a hedged field, with its hedge. What a host mustering in the open keeps off (army.gd).
-func occupied(p: Vector3, r := 0.0) -> bool:
-	var q := Vector2(p.x, p.z)
-	var cx := floori(p.x / CHUNK)
-	var cz := floori(p.z / CHUNK)
-	for key in ["%d|%d" % [cx, cz], "%d|%d" % [cx - 1, cz], "%d|%d" % [cx + 1, cz], "%d|%d" % [cx, cz - 1], "%d|%d" % [cx, cz + 1], "%d|%d" % [cx - 1, cz - 1], "%d|%d" % [cx + 1, cz - 1], "%d|%d" % [cx - 1, cz + 1], "%d|%d" % [cx + 1, cz + 1]]:
-		if not _patches.has(key):
-			continue
-		for stead in _patches[key]["steads"]:
-			var at := Vector2((stead["at"] as Vector3).x, (stead["at"] as Vector3).z)
-			if at.distance_to(q) > r + 6.0:
-				continue
-			for y in stead["yard"]:
-				if Vector2((y[0] as Vector3).x, (y[0] as Vector3).z).distance_to(q) < float(y[1]) + r:
-					return true
-			for f in stead["fields"]:
-				var c := Vector2((f[0] as Vector3).x, (f[0] as Vector3).z)
-				var half: Vector2 = (f[1] as Vector2) * 0.5 + Vector2(r + 0.12, r + 0.12)  # the hedge round it
-				var local := (q - c).rotated(float(f[2]))
-				if absf(local.x) <= half.x and absf(local.y) <= half.y:
-					return true
-	return false
-
-
 ## Takes up a patch of farms: its buildings, fields, hedges and tracks.
 func _drop(key: String) -> void:
 	if not _patches.has(key):
 		return
 	if is_instance_valid(_patches[key]["node"]):
+		Ground.gone(_patches[key]["node"])
 		_patches[key]["node"].queue_free()
+	for id in _patches[key].get("claims", []):
+		Ground.release(id)
 	_patches.erase(key)
 	if roads:
 		roads.clear_tracks(key)
@@ -251,7 +230,22 @@ func _raise(key: String, farms: Array, sig: String) -> void:
 		mmi.multimesh = mm
 		_fade(mmi, 45.0)
 		node.add_child(mmi)
-	_patches[key] = {"sig": sig, "node": node, "steads": steads}
+	# What the farms set down is in the way (ground.gd: their houses, barns, stacks, hedges and orchards read off the
+	# patch), and each hedged field held, hedge and all: a muster keeps off it (Mac 2026-11-15: hosts in the cottages).
+	var kc := key.split("|")
+	Ground.stands(node, Rect2(float(kc[0]) * CHUNK - CHUNK, float(kc[1]) * CHUNK - CHUNK, CHUNK * 3.0, CHUNK * 3.0))
+	var claims: Array = []
+	for stead in steads:
+		for f in stead["fields"]:
+			var c := Vector2((f[0] as Vector3).x, (f[0] as Vector3).z)
+			var half: Vector2 = (f[1] as Vector2) * 0.5 + Vector2(0.12, 0.12)  # the hedge round it
+			var poly := PackedVector2Array()
+			for corner in [Vector2(-half.x, -half.y), Vector2(half.x, -half.y), Vector2(half.x, half.y), Vector2(-half.x, half.y)]:
+				poly.append(c + (corner as Vector2).rotated(-float(f[2])))
+			var id := "field %s %d" % [key, claims.size()]
+			Ground.claim(id, poly, "field")
+			claims.append(id)
+	_patches[key] = {"sig": sig, "node": node, "steads": steads, "claims": claims}
 	_laid += 1
 
 
