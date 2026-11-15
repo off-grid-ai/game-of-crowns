@@ -793,15 +793,18 @@ const FIGURE_R := 0.4  # a company's figure and its standard, its box for the re
 
 ## A new figure watched by events, not polled (FPS audit 2026-11-15 item 4, docs/research/fps-engine-swaps-2026-11-15.md:
 ## units 1.25-2.7 ms a frame, a frustum test, a Mover ask and a stance for every figure every frame). The renderer's own
-## cull says when it comes on screen (VisibleOnScreenNotifier3D, not the enabler: a company Freeciv marches keeps going
-## off screen); its Mover says when it stops; sync says when it is wounded or dug in. Each tells its stance then.
+## cull says when it comes on screen (VisibleOnScreenNotifier3D: the enabler on_screen.gd gives every body, or one of
+## its own); its Mover says when it stops; sync says when it is wounded or dug in. Each tells its stance then.
 func _watch(key: int) -> void:
 	var f: Dictionary = _figures[key]
 	var n: Node3D = f["node"]
-	var seen := VisibleOnScreenNotifier3D.new()
-	seen.name = "OnScreen"
-	seen.aabb = AABB(Vector3(-FIGURE_R, 0.0, -FIGURE_R), Vector3(FIGURE_R * 2.0, FIGURE_R * 2.0, FIGURE_R * 2.0)).grow(ViewTier.LEAD)
-	n.add_child(seen)
+	# Every body is already given one (on_screen.gd: its enabler, a notifier that also stops it off screen): that one.
+	var seen := n.get_node_or_null("OnScreen") as VisibleOnScreenNotifier3D
+	if seen == null:
+		seen = VisibleOnScreenNotifier3D.new()
+		seen.name = "Seen"
+		seen.aabb = AABB(Vector3(-FIGURE_R, 0.0, -FIGURE_R), Vector3(FIGURE_R * 2.0, FIGURE_R * 2.0, FIGURE_R * 2.0)).grow(ViewTier.LEAD)
+		n.add_child(seen)
 	f["seen"] = seen
 	seen.screen_entered.connect(_tell.bind(key, true))
 	Mover.of(n).arrived.connect(_tell.bind(key, true))
