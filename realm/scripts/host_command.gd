@@ -24,6 +24,7 @@ const HostPick := preload("res://scripts/host_pick.gd")  # a click on a host pic
 const T := preload("res://scripts/theme.gd")
 const Keys := preload("res://scripts/keys.gd")
 const Terrain := preload("res://scripts/terrain.gd")  # its GROUND_LAYER: the ring is painted on the land alone
+const TeamColour := preload("res://scripts/team_colour.gd")  # the ring in the crown's own colour, as its men wear it
 const FILE := "host_command"
 
 var main: Node
@@ -34,6 +35,7 @@ var _title: Label
 var _status: Label
 var _buttons := {}  # order -> its Button on the card
 var _left: Label  # how many orders are left this season
+var _doing_l: Label  # its current order, on a line of its own
 var _kinds: Label  # its companies by kind and its morale (Warcraft III's unit panel; Total War's unit cards)
 var _ring: Decal
 var _end: Decal  # the ring where the selected host is bound
@@ -374,7 +376,9 @@ func _process(delta: float) -> void:
 	if not h.is_empty():
 		var at := _ground(h)
 		var r := minf(Data.num(FILE, "ring.max", 1.6), Data.num(FILE, "ring.radius", 0.55) + Data.num(FILE, "ring.per_company", 0.06) * float(h.get("companies", 1)))
+		r = maxf(r, _seen_at(Data.num(FILE, "ring.screen", 0.0)))  # never smaller than so much of the view: read at play zoom
 		_ring.global_position = at
+		_ring.modulate = _crown_colour()
 		_ring.size = Vector3(r * 2.0, 1.2, r * 2.0)
 		var b := _banner(h)
 		if b:
@@ -406,8 +410,9 @@ func _routes() -> void:
 			continue
 		var mine := int(h.get("id", -1)) == selected
 		if mine:
-			var r := Data.num(FILE, "route.end_ring", 0.35)
+			var r := maxf(Data.num(FILE, "route.end_ring", 0.35), _seen_at(Data.num(FILE, "route.end_screen", 0.0)))
 			_end.global_position = to
+			_end.modulate = _order_colour(String(o.get("kind", "march")))
 			_end.size = Vector3(r * 2.0, 1.2, r * 2.0)
 			_end.visible = true
 		var n := int(flat.length() / every)
@@ -500,16 +505,33 @@ func _cursor_hot() -> Vector2:
 func _mark(at: Vector3, kind: String) -> void:
 	var k: Dictionary = Data.value(FILE, "marker", {})
 	var d := _decal(_ring_texture(), float(k.get("energy", 2.0)))
-	d.modulate = Color.from_string(String((k.get("colors", {}) as Dictionary).get(kind, k.get("color", "#dbb56e"))), T.ACCENT)
+	d.modulate = _order_colour(kind)
 	d.global_position = at
 	d.visible = true
-	var from := float(k.get("from", 0.7))
-	var to := float(k.get("to", 0.25))
+	var from := maxf(float(k.get("from", 0.7)), _seen_at(float(k.get("screen", 0.0))))  # as wide on screen at any zoom
+	var to := from * float(k.get("to", 0.25)) / maxf(0.01, float(k.get("from", 0.7)))
 	d.size = Vector3(from, 1.2, from)
 	var tw := d.create_tween().set_parallel()
 	tw.tween_property(d, "size", Vector3(to, 1.2, to), float(k.get("secs", 0.6))).set_ease(Tween.EASE_OUT)
 	tw.tween_property(d, "modulate:a", 0.0, float(k.get("secs", 0.6))).set_ease(Tween.EASE_IN)
 	tw.chain().tween_callback(d.queue_free)
+
+
+## An order's colour (host_command.json marker.colors: green to march, red to attack or besiege, Warcraft III).
+func _order_colour(kind: String) -> Color:
+	var k: Dictionary = Data.value(FILE, "marker", {})
+	return Color.from_string(String((k.get("colors", {}) as Dictionary).get(kind, k.get("color", "#dbb56e"))), T.ACCENT)
+
+
+## The crown's colour (team_colour.gd, as its men and roofs wear it), else the ring's own.
+func _crown_colour() -> Color:
+	var house: Dictionary = main.awareness.houses_by_id().get(int(main.awareness.rec("crownId", -1)), {})
+	return TeamColour.house_colour(house) if not house.is_empty() else Color.from_string(String(Data.value(FILE, "ring.color", "#dbb56e")), T.ACCENT)
+
+
+## A world size that is `share` of the lens's distance (camera_rig.distance): a mark that keeps its size on screen.
+func _seen_at(share: float) -> float:
+	return share * float(main.rig.distance) if main.rig else 0.0
 
 
 ## A ground ring painted on the land as it lies (a decal: it follows hills and roads).
@@ -566,6 +588,8 @@ func _build_card() -> void:
 	v.add_child(_title)
 	_status = T.datum("", T.SIZE_DESC, T.TEXT)
 	v.add_child(_status)
+	_doing_l = T.datum("", T.SIZE_DESC, T.ACCENT)  # what it is doing now, in the accent: the order at first sight
+	v.add_child(_doing_l)
 	_kinds = T.label("", T.TEXT_2)
 	v.add_child(_kinds)
 	_left = T.label("", T.TEXT_3)
@@ -604,7 +628,11 @@ func _refresh() -> void:
 		return
 	var at: Variant = h.get("at")
 	_title.text = ("The royal host at %s" % String(at.get("name", ""))).to_upper() if at is Dictionary else "THE ROYAL HOST"
-	_status.text = "%s · %s" % [String(Data.value(FILE, "troops", "{men} troops")).format({"men": main.ui.heads(int(h.get("men", 0)))}), _doing(h)]
+	_status.text = String(Data.value(FILE, "troops", "{men} troops")).format({"men": main.ui.heads(int(h.get("men", 0)))})
+	var doing := _doing(h)
+	_doing_l.text = doing.left(1).to_upper() + doing.substr(1)
+	var o: Variant = h.get("order")
+	_doing_l.add_theme_color_override("font_color", _order_colour(String(o.get("kind", ""))) if o is Dictionary else T.TEXT_2)
 	_card.tooltip_text = "%d companies" % int(h.get("companies", 0))
 	_kinds.text = _makeup(h)
 	# The host's orders this season (bridge hosts.json ordersPerHost): the card says how many it has left, and with none its
