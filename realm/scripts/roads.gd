@@ -503,7 +503,21 @@ func _segment(a: Vector3, b: Vector3, parent: Node3D = null, width := WIDTH, own
 	# Every earlier stretch was trimmed when it was painted or when its disc was laid: rescanning them all for every
 	# segment was segments x towns x stretches (11:01 load, 2 fps for minutes in kings_road; SEGV trace clear_in).
 	for d in _stone_discs:
-		clear_in(d[0], float(d[1]), false, fresh)
+		if _reaches(d, fresh):
+			clear_in(d[0], float(d[1]), false, fresh)
+
+
+## Whether any stretch from `from` on reaches into town disc `d` ([centre, r]) with its verge: only then is it trimmed.
+func _reaches(d: Array, from: int) -> bool:
+	var verge := Data.num("ground", "roads.verge", 2.4) * 0.5
+	var c: Vector2 = d[0]
+	for i in range(from, _painted.size()):
+		var st: Array = _painted[i]
+		var p: Vector3 = st[0]
+		var q: Vector3 = st[1]
+		if Geometry2D.get_closest_point_to_segment(c, Vector2(p.x, p.z), Vector2(q.x, q.z)).distance_to(c) < float(d[1]) + float(st[2]) * verge:
+			return true
+	return false
 
 
 ## The stretches painted so far: [from, to, width, owner, parent, [its decals]] (clear_in trims them where a town lays
@@ -554,7 +568,10 @@ func clear_in(centre: Vector2, r: float, remember := true, from := 0) -> void:
 	if from == 0:
 		_painted = _painted.filter(func(st: Array) -> bool: return is_instance_valid(st[4]))
 	var verge := Data.num("ground", "roads.verge", 2.4) * 0.5  # the verge's half-width, per unit of track width
-	var kept: Array = _painted.slice(0, from)
+	# Only the stretches from `from` on are looked at and rebuilt; the rest stay where they are (copying every earlier
+	# stretch for each town's disc made each new stretch ~6 ms once the realm's roads ran to thousands: combined run 8,
+	# kings_road.paint every frame of a battle).
+	var kept: Array = []
 	for st in _painted.slice(from):
 		var p: Vector3 = st[0]
 		var q: Vector3 = st[1]
@@ -586,4 +603,5 @@ func clear_in(centre: Vector2, r: float, remember := true, from := 0) -> void:
 					var q2 := p.lerp(q, clampf(float(piece[1]), 0.0, 1.0))
 					if Vector2(q2.x - p2.x, q2.z - p2.z).length() > 0.05:
 						kept.append([p2, q2, st[2], st[3], st[4], _paint_run(p2, q2, float(st[2]), String(st[3]), st[4])])
-	_painted = kept
+	_painted.resize(from)
+	_painted.append_array(kept)
