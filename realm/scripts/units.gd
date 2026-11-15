@@ -329,6 +329,7 @@ func _company(u: Dictionary, slot: int, w: Dictionary) -> void:
 			_banner(node.rider if node.get("rider") else node, Color.from_string(String(house.get("color", "#888")), Color.GRAY), house)
 			HostPick.proxy(node, int(id), Vector3(0.22, 0.62, 0.22))  # the bearer and his standard, to click (host_command.gd)
 		_figures[id] = {"node": node, "target": target, "wild": wild, "bow": String(u["type"]) in BOWS, "horse": node.has_method("mount"), "ship": ship}
+		_watch(id)
 	if _figures[id]["target"].distance_to(target) > 0.01:
 		var moved: Vector3 = target - _figures[id]["node"].position
 		if slot == 0 and Vector2(moved.x, moved.z).length() > 0.3:
@@ -341,6 +342,7 @@ func _company(u: Dictionary, slot: int, w: Dictionary) -> void:
 	# How the company stands, from Freeciv's own word on it (the save's hp and orders).
 	_figures[id]["hurt"] = u.get("hp") != null and float(u["hp"]) <= WOUNDED_HP
 	_figures[id]["fort"] = u.get("activity") != null and int(u["activity"]) in FORTIFIED
+	_tell(id)  # wounded or dug in: his stance told now, not polled
 
 
 ## Raiders making for a royal work (store raids, bridge raids.js): each raider's id -> the work's site, the crown's
@@ -416,11 +418,13 @@ func _band(id: int, at: Vector3) -> void:
 			var mo: Node = Mover.of(node)
 			mo.stride = true
 			_figures[key] = {"node": node, "target": target, "wild": false, "bow": false, "horse": false, "ship": false}
+			_watch(key)
 		var f: Dictionary = _figures[key]
 		if f["target"].distance_to(target) > 0.01:
 			f["target"] = target
 			_march(f)
 		f["hurt"] = _figures[id].get("hurt", false)
+		_tell(key)
 
 
 ## Hit points at or under which a company looks wounded (most units have 10 or 20).
@@ -782,8 +786,67 @@ func _banner(soldier: Node3D, color: Color, house: Dictionary) -> void:
 
 
 var _settle_at := 2.0
+var _far := false  # the lens at FAR (view_tier.gd): companies are the map's marks, no bodies
 const ViewTier := preload("res://scripts/view_tier.gd")
-const FIGURE_R := 0.4  # a company's figure and its standard, its sphere for the screen test
+const FIGURE_R := 0.4  # a company's figure and its standard, its box for the renderer's screen test
+
+
+## A new figure watched by events, not polled (FPS audit 2026-11-15 item 4, docs/research/fps-engine-swaps-2026-11-15.md:
+## units 1.25-2.7 ms a frame, a frustum test, a Mover ask and a stance for every figure every frame). The renderer's own
+## cull says when it comes on screen (VisibleOnScreenNotifier3D, not the enabler: a company Freeciv marches keeps going
+## off screen); its Mover says when it stops; sync says when it is wounded or dug in. Each tells its stance then.
+func _watch(key: int) -> void:
+	var f: Dictionary = _figures[key]
+	var n: Node3D = f["node"]
+	var seen := VisibleOnScreenNotifier3D.new()
+	seen.name = "OnScreen"
+	seen.aabb = AABB(Vector3(-FIGURE_R, 0.0, -FIGURE_R), Vector3(FIGURE_R * 2.0, FIGURE_R * 2.0, FIGURE_R * 2.0)).grow(ViewTier.LEAD)
+	n.add_child(seen)
+	f["seen"] = seen
+	seen.screen_entered.connect(_tell.bind(key, true))
+	Mover.of(n).arrived.connect(_tell.bind(key, true))
+	if _far and not f["ship"]:
+		n.visible = false
+
+
+## A soldier at rest, on screen and not at FAR, is told his stance once, when it changes (wounded, dug in, at the
+## ready); `afresh`: told again whatever he played (he came on screen, or stopped marching).
+func _tell(key: int, afresh := false) -> void:
+	var f: Dictionary = _figures.get(key, {})
+	if f.is_empty() or f["wild"] or f.get("horse", false):
+		return
+	var n: Node3D = f["node"]
+	if afresh:
+		f["playing"] = ""
+	if not is_instance_valid(n) or not n.visible or Mover.of(n).moving():
+		return
+	var seen: VisibleOnScreenNotifier3D = f.get("seen")
+	if seen and not seen.is_on_screen():
+		return
+	var want := stance(f)
+	if f.get("playing", "") != want:
+		_people.play(n, want)
+		f["playing"] = want
+
+
+## The lens crossing FAR_FROM (view_tier.gd's rule, with its FAR_BACK so a lens resting there doesn't flip it): every
+## company's body hidden, or shown and told its stance. Once a crossing, not a test a figure a frame.
+func _lens() -> void:
+	var vt: Node = ViewTier.get_one()
+	var far := false
+	if vt and vt.rig:
+		var d: float = vt.rig.distance
+		far = d >= ViewTier.FAR_FROM or (_far and d >= ViewTier.FAR_FROM - ViewTier.FAR_BACK)
+	if far == _far:
+		return
+	_far = far
+	for id in _figures:
+		var f: Dictionary = _figures[id]
+		if f["ship"]:
+			continue  # ships keep their own showing (in port or at sea, sync)
+		(f["node"] as Node3D).visible = not far
+		if not far:
+			_tell(id, true)
 
 
 func _process(delta: float) -> void:
@@ -802,27 +865,4 @@ func _process_timed(delta: float) -> void:
 	if _settle_at <= 0.0:
 		_settle_at = 2.0
 		_settle()
-	for id in _figures:
-		var f: Dictionary = _figures[id]
-		var n: Node3D = f["node"]
-		# Its tier (view_tier.gd, the one decider): at FAR a company is the map's mark (map_marks.gd: its standard and
-		# its men), no body; off screen nothing of it is told. Ships keep their own showing (in port or at sea, sync).
-		var tier := ViewTier.of(n.global_position, FIGURE_R)
-		if not f["ship"]:
-			var body := tier != ViewTier.FAR
-			if n.visible != body:
-				n.visible = body
-				f["playing"] = ""  # told its stance afresh when it shows
-		if f["wild"] or tier <= ViewTier.FAR:
-			continue
-		if Mover.of(n).moving():
-			f["playing"] = ""  # marching: the stance is told afresh when he stops
-		elif f.get("horse", false):
-			pass  # the horse stands; its gait follows how it is moved
-		else:
-			# A soldier at rest is told his stance once, when it changes (wounded, dug in,
-			# at the ready), not every frame.
-			var want := stance(f)
-			if f.get("playing", "") != want:
-				_people.play(n, want)
-				f["playing"] = want
+	_lens()
