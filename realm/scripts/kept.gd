@@ -30,14 +30,34 @@ static func has(path: String) -> bool:
 
 
 ## `res` given the file at `path` (every scene packed after points at it) and written there: at once while baking,
-## else on a worker thread.
+## else one file a frame on the main thread. Never on a worker: saving a mesh reads it back from the renderer, and a
+## read from another thread while the frame draws tore the GPU's copies (Mac 2026-11-15: grey sheets streaked over
+## the land while towns were built and kept, every drawn box whole on the CPU; 'timeout waiting for fence', a hang).
+static var _to_write: Array = []  # [resource, path], oldest first
 static func keep(res: Resource, path: String) -> void:
 	DirAccess.make_dir_recursive_absolute(path.get_base_dir())
 	res.take_over_path(path)
 	if baking:
 		ResourceSaver.save(res, path, ResourceSaver.FLAG_COMPRESS)
-	else:
-		WorkerThreadPool.add_task(func(): ResourceSaver.save(res, path, ResourceSaver.FLAG_COMPRESS), false, "keep " + path.get_file())
+		return
+	if _to_write.is_empty():
+		var tree := Engine.get_main_loop() as SceneTree
+		if tree and not tree.process_frame.is_connected(_write_one):
+			tree.process_frame.connect(_write_one)
+	_to_write.append([res, path])
+
+
+## The oldest file waiting, written (the main thread, once a frame while any wait).
+static func _write_one() -> void:
+	if _to_write.is_empty():
+		var tree := Engine.get_main_loop() as SceneTree
+		if tree and tree.process_frame.is_connected(_write_one):
+			tree.process_frame.disconnect(_write_one)
+		return
+	var next: Array = _to_write.pop_front()
+	var t0 := Time.get_ticks_usec()
+	ResourceSaver.save(next[0], next[1], ResourceSaver.FLAG_COMPRESS)
+	preload("res://scripts/perf_tools.gd").add("kept.write", Time.get_ticks_usec() - t0)
 
 
 ## The kept things' fingerprint, made once from realm/data/kept.json's version. An exported game takes the one the

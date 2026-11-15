@@ -236,6 +236,7 @@ func _log_perf(delta: float) -> void:
 			Engine.get_frames_per_second(), Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0, render_cpu, render_gpu, folk.size(), minds, main.get_viewport().get_visible_rect().size.x, main.get_viewport().get_visible_rect().size.y, main.get_viewport().scaling_3d_scale, ",".join(tallied), _holders(folk)])
 	if probing:
 		f.store_line("    people by holder (all/visible) " + _holders(main.get_tree().get_nodes_in_group("people")))
+		f.store_line("    every frame " + _tickers())
 		var torn := _torn()
 		if torn != "":
 			f.store_line("    TORN " + torn)
@@ -477,4 +478,22 @@ func _torn() -> String:
 			out.append("%s %s size=%s" % [String(main.get_path_to(g)), g.get_class(), str(box.size)])
 			if out.size() >= 8:
 				break
+	return ", ".join(out)
+
+
+## Who runs code every frame (GOC_PERF_PROBE): nodes with _process or _physics_process on, by their script (else their
+## class), most first, so the frame's time no named job holds can be pinned on someone.
+func _tickers() -> String:
+	var by := {}
+	for n in main.get_tree().root.find_children("*", "", true, false):
+		if not (n.is_processing() or n.is_physics_processing()):
+			continue
+		var sc: Script = n.get_script()
+		var k := String(sc.resource_path).get_file() if sc and sc.resource_path != "" else n.get_class()
+		by[k] = int(by.get(k, 0)) + 1
+	var keys := by.keys()
+	keys.sort_custom(func(a, b): return by[a] > by[b])
+	var out := PackedStringArray()
+	for k in keys.slice(0, 15):
+		out.append("%s:%d" % [k, by[k]])
 	return ", ".join(out)
