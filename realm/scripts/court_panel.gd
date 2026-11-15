@@ -172,7 +172,8 @@ func _mark(petitions: Array) -> void:
 		# their house's colour; the Hand's matters keep the plain mark.
 		var sitter = p.get("who")
 		var house: Dictionary = ui.house_by_name.get(String(p.get("house", "")), {})
-		if p.get("petitioner") != null and sitter is Dictionary and ui.portrait.is_valid():
+		var painted_mark: Texture2D = PaintedFaces.face(sitter) if p.get("petitioner") != null and sitter is Dictionary else null
+		if painted_mark:
 			m.custom_minimum_size = Vector2(44, 60)  # a face to press, not a pin
 			m.expand_icon = true
 			m.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -183,10 +184,8 @@ func _mark(petitions: Array) -> void:
 			frame.set_corner_radius_all(6)
 			for st in ["normal", "hover", "pressed", "focus"]:
 				m.add_theme_stylebox_override(st, frame)
-			ui.portrait.call(sitter, house, func(tex):
-				if is_instance_valid(m) and tex:
-					m.text = ""
-					m.icon = tex)
+			m.text = ""
+			m.icon = painted_mark  # their painted face (painted_faces.gd), the one they wear on every screen
 		m.tooltip_text = "%s%s" % [String(p.get("name", "The Hand of the King")), (" of " + String(p["house"])) if String(p.get("house", "")) != "" else ""]
 		# What is wrong at the place, in a word under the face: the town's own state.
 		var pl = p.get("place")
@@ -326,16 +325,6 @@ func _show_audience() -> void:
 		face.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 		frame.add_child(face)
 		named.add_child(frame)
-	elif ui.portrait.is_valid() and sitter is Dictionary:
-		var figure := TextureRect.new()
-		figure.custom_minimum_size = Vector2(56, 90)
-		figure.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		figure.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-		figure.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		named.add_child(figure)
-		ui.portrait.call(sitter, ui.house_by_name.get(String(p.get("house", "")), {}), func(tex):
-			if is_instance_valid(figure):
-				figure.texture = tex)
 	ui.arms_pair(named, String(p.get("name", "")), ui.house_by_name.get(String(p.get("house", "")), {}), 40)
 	var pname := T.title(String(p.get("name", "")), 22)
 	pname.size_flags_horizontal = Control.SIZE_EXPAND_FILL

@@ -1117,7 +1117,6 @@ var _interlude_told: String:  # "reign id:quarter" of the interlude told (reign_
 var _interlude_on: bool:  # an act is being told back: the court waits behind it
 	get:
 		return reign_cards._interlude_on
-var portrait := Callable()  # (person, house, cb(texture)): their painted figure (portrait.gd)
 var mic: Node  # mic.gd
 
 
