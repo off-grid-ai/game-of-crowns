@@ -15,7 +15,12 @@ extends SceneTree
 ##      is_clear answers at its middle;
 ##   5. a regiment's rectangle asked in one call (area_free, as army.gd _clear_at asks it) at 1000 random placements:
 ##      never clear where the old grid of point asks (every muster.probe, 0.05 reach) refused, refused only where
-##      something stands within it (the grid stepped over a trunk or a hedge), under 50 us an ask.
+##      something stands within it (the grid stepped over a trunk or a hedge), under 50 us an ask;
+##   6. a town built piece by piece (houses on the town, stalls and walkers in its Life, a stall taken away now and
+##      then) with is_clear asks between the pieces, as towns.gd builds and its life sets down while bodies are placed
+##      (Mac's game 2026-11-15: 98,587 asks cost 3.16 s while towns were built, every ask after a new piece restamping
+##      the whole town): the asks average under 3 us, each piece is read once (the ground's stamp_reads: linear in the
+##      pieces, never pieces x asks), and the answers still equal the old point tests over the town.
 ## Prints CHECK lines; exits 1 on a fail.   arch -arm64 godot --headless --path realm -s res://tools/occupancy_probe.gd
 
 const Ground := preload("res://scripts/ground.gd")
@@ -157,6 +162,7 @@ func _run() -> void:
 	await _route_grid()
 	_rectangles()
 	_changes()
+	await _built_piece_by_piece()
 	_agree("after the changes", 8000)
 	print("OCCUPANCY %s (%d failed)" % ["PASS" if fail == 0 else "FAIL", fail])
 	quit(1 if fail else 0)
@@ -404,3 +410,97 @@ func _rectangles() -> void:
 	_check(missed == 0, "a regiment's rectangle is never clear where the point grid refused it (%d of 1000)" % missed)
 	_check(wrong == 0, "a regiment's rectangle is refused only where something stands within it (%d of 1000)" % wrong)
 	_check(per < 50.0, "a regiment's rectangle costs under 50 us an ask (%.1f us)" % per)
+
+
+# --- 6. a town built piece by piece ----------------------------------------------------------------------------------
+
+## The ground's count of pieces read off what stands (ground.gd stamp_reads), or -1 where it keeps none.
+func _reads() -> int:
+	var g: GDScript = load("res://scripts/ground.gd")
+	if not g.get_script_method_list().any(func(m: Dictionary) -> bool: return m["name"] == "stamp_reads"):
+		return -1
+	return int(g.call("stamp_reads"))
+
+
+func _built_piece_by_piece() -> void:
+	var c := Vector3(38, 0, 18)
+	var t := Node3D.new()
+	t.position = c
+	t.set_meta("reach", 6.0)
+	towns.add_child(t)
+	towns.towns[4] = {"node": t}
+	var life := Node3D.new()
+	life.name = "Life"
+	t.add_child(life)
+	var pts := PackedVector3Array()
+	for i in 4000:
+		pts.append(c + Vector3(rng.randf_range(-6, 6), 0, rng.randf_range(-6, 6)))
+	for p in pts:  # the land under the town laid first: the cost measured is the stamping's, not the first fill
+		Ground.is_clear(p)
+	await process_frame
+	var reads0 := _reads()
+	var pieces := 300
+	var asks := 0
+	var cost := 0
+	var stalls: Array = []
+	var kit := {}  # one mesh a kind, as a town's kit models are shared by every copy
+	for i in pieces:
+		var at := Vector3(-5.5 + (i % 15) * 0.75, 0, -5.5 + (i / 15) * 0.55)
+		if i % 3 == 0:
+			stalls.append(_kit(kit, life, at, Vector3(0.24, 0.2, 0.12)))  # a stall its life sets down
+		elif i % 7 == 0:
+			var walker := Node3D.new()  # a walker: in its life, never in the way
+			walker.add_to_group("people")
+			life.add_child(walker)
+			_kit(kit, walker, Vector3.ZERO, Vector3(0.1, 0.4, 0.1))
+		else:
+			_kit(kit, t, at, Vector3(0.4, 0.5, 0.35)).rotation.y = 0.2 * i  # a house its builders set down
+		if i % 10 == 9 and stalls.size() > 2:
+			(stalls.pop_front() as Node).free()  # a stall taken away
+		for j in 40:
+			var p := pts[(i * 40 + j) % pts.size()]
+			var t0 := Time.get_ticks_usec()
+			Ground.is_clear(p, 0.1 if j % 4 == 0 else 0.0)
+			cost += Time.get_ticks_usec() - t0
+			asks += 1
+		if i % 20 == 19:
+			await process_frame  # the town is built over frames, a piece or a few each
+	var per := float(cost) / asks
+	var reads := _reads() - reads0 if reads0 >= 0 else -1
+	# The same asks over the town standing still: what an ask costs on this machine now (a loaded Mac runs every ask
+	# slower; the stamping must add nearly nothing to it).
+	var t1 := Time.get_ticks_usec()
+	for i in asks:
+		Ground.is_clear(pts[i % pts.size()], 0.1 if i % 4 == 0 else 0.0)
+	var still := float(Time.get_ticks_usec() - t1) / asks
+	print("town built piece by piece: %d pieces, %d asks between them, %.2f us an ask (%.2f us with it standing still), %d pieces read" % [pieces, asks, per, still, reads])
+	_check(per < maxf(3.0, still * 1.5), "asks while a town is built cost under 3 us each, or half again an ask on a still town on a loaded machine (%.2f us, still %.2f)" % [per, still])
+	_check(reads0 >= 0 and reads <= pieces + 4, "each piece set down is read once, not the whole town per ask (%d reads for %d pieces)" % [reads, pieces])
+	for f in 61:
+		await process_frame  # the reference's town lookup (town_nav towns_at) keeps what it found a second
+	var missed := 0
+	var wrong := 0
+	for i in 6000:
+		var p := c + Vector3(rng.randf_range(-6.5, 6.5), 0, rng.randf_range(-6.5, 6.5))
+		var props := i % 3 != 0
+		var old := _old_clear(p, 0.0, props, null, [])
+		var now := Ground.is_clear(p, 0.0, props)
+		if now and not old:
+			missed += 1
+		elif old and not now and not _near_blocked(p, 0.0, props, null, [], maxf(_cell_size(), 0.08)):
+			wrong += 1
+	print("town built piece by piece: 6000 asks over it, %d missed, %d wrong" % [missed, wrong])
+	_check(missed == 0 and wrong == 0, "a town built piece by piece answers as the old point tests (%d missed, %d wrong)" % [missed, wrong])
+
+
+## A box of `size` set down under `parent` at `at`, its mesh shared with every other box of that size (`kit`).
+func _kit(kit: Dictionary, parent: Node3D, at: Vector3, size: Vector3) -> MeshInstance3D:
+	if not kit.has(size):
+		var b := BoxMesh.new()
+		b.size = size
+		kit[size] = b
+	var m := MeshInstance3D.new()
+	m.mesh = kit[size]
+	m.position = at + Vector3(0, size.y * 0.5, 0)
+	parent.add_child(m)
+	return m

@@ -119,7 +119,17 @@ static func inside_something(root: Node3D, p: Vector3, terrain: Node3D = null, k
 	return PackedVector2Array()
 
 
-static func _walk(n: Node, root: Node3D, life: Node3D, to_town: Transform3D, terrain: Node3D, K: Dictionary, out: Dictionary) -> void:
+## One piece's outlines in its town's space (town-local XZ): what `n` set down under `root` (or its Life) has on the
+## ground, and, `deep`, everything under it. ground.gd reads a town a piece at a time as each is set down or taken
+## away, never the whole town again for each piece (Mac 2026-11-15, the fps round: is_clear 32 us an ask while towns
+## were built, every ask after a new piece walking the whole town).
+static func piece(n: Node, root: Node3D, terrain: Node3D = null, deep := true) -> Array:
+	var out := {"town": [], "life": []}
+	_walk(n, root, root.get_node_or_null("Life"), root.global_transform.affine_inverse(), terrain, Data.value("towns", "nav", {}), out, deep)
+	return (out["town"] as Array) + (out["life"] as Array)
+
+
+static func _walk(n: Node, root: Node3D, life: Node3D, to_town: Transform3D, terrain: Node3D, K: Dictionary, out: Dictionary, deep := true) -> void:
 	for g in K.get("skip_groups", ["people", "animals", "horses"]):
 		if n.is_in_group(String(g)):
 			return
@@ -146,6 +156,8 @@ static func _walk(n: Node, root: Node3D, life: Node3D, to_town: Transform3D, ter
 		var base := (n as MultiMeshInstance3D).global_transform
 		for xf: Transform3D in instances(n as MultiMeshInstance3D):
 			_add(mm.mesh, base * xf, to_town, terrain, K, out[key])
+	if not deep:
+		return
 	for c in n.get_children():
 		_walk(c, root, life, to_town, terrain, K, out)
 

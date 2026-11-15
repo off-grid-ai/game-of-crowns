@@ -61,6 +61,9 @@ const CHUNK := 16.0  # world units to a cell of the places' and claims' lookup
 const DRY := 1  # a cell's bit: dry land at every corner (a body may stand)
 const WALK := 2  # walkable at every corner: dry land or a ford (a foot may pass)
 ## A chunk of the map: CHUNK world units a side, its cells laid a block at a time as first asked.
+## Its arrays are written through take()/put() (a writer holds the only copy while it writes): a packed array written
+## as another object's property is copied whole on every write (Godot's copy-on-write: 2.6 us a cell stamped, 40,000
+## cells copied each time; the town-build guard, tools/occupancy_probe.gd).
 class Chunk:
 	var cells := PackedInt32Array()  # cell (row-major) -> its bits
 	var laid := PackedByteArray()  # block -> 1 once its land is read
@@ -82,9 +85,10 @@ const CLAIM_ALL := 1023 << 21
 const OPEN := DRY | WALK  # plain open land: dry, and nothing on it
 const KNOWN := DRY | WALK | SRC | TOWN_ALL | LIFE_ALL | CLAIM_ALL
 const AROUND: Array[Vector2] = [Vector2(0, 0), Vector2(1, 0), Vector2(0.70710678, 0.70710678), Vector2(0, 1), Vector2(-0.70710678, 0.70710678), Vector2(-1, 0), Vector2(-0.70710678, -0.70710678), Vector2(0, -1), Vector2(0.70710678, -0.70710678)]  # a body's middle and eight round it, at its reach
-static var _roots := {}  # root instance id -> {root, clip (world Rect2), town, sig, town_spans, life_spans}: what stands
+static var _roots := {}  # root instance id -> {root, clip (world Rect2), town, sig, kids, new, ...}: what stands
 static var _dirty := {}  # root instance id -> true: something set down, taken away, turned or hidden under it
 static var _hooked := {}  # instance id -> true: a root (or its Life) whose changes mark it dirty
+static var _reads := 0  # pieces read off what stands since the realm loaded (stamp_reads)
 static var _towns_frame := -1  # the frame the realm's towns were last read (Ground.towns)
 static var _claims := {}  # chunk -> {id: [kind, outline (world XZ)]}: the ground bodies hold while they stand
 static var _claim_area := {}  # id -> [chunks, Rect2, the map's runs of cells it holds, kind]
@@ -422,9 +426,13 @@ static func _chunk_at(k: Vector2i) -> Chunk:
 
 
 ## A block's land read off the terrain: a cell is dry (or walkable) only where all four of its corners are, so no
-## body stands on water within a cell of the shore.
+## body stands on water within a cell of the shore. Its corners come from _corners: dry land read whole at the
+## land's own resolution, only the ground by a shore, a lake or a river read corner by corner.
 static func _lay(ch: Chunk, k: Vector2i, b: int) -> void:
+	var t0 := Time.get_ticks_usec() if PerfTools.probing else 0
 	ch.laid[b] = 1
+	var cells := ch.cells
+	ch.cells = PackedInt32Array()  # the writer's own copy while it writes (Chunk)
 	var x0 := (b % _nb) * _b
 	var z0 := (b / _nb) * _b
 	var w := mini(_b, _n - x0)
@@ -433,20 +441,12 @@ static func _lay(ch: Chunk, k: Vector2i, b: int) -> void:
 	var gz := k.y * _n + z0
 	var corner := PackedByteArray()  # (w + 1) x (h + 1) corners: DRY | WALK
 	corner.resize((w + 1) * (h + 1))
-	for j in h + 1:
-		for i in w + 1:
-			var x := (gx + i) * _cell
-			var z := (gz + j) * _cell
-			var c := DRY | WALK
-			if terrain:
-				if not terrain.is_land(x, z):
-					c = WALK if terrain.walkable(x, z) else 0
-			corner[j * (w + 1) + i] = c
+	var whole := _corners(corner, w + 1, gx, gz, 0, 0, w, h)
 	for j in h:
 		for i in w:
 			var c := corner[j * (w + 1) + i] & corner[j * (w + 1) + i + 1] & corner[(j + 1) * (w + 1) + i] & corner[(j + 1) * (w + 1) + i + 1]
 			var at := (z0 + j) * _n + x0 + i
-			ch.cells[at] = (ch.cells[at] & ~(DRY | WALK | SRC)) | c
+			cells[at] = (cells[at] & ~(DRY | WALK | SRC)) | c
 	# What the sources (the woods) have in the way over the block: every cell a trunk touches.
 	var clip := Rect2i(gx, gz, w - 1, h - 1)
 	var area := Rect2(gx * _cell, gz * _cell, w * _cell, h * _cell)
@@ -462,13 +462,50 @@ static func _lay(ch: Chunk, k: Vector2i, b: int) -> void:
 	for r in range(0, runs.size(), 3):
 		var row := (runs[r] - k.y * _n) * _n - k.x * _n
 		for ix in range(runs[r + 1], runs[r + 2] + 1):
-			ch.cells[row + ix] |= SRC
+			cells[row + ix] |= SRC
 	var busy := 0
 	for j in h:
-		for c in ch.cells.slice((z0 + j) * _n + x0, (z0 + j) * _n + x0 + w):
+		for c in cells.slice((z0 + j) * _n + x0, (z0 + j) * _n + x0 + w):
 			if c & KNOWN != OPEN:
 				busy += 1
-	ch.busy[b] = busy
+	ch.cells = cells
+	var counts := ch.busy
+	ch.busy = PackedInt32Array()
+	counts[b] = busy
+	ch.busy = counts
+	if PerfTools.probing:
+		PerfTools.add("ground.lay" if whole else "ground.lay.by_point", Time.get_ticks_usec() - t0)  # reading the land: its share of the frame (GOC_PERF_PROBE)
+
+
+## Corners i0..i0+w, j0..j0+h (cells; `stride` corners a row) of the block from cell (gx, gz) (realm-wide) as DRY |
+## WALK: a rectangle the terrain says is dry all over (terrain.gd dry_rect: read at the land's own resolution, a few
+## dozen reads) is dry at every corner; else it is halved and each half asked the same, down to LAY_LEAST cells a
+## side, read corner by corner (is_land, walkable). A dry block costs about 100 reads, not 676 point asks (Mac's game
+## 2026-11-15: the land's first fill was most of the King's road's 1.5 s frames). True when all of it was dry.
+const LAY_LEAST := 6
+static func _corners(corner: PackedByteArray, stride: int, gx: int, gz: int, i0: int, j0: int, w: int, h: int) -> bool:
+	if terrain == null or (terrain.has_method("dry_rect") and terrain.dry_rect((gx + i0) * _cell, (gz + j0) * _cell, w * _cell, h * _cell)):
+		for j in range(j0, j0 + h + 1):
+			for i in range(i0, i0 + w + 1):
+				corner[j * stride + i] = DRY | WALK
+		return true
+	if maxi(w, h) <= LAY_LEAST or not terrain.has_method("dry_rect"):
+		for j in range(j0, j0 + h + 1):
+			for i in range(i0, i0 + w + 1):
+				var x := (gx + i) * _cell
+				var z := (gz + j) * _cell
+				var c := DRY | WALK
+				if not terrain.is_land(x, z):
+					c = WALK if terrain.walkable(x, z) else 0
+				corner[j * stride + i] = c
+		return false
+	if w >= h:
+		_corners(corner, stride, gx, gz, i0, j0, w / 2, h)
+		_corners(corner, stride, gx, gz, i0 + w / 2, j0, w - w / 2, h)
+	else:
+		_corners(corner, stride, gx, gz, i0, j0, w, h / 2)
+		_corners(corner, stride, gx, gz, i0, j0 + h / 2, w, h - h / 2)
+	return false
 
 
 ## Appends the runs of cells a disc touches (strictly within `r` of its middle): every cell whose square comes nearer.
@@ -484,7 +521,10 @@ static func _disc_spans(cx: float, cz: float, r: float, clip: Rect2i, out: Packe
 ## Every block's land and sources read again when next asked (a source came or went).
 static func _relay_all() -> void:
 	for k in _map:
-		(_map[k] as Chunk).laid.fill(0)
+		var ch: Chunk = _map[k]
+		var laid := ch.laid
+		laid.fill(0)  # a method call on a member's packed array writes a copy: written back
+		ch.laid = laid
 
 
 ## The land under `area` (world XZ) is read again when next asked: every block it touches.
@@ -502,7 +542,10 @@ static func _relay(area: Rect2) -> void:
 # --- towns and places on the map ------------------------------------------------------------------------------------
 
 ## Brings the map up to date before an ask: the realm's towns read once a frame (a town raised or razed), and every
-## root something was set down under, taken from, turned or hidden since stamped again.
+## root something was set down under, taken from, turned or hidden since brought up to date: only the pieces set
+## down since are read (a piece at a time), the whole root again only when it was turned, hidden or shown, its yards
+## or its walls changed (Mac 2026-11-15, the fps round: 98,587 asks cost 3.16 s while towns were built; every ask
+## after a new piece walked and stamped the whole town again, pieces x asks).
 static func _fresh() -> void:
 	var f := Engine.get_process_frames()
 	if f != _towns_frame:
@@ -513,6 +556,12 @@ static func _fresh() -> void:
 		for iid in ids:
 			if _roots.has(iid):
 				_stamp(_roots[iid])
+
+
+## How many pieces the map has read off what stands (a guard's count: tools/occupancy_probe.gd keeps it linear in the
+## pieces set down, never pieces x asks).
+static func stamp_reads() -> int:
+	return _reads
 
 
 static func _sync_towns(f: int) -> void:
@@ -538,66 +587,118 @@ static func _sync_towns(f: int) -> void:
 
 static func _add_root(root: Node3D, clip: Rect2, town: bool) -> void:
 	var iid := root.get_instance_id()
-	_roots[iid] = {"iid": iid, "root": root, "clip": clip, "town": town, "sig": [], "town_spans": PackedInt32Array(), "life_spans": PackedInt32Array()}
+	# kids: piece instance id -> [TOWN or LIFE, its runs of cells]; new: pieces set down since, read at the next ask.
+	_roots[iid] = {"iid": iid, "root": root, "clip": clip, "town": town, "sig": [], "kids": {}, "new": {}}
 	_dirty[iid] = true
 	_hook(root, iid)
 
 
-## A root's (or its Life's) children set down or taken away, its showing or leaving the tree: stamped again.
+## A root's (or its Life's) pieces set down are read at the next ask, a piece taken away is lifted off the map at
+## once; its showing or leaving the tree has it looked at again.
 static func _hook(n: Node, iid: int) -> void:
 	if _hooked.has(n.get_instance_id()):
 		return
 	_hooked[n.get_instance_id()] = true
-	var mark := func(_c: Node = null) -> void: _dirty[iid] = true
-	n.child_entered_tree.connect(mark)
-	n.child_exiting_tree.connect(mark)
-	n.tree_exiting.connect(mark)
+	n.child_entered_tree.connect(func(c: Node) -> void: _entered(iid, c))
+	n.child_exiting_tree.connect(func(c: Node) -> void: _left(iid, c))
+	n.tree_exiting.connect(func() -> void: _dirty[iid] = true)
 	if n is Node3D:
-		(n as Node3D).visibility_changed.connect(mark)
+		(n as Node3D).visibility_changed.connect(func() -> void: _dirty[iid] = true)
 
 
-## Stamps a root's outlines on the map afresh if its layout, yards, place or showing changed since: its own pieces
-## (TOWN) only when they did, its life's (LIFE) whenever anything did.
+## A piece set down under a root or its Life: read at the next ask (by then it is whole: its own _ready has run).
+static func _entered(iid: int, c: Node) -> void:
+	var rec: Dictionary = _roots.get(iid, {})
+	if rec.is_empty():
+		return
+	rec["new"][c.get_instance_id()] = c
+	_dirty[iid] = true
+
+
+## A piece taken away: its cells let go at once.
+static func _left(iid: int, c: Node) -> void:
+	var rec: Dictionary = _roots.get(iid, {})
+	if rec.is_empty():
+		return
+	var k := c.get_instance_id()
+	(rec["new"] as Dictionary).erase(k)
+	var e: Array = rec["kids"].get(k, [])
+	if not e.is_empty():
+		_apply(e[1], -int(e[0]))
+		(rec["kids"] as Dictionary).erase(k)
+
+
+## Brings a root's pieces on the map up to date: all of them afresh if it was shown, hidden, turned or moved, or its
+## yards, its Life's showing or its walls changed since; else only the pieces set down since, each read once (TOWN
+## for its builders', LIFE for its life's).
 static func _stamp(rec: Dictionary) -> void:
 	var root: Node3D = rec["root"] if is_instance_valid(rec["root"]) else null
-	var shown := root != null and root.is_inside_tree() and root.is_visible_in_tree()
-	var lay: Array = NavGround.layout(root) if shown else [0, 0, 0]
-	var yards: Array = root.get_meta("yards", []) if shown else []
-	var xf := root.global_transform if shown else Transform3D()
-	var tsig := [shown, lay[0], lay[2], yards.duplicate(), xf]
-	var sig := tsig + [lay[1]]
-	if sig == rec["sig"]:
-		return
-	var redo_town: bool = (rec["sig"] as Array).is_empty() or (rec["sig"] as Array).slice(0, 5) != tsig
-	rec["sig"] = sig
-	if redo_town:
-		_apply(rec["town_spans"], -TOWN)
-		rec["town_spans"] = PackedInt32Array()
-	_apply(rec["life_spans"], -LIFE)
-	rec["life_spans"] = PackedInt32Array()
 	if root == null:
+		_unstamp(rec)
 		_roots.erase(rec["iid"])
 		return
-	if not shown:
+	var shown := root.is_inside_tree() and root.is_visible_in_tree()
+	var life: Node3D = root.get_node_or_null("Life") if shown else null
+	var sig: Array = [false]
+	if shown:
+		sig = [true, life != null and life.visible, int(root.get_meta("stone_walls_rev", 0)), (root.get_meta("yards", []) as Array).duplicate(), root.global_transform]
+	var news: Dictionary = rec["new"]
+	if sig != rec["sig"]:
+		_unstamp(rec)
+		rec["sig"] = sig
+		news.clear()
+		if not shown:
+			return
+		rec["xf"] = sig[4]
+		rec["cells"] = _cells_of(rec["clip"])
+		rec["skip"] = _yard_cells(sig[3], sig[4])
+		_read(rec, root, root, TOWN, false)  # what the root itself carries (a place's bulk-drawn dressing)
+		for c in root.get_children():
+			if c != life:
+				_read(rec, root, c, TOWN)
+		if life:
+			_hook(life, rec["iid"])
+			if sig[1]:
+				_read(rec, root, life, LIFE, false)
+				for c in life.get_children():
+					_read(rec, root, c, LIFE)
 		return
-	var o := NavGround.outlines(root, terrain)
-	var clip := _cells_of(rec["clip"])
-	var skip := _yard_cells(yards, xf)
-	if redo_town:
-		rec["town_spans"] = _spans_of(o["town"], xf, clip, skip)
-		_apply(rec["town_spans"], TOWN)
-	rec["life_spans"] = _spans_of(o["life"], xf, clip, skip)
-	_apply(rec["life_spans"], LIFE)
-	var life := root.get_node_or_null("Life")
-	if life:
-		_hook(life, root.get_instance_id())
+	if news.is_empty():
+		return
+	var pieces := news.values()
+	news.clear()
+	for c in pieces:
+		if not is_instance_valid(c) or not (c as Node).is_inside_tree():
+			continue
+		var up := (c as Node).get_parent()
+		if up == root:
+			_read(rec, root, c, TOWN)
+		elif life and up == life and sig[1]:
+			_read(rec, root, c, LIFE)
+
+
+## One piece's outlines (nav_ground.gd piece: it and all under it, `deep`) stamped on the map as `bit`, in place of
+## what it stood on before.
+static func _read(rec: Dictionary, root: Node3D, n: Node, bit: int, deep := true) -> void:
+	var k := n.get_instance_id()
+	var old: Array = rec["kids"].get(k, [])
+	if not old.is_empty():
+		_apply(old[1], -int(old[0]))
+		(rec["kids"] as Dictionary).erase(k)
+	_reads += 1
+	var polys := NavGround.piece(n, root, terrain, deep)
+	if polys.is_empty():
+		return
+	var spans := _spans_of(polys, rec["xf"], rec["cells"], rec["skip"])
+	_apply(spans, bit)
+	rec["kids"][k] = [bit, spans]
 
 
 static func _unstamp(rec: Dictionary) -> void:
-	_apply(rec["town_spans"], -TOWN)
-	_apply(rec["life_spans"], -LIFE)
-	rec["town_spans"] = PackedInt32Array()
-	rec["life_spans"] = PackedInt32Array()
+	for e: Array in (rec["kids"] as Dictionary).values():
+		_apply(e[1], -int(e[0]))
+	(rec["kids"] as Dictionary).clear()
+	(rec["new"] as Dictionary).clear()
 	rec["sig"] = []
 
 
@@ -777,15 +878,31 @@ static func _apply(spans: PackedInt32Array, by: int) -> void:
 			var stop := mini(last, ix + _n - 1 - lx)
 			var at := lz * _n + lx
 			var bz := (lz / _b) * _nb
+			var cells := ch.cells
+			var busy := ch.busy
+			ch.cells = PackedInt32Array()  # the writer's own copies while it writes (Chunk)
+			ch.busy = PackedInt32Array()
 			for j in stop - ix + 1:
-				_add(ch, at + j, bz + (lx + j) / _b, by)
+				var was := cells[at + j]
+				cells[at + j] = was + by
+				var open_was := was & KNOWN == OPEN
+				if open_was != ((was + by) & KNOWN == OPEN):
+					busy[bz + (lx + j) / _b] += 1 if open_was else -1
+			ch.cells = cells
+			ch.busy = busy
 			ix = stop + 1
 
 
 ## Adds `by` to cell `i` of `ch` (in block `b`), keeping the block's count of busy cells.
 static func _add(ch: Chunk, i: int, b: int, by: int) -> void:
-	var was := ch.cells[i]
-	ch.cells[i] = was + by
+	var cells := ch.cells
+	ch.cells = PackedInt32Array()  # the writer's own copy while it writes (Chunk)
+	var was := cells[i]
+	cells[i] = was + by
+	ch.cells = cells
 	var open_was := was & KNOWN == OPEN
 	if open_was != ((was + by) & KNOWN == OPEN):
-		ch.busy[b] += 1 if open_was else -1
+		var busy := ch.busy
+		ch.busy = PackedInt32Array()
+		busy[b] += 1 if open_was else -1
+		ch.busy = busy

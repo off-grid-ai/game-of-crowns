@@ -480,8 +480,45 @@ func _warp(wx: float, wz: float) -> Vector2:
 func is_land(wx: float, wz: float) -> bool:
 	var name := tile_at(floori(wx / TILE), floori(wz / TILE))
 	if land:
-		return name != "Lake" and height_at(wx, wz) > SEA_LEVEL + 0.04 and not in_river(wx, wz)
+		return name != "Lake" and height_at(wx, wz) > SEA_LEVEL + DRY_ABOVE and not in_river(wx, wz)
 	return not (name.contains("Ocean") or name == "Lake") and height_at(wx, wz) > SEA_LEVEL + 0.1
+
+
+const DRY_ABOVE := 0.04  # how far above the sea's surface the eroded land stands dry (is_land, dry_rect)
+
+
+## Whether all of the rectangle from (x0, z0), `sx` by `sz` (world), is dry land (is_land true at every point of it),
+## read at the land's own resolution instead of point by point (the ground owner's occupancy map reads its land a
+## block at a time: 676 is_land reads a block, 2.4 ms, most of the King's road's 1.5 s frames, Mac's game 2026-11-15):
+## no Lake tile at its corners, no river-mask pixel under it at the water's reading, and the height above the
+## waterline at every point the land is drawn from round it (Terrain3D's vertices, or the heightmap's pixel middles),
+## between which the height is bilinear, so nowhere in it lies lower. false where it can't tell (no heightmap, a hole):
+## the asker reads it point by point then.
+func dry_rect(x0: float, z0: float, sx: float, sz: float) -> bool:
+	if land == null:
+		return false
+	for c in [Vector2(x0, z0), Vector2(x0 + sx, z0), Vector2(x0, z0 + sz), Vector2(x0 + sx, z0 + sz)]:
+		if tile_at(floori(c.x / TILE), floori(c.y / TILE)) == "Lake":
+			return false
+	if river_mask:
+		if _water < 0.0:
+			_water = Data.num("ground", "rivers.water", 0.9)
+		for z in range(int(z0 * land_per_unit), int((z0 + sz) * land_per_unit) + 1):
+			for x in range(int(x0 * land_per_unit), int((x0 + sx) * land_per_unit) + 1):
+				if river_near((x + 0.5) / land_per_unit, (z + 0.5) / land_per_unit) >= _water:
+					return false
+	var data = land3d.land.data if built and land3d and land3d.land else null
+	var step: float = land3d.land.vertex_spacing if data else 1.0 / land_per_unit
+	var off := 0.0 if data else 0.5 / land_per_unit  # Terrain3D's vertices; the heightmap's pixel middles
+	var dry := SEA_LEVEL + DRY_ABOVE
+	for iz in range(floori((z0 - off) / step), ceili((z0 + sz - off) / step) + 1):
+		for ix in range(floori((x0 - off) / step), ceili((x0 + sx - off) / step) + 1):
+			var wx := off + ix * step
+			var wz := off + iz * step
+			var h: float = data.get_height(Vector3(wx, 0.0, wz)) if data else _land_height(wx, wz)
+			if is_nan(h) or h <= dry:
+				return false
+	return true
 
 
 ## Where a person, a horse or a host may set foot: dry land, or a ford, where a road runs through a river (roads.gd
