@@ -1,0 +1,207 @@
+<title>Control Plane Change</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+SC:wght@500;600&family=Source+Sans+3:wght@400;600&family=JetBrains+Mono:wght@400&display=swap">
+<style>
+/* Layout: a review board. Summary on top, then each changed screen with only its calls beside it, then the map. */
+:root{
+  --bg:#f3f1ec; --panel:#fbfaf7; --ink:#1f1d1a; --muted:#5f5a52; --line:#d9d3c8; --gold:#8a6a1f; --gold-soft:#efe4c8; --warn:#8c3b2a;
+  --display:"Cormorant SC", Georgia, serif; --body:"Source Sans 3", system-ui, sans-serif; --mono:"JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#15140f;--panel:#1d1b16;--ink:#ece6d8;--muted:#a59d8e;--line:#36322a;--gold:#d9b25f;--gold-soft:#3a3020;--warn:#e08a74;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#15140f;--panel:#1d1b16;--ink:#ece6d8;--muted:#a59d8e;--line:#36322a;--gold:#d9b25f;--gold-soft:#3a3020;--warn:#e08a74;color-scheme:dark}
+body{background:var(--bg);color:var(--ink);font:16px/1.55 var(--body);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 64px}
+main{max-width:1180px;margin:0 auto;display:grid;gap:40px}
+h1,h2{font-family:var(--display);font-weight:600;text-wrap:balance;margin:0;letter-spacing:.01em}
+h1{font-size:2.2rem}
+h2{font-size:1.5rem}
+h3{margin:0;font-size:1.05rem}
+p{margin:0;max-width:68ch}
+.eyebrow{font-size:.75rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.lede{display:grid;gap:10px}
+.facts{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid var(--line);border-radius:999px;padding:2px 10px;font-size:.85rem;color:var(--muted);background:var(--panel)}
+.chip b{color:var(--ink);font-weight:600}
+.screen{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:20px;align-items:start;border-top:1px solid var(--line);padding-top:24px}
+@media (max-width:820px){.screen{grid-template-columns:1fr}}
+.shot{display:grid;gap:8px;min-width:0}
+.shot img{width:100%;border:1px solid var(--line);border-radius:6px;display:block}
+.shot .none{border:1px dashed var(--line);border-radius:6px;padding:28px;color:var(--muted);text-align:center}
+.calls{display:grid;gap:14px;min-width:0}
+.call{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px;display:grid;gap:8px}
+.call .k{font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--gold)}
+.call dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:4px 10px;font-size:.92rem}
+.call dt{color:var(--muted)}
+.call dd{margin:0}
+.opts{display:flex;flex-wrap:wrap;gap:8px}
+.opts button{font:inherit;font-size:.9rem;padding:6px 12px;border-radius:6px;border:1px solid var(--line);background:transparent;color:var(--ink);cursor:pointer}
+.opts button.rec{border-color:var(--gold)}
+.opts button[aria-pressed="true"]{background:var(--gold-soft);border-color:var(--gold);font-weight:600}
+.opts button:focus-visible,textarea:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.chosen{font-size:.85rem;color:var(--muted)}
+.note{display:grid;gap:6px}
+textarea{font:inherit;font-size:.92rem;width:100%;min-height:56px;box-sizing:border-box;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);padding:8px}
+.note button{justify-self:end;font:inherit;font-size:.85rem;padding:5px 12px;border-radius:6px;border:1px solid var(--gold);background:var(--gold-soft);color:var(--ink);cursor:pointer}
+.notes{display:grid;gap:6px;font-size:.9rem}
+.notes div{border-left:2px solid var(--line);padding-left:8px}
+.map{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.concept{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px;display:grid;gap:6px;min-width:0}
+.concept ul{margin:0;padding-left:18px;font-family:var(--mono);font-size:.78rem;overflow-wrap:anywhere}
+.checks{display:grid;gap:8px}
+.check{display:grid;grid-template-columns:7.5em 1fr;gap:10px;font-size:.95rem}
+.check .s{font-weight:600}
+.check .s.clear{color:var(--muted)}
+.check .s.call{color:var(--warn)}
+.status{font-size:.85rem;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<main>
+  <header class="lede">
+    <div class="eyebrow">Game of Crowns · change review · night of 16 November</div>
+    <h1>Control Plane Change</h1>
+    <p>The strip along the foot of the screen, the host's orders, the chronicle's answers, the Hand's lessons and the frame rate at Kingsmere. Each changed screen stands with only the calls it needs from you. Pick an answer, or leave a note; I read both back and act on them.</p>
+    <div class="facts" id="facts">
+      <span class="chip"><b>11</b> commits on main</span>
+      <span class="chip"><b>5</b> parts of the game touched</span>
+      <span class="chip"><b>7</b> calls for you</span>
+      <span class="chip">Checks: compile clean, rules clean</span>
+    </div>
+    <p class="status" id="status">Loading your earlier answers…</p>
+  </header>
+
+  <section id="screens" aria-label="Changed screens"></section>
+
+  <section class="lede" aria-label="Principles">
+    <h2>How it holds together</h2>
+    <div class="checks" id="checks"></div>
+  </section>
+
+  <section class="lede" aria-label="Change map">
+    <h2>Where each part lives</h2>
+    <div class="map" id="map"></div>
+  </section>
+</main>
+
+<script>
+const SCREENS = [
+  {id:"plane", title:"The strip, a host selected", shot:"shots/plane.jpg",
+   what:"Centred and as wide as what it holds. The host's orders carry their word under the icon. The stray key letters are gone. The host's lines are in the reading face. With nothing picked, the middle folds away. Seen here: the chronicle drawer ran off the right edge; fixed since (long answers wrap)."},
+  {id:"card", title:"A raid card: Defend", shot:"shots/card.jpg",
+   what:"Defend reads 'Sending…' at once. The card goes only when the order lands. A refusal stays on the card with the button live again. Defend never lays siege to the town it defends."},
+  {id:"tour", title:"The Hand's welcome", shot:"shots/tour.jpg",
+   what:"Three deeds, not thirteen beats: select the host, march it, answer the top matter. What he points at always takes its click. The first-threat lesson lets the realm run."},
+  {id:"fps", title:"Kingsmere, close in", shot:"shots/fps.jpg",
+   what:"Held tools now drawn only near (a 14,000-triangle bowl drew town-wide). The frame card now counts draw calls by part. At Kingsmere: 7 to 17 frames a second, about 714 calls, scripts about 45 ms."}
+];
+const CALLS = [
+  {id:"keys-words", screen:"plane", kind:"Look", title:"Words under the realm's keys too?",
+   what:"The host's orders now show a word under each icon. The realm's own keys on the right (houses, chronicle, book, pause, settings) are still icons only.",
+   risk:"You told me the house icon did nothing; an icon you can't read is a dead control.",
+   rec:"Give the keys their word as well, the same way.", recommended:"Icon and word", options:["Icon and word","Icons, word on hover"]},
+  {id:"hold-icon", screen:"plane", kind:"Look", title:"Hold uses the same glyph as Pause",
+   what:"The host's Hold order and the game's Pause key both show two bars.",
+   risk:"You may pause the realm when you meant to halt a host, or the other way round.",
+   rec:"Give Hold its own glyph (a planted standard). The word under it stays.", recommended:"New glyph for Hold", options:["New glyph for Hold","Keep it; the word tells them apart"]},
+  {id:"defend-twice", screen:"card", kind:"One voice", title:"The order's answer is said twice",
+   what:"When the bridge answers Defend, its line shows on the card and also as a notice at the top.",
+   risk:"Two copies of one message: noise, and the two can disagree if one changes.",
+   rec:"Say it once, on the card that asked.", recommended:"On the card only", options:["On the card only","Card and notice"]},
+  {id:"begin-click", screen:"tour", kind:"Flow", title:"The realm waits for a click once it's ready",
+   what:"When the realm is built the loading screen says 'Click to begin' and keeps turning its pages until you click.",
+   risk:"Left alone it waited six minutes. You asked to just keep pressing Next.",
+   rec:"Begin by itself a few seconds after it's ready, unless you're reading a page.", recommended:"Begin by itself", options:["Begin by itself","Keep the click"]},
+  {id:"nav-rebake", screen:"fps", kind:"Speed", title:"Market props re-carve the walking map",
+   what:"Every stall, crate and cart a town scene sets down cuts a hole in the walking map, and the map is rebuilt. At Kingsmere: 72 rebuilds in 10 seconds, 15 seconds of worker time.",
+   risk:"Those rebuilds fight the frame for the processor; it's one of the reasons Kingsmere runs slow.",
+   rec:"Small props don't cut the map; people step round them (they already avoid each other). Walls, houses and hosts still cut it.", recommended:"Props don't cut the map", options:["Props don't cut the map","Keep cutting, rebuild less often"]},
+  {id:"hand-choices", screen:"tour", kind:"Look", title:"The Hand's choices float apart from his words",
+   what:"'I know the realm' and 'Show me' stand in the middle of the screen, over the square; his words are in a box above the strip.",
+   risk:"Your eye has to jump; on a busy square the buttons get lost.",
+   rec:"Put his choices inside his box, under his words (the way Crusader Kings III's tutorial does).", recommended:"Inside his box", options:["Inside his box","Leave them centred"]},
+  {id:"split-host", screen:"plane", kind:"Structure", title:"One file does the host's card and its rings, routes and orders",
+   what:"host_command.gd is 1,132 lines: the card on the strip, the rings on the ground, the drawn routes and the orders to the bridge.",
+   risk:"Every change to the card risks the orders, as tonight's slip showed (I restored it before it shipped).",
+   rec:"Split the card out after the release, not tonight.", recommended:"After the release", options:["After the release","Split it now"]}
+];
+const CHECKS = [
+  ["clear","One owner per fact","The strip's size is read from one place (the plane); every panel asks it where the strip begins."],
+  ["clear","One way to go somewhere","'Go there' moves the camera only; picking a town is only your own click."],
+  ["call","One voice per answer","The order's answer is said on the card and as a notice (call: The order's answer is said twice)."],
+  ["clear","Numbers in data","Order words, sizes, the waiting word and lesson settings live in data files, each with a line in TUNING.md."],
+  ["call","One job per file","host_command.gd holds four jobs (call: One file does the host's card…). ui.gd is 1,320 lines; left as it is."],
+  ["clear","No old path kept","The old key letters, the full-width strip and the start-of-lesson 'seen' mark are gone, not hidden."]
+];
+const MAP = [
+  {name:"The strip", files:["realm/scripts/control_plane.gd (owner)","realm/scripts/ui.gd","realm/scripts/top_bar.gd","realm/scripts/camera_pad.gd","realm/scripts/army_bar.gd","realm/scripts/news_chips.gd","realm/data/ui.json plane"]},
+  {name:"The host's orders", files:["realm/scripts/host_command.gd (owner)","realm/data/host_command.json","bridge/hosts.js (decides)","realm/scripts/news_actions.gd _defend"]},
+  {name:"The chronicle's answers", files:["realm/scripts/chronicle_panel.gd (owner)","realm/scripts/news_actions.gd","realm/data/news_actions.json","realm/scripts/main.gd _look_city"]},
+  {name:"The Hand's lessons", files:["realm/scripts/hand_prompts.gd (owner)","realm/data/opening.json tour","realm/data/tour/*.dtl","realm/scripts/settings.gd hand_lessons","realm/scripts/title.gd","realm/tools/tour_click_probe.gd"]},
+  {name:"Frame rate", files:["realm/scripts/draw_census.gd","realm/scripts/fps_meter.gd","realm/scripts/weapons.gd","realm/data/people.json held_seen_to","realm/scripts/nav_world.gd (next)"]}
+];
+
+const $ = (t, a={}, ...kids) => { const e=document.createElement(t); for (const [k,v] of Object.entries(a)) { if (k==="text") e.textContent=v; else e.setAttribute(k,v); } kids.forEach(c=>c&&e.append(c)); return e; };
+let db=null, me=null, chosen={}, notes={};
+
+function render(){
+  const host=document.getElementById("screens"); host.replaceChildren();
+  for (const s of SCREENS){
+    const img=$("img",{src:s.shot,alt:s.title,loading:"lazy"});
+    const shot=$("div",{class:"shot"}, $("h2",{text:s.title}), img, $("p",{text:s.what}));
+    img.addEventListener("error",()=>img.replaceWith($("div",{class:"none",text:"Screenshot to come with the next publish."})));
+    const side=$("div",{class:"calls"});
+    for (const c of CALLS.filter(c=>c.screen===s.id)){
+      const box=$("article",{class:"call",id:"call-"+c.id},
+        $("div",{class:"k",text:c.kind}), $("h3",{text:c.title}),
+        $("dl",{}, $("dt",{text:"Now"}),$("dd",{text:c.what}), $("dt",{text:"Risk"}),$("dd",{text:c.risk}), $("dt",{text:"I'd"}),$("dd",{text:c.rec})));
+      const opts=$("div",{class:"opts",role:"group","aria-label":c.title});
+      for (const o of c.options){
+        const b=$("button",{type:"button",class:o===c.recommended?"rec":"","aria-pressed":String(chosen[c.id]===o),text:o+(o===c.recommended?" (recommended)":"")});
+        b.addEventListener("click",()=>choose(c,o,b));
+        opts.append(b);
+      }
+      box.append(opts, $("div",{class:"chosen",id:"chosen-"+c.id,text:chosen[c.id]?"Chosen: "+chosen[c.id]:""}));
+      side.append(box);
+    }
+    const ta=$("textarea",{id:"note-"+s.id,"aria-label":"Note on "+s.title,placeholder:"A note on this screen"});
+    const send=$("button",{type:"button",text:"Add note"});
+    const list=$("div",{class:"notes",id:"notes-"+s.id});
+    (notes[s.id]||[]).forEach(n=>list.append($("div",{text:n})));
+    send.addEventListener("click",()=>addNote(s.id,ta,send));
+    side.append($("div",{class:"note"},ta,send,list));
+    host.append($("div",{class:"screen",id:"screen-"+s.id},shot,side));
+  }
+  const ck=document.getElementById("checks"); ck.replaceChildren();
+  for (const [st,name,txt] of CHECKS) ck.append($("div",{class:"check"},$("span",{class:"s "+st,text:st==="call"?"Call":"Holds"}),$("span",{text:name+". "+txt})));
+  const mp=document.getElementById("map"); mp.replaceChildren();
+  for (const m of MAP){ const ul=$("ul"); m.files.forEach(f=>ul.append($("li",{text:f}))); mp.append($("div",{class:"concept"},$("h3",{text:m.name}),ul)); }
+}
+
+async function choose(c,o,b){
+  if(!db){ document.getElementById("status").textContent="Answers can't be saved in this view."; return; }
+  b.setAttribute("aria-pressed","true"); document.getElementById("chosen-"+c.id).textContent="Saving…";
+  try{ await db.doc("calls/"+c.id).set({screen:c.screen,choice:o,by:me||"",at:new Date().toISOString()}); chosen[c.id]=o; document.getElementById("chosen-"+c.id).textContent="Chosen: "+o; }
+  catch(e){ document.getElementById("chosen-"+c.id).textContent="Not saved: you may only view this page."; }
+  document.querySelectorAll("#call-"+c.id+" .opts button").forEach(x=>x.setAttribute("aria-pressed",String(chosen[c.id]===x.textContent.replace(" (recommended)",""))));
+}
+async function addNote(screen,ta,btn){
+  const text=ta.value.trim(); if(!text) return;
+  if(!db){ document.getElementById("status").textContent="Notes can't be saved in this view."; return; }
+  btn.disabled=true; btn.textContent="Saving…";
+  try{ await db.collection("comments").add({screen,text,by:me||"",at:new Date().toISOString()}); ta.value=""; btn.textContent="Added"; }
+  catch(e){ btn.textContent="Not saved"; }
+  setTimeout(()=>{btn.disabled=false;btn.textContent="Add note";},1500);
+}
+
+render();
+(async()=>{
+  const st=document.getElementById("status");
+  const timer=setTimeout(()=>{ st.textContent="Your earlier answers didn't load; you can still read the page."; },10000);
+  try{
+    const user=await claude.use("user"); if(user){ me=await user.id(); }
+    db=await claude.use("db");
+    if(!db){ clearTimeout(timer); st.textContent="Sign in to answer the calls."; return; }
+    db.collection("calls").onSnapshot(snap=>{ clearTimeout(timer); chosen={}; snap.docs.forEach(d=>{chosen[d.id]=d.data().choice;}); st.textContent=Object.keys(chosen).length?`${Object.keys(chosen).length} of ${CALLS.length} calls answered.`:"No calls answered yet."; render(); });
+    db.collection("comments").onSnapshot(snap=>{ notes={}; snap.docs.forEach(d=>{const n=d.data(); (notes[n.screen]=notes[n.screen]||[]).push(n.text);}); render(); });
+  }catch(e){ clearTimeout(timer); st.textContent="Answers can't load in this view."; }
+})();
+</script>
