@@ -23,6 +23,31 @@
   "court": "I mean to be noticed by the King himself.",
   "defect": "I mean to find a liege more worthy of my sword."
  },
+ "_aims": "What a person wants, said of them (characters.js aimOf: the Lore, the court's cards, a person's page): aim, in the third person with {their}/{they}/{themselves} for their sex and the target ambitionOf reads from the realm now ({town}, {house}, {name}); plain, the same with no target to name, which is what a person holds (goals[0].text). lord and bannerman: the aims each is dealt, every one a kind the season's moves weigh (drives, act, match, plea).",
+ "aim": {
+  "land": "take {town} from {house}",
+  "power": "make {their} house the greatest in the realm, beginning with {town}",
+  "marriage": "wed {their} heir into {house}",
+  "revenge": "settle the old score with {name} of {house}",
+  "crown": "sit the throne {themselves} one day",
+  "peace": "keep {their} people fed and out of other lords' wars",
+  "favour": "rise in {name}'s esteem",
+  "court": "win a place at the King's council",
+  "defect": "forswear {their} liege and serve {house}"
+ },
+ "plain": {
+  "land": "win more land for {their} house",
+  "power": "make {their} house the greatest in the realm",
+  "marriage": "wed {their} heir into a great house",
+  "revenge": "settle an old score in blood",
+  "crown": "sit the throne {themselves} one day",
+  "peace": "keep {their} people fed and out of other lords' wars",
+  "favour": "rise in {their} liege's esteem",
+  "court": "win a place at the King's council",
+  "defect": "find a liege more worthy of {their} sword"
+ },
+ "lord": ["power", "land", "marriage", "revenge", "crown", "peace"],
+ "bannerman": ["land", "favour", "court", "revenge", "defect", "marriage"],
  "act": { "_": "A lord who wants land or power and is not loyal goes to war for his town himself (characters.js press): press is the move's base score; forbidden is added to it, and to a rising's, once the King forbade him that town.", "press": 15, "forbidden": 25 },
  "match": { "_": "A lord who wants a match asks the King to make it (royalmatch): his eldest unwed child of age to the eldest unwed child of the other sex of the house he likes best; the King's answers' favour.", "age": 15, "weight": 4, "arrange": { "him": 15, "them": 5 }, "refuse": { "him": -10 } },
  "plea": { "weight": 4, "reach": 10, "back": { "him": 20, "holder": -25 }, "forbid": { "him": -15, "holder": 5 }, "promise": { "him": 5, "cost": 120 } }

@@ -414,6 +414,7 @@ Switches (`--name`) go after `--` on the game's command line.
 - The royal host the King is crowned with at Kingsmere, by the reign's host choice (small, standard, strong): its companies, `bridge/data/hosts.json` `start`.
 - The common folk's lasting households (how many a town holds by size, deaths by age, famine and plague, weddings, births, coming of age, newcomers and leavers): `bridge/data/households.json`.
 - What each lord wants and how much it steers his court matters (his plea for a town, the King's three answers): `bridge/data/ambitions.json` (`boost`, `drives`, `lines`, `plea`).
+- What a lord or bannerman is said to want in the Lore, on court cards and on a person's page (named for the town, house or man the realm gives it), and the aims each is dealt: `bridge/data/ambitions.json` (`aim`, `plain`, `lord`, `bannerman`).
 - How far a harsh ruling (a hanging, a levy) is heard and for how long, the mood it leaves and the words the townsfolk hear: `bridge/data/rulings.json` `echo` (`harsh`, `reach` 6, `seasons` 1, `mood`, `words`).
 - The ground raiders keep off while there is open ground (they rise, march and burn in the fields): `bridge/data/realmrules/luadata.txt` `[raids]` `cover`.
 - A wet harvest (bridge `harvest.js`; /world `harvest`): what carries a town through and how long the rest eat lean (Blight decree), `bridge/data/harvest.json` `store` (Granary), `seasons` (2).

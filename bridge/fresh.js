@@ -8,6 +8,7 @@ import fs from "node:fs";
 import path from "node:path";
 import zlib from "node:zlib";
 import { HOUSES } from "./narrator.js";
+import { dealt } from "./aims.js";
 
 export function rng(seed) {
   let s = seed >>> 0 || 1;
@@ -51,13 +52,7 @@ function tensions(text, world, r) {
   return { text, dealt };
 }
 
-const LORD_GOALS = [
-  { kind: "power", text: "make my house the greatest in the realm" },
-  { kind: "marriage", text: "wed my heir into a great house" },
-  { kind: "revenge", text: "settle the old grudge" },
-  { kind: "crown", text: "sit the throne myself one day" },
-  { kind: "peace", text: "keep my people fed and out of other men's wars" },
-];
+const LORD_GOALS = dealt("lord");  // the aims a lord is dealt (data/ambitions.json lord)
 
 // The lords' grudges follow the openings: a lord hates the lords of a house
 // he is at war or truce with, warms to one he is at peace with; every other
@@ -74,7 +69,7 @@ function grudges(dir, dealt, nameOf, r) {
   for (const { c } of lords) {
     for (const rel of Object.values(c.relationships ?? {})) rel.opinion = clamp(rel.opinion * (0.6 + r() * 0.8));
     const feud = dealt.find((t) => t.state !== "Peace" && (t.a === c.playerId || t.b === c.playerId));
-    c.goals = [feud && r() < 0.5 ? LORD_GOALS[2] : LORD_GOALS[Math.floor(r() * LORD_GOALS.length)]];
+    c.goals = [feud && r() < 0.5 ? LORD_GOALS.find((g) => g.kind === "revenge") : LORD_GOALS[Math.floor(r() * LORD_GOALS.length)]];
   }
   for (const t of dealt) {
     for (const [p, q] of [[t.a, t.b], [t.b, t.a]]) {

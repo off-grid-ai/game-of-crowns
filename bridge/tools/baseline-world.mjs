@@ -55,25 +55,17 @@ function served(world) {
   rememberNames(world);
   const people = fs.readdirSync(path.join(BASE, "characters")).filter((f) => f.endsWith(".json"))
     .map((f) => JSON.parse(fs.readFileSync(path.join(BASE, "characters", f), "utf8")));
-  // Each town's family as a new reign gives it, in the same order and by the same rule (characters.js bannerSurname):
-  // the baseline's bannermen take their towns' surnames (written.js freshMinorNames, sorted by town), then each town of a
-  // house with no lord or bannerman gets one (characters.js populate, house by house). A house's seat is its lord's.
+  // Each town's family as a new reign gives it: a seated bannerman of the baseline keeps the family he was written with
+  // (written.js freshMinorNames renews first names only), and each town of a house with no lord or bannerman gets one by
+  // the same rule as play (characters.js populate, bannerSurname). A house's seat is its lord's.
   const alive = people.filter((x) => x.alive !== false);
-  const bannerKin = new Set(people.filter((x) => x.rank === "bannerman").flatMap((x) => [x.id, x.spouse, ...(x.children ?? [])]));
-  const taken = new Set(people.filter((x) => !bannerKin.has(x.id)).map((x) => x.surname));
   const family = new Map();
-  const sur = new Map(alive.map((x) => [x.id, x.surname]));
-  for (const bm of people.filter((x) => x.rank === "bannerman").sort((a, b) => (a.seat ?? 1e9) - (b.seat ?? 1e9))) {
-    const was = bm.surname, now = bannerSurname(bm.seat ?? 0, taken);
-    for (const id of [bm.id, bm.spouse, ...(bm.children ?? [])]) if (sur.get(id) === was) sur.set(id, now);
-    if (bm.alive !== false && bm.seat != null) family.set(bm.seat, now);
-  }
+  for (const bm of alive.filter((x) => x.rank === "bannerman" && x.seat != null)) family.set(bm.seat, bm.surname);
   const seated = new Set(alive.filter((x) => (x.rank === "lord" || x.rank === "bannerman") && x.seat != null).map((x) => x.seat));
   for (const p of world.players) {
     if (houseFor(p).wild) continue;
     for (const c of world.cities.filter((t) => t.owner === p.id && !t.capital && !seated.has(t.id))) {
-      family.set(c.id, bannerSurname(c.id, new Set(sur.values())));
-      sur.set(`town${c.id}`, family.get(c.id));
+      family.set(c.id, bannerSurname(c.id));
       seated.add(c.id);
     }
   }

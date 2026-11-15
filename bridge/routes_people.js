@@ -13,6 +13,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { BANDS } from "./favour.js";
 import { GOALS, ROLES, TRAITS } from "./characters.js";
+import { aimWords } from "./aims.js";
 import * as chron from "./chronicles.js";
 import { cityName, houseFor } from "./narrator.js";
 import { folkPlain, folkTale, speak } from "./claude.js";
@@ -30,7 +31,7 @@ export async function house(ctx, req, res, url) {
   const nameOf = (id) => houseFor(ctx.world.players.find((x) => x.id === id) ?? {}).name;
   const great = (id) => ctx.world.players.some((x) => x.id === id && !houseFor(x).wild);
   const lord = ctx.court.lordOfHouse(pid);
-  const person = (c) => c && { id: c.id, gender: c.gender, name: c.name, age: c.age, traits: c.traits, goal: c.goals?.[0]?.text, loyalty: c.loyalty, seat: c.seat != null ? cityName(c.seat) : null, role: c.role ? ROLES[c.role]?.title : null, created: !!c.created };
+  const person = (c) => c && { id: c.id, gender: c.gender, name: c.name, age: c.age, traits: c.traits, goal: ctx.court.aimOf(c, ctx.world), loyalty: c.loyalty, seat: c.seat != null ? cityName(c.seat) : null, role: c.role ? ROLES[c.role]?.title : null, created: !!c.created };
   return json(res, 200, {
     id: pid, name: h.name, words: h.words, seat: h.seat, color: h.color,
     favour: h.wild || h.crown ? null : favourOf(pid),
@@ -57,7 +58,7 @@ export async function person(ctx, req, res, url) {
   if (!c) return json(res, 404, { error: "no such person" });
   return json(res, 200, {
     id: c.id, name: c.name, gender: c.gender, age: c.age, alive: c.alive, rank: c.rank, house: c.house,
-    traits: c.traits, goals: (c.goals ?? []).map((g) => g.text), goal: c.goals?.[0]?.kind ?? null, role_key: c.role ?? null, loyalty: c.loyalty,
+    traits: c.traits, goals: (c.goals ?? []).map((g, i) => (i === 0 ? ctx.court.aimOf(c, ctx.world) : aimWords(g.text, "they", c.gender))), goal: c.goals?.[0]?.kind ?? null, role_key: c.role ?? null, loyalty: c.loyalty,
     seat: c.seat != null ? cityName(c.seat) : null, role: c.role ? ROLES[c.role]?.title : null,
     memories: [...new Set(c.memories ?? [])].slice(-6), backstory: c.backstory ?? null,
     why: whyOf(ctx, c), family: familyOf(ctx, c), ambition: ctx.court.ambitionOf(c, ctx.world),

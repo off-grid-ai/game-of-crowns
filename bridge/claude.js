@@ -5,6 +5,8 @@
 // always with Omni 2B or Omni 1.7B.
 // If the gateway isn't running, callers fall back to the rule-based choice.
 
+import { aimWords } from "./aims.js";
+
 // The gateway's port moves between dev runs (7878 by default); find it by its /health name.
 // A model the realm was pointed at by hand (GOC_LLM_URL), if any: used
 // only when Off Grid AI Desktop isn't running, which also brings voices.
@@ -497,7 +499,7 @@ export async function aiStatus() {
 export async function arcLine(who, thread, happening, alsoIn = []) {
   const rank = who.rank === "lord" ? (who.gender === "female" ? "Lady" : "Lord") : who.folk ? `a ${who.station} in the lands` : who.rank;
   const said = await say(
-    `You are ${who.name}, ${who.age}, ${who.gender === "female" ? "a woman" : "a man"}, ${rank} of ${who.house}. By nature ${(who.traits ?? []).join(", ") || "ordinary"}. You want to ${who.goals?.[0]?.text ?? "endure"}. You remember: ${(who.memories ?? []).slice(-4).join(" ") || "little worth telling"}${alsoIn.length ? ` You are also caught up in ${alsoIn.join(" and ")}.` : ""}
+    `You are ${who.name}, ${who.age}, ${who.gender === "female" ? "a woman" : "a man"}, ${rank} of ${who.house}. By nature ${(who.traits ?? []).join(", ") || "ordinary"}. You want to ${aimWords(who.goals?.[0]?.text ?? "endure", "you")}. You remember: ${(who.memories ?? []).slice(-4).join(" ") || "little worth telling"}${alsoIn.length ? ` You are also caught up in ${alsoIn.join(" and ")}.` : ""}
 Gritty medieval realm. You are living through ${thread}. Speak as yourself, in the first person, to someone beside you as it happens: one short sentence, plain speech of the period, as your nature demands. Don't describe what is happening; say what you feel or mean to do about it. No narration, no quotation marks, no names of speakers.`,
     [],
     `What is happening: ${happening}`,

@@ -83,7 +83,7 @@ export async function createChronicle(ctx, req, res, url) {
   const m = chron.create({ name: String(b.name || "A New Realm").slice(0, 40), scenario, minutes: b.minutes, pace: b.options?.pace ?? ctx.turnSeconds, fate: b.fate, wealth: b.wealth, mood: b.mood, options: b.options });
   rewrites.applyTo(path.join(chron.paths(m.id).base, "characters"));  // the starting cast as the player rewrote it
   // A real reign deals its minor folk fresh names; test, film and check reigns keep the baseline's, so proofs repeat.
-  if (!/test|film|check|proof/i.test(m.name)) try { rewrites.freshMinorNames(chron.paths(m.id).base, JSON.parse(fs.readFileSync(path.join(path.dirname(new URL(import.meta.url).pathname), "data", "first-names.json"), "utf8")), JSON.parse(fs.readFileSync(path.join(path.dirname(new URL(import.meta.url).pathname), "data", "surnames.json"), "utf8")).bannermen); } catch (e) { console.log("fresh names:", e.message); }
+  if (!/test|film|check|proof/i.test(m.name)) try { rewrites.freshMinorNames(chron.paths(m.id).base, JSON.parse(fs.readFileSync(path.join(path.dirname(new URL(import.meta.url).pathname), "data", "first-names.json"), "utf8"))); } catch (e) { console.log("fresh names:", e.message); }
   try { rewrites.distinctNames(chron.paths(m.id).base, JSON.parse(fs.readFileSync(path.join(path.dirname(new URL(import.meta.url).pathname), "data", "first-names.json"), "utf8"))); } catch (e) { console.log("names:", e.message); }  // no two living share a first name
   switchTo(m.id);
   return json(res, 200, m);
@@ -332,7 +332,7 @@ export async function lore(ctx, req, res, url) {
       favour: h.crown ? null : favourOf(p.id), lore: { ...(b.houses[h.name] ?? rebel(h.name) ?? {}), ...rewrites.houseOf(h.name) },
       notables: [...royal, ...notables.map((c) => ({
         id: c.id, name: c.name, key: c.name, surname: c.surname ?? null, gender: c.gender, age: c.age, rank: c.rank, traits: c.traits,
-        goal: c.goals?.[0]?.text ?? null, role: c.role ? ROLES[c.role]?.title : null,
+        goal: ctx.court.aimOf(c, written ? null : ctx.world), role: c.role ? ROLES[c.role]?.title : null,
         seat: c.seat != null ? seatName(c.seat) : null, loyalty: c.loyalty, written,
         memories: [...new Set(c.memories ?? [])].slice(-6), backstory: c.backstory ?? null,
         // In their own words: their latest memory told as theirs, never a

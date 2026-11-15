@@ -5,7 +5,7 @@
 import fs from "fs";
 import path from "path";
 import { HOME } from "./chronicles.js";
-import { TRAITS, bannerSurname } from "./characters.js";
+import { TRAITS } from "./characters.js";
 
 let edits = null;  // id -> { backstory?, memories?, traits?, loyalty? }
 const file = () => path.join(HOME, "written.json");
@@ -104,48 +104,45 @@ export function distinctNames(base, pool) {
   for (const f of files) { try { fs.writeFileSync(f, swap(fs.readFileSync(f, "utf8"))); } catch { /* not there */ } }
 }
 
-// Fresh minor folk each real reign (PLAN.md, "kill the repeats"; RCT's guests all have names): every
-// bannerman's family gets a surname of its own from data/surnames.json, and each of them a first name of
-// their sex from the pool, so the same informer isn't back in every reign. Lords, their kin and the dead
-// keep theirs. Everything that names them (memories, the court's waiting pleas, the chronicle) follows.
-export function freshMinorNames(base, pool, surnames) {
+// Fresh minor folk each real reign (PLAN.md, "kill the repeats"; RCT's guests all have names): every bannerman's
+// family keeps the family it was written with (lore.js: its arms, its page, the banners its towns are baked with),
+// and each of them gets a fresh first name of their sex from the pool, so the same informer isn't back in every
+// reign. Lords, their kin and the dead keep theirs. Everything that names them (memories, the court's waiting pleas,
+// the chronicle) follows; within the family, a first name alone ("daughter of Leofric and Constance") follows too.
+export function freshMinorNames(base, pool) {
   const dir = path.join(base, "characters");
   let cast;
   try { cast = fs.readdirSync(dir).filter((f) => f.endsWith(".json")).map((f) => ({ f: path.join(dir, f), c: JSON.parse(fs.readFileSync(path.join(dir, f), "utf8")) })); } catch { return; }
   const byId = new Map(cast.map((x) => [x.c.id, x.c]));
   const first = (n) => String(n).split(" ")[0];
   const takenFirst = new Set(cast.map((x) => first(x.c.name)));
-  // Each bannerman's family takes its town's surname (characters.js bannerSurname), in order of their towns, among the
-  // surnames no lord's or other family's: the same families for the same realm in every reign, so the starting towns'
-  // baked banners hold (the people still get fresh first names).
-  const bannerKin = new Set(cast.filter((x) => x.c.rank === "bannerman").flatMap((x) => [x.c.id, x.c.spouse, ...(x.c.children ?? [])]));
-  const takenSur = new Set(cast.filter((x) => !bannerKin.has(x.c.id)).map((x) => x.c.surname));
   const roll = (list) => list[Math.floor(Math.random() * list.length)];
-  const renames = [], surRenames = new Map(), kinSur = new Map();  // kinSur: person id -> [old, new] surname of their family
-  const oldSurCount = new Map();
-  for (const x of cast) oldSurCount.set(x.c.surname, (oldSurCount.get(x.c.surname) ?? 0) + (x.c.rank === "bannerman" ? 1 : 0));
+  const renames = [], kinFirst = new Map();  // kinFirst: person id -> their family's [old, new] first names
   for (const bm of cast.map((x) => x.c).filter((c) => c.rank === "bannerman").sort((a, b) => (a.seat ?? 1e9) - (b.seat ?? 1e9))) {
-    if (!surnames.some((s) => !takenSur.has(s))) break;
-    const sur = bannerSurname(bm.seat ?? 0, takenSur);
-    if (oldSurCount.get(bm.surname) === 1) surRenames.set(bm.surname, sur);  // "the Kettle books": the surname alone, when only one family had it
-    const kin = [bm, byId.get(bm.spouse), ...(bm.children ?? []).map((id) => byId.get(id))].filter((c) => c && c.surname === bm.surname);
+    const kin = [bm, byId.get(bm.spouse), ...(bm.children ?? []).map((id) => byId.get(id))].filter((c) => c && c.surname === bm.surname && c.alive !== false);
+    const firsts = [];
     for (const c of kin) {
-      kinSur.set(c.id, [c.surname, sur]);
       const freeFirst = (pool[c.gender === "male" ? "male" : "female"] ?? []).filter((n) => !takenFirst.has(n));
-      const to = c.alive !== false && freeFirst.length ? roll(freeFirst) : first(c.name);
+      if (!freeFirst.length) continue;
+      const to = roll(freeFirst);
       takenFirst.add(to);
-      const was = c.name;
-      c.name = `${to} ${sur}`;
-      c.surname = sur;
-      renames.push([was, c.name]);
+      firsts.push([first(c.name), to]);
+      renames.push([c.name, `${to} ${c.surname}`]);
+      c.name = `${to} ${c.surname}`;
     }
+    for (const c of kin) kinFirst.set(c.id, firsts);
   }
   if (!renames.length) return;
   // Longest first, so "Cedric Kettle" isn't caught inside "Cedric Kettle the Younger" half-done.
   renames.sort((a, b) => b[0].length - a[0].length);
-  const swap = (t) => [...surRenames].reduce((s, [a, b]) => s.replace(new RegExp(`\\b${a}\\b`, "g"), b), renames.reduce((s, [a, b]) => s.split(a).join(b), t));
-  const word = (t, [a, b]) => t.replace(new RegExp(`\\b${a}\\b`, "g"), b);
-  for (const x of cast) { const named = x.c.name, sur = x.c.surname; const own = kinSur.get(x.c.id); const o = JSON.parse(own ? word(swap(JSON.stringify(x.c)), own) : swap(JSON.stringify(x.c))); o.name = named; o.surname = sur; fs.writeFileSync(x.f, JSON.stringify(o, null, 2)); }
+  const swap = (t) => renames.reduce((s, [a, b]) => s.split(a).join(b), t);
+  // A family's first names alone, all at once (one name's new one may be another's old one).
+  const firstsIn = (t, pairs) => {
+    if (!pairs?.length) return t;
+    const to = new Map(pairs);
+    return t.replace(new RegExp(`\\b(${pairs.map(([a]) => a).join("|")})\\b`, "g"), (m) => to.get(m) ?? m);
+  };
+  for (const x of cast) { const named = x.c.name; const o = JSON.parse(firstsIn(swap(JSON.stringify(x.c)), kinFirst.get(x.c.id))); o.name = named; fs.writeFileSync(x.f, JSON.stringify(o, null, 2)); }
   const files = ["court.json", "arcs.json", "meta.json"].map((f) => path.join(base, f));
   try { for (const f of fs.readdirSync(path.join(base, "state"))) if (/\.(json|jsonl)$/.test(f)) files.push(path.join(base, "state", f)); } catch { /* none */ }
   for (const f of files) { try { fs.writeFileSync(f, swap(fs.readFileSync(f, "utf8"))); } catch { /* not there */ } }

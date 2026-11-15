@@ -12,6 +12,7 @@ import { pick as wording, say } from "./say.js";  // one of a result's wordings 
 import fs from "node:fs";
 import path from "node:path";
 import { cityName, houseFor } from "./narrator.js";
+import { SWORN } from "./lore.js";
 import { decide } from "./claude.js";
 
 import { calendar, SEASONS_PER_YEAR, yearsIn, isYearEnd } from "./calendar.js";
@@ -36,7 +37,7 @@ export function warMuster(world, pid, prey) {
 // The court's deck of dilemmas: data, so new ones are written, not coded.
 const DECK_FILE = new URL("./data/dilemmas.json", import.meta.url);
 // Each lord's one want, made a thing in the realm (data/ambitions.json; ambitionOf).
-const AMB = JSON.parse(fs.readFileSync(new URL("./data/ambitions.json", import.meta.url), "utf8"));
+import { AMB, AIMS, aimWords, dealt, isPlain } from "./aims.js";
 function loadDeck() {
   try { return JSON.parse(fs.readFileSync(DECK_FILE, "utf8")); } catch { return []; }
 }
@@ -47,8 +48,6 @@ const NO_MOOD = { aggression: 0, loyalty: 0, ambition: 0, caution: 0, cunning: 0
 // people share one, so "Cecily" is always the one Cecily. M and F are the old
 // short lists, kept for anything that still reads them.
 const NAMES_FILE = new URL("./data/first-names.json", import.meta.url);
-// Bannermen's surnames (data/surnames.json): one list, here and for each reign's fresh names (written.js).
-const SURNAMES = JSON.parse(fs.readFileSync(new URL("./data/surnames.json", import.meta.url), "utf8")).bannermen;
 let firstNames = null;
 function namePool(gender) {
   if (!firstNames) { try { firstNames = JSON.parse(fs.readFileSync(NAMES_FILE, "utf8")); } catch { firstNames = { male: M, female: F }; } }
@@ -72,29 +71,16 @@ export const ROLES = {
   ward: { title: "a ward", traits: ["content"], loyalty: 60 },
   outlaw: { title: "a pardoned outlaw", traits: ["wrathful"], loyalty: 25 },
 };
-// Aims a player can set; the kinds the season's moves already weigh.
-export const GOALS = [
-  { kind: "favour", text: "rise in my liege's esteem" },
-  { kind: "court", text: "be noticed by the King himself" },
-  { kind: "land", text: "win more land for my family" },
-  { kind: "marriage", text: "see my daughter wed above her station" },
-  { kind: "defect", text: "find a liege more worthy of my sword" },
-  { kind: "revenge", text: "settle the old grudge" },
-];
+// Aims a player can set: every aim a person can hold (aims.js), each a kind the season's moves weigh.
+export const GOALS = AIMS;
 
-// The family a bannerman seated in a town bears: the town's own surname from the list (a hash of its id), or the next
-// one along not already `taken`, the same in every reign given the same realm (not the reign's dice), so a fresh
-// realm's starting towns fly the banners the game was baked with (tools/baseline-world.mjs world_served.json; Square
-// bakes each town by its family). Adds the surname to `taken`.
-export function bannerSurname(townId, taken = new Set()) {
+// The family a new bannerman seated in a town bears: one of the families sworn to the great houses (lore.js SWORN,
+// each with its arms painted and its page in the Lore), by a hash of the town's id, so the same in every reign. A
+// family may hold several towns, each a branch of it. The starting cast keeps the families it was written with.
+export function bannerSurname(townId) {
   let h = (Number(townId) * 2654435761 + 0x9e3779b9) >>> 0;
   h = Math.imul(h ^ (h >>> 15), 2246822507) >>> 0;
-  const at = (h ^ (h >>> 13)) % SURNAMES.length;
-  for (let i = 0; i < SURNAMES.length; i++) {
-    const s = SURNAMES[(at + i) % SURNAMES.length];
-    if (!taken.has(s)) { taken.add(s); return s; }
-  }
-  return SURNAMES[at];
+  return SWORN[(h ^ (h >>> 13)) % SWORN.length];
 }
 
 function pick(arr, r) {
@@ -342,7 +328,7 @@ export class Court {
       }
       for (const town of world.cities.filter((c) => c.owner === p.id && !c.capital)) {
         if (this.lordOfTown(town.id)) continue;
-        const surname = bannerSurname(town.id, new Set(this.alive().map((x) => x.surname)));
+        const surname = bannerSurname(town.id);
         const liege = h.crown ? null : this.lordOfHouse(p.id);
         const bm = this.newPerson({ surname, house: h.name, playerId: p.id, rank: "bannerman", seat: town.id, liege: liege?.id ?? null, age: 25 + Math.floor(r() * 35) }, r);
         bm.goals = [this.goalFor(bm, r)];
@@ -416,15 +402,12 @@ export class Court {
     if (spec.past != null) c.backstory = String(spec.past).slice(0, 300) || undefined;  // rewritten, or cleared
     if (spec.backstory) this.remember(c.id, String(spec.backstory).slice(0, 300));
     this.save(c);
-    this.record({ turn: world?.turn ?? 0, kind: "person", text: `By the King's hand, ${c.name} of ${c.house} is changed: ${c.traits.join(", ")}.${c.goals?.[0] ? ` "I mean to ${c.goals[0].text}."` : ""}`, city: c.seat });
+    this.record({ turn: world?.turn ?? 0, kind: "person", text: `By the King's hand, ${c.name} of ${c.house} is changed: ${c.traits.join(", ")}.${c.goals?.[0] ? ` "I mean to ${aimWords(c.goals[0].text, "I")}."` : ""}`, city: c.seat });
     return { ok: true, character: c };
   }
 
   goalFor(c, r) {
-    const options = c.rank === "lord"
-      ? [{ kind: "power", text: "make my house the greatest in the realm" }, { kind: "marriage", text: "wed my heir into a great house" }, { kind: "revenge", text: "settle the old grudge" }, { kind: "crown", text: "sit the throne myself one day" }, { kind: "peace", text: "keep my people fed and out of other men's wars" }]
-      : [{ kind: "marriage", text: "see my daughter wed above her station" }, { kind: "land", text: "win more land for my family" }, { kind: "favour", text: "rise in my liege's esteem" }, { kind: "defect", text: "find a liege more worthy of my sword" }, { kind: "court", text: "be noticed by the King himself" }];
-    return pick(options, r);
+    return pick(dealt(c.rank), r);
   }
 
   opinion(a, b) {
@@ -451,8 +434,27 @@ export class Court {
     if (g.kind === "marriage" && c.rank === "lord") { const o = by(1); if (o) target = { kind: "house", id: o.playerId, name: o.house, house: o.house }; }
     if (g.kind === "revenge") { const o = by(-1); if (o) target = { kind: "person", id: o.id, name: o.name, house: o.house }; }
     const line = target || !["land", "power", "marriage", "revenge"].includes(g.kind)
-      ? String(AMB.lines[g.kind] ?? "").replace(/\{(\w+)\}/g, (_, k) => ({ town: target?.name, house: target?.house, name: target?.name }[k] ?? "")) : `I mean to ${g.text}.`;
-    return { kind: g.kind, text: g.text, line: line || `I mean to ${g.text}.`, target };
+      ? String(AMB.lines[g.kind] ?? "").replace(/\{(\w+)\}/g, (_, k) => ({ town: target?.name, house: target?.house, name: target?.name }[k] ?? "")) : `I mean to ${aimWords(g.text, "I")}.`;
+    return { kind: g.kind, text: g.text, line: line || `I mean to ${aimWords(g.text, "I")}.`, target };
+  }
+
+  // What someone wants, said of them (the Lore, a person's page, the court's cards): their aim with the target the
+  // realm gives it now (ambitionOf's town, house or man; a bannerman's own liege; the house they like best), so no
+  // two read alike (data/ambitions.json aim); the plain words when there is none to name. Derived, never stored.
+  aimOf(c, world) {
+    const g = c?.goals?.[0];
+    if (!g) return null;
+    if (!isPlain(g)) return aimWords(g.text, "they", c.gender);
+    if (!world) return aimWords(AMB.plain[g.kind], "they", c.gender);  // no realm to read a target from (the book as written)
+    let t = this.ambitionOf(c, world)?.target;
+    if (!t && g.kind === "favour") { const l = this.people[c.liege]; if (l?.alive) t = { name: l.name, house: l.house }; }
+    if (!t && (g.kind === "marriage" || g.kind === "defect")) {
+      const o = this.alive().filter((x) => x.rank === "lord" && x.playerId !== c.playerId).sort((a, b) => this.opinion(c.id, b.id) - this.opinion(c.id, a.id))[0];
+      if (o) t = { name: o.name, house: o.house };
+    }
+    const want = AMB.aim[g.kind];
+    const named = t && (want.match(/\{(town|house|name)\}/g) ?? []).every((k) => t[k.slice(1, -1)]);
+    return aimWords((named ? want : AMB.plain[g.kind]).replace(/\{(town|house|name)\}/g, (_, k) => t?.[k] ?? ""), "they", c.gender);
   }
 
   shift(a, b, delta, why) {
@@ -1137,8 +1139,7 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
   sitter(cid) {
     const c = cid != null ? this.people[cid] : null;
     if (!c) return null;
-    const theirWords = (t) => t.replace(/\bmy\b/g, "their").replace(/\bme\b/g, "them").replace(/\bI am\b/g, "they are").replace(/\bI\b/g, "they");
-    return { id: c.id, name: c.name, age: c.age, gender: c.gender, role: c.role ?? null, rank: c.rank ?? null, want: c.goals?.[0]?.text ? theirWords(c.goals[0].text) : null };
+    return { id: c.id, name: c.name, age: c.age, gender: c.gender, role: c.role ?? null, rank: c.rank ?? null, want: this.aimOf(c, null) };
   }
 
   arcPetition({ arc, beat, thread, from, text, options }, world) {
