@@ -115,7 +115,7 @@ func _to_news() -> void:
 func _watch(s: Dictionary, follow: Node3D) -> void:
 	main.director.watch(s, follow)
 	var at: Vector3 = follow.global_position if is_instance_valid(follow) else main.terrain.world_pos(float(s.get("x", 0)), float(s.get("y", 0)))
-	var e := {"thread": main.director.caption(s), "text": String(s.get("text", "")), "city": s.get("city"), "kind": String(s.get("kind", ""))}
+	var e := {"thread": main.director.caption(s), "text": String(s.get("text", "")), "city": s.get("city"), "kind": String(s.get("kind", "")), "scene": true}
 	preload("res://scripts/story_card.gd").new().show_story(main, e, at, follow, preload("res://scripts/ui.gd").ui_num("story_card.town_radius", 2.0), "")
 
 

@@ -296,8 +296,8 @@ class StoryMark extends Button:
 
 	static func leave(m: Node, e: Dictionary, follow: Node3D, at: Vector3) -> void:
 		var thread := String(e.get("thread", ""))
-		if thread == "" or String(e.get("stage", "")) == "resolution" or at == Vector3.INF:
-			return  # news with no story, or a story already told to its end: nothing to come back to
+		if thread == "" or bool(e.get("scene", false)) or String(e.get("stage", "")) == "resolution" or at == Vector3.INF:
+			return  # news with no story, a passing scene (a battle, a market: news.gd _watch), or a story already told to its end: nothing to come back to
 		drop(m.ui, thread)
 		var mark := StoryMark.new()
 		mark.main = m
