@@ -42,8 +42,10 @@ func _process(delta: float) -> void:
 	_scene_t -= 0.5
 	if _scene_t <= 0.0:
 		_scene_t = 2.0
-		_scene = _drawn()
-		_tris = DrawCensus.line(get_viewport().get_camera_3d(), get_parent())
+		# Under a screen that covers the window the realm isn't drawn (world_cover.gd): say so, not what the lens frames.
+		var covered := preload("res://scripts/world_cover.gd").covered()
+		_scene = "the realm isn't drawn (a screen covers it)" if covered else _drawn()
+		_tris = "" if covered else DrawCensus.line(get_viewport().get_camera_3d(), get_parent())
 		_log(lines)
 	if _scene != "":
 		lines.append(_scene)
