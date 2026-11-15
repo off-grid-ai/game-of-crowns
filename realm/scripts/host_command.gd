@@ -67,6 +67,9 @@ var _hint: Label  # the card's line: what a right-click will do right now
 var _hover := []  # [kind, words] of a right-click where the pointer is, or []
 var _hover_px := Vector2.INF  # where it was last read
 var _pending := {}  # host id -> {to, kind, ms}: an order given, drawn at once until /world shows it (or it is refused)
+var _groups := {}  # 1..9 -> the host ids Cmd+number put in it (StarCraft's control groups); in memory, for this sitting
+var _group_last := -1  # the group number last pressed, and when (msec): pressed twice quickly, the view goes there
+var _group_ms := 0
 
 
 static func on() -> bool:
@@ -516,6 +519,14 @@ func _show_line(a: Vector2, b: Vector2) -> void:
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not event.is_pressed() or event.is_echo():
 		return
+	for n in range(1, 10):
+		if event.is_action_pressed(StringName("group_%d" % n)):
+			if event is InputEventWithModifiers and (event as InputEventWithModifiers).is_command_or_control_pressed():
+				_make_group(n)
+			else:
+				_call_group(n)
+			get_viewport().set_input_as_handled()
+			return
 	if event.is_action_pressed(&"host_all"):
 		var ids := []
 		for h in hosts():
@@ -538,6 +549,47 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			_press(kind)
 			get_viewport().set_input_as_handled()
 			return
+
+
+## Cmd+number: the hosts selected now are group n (none selected: the group is emptied). A host may be in several.
+func _make_group(n: int) -> void:
+	var ids: Array[int] = []
+	if selected >= 0:
+		ids.append(selected)
+		ids.append_array(also)
+	_groups[n] = ids
+	var k: Dictionary = Data.value("army_bar", "groups", {})
+	if main.ui:
+		var words := String(k.get("cleared", "")) if ids.is_empty() else String(k.get("one" if ids.size() == 1 else "some", ""))
+		main.ui.toast(words.format({"n": n, "count": ids.size()}))
+	selection_changed.emit()  # the armies bar shows the number on each host's button
+
+
+## The number: group n selected; pressed again quickly (army_bar.json groups.twice_s), the view goes to it as well.
+func _call_group(n: int) -> void:
+	var ids := []
+	for id in _groups.get(n, []):
+		if not host(int(id)).is_empty():
+			ids.append(int(id))
+	if ids.is_empty():
+		if main.ui:
+			main.ui.toast(String((Data.value("army_bar", "groups", {}) as Dictionary).get("empty", "")).format({"n": n}))
+		return
+	var now := Time.get_ticks_msec()
+	var twice := _group_last == n and now - _group_ms <= int(Data.num("army_bar", "groups.twice_s", 0.4) * 1000.0)
+	_group_last = n
+	_group_ms = now
+	select_many(ids)
+	if twice:
+		fly_to(ids)
+
+
+## The lowest group a host is in (its number on the armies bar), or 0.
+func group_of(id: int) -> int:
+	for n in range(1, 10):
+		if (_groups.get(n, []) as Array).has(id):
+			return n
+	return 0
 
 
 ## An order from the card (a click or its key).

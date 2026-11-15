@@ -7,5 +7,6 @@
  "field": "In the field",
  "troops": "{men} troops",
  "selected": "Selected",
- "tip": "Click: select this host. Shift- or Cmd-click: add it to those selected. Double-click: go to it."
+ "tip": "Click: select this host. Shift- or Cmd-click: add it to those selected. Double-click: go to it.",
+ "groups": {"_": "Groups of hosts (host_command.gd; StarCraft's and Age of Empires' control groups, keys.gd group_1..group_9, changeable in Settings): Cmd+number makes group n of the hosts selected, the number selects them, twice within twice_s seconds the view goes there too. Kept for this sitting only. Words ({n} the number, {count} how many hosts): one / some when a group is made, cleared when Cmd+number is pressed with none selected, empty when a number has no host left in it, badge the line on a host's button.", "twice_s": 0.4, "one": "Group {n}: this host. Press {n} to select it, twice to go there.", "some": "Group {n}: {count} hosts. Press {n} to select them, twice to go there.", "cleared": "Group {n} is empty.", "empty": "No host in group {n}. Select some and press Cmd+{n}.", "badge": "In group {n}: press {n} to select, twice to go there."}
 }

@@ -45,6 +45,16 @@ const ACTIONS := [
 	["host_garrison", "Garrison a town", "The King's hosts", [KEY_U]],
 	["host_return", "Go home to the King's seat", "The King's hosts", [KEY_I]],
 	["host_split", "Split the host in two", "The King's hosts", [KEY_O]],
+	# Groups of hosts (StarCraft's, Age of Empires' control groups; host_command.gd): Cmd+number makes one, the number selects it.
+	["group_1", "Host group 1 (with Cmd: make it of those selected; twice: go there)", "The King's hosts", [KEY_1]],
+	["group_2", "Host group 2 (with Cmd: make it of those selected; twice: go there)", "The King's hosts", [KEY_2]],
+	["group_3", "Host group 3 (with Cmd: make it of those selected; twice: go there)", "The King's hosts", [KEY_3]],
+	["group_4", "Host group 4 (with Cmd: make it of those selected; twice: go there)", "The King's hosts", [KEY_4]],
+	["group_5", "Host group 5 (with Cmd: make it of those selected; twice: go there)", "The King's hosts", [KEY_5]],
+	["group_6", "Host group 6 (with Cmd: make it of those selected; twice: go there)", "The King's hosts", [KEY_6]],
+	["group_7", "Host group 7 (with Cmd: make it of those selected; twice: go there)", "The King's hosts", [KEY_7]],
+	["group_8", "Host group 8 (with Cmd: make it of those selected; twice: go there)", "The King's hosts", [KEY_8]],
+	["group_9", "Host group 9 (with Cmd: make it of those selected; twice: go there)", "The King's hosts", [KEY_9]],
 	["defend", "Defend the town under attack (the latest news of a foe's host)", "The King's hosts", [KEY_PERIOD]],  # news_actions.gd; beside comma, the next host
 	["walk_forward", "Walk forward", "Walking and fighting", [KEY_W, KEY_UP]],
 	["walk_back", "Walk back", "Walking and fighting", [KEY_S, KEY_DOWN]],

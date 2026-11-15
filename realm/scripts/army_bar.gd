@@ -107,6 +107,12 @@ func _row(id: int) -> Dictionary:
 	sword.modulate = T.TEXT_2
 	sword.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(sword)
+	var group := T.datum("", T.SIZE_LABEL, T.TEXT)  # its group's number in the sword's corner, as Warcraft III's card shows a key
+	group.add_theme_color_override("font_outline_color", Color(0.06, 0.05, 0.04, 0.9))
+	group.add_theme_constant_override("outline_size", 4)
+	group.position = Vector2(10, 6)
+	group.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	sword.add_child(group)
 	var col := VBoxContainer.new()
 	col.add_theme_constant_override("separation", 0)
 	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -132,7 +138,7 @@ func _row(id: int) -> Dictionary:
 	b.gui_input.connect(_clicked.bind(id))
 	_list.add_child(b)
 	b.custom_minimum_size.y = maxf(row.get_combined_minimum_size().y + 12.0, 54.0)
-	return {"button": b, "place": place, "troops": troops, "doing": doing, "chosen": chosen}
+	return {"button": b, "place": place, "troops": troops, "doing": doing, "chosen": chosen, "group": group}
 
 
 func _fill(r: Dictionary, h: Dictionary, on: bool) -> void:
@@ -142,9 +148,13 @@ func _fill(r: Dictionary, h: Dictionary, on: bool) -> void:
 	var doing: String = _cmd._doing(h)
 	(r["doing"] as Label).text = doing.left(1).to_upper() + doing.substr(1)
 	(r["chosen"] as Label).visible = on
+	var n: int = _cmd.group_of(int(h.get("id", -1)))
+	(r["group"] as Label).text = str(n) if n > 0 else ""
 	var b: Button = r["button"]
 	b.add_theme_stylebox_override("normal", _sel_box if on else _rest_box)
 	b.tooltip_text = "%s\n%s" % [(r["doing"] as Label).text, String(Data.value(FILE, "tip", ""))]
+	if n > 0:
+		b.tooltip_text += "\n" + String((Data.value(FILE, "groups", {}) as Dictionary).get("badge", "")).format({"n": n})
 
 
 ## A click selects the host; Shift or Cmd adds it to those selected or takes it out; a double-click goes to it.
