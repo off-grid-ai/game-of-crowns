@@ -113,7 +113,11 @@ func _by_part() -> String:
 	var planes := cam.get_frustum()
 	var by := {}
 	var all := 0
-	for g: GeometryInstance3D in main.find_children("*", "GeometryInstance3D", true, false):
+	var drawn: Array = main.find_children("*", "GeometryInstance3D", true, false)
+	var bulk := get_tree().root.get_node_or_null("Bulk")  # bulk.gd's batches stand under the tree's root
+	if bulk:
+		drawn.append_array(bulk.get_children())
+	for g: GeometryInstance3D in drawn:
 		if not g.is_visible_in_tree():
 			continue
 		var mesh: Mesh = null
@@ -169,6 +173,9 @@ func _tris_of(mesh: Mesh) -> int:
 
 ## Where a drawn thing sits, as a reader would name it: the realm's child it is under, and the named node below that.
 func _part(g: Node, main: Node) -> String:
+	if g.get_parent() and g.get_parent().name == "Bulk":
+		var mm := (g as MultiMeshInstance3D).multimesh if g is MultiMeshInstance3D else null
+		return "Bulk/" + (String(mm.mesh.resource_path.get_file().get_basename()) if mm and mm.mesh and mm.mesh.resource_path != "" else "props")
 	var path := String(main.get_path_to(g)).split("/")
 	var words := PackedStringArray()
 	for w in path.slice(0, path.size() - 1):

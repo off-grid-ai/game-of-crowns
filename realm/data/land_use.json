@@ -9,8 +9,8 @@
   ],
   "gap": 0.06,
   "hedge": "garden_hedge",
-  "hedge_every": 0.1,
-  "hedge_reach": 70.0,
+  "hedge_every": 0.16,
+  "hedge_reach": 35.0,
   "clump": 0.4,
   "clump_trees": [
    6,

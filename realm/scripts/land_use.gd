@@ -1,4 +1,5 @@
 extends Node3D
+const Bulk := preload("res://scripts/bulk.gd")  # the one drawer of repeated things
 ## The land the towns work, drawn from Freeciv's own facts (Mac: "combine the engines with the visuals"; art set step 5,
 ## docs/research/look-audit-2026-11-12.md and docs/art/STANDARDS.md: fields in rows, hedges on every edge, clumps of
 ## trees, never bare lawn). The store's worked map (which town works each tile) and tilling (irrigation, farmland),
@@ -256,7 +257,7 @@ func _hedge(hedges: Dictionary, at: Vector3, dir: Vector3, length: float, k: Dic
 		var kind := String(vs[rng.randi() % vs.size()])
 		if not hedges.has(kind):
 			hedges[kind] = []
-		var sc := rng.randf_range(0.9, 1.3)
+		var sc := rng.randf_range(1.1, 1.6)  # fuller bushes, spaced wider (hedge_every 0.16): the same hedge, ~40% fewer
 		hedges[kind].append(Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3.ONE * sc), p))
 
 
@@ -302,24 +303,19 @@ func _clump(hedges: Dictionary, at: Vector3, count: Array, rng: RandomNumberGene
 			woods.add_crown(p, Real.height(kind) * sc)
 
 
-## The bushes and trees of a tile, one batch a model (drawn only within `reach` of the camera).
+## The bushes and trees of a tile, through the one drawer of repeated things (bulk.gd: one batch a model a cell of
+## the land, culled a cell at a time, drawn only within `reach` of the camera; owned by the tile's node, so they go
+## with it). Its own batch a model a tile was never culled and drew every hedge bush at full detail (Mac's fps card,
+## 2026-11-15: one tile 3.4M triangles). Only the clumps' trees cast a shadow.
 func _batch(node: Node3D, hedges: Dictionary, reach: float) -> void:
+	var trees := {}
+	for v in Real.variants(String(Data.value("land_use", "fields.tree", "town_tree"))):
+		trees[String(v)] = true
 	for kind in hedges:
 		var xfs: Array = hedges[kind]
 		for part in (_path_parts(kind.trim_prefix("path:")) if kind.begins_with("path:") else Real.parts(kind)):
-			var mm := MultiMesh.new()
-			mm.transform_format = MultiMesh.TRANSFORM_3D
-			mm.mesh = part[0]
-			mm.instance_count = xfs.size()
-			for i in xfs.size():
-				mm.set_instance_transform(i, node.global_transform.affine_inverse() * xfs[i] * part[1])
-			var mmi := MultiMeshInstance3D.new()
-			mmi.multimesh = mm
-			mmi.set_meta("xfs", xfs)  # what was placed, for the headless checks (the renderer keeps none there)
-			mmi.visibility_range_end = reach
-			mmi.visibility_range_end_margin = reach * 0.15
-			mmi.lod_bias = float((Data.value("forest", "lod_bias", {}) as Dictionary).get("mid", 1.0))  # the woods' own (forest.gd): a field-corner clump's crowns hold from the middle zoom (g38: palms)
-			node.add_child(mmi)
+			for xf: Transform3D in xfs:
+				Bulk.add(part[0], xf * part[1], node, reach, trees.has(kind))
 
 
 ## A ground-cover file as one part [mesh, its offset], baked once (house_builder.bake_path, as vegetation.gd does).

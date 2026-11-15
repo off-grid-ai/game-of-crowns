@@ -25,6 +25,7 @@ var GRASS: String = "res://assets/ground/terrain3d/grass-paint.png"  # a verge's
 
 var terrain: Node3D
 var _signature := ""
+const Bulk := preload("res://scripts/bulk.gd")  # the one drawer of repeated things
 var _kings_sig := ""
 var _kings: Node3D
 var _roads: Node3D  # the network Freeciv's workers built, redrawn when it changes
@@ -200,26 +201,13 @@ func _plant_verges() -> void:
 			kept.append(Vector3(q.x, terrain.height_at(q.x, q.z), q.z))
 	var builder = preload("res://scripts/house_builder.gd").new()
 	var bushes := [builder.bake_path(BUSH)]  # the nature set's bush (data/forest.json cover.bush), one batch
-	var groups := [[]]
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 5
+	# Through the one drawer of repeated things (bulk.gd, a batch a cell of the land, culled a cell at a time): one batch
+	# for every verge of the realm's road was never culled and drew every bush (Mac's fps card, 2026-11-15: 2.3M).
 	for p in kept:
 		var k := Units.M * rng.randf_range(0.5, 1.0)  # 0.8-1.7 m: nt_bush is 1.69 m at scale 1
-		groups[0].append(Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(k, k * rng.randf_range(0.8, 1.3), k)), p - Vector3(0, 0.02, 0)))
-	for i in groups.size():
-		if groups[i].is_empty():
-			continue
-		var mm := MultiMesh.new()
-		mm.transform_format = MultiMesh.TRANSFORM_3D
-		mm.mesh = bushes[i]
-		mm.instance_count = groups[i].size()
-		for j in groups[i].size():
-			mm.set_instance_transform(j, groups[i][j])
-		var mmi := MultiMeshInstance3D.new()
-		mmi.multimesh = mm
-		mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		mmi.visibility_range_end = 60.0
-		road.add_child(mmi)
+		Bulk.add(bushes[0], Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(k, k * rng.randf_range(0.8, 1.3), k)), p - Vector3(0, 0.02, 0)), road, 60.0)
 
 
 ## A road or track along the land between two points. Tracks have a layer of
