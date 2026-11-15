@@ -90,7 +90,8 @@ Every change follows these. A plan that breaks one isn't approved.
 7. **Small commits.** One change each, by subsystem, staged by name. Never `--no-verify`.
 8. **Third-party art stays out of git** (Sketchfab, Mixamo, Quaternius, Poly Haven): only its `.import` files and licences are tracked. Own art, code, docs and the baseline realm go in. See `.gitignore`.
 9. **Never wait.** Renders, imports and long calls run in the background; resume from the notification.
-10. **Local model:** text only, Off Grid's Omni 2B (or 1.7B), no call budget. Small model: short persona, real conversation turns, plain-text replies; JSON only for simple picks.
+10. **Saved towns stay saved.** Kept files (towns, merged models, tiled grounds, crops, dressing) are named by `realm/data/kept.json` `version`. Bump it in the same commit as any change to how a kept thing is built or looks (towns.gd, town_layout.gd, house_builder.gd, castle_builder.gd, dressing.gd, realistic.gd, terrain.gd tiled, countryside.gd crops, their data); otherwise players keep the old ones. Never pack particle systems into a kept town: note them on the root (towns.gd `_kindle`/`relight`).
+11. **Local model:** text only, Off Grid's Omni 2B (or 1.7B), no call budget. Small model: short persona, real conversation turns, plain-text replies; JSON only for simple picks.
 
 ## Sessions share one checkout and one git index
 
