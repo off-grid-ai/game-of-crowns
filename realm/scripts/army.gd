@@ -145,10 +145,17 @@ func _ready() -> void:
 		push_error("ARMY no host to show (the crown has no soldiers, and no head count was given)")
 		return
 	var colours := _colours()
-	var t_raise := Time.get_ticks_usec()
+	# Raised a regiment at a time on the one frame budget (ViewTier.spend_ok), never in the sync that made it (round11:
+	# units.sync 232 ms over 7 calls, army.raise.host 154 ms over 3 hosts, all inside the sync's frame).
+	await get_tree().process_frame
+	var spent := 0
 	for i in specs.size():
+		if not await _budget():
+			return
+		var t_one := Time.get_ticks_usec()
 		var k := i % colours.size() if colour_mode() == "houses" else 0
 		var r := _regiment(specs[i], battle["colour"], battle.get("house", {})) if battle.has("colour") else _regiment(specs[i], colours[k], _worn[k] if k < _worn.size() else {})
+		spent += Time.get_ticks_usec() - t_one
 		if r.is_empty():
 			continue
 		_regiments.append(r)
@@ -156,16 +163,29 @@ func _ready() -> void:
 	if _regiments.is_empty():
 		push_error("ARMY no soldier mesh to raise the host with")
 		return
-	PerfTools.add("army.raise.regiments", Time.get_ticks_usec() - t_raise)  # its share of the frame (GOC_PERF_PROBE)
-	t_raise = Time.get_ticks_usec()
+	PerfTools.add("army.raise.regiments", spent)  # its share of the frame (GOC_PERF_PROBE)
+	if not await _budget():
+		return
+	var t_raise := Time.get_ticks_usec()
 	# The line: where it stands and the way it faces, every regiment's place in it.
 	var placed := Formation.line_places(_regiments)
 	var extent: Vector2 = placed["extent"]
 	_commander = placed["commander"]
 	_extent = extent
 	if battle.has("host"):  # a host in the field: in column on its tile, marching where Freeciv moves it (march_to)
+		# Each step on its own turn of the frame budget: the carts and their carters, the column stood on its tile, the
+		# scouts and their horses (army.raise.host is the sum of the steps).
+		spent = 0
 		_raise_baggage()
+		spent += Time.get_ticks_usec() - t_raise
+		if not await _budget():
+			return
+		t_raise = Time.get_ticks_usec()
 		_stand_on_tile(town, _bound_yaw(battle["host"], town))
+		spent += Time.get_ticks_usec() - t_raise
+		if not await _budget():
+			return
+		t_raise = Time.get_ticks_usec()
 		_raise_scouts(town, _bound_yaw(battle["host"], town))
 		for r in _regiments:
 			var mo: Node = Mover.of(r["node"]).fights(false)  # the realm's navigation, as every marcher on the map
@@ -173,9 +193,11 @@ func _ready() -> void:
 			mo.clip = ""
 			mo.turn_rate = 3.0
 		_standard_up()
-		PerfTools.add("army.raise.host", Time.get_ticks_usec() - t_raise)  # its share of the frame (GOC_PERF_PROBE)
+		PerfTools.add("army.raise.host", spent + Time.get_ticks_usec() - t_raise)  # its share of the frame (GOC_PERF_PROBE)
 		mustered = true
 		raised.emit()
+		if not _hunger_was.is_empty():
+			hunger_now(_hunger_was)  # told while it was still being raised
 		if not _pending_hulls.is_empty():
 			board(_pending_hulls)
 		elif _pending != Vector3.INF:
@@ -252,6 +274,16 @@ func _ready() -> void:
 	if battle.has("out_to"):  # war: formed at its seat a while, then out along the roads (march_out)
 		await get_tree().create_timer(Data.num("army", "march.form", 6.0)).timeout
 		march_out(battle["out_to"])
+
+
+## Waits, frame by frame, until the frame's staging pot has room for the next piece of the raise (ViewTier.spend_ok,
+## the one budget every staged loop draws on); false when the host was taken away meanwhile.
+func _budget() -> bool:
+	while not ViewTier.spend_ok(&"army.raise"):
+		await get_tree().process_frame
+		if not is_inside_tree():
+			return false
+	return is_inside_tree()
 
 
 ## March out (READY.md line 3, war; casebook, War and sieges: "The march feeds the battle"): the host formed in line
@@ -467,8 +499,12 @@ func order_now(o: Variant) -> void:
 ## stragglers: back, across, in world units), each always the same man, so a hungry column frays at its tail; and
 ## while it is hungry (hosts[].hungry) its camp's men huddle at more fires (army_camp.gd, army.json camp.hungry).
 var _stragglers := 0.0
+var _hunger_was := {}  # the last word on its hunger while it was still being raised (_ready tells it once raised)
 
 func hunger_now(h: Dictionary) -> void:
+	if not mustered:
+		_hunger_was = h
+		return
 	if bool(h.get("hungry", false)) != _hungry:
 		_hungry = not _hungry
 		_strike_camp()  # pitched again for it (_process): a hungry camp huddles at its fires
