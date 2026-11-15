@@ -609,6 +609,8 @@ func _walk(delta: float) -> void:
 		_waited = 0.0
 		_drive(body, at, aim, flat, step)
 		return
+	if nav == &"host" and _engine_ahead(at, aim, delta):
+		return  # an engine's ground on its way, newer than its route: it waits, asking its way afresh
 	if wheel > 0.0 and _face:
 		var wheel_to := _wheeling(body, at, _ahead(at))
 		if not is_nan(wheel_to):  # a formed block turns to its way on the spot before it walks on
@@ -636,6 +638,47 @@ func _walk(delta: float) -> void:
 	_put(body, at)
 	if _i >= _way.size():
 		_finish()
+
+
+## Whether a host's block is about to walk onto a siege engine's ground (ground.json nav.engine_room off it), as the
+## engine waits for a block (siege_camp.gd _mind_the_way): an engine's claim is carved into the host map at once, but a
+## route asked before it was (or before the map was baked again) runs through it, and a block walked into a waiting
+## tower (siege_activity_probe, one run in six). Looks army.json steer.engine_look along its way from `at`; held, it
+## asks its way afresh every steer.engine_reask seconds (round the engine once the map has it) and walks on when clear.
+## Never holds a block already within an engine's room (it walks out).
+var _engine_wait := 0.0
+func _engine_ahead(at: Vector3, aim: Vector3, delta: float) -> bool:
+	var flat := Vector2(aim.x - at.x, aim.z - at.z)
+	if flat.length() < 0.001 or not NavWorld.off_engines(at, nav):
+		_engine_wait = 0.0
+		return false
+	var look := _steer_num("engine_look", 0.4)
+	var blocked := false
+	var from := at
+	var left := look
+	var j := _i
+	while left > 0.0 and j < _way.size() and not blocked:
+		var to := _way[j]
+		var seg := Vector2(to.x - from.x, to.z - from.z).length()
+		var n := maxi(1, ceili(minf(seg, left) / 0.1))
+		for k in range(1, n + 1):
+			var q := from.lerp(to, minf(1.0, minf(seg, left) / maxf(seg, 0.001)) * float(k) / n)
+			if not NavWorld.off_engines(q, nav):
+				blocked = true
+				break
+		left -= seg
+		from = to
+		j += 1
+	if not blocked:
+		_engine_wait = 0.0
+		return false
+	_engine_wait += delta
+	if _engine_wait >= _steer_num("engine_reask", 0.5):
+		_engine_wait = 0.0
+		var way := _route(at, _way[_way.size() - 1])
+		if not way.is_empty():
+			_begin(way, _then, _face, _keep_y)
+	return true
 
 
 ## A horse or a cart: it steers, it doesn't pivot. Its heading turns toward the way only as fast as moving
