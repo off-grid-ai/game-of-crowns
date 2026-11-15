@@ -43,6 +43,7 @@ static var _claims := {}  # chunk -> {id: [kind, outline (world XZ)]}: the groun
 static var _claim_area := {}  # id -> [chunks, Rect2]
 static var _sources: Array = []  # keepers of many small things in the way (the woods): in_way(p) -> bool
 static var _rev := 0  # counts places set down and claims made: nearest_clear's kept answers are asked afresh after
+static var claims_rev := 0  # counts claims made and released: a fight's grid (army_ground.gd) lays the claimed ground afresh after
 static var _kept := {}  # tile (Vector2i) -> {[point, radius, reach] (Vector4i, hundredths) -> [answer, its towns' layouts]}
 static var _kept_n := 0
 
@@ -50,8 +51,8 @@ static var _kept_n := 0
 ## Whether something reaching `radius` all round may stand at `p` (world): on walkable land and in no footprint.
 ## `props` false: only the buildings keep it out, not the life's own pieces (a keeper behind his stall's counter,
 ## a guest on the feast's bench, an elder on his doorstep's bench is at them, not in a building).
-## `free_of`: a claim that doesn't count (the asker's own); `open_kinds`: kinds of claim stood on freely (a battle
-## over fields; "host" for every host's ground, a battle's grid that both sides close over).
+## `free_of`: a claim that doesn't count (the asker's own); `open_kinds`: kinds of claim stood on freely ("host" for
+## every host's ground: a fight's grid lays that as it moves, army_ground.gd, shut to routes but not to standing).
 static func is_clear(p: Vector3, radius := 0.0, props := true, free_of: Variant = null, open_kinds: Array = []) -> bool:
 	if not PerfTools.probing:
 		return _is_clear(p, radius, props, free_of, open_kinds)
@@ -137,6 +138,7 @@ static func claim(id: Variant, poly: PackedVector2Array, kind := "body") -> void
 		_claims[k][id] = [kind, poly]
 	_claim_area[id] = [cells, area]
 	_rev += 1
+	claims_rev += 1
 
 
 ## The body has left that ground.
@@ -146,6 +148,20 @@ static func release(id: Variant) -> void:
 	for k in _claim_area[id][0]:
 		(_claims.get(k, {}) as Dictionary).erase(id)
 	_claim_area.erase(id)
+	_rev += 1  # nearest_clear's kept answers over it are asked afresh
+	claims_rev += 1
+
+
+## Every claim over `area` (world XZ) whose kind is in `kinds` (or begins "host " when "host" is): id -> [kind,
+## outline]. A fight's grid (army_ground.gd) shuts what bodies hold, as they move.
+static func claims_in(area: Rect2, kinds: Array) -> Dictionary:
+	var out := {}
+	for c in _chunks(area):
+		var here: Dictionary = _claims.get(c, {})
+		for id in here:
+			if not out.has(id) and _open(String(here[id][0]), kinds) and (_claim_area[id][1] as Rect2).intersects(area):
+				out[id] = here[id]
+	return out
 
 
 ## Whether a claim of `kind` is stood on freely: named in `open_kinds`, or a host's ("host <id>") when "host" is.

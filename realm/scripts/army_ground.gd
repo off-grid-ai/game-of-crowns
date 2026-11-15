@@ -9,6 +9,11 @@ extends RefCounted
 ## house or a wall again.
 ##
 ## Laid a few rows a frame (it never freezes the frame); until it is laid, routes are straight lines.
+##
+## The ground bodies hold (ground.gd claims: a regiment's rectangle where it stands) is shut to routes as it moves
+## (Mac 2026-11-15: an assault's men walked through both sides' regiment blocks): a route goes round every held
+## rectangle but the ones it starts or ends in (a regiment leaving its own ground, a man joining his own regiment, a
+## line closing on its foe). Only routes see it: where a body may stand (keep_out, open_at, takes) is the land's.
 
 const Footing := preload("res://scripts/ground.gd")  # the one owner of where a body may stand
 const CELL := 0.08  # world units: about two-thirds of a man's width (a man stands ~0.22 tall)
@@ -20,6 +25,11 @@ var cells := 0  # a side
 var built := false
 var _main: Node
 var _opened: Array = []  # [world centre, radius]: ground a breach opened
+var _base := PackedByteArray()  # cell -> 1 where the land shuts it (water, a house, a wall), whatever bodies hold
+var _cover := PackedInt32Array()  # cell -> how many held rectangles cover it (ground.gd claims)
+var _held := {}  # claim id -> [its outline, its cells (indices)]
+var _seen := -1  # ground.gd claims_rev the held cells were laid at
+var _synced_frame := -1
 
 
 ## A fight's ground, `reach` world units round `centre`, laid from the frame after.
@@ -46,9 +56,13 @@ func _build() -> void:
 	var tree: SceneTree = _main.get_tree() if _main and _main.is_inside_tree() else null
 	# Every cell asked of the one ground owner (ground.gd Footing.is_clear: walkable land or a ford, in no house,
 	# wall, fence or stall), a few rows a frame.
+	_base.resize(cells * cells)
+	_cover.resize(cells * cells)
 	for y in cells:
 		for x in cells:
-			grid.set_point_solid(Vector2i(x, y), not Footing.is_clear(_world(Vector2i(x, y)), 0.0, true, null, ["host", "field", "ford"]))  # the hosts close over each other's ground; a ford is passed
+			var shut := not Footing.is_clear(_world(Vector2i(x, y)), 0.0, true, null, ["host", "field", "ford"])  # bodies' ground is laid after (_sync); a ford is passed
+			_base[y * cells + x] = 1 if shut else 0
+			grid.set_point_solid(Vector2i(x, y), shut)
 		if tree and y % ROWS_A_FRAME == ROWS_A_FRAME - 1:
 			await tree.process_frame
 	for o in _opened:
@@ -70,7 +84,9 @@ func _open_cells(at: Vector3, radius: float) -> void:
 		for x in range(c.x - n, c.x + n + 1):
 			var k := Vector2i(x, y)
 			if grid.is_in_boundsv(k) and Vector2(_world(k).x - at.x, _world(k).z - at.z).length() <= radius:
-				grid.set_point_solid(k, false)
+				if not _base.is_empty():
+					_base[k.y * cells + k.x] = 0
+				grid.set_point_solid(k, _cover.size() > 0 and _cover[k.y * cells + k.x] > 0)
 
 
 ## The way from `from` to `to` (world), round everything the field shuts: the cells' path pulled straight where
@@ -82,6 +98,16 @@ func route(from: Vector3, to: Vector3) -> PackedVector3Array:
 	if not built or not grid.is_in_boundsv(a):
 		out.append(to)
 		return out
+	_sync()
+	var own := _own_cells(from, to)
+	_solid_all(own, true)
+	var way := _route(a, b, to)
+	_solid_all(own, false)
+	return way
+
+
+func _route(a: Vector2i, b: Vector2i, to: Vector3) -> PackedVector3Array:
+	var out := PackedVector3Array()
 	var end := to
 	if not grid.is_in_boundsv(b):
 		# Past the field's edge (a routed regiment running on, a charge carried through): to the field's last cell
@@ -119,23 +145,23 @@ func keep_out(p: Vector3) -> Vector3:
 	if not built:
 		return p
 	var c := _cell(p)
-	if not grid.is_in_boundsv(c) or not grid.is_point_solid(c):
+	if not grid.is_in_boundsv(c) or not _shut(c):
 		return p
-	var q := _world(_nearest_open(c))
+	var q := _world(_nearest_open(c, true))
 	return Vector3(q.x, p.y, q.z)
 
 
 ## Whether a man may stand at `p` (world) on this field.
 func open_at(p: Vector3) -> bool:
 	var c := _cell(p)
-	return not built or not grid.is_in_boundsv(c) or not grid.is_point_solid(c)
+	return not built or not grid.is_in_boundsv(c) or not _shut(c)
 
 
 ## Whether `p` (world) is a mark a man may be sent to as it is: on this field and open. A goal past the field's edge
 ## or in water or a building is not: the route's own end (the nearest open cell) stands for it.
 func takes(p: Vector3) -> bool:
 	var c := _cell(p)
-	return built and grid.is_in_boundsv(c) and not grid.is_point_solid(c)
+	return built and grid.is_in_boundsv(c) and not _shut(c)
 
 
 func _cell(p: Vector3) -> Vector2i:
@@ -149,8 +175,9 @@ func _world(c: Vector2i) -> Vector3:
 	return Vector3(x, terrain.height_at(x, z) if terrain else 0.0, z)
 
 
-## The nearest open cell to `c`, on rings widening out; `c` itself if none is near.
-func _nearest_open(c: Vector2i) -> Vector2i:
+## The nearest open cell to `c`, on rings widening out; `c` itself if none is near. `land`: open by the land alone
+## (where a body may stand), else open to a route (bodies' ground shut too).
+func _nearest_open(c: Vector2i, land := false) -> Vector2i:
 	for ring in range(1, 40):
 		var best := c
 		var bd := INF
@@ -159,7 +186,7 @@ func _nearest_open(c: Vector2i) -> Vector2i:
 				if absi(x - c.x) != ring and absi(y - c.y) != ring:
 					continue
 				var k := Vector2i(x, y)
-				if grid.is_in_boundsv(k) and not grid.is_point_solid(k):
+				if grid.is_in_boundsv(k) and not (_shut(k) if land else grid.is_point_solid(k)):
 					var d := Vector2(k - c).length()
 					if d < bd:
 						bd = d
@@ -193,3 +220,74 @@ func _clear_line(a: Vector2i, b: Vector2i) -> bool:
 		if grid.is_point_solid(c):
 			return false
 	return true
+
+
+## Whether the land shuts cell `c` (water, a house, a wall), whatever bodies hold.
+func _shut(c: Vector2i) -> bool:
+	if not built or _base.is_empty():
+		return grid.is_point_solid(c)
+	return _base[c.y * cells + c.x] == 1
+
+
+## The ground bodies hold (ground.gd claims over this field) laid on the grid afresh once a claim has been made or
+## released since, at most once a frame: each rectangle that came, went or moved covers or uncovers its cells.
+func _sync() -> void:
+	if Footing.claims_rev == _seen or Engine.get_process_frames() == _synced_frame:
+		return
+	_seen = Footing.claims_rev
+	_synced_frame = Engine.get_process_frames()
+	var span := cells * CELL
+	var now: Dictionary = Footing.claims_in(Rect2(origin, Vector2(span, span)), ["host", "body"])
+	for id in _held.keys():
+		if not now.has(id) or now[id][1] != _held[id][0]:
+			_cover_by(_held[id][1], -1)
+			_held.erase(id)
+	for id in now:
+		if not _held.has(id):
+			var poly: PackedVector2Array = now[id][1]
+			var mine := _cells_in(poly)
+			_held[id] = [poly, mine]
+			_cover_by(mine, 1)
+
+
+func _cover_by(idx: PackedInt32Array, by: int) -> void:
+	for i in idx:
+		_cover[i] += by
+		grid.set_point_solid(Vector2i(i % cells, i / cells), _base[i] == 1 or _cover[i] > 0)
+
+
+## The cells whose middles lie inside `poly` (world XZ).
+func _cells_in(poly: PackedVector2Array) -> PackedInt32Array:
+	var out := PackedInt32Array()
+	var lo := poly[0]
+	var hi := poly[0]
+	for v in poly:
+		lo = lo.min(v)
+		hi = hi.max(v)
+	var a := _cell(Vector3(lo.x, 0, lo.y))
+	var b := _cell(Vector3(hi.x, 0, hi.y))
+	for y in range(maxi(a.y, 0), mini(b.y, cells - 1) + 1):
+		for x in range(maxi(a.x, 0), mini(b.x, cells - 1) + 1):
+			var m := Vector2(origin.x + (x + 0.5) * CELL, origin.y + (y + 0.5) * CELL)
+			if Geometry2D.is_point_in_polygon(m, poly):
+				out.append(y * cells + x)
+	return out
+
+
+## The held cells a route from `from` to `to` may cross: those of the rectangles it starts or ends in (its own
+## ground, the regiment it joins, the foe it closes on). cell index -> how many of those rectangles cover it.
+func _own_cells(from: Vector3, to: Vector3) -> Dictionary:
+	var out := {}
+	for id in _held:
+		var poly: PackedVector2Array = _held[id][0]
+		if Geometry2D.is_point_in_polygon(Vector2(from.x, from.z), poly) or Geometry2D.is_point_in_polygon(Vector2(to.x, to.z), poly):
+			for i in (_held[id][1] as PackedInt32Array):
+				out[i] = int(out.get(i, 0)) + 1
+	return out
+
+
+## Opens (`open`) the cells of `own` to this one route, where nothing else shuts them, or shuts them again after.
+func _solid_all(own: Dictionary, open: bool) -> void:
+	for i in own:
+		var held: int = _cover[i] - (int(own[i]) if open else 0)
+		grid.set_point_solid(Vector2i(i % cells, i / cells), _base[i] == 1 or held > 0)
