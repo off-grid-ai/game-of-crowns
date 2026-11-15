@@ -175,25 +175,33 @@ func sync(houses: Dictionary) -> void:
 func _walk_some() -> void:
 	var w := _walk
 	var tiles: Array = w["tiles"]
+	# The budget is asked before each company, not each tile (round11: resume.units 1,348 ms over 92 resumes, ~15 ms
+	# each, a tile's six new bodies made in one go past the frame's pot): a walk stopped mid-tile carries on next frame
+	# at the company it stopped at (j), its slot count kept.
 	while int(w["i"]) < tiles.size():
-		if not ViewTier.spend_ok(&"units"):
-			if not _more:
-				_more = true
-				_walk_on.call_deferred()
-			return
 		var ids: Array = w["on"].get(tiles[int(w["i"])], [])
-		ids.sort()
-		var slot := 0
-		for id in ids:
+		if int(w.get("j", 0)) == 0:
+			ids.sort()
+			w["slot"] = 0
+		while int(w.get("j", 0)) < ids.size():
+			if not ViewTier.spend_ok(&"units"):
+				if not _more:
+					_more = true
+					_walk_on.call_deferred()
+				return
+			var id: int = ids[int(w["j"])]
+			w["j"] = int(w["j"]) + 1
 			if not _units.has(id):
 				continue  # gone since the walk began
+			var slot := int(w["slot"])
 			if w["hosts"].has(id) or slot >= 6:
 				_free(id)  # its host's column draws it, or the tile holds as many as are drawn
 			else:
 				_company(_units[id], slot, w)
 			if not w["hosts"].has(id):
-				slot += 1
+				w["slot"] = slot + 1
 		w["i"] = int(w["i"]) + 1
+		w["j"] = 0
 	_walk = {}
 	placed = true
 	preload("res://scripts/perf_tools.gd").mark("units")
