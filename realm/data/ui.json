@@ -1,6 +1,6 @@
 {
  "_loading": "intro.gd _is_ready: once the realm stands, the loading card stays until every frame has kept steady_fps for steady_s seconds (so play starts smooth), or most_s seconds have passed since it stood.",
- "loading": {"steady_fps": 30, "steady_s": 3.0, "most_s": 90},
+ "loading": {"steady_fps": 30, "steady_s": 3.0, "most_s": 90, "settling": "The realm is settling…"},
  "_smooth_scale": "main.gd apply_graphics: Smooth draws the 3D world at this share of the window's pixels a side (0.47: about half the pixels of the project's 0.67), MetalFX upscaling it to full size; the interface is always drawn sharp. Beautiful keeps project.godot scaling_3d/scale.",
  "smooth_scale": 0.47,
  "_": "The interface's finesse pass (docs/review/ui-pass.md; ui.gd reads it through data.gd). The camera pad shows only when the player picks 'always' in Settings (else the camera moves by mouse, trackpad and keys) and the minimap sits flush to the right edge; the date card is capped at top.maxWidth points, its long lines ending in an ellipsis; the chronicle drawer is chronicle.width points wide and at most chronicle.height of the screen tall; a town card not pinned by its town stands on the left, townCard.width points wide; a toast is toast.width points wide.",

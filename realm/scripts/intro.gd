@@ -262,7 +262,8 @@ func _process(delta: float) -> void:
 	if visible and _hint:
 		# One quiet line, in sentence case, not a strip of keys in capitals (the audit; no key strips on screen):
 		# a click still turns the page and Esc still returns to the menu.
-		var words: String = "" if watching else "Click to begin" if _is_ready() else (forming.call() if forming.is_valid() else "The realm is forming…")
+		# Click to begin only once play will run smooth: while the realm stands but its frames haven't steadied, it says so.
+		var words: String = "" if watching else "Click to begin" if _is_ready() else preload("res://scripts/data.gd").value("ui", "loading.settling", "The realm is settling…") if _built_at >= 0.0 else (forming.call() if forming.is_valid() else "The realm is forming…")
 		_hint.text = words
 
 
