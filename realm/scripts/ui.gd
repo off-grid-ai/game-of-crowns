@@ -166,9 +166,6 @@ var _ledger_panel: PanelContainer:
 		return ledger._ledger_panel
 var top_bar := TopBar.new(self)  # the top bar and the story so far (top_bar.gd): its state lives there
 # The bar's pieces, read here by the keys, the cards and the realm's report.
-var _reign: Label:
-	get:
-		return top_bar._reign
 var _tithe_l: Label:
 	get:
 		return top_bar._tithe_l
@@ -1114,7 +1111,7 @@ func set_tithe(rate: float) -> void:
 	toast("The royal tithe is now %d%%. %s" % [int(tithe * 100), "The houses grumble." if tithe >= Awareness.tithe_high else "The houses breathe easier."])
 
 
-## Where the reign is heading, under the date (top_bar.gd).
+## The reign as the realm reports it: the objective on the date card (top_bar.gd), an event card waiting.
 func _show_heading(r: Dictionary) -> void:
 	top_bar._show_heading(r)
 	events.show(r.get("event"))
@@ -1152,7 +1149,7 @@ func set_reign(r: Dictionary) -> void:
 	# A locked button says what unlocks it (the casebook's silent locked button).
 	_pause_btn.tooltip_text = "The reign has ended. Rule on from the last card or the menu, and the realm moves again." if _pause_btn.disabled else with_key("Pause", "pause")
 	# A run of ours (the bridge's test flag) never shows its name: just the clock (the audit: no dev save in his face).
-	_reign.text = (clock if r.get("test", false) else "%s  ·  %s" % [r.get("name", ""), clock]).to_upper()
+	top_bar.reign_line = clock if r.get("test", false) else "%s  ·  %s" % [r.get("name", ""), clock]  # the date's tooltip and the story so far
 	if r.get("status", "") == "ended":
 		_reign_end(r)
 	else:

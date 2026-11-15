@@ -1,9 +1,10 @@
 extends RefCounted
-## The top bar: the date card top-left (the date, the reign's story and its bar,
-## where the reign is heading and the King's aim), the realm's numbers in the
-## middle (treasury, peace, souls, tithe) and the King's keys top-right, with the
-## story so far that opens from the date. Owned by ui.gd, which builds it in
-## _ready and forwards its calls here (ui._show_heading, ui._toggle_pause and the rest).
+## The top bar: the date card top-left (Anno 1800's quest tracker: the date, the one goal with its count, and one
+## button for the step he is on), the realm's numbers in the middle (treasury, seals, peace, souls, tithe) and the
+## King's keys top-right, with the story so far that opens from the date. What the card no longer holds goes where it
+## belongs: the counsel comes and goes as a notice, the act's name is told when it begins, the King's nature, name
+## and promises are on his own card (royal_sheet.gd). Owned by ui.gd, which builds it in _ready and forwards its
+## calls here (ui._show_heading, ui._toggle_pause and the rest).
 
 const Awareness := preload("res://scripts/awareness.gd")  # the view's one store: the realm's records (rec)
 const Features := preload("res://scripts/features.gd")
@@ -11,11 +12,10 @@ const T := preload("res://scripts/theme.gd")
 const UI := preload("res://scripts/ui.gd")
 const Juice := preload("res://scripts/juice.gd")
 const Data := preload("res://scripts/data.gd")
-const RoyalSheet := preload("res://scripts/royal_sheet.gd")  # the King's name and nature, from /world royals
 
 var ui: UI  # the interface that owns this bar: its signals, its building blocks, its other cards
 
-var _reign: Label
+var reign_line := ""  # the reign's name and clock (ui.set_reign): told in the date's tooltip and the story so far
 var _year: Label
 var _gold: Label
 var _peace: Label
@@ -112,29 +112,21 @@ func _pill(anchor_x: float, grow: int) -> HBoxContainer:
 	return h
 
 
-var _heading_more: VBoxContainer  # under the date: shown while the pointer is on the heading
 var _state_more: HBoxContainer  # beside the treasury: peace, souls, the tithe, on hover
-var _heading_pill: Control
 var _state_pill: Control
 
 
 ## What rests folded opens while the pointer is on its pill, and folds again after.
 func _hover_check() -> void:
-	if _heading_pill == null or not is_instance_valid(_heading_pill):
+	if _state_pill == null or not is_instance_valid(_state_pill):
 		return
 	var m := ui.get_viewport().get_mouse_position()
-	var on_heading := _heading_pill.is_visible_in_tree() and _heading_pill.get_global_rect().grow(6).has_point(m)
 	var on_state := _state_pill.is_visible_in_tree() and _state_pill.get_global_rect().grow(6).has_point(m)
-	if _heading_more.visible != on_heading:
-		_heading_more.visible = on_heading
-		_heading_pill.reset_size()
 	if _state_more.visible != on_state:
 		_state_more.visible = on_state
 		_state_pill.reset_size()
 
 
-var _threat_bar: ProgressBar  # how near the reign's story is to the throne
-var _threat_fill: StyleBoxFlat
 var _date_pill: Control  # the date card, top-left: the houses table keeps below it
 var _bar_pill: Control  # the buttons, top-right: the cards under the top bar keep below it
 var _story: Dictionary = {}  # the reign's story as the world last told it
@@ -149,7 +141,7 @@ func _toggle_story(pill: Control) -> void:
 		_story_panel.visible = false
 		return
 	if _story.is_empty():
-		ui.toast("No story has come for the throne yet. It shows here when one does.")
+		ui.toast("No story has come for the throne yet. It shows here when one does." + ("\n" + reign_line if reign_line != "" else ""))
 		return
 	if _story_panel == null:
 		_story_panel = ui.glass_panel()
@@ -166,7 +158,7 @@ func _fill_story() -> void:
 	if _story_panel == null:
 		return
 	var beats: Array = _story.get("beats", [])
-	var sig := "%s|%d|%d|%s" % [_story.get("title", ""), int(_story.get("act", 1)), beats.size(), _story.get("status", "")]
+	var sig := "%s|%d|%d|%s|%s|%s" % [_story.get("title", ""), int(_story.get("act", 1)), beats.size(), _story.get("status", ""), _last_act_told, reign_line]
 	if sig == _story_sig:
 		return
 	_story_sig = sig
@@ -175,7 +167,7 @@ func _fill_story() -> void:
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 10)
 	_story_panel.add_child(v)
-	v.add_child(T.label("The story so far"))
+	v.add_child(T.label("The story so far" + ("  ·  " + reign_line if reign_line != "" else "")))
 	v.add_child(T.title(String(_story.get("title", "")), 18))
 	var threat := float(_story.get("threat", 0))
 	var where := Label.new()
@@ -184,6 +176,9 @@ func _fill_story() -> void:
 	where.add_theme_color_override("font_color", T.DANGER if threat >= 66.0 and not ended else T.TEXT_2)
 	where.add_theme_font_size_override("font_size", T.SIZE_DESC)
 	v.add_child(where)
+	# The last act of the reign, once it is named (bridge lastAct): what comes for the throne now.
+	if _last_act_told != "":
+		v.add_child(T.label("The last act: %s" % _last_act_told, T.ACCENT))
 	v.add_child(HSeparator.new())
 	var scroll := ScrollContainer.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -233,164 +228,48 @@ func _fill_story() -> void:
 
 
 func _build_top_bar() -> void:
-	# Top-left: when.
+	# Top-left: the date and the one goal (Anno 1800's quest tracker): the goal's line with its count inline, and
+	# under it one button for the step he is on. Nothing else rests here (Mac: six things he couldn't read).
 	var when := _pill(0.0, Control.GROW_DIRECTION_END)
 	when.get_parent().offset_left = 10
 	var who := VBoxContainer.new()
-	who.add_theme_constant_override("separation", 3)  # the date, the story and its bar each get room
+	who.add_theme_constant_override("separation", 4)
+	var line := HBoxContainer.new()
+	line.add_theme_constant_override("separation", 12)
+	who.add_child(line)
 	_year = T.title("The realm is forming", 15)
-	who.add_child(_year)
-	_reign = T.label("Aldmere")
-	_reign.add_theme_font_size_override("font_size", T.SIZE_LABEL)
-	who.add_child(_reign)
-	# The story that comes for the throne: how near it is, as a thin bar under its name.
-	_threat_bar = ProgressBar.new()
-	_threat_bar.show_percentage = false
-	_threat_bar.custom_minimum_size = Vector2(0, 3)
-	_threat_bar.max_value = 100.0
-	var track := StyleBoxFlat.new()
-	track.bg_color = Color(1, 1, 1, 0.08)
-	_threat_bar.add_theme_stylebox_override("background", track)
-	_threat_fill = StyleBoxFlat.new()
-	_threat_fill.bg_color = T.ACCENT
-	_threat_bar.add_theme_stylebox_override("fill", _threat_fill)
-	_threat_bar.visible = false
-	_threat_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	who.add_child(_threat_bar)
-	# Where the reign is heading: peace, wealth and strength, each rising or
-	# falling against a year ago, and the name it is earning.
-	_heading = HBoxContainer.new()
-	_heading.add_theme_constant_override("separation", 6)
-	_heading.mouse_filter = Control.MOUSE_FILTER_PASS
-	_heading.visible = false
-	for k in [["peace", "scales"], ["wealth", "coins"], ["strength", "shield"]]:
-		var icon := TextureRect.new()
-		icon.texture = ui.icon(k[1])
-		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		icon.custom_minimum_size = Vector2(17, 17)
-		icon.modulate = T.TEXT
-		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		icon.visible = false  # said in words on the line instead (Mac: "very difficult to understand")
-		_heading.add_child(icon)
-		var way := Label.new()
-		way.add_theme_font_override("font", T.mono)
-		way.add_theme_font_size_override("font_size", T.SIZE_DESC)
-		way.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		way.visible = false
-		_heading.add_child(way)
-		_ways[k[0]] = way
-	_earning = Label.new()
-	_earning.add_theme_font_size_override("font_size", T.SIZE_DESC)
-	_earning.add_theme_color_override("font_color", T.TEXT)
-	_earning.add_theme_font_override("font", T.sans)  # a step heavier than the light titles: read at a glance
-	_earning.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_heading.add_child(_earning)
-	who.add_child(_heading)
-	# The King himself is a click away from his name (royal_sheet.gd: his nature, his family, his line).
-	_heading.mouse_filter = Control.MOUSE_FILTER_STOP
-	_heading.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	_heading.gui_input.connect(func(e):
-		if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
-			ui.royal.toggle())
-	_last_act = Label.new()
-	_last_act.add_theme_font_override("font", T.mono)
-	_last_act.add_theme_font_size_override("font_size", T.SIZE_LABEL)
-	_last_act.add_theme_color_override("font_color", T.ACCENT)  # gold: what needs him; red is only for loss
-	_last_act.visible = false
-	who.add_child(_last_act)
-	# The King's own aim, always before him: what to do next, in gold.
+	line.add_child(_year)
+	# The goal, in gold: what to do now. Click it and go where it's done (a quest log's marker).
 	_aim = Label.new()
-	_aim.add_theme_font_size_override("font_size", T.SIZE_BODY)  # the one line that says what to do next: read at a glance
+	_aim.add_theme_font_size_override("font_size", T.SIZE_DESC)
 	_aim.add_theme_font_override("font", T.sans)
 	_aim.add_theme_color_override("font_color", T.ACCENT)
 	_aim.mouse_filter = Control.MOUSE_FILTER_STOP
 	_aim.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	# Click the aim and go where it's done: that town's card opens (a quest log's marker).
 	_aim.gui_input.connect(func(e: InputEvent):
 		if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT and _aim_at >= 0:
 			ui.focus_city.emit(_aim_at))
 	_aim.visible = false
-	who.add_child(_aim)
-	# The first objectives' exact hands (objectives.json input; Warcraft III's first mission shows the click): a
-	# numbered key each, gone once the objective that carries them is done.
-	_aim_input = HBoxContainer.new()
-	_aim_input.add_theme_constant_override("separation", 6)
-	_aim_input.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_aim_input.visible = false
-	who.add_child(_aim_input)
-	# How far along: a thin gold fill and the count in the realm's words ("7 of 12 companies").
-	_aim_how = HBoxContainer.new()
-	_aim_how.add_theme_constant_override("separation", 8)
-	_aim_how.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_aim_how.visible = false
-	var aim_track := ColorRect.new()
-	aim_track.color = Color(T.ACCENT, 0.22)
-	aim_track.custom_minimum_size = Vector2(120, 4)
-	aim_track.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	aim_track.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_aim_fill = ColorRect.new()
-	_aim_fill.color = T.ACCENT
-	_aim_fill.size = Vector2(0, 4)
-	_aim_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	aim_track.add_child(_aim_fill)
-	_aim_how.add_child(aim_track)
+	line.add_child(_aim)
+	# How far along, inline after the goal, in the realm's words ("1,400 of 2,400 troops").
 	_aim_count = Label.new()
 	_aim_count.add_theme_font_override("font", T.mono)
 	_aim_count.add_theme_font_size_override("font_size", T.SIZE_LABEL)
 	_aim_count.add_theme_color_override("font_color", Color(T.ACCENT, 0.85))
+	_aim_count.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_aim_count.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_aim_how.add_child(_aim_count)
-	who.add_child(_aim_how)
-	# The next thing, under the date and the aim at rest: what he can do soonest and
-	# where, one quiet line (UI.md: text, a mono clock, a thin bar; gold only when it
-	# needs him, red only when it's about to be lost). A click flies there.
-	_next_row = HBoxContainer.new()
-	_next_row.add_theme_constant_override("separation", 8)
-	_next_row.mouse_filter = Control.MOUSE_FILTER_STOP
-	_next_row.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	_next_row.visible = false
-	_next_row.gui_input.connect(func(e: InputEvent):
-		if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
-			var at := _next_at_x((e as InputEventMouseButton).global_position.x)
-			if at >= 0:
-				ui.focus_city.emit(at))
-	_seals = Label.new()
-	_seals.add_theme_font_override("font", T.mono)
-	_seals.add_theme_font_size_override("font_size", T.SIZE_LABEL)
-	_seals.add_theme_color_override("font_color", T.ACCENT)
-	_seals.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_seals.visible = false
-	_next_row.add_child(_seals)
-	_next = Label.new()
-	_next.add_theme_font_override("font", T.sans)
-	_next.add_theme_font_size_override("font_size", T.SIZE_LABEL)
-	_next.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_next_row.add_child(_next)
-	_next_track = ColorRect.new()
-	_next_track.color = Color(T.TEXT, 0.14)
-	_next_track.custom_minimum_size = Vector2(48, 2)
-	_next_track.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	_next_track.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_next_fill = ColorRect.new()
-	_next_fill.size = Vector2(0, 2)
-	_next_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_next_track.add_child(_next_fill)
-	_next_row.add_child(_next_track)
-	_next_clock = Label.new()
-	_next_clock.add_theme_font_override("font", T.mono)
-	_next_clock.add_theme_font_size_override("font_size", T.SIZE_LABEL)
-	_next_clock.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_next_row.add_child(_next_clock)
-	# The clock runs down between the realm's reports, four times a second.
-	var tick := Timer.new()
-	tick.wait_time = 0.25
-	tick.autostart = true
-	tick.timeout.connect(_tick_next)
-	_next_row.add_child(tick)
-	who.add_child(_next_row)
-	# An event card waiting, on its own line under the next thing: gold, with the season's
-	# clock running down (Frostpunk's law timer), opened with a click.
+	_aim_count.visible = false
+	line.add_child(_aim_count)
+	# The one step he is on (objectives.json input; Warcraft III's first mission shows the click): a button that
+	# does it, the next step in its place once it's done (ui.json step).
+	_step_btn = ui.btn("", _do_step)
+	_step_btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	_step_btn.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	_step_btn.add_theme_font_size_override("font_size", T.SIZE_DESC)
+	_step_btn.visible = false
+	who.add_child(_step_btn)
+	# An event card waiting, on its own line: gold, with the season's clock running down (Frostpunk's law timer),
+	# opened with a click.
 	_event_row = ui.btn("", func():
 		if _event_open.is_valid():
 			_event_open.call())
@@ -400,29 +279,19 @@ func _build_top_bar() -> void:
 	_event_row.add_theme_font_size_override("font_size", T.SIZE_LABEL)
 	_event_row.visible = false
 	who.add_child(_event_row)
+	# The event's clock runs down, and the step follows his hand, four times a second.
+	var tick := Timer.new()
+	tick.wait_time = 0.25
+	tick.autostart = true
+	tick.timeout.connect(_tick)
+	who.add_child(tick)
 	when.add_child(who)
-	# At rest the heading is one line, the date and the aim (UI.md §1: the world is
-	# the content); the story, the name being earned, the last act and the aim's
-	# progress open beneath it while the pointer is on it.
-	var line := HBoxContainer.new()
-	line.add_theme_constant_override("separation", 12)
-	who.add_child(line)
-	who.move_child(line, 0)
-	_year.reparent(line)
-	_aim.reparent(line)
-	_aim.add_theme_font_size_override("font_size", T.SIZE_DESC)
-	_heading_more = VBoxContainer.new()
-	_heading_more.add_theme_constant_override("separation", 3)
-	_heading_more.visible = false
-	who.add_child(_heading_more)
-	for n in [_reign, _threat_bar, _heading, _last_act, _aim_how]:
-		n.reparent(_heading_more)
-	# Click the date and the story's line for the story so far.
+	# Click the date for the story so far.
 	var date_pill := when.get_parent() as Control
 	_date_pill = date_pill
 	date_pill.mouse_filter = Control.MOUSE_FILTER_STOP
 	date_pill.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	date_pill.tooltip_text = "The story so far"
+	date_pill.tooltip_text = "Click for the story so far"
 	date_pill.gui_input.connect(func(e: InputEvent):
 		if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
 			_toggle_story(date_pill))
@@ -431,7 +300,11 @@ func _build_top_bar() -> void:
 	var state := _pill(0.5, Control.GROW_DIRECTION_BOTH)
 	_top = [when.get_parent(), state.get_parent()]
 	_gold = ui.gauge(state, "coins", "Royal treasury, in crowns. The figure after it is what the tithe brings each season, less the court and the castles.", "Treasury")
-	# At rest one pill, the treasury; peace, souls and the tithe open beside it on hover.
+	# The royal seals in hand, beside the treasury at rest: a filled pip for each, a hollow one for each he could hold.
+	_seals = ui.gauge(state, "scroll", "Royal seals: each order you choose between sittings takes one. A new one comes each season; at court your rulings take none.", "Seals")
+	_seals.add_theme_color_override("font_color", T.ACCENT)
+	_seals.get_parent().visible = false
+	# At rest one pill, the treasury and the seals; peace, souls and the tithe open beside it on hover.
 	_state_more = HBoxContainer.new()
 	_state_more.add_theme_constant_override("separation", 14)
 	_state_more.visible = false
@@ -454,7 +327,6 @@ func _build_top_bar() -> void:
 	tithe.add_child(more)
 	_state_more.add_child(tithe)
 	# Opened while the pointer is on the pill (polled: its children take the pointer).
-	_heading_pill = when.get_parent()
 	_state_pill = state.get_parent()
 	ui.get_tree().process_frame.connect(_hover_check)
 	# Top-right: what you can do.
@@ -492,6 +364,8 @@ func _build_top_bar() -> void:
 	_court_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_court_btn.add_child(_court_badge)
 	act.add_child(ui.named(_court_btn, "Court"))
+	# The King himself (royal_sheet.gd): his nature, the name he is earning, his promises, his family, his line.
+	act.add_child(ui.named(ui.icon_btn("sword", "The King: your nature, the name you are earning, your promises and your family", func(): ui.royal.toggle()), "King"))
 	# You are the King: one press to walk among your people as him.
 	if Features.WALKING:
 		var walk := ui.btn("Walk as the King", func(): ui.walk_as_king.emit())
@@ -533,10 +407,6 @@ func _court_waiting_shown(n: int) -> void:
 	_court_btn.tooltip_text = ui.with_key(("The court: %d matter%s wait%s for you" % [n, "" if n == 1 else "s", "s" if n == 1 else ""]) if n > 0 else "The court sits when it has matters for you; the Hand calls you sooner only for a crisis.", "court")
 
 
-var _heading: HBoxContainer  # the three readings and the name being earned, under the date
-var _ways := {}  # reading -> its arrow
-var _earning: Label
-var _last_act: Label  # the last act's threat, named at three quarters of the reign
 var _aim: Label  # the royal ladder's current aim
 var _lore_btn: Button
 var _season := ""  # the realm's season, as last read
@@ -557,18 +427,20 @@ func _first_ten() -> void:
 		_aim.text = "◆ %s" % (String(cfg.get("text", "Hold the realm whole · winter in %d seasons")) % n if n > 1 else String(cfg.get("one", "Hold the realm whole · winter next season")))
 		_aim.tooltip_text = "Hold the realm whole to the first winter"
 		_aim_at = -1
+		_aim_count.visible = false  # the ladder's count belongs to the ladder's line, not the winter's
 	var hide: Array = preload("res://scripts/data.gd").value("opening", "hideUntilWinter", [])
 	for pair in [["Lore", _lore_btn], ["Ledger", _ledger_btn]]:
 		if pair[1] and String(pair[0]) in hide:
 			(pair[1] as Button).visible = _winter_seen
 var _aim_at := -1  # the town where the aim is acted on, opened by a click
-var _aim_how: HBoxContainer  # how far along the aim is: a fill and a count
-var _aim_input: HBoxContainer  # the exact input for the first objectives: "1 Click your host  2 Right-click the raiders"
-var _aim_input_was := []
-var _aim_fill: ColorRect
-var _aim_count: Label
-var _aim_frac := -1.0  # the fill shown, eased toward the real one
+var _aim_count: Label  # how far along the aim is, inline after it
 var _aim_told := ""  # the last aim met, toasted once
+var _step_btn: Button  # the one step he is on, as a button that does it
+var _steps: Array = []  # the objective's exact hands (objectives.json input), in order
+var _step_i := 0  # the step he is on
+var _step_key := ""  # the objective the steps belong to
+var _step_at := -1  # the ladder's own place for the step (kept apart from the aim's, which the first winter clears)
+var _step_how := ""  # how the objective is done (objectives.json how), under the step's own tooltip
 var _gold_shown := -1  # the treasury as the bar shows it now (juice counts it to the new sum)
 var _gold_to := -1
 var _gold_net := 0
@@ -579,72 +451,22 @@ func _gold_line(sum: int, net: int) -> String:
 	return ui.heads(sum) + ("  %s%s a season" % ["▲" if net > 0 else "▼", ui.heads(absi(net))] if net != 0 else "")
 
 
-var _seals: Label  # the King's royal seals this season, as gold pips (bridge seals.js)
+var _seals: Label  # the King's royal seals this season, as gold pips (bridge seals.js), beside the treasury
 var _seals_n := -1  # the count shown, to mark one being spent
 var _event_row: Button  # an event card waiting (event_card.gd): its title and the season's clock, gold
 var _event_open := Callable()
 var _event_ends := -1.0
 var _event_title := ""
-var _next_row: HBoxContainer  # the next thing, a minute away (bridge next.js): words, a countdown, a thin bar
-var _next: Label
-var _next_clock: Label
-var _next_fill: ColorRect
-var _next_track: ColorRect  # the next line's thin clock track
-var _next_at := -1  # its town, flown to on a click
-var _next_voices: Array = []  # two councillors' uses for the next seal (next.js voices): each half of the line goes to its own town
-var _next_ends := -1.0  # when its countdown runs out (engine seconds); -1 for a step with no clock
-var _next_key := ""  # what it says, to tell a new one from the same one
+var _counsel_said := ""  # the counsel last told as a notice (bridge next.js)
+var _counsel_at := -1.0e9  # when (engine seconds)
+var _act_told := ""  # "title|act" of the reign's story whose act was last told
+var _danger_told := ""  # the gravest danger to the crown last told
 var _last_act_told := ""
 
 
-## The reign's readings, as the realm reports them: an arrow each (gold rising,
-## red falling, grey holding) and the name history would give, then the next.
+## The objective as the realm reports it (reign aim): its line and count on the date card, its step as one button,
+## a tick when it is met. The counsel and the last act are told as notices as they come.
 func _show_heading(r: Dictionary) -> void:
-	var rd = r.get("readings")
-	_heading.visible = rd is Dictionary and String(r.get("status", "")) == "running"
-	if not _heading.visible:
-		return
-	var says := {"peace": ["Peace", "the houses at war or not"], "wealth": ["Wealth", "souls and the royal treasury"], "strength": ["Strength", "the great houses who would answer your banners"]}
-	var tip := PackedStringArray()
-	for k in _ways:
-		var w := int((rd.get(k, {}) as Dictionary).get("way", 0))
-		var l: Label = _ways[k]
-		l.text = "▲" if w > 0 else ("▼" if w < 0 else "–")
-		l.add_theme_color_override("font_color", T.ACCENT if w > 0 else (T.DANGER if w < 0 else T.TEXT_3))
-		tip.append("%s %s against a year ago (%s)." % [says[k][0], "rising" if w > 0 else ("falling" if w < 0 else "holding"), says[k][1]])
-	var name := String(rd.get("name", ""))
-	var next := String(rd.get("next", "")) if rd.get("next") != null else ""
-	# One line in words: what people call you, what's moving, and your promises.
-	# (What's rising or falling already shows in the arrows beside it: the line keeps to the name and a promise.)
-	_earning.text = "People call you %s" % name
-	# The King's own name and nature first (bridge royals.js: his two traits, by blood).
-	var rs := RoyalSheet.royals()
-	if rs.get("king") is Dictionary:
-		var k: Dictionary = rs["king"]
-		var nature := RoyalSheet.traits_of(k)
-		var focus := RoyalSheet.focus_label(rs)
-		_earning.text = "%s%s%s  ·  %s" % [String(k.get("name", "")), (", " + nature) if nature != "" else "", ("  ·  " + focus) if focus != "" else "", _earning.text]
-		tip.append("King %s, %d: %s.%s Click for the royal family." % [RoyalSheet.line_of(k).get_slice(",", 0), int(k.get("age", 0)), nature if nature != "" else "of no marked nature", "  A child King: a regent holds the realm." if bool(rs.get("regency", false)) else ""])
-		var strain := String(RoyalSheet.stress_band(k).get("says", ""))
-		if strain != "":
-			tip.append(strain)
-	tip.append("If the reign ended today, the realm would remember you as %s%s." % [name, ("; a few would say %s" % next) if next != "" else ""])
-	# The King's three ambitions: a diamond each, filled when met.
-	var am = r.get("ambitions")
-	if am is Array and not (am as Array).is_empty():
-		var kept := 0
-		var next_promise := ""
-		tip.append("Your three promises:")
-		for a in am:
-			var done: bool = (a as Dictionary).get("met") != null
-			kept += 1 if done else 0
-			if not done and next_promise == "":
-				next_promise = String((a as Dictionary).get("text", ""))
-			tip.append("  %s %s" % ["kept:" if done else "not yet:", String((a as Dictionary).get("text", ""))])
-		# At rest, the promise still to keep, so he sees what he swore without opening anything.
-		_earning.text += ("  ·  %s  %d/%d" % [next_promise, kept, (am as Array).size()]) if next_promise != "" else "  ·  Every promise kept"
-	_heading.tooltip_text = "\n".join(tip)
-	# The royal ladder: the aim before him, and a cheer when one is met.
 	var aim = r.get("aim")
 	_aim.visible = aim is Dictionary
 	if aim is Dictionary:
@@ -653,18 +475,13 @@ func _show_heading(r: Dictionary) -> void:
 		_aim_at = int(aim["at"]) if aim.get("at") != null else -1
 		if _aim_at >= 0:
 			_aim.tooltip_text += "\nClick to go there"
-	_show_input(aim.get("input") if aim is Dictionary else null)
-	_first_ten()
+	_step_at = _aim_at
 	var prog = aim.get("progress") if aim is Dictionary else null
-	_aim_how.visible = prog is Dictionary
-	if prog is Dictionary:
-		_aim_count.text = String(prog.get("text", ""))
-		var f := clampf(float(prog.get("frac", 0.0)), 0.0, 1.0)
-		# The fill grows to its new mark rather than jumping, so a step forward is seen.
-		if not is_equal_approx(f, _aim_frac):
-			var tw := ui.create_tween()
-			tw.tween_property(_aim_fill, "size:x", 120.0 * f, 0.6 if _aim_frac >= 0.0 else 0.0).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-			_aim_frac = f
+	_aim_count.visible = prog is Dictionary and String(prog.get("text", "")) != ""
+	if _aim_count.visible:
+		_aim_count.text = "·  %s" % String(prog.get("text", ""))
+	_first_ten()
+	_show_steps(aim)
 	_show_next(r.get("next"))
 	_show_seals(r.get("seals"))
 	# Done: a tick and what it brought (objectives.json says), once.
@@ -679,39 +496,88 @@ func _show_heading(r: Dictionary) -> void:
 	if il_key != "" and il_key != ui._interlude_told and not ui._interlude_on:
 		ui._interlude_told = il_key
 		ui._tell_interlude(il)
-	# The last act, named at three quarters of the reign, once.
+	# The last act, named at three quarters of the reign, once; it stays in the story so far.
 	var la = r.get("lastAct")
-	_last_act.visible = la is Dictionary
-	if la is Dictionary:
-		_last_act.text = ("The last act: %s" % String(la.get("threat", ""))).to_upper()
-		if _last_act_told != String(la.get("threat", "")):
-			if _last_act_told == "" and ui._court_met:
-				ui.toast("The last act of the reign begins. What comes for the throne now: %s." % String(la.get("threat", "")))
-			_last_act_told = String(la.get("threat", ""))
+	if la is Dictionary and _last_act_told != String(la.get("threat", "")):
+		if _last_act_told == "" and ui._court_met:
+			ui.toast("The last act of the reign begins. What comes for the throne now: %s." % String(la.get("threat", "")))
+		_last_act_told = String(la.get("threat", ""))
 
 
-## The objective's input keys, one chip each, numbered (rebuilt only when they change).
-func _show_input(input) -> void:
-	var want: Array = input if input is Array else []
-	_aim_input.visible = not want.is_empty()
-	if want == _aim_input_was:
+## The objective's steps (objectives.json input): only the one he is on shows, as a button that does it (ui.json
+## step: what each step's button does, its tooltip's words). A new objective starts at its first step.
+func _show_steps(aim) -> void:
+	var want: Array = aim.get("input") if aim is Dictionary and aim.get("input") is Array else []
+	var key := String(aim.get("key", "")) if aim is Dictionary else ""
+	if key != _step_key or want != _steps:
+		_steps = want.duplicate()
+		_step_key = key
+		_step_i = 0
+	_step_how = String(aim.get("how", "")) if aim is Dictionary else ""
+	_fill_step()
+
+
+## What the step's button does: "host" selects his host and shows it (ui.next_host), "place" goes where the objective
+## is done (ui.focus_city). By objective and step in ui.json step.do; a step it doesn't name goes to the place.
+func _step_does(i: int) -> String:
+	var by: Dictionary = Data.value("ui", "step.do", {})
+	var dos: Array = by.get(_step_key, []) if by.get(_step_key) is Array else []
+	return String(dos[i]) if i < dos.size() else "place"
+
+
+func _step_town() -> String:
+	if _step_at < 0 or not ui.town_of.is_valid():
+		return ""
+	return String((ui.town_of.call(_step_at) as Dictionary).get("name", ""))
+
+
+func _fill_step() -> void:
+	var words: Dictionary = Data.value("ui", "step", {})
+	var town := _step_town()
+	var label := ""
+	if not _steps.is_empty():
+		label = String(_steps[_step_i])
+	elif _step_at >= 0 and town != "":
+		label = String(words.get("go", "Go to {town}")).replace("{town}", town)
+	_step_btn.visible = label != ""
+	if label == "":
 		return
-	_aim_input_was = want.duplicate()
-	for c in _aim_input.get_children():
-		c.queue_free()
-	for i in want.size():
-		var chip := PanelContainer.new()
-		chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var box := T._box(Color(T.ACCENT, 0.12), Color(T.ACCENT, 0.45), 6, 8)
-		box.content_margin_top = 2
-		box.content_margin_bottom = 2
-		chip.add_theme_stylebox_override("panel", box)
-		chip.add_child(T.prose("%d  %s" % [i + 1, String(want[i])], T.SIZE_DESC, T.TEXT))
-		_aim_input.add_child(chip)
+	var does := _step_does(_step_i) if not _steps.is_empty() else "place"
+	_step_btn.text = label
+	# A step that has nowhere to go yet says so, rather than doing nothing (the casebook's silent locked button).
+	_step_btn.disabled = does == "place" and _step_at < 0
+	var tips: Dictionary = words.get("tips", {}) if words.get("tips") is Dictionary else {}
+	var tip := String(tips.get("nowhere" if _step_btn.disabled else does, "")).replace("{town}", town if town != "" else "the place")
+	if _steps.size() > 1:
+		tip = String(words.get("of", "Step {n} of {of}.")).replace("{n}", str(_step_i + 1)).replace("{of}", str(_steps.size())) + " " + tip
+	_step_btn.tooltip_text = tip + ("\n" + _step_how if _step_how != "" else "")
 
 
-## The realm's numbers in the bar and the reign's line under the date, from the
-## world as the realm reports it (ui.set_world hands over the crown's report).
+## The step's button pressed: it does the step, and the next step takes its place.
+func _do_step() -> void:
+	var does := _step_does(_step_i) if not _steps.is_empty() else "place"
+	if does == "host":
+		ui.next_host.emit()
+	elif _step_at >= 0:
+		ui.focus_city.emit(_step_at)
+	if _step_i < _steps.size() - 1:
+		_step_i += 1
+	_fill_step()
+
+
+## The step follows his hand: a "go there" step is done once that town's card is open, though he got there himself.
+func _follow_step() -> void:
+	if _steps.is_empty() or _step_i >= _steps.size() - 1 or _step_at < 0 or _step_does(_step_i) != "place":
+		return
+	var panel: Control = ui._town_panel
+	if panel and panel.visible and ui._town_id == _step_at:
+		_step_i += 1
+		_fill_step()
+
+
+## The realm's numbers in the bar and the date, from the world as the realm reports it (ui.set_world hands over the
+## crown's report). The reign's story and the dangers to the crown are told when they turn, and kept in the date's
+## tooltip and the story so far.
 func _show_world(c: Dictionary) -> void:
 	var st: Node = Awareness.store()
 	var date = st.rec("date")
@@ -755,112 +621,102 @@ func _show_world(c: Dictionary) -> void:
 	_souls.text = ui.heads(int(st.rec("souls", 0)))
 	_tithe_l.text = "%d%%" % int(ui.tithe * 100) + ("  ·  again in %d season%s" % [ui.tithe_wait, "" if ui.tithe_wait == 1 else "s"] if ui.tithe_wait > 0 else "")
 	_year.text = String(st.rec("date", {}).get("text", "The realm is forming"))
-	# Danger to the crown shows in the reign line, in red, only while it lasts.
+	# Danger to the crown: told once as it comes, and kept in the date's tooltip while it lasts.
 	var th: Dictionary = st.rec("threat", {})
 	var danger := []
 	if th.get("usurper", "none") == "rumour":
-		danger.append("a usurper stirs")
+		danger.append("A usurper stirs")
 	elif th.get("usurper", "none") == "march":
-		danger.append("a usurper marches on Kingsmere")
+		danger.append("A usurper marches on Kingsmere")
 	if int(th.get("north", 0)) > 0:
-		danger.append("the dead march on the North")
-	# The reign's story leads the line while it runs: its name, the act, and how
-	# near it is to the throne (the bar turns red past two-thirds).
+		danger.append("The dead march on the North")
+	var gravest := String(danger[0]) if not danger.is_empty() else ""
+	if gravest != _danger_told:
+		_danger_told = gravest
+		if gravest != "":
+			ui.toast(gravest + ".")
+	# The reign's story: its name and act told as a notice when an act begins, never resting on the card.
 	var story: Dictionary = st.rec("story", {}) if st.rec("story") is Dictionary else {}
 	_story = story
 	if _story_panel and _story_panel.visible:
 		_fill_story()  # rebuilt only when a beat lands or the act turns
-	_threat_bar.visible = not story.is_empty() and String(story.get("status", "")) == "running"
-	if _threat_bar.visible:
-		var threat := float(story.get("threat", 0))
-		_threat_bar.value = threat
-		_threat_fill.bg_color = T.DANGER if threat >= 66.0 else T.ACCENT
-		_reign.text = "%s  ·  Act %d" % [String(story.get("title", "")), int(story.get("act", 1))]
-		_reign.add_theme_font_size_override("font_size", T.SIZE_LABEL)
-		_reign.remove_theme_font_override("font")  # the story's name in the reading face, not tiny capitals
-		_reign.add_theme_color_override("font_color", T.DANGER if threat >= 66.0 else T.ACCENT)
-		_reign.get_parent().get_parent().tooltip_text = "%s\n\n%s\n\nHow near it is to the throne: %d in 100." % [String(story.get("title", "")), String(story.get("last", "")), int(threat)]
-	elif danger.is_empty():
-		_reign.add_theme_font_override("font", T.mono)
-		_reign.add_theme_font_size_override("font_size", T.SIZE_LABEL)
-		_reign.add_theme_color_override("font_color", T.TEXT_3)
-	else:
-		_reign.add_theme_font_override("font", T.mono)
-		_reign.add_theme_font_size_override("font_size", T.SIZE_LABEL)
-		# The gravest danger only: a longer line would push the realm's numbers off the bar.
-		_reign.text = String(danger[0]).to_upper()
-		_reign.add_theme_color_override("font_color", T.DANGER)
+	var running := not story.is_empty() and String(story.get("status", "")) == "running"
+	var act_key := "%s|%d" % [String(story.get("title", "")), int(story.get("act", 1))] if running else ""
+	if act_key != "" and act_key != _act_told:
+		_act_told = act_key
+		_tell_act(story)
+	# The date's tooltip: the reign and its clock, the danger, how near the story is to the throne.
+	var tip := PackedStringArray()
+	if reign_line != "":
+		tip.append(reign_line)
+	if gravest != "":
+		tip.append(gravest + ".")
+	if running:
+		tip.append("%s, act %d: %d in 100 near the throne." % [String(story.get("title", "")), int(story.get("act", 1)), int(story.get("threat", 0))])
+	tip.append("Click for the story so far")
+	_date_pill.tooltip_text = "\n".join(tip)
 
 
-## The next thing from the bridge (next.js): its words, its tone, its clock or count.
+## An act of the reign's story begins: its name and act, and the promise he has still to keep (ui.json act).
+func _tell_act(story: Dictionary) -> void:
+	var words: Dictionary = Data.value("ui", "act", {})
+	var says := String(words.get("begins", "Act {n} of {title} begins.")).replace("{n}", str(int(story.get("act", 1)))).replace("{title}", String(story.get("title", "")))
+	var promise := _next_promise()
+	if promise != "":
+		says += "\n" + String(words.get("promise", "Your promise: {text}")).replace("{text}", promise)
+	ui.toast(says)
+
+
+## The first of the King's three promises not yet kept (reign ambitions), or "".
+func _next_promise() -> String:
+	var am = (ui.reign_now as Dictionary).get("ambitions")
+	if not am is Array:
+		return ""
+	for a in am:
+		if a is Dictionary and a.get("met") == null:
+			return String(a.get("text", ""))
+	return ""
+
+
+## The counsel from the bridge (next.js): what he can do next, told as a notice that comes and goes (ui.json counsel:
+## a new word at most every gap seconds, the same word again after again seconds while it stands). The kinds
+## ui.json next.quiet names are said elsewhere (the ladder's step is the objective's own line, the court's sitting
+## its badge).
 func _show_next(n) -> void:
-	# One thing to do at a time (Mac: 'I should know what the hell to do'): the line speaks only for what the
-	# objective doesn't (ui.json next.quiet: the ladder's step is the objective's own line, the court's sitting its
-	# badge); the seals stay.
-	var said: bool = n is Dictionary and not String(n.get("kind", "")) in (Data.value("ui", "next.quiet", ["ladder", "court"]) as Array)
-	for c in [_next, _next_track, _next_clock]:
-		c.visible = said
-	_next_row.visible = said or _seals.visible
-	if not said:
+	if not n is Dictionary or String(n.get("kind", "")) in (Data.value("ui", "next.quiet", ["ladder", "court"]) as Array):
 		return
-	var tone := String(n.get("tone", "quiet"))
-	var col: Color = T.DANGER if tone == "loss" else T.ACCENT if tone == "act" else Color(T.TEXT, 0.7)
-	_next.text = String(n.get("text", ""))
-	_next.add_theme_color_override("font_color", col)
-	_next_clock.add_theme_color_override("font_color", Color(col, 0.85))
-	_next_fill.color = col
-	_next_fill.size.x = 48.0 * clampf(float(n.get("frac", 0.0)), 0.0, 1.0)
-	_next_at = int(n["city"]) if n.get("city") != null else -1
-	_next_voices = n.get("voices", []) if n.get("voices") is Array else []
-	if _next_voices.size() == 2:
-		# Competing needs (KoDP's council): one seal, two uses, each councillor's own; whichever he seals, the other waits.
-		_next_row.tooltip_text = "One seal, two uses: %s wants one, %s the other. Whichever you seal, the other waits.\nClick either to go there" % [String(_next_voices[0].get("who", "")), String(_next_voices[1].get("who", ""))]
-	else:
-		_next_row.tooltip_text = "What you can do next.%s" % ("\nClick to go there" if _next_at >= 0 else "")
-	var key := String(n.get("text", ""))
+	var text := String(n.get("text", ""))
+	if text == "":
+		return
+	var now := Time.get_ticks_msec() / 1000.0
+	var fresh := text != _counsel_said and now - _counsel_at >= UI.ui_num("counsel.gap", 20.0)
+	if not fresh and now - _counsel_at < UI.ui_num("counsel.again", 90.0):
+		return
+	_counsel_said = text
+	_counsel_at = now
+	var when := ""
 	if n.get("seconds") != null:
-		var ends := Time.get_ticks_msec() / 1000.0 + float(n["seconds"])
-		# The same thing re-reported keeps its own clock unless the realm's is far off (a court paused it).
-		if key != _next_key or absf(ends - _next_ends) > 3.0:
-			_next_ends = ends
-	else:
-		_next_ends = -1.0
-		_next_clock.text = String(n.get("count", "")) if n.get("count") != null else ""
-	_next_key = key
-	_tick_next()
+		var left := maxi(0, int(n["seconds"]))
+		when = "  ·  %d:%02d" % [left / 60, left % 60]
+	elif n.get("count") != null and String(n["count"]) != "":
+		when = "  ·  %s" % String(n["count"])
+	ui.toast(text + when)
 
 
-## The town a click on the line goes to: with two voices, the half of the words clicked (the first voice's words
-## end at the line's separator); else the line's own town.
-func _next_at_x(x: float) -> int:
-	if _next_voices.size() != 2:
-		return _next_at
-	var first := _next.text.get_slice("  ·  ", 0)
-	var font := _next.get_theme_font("font")
-	var w := font.get_string_size(first, HORIZONTAL_ALIGNMENT_LEFT, -1, _next.get_theme_font_size("font_size")).x if font else _next.size.x / 2.0
-	var v: Dictionary = _next_voices[1] if x - _next.global_position.x > w else _next_voices[0]
-	return int(v["city"]) if v.get("city") != null else _next_at
-
-
-func _tick_next() -> void:
+func _tick() -> void:
 	_tick_event()
-	if _next_ends < 0.0 or _next_clock == null:
-		return
-	var left := maxi(0, int(ceil(_next_ends - Time.get_ticks_msec() / 1000.0)))
-	_next_clock.text = "%d:%02d" % [left / 60, left % 60]
+	_follow_step()
 
 
 ## The royal seals in hand: a filled pip for each, a hollow one for each he could
 ## hold; one just spent fades out of its pip so the press is seen.
 func _show_seals(sl) -> void:
-	_seals.visible = sl is Dictionary
-	_next_row.visible = _next.visible or _seals.visible
+	_seals.get_parent().visible = sl is Dictionary
 	if not sl is Dictionary:
 		return
 	var n := int(sl.get("n", 0))
 	var of := int(sl.get("of", 2))
 	_seals.text = "●".repeat(n) + "○".repeat(maxi(0, of - n))
-	_seals.tooltip_text = "Royal seals: each order you choose between sittings takes one. A new one comes each season; at court your rulings take none."
 	if _seals_n >= 0 and n < _seals_n:
 		_seals.modulate.a = 0.35
 		ui.create_tween().tween_property(_seals, "modulate:a", 1.0, 0.5)
