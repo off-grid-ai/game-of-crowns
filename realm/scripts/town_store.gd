@@ -1,23 +1,19 @@
 extends RefCounted
 ## Towns kept on disk (Mac: stream towns by distance; the first load builds and saves every town, later loads read
-## them back): a town once raised is packed whole (Godot's PackedScene) and written to user://towns/ with
-## ResourceSaver, by a key of everything its layout reads, so it is read back (ResourceLoader's threaded load) rather
+## them back): a town once raised is packed whole (Godot's PackedScene) and kept (kept.gd: the game's baked copy, else
+## the player's), by a key of everything its layout reads, so it is read back (ResourceLoader's threaded load) rather
 ## than laid out again. Owned by towns.gd, which saves each town it raises and asks here first for one it would raise.
 ##
 ## The key: the city's own facts the build reads (where it stands, its size, buildings, holder, rank, family, name),
-## the land it stands on (the map's tiles), and a fingerprint of the game's scripts and data, so a town saved by
-## other code or other numbers is never read back. A changed town has a new key: it is raised and saved anew.
+## the land it stands on (the map's tiles), and (kept.gd) a fingerprint of the game's scripts and data, so a town saved
+## by other code or other numbers is never read back. A changed town has a new key: it is raised and saved anew.
 ##
 ## A packed scene keeps nodes, resources and plain metas. What it can't keep is carried over by hand: a meta that
 ## points at a node (a town's banners, its stalls) is written as the node's path and turned back on reading; a group
 ## a node belongs to ("town_roots", "hearths") is written as a meta and joined again.
 
-const DIR := "user://towns/"
-const BAKED := "res://baked/towns/"  # the starting realm's towns, shipped in the game (tools/bake.gd, before every export)
-const STAMP := "res://baked/code.txt"  # the fingerprint the bake was made by (code())
-static var baking := false  # tools/bake.gd: towns written into the game (BAKED), not the player's folder
+const Kept := preload("res://scripts/kept.gd")  # where a town is kept: the game's baked copy, else the player's
 
-static var _code := ""  # the scripts' and data's fingerprint, made once
 static var _land := {}  # the map's tiles -> their hash, for the map last asked
 
 
@@ -27,49 +23,13 @@ static func path_of(c: Dictionary, house: Dictionary, tiles: Array) -> String:
 		_land = {"tiles": tiles, "hash": str(tiles.hash())}
 	var facts := [c.get("x"), c.get("y"), c.get("size"), c.get("buildings"), c.get("capital"), c.get("owner"),
 		c.get("family"), c.get("title", c.get("name", "")), house.get("crown", false), house.get("name", ""),
-		house.get("colour", house.get("color", "")), _land["hash"], code()]
-	var f := "%d_%s_%s.scn" % [int(c["id"]), code(), str(facts).md5_text()]
-	if baking or FileAccess.file_exists(BAKED + f):
-		return BAKED + f
-	return DIR + f
-
-
-## Every script and data file's md5, as one, made once: a town (or a model's merged mesh, realistic.gd) is read back
-## only by the code and numbers that made it. An exported game's scripts are tokens, not the .gd files the bake
-## hashed, so it takes the fingerprint the bake stamped (STAMP): its scripts are the baked tree's.
-static func code() -> String:
-	if _code != "":
-		return _code
-	if OS.has_feature("template") and FileAccess.file_exists(STAMP):
-		_code = FileAccess.get_file_as_string(STAMP).strip_edges()
-	else:
-		var sums := PackedStringArray()
-		for dir in ["res://scripts/", "res://data/"]:
-			for f in DirAccess.get_files_at(dir):
-				if f.ends_with(".gd") or f.ends_with(".json"):
-					sums.append(f + FileAccess.get_md5(dir + f))
-		_code = "".join(sums).md5_text().substr(0, 12)
-	# What older code or numbers kept is never read again: gone, so the folders don't grow with every change.
-	for dir in [DIR, "user://models/"]:
-		_sweep(dir)
-	return _code
-
-
-## Every file under `dir` (its kits' folders too) not made by the current code, removed; the folders stay.
-static func _sweep(dir: String) -> void:
-	if not DirAccess.dir_exists_absolute(dir):
-		return
-	for f in DirAccess.get_files_at(dir):
-		if not f.contains(_code):
-			DirAccess.remove_absolute(dir + f)
-	for d in DirAccess.get_directories_at(dir):
-		_sweep(dir + d + "/")
+		house.get("colour", house.get("color", "")), _land["hash"]]
+	return Kept.path("towns", "%d_%s" % [int(c["id"]), str(facts).md5_text()], "scn")
 
 
 ## A town just raised, packed and written (the writing on a worker thread). Its metas and groups are made savable on
 ## a copy of what they hold and put back after packing, so the town in play is untouched.
 static func save(root: Node3D, path: String) -> void:
-	DirAccess.make_dir_recursive_absolute(path.get_base_dir())
 	var kept := []  # [node, meta, value as it was]
 	for n in [root] + root.find_children("*", "", true, false):
 		if n != root:
@@ -98,10 +58,7 @@ static func save(root: Node3D, path: String) -> void:
 	if ok != OK:
 		push_warning("TOWNS a town could not be packed (%s): it is raised again next time" % error_string(ok))
 		return
-	if baking:
-		ResourceSaver.save(scene, path, ResourceSaver.FLAG_COMPRESS)
-	else:
-		WorkerThreadPool.add_task(func(): ResourceSaver.save(scene, path), false, "town save")
+	Kept.keep(scene, path)
 
 
 ## Whether a town is kept at `path`; if so its reading is started on Godot's loader threads.
@@ -121,7 +78,7 @@ static func take(path: String) -> Variant:
 		return null
 	var scene := ResourceLoader.load_threaded_get(path) as PackedScene if st == ResourceLoader.THREAD_LOAD_LOADED else null
 	if scene == null:
-		if path.begins_with(DIR):
+		if path.begins_with(Kept.USER):
 			DirAccess.remove_absolute(path)  # unreadable: raised again
 		return false
 	var root := scene.instantiate() as Node3D

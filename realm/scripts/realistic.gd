@@ -10,6 +10,7 @@ const S := Units.M  # game units per metre, as in towns.gd
 ## component's models, by the names placers have always used. The tables below keep
 ## their old shapes while placers move from model names to component ids.
 const Data := preload("res://scripts/data.gd")
+const Kept := preload("res://scripts/kept.gd")
 # name -> [kind, longest horizontal side in metres], in the catalogue's order (the order placers pick in)
 static var KIT := {}
 # Parts a kit brings that our land supplies itself (a castle's raised platform and moat, a hall's ground sheet).
@@ -606,28 +607,15 @@ static func _finish(name: String) -> Dictionary:
 	return _cache[name]
 
 
-## A model's merged mesh (or its low mesh, `which`), kept on disk once, by the scripts' and data's fingerprint
-## (town_store.gd): towns kept on disk point at it rather than each holding a copy, and a later game reads it back
-## instead of merging again. It takes the file's path, so every town packed after shares it. Shipped in the game
-## (BAKED, made by tools/bake.gd before every export) or, for one the bake didn't make, kept in the player's own
-## folder (MODELS) the first time it is merged.
-const MODELS := "user://models/"
-const BAKED := "res://baked/models/"
-static var baking := false  # tools/bake.gd: every mesh made afresh and written into the game (BAKED)
+## A model's merged mesh (or its low mesh, `which`), kept in a file of its own once (kept.gd: the game's baked copy,
+## else the player's): towns kept on disk point at it rather than each holding a copy, and a later game reads it back
+## instead of merging again.
 static func _kept(name: String, which := "whole") -> String:
-	var f := "%s_%s_%s.res" % [name, which, preload("res://scripts/town_store.gd").code()]
-	if baking or FileAccess.file_exists(BAKED + f):
-		return BAKED + f
-	return MODELS + f
+	return Kept.path("models", "%s_%s" % [name, which])
 
 
 static func _keep(mesh: ArrayMesh, path: String) -> void:
-	DirAccess.make_dir_recursive_absolute(path.get_base_dir())  # a kit's own folder (props/, town/)
-	mesh.take_over_path(path)
-	if baking:
-		ResourceSaver.save(mesh, path, ResourceSaver.FLAG_COMPRESS)
-	else:
-		WorkerThreadPool.add_task(func(): ResourceSaver.save(mesh, path), false, "model save")
+	Kept.keep(mesh, path)
 
 
 ## Kits whose walls are stone but whose file never says how metallic it is, so
