@@ -10,6 +10,7 @@ extends RefCounted
 ## Knobs: realm/data/works.json. --works=off turns it all off.
 
 const Units := preload("res://scripts/world_units.gd")  # the world's one scale (Units.M)
+const WorldClock := preload("res://scripts/world_clock.gd")  # the realm's clock: stops while paused
 const Mover := preload("res://scripts/mover.gd")  # the one way to move (CLAUDE.md)
 const Data := preload("res://scripts/data.gd")
 const S := Units.M  # world units per metre, as towns.gd
@@ -329,7 +330,7 @@ static func take_horse(root: Node3D, by: Node3D, tied: bool) -> Node3D:
 			best = h
 	if best:
 		best.set_meta("led_by", by)
-		best.set_meta("led_at", Time.get_ticks_msec())
+		best.set_meta("led_at", WorldClock.msec())
 		if best.has_meta("tied_at"):
 			best.remove_meta("tied_at")
 	return best
@@ -342,7 +343,7 @@ static func let_go(h: Node3D, tie: bool) -> void:
 	if h.has_meta("led_by"):
 		h.remove_meta("led_by")
 	if tie:
-		h.set_meta("tied_at", Time.get_ticks_msec())
+		h.set_meta("tied_at", WorldClock.msec())
 
 
 # --- the clock --------------------------------------------------------------------
@@ -501,7 +502,7 @@ class Tick extends Node:
 			var to := Vector3.INF
 			var pace := amble
 			var by: Variant = h.get_meta("led_by") if h.has_meta("led_by") else null  # (a null default to get_meta is no default)
-			if by != null and (not is_instance_valid(by) or Time.get_ticks_msec() - int(h.get_meta("led_at", 0)) > int(Data.num("works", "paddock.lead_most", 120.0) * 1000.0)):
+			if by != null and (not is_instance_valid(by) or WorldClock.msec() - int(h.get_meta("led_at", 0)) > int(Data.num("works", "paddock.lead_most", 120.0) * 1000.0)):
 				Works.let_go(h, false)  # their groom gone, or never let go: it wanders home
 				by = null
 			if by != null:
@@ -512,7 +513,7 @@ class Tick extends Node:
 				if Vector2(to.x - h.position.x, to.z - h.position.z).length() < 0.03:
 					to = Vector3.INF  # close enough: it stands
 			elif h.has_meta("tied_at"):
-				if Time.get_ticks_msec() - int(h.get_meta("tied_at")) > int(Data.num("works", "paddock.tied_secs", 90.0) * 1000.0):
+				if WorldClock.msec() - int(h.get_meta("tied_at")) > int(Data.num("works", "paddock.tied_secs", 90.0) * 1000.0):
 					h.remove_meta("tied_at")  # nobody came: it's brought home (or wanders back)
 				continue
 			else:

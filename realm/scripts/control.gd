@@ -1,5 +1,6 @@
 extends Node3D
 const Units := preload("res://scripts/world_units.gd")  # the world's one scale (Units.M)
+const WorldClock := preload("res://scripts/world_clock.gd")  # the realm's clock: stops while paused
 const Ground := preload("res://scripts/ground.gd")  # the one answer to where a body may stand
 const PerfTools := preload("res://scripts/perf_tools.gd")  # the frame-cost probe
 ## Taking control of a character: you step into a lord, heir or knight and walk
@@ -737,7 +738,7 @@ func _hold_listener() -> void:
 	var crowd: Array = villagers.crowds.get(_chat_with["town"], [])
 	if int(_chat_with["i"]) < crowd.size():
 		var a: Dictionary = crowd[int(_chat_with["i"])]
-		a["hold_until"] = Time.get_ticks_msec() + 1500
+		a["hold_until"] = WorldClock.msec() + 1500
 		a["face"] = _body.position
 		var to: Vector3 = a["node"].position - _body.position
 		_body.rotation.y = atan2(to.x, to.z)

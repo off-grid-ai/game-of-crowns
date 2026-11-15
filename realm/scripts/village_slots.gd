@@ -14,6 +14,7 @@ func _init(owner: Node) -> void:
 
 
 const Ground := preload("res://scripts/ground.gd")  # the one answer to where a body may stand
+const WorldClock := preload("res://scripts/world_clock.gd")  # the realm's clock: stops while paused
 const TownNav := preload("res://scripts/town_nav.gd")  # a town's frame on the realm's navigation
 
 
@@ -54,7 +55,7 @@ var _released := {}  # slot id -> when it was last left (msec): shut for square_
 ## people mostly are.
 func place(a: Dictionary, key: String, knot := false) -> Vector3:
 	if a.has("slot_id"):
-		_released[String(a["slot_id"])] = Time.get_ticks_msec()  # the slot they leave shuts a moment (square_agents.cooldown)
+		_released[String(a["slot_id"])] = WorldClock.msec()  # the slot they leave shuts a moment (square_agents.cooldown)
 		a.erase("slot_id")
 	a["face_at"] = Vector3.INF
 	a["slot_stall"] = -1
@@ -181,7 +182,7 @@ func at_stall(a: Dictionary, who: Node3D) -> void:
 	var keeper: Variant = (town_node.get_meta("keepers", {}) as Dictionary).get(stall)
 	if keeper is Node3D and is_instance_valid(keeper) and not (keeper as Node3D).has_meta("customer"):
 		(keeper as Node3D).set_meta("customer", who)
-		(keeper as Node3D).set_meta("customer_at", Time.get_ticks_msec())
+		(keeper as Node3D).set_meta("customer_at", WorldClock.msec())
 		(keeper as Node3D).set_meta("customer_stall", stall)
 
 
@@ -252,7 +253,7 @@ func _slot(a: Dictionary, key: String, queue := true) -> Vector3:
 		goals.append_array(Array(life.get_meta("standing", PackedVector2Array())))
 	var clear := float(K.get("slot_clear", 0.1))
 	var cool := int(float(K.get("cooldown", 3.0)) * 1000.0)
-	var now := Time.get_ticks_msec()
+	var now := WorldClock.msec()
 	var buys := offers.filter(func(o: Array) -> bool: return o.size() < 4 or o[3] != "wait")
 	var rest := offers.filter(func(o: Array) -> bool: return o.size() >= 4 and o[3] == "wait")
 	var first: int = a["rng"].randi() % maxi(buys.size(), 1)

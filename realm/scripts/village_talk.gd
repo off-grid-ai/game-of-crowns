@@ -3,6 +3,7 @@ extends RefCounted
 ## (npc_mind FindPartner, Talk, JoinCircle), recorded so chatter.gd puts words over them and hands the floor round.
 ## One owner of the talks: villagers.gd keeps the bodies, this keeps who is talking with whom, where and for how
 ## long. Each member's own dictionary points at its gathering (a.talk), and each gathering at its members.
+const WorldClock := preload("res://scripts/world_clock.gd")  # the realm's clock: stops while paused
 
 var v: Node  # villagers.gd: the bodies, their towns and walk maps
 var talks := {}  # town id -> Array of gatherings: {key, centre, members, move, kind, topic, until, speaker, turn_at, floor}
@@ -109,7 +110,7 @@ func _in_talk(b: Dictionary, g: Dictionary) -> bool:
 ## them; the old rules' upkeep leaves them be ("mind"). Returns its key.
 func open_talk(a: Dictionary, b: Dictionary, kind := "talk", topic := "") -> int:
 	var town: int = a["town"]
-	var now := Time.get_ticks_msec() * 0.001
+	var now := WorldClock.msec() * 0.001
 	var list: Array = talks.get(town, []).filter(func(g): return float(g["until"]) > now and not (_index(g["members"], a) >= 0 or _index(g["members"], b) >= 0))
 	_keys += 1
 	var c: Vector3 = a["center"]
@@ -165,7 +166,7 @@ func talk_counts(town: int) -> Dictionary:
 ## rules never keep those up), or a minds' talk both left. Gone, and their
 ## people free again, so a lapsed knot never blocks a new talk.
 func prune(id: int) -> void:
-	var now := Time.get_ticks_msec() * 0.001
+	var now := WorldClock.msec() * 0.001
 	var list: Array = talks.get(id, [])
 	for k in range(list.size() - 1, -1, -1):
 		var g: Dictionary = list[k]
@@ -194,7 +195,7 @@ func join_talk(a: Dictionary) -> Array:
 	var K: Dictionary = preload("res://scripts/data.gd").value("crowd", "square_agents.circle", {})
 	var c: Vector3 = a["center"]
 	var here := Vector2(a["node"].position.x - c.x, a["node"].position.z - c.z)
-	var now := Time.get_ticks_msec() * 0.001
+	var now := WorldClock.msec() * 0.001
 	for g in talks.get(a["town"], []):
 		if float(g["until"]) < now or _index(g["members"], a) >= 0:
 			continue
@@ -240,7 +241,7 @@ func talk_centre(town: int, key: int) -> Vector3:
 ## Who has the floor in talk `key` now (chatter.gd is showing their line):
 ## their villager index, or -1 between lines or when the talk is gone.
 func floor_of(town: int, key: int) -> int:
-	var now := Time.get_ticks_msec() * 0.001
+	var now := WorldClock.msec() * 0.001
 	for g in talks.get(town, []):
 		if int(g["key"]) == key:
 			var f: Dictionary = g.get("floor", {})
@@ -251,7 +252,7 @@ func floor_of(town: int, key: int) -> int:
 ## Villager `i` has the floor in gathering `key` for `secs`: their turn to
 ## talk while chatter.gd shows their line, and the gathering lasts past it.
 func give_floor(town: int, key: int, i: int, secs: float) -> void:
-	var now := Time.get_ticks_msec() * 0.001
+	var now := WorldClock.msec() * 0.001
 	for g in talks.get(town, []):
 		if int(g["key"]) != key:
 			continue
@@ -282,7 +283,7 @@ func audit() -> void:
 			var now: String = v.people.clip(n)
 			if not n.visible or not now in v.SOCIAL + ["Drinking"]:
 				continue
-			if Time.get_ticks_msec() < int(a.get("hold_until", 0)):
+			if WorldClock.msec() < int(a.get("hold_until", 0)):
 				continue  # talking to the player
 			if now == "Drinking" and a.get("talk", {}).is_empty():
 				continue  # a drink alone is no conversation

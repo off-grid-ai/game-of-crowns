@@ -1,5 +1,6 @@
 extends Node3D
 const PerfTools := preload("res://scripts/perf_tools.gd")
+const WorldClock := preload("res://scripts/world_clock.gd")  # the realm's clock: stops while paused
 const ViewTier := preload("res://scripts/view_tier.gd")  # the one frame budget every staged loop draws on
 ## The land between the towns: farmsteads with their barns and fields, the
 ## hedgerows that divide the fields, crops in the fields and grass underfoot.
@@ -643,13 +644,13 @@ static var _held := false  # a film's season held (hold_season), whatever the re
 static func hold_season(season: String, t: float) -> void:
 	_held = true
 	_season_name = season
-	_season_from = Time.get_ticks_msec() - int(clampf(t, 0.0, 1.0) * maxf(Awareness.season_seconds, 1.0) * 1000.0)
+	_season_from = WorldClock.msec() - int(clampf(t, 0.0, 1.0) * maxf(Awareness.season_seconds, 1.0) * 1000.0)
 static var _tinted := {}  # "kind|stage" -> the crop's material in that colour
 
 
 ## How far through the season the realm is, 0 to 1.
 static func _through() -> float:
-	return clampf((Time.get_ticks_msec() - _season_from) / 1000.0 / maxf(Awareness.season_seconds, 1.0), 0.0, 1.0)  # the realm's own season (bridge pace)
+	return clampf((WorldClock.msec() - _season_from) / 1000.0 / maxf(Awareness.season_seconds, 1.0), 0.0, 1.0)  # the realm's own season (bridge pace)
 
 
 static func _stage(kind: String, season: String, t: float, lag: float) -> Array:
@@ -707,7 +708,7 @@ func _check_season() -> void:
 		return
 	if terrain.season != _season_name and not _held:
 		_season_name = terrain.season
-		_season_from = Time.get_ticks_msec()
+		_season_from = WorldClock.msec()
 	var t := _through()
 	for crop in get_tree().get_nodes_in_group("crops"):
 		_ripen(crop, _season_name, t)

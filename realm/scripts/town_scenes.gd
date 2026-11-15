@@ -1,5 +1,6 @@
 extends Node3D
 const PerfTools := preload("res://scripts/perf_tools.gd")
+const WorldClock := preload("res://scripts/world_clock.gd")  # the realm's clock: stops while paused
 ## Town life's director: the one reducer of docs/TOWN_LIFE.md. Every person and beast in a town's scenes is cast
 ## here from the rows of realm/data/town_scenes.json; nothing else places them.
 ## - The town's standing scenes (`standing` rows): staged whenever the town is dressed (town_life.gd update, the
@@ -1434,7 +1435,7 @@ func _road_out(root: Node3D, p: Node3D) -> Array:
 func _direct(id: int, root: Node3D, c: Dictionary) -> void:
 	var bb: Blackboard = main.awareness.town(id)
 	var states := Works.states_bb(bb)
-	var now := Time.get_ticks_msec()
+	var now := WorldClock.msec()
 	var running: Array = _live.get(id, [])
 	for s in running:
 		if not bool(s["ending"]) and now >= int(s["ends"]):
@@ -1557,7 +1558,7 @@ func _start(id: int, root: Node3D, row: Dictionary) -> Dictionary:
 		return {}
 	_seq += 1
 	var s := {"row": row, "key": "%s:%d" % [row["id"], _seq], "at": at, "cast": [], "ending": false,
-		"ends": Time.get_ticks_msec() + int(_rng.randf_range(float(last[0]), float(last[1])) * 1000.0), "town": id}
+		"ends": WorldClock.msec() + int(_rng.randf_range(float(last[0]), float(last[1])) * 1000.0), "town": id}
 	var axis := _rng.randf() * TAU
 	var first := Vector3.INF
 	for role in row.get("roles", []):
@@ -1709,7 +1710,7 @@ func _on_stimulus(kind: String, pos: Vector3, radius: float, _house: String, _st
 	var row: Dictionary = _d.get("reactions", {}).get(SceneKinds.tone(kind), {})
 	if row.is_empty() or radius <= 0.0:
 		return
-	var until := Time.get_ticks_msec() + int(float(row.get("last", 20)) * 1000.0)
+	var until := WorldClock.msec() + int(float(row.get("last", 20)) * 1000.0)
 	for scenes in _live.values():
 		for s in scenes:
 			for p in s["cast"]:
@@ -1776,7 +1777,7 @@ class HasReact extends BTCondition:
 		var r: Dictionary = blackboard.get_var(&"react")
 		if r.is_empty():
 			return FAILURE
-		if Time.get_ticks_msec() > int(r.get("until", 0)):
+		if WorldClock.msec() > int(r.get("until", 0)):
 			blackboard.set_var(&"react", {})
 			return FAILURE
 		return SUCCESS
@@ -1802,7 +1803,7 @@ class DoReact extends BTAction:
 
 	func _tick(delta: float) -> Status:
 		var r: Dictionary = blackboard.get_var(&"react")
-		if r.is_empty() or Time.get_ticks_msec() > int(r.get("until", 0)):
+		if r.is_empty() or WorldClock.msec() > int(r.get("until", 0)):
 			blackboard.set_var(&"react", {})
 			return SUCCESS
 		if not Mover.of(agent as Node3D).moving():
@@ -1864,7 +1865,7 @@ class Round extends BTAction:
 		var route: Array = blackboard.get_var(&"route")
 		if route.is_empty():
 			return RUNNING
-		var now := Time.get_ticks_msec()
+		var now := WorldClock.msec()
 		var lead := bool(blackboard.get_var(&"lead"))
 		var side := float(blackboard.get_var(&"side"))
 		if now < int(plan.get("until", 0)):
@@ -2029,7 +2030,7 @@ class Chase extends BTAction:
 			return RUNNING
 		var me := agent as Node3D
 		var m: Node = Mover.of(me)
-		var now := Time.get_ticks_msec()
+		var now := WorldClock.msec()
 		var W: Dictionary = pair["W"]
 		if now < int(pair["until"]):
 			return RUNNING  # a breather: both stand

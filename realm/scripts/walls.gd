@@ -13,6 +13,7 @@ extends Node3D
 ## middle section each stone that strikes it wears further, without the bridge.
 
 const Units := preload("res://scripts/world_units.gd")  # the world's one scale (Units.M)
+const WorldClock := preload("res://scripts/world_clock.gd")  # the realm's clock: stops while paused
 const StoneWall := preload("res://scripts/stone_wall.gd")
 const Data := preload("res://scripts/data.gd")
 const CastleBuilder := preload("res://scripts/castle_builder.gd")  # the kit curtain's storey
@@ -59,7 +60,7 @@ func _tick() -> void:
 		var dw: Node3D = _demo["wall"]
 		dw.set_hot(true)
 		var first := float(Data.num("walls", "demo.first_s", 4.0)) * 1000.0
-		if Time.get_ticks_msec() - int(_demo["at"]) > first:
+		if WorldClock.msec() - int(_demo["at"]) > first:
 			if dw.aim() == Vector3.INF:
 				_demo_wear()
 			_keep_striking(dw, _demo["center"])
@@ -74,7 +75,7 @@ func _keep_striking(wall: Node3D, center: Vector3) -> void:
 	# The demo wall is battered at its own, quicker pace (demo.every_s, demo.max), so a short take sees it
 	# crack, notch and breach; a real siege keeps strike.*.
 	var demo: bool = not _demo.is_empty() and wall == _demo["wall"]
-	if Time.get_ticks_msec() - int(_last.get(wall, 0)) < float(Data.num("walls", "demo.every_s" if demo else "strike.every_s", 2.6)) * 1000.0:
+	if WorldClock.msec() - int(_last.get(wall, 0)) < float(Data.num("walls", "demo.every_s" if demo else "strike.every_s", 2.6)) * 1000.0:
 		return
 	if not wall.hot:
 		return
@@ -104,7 +105,7 @@ func _keep_striking(wall: Node3D, center: Vector3) -> void:
 ## A catapult stone arcs from `from` to the wall and strikes it.
 func _throw(wall: Node3D, from: Vector3, to: Vector3) -> void:
 	_thrown[wall] = true
-	_last[wall] = Time.get_ticks_msec()
+	_last[wall] = WorldClock.msec()
 	var stone := MeshInstance3D.new()
 	var sm := SphereMesh.new()
 	sm.radius = 0.045
@@ -271,7 +272,7 @@ func strike(at: Vector3, along: Vector3) -> void:
 	for w in _walls():
 		if w.distance_to(at) < 0.4:
 			_blows[w] = int(_blows.get(w, 0)) + 1
-			_last[w] = Time.get_ticks_msec()
+			_last[w] = WorldClock.msec()
 			w.strike(at, along)
 			return
 
@@ -553,7 +554,7 @@ func _demo_build() -> void:
 			"sections": int(Data.num("walls", "demo.sections", 3)), "outer": 1.0, "seed": int(id),
 			"ground": func(p: Vector3) -> float: return main.terrain.height_at(p.x, p.z)})
 		add_child(wall)
-		_demo = {"wall": wall, "wear": 0.0, "id": int(id), "center": center, "at": Time.get_ticks_msec()}
+		_demo = {"wall": wall, "wear": 0.0, "id": int(id), "center": center, "at": WorldClock.msec()}
 		var t: Dictionary = main.towns.towns.get(int(id), {})
 		if is_instance_valid(t.get("node")):
 			wall.opened.connect(_publish.bind(wall, t["node"]))
@@ -566,4 +567,4 @@ func _demo_wear() -> void:
 	_demo["wear"] = minf(1.0, float(_demo["wear"]) + float(Data.num("walls", "demo.wear_per_hit", 0.12)))
 	_blows[w] = 0
 	w.wear_to(1, float(_demo["wear"]), true)
-	print("WALL demo wear=%.2f (cracked from 0.2, breached to the ground at %.2f) at %.1f s" % [float(_demo["wear"]), float(Data.num("walls", "breach.full_at", 0.75)), (Time.get_ticks_msec() - int(_demo["at"])) / 1000.0])
+	print("WALL demo wear=%.2f (cracked from 0.2, breached to the ground at %.2f) at %.1f s" % [float(_demo["wear"]), float(Data.num("walls", "breach.full_at", 0.75)), (WorldClock.msec() - int(_demo["at"])) / 1000.0])

@@ -29,6 +29,7 @@ extends Node3D
 ## data/army.json (docs/TUNING.md); units, their roles, meshes and clips are rows there (tools/rig/README.md's hook).
 
 const PerfTools := preload("res://scripts/perf_tools.gd")  # the frame-cost probe
+const WorldClock := preload("res://scripts/world_clock.gd")  # the realm's clock: stops while paused
 const Formation := preload("res://scripts/army_formation.gd")  # its shapes: line, column, places, order
 const Visual := preload("res://scripts/army_visual.gd")
 const HostPick := preload("res://scripts/host_pick.gd")  # a click on a regiment picks it by its own body  # its baked soldiers, their look and lighter levels
@@ -118,7 +119,7 @@ func _ready() -> void:
 			_dist = float(a.substr(7))  # g6: unread for a muster, the lens stood at 12, high over two towns
 	# Wait for the land and the realm's towns as the bridge reports them.
 	while main.terrain.width == 0 or not main.terrain.built or (_rec("cities", []) as Array).is_empty():
-		await get_tree().create_timer(0.5).timeout
+		await get_tree().create_timer(0.5, false).timeout
 	var in_field := battle.has("field") or battle.has("host")  # a battle side or a host in the field: no seat to muster by
 	var seat := _seat() if not in_field else {"name": "the field"}
 	var town: Vector3 = _ground_at(battle["field"]) if battle.has("field") else Vector3.ZERO
@@ -133,7 +134,7 @@ func _ready() -> void:
 		main.towns.ensure(id)
 		var waited := 0.0
 		while not main.towns.towns.has(id) and waited < 30.0:
-			await get_tree().create_timer(0.5).timeout
+			await get_tree().create_timer(0.5, false).timeout
 			waited += 0.5
 		_seat_root = main.towns.towns[id]["node"] if main.towns.towns.has(id) else null
 		town = _seat_root.global_position if _seat_root else main.terrain.world_pos(float(seat["x"]), float(seat["y"]))
@@ -272,7 +273,7 @@ func _ready() -> void:
 	mustered = true
 	raised.emit()
 	if battle.has("out_to"):  # war: formed at its seat a while, then out along the roads (march_out)
-		await get_tree().create_timer(Data.num("army", "march.form", 6.0)).timeout
+		await get_tree().create_timer(Data.num("army", "march.form", 6.0), false).timeout
 		march_out(battle["out_to"])
 
 
@@ -469,7 +470,7 @@ func board(hulls: Array) -> void:
 			edge = p
 		var mo: Node = Mover.of(r["node"]).fights(false)
 		mo.speed = Data.num("army", "march.speed", 0.16)
-		get_tree().create_timer(i * Data.num("army", "deck.file", 1.5)).timeout.connect(func():
+		get_tree().create_timer(i * Data.num("army", "deck.file", 1.5), false).timeout.connect(func():
 			if not is_instance_valid(hull) or not is_instance_valid(r["node"]):
 				return
 			_clips(r, "walk")
@@ -810,7 +811,7 @@ func ack() -> void:
 		var hold := float(k.get("s", 1.8)) * _rng.randf_range(0.85, 1.15)
 		r["fidget"] = hold  # no man fidgets through it
 		play(r, String(k.get("role", "cheer")))
-		get_tree().create_timer(hold).timeout.connect(func():
+		get_tree().create_timer(hold, false).timeout.connect(func():
 			if is_instance_valid(self) and String(r.get("state", "")) in ["halt", "rest"]:
 				play(r, "idle"))
 
@@ -1892,7 +1893,7 @@ func _process_timed(delta: float) -> void:
 func _at_ease(r: Dictionary, delta: float) -> void:
 	var vat: VATMultiMeshInstance3D = r["vat"]
 	var backs: Array = r["backs"]
-	var now := Time.get_ticks_msec() / 1000.0
+	var now := WorldClock.msec() / 1000.0
 	for i in range(backs.size() - 1, -1, -1):
 		if float(backs[i][1]) <= now:
 			var s := int(backs[i][0])

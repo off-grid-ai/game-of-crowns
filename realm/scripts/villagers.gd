@@ -1,5 +1,6 @@
 extends Node3D
 const PerfTools := preload("res://scripts/perf_tools.gd")  # the frame-cost probe
+const WorldClock := preload("res://scripts/world_clock.gd")  # the realm's clock: stops while paused
 const Data := preload("res://scripts/data.gd")  # the one loader of realm/data (data.gd)
 const Awareness := preload("res://scripts/awareness.gd")  # a mind's part handed it through the store (assign)
 ## Villagers for the towns near the camera: they walk between home, the square
@@ -108,7 +109,7 @@ func _process_timed(delta: float) -> void:
 	if _others_at <= 0.0:
 		_others_at = 0.25
 		_give_way()
-	var t := Time.get_ticks_msec() * 0.001
+	var t := WorldClock.msec() * 0.001
 	# A body moves on the frames its legs step (anim_lod.gd decides, one rule):
 	# every frame near the camera, further off one in AnimLOD.STRIDE with the
 	# time they're owed. Moved on a phase of its own, it stood still two frames
@@ -151,7 +152,7 @@ const ARRIVE := Mover.TOWN_ARRIVE  # a waypoint this near is reached (the Mover'
 ## on them) takes a real step aside, walking, once in a while: never pushed. Asked four times a second (_give_way),
 ## the travellers it found.
 func _make_way(a: Dictionary, travellers: Array[Node3D]) -> void:
-	var now := Time.get_ticks_msec()
+	var now := WorldClock.msec()
 	if now < int(a.get("made_way", 0)) + 3000:
 		return
 	var n: Node3D = a["node"]
@@ -272,7 +273,7 @@ func _raid_indoors(id: int) -> void:
 	for a in crowds[id]:
 		var go_in := raid or (sick and posmod(int(a["i"]) * 7, 10) < int(share * 10.0))
 		if go_in and not a.has("in_at"):
-			a["in_at"] = Time.get_ticks_msec() + int(1000.0 * (a["rng"] as RandomNumberGenerator).randf_range(float(within[0]), float(within[1])))
+			a["in_at"] = WorldClock.msec() + int(1000.0 * (a["rng"] as RandomNumberGenerator).randf_range(float(within[0]), float(within[1])))
 			if raid:
 				_flee(a, a["center"])
 		elif not go_in:
@@ -519,7 +520,7 @@ func _step(a: Dictionary, delta: float, _t: float) -> void:
 	if not a["placed"] and not _set_down(a):
 		return
 	# Spoken to: they stop, turn to whoever it is, and talk with their hands.
-	if Time.get_ticks_msec() < int(a.get("hold_until", 0)):
+	if WorldClock.msec() < int(a.get("hold_until", 0)):
 		var to: Vector3 = a.get("face", n.position) - n.position
 		if Vector2(to.x, to.z).length() > 0.01:
 			n.rotation.y = lerp_angle(n.rotation.y, atan2(to.x, to.z), minf(1.0, delta * 6.0))
@@ -536,7 +537,7 @@ func _step(a: Dictionary, delta: float, _t: float) -> void:
 	if block != a["block"]:
 		a["block"] = block
 		a["wait"] = minf(a["wait"], a["rng"].randf_range(0.0, 3.0))
-	n.visible = (a["block"] != "night" or (a["role"] == "tavern" and a["phase"] < 2.0)) and Time.get_ticks_msec() < int(a.get("in_at", 1 << 62))
+	n.visible = (a["block"] != "night" or (a["role"] == "tavern" and a["phase"] < 2.0)) and WorldClock.msec() < int(a.get("in_at", 1 << 62))
 	var center: Vector3 = a["center"]
 	var route: PackedVector2Array = a["route"]
 	var mo: Node = a["mover"]
@@ -997,7 +998,7 @@ func struck(town: int, i: int, by: Vector3, who_struck: String) -> void:
 	if i >= crowd.size():
 		return
 	var a: Dictionary = crowd[i]
-	a["hold_until"] = Time.get_ticks_msec() + 700
+	a["hold_until"] = WorldClock.msec() + 700
 	a["face"] = by
 	a["held_move"] = "React_Front"
 	a["flee_from"] = by

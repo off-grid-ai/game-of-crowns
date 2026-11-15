@@ -5,6 +5,7 @@ extends RefCounted
 ## banners carry a gold fringe. Read from the view's one store (awareness.gd), over the towns builder's towns (t).
 
 const Awareness := preload("res://scripts/awareness.gd")  # the view's one store: the realm's records (rec)
+const WorldClock := preload("res://scripts/world_clock.gd")  # the realm's clock: stops while paused
 
 var t: Node  # the towns builder (towns.gd): its towns
 var _banner_at := {}  # house id -> 0..1 of the pole
@@ -107,7 +108,7 @@ static func height_for(favour) -> float:
 ## colours raised over the keep), the first after castle.json banners.taken.delay, the rest a beat apart. Banners
 ## stood later than taken.window seconds after the taking stand as any other.
 func taken(root: Node3D) -> void:
-	root.set_meta("taken_at", Time.get_ticks_msec())
+	root.set_meta("taken_at", WorldClock.msec())
 	for flag in root.get_meta("banners", []):
 		if is_instance_valid(flag):
 			run_up(root, flag)
@@ -115,7 +116,7 @@ func taken(root: Node3D) -> void:
 
 func run_up(root: Node3D, flag: Node3D) -> void:
 	var k: Dictionary = (preload("res://scripts/data.gd").value("castle", "banners", {}) as Dictionary).get("taken", {})
-	var since := (Time.get_ticks_msec() - int(root.get_meta("taken_at", 0))) / 1000.0
+	var since := (WorldClock.msec() - int(root.get_meta("taken_at", 0))) / 1000.0
 	if since > float(k.get("window", 30.0)) or not flag.is_inside_tree():
 		return
 	var top: float = flag.get_meta("top", flag.position.y)

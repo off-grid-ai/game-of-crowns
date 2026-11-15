@@ -11,6 +11,7 @@ extends RefCounted
 ## - each person on their own clock (a random first wait), so no crowd moves as one.
 
 const People := preload("res://scripts/people.gd")
+const WorldClock := preload("res://scripts/world_clock.gd")  # the realm's clock: stops while paused
 const SceneKinds := preload("res://scripts/scene_kinds.gd")
 const Motion := preload("res://scripts/motion.gd")
 const Ground := preload("res://scripts/ground.gd")  # the one answer to where a body may stand
@@ -850,7 +851,7 @@ class HasCustomer extends BTCondition:
 		var c: Variant = agent.get_meta("customer") if agent.has_meta("customer") else null
 		var K: Dictionary = preload("res://scripts/data.gd").value("crowd", "square_agents.serve", {})
 		if c is Node3D and is_instance_valid(c) and (c as Node3D).global_position.distance_to((agent as Node3D).global_position) < float(K.get("reach", 0.4)) \
-				and Time.get_ticks_msec() - int(agent.get_meta("customer_at", 0)) < int(float(K.get("within", 20.0)) * 1000.0):
+				and WorldClock.msec() - int(agent.get_meta("customer_at", 0)) < int(float(K.get("within", 20.0)) * 1000.0):
 			return SUCCESS
 		if agent.has_meta("customer"):
 			agent.remove_meta("customer")
@@ -1201,7 +1202,7 @@ class FindPartner extends BTAction:
 	## Spoken for: called or talking, lately (an interrupted arrangement lapses).
 	static func booked(bb: Blackboard) -> bool:
 		var on: bool = bb.get_var(&"called", false, false) or bb.get_var(&"talking", false, false)
-		return on and Time.get_ticks_msec() - int(bb.get_var(&"called_at", 0, false)) < BOOKED_MS
+		return on and WorldClock.msec() - int(bb.get_var(&"called_at", 0, false)) < BOOKED_MS
 
 	func _tick(_delta: float) -> Status:
 		var me := agent.get_node_or_null("Mind") as BTPlayer
@@ -1233,12 +1234,12 @@ class FindPartner extends BTAction:
 		blackboard.set_var(&"partner", them)
 		# Its partner's part, handed it through the store; both spoken for until the talk ends: nobody calls either away.
 		Awareness.assign(best, {"meet": them.position + (meet - off - them.global_position), "partner": agent, "called": true,
-			"called_at": Time.get_ticks_msec(), "talking": true, "talk_pool": talk})
-		blackboard.set_var(&"called_at", Time.get_ticks_msec())
+			"called_at": WorldClock.msec(), "talking": true, "talk_pool": talk})
+		blackboard.set_var(&"called_at", WorldClock.msec())
 		blackboard.set_var(&"talking", true)
 		blackboard.set_var(&"talk_pool", talk)
 		# The topic: what the one who starts it saw last, passed on as their own news.
-		var memory: Array = (blackboard.get_var(&"memory", [], false) as Array).filter(func(x): return Time.get_ticks_msec() - int(x.get("ms", 0)) < FRESH_MS)
+		var memory: Array = (blackboard.get_var(&"memory", [], false) as Array).filter(func(x): return WorldClock.msec() - int(x.get("ms", 0)) < FRESH_MS)
 		if not memory.is_empty():
 			var heard: Dictionary = (memory[0] as Dictionary).duplicate()
 			heard["near"] = 1.0  # heard of, not seen
@@ -1365,9 +1366,9 @@ class Talk extends PlayRun:
 		var off := flat.length() - FindPartner.TALK_GAP  # >0 too far, <0 too close
 		if absf(off) < 0.025 or _both_for > SETTLE:
 			return true
-		if Time.get_ticks_msec() - _step_at < 1200:
+		if WorldClock.msec() - _step_at < 1200:
 			return false  # (settling: the other may be stepping too)
-		_step_at = Time.get_ticks_msec()
+		_step_at = WorldClock.msec()
 		_stepped = true
 		var v: Node = blackboard.get_var(&"vill", null, false)
 		var dir := flat.normalized() if flat.length() > 0.005 else Vector2.from_angle(randf() * TAU)
