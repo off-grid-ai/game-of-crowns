@@ -398,6 +398,16 @@ for spec in UNIT.get("props", []):
     piece.matrix_world = m
     with active(piece):
         bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+    if int(spec.get("tris", 0)) > 0 and tris(piece) > int(spec["tris"]):
+        # A prop's own budget (props.<n>.tris): welded first, so the decimate doesn't tear it at its UV seams.
+        bm = bmesh.new()
+        bm.from_mesh(piece.data)
+        bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=float(CFG["weld"]))
+        bm.to_mesh(piece.data)
+        bm.free()
+        m = piece.modifiers.new("decimate", "DECIMATE")
+        m.ratio = int(spec["tris"]) / tris(piece)
+        apply(piece, m)
     if spec.get("centre", False):
         # Its geometry about its own middle (a kit's shield keeps its old place on its first owner as an offset).
         lo_, hi_ = bounds([piece])

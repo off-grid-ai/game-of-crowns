@@ -11,8 +11,11 @@ a = sys.argv[sys.argv.index("--") + 1:]
 base_path, model_path, out = a[0], a[1], a[2]
 R = 0.2           # a leg's reach from its bone chain (metres)
 OVER = 0.55       # how far the base leg runs up inside the cloth above the hem
-LEGS = 0.25       # the base legs thinned to this share of their faces (the bake holds 8,192 vertices in all)
-BODY = 0.55       # the model above the hem thinned to this share, room for the legs
+BODY_TRIS = 2000  # the model above the hem decimated to this many triangles (docs/TUNING.md; the army's fps round)
+LEGS_TRIS = 500   # the four base legs together decimated to this many
+WELD = 1e-4       # metres: a glTF splits each vertex at its UV islands; welded back before decimating, or the
+                  # decimate pulls each side of every seam its own way and tears the mesh into scraps (the cavalry
+                  # was 1,747 loose pieces, and Godot's simplifier gave it one lighter level, 2.6k, at any distance)
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
 
@@ -131,14 +134,24 @@ print("MOUNT_LEGS base leg faces", len(horse.data.polygons))
 mw = horse.matrix_world.copy(); horse.parent = None; horse.matrix_world = mw
 for m in list(horse.modifiers):
     horse.modifiers.remove(m)
-# Thinned (Blender's collapse decimate keeps each vertex's weights interpolated).
-bpy.context.view_layer.objects.active = body
-bm_ = body.modifiers.new("thin", "DECIMATE"); bm_.ratio = BODY
-bpy.ops.object.modifier_apply(modifier="thin")
-bpy.context.view_layer.objects.active = horse
-dm = horse.modifiers.new("thin", "DECIMATE"); dm.ratio = LEGS
-bpy.ops.object.modifier_apply(modifier="thin")
-print("MOUNT_LEGS base leg faces thinned", len(horse.data.polygons))
+# Welded, then thinned to a triangle budget (Blender's collapse decimate keeps each vertex's weights interpolated and
+# the UVs on the faces' corners, so the paint's seams stay).
+def thin(o, budget):
+    bm = bmesh.new(); bm.from_mesh(o.data)
+    bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=WELD)
+    bm.to_mesh(o.data); bm.free()
+    o.data.calc_loop_triangles()
+    n = len(o.data.loop_triangles)
+    if n > budget:
+        bpy.context.view_layer.objects.active = o
+        dm = o.modifiers.new("thin", "DECIMATE"); dm.ratio = budget / n
+        bpy.ops.object.modifier_apply(modifier="thin")
+    o.data.calc_loop_triangles()
+    print("MOUNT_LEGS %s triangles %d -> %d" % (o.name, n, len(o.data.loop_triangles)))
+
+
+thin(body, BODY_TRIS)
+thin(horse, LEGS_TRIS)
 
 # One body: the base legs joined into the model, every group by bone name, on the base's armature.
 bpy.ops.object.select_all(action="DESELECT")
