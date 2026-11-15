@@ -999,7 +999,7 @@ const ROUTES = {
   },
   // An order to one of the King's hosts (hosts.js: the view asks, the bridge decides and moves it).
   "POST /host/order": async (req, res, url) => {
-    const [code, out] = Hosts.order({ world, meta, sworn, crownSeat }, await body(req));
+    const [code, out] = Hosts.order({ world, meta, sworn, crownSeat, send, record, besiege: (c) => startCampaign(c), detail: detail() }, await body(req));  // send etc.: the order's first step at once (hosts.js atOnce)
     if (code === 200 && !out.dry) { record({ turn: world?.turn ?? 0, kind: "decree", text: out.text }); meta.lastActAt = world?.turn ?? 0; meta.idleTold = false; }  // an order is an act (season.js idle)
     // A march on a great house's town is declared as it is ordered: the house and the realm hear of it.
     if (code === 200 && out.declare) {

@@ -98,9 +98,33 @@ export function order(ctx, b) {
     const by = meta.hostOrdered?.turn === world.turn ? { ...meta.hostOrdered.by } : {};
     by[Number(b.host)] = (by[Number(b.host)] ?? 0) + 1;
     meta.hostOrdered = { turn: world.turn, by };  // orders given this season, by host (its id: its lowest company's)
+    atOnce(ctx, Number(b.host));
     chron.saveMeta(meta);
   }
   return out;
+}
+
+// The King's word takes effect at once (Mac 2026-11-15, supervisor's call: 'orders take effect at once'): a march,
+// attack or garrison just given takes its first step now, through the same stepOrder the season's turn uses, and the
+// host is held from Freeciv's AI as the season holds it. Its far (how near it came last season) is left for the season
+// to measure, so a first step never reads as a host that came no nearer.
+function atOnce(ctx, hostId) {
+  const { world, meta, send } = ctx;
+  const crown = crownOf(world);
+  const i = (meta.hostOrders ?? []).findIndex((o) => o.units.includes(hostId));
+  if (!send || !crown || i < 0) return;
+  const o = meta.hostOrders[i];
+  if (!["march", "attack", "garrison"].includes(o.kind)) return;
+  const byId = new Map(soldiersOf(world, crown.id).map((u) => [u.id, u]));
+  const shut = new Set([...(world.cities ?? []), ...(world.units ?? [])].filter((x) => x.owner !== crown.id).map((x) => `${x.x},${x.y}`));
+  const units = o.units.filter((id) => byId.has(id));
+  if (!units.length) return;
+  const after = stepOrder(ctx, o, world.turn, units, byId, shut).map((x) => ({ ...x, far: o.far ?? null }));
+  meta.hostOrders.splice(i, 1, ...after);
+  meta.hostsHeld ??= [];
+  const held = after.filter((x) => x.kind === "march" || x.kind === "garrison" || (x.kind === "hold" && x.siege != null)).flatMap((x) => x.units).filter((id) => !meta.hostsHeld.includes(id));
+  if (held.length) send(`lua cmd ${Lua.homewardHold(held)}`);
+  meta.hostsHeld.push(...held);
 }
 // How many more orders host `id` may have this season (each host its own: data/hosts.json ordersPerHost; for /world's
 // hosts and the command card).
@@ -551,6 +575,124 @@ function supplyOf(meta, units) {
   return { supply: v, hungry: v < S.hungry, stragglers: v >= S.hungry ? 0 : Math.round(S.stragglers * (1 - v / S.hungry) * 100) / 100 };
 }
 
+// One step of a crown host's order (march, attack, garrison, hold, its crossing by sea): the King's men walked toward
+// its goal (Freeciv's edit walk, a season's HOSTS.speed), a siege laid at the walls, a foe struck from beside him.
+// Returns the order as it stands after the step ([] when it is over). The season's turn (season) and the King's word
+// (order: at once, Mac 2026-11-15 'orders take effect at once') both step through here, one path.
+function stepOrder(ctx, o, turn, units, byId, shut) {
+  const { world, meta, send, record, besiege } = ctx;
+  const crown = crownOf(world);
+  if (o.joined && turn > (o.since ?? 0) + 1) return [];  // banner men a season in: the town's men now, one host with them
+  if (o.x == null) { return [{ ...o, units }]; }
+  if (o.kind === "attack") {
+    // The foe's men are followed where they go; gone (fallen, or home behind walls), the host stands.
+    const foe = (world.units ?? []).find((u) => u.id === o.target);
+    if (!foe) {
+      record?.({ turn, kind: "decree", text: "The foe the royal host marched on is gone from the field; the host makes camp." });
+      return [{ kind: "hold", units, since: turn, ...(o.face != null ? { face: o.face } : {}) }];
+    }
+    o.x = foe.x;
+    o.y = foe.y;
+    const beside = units.filter((id) => cheb(byId.get(id), foe) === 1);
+    if (beside.length) send(`lua cmd ${Lua.strike(beside, foe.x, foe.y)}`);  // from beside them, each strikes once
+    if (beside.length === units.length) { return [{ ...o, units, far: null }]; }
+  }
+  // Over the water (crossing): to the shore; there the crown raises and pays for the ships, and the host boards them
+  // (one Lua call: realm_ferry_raise); at sea; ashore, the ships disbanded (realm_ferry_land); then the march goes on
+  // to its goal. The ships are the King's while they carry his host: held from Freeciv's AI (realm_hold) and let go
+  // only for their own sailing.
+  if (o.sea && o.sea.phase !== "landed") {
+    const sea = o.sea;
+    const L = landOf();
+    const held = new Set([...(meta.hostsHeld ?? []), ...(meta.siegeHeld ?? [])]);
+    const go = (way, hulls = []) => {  // a step of the King's own, let go from any hold for it
+      const ids = way.filter(([, w]) => w.length).map(([id]) => id);
+      if (ids.length) send(`lua cmd ${Lua.homewardRelease(ids)}`);
+      for (const [id, w] of way) if (w.length) send(`lua cmd ${Lua.walk(id, w)}`);
+      const back = ids.filter((id) => held.has(id) || hulls.includes(id));
+      if (back.length) send(`lua cmd ${Lua.homewardHold(back)}`);
+    };
+    if (!L) { return [{ kind: "hold", units, since: turn }]; }
+    if (sea.phase === "coast") {
+      if (units.every((id) => cheb(byId.get(id), sea.coast) === 0)) {
+        const triremes = (world.units ?? []).filter((u) => u.owner === crown?.id && u.type === SHIP).map((u) => u.id);
+        send(`lua cmd ${Lua.ferryRaise(crown?.id, units, sea.water.x, sea.water.y, sea.ships, sea.cost)}`);
+        return [{ ...o, units, sea: { ...sea, phase: "raised", before: triremes } }];
+      }
+      const steps = stepsTo(sea.coast, new Set([...shut].filter((k) => k !== `${sea.coast.x},${sea.coast.y}`))) ?? stepsTo(sea.coast);
+      go(units.map((id) => [id, steps ? wayOn(steps, byId.get(id), HOSTS.speed) : []]));
+      return [{ ...o, units }];
+    }
+    if (sea.phase === "raised") {
+      // The ships raised last season: the crown's new Triremes on the water where they were raised, the host in them.
+      const fresh = (world.units ?? []).filter((u) => u.owner === crown?.id && u.type === SHIP && !(sea.before ?? []).includes(u.id) && u.x === sea.water.x && u.y === sea.water.y);
+      const aboard = units.every((id) => { const u = byId.get(id); return u && u.x === sea.water.x && u.y === sea.water.y; });
+      if (fresh.length < sea.ships || !aboard) {
+        record?.({ turn, kind: "decree", text: (crown?.gold ?? 0) < sea.cost ? "The treasury could not pay for the ships; the royal host makes camp on the shore." : "No ships could be raised for the royal host; it makes camp on the shore." });
+        if (fresh.length) {
+          send(`lua cmd ${Lua.ferryLand(units, sea.coast.x, sea.coast.y)}`);
+          shipsOff(ctx, turn, L, fresh.map((u) => u.id), sea.coast);
+        }
+        return [{ kind: "hold", units, since: turn }];
+      }
+      record?.({ turn, kind: "decree", text: `The royal host takes ship: the crown raises ${sea.ships === 1 ? "a ship" : `${sea.ships} ships`} for ${sea.cost} gold.` });
+      o.sea = { ...sea, phase: "sail", hulls: fresh.slice(0, sea.ships).map((u) => u.id), before: undefined };
+    }
+    // At sea: the ships (and the host in them) sail toward the water beside the landing; there, the host comes ashore
+    // and the ships put out to sea (shipsOff).
+    const hulls = o.sea.hulls.map((id) => (world.units ?? []).find((u) => u.id === id && u.owner === crown?.id)).filter(Boolean);
+    if (hulls.length < o.sea.hulls.length) {
+      record?.({ turn, kind: "decree", text: "The ships carrying the royal host are lost." });
+      return [{ kind: "hold", units, since: turn }];
+    }
+    const beside = round(L, o.sea.landing.x, o.sea.landing.y).filter(([x, y]) => sails(L, x, y, false));
+    const near = new Set(beside.map(([x, y]) => `${x},${y}`));
+    if (hulls.every((u) => near.has(`${u.x},${u.y}`))) {
+      send(`lua cmd ${Lua.ferryLand(units, o.sea.landing.x, o.sea.landing.y)}`);
+      shipsOff(ctx, turn, L, o.sea.hulls, o.sea.landing);
+      record?.({ turn, kind: "decree", text: `The royal host comes ashore${o.city != null ? ` on the road to ${cityName(o.city)}` : ""}; the ships put out to sea.`, city: o.city ?? undefined });
+      return [{ ...o, units, far: null, sea: { ...o.sea, phase: "landed" } }];
+    }
+    go(hulls.map((u) => [u.id, (seaRoad(L, [[u.x, u.y]], beside, false) ?? []).slice(1, 1 + (HULLS[u.type]?.speed ?? 1))]), o.sea.hulls);
+    return [{ ...o, units }];
+  }
+  // There: on the place, or before the walls of a town that isn't the crown's (a march halts at another's gates).
+  const goal = o.city != null ? world.cities.find((c) => c.id === o.city) : null;
+  const reach0 = (goal && goal.owner !== crown?.id && o.kind === "march") || o.kind === "attack" ? 1 : 0;
+  const there = units.every((id) => cheb(byId.get(id), o) <= reach0);
+  if (there) {
+    // At the walls of a town it marched on: the siege begins (campaigns.js) on whoever holds it now (the town
+    // may have changed hands on the road: a rising, a war), if that is still a foe, and the host holds before them.
+    const holder = goal && o.siege ? world.players.find((p) => p.id === goal.owner) : null;
+    if (holder && holder.id !== crown?.id && !sworn(ctx, holder.id) && !(meta.campaigns ?? []).some((k) => k.city === goal.id)) {
+      record?.({ turn, kind: "decree", text: `The royal host reaches ${cityName(goal.id)} and lays siege.`, city: goal.id });
+      besiege?.({ city: goal.id, house: holder.id });
+      return [{ kind: "hold", units, since: turn, siege: goal.id }];
+    }
+    if (!o.arrived) record?.({ turn, kind: "decree", text: o.kind === "garrison" ? `The royal host ${o.home ? "is home at" : "garrisons"} ${cityName(o.city)}.` : `The royal host has reached ${o.city != null ? cityName(o.city) : "the place the King named"}.`, city: o.city ?? undefined });
+    return [o.kind === "march" ? { kind: "hold", units, since: turn } : { ...o, units, arrived: true }];
+  }
+  // A host that came no nearer last season (the sea, or gates shut to it) stands where it is.
+  // Nearer is counted in steps over land where the way is known (around a lake is nearer too).
+  const steps = stepsTo(o, new Set([...shut].filter((k) => k !== `${o.x},${o.y}`))) ?? stepsTo(o);
+  const reach = (u) => (steps && steps.at(u) >= 0 ? steps.at(u) : cheb(u, o));
+  const far = units.reduce((t, id) => t + reach(byId.get(id)), 0);
+  if (o.far != null && far >= o.far && o.kind !== "attack") {  // (a foe followed may draw off a season; it isn't a wall)
+    record?.({ turn, kind: "decree", text: `The royal host can go no nearer ${o.city != null ? cityName(o.city) : "the place the King named"}, and makes camp.`, city: o.city ?? undefined });
+    return [{ kind: "hold", units, since: turn }];
+  }
+  const pinned = units.filter((id) => (meta.hostsHeld ?? []).includes(id));  // let go for their own steps, held again after
+  if (pinned.length) send(`lua cmd ${Lua.homewardRelease(pinned)}`);
+  for (const id of units) {
+    // A march on another's town halts at its walls (reach0): the walk never steps onto the town's own tile, where
+    // Freeciv's edit move would put the King's men inside an empty town without taking it (besiege_order_probe).
+    const way = steps ? wayOn(steps, byId.get(id), HOSTS.speed, reach0) : [];
+    send(`lua cmd ${way.length ? Lua.walk(id, way) : Lua.step(id, o.x, o.y, HOSTS.speed, reach0)}`);
+  }
+  if (pinned.length) send(`lua cmd ${Lua.homewardHold(pinned)}`);
+  return [{ ...o, units, far }];
+}
+
 export function season(ctx, turn) {
   const { world, meta, send, record, besiege } = ctx;
   if (!world) return;
@@ -630,125 +772,8 @@ export function season(ctx, turn) {
       next.push({ ...o, units, far });
       continue;
     }
-    if (o.joined && turn > (o.since ?? 0) + 1) continue;  // banner men a season in: the town's men now, one host with them
-    if (o.x == null) { next.push({ ...o, units }); continue; }
-    if (o.kind === "attack") {
-      // The foe's men are followed where they go; gone (fallen, or home behind walls), the host stands.
-      const foe = (world.units ?? []).find((u) => u.id === o.target);
-      if (!foe) {
-        record?.({ turn, kind: "decree", text: "The foe the royal host marched on is gone from the field; the host makes camp." });
-        next.push({ kind: "hold", units, since: turn, ...(o.face != null ? { face: o.face } : {}) });
-        continue;
-      }
-      o.x = foe.x;
-      o.y = foe.y;
-      const beside = units.filter((id) => cheb(byId.get(id), foe) === 1);
-      if (beside.length) send(`lua cmd ${Lua.strike(beside, foe.x, foe.y)}`);  // from beside them, each strikes once
-      if (beside.length === units.length) { next.push({ ...o, units, far: null }); continue; }
-    }
-    // Over the water (crossing): to the shore; there the crown raises and pays for the ships, and the host boards them
-    // (one Lua call: realm_ferry_raise); at sea; ashore, the ships disbanded (realm_ferry_land); then the march goes on
-    // to its goal. The ships are the King's while they carry his host: held from Freeciv's AI (realm_hold) and let go
-    // only for their own sailing.
-    if (o.sea && o.sea.phase !== "landed") {
-      const sea = o.sea;
-      const L = landOf();
-      const held = new Set([...(meta.hostsHeld ?? []), ...(meta.siegeHeld ?? [])]);
-      const go = (way, hulls = []) => {  // a step of the King's own, let go from any hold for it
-        const ids = way.filter(([, w]) => w.length).map(([id]) => id);
-        if (ids.length) send(`lua cmd ${Lua.homewardRelease(ids)}`);
-        for (const [id, w] of way) if (w.length) send(`lua cmd ${Lua.walk(id, w)}`);
-        const back = ids.filter((id) => held.has(id) || hulls.includes(id));
-        if (back.length) send(`lua cmd ${Lua.homewardHold(back)}`);
-      };
-      if (!L) { next.push({ kind: "hold", units, since: turn }); continue; }
-      if (sea.phase === "coast") {
-        if (units.every((id) => cheb(byId.get(id), sea.coast) === 0)) {
-          const triremes = (world.units ?? []).filter((u) => u.owner === crown?.id && u.type === SHIP).map((u) => u.id);
-          send(`lua cmd ${Lua.ferryRaise(crown?.id, units, sea.water.x, sea.water.y, sea.ships, sea.cost)}`);
-          next.push({ ...o, units, sea: { ...sea, phase: "raised", before: triremes } });
-          continue;
-        }
-        const steps = stepsTo(sea.coast, new Set([...shut].filter((k) => k !== `${sea.coast.x},${sea.coast.y}`))) ?? stepsTo(sea.coast);
-        go(units.map((id) => [id, steps ? wayOn(steps, byId.get(id), HOSTS.speed) : []]));
-        next.push({ ...o, units });
-        continue;
-      }
-      if (sea.phase === "raised") {
-        // The ships raised last season: the crown's new Triremes on the water where they were raised, the host in them.
-        const fresh = (world.units ?? []).filter((u) => u.owner === crown?.id && u.type === SHIP && !(sea.before ?? []).includes(u.id) && u.x === sea.water.x && u.y === sea.water.y);
-        const aboard = units.every((id) => { const u = byId.get(id); return u && u.x === sea.water.x && u.y === sea.water.y; });
-        if (fresh.length < sea.ships || !aboard) {
-          record?.({ turn, kind: "decree", text: (crown?.gold ?? 0) < sea.cost ? "The treasury could not pay for the ships; the royal host makes camp on the shore." : "No ships could be raised for the royal host; it makes camp on the shore." });
-          if (fresh.length) {
-            send(`lua cmd ${Lua.ferryLand(units, sea.coast.x, sea.coast.y)}`);
-            shipsOff(ctx, turn, L, fresh.map((u) => u.id), sea.coast);
-          }
-          next.push({ kind: "hold", units, since: turn });
-          continue;
-        }
-        record?.({ turn, kind: "decree", text: `The royal host takes ship: the crown raises ${sea.ships === 1 ? "a ship" : `${sea.ships} ships`} for ${sea.cost} gold.` });
-        o.sea = { ...sea, phase: "sail", hulls: fresh.slice(0, sea.ships).map((u) => u.id), before: undefined };
-      }
-      // At sea: the ships (and the host in them) sail toward the water beside the landing; there, the host comes ashore
-      // and the ships put out to sea (shipsOff).
-      const hulls = o.sea.hulls.map((id) => (world.units ?? []).find((u) => u.id === id && u.owner === crown?.id)).filter(Boolean);
-      if (hulls.length < o.sea.hulls.length) {
-        record?.({ turn, kind: "decree", text: "The ships carrying the royal host are lost." });
-        next.push({ kind: "hold", units, since: turn });
-        continue;
-      }
-      const beside = round(L, o.sea.landing.x, o.sea.landing.y).filter(([x, y]) => sails(L, x, y, false));
-      const near = new Set(beside.map(([x, y]) => `${x},${y}`));
-      if (hulls.every((u) => near.has(`${u.x},${u.y}`))) {
-        send(`lua cmd ${Lua.ferryLand(units, o.sea.landing.x, o.sea.landing.y)}`);
-        shipsOff(ctx, turn, L, o.sea.hulls, o.sea.landing);
-        record?.({ turn, kind: "decree", text: `The royal host comes ashore${o.city != null ? ` on the road to ${cityName(o.city)}` : ""}; the ships put out to sea.`, city: o.city ?? undefined });
-        next.push({ ...o, units, far: null, sea: { ...o.sea, phase: "landed" } });
-        continue;
-      }
-      go(hulls.map((u) => [u.id, (seaRoad(L, [[u.x, u.y]], beside, false) ?? []).slice(1, 1 + (HULLS[u.type]?.speed ?? 1))]), o.sea.hulls);
-      next.push({ ...o, units });
-      continue;
-    }
-    // There: on the place, or before the walls of a town that isn't the crown's (a march halts at another's gates).
-    const goal = o.city != null ? world.cities.find((c) => c.id === o.city) : null;
-    const reach0 = (goal && goal.owner !== crown?.id && o.kind === "march") || o.kind === "attack" ? 1 : 0;
-    const there = units.every((id) => cheb(byId.get(id), o) <= reach0);
-    if (there) {
-      // At the walls of a town it marched on: the siege begins (campaigns.js) on whoever holds it now (the town
-      // may have changed hands on the road: a rising, a war), if that is still a foe, and the host holds before them.
-      const holder = goal && o.siege ? world.players.find((p) => p.id === goal.owner) : null;
-      if (holder && holder.id !== crown?.id && !sworn(ctx, holder.id) && !(meta.campaigns ?? []).some((k) => k.city === goal.id)) {
-        record?.({ turn, kind: "decree", text: `The royal host reaches ${cityName(goal.id)} and lays siege.`, city: goal.id });
-        besiege?.({ city: goal.id, house: holder.id });
-        next.push({ kind: "hold", units, since: turn, siege: goal.id });
-        continue;
-      }
-      if (!o.arrived) record?.({ turn, kind: "decree", text: o.kind === "garrison" ? `The royal host ${o.home ? "is home at" : "garrisons"} ${cityName(o.city)}.` : `The royal host has reached ${o.city != null ? cityName(o.city) : "the place the King named"}.`, city: o.city ?? undefined });
-      next.push(o.kind === "march" ? { kind: "hold", units, since: turn } : { ...o, units, arrived: true });
-      continue;
-    }
-    // A host that came no nearer last season (the sea, or gates shut to it) stands where it is.
-    // Nearer is counted in steps over land where the way is known (around a lake is nearer too).
-    const steps = stepsTo(o, new Set([...shut].filter((k) => k !== `${o.x},${o.y}`))) ?? stepsTo(o);
-    const reach = (u) => (steps && steps.at(u) >= 0 ? steps.at(u) : cheb(u, o));
-    const far = units.reduce((t, id) => t + reach(byId.get(id)), 0);
-    if (o.far != null && far >= o.far && o.kind !== "attack") {  // (a foe followed may draw off a season; it isn't a wall)
-      record?.({ turn, kind: "decree", text: `The royal host can go no nearer ${o.city != null ? cityName(o.city) : "the place the King named"}, and makes camp.`, city: o.city ?? undefined });
-      next.push({ kind: "hold", units, since: turn });
-      continue;
-    }
-    const pinned = units.filter((id) => meta.hostsHeld.includes(id));  // let go for their own steps, held again after
-    if (pinned.length) send(`lua cmd ${Lua.homewardRelease(pinned)}`);
-    for (const id of units) {
-      // A march on another's town halts at its walls (reach0): the walk never steps onto the town's own tile, where
-      // Freeciv's edit move would put the King's men inside an empty town without taking it (besiege_order_probe).
-      const way = steps ? wayOn(steps, byId.get(id), HOSTS.speed, reach0) : [];
-      send(`lua cmd ${way.length ? Lua.walk(id, way) : Lua.step(id, o.x, o.y, HOSTS.speed, reach0)}`);
-    }
-    if (pinned.length) send(`lua cmd ${Lua.homewardHold(pinned)}`);
-    next.push({ ...o, units, far });
+    const stepped = stepOrder(ctx, o, turn, units, byId, shut);
+    next.push(...stepped);
   }
   const held = keep(next).filter((id) => !meta.hostsHeld.includes(id));
   if (held.length) send(`lua cmd ${Lua.homewardHold(held)}`);

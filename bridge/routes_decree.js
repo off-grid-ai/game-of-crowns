@@ -101,7 +101,7 @@ export async function issueDecree(ctx, req, res, url) {
   if (result.hostMarch) {
     // A house that asked the King's help opens its gates to his host (reinforce): its town may be garrisoned.
     const open = result.hostMarch.opens != null ? (pid) => pid === result.hostMarch.opens || sworn(pid) : sworn;
-    const [code, out] = Hosts.order({ world: ctx.world, meta: ctx.meta, sworn: open, crownSeat: ctx.crownSeat }, { host: result.hostMarch.host, order: result.hostMarch.order ?? "march", city: result.hostMarch.city, declared: true });
+    const [code, out] = Hosts.order({ world: ctx.world, meta: ctx.meta, sworn: open, crownSeat: ctx.crownSeat, send, record, besiege: (c) => startCampaign?.(c), detail: ctx.detail?.() }, { host: result.hostMarch.host, order: result.hostMarch.order ?? "march", city: result.hostMarch.city, declared: true });
     if (code === 200) result.text = `${result.text} ${out.text.replace(/^.*?: /, "").replace(/^./, (c) => c.toUpperCase())}`;
   }
   if (yearly) { (ctx.meta.decreeAt ??= {})[yearly] = ctx.world.turn ?? 0; chron.saveMeta(ctx.meta); }
