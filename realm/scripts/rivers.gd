@@ -7,6 +7,7 @@ extends Node3D
 const RIVERS := "res://assets/maps/rivers.json"
 const RiverManager := preload("res://addons/waterways/river_manager.gd")
 const Data := preload("res://scripts/data.gd")
+const Kept := preload("res://scripts/kept.gd")
 
 
 static var _lines = null  # the file's rivers, parsed once
@@ -139,6 +140,22 @@ func _lay(pts: Array[Vector3], widths: Array[float]) -> void:
 	# Cross-sections every share of a Waterways step (a step is about the river's width): at one, the ribbon's straight
 	# sides cut each bend and lay the water as flat sheets over the banks (Mac 2026-11-15: a flat slab on a hillside).
 	river.shape_step_length_divs = maxi(1, int(Data.num("ground", "rivers.lengthDivs", 4)))
+	# Its water's mesh made once and kept (kept.gd): the same course, widths and cross-sections make the same mesh, and
+	# Waterways' making took 7.7 s for the 32 rivers at every start (Mac's game 2026-11-15, rivers.make). A kept one
+	# is laid in as the river's own mesh, so Waterways takes it rather than making it (river_manager.gd _enter_tree).
+	var kept := Kept.path("rivers", str([pts, widths, river.shape_step_length_divs]).md5_text(), "res")
+	var arrays: Array = []
+	if Kept.has(kept):
+		var plain := load(kept) as ImporterMesh
+		if plain and plain.get_surface_count() > 0:
+			arrays = plain.get_surface_arrays(0)
+			var made := ArrayMesh.new()
+			made.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+			made.surface_set_material(0, river._material)
+			var own := MeshInstance3D.new()
+			own.name = "RiverMeshInstance"
+			own.mesh = made
+			river.add_child(own)
 	add_child(river)
 	# A lowland river, not a torrent: peaty green-brown, a slow even current, a
 	# soft ripple and no white water (Waterways' defaults are a mountain stream).
@@ -157,7 +174,12 @@ func _lay(pts: Array[Vector3], widths: Array[float]) -> void:
 	river.set_materials("i_lod0_distance", 6.0)
 	river.mesh_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	var mi: MeshInstance3D = river.mesh_instance
-	var arrays := (mi.mesh as ArrayMesh).surface_get_arrays(0)  # once, as it is made; every later drape works on this copy
+	if arrays.is_empty():
+		# Made now: its arrays read once, as it is made (every later drape works on this copy), and kept on a worker.
+		arrays = (mi.mesh as ArrayMesh).surface_get_arrays(0)
+		var plain := ImporterMesh.new()
+		plain.add_surface(Mesh.PRIMITIVE_TRIANGLES, arrays)
+		Kept.keep(plain, kept)
 	var level: PackedVector3Array = (arrays[Mesh.ARRAY_VERTEX] as PackedVector3Array).duplicate()
 	var uv: PackedVector2Array = arrays[Mesh.ARRAY_TEX_UV]
 	var rims := PackedInt32Array()
