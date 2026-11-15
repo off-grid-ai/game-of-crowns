@@ -768,6 +768,8 @@ func _char(root: Node3D, key: String, h: Array) -> Dictionary:
 		for g in root.get_children():
 			if not (g is MultiMeshInstance3D and String(g.get_meta("kind", "")) == String(h[3])):
 				continue
+			if g.has_meta("cell") and g.get_meta("cell") != preload("res://scripts/towns.gd").cell_of(Vector3(h[2])):
+				continue  # another cell's batch of the kind (towns.gd _flush): its copy at that place is another house
 			var mm: MultiMesh = (g as MultiMeshInstance3D).multimesh
 			var idx := int(h[4])
 			var at: Array = g.get("xfs") if g.get_script() == Batch else []
