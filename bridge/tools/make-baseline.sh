@@ -19,6 +19,8 @@ for f in realm.serv world_setup.lua court.json mood.json; do
   [ -f "$SRC/$f" ] && cp "$SRC/$f" "$DST/$f"
 done
 rm -f "$DST/state/folk-tales.json"  # the townsfolk's stories are written fresh in each chronicle
+# The starting /world and map read from the baseline's own save, so they never drift from it (tools/baseline-world.mjs).
+node "$HERE/tools/baseline-world.mjs"
 node -e '
 const fs = require("fs");
 const meta = JSON.parse(fs.readFileSync(process.argv[1] + "/meta.json", "utf8"));
