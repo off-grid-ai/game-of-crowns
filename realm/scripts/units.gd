@@ -336,6 +336,8 @@ func _company(u: Dictionary, slot: int, w: Dictionary) -> void:
 			# Carried by the rider when the company is mounted.
 			_banner(node.rider if node.get("rider") else node, Color.from_string(String(house.get("color", "#888")), Color.GRAY), house)
 			HostPick.proxy(node, int(id), Vector3(0.22, 0.62, 0.22))  # the bearer and his standard, to click (host_command.gd)
+		elif raider and not ship:
+			HostPick.proxy(node, int(id), Vector3(0.22, 0.5, 0.22))  # no standard, but the King's host can be sent at them (host_command.gd)
 		_figures[id] = {"node": node, "target": target, "wild": wild, "bow": String(u["type"]) in BOWS, "horse": node.has_method("mount"), "ship": ship}
 		_watch(id)
 	if _figures[id]["target"].distance_to(target) > 0.01:
@@ -382,7 +384,8 @@ func _raid_goals(store: Node) -> Dictionary:
 
 
 ## A raider: a man in dark cloth (army.json map.raider.cloth) with an axe, and a lit torch in his other hand for one in
-## torch_every of them, held whatever the body plays (motion.gd errand_load). No banner, no standard, nothing to click.
+## torch_every of them, held whatever the body plays (motion.gd errand_load). No banner, no standard; a right-click
+## on him sends the selected host at his band (_company's pick proxy, host_command.gd).
 func _raider_man(key: int, of := {}) -> Node3D:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = key
