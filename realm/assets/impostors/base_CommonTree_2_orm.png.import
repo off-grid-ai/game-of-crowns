@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dadyn6ji6rmba"
-path="res://.godot/imported/base_CommonTree_2_orm.png-0e11354915b164bcd05a933c7f50129e.ctex"
+path.s3tc="res://.godot/imported/base_CommonTree_2_orm.png-0e11354915b164bcd05a933c7f50129e.s3tc.ctex"
+path.etc2="res://.godot/imported/base_CommonTree_2_orm.png-0e11354915b164bcd05a933c7f50129e.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/impostors/base_CommonTree_2_orm.png"
-dest_files=["res://.godot/imported/base_CommonTree_2_orm.png-0e11354915b164bcd05a933c7f50129e.ctex"]
+dest_files=["res://.godot/imported/base_CommonTree_2_orm.png-0e11354915b164bcd05a933c7f50129e.s3tc.ctex", "res://.godot/imported/base_CommonTree_2_orm.png-0e11354915b164bcd05a933c7f50129e.etc2.ctex"]
 
 [params]
 

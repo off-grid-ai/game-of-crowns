@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bm21s18wuvg3g"
-path="res://.godot/imported/base_CommonTree_1_albedo.png-5402c56cf56ce09759d69ff42ba8e907.ctex"
+path.s3tc="res://.godot/imported/base_CommonTree_1_albedo.png-5402c56cf56ce09759d69ff42ba8e907.s3tc.ctex"
+path.etc2="res://.godot/imported/base_CommonTree_1_albedo.png-5402c56cf56ce09759d69ff42ba8e907.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/impostors/base_CommonTree_1_albedo.png"
-dest_files=["res://.godot/imported/base_CommonTree_1_albedo.png-5402c56cf56ce09759d69ff42ba8e907.ctex"]
+dest_files=["res://.godot/imported/base_CommonTree_1_albedo.png-5402c56cf56ce09759d69ff42ba8e907.s3tc.ctex", "res://.godot/imported/base_CommonTree_1_albedo.png-5402c56cf56ce09759d69ff42ba8e907.etc2.ctex"]
 
 [params]
 

@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://culyninnmq0aa"
-path="res://.godot/imported/base_DeadTree_1_orm.png-2573ddbcc84f7772f63c522dcd520c7a.ctex"
+path.s3tc="res://.godot/imported/base_DeadTree_1_orm.png-2573ddbcc84f7772f63c522dcd520c7a.s3tc.ctex"
+path.etc2="res://.godot/imported/base_DeadTree_1_orm.png-2573ddbcc84f7772f63c522dcd520c7a.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/impostors/base_DeadTree_1_orm.png"
-dest_files=["res://.godot/imported/base_DeadTree_1_orm.png-2573ddbcc84f7772f63c522dcd520c7a.ctex"]
+dest_files=["res://.godot/imported/base_DeadTree_1_orm.png-2573ddbcc84f7772f63c522dcd520c7a.s3tc.ctex", "res://.godot/imported/base_DeadTree_1_orm.png-2573ddbcc84f7772f63c522dcd520c7a.etc2.ctex"]
 
 [params]
 

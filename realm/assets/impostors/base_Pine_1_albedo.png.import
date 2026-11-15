@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cwraavy1xr1k"
-path="res://.godot/imported/base_Pine_1_albedo.png-b925607b5966616c4ac5d1ccd88fba1c.ctex"
+path.s3tc="res://.godot/imported/base_Pine_1_albedo.png-b925607b5966616c4ac5d1ccd88fba1c.s3tc.ctex"
+path.etc2="res://.godot/imported/base_Pine_1_albedo.png-b925607b5966616c4ac5d1ccd88fba1c.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/impostors/base_Pine_1_albedo.png"
-dest_files=["res://.godot/imported/base_Pine_1_albedo.png-b925607b5966616c4ac5d1ccd88fba1c.ctex"]
+dest_files=["res://.godot/imported/base_Pine_1_albedo.png-b925607b5966616c4ac5d1ccd88fba1c.s3tc.ctex", "res://.godot/imported/base_Pine_1_albedo.png-b925607b5966616c4ac5d1ccd88fba1c.etc2.ctex"]
 
 [params]
 

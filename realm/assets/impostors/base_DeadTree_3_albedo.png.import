@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://csc16o12t70rb"
-path="res://.godot/imported/base_DeadTree_3_albedo.png-32a517c4078609eeae7f1b2ed75e67bd.ctex"
+path.s3tc="res://.godot/imported/base_DeadTree_3_albedo.png-32a517c4078609eeae7f1b2ed75e67bd.s3tc.ctex"
+path.etc2="res://.godot/imported/base_DeadTree_3_albedo.png-32a517c4078609eeae7f1b2ed75e67bd.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/impostors/base_DeadTree_3_albedo.png"
-dest_files=["res://.godot/imported/base_DeadTree_3_albedo.png-32a517c4078609eeae7f1b2ed75e67bd.ctex"]
+dest_files=["res://.godot/imported/base_DeadTree_3_albedo.png-32a517c4078609eeae7f1b2ed75e67bd.s3tc.ctex", "res://.godot/imported/base_DeadTree_3_albedo.png-32a517c4078609eeae7f1b2ed75e67bd.etc2.ctex"]
 
 [params]
 
