@@ -7,8 +7,8 @@ extends Node
 ## A land chunk is baked from the land itself (Terrain3D's generate_nav_mesh_source_geometry: its triangles), less the
 ## sea, the lakes and the rivers' drawn water (terrain.gd: below the waterline, a Lake tile, in_river; a road's ford is
 ## open), less every slope steeper than nav.slope (Recast's own walkable slope), with everything standing carved out,
-## grown by the body's radius: what ground.gd keeps stamped on its occupancy map (a town's and a place's pieces read off
-## their geometry, nav_ground.gd; the woods' trunks; the ground hosts and engines hold while they stand). It is three
+## grown by the body's radius: ground.gd obstacle_shapes, the engine's own shapes (a town's and a place's pieces, the
+## woods' trunks, camps, the ground hosts and engines hold while they stand; a hedged field is walked). It is three
 ## layers at three travel costs: the ways (a town's streets, square and footpaths; the roads; cost 1), the open land
 ## (nav.open_cost) and, for a cart's or a host's map, a river's water where no road fords it (nav.river_cost). A water
 ## chunk is the sea and lakes deeper than nav.water.draft under the waterline, kept a hull's half beam off the shore.
@@ -24,7 +24,6 @@ extends Node
 const Data := preload("res://scripts/data.gd")
 const Kept := preload("res://scripts/kept.gd")
 const ViewTier := preload("res://scripts/view_tier.gd")
-const NavGround := preload("res://scripts/nav_ground.gd")
 const Ground := preload("res://scripts/ground.gd")
 const PerfTools := preload("res://scripts/perf_tools.gd")
 
@@ -267,33 +266,39 @@ static func _faces(c: Vector2i) -> PackedVector3Array:
 	return land.generate_nav_mesh_source_geometry(box, false)
 
 
-## What a chunk's land maps are made of besides the land: everything standing over it (world XZ outlines), the ways
-## over it, and its signature (with the land's changes). claims_only: only the ground hosts and engines hold differs
-## from what it was last baked from.
+## What a chunk's land maps are made of besides the land: every shape standing over it (ground.gd obstacle_shapes: the
+## engine's own bodies for the towns' and places' pieces, the woods' trunks, camps, and the ground hosts and engines
+## hold), as world XZ outlines, the ways over it, and its signature (with the land's changes). claims_only: only the
+## held ground (hosts, bodies, engines) differs from what it was last baked from.
 static func _inputs(c: Vector2i) -> Dictionary:
 	var chunk := _chunk_size()
 	var area := Rect2(c.x * chunk - 1.0, c.y * chunk - 1.0, chunk + 2.0, chunk + 2.0)
+	var L: Dictionary = Data.value("ground", "physics.layers", {})
+	var held_bits := 0
+	var mask := 0
+	for k in L:
+		if String(k).begins_with("_") or String(k) == "field":
+			continue  # a hedged field is walked into by those who work it
+		var bit := 1 << (int(L[k]) - 1)
+		mask |= bit
+		if String(k) in BLOCKING_CLAIMS:
+			held_bits |= bit
 	var obstacles: Array = []
+	var held: Array = []
+	for e: Dictionary in Ground.obstacle_shapes(area, mask):
+		var o := _outline(e["shape"], e["xform"])
+		if o.size() >= 3:
+			(held if int(e["layer"]) & held_bits else obstacles).append(o)
 	var ways: Array = []
-	for rec: Dictionary in (Ground._roots as Dictionary).values():
-		var root: Node3D = rec["root"] if is_instance_valid(rec["root"]) else null
-		if root == null or not root.is_inside_tree() or not root.is_visible_in_tree() or not (rec["clip"] as Rect2).intersects(area):
-			continue
-		var town := _town(root)
-		for e in town[1]:
-			if (e[1] as Rect2).intersects(area):
-				obstacles.append(e[0])
-		for e in town[2]:
-			if (e[1] as Rect2).intersects(area):
-				ways.append(e[0])
-	for src in Ground._sources:
-		if not is_instance_valid(src):
-			continue
-		for o in src.obstacles(area):
-			if o is Vector3:
-				obstacles.append(_disc(Vector2(o.x, o.y), o.z))
-			elif o is PackedVector2Array:
-				obstacles.append(o)
+	var towns: Node = Ground.towns
+	if towns and is_instance_valid(towns):
+		for t: Dictionary in (towns.get("towns") as Dictionary).values():
+			var root: Node3D = t.get("node") if t.get("node") is Node3D and is_instance_valid(t.get("node")) else null
+			if root == null or not root.is_inside_tree():
+				continue
+			for e in _town_ways(root):
+				if (e[1] as Rect2).intersects(area):
+					ways.append(e[0])
 	if roads and is_instance_valid(roads):
 		for s in roads.segments():
 			var a: Vector2 = s[0]
@@ -306,32 +311,46 @@ static func _inputs(c: Vector2i) -> Dictionary:
 			if side == Vector2.ZERO:
 				continue
 			ways.append(PackedVector2Array([a + side, b + side, b - side, a - side]))
-	var held: Array = []
-	var claims := Ground.claims_in(area, BLOCKING_CLAIMS)
-	for id in claims:
-		held.append(claims[id][1])
 	var base := str(hash([int(_land_rev.get(c, 0)), obstacles, ways]))
 	var sig := base + ":" + str(hash(held))
 	var was: String = String(_chunks[&"walk"][c]["sig"]) if _chunks.has(&"walk") else ""
 	return {"sig": sig, "obstacles": obstacles + held, "ways": ways, "claims_only": was.get_slice(":", 0) == base, "held": not held.is_empty()}
 
 
-## A town's (or a place's) outlines and ways in world XZ, read again only when its layout or its place changes.
-static func _town(root: Node3D) -> Array:
-	var sig := [NavGround.layout(root), root.global_transform]
+## A shape standing in the ground's space (ground.gd: prisms, boxes, a trunk's cylinder) as its outline on the ground,
+## world XZ: what Recast carves.
+static func _outline(shape: RID, xf: Transform3D) -> PackedVector2Array:
+	var data: Variant = PhysicsServer3D.shape_get_data(shape)
+	var pts := PackedVector2Array()
+	match PhysicsServer3D.shape_get_type(shape):
+		PhysicsServer3D.SHAPE_BOX:
+			var h: Vector3 = data
+			for v in [Vector3(-h.x, 0, -h.z), Vector3(h.x, 0, -h.z), Vector3(h.x, 0, h.z), Vector3(-h.x, 0, h.z)]:
+				var w: Vector3 = xf * v
+				pts.append(Vector2(w.x, w.z))
+		PhysicsServer3D.SHAPE_CONVEX_POLYGON:
+			for v: Vector3 in (data as PackedVector3Array):
+				var w: Vector3 = xf * v
+				pts.append(Vector2(w.x, w.z))
+			pts = Geometry2D.convex_hull(pts)
+		PhysicsServer3D.SHAPE_CYLINDER, PhysicsServer3D.SHAPE_CAPSULE:
+			pts = _disc(Vector2(xf.origin.x, xf.origin.z), float((data as Dictionary).get("radius", 0.05)))
+		PhysicsServer3D.SHAPE_SPHERE:
+			pts = _disc(Vector2(xf.origin.x, xf.origin.z), float(data))
+	return pts
+
+
+## A town's ways in world XZ, with their bounds, read again only when its layout or its place changes.
+static func _town_ways(root: Node3D) -> Array:
+	var sig := [root.get_meta("lanes", []).size(), root.get_meta("doors", []).size(), root.get_meta("square_r", 0.0), root.global_transform]
 	var kept: Array = _town_polys.get(root.get_instance_id(), [])
 	if not kept.is_empty() and kept[0] == sig:
-		return kept
-	var xf := root.global_transform
-	var stand: Array = []
-	for fp: PackedVector2Array in NavGround.all(root, terrain):
-		stand.append(_placed(fp, xf))
+		return kept[1]
 	var ways: Array = []
 	for w: PackedVector2Array in town_ways(root):
-		ways.append(_placed(w, xf))
-	var out := [sig, stand, ways]
-	_town_polys[root.get_instance_id()] = out
-	return out
+		ways.append(_placed(w, root.global_transform))
+	_town_polys[root.get_instance_id()] = [sig, ways]
+	return ways
 
 
 ## A town-local outline in world XZ, with its bounds: [poly, Rect2].
