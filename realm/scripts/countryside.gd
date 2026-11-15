@@ -7,6 +7,7 @@ extends Node3D
 
 const Units := preload("res://scripts/world_units.gd")  # the world's one scale (Units.M)
 const Real = preload("res://scripts/realistic.gd")
+const Kept := preload("res://scripts/kept.gd")
 const S := Units.M  # game units per metre
 static var NEAR_TOWN: float = preload("res://scripts/data.gd").num("countryside", "near_town", 2.4)  # tiles kept clear around a town for its own fields
 const CHUNK := 20.0  # farms are kept and batched by patch of land, so distant ones still cull
@@ -480,8 +481,9 @@ static func crop_for(field: String, rng: RandomNumberGenerator) -> String:
 static func crop_mesh(kind: String) -> Mesh:
 	if _crop_meshes.has(kind):
 		return _crop_meshes[kind]
-	var mesh: Mesh = null
-	if ResourceLoader.exists(CROP_MODELS[kind]):
+	var kept := Kept.path("crops", kind)  # made once and kept in a file of its own: a kept town's crops point at it
+	var mesh: Mesh = load(kept) as Mesh if Kept.has(kept) else null
+	if mesh == null and ResourceLoader.exists(CROP_MODELS[kind]):
 		var baked: ArrayMesh = preload("res://scripts/house_builder.gd").new().bake_path(CROP_MODELS[kind])
 		var box := baked.get_aabb()
 		var k: float = CROP_SIZE[kind] / (box.size.y if kind in STANDING else maxf(box.size.x, box.size.z))
@@ -515,6 +517,8 @@ static func crop_mesh(kind: String) -> Mesh:
 				if sm:
 					sm.set_shader_parameter("sway", CROP_SWAY)
 					sm.set_shader_parameter("alpha_cut", CROP_CUT)
+		if mesh:
+			Kept.keep(mesh, kept)
 	_crop_meshes[kind] = mesh
 	return mesh
 

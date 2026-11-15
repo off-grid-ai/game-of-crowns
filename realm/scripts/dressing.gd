@@ -15,6 +15,7 @@ const Data := preload("res://scripts/data.gd")
 const Ground := preload("res://scripts/ground.gd")  # the one answer to where anything may stand
 const Works := preload("res://scripts/works.gd")
 const Bulk := preload("res://scripts/bulk.gd")  # the one drawer of repeated small things
+const Kept := preload("res://scripts/kept.gd")  # each piece's mesh made once, kept in a file of its own
 
 static var _meshes := {}  # "kit/model" -> [ArrayMesh, its lowest y in metres] (or [] when it doesn't load)
 static var _builder = null
@@ -290,12 +291,16 @@ static func mesh_of(model: String) -> Array:
 	var kit := _kit(model)
 	var path := String(kit[0]).replace("%s", model.get_slice("/", 1))  # every %s: a nature-set piece sits in its own folder (meshy/<name>/<name>.glb)
 	var out: Array = []
-	if ResourceLoader.exists(path):
+	var kept := _kept(model)  # made once and kept in a file of its own: a kept town's dressing points at it
+	var m: ArrayMesh = load(kept) as ArrayMesh if Kept.has(kept) else null
+	if m == null and ResourceLoader.exists(path):
 		if _builder == null:
 			_builder = preload("res://scripts/house_builder.gd").new()
-		var m: ArrayMesh = _builder.bake_path(path)
+		m = _builder.bake_path(path)
 		if m and m.get_surface_count() > 0:
-			out = [m, m.get_aabb().position.y]
+			Kept.keep(m, kept)
+	if m and m.get_surface_count() > 0:
+		out = [m, m.get_aabb().position.y]
 	_meshes[model] = out
 	return out
 
@@ -311,9 +316,14 @@ static func warm() -> void:
 	_models_in(Data.read("dressing"), models)
 	for model in models:
 		var path := String(_kit(model)[0]).replace("%s", String(model).get_slice("/", 1))
-		if ResourceLoader.exists(path):
+		if ResourceLoader.exists(path) and not Kept.has(_kept(String(model))):
 			_builder.bake_ahead(path)
 			await tree.process_frame
+
+
+## The file a dressing piece's mesh is kept in (kept.gd).
+static func _kept(model: String) -> String:
+	return Kept.path("dressing", model.replace("/", "~"))
 
 
 ## Every "kit/model" string in the dressing's data whose kit the dressing knows.
