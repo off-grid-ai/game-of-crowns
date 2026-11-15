@@ -254,6 +254,10 @@ var cards: Array = []
 
 ## Closes the topmost thing the King has open; false when nothing was.
 func _step_back() -> bool:
+	var story := root.get_node_or_null("StoryCard")  # a story watched: its card first (story_card.gd)
+	if story and story.visible:
+		story.close()
+		return true
 	if _story_panel and _story_panel.visible:
 		_story_panel.visible = false
 		return true
@@ -1332,6 +1336,15 @@ func _show_audience() -> void:
 ## A matter opened by its face on the map (court_panel.gd): also the harness's call.
 func open_matter(id: String) -> void:
 	court.open_matter(id)
+
+
+## The court matter a story waits on (story_card.gd), by the story's name and arc: its id, or "" (it's news).
+func story_matter(e: Dictionary) -> String:
+	var thread := String(e.get("thread", ""))
+	for p in court._petitions:
+		if thread != "" and String(p.get("thread", "")) == thread and (e.get("arc") == null or p.get("arc") == null or str(p["arc"]) == str(e["arc"])):
+			return String(p["id"])
+	return ""
 
 
 ## The faces on the map now: matter id -> screen point (for a film's harness to click).
