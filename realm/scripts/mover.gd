@@ -459,7 +459,12 @@ func _steer_step(body: Node3D, delta: float) -> void:
 func _put(body: Node3D, at: Vector3) -> void:
 	if keep.is_valid():
 		at = keep.call(at)
-	if fighting and (_steer or _shifting) and not Ground.is_clear(at, 0.0, true, null, FIGHT_OPEN):
+	# A step on his own navigation map is ground he may stand on (it is the land kept off the water and what stands, by
+	# his radius): the ground's land cells are coarser (physics.land_cell, a cell wet if a corner is), and a route
+	# along a shore runs inside one; asked of them alone, he was set back off his own route each step and never got
+	# past the lake (nav_probe's steered fighter, once the ground's land read was done).
+	if fighting and (_steer or _shifting) and not Ground.is_clear(at, 0.0, true, null, FIGHT_OPEN) \
+			and not NavWorld.on_map(at, &"wide" if turn_radius > 0.0 else nav):
 		at = Ground.nearest_clear(at, 0.0, 0.5, FIGHT_OPEN)  # avoidance pushed him into a house or the water: beside it
 	var main := _main()
 	if _keep_y:
