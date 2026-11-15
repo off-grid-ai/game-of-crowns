@@ -367,10 +367,23 @@ func _nearest_host() -> int:
 ## the plane's height.
 func _over_plane(layout: Node) -> void:
 	var room: float = main.ui.plane.room()
+	var box_top := room + 15.0
 	for n in layout.find_children("*", "", true, false):
 		if n.get("box_margin_bottom") != null and n.has_method("_apply_export_overrides"):
 			n.set("box_margin_bottom", int(room) + 15)
 			n.call("_apply_export_overrides")
+			box_top += float((n.get("box_size") as Vector2).y)
+	# His answers stand on his box, stacked up from its top edge, never mid-screen (Dialogic's VN default centres them;
+	# Crusader Kings III's event window keeps the options with the words). Same centre line as the box.
+	for n in layout.find_children("*", "", true, false):
+		if n.has_method("get_choices"):
+			var c: Control = n.call("get_choices")
+			c.anchor_top = 1.0
+			c.anchor_bottom = 1.0
+			c.grow_vertical = Control.GROW_DIRECTION_BEGIN
+			c.grow_horizontal = Control.GROW_DIRECTION_BOTH
+			c.offset_bottom = -(box_top + float(Data.num("opening", "choices_gap", 10.0)))
+			c.offset_top = c.offset_bottom
 
 ## Dialogic's layout keeps its own canvas layers (its choices on layer 1, under the veil): each is lifted over the
 ## veil (tour_layer), so his words and his buttons take the click (tour_click_probe.gd).
