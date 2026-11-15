@@ -7,6 +7,7 @@ extends RefCounted
 ## lod, shadows.near).
 
 const Data := preload("res://scripts/data.gd")
+const MeshLods := preload("res://scripts/mesh_lods.gd")  # the one way detail levels are made
 const Heraldry := preload("res://scripts/heraldry.gd")
 const KNIGHT := "armies/meshy_knight"  # the fallback a regiment wears when its folder is not baked yet (the Meshy knight, docs/art/army)
 
@@ -122,43 +123,16 @@ static func _soldier_mesh(dir: String, quiet: bool) -> ArrayMesh:
 	return mesh
 
 
-## A surface's lighter levels ({screen size: indices}), down to lod.least triangles, or none when the
-## simplifier gave back other vertices than these.
+## A surface's lighter levels ({screen size: indices}, mesh_lods.gd: welded at its seams, so every vertex keeps its
+## motion column), down to lod.least triangles.
 static func _lods(arrays: Array) -> Dictionary:
-	if arrays[Mesh.ARRAY_INDEX] == null:
-		return {}
-	# Welded by position for the simplifier: a body cut into many UV islands is all seams, and the simplifier
-	# won't move a seam, so it stopped at a third of the triangles. Vertices on one spot share their bones and
-	# so their baked motion; a lighter level's seam takes one of their paints, too small to see where it's drawn.
-	var verts0: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
-	var spot := {}
-	var canon := PackedInt32Array()
-	canon.resize(verts0.size())
-	for v in verts0.size():
-		var key := (verts0[v] * 10000.0).round()
-		if not spot.has(key):
-			spot[key] = v
-		canon[v] = spot[key]
-	var welded := arrays.duplicate()
-	var idx0: PackedInt32Array = (arrays[Mesh.ARRAY_INDEX] as PackedInt32Array).duplicate()
-	for k in idx0.size():
-		idx0[k] = canon[idx0[k]]
-	welded[Mesh.ARRAY_INDEX] = idx0
-	var im := ImporterMesh.new()
-	im.add_surface(Mesh.PRIMITIVE_TRIANGLES, welded)
-	im.generate_lods(Data.num("army", "lod.mergeAngle", 25.0), 60.0, [])
-	var back: Array = im.get_surface_arrays(0)
-	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
-	if (back[Mesh.ARRAY_VERTEX] as PackedVector3Array) != verts or (back[Mesh.ARRAY_TEX_UV2] as PackedVector2Array) != (arrays[Mesh.ARRAY_TEX_UV2] as PackedVector2Array):
-		push_warning("ARMY the soldier's lighter levels moved its vertices: drawn at full detail")
-		return {}
 	var least := int(Data.num("army", "lod.least", 400.0))
 	var out := {}
-	for l in im.get_surface_lod_count(0):
-		var idx: PackedInt32Array = im.get_surface_lod_indices(0, l)
-		if idx.size() / 3 < least:
+	var all := MeshLods.levels(arrays, Data.num("army", "lod.mergeAngle", 25.0))
+	for k in all:
+		if (all[k] as PackedInt32Array).size() / 3 < least:
 			break
-		out[im.get_surface_lod_size(0, l)] = idx
+		out[k] = all[k]
 	return out
 
 

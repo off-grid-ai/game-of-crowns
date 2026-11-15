@@ -23,8 +23,15 @@ func _ready() -> void:
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	label.add_theme_font_size_override("font_size", 15)
-	label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
-	label.add_theme_constant_override("outline_size", 5)
+	# White on a dark panel, never a colour code (Mac is colour-blind: the old green, amber and red read alike).
+	label.add_theme_color_override("font_color", Color(1, 1, 1))
+	label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	label.add_theme_constant_override("outline_size", 4)
+	var panel := StyleBoxFlat.new()
+	panel.bg_color = Color(0, 0, 0, 0.6)
+	panel.set_content_margin_all(8)
+	panel.set_corner_radius_all(4)
+	label.add_theme_stylebox_override("normal", panel)
 
 
 func _process(delta: float) -> void:
@@ -33,7 +40,7 @@ func _process(delta: float) -> void:
 		return
 	_t = 0.5
 	var fps := Engine.get_frames_per_second()
-	var lines := PackedStringArray(["%d fps  ·  %.0f ms" % [fps, 1000.0 / maxf(fps, 1.0)]])
+	var lines := PackedStringArray(["%d fps  ·  %.0f ms  ·  %s" % [fps, 1000.0 / maxf(fps, 1.0), "smooth" if fps >= 60 else "playable" if fps >= 30 else "slow" if fps >= 15 else "very slow"]])
 	lines.append("%.1fM triangles  ·  %d draws" % [Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME) / 1000000.0, int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME))])
 	var PerfTools := preload("res://scripts/perf_tools.gd")
 	var st: String = PerfTools.live_split()  # draw against our code, while the probe measures (GOC_PERF_PROBE)
@@ -50,12 +57,11 @@ func _process(delta: float) -> void:
 	if _scene != "":
 		lines.append(_scene)
 	if _tris != "":
-		lines.append(_tris)
+		lines.append(_tris.replace(", ", "\n"))  # one part a line: on one line the dearest eight ran off the window
 	var testing := PerfTools.testing  # what the measuring run is trying now (perf_tools cyclevis)
 	if testing != "":
 		lines.append("testing: " + testing)
 	label.text = "\n".join(lines)
-	label.add_theme_color_override("font_color", Color(0.55, 0.9, 0.5) if fps >= 30 else Color(1.0, 0.82, 0.4) if fps >= 15 else Color(1.0, 0.45, 0.4))
 
 
 ## What the frame is drawing (Mac: "log what you are rendering"): objects the renderer drew, towns and people in
