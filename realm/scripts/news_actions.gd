@@ -3,12 +3,13 @@ extends Node
 ## Copied from Crusader Kings 3's alerts (each one carries its answers) and Warcraft III's "our town is under
 ## attack" (a horn, a line, the arrow, a key that answers it). Every answer is an order the King already has:
 ## a host order (host_command.gd's public select and order: POST /host/order), a decree (ui.decree_at: the
-## bridge's /decree), the court (ui.open_matter), or the camera's jump-and-back (news.gd go_to). Nothing new is
+## bridge's /decree; each decree verb placed by its data row), the court (ui.open_matter, or ui.counsel_act's court),
+## the tithe (ui.counsel_act), or the camera's jump-and-back (news.gd go_to). Nothing new is
 ## decided here; the bridge decides and says so.
 ##   verbs(entry) -> rows   what can be done about a news entry (a chronicle line, or a threat seen here):
 ##                          [{verb, label, cost, enabled, why, tip, call}], left to right; label carries the price
 ##                          ("Raise the levy · 20,000 crowns") or why it can't be done ("· the treasury can't pay");
-##                          call() does it. The ticker (chronicle_panel.gd) and the story card ask here.
+##                          call() does it. The ticker and the drawer (chronicle_panel.gd) ask here.
 ##   buttons(entry)         the same rows as one row of buttons, ready to place.
 ##   threats                the King's towns a foe's host marches on, besieges or raids now (from the mirror:
 ##                          awareness war_hosts, cities' besieged, raids); a new one is news with its answers
@@ -143,6 +144,9 @@ func verbs(entry: Dictionary) -> Array:
 		var r := _row(String(v), entry)
 		if not r.is_empty():
 			rows.append(r)
+	# "To court" stands in for "Rule on it" only where no matter of the story's own waits (news_actions.json court).
+	if rows.any(func(x): return String(x["verb"]) == "rule"):
+		rows = rows.filter(func(x): return String(x["verb"]) != "court")
 	return rows
 
 
@@ -163,7 +167,7 @@ func _themed(entry: Dictionary) -> Array:
 	return out
 
 
-## The rows as one row of buttons (the ticker's line, the story card): the label says the price, or why not.
+## The rows as one row of buttons (the ticker's line, a caption): the label says the price, or why not.
 func buttons(entry: Dictionary) -> HBoxContainer:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", T.GAP)
@@ -199,21 +203,6 @@ func _row(verb: String, e: Dictionary) -> Dictionary:
 				var from: String = String((h["at"] as Dictionary).get("name", "")) if h.get("at") is Dictionary else "the field"
 				r["tip"] = String(words.get("tip", "")).format({"from": from, "men": UI.heads(int(h.get("men", 0))), "town": fill["town"]})
 				r["call"] = _defend.bind(city)
-		"levy":
-			if not mine:
-				return {}
-			_priced(r, words, "levy", -1)
-			r["call"] = _decree.bind("levy", int(main.awareness.rec("seatId", -1)), verb)
-		"grain", "relief":
-			if c.is_empty() or verb == "grain" and bool(c.get("capital", false)) and mine:
-				return {}  # the King's seat feeds itself (but its sick still need physicians)
-			_priced(r, words, "relief", -1 if mine else int(c.get("owner", -1)))
-			r["call"] = _decree.bind("relief", city, verb)
-		"feast":
-			if c.is_empty() or mine:
-				return {}  # a feast in a lord's honour: at one of his towns
-			_priced(r, words, "feast", int(c.get("owner", -1)))
-			r["call"] = _decree.bind("feast", city, verb)
 		"rule":
 			var id: String = main.ui.story_matter(e) if e.get("thread") else ""
 			if id == "":
@@ -224,10 +213,63 @@ func _row(verb: String, e: Dictionary) -> Dictionary:
 				return {}
 			r["call"] = func(): main.news.go_to(_at(c), String(e.get("text", "")), _go_call(city))
 		_:
-			return {}
+			if words.has("ui"):
+				return _ui_row(r, words)
+			if not words.has("decree"):
+				return {}
+			return _decree_row(r, words, verb, c, mine)
 	if not r.has("call"):
 		r["call"] = func(): pass
 	return r
+
+
+## A decree verb, as its data row says (news_actions.json verbs: decree, at, town, not_seat, building, built_as,
+## unsworn): at the news's town, or at the King's seat (at: seat); only at his own towns (town: mine), only at a
+## lord's (town: theirs); a building only where the town hasn't one and no royal works rise. Priced as the bridge has it.
+func _decree_row(r: Dictionary, words: Dictionary, verb: String, c: Dictionary, mine: bool) -> Dictionary:
+	var action := String(words["decree"])
+	var seat := String(words.get("at", "town")) == "seat"
+	var want := String(words.get("town", "any"))
+	if want == "mine" and not mine or want == "theirs" and (c.is_empty() or mine) or not seat and c.is_empty():
+		return {}
+	if bool(words.get("not_seat", false)) and mine and bool(c.get("capital", false)):
+		return {}  # the King's seat feeds itself (but its sick still need physicians)
+	var owner := int(c.get("owner", -1))
+	var pl := _player(owner)
+	if bool(words.get("unsworn", false)) and (pl.is_empty() or pl.get("sworn") != null):
+		return {}
+	var building := String(words.get("building", ""))
+	if building != "":
+		var built := String(words.get("built_as", building))
+		if bool(c.get("royal", false)) or (c.get("buildings", []) as Array).any(func(x): return String(x).begins_with(built)):
+			return {}
+	var at := int(main.awareness.rec("seatId", -1)) if seat else int(c.get("id", -1))
+	_priced(r, words, action, -1 if mine or seat else owner)
+	r["call"] = _decree.bind(action, at, verb, building)
+	return r
+
+
+## A verb the King's own controls already answer (ui.counsel_act: the court, the tithe up or down), as its data row
+## says (news_actions.json verbs: ui); the tithe greyed with its wait while the year's rate stands.
+func _ui_row(r: Dictionary, words: Dictionary) -> Dictionary:
+	var on := String(words["ui"])
+	var ui: Node = main.ui
+	if on == "tithe_down" and float(ui.tithe) <= 0.0 or on == "tithe_up" and float(ui.tithe) >= 0.4:
+		return {}
+	if on.begins_with("tithe") and int(ui.tithe_wait) > 0:
+		r["label"] = "%s  ·  %s" % [r["label"], String(Data.value(FILE, "again_in", "again in {n} seasons")).format({"n": ui.tithe_wait, "s": "" if int(ui.tithe_wait) == 1 else "s"})]
+		r["enabled"] = false
+		r["why"] = r["label"]
+	r["call"] = ui.counsel_act.bind({"ui": on})
+	return r
+
+
+## A house's record from the mirror (its sworn oath, its war), or {}.
+func _player(id: int) -> Dictionary:
+	for pl in main.awareness.rec("players", []):
+		if int(pl.get("id", -2)) == id:
+			return pl
+	return {}
 
 
 ## A decree's price as the bridge has it (/world crown.decrees, in its gold), on the label; greyed with the
@@ -314,8 +356,8 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 ## A decree from the news, as the town card gives it (ui.decree_at -> bridge /decree); the steward says so.
-func _decree(action: String, city: int, verb: String) -> void:
-	main.ui.decree_at.emit(action, city, -1, "", "")
+func _decree(action: String, city: int, verb: String, building := "") -> void:
+	main.ui.decree_at.emit(action, city, -1, building, "")
 	if main.barks and main.barks.has_method("steward"):
 		main.barks.steward(verb)
 
