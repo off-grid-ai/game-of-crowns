@@ -242,6 +242,12 @@ func _place_ring() -> void:
 	var dlg := get_node_or_null("/root/Dialogic")
 	if dlg and dlg.Styles.has_active_layout_node():
 		lift(dlg.Styles.get_layout_node())  # its layers draw over the veil (they set themselves after start)
+		# Only the Hand's buttons take a click in his layout (Mac: "trying to click Defend for so long", "it lets the
+		# click pass through", and on to Greenmantle behind the card): its full-screen layers and click-catcher, lifted
+		# over the interface, took or passed on every click to the realm. The page is turned in _input instead.
+		for n in dlg.Styles.get_layout_node().find_children("*", "Control", true, false):
+			if not n is BaseButton and (n as Control).mouse_filter != Control.MOUSE_FILTER_IGNORE:
+				(n as Control).mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var rect := Rect2()
 	if _spot == "host" and _host >= 0:
 		var cam := get_viewport().get_camera_3d()

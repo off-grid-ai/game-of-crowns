@@ -121,7 +121,7 @@ func _realm_town(c: Dictionary, crown: int) -> bool:
 func _raise(id: int) -> void:
 	_latest = id
 	var t: Dictionary = threats[id]
-	var e := {"kind": "attack", "text": String(t["text"]), "city": id, "crown": true, "open": true, "hold": Data.num(FILE, "attack_hold", 40.0)}
+	var e := {"kind": "attack", "text": String(t["text"]), "city": id, "crown": true, "open": true, "hold": Data.num(FILE, "attack_hold", 40.0), "turn": int(main.awareness.rec("turn", 0))}  # dated now: its season on the card, and its age
 	main.ui.chronicle.show_news(e, true)
 	main.sound.event("horn")
 	var c: Dictionary = main.awareness.city(id)
