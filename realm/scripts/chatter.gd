@@ -393,7 +393,7 @@ func _ask(town: int, g: Dictionary, key: String) -> void:
 					return
 		_own_words(town, g, key))
 	# The minds may take a while (the model's first call loads it): not this talk's silence.
-	get_tree().create_timer(OWN_WORDS_SECS).timeout.connect(func(): _own_words(town, g, key))
+	get_tree().create_timer(OWN_WORDS_SECS, false).timeout.connect(func(): _own_words(town, g, key))
 
 
 ## Plain words of their own (OWN_WORDS), when the minds have none for them yet
@@ -470,7 +470,7 @@ func _play(town: int, g: Dictionary, key: String, talk: Dictionary) -> void:
 			_shot_on_talk = false
 			get_tree().create_timer(1.0).timeout.connect(func(): get_parent().call("_take_shot"))
 		var heard := await _speak(speaker, text, line)
-		await get_tree().create_timer(maxf(0.3, secs - heard)).timeout
+		await get_tree().create_timer(maxf(0.3, secs - heard), false).timeout
 		if not is_inside_tree():
 			return
 	if prev:

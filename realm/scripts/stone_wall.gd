@@ -437,7 +437,7 @@ func hit(world_pos: Vector3, force := 7.0, radius_m := 1.5, along_dir := Vector3
 	dust(world_pos, 1.0)
 	if loose > 0:
 		var foot := _world_at(along(world_pos), 0.0, _ground_at(along(world_pos)))
-		get_tree().create_timer(0.7).timeout.connect(func(): if is_inside_tree(): dust(foot, 1.6))
+		get_tree().create_timer(0.7, false).timeout.connect(func(): if is_inside_tree(): dust(foot, 1.6))
 		opened.emit()
 	return loose
 
@@ -469,7 +469,7 @@ func wear_to(section: int, wear: float, animate := false) -> void:
 		var s := (section + 0.5) * _length / sections
 		dust(section_point(section), 1.2)
 		var foot := _world_at(s, 0.0, _ground_at(s))
-		get_tree().create_timer(0.6).timeout.connect(func(): if is_inside_tree(): dust(foot, 1.8))
+		get_tree().create_timer(0.6, false).timeout.connect(func(): if is_inside_tree(): dust(foot, 1.8))
 	opened.emit()
 
 

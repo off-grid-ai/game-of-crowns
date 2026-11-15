@@ -116,7 +116,7 @@ func _ready() -> void:
 		return
 	_dist = lens_distance()
 	while main.terrain.width == 0 or not main.terrain.built or (Army._rec("cities", []) as Array).is_empty():
-		await get_tree().create_timer(0.5).timeout
+		await get_tree().create_timer(0.5, false).timeout
 	var crown: Army = Army.new(main, men, {"side": 0, "shape": "line"})
 	add_child(crown)
 	if not crown.mustered:
@@ -356,7 +356,7 @@ func _aftermath() -> void:
 			if n is Node3D and is_instance_valid(n):
 				(n as Node3D).visible = false  # the host's standard goes with the living
 	_prisoners()
-	get_tree().create_timer(maxf(1.0, Awareness.season_seconds * Data.num(F, "field.play.aftermath", 1.0))).timeout.connect(queue_free)
+	get_tree().create_timer(maxf(1.0, Awareness.season_seconds * Data.num(F, "field.play.aftermath", 1.0)), false).timeout.connect(queue_free)
 
 
 ## Prisoners led away (Total War's captives after the battle, Bannerlord's prisoners marched behind the victor): from
@@ -1117,7 +1117,7 @@ func _run(r: Dictionary, dt: float) -> void:
 		for s in runners:
 			vat.fade_out_instance(s, 1.0, _rng.randf_range(0.0, 1.5))
 		(r["banner"] as Node3D).visible = false
-		get_tree().create_timer(3.0).timeout.connect(func(): _free_runners(r))
+		get_tree().create_timer(3.0, false).timeout.connect(func(): _free_runners(r))
 
 
 ## Each loose man's figure laid where his runner is and turned the way he faces (in the block's frame: its one draw).

@@ -84,7 +84,7 @@ func start(s: Node, siege: Node3D, rng: RandomNumberGenerator, colour: Color, gr
 		t.wait_time = WAVE
 		t.timeout.connect(_send_party.bind(p))
 		add_child(t)
-		get_tree().create_timer(first[p]).timeout.connect(func():
+		get_tree().create_timer(first[p], false).timeout.connect(func():
 			if is_instance_valid(t):
 				_send_party(p)
 				t.start())
@@ -155,7 +155,7 @@ func _send_party(p: int) -> void:
 	for m in parties[p]:
 		if not m["alive"]:
 			_man(m)
-		get_tree().create_timer(r.randf_range(0.0, 0.8)).timeout.connect(func():
+		get_tree().create_timer(r.randf_range(0.0, 0.8), false).timeout.connect(func():
 			if m["alive"]:
 				_send(m, &"go"))
 
@@ -244,7 +244,7 @@ func _at_wall(m: Dictionary, dt: float) -> void:
 	var length := _play(m, move, r.randf_range(0.95, 1.15))
 	m["cool"] = length + r.randf_range(0.2, 0.6)
 	if r.randf() < FALL:
-		get_tree().create_timer(length * 0.5).timeout.connect(func():
+		get_tree().create_timer(length * 0.5, false).timeout.connect(func():
 			if m["alive"]:
 				_send(m, &"die"))
 
@@ -315,7 +315,7 @@ func _pour_in(m: Dictionary, _dt: float) -> void:
 			var flag: Node3D = scenes.standard(root, scenes.stand(st["gap"] + st["inward"] * float(Data.num("walls", "assault.flag_in", 0.4))), col, st["inward"], house)
 			flag.scale = Vector3(1, 0.05, 1)
 			flag.create_tween().tween_property(flag, "scale", Vector3.ONE, 2.0).set_ease(Tween.EASE_OUT)
-			get_tree().create_timer(float(Data.num("walls", "assault.torch_s", 3.0))).timeout.connect(_torch)
+			get_tree().create_timer(float(Data.num("walls", "assault.torch_s", 3.0)), false).timeout.connect(_torch)
 
 
 func _not_down(m: Dictionary) -> bool:

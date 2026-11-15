@@ -553,7 +553,7 @@ func _walker(path: Array, colour: Color, k: Dictionary, scale: float, i: int) ->
 ## walker's side (a groom's horse), walking each leg beside him at his pace with its own Mover. The castle's folk
 ## (castle_folk.gd) walk their rounds here too: one round for the bailey.
 func rounds(f: Node3D, legs: Array, waits: Array, first: float, at := 0, rest: Array = REST, led: Node3D = null) -> void:
-	get_tree().create_timer(first).timeout.connect(func():
+	get_tree().create_timer(first, false).timeout.connect(func():
 		if not is_instance_valid(f):
 			return
 		var leg: PackedVector3Array = legs[at % legs.size()]

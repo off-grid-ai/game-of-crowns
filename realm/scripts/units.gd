@@ -772,7 +772,7 @@ func _relieve(old: Node3D, fresh: Node3D) -> void:
 			_hosts.erase(k)
 	fresh.raised.connect(_free_view.bind(old), CONNECT_ONE_SHOT)
 	fresh.tree_exiting.connect(_free_view.bind(old), CONNECT_ONE_SHOT)
-	get_tree().create_timer(Data.num("army", "map.relief_s", 20.0)).timeout.connect(_free_view.bind(old))
+	get_tree().create_timer(Data.num("army", "map.relief_s", 20.0), false).timeout.connect(_free_view.bind(old))
 
 
 func _free_view(view: Variant) -> void:

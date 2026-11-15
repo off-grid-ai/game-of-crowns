@@ -233,7 +233,7 @@ func _turn_coat() -> void:
 		scenes.people.play(man, "Telling_Secret", 1.0)
 		if is_instance_valid(t["officer"]):
 			scenes.people.play(t["officer"], "Nod_Yes", 1.0)
-		get_tree().create_timer(float(k.get("talk_s", 6.0))).timeout.connect(func():
+		get_tree().create_timer(float(k.get("talk_s", 6.0)), false).timeout.connect(func():
 			if not is_instance_valid(man):
 				return
 			if is_instance_valid(t["officer"]):
@@ -242,7 +242,7 @@ func _turn_coat() -> void:
 				if not is_instance_valid(man):
 					return
 				man.visible = false
-				get_tree().create_timer(float(k.get("again_s", 40.0))).timeout.connect(func(): t["out"] = false))))
+				get_tree().create_timer(float(k.get("again_s", 40.0)), false).timeout.connect(func(): t["out"] = false))))
 
 
 ## One trench line along the arc at `rad` from the town: dark dug earth in segments, a low bank of spoil behind it.
@@ -817,7 +817,7 @@ func _cycle(e: Dictionary) -> void:
 
 ## Men from the camp take the fallen crew's places after crew_back_s, and the engine works again.
 func _recrew(e: Dictionary, k: Dictionary) -> void:
-	var t := get_tree().create_timer(float(k.get("crew_back_s", 20.0)))
+	var t := get_tree().create_timer(float(k.get("crew_back_s", 20.0)), false)
 	t.timeout.connect(func():
 		if not is_instance_valid(e["node"]):
 			return
@@ -888,7 +888,7 @@ func _loose(e: Dictionary, stone: MeshInstance3D) -> void:
 			root.add_child(tg)
 			tg.global_transform = at_end
 			tg.emitting = false
-			get_tree().create_timer(1.5).timeout.connect(tg.queue_free)
+			get_tree().create_timer(1.5, false).timeout.connect(tg.queue_free)
 		stone.queue_free()
 		if on_wall != Vector3.INF and walls and is_instance_valid(walls):
 			walls.strike(land, (land - from).normalized())  # its own dust and falling stones
@@ -934,4 +934,4 @@ func _puff(p: Vector3, c: Color, big := 1.0) -> void:
 	var g: GPUParticles3D = Particles.to_gpu(d)
 	root.add_child(g)
 	g.emitting = true
-	get_tree().create_timer(3.0).timeout.connect(g.queue_free)
+	get_tree().create_timer(3.0, false).timeout.connect(g.queue_free)

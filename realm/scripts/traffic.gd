@@ -240,7 +240,7 @@ func party(from: Vector3, to: Vector3, kind: String, on_done := Callable()) -> b
 		(members[-1] as Node3D).add_child(light)
 	# A load is carried, or a step kept, once they are on the move (a standing move asked at rest
 	# would hold them still): the gait asked again when they have set off.
-	var again := get_tree().create_timer(0.8) if is_inside_tree() else null
+	var again := get_tree().create_timer(0.8, false) if is_inside_tree() else null
 	if again:
 		again.timeout.connect(func():
 			for p in members:

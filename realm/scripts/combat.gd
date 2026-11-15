@@ -222,7 +222,7 @@ func take(attacker, damage: float) -> bool:
 		var parry: Array = style()["parry"]
 		if not parry.is_empty():
 			_once(parry[randi() % parry.size()], 1.3)
-			node.get_tree().create_timer(0.5).timeout.connect(func():
+			node.get_tree().create_timer(0.5, false).timeout.connect(func():
 				if state == "blocking":
 					_guard())
 		return true
@@ -246,7 +246,7 @@ func take(attacker, damage: float) -> bool:
 		if bladed or attacker.armed:
 			var at := node.global_position
 			var parent := node.get_parent()
-			node.get_tree().create_timer(1.4).timeout.connect(func():
+			node.get_tree().create_timer(1.4, false).timeout.connect(func():
 				if is_instance_valid(parent):
 					Blood.pool(parent, at, -to_attacker, unit))
 		return false
@@ -320,7 +320,7 @@ func _floor(clip := "Knocked_Down") -> void:
 	_hurt_until = Time.get_ticks_msec() / 1000.0 + HURT_FOR
 	var fall := _once(clip, 1.2) / 1.2
 	_timer = fall + 8.33 / 2.2
-	node.get_tree().create_timer(fall).timeout.connect(func():
+	node.get_tree().create_timer(fall, false).timeout.connect(func():
 		if state == "down":
 			_once("Getting_Up", 2.2))
 

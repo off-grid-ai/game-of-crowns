@@ -535,7 +535,7 @@ func _fight(delta: float) -> void:
 			# Seeing your swing coming: a guard if they have one, else a step aside.
 			if randf() < 0.6 and f.style()["guard"] != "":
 				f.block(true)
-				get_tree().create_timer(0.7).timeout.connect(func(): f.block(false))
+				get_tree().create_timer(0.7, false).timeout.connect(func(): f.block(false))
 			else:
 				f.dodge(["left", "right", "back"][randi() % 3])
 			continue

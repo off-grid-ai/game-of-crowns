@@ -581,7 +581,7 @@ func clear(center: Vector3, radius: float) -> void:
 		# lot, a moment later, not once per field (each replant redraws them all).
 		if not _felled.is_empty() and not _replant_due:
 			_replant_due = true
-			get_tree().create_timer(2.0).timeout.connect(_replant)
+			get_tree().create_timer(2.0, false).timeout.connect(_replant)
 		return
 	for mmi in get_children():
 		if not (mmi is MultiMeshInstance3D):

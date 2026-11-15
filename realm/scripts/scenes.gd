@@ -641,7 +641,7 @@ func caption(root: Node3D, text: String, at: Vector3) -> Label3D:
 	tag.tree_exiting.connect(func(): _tags.erase(tag))
 	place_tag(tag, at)
 	# Every caption has a lifetime, like combat text: read, then gone.
-	get_tree().create_timer(9.0).timeout.connect(func(): _fade_tag(tag, 1.0))
+	get_tree().create_timer(9.0, false).timeout.connect(func(): _fade_tag(tag, 1.0))
 	return tag
 
 

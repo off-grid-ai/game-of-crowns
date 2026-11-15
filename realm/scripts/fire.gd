@@ -836,7 +836,7 @@ func _char(root: Node3D, key: String, h: Array) -> Dictionary:
 		wisp.position = Vector3(box.get_center().x, box.position.y + box.size.y * cut, box.get_center().z)
 		shell.add_child(wisp)
 		var wisp_ref: WeakRef = weakref(wisp)  # held weakly: a town rebuilt frees it before the timer's out
-		get_tree().create_timer(float(sm.get("seconds", 240.0)) * r.randf_range(0.6, 1.0)).timeout.connect(func():
+		get_tree().create_timer(float(sm.get("seconds", 240.0)) * r.randf_range(0.6, 1.0), false).timeout.connect(func():
 			var w: GPUParticles3D = wisp_ref.get_ref()
 			if w != null:
 				w.emitting = false)
