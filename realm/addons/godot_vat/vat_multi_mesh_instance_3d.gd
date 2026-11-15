@@ -73,6 +73,10 @@ func _ready() -> void:
 		multimesh.use_custom_data = true # offsets, start/end frame, alpha
 		multimesh.use_colors = true # isLooping, timestamp
 		multimesh.instance_count = instance_count
+		_customs.resize(instance_count)
+		_colors.resize(instance_count)
+		_customs.fill(Color(0, 0, 0, 0))
+		_colors.fill(Color(0, 0, 0, 0))
 		physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF # becasue Godot interpolates custom_data, which we do not want
 	else:
 		printerr("VATMultiMeshInstance3D: No multimesh defined")
@@ -107,35 +111,65 @@ func _process(delta: float) -> void:
 
 #region instanced helper functions
 
+# Game of Crowns: each soldier's clip, fade and timing are kept here and only ever written to the MultiMesh, never read
+# back from it (Mac 2026-11-15: soldiers torn into streaks fanning across the land for a second at a time). Under the
+# temporal upscaler (MetalFX) Godot keeps this frame's and last frame's instance data in one buffer, and a read can
+# return the other half: the plugin's read-modify-write then wrote a transform's numbers as a clip's frames. The town
+# batches follow the same rule (batch.gd xfs).
+var _customs := PackedColorArray()
+var _colors := PackedColorArray()
+
+
+func _custom_of(i: int) -> Color:
+	return _customs[i] if i < _customs.size() else Color(0, 0, 0, 0)
+
+
+func _set_custom(i: int, c: Color) -> void:
+	if i >= _customs.size():
+		_customs.resize(i + 1)
+	_customs[i] = c
+	multimesh.set_instance_custom_data(i, c)
+
+
+func _color_of(i: int) -> Color:
+	return _colors[i] if i < _colors.size() else Color(0, 0, 0, 0)
+
+
+func _set_color(i: int, c: Color) -> void:
+	if i >= _colors.size():
+		_colors.resize(i + 1)
+	_colors[i] = c
+	multimesh.set_instance_color(i, c)
+
 ## Updates the current instance_id with the provided animation_offset (0..1),
 ## unless rand_anim_offset = false, where it sets the animation_offset to 0
 func update_instance_animation_offset(instance_id: int, animation_offset: float) -> void:
 	animation_offset = clamp(animation_offset, 0.0, 1.0)
-	custom_data = multimesh.get_instance_custom_data(instance_id)
+	custom_data = _custom_of(instance_id)
 	if rand_anim_offset:
 		custom_data.r = animation_offset
 	else:
 		custom_data.r = 0.0
-	multimesh.set_instance_custom_data(instance_id, custom_data)
+	_set_custom(instance_id, custom_data)
 
 ## Updates the current instance_id with the provided track_number (0..animation_tracks.size()- 1)
 func update_instance_track(instance_id: int, track_number: int) -> void:
 	if track_number < 0 or track_number > vat_animation_tracks.size() - 1: 
 		printerr("[VATMultiMeshInstance3D] -> update_instance_track(instance_id: int, track_number: int)]: track_number is out of bounds.")
 		return 
-	custom_data = multimesh.get_instance_custom_data(instance_id)
+	custom_data = _custom_of(instance_id)
 	custom_data.g = vat_animation_tracks[track_number].startFrame 
 	custom_data.b = vat_animation_tracks[track_number].endFrame
-	multimesh.set_instance_custom_data(instance_id, custom_data)
+	_set_custom(instance_id, custom_data)
 		
 	reset_one_shot(instance_id, vat_animation_tracks[track_number])  # the track itself (ours: a lookup by frames came back empty, 14,825 errors a run with the 27-clip knight)
 
 ## Updates the current instance_id with the provided alpha (0..1)
 func update_instance_alpha(instance_id: int, alpha: float) -> void:
 	alpha = clampf(alpha, 0.0, 1.0)
-	custom_data = multimesh.get_instance_custom_data(instance_id)
+	custom_data = _custom_of(instance_id)
 	custom_data.a = alpha
-	multimesh.set_instance_custom_data(instance_id, custom_data)
+	_set_custom(instance_id, custom_data)
 
 ## Update the instance_id with the provided animation_offset, track_number, and alpha
 ## unless rand_anim_offset = false, where it sets the animation_offset to 0
@@ -162,13 +196,13 @@ func fade_out_instance(instance_id: int, fade_out_time: float = 1.0, start_delay
 	if fade_out_time < 0: return
 	if instance_id >= multimesh.instance_count: return
 	
-	var custom_data: Color = multimesh.get_instance_custom_data(instance_id)
+	var custom_data: Color = _custom_of(instance_id)
 	if custom_data.a < 0: return
 	
 	var fade_tween = create_tween()
 	fade_tween.tween_method(
 		_do_tween_fade.bind(instance_id),
-		multimesh.get_instance_custom_data(instance_id).a,
+		_custom_of(instance_id).a,
 		0,
 		fade_out_time).set_delay(start_delay)
 
@@ -180,20 +214,20 @@ func fade_in_instance(instance_id: int, fade_in_time: float = 1.0, start_delay: 
 	if fade_in_time < 0: return
 	if instance_id >= multimesh.instance_count: return
 
-	var custom_data: Color = multimesh.get_instance_custom_data(instance_id)
+	var custom_data: Color = _custom_of(instance_id)
 	if custom_data.a >= 1: return
 	
 	var fade_tween = create_tween()
 	fade_tween.tween_method(
 		_do_tween_fade.bind(instance_id),
-		multimesh.get_instance_custom_data(instance_id).a,
+		_custom_of(instance_id).a,
 		1,
 		fade_in_time).set_delay(start_delay)
 
 func _do_tween_fade(value: float, instance_id: int) -> void:
-	var custom_data: Color = multimesh.get_instance_custom_data(instance_id)
+	var custom_data: Color = _custom_of(instance_id)
 	custom_data.a = value
-	multimesh.set_instance_custom_data(instance_id, custom_data)
+	_set_custom(instance_id, custom_data)
 
 ## Sink a specific instance.[br][br]
 ## [param instance_id] is the specific instance to sink down.[br]
@@ -241,7 +275,7 @@ func play_next_track_all_instances() -> void:
 ## instance must have been initialized. 
 ## Returns null if instance_id not found
 func get_animation_from_instance(instance_id: int) -> VATAnimationTrack:
-	custom_data = multimesh.get_instance_custom_data(instance_id)
+	custom_data = _custom_of(instance_id)
 	
 	for track: VATAnimationTrack in vat_animation_tracks:
 		if is_equal_approx(custom_data.g, float(track.startFrame)) and is_equal_approx(custom_data.b, float(track.endFrame)):
@@ -290,7 +324,7 @@ func get_current_timestamp() -> float:
 ## Restarts the one shot animation for a specific instance_id.[br][br]
 ## Only valid if instanced animation track  [is_looping] is true
 func reset_one_shot(instance_id: int, known: VATAnimationTrack = null):
-	custom_color = multimesh.get_instance_color(instance_id)
+	custom_color = _color_of(instance_id)
 	
 	var track: VATAnimationTrack = known if known else get_animation_from_instance(instance_id)
 	if track == null:
@@ -299,7 +333,7 @@ func reset_one_shot(instance_id: int, known: VATAnimationTrack = null):
 	custom_color.r = _encode_color_channel_red(track)
 	custom_color.g = get_current_timestamp()
 	
-	multimesh.set_instance_color(instance_id, custom_color)
+	_set_color(instance_id, custom_color)
 
 ## Generates a float that represents isLooping, isBlended, isReversed, and framerate to be encoded into custom_color.r [br]
 func _encode_color_channel_red(track: VATAnimationTrack) -> float:
@@ -339,15 +373,15 @@ func _encode_float_from_digits(float_digits: Array[int]) -> float:
 
 ## Sets start and end frame while keeping current track parameters
 func set_section(instance_id: int, start_frame: int, end_frame: int,) -> void:
-	custom_data   = multimesh.get_instance_custom_data(instance_id)
+	custom_data   = _custom_of(instance_id)
 	custom_data.r = 0.0
 	custom_data.g = start_frame
 	custom_data.b = end_frame
-	multimesh.set_instance_custom_data(instance_id, custom_data)
+	_set_custom(instance_id, custom_data)
 	
-	custom_color   = multimesh.get_instance_color(instance_id)
+	custom_color   = _color_of(instance_id)
 	custom_color.g = get_current_timestamp()
-	multimesh.set_instance_color(instance_id, custom_color)
+	_set_color(instance_id, custom_color)
 	
 @export_tool_button("Import VATAnimationTrack(s) from JSON File", "File") var import_vat_animation_track = _import_vat_animation_track
 func _import_vat_animation_track() -> void:
@@ -384,13 +418,13 @@ func _import_vat_animation_track() -> void:
 ## Frame number is in VAT scope
 ## Animation offset will be reset to 0
 func freeze_frame(instance_id: int, frame: int) -> void:
-	custom_data = multimesh.get_instance_custom_data(instance_id)
+	custom_data = _custom_of(instance_id)
 	
 	frame = clampi(frame, 0, 8192)
 	custom_data.r = 0.0
 	custom_data.g = frame
 	custom_data.b = frame
-	multimesh.set_instance_custom_data(instance_id, custom_data)
+	_set_custom(instance_id, custom_data)
 
 ## Identical to shader
 func _extractDigitGroup(value: float, groupIndex: int, digitCount: int) -> int:
@@ -399,8 +433,8 @@ func _extractDigitGroup(value: float, groupIndex: int, digitCount: int) -> int:
 
 ## Get current frame from instance_id (0...last_frame - first_frame)
 func get_current_frame_from_instance(instance_id: int, relative_to_all_tracks: bool = false) -> int:
-	var color_data: Color = multimesh.get_instance_color(instance_id)
-	var frame_data: Color = multimesh.get_instance_custom_data(instance_id)
+	var color_data: Color = _color_of(instance_id)
+	var frame_data: Color = _custom_of(instance_id)
 	
 	var start_time:   float = color_data.g
 	var current_time: float = get_current_timestamp()
