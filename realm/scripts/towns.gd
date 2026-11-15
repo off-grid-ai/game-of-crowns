@@ -193,16 +193,25 @@ func _on_tier(key: Variant, tier: int) -> void:
 	if not (key is String and (key as String).begins_with("town:")):
 		return
 	var id := int((key as String).substr(5))
+	_tier[id] = tier
 	if towns.has(id) and is_instance_valid(towns[id]["node"]):
 		(towns[id]["node"] as Node3D).process_mode = Node.PROCESS_MODE_DISABLED if tier == ViewTier.OFF else Node.PROCESS_MODE_INHERIT
-		if tier == ViewTier.OFF or tier == ViewTier.FAR:
-			_shell(id)
-		else:
+		# Off screen it only stops: the renderer's frustum culling draws none of it, and a pan back finds it whole.
+		# FAR (its visibility ranges already hide the detail) it is shelled once it has stayed FAR towns.json
+		# stream.shell_after seconds, so a zoom out and back never pays the free and the read from disk.
+		if tier == ViewTier.FAR:
+			get_tree().create_timer(Data.num("towns", "stream.shell_after", 8.0)).timeout.connect(func() -> void:
+				if int(_tier.get(id, -1)) == ViewTier.FAR and towns.has(id) and is_instance_valid(towns[id]["node"]):
+					_shell(id))
+		elif tier != ViewTier.OFF:
 			_revive(id)
 
 
-## Towns streamed by the lens (Mac: "stream towns by distance"): a town FAR or off screen keeps a shell, its full
-## detail freed, and a town at MID or NEAR has it read back from disk (town_store.gd). The shell is the root with
+var _tier := {}  # city id -> the tier the lens last gave it (view_tier.gd)
+
+
+## Towns streamed by the lens (Mac: "stream towns by distance"): a town FAR a while (towns.json stream.shell_after)
+## keeps a shell, its full detail freed, and a town at MID or NEAR has it read back from disk (town_store.gd). The shell is the root with
 ## everything that shows past view_tier.far_from: its far stand-ins (the low batches, _hlod), banners, map seat and
 ## growing houses (its Life), every meta (footprints, doors, plots: Ground and the walk maps read them) and its marks on
 ## the world. Freed is only what Godot's own visibility ranges already hide at FAR (_detail_only: the whole models
