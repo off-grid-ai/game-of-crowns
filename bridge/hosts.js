@@ -67,6 +67,8 @@ export function list(ctx) {
         sea: o.sea ? { phase: o.sea.phase, coast: o.sea.coast, landing: o.sea.landing, ships: o.sea.ships, hulls: o.sea.hulls ?? [] } : null } : null,
       aboard: o?.sea?.phase === "raised" || o?.sea?.phase === "sail",  // at sea in the ships the crown raised (its crossing: hosts.js crossing)
       ordersLeft: ordersLeft(ctx, lead.id),
+      kinds: g.units.reduce((k, u) => ({ ...k, [u.type]: (k[u.type] ?? 0) + 1 }), {}),  // {Freeciv unit type: companies}
+      morale: moraleOf(meta, g.units),  // 0..1: its men's health, and its supply (moraleOf)
       ...supplyOf(meta, g.units),  // supply 0..1 and stragglers, the share of its men fallen out of the line (supply)
       banners: o?.joined ?? null,  // banner men just come in (joined): {owner: their house, from: the ids they marched under, city}  // this host's orders still to give this season (data/hosts.json ordersPerHost)
     };
@@ -535,6 +537,14 @@ function supply(ctx, turn) {
 
 // A host's supply (the lowest of its companies'), whether hunger bites it (hungry), and its stragglers: the share of its men fallen out of the line,
 // up to data/hosts.json supply.stragglers as the supply runs out under supply.hungry.
+// A host's heart for the fight, 0..1 (the unit card's morale): its companies' health (hit points over their type's
+// full, as menOf counts them), the lower the hungrier it is (supply under hosts.json supply.hungry halves it at worst).
+function moraleOf(meta, units) {
+  const health = units.reduce((t, u) => t + Math.max(0, Math.min(1, u.hp == null ? 1 : Number(u.hp) / (HITPOINTS[u.type] ?? 10))), 0) / Math.max(1, units.length);
+  const { supply } = supplyOf(meta, units);
+  return Math.round(health * (0.5 + 0.5 * Math.min(1, supply / HOSTS.supply.hungry)) * 100) / 100;
+}
+
 function supplyOf(meta, units) {
   const S = HOSTS.supply;
   const v = Math.min(...units.map((u) => meta?.supply?.[u.id] ?? 1));

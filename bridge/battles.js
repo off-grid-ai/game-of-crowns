@@ -108,6 +108,7 @@ export function season(ctx, turn) {
   const F = HOSTS.battles?.fate;
   for (const c of (meta.battles ?? []).filter((b) => b.turn === turn - 1 && !b.settled)) {
     c.settled = true;
+    reward(ctx, c);
     for (const s of c.sides) {
       if (s.house === c.victor) continue;
       s.fled = Math.max(0, s.men - s.lost);
@@ -140,6 +141,22 @@ export function season(ctx, turn) {
       if (fate !== "slain") court.save?.(lord);
     }
   }
+}
+
+// What a won field brings the crown (hosts.json battles.reward; Total War's post-battle loot, Bannerlord's prisoners):
+// gold stripped from the fallen, perMan for each of the beaten's men who fell, into the crown's chest; captives, that
+// share of the beaten who fled the field. Set once on the card: reward {gold, captives, town} (town: where, as the card
+// says it), for the view's battle card; the chronicle says it.
+function reward(ctx, c) {
+  const R = HOSTS.battles?.reward;
+  const crownId = c.sides[0]?.house;
+  if (!R || c.crown !== "won" || crownId == null) return;
+  const beaten = c.sides.filter((s) => s.house !== crownId);
+  const fell = beaten.reduce((t, s) => t + s.lost, 0), fled = beaten.reduce((t, s) => t + Math.max(0, s.men - s.lost), 0);
+  const gold = Math.round(fell * R.perMan), captives = Math.round(fled * R.captives);
+  c.reward = { gold, captives, town: c.place ?? null };
+  if (gold > 0) ctx.send(`lua cmd ${Lua.gold(crownId, gold)}`);
+  if (gold || captives) ctx.record({ turn: c.turn + 1, kind: "battle", text: `The field ${c.place ?? "in the open"} is the King's: ${gold} gold from the fallen${captives ? `, and ${captives} taken alive` : ""}.` });
 }
 
 // Panic spreads (casebook, War: morale is contagious; Total War's routs that carry the line): a side that lost
