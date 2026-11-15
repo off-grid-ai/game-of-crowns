@@ -94,48 +94,65 @@ func besiege(id: int, at: Vector3, approach: Vector3, size: int, engines: int, f
 	camp.pitch(stage, root, at, base, camp_r, foe_col, engines, r, foe)
 	camp.works(seasons)
 	sieges[id]["camp"] = camp
-	# The garrison on the walls, facing out toward the host: archers and spearmen turn about, up on the wall walk
-	# where the town has a wall (walls.gd walk_toward; 04-siege, Stronghold: bowmen along the battlements), on the
-	# ground behind the line where it has none.
+	# The garrison by lanes (research note step 9; Bannerlord's siege lanes, Stronghold's manned walls): every way the
+	# besiegers come at the wall (each assault party's stretch, the ram's gate, the tower's face) gets a defender block
+	# on the wall walk opposite it (walls.gd walk_toward): garrison.lane.men men side by side garrison.lane.file apart
+	# along the walk, bows the share of them archers, facing out; with no wall in reach they stand on the ground behind
+	# the line. Each block's archers shoot down its own lane, its spearmen meet whoever reaches the wall's foot there
+	# and the tower's bridge when it docks.
 	var gk: Dictionary = Data.value("siege", "garrison", {})
 	var walls: Node = Engine.get_meta("stone_walls") if Engine.has_meta("stone_walls") else null
 	var archers := []
 	var spears := []  # the wall's spearmen, who fight back at whoever reaches its foot
 	var up_top := []  # [man, his mark or null]: men on the walk, who fall when it gives way under them
-	var held_men := int(gk.get("men", 12))
-	for i in held_men:
-		var a := (i - (held_men - 1) * 0.5) * float(gk.get("every", 0.11))
-		var p: Vector3 = arc.call(a, wall - 0.3)
-		var walk: Vector3 = walls.walk_toward(p, float(gk.get("reach", 1.5))) if walls else Vector3.INF
-		if walk != Vector3.INF:
-			p = walk
-		else:
-			p = stage.stand(p)
-			if not stage._footing(p):
-				continue
-		var f: Node3D = stage.people.make(r, "soldier", held_col, "adult")
-		f.position = p
-		var face := (p - at).normalized()
-		f.rotation.y = atan2(face.x, face.z)
-		root.add_child(f)
-		var bow := fmod(i * float(gk.get("bows", 0.67)), 1.0) < float(gk.get("bows", 0.67))
-		stage.arm(f, "bow" if bow else "spear")
-		stage.people.play(f, "Bow_Idle" if bow else "Sword_Idle", r.randf_range(0.9, 1.1))
-		var mark: Variant = null
-		if bow:
-			mark = {"node": f, "alive": true, "kit": "bow", "engaged": false}
-			archers.append(mark)
-		else:
-			spears.append(f)
-		if walk != Vector3.INF:
-			up_top.append([f, mark])
+	var lanes := []  # {at: the lane's wall point, archers: [marks], spears: [men], tower: the rolling tower's lane}
+	var lane_at := [-0.25, 0.25]  # the two assault parties' stretches (their arc angles, _assault below)
+	var lane_pts := lane_at.map(func(a): return arc.call(a, wall))
+	for l in camp.lanes():
+		lane_pts.append(l)
+	var lk: Dictionary = gk.get("lane", {})
+	var lane_men := int(lk.get("men", 6))
+	var lane_file := float(lk.get("file", 0.1))
+	for li in lane_pts.size():
+		var lp: Vector3 = lane_pts[li]
+		var la := wrapf(atan2(lp.z - at.z, lp.x - at.x) - base, -PI, PI)
+		var lane := {"at": lp, "archers": [], "spears": [], "tower": li >= lane_at.size()}
+		for i in lane_men:
+			var a := la + (i - (lane_men - 1) * 0.5) * lane_file / maxf(wall, 0.1)
+			var p: Vector3 = arc.call(a, wall - 0.3)
+			var walk: Vector3 = walls.walk_toward(p, float(gk.get("reach", 1.5))) if walls else Vector3.INF
+			if walk != Vector3.INF:
+				p = walk
+			else:
+				p = stage.stand(p)
+				if not stage._footing(p):
+					continue
+			var f: Node3D = stage.people.make(r, "soldier", held_col, "adult")
+			f.position = p
+			var face := (p - at).normalized()
+			f.rotation.y = atan2(face.x, face.z)
+			root.add_child(f)
+			var bow := fmod(i * float(gk.get("bows", 0.67)), 1.0) < float(gk.get("bows", 0.67))
+			stage.arm(f, "bow" if bow else "spear")
+			stage.people.play(f, "Bow_Idle" if bow else "Sword_Idle", r.randf_range(0.9, 1.1))
+			var mark: Variant = null
+			if bow:
+				mark = {"node": f, "alive": true, "kit": "bow", "engaged": false}
+				archers.append(mark)
+				lane["archers"].append(mark)
+			else:
+				spears.append(f)
+				lane["spears"].append(f)
+			if walk != Vector3.INF:
+				up_top.append([f, mark])
+		lanes.append(lane)
 	# Assault parties rush the walls in turn under the archers' arrows, fight there, and fall back; fought by the
 	# men in them (army_assault.gd, the army layer's close fight).
 	var parties := []
 	if OS.get_cmdline_user_args().has("--probe"):
 		print("SIEGE staged: parties=%d" % 2)
 	for party in 2:
-		parties.append(_assault(arc, (party - 0.5) * 0.5, wall))
+		parties.append(_assault(arc, float(lane_at[party]), wall))  # each on its own lane, a defender block opposite
 	var assault := ArmyAssault.new()
 	assault.start(stage, root, r, foe_col, parties, [3.0, 9.0], held_col, at, foe)  # held_col: the block behind a breach; at: the town the storm torches; foe: whose standard goes up once it falls
 	sieges[id]["assault"] = assault
@@ -161,13 +178,20 @@ func besiege(id: int, at: Vector3, approach: Vector3, size: int, engines: int, f
 				if u[1] != null:
 					u[1]["alive"] = false
 				stage.die(f, "Death_Front", r)
-		if not marks.is_empty():
-			stage._arrows(root, archers, marks, r)
-		# The spearmen above thrust down at the men at the foot of the wall,
-		# or raise their shields against what comes up.
-		for sp in spears:
-			if is_instance_valid(sp) and not sp.has_meta("dead") and marks.any(func(m): return stage._flat_gap(m["node"].global_position, sp.global_position) < 0.6):
-				stage.people.play(sp, "Spear_Thrust" if r.randf() < 0.7 else stage.guard(r), r.randf_range(0.9, 1.15)))
+		# Each lane's archers shoot down their own lane (the marks within garrison.lane.reach of it), or at any mark when
+		# their lane is empty; its spearmen thrust at whoever is at the wall's foot below them, and at the tower's
+		# bridge once it stands against their stretch.
+		var lane_reach := float(lk.get("reach", 2.5))
+		var tower_at: Vector3 = camp.tower_at_wall() if is_instance_valid(camp) else Vector3.INF
+		for lane in lanes:
+			var lp: Vector3 = lane["at"]
+			var theirs := marks.filter(func(m): return stage._flat_gap(m["node"].global_position, lp) < lane_reach)
+			if not (lane["archers"] as Array).is_empty() and not marks.is_empty():
+				stage._arrows(root, lane["archers"], theirs if not theirs.is_empty() else marks, r)
+			var docked: bool = tower_at != Vector3.INF and stage._flat_gap(tower_at, lp) < lane_reach
+			for sp in lane["spears"]:
+				if is_instance_valid(sp) and not sp.has_meta("dead") and (docked or theirs.any(func(m): return stage._flat_gap(m["node"].global_position, sp.global_position) < 0.6)):
+					stage.people.play(sp, "Spear_Thrust" if r.randf() < 0.7 else stage.guard(r), r.randf_range(0.9, 1.15)))
 	root.add_child(loose)
 	_siege_watch(id)
 

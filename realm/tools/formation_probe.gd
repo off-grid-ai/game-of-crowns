@@ -22,6 +22,9 @@ extends SceneTree
 ##      arc's top g T^2 / 8, landing where aimed; every archer draws together and they loose within field.volley.step;
 ##   9. a broken regiment comes apart into loose men, each his own body walked by his Mover through the field's crowd
 ##      (RVO), its ground let go; a rally walks them back to their places by their Movers and it stands formed again;
+##   10. the town's defenders stand by lanes: a block on the wall walk opposite each assault party, the ram's gate and
+##      the tower's face (siege.json garrison.lane), its archers shooting down their own lane, its spearmen meeting the
+##      docked tower;
 ##   4. a column marching to its place in the line keeps its column until deploy.range from it (army.gd _deploy cuts
 ##      its way there) and forms its line there; the road in is marched in column (army.gd _column_up).
 ## Prints "FORMATION PROBE …" lines and "FORMATION PROBE PASS" or "FORMATION PROBE FAIL n"; quits with 0 or 1.
@@ -53,6 +56,7 @@ func _run() -> void:
 	_horse()
 	_volley()
 	_rout()
+	_wall_lanes()
 	print("FORMATION PROBE PASS" if _fails == 0 else "FORMATION PROBE FAIL %d" % _fails)
 	quit(0 if _fails == 0 else 1)
 
@@ -309,3 +313,15 @@ func _rout() -> void:
 	_check(ral.contains("mo.go(node.to_global(form[s])"), "a rally walks every man back to his place by his Mover")
 	var M: GDScript = load("res://scripts/army_morale.gd")
 	_check((M.rallied([[], []], 0.1, true, [{}, {}]) as Array).is_empty(), "once the day is spent nobody rallies")
+
+
+## 10. The defenders by lanes, as scene_kinds/siege.gd and siege_camp.gd wire them.
+func _wall_lanes() -> void:
+	_check(int(Data.num("siege", "garrison.lane.men", 0)) >= 4 and not (Data.value("siege", "garrison", {}) as Dictionary).has("every"), "each lane gets a defender block of %d men (no men spread evenly along the wall)" % int(Data.num("siege", "garrison.lane.men", 0)))
+	var src := FileAccess.get_file_as_string("res://scripts/scene_kinds/siege.gd")
+	_check(src.contains("camp.lanes()") and src.contains("walls.walk_toward(p") and src.contains("lane[\"archers\"]") and src.contains("tower_at_wall()"),
+		"a block on the wall walk opposite each assault party, the ram and the tower; its archers shoot down their lane; its spearmen meet the docked tower")
+	var camp: Node = (load("res://scripts/siege_camp.gd") as GDScript).new()
+	camp.set("_rolling", [{"kind": "siege_ram", "to": Vector3(1, 0, 0), "node": null}, {"kind": "siege_tower", "to": Vector3(0, 0, 1), "node": null, "at_wall": false}])
+	_check((camp.call("lanes") as Array).size() == 2 and camp.call("tower_at_wall") == Vector3.INF, "the ram's and the tower's lanes come from where they will stand; a tower not yet docked meets no one")
+	camp.free()

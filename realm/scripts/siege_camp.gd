@@ -469,6 +469,20 @@ func _parked() -> void:
 			_rolling.append(go)
 
 
+## The ways the ram and the tower come at the wall (research note step 9, the siege's lanes): where each will stand
+## against it (world), for the garrison's defender blocks opposite them.
+func lanes() -> Array:
+	return _rolling.map(func(g): return g["to"])
+
+
+## Where the rolling tower stands against the wall once it has docked (its bridge down), else INF.
+func tower_at_wall() -> Vector3:
+	for g in _rolling:
+		if g["kind"] == "siege_tower" and g.get("at_wall", false) and is_instance_valid(g["node"]):
+			return (g["node"] as Node3D).global_position
+	return Vector3.INF
+
+
 ## The wall's outer face in front of `p`, `out` metres off it, on the ground (world), or INF (no wall).
 func _wall_face(p: Vector3, out: float) -> Vector3:
 	var walls: Node = Engine.get_meta("stone_walls") if Engine.has_meta("stone_walls") else null
