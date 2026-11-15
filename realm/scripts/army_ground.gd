@@ -16,8 +16,12 @@ extends RefCounted
 ## line closing on its foe). Only routes see it: where a body may stand (keep_out, open_at, takes) is the land's.
 
 const Footing := preload("res://scripts/ground.gd")  # the one owner of where a body may stand
-const CELL := 0.08  # world units: about two-thirds of a man's width (a man stands ~0.22 tall)
-const ROWS_A_FRAME := 16
+const ViewTier := preload("res://scripts/view_tier.gd")
+## World units a cell spans (battle.json grid.cell): a quarter of a regiment's width, a third of a house. At 0.08 a
+## field's grid was 330,000 cells, each asked of the ground owner (32 us an ask): 300 ms a frame while a battle was
+## raised (Mac 2026-11-15, the fps round: a battle at 1 fps).
+const Data := preload("res://scripts/data.gd")
+var cell: float = Data.num("battle", "grid.cell", 0.25)
 
 var grid := AStarGrid2D.new()
 var origin := Vector2.ZERO  # world x, z of the grid's corner
@@ -41,7 +45,7 @@ static func around(main: Node, centre: Vector3, reach: float) -> RefCounted:
 
 func _lay(main: Node, centre: Vector3, reach: float) -> void:
 	_main = main
-	cells = maxi(4, ceili(reach * 2.0 / CELL))
+	cells = maxi(4, ceili(reach * 2.0 / cell))
 	origin = Vector2(centre.x - reach, centre.z - reach)
 	grid.region = Rect2i(0, 0, cells, cells)
 	grid.cell_size = Vector2.ONE
@@ -63,7 +67,7 @@ func _build() -> void:
 			var shut := not Footing.is_clear(_world(Vector2i(x, y)), 0.0, true, null, ["host", "field", "ford"])  # bodies' ground is laid after (_sync); a ford is passed
 			_base[y * cells + x] = 1 if shut else 0
 			grid.set_point_solid(Vector2i(x, y), shut)
-		if tree and y % ROWS_A_FRAME == ROWS_A_FRAME - 1:
+		while tree and not ViewTier.spend_ok(&"battle_ground"):  # on the frame's one budget: the battle never freezes the frame
 			await tree.process_frame
 	for o in _opened:
 		_open_cells(o[0], o[1])
@@ -79,7 +83,7 @@ func open(at: Vector3, radius: float) -> void:
 
 func _open_cells(at: Vector3, radius: float) -> void:
 	var c := _cell(at)
-	var n := ceili(radius / CELL)
+	var n := ceili(radius / cell)
 	for y in range(c.y - n, c.y + n + 1):
 		for x in range(c.x - n, c.x + n + 1):
 			var k := Vector2i(x, y)
@@ -165,12 +169,12 @@ func takes(p: Vector3) -> bool:
 
 
 func _cell(p: Vector3) -> Vector2i:
-	return Vector2i(floori((p.x - origin.x) / CELL), floori((p.z - origin.y) / CELL))
+	return Vector2i(floori((p.x - origin.x) / cell), floori((p.z - origin.y) / cell))
 
 
 func _world(c: Vector2i) -> Vector3:
-	var x := origin.x + (c.x + 0.5) * CELL
-	var z := origin.y + (c.y + 0.5) * CELL
+	var x := origin.x + (c.x + 0.5) * cell
+	var z := origin.y + (c.y + 0.5) * cell
 	var terrain = _main.get("terrain") if _main else null
 	return Vector3(x, terrain.height_at(x, z) if terrain else 0.0, z)
 
@@ -236,7 +240,7 @@ func _sync() -> void:
 		return
 	_seen = Footing.claims_rev
 	_synced_frame = Engine.get_process_frames()
-	var span := cells * CELL
+	var span := cells * cell
 	var now: Dictionary = Footing.claims_in(Rect2(origin, Vector2(span, span)), ["host", "body"])
 	for id in _held.keys():
 		if not now.has(id) or now[id][1] != _held[id][0]:
@@ -268,7 +272,7 @@ func _cells_in(poly: PackedVector2Array) -> PackedInt32Array:
 	var b := _cell(Vector3(hi.x, 0, hi.y))
 	for y in range(maxi(a.y, 0), mini(b.y, cells - 1) + 1):
 		for x in range(maxi(a.x, 0), mini(b.x, cells - 1) + 1):
-			var m := Vector2(origin.x + (x + 0.5) * CELL, origin.y + (y + 0.5) * CELL)
+			var m := Vector2(origin.x + (x + 0.5) * cell, origin.y + (y + 0.5) * cell)
 			if Geometry2D.is_point_in_polygon(m, poly):
 				out.append(y * cells + x)
 	return out
