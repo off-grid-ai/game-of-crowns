@@ -154,6 +154,16 @@ func _town(world: Node3D, r11 := false) -> Node3D:
 	return root
 
 
+## No camera headless: every body the town's life cast counts as seen (on_screen.gd's VisibleOnScreenEnabler3D would
+## keep each one disabled, its mind and its walk with it: 'the walkers stood still').
+func _all_seen(life: Node) -> void:
+	for seen in life.find_children("OnScreen", "", true, false):
+		var body := seen.get_parent()
+		body.remove_child(seen)
+		seen.free()
+		body.process_mode = Node.PROCESS_MODE_INHERIT
+
+
 func _run() -> void:
 	var failed: Array = []  # a lambda captures a number by value: the count is kept in an array
 	var fail := func(msg: String) -> void:
@@ -215,11 +225,12 @@ func _run() -> void:
 			life.director = director
 		var c := {"id": 7, "size": 8, "kind": "", "building": "", "food": 30, "granary": 40}
 		c.merge(states[name], true)
-		life.update(town, c, {"color": "#884422"})
+		await life.update(town, c, {"color": "#884422"})  # staged over frames (ViewTier.spend_ok): counted once it stands, as the game sees it
 		var l: Node3D = town.get_node_or_null("Life")
 		if l == null:
 			fail.call("%s: no Life" % name)
 			continue
+		_all_seen(l)
 		var cast := l.get_children().filter(func(n): return n is Node3D and (n.has_meta("role") or n.has_meta("town_dog") or n.has_meta("cart")))
 		var by := func(meta: String) -> Array: return cast.filter(func(n): return n.has_meta(meta))
 		# One director: nobody in the town's scenes but the director's cast and the working buildings' own.
@@ -448,7 +459,7 @@ func _run() -> void:
 		if name == "peace":
 			# The town dressed again as its state turns (a good year): its Life is rebuilt, the director still casts it.
 			c["prosperity"] = true
-			life.update(town, c, {"color": "#884422"})
+			await life.update(town, c, {"color": "#884422"})
 			var again: Node3D = town.get_node_or_null("Life")
 			var recast := again.get_children().filter(func(n): return n.has_meta("scene")).size() if again else 0
 			print("DIRECTOR peace   rebuilt in a good year: %d cast by the director" % recast)
