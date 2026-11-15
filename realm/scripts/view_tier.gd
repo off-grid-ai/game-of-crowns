@@ -28,9 +28,11 @@ static var LOAD_MS: float = Data.num("towns", "load_ms", 50.0)  # the pot while 
 static var loading := false  # the loading screen is up: the frame's pot is LOAD_MS, not STAGE_MS
 static var _pot_frame := -1  # the frame the pot was filled for
 static var _pot_at := 0  # when this frame's pot began (usec)
-static var _turns := {}  # a staged loop (its name) -> [the frame, when its first ask in that frame came (usec)]
+static var _turns := {}  # a staged loop (its name) -> [the frame, its first ask in it (usec), how long it has spent since (usec)]
 static var _askers := 0  # how many staged loops have asked this frame
-static var _askers_last := 1  # how many asked last frame: the pot is shared out between that many
+static var _askers_last := 1  # how many asked last frame: each is owed pot / that many at most
+static var _owed := {}  # a loop that spent last frame and has not asked yet this one -> what is kept for it (usec)
+static var _kept := 0  # the sum of _owed: the pot others may not take
 
 static var _me: Node  # the one in the tree (main.gd adds it)
 var rig: Node  # camera_rig.gd: distance, target
@@ -75,32 +77,44 @@ static func of(at: Vector3, radius := 0.0) -> int:
 
 
 ## Whether this frame's staging pot has time left for `who` (the staged loop asking, by name): a staged loop does
-## its next piece while it is true, and waits for the next frame once it is false. The pot is shared, so no loop
-## can starve another: every loop that asked last frame is owed an equal share, timed from its own first ask this
-## frame; past its share a loop may take what is left only once every loop has had its turn. The pot starts with
-## the frame's first ask (or ViewTier's own _process, which runs before every layer).
+## its next piece while it is true, and waits for the next frame once it is false. No loop starves and none is held
+## back for nothing: each is sure of its share (pot / the loops that asked last frame), timed from its own first ask,
+## and past it may take the whole pot but what is kept for the loops still to come this frame (each kept what it
+## spent last frame, up to its share; an idle loop keeps nothing). The pot starts with the frame's first ask (or
+## ViewTier's own _process, which runs before every layer).
 static func spend_ok(who: StringName) -> bool:
 	_open_pot()
 	var now := Time.get_ticks_usec()
 	var turn: Array = _turns.get(who, [])
 	if turn.is_empty() or int(turn[0]) != _pot_frame:
-		turn = [_pot_frame, now]
+		turn = [_pot_frame, now, 0]
 		_turns[who] = turn
 		_askers += 1
+		_kept -= int(_owed.get(who, 0))
+		_owed.erase(who)
+	turn[2] = now - int(turn[1])
 	var pot := int((LOAD_MS if loading else STAGE_MS) * 1000.0)
-	if now - int(turn[1]) < pot / _askers_last:
-		return true
-	return _askers >= _askers_last and now - _pot_at < pot
+	return int(turn[2]) < pot / _askers_last or now - _pot_at < pot - _kept
 
 
-## A new frame fills the pot afresh and shares it between the loops that asked in the last one.
+## A new frame fills the pot afresh: each loop that spent in the last one is owed that much again (up to its share).
 static func _open_pot() -> void:
 	var f := Engine.get_process_frames()
-	if f != _pot_frame:
-		_pot_frame = f
-		_pot_at = Time.get_ticks_usec()
-		_askers_last = maxi(_askers, 1)
-		_askers = 0
+	if f == _pot_frame:
+		return
+	var last := _pot_frame
+	_pot_frame = f
+	_pot_at = Time.get_ticks_usec()
+	_askers_last = maxi(_askers, 1)
+	_askers = 0
+	var share := int((LOAD_MS if loading else STAGE_MS) * 1000.0) / _askers_last
+	_owed.clear()
+	_kept = 0
+	for who in _turns:
+		var t: Array = _turns[who]
+		if int(t[0]) == last and int(t[2]) > 0:
+			_owed[who] = mini(int(t[2]), share)
+			_kept += int(_owed[who])
 
 
 ## Whether a place's sphere touches the screen (with the lead).
