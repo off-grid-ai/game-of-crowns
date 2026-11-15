@@ -201,6 +201,10 @@ var _form_panel: PanelContainer:
 	get:
 		return form_card._form_panel
 var minimap: Control
+var army_bar := preload("res://scripts/army_bar.gd").new(self)  # the King's hosts down the left edge (army_bar.gd): its state lives there
+var _army_panel: PanelContainer:
+	get:
+		return army_bar._panel
 var news := NewsChips.new(self)  # the notices, the Watch offer and the edge arrow (news_chips.gd): their state lives there
 var _offer: PanelContainer:  # "Watch": the latest moment worth seeing, for a few seconds
 	get:
@@ -239,6 +243,7 @@ func _ready() -> void:
 	_build_court()
 	_build_minimap()
 	_build_camera_controls()
+	army_bar._build()
 	news._build_toast()  # what the King's order did, on a card of its own (news_chips.gd)
 
 
@@ -1000,7 +1005,7 @@ func guide_block() -> Control:
 # court waits; all come back as they were when he moves or the scene ends.
 var cinema_on := false
 var cinema_was := {}
-const CINEMA_HIDES := ["_houses_panel", "_chron_panel", "_town_panel", "_court_panel", "_house_panel", "_offer"]
+const CINEMA_HIDES := ["_houses_panel", "_chron_panel", "_town_panel", "_court_panel", "_house_panel", "_offer", "_army_panel"]
 
 
 func cinema(on: bool) -> void:

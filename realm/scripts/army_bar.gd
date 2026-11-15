@@ -1,0 +1,190 @@
+extends RefCounted
+## The armies bar (Total War's army list, Age of Empires IV's army panel): down the left edge under the date card, a
+## button for each of the King's own hosts, so none has to be hunted for on the map. Each says where the host stands,
+## its strength and what it is doing (host_command.gd _doing). A click selects it, Shift- or Cmd-click adds it to those
+## selected (or takes it out), a double-click selects it and takes the view there: the King's own click, never the
+## camera on its own. A selected host's button says so in a word and a thicker outline, never by colour alone.
+## It keeps nothing of the realm's: the hosts are the mirror's (host_command.hosts()), read again when the mirror
+## syncs and when the selection changes, never every frame. Owned by ui.gd (built in its _ready); host_command.gd
+## attaches itself once it is up. Words and sizes: realm/data/army_bar.json.
+
+const T := preload("res://scripts/theme.gd")
+const Data := preload("res://scripts/data.gd")
+const UI := preload("res://scripts/ui.gd")
+const FILE := "army_bar"
+
+var ui: UI
+var _cmd: Node  # host_command.gd, once it is up
+var _panel: PanelContainer
+var _scroll: ScrollContainer
+var _list: VBoxContainer
+var _rows := {}  # host id -> {button, place, troops, doing, chosen}
+var _sel_box: StyleBoxFlat
+var _rest_box: StyleBoxFlat
+var _hover_box: StyleBoxFlat
+
+
+func _init(owner: UI) -> void:
+	ui = owner
+
+
+## The empty bar, hidden until there is a host to list.
+func _build() -> void:
+	_panel = ui.glass_panel()
+	_panel.add_theme_stylebox_override("panel", T._box(T.SURFACE, T.HAIRLINE, 10, 6))
+	_panel.offset_left = 10
+	_panel.visible = false
+	_scroll = ScrollContainer.new()
+	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_panel.add_child(_scroll)
+	_list = VBoxContainer.new()
+	_list.add_theme_constant_override("separation", T.GAP_TIGHT)
+	_scroll.add_child(_list)
+	_rest_box = _key(Color(1, 0.97, 0.9, 0.04), Color(1, 0.95, 0.85, 0.10), 1)
+	_hover_box = _key(Color(1, 0.97, 0.9, 0.12), Color(1, 0.95, 0.85, 0.24), 1)
+	_sel_box = _key(Color(1, 0.97, 0.9, 0.14), T.TEXT, 2)  # the thicker, white outline: selected reads without colour
+	ui.get_viewport().size_changed.connect(_place)
+	if ui._houses_panel:
+		ui._houses_panel.visibility_changed.connect(_place)
+
+
+## host_command.gd is up: the bar follows the mirror and the selection from now on.
+func attach(cmd: Node) -> void:
+	_cmd = cmd
+	cmd.selection_changed.connect(refresh)
+	if cmd.main and cmd.main.awareness:
+		cmd.main.awareness.synced.connect(refresh)
+	refresh()
+
+
+## The buttons brought in line with the hosts: one per host, largest first as the mirror lists them.
+func refresh() -> void:
+	if _cmd == null or _panel == null:
+		return
+	var list: Array = _cmd.hosts()
+	var ids := []
+	for h in list:
+		ids.append(int(h.get("id", -1)))
+	for id in _rows.keys():
+		if not ids.has(id):
+			(_rows[id]["button"] as Button).queue_free()
+			_rows.erase(id)
+	for i in list.size():
+		var h: Dictionary = list[i]
+		var id: int = ids[i]
+		if not _rows.has(id):
+			_rows[id] = _row(id)
+		var r: Dictionary = _rows[id]
+		_list.move_child(r["button"], i)
+		_fill(r, h, id == int(_cmd.selected) or (_cmd.also as Array).has(id))
+	_panel.visible = not list.is_empty() and not ui.cinema_on
+	_place.call_deferred()
+
+
+## One host's button: its sword, where it stands, its strength and what it is doing.
+func _row(id: int) -> Dictionary:
+	var b := Button.new()
+	b.focus_mode = Control.FOCUS_NONE
+	b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	b.custom_minimum_size = Vector2(Data.num(FILE, "width", 220.0), 0)
+	b.add_theme_stylebox_override("hover", _hover_box)
+	b.add_theme_stylebox_override("pressed", _hover_box)
+	var row := HBoxContainer.new()
+	row.set_anchors_preset(Control.PRESET_FULL_RECT)
+	row.offset_left = 8
+	row.offset_right = -8
+	row.offset_top = 6
+	row.offset_bottom = -6
+	row.add_theme_constant_override("separation", T.GAP)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	b.add_child(row)
+	var sword := TextureRect.new()
+	sword.texture = ui.icon("sword")
+	sword.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	sword.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	sword.custom_minimum_size = Vector2(18, 18)
+	sword.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	sword.modulate = T.TEXT_2
+	sword.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(sword)
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 0)
+	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	col.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(col)
+	var top := HBoxContainer.new()
+	top.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	col.add_child(top)
+	var place := T.prose("", T.SIZE_DESC, T.TEXT)
+	var troops := T.datum("", T.SIZE_LABEL, T.TEXT_2)
+	var doing := T.prose("", T.SIZE_LABEL, T.TEXT_2)
+	var chosen := T.label(String(Data.value(FILE, "selected", "Selected")), T.TEXT)
+	for l in [place, troops, doing]:
+		(l as Label).clip_text = true
+		(l as Label).text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		(l as Label).size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	for l in [place, troops, doing, chosen]:
+		(l as Label).mouse_filter = Control.MOUSE_FILTER_IGNORE
+	top.add_child(place)
+	top.add_child(chosen)
+	col.add_child(troops)
+	col.add_child(doing)
+	b.gui_input.connect(_clicked.bind(id))
+	_list.add_child(b)
+	b.custom_minimum_size.y = maxf(row.get_combined_minimum_size().y + 12.0, 54.0)
+	return {"button": b, "place": place, "troops": troops, "doing": doing, "chosen": chosen}
+
+
+func _fill(r: Dictionary, h: Dictionary, on: bool) -> void:
+	var at: Variant = h.get("at")
+	(r["place"] as Label).text = String(Data.value(FILE, "place", "At {town}")).format({"town": String(at.get("name", ""))}) if at is Dictionary else String(Data.value(FILE, "field", "In the field"))
+	(r["troops"] as Label).text = String(Data.value(FILE, "troops", "{men} troops")).format({"men": ui.heads(int(h.get("men", 0)))})
+	var doing: String = _cmd._doing(h)
+	(r["doing"] as Label).text = doing.left(1).to_upper() + doing.substr(1)
+	(r["chosen"] as Label).visible = on
+	var b: Button = r["button"]
+	b.add_theme_stylebox_override("normal", _sel_box if on else _rest_box)
+	b.tooltip_text = "%s\n%s" % [(r["doing"] as Label).text, String(Data.value(FILE, "tip", ""))]
+
+
+## A click selects the host; Shift or Cmd adds it to those selected or takes it out; a double-click goes to it.
+func _clicked(e: InputEvent, id: int) -> void:
+	if _cmd == null or not (e is InputEventMouseButton) or not e.pressed or e.button_index != MOUSE_BUTTON_LEFT:
+		return
+	var m := e as InputEventMouseButton
+	if m.double_click:
+		if not (int(_cmd.selected) == id or (_cmd.also as Array).has(id)):
+			_cmd.pick(id)
+		_cmd.fly_to([id])
+	elif m.shift_pressed or m.is_command_or_control_pressed():
+		_cmd.toggle(id)
+	else:
+		_cmd.pick(id)
+	ui.heard.emit("click")
+
+
+## Under the date card, or under the great houses while they are open; never down into the town card or the news.
+func _place() -> void:
+	if _panel == null or not _panel.visible:
+		return
+	var top := 62.0
+	var date: Control = ui._date_pill
+	if date and date.is_visible_in_tree():
+		top = date.get_global_rect().end.y
+	var houses: Control = ui._houses_panel
+	if houses and houses.is_visible_in_tree():
+		top = maxf(top, houses.get_global_rect().end.y)
+	top += Data.num(FILE, "gap", 8.0)
+	_panel.offset_top = top
+	var room := ui.get_viewport().get_visible_rect().size.y - top - Data.num(FILE, "keep_bottom", 230.0)
+	_scroll.custom_minimum_size = Vector2(_list.get_combined_minimum_size().x, clampf(_list.get_combined_minimum_size().y, 0.0, maxf(60.0, room)))
+	_panel.size = Vector2.ZERO  # shrink to the list again after a host is gone
+
+
+static func _key(bg: Color, line: Color, width: int) -> StyleBoxFlat:
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = bg
+	sb.border_color = line
+	sb.set_border_width_all(width)
+	sb.set_corner_radius_all(8)
+	return sb

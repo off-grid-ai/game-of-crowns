@@ -31,6 +31,8 @@ const Terrain := preload("res://scripts/terrain.gd")  # its GROUND_LAYER: the ri
 const TeamColour := preload("res://scripts/team_colour.gd")  # the ring in the crown's own colour, as its men wear it
 const FILE := "host_command"
 
+signal selection_changed  # a host selected, added, taken out or let go: the armies bar reads it again (army_bar.gd)
+
 var main: Node
 var selected := -1  # the selected host's id (bridge/hosts.js: its lowest company's id), or -1
 var also: Array[int] = []  # hosts shift- or Cmd-clicked or boxed in beside it: each takes the same orders (Warcraft III's group)
@@ -99,6 +101,8 @@ func _ready() -> void:
 	_build_card()
 	_build_overlay()
 	add_child(load("res://scripts/battle_card.gd").new(main))  # the King's battles, when they are over (battle_card.gd)
+	if main and main.ui and main.ui.get("army_bar"):
+		main.ui.army_bar.attach(self)  # the armies bar down the left edge (army_bar.gd)
 
 
 # --- what the bridge says --------------------------------------------------------------------
@@ -198,6 +202,35 @@ func _toggle(id: int) -> void:
 		also.append(id)
 		main.barks.host("select", id)
 	_refresh()
+	selection_changed.emit()
+
+
+## One host selected from the interface (the armies bar): as a click on its standard, its captain answering.
+func pick(id: int) -> void:
+	select(id)
+	if selected == id:
+		main.barks.host("select", id)
+
+
+## Shift- or Cmd-click from the interface: in beside those selected, or out again; with none selected, selected.
+func toggle(id: int) -> void:
+	if selected < 0:
+		pick(id)
+	else:
+		_toggle(id)
+
+
+## The King's own click to go (the armies bar's double-click): the view glides to where these hosts stand, their middle.
+func fly_to(ids: Array) -> void:
+	var sum := Vector3.ZERO
+	var n := 0
+	for id in ids:
+		var h := host(int(id))
+		if not h.is_empty():
+			sum += _ground(h)
+			n += 1
+	if n > 0 and main.rig:
+		main.rig.focus(sum / float(n))
 
 
 ## Several of the King's hosts at once (a box, a double-click, F2): the first leads (`selected`), the rest beside it
@@ -218,6 +251,7 @@ func select_many(ids: Array, add := false) -> void:
 		main.barks.host("select", lead)
 	also.assign(group.slice(1))
 	_refresh()
+	selection_changed.emit()
 
 
 ## The King's hosts whose standard stands inside `rect` on screen (in front of the lens), largest first as listed.
@@ -292,6 +326,7 @@ func select(id: int) -> void:
 		_show_hover([], Vector2.ZERO)
 	_hover_px = Vector2.INF
 	_refresh()
+	selection_changed.emit()
 
 
 ## A left press: what it met is kept for take_click (host_pick.gd). With Cmd or Shift held on the land, a drag is a
