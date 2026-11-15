@@ -33,6 +33,7 @@ func _run() -> void:
 		if not Real._template(n).is_empty():
 			made += 1
 	print("BAKE models: %d merged in %.0f s" % [made, (Time.get_ticks_msec() - t0) / 1000.0])
+	print("BAKE troops: %d soldiers kept" % preload("res://scripts/army_visual.gd").bake())
 	var stood := await _towns()
 	Kept.stamp()
 	print("BAKE towns: %d stood and kept, %.0f s in all" % [stood, (Time.get_ticks_msec() - t0) / 1000.0])
