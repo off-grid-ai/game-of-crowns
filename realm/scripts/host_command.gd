@@ -70,6 +70,7 @@ var _pending := {}  # host id -> {to, kind, ms}: an order given, drawn at once u
 var _groups := {}  # 1..9 -> the host ids Cmd+number put in it (StarCraft's control groups); in memory, for this sitting
 var _group_last := -1  # the group number last pressed, and when (msec): pressed twice quickly, the view goes there
 var _group_ms := 0
+var _idle_last := -1  # the idle host the idle key went to last: the next press goes on from it
 
 
 static func on() -> bool:
@@ -527,6 +528,10 @@ func _unhandled_key_input(event: InputEvent) -> void:
 				_call_group(n)
 			get_viewport().set_input_as_handled()
 			return
+	if event.is_action_pressed(&"next_idle"):
+		_next_idle()
+		get_viewport().set_input_as_handled()
+		return
 	if event.is_action_pressed(&"host_all"):
 		var ids := []
 		for h in hosts():
@@ -582,6 +587,23 @@ func _call_group(n: int) -> void:
 	select_many(ids)
 	if twice:
 		fly_to(ids)
+
+
+## The idle key (Age of Empires' idle soldier): the next of the King's hosts with no orders, after the one it went to
+## last, is selected and the view goes to it. None idle: the King is told so.
+func _next_idle() -> void:
+	var idle := []
+	for h in hosts():
+		if not (h.get("order") is Dictionary) and not _pending.has(int(h.get("id", -1))):  # an order just given is not idle
+			idle.append(int(h.get("id", -1)))
+	if idle.is_empty():
+		if main.ui:
+			main.ui.toast(String((Data.value("army_bar", "idle", {}) as Dictionary).get("none", "")))
+		return
+	var at := idle.find(_idle_last)
+	_idle_last = int(idle[(at + 1) % idle.size()])
+	pick(_idle_last)
+	fly_to([_idle_last])
 
 
 ## The lowest group a host is in (its number on the armies bar), or 0.
