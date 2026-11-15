@@ -39,6 +39,7 @@ static func _add_one(mesh: Mesh, place: Transform3D, owner: Variant, begin: floa
 	var s: Dictionary = _sets.get(key, {})
 	if s.is_empty():
 		s = _make(mesh, begin, end, shadows, cell)
+		(s["mmi"] as Node).set_meta("layer", _layer(owner))  # who it draws for, on the fps card (draw_census.gd)
 		_sets[key] = s
 	var xfs: Array = s["xfs"]
 	var mm: MultiMesh = (s["mmi"] as MultiMeshInstance3D).multimesh
@@ -60,6 +61,18 @@ static func _add_one(mesh: Mesh, place: Transform3D, owner: Variant, begin: floa
 			(owner as Node).tree_exiting.connect(gone, CONNECT_ONE_SHOT)
 	_owned[owner][h] = true
 	return h
+
+
+## A batch's layer as the fps card names it: its first owner's script (vegetation, countryside, roads), else its name.
+static func _layer(owner: Variant) -> String:
+	if owner is Node:
+		var n := owner as Node
+		while n:
+			if n.get_script() and (n.get_script() as Script).resource_path != "":
+				return (n.get_script() as Script).resource_path.get_file().get_basename()
+			n = n.get_parent()
+		return String((owner as Node).name)
+	return str(owner)
 
 
 ## Takes one copy away (the last of its batch moves into its place).

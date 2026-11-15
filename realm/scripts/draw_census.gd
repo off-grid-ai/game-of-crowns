@@ -100,12 +100,14 @@ static func _mesh_name(mesh: Mesh) -> String:
 		return mesh.resource_name
 	if mesh.resource_path != "" and not mesh.resource_path.contains("::"):
 		return mesh.resource_path.get_file().get_basename()
+	if mesh.has_meta("path"):  # a model baked in code (house_builder.gd bake_path) keeps its file's path
+		return "%s (%d-tri)" % [String(mesh.get_meta("path")).get_file().get_basename(), _tris_of(mesh)]
 	return "(%d-tri mesh)" % _tris_of(mesh)
 
 
 static func _where(g: Node, main: Node) -> String:
 	if g.get_parent() and g.get_parent().name == "Bulk":
-		return "Bulk"
+		return "Bulk/" + String(g.get_meta("layer", "?"))  # the layer that set its first copy down (bulk.gd)
 	var top := g
 	while top.get_parent() and top.get_parent() != main:
 		top = top.get_parent()
