@@ -1,0 +1,7 @@
+{
+ "_": "The King's war on a great house (war.js; CK3's war goal, Total War's campaign against a faction, its capital last). minCompanies: the smallest host the captains send against a town (a host in the King's seat of twice that or more leaves half at home). regroup: seasons the captains wait after a siege came to nothing before ordering the next town. join: the King's envoy asking a house to join the war (decrees.json join): chance = (favour - floor) / span, plus atWar if the house already fights the foe, less likingWeight for each point its lord likes the foe's lord, at most most; a house sworn to the crown comes at sworn; a house bound to the foe (pact or marriage) or whose lord likes the foe's lord friendly or more refuses and warns the foe, whose next town raises warnLevy. A house that joins is under oath for seasons (it sends its men with each siege, campaigns.js); the King may ask a house again after again seasons. retaliate: the house at war strikes back every every seasons (characters.js retaliate): its own host of host companies of kinds on the King's town nearest its lands when it has hostMin companies or more and its lord is not craven, else men without banners raid that town.",
+ "minCompanies": 3,
+ "regroup": 1,
+ "join": { "floor": 25, "span": 50, "most": 0.9, "sworn": 0.9, "atWar": 0.25, "likingWeight": 0.01, "friendly": 30, "seasons": 16, "again": 4, "warnLevy": ["Pikemen", "Pikemen"] },
+ "retaliate": { "every": 2, "hostMin": 4, "host": 3, "kinds": ["Pikemen", "Knights", "Archers"] }
+}

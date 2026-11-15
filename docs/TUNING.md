@@ -34,6 +34,7 @@ Switches (`--name`) go after `--` on the game's command line.
 
 ## Decrees and their prices (Builder 2)
 - Each decree's price and words: `bridge/data/decrees.json`: `<decree>.cost`, `.label`.
+- The King's war on a house and his envoys asking others to join it (`bridge/war.js`): the smallest host sent against a town, the seasons the captains regroup after a failed siege, how likely a house is to join (favour floor and span, already at war, its lord's liking for the foe, a friend of the foe refusing and warning, the levy a warning raises, the oath's seasons, when he may ask again), and how often and how hard the house strikes back (its own host or a raid): `bridge/data/war.json`. The decrees' prices and favour: `bridge/data/decrees.json` `war`, `join`.
 
 ## The court (Builder 2)
 - How often the court sits and how many it hears, by stage of the reign: `bridge/data/court.json`: `stages`, `noClock`.

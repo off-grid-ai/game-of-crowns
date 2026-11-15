@@ -17,6 +17,7 @@ import { decide } from "./claude.js";
 
 import { calendar, SEASONS_PER_YEAR, yearsIn, isYearEnd } from "./calendar.js";
 import { ANSWERS } from "./petitions.js";
+import { CIVILIAN } from "./campaigns.js";
 import { PROMISES as PR } from "./promises.js";
 const SP = JSON.parse(fs.readFileSync(new URL("./data/spoils.json", import.meta.url), "utf8"));
 import { heir as royalHeir, MATCH as RM, REGENCY, isRegency } from "./royals.js";
@@ -210,6 +211,44 @@ export class Court {
   boundTo(pid) {
     return (this.intrigue ?? []).filter((s) => (s.kind === "pact" || s.kind === "marriage") && (s.from === Number(pid) || s.to === Number(pid)))
       .map((s) => (s.from === Number(pid) ? s.to : s.from));
+  }
+
+  // The King makes war on a house (war.js declare): the houses bound to it by a pact or a marriage answer its call and
+  // go to war on the crown too (Freeciv's diplomacy, onWar), and its lord remembers. Their ids.
+  answerWar(pid, crownId, world, turn) {
+    const lord = this.lordOfHouse(pid);
+    if (lord) { this.remember(lord.id, "The King made war on my house."); this.save(lord); }
+    const called = [...new Set(this.boundTo(pid))].filter((a) => a !== crownId && (world.cities ?? []).some((c) => c.owner === a));
+    for (const a of called) {
+      this.onWar?.([a, crownId]);
+      const al = this.lordOfHouse(a);
+      if (al) { this.remember(al.id, `I took up arms beside ${lord?.house ?? "my friends"} against the crown.`); this.save(al); }
+    }
+    return called;
+  }
+
+  // The house at war with the crown strikes back (war.js, every data/war.json retaliate.every seasons) at the King's
+  // town nearest its lands (his seat only when he holds no other): its own host of R.host companies, raised at its
+  // nearest town and marched there by the road (realm_war_host, hosts.js warpath; at the walls Freeciv's AI, at war,
+  // falls on it), when it has R.hostMin companies and its lord is no coward; else men without banners, paid by it,
+  // raid the town (realm_raid). {kind, city, text} for the news, or null.
+  retaliate(pid, world, { send, crownId, R }, turn) {
+    const mine = (world.cities ?? []).filter((c) => c.owner === pid);
+    const royal = (world.cities ?? []).filter((c) => c.owner === crownId);
+    if (!mine.length || !royal.length) return null;
+    const near = (t) => Math.min(...mine.map((m) => Math.max(Math.abs(t.x - m.x), Math.abs(t.y - m.y))));
+    const town = [...(royal.some((c) => !c.capital) ? royal.filter((c) => !c.capital) : royal)].sort((a, b) => near(a) - near(b))[0];
+    const lord = this.lordOfHouse(pid);
+    const house = lord?.house ?? houseFor(world.players.find((p) => p.id === pid) ?? {}).name;
+    const men = (world.units ?? []).filter((u) => u.owner === pid && !CIVILIAN.has(u.type)).length;
+    const bold = !lord?.traits?.includes("craven");
+    if (men >= R.hostMin && bold) {
+      send(Lua.warHost(pid, town.id, R.kinds, R.host));
+      if (lord) { this.remember(lord.id, `I sent my men against ${cityName(town.id)}: the King made war on us first.`); this.save(lord); }
+      return { kind: "battle", city: town.id, text: `${house} answers the King's war: ${R.host} companies march on ${cityName(town.id)}.` };
+    }
+    send(Lua.raid(town.id));
+    return { kind: "raid", city: town.id, text: `Men without banners burn the fields of ${cityName(town.id)}. Everyone knows who paid them: ${house}, at war with the crown.` };
   }
 
   // A scheme that ended (a match refused, gates opened): off the map.

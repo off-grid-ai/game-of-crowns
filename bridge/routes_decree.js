@@ -11,6 +11,7 @@
 import { crownOf } from "./realm.js";
 import * as Seals from "./seals.js";
 import * as Hosts from "./hosts.js";
+import * as War from "./war.js";
 import * as Sittings from "./court.js";
 import * as Director from "./director.js";
 import * as Treasury from "./treasury.js";
@@ -81,8 +82,14 @@ export async function issueDecree(ctx, req, res, url) {
     if (!host) return json(res, 400, { error: "The crown has no host to march" });
     if (Hosts.ordersLeft(hctx, host.id) < 1) return json(res, 400, { error: "This host has its orders for this season; the next goes with the season's turn." });
   }
+  // The King's envoy to a house he asked lately waits for its answer to cool (war.js askWait).
+  if (cmd.action === "join") {
+    const pid = ctx.world.cities.find((c) => c.id === Number(cmd.city))?.owner;
+    const n = pid != null ? War.askWait(ctx.meta, pid, ctx.world.turn ?? 0) : 0;
+    if (n > 0) return json(res, 400, { error: `That house gave the King's envoy its answer lately: ask again in ${n} season${n === 1 ? "" : "s"}.` });
+  }
   const price = priceOf(cmd.action);
-  const result = decree({ ...cmd, host, works: ctx.meta.works ?? {}, price, favourOf, causeOf, sworn, warded: (pid) => (ctx.stakes?.s.wards?.[pid] ?? -1) > (ctx.world.turn ?? 0), marching: (city) => (ctx.meta.campaigns ?? []).some((x) => x.city === city), usurper: ctx.stakes?.s.usurper, seat: ctx.stakes?.s.seat }, ctx.world);
+  const result = decree({ ...cmd, host, war: War.current(ctx.meta), joinChance: (pid) => War.joinChance(ctx, pid), works: ctx.meta.works ?? {}, price, favourOf, causeOf, sworn, warded: (pid) => (ctx.stakes?.s.wards?.[pid] ?? -1) > (ctx.world.turn ?? 0), marching: (city) => (ctx.meta.campaigns ?? []).some((x) => x.city === city), usurper: ctx.stakes?.s.usurper, seat: ctx.stakes?.s.seat }, ctx.world);
   if (result.error) return json(res, 400, result);
   {
     const dc = ctx.world.cities.find((x) => x.id === Number(cmd.city));
@@ -98,6 +105,9 @@ export async function issueDecree(ctx, req, res, url) {
   if (result.relieved != null) { (ctx.meta.relieved ??= {})[result.relieved] = ctx.world.turn ?? 0; chron.saveMeta(ctx.meta); }
   if (result.alliance != null) { (ctx.meta.alliances ??= {})[result.alliance] = (ctx.world.turn ?? 0) + 16; chron.saveMeta(ctx.meta); }
   if (result.march) startCampaign(result.march);
+  // The King's war (war.js): declared, its first town ordered; or an envoy's answer, an ally or a warning.
+  if (result.war != null) War.declare(ctx, result.war);
+  if (result.join) War.joined(ctx, result.join);
   if (result.hostMarch) {
     // A house that asked the King's help opens its gates to his host (reinforce): its town may be garrisoned.
     const open = result.hostMarch.opens != null ? (pid) => pid === result.hostMarch.opens || sworn(pid) : sworn;
@@ -132,7 +142,7 @@ export async function issueDecree(ctx, req, res, url) {
   if (crownNow) crownNow.gold -= result.cost;
   // The result card says what the order cost and whose favour moved, so the
   // King learns the price of his word.
-  const effects = shiftAndTell(result.favour, { gift: "a gift of crowns", feast: "a feast in their honour", relief: "grain from the crown", build: "a building paid by the crown", grant: "a town granted or taken", banners: "the King's banners: answered or refused", marriage: "a royal match", peace: "the King's peace", back: "the King took a side", settle: "the King's peace, kept by another house", buyoff: "the King bought off the pretender", ward: "their heir taken as the King's ward", alliance: "an oath to the crown", march: "the royal host" }[cmd.action] ?? "a royal decree", result.cost);
+  const effects = shiftAndTell(result.favour, { gift: "a gift of crowns", feast: "a feast in their honour", relief: "grain from the crown", build: "a building paid by the crown", grant: "a town granted or taken", banners: "the King's banners: answered or refused", marriage: "a royal match", peace: "the King's peace", back: "the King took a side", settle: "the King's peace, kept by another house", buyoff: "the King bought off the pretender", ward: "their heir taken as the King's ward", alliance: "an oath to the crown", march: "the royal host", war: "the King's war", join: "the King's war" }[cmd.action] ?? "a royal decree", result.cost);
   const seat = ctx.world.cities.find((c) => c.owner === crownNow?.id && c.capital);
   const target = ctx.world.cities.find((c) => c.id === Number(cmd.city));
   // No journey to where the King already is: an order for his own seat simply takes effect there.

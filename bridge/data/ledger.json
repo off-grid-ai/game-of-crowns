@@ -104,6 +104,16 @@
    },
    "says": "the march on {town}"
   },
+  "war": {
+   "axes": {
+    "peace": -2
+   },
+   "says": "the war on {house}"
+  },
+  "join": {
+   "axes": {},
+   "says": "an envoy to {house}"
+  },
   "promise": {
    "axes": {},
    "says": "the council seat promised to {house}"

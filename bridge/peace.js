@@ -8,6 +8,7 @@ import fs from "node:fs";
 import * as Lua from "./lua.js";
 import { crownOf } from "./realm.js";
 import { cityName, houseFor } from "./narrator.js";
+import * as War from "./war.js";
 
 const P = JSON.parse(fs.readFileSync(new URL("./data/peace.json", import.meta.url), "utf8"));
 const signed = (d) => `${d > 0 ? "+" : "−"}${Math.abs(d)}`;
@@ -86,6 +87,7 @@ export function ruled(ctx, beat, option) {
   ctx.diplomacy?.([crown.id, pid, P.armistice, "Armistice"]);
   record({ turn: world?.turn ?? 0, kind: "court", text: `Peace between the crown and ${houseFor(world.players.find((p) => p.id === pid)).name}, sealed at Kingsmere.` });
   delete meta.crownWars[pid];
+  War.ended(ctx, pid);  // the King's war on the house, if it was his, ends here (war.js)
 }
 
 // For /world wars: the crown's wars with the great houses, since when and the towns each side has lost.

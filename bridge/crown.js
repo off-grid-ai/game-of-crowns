@@ -365,6 +365,36 @@ const HANDLERS = {
     return { cost, lua: [pay], favour, hostMarch: { host: h.id, city: c.id, house: owner.id },
       text: `The royal host, ${h.men.toLocaleString("en-US")} troops, marches on ${town}. ${lord} calls every man to its walls, and every house in the realm watches.` };
   },
+  // The King's war on a house (war.js keeps it) and his envoy asking another house to join it. cmd.war: the war now
+  // (war.js current), cmd.joinChance(pid): the house's answer as war.js reckons it; both lent by routes_decree.js.
+  war(x) {
+    const { cmd, world, cost, pay, owner, lord } = x;
+    if (!owner || houseFor(owner).crown || houseFor(owner).wild) return { error: "choose a great house's town to make war on" };
+    const w = cmd.war;
+    if (w) return { error: w.house === owner.id ? `the crown is already at war with ${lord}` : `the crown is at war with ${houseFor(world.players.find((p) => p.id === w.house) ?? {}).name}; end that war first` };
+    if ((cmd.sworn ?? (() => false))(owner.id)) return { error: `${lord} is sworn to the crown; its oath must run out before the King makes war on it` };
+    const d = DECREES.war;
+    const others = greatHouses(world).filter((p) => p.id !== owner.id);
+    const towns = world.cities.filter((c) => c.owner === owner.id).length;
+    return { cost, lua: [pay], war: owner.id, favour: { [owner.id]: d.favour ?? -30, ...Object.fromEntries(others.map((p) => [p.id, d.others ?? -3])) },
+      text: `The King's heralds ride to ${lord}'s gates with his defiance: war, until its ${towns} ${towns === 1 ? "town is" : "towns are"} the crown's.` };
+  },
+  join(x) {
+    const { cmd, world, cost, pay, owner, lord } = x;
+    const w = cmd.war;
+    if (!w) return { error: "the crown is at war with no house" };
+    if (!owner || houseFor(owner).crown || houseFor(owner).wild) return { error: "choose a great house's town to send the envoy to" };
+    if (owner.id === w.house) return { error: `${lord} is the house the King is at war with` };
+    const foe = houseFor(world.players.find((p) => p.id === w.house) ?? {}).name;
+    const a = cmd.joinChance?.(owner.id);
+    if (!a) return { error: `${lord} already marches with the King` };
+    if (a.warns) return { cost, lua: [pay], favour: {}, join: { house: owner.id, yes: false, warns: true },
+      text: `The King's envoy rides to ${lord}, and comes back with nothing: ${lord} is ${a.why}. Its riders are already on the road to warn ${foe}.` };
+    const yes = (cmd.roll ?? Math.random)() < a.chance;
+    return { cost, lua: [pay], favour: yes ? { [owner.id]: 2 } : {}, join: { house: owner.id, yes, warns: false },
+      text: yes ? `${lord} answers the King's envoy: its banners are called, and its men march with the royal host against ${foe}.`
+        : `${lord} hears the King's envoy out and sends him home: it ${a.why === "is cold to the crown" ? "owes the crown nothing" : "will not bleed in the King's war"}.` };
+  },
 };
 
 // The price of making two warring houses stop, as a multiple of the base: each point under coldBelow
