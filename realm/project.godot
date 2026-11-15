@@ -13,6 +13,7 @@ config/features=PackedStringArray("4.7", "Forward Plus")
 
 AppServices="*res://scripts/app_services.gd"
 Clock="*res://scripts/world_clock.gd"
+Dialogic="*res://addons/dialogic/Core/DialogicGameHandler.gd"
 
 [display]
 
@@ -66,3 +67,10 @@ snow={
 [filesystem]
 
 import/blender/enabled=false
+
+[dialogic]
+
+directories/dch_directory={}
+directories/dtl_directory={}
+layout/style_directory={}
+text/input_action="tour_next"

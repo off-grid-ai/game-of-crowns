@@ -45,6 +45,8 @@ const ACTIONS := [
 	["host_garrison", "Garrison a town", "The King's hosts", [KEY_U]],
 	["host_return", "Go home to the King's seat", "The King's hosts", [KEY_I]],
 	["host_split", "Split the host in two", "The King's hosts", [KEY_O]],
+	["tour", "The Hand's tour: how the realm answers you", "The realm", [KEY_F1]],
+	["tour_next", "The Hand goes on", "The realm", [MOUSE + MOUSE_BUTTON_LEFT, KEY_ENTER]],
 	["card_do", "Do the top card's answer in the chronicle", "The realm", [KEY_ENTER]],  # chronicle_panel.gd do_top
 	["next_idle", "The next host with no orders, selected and looked at", "The King's hosts", [KEY_F3, KEY_SLASH]],  # host_command.gd; Age of Empires' idle key, beside F1 and F2
 	# Groups of hosts (StarCraft's, Age of Empires' control groups; host_command.gd): Cmd+number makes one, the number selects it.

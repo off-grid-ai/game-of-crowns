@@ -375,6 +375,7 @@ func _build_top_bar() -> void:
 	_pause_btn.toggle_mode = true
 	act.add_child(ui.named(_pause_btn, "Pause"))
 	ui.divider(act)
+	act.add_child(ui.named(ui.icon_btn("question", ui.with_key("The Hand's tour: how the realm answers you", "tour"), func(): ui.tour_asked.emit()), "Tour"))
 	act.add_child(ui.named(ui.icon_btn("gear-six", "Settings: this reign, voices, the local model", func(): ui.open_settings.emit()), "Settings"))
 	act.add_child(ui.named(ui.icon_btn("list", "Chronicles, new realms, records", func(): ui.open_menu.emit()), "Menu"))
 

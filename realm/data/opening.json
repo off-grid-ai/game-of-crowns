@@ -1,62 +1,74 @@
 {
- "_": "The first ten minutes in the view (--opening=v2; docs/review/first-ten-minutes-plan.md). Tune here, not in code. The Hand speaks each prompt once, in the first reign only (Against the Storm's envoy; Six Ages: teach a few things). storybook: the storybook's pages kept in the v2 opening (by their painting's name); storyKeys: whether its pages show key strips (off: the game decides). crowning: the King's first moment (crowning.gd): on, the line and the one under it, seconds it holds, how high on the screen, the royal standard's height and seconds to rise. tracker: the date card's one goal until the first winter (on, its words, %d the seasons to go). hideUntilWinter: the toolbar keys at rest, hidden in the first reign until the first winter (UI v2; their keys still work).",
- "speaker": "The Hand",
- "prompts": [
-  {
-   "id": "realm",
-   "on": "landed",
-   "after_sec": 6,
-   "text": "The realm is yours, Your Grace. The court is waiting."
+  "_": "The first ten minutes in the view (--opening=v2; docs/review/first-ten-minutes-plan.md). Tune here, not in code. The Hand's tour (hand_prompts.gd, Dialogic 2): tour, each lesson's moment (on: landed, first_card, first_threat, court_waits, first_ruling, house_turns, winter), the seconds after it (after_sec) and its words, realm/data/tour/<timeline>.dtl (Dialogic timelines; [signal arg=\"spot:<part>\"] rings a part of the screen: chronicle, card, armies, houses, pause, court, top, none). Each once per player; welcome again from the top bar's ? or F1. crowning: the King's first moment (crowning.gd): on, the line and the one under it, seconds it holds, how high on the screen, the royal standard's height and seconds to rise. tracker: the date card's one goal until the first winter (on, its words, %d the seasons to go). hideUntilWinter: the toolbar keys at rest, hidden in the first reign until the first winter (UI v2; their keys still work).",
+  "storybook": [
+    "realm_land",
+    "house_crown",
+    "hall"
+  ],
+  "storyKeys": false,
+  "crowning": {
+    "on": true,
+    "line": "Long live %s, King of Aldmere",
+    "under": "The realm is yours",
+    "seconds": 4.0,
+    "yield": 0.25,
+    "_yield": "seconds the line takes to give way when a card comes up (crowning.gd, ui.card_shown): one layer at a time",
+    "top": 150,
+    "standard": 1.2,
+    "rise": 2.5
   },
-  {
-   "id": "lord",
-   "on": "court_waits",
-   "after_sec": 0,
-   "text": "A lord asks for you. Follow the gold arrow."
+  "tracker": {
+    "on": true,
+    "text": "Hold the realm whole · winter in %d seasons",
+    "one": "Hold the realm whole · winter next season",
+    "winter": "Winter, and the realm stands"
   },
-  {
-   "id": "goal",
-   "on": "first_ruling",
-   "after_sec": 6,
-   "text": "Hold the realm whole to the first winter."
-  },
-  {
-   "id": "setback",
-   "on": "house_turns",
-   "after_sec": 0,
-   "text": "A house turns from you. The court will let you answer."
-  },
-  {
-   "id": "winter",
-   "on": "winter",
-   "after_sec": 2,
-   "text": "Winter, and the realm stands. History is watching."
-  }
- ],
- "storybook": [
-  "realm_land",
-  "house_crown",
-  "hall"
- ],
- "storyKeys": false,
- "crowning": {
-  "on": true,
-  "line": "Long live %s, King of Aldmere",
-  "under": "The realm is yours",
-  "seconds": 4.0,
-  "yield": 0.25, "_yield": "seconds the line takes to give way when a card comes up (crowning.gd, ui.card_shown): one layer at a time",
-  "top": 150,
-  "standard": 1.2,
-  "rise": 2.5
- },
- "tracker": {
-  "on": true,
-  "text": "Hold the realm whole · winter in %d seasons",
-  "one": "Hold the realm whole · winter next season",
-  "winter": "Winter, and the realm stands"
- },
- "hideUntilWinter": [
-  "Lore",
-  "Ledger"
- ]
+  "hideUntilWinter": [
+    "Lore",
+    "Ledger"
+  ],
+  "tour": [
+    {
+      "id": "welcome",
+      "on": "landed",
+      "after_sec": 8,
+      "timeline": "welcome"
+    },
+    {
+      "id": "first_threat",
+      "on": "first_threat",
+      "after_sec": 0,
+      "timeline": "first_threat"
+    },
+    {
+      "id": "first_card",
+      "on": "first_card",
+      "after_sec": 1,
+      "timeline": "first_card"
+    },
+    {
+      "id": "court_waits",
+      "on": "court_waits",
+      "after_sec": 0,
+      "timeline": "court_waits"
+    },
+    {
+      "id": "goal",
+      "on": "first_ruling",
+      "after_sec": 6,
+      "timeline": "goal"
+    },
+    {
+      "id": "house_turns",
+      "on": "house_turns",
+      "after_sec": 0,
+      "timeline": "house_turns"
+    },
+    {
+      "id": "winter",
+      "on": "winter",
+      "after_sec": 2,
+      "timeline": "winter"
+    }
+  ]
 }

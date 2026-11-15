@@ -244,6 +244,7 @@ func _row(e: Dictionary, loss: bool, watch := Callable()) -> Control:
 		var card := _card(e, loss, watch)
 		if card != null:
 			_asked_at = now
+			ui.chronicle_asked.emit(e, _urgency(e, loss) >= int(UI.ui_num("chronicle.pause_at", 3.0)))
 		return card
 	if watch.is_valid():
 		return null  # a moment to watch is now or never
@@ -265,6 +266,7 @@ func _release() -> void:
 		var card := _card(h["e"], h["loss"])
 		if card != null:
 			_asked_at = float(WorldClock.msec())
+			ui.chronicle_asked.emit(h["e"], false)
 			_count_if(card)
 			_trim()
 			return
@@ -414,6 +416,14 @@ var _paused_for: Control
 
 
 ## Enter: the top card's answer (its gold button), as the keyboard's way to act at once.
+## The card on top, the one the Hand points at (hand_prompts.gd), or null.
+func top_card() -> Control:
+	for r in _needs.get_children():
+		if (r as Control).visible:
+			return r
+	return null
+
+
 func do_top() -> bool:
 	for c in _needs.get_children():
 		if not c.visible:
