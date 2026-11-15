@@ -252,7 +252,7 @@ export function aimProgress(ctx, a) {
       const now = raiding(ctx)[0]?.n ?? 0, peak = meta.ladder?.raidPeak ?? 0;
       return peak > 0 ? { text: now > 0 ? `${now} compan${now === 1 ? "y" : "ies"} of raiders left` : "the raiders flee", frac: 1 - now / peak } : null;
     }
-    case "levy": { const n = mustered(ctx); return { text: `${(Math.min(n, a.n) * 200).toLocaleString("en-US")} of ${(a.n * 200).toLocaleString("en-US")} troops`, frac: Math.min(1, n / a.n) }; }  // in men, as the ledger counts them; the best muster so far
+    case "levy": { const n = mustered(ctx); return { text: `${(Math.min(n, a.n) * 200).toLocaleString("en-US")} of ${(a.n * 200).toLocaleString("en-US")} men`, frac: Math.min(1, n / a.n) }; }  // in men, as the ledger counts them; the best muster so far
     case "oath": { const best = warmest(ctx); return best ? favourTo(best.id, a.to) : null; }
     case "town": {
       const s = (meta.campaigns ?? [])[0];
