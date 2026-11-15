@@ -9,6 +9,7 @@ extends Node3D
 ## Every number is realm/data/roadside.json's (docs/TUNING.md). On with `on: true` there.
 
 const Mover := preload("res://scripts/mover.gd")  # the one way to move (CLAUDE.md)
+const Ground := preload("res://scripts/ground.gd")  # the one answer to where a body may stand
 const MeshCpu := preload("res://scripts/mesh_cpu.gd")
 const Data := preload("res://scripts/data.gd")
 const Real := preload("res://scripts/realistic.gd")
@@ -142,6 +143,8 @@ func _lay() -> void:
 	}
 	var sites := Plan.plan(input, _d)
 	if _root:
+		for n in _root.get_children():
+			Ground.gone(n)
 		_root.queue_free()
 	Bulk.remove_owner(self)  # the small props of the last lay (bulk.gd)
 	_alive = []
@@ -224,6 +227,11 @@ func _raise(s: Dictionary) -> void:
 		preload("res://scripts/fire.gd").hearth(node, _world(s, float(f[0]), float(f[1])))
 	if k.has("sign") and bool(k["sign"].get("on", true)):
 		_sign(node, s, k["sign"], rng)
+	# What the site set down is in the way (ground.gd, read off it the towns' way); a bridge or a ford is crossed.
+	if not String(s["kind"]) in ["bridge", "ford"]:
+		var c: Vector2 = s["at"]
+		var reach := float(_d.get("site_reach", 5.0))
+		Ground.stands(node, Rect2(c.x - reach, c.y - reach, reach * 2.0, reach * 2.0))
 
 
 ## One catalogue piece: {c: component, at: [along, out], yaw: degrees, chance, squash: [x, y, z],
