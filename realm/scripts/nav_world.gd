@@ -47,7 +47,10 @@ static var _pending := {}  # kind -> chunks not yet landed once
 static var _await := {}  # kind -> {regs: [[region, its iteration when set]], map_at: the map's iteration once all were built}
 static var _answers := {}  # kind -> true once the map answers for every chunk (read on any thread)
 static var _land_rev := {}  # chunk -> how many times its land was changed (terrain.ground_changed)
-static var _town_polys := {}  # root instance id -> [signature, [[world poly, its bounds]], [[way poly, bounds]]]
+static var _town_polys := {}  # root instance id -> [signature, the cells its ways were kept in]
+static var _town_cells := {}  # cell (Vector2i, the chunk) -> {root instance id: [world way poly]}: the towns' ways by cell
+static var _town_rev := {}  # cell (Vector2i) -> how many times the towns' ways over it changed
+static var _towns_read_at := -1  # the frame the towns' layouts were last looked at (_index_towns)
 static var _faces_kept := {}  # chunk -> [its land's change count, its triangles]: the chunks baked lately (_faces)
 static var _faces_order: Array = []  # those chunks, the least lately baked first
 const FACES_KEPT := 24
@@ -83,6 +86,9 @@ static func stop() -> void:
 	_answers.clear()
 	_queue.clear()
 	_town_polys.clear()
+	_town_cells.clear()
+	_town_rev.clear()
+	_towns_read_at = -1
 	_land_rev.clear()
 	_base.clear()
 	_still.clear()
@@ -285,7 +291,11 @@ static func _key() -> Array:
 	var land := 0
 	for c in _land_rev:
 		land += int(_land_rev[c])
-	return [Ground.shapes_rev, _carved_rev, _roads_n(), land]
+	_index_towns()
+	var towns := 0
+	for c in _town_rev:
+		towns += int(_town_rev[c])
+	return [Ground.shapes_rev, _carved_rev, _roads_n(), land, towns]
 
 
 ## Held ground is carved out of the maps only once it stands (Godot's rule: a navmesh is baked for what stays put; what
@@ -345,7 +355,22 @@ static func carved(id: Variant) -> bool:
 
 
 static func _roads_n() -> int:
-	return (roads.get("_paths") as Dictionary).size() if roads and is_instance_valid(roads) and roads.get("_paths") is Dictionary else 0
+	return int(roads.get("version")) if roads and is_instance_valid(roads) else 0
+
+
+## The roads' stretches over `area` changed this many times (roads.gd ways_rev_in): a chunk's own cells only.
+static func _roads_rev_in(area: Rect2) -> int:
+	return int(roads.ways_rev_in(area)) if roads and is_instance_valid(roads) else 0
+
+
+## The towns' ways over `area` changed this many times (_index_towns).
+static func _towns_rev_in(area: Rect2) -> int:
+	var n := 0
+	var chunk := _chunk_size()
+	for x in range(floori(area.position.x / chunk), floori(area.end.x / chunk) + 1):
+		for z in range(floori(area.position.y / chunk), floori(area.end.y / chunk) + 1):
+			n += int(_town_rev.get(Vector2i(x, z), 0))
+	return n
 
 
 ## A few chunks a frame (nav.watch), on the frame's budget, in rounds over the realm, and only while something changed
@@ -452,7 +477,8 @@ static func _inputs(c: Vector2i) -> Dictionary:
 	# What stands and the ways, read again only when the ground's shapes, the roads or the land there changed.
 	# What stands is asked only over this chunk (ground.gd shapes_rev_in): a town's life put away or a wood's trunks laid
 	# elsewhere never has this chunk read again (the battle run: every chunk re-read each look, 218 ms a frame).
-	var key := [Ground.shapes_rev_in(area), _roads_n(), int(_land_rev.get(c, 0))]
+	_index_towns()
+	var key := [Ground.shapes_rev_in(area), _roads_rev_in(area), _towns_rev_in(area), int(_land_rev.get(c, 0))]
 	var kept: Array = _base.get(c, [])
 	if kept.is_empty() or kept[0] != key:
 		var L: Dictionary = Data.value("ground", "physics.layers", {})
@@ -472,18 +498,20 @@ static func _inputs(c: Vector2i) -> Dictionary:
 		PerfTools.add("nav_world.shapes", r1 - r0)
 		PerfTools.add("nav_world.outlines", Time.get_ticks_usec() - r1)
 		var r2 := Time.get_ticks_usec()
+		# The ways kept by cell (the towns' here, the roads' in roads.gd): only this chunk's own cells are read.
 		var ways: Array = []
-		var towns: Node = Ground.towns
-		if towns and is_instance_valid(towns):
-			for t: Dictionary in (towns.get("towns") as Dictionary).values():
-				var root: Node3D = t.get("node") if t.get("node") is Node3D and is_instance_valid(t.get("node")) else null
-				if root == null or not root.is_inside_tree():
-					continue
-				for e in _town_ways(root):
-					if (e[1] as Rect2).intersects(area):
-						ways.append(e[0])
+		var a0 := Vector2i(floori(area.position.x / chunk), floori(area.position.y / chunk))
+		for x in range(a0.x, floori(area.end.x / chunk) + 1):
+			for z in range(a0.y, floori(area.end.y / chunk) + 1):
+				var at: Dictionary = _town_cells.get(Vector2i(x, z), {})
+				for id in at:
+					for e: Array in at[id]:
+						var r: Rect2 = e[1]
+						# once: from the first of its cells inside the area
+						if r.intersects(area) and x == maxi(floori(r.position.x / chunk), a0.x) and z == maxi(floori(r.position.y / chunk), a0.y):
+							ways.append(e[0])
 		if roads and is_instance_valid(roads):
-			for s in roads.segments():
+			for s in roads.segments_in(area):
 				var a: Vector2 = s[0]
 				var b: Vector2 = s[1]
 				var half := float(s[2])
@@ -496,8 +524,8 @@ static func _inputs(c: Vector2i) -> Dictionary:
 				ways.append(PackedVector2Array([a + side, b + side, b - side, a - side]))
 		var r3 := Time.get_ticks_usec()
 		PerfTools.add("nav_world.ways", r3 - r2)
-		key = [Ground.shapes_rev_in(area), _roads_n(), int(_land_rev.get(c, 0))]  # as read: the read itself may lay a wood's trunks
-		kept = [key, str(hash([key[2], obstacles, ways])), obstacles, ways]
+		key = [Ground.shapes_rev_in(area), _roads_rev_in(area), _towns_rev_in(area), int(_land_rev.get(c, 0))]  # as read: the read itself may lay a wood's trunks
+		kept = [key, str(hash([key[3], obstacles, ways])), obstacles, ways]
 		PerfTools.add("nav_world.hash", Time.get_ticks_usec() - r3)
 		_base[c] = kept
 	# The held ground (a regiment's block, an engine): the claims' own outlines, cheap to read every look.
@@ -558,17 +586,63 @@ static func _outline(shape: RID, xf: Transform3D, bounds := Rect2()) -> PackedVe
 	return pts
 
 
-## A town's ways in world XZ, with their bounds, read again only when its layout or its place changes.
-static func _town_ways(root: Node3D) -> Array:
-	var sig := [root.get_meta("lanes", []).size(), root.get_meta("doors", []).size(), root.get_meta("square_r", 0.0), root.global_transform]
-	var kept: Array = _town_polys.get(root.get_instance_id(), [])
-	if not kept.is_empty() and kept[0] == sig:
-		return kept[1]
-	var ways: Array = []
-	for w: PackedVector2Array in town_ways(root):
-		ways.append(_placed(w, root.global_transform))
-	_town_polys[root.get_instance_id()] = [sig, ways]
-	return ways
+## The towns' ways kept by chunk cell, looked at once a frame: a town whose layout or place changed (its lanes, doors,
+## square, transform) has its ways taken out of the cells they were in and put in the cells they cover now, and a town
+## gone has them taken out. _inputs then reads only its chunk's cells (run 9: every town walked for every chunk).
+static func _index_towns() -> void:
+	var frame := Engine.get_process_frames()
+	if frame == _towns_read_at:
+		return
+	_towns_read_at = frame
+	var live := {}
+	var towns: Node = Ground.towns
+	if towns and is_instance_valid(towns) and towns.get("towns") is Dictionary:
+		for t: Dictionary in (towns.get("towns") as Dictionary).values():
+			var root: Node3D = t.get("node") if t.get("node") is Node3D and is_instance_valid(t.get("node")) else null
+			if root == null or not root.is_inside_tree():
+				continue
+			var id := root.get_instance_id()
+			live[id] = true
+			var sig := [root.get_meta("lanes", []).size(), root.get_meta("doors", []).size(), root.get_meta("square_r", 0.0), root.global_transform]
+			var kept: Array = _town_polys.get(id, [])
+			if not kept.is_empty() and kept[0] == sig:
+				continue
+			_unindex_town(id)
+			var ways: Array = []
+			for w: PackedVector2Array in town_ways(root):
+				ways.append(_placed(w, root.global_transform))
+			var cells: Array = []
+			var chunk := _chunk_size()
+			for e: Array in ways:
+				var r: Rect2 = e[1]
+				for x in range(floori(r.position.x / chunk), floori(r.end.x / chunk) + 1):
+					for z in range(floori(r.position.y / chunk), floori(r.end.y / chunk) + 1):
+						var c := Vector2i(x, z)
+						if not _town_cells.has(c):
+							_town_cells[c] = {}
+						if not (_town_cells[c] as Dictionary).has(id):
+							_town_cells[c][id] = []
+							cells.append(c)
+							_town_rev[c] = int(_town_rev.get(c, 0)) + 1
+						(_town_cells[c][id] as Array).append(e)
+			_town_polys[id] = [sig, cells]
+	for id in _town_polys.keys():
+		if not live.has(id):
+			_unindex_town(id)
+			_town_polys.erase(id)
+
+
+static func _unindex_town(id: int) -> void:
+	var kept: Array = _town_polys.get(id, [])
+	if kept.is_empty():
+		return
+	for c: Vector2i in kept[1]:
+		var at: Dictionary = _town_cells.get(c, {})
+		at.erase(id)
+		if at.is_empty():
+			_town_cells.erase(c)
+		_town_rev[c] = int(_town_rev.get(c, 0)) + 1
+	kept[1] = []
 
 
 ## A town-local outline in world XZ, with its bounds: [poly, Rect2].

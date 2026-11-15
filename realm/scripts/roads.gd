@@ -366,11 +366,16 @@ func _forget_road(owner: String, road: String) -> void:
 	var kept := was.filter(func(s: Array) -> bool: return s.size() < 5 or String(s[4]) != road)
 	if kept.size() != was.size():
 		_paths[owner] = kept
+		for st in was:
+			if st.size() >= 5 and String(st[4]) == road:
+				_unindex(st)
 		_grid_stale = true
 		version += 1
 
 
 func _forget(owner: String) -> void:
+	for st in _paths.get(owner, []):
+		_unindex(st)
 	if _paths.erase(owner):
 		_grid_stale = true
 		version += 1
@@ -379,7 +384,9 @@ func _forget(owner: String) -> void:
 func _remember(owner: String, a: Vector3, b: Vector3, half: float, road := "") -> void:
 	if not _paths.has(owner):
 		_paths[owner] = []
-	_paths[owner].append([Vector2(a.x, a.z), Vector2(b.x, b.z), half, owner, road])
+	var st := [Vector2(a.x, a.z), Vector2(b.x, b.z), half, owner, road]
+	_paths[owner].append(st)
+	_index(st)
 	_grid_stale = true
 	version += 1
 
@@ -406,6 +413,72 @@ func _cells() -> Dictionary:
 ## nav_world.gd), as a cart or a rider goes; empty while the navigation isn't ready.
 func route(from: Vector3, to: Vector3) -> PackedVector3Array:
 	return NavWorld.path(from, to, &"wide")
+
+
+# --- the navigation's ways, by WAYS_CELL cell ----------------------------------------------------------------------
+# Each stretch laid is kept in the cells its bounds cover (as ground.gd keeps its shapes), added when laid and dropped
+# when taken up, so a navigation chunk reads only its own cells (nav_world.gd _inputs: every stretch walked for every
+# chunk was its top cost, run 9: 5 ms a call).
+const WAYS_CELL := 16.0  # nav_world.gd's chunk (ground.json nav.chunk), as ground.gd SHAPES_CELL
+var _way_cells := {}  # cell (Vector2i) -> [stretch]
+var _way_rev := {}  # cell (Vector2i) -> how many times its stretches changed
+
+
+func _way_span(st: Array) -> Rect2i:
+	var half := float(st[2])
+	var lo: Vector2 = (st[0] as Vector2).min(st[1]) - Vector2.ONE * half
+	var hi: Vector2 = (st[0] as Vector2).max(st[1]) + Vector2.ONE * half
+	var c0 := Vector2i(floori(lo.x / WAYS_CELL), floori(lo.y / WAYS_CELL))
+	var c1 := Vector2i(floori(hi.x / WAYS_CELL), floori(hi.y / WAYS_CELL))
+	return Rect2i(c0, c1 - c0)
+
+
+func _index(st: Array) -> void:
+	var r := _way_span(st)
+	for x in range(r.position.x, r.end.x + 1):
+		for z in range(r.position.y, r.end.y + 1):
+			var c := Vector2i(x, z)
+			if not _way_cells.has(c):
+				_way_cells[c] = []
+			(_way_cells[c] as Array).append(st)
+			_way_rev[c] = int(_way_rev.get(c, 0)) + 1
+
+
+func _unindex(st: Array) -> void:
+	var r := _way_span(st)
+	for x in range(r.position.x, r.end.x + 1):
+		for z in range(r.position.y, r.end.y + 1):
+			var c := Vector2i(x, z)
+			var at: Array = _way_cells.get(c, [])
+			for i in range(at.size() - 1, -1, -1):
+				if is_same(at[i], st):
+					at.remove_at(i)
+			if at.is_empty():
+				_way_cells.erase(c)
+			_way_rev[c] = int(_way_rev.get(c, 0)) + 1
+
+
+## The stretches whose bounds touch `area` (world XZ), each once: the navigation's ways over one chunk.
+func segments_in(area: Rect2) -> Array:
+	var out: Array = []
+	var a0 := Vector2i(floori(area.position.x / WAYS_CELL), floori(area.position.y / WAYS_CELL))
+	var a1 := Vector2i(floori(area.end.x / WAYS_CELL), floori(area.end.y / WAYS_CELL))
+	for x in range(a0.x, a1.x + 1):
+		for z in range(a0.y, a1.y + 1):
+			for st in _way_cells.get(Vector2i(x, z), []):
+				var r := _way_span(st)  # once: from the first of its cells inside the area
+				if x == maxi(r.position.x, a0.x) and z == maxi(r.position.y, a0.y):
+					out.append(st)
+	return out
+
+
+## How many times the stretches over `area` changed (world XZ): a chunk's ways read again only when it moves.
+func ways_rev_in(area: Rect2) -> int:
+	var n := 0
+	for x in range(floori(area.position.x / WAYS_CELL), floori(area.end.x / WAYS_CELL) + 1):
+		for z in range(floori(area.position.y / WAYS_CELL), floori(area.end.y / WAYS_CELL) + 1):
+			n += int(_way_rev.get(Vector2i(x, z), 0))
+	return n
 
 
 ## Every stretch of road and track laid, as [from, to (world XZ), half width]: the navigation's ways (nav_world.gd).
