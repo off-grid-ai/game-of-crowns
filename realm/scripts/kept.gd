@@ -3,7 +3,8 @@ extends RefCounted
 ## rather than carrying a copy (Mac, 2026-11-15: "cant you just bundle it"): a model's merged mesh and its low level
 ## (realistic.gd), a tiled ground (terrain.gd), a crop's mesh (countryside.gd), a dressing piece's mesh (dressing.gd),
 ## a town (town_store.gd). One loader for all of them: the game's own copy (res://baked/, made by tools/bake.gd before
-## every export, read only by an exported game), else the player's (user://kept/), else made and kept there.
+## every export and after every kept version bump; read by any run, a file name carrying its version), else the
+## player's (user://kept/), else made and kept there (Mac 2026-11-15: "we'll need to bundle the built towns into the game").
 ##
 ## Every file is named by the kept things' version (code(): realm/data/kept.json, bumped when how a kept thing is made
 ## changes), so an older make is never read back; the player's older files are swept the first time it is asked.
@@ -19,7 +20,7 @@ static var _code := ""
 ## The file `name` of `kind` (a folder: models, tiled, crops, dressing, towns) is kept in, with its extension.
 static func path(kind: String, name: String, ext := "res") -> String:
 	var f := "%s/%s_%s.%s" % [kind, name, code(), ext]
-	if baking or (OS.has_feature("template") and FileAccess.file_exists(BAKED + f)):
+	if baking or FileAccess.file_exists(BAKED + f):  # the bundled copy, in any run, when it is of this version
 		return BAKED + f
 	return USER + f
 
