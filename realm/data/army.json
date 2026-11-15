@@ -116,12 +116,13 @@
         "volley": { "enter": "_ready_in", "tick": "_volley" },
         "advance": { "enter": "_walk_in", "tick": "_advance" },
         "flank": { "enter": "_walk_in", "tick": "_flank" },
-        "charge": { "enter": "_run_in", "tick": "_charge" },
+        "charge": { "enter": "_charge_in", "tick": "_charge" },
+        "rideout": { "enter": "_ride_out_in", "tick": "_ride_out" },
         "fight": { "enter": "_ready_in", "tick": "_fight" },
         "rout": { "enter": "_break", "tick": "_run", "guard": "_may_break" },
         "hold": { "enter": "_hold", "guard": "_may_hold" }
       },
-      "go": [["stand", "volley", "volley"], ["stand", "advance", "advance"], ["stand", "flank", "flank"], ["advance", "fight", "engage"], ["volley", "fight", "engage"], ["flank", "charge", "charge"], ["charge", "fight", "engage"], ["fight", "advance", "advance"], ["charge", "flank", "flank"]],
+      "go": [["stand", "volley", "volley"], ["stand", "advance", "advance"], ["stand", "flank", "flank"], ["advance", "fight", "engage"], ["volley", "fight", "engage"], ["flank", "charge", "charge"], ["charge", "fight", "engage"], ["fight", "advance", "advance"], ["charge", "flank", "flank"], ["fight", "rideout", "rideout"], ["rideout", "flank", "flank"]],
       "any": { "break": "rout", "won": "hold" }
     },
     "storm_regiment": {

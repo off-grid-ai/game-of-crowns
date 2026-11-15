@@ -33,6 +33,7 @@ const Heraldry := preload("res://scripts/heraldry.gd")
 const Awareness := preload("res://scripts/awareness.gd")  # the season's length: the field keeps its dead a season
 const Fire := preload("res://scripts/fire.gd")
 const F := "battle"  # data/battle.json, its field block
+const Formation := preload("res://scripts/army_formation.gd")  # a regiment's formation templates (horse: the wedge)
 
 var main: Node
 var men := 0
@@ -475,10 +476,6 @@ func _walk_in(r: Dictionary) -> void:
 	_play(r, "walk")
 
 
-func _run_in(r: Dictionary) -> void:
-	_play(r, "run")
-
-
 ## How far the battle's lens stands (the test aid): the town view's distance (camera.json town_view.dist), so a
 ## rout reads as a crowd in the square does; --dist=<units> for another.
 static func lens_distance() -> float:
@@ -706,6 +703,9 @@ func _fight(r: Dictionary, dt: float) -> void:
 		r["foe"] = null
 		_send(r, &"advance")  # its foe broke: on to the next
 		return
+	if r["role"] == "cavalry" and clock - float(r.get("met_at", clock)) > Data.num(F, "field.cavalry.melee_s", 4.0):
+		_send(r, &"rideout")  # horse never stays stuck in: it rides out to charge again (Total War's cycle charge)
+		return
 	var army: Army = r["army"]
 	var vat: VATMultiMeshInstance3D = r["vat"]
 	var front := _front_men(r)
@@ -725,7 +725,7 @@ func _fight(r: Dictionary, dt: float) -> void:
 	# The front surges: each front man a little forward and back on his own beat (his place in the formation).
 	var surge := Data.num(F, "field.fight.surge", 0.02)
 	var local: PackedVector3Array = r["local"]
-	var line: PackedVector3Array = r["line"]["at"]
+	var line: PackedVector3Array = r[String(r.get("form", "line"))]["at"]
 	for s in front:
 		var v := local[s]
 		v.z = line[s].z + sin(clock * 2.1 + float(s) * 1.7) * surge
@@ -772,6 +772,7 @@ func _flank(r: Dictionary, _dt: float) -> void:
 	if rows.is_empty():
 		return
 	var node: Node3D = r["node"]
+	_morph_step(r, _dt)  # back into its ranks as it rides round (after a ride out)
 	var face := foe_army.facing()
 	var right := Vector3(cos(face), 0, -sin(face))
 	var fwd := Vector3(sin(face), 0, cos(face))
@@ -792,9 +793,18 @@ func _flank(r: Dictionary, _dt: float) -> void:
 	Mover.of(node).toward(goal, Data.num(F, "field.cavalry.ride", 0.3))
 
 
-## In on the flank at the charge, into the side of the regiment at the enemy's end; it fights there, and the
-## regiment it hits is flanked (bleeds harder).
+## Horse in a wedge (research note step 6; Total War's cavalry, 0 A.D.'s wedge template): on its charge it forms the
+## wedge as it runs (formations.json templates.wedge, each man to his nearest place), then in on its target's flank or
+## rear, whichever it is nearest, never its front; the shock where it strikes (field.cavalry.shock men down at once),
+## at blows for field.cavalry.melee_s, then it rides out (field.cavalry.out away from the target), forms its ranks again
+## as it rides round, and charges again: the cycle charge, never stuck in the press.
+func _charge_in(r: Dictionary) -> void:
+	_play(r, "run")
+	_morph(r, "wedge")
+
+
 func _charge(r: Dictionary, _dt: float) -> void:
+	_morph_step(r, _dt)
 	var t: Variant = r.get("target")
 	if t == null or (t as Dictionary).get("state_name", "") == "rout":
 		_send(r, &"flank")
@@ -802,18 +812,14 @@ func _charge(r: Dictionary, _dt: float) -> void:
 	var target: Dictionary = t
 	var tn: Node3D = target["node"]
 	var at: Vector3 = (r["node"] as Node3D).global_position
-	var reach := float(target["w"]) * 0.5 + float(r["d"]) * 0.5 + Data.num(F, "field.contact", 0.12)
-	# Square into its side, the riders' front against the block's end (g20: the charge rode at its middle and met it
-	# file to file, a column beside a column).
-	var side := tn.global_transform.basis.x
-	side.y = 0.0
-	side = side.normalized()
-	if (at - tn.global_position).dot(side) < 0.0:
-		side = -side
+	var hit := charge_face(tn.global_transform, float(target["w"]), float(target["d"]), at)
+	var side: Vector3 = hit[0]
+	var reach := float(hit[1]) + float(r["d"]) * 0.5 + Data.num(F, "field.contact", 0.12)
 	var spot := tn.global_position + side * reach
 	spot.y = at.y
 	if Vector2(at.x - spot.x, at.z - spot.z).length() <= Data.num(F, "field.contact", 0.12):
 		r["foe"] = target
+		r["met_at"] = clock
 		target["flanked"] = true
 		# The shock of the charge: men go down at once where the horse strikes (Total War's charge impact).
 		if target.get("state_name", "") != "rout" and int(target.get("living", 0)) > 0:
@@ -821,6 +827,85 @@ func _charge(r: Dictionary, _dt: float) -> void:
 		_send(r, &"engage")
 		return
 	Mover.of(r["node"]).toward(spot, Data.num(F, "field.cavalry.charge", 0.55), -side)
+
+
+## Which face of a block (its transform, width, depth) a charge from `from` strikes: its left or right flank or its
+## rear, whichever `from` stands most before, never its front. [the face's outward way (flat, world), its half extent].
+static func charge_face(xf: Transform3D, w: float, d: float, from: Vector3) -> Array:
+	var right := Vector3(xf.basis.x.x, 0, xf.basis.x.z).normalized()
+	var fwd := Vector3(xf.basis.z.x, 0, xf.basis.z.z).normalized()
+	var off := Vector3(from.x - xf.origin.x, 0, from.z - xf.origin.z)
+	var best: Array = [right, w * 0.5]
+	var most := -INF
+	for f in [[right, w * 0.5], [-right, w * 0.5], [-fwd, d * 0.5]]:
+		var score := off.dot(f[0] as Vector3)
+		if score > most:
+			most = score
+			best = f
+	return best
+
+
+## Out of the press: away from the foe it hit, at the charge's pace, field.cavalry.out; then round for the next.
+func _ride_out_in(r: Dictionary) -> void:
+	_play(r, "run")
+	var foe: Variant = r.get("foe")
+	var at: Vector3 = (r["node"] as Node3D).global_position
+	var away := (r["node"] as Node3D).global_transform.basis.z
+	if foe is Dictionary and is_instance_valid((foe as Dictionary).get("node")):
+		away = at - ((foe as Dictionary)["node"] as Node3D).global_position
+		(foe as Dictionary)["flanked"] = false
+	away.y = 0.0
+	r["out_to"] = at + away.normalized() * Data.num(F, "field.cavalry.out", 2.5)
+	r["foe"] = null
+	r["ride_t"] = 0.0
+
+
+func _ride_out(r: Dictionary, dt: float) -> void:
+	_morph_step(r, dt)
+	var at: Vector3 = (r["node"] as Node3D).global_position
+	var to: Vector3 = r["out_to"]
+	r["ride_t"] = float(r["ride_t"]) + dt
+	if Vector2(to.x - at.x, to.z - at.z).length() <= 0.1 or float(r["ride_t"]) > Data.num(F, "field.cavalry.out_s", 8.0):
+		_morph(r, "line")  # its ranks again as it rides round for the next charge
+		_play(r, "walk")
+		_send(r, &"flank")
+		return
+	Mover.of(r["node"]).toward(to, Data.num(F, "field.cavalry.charge", 0.55))
+
+
+## A regiment taking another of its formations (formations.json) while it moves: each living man from where he stands
+## to his nearest place in it (Formation.assign) over field.cavalry.form_s; its fight reads the new formation's ranks.
+func _morph(r: Dictionary, shape: String) -> void:
+	if not r.has(shape):
+		r[shape] = Formation.layout(r, shape, _rng)
+	if String(r.get("form", "line")) == shape and not r.has("morph"):
+		return
+	var to := Formation.assign(r["local"], r[shape]["at"])
+	(r[shape] as Dictionary)["at"] = to
+	r["form"] = shape
+	r["morph"] = {"from": (r["local"] as PackedVector3Array).duplicate(), "to": to, "t": 0.0}
+
+
+func _morph_step(r: Dictionary, dt: float) -> void:
+	if not r.has("morph"):
+		return
+	var m: Dictionary = r["morph"]
+	m["t"] = minf(1.0, float(m["t"]) + dt / maxf(Data.num(F, "field.cavalry.form_s", 1.5), 0.05))
+	var e := smoothstep(0.0, 1.0, float(m["t"]))
+	var from: PackedVector3Array = m["from"]
+	var to: PackedVector3Array = m["to"]
+	var local: PackedVector3Array = r["local"]
+	var alive: PackedByteArray = r["alive"]
+	for s in mini(local.size(), to.size()):
+		if alive[s] == 1:
+			local[s] = from[s].lerp(to[s], e)
+	r["local"] = local
+	r["moved"] = true
+	if float(m["t"]) >= 1.0:
+		var shape: Dictionary = r[String(r["form"])]
+		r["w"] = shape["w"]
+		r["d"] = shape["d"]
+		r.erase("morph")
 
 
 ## Men break ranks before a rout (Total War and Bannerlord: a wavering unit sheds men from its rear before it
@@ -1037,8 +1122,9 @@ func _backs(r: Dictionary) -> void:
 ## The living men of its front ranks (field.fight.ranks), by their place in the line: the front is +Z.
 func _front_men(r: Dictionary) -> Array:
 	var alive: PackedByteArray = r["alive"]
-	var line: PackedVector3Array = r["line"]["at"]
-	var files := int(r["line"].get("files", 20))
+	var form: Dictionary = r[String(r.get("form", "line"))]
+	var line: PackedVector3Array = form["at"]
+	var files := int(form.get("files", 20))
 	var ranks := int(Data.num(F, "field.fight.ranks", 2))
 	var order: Array = []
 	for s in alive.size():

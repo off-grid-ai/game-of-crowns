@@ -16,6 +16,8 @@ extends SceneTree
 ##      each in front of its foe;
 ##   6. siege engines stand in their own lane behind the storm host, clear of its rows (siege.json engines.behind_host),
 ##      inside the camp line; the ram's crew stand in two files along its flanks, the ram rolling inside them;
+##   7. horse charge in a wedge (one man at its point, each rank wider behind) and strike a block's flank or rear,
+##      never its front, whichever side they come from; the cycle charge's states are in its mind (army.json minds);
 ##   4. a column marching to its place in the line keeps its column until deploy.range from it (army.gd _deploy cuts
 ##      its way there) and forms its line there; the road in is marched in column (army.gd _column_up).
 ## Prints "FORMATION PROBE …" lines and "FORMATION PROBE PASS" or "FORMATION PROBE FAIL n"; quits with 0 or 1.
@@ -44,6 +46,7 @@ func _run() -> void:
 	_column_then_line()
 	_meets_as_a_line()
 	_siege_lanes()
+	_horse()
 	print("FORMATION PROBE PASS" if _fails == 0 else "FORMATION PROBE FAIL %d" % _fails)
 	quit(0 if _fails == 0 else 1)
 
@@ -238,3 +241,30 @@ func _siege_lanes() -> void:
 		inside = inside and absf(at.z) > 0.1 and absf(at.x) <= 0.4 + 0.12
 	_check(inside, "the ram rolls inside its crew: %d men in two files along its flanks" % men)
 	camp.free()
+
+
+## 7. The wedge, the face a charge strikes, and the cycle charge in the regiment's mind.
+func _horse() -> void:
+	var w := Formation.layout(_reg("horse", 100), "wedge", RandomNumberGenerator.new())
+	var at: PackedVector3Array = w["at"]
+	var zs: Array = []
+	for p in at:
+		zs.append(p.z)
+	zs.sort()
+	zs.reverse()  # the front (+z) first
+	var counts: Array = [1]
+	for i in range(1, zs.size()):  # a new rank where the next man stands well behind the last (ranks 0.4 apart, men off their marks by less)
+		if float(zs[i - 1]) - float(zs[i]) > 0.15:
+			counts.append(1)
+		else:
+			counts[counts.size() - 1] += 1
+	_check(counts.size() > 2 and int(counts[0]) == 1 and int(counts[1]) > 1, "the horse's wedge has one rider at its point and wider ranks behind (%s)" % str(counts))
+	var F: GDScript = load("res://scripts/army_field.gd")
+	var xf := Transform3D(Basis(Vector3.UP, 0.0), Vector3.ZERO)  # a block facing +z
+	for c in [[Vector3(0, 0, 5), "in front"], [Vector3(4, 0, 1), "on its right"], [Vector3(-4, 0, 0.5), "on its left"], [Vector3(0.5, 0, -5), "behind"]]:
+		var hit: Array = F.charge_face(xf, 2.0, 1.0, c[0])
+		var face: Vector3 = hit[0]
+		_check(face.z < 0.5, "horse coming %s strike its flank or rear, never its front (the face %s)" % [c[1], str(face)])
+	var row: Dictionary = Data.value("army", "minds.regiment", {})
+	var go: Array = row.get("go", [])
+	_check(go.has(["fight", "rideout", "rideout"]) and go.has(["rideout", "flank", "flank"]), "the cycle charge: from the press they ride out and round to charge again")
