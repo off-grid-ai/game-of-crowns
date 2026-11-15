@@ -18,7 +18,6 @@ var _petitions: Array = []
 var _court_waiting := false  # the court panel, set aside for a commoner's card
 var _court_hidden := true
 var _court_met := false  # the court has opened once this sitting
-var _held_court := false  # a new petitioner arrived while he was busy
 var _markers := {}  # matter id -> its marker on the map, at its place
 const PINNED_WIDTH := 440.0  # the court card standing by its place
 var _opened_at := Vector3.INF  # the place of the matter the King opened from its marker: the card stands by it
@@ -51,6 +50,7 @@ func _toggle_court() -> void:
 		_court_panel.visible = false
 	else:
 		_court_hidden = false
+		_court_met = true
 		_kings_press = true
 		_show_audience()
 
@@ -103,20 +103,10 @@ func _placed(petitions: Array) -> bool:
 	return petitions.any(func(p): return p.get("place") is Dictionary)
 
 
-## What waited while he was busy, put on screen once he's done: the court's part.
-func _catch_up() -> void:
-	if _held_court and not ui.card_up(_court_panel) and not _court_hidden and not _placed(_petitions):
-		_held_court = false
-		_court_hidden = false
-		_court_met = true
-		_show_audience()
-
-
 # --- the court --------------------------------------------------------------------------
 
 ## What stands before the King (the bridge's docket): the crises first, then
-## the sitting's other matters. A new sitting or crisis brings
-## the court up once, when he isn't using a card; the rest wait on the badge.
+## the sitting's other matters. They wait on the badge until he opens the court.
 var _court_seen := {}  # matters already put before him, by id
 
 
@@ -140,36 +130,20 @@ func set_court(petitions: Array) -> void:
 		_doors_shut = false  # a sitting: its doors will close once
 	if petitions.is_empty():
 		_court_panel.visible = false
-		_held_court = false
 		if had > 0 and _court_met:
 			_close_doors()
 		return
-	if fresh:
-		_court_hidden = false  # a new sitting, or a crisis: the court comes to him once
-	if ui.cinema_on:
-		return  # the court waits while the King watches a scene
-	if _court_hidden and not _court_panel.visible:
-		return
-	# Its matters stand on the map at their places (faces, markers): the court
-	# doesn't take the screen by itself, now or once he's done with a card; one
-	# line says it sits, and the King opens a matter where it is. Matters with no
-	# place open the court as before.
-	if _placed(petitions):
-		if fresh:
-			_court_met = true
-			_court_hidden = true
-			_held_court = false
-			ui.toast("The court sits: %d wait for you. Their faces are on the map; the crown at the top right opens them all." % petitions.size())
+	# The court never takes the screen by itself (Mac, 2026-11-15: 'the court is a badge you open when you choose,
+	# never a freeze'): a new sitting is a line, the badge, and its faces on the map; the crown at the top right opens it.
+	if fresh and not _court_panel.visible:
+		_court_hidden = true
+		ui.toast("The court sits: %d wait for you. The crown at the top right opens them%s." % [petitions.size(), "; their faces are on the map" if _placed(petitions) else ""])
+		if _placed(petitions):
 			# The first face, if he can't see it, gets the edge arrow and Space (news.gd), as news does.
 			var first: Dictionary = petitions.filter(func(p): return p.get("place") is Dictionary)[0]
 			ui.court_waits_at.emit(ui.place_of.call(first), "%s waits at %s" % [String(first.get("name", "A lord")), String((first["place"] as Dictionary).get("name", "their town"))], String(first["id"]))
-		return
-	if ui.busy() or ui.card_up(_court_panel):
-		_held_court = true  # he's using a card, or another is up: it waits its turn on the badge
-		return
-	_court_met = true
-	_court_hidden = false
-	_show_audience()
+	if _court_panel.visible and not ui.cinema_on:
+		_show_audience()  # what he has open shows the matters as they now stand
 
 
 ## A marker on the map at each matter's place (the bridge's item.place; a matter
@@ -252,6 +226,7 @@ func open_matter(id: String) -> void:
 	if _opened_at != Vector3.INF:
 		ui.matter_opened.emit(_opened_at)
 	_court_hidden = false
+	_court_met = true
 	_show_audience()
 
 

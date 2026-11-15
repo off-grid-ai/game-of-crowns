@@ -201,7 +201,18 @@ func _activity() -> void:
 				var hc := Color.from_string(String(_houses_now.get(owner, {}).get("color", "")), col)
 				_bursts.append([at, hc, Time.get_ticks_msec()])
 	# The objective's place (reign.js aimPlace; a campaign's objective marker): a gold ring always, a burst when it is new.
-	var aim = (st.rec("reign", {}) as Dictionary).get("aim") if st.rec("reign", {}) is Dictionary else null
+	var reign: Dictionary = st.rec("reign", {}) if st.rec("reign", {}) is Dictionary else {}
+	# Each new matter to act on (next.js: a raid, a lord's demand, a siege, a starving town) bursts at its place once,
+	# red for a loss about to land, gold for the rest (never boring: something to answer every little while).
+	var nx = reign.get("next")
+	if nx is Dictionary and nx.get("city") != null and String(nx.get("tone", "")) in ["loss", "act"]:
+		var key := "next:%s:%d" % [String(nx.get("text", "")), int(nx["city"])]
+		if not _seen_ms.has(key):
+			_seen_ms[key] = Time.get_ticks_msec()
+			for c in st.rec("cities", []):
+				if int(c["id"]) == int(nx["city"]):
+					_bursts.append([Vector2(float(c["x"]) + 0.5, float(c["y"]) + 0.5), WAR if String(nx["tone"]) == "loss" else CROWN, Time.get_ticks_msec()])
+	var aim = reign.get("aim")
 	if aim is Dictionary and aim.get("at") != null:
 		for c in st.rec("cities", []):
 			if int(c["id"]) == int(aim["at"]):

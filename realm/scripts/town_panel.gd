@@ -246,11 +246,10 @@ func show_town(c: Dictionary, house: Dictionary, _player: Dictionary) -> void:
 			ui.cinema_was["_town_panel"] = true
 	elif fresh or _town_panel.visible:
 		_town_panel.visible = true
-		# The King opened a town: a petitioner on screen steps back and waits on
-		# the court's badge, and comes back in when the town's card is put away.
+		# The King opened a town: the court's card steps back to its badge (he reopens it when he chooses).
 		if ui._court_panel.visible:
 			ui._court_panel.visible = false
-			ui._held_court = true
+			ui._court_hidden = true
 	ui._ticker.visible = false
 	_town_title.text = "%s  ·  %s" % [c.get("title", c["name"]), house.get("name", "")]
 	# The town's orders stand by the town itself, following it as the camera moves

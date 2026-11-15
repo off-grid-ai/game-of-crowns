@@ -147,11 +147,6 @@ var _court_met: bool:  # the court has opened once this sitting
 		return court._court_met
 	set(v):
 		court._court_met = v
-var _held_court: bool:  # a new petitioner arrived while he was busy
-	get:
-		return court._held_court
-	set(v):
-		court._held_court = v
 var reign_cards := ReignCards.new(self)  # the digest, the tellings and the reign-end card (reign_cards.gd): their state lives there
 var _digest_panel: PanelContainer:
 	get:
@@ -1061,7 +1056,6 @@ func _catch_up() -> void:
 		_held_offer = []
 		if Time.get_ticks_msec() - int(held[2]) < 60000:
 			offer_watch(held[0], held[1])
-	court._catch_up()
 
 
 ## A card is open that the King is reading (the director waits for him).
