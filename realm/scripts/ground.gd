@@ -23,20 +23,51 @@ extends RefCounted
 ##     (the woods' trunks), answers in_way(p) -> bool from its own index.
 ##   claim(id, poly, kind), release(id): ground held while it lies (world XZ): a regiment's rectangle ("body"), a
 ##     hedged field ("field": a muster keeps off it, a battle may be fought over it).
+##
+## The answers come from one occupancy map over the realm (0 A.D.'s obstruction manager and passability grid,
+## Warcraft III's pathing map; Mac 2026-11-15, the fps round: 32 us a point test, 7.5 s of a 9 s battle frame): cells
+## of ground.json occupancy.cell in chunks laid as first asked. Each cell carries its land (dry, walkable: read off
+## the terrain at its corners) and counts of what stands on it. Writers stamp it once, never per ask; an ask reads the
+## cells under a body's reach points. Anything in the way shuts every cell it touches, so the map never stands a body
+## where a point test would refuse one; it may refuse one within a cell of an obstacle (tools/occupancy_probe.gd).
 
 const PerfTools := preload("res://scripts/perf_tools.gd")  # the frame-cost probe
 const NavGround := preload("res://scripts/nav_ground.gd")
 const TownNav := preload("res://scripts/town_nav.gd")
 
 static var towns: Node3D  # the realm's towns (towns.gd), set by main as the realm loads
-static var terrain: Node3D  # the land (terrain.gd), set by main as the realm loads
+## The land (terrain.gd), set by main as the realm loads; the map reads it again wherever it says it changed (a
+## square levelled, a ford laid: terrain.ground_changed).
+static var terrain: Node3D:
+	set(t):
+		if terrain and is_instance_valid(terrain) and terrain.has_signal("ground_changed") and terrain.ground_changed.is_connected(forget):
+			terrain.ground_changed.disconnect(forget)
+		terrain = t
+		_map.clear()
+		if t and t.has_signal("ground_changed"):
+			t.ground_changed.connect(forget)
 
 const REACH := 2.4  # how far nearest_clear looks by default
 const RINGS := 6  # rings nearest_clear tries out to its reach, off a walk map
 const SPOKES := 8  # points on each ring: at most RINGS x SPOKES checks a call
 const KEPT_MAX := 20000  # answers nearest_clear keeps before it starts afresh
 
+const Data := preload("res://scripts/data.gd")
 const CHUNK := 16.0  # world units to a cell of the places' and claims' lookup
+
+# --- the occupancy map ---------------------------------------------------------------------------------------------
+const DRY := 1  # a cell's bit: dry land at every corner (a body may stand)
+const WALK := 2  # walkable at every corner: dry land or a ford (a foot may pass)
+## A chunk of the map: CHUNK world units a side, its cells laid a block at a time as first asked.
+class Chunk:
+	var cells := PackedInt32Array()  # cell (row-major) -> its bits
+	var laid := PackedByteArray()  # block -> 1 once its land is read
+static var _n: int = roundi(CHUNK / Data.num("ground", "occupancy.cell", 0.08))  # cells to a chunk's side
+static var _cell: float = CHUNK / _n  # world units a cell spans
+static var _inv: float = _n / CHUNK
+static var _nb: int = maxi(1, roundi(CHUNK / Data.num("ground", "occupancy.block", 2.0)))  # blocks to a chunk's side
+static var _b: int = ceili(float(_n) / _nb)  # cells to a block's side
+static var _map := {}  # chunk (Vector2i) -> Chunk
 static var _places := {}  # chunk (Vector2i) -> {root instance id: root}: what builders outside towns set down
 static var _place_area := {}  # root instance id -> [chunks, Rect2 it covers]
 static var _claims := {}  # chunk -> {id: [kind, outline (world XZ)]}: the ground bodies hold while they stand
@@ -64,10 +95,11 @@ static func is_clear(p: Vector3, radius := 0.0, props := true, free_of: Variant 
 
 static func _is_clear(p: Vector3, radius := 0.0, props := true, free_of: Variant = null, open_kinds: Array = []) -> bool:
 	var keys: Array = ["town", "life"] if props else ["town"]
+	var need := WALK if "ford" in open_kinds else DRY  # a ford is passed, never stood on (a fight's grid opens it: "ford")
 	for o in _reach_of(radius):
 		var q: Vector3 = p + o
-		if not (on_land(q) or ("ford" in open_kinds and walkable(q))):
-			return false  # a ford is passed, never stood on (a fight's grid opens it: "ford")
+		if _bits(q.x, q.z) & need == 0:
+			return false
 		for t in TownNav.towns_at(towns, q):
 			if not NavGround.inside_something(t[1], q, terrain, keys).is_empty():
 				return false
@@ -271,8 +303,10 @@ static func nearest_clear(p: Vector3, radius := 0.0, max_dist := REACH, open_kin
 	return q
 
 
-## The ground changed in `area` (terrain.ground_changed, main.gd): the answers kept over it are asked afresh.
+## The ground changed in `area` (terrain.ground_changed, main.gd): the map's land over it is read again, and the
+## answers kept over it are asked afresh.
 static func forget(area: Rect2) -> void:
+	_relay(area)
 	for x in range(floori(area.position.x), floori(area.end.x) + 1):
 		for z in range(floori(area.position.y), floori(area.end.y) + 1):
 			var t := Vector2i(x, z)
@@ -309,3 +343,73 @@ static func _reach_of(radius: float) -> Array:
 		for i in 8:
 			out.append(Vector3(cos(TAU * i / 8.0), 0, sin(TAU * i / 8.0)) * radius)
 	return out
+
+
+# --- the occupancy map ---------------------------------------------------------------------------------------------
+
+## World units a cell of the map spans (ground.json occupancy.cell): a fight's route grid (army_ground.gd) takes its cells.
+static func cell_size() -> float:
+	return _cell
+
+
+## The bits of the cell under (x, z) (world), its land read first if it hasn't been.
+static func _bits(x: float, z: float) -> int:
+	var ix := floori(x * _inv)
+	var iz := floori(z * _inv)
+	var lx := posmod(ix, _n)
+	var lz := posmod(iz, _n)
+	var ch: Chunk = _map.get(Vector2i((ix - lx) / _n, (iz - lz) / _n))
+	if ch == null:
+		ch = _chunk_at(Vector2i((ix - lx) / _n, (iz - lz) / _n))
+	var b := (lz / _b) * _nb + lx / _b
+	if ch.laid[b] == 0:
+		_lay(ch, Vector2i((ix - lx) / _n, (iz - lz) / _n), b)
+	return ch.cells[lz * _n + lx]
+
+
+static func _chunk_at(k: Vector2i) -> Chunk:
+	var ch := Chunk.new()
+	ch.cells.resize(_n * _n)
+	ch.laid.resize(_nb * _nb)
+	_map[k] = ch
+	return ch
+
+
+## A block's land read off the terrain: a cell is dry (or walkable) only where all four of its corners are, so no
+## body stands on water within a cell of the shore.
+static func _lay(ch: Chunk, k: Vector2i, b: int) -> void:
+	ch.laid[b] = 1
+	var x0 := (b % _nb) * _b
+	var z0 := (b / _nb) * _b
+	var w := mini(_b, _n - x0)
+	var h := mini(_b, _n - z0)
+	var gx := k.x * _n + x0  # the block's first cell, realm-wide
+	var gz := k.y * _n + z0
+	var corner := PackedByteArray()  # (w + 1) x (h + 1) corners: DRY | WALK
+	corner.resize((w + 1) * (h + 1))
+	for j in h + 1:
+		for i in w + 1:
+			var x := (gx + i) * _cell
+			var z := (gz + j) * _cell
+			var c := DRY | WALK
+			if terrain:
+				if not terrain.is_land(x, z):
+					c = WALK if terrain.walkable(x, z) else 0
+			corner[j * (w + 1) + i] = c
+	for j in h:
+		for i in w:
+			var c := corner[j * (w + 1) + i] & corner[j * (w + 1) + i + 1] & corner[(j + 1) * (w + 1) + i] & corner[(j + 1) * (w + 1) + i + 1]
+			var at := (z0 + j) * _n + x0 + i
+			ch.cells[at] = (ch.cells[at] & ~(DRY | WALK)) | c
+
+
+## The land under `area` (world XZ) is read again when next asked: every block it touches.
+static func _relay(area: Rect2) -> void:
+	var bw := _b * _cell
+	for bz in range(floori((area.position.y - _cell) / bw), floori((area.end.y + _cell) / bw) + 1):
+		for bx in range(floori((area.position.x - _cell) / bw), floori((area.end.x + _cell) / bw) + 1):
+			var lbx := posmod(bx, _nb)
+			var lbz := posmod(bz, _nb)
+			var ch: Chunk = _map.get(Vector2i((bx - lbx) / _nb, (bz - lbz) / _nb))
+			if ch:
+				ch.laid[lbz * _nb + lbx] = 0
