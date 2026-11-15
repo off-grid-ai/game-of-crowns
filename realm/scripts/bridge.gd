@@ -48,6 +48,7 @@ var active := true
 
 func wake() -> void:
 	if not active:
+		preload("res://scripts/perf_tools.gd").mark("chronicle chosen")  # the time on the title menu ends here, not the load
 		active = true
 		_poll()
 
