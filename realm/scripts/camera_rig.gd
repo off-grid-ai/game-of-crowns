@@ -645,6 +645,23 @@ func _lens_bodies() -> void:
 		_bodies[id] = [holder, sig]
 
 
+## The land's finest detail centred on what the lens looks at, not on the lens (Terrain3D clipmap_target): at the
+## low oblique the lens stands 20-40 units back, so the ground under the people looked at was drawn from points 1-2
+## units apart while they stood on its true height (Mac 2026-11-15: 'NPCs halfway into the ground').
+var _land_center: Node3D
+func _center_land() -> void:
+	var land3d: Variant = terrain.get("land3d") if terrain else null
+	var land: Variant = land3d.get("land") if land3d else null
+	if land == null:
+		return
+	if _land_center == null:
+		_land_center = Node3D.new()
+		_land_center.name = "LandCenter"
+		add_child(_land_center)
+		land.set_clipmap_target(_land_center)
+	_land_center.global_position = Vector3(target.x, 0.0, target.z)
+
+
 ## A town's lens bodies out of the physics world now (not at the frame's end, so the ones built next have room).
 func _drop_bodies(id: Variant) -> void:
 	if _bodies.has(id) and is_instance_valid(_bodies[id][0]):
@@ -730,6 +747,7 @@ func _click(screen: Vector2) -> void:
 func _process(delta: float) -> void:
 	# Real time, but one long frame (a town built, a save) never throws the view: at most rig.max_step a frame.
 	delta = minf(delta, MAX_STEP)
+	_center_land()
 	var keys := Vector2(
 		Input.get_axis(&"cam_left", &"cam_right"),
 		Input.get_axis(&"cam_up", &"cam_down"))
