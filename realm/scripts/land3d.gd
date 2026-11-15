@@ -462,7 +462,7 @@ func _drape_atlas(mat: Terrain3DMaterial, terrain: Node3D) -> void:
 	var end := code.find("\n", at)
 	# The atlas under the snow, never over it: a summer-green painted map laid over the season turned winter's land
 	# green as the camera drew back (fps5, Mac: "in between I saw it turn green").
-	code = code.insert(end, SCAR_ALBEDO + "\n\tALBEDO = mix(ALBEDO, texture(atlas_tex, v_vertex.xz / atlas_size).rgb, atlas_mix);" + SNOW_ALBEDO + REALM_WASH)
+	code = code.insert(end, SCAR_ALBEDO + "\n\tif (atlas_mix > 0.0) { ALBEDO = mix(ALBEDO, texture(atlas_tex, v_vertex.xz / atlas_size).rgb, atlas_mix); }" + SNOW_ALBEDO + REALM_WASH)
 	var drape := Shader.new()
 	drape.code = code
 	mat.shader_override = drape

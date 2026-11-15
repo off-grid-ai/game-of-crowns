@@ -765,7 +765,7 @@ func _drape_sea(mat: ShaderMaterial) -> void:
 	var code: String = mat.shader.code
 	code = code.replace("uniform bool freeze_time", "uniform sampler2D atlas_tex : source_color, filter_linear_mipmap_anisotropic, repeat_disable;\nuniform vec2 atlas_size = vec2(1.0);\nuniform float atlas_mix = 0.0;\nuniform bool freeze_time")
 	var end := code.rfind("}")
-	code = code.left(end) + "\tvec2 auv = world_coordinates.xz / atlas_size;\n\tvec3 chart = all(greaterThanEqual(auv, vec2(0.0))) && all(lessThanEqual(auv, vec2(1.0))) ? texture(atlas_tex, auv).rgb : vec3(0.2, 0.34, 0.53);\n\tALBEDO = mix(ALBEDO, chart, atlas_mix);\n\tEMISSION *= 1.0 - atlas_mix;\n}\n"
+	code = code.left(end) + "\tif (atlas_mix > 0.0) {\n\tvec2 auv = world_coordinates.xz / atlas_size;\n\tvec3 chart = all(greaterThanEqual(auv, vec2(0.0))) && all(lessThanEqual(auv, vec2(1.0))) ? texture(atlas_tex, auv).rgb : vec3(0.2, 0.34, 0.53);\n\tALBEDO = mix(ALBEDO, chart, atlas_mix);\n\tEMISSION *= 1.0 - atlas_mix;\n\t}\n}\n"
 	code = _shore_code(code)
 	# Smooth water (Mac 2026-11-15, the fps round): no refraction and no Snell's window, each a
 	# set of texture reads on every pixel of sea in view; the colour by depth, the waves and the foam stay.
