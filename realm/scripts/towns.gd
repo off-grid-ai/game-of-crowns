@@ -392,7 +392,8 @@ func _raise(best: int, job: Dictionary) -> void:
 			_reown(node, job["c"], job["house"])  # whoever holds it now: the file is kept by its shape alone
 	if node == null:
 		node = await _build_town(job["c"], job["house"])
-		_occlude(node)
+		await _occlude(node)
+		await _pace()  # the town packed for its file its own step (build@last: what is left after this pace)
 		TownStore.save(node, path)
 	var pt0 := Time.get_ticks_usec()
 	PerfTools.add("build@last", pt0 - _step_at)  # the build's last step, after its last _pace
@@ -709,6 +710,8 @@ func _occlude(root: Node3D) -> void:
 	var verts := PackedVector3Array()
 	var idx := PackedInt32Array()
 	for i in fps.size():
+		if i % 16 == 0:
+			await _pace()  # a few buildings' ground read a step
 		var fp: PackedVector2Array = fps[i]
 		if fp.size() < 3:
 			continue
@@ -1874,6 +1877,7 @@ func _put(root: Node3D, center: Vector3, kind: String, p: Vector3, f: Vector2, l
 	face = Vector3(sq.x, face.y, sq.y)
 	var yaw := atan2(face.x, face.z)
 	var seat_y := _seat(center, p, f, yaw)
+	await _pace()  # its ground seated (cut and filled) a step; its placing the next
 	if is_nan(seat_y):
 		return false
 	# No two houses the same: each a little larger or smaller than the last.
@@ -2306,6 +2310,7 @@ func _place(root: Node3D, kind: String, pos: Vector3, yaw: float, scale := Vecto
 
 func _flush(root: Node3D) -> void:
 	for kind in _batch:
+		await _pace()  # each kind's batch its own step (Mac's game: the build's last step, up to 2.7 s)
 		var xfs: Array = _batch[kind]
 		for part in Real.parts(kind):
 			var mmi := Batch.make("", part[0], xfs.map(func(x: Transform3D) -> Transform3D: return x * part[1]))
@@ -2319,6 +2324,7 @@ func _flush(root: Node3D) -> void:
 			if low and not is_detail(kind) and _reach_for(kind) > HLOD_AT:
 				_hlod(root, mmi, low, kind)
 	_batch.clear()
+	await _pace()
 	# Anything placed whole (the castle, landmarks) carries furthest.
 	for g in root.find_children("*", "GeometryInstance3D", true, false):
 		if g.visibility_range_end == 0.0:
@@ -2490,23 +2496,27 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 	var reps := roundi(square_r * 4.0)
 	# The square: a cobbled heart laid whole to its edge, and trodden earth
 	# spreading out round it, ragged where it wears into the grass.
+	await _pace()  # the town's start (its knobs, its streets) a step; its square's ground, its setts and the realm's roads cut back each their own (Mac's game: 731-752 ms in one before its ways)
 	if TownPlots.GRID:
 		pass  # a square on the grid: its setts are its ground, edge to edge (g37 landuse: a round mud ring round a square square)
 	elif terrain.land3d and terrain.land3d.land:
 		world("mud", [center, square_r * 1.3, rng.randi()])  # in the ground itself
 	else:
 		terrain.paint(root, terrain.tiled(ROAD_TEX, reps + 2, reps + 2, "round"), Vector3(0, _ground_y(center, Vector3.ZERO), 0), Vector2.ONE * square_r * 3.2, rng.randf() * TAU, ROAD_TINT)
+	await _pace()
 	# Laid to the house fronts (towns.json paving: the stone, its tint, how far it reaches; art target town-b).
 	var pave: Dictionary = _paving()
 	var pave_span := square_r * float(pave.get("square", 2.0))
 	_note_paved(root, Vector2.ZERO, Vector2.ZERO, pave_span * 0.5 * 0.9)  # the plaza edge holds whole to about there
 	world("roads", [Vector2(center.x, center.z), pave_span * 0.5 * 0.9])  # the realm's roads end at the setts
+	await _pace()
 	var pave_reps := pave_span / float(pave.get("tile", 0.25))  # every sheet at its own size, a part sheet too (setts_probe)
 	var setts_size := Vector2(pave_span, pave_span * float(pave.get("square_aspect", 0.9)))
 	var setts_yaw := rng.randf() * TAU
 	var setts: Decal = terrain.paint(root, terrain.tiled(String(pave.get("texture", SQUARE_TEX)), pave_reps, (pave_reps * float(pave.get("square_aspect", 0.9))), String(pave.get("square_edge", "setts"))), Vector3(0, _ground_y(center, Vector3.ZERO), 0), setts_size, setts_yaw, Data.colour(pave.get("tint"), Color.WHITE))
 	_note_setts(root, setts_size, setts_yaw)
 	setts.sorting_offset = 1.0  # the paving over the roads that come into the square: a road ends at its setts, never a dirt stripe across them
+	await _pace()
 
 	# Townhouses mostly; now and then an inn-like timber house or a barn
 	# (the tavern on the square stays the one that stands out).
@@ -2515,7 +2525,7 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 	# --towns=plots: the roads come first, laid over the land toward where they
 	# lead, and lanes off them as the town grows; the spokes below stand aside.
 	await _pace()
-	var ways: Array = layout.lay_ways(root, center, c, size, square_r, reach, streets, rng)
+	var ways: Array = await layout.lay_ways(root, center, c, size, square_r, reach, streets, rng)
 	await _pace()
 	if TownPlots.GRID and not ways.is_empty():
 		# The square's setts square to the town's grid (its axis known once its ways are laid): its fronts stand along them.
@@ -2603,7 +2613,8 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 
 	_kerbs(root, center)  # after the houses and stalls stand: the kerb runs only where the paving meets open ground
 	await _pace()
-	_flush(root)
+	await _flush(root)
+	await _pace()
 	root.set_meta("imprint", _imprint)  # what it did to the world beyond itself (world), replayed when it is loaded
 	# Its name on the map is drawn in screen space by map_labels.gd.
 	return root
@@ -2625,7 +2636,10 @@ func _footpath(root: Node3D, center: Vector3, door: Vector3) -> void:
 	var mid := (from + to) * 0.5
 	var lo := minf(_ground_y(center, door), _ground_y(center, Vector3(to.x, 0, to.y)))
 	var hi := maxf(_ground_y(center, door), _ground_y(center, Vector3(to.x, 0, to.y)))
-	terrain.paint(root, terrain.tiled(ROAD_TEX, 1, (length / 0.3), "track"), Vector3(mid.x, (lo + hi) / 2.0, mid.y), Vector2(0.14, from.distance_to(to)), atan2(to.x - from.x, to.y - from.y), ROAD_TINT, hi - lo + 0.6)
+	# Its track's copies to the half (terrain.tiled makes each new count's texture pixel by pixel the first time: a
+	# footpath's own length made one a house, up to 230 ms in Mac's game, build@towns.gd:1890); a trodden path
+	# never shows the slight stretch.
+	terrain.paint(root, terrain.tiled(ROAD_TEX, 1, maxf(snappedf(length / 0.3, 0.5), 0.5), "track"), Vector3(mid.x, (lo + hi) / 2.0, mid.y), Vector2(0.14, from.distance_to(to)), atan2(to.x - from.x, to.y - from.y), ROAD_TINT, hi - lo + 0.6)
 	var lanes: Array = root.get_meta("lanes", [])
 	lanes.append([from, to])
 	root.set_meta("lanes", lanes)

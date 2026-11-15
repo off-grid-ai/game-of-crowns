@@ -66,9 +66,11 @@ static func tune(base: Dictionary, over: Dictionary = {}) -> void:
 ## The town's main roads (town-local polylines), from the square's edge out
 ## past `edge` toward each heading (radians, town-local XZ angle), each the
 ## cheapest way over `g` (grid()). `land` takes town-local Vector2.
-static func roads(headings: Array, square_r: float, edge: float, g: AStarGrid2D, land: Callable) -> Array:
+## `pace`: the builder's frame budget (towns.gd _pace), awaited between pieces of work so no frame holds a whole layout.
+static func roads(headings: Array, square_r: float, edge: float, g: AStarGrid2D, land: Callable, pace: Callable) -> Array:
 	var out: Array = []
 	for ang: float in headings:
+		await pace.call()
 		var dir := Vector2.from_angle(ang)
 		var goal := dir * (edge + ROAD_PAST)
 		var t := edge + ROAD_PAST
@@ -84,7 +86,7 @@ static func roads(headings: Array, square_r: float, edge: float, g: AStarGrid2D,
 ## Lanes off the main roads, as many as the town's size calls for: each from a
 ## point along a road, out to one side, square to it, the cheapest way; one
 ## that comes near another street ends on it (a junction).
-static func lanes(main: Array, count: int, square_r: float, edge: float, g: AStarGrid2D, land: Callable, seed: int) -> Array:
+static func lanes(main: Array, count: int, square_r: float, edge: float, g: AStarGrid2D, land: Callable, seed: int, pace: Callable) -> Array:
 	if count <= 0 or main.is_empty():
 		return []
 	var rng := RandomNumberGenerator.new()
@@ -96,6 +98,7 @@ static func lanes(main: Array, count: int, square_r: float, edge: float, g: ASta
 		for r in main.size():
 			if out.size() >= count:
 				break
+			await pace.call()
 			var road: PackedVector2Array = main[r]
 			var at := point_at(road, along)
 			if at.is_empty():
@@ -128,7 +131,7 @@ static func lanes(main: Array, count: int, square_r: float, edge: float, g: ASta
 ## square's edge), a street that keeps about that far from the heart, a little uneven, each stretch the
 ## cheapest way over `g`; broken where it would cross water, a castle or a landmark (solid on `g`), so
 ## it runs as arcs between them. Shorter than `least` and an arc is not laid.
-static func rings(radii: Array, square_r: float, g: AStarGrid2D, land: Callable, seed: int, least := 1.6) -> Array:
+static func rings(radii: Array, square_r: float, g: AStarGrid2D, land: Callable, seed: int, pace: Callable, least := 1.6) -> Array:
 	var out: Array = []
 	var noise := _noise(seed)
 	for r0 in radii:
@@ -145,6 +148,8 @@ static func rings(radii: Array, square_r: float, g: AStarGrid2D, land: Callable,
 				start = i
 				break
 		for k in n + 1:
+			if k % 8 == 0:
+				await pace.call()
 			var i := (start + k) % n
 			var q := _ring_at(r, i, n, noise)
 			if _open(g, land, q):
@@ -154,6 +159,8 @@ static func rings(radii: Array, square_r: float, g: AStarGrid2D, land: Callable,
 			if arc.size() >= 2:
 				var way := PackedVector2Array()
 				for j in range(1, arc.size()):
+					if j % 8 == 0:
+						await pace.call()
 					var leg := path_on(g, arc[j - 1], arc[j])
 					if leg.size() < 2:
 						continue
@@ -351,7 +358,7 @@ static func closest_on(way: PackedVector2Array, p: Vector2) -> Vector2:
 ## AStarGrid2D over the square of half-size `r` round the town's heart:
 ## water solid, each cell weighted by the slope under it. Built once per town,
 ## for its roads and its lanes.
-static func grid(r: float, height: Callable, land: Callable, seed := 0) -> AStarGrid2D:
+static func grid(r: float, height: Callable, land: Callable, seed: int, pace: Callable) -> AStarGrid2D:
 	var n := int(ceil(r * 2.0 / CELL)) + 1
 	var g := AStarGrid2D.new()
 	g.region = Rect2i(0, 0, n, n)
@@ -365,12 +372,15 @@ static func grid(r: float, height: Callable, land: Callable, seed := 0) -> AStar
 	hs.resize(n * n)
 	var noise := _noise(seed)
 	for y in n:
+		await pace.call()  # a row of cells a step: each asks the ground and the land (Mac's game, 731 ms in one)
 		for x in n:
 			var p := Vector2(-r + x * CELL, -r + y * CELL)
 			hs[y * n + x] = float(height.call(p))
 			if not bool(land.call(p)):
 				g.set_point_solid(Vector2i(x, y), true)
 	for y in n:
+		if y % 16 == 0:
+			await pace.call()
 		for x in n:
 			var h := hs[y * n + x]
 			var rise := 0.0
@@ -401,9 +411,11 @@ static func _noise(seed: int) -> FastNoiseLite:
 ## bearings, each point `inset` back from the water's edge, never inside a footprint (`polys`). Empty when the town's
 ## water is shorter than `least` (game units): an inland town, or a pond. Anno's and Stronghold's harbours: the
 ## waterfront is a street, the quay, that the houses front.
-static func shore(from: float, edge: float, land: Callable, inset: float, least: float, polys: Array, steps := 64) -> PackedVector2Array:
+static func shore(from: float, edge: float, land: Callable, inset: float, least: float, polys: Array, pace: Callable, steps := 64) -> PackedVector2Array:
 	var hits: Array = []
 	for i in steps:
+		if i % 4 == 0:
+			await pace.call()
 		var dir := Vector2.from_angle(TAU * i / steps)
 		var found := -1.0
 		var t := from
@@ -432,8 +444,9 @@ static func shore(from: float, edge: float, land: Callable, inset: float, least:
 	return line if length(line) >= least else PackedVector2Array()
 
 
-static func block(g: AStarGrid2D, polys: Array) -> void:
+static func block(g: AStarGrid2D, polys: Array, pace: Callable) -> void:
 	for poly in polys:
+		await pace.call()
 		if not poly is PackedVector2Array or (poly as PackedVector2Array).size() < 3:
 			continue
 		var box := Rect2(poly[0], Vector2.ZERO)

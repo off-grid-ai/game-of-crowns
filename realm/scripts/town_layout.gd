@@ -127,6 +127,7 @@ func real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds:
 					root.set_meta("castle_frame", [cp, castle.rotation.y, f, cy])  # the bailey's dressing reads it (dressing.gd bailey)
 					await tb._pace()
 					tb._bailey(root, cp, cy, castle.rotation.y, rng)
+					await tb._pace()  # the bailey's yard and its things a step of their own
 					held = true
 					if float(pass_[3]) == 0.0:
 						gap_ang += step * TAU / 8.0  # as the old search left it, for what's laid out after
@@ -141,7 +142,9 @@ func real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds:
 	# The town's house decider and its trades (towns.json tiers, trades): the land goes to the
 	# landmarks and the trades first, then the big and middle houses; the small fill what is left.
 	tb._tiers = TownTiers.new(size, seat)
+	await tb._pace()
 	tb._trades = TownTrades.plan(size, root.get_meta("buildings", []), seat, rng.seed + 53, tb._rank)
+	await tb._pace()
 	# A trade that stands elsewhere at this rank (towns.json trades.list where_by_rank): the crown's smithy on the
 	# square's edge, its foreground trade (01-town).
 	for tr in tb._trades:
@@ -200,6 +203,7 @@ func real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds:
 			if await tb._put(root, center, lm, p, f, lots, rng, false, face_at):
 				stands = true
 				break
+			await tb._pace()  # the ring line's try its own step (Mac's game: a spot round the edge, 1.5 s in one)
 			# Then on the ring line the square's fronts stand on (front_ring: their walls flush round its edge), out of the
 			# market's goods and benches at the paving's rim (g10: the forge found no room at 16 spots round the edge).
 			var on_ring: Vector3 = Vector3(cos(gap_ang), 0, sin(gap_ang)) * (float(tb.front_ring(square_r)) + f.y * 0.5)
@@ -227,9 +231,11 @@ func real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds:
 				if comp == "forge":
 					await tb._pace()
 					tb._smithy(root, center, p, fc, f, rng)
+					await tb._pace()
 			if comp == "church":
 				await tb._pace()
 				tb._walled(root, center, p, -p.normalized(), f, "church", lots)  # the churchyard
+				await tb._pace()
 		if lens_turn != null and gap_ang != keep_ang:
 			gap_ang = keep_ang  # the landmarks after it keep the spots they had
 		gap_ang += PI * 0.62
@@ -253,9 +259,11 @@ func real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds:
 			await tb._trade_off_plot(root, center, tr, square_r, square_r + 3.6, ways, lots, rng)
 	# The square's ring (above), then the lanes (laid now, round the castle and the landmarks), then burgage plots
 	# along the roads and lanes, the edge where they stop.
-	ways = ways + lay_lanes(root, center, ways, clampi(int((size - 2) * float(pk.get("lanes_per_size", 0.5))), 0, int(pk.get("lanes_most", 6))), square_r, rng)
+	await tb._pace()
+	ways = ways + await lay_lanes(root, center, ways, clampi(int((size - 2) * float(pk.get("lanes_per_size", 0.5))), 0, int(pk.get("lanes_most", 6))), square_r, rng)
 	await tb._pace()
 	await plot_lots(root, center, square_r, ways, kinds, lots, rng, want - placed, seat)
+	await tb._pace()
 	tb._square_trees(root, center, square_r, ways, lots, rng)
 	await tb._pace()
 	await tb._trades_beyond(root, center, square_r, float(root.get_meta("edge_r", square_r + 3.6)), ways, lots, rng)
@@ -356,7 +364,7 @@ func square_ring(root: Node3D, center: Vector3, square_r: float, ways: Array, ki
 				stood = true
 				_ring_yard(root, p, kf, k, ways, lots.size() - 1)
 				if prev_ang > -INF:
-					_ring_alley(root, center, ring, prev_ang, prev_half, ang, kf.x * 0.5, ways, washing)
+					await _ring_alley(root, center, ring, prev_ang, prev_half, ang, kf.x * 0.5, ways, washing)
 				prev_ang = ang
 				prev_half = kf.x * 0.5
 				break
@@ -415,7 +423,8 @@ func lay_ways(root: Node3D, center: Vector3, c: Dictionary, size: int, square_r:
 	root.set_meta("plot_edge", edge)
 	var height := func(p: Vector2) -> float: return tb._ground_y(center, Vector3(p.x, 0, p.y))
 	var land := func(p: Vector2) -> bool: return tb.terrain.is_land(center.x + p.x, center.z + p.y)
-	tb._ways_grid = TownPlots.grid(edge + TownPlots.ROAD_PAST + 0.2, height, land, rng.seed + 13)
+	var pace := Callable(tb, "_pace")
+	tb._ways_grid = await TownPlots.grid(edge + TownPlots.ROAD_PAST + 0.2, height, land, rng.seed + 13, pace)
 	var main: Array = []
 	# 01-town: the main street and one or two lanes into the square, no more (round 4: eleven ways met at
 	# Kingsmere's square and left its fronts no room). At most plots.square_roads.most roads run into the
@@ -428,14 +437,14 @@ func lay_ways(root: Node3D, center: Vector3, c: Dictionary, size: int, square_r:
 		var ranked: Array = headings.duplicate()
 		ranked.sort_custom(func(a, b): return great.any(func(g): return absf(angle_difference(float(g), float(a))) < 0.35) and not great.any(func(g): return absf(angle_difference(float(g), float(b))) < 0.35))
 		var start := square_r + float(radii[0]) - float(sr.get("into_ring", 0.15))
-		main = TownPlots.roads(ranked.slice(0, most), square_r, edge, tb._ways_grid, land)
-		main += TownPlots.roads(ranked.slice(most), start / 0.9, edge, tb._ways_grid, land)  # roads() starts a road at 0.9 of the radius it's given
+		main = await TownPlots.roads(ranked.slice(0, most), square_r, edge, tb._ways_grid, land, pace)
+		main += await TownPlots.roads(ranked.slice(most), start / 0.9, edge, tb._ways_grid, land, pace)  # roads() starts a road at 0.9 of the radius it's given
 	else:
-		main = TownPlots.roads(headings, square_r, edge, tb._ways_grid, land)
+		main = await TownPlots.roads(headings, square_r, edge, tb._ways_grid, land, pace)
 	root.set_meta("ways_main", main)
 	root.set_meta("crown_seat", crown_town)
 	root.set_meta("seat", bool(c.get("capital", false)))
-	keep_ways(root, center, main, true)
+	await keep_ways(root, center, main, true)
 	return main
 
 
@@ -492,19 +501,20 @@ func great_ways(c: Dictionary) -> Array:
 func lay_lanes(root: Node3D, center: Vector3, main: Array, count: int, square_r: float, rng: RandomNumberGenerator) -> Array:
 	if tb._ways_grid == null or main.is_empty():
 		return []
-	TownPlots.block(tb._ways_grid, root.get_meta("footprints", []))
+	var pace := Callable(tb, "_pace")
+	await TownPlots.block(tb._ways_grid, root.get_meta("footprints", []), pace)
 	var land := func(p: Vector2) -> bool: return tb.terrain.is_land(center.x + p.x, center.z + p.y)
 	# Ring streets round the square first (towns.json plots.rings: the crown's seat's, art target town-b), arcs
 	# between the main roads that the houses line on both sides; then the lanes off the main roads.
 	var radii: Array = tb._plot_knobs().get("rings", [])  # the crown's seat's, a great house's seat's, a market town's
-	var rings: Array = TownPlots.rings(radii, square_r, tb._ways_grid, land, rng.seed + 19)
-	keep_ways(root, center, rings)
+	var rings: Array = await TownPlots.rings(radii, square_r, tb._ways_grid, land, rng.seed + 19, pace)
+	await keep_ways(root, center, rings)
 	root.set_meta("ways_ring", rings.size())
-	var quay := lay_quay(root, center, square_r, land)
+	var quay: PackedVector2Array = await lay_quay(root, center, square_r, land)
 	if not quay.is_empty():
 		rings = rings + [quay]
-	var lanes: Array = TownPlots.lanes(main, count, square_r, float(root.get_meta("plot_edge", square_r + 3.6)), tb._ways_grid, land, rng.seed + 17)
-	keep_ways(root, center, lanes, false, true)
+	var lanes: Array = await TownPlots.lanes(main, count, square_r, float(root.get_meta("plot_edge", square_r + 3.6)), tb._ways_grid, land, rng.seed + 17, pace)
+	await keep_ways(root, center, lanes, false, true)
 	tb._ways_grid = null
 	return rings + lanes
 
@@ -518,10 +528,11 @@ func lay_quay(root: Node3D, center: Vector3, square_r: float, land: Callable) ->
 		return PackedVector2Array()
 	var edge := float(root.get_meta("plot_edge", square_r + 3.6))
 	var half := float(k.get("width", 0.5)) * 0.5
-	var line := TownPlots.shore(square_r + float(k.get("from_square", 0.3)), edge, land, half + float(k.get("lip", 0.05)), float(k.get("least", 2.0)), root.get_meta("footprints", []))
+	var line: PackedVector2Array = await TownPlots.shore(square_r + float(k.get("from_square", 0.3)), edge, land, half + float(k.get("lip", 0.05)), float(k.get("least", 2.0)), root.get_meta("footprints", []), Callable(tb, "_pace"))
 	if line.is_empty():
 		return line
 	for i in range(1, line.size()):
+		await tb._pace()
 		paint_way(root, center, line[i - 1], line[i], half * 2.0, "paved")
 		tb._note_paved(root, line[i - 1], line[i], half)
 	var kept: Array = root.get_meta("lanes", [])
@@ -538,9 +549,10 @@ func keep_ways(root: Node3D, center: Vector3, ways: Array, main := false, back :
 	var kept: Array = root.get_meta("lanes", [])
 	if back:
 		for way in ways:
+			await tb._pace()  # each lane worn into the ground its own steps (back_lane)
 			for i in range(1, way.size()):
 				kept.append([way[i - 1], way[i]])
-			back_lane(root, center, way)
+			await back_lane(root, center, way)
 		root.set_meta("lanes", kept)
 		return
 	# The main streets paved from the square out (towns.json paving.streets: the crown's seat furthest,
@@ -554,6 +566,7 @@ func keep_ways(root: Node3D, center: Vector3, ways: Array, main := false, back :
 		var paved_to := TownPlots.length(way) * share
 		var gone := 0.0
 		for i in range(1, way.size()):
+			await tb._pace()  # each stretch painted its own step (a street's decals: their tiles made the first time)
 			paint_way(root, center, way[i - 1], way[i], TownPlots.ROAD_HALF * 2.0)
 			kept.append([way[i - 1], way[i]])
 			var seg := (way[i - 1] as Vector2).distance_to(way[i])
@@ -578,6 +591,7 @@ func back_lane(root: Node3D, center: Vector3, way: PackedVector2Array) -> void:
 		var pave: Dictionary = tb._paving()
 		var stone: String = tb.terrain.art(String(pave.get("texture", tb.SQUARE_TEX)), tb.ROAD_TEX)
 		for i in range(1, way.size()):
+			await tb._pace()
 			var a2: Vector2 = way[i - 1]
 			var b2: Vector2 = way[i]
 			var run := a2.distance_to(b2)
@@ -600,12 +614,15 @@ func back_lane(root: Node3D, center: Vector3, way: PackedVector2Array) -> void:
 			if at.is_empty():
 				break
 			var q: Vector2 = at[0]
+			if n % 4 == 0:
+				await tb._pace()  # a few stamps a step: each paints the land's control map round it
 			tb.world("mud", [center + Vector3(q.x, 0, q.y), width * 0.5, n * 31 + way.size()])
 			s += step
 			n += 1
 		return
 	var tex: String = tb.terrain.art(String(k.get("texture", tb.DIRT)), tb.ROAD_TEX)
 	for i in range(1, way.size()):
+		await tb._pace()
 		var a: Vector2 = way[i - 1]
 		var b: Vector2 = way[i]
 		var length := a.distance_to(b)
@@ -951,7 +968,7 @@ func _ring_alley(root: Node3D, center: Vector3, ring: float, a0: float, h0: floa
 	var side := Vector2(-dir.y, dir.x) * 0.02
 	if TownPlots.on_other_way(PackedVector2Array([from - side, from + side, to + side, to - side]), ways, -1, TownPlots.ROAD_HALF):
 		return
-	back_lane(root, center, PackedVector2Array([from, to]))
+	await back_lane(root, center, PackedVector2Array([from, to]))
 	var lanes: Array = root.get_meta("lanes", [])  # town-local, where the grass keeps off and footpaths join
 	lanes.append([from, to])
 	root.set_meta("lanes", lanes)
