@@ -216,10 +216,12 @@ function townSeason(c, turn, world = null) {
   }
   // Freeciv's size: newcomers as the town grows, a household moving away as it shrinks (one a season).
   const want = target(c.size);
-  const homes = homesOf(town).filter((h) => membersOf(h.id).length);
+  const count = new Map();  // home id -> its living members, counted once (membersOf scans the realm's people each ask)
+  for (const p of living(town)) count.set(p.home, (count.get(p.home) ?? 0) + 1);
+  const homes = homesOf(town).filter((h) => count.get(h.id));
   if (homes.length < want) arrive(town, turn, true);
   else if (homes.length > want + H.slack) {
-    const leaving = homes.filter((h) => h.surname).sort((a, b) => membersOf(a.id).length - membersOf(b.id).length)[0];
+    const leaving = homes.filter((h) => h.surname).sort((a, b) => count.get(a.id) - count.get(b.id))[0];
     if (leaving) {
       // The cold walks them out (Ostriv): the household packs a cart for the nearest town not hungry or sick, and the
       // town sees it go (lately: leaving); hunger or sickness is said in the chronicle (season's leavers).
@@ -230,7 +232,8 @@ function townSeason(c, turn, world = null) {
     }
   }
   // Homes nobody lives in any more are let go.
-  for (const h of homesOf(town)) if (!membersOf(h.id).length) delete S.homes[h.id];
+  const lived = new Set(living(town).map((p) => p.home));
+  for (const h of homesOf(town)) if (!lived.has(h.id)) delete S.homes[h.id];
   // The crowd's places close up over the dead and departed, in their order, so they stay 0..n-1 (minds.js moves
   // each mind with its person).
   living(town).filter((p) => p.i != null).sort((a, b) => a.i - b.i).forEach((p, k) => { p.i = k; });
@@ -267,7 +270,15 @@ export function lately(cityId, turn) {
 export function folkOf(city, turn) {
   if (!S) return [];
   if (!S.towns[city.id] || !homesOf(city.id).length) { townSeason(city, turn); save(); }
+  // Each parent's living and dead children, counted in one pass over the realm's people: every folk asked each of the realm's people before (FPS P0,
+  // the bridge at 97% CPU answering nothing at turn 43, 8.6 s of 15 here).
+  const kids = new Map(), dead = new Map();
+  for (const k of Object.values(S.people)) {
+    for (const pid of k.parents ?? []) {
+      if (k.died != null) dead.set(pid, (dead.get(pid) ?? 0) + 1);
+      else if (!k.gone) kids.set(pid, (kids.get(pid) ?? 0) + 1);
+    }
+  }
   return living(city.id).sort((a, b) => a.i - b.i).map((p) => ({ ...p, age: years(p, turn), spouseOf: S.people[p.spouse] ?? null,
-    kids: Object.values(S.people).filter((k) => k.parents.includes(p.id) && !k.died && !k.gone).length,
-    dead: Object.values(S.people).filter((k) => k.parents.includes(p.id) && k.died != null).length }));
+    kids: kids.get(p.id) ?? 0, dead: dead.get(p.id) ?? 0 }));
 }
