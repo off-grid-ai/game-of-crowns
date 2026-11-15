@@ -72,13 +72,9 @@ func build(terrain: Node3D, ground_layer: int) -> void:
 	# projected onto steep faces instead of stretched down them, broad patches
 	# of colour and tone across the grass, and a second, larger texture scale
 	# blended in with distance so the tiling never shows.
-	# Smooth keeps the broad patches but not the two extra passes: projection and the second scale each read every
-	# ground texture again, on every pixel of ground on screen (Mac 2026-11-15, the fps round: the land's shading was
-	# the dearest part of the frame at play zoom, draw 16-26 ms on 3.6M triangles).
-	var smooth: bool = terrain.get_parent().smooth_chosen() if terrain.get_parent().has_method("smooth_chosen") else true
-	mat.projection_enabled = not smooth
+	mat.projection_enabled = true
 	mat.macro_variation_enabled = true
-	mat.dual_scaling_enabled = not smooth
+	mat.dual_scaling_enabled = true
 	# The grass's grain coarser with distance (ground.json dual: near and far, game units from the lens where the second,
 	# larger scale blends in; reduction, its size against the first). Terrain3D's 100-170 are metres; in our units the
 	# camera never got that far, so the grain was one size near and far (Mac on g3's muster frame).

@@ -8,18 +8,12 @@ extends RefCounted
 
 const CELL := 32.0  # game units a side of a cell's batch
 const ViewTier := preload("res://scripts/view_tier.gd")
-## Past this from the lens a model with a baked impostor (forest.gd impostor; tools/impostor_bake.gd) is drawn as its
-## card, one quad a copy (Mac 2026-11-15, the fps round: a 1200-triangle bush in every hedge, verge and field edge was
-## a quarter of the frame's triangles; SpeedTree's and UE HLOD's far foliage). camera.json view_tier.card_from.
-static var CARD_FROM: float = preload("res://scripts/data.gd").num("camera", "view_tier.card_from", 18.0)
 
 static var _root: Node3D  # the batches' parent, under the scene tree's root
 static var _sets := {}  # "mesh id:cell x:cell z:reach" -> {mmi, xfs: Array[Transform3D], handles: Array[int]}
 static var _where := {}  # handle -> [set key, index in it, owner]
 static var _owned := {}  # owner -> {handle: true}
 static var _next := 1
-static var _twin := {}  # handle -> its card copy's handle (a model drawn as a card past CARD_FROM)
-static var _cards := {}  # model file -> its impostor card, or null when it has none
 
 
 ## A copy of `mesh` standing at `place` (world), drawn out to `reach` from the lens (ViewTier.FAR_FROM when not given),
@@ -28,23 +22,7 @@ static func add(mesh: Mesh, place: Transform3D, owner: Variant, reach := -1.0, s
 	if mesh == null:
 		return 0
 	var end := ViewTier.FAR_FROM if reach <= 0.0 else reach
-	var card := _card_of(mesh)
-	if card == null or end <= CARD_FROM:
-		return _add_one(mesh, place, owner, 0.0, end, shadows)
-	var h := _add_one(mesh, place, owner, 0.0, CARD_FROM, shadows)
-	_twin[h] = _add_one(card, place, owner, CARD_FROM, end, false)
-	return h
-
-
-## The impostor card of a model baked from a file (house_builder.bake_path tags the mesh "path"), made once a file.
-static func _card_of(mesh: Mesh) -> Mesh:
-	if not mesh.has_meta("path"):
-		return null
-	var path := String(mesh.get_meta("path"))
-	if not _cards.has(path):
-		var Forest := preload("res://scripts/forest.gd")
-		_cards[path] = Forest.impostor(path, mesh) if Forest.has_impostor(path) else null
-	return _cards[path]
+	return _add_one(mesh, place, owner, 0.0, end, shadows)
 
 
 static func _add_one(mesh: Mesh, place: Transform3D, owner: Variant, begin: float, end: float, shadows: bool) -> int:
@@ -76,9 +54,6 @@ static func _add_one(mesh: Mesh, place: Transform3D, owner: Variant, begin: floa
 
 ## Takes one copy away (the last of its batch moves into its place).
 static func remove(handle: int) -> void:
-	if _twin.has(handle):
-		remove(int(_twin[handle]))
-		_twin.erase(handle)
 	var w: Array = _where.get(handle, [])
 	if w.is_empty():
 		return
@@ -112,8 +87,6 @@ static func remove_owner(owner: Variant) -> void:
 
 ## Moves one copy (a stand-in walking, a cart turning).
 static func move(handle: int, place: Transform3D) -> void:
-	if _twin.has(handle):
-		move(int(_twin[handle]), place)
 	var w: Array = _where.get(handle, [])
 	if w.is_empty():
 		return

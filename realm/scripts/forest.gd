@@ -309,11 +309,6 @@ static func orm_set(on: bool) -> void:
 	_orm = on
 	for m in impostors:
 		m.set_shader_parameter("orm_on", on)
-## Whether the model at `path` has a baked impostor (bulk.gd draws such a model as one past its card distance).
-static func has_impostor(path: String) -> bool:
-	return FileAccess.file_exists(IMPOSTORS + path.get_file().get_basename() + ".json")
-
-
 static func impostor(path: String, far: Mesh) -> Mesh:
 	var name := path.get_file().get_basename()
 	var n: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(IMPOSTORS + name + ".json"))
