@@ -11,11 +11,13 @@ gold, marriages and your word at court, and when the reign ends history names yo
 (the Golden, the Bloody, the Meddler, the Deposed). Every feature serves that promise or it goes.
 
 ## The core loop
-Once a season (40 seconds) the court sits and the world holds still. Petitioners bring their matters, one
-at a time; the Hand speaks a line of counsel on each. You answer, refuse, or close the court and let your
-silence answer. Then the doors shut and the realm moves: the camera shows you what you changed and
-what the houses do without you. It comes back to you in later seasons. Repeat until the reign ends and
-history gives you your name.
+You are a war king from the first minute (Mac, 2026-11-15: "I start without an army, so I can't do anything",
+"I should know what the hell to do", "just make the game fun"). Your royal host stands at your seat: click it,
+right-click where it goes or whom it strikes (Warcraft III, Total War). One objective is always on screen and
+something to act on comes at least every 45 seconds: raiders, a lord's demand, a siege, a starving town. Crowns
+come in every season and buy men, walls and favour; every first choice is one you can pay for. The court is where
+lords bring their matters, opened when you choose; it never stops time. Win the seven great houses by sword or by
+oath, and history gives you your name.
 
 ## Pillars
 1. **Decisions matter because they're scarce.** One court a season: one matter early in the reign, rising
