@@ -12,7 +12,10 @@ const NewsActions := preload("res://scripts/news_actions.gd")  # what the King c
 var ui: UI  # the interface that owns this drawer: its signals, its building blocks
 
 var _chron_panel: PanelContainer
-var _list: VBoxContainer  # the drawer's rows, newest at the top: a line each, its answers under it
+var _list: VBoxContainer  # the drawer's content: the last word on his orders, then the cards
+var _needs: VBoxContainer  # cards that ask something of the King (an answer, a threat, a moment to watch), newest first
+var _last: Label  # the latest word on the King's own orders or the realm's notices that ask nothing: one line, replaced
+var _empty: Label  # said when nothing waits on him
 var _scroll: ScrollContainer
 var _focused: Control  # the row the camera just went to: its answers open, marked "Here now"
 var entries: Array = []  # every line of the reign as the bridge sent it, oldest first: the book of the reign reads these
@@ -56,6 +59,18 @@ func _build_chronicle() -> void:
 	ui.get_viewport().size_changed.connect(_fit)
 	_list.add_theme_constant_override("separation", 10)
 	_scroll.add_child(_list)
+	# Only what asks something of him (Mac: "the chronicle should only be things that need to be taken action on ...
+	# the book of the realm is there for the other stuff"): a card each, its buttons always there. The latest word on
+	# his own orders sits above them as one quiet line; the whole story is in the book of the reign (chronicle_book.gd,
+	# which reads entries).
+	_last = _wrap("", T.SIZE_DESC - 1, T.TEXT_2)
+	_last.visible = false
+	_list.add_child(_last)
+	_empty = _wrap(String(Data.value("ui", "chronicle.empty", "Nothing waits on you. The whole story is in the book of the reign.")), T.SIZE_DESC - 1, T.TEXT_3)
+	_list.add_child(_empty)
+	_needs = VBoxContainer.new()
+	_needs.add_theme_constant_override("separation", 8)
+	_list.add_child(_needs)
 
 
 func add_chronicle(added: Array) -> void:
@@ -69,9 +84,9 @@ func add_chronicle(added: Array) -> void:
 		var loss: bool = kind in ["civil_war", "betrayal", "rebellion"] or (touches_crown and kind in ["city_shrank", "disaster", "city_destroyed", "building_lost", "city_transferred", "raid", "death", "unrest"])
 		if e.get("thread"):
 			_stories[int(e.get("seq", 0))] = e
-		_row(e, loss)
+		var row := _row(e, loss)
 		if kind != "year" and _ticks(e):
-			_count()
+			_count_if(row)
 	_trim()
 
 
@@ -82,11 +97,21 @@ func notice(text: String, entry := {}, watch := Callable()) -> void:
 	var said := text.strip_edges()
 	if said == "":
 		return
+	# A moment to watch of a story already on a card ("The Treason of Bitterford"): its Watch goes on that card.
+	if watch.is_valid():
+		for r in _rows().slice(0, 30):
+			if String((r.get_meta("entry", {}) as Dictionary).get("thread", "")) == said:
+				var e2: Dictionary = r.get_meta("entry", {})
+				if r == _focused:
+					_focused = null
+				r.free()
+				_count_if(_row(e2, false, watch))
+				return
 	var subject := preload("res://scripts/news_chips.gd")._subject(said)
 	var n := 0
-	for r in _list.get_children():
+	for r in _rows():
 		n += 1
-		if n > 12:
+		if n > 20:
 			break
 		if r.get_meta("subject", "") == subject:
 			if r == _focused:
@@ -98,24 +123,73 @@ func notice(text: String, entry := {}, watch := Callable()) -> void:
 	if not e.has("turn"):
 		var main: Node = ui.get_parent()
 		e["turn"] = int(main.awareness.rec("turn", 0)) if main and main.get("awareness") else 0
-	var row := _row(e, bool(e.get("loss", false)))
+	var row := _row(e, bool(e.get("loss", false)), watch)
+	if row == null:
+		_last.text = said  # asks nothing: the latest word on his orders, one line over the cards
+		_last.visible = true
+		return
 	row.set_meta("subject", subject)
-	if watch.is_valid():
-		var b: Button = ui.btn(String(Data.value("ui", "chronicle.watch", "Watch")), watch)
-		b.add_theme_color_override("font_color", T.ACCENT)
-		b.size_flags_horizontal = Control.SIZE_SHRINK_END
-		b.add_theme_font_size_override("font_size", T.SIZE_DESC)
-		row.add_child(b)
-	_count()
+	_count_if(row)
 	_trim()
 
 
+## A Watch button on a card, after its Go there and before its answers (an answer stays the one we'd have him press).
+func _add_watch(row: Control, watch: Callable) -> void:
+	var body: VBoxContainer = row.get_node("Body")
+	var flow: HFlowContainer = row.get_node_or_null("Body/Actions")
+	if flow == null:
+		flow = HFlowContainer.new()
+		flow.name = "Actions"
+		flow.alignment = FlowContainer.ALIGNMENT_END
+		flow.add_theme_constant_override("h_separation", 6)
+		body.add_child(flow)
+	elif flow.has_node("Watch"):
+		return
+	var b: Button = ui.btn(String(Data.value("ui", "chronicle.watch", "Watch")), watch)
+	b.name = "Watch"
+	b.add_theme_font_size_override("font_size", T.SIZE_DESC)
+	var at := 0
+	for c in flow.get_children():
+		if (c as Button).text == String(Data.value("news_actions", "verbs.go.label", "Go there")):
+			at = c.get_index() + 1
+	flow.add_child(b)
+	flow.move_child(b, at)
+	_mark_primary(flow)
+
+
+## Every card.
+func _rows() -> Array:
+	return _needs.get_children()
+
+
+## The cards kept to chronicle.rows; a card leaves once it is old (chronicle.needs_seasons): what it asked has passed.
 func _trim() -> void:
-	while _list.get_child_count() > int(UI.ui_num("chronicle.rows", 150.0)):
-		var last := _list.get_child(_list.get_child_count() - 1)
-		if last == _focused:
-			_focused = null
-		last.free()
+	while _needs.get_child_count() > int(UI.ui_num("chronicle.rows", 30.0)):
+		_settle(_needs.get_child(_needs.get_child_count() - 1))
+	var main: Node = ui.get_parent()
+	var now := int(main.awareness.rec("turn", 0)) if main and main.get("awareness") else 0
+	var keep := int(UI.ui_num("chronicle.needs_seasons", 4.0))
+	for r in _needs.get_children():
+		var e: Dictionary = r.get_meta("entry", {})
+		if now - int(e.get("turn", now)) > keep:
+			_settle(r)
+	_empty.visible = _needs.get_child_count() == 0
+
+
+## A card done with (answered, or old): it goes; the book of the reign keeps the line.
+func _settle(r: Control) -> void:
+	if not is_instance_valid(r) or r.get_parent() != _needs:
+		return
+	if r == _focused:
+		_focused = null
+	r.free()
+	_empty.visible = _needs.get_child_count() == 0
+
+
+## Counted on the key when it is a card (it asks something of him).
+func _count_if(row: Control) -> void:
+	if row != null:
+		_count()
 
 
 ## One more row of the King's business: counted on the chronicle key while the drawer is shut.
@@ -146,41 +220,149 @@ func _fit() -> void:
 	_list.custom_minimum_size.x = maxf(r.size.x - pad - 12.0, 120.0)  # less the scroll bar
 
 
-## One line of the drawer: its season (and "Loss" in words, not colour alone: Mac is colour-blind), the story's name
-## when it is a story's beat, the line itself (a click goes there and opens its answers), and its answers, built
-## when first opened.
-func _row(e: Dictionary, loss: bool) -> Control:
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 3)
-	box.set_meta("entry", e)
-	var head := String(ui.season_of(int(e.get("turn", 0))))
-	if loss:
-		head += "  ·  Loss"
+## One card of the drawer (Mac: "a bunch of action cards", not a scroll; CK3's alerts, Total War's event feed): a framed
+## card with its kind and season in words ("Loss" too: Mac is colour-blind), its title (the story's name, else the line's
+## first sentence), the rest of the line, and its buttons always at its foot, the one we'd have him press on the right
+## in the accent (news_actions.gd, the one owner; Watch when there is a moment to see; Go there). A line with nothing
+## to do or see is a slim card with no buttons. A click on the card goes there.
+func _row(e: Dictionary, loss: bool, watch := Callable()) -> Control:
+	var acts := _actions(e)
+	var asks := false
+	for b in acts.get_children():
+		if (b as Button).text != String(Data.value("news_actions", "verbs.go.label", "Go there")):
+			asks = true
+	if not asks and not watch.is_valid():
+		acts.free()
+		return null  # it asks nothing of him: the book of the reign keeps it
+	var card := PanelContainer.new()
+	card.set_meta("entry", e)
+	card.add_theme_stylebox_override("panel", _card_box(false))
+	card.mouse_filter = Control.MOUSE_FILTER_STOP
+	card.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	card.gui_input.connect(func(ev: InputEvent):
+		if ev is InputEventMouseButton and (ev as InputEventMouseButton).pressed and (ev as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
+			go(e))
+	var v := VBoxContainer.new()
+	v.name = "Body"
+	v.add_theme_constant_override("separation", 4)
+	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	card.add_child(v)
+	# The kind in words, then the season, on one line.
+	var top := HBoxContainer.new()
+	top.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var kind := _kind_word(e, loss)
+	var k := _small(kind, T.DANGER if loss else (T.ACCENT if e.get("thread") else T.TEXT_3))
+	k.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	top.add_child(k)
+	top.add_child(_small(String(ui.season_of(int(e.get("turn", 0)))), T.TEXT_3))
+	v.add_child(top)
+	# The title and the rest of the line.
+	var text := String(e.get("text", ""))
+	var title := String(e.get("thread", ""))
+	var body := text
+	if title == "":
+		var cut := text.find(". ")
+		title = text.substr(0, cut + 1) if cut > 0 and cut < 90 else text
+		body = text.substr(cut + 2) if cut > 0 and cut < 90 else ""
+	var t := _wrap(title, T.SIZE_DESC + 1, T.TEXT)
+	v.add_child(t)
+	if body.strip_edges() != "" and body != title:
+		var b := _wrap(body, T.SIZE_DESC - 1, T.TEXT_2)
+		b.max_lines_visible = int(UI.ui_num("chronicle.body_lines", 3.0))
+		b.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		b.tooltip_text = body
+		b.mouse_filter = Control.MOUSE_FILTER_PASS
+		v.add_child(b)
+	# Here now (when the camera went there) and what is happening at its town: filled in by focus.
+	var here := VBoxContainer.new()
+	here.name = "Here"
+	here.visible = false
+	here.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	v.add_child(here)
+	v.add_child(acts)
+	# Answered: the card goes (the order's word comes back as the line above the cards).
+	for b in acts.get_children():
+		if (b as Button).text != String(Data.value("news_actions", "verbs.go.label", "Go there")):
+			(b as Button).pressed.connect(_settle.bind(card), CONNECT_DEFERRED)
+	_needs.add_child(card)
+	_needs.move_child(card, 0)
+	_empty.visible = false
+	if watch.is_valid():
+		_add_watch(card, watch)
+	return card
+
+
+## The card's buttons, right-aligned, the one we'd have him press last (rightmost) and in the accent; Go there first
+## (leftmost) when the line has a place.
+func _actions(e: Dictionary) -> HFlowContainer:
+	var flow := HFlowContainer.new()
+	flow.name = "Actions"
+	flow.alignment = FlowContainer.ALIGNMENT_END
+	flow.add_theme_constant_override("h_separation", 6)
+	flow.add_theme_constant_override("v_separation", 6)
+	var acts := NewsActions.one
+	var rows: Array = acts.verbs(e) if acts and String(e.get("kind", "")) != "year" else []
+	var go_row := rows.filter(func(r): return String(r["verb"]) == "go")
+	rows = rows.filter(func(r): return String(r["verb"]) != "go")
+	rows.reverse()
+	for r in go_row + rows:
+		var b: Button = ui.btn(String(r["label"]), r["call"])
+		b.disabled = not bool(r["enabled"])
+		b.tooltip_text = String(r["why"]) if String(r["why"]) != "" else String(r["tip"])
+		b.add_theme_font_size_override("font_size", T.SIZE_DESC)
+		flow.add_child(b)
+	_mark_primary(flow)
+	return flow
+
+
+## The rightmost button that can be pressed is the one we'd have him press: in the accent.
+func _mark_primary(flow: Container) -> void:
+	for b in flow.get_children():
+		(b as Button).remove_theme_color_override("font_color")
+	for i in range(flow.get_child_count() - 1, -1, -1):
+		var b := flow.get_child(i) as Button
+		if b and not b.disabled:
+			b.add_theme_color_override("font_color", T.ACCENT)
+			return
+
+
+## The card's kind in a word or two (ui.json chronicle.kinds), with the story's name for a story's beat.
+func _kind_word(e: Dictionary, loss: bool) -> String:
+	var words: Dictionary = Data.value("ui", "chronicle.kinds", {})
+	var kind := String(e.get("kind", ""))
+	var w := String(words.get(kind, words.get("other", "News")))
 	if e.get("thread"):
-		head += "  ·  " + String(e["thread"])
-	var h := T.label(head, T.ACCENT if e.get("thread") else T.TEXT_3)
-	h.add_theme_font_size_override("font_size", T.SIZE_DESC - 1)
-	h.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	h.custom_minimum_size.x = 1.0
-	box.add_child(h)
-	# A label, not a button: a button's least width is its whole line unwrapped, which pushed the drawer off the
-	# screen (Mac: "chronicle is out of the desktop"); a label wraps to the drawer's width.
+		w = String(words.get("story", "Story"))
+	if loss:
+		w = String(words.get("loss", "Loss")) + "  ·  " + w
+	return w.to_upper()
+
+
+func _card_box(on: bool) -> StyleBox:
+	var edge := T.ACCENT if on else T.HAIRLINE
+	var sb := T._box(T.SURFACE_SOLID, edge, 10, 12)
+	if on:
+		sb.set_border_width_all(2)
+	return sb
+
+
+func _small(text: String, c: Color) -> Label:
+	var l := T.label(text, c)
+	l.add_theme_font_size_override("font_size", T.SIZE_DESC - 2)
+	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return l
+
+
+func _wrap(text: String, size: int, c: Color) -> Label:
 	var l := Label.new()
-	l.text = String(e.get("text", ""))
+	l.text = text
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	l.custom_minimum_size.x = 1.0
 	l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	l.mouse_filter = Control.MOUSE_FILTER_STOP
-	l.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	l.add_theme_font_size_override("font_size", T.SIZE_DESC)
-	l.add_theme_color_override("font_color", T.TEXT_2 if String(e.get("kind", "")) == "year" else T.TEXT)
-	l.gui_input.connect(func(ev: InputEvent):
-		if ev is InputEventMouseButton and (ev as InputEventMouseButton).pressed and (ev as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
-			go(e))
-	box.add_child(l)
-	_list.add_child(box)
-	_list.move_child(box, 0)
-	return box
+	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	l.add_theme_font_size_override("font_size", size)
+	l.add_theme_color_override("font_color", c)
+	return l
 
 
 ## The camera to the line's place (a story's people or its town: main.gd _follow_story, ui.focus_city), and the
@@ -199,13 +381,15 @@ func go(e: Dictionary) -> void:
 ## seen in the realm, a scene watched) gets a row of its own at the top.
 func focus(e: Dictionary) -> void:
 	var row: Control = null
-	for r in _list.get_children():
+	for r in _rows():
 		var d: Dictionary = r.get_meta("entry", {})
 		if d == e or (e.has("seq") and d.get("seq") == e.get("seq") and String(d.get("text", "")) == String(e.get("text", ""))):
 			row = r
 			break
 	if row == null:
 		row = _row(e, false)
+	if row == null:
+		return  # it asks nothing of him: the camera goes, no card
 	if is_instance_valid(_focused) and _focused != row:
 		_open(_focused, false)
 	_focused = row
@@ -216,47 +400,20 @@ func focus(e: Dictionary) -> void:
 	_scroll.ensure_control_visible.call_deferred(row)
 
 
-## A row's answers shown or put away; built the first time (one row of buttons, news_actions.gd), with what is
-## happening at its town now (map_tip.gd's words). Go there is left off: the camera is there.
+## The card the camera went to: its frame in the accent, "Here now" and what is happening at its town (map_tip.gd), or
+## back to plain.
 func _open(row: Control, on: bool) -> void:
-	var ans: Control = row.get_node_or_null("Answers")
-	if on and ans == null:
+	(row as PanelContainer).add_theme_stylebox_override("panel", _card_box(on))
+	var here: VBoxContainer = row.get_node_or_null("Body/Here")
+	if here == null:
+		return
+	if on and here.get_child_count() == 0:
 		var e: Dictionary = row.get_meta("entry", {})
-		ans = VBoxContainer.new()
-		ans.name = "Answers"
-		ans.add_theme_constant_override("separation", 4)
-		var here := T.label(String(Data.value("ui", "chronicle.here", "Here now")), T.ACCENT)
-		here.add_theme_font_size_override("font_size", T.SIZE_DESC - 1)
-		ans.add_child(here)
+		here.add_child(_small(String(Data.value("ui", "chronicle.here", "Here now")).to_upper(), T.ACCENT))
 		var now := _town_now(e)
 		if now != "":
-			var nl := T.label(now, T.TEXT_2)
-			nl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			nl.custom_minimum_size.x = 1.0
-			nl.add_theme_font_size_override("font_size", T.SIZE_DESC - 1)
-			ans.add_child(nl)
-		var acts := NewsActions.one
-		if acts:
-			var flow := HFlowContainer.new()
-			flow.add_theme_constant_override("h_separation", 6)
-			flow.add_theme_constant_override("v_separation", 6)
-			# The answer we'd have him give (news_actions' first) on the right, in the accent (Mac: the right-hand
-			# button is the one we want pressed); the others to its left.
-			var rows: Array = acts.verbs(e).filter(func(r): return String(r["verb"]) != "go")
-			rows.reverse()
-			for r in rows:
-				var b: Button = ui.btn(String(r["label"]), r["call"])
-				b.disabled = not bool(r["enabled"])
-				b.tooltip_text = String(r["why"]) if String(r["why"]) != "" else String(r["tip"])
-				b.add_theme_font_size_override("font_size", T.SIZE_DESC)
-				if r == rows[-1] and bool(r["enabled"]):
-					b.add_theme_color_override("font_color", T.ACCENT)
-				flow.add_child(b)
-			if flow.get_child_count() > 0:
-				ans.add_child(flow)
-		row.add_child(ans)
-	if ans:
-		ans.visible = on
+			here.add_child(_wrap(now, T.SIZE_DESC - 1, T.TEXT_2))
+	here.visible = on
 
 
 ## What is happening at the line's town now, as the map's hover says it (map_tip.gd).
@@ -292,14 +449,13 @@ static func _ticks(e: Dictionary) -> bool:
 ## A piece of news the realm's chronicle doesn't carry (a threat to the King's town, news_actions.gd): a line in
 ## the ticker like any other, with its answers.
 func show_news(e: Dictionary, loss: bool) -> void:
-	_row(e, loss)
-	_count()
+	_count_if(_row(e, loss))
 
 
 func clear_chronicle() -> void:
 	entries.clear()
 	_focused = null
-	for r in _list.get_children():
+	for r in _rows():
 		r.queue_free()
 	_unread = 0
 	ui.top_bar.chronicle_unread(0)
