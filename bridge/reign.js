@@ -8,10 +8,10 @@
 // come in as one context argument, built fresh by server.js on each call
 // (getters for what it reassigns, setPaused for the clock's hold); server.js
 // keeps wrappers of the same names.
+import fs from "node:fs";
 import { crownOf, houseName } from "./realm.js";
 import { HEIRLESS, dynastyOf } from "./royals.js";
 import * as Lua from "./lua.js";
-import * as Opening from "./opening.js";
 import { say } from "./say.js";
 import * as Events from "./events.js";
 import * as Seals from "./seals.js";
@@ -138,33 +138,56 @@ export const AMBITIONS = [
   { key: "grow", text: "Grow the realm by a fifth", met: ({ meta, history }) => meta.ambitionsFrom?.pop > 0 && (history.at(-1)?.pop ?? 0) >= meta.ambitionsFrom.pop * 1.2 },
 ];
 
-// The royal ladder: one aim always before the King, each with a reward he can
-// see in the realm, each leading to the next (build, then muster, then win a
-// house, then trade, then take land, then hold it). Checked every few seconds;
-// met, the reward lands at once and the next aim is named.
-const crownHas = ({ world, crownOf }, b, seatOnly = false) => { const c = crownOf(); return !!c && world.cities.some((x) => x.owner === c.id && (!seatOnly || x.capital) && (x.buildings ?? []).includes(b)); };
+// The royal ladder: one objective always before the King, each with a reward he can see in the realm, each leading
+// to the next (data/objectives.json; Warcraft III's and Age of Empires II's campaign objectives): the war king's
+// chain (beat the raiders, raise the levy, march on a town, win a house's oath), then the realm's own (nextAim).
+// Checked every few seconds; met, the reward lands at once and the next is named.
+const OBJ = JSON.parse(fs.readFileSync(new URL("./data/objectives.json", import.meta.url), "utf8"));
 
 // The most companies the crown has had under its banner at once, wherever they stand (the muster
 // aim never goes backward when the King sends men out or loses some; gameplay review #7).
 const companies = ({ world, crownOf, SOLDIER }) => (world?.units ?? []).filter((u) => u.owner === crownOf()?.id && SOLDIER(u)).length;
 const mustered = (ctx) => Math.max(companies(ctx), ctx.meta?.ladder?.peak ?? 0);
 
-export const LADDER = [
-  { key: "granary", do: "Fund a granary", text: "Raise a granary in Kingsmere", how: "Open Kingsmere's card and fund a granary.",
-    met: (ctx) => crownHas(ctx, "Granary", true), reward: "feast", says: "Kingsmere's granary stands full. The town holds a harvest feast in the King's name." },
-  { key: "host", do: "Raise the levy", text: "Muster a royal host of 2,400 troops", how: "Raise the levy, or call the banners.",
-    met: (ctx) => mustered(ctx) >= 12, reward: "knights", says: "Two thousand four hundred men stand under the royal banner. Two knights ride in to join them, unasked." },
-  { key: "friend", do: "Win over", text: "Win a great house to the Crown", how: "Favour a house until it stands at 70.",
-    met: ({ world, favourOf }) => world.players.some((p) => !houseFor(p).wild && !houseFor(p).crown && favourOf(p.id) >= 70), reward: "gold", says: "A great house swears itself to the Crown, and sends a chest of silver to prove it." },
-  { key: "market", do: "Fund a market", text: "Raise a market in a royal town", how: "Fund a market in any town of the Crown.",
-    met: (ctx) => crownHas(ctx, "Marketplace"), reward: "gold", says: "The royal market opens. Merchants come from three houses' lands to trade under the King's peace." },
-  { key: "town", do: "March the host", text: "Bring a new town under the Crown", how: "March the royal host on a town, or win one by grant.",
-    met: ({ world, meta, crownOf }) => { const c = crownOf(); return !!c && world.cities.some((x) => x.owner === c.id && !(meta.ladder?.held ?? []).includes(x.id)); }, reward: "feast", says: "A new town flies the royal banner. Its people line the road to see the King's men ride in." },
-  { key: "walls", do: "Fund walls", text: "Wall Kingsmere against what comes", how: "Fund walls in Kingsmere.",
-    met: (ctx) => crownHas(ctx, "City Walls", true), reward: "knights", says: "Stone walls ring Kingsmere. Let them come." },
-];
+// The royal towns a wild house's soldiers stand near (objectives.json raiders.near), the most raiders first.
+function raiding({ world, crownOf, SOLDIER }) {
+  const crown = crownOf();
+  if (!crown || !world) return [];
+  const wild = new Set(world.players.filter((p) => houseFor(p).wild).map((p) => p.id));
+  const near = OBJ.raiders?.near ?? 6;
+  const men = (world.units ?? []).filter((u) => wild.has(u.owner) && SOLDIER(u));
+  return world.cities.filter((c) => c.owner === crown.id)
+    .map((c) => ({ town: c.id, n: men.filter((u) => Math.hypot(u.x - c.x, u.y - c.y) <= near).length }))
+    .filter((r) => r.n > 0).sort((a, b) => b.n - a.n);
+}
+const warmest = ({ world, favourOf }) => world.players.filter((p) => !houseFor(p).wild && !houseFor(p).crown).sort((x, y) => favourOf(y.id) - favourOf(x.id))[0];
 
-// Past the six, the ladder keeps going from the realm itself: win back the
+// Each step's rule (objectives.json met), by name.
+const RULES = {
+  // Raiders seen at a royal town, then none left near any: beaten. The town is kept for the line and the marker.
+  raiders: (ctx) => {
+    const l = ctx.meta.ladder, now = raiding(ctx);
+    if (now.length) { l.raid = now[0].town; l.raidPeak = Math.max(l.raidPeak ?? 0, now[0].n); return false; }
+    return l.raid != null;
+  },
+  companies: (ctx, s) => mustered(ctx) >= s.n,
+  town: ({ world, meta, crownOf }) => { const c = crownOf(); return !!c && world.cities.some((x) => x.owner === c.id && !(meta.ladder?.held ?? []).includes(x.id)); },
+  oath: ({ world, favourOf }, s) => world.players.some((p) => !houseFor(p).wild && !houseFor(p).crown && favourOf(p.id) >= s.to),
+};
+export const LADDER = OBJ.steps.map((s) => ({ ...s, met: (ctx) => RULES[s.met](ctx, s) }));
+const NEVER_PASSED = ["raiders", "town"];  // never true at a reign's start in a way that counts
+
+// An objective's words for the King: the raided town and his seat by name; before the raiders come, its wait line.
+function fill(ctx, a, text) {
+  const seat = ctx.world?.cities?.find((x) => x.owner === ctx.crownOf()?.id && x.capital);
+  const raid = ctx.meta?.ladder?.raid;
+  return String(text ?? "").replace("{town}", raid != null ? cityName(raid) : "the border").replace("{seat}", seat ? cityName(seat.id) : "your seat");
+}
+export function aimText(ctx, a) {
+  return fill(ctx, a, a.key === "raiders" && ctx.meta?.ladder?.raid == null && a.wait ? a.wait : a.text);
+}
+
+// Past the chain, the ladder keeps going from the realm itself: win back the
 // coldest great house (its lord by name), or raise what a royal town lacks.
 export function nextAim(ctx) {
   const { meta, world, court, favourOf, crownOf } = ctx;
@@ -191,16 +214,15 @@ export const aimNow = ({ meta }) => meta.ladder ? (LADDER[meta.ladder.i] ?? meta
 // log's marker). Kingsmere for its works and the levy, a royal town without a
 // market, the warmest house's seat to win, a town he could take.
 export function aimPlace(ctx, a) {
-  const { meta, world, favourOf, crownOf } = ctx;
+  const { meta, world, crownOf } = ctx;
   const crown = crownOf();
   if (!a || !crown || !world) return null;
   const seat = world.cities.find((x) => x.owner === crown.id && x.capital);
-  const royal = world.cities.filter((x) => x.owner === crown.id);
   switch (a.key) {
-    case "granary": case "walls": case "host": return seat?.id ?? null;
-    case "market": return (royal.find((x) => !(x.buildings ?? []).includes("Marketplace")) ?? seat)?.id ?? null;
-    case "friend": {
-      const best = world.players.filter((p) => !houseFor(p).wild && !houseFor(p).crown).sort((x, y) => favourOf(y.id) - favourOf(x.id))[0];
+    case "raiders": return meta.ladder?.raid ?? null;
+    case "levy": return seat?.id ?? null;
+    case "oath": {
+      const best = warmest(ctx);
       return best ? (world.cities.find((x) => x.owner === best.id && x.capital)?.id ?? null) : null;
     }
     case "town": return (meta.campaigns ?? [])[0]?.city ?? null;
@@ -226,14 +248,12 @@ export function aimProgress(ctx, a) {
   const seat = world.cities.find((x) => x.owner === crown.id && x.capital);
   const favourTo = (pid, to) => { const f = Math.round(favourOf(pid)); return { text: `${houseFor(world.players.find((p) => p.id === pid)).name} at ${f} of ${to}`, frac: Math.max(0, Math.min(1, f / to)) }; };
   switch (a.key) {
-    case "host": { const n = mustered(ctx); return { text: `${(Math.min(n, 12) * 200).toLocaleString("en-US")} of 2,400 troops`, frac: Math.min(1, n / 12) }; }  // in men, as the ledger counts them; the best muster so far
-    case "friend": {
-      const best = world.players.filter((p) => !houseFor(p).wild && !houseFor(p).crown).sort((x, y) => favourOf(y.id) - favourOf(x.id))[0];
-      return best ? favourTo(best.id, 70) : null;
+    case "raiders": {
+      const now = raiding(ctx)[0]?.n ?? 0, peak = meta.ladder?.raidPeak ?? 0;
+      return peak > 0 ? { text: now > 0 ? `${now} compan${now === 1 ? "y" : "ies"} of raiders left` : "the raiders flee", frac: 1 - now / peak } : null;
     }
-    case "granary": return rising(works((id, b) => id === seat?.id && b === "Granary"));
-    case "walls": return rising(works((id, b) => id === seat?.id && b === "City Walls"));
-    case "market": return rising(works((_, b) => b === "Marketplace"));
+    case "levy": { const n = mustered(ctx); return { text: `${(Math.min(n, a.n) * 200).toLocaleString("en-US")} of ${(a.n * 200).toLocaleString("en-US")} troops`, frac: Math.min(1, n / a.n) }; }  // in men, as the ledger counts them; the best muster so far
+    case "oath": { const best = warmest(ctx); return best ? favourTo(best.id, a.to) : null; }
     case "town": {
       const s = (meta.campaigns ?? [])[0];
       return s ? { text: `the host before ${cityName(s.city)}`, frac: Math.min(0.9, ((world.turn ?? s.turn) - s.turn + 0.5) / (2 + (s.extra ?? 0))) } : null;
@@ -248,7 +268,7 @@ export function ladder(ctx) {
   const { meta, world, send, scene, record, crownOf, crownSeat } = ctx;
   if (meta.status !== "running" || !world || !crownOf()) return;
   // Aims already true when the reign begins are passed over: the King is never asked for what he has.
-  meta.ladder ??= { i: 0, held: world.cities.filter((x) => x.owner === crownOf().id).map((x) => x.id), skip: LADDER.filter((a) => a.key !== "town" && a.met(ctx)).map((a) => a.key) };
+  meta.ladder ??= { i: 0, held: world.cities.filter((x) => x.owner === crownOf().id).map((x) => x.id), skip: LADDER.filter((a) => !NEVER_PASSED.includes(a.key) && a.met(ctx)).map((a) => a.key) };
   const l = meta.ladder;
   l.peak = Math.max(l.peak ?? 0, companies(ctx));
   l.held ??= world.cities.filter((x) => x.owner === crownOf().id).map((x) => x.id);  // a save from before
@@ -268,7 +288,7 @@ export function ladder(ctx) {
   if (l.i < LADDER.length) l.i++;
   else { l.dyn = null; l.n = (l.n ?? 0) + 1; }
   if (aim.key === "town") l.held = world.cities.filter((x) => x.owner === crownOf().id).map((x) => x.id);
-  l.just = { text: aim.text, at: Date.now() };
+  l.just = { text: aimText(ctx, aim), says: aim.says, at: Date.now() };
   chron.saveMeta(meta);
 }
 
@@ -598,16 +618,6 @@ export function saveCard(ctx) {
     king: name ? `The King ${name}` : "The King", lastRuling: meta.lastRuling ?? null };
 }
 
-// Opening v2: until the first winter has passed, the aim is to hold the realm to it, with the seasons left
-// (opening.js; the first-ten-minutes plan's tracker). The ladder's aims come after.
-function winterAim(meta, world) {
-  const left = Opening.toWinter(meta, world?.turn ?? 0);
-  if (left == null) return null;
-  const a = Opening.OPENING.winterAim ?? {};
-  return { n: 0, of: null, text: a.text ?? "Hold the realm whole to the first winter", how: a.how ?? "", at: null,
-    progress: { text: left === 1 ? "the last season of winter" : `${left} seasons to the end of winter`, frac: Math.max(0, Math.min(1, 1 - (left - 1) / 4)) } };
-}
-
 export function reignInfo(ctx) {
   const { meta, world, paused, soulsOf } = ctx;
   const aim = aimNow(ctx);
@@ -618,7 +628,8 @@ export function reignInfo(ctx) {
     id: meta.id, name: meta.name, test: chron.isTest(meta), scenario: meta.scenario, status: meta.status, paused, minutes: meta.minutes,
     elapsedMs: meta.elapsedMs, remainingMs: meta.minutes > 0 ? Math.max(0, meta.minutes * 60000 - meta.elapsedMs) : null,
     score: meta.score, verdict: meta.verdict, title: meta.title, why: meta.why ?? null, outcome: meta.outcome, ended: meta.endedAt,
-    epilogue: meta.epilogue ?? null, epitaph: meta.epitaph ?? null, ledger: meta.ledger ?? null, grudge: meta.status === "ended" ? meta.grudgeLeft ?? null : null, lastAct: meta.lastAct ?? null, interlude: meta.interlude && !meta.interlude.seen ? meta.interlude : null, ambitions: meta.ambitions ?? null, aim: winterAim(meta, world) ?? (aim ? { n: Math.min(meta.ladder.i, LADDER.length) + (meta.ladder.n ?? 0) + 1, of: meta.ladder.i < LADDER.length ? LADDER.length : null, text: aim.text, how: aim.how, progress: aimProgress(ctx, aim), at: aimPlace(ctx, aim) } : null), aimDone: meta.ladder?.just && Date.now() - meta.ladder.just.at < 8000 ? meta.ladder.just.text : null, readings: meta.status === "running" ? readings(ctx) : null,
+    epilogue: meta.epilogue ?? null, epitaph: meta.epitaph ?? null, ledger: meta.ledger ?? null, grudge: meta.status === "ended" ? meta.grudgeLeft ?? null : null, lastAct: meta.lastAct ?? null, interlude: meta.interlude && !meta.interlude.seen ? meta.interlude : null, ambitions: meta.ambitions ?? null, aim: aim ? { n: Math.min(meta.ladder.i, LADDER.length) + (meta.ladder.n ?? 0) + 1, of: meta.ladder.i < LADDER.length ? LADDER.length : null, key: aim.key, text: aimText(ctx, aim), how: fill(ctx, aim, aim.how), input: aim.input ? aim.input.map((t) => fill(ctx, aim, t)) : null, progress: aimProgress(ctx, aim), at: aimPlace(ctx, aim) } : null,
+    aimDone: meta.ladder?.just && Date.now() - meta.ladder.just.at < 8000 ? { text: meta.ladder.just.text, says: meta.ladder.just.says ?? null } : null, readings: meta.status === "running" ? readings(ctx) : null,
     souls: world?.cities?.reduce((t, c) => t + soulsOf(c.size), 0) ?? 0,
     next,
     seals: Seals.view(meta),

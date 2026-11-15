@@ -4,7 +4,7 @@
 // ruling that slights a lord is the one that comes back, about five minutes in, as the first setback.
 // Numbers in data/opening.json.
 import fs from "node:fs";
-import { calendar, SEASONS } from "./calendar.js";
+import { calendar } from "./calendar.js";
 
 export const OPENING = JSON.parse(fs.readFileSync(new URL("./data/opening.json", import.meta.url), "utf8"));
 
@@ -29,13 +29,6 @@ const calm = (meta) => meta?.minutes > 0 && (meta.elapsedMs ?? 0) < (OPENING.cal
 export const quiet = (meta) => calm(meta) || (v2(meta) && OPENING.quietToWinter !== false && !meta?.openingState?.wintered);
 // Whether a pretender may yet whisper of a better claim (data: usurperFromAct).
 export const usurperMay = (meta) => !quiet(meta) && actOf(meta) >= (OPENING.usurperFromAct ?? 1);
-
-// Seasons until the first winter is over (the top bar's tracker), or null once it is (or not a v2 reign).
-export function toWinter(meta, turn) {
-  if (!v2(meta) || meta?.openingState?.wintered) return null;
-  const i = SEASONS.indexOf(calendar(turn).season);
-  return i < 0 ? null : 3 - i + 1;  // this season to the end of winter, counted whole
-}
 
 // The first ruling that cools a house (the lord who asked, or the house it ruled against): due later than the usual return, so it lands
 // about five minutes in (firstSetbackSeasons after it), and always as a plea for amends, never a quiet

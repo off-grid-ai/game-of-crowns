@@ -200,6 +200,17 @@ func _activity() -> void:
 							owner = int(c["owner"])
 				var hc := Color.from_string(String(_houses_now.get(owner, {}).get("color", "")), col)
 				_bursts.append([at, hc, Time.get_ticks_msec()])
+	# The objective's place (reign.js aimPlace; a campaign's objective marker): a gold ring always, a burst when it is new.
+	var aim = (st.rec("reign", {}) as Dictionary).get("aim") if st.rec("reign", {}) is Dictionary else null
+	if aim is Dictionary and aim.get("at") != null:
+		for c in st.rec("cities", []):
+			if int(c["id"]) == int(aim["at"]):
+				var at := Vector2(float(c["x"]) + 0.5, float(c["y"]) + 0.5)
+				_pings.append([at, CROWN, "aim"])
+				var key := "aim:%s:%d" % [String(aim.get("key", aim.get("text", ""))), int(aim["at"])]
+				if not _seen_ms.has(key):
+					_seen_ms[key] = Time.get_ticks_msec()
+					_bursts.append([at, CROWN, Time.get_ticks_msec()])
 	for c in st.rec("cities", []):
 		var at := Vector2(float(c["x"]) + 0.5, float(c["y"]) + 0.5)
 		if c.get("disorder", false):

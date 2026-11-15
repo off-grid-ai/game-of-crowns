@@ -1,0 +1,15 @@
+{
+  "_": "The King's one objective at a time (reign.js LADDER; Warcraft III's and Age of Empires II's campaign objectives; Mac 2026-11-15: 'I literally don't know what to do... just make the game fun'). The war king from minute one: beat the raiders, raise the levy, march on a town, win a house's oath; past these, the realm's own (reign.js nextAim). Each step: key, do (the verb, for the next line), text (the line top-left; {town} is the raided town, {seat} the King's seat), wait (the line before its moment has come, as the raiders before they cross), how (its tooltip), input (the exact hand on mouse and keys, shown beside the line for the first steps only), met (the rule: raiders, companies, town, oath), its numbers (n companies, to favour), reward (gold, knights, feast) and says (the chronicle's line and the tick when done). A step already true when the reign begins is passed over, but never raiders or town.",
+  "raiders": { "near": 6, "_near": "tiles from a royal town within which a wild house's soldiers count as raiding it" },
+  "steps": [
+    { "key": "raiders", "do": "Drive off the raiders", "text": "Raiders burn {town}. Select your host and right-click them.", "wait": "Raiders are seen on the border. Make ready your host.",
+      "how": "Click your host's banner to select it, then right-click the raiders: your men march and fight them.", "input": ["Click your host", "Right-click the raiders"],
+      "met": "raiders", "reward": "gold", "says": "The raiders are broken and flee. The townsfolk send the King a purse of thanks." },
+    { "key": "levy", "do": "Raise the levy", "text": "Raise the levy at {seat}: 2,400 men under your banner.", "how": "Open {seat}'s card and raise the levy, or call the banners.",
+      "input": ["Click {seat}", "Raise the levy"], "met": "companies", "n": 12, "reward": "knights", "says": "Two thousand four hundred men stand under the royal banner. Two knights ride in to join them, unasked." },
+    { "key": "town", "do": "March the host", "text": "March on a town: relieve it or besiege it.", "how": "Select your host and right-click a town to march on it.",
+      "met": "town", "reward": "feast", "says": "A new town flies the royal banner. Its people line the road to see the King's men ride in." },
+    { "key": "oath", "do": "Win over", "text": "Win a great house's oath to the Crown.", "how": "Favour a house until it stands at 70: a gift, a feast, a match, or a ruling in its favour.",
+      "met": "oath", "to": 70, "reward": "gold", "says": "A great house swears itself to the Crown, and sends a chest of silver to prove it." }
+  ]
+}

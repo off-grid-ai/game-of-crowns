@@ -312,6 +312,13 @@ func _build_top_bar() -> void:
 			ui.focus_city.emit(_aim_at))
 	_aim.visible = false
 	who.add_child(_aim)
+	# The first objectives' exact hands (objectives.json input; Warcraft III's first mission shows the click): a
+	# numbered key each, gone once the objective that carries them is done.
+	_aim_input = HBoxContainer.new()
+	_aim_input.add_theme_constant_override("separation", 6)
+	_aim_input.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_aim_input.visible = false
+	who.add_child(_aim_input)
 	# How far along: a thin gold fill and the count in the realm's words ("7 of 12 companies").
 	_aim_how = HBoxContainer.new()
 	_aim_how.add_theme_constant_override("separation", 8)
@@ -556,6 +563,8 @@ func _first_ten() -> void:
 			(pair[1] as Button).visible = _winter_seen
 var _aim_at := -1  # the town where the aim is acted on, opened by a click
 var _aim_how: HBoxContainer  # how far along the aim is: a fill and a count
+var _aim_input: HBoxContainer  # the exact input for the first objectives: "1 Click your host  2 Right-click the raiders"
+var _aim_input_was := []
 var _aim_fill: ColorRect
 var _aim_count: Label
 var _aim_frac := -1.0  # the fill shown, eased toward the real one
@@ -643,6 +652,7 @@ func _show_heading(r: Dictionary) -> void:
 		_aim_at = int(aim["at"]) if aim.get("at") != null else -1
 		if _aim_at >= 0:
 			_aim.tooltip_text += "\nClick to go there"
+	_show_input(aim.get("input") if aim is Dictionary else null)
 	_first_ten()
 	var prog = aim.get("progress") if aim is Dictionary else null
 	_aim_how.visible = prog is Dictionary
@@ -656,10 +666,12 @@ func _show_heading(r: Dictionary) -> void:
 			_aim_frac = f
 	_show_next(r.get("next"))
 	_show_seals(r.get("seals"))
+	# Done: a tick and what it brought (objectives.json says), once.
 	var done = r.get("aimDone")
-	if done != null and String(done) != _aim_told:
-		_aim_told = String(done)
-		ui.toast("Done: %s." % String(done))
+	if done is Dictionary and String(done.get("text", "")) != _aim_told:
+		_aim_told = String(done.get("text", ""))
+		var brought := String(done.get("says", ""))
+		ui.toast("✓  %s%s" % [_aim_told.trim_suffix("."), ("\n" + brought) if brought != "" else ""])
 	# The act just gone, told back at each quarter of the reign: the realm waits for him.
 	var il = r.get("interlude")
 	var il_key := "%s:%d" % [String(r.get("id", "")), int(il.get("q", 0))] if il is Dictionary else ""
@@ -675,6 +687,26 @@ func _show_heading(r: Dictionary) -> void:
 			if _last_act_told == "" and ui._court_met:
 				ui.toast("The last act of the reign begins. What comes for the throne now: %s." % String(la.get("threat", "")))
 			_last_act_told = String(la.get("threat", ""))
+
+
+## The objective's input keys, one chip each, numbered (rebuilt only when they change).
+func _show_input(input) -> void:
+	var want: Array = input if input is Array else []
+	_aim_input.visible = not want.is_empty()
+	if want == _aim_input_was:
+		return
+	_aim_input_was = want.duplicate()
+	for c in _aim_input.get_children():
+		c.queue_free()
+	for i in want.size():
+		var chip := PanelContainer.new()
+		chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var box := T._box(Color(T.ACCENT, 0.12), Color(T.ACCENT, 0.45), 6, 8)
+		box.content_margin_top = 2
+		box.content_margin_bottom = 2
+		chip.add_theme_stylebox_override("panel", box)
+		chip.add_child(T.prose("%d  %s" % [i + 1, String(want[i])], T.SIZE_DESC, T.TEXT))
+		_aim_input.add_child(chip)
 
 
 ## The realm's numbers in the bar and the reign's line under the date, from the

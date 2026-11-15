@@ -55,13 +55,11 @@ export function nextThing(ctx, aim) {
   // The order each candidate needs.
   const seat = world.cities.find((c) => c.owner === crown?.id && c.capital);
   const aimTown = aim?.at != null ? town(aim.at) : null;
-  const aimAct = !aim?.do ? null : aim.key === "host" ? { action: "levy", city: seat?.id ?? null }
-    : ["granary", "walls"].includes(aim.key) ? { action: "build", city: seat?.id ?? null, building: aim.key }
-    : aim.key === "market" ? { action: "build", city: aimTown?.id ?? null, building: "market" }
+  const aimAct = !aim?.do ? null : aim.key === "levy" ? { action: "levy", city: seat?.id ?? null }
     : aim.building ? { action: "build", city: aimTown?.id ?? null, building: buildKey(aim.building) }
-    : aimTown && (aim.key === "friend" || String(aim.key).startsWith("win-")) ? { action: "feast", city: aimTown.id } : null;
+    : aimTown && (aim.key === "oath" || String(aim.key).startsWith("win-")) ? { action: "feast", city: aimTown.id } : null;
   const ladder = !aim?.do ? null : (() => {
-    const who = aim.key === "friend" && aimTown ? houseFor(world.players.find((p) => p.id === aimTown.owner) ?? {}).name : null;
+    const who = aim.key === "oath" && aimTown ? houseFor(world.players.find((p) => p.id === aimTown.owner) ?? {}).name : null;
     const text = who ? `${aim.do} ${who} at ${cityName(aimTown.id)}` : aimTown ? `${aim.do} at ${cityName(aimTown.id)}` : aim.do;
     return { kind: "ladder", text, city: aimTown?.id ?? null, count: aim.progress?.text ?? null, frac: aim.progress?.frac ?? 0, act: aimAct };
   })();
