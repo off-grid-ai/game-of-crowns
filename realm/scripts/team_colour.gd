@@ -220,6 +220,8 @@ func _process(delta: float) -> void:
 	_tick += delta
 	if _tick < 0.5:
 		return
+	if main.awareness == null:
+		return  # the realm's mirror isn't made yet (main.gd makes it after the view): nothing to colour by
 	var dt := _tick
 	_tick = 0.0
 	var owner_of := {}
