@@ -41,10 +41,19 @@ static func code() -> String:
 	_code = "".join(sums).md5_text().substr(0, 12)
 	# What older code or numbers kept is never read again: gone, so the folders don't grow with every change.
 	for dir in [DIR, "user://models/"]:
-		for f in DirAccess.get_files_at(dir) if DirAccess.dir_exists_absolute(dir) else PackedStringArray():
-			if not f.contains(_code):
-				DirAccess.remove_absolute(dir + f)
+		_sweep(dir)
 	return _code
+
+
+## Every file under `dir` (its kits' folders too) not made by the current code, removed; the folders stay.
+static func _sweep(dir: String) -> void:
+	if not DirAccess.dir_exists_absolute(dir):
+		return
+	for f in DirAccess.get_files_at(dir):
+		if not f.contains(_code):
+			DirAccess.remove_absolute(dir + f)
+	for d in DirAccess.get_directories_at(dir):
+		_sweep(dir + d + "/")
 
 
 ## A town just raised, packed and written (the writing on a worker thread). Its metas and groups are made savable on

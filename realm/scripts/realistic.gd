@@ -615,7 +615,7 @@ static func _kept(name: String, which := "whole") -> String:
 
 
 static func _keep(mesh: ArrayMesh, path: String) -> void:
-	DirAccess.make_dir_recursive_absolute(MODELS)
+	DirAccess.make_dir_recursive_absolute(path.get_base_dir())  # a kit's own folder (props/, town/) under MODELS
 	mesh.take_over_path(path)
 	WorkerThreadPool.add_task(func(): ResourceSaver.save(mesh, path), false, "model save")
 

@@ -246,8 +246,18 @@ func _revive(id: int) -> void:
 		if not copy.is_ancestor_of(g) or not _detail_only(g, copy):
 			continue  # moved already with a part above it, or kept by the shell
 		var dest: Node = root.get_node_or_null(copy.get_path_to(g.get_parent()))
+		var place: Transform3D = g.transform
+		if dest == null:  # its parent isn't in the shell: it stands under the root where it stood in the copy
+			var up: Node = g.get_parent()
+			while up != copy and up != null:
+				if up is Node3D:
+					place = (up as Node3D).transform * place
+				up = up.get_parent()
+		for n in [g] + g.find_children("*", "", true, false):
+			(n as Node).owner = null  # the copy's, not the town's: unset before it moves (Godot's 'owner inconsistent')
 		g.get_parent().remove_child(g)
 		(dest if dest else root).add_child(g)
+		g.transform = place
 	for m in pointing:
 		root.set_meta(m, TownStore.nodes(pointing[m], root))
 	copy.free()
