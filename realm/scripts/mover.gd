@@ -48,6 +48,15 @@ var _walk_at := Vector3.INF  # where its walk along the way has come to: keep mo
 var fighting := false  # in a fight: its steered steps are kept off what stands, and it steps every frame in sight
 var nav: StringName = &"walk"  # which of the realm's navigation maps its routes are asked of (nav_world.gd: water for a ship)
 var _face := true  # turns into its way (off for a step back from a blow, or a dodge)
+# A formed block (a regiment; data/formations.json wheel, 0 A.D.'s MaxTurningAngle): it turns to face its way before it
+# walks, never crabbing sideways or backing. wheel: radians a second it wheels on the spot (0: not a block); wheel_slide:
+# the most its front may stand off its way while it walks; wheel_near: within this of its mark it faces the look it
+# was given and may sidestep; wheel_most: a turn wider than this calls `about` (its men about-face where they stand).
+var wheel := 0.0
+var wheel_slide := 0.35
+var wheel_near := 0.3
+var wheel_most := 2.2
+var about := Callable()
 var _keep_y := false  # a given way keeps its own heights (a wall walk): no ground under it
 var _way := PackedVector3Array()
 var _i := 0
@@ -435,6 +444,11 @@ func _steer_step(body: Node3D, delta: float) -> void:
 	var want := Vector3.ZERO
 	if to.length() > 0.015:
 		want = to.normalized() * minf(speed, to.length() * 4.0)
+	# A formed block far from its mark faces where it goes, and stands to wheel while its front is off its way;
+	# near it, it faces the look it was given (_wheeling).
+	var wheel_to := _wheeling(body, at, want)
+	if not is_nan(wheel_to):
+		want = Vector3.ZERO
 	if _agent.is_valid():
 		NavigationServer3D.agent_set_position(_agent, at)
 		NavigationServer3D.agent_set_velocity(_agent, want)
@@ -447,12 +461,46 @@ func _steer_step(body: Node3D, delta: float) -> void:
 			elif not _flagged:
 				_flagged = true
 				print("CHECK avoidance held a fighter still for a second")  # once a man, as battle_ai did; the round greps it
-	_vel = _vel.lerp(want, minf(1.0, delta * 6.0))
+	_vel = _vel.lerp(want, minf(1.0, delta * 6.0)) if is_nan(wheel_to) else Vector3.ZERO
 	at += _vel * delta
 	_put(body, at)
-	var face: Vector3 = _look if _look.length() > 0.001 else _vel
+	if not is_nan(wheel_to):
+		body.rotation.y += clampf(angle_difference(body.rotation.y, wheel_to), -wheel * delta, wheel * delta)
+		return
+	var face: Vector3 = _look if _look.length() > 0.001 and not _far(at) else _vel
 	if Vector2(face.x, face.z).length() > 0.001:
 		body.rotation.y = lerp_angle(body.rotation.y, atan2(face.x, face.z), clampf(turn_rate * 0.85 * delta, 0.0, 1.0))
+
+
+## Whether a formed block is still further than wheel_near from the end of its way (it faces where it goes).
+func _far(at: Vector3) -> bool:
+	if wheel <= 0.0 or _way.is_empty():
+		return false
+	var end := _way[_way.size() - 1]
+	return Vector2(end.x - at.x, end.z - at.z).length() > wheel_near
+
+
+## The way's heading from `at`: toward its first point a step's length off (a route's first point is where it stands).
+func _ahead(at: Vector3) -> Vector3:
+	for j in range(_i, _way.size()):
+		var d := Vector3(_way[j].x - at.x, 0.0, _way[j].z - at.z)
+		if d.length() > 0.05:
+			return d
+	return Vector3.ZERO
+
+
+## A formed block about to step along `dir` (its way): the heading it must first wheel to on the spot, or NAN to walk
+## on. Off its way by more than wheel_slide it wheels (wheel a second); by more than wheel_most its men about-face
+## (`about`) first. A body that isn't a block (wheel 0), near its mark, or not moving never wheels.
+func _wheeling(body: Node3D, at: Vector3, dir: Vector3) -> float:
+	if wheel <= 0.0 or Vector2(dir.x, dir.z).length() < 0.001 or not _far(at):
+		return NAN
+	var want := atan2(dir.x, dir.z)
+	var off := angle_difference(body.rotation.y, want)
+	if absf(off) > wheel_most and about.is_valid():
+		about.call()
+		off = angle_difference(body.rotation.y, want)
+	return want if absf(off) > wheel_slide else NAN
 
 
 ## Sets the body at `at`, by the place's own rule for standing, on its ground.
@@ -556,6 +604,11 @@ func _walk(delta: float) -> void:
 		_waited = 0.0
 		_drive(body, at, aim, flat, step)
 		return
+	if wheel > 0.0 and _face:
+		var wheel_to := _wheeling(body, at, _ahead(at))
+		if not is_nan(wheel_to):  # a formed block turns to its way on the spot before it walks on
+			body.rotation.y += clampf(angle_difference(body.rotation.y, wheel_to), -wheel * delta, wheel * delta)
+			return
 	# The frame's whole step, through every point of the way it reaches (a road is baked every few centimetres: one
 	# point a frame would cap the pace at the frame rate).
 	while flat.length() <= step:

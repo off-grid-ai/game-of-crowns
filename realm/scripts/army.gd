@@ -295,10 +295,12 @@ func _stand_on_tile(at: Vector3, yaw: float) -> void:
 		(c["node"] as Node3D).rotation.y = yaw
 
 
-## Half a column's width on the march, at its widest (column.files abreast, column.fileMost apart).
+## Half a column's width on the march, at its widest (its regiments' column shapes, formations.json's march template).
 func _column_half() -> float:
-	var files: Array = Data.value("army", "column.files", [8, 10])
-	return float(files[files.size() - 1]) * Data.num("army", "column.fileMost", 0.1) * 0.5
+	var half := 0.0
+	for r in _regiments:
+		half = maxf(half, float((r["column"] as Dictionary).get("w", 0.0)) * 0.5)
+	return half
 
 
 ## A heading for a column standing with its head at `at` whose every regiment stands clear (Mac 2026-11-15: a
@@ -942,9 +944,11 @@ func _regiment(spec: Dictionary, colour: Color, house: Dictionary = {}) -> Dicti
 		"yaws": yaws, "sizes": sizes, "local": PackedVector3Array(), "from": PackedVector3Array(), "to": PackedVector3Array(),
 		"shape": "line", "state": "rest", "s": 0.0, "off": 0.0, "slot": Vector3.ZERO, "place": Vector2.ZERO, "t": 0.0,
 		"fidget": _rng.randf_range(0.5, 3.0), "backs": [], "selected": false, "w": 1.0, "d": 1.0, "house": house}
-	r["line"] = Formation.layout(r, "line", battle.get("frontage"), _rng)
-	r["column"] = Formation.layout(r, "column", battle.get("frontage"), _rng)
-	r["deck"] = Formation.layout(r, "deck", null, _rng)
+	# Its shapes (data/formations.json): on the field its role's template, on the road the march's, aboard the deck's.
+	r["line"] = Formation.layout(r, Formation.field_form(r["role"]), _rng)
+	r["column"] = Formation.layout(r, String(Data.value("formations", "march", "column")), _rng)
+	r["deck"] = Formation.layout(r, String(Data.value("formations", "aboard", "deck")), _rng)
+	_wheels(r)
 	banners.banner(r)
 	_ground_marks(r)
 	return r
@@ -983,6 +987,40 @@ func _shape(r: Dictionary, shape: String) -> void:
 	_dress(r)
 	_fit(r)
 	_bear(r)
+
+
+## A formed block turns to face its way before it walks (formations.json wheel; 0 A.D.'s MaxTurningAngle): its Mover
+## wheels it on the spot and never crabs sideways or backs, and a turn wider than wheel.most about-faces its men.
+func _wheels(r: Dictionary) -> void:
+	var w: Dictionary = Data.value("formations", "wheel", {})
+	var mo: Node = Mover.of(r["node"])
+	mo.wheel = float(w.get("rate", 0.9))
+	mo.wheel_slide = float(w.get("slide", 0.35))
+	mo.wheel_near = float(w.get("near", 0.3))
+	mo.wheel_most = float(w.get("most", 2.2))
+	mo.about = func(): _about(r)
+
+
+## Its men about-face where they stand (a turn wider than wheel.most): the regiment's front turns half round and
+## every man keeps his ground, the rear rank now the front; its shapes turn with it, so it forms again in place.
+func _about(r: Dictionary) -> void:
+	var node: Node3D = r["node"]
+	node.rotation.y = wrapf(node.rotation.y + PI, -PI, PI)
+	r["yaw"] = node.rotation.y
+	r["local"] = _half_round(r["local"])
+	for shape in ["line", "column", "deck"]:
+		if r.has(shape):
+			(r[shape] as Dictionary)["at"] = _half_round(r[shape]["at"])
+	r["moved"] = true
+	_dress(r)
+	_bear(r)
+
+
+static func _half_round(at: PackedVector3Array) -> PackedVector3Array:
+	var out := PackedVector3Array()
+	for p in at:
+		out.append(Vector3(-p.x, p.y, -p.z))
+	return out
 
 
 ## The regiment's standard bearer (Total War: the colours carried by a man in the front rank, not a pole among
@@ -1620,13 +1658,46 @@ func _block_keep(r: Dictionary) -> Callable:
 		return p
 
 
-## Off the road to its place in the line by the ground's route, where it turns into line.
+## Off the road to its place in the line by the ground's route: in column until it is formations.json deploy.range
+## from its place (0 A.D.'s column for the march, its formation at the end), where it forms its line facing its way;
+## the rest in line, its front to its way, and at its place it turns to the line's facing.
 func _deploy(r: Dictionary) -> void:
 	r["state"] = "deploy"
 	_clips(r, "walk")
 	var mo: Node = Mover.of(r["node"])
 	mo.speed = float(r["speed"])
+	var form_up := func(): _reform(r, "line", func(): _in_line_to(r), float((r["node"] as Node3D).rotation.y))
+	if r["shape"] != "column":
+		_in_line_to(r)
+		return
+	mo.route_to(r["slot"], func(way: PackedVector3Array):
+		var cut := _short_of(way, Data.num("formations", "deploy.range", 3.0))
+		if cut.size() < 2:
+			form_up.call()  # within reach already: it forms where it stands
+		else:
+			mo.follow(cut, form_up))
+
+
+## Formed, the last of the way to its place in line, then turned to the line's facing.
+func _in_line_to(r: Dictionary) -> void:
+	r["state"] = "deploy"
+	_clips(r, "walk")
+	var mo: Node = Mover.of(r["node"])
+	mo.speed = float(r["speed"])
 	mo.go(r["slot"], func(): _reform(r, "line"))
+
+
+## `way` up to `reach` (world units, along it) short of its end; empty if the whole way is shorter.
+static func _short_of(way: PackedVector3Array, reach: float) -> PackedVector3Array:
+	var left := reach
+	for i in range(way.size() - 1, 0, -1):
+		var seg := Vector2(way[i].x - way[i - 1].x, way[i].z - way[i - 1].z).length()
+		if seg >= left:
+			var out := way.slice(0, i)
+			out.append(way[i].lerp(way[i - 1], left / maxf(seg, 0.0001)))
+			return out
+		left -= seg
+	return PackedVector3Array()
 
 
 ## How far along the road in `p` (world) stands: its nearest point on it.
@@ -1672,13 +1743,23 @@ func _set_at(r: Dictionary, p: Vector3, yaw: float) -> void:
 
 
 ## A regiment turns from one shape to the other where it stands: each man walks from his place in the one to
-## his place in the other over line.reform seconds, the regiment turning to its facing as it does.
-func _reform(r: Dictionary, shape: String) -> void:
+## his nearest free place in the other (Formation.assign, 0 A.D.'s) over line.reform seconds, the regiment turning
+## to `face` as it does (NAN: the line's facing into line, its own into column); `then` once it is formed.
+func _reform(r: Dictionary, shape: String, then := Callable(), face := NAN) -> void:
+	var to_yaw: float = face if not is_nan(face) else (_face if shape == "line" else float(r["yaw"]))
+	# Where each man stands now, seen from the regiment as it will face: the nearest place to him there.
+	var turn := Basis(Vector3.UP, float(r["yaw"]) - to_yaw)
+	var now := PackedVector3Array()
+	for p in (r["local"] as PackedVector3Array):
+		now.append(turn * p)
+	r[shape]["at"] = Formation.assign(now, r[shape]["at"])
 	r["from"] = (r["local"] as PackedVector3Array).duplicate()
 	r["to"] = r[shape]["at"]
 	r["into"] = shape
 	r["t"] = 0.0
 	r["turn_from"] = r["yaw"]
+	r["turn_to"] = to_yaw
+	r["then"] = then
 	r["state"] = "reform"
 	_clips(r, "walk")
 
@@ -1710,13 +1791,16 @@ func _process_timed(delta: float) -> void:
 					local[s] = from[s].lerp(to[s], e)
 				r["local"] = local
 				_dress(r)
-				var face := _face if r["into"] == "line" else float(r["turn_from"])
-				_set_at(r, (r["node"] as Node3D).global_position, lerp_angle(float(r["turn_from"]), face, e))
+				_set_at(r, (r["node"] as Node3D).global_position, lerp_angle(float(r["turn_from"]), float(r["turn_to"]), e))
 				if float(r["t"]) >= 1.0:
 					_shape(r, String(r["into"]))
 					r["state"] = "rest"
 					_clips(r, "rest")
-					if _out and r["into"] == "column":  # marching out: in column, on from where it stands
+					var then: Callable = r.get("then", Callable())
+					r["then"] = Callable()
+					if then.is_valid():
+						then.call()  # formed on the way: on to its place
+					elif _out and r["into"] == "column":  # marching out: in column, on from where it stands
 						_march(r)
 			"out":
 				r["leave"] = float(r["leave"]) - delta

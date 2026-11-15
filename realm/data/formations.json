@@ -1,0 +1,21 @@
+{
+  "_": "A regiment's formations as data (docs/research/war-formations-2026-11-15.md, step 1: 0 A.D.'s formation templates, templates/special/formations/*.xml, read by scripts/army_formation.gd layout; docs/TUNING.md). Each template: shape (rect: ranks of men; triangle: a wedge, each rank two wider than the one before, to maxColumns), widthDepthRatio (the block's width over its depth, in ground, as 0 A.D.'s WidthDepthRatio: the files come from it), minColumns / maxColumns (the least and most men abreast, 0 A.D.'s MinColumns / MaxColumns), separation ([file, rank]: times the kind's own spacing, army.json spacing / units.<kind>.spacing), shiftRows (every other rank half a file aside, 0 A.D.'s ShiftRows: the loose chequer), sloppiness (times army.json jitter.place: how far each man stands off his mark), closed (on the march or a deck: the spacing clamped, fileMost / rankMost for men on foot, rankLeast for every rank, horseRankMost for horse). field: the template each role stands in on the field; march: the road's; aboard: a ship's deck.",
+  "templates": {
+    "line":        { "shape": "rect", "widthDepthRatio": 1.75, "minColumns": 8, "maxColumns": 12, "separation": [1.0, 1.0], "shiftRows": false, "sloppiness": 1.0 },
+    "column":      { "shape": "rect", "widthDepthRatio": 0.8, "minColumns": 6, "maxColumns": 8, "separation": [1.0, 1.0], "shiftRows": false, "sloppiness": 1.0,
+                     "closed": { "fileMost": 0.08, "rankMost": 0.1, "rankLeast": 0.09, "horseRankMost": 0.32 } },
+    "wedge":       { "shape": "triangle", "widthDepthRatio": 1.0, "minColumns": 1, "maxColumns": 9, "separation": [1.0, 0.8], "shiftRows": false, "sloppiness": 1.0 },
+    "shield_wall": { "shape": "rect", "widthDepthRatio": 3.0, "minColumns": 10, "maxColumns": 14, "separation": [0.6, 0.8], "shiftRows": false, "sloppiness": 0.4 },
+    "loose":       { "shape": "rect", "widthDepthRatio": 1.75, "minColumns": 8, "maxColumns": 12, "separation": [1.0, 1.0], "shiftRows": true, "sloppiness": 2.5 },
+    "square":      { "shape": "rect", "widthDepthRatio": 1.0, "minColumns": 6, "maxColumns": 9, "separation": [0.8, 0.8], "shiftRows": false, "sloppiness": 0.6 },
+    "deck":        { "shape": "rect", "widthDepthRatio": 0.6, "minColumns": 4, "maxColumns": 5, "separation": [1.0, 1.0], "shiftRows": false, "sloppiness": 1.0,
+                     "closed": { "fileMost": 0.08, "rankMost": 0.1, "rankLeast": 0.0, "horseRankMost": 0.1 } }
+  },
+  "field": { "melee": "line", "ranged": "loose", "cavalry": "line" },
+  "march": "column",
+  "aboard": "deck",
+  "_wheel": "Facing and wheeling (step 2; 0 A.D.'s MaxTurningAngle, Millington's formation anchor): a regiment turns to face its way before it walks, never crabbing sideways or backing. rate: radians a second it wheels on the spot; slide: the most its front may stand off its way while it walks (radians; more and it stops and wheels); near: within this of its mark (world units) it dresses to the facing it was given and may sidestep; most: a turn wider than this (radians) and its men about-face where they stand, the rear rank the front, instead of wheeling round.",
+  "wheel": { "rate": 0.9, "slide": 0.35, "near": 0.3, "most": 2.2 },
+  "_deploy": "Column on the road, line on the field (step 3; 0 A.D.'s switch to column for a long march): a regiment marching in column to its place in the line goes on in column until it is range world units from it, forms its line there and walks the rest in line, its front to its way.",
+  "deploy": { "range": 3.0 }
+}

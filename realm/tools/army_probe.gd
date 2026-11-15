@@ -18,7 +18,7 @@ extends SceneTree
 ##     beside the rout holds; the commander beside the neighbour steadies it (it breaks later or not at all); the
 ##     victors never break. Nerve kept on each mind's LimboAI blackboard (army_morale.gd);
 ##  8. the rout runs along a real line (round 15: one regiment broke at t=29, then three in one tick at t=49): the
-##     beaten side drawn up as a field battle draws it (army.gd's own line layout, battle.json field.frontage, its
+##     beaten side drawn up as a field battle draws it (army.gd's own line layout, formations.json's line template, its
 ##     gaps and rows), bleeding at field.fight.loss, its commander in the middle; its first break shakes the next so
 ##     the breaks run along the line one after another from the flanked end, a second or more apart and no more
 ##     than SPREAD apart, the far end last; never two in one moment;
@@ -88,7 +88,7 @@ extends SceneTree
 ## 28. a war's muster forms as a column on the road out (the render pass: a small block on open grass where 03-army is
 ##     a dense column on a road): a host raised for war (out_to) stands in column on the road from its seat toward
 ##     where it is bound, every regiment on the road, halted, in column order with its head toward the goal, no two in
-##     one place, its ranks closed up (army.json column.rank at most 0.15, from 0.22), each regiment still at its floor of figures.
+##     one place, its ranks closed up (formations.json column rankLeast at most 0.15, from 0.22), each regiment still at its floor of figures.
 ## Prints "ARMY PROBE …" lines and "ARMY PROBE PASS" or "ARMY PROBE FAIL n"; quits with 0 or 1.
 
 const Data := preload("res://scripts/data.gd")
@@ -150,7 +150,7 @@ func _muster_forms_on_the_road() -> void:
 	var src := FileAccess.get_file_as_string("res://scripts/army.gd")
 	var body := src.substr(src.find("func _form_on_way("), 4000)
 	_check(body.contains("is_land") and body.contains("ways_main"), "it leaves by the town's main way whose stretch past the edge is dry land (g6: formed over the strait)")
-	_check(Data.num("army", "column.rank", 1.0) <= 0.15, "the column's ranks are closed up (column.rank %.3f)" % Data.num("army", "column.rank", 1.0))
+	_check(Data.num("formations", "templates.column.closed.rankLeast", 1.0) <= 0.15, "the column's ranks are closed up (formations.json column rankLeast %.3f)" % Data.num("formations", "templates.column.closed.rankLeast", 1.0))
 	# A regiment on the march is a block, ranks abreast (03-army: 6-10 men to a rank; pass g2's host5: 4 abreast strung
 	# a spearmen regiment 14 ranks down the road, and the horse at 0.5 between ranks): every kind's regiment of its
 	# full men lays out no deeper than it is wide, the horse's ranks closed up too.
@@ -163,7 +163,7 @@ func _muster_forms_on_the_road() -> void:
 		var r := {"figures": ArmyF.figures(int(row.get("men", 150))), "sf": float(sp.get("file", Data.num("army", "spacing.file", 0.12))),
 			"sr": float(sp.get("rank", Data.num("army", "spacing.rank", 0.15))), "role": String(row.get("role", "melee"))}
 		rng.seed = 7
-		var c: Dictionary = Form.layout(r, "column", null, rng)
+		var c: Dictionary = Form.layout(r, "column", rng)
 		_check(int(c["files"]) >= 6 and float(c["d"]) <= float(c["w"]) * 1.6, "a %s regiment marches as a block: %d abreast, %.2f deep for %.2f wide" % [k, int(c["files"]), float(c["d"]), float(c["w"])])
 	if not has:
 		return
@@ -758,13 +758,12 @@ const SEED := 3118  # the line's layout (its regiments' frontage)
 
 
 ## 8. The rout runs along a real line. The beaten side (1): three foot regiments abreast and archers a row behind,
-## each as army.gd lays a battle's regiment out (its width from field.frontage and its kind's spacing), army.gap
+## each as army.gd lays a battle's regiment out (its width from formations.json's template and its kind's spacing), army.gap
 ## between them; the victors (0) at sword's length. Steps of a slow frame (0.25 s); the end regiment is flanked.
 func _rout_runs_along_the_line() -> void:
 	var M: GDScript = load("res://scripts/army_morale.gd")
 	var ArmyS: GDScript = load("res://scripts/army.gd")
-	var deep: Array = Data.value("battle", "field.frontage", [10, 14])
-	var a: Object = ArmyS.new(Node.new(), 0, {"side": 1, "frontage": deep})
+	var a: Object = ArmyS.new(Node.new(), 0, {"side": 1})
 	(a.get("_rng") as RandomNumberGenerator).seed = SEED
 	var units: Dictionary = Data.value("army", "units", {})
 	var kind_of := func(role: String) -> String:
@@ -780,7 +779,7 @@ func _rout_runs_along_the_line() -> void:
 		var r := {"name": nm, "side": side, "men": 150, "figures": int(a.call("figures", 150)), "role": String(row.get("role", "melee")),
 			"sf": float(sp.get("file", Data.num("army", "spacing.file", 0.1))), "sr": float(sp.get("rank", Data.num("army", "spacing.rank", 0.12))),
 			"state_name": "fight"}
-		var l: Dictionary = (load("res://scripts/army_formation.gd") as GDScript).call("layout", r, "line", deep, a.get("_rng"))
+		var l: Dictionary = (load("res://scripts/army_formation.gd") as GDScript).call("layout", r, String((load("res://scripts/army_formation.gd") as GDScript).call("field_form", r["role"])), a.get("_rng"))
 		r["w"] = float(l["w"])
 		r["d"] = float(l["d"])
 		var n := Node3D.new()
@@ -1127,7 +1126,7 @@ func _figures_and_room() -> void:
 		var r := {"men": men, "figures": got, "role": String(row.get("role", "melee")),
 			"sf": float(sp.get("file", Data.num("army", "spacing.file", 0.1))), "sr": float(sp.get("rank", Data.num("army", "spacing.rank", 0.12)))}
 		for shape in ["line", "column"]:
-			var l: Dictionary = (load("res://scripts/army_formation.gd") as GDScript).call("layout", r, shape, null, a.get("_rng"))
+			var l: Dictionary = (load("res://scripts/army_formation.gd") as GDScript).call("layout", r, shape, a.get("_rng"))
 			var at: PackedVector3Array = l["at"]
 			var near := INF
 			for i in at.size():

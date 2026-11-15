@@ -116,8 +116,7 @@ func _ready() -> void:
 	_dist = lens_distance()
 	while main.terrain.width == 0 or not main.terrain.built or (main.awareness.rec("cities", []) as Array).is_empty():
 		await get_tree().create_timer(0.5).timeout
-	var deep: Array = Data.value(F, "field.frontage", [10, 14])
-	var crown: Army = Army.new(main, men, {"side": 0, "shape": "line", "frontage": deep})
+	var crown: Army = Army.new(main, men, {"side": 0, "shape": "line"})
 	add_child(crown)
 	if not crown.mustered:
 		await crown.raised
@@ -129,7 +128,7 @@ func _ready() -> void:
 	var face := crown.facing()
 	var fwd := Vector3(sin(face), 0, cos(face))
 	var house := _foe_house()
-	var foe: Army = Army.new(main, men, {"side": 1, "shape": "line", "frontage": deep, "field": crown.field() + fwd * gap, "face": face + PI,
+	var foe: Army = Army.new(main, men, {"side": 1, "shape": "line", "field": crown.field() + fwd * gap, "face": face + PI,
 		"colour": Heraldry.colour(house, Color(0.72, 0.12, 0.12)) if not house.is_empty() else Color(0.72, 0.12, 0.12), "house": house})
 	add_child(foe)
 	if not foe.mustered:
@@ -160,7 +159,7 @@ func _raise_in_play() -> void:
 		var face: float = play["face"] if i == 0 else (made[0] as Army).facing() + PI
 		var field: Vector3 = at if i == 0 else (made[0] as Army).field() - Vector3(sin(face), 0, cos(face)) * gap
 		var side: Army = Army.new(main, 0, {"side": i, "field": field, "face": face, "colour": colour, "house": house, "quiet": true,
-			"shape": "line", "frontage": Data.value(F, "field.frontage", [10, 14])})
+			"shape": "line"})
 		var specs: Array = []
 		var kinds: Array = (play["kinds"] as Array)[i]
 		for j in mini(kinds.size(), most):
