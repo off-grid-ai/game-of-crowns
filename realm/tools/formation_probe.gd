@@ -262,6 +262,7 @@ func _horse() -> void:
 		else:
 			counts[counts.size() - 1] += 1
 	_check(counts.size() > 2 and int(counts[0]) == 1 and int(counts[1]) > 1, "the horse's wedge has one rider at its point and wider ranks behind (%s)" % str(counts))
+	_check(float(w["d"]) <= float(w["w"]), "the horse's wedge stands no deeper than it is wide (%.2f by %.2f)" % [float(w["w"]), float(w["d"])])
 	var F: GDScript = load("res://scripts/army_field.gd")
 	var xf := Transform3D(Basis(Vector3.UP, 0.0), Vector3.ZERO)  # a block facing +z
 	for c in [[Vector3(0, 0, 5), "in front"], [Vector3(4, 0, 1), "on its right"], [Vector3(-4, 0, 0.5), "on its left"], [Vector3(0.5, 0, -5), "behind"]]:

@@ -26,7 +26,7 @@ static func field_form(role: String) -> String:
 ## and most columns, so a 150-man regiment stands 8-12 abreast and 4-5 deep in line and 6-8 abreast in column,
 ## whatever drawPerMan draws (the files were cut by drawPerMan's root before: 2-3 abreast, a column on the field).
 ## A rect stands rank behind rank (shiftRows: every other rank half a file aside); a triangle is a wedge, each rank
-## two wider than the one before. Each rank bows a little along its length and each man stands a little off his mark
+## `widen` wider than the one before, to its most columns (its ratio unused). Each rank bows a little along its length and each man stands a little off his mark
 ## (jitter.place times its sloppiness), so the ranks read as men, not a printed grid. A short last rank is centred.
 ## Its w and d are the ground its men stand on (a file and a rank round them): the regiment's claim (army.gd _claim).
 static func layout(r: Dictionary, form: String, rng: RandomNumberGenerator) -> Dictionary:
@@ -47,6 +47,8 @@ static func layout(r: Dictionary, form: String, rng: RandomNumberGenerator) -> D
 	var ratio := float(t.get("widthDepthRatio", 1.75))
 	var files := roundi(sqrt(count * ratio * sr / maxf(sf, 0.001)))
 	files = clampi(files, int(t.get("minColumns", 1)), int(t.get("maxColumns", 12)))
+	if String(t.get("shape", "rect")) == "triangle":
+		files = int(t.get("maxColumns", 12))  # a wedge widens rank by rank to its most
 	files = clampi(files, 1, maxi(count, 1))
 	var rows: Array = []  # men in each rank, front first
 	if String(t.get("shape", "rect")) == "triangle":
@@ -55,7 +57,7 @@ static func layout(r: Dictionary, form: String, rng: RandomNumberGenerator) -> D
 		while left > 0:
 			rows.append(mini(n, left))
 			left -= n
-			n = mini(n + 2, files)
+			n = mini(n + int(t.get("widen", 2)), files)
 	else:
 		for k in int(ceil(float(count) / files)):
 			rows.append(mini(files, count - k * files))
