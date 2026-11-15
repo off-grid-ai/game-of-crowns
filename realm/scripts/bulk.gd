@@ -46,8 +46,9 @@ static func _add_one(mesh: Mesh, place: Transform3D, owner: Variant, begin: floa
 	_where[h] = [key, i, owner]
 	if not _owned.has(owner):
 		_owned[owner] = {}
-		if owner is Node:  # a node owner takes its copies with it when it leaves the tree
-			(owner as Node).tree_exiting.connect(remove_owner.bind(owner), CONNECT_ONE_SHOT)
+		var gone := remove_owner.bind(owner)
+		if owner is Node and not (owner as Node).tree_exiting.is_connected(gone):  # a node owner takes its copies with it when it leaves the tree (once, though its copies may all go and come back)
+			(owner as Node).tree_exiting.connect(gone, CONNECT_ONE_SHOT)
 	_owned[owner][h] = true
 	return h
 
