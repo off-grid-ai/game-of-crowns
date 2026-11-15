@@ -1108,6 +1108,7 @@ static func _smoke_material() -> StandardMaterial3D:
 	m.roughness = 1.0
 	m.proximity_fade_enabled = true
 	m.proximity_fade_distance = 0.15
+	preload("res://scripts/particles.gd").near_fade(m)  # thin at the lens, never filling the view
 	_cache["smoke"] = m
 	return m
 

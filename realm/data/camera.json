@@ -43,7 +43,7 @@
   "fade": { "gone": 0.5, "solid": 1.0 },
   "frame": {"_": "The film's width over its height (camera_rig.town_view frames a town for it).", "aspect": 1.74},
   "smoke": {
-   "_": "Chimney smoke near the lens fades out (hearths.gd; the smoke material's distance fade): gone nearer than 'gone', whole from 'solid', in game units from the lens (batch 9: smoke drifting across the near houses at d6).",
+   "_": "Smoke, dust and sparks near the lens fade out (particles.gd near_fade: every effect's material, the hearths' and fire's smoke too; Godot's distance fade): gone nearer than 'gone', whole from 'solid', in game units from the lens (batch 9: smoke drifting across the near houses at d6).",
    "gone": 2.0,
    "solid": 3.5
   },
