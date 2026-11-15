@@ -153,6 +153,12 @@ func verbs(entry: Dictionary) -> Array:
 			entry["city"] = act["city"]
 	var c: Dictionary = main.awareness.city(int(entry["city"])) if entry.get("city") != null else {}
 	var now := _now(c)
+	# Fresh news of a foe at a town of the realm is a threat there, whoever's riders they are (a rival king's raiders
+	# over the border, rivals.js, aren't Freeciv's raids the mirror sees): Defend and the levy answer it.
+	var turn := int(main.awareness.rec("turn", 0))
+	if kind in (Data.value(FILE, "threat_kinds", []) as Array) and not c.is_empty() and _realm_town(c, int(main.awareness.rec("crownId", -1))) and turn - int(entry.get("turn", turn)) <= int(Data.num(FILE, "fresh_seasons", 1.0)):
+		now["threat"] = true
+		now["war"] = true
 	var stated := []
 	if not kind in (Data.value(FILE, "no_state", []) as Array):
 		for s in Data.value(FILE, "states", []):

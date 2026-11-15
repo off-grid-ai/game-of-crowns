@@ -1,21 +1,25 @@
 [signal arg="spot:none"]
-Your Grace, I am your Hand. The realm waits while I show you how it answers to you.
+Your Grace, I am your Hand. Let me show you how the realm answers to you.
 - I know the realm
 	[end_timeline]
 - Show me
-[signal arg="spot:chronicle"]
-This is your chronicle. Only what needs you stands here, the gravest first.
-One new matter at a time, never more than one each minute and a half. The rest is written in the book of the reign.
-Every matter has its answers. The one on the right is the one I would give, and Enter gives it.
-Go there takes you to the place. Home brings you back.
-[signal arg="spot:armies"]
-These are your hosts. Click one, then right-click the ground, and it marches there.
-Press A and click, and it falls on any foe it meets on the road.
+[signal arg="do:select"]
+This is your host. Click it.
+[signal arg="do:march"]
+Now right-click open ground. Your host marches there.
+[signal arg="spot:none"]
+Well done. Press A before you click, and it falls on any foe it meets on the road.
+[signal arg="do:houses"]
+These are the great houses. Open them.
 [signal arg="spot:houses"]
-The great houses. Swear one to you and its men fight your wars. A gift or a feast warms a cold lord.
+Swear a house to you and its men fight your wars. A gift or a feast warms a cold lord.
 War takes their towns one by one, their seat last. Every house remembers what you do to one of them.
+[signal arg="spot:chronicle"]
+This is your chronicle. Only what needs you stands here, the gravest first, one new matter at a time.
+[signal arg="do:answer"]
+Here is a matter for you. The answer on the right is the one I would give. Choose one.
 [signal arg="spot:pause"]
-Pause whenever you need to think. The realm stops, and your orders still go out.
+Pause whenever you need to think. Your orders still go out.
 [signal arg="spot:none"]
 Nothing guards a town but its own men and your hosts. When raiders come, answer, or it burns.
-The realm is yours, Your Grace.
+The realm is yours, Your Grace. Press the question mark above whenever you want me again.

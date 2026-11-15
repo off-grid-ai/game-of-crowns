@@ -5,8 +5,10 @@ extends Node
 ## each lesson once, at the moment it matters, and Civ's and Anno's help key brings the tour back any time (the top
 ## bar's ?, F1). The lessons, their moments and order are data (realm/data/opening.json tour), their words Dialogic
 ## timelines (realm/data/tour/*.dtl). This decides when a moment has come, holds the realm still while the Hand
-## speaks, and rings the part of the screen he speaks of (a timeline's [signal arg="spot:<part>"]). It decides nothing
-## about the realm itself.
+## speaks, and rings the part of the screen he speaks of (a timeline's [signal arg="spot:<part>"]). A guided step
+## ([signal arg="do:<task>"], Mac: "it's not panning the camera, it's not waiting for me", "it's accepting clicks other
+## than what the tour should allow"; Civ VI's and Anno's tutorial veil) takes the camera there, dims the screen, lets a
+## click through only on the thing to do, and goes on when he has done it. It decides nothing about the realm itself.
 
 const Data := preload("res://scripts/data.gd")  # the one loader of realm/data (data.gd)
 const T := preload("res://scripts/theme.gd")
@@ -24,6 +26,38 @@ var _landed := false
 var _turning_seen := {}  # player id -> their turning when the King landed: a house turning since is news
 var _spot := "none"  # the part of the screen the Hand speaks of
 var _ring: Panel  # the ring round it
+var _veil: Veil  # the dim over the screen while he speaks, with a hole on what to do
+var _layer: CanvasLayer  # the tour's own layer over the interface: the veil, the ring, the Hand's words
+var _want := ""  # the task a guided step waits for (select, march, houses, answer), or ""
+var _card: Control  # the card the answer step points at
+var _host := -1  # the host the select step points at
+
+
+## The dim over the screen with a hole on the part spoken of; a click passes only through the hole, and only on a
+## guided step (pass_hole). Its own words are none: the Hand says them.
+class Veil extends Control:
+	var hole := Rect2()
+	var pass_hole := false
+	var open := false  # the whole realm is his to click (march: anywhere on the land)
+
+	func _has_point(p: Vector2) -> bool:
+		if open:
+			return false
+		return not (pass_hole and hole.has_area() and hole.has_point(p))
+
+	func _draw() -> void:
+		if open:
+			return
+		var dim := Color(0, 0, 0, 0.45)
+		var r := get_rect()
+		if not hole.has_area():
+			draw_rect(r, dim)
+			return
+		var h := hole.intersection(r)
+		draw_rect(Rect2(0, 0, r.size.x, h.position.y), dim)
+		draw_rect(Rect2(0, h.end.y, r.size.x, r.size.y - h.end.y), dim)
+		draw_rect(Rect2(0, h.position.y, h.position.x, h.size.y), dim)
+		draw_rect(Rect2(h.end.x, h.position.y, r.size.x - h.end.x, h.size.y), dim)
 
 
 func _init(owner: Node) -> void:
@@ -46,6 +80,15 @@ func _ready() -> void:
 		ui.counsel_answered.connect(func(_k): _moment("first_ruling"))
 		ui.chronicle_asked.connect(func(_e, urgent: bool): _moment("first_threat" if urgent else "first_card"))
 		ui.tour_asked.connect(func(): _tell("welcome"))
+		_layer = CanvasLayer.new()
+		_layer.layer = 20  # over the interface (its layer 1) and under the loading cover (128)
+		_layer.process_mode = Node.PROCESS_MODE_ALWAYS
+		_layer.visible = false
+		add_child(_layer)
+		_veil = Veil.new()
+		_veil.set_anchors_preset(Control.PRESET_FULL_RECT)
+		_veil.mouse_filter = Control.MOUSE_FILTER_STOP
+		_layer.add_child(_veil)
 		_ring = Panel.new()
 		var box := StyleBoxFlat.new()
 		box.bg_color = Color(0, 0, 0, 0)
@@ -55,8 +98,10 @@ func _ready() -> void:
 		_ring.add_theme_stylebox_override("panel", box)
 		_ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_ring.visible = false
-		_ring.z_index = 100
-		ui.add_child(_ring)
+		_layer.add_child(_ring)
+		var hc: Node = main.get_node_or_null("HostCommand")
+		if hc:
+			hc.ordered.connect(func(_k): if _want == "march": _did())
 	var dlg := get_node_or_null("/root/Dialogic")
 	if dlg:
 		dlg.process_mode = Node.PROCESS_MODE_ALWAYS
@@ -121,6 +166,10 @@ func _tell(id: String) -> void:
 	if _held_it:
 		main.ui.top_bar._toggle_pause()
 	main.ui.tour_up = true
+	_layer.visible = true
+	_spot = "none"
+	if not dlg.Styles.has_active_layout_node():
+		dlg.Styles.load_style("", _layer)  # the Hand's words in the tour's layer, over the veil
 	var layout: Node = dlg.start(timeline)
 	if layout:
 		layout.process_mode = Node.PROCESS_MODE_ALWAYS
@@ -138,6 +187,9 @@ func _told() -> void:
 		return
 	_telling = ""
 	_spot = "none"
+	_want = ""
+	_layer.visible = false
+	_advance(true)
 	main.ui.tour_up = false
 	if _held_it and main.ui.paused:
 		main.ui.top_bar._toggle_pause()
@@ -147,6 +199,9 @@ func _told() -> void:
 ## A timeline's word to the screen: spot:<part> rings that part (and opens the chronicle when he speaks of it).
 func _on_signal(arg: Variant) -> void:
 	var said := String(arg)
+	if said.begins_with("do:"):
+		_guide(said.substr(3))
+		return
 	if not said.begins_with("spot:"):
 		return
 	_spot = said.substr(5)
@@ -162,7 +217,7 @@ func _target() -> Control:
 		"chronicle":
 			return ui._chron_panel
 		"card":
-			var c: Control = ui.chronicle.top_card()
+			var c: Control = _card if is_instance_valid(_card) else ui.chronicle.top_card()
 			return c if c != null else ui._chron_panel
 		"armies":
 			return ui._army_panel
@@ -178,12 +233,109 @@ func _target() -> Control:
 
 
 func _place_ring() -> void:
-	if _ring == null:
+	if _ring == null or _telling == "":
 		return
-	var t := _target() if _telling != "" else null
-	_ring.visible = t != null and is_instance_valid(t) and t.is_visible_in_tree()
+	var rect := Rect2()
+	if _spot == "host" and _host >= 0:
+		var cam := get_viewport().get_camera_3d()
+		var hc: Node = main.get_node_or_null("HostCommand")
+		if cam and hc:
+			var at: Vector3 = hc.ground_of(_host)
+			if at != Vector3.INF and not cam.is_position_behind(at):
+				var half := float(Data.value("opening", "tour_host_hole", 90.0))
+				rect = Rect2(cam.unproject_position(at + Vector3(0, 1.0, 0)) - Vector2(half, half), Vector2(half, half) * 2.0)
+	else:
+		var t := _target()
+		if t != null and is_instance_valid(t) and t.is_visible_in_tree():
+			rect = t.get_global_rect().grow(6.0)
+	_ring.visible = rect.has_area()
 	if _ring.visible:
-		var pad := 6.0
-		var r := t.get_global_rect()
-		_ring.position = r.position - Vector2(pad, pad)
-		_ring.size = r.size + Vector2(pad, pad) * 2.0
+		_ring.position = rect.position
+		_ring.size = rect.size
+	_veil.hole = rect
+	_veil.pass_hole = _want != ""
+	_veil.open = _want == "march"
+	_veil.queue_redraw()
+	if _want != "" and _done():
+		_did()
+
+
+## A guided step: the camera to the thing, the veil's hole on it, the Hand's click to go on held until it is done.
+## A step with nothing to do it on (no host, no card) passes at once.
+func _guide(task: String) -> void:
+	var ui = main.ui
+	_want = task
+	match task:
+		"select":
+			_host = _nearest_host()
+			if _host < 0:
+				_want = ""
+				return
+			_spot = "host"
+			var hc: Node = main.get_node_or_null("HostCommand")
+			main.rig.focus(hc.ground_of(_host))
+		"march":
+			_spot = "none"
+		"houses":
+			_spot = "houses"
+		"answer":
+			_card = ui.chronicle.top_card()
+			if _card == null:
+				_want = ""
+				return
+			_spot = "card"
+			ui.top_bar._chron_btn.button_pressed = true
+			ui._chron_panel.visible = true
+			ui.chronicle.go(_card.get_meta("entry", {}))
+	# He does it in the living realm: the realm goes on while he acts, and his click no longer turns the page.
+	if _want != "" and ui.paused:
+		ui.top_bar._toggle_pause()
+		_held_it = false
+	_advance(_want == "")
+
+
+## Whether the task the step waits for is done.
+func _done() -> bool:
+	var hc: Node = main.get_node_or_null("HostCommand")
+	match _want:
+		"select":
+			return hc != null and int(hc.selected) >= 0
+		"houses":
+			return main.ui._houses_panel.visible
+		"answer":
+			return not is_instance_valid(_card)
+	return false
+
+
+func _did() -> void:
+	_want = ""
+	_advance(true)
+	var dlg := get_node_or_null("/root/Dialogic")
+	if dlg and _telling != "":
+		dlg.handle_next_event()
+
+
+## The Hand's own click to go on: on for his words, off while a guided step waits for the deed.
+func _advance(on: bool) -> void:
+	var dlg := get_node_or_null("/root/Dialogic")
+	if dlg and dlg.get("Inputs") and dlg.Inputs.manual_advance:
+		dlg.Inputs.manual_advance.system_enabled = on
+
+
+## The King's host nearest the camera, or -1.
+func _nearest_host() -> int:
+	var hc: Node = main.get_node_or_null("HostCommand")
+	if hc == null:
+		return -1
+	var best := -1
+	var near := INF
+	var eye: Vector3 = main.rig.goal_target if main.rig.get("goal_target") != null else Vector3.ZERO
+	for h in main.awareness.hosts():
+		var at: Vector3 = hc.ground_of(int(h["id"]))
+		if at == Vector3.INF:
+			continue
+		var d := at.distance_to(eye)
+		if d < near:
+			near = d
+			best = int(h["id"])
+	return best

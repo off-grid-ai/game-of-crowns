@@ -31,6 +31,7 @@ const Terrain := preload("res://scripts/terrain.gd")  # its GROUND_LAYER: the ri
 const TeamColour := preload("res://scripts/team_colour.gd")  # the ring in the crown's own colour, as its men wear it
 const FILE := "host_command"
 
+signal ordered(kind: String)  # an order given (the one way, order()): the Hand's tour waits for it (hand_prompts.gd)
 signal selection_changed  # a host selected, added, taken out or let go: the armies bar reads it again (army_bar.gd)
 
 var main: Node
@@ -138,6 +139,11 @@ func _banner(h: Dictionary) -> Node3D:
 
 
 ## Where a host stands on the ground: under its banner as it marches, else its lead company, else its tile.
+## Where a host stands in the world (its banner, its lead man, else its tile).
+func ground_of(id: int) -> Vector3:
+	return _ground(host(id))
+
+
 func _ground(h: Dictionary) -> Vector3:
 	var at := Vector3.INF
 	var b := _banner(h)
@@ -663,6 +669,7 @@ func order(kind: String, at := {}, done := Callable()) -> bool:
 			body[k] = int(at[k])
 	if at.has("face"):
 		body["face"] = at["face"]
+	ordered.emit(kind)
 	main.barks.host("order", selected)  # its captain answers at once, as Warcraft III's do (barks.gd)
 	_ask(body, done)
 	_routes()

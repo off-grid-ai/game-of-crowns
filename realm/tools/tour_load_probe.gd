@@ -3,6 +3,7 @@ extends SceneTree
 ## spot signals naming parts hand_prompts.gd knows. PASS/FAIL. Run: godot --headless --path realm -s res://tools/tour_load_probe.gd
 
 const PARTS := ["chronicle", "card", "armies", "houses", "pause", "court", "top", "none"]
+const TASKS := ["select", "march", "houses", "answer"]
 
 
 func _init() -> void:
@@ -21,7 +22,8 @@ func _init() -> void:
 			n += 1
 			if e.get_class() != "" and e.has_method("get_shortcode") and e.get_shortcode() == "signal":
 				var arg := String(e.argument)
-				if not arg.begins_with("spot:") or not arg.substr(5) in PARTS:
+				var ok := arg.begins_with("spot:") and arg.substr(5) in PARTS or arg.begins_with("do:") and arg.substr(3) in TASKS
+				if not ok:
 					fails.append("%s: unknown signal %s" % [path, arg])
 		print("TOUR %s: %d events" % [l["id"], n])
 		if n == 0:

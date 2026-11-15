@@ -1,4 +1,2 @@
-[signal arg="spot:card"]
-Your first matter, Your Grace. Read it, then choose.
-Each answer shows its price. Rest on it and I will tell you what follows.
-Leave it, and in a season it passes, and the realm decides without you.
+[signal arg="do:answer"]
+Your first matter, Your Grace. Rest on an answer and I will tell you what follows. Then choose one.
