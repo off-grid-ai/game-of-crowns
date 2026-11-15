@@ -327,7 +327,7 @@ func _process_timed(delta: float) -> void:
 		flat.y = 0
 		speed = lerpf(speed, flat.length() / delta, minf(1.0, delta * 4.0))
 	_last = global_position
-	if _down:
+	if _down or _anim == null:  # a kept town's horse before its body is put on (towns.gd): nothing to play yet
 		return
 	var g := _gait_for(speed / READ)  # its gaits by its own size: a horse drawn larger walks faster over the ground
 	gait = String(GAITS[g][0])
