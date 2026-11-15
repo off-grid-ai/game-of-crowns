@@ -161,9 +161,9 @@ func take_click(ground: Vector3) -> bool:
 		_set_aim("")
 		var foe := _pressed_foe
 		if kind == "attack" and foe.is_empty():
-			# Attack, then open ground: the host marches there (Warcraft III's attack-move asks the bridge for an order that
-			# falls on any foe met on the road; bridge hosts.js attack only takes the foe's men on a tile, so a march).
-			kind = "march"
+			# Attack, then open ground: Warcraft III's attack-move. The host advances there and falls on any foe it meets
+			# on the road, then marches on (bridge hosts.js advance).
+			kind = "advance"
 		order(kind, {"ground": _foe_at(foe, ground) if kind == "attack" else ground})
 		return true
 	var got := _pressed
@@ -441,8 +441,8 @@ func _hover_read(screen: Vector2) -> void:
 		return
 	var picked := HostPick.pick(get_viewport().get_camera_3d(), screen, Data.num(FILE, "foe_px", 40.0), _is_foe)
 	var smart := _intent(picked, g)
-	if _aim != "":  # an order waiting for its place: the click is that order's (an attack on open ground marches)
-		var kind := ("march" if picked.is_empty() else "attack") if _aim == "attack" else _aim
+	if _aim != "":  # an order waiting for its place: the click is that order's (an attack on open ground advances)
+		var kind := ("advance" if picked.is_empty() else "attack") if _aim == "attack" else _aim
 		var town_words := String(smart[2]) if String(smart[0]) in ["relieve", "besiege"] else ""
 		smart = [kind, g, String(smart[2]) if kind == "attack" else (town_words if kind != "march" else "")]
 	_show_hover([String(smart[0]), String(smart[2])], screen)
