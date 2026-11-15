@@ -108,6 +108,17 @@ const CHOICES = {
   trust: ["loyal", "wary", "resentful"], host: ["small", "standard", "strong"], petitions: ["rare", "normal", "often"], intrigue: ["quiet", "normal", "scheming"],
   language: ["en", "de", "es", "fr", "it", "pt", "hi"],
 };
+// What kind of king you'd be (data/king_types.json; title.gd's first page): each type steps some of the reign's own
+// choices one place up or down their ladder, after the player's other choices (stepKing), and sets the first King's
+// traits and focus (royals.js crown, at routes_realm.js createChronicle).
+export const KING_TYPES = JSON.parse(fs.readFileSync(new URL("./data/king_types.json", import.meta.url), "utf8"));
+const LADDERS = { host: CHOICES.host, trust: ["resentful", "wary", "loyal"], petitions: CHOICES.petitions, wealth: ["poor", "comfortable", "rich"] };
+function stepKing(opt, wealth) {
+  const steps = KING_TYPES.types[opt.kingType]?.steps ?? {};
+  const step = (ladder, v, by) => ladder[Math.max(0, Math.min(ladder.length - 1, Math.max(0, ladder.indexOf(v)) + Math.round(Number(by) || 0)))];
+  for (const [k, by] of Object.entries(steps)) if (k !== "wealth" && LADDERS[k]) opt[k] = step(LADDERS[k], opt[k], by);
+  return steps.wealth ? step(LADDERS.wealth, wealth, steps.wealth) : wealth;
+}
 export const HOUSE_NATIONS = { Wolfholt: "scottish", Goldcrest: "english", Ironreach: "norwegian", Thornvale: "french", Stormhold: "welsh", Sunspire: "castilian", Highfell: "irish" };
 
 // The old single "fate" choice still works: it presets the new ones.
@@ -126,6 +137,7 @@ export function cleanOptions(o = {}, fate) {
   if (o?.events !== undefined) out.events = Boolean(o.events);  // event cards (events.js); unset, the reign follows data/events.json
   if (o?.oneAtATime !== undefined) out.oneAtATime = Boolean(o.oneAtATime);  // one court matter at a time (court.js); unset, data/court.json one.on
   if (o?.opening === "v2") out.opening = "v2";  // the v2 opening (court.js: the first court waits for the King in his realm)
+  out.kingType = typeof o?.kingType === "string" && o.kingType !== "_" && o.kingType in KING_TYPES.types ? o.kingType : null;  // data/king_types.json
   out.skip = (Array.isArray(o?.skip) ? o.skip : []).filter((h) => h in HOUSE_NATIONS).slice(0, 5);
   return out;
 }
@@ -196,6 +208,7 @@ export function create({ name, scenario = "aldmere", minutes = 0, pace, fate = "
   const p = paths(id);
   const opt = cleanOptions({ pace, ...options }, fate);
   pace = opt.pace;
+  wealth = stepKing(opt, wealth);  // what kind of king: a step along host, trust, petitions or the purse (KING_TYPES)
   if (scenario === "aldmere" && fs.existsSync(path.join(BASELINE, "saves"))) {
     fs.mkdirSync(p.base, { recursive: true });
     const base = fromBaseline(p);

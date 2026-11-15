@@ -21,7 +21,7 @@ import * as chron from "./chronicles.js";
 import { OPENING } from "./court.js";
 import * as names from "./names.js";
 import * as rewrites from "./written.js";
-import { heir as royalHeir } from "./royals.js";
+import { heir as royalHeir, crown as crownKing } from "./royals.js";
 import { body, json } from "./http_util.js";
 
 export async function world(ctx, req, res, url) {
@@ -69,7 +69,9 @@ export async function scenarios(ctx, req, res, url) {
 }
 
 export async function chronicleOptions(ctx, req, res, url) {
-  return json(res, 200, { defaults: chron.OPTION_DEFAULTS, houses: Object.keys(chron.HOUSE_NATIONS) });
+  // What kind of king you'd be (data/king_types.json), in its order, for the new chronicle's first page.
+  const kingTypes = chron.KING_TYPES.order.filter((id) => chron.KING_TYPES.types[id]).map((id) => ({ id, ...chron.KING_TYPES.types[id] }));
+  return json(res, 200, { defaults: chron.OPTION_DEFAULTS, houses: Object.keys(chron.HOUSE_NATIONS), kingTypes });
 }
 
 export async function listChronicles(ctx, req, res, url) {
@@ -85,6 +87,11 @@ export async function createChronicle(ctx, req, res, url) {
   // A real reign deals its minor folk fresh names; test, film and check reigns keep the baseline's, so proofs repeat.
   if (!/test|film|check|proof/i.test(m.name)) try { rewrites.freshMinorNames(chron.paths(m.id).base, JSON.parse(fs.readFileSync(path.join(path.dirname(new URL(import.meta.url).pathname), "data", "first-names.json"), "utf8"))); } catch (e) { console.log("fresh names:", e.message); }
   try { rewrites.distinctNames(chron.paths(m.id).base, JSON.parse(fs.readFileSync(path.join(path.dirname(new URL(import.meta.url).pathname), "data", "first-names.json"), "utf8"))); } catch (e) { console.log("names:", e.message); }  // no two living share a first name
+  // The first King as the player made him: his type's traits and focus, and who he is (royals.js crown; title.gd's first pages).
+  if (m.options.kingType || (b.options?.king && typeof b.options.king === "object")) {
+    crownKing(m, chron.KING_TYPES.types[m.options.kingType] ?? null, b.options?.king ?? {});
+    chron.saveMeta(m);
+  }
   switchTo(m.id);
   return json(res, 200, m);
 }

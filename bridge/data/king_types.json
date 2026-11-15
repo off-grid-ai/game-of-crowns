@@ -1,0 +1,42 @@
+{
+ "_": "What kind of king you'd be, the first choice of a new chronicle (title.gd show_new; Crusader Kings 3's ruler designer, Total War's faction pick). Each type sets the starting King's two traits (characters.js TRAITS: what rulings weigh on him, royals.json stress.against) and his focus (royals.json focus.choices: which cards come more often, what weighs on him), and steps the reign's own choices up or down one place along their ladder (chronicles.js create, after the player's other choices): host (small, standard, strong: the royal host he is crowned with), trust (resentful, wary, loyal: the houses' faith in the crown), wealth (poor, comfortable, rich: his purse), petitions (rare, normal, often: lords at court each season). Card words: name, line (what kind of reign), gives (what it changes, in play). art: the painted still on its card (realm/assets).",
+ "order": ["warlord", "peacemaker", "schemer", "builder"],
+ "types": {
+  "warlord": {
+   "name": "Warlord",
+   "line": "You rule from the saddle. The realm is held by the sword, and you mean to use it.",
+   "gives": "A bigger host at your crowning, a thinner purse. Brave and quick to anger; paying for peace weighs on you.",
+   "art": "res://assets/intro/art/battle.jpg",
+   "traits": ["brave", "wrathful"],
+   "focus": "war",
+   "steps": { "host": 1, "wealth": -1 }
+  },
+  "peacemaker": {
+   "name": "Peacemaker",
+   "line": "You'd rather the lords kneel than bleed. Justice first, the sword last.",
+   "gives": "The houses trust you more, your host starts smaller. Just and honourable; cruelty weighs on you.",
+   "art": "res://assets/intro/art/hall.jpg",
+   "traits": ["just", "honourable"],
+   "focus": "faith",
+   "steps": { "trust": 1, "host": -1 }
+  },
+  "schemer": {
+   "name": "Schemer",
+   "line": "A quiet word on the walls, a match made, a rival undone. You play the lords against each other.",
+   "gives": "More lords come to court each season, and the houses trust you less. Cunning and ambitious.",
+   "art": "res://assets/intro/art/tip_meet.jpg",
+   "traits": ["cunning", "ambitious"],
+   "focus": "court",
+   "steps": { "petitions": 1, "trust": -1 }
+  },
+  "builder": {
+   "name": "Builder",
+   "line": "Roads, markets, full granaries. You'll be remembered for what stands when you're gone.",
+   "gives": "A richer purse at your crowning, a smaller host. Patient and content; gold thrown away weighs on you.",
+   "art": "res://assets/intro/art/street.jpg",
+   "traits": ["patient", "content"],
+   "focus": "coin",
+   "steps": { "wealth": 1, "host": -1 }
+  }
+ }
+}

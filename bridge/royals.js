@@ -199,6 +199,47 @@ export function rewrite(ctx, spec) {
   return { ok: true, royal: { id: p.id, name: p.name, age: p.age, woman: p.woman, traits: p.traits, story: p.story ?? null } };
 }
 
+// The first King as the player made him for a new chronicle (title.gd: what kind of king, then who you are; routes_realm.js
+// createChronicle): the type's two traits and focus (data/king_types.json), and the name, age and sex the player gave. The
+// household keeps its shape: the consort and children age with him, a consort of the other sex, and a royal who had the
+// name he took is given another. named: the reign's first question (royal_sheet.gd who are you) has been answered.
+export function crown(meta, type, spec = {}) {
+  const h = of(meta), k = h.king;
+  if (type) {
+    const t = (type.traits ?? []).filter((x) => TRAITS.includes(x)).slice(0, 2);
+    if (t.length) k.traits = t;
+    if (R.focus.choices[type.focus] && type.focus !== "_") k.focus = type.focus;
+  }
+  if (!spec || typeof spec !== "object") return k;
+  const family = [h.consort, ...h.children, ...(h.kin ?? [])].filter(Boolean);
+  if (spec.age != null && Number.isFinite(Number(spec.age))) {
+    const to = Math.max(R.edit.age[0], Math.min(R.edit.age[1], Math.round(Number(spec.age))));
+    const d = to - k.age;
+    k.age = to;
+    for (const p of [h.consort, ...h.children]) if (p) p.age = Math.max(0, p.age + d);
+  }
+  if (spec.gender === "female" || spec.gender === "male") {
+    k.woman = spec.gender === "female";
+    if (h.consort && h.consort.woman === k.woman) {
+      h.consort.woman = !k.woman;
+      h.consort.name = freeName(h, !k.woman ? NAMES.female : NAMES.male, h.consort.name);
+    }
+  }
+  const name = String(spec.name ?? "").trim().replace(/\s+/g, " ").replace(/[^\p{L}' -]/gu, "").slice(0, 24);
+  if (name) {
+    k.name = name;
+    for (const p of family) if (p.alive !== false && p.name === name) p.name = freeName(h, p.woman ? NAMES.female : NAMES.male, p.name);
+  }
+  k.named = true;
+  return k;
+}
+
+// A first name from the pool that no living royal has (the one given back if none is free).
+function freeName(h, pool, was) {
+  const taken = new Set([h.king, h.consort, ...h.children, ...(h.kin ?? [])].filter((p) => p?.alive !== false).map((p) => p?.name));
+  return pool.find((n) => !taken.has(n)) ?? was;
+}
+
 // What a court answer goes against, before it is chosen (court.js docket, for the court panel's tags): the focuses
 // whose against list holds kind.option (data/royals.json focus), the King's own traits it goes against (stress.against),
 // and the great houses it cools (its favour). {focus: [ids], traits: [names], houses: [names]}.
@@ -297,7 +338,7 @@ export function view(meta, turn = 0) {
   if (!h) return null;
   // The King's stress, and the seasons until he may next rest at all (Loop's sheet: 0 when one is ready).
   const wait = Math.min(...Object.entries(R.rest).filter(([k]) => k !== "_").map(([k, v]) => h.rested?.[k] == null ? 0 : Math.max(0, v.seasons - (turn - h.rested[k]))));
-  const who = (p) => p && { id: p.id, name: p.name, age: p.age, woman: p.woman, traits: p.traits ?? [], story: p.story ?? null, ...(p === h.king ? { stress: p.stress ?? 0, restWait: wait, focus: p.focus ?? null } : {}) };
+  const who = (p) => p && { id: p.id, name: p.name, age: p.age, woman: p.woman, traits: p.traits ?? [], story: p.story ?? null, ...(p === h.king ? { stress: p.stress ?? 0, restWait: wait, focus: p.focus ?? null, named: Boolean(p.named) } : {}) };
   const next = heir(h);
   return {
     king: who(h.king), consort: h.consort?.alive ? who(h.consort) : null, heir: who(next), match: next?.spouse ? { name: next.spouse.name, house: next.spouse.house } : null,
