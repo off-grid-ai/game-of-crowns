@@ -37,6 +37,7 @@ const ACTIONS := [
 	["back", "Close, step back", "The realm", [KEY_ESCAPE]],
 	# The command card's cells, left to right (host_command.gd; Warcraft III's grid keys).
 	["next_host", "Find the King's host (again: the next)", "The King's hosts", [KEY_F1, KEY_COMMA]],  # F1 as Warcraft III's hero key
+	["host_all", "Select all the King's hosts", "The King's hosts", [KEY_F2]],  # StarCraft II's select-army key, beside F1
 	["host_march", "March the selected host", "The King's hosts", [KEY_T]],
 	["host_attack", "Attack a foe's host", "The King's hosts", [KEY_V]],
 	["host_besiege", "Besiege a foe's town", "The King's hosts", [KEY_N]],
@@ -44,6 +45,7 @@ const ACTIONS := [
 	["host_garrison", "Garrison a town", "The King's hosts", [KEY_U]],
 	["host_return", "Go home to the King's seat", "The King's hosts", [KEY_I]],
 	["host_split", "Split the host in two", "The King's hosts", [KEY_O]],
+	["defend", "Defend the town under attack (the latest news of a foe's host)", "The King's hosts", [KEY_PERIOD]],  # news_actions.gd; beside comma, the next host
 	["walk_forward", "Walk forward", "Walking and fighting", [KEY_W, KEY_UP]],
 	["walk_back", "Walk back", "Walking and fighting", [KEY_S, KEY_DOWN]],
 	["walk_left", "Walk left", "Walking and fighting", [KEY_A, KEY_LEFT]],

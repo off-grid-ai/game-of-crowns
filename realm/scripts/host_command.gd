@@ -5,7 +5,10 @@ extends Node3D
 ## left to right); right-click on the ground or a town marches. From Total War's campaign map: an army is
 ## one thing, its banner glows when selected, and where it is ordered shows as a dotted route on the map.
 ##   click a host's standard   select it (the ring and the glow); click the land elsewhere to let it go;
-##                             shift-click another to add it (or take it out): every order goes to them all
+##                             shift- or Cmd-click another to add it (or take it out): every order goes to them all
+##   Cmd-drag on the land      a box: every one of the King's hosts whose standard is inside is selected (Shift with
+##                             it adds them to those already selected). A plain left-drag still moves the view.
+##   double-click a standard   every one of the King's hosts on screen; F2 (host_all) every one of them in the realm
 ##   click one of its regiments select its host, that regiment marked (army.gd's regiments, Total War)
 ##   March / Attack / Besiege / Garrison   then click where (the ground, a foe's host, a town); right-click or Esc
 ##                             lets it go
@@ -30,7 +33,7 @@ const FILE := "host_command"
 
 var main: Node
 var selected := -1  # the selected host's id (bridge/hosts.js: its lowest company's id), or -1
-var also: Array[int] = []  # hosts shift-clicked in beside it: each takes the same orders (Warcraft III's group)
+var also: Array[int] = []  # hosts shift- or Cmd-clicked or boxed in beside it: each takes the same orders (Warcraft III's group)
 var _also_rings := {}  # id -> its ring
 var _aim := ""  # an order waiting for the King to click where (its row's aim: march, attack, besiege, garrison)
 var _card: PanelContainer
@@ -49,6 +52,19 @@ var _right_at := Vector2.INF  # where a right-click went down while a host is se
 var _facing := false  # the right button is drawing the line the host will form on
 var _ghosts: MultiMeshInstance3D  # a mark per company along that line
 var _t := 0.0
+var _box_from := Vector2.INF  # where a Cmd- or Shift-press went down on the land: a drag from here is a selection box
+var _box_to := Vector2.INF
+var _boxing := false  # the drag went far enough to be a box, not a click
+var _box_add := false  # Shift was held: the box adds to those selected
+var _boxed := false  # the box was let go: the camera's click on its release is not a click on the land
+var _eat_release := false  # a double-click on a standard took its press: its release is no click either
+var _press_add := false  # the press under the coming click held Shift or Cmd: add or take out, not select anew
+var _overlay: Control  # the box and the word by the pointer, over the world
+var _word: Label  # what a right-click will do here, by the pointer (Warcraft III's cursor; words, not a colour)
+var _hint: Label  # the card's line: what a right-click will do right now
+var _hover := []  # [kind, words] of a right-click where the pointer is, or []
+var _hover_px := Vector2.INF  # where it was last read
+var _pending := {}  # host id -> {to, kind, ms}: an order given, drawn at once until /world shows it (or it is refused)
 
 
 static func on() -> bool:
@@ -81,6 +97,7 @@ func _ready() -> void:
 	_dots_rest = _dots(Color(gold, Data.num(FILE, "route.others_alpha", 0.4)))
 	_ghosts = _dots(Color.from_string(String(Data.value(FILE, "face.color", "#f0c878")), T.ACCENT), Data.num(FILE, "face.ghost", 0.12))
 	_build_card()
+	_build_overlay()
 	add_child(load("res://scripts/battle_card.gd").new(main))  # the King's battles, when they are over (battle_card.gd)
 
 
@@ -128,22 +145,24 @@ func _ground(h: Dictionary) -> Vector3:
 
 ## A left click on the land (main._on_ground_clicked asks first): true when it was the host's to take.
 func take_click(ground: Vector3) -> bool:
+	if _boxed:
+		_boxed = false
+		return true  # the release of a selection box
 	if _aim != "":
 		var kind := _aim
 		_set_aim("")
-		order(kind, {"ground": ground})
+		var foe := _pressed_foe
+		if kind == "attack" and foe.is_empty():
+			# Attack, then open ground: the host marches there (Warcraft III's attack-move asks the bridge for an order that
+			# falls on any foe met on the road; bridge hosts.js attack only takes the foe's men on a tile, so a march).
+			kind = "march"
+		order(kind, {"ground": _foe_at(foe, ground) if kind == "attack" else ground})
 		return true
 	var got := _pressed
 	_pressed = {}
 	var h := _host_of(int(got.get("unit", -1))) if not got.is_empty() else {}
-	if not h.is_empty() and selected >= 0 and Input.is_key_pressed(KEY_SHIFT) and int(h["id"]) != selected:
-		var id := int(h["id"])
-		if also.has(id):
-			also.erase(id)  # shift-click again: let that one go
-		else:
-			also.append(id)  # shift-click: in beside the selected host
-			main.barks.host("select", id)
-		_refresh()
+	if not h.is_empty() and selected >= 0 and _press_add:
+		_toggle(int(h["id"]))  # shift- or Cmd-click: in beside the selected host, or out again
 		return true
 	if not h.is_empty():
 		select(int(h["id"]))
@@ -152,14 +171,102 @@ func take_click(ground: Vector3) -> bool:
 		if view is Node and (view as Node).has_method("select"):
 			(view as Node).select(int(got["unit"]))  # army.gd: that regiment's rectangle and banner
 		return true
-	if selected >= 0:
-		select(-1)  # the land elsewhere: the host is let go, and the click picks a town as before
+	if selected >= 0 and not _press_add:
+		select(-1)  # the land elsewhere: the host is let go, and the click picks a town as before (Shift or Cmd keeps them)
 	return false
 
 
-## What the press under a left click met (host_pick.gd: the physics ray at the press, the camera as it was then):
-## {unit, view}, or {} for the land. take_click uses it once.
+## What the press under a left click met (host_pick.gd: the physics ray at the press, the camera as it was then, or
+## the King's standard nearest it within pick_px): {unit, view}, or {} for the land. take_click uses it once.
 var _pressed := {}
+var _pressed_foe := {}  # the foe's men nearest the same press within foe_px, for an Attack waiting for its place
+
+
+## One of the King's hosts added beside those selected, or taken out again (Warcraft III's shift-click). The selected
+## one taken out hands the lead to the next.
+func _toggle(id: int) -> void:
+	if id == selected:
+		if also.is_empty():
+			select(-1)
+			return
+		var rest := also.duplicate()
+		select(int(rest.pop_front()))
+		also.assign(rest)
+	elif also.has(id):
+		also.erase(id)
+	else:
+		also.append(id)
+		main.barks.host("select", id)
+	_refresh()
+
+
+## Several of the King's hosts at once (a box, a double-click, F2): the first leads (`selected`), the rest beside it
+## (`also`); with `add`, in beside those already selected. None given: nothing changes.
+func select_many(ids: Array, add := false) -> void:
+	var group: Array[int] = []
+	if add and selected >= 0:
+		group.append(selected)
+		group.append_array(also)
+	for id in ids:
+		if not group.has(int(id)) and not host(int(id)).is_empty():
+			group.append(int(id))
+	if group.is_empty():
+		return
+	var lead := group[0]
+	if lead != selected:
+		select(lead)
+		main.barks.host("select", lead)
+	also.assign(group.slice(1))
+	_refresh()
+
+
+## The King's hosts whose standard stands inside `rect` on screen (in front of the lens), largest first as listed.
+func _hosts_in(rect: Rect2) -> Array:
+	var cam := get_viewport().get_camera_3d()
+	var out := []
+	if cam == null:
+		return out
+	for h in hosts():
+		var b := _banner(h)
+		var at: Vector3 = b.global_position if b else _ground(h)
+		if not cam.is_position_behind(at) and rect.has_point(cam.unproject_position(at)):
+			out.append(int(h.get("id", -1)))
+	return out
+
+
+## A unit of the King's own hosts (a left click looks for these).
+func _is_mine(unit: int) -> bool:
+	return not _host_of(unit).is_empty()
+
+
+## A unit of another's, not the crown's own (a right-click falls on these; the bridge says no to a sworn house's).
+func _is_foe(unit: int) -> bool:
+	var u := _unit(unit)
+	return not u.is_empty() and int(u.get("owner", -1)) != int(main.awareness.rec("crownId", -1)) and not _is_mine(unit)
+
+
+func _unit(id: int) -> Dictionary:
+	for u in main.awareness.rec("units", []):
+		if int((u as Dictionary).get("id", -2)) == id:
+			return u
+	return {}
+
+
+## Where the picked foe's men stand (else `g`, the land under the pointer).
+func _foe_at(picked: Dictionary, g: Vector3) -> Vector3:
+	var f: Node3D = main.units.figure_of(int(picked.get("unit", -1))) if not picked.is_empty() else null
+	return f.global_position if f and is_instance_valid(f) else g
+
+
+## Whose men a foe's unit is, in the card's words (host_command.json hover.foe / hover.raiders).
+func _foe_words(unit: int) -> String:
+	var k: Dictionary = Data.value(FILE, "hover", {})
+	if main.awareness.rival_raiders().has(unit):
+		return String(k.get("raiders", "the raiders"))
+	var house: Dictionary = main.awareness.houses_by_id().get(int(_unit(unit).get("owner", -1)), {})
+	if house.is_empty() or bool(house.get("wild", false)):
+		return String(k.get("raiders", "the raiders"))
+	return String(k.get("foe", "{house}'s men")).format({"house": String(house.get("name", ""))})
 
 
 ## The host a company belongs to ({} when it is in none of the King's).
@@ -181,18 +288,71 @@ func select(id: int) -> void:
 	for n in get_tree().get_nodes_in_group(&"host_views"):
 		if n.has_method("select_host"):
 			n.select_host(h)
+	if selected < 0 and _word:
+		_show_hover([], Vector2.ZERO)
+	_hover_px = Vector2.INF
 	_refresh()
 
 
-## A left press: what it met is kept for take_click (host_pick.gd). The right button while a host is selected,
-## ahead of the camera (whose right-drag turns the view): a click marches
-## there (or lets a waiting order go, Warcraft III), a drag draws the line the host forms on (Total War). Over the
-## interface it is the interface's.
+## A left press: what it met is kept for take_click (host_pick.gd). With Cmd or Shift held on the land, a drag is a
+## selection box (StarCraft's, Warcraft III's), drawn and taken here ahead of the camera, whose plain left-drag still
+## grabs and moves the view (Mac plays on a trackpad: click-drag and the two-finger swipe pan). A double-click on one
+## of the King's standards takes every one of his hosts on screen. The right button while a host is selected, ahead of
+## the camera (whose right-drag turns the view): a click gives the order what it lands on asks for (_intent; or lets a
+## waiting order go, Warcraft III), a drag draws the line the host forms on (Total War). Over the interface it is the
+## interface's. With a host selected and no button held, the pointer says what a right-click would do (_hover_read).
 func _input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
-		_pressed = HostPick.pick(get_viewport().get_camera_3d(), event.position)  # the click is resolved at its press
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+		if event.pressed:
+			_boxed = false
+			var cam := get_viewport().get_camera_3d()
+			_pressed = HostPick.pick(cam, event.position, Data.num(FILE, "pick_px", 24.0), _is_mine)  # resolved at its press
+			_pressed_foe = HostPick.pick(cam, event.position, Data.num(FILE, "foe_px", 40.0), _is_foe) if _aim == "attack" else {}
+			_press_add = event.shift_pressed or event.is_command_or_control_pressed()
+			if get_viewport().gui_get_hovered_control() != null:
+				return
+			if event.double_click and not _pressed.is_empty():
+				select_many(_hosts_in(get_viewport().get_visible_rect()), _press_add)  # every one of the King's hosts on screen
+				_pressed = {}
+				_eat_release = true
+				get_viewport().set_input_as_handled()
+				return
+			if _press_add and _aim == "":
+				_box_from = event.position  # a drag from here is a box; a click stays a click (add or take out)
+				_box_to = event.position
+				_boxing = false
+				_box_add = event.shift_pressed  # Shift adds to those selected; Cmd alone selects anew
+			return
+		if _eat_release:
+			_eat_release = false
+			get_viewport().set_input_as_handled()
+			return
+		if _box_from != Vector2.INF:
+			var rect := Rect2(_box_from, Vector2.ZERO).expand(event.position).grow(Data.num(FILE, "box.grow_px", 6.0))
+			var was_box := _boxing
+			_box_from = Vector2.INF
+			_boxing = false
+			_overlay.queue_redraw()
+			if was_box:
+				# The camera still hears the release (it ends its own press) and calls it a click: take_click lets it pass.
+				_boxed = true
+				select_many(_hosts_in(rect), _box_add)
+			return
+	if event is InputEventMouseMotion and _box_from != Vector2.INF and not Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
+		_box_from = Vector2.INF  # let go where this view never heard it (outside the window): no box left hanging
+		_boxing = false
+		_overlay.queue_redraw()
+	if event is InputEventMouseMotion and _box_from != Vector2.INF:
+		get_viewport().set_input_as_handled()  # a Cmd- or Shift-drag never moves the view
+		_box_to = event.position
+		if not _boxing and _box_from.distance_to(event.position) >= Data.num(FILE, "box.drag_px", 6.0):
+			_boxing = true
+		_overlay.queue_redraw()
+		return
 	if selected < 0:
 		return
+	if event is InputEventMouseMotion and _right_at == Vector2.INF:
+		_hover_read(event.position)
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT:
 		if event.pressed:
 			if get_viewport().gui_get_hovered_control() != null:
@@ -218,7 +378,7 @@ func _input(event: InputEvent) -> void:
 			return
 		var g: Vector3 = main.rig._ground_under(event.position)
 		if g != Vector3.INF:
-			var smart := _intent(HostPick.pick(get_viewport().get_camera_3d(), event.position), g)
+			var smart := _intent(HostPick.pick(get_viewport().get_camera_3d(), event.position, Data.num(FILE, "foe_px", 40.0), _is_foe), g)
 			order(String(smart[0]), {"ground": smart[1]})
 	elif event is InputEventMouseMotion and _right_at != Vector2.INF:
 		get_viewport().set_input_as_handled()
@@ -228,18 +388,55 @@ func _input(event: InputEvent) -> void:
 		_show_line(_right_at, event.position)
 
 
+## What a right-click at `screen` would do now, read as the pointer moves (Warcraft III's cursor over a foe, Age of
+## Empires' too): the card's line says it in full, the word by the pointer in one, and over a foe's men or town the
+## pointer is the order's icon. Over the interface the pointer is the interface's; the card's line keeps the last.
+func _hover_read(screen: Vector2) -> void:
+	if _hover_px != Vector2.INF and _hover_px.distance_to(screen) < 3.0:
+		_word.position = screen + Vector2(18, 14)
+		return
+	_hover_px = screen
+	var g: Vector3 = main.rig._ground_under(screen) if get_viewport().gui_get_hovered_control() == null else Vector3.INF
+	if g == Vector3.INF:
+		_show_hover([], screen)
+		return
+	var picked := HostPick.pick(get_viewport().get_camera_3d(), screen, Data.num(FILE, "foe_px", 40.0), _is_foe)
+	var smart := _intent(picked, g)
+	if _aim != "":  # an order waiting for its place: the click is that order's (an attack on open ground marches)
+		var kind := ("march" if picked.is_empty() else "attack") if _aim == "attack" else _aim
+		var town_words := String(smart[2]) if String(smart[0]) in ["relieve", "besiege"] else ""
+		smart = [kind, g, String(smart[2]) if kind == "attack" else (town_words if kind != "march" else "")]
+	_show_hover([String(smart[0]), String(smart[2])], screen)
+
+
+func _show_hover(now: Array, screen: Vector2) -> void:
+	var k: Dictionary = Data.value(FILE, "hover", {})
+	var kind := String(now[0]) if not now.is_empty() else ""
+	_word.visible = kind != ""
+	_word.position = screen + Vector2(18, 14)
+	if kind != "":
+		_word.text = String((k.get("word", {}) as Dictionary).get(kind, kind.capitalize()))
+		var line := String((k.get("aim_line" if _aim != "" else "line", {}) as Dictionary).get(kind, "")).format({"who": String(now[1])})
+		if _hint.text != line:
+			_hint.text = line
+	var was := String(_hover[0]) if not _hover.is_empty() else ""
+	_hover = now
+	if _aim == "" and kind != was:
+		var icon_kind := kind if kind in ["attack", "besiege"] else ""  # over a foe the pointer is the sword or the tower
+		Input.set_custom_mouse_cursor(_cursor(icon_kind) if icon_kind != "" else null, Input.CURSOR_ARROW, _cursor_hot())
+
+
 ## What a right-click on `g` asks of the selected host, read from what stands there (Warcraft III's smart order: no
 ## menu, the target decides): a foe's company or raiders under the pointer (`picked`, host_pick.gd) is attacked where it
 ## stands; a town of the crown's or a sworn house's is relieved; any other town is besieged (bridge hosts.js relieve and
-## besiege, 4cbad5ff); the open ground is marched to. [order, the world point it is given at].
+## besiege, 4cbad5ff); the open ground is marched to. [order, the world point it is given at, whom or where in words].
 func _intent(picked: Dictionary, g: Vector3) -> Array:
-	if not picked.is_empty() and _host_of(int(picked["unit"])).is_empty():
-		var f: Node3D = main.units.figure_of(int(picked["unit"]))
-		return ["attack", f.global_position if f and is_instance_valid(f) else g]
+	if not picked.is_empty() and _is_foe(int(picked["unit"])):
+		return ["attack", _foe_at(picked, g), _foe_words(int(picked["unit"]))]
 	var town: Dictionary = main.towns.nearest(g, Data.num(FILE, "town_reach", 3.0))
 	if town.is_empty():
-		return ["march", g]
-	return ["relieve" if _friendly(int(town.get("owner", -1)), int(town.get("id", -1))) else "besiege", g]
+		return ["march", g, ""]
+	return ["relieve" if _friendly(int(town.get("owner", -1)), int(town.get("id", -1))) else "besiege", g, String(town.get("name", ""))]
 
 
 ## A town the King's men may enter as friends: the crown's own, or the seat of a bannerman sworn to it (/world vassals).
@@ -282,7 +479,16 @@ func _show_line(a: Vector2, b: Vector2) -> void:
 
 
 func _unhandled_key_input(event: InputEvent) -> void:
-	if selected < 0 or not event.is_pressed() or event.is_echo():
+	if not event.is_pressed() or event.is_echo():
+		return
+	if event.is_action_pressed(&"host_all"):
+		var ids := []
+		for h in hosts():
+			ids.append(int(h.get("id", -1)))
+		select_many(ids)  # every one of the King's hosts (StarCraft II's select army); the view stays where it is
+		get_viewport().set_input_as_handled()
+		return
+	if selected < 0:
 		return
 	if event.is_action_pressed(&"back"):
 		if _aim != "":
@@ -348,7 +554,9 @@ func order(kind: String, at := {}, done := Callable()) -> bool:
 			body[k] = int(at[k])
 	if at.has("face"):
 		body["face"] = at["face"]
+	main.barks.host("order", selected)  # its captain answers at once, as Warcraft III's do (barks.gd)
 	_ask(body, done)
+	_routes()
 	for id in also:  # the hosts shifted in beside it: the same order, each asked for itself (its own orders this season)
 		var h := host(id)
 		if not h.is_empty() and int(h.get("ordersLeft", 1)) != 0:
@@ -364,9 +572,10 @@ func _ask(body: Dictionary, done := Callable()) -> void:
 		var said := String(d.get("text", d.get("error", "")))
 		if said != "" and main.ui:
 			main.ui.toast(said)
+		if code != 200:
+			_pending.erase(int(body.get("host", -1)))  # refused: the road drawn for it goes
 		if code == 200:
 			main.sound.ordered(String(body.get("order", "")))  # heard as it sets off (sounds.json orders)
-			main.barks.host("order", int(body.get("host", -1)))  # and its captain says he goes (barks.gd)
 			main.units.ack(int(body.get("host", -1)))  # and its men raise a cry where they stand (army.gd ack)
 			main.bridge._poll()
 		if done.is_valid():
@@ -375,6 +584,8 @@ func _ask(body: Dictionary, done := Callable()) -> void:
 
 func _set_aim(kind: String) -> void:
 	_aim = kind
+	_hover = []  # the pointer's word and icon are read again for what the click now does
+	_hover_px = Vector2.INF
 	Input.set_default_cursor_shape(Input.CURSOR_CROSS if kind != "" else Input.CURSOR_ARROW)
 	# Warcraft III's order cursor: while an order waits for its place, the pointer is that order's own icon (the card's),
 	# in the accent for a march or a garrison, red for an attack or a siege, so the King sees what his next click does.
@@ -441,11 +652,18 @@ func _routes() -> void:
 	var every := maxf(0.1, Data.num(FILE, "route.every", 0.55))
 	var lift := Data.num(FILE, "route.lift", 0.04)
 	_end.visible = false
+	var fresh := Time.get_ticks_msec() - int(Data.num(FILE, "route.pending_s", 4.0) * 1000.0)
+	for id in _pending.keys():
+		if int(_pending[id]["ms"]) < fresh:
+			_pending.erase(id)
 	for h in hosts():
 		var o: Variant = h.get("order")
+		var given: Dictionary = _pending.get(int(h.get("id", -1)), {})
+		if not given.is_empty():
+			o = {"kind": given["kind"], "x": 0, "y": 0}  # just ordered: drawn to where the King pointed until /world has it
 		if not (o is Dictionary) or o.get("x") == null or o.get("y") == null:
 			continue
-		var to: Vector3 = main.terrain.world_pos(float(o["x"]), float(o["y"]))
+		var to: Vector3 = given["to"] if not given.is_empty() else main.terrain.world_pos(float(o["x"]), float(o["y"]))
 		var from := _ground(h)
 		var flat := Vector2(to.x - from.x, to.z - from.z)
 		if flat.length() < every:
@@ -610,6 +828,35 @@ static func _ring_texture() -> Texture2D:
 
 # --- the command card (bottom right, over the minimap) ---------------------------------------
 
+## The selection box and the word by the pointer, over the world and under the panels (screen space).
+func _build_overlay() -> void:
+	var layer := CanvasLayer.new()
+	layer.layer = 1
+	add_child(layer)
+	_overlay = Control.new()
+	_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_overlay.draw.connect(_draw_box)
+	layer.add_child(_overlay)
+	_word = T.label("", T.TEXT)
+	_word.add_theme_font_size_override("font_size", T.SIZE_DESC)
+	_word.add_theme_color_override("font_outline_color", Color(0.06, 0.05, 0.04, 0.9))
+	_word.add_theme_constant_override("outline_size", 5)
+	_word.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_word.visible = false
+	_overlay.add_child(_word)
+
+
+## A thin white rectangle on a dark outline (host_command.json box), from where the drag began to the pointer.
+func _draw_box() -> void:
+	if not _boxing or _box_from == Vector2.INF:
+		return
+	var k: Dictionary = Data.value(FILE, "box", {})
+	var r := Rect2(_box_from, Vector2.ZERO).expand(_box_to)
+	_overlay.draw_rect(r, Color(0.05, 0.04, 0.03, float(k.get("outline_alpha", 0.8))), false, float(k.get("outline", 3.0)))
+	_overlay.draw_rect(r, Color(1, 1, 1, float(k.get("alpha", 0.95))), false, float(k.get("line", 1.0)))
+
+
 func _build_card() -> void:
 	if main == null or main.ui == null:
 		return
@@ -636,6 +883,8 @@ func _build_card() -> void:
 	v.add_child(_kinds)
 	_left = T.label("", T.TEXT_3)
 	v.add_child(_left)
+	_hint = T.label("", T.TEXT)  # what a right-click on the land does right now (_hover_read), in words
+	v.add_child(_hint)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", T.GAP_TIGHT)
 	v.add_child(row)
@@ -676,9 +925,22 @@ func _refresh() -> void:
 	var o: Variant = h.get("order")
 	_doing_l.add_theme_color_override("font_color", _order_colour(String(o.get("kind", ""))) if o is Dictionary else T.TEXT_2)
 	_card.tooltip_text = "%d companies" % int(h.get("companies", 0))
-	if not also.is_empty():
-		_title.text += String(Data.value(FILE, "also", " +{n}")).format({"n": also.size()})
 	_kinds.text = _makeup(h)
+	if not also.is_empty():  # several selected: how many, and all their men and companies (Warcraft III's group card)
+		var men := int(h.get("men", 0))
+		var kinds: Dictionary = (h.get("kinds", {}) as Dictionary).duplicate() if h.get("kinds") is Dictionary else {}
+		for id in also:
+			var o2 := host(id)
+			men += int(o2.get("men", 0))
+			var k2: Variant = o2.get("kinds")
+			if k2 is Dictionary:
+				for t in k2:
+					kinds[t] = int(kinds.get(t, 0)) + int(k2[t])
+		_title.text = String(Data.value(FILE, "group", "{n} hosts")).format({"n": also.size() + 1}).to_upper()
+		_status.text = String(Data.value(FILE, "troops", "{men} troops")).format({"men": main.ui.heads(men)})
+		_kinds.text = _makeup({"kinds": kinds, "morale": h.get("morale")})
+	if _hint.text == "":
+		_hint.text = String((Data.value(FILE, "hover", {}) as Dictionary).get("idle", ""))
 	# The host's orders this season (bridge hosts.json ordersPerHost): the card says how many it has left, and with none its
 	# buttons are greyed with the reason rather than looking live and refusing.
 	var left := orders_left()
