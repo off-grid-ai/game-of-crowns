@@ -527,6 +527,8 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		_houses_panel.visible = _houses_btn.button_pressed
 	elif event.is_action_pressed(&"counsel"):
 		_toggle_court()  # the Hand speaks at court now
+	elif event.is_action_pressed(&"card_do"):
+		chronicle.do_top()  # the top card's answer (chronicle_panel.gd)
 	elif event.is_action_pressed(&"chronicle"):
 		_chron_btn.button_pressed = not _chron_btn.button_pressed
 		_chron_panel.visible = _chron_btn.button_pressed

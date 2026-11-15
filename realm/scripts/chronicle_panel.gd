@@ -182,8 +182,13 @@ func _settle(r: Control) -> void:
 		return
 	if r == _focused:
 		_focused = null
+	if r == _paused_for:
+		_paused_for = null
+		if ui.paused:
+			ui.top_bar._toggle_pause()
 	r.free()
 	_empty.visible = _needs.get_child_count() == 0
+	_fold()
 
 
 ## Counted on the key when it is a card (it asks something of him).
@@ -284,12 +289,86 @@ func _row(e: Dictionary, loss: bool, watch := Callable()) -> Control:
 	for b in acts.get_children():
 		if (b as Button).text != String(Data.value("news_actions", "verbs.go.label", "Go there")):
 			(b as Button).pressed.connect(_settle.bind(card), CONNECT_DEFERRED)
+	# Most urgent first (Mac: "not very clear what I should be doing"): a threat to his own above a clock, a clock above
+	# the court, the court above the rest; the newest first within each.
+	var u := _urgency(e, loss)
+	card.set_meta("urgency", u)
+	var at := _needs.get_child_count()
+	for i in _needs.get_child_count():
+		if int(_needs.get_child(i).get_meta("urgency", 0)) <= u:
+			at = i
+			break
 	_needs.add_child(card)
-	_needs.move_child(card, 0)
+	_needs.move_child(card, at)
 	_empty.visible = false
 	if watch.is_valid():
 		_add_watch(card, watch)
+	_fold()
+	if u >= int(UI.ui_num("chronicle.pause_at", 3.0)):
+		_wait_for_him(card)
 	return card
+
+
+## How much a card asks of him now (ui.json chronicle.urgency: kinds by weight): a threat to his own (an attack, a
+## siege, a rising, a loss) 3, a clock running ("· 0:39") 2, a matter at court 1, the rest 0.
+func _urgency(e: Dictionary, loss: bool) -> int:
+	var by: Dictionary = Data.value("ui", "chronicle.urgency", {})
+	var u := int(by.get(String(e.get("kind", "")), 0))
+	if loss:
+		u = maxi(u, 3)
+	if String(e.get("text", "")).contains(" · 0:") or String(e.get("text", "")).contains("· 0:"):
+		u = maxi(u, 2)
+	return u
+
+
+## Only the most urgent few stand open (ui.json chronicle.shown); the rest wait folded under "N more".
+var _more: Button
+func _fold() -> void:
+	var shown := int(UI.ui_num("chronicle.shown", 3.0))
+	var n := _needs.get_child_count()
+	for i in n:
+		_needs.get_child(i).visible = i < shown or (_more != null and _more.button_pressed)
+	if _more == null:
+		_more = Button.new()
+		_more.flat = true
+		_more.toggle_mode = true
+		_more.focus_mode = Control.FOCUS_NONE
+		_more.add_theme_font_size_override("font_size", T.SIZE_DESC - 1)
+		_more.add_theme_color_override("font_color", T.TEXT_2)
+		_more.toggled.connect(func(_on): _fold())
+		_list.add_child(_more)
+	_more.visible = n > shown
+	_more.text = ("Fewer" if _more.button_pressed else "%d more" % (n - shown))
+
+
+## Something that threatens his own (urgency at chronicle.pause_at): the realm waits for him (RimWorld's and Total
+## War's pause on an event; Settings "Pause when you're needed", on by default): paused, the chronicle open at it.
+func _wait_for_him(card: Control) -> void:
+	if not bool(preload("res://scripts/settings.gd").get_value("pause_when_needed")):
+		return
+	if not ui.paused:
+		ui.top_bar._toggle_pause()
+		_paused_for = card  # answered, the realm goes on by itself
+	focus(card.get_meta("entry", {}))
+
+
+var _paused_for: Control
+
+
+## Enter: the top card's answer (its gold button), as the keyboard's way to act at once.
+func do_top() -> bool:
+	for c in _needs.get_children():
+		if not c.visible:
+			continue
+		var flow: Container = c.get_node_or_null("Body/Actions")
+		if flow == null:
+			continue
+		for i in range(flow.get_child_count() - 1, -1, -1):
+			var b := flow.get_child(i) as Button
+			if b and not b.disabled:
+				b.pressed.emit()
+				return true
+	return false
 
 
 ## The card's buttons, right-aligned, the one we'd have him press last (rightmost) and in the accent; Go there first
