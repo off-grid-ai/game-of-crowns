@@ -70,7 +70,7 @@
   "muster": { "cell": 2.0, "clear": 4.5, "gateClear": 0.6, "roadClear": 0.3, "wayReach": 16.0, "reach": 40.0, "slope": 0.2, "keepOff": 0.75, "treeCost": 0.15, "missCost": 4.0, "nearCost": 0.25, "margin": 0.15, "probe": 0.35, "search": 8.0, "fieldSearch": 2.5 },
   "lod": { "on": true, "bias": 1.0, "least": 300, "mergeAngle": 25.0 },
   "shadows": { "near": 18.0 },
-  "settle": 0.15,
+  "settle": 0.06,
   "banner": { "height": 2.0, "width": 1.2, "fixedFrom": 14.0, "pips": 5 },
   "standard": { "scale": 1.3 },
   "select": { "margin": 0.15, "alpha": 0.9, "idle": 0.0, "bar": { "_": "A selected regiment's health bar over its banner (Warcraft III; army_bar.gdshader), its house's colour filled to its strength: width, height and above (its middle's height over the banner's foot), in men's heights.", "width": 3.0, "height": 0.32, "above": 2.95 } },

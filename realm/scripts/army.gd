@@ -1430,7 +1430,7 @@ func _form_on_way(town: Vector3, to: Vector3, root: Node3D) -> void:
 func _onward(from: Vector3, to: Vector3) -> PackedVector3Array:
 	var roads = main.get("roads")
 	var road: PackedVector3Array = roads.route(from, to, Data.num("army", "march.roadReach", 12.0)) if roads and roads.has_method("route") else PackedVector3Array()
-	var way: PackedVector3Array = road if road.size() >= 3 else main.terrain.paths.land_path(from, to)
+	var way: PackedVector3Array = road if road.size() >= 3 else main.terrain.paths.land_path(from, to, _column_half())  # the column's whole width
 	var out := way.slice(1)
 	if out.is_empty() or out[out.size() - 1] != to:
 		out.append(to)
@@ -1438,7 +1438,7 @@ func _onward(from: Vector3, to: Vector3) -> PackedVector3Array:
 
 
 ## `way` as far as men can walk it: from point `keep` on, cut where it first runs onto water (sampled every
-## march.wetStep world units), ending on the last dry ground before it. A town over the sea, or no land route to
+## march.wetStep world units), ending on the last ground before it where the column's whole width stands dry. A town over the sea, or no land route to
 ## it (land_path's straight line), halts a host on the shore, never in the sea (g36 muster: the host halted in the
 ## strait); crossing water is the ships' (board).
 func _dry(way: PackedVector3Array, keep: int) -> PackedVector3Array:
@@ -1451,7 +1451,12 @@ func _dry(way: PackedVector3Array, keep: int) -> PackedVector3Array:
 		for k in range(1, n + 1):
 			var q := a.lerp(b, float(k) / n)
 			if not Footing.walkable(q):  # the ground owner: dry land or a ford
-				var last := a.lerp(b, float(k - 1) / n)
+				# Back to where the column's whole width stands on land (Mac 2026-11-15: a block's flanks over the river).
+				var half := _column_half()
+				var j := k - 1
+				while j > 0 and not Footing.is_clear(a.lerp(b, float(j) / n), half, false, null, ["host", "field"]):
+					j -= 1
+				var last := a.lerp(b, float(j) / n)
 				if last.distance_to(out[out.size() - 1]) > 0.01:
 					out.append(_ground_at(last))
 				return out

@@ -393,8 +393,16 @@ const RIVER_MASK := "res://assets/maps/rivers-mask.png"
 var river_mask: Image
 
 
+## Whether `(wx, wz)` lies in a river's water as rivers.gd draws it. The mask's 255 core is only the inner 0.85 of the
+## channel (bridge/tools/azgaar_rivers.py): the drawn water runs to the bank, where the mask reads 230-254 (river
+## footing probe, Mac 2026-11-15: men and a regiment's block stood on the water's edge). ground.json rivers.water.
 func in_river(wx: float, wz: float) -> bool:
-	return river_near(wx, wz) >= 1.0
+	if _water < 0.0:
+		_water = Data.num("ground", "rivers.water", 0.9)
+	return river_near(wx, wz) >= _water
+
+
+var _water := -1.0  # ground.json rivers.water, read once
 
 
 ## 1 in a river's water, falling to 0 a few units from its edge.

@@ -59,9 +59,10 @@ func tile_of(p: Vector3) -> Vector2i:
 	return Vector2i(clampi(floori(p.x / _t.TILE), 0, int(_t.width) - 1), clampi(floori(p.z / _t.TILE), 0, int(_t.height) - 1))
 
 
-## A walkable route over land between two world points, as world points.
-## Falls back to the straight line when either end is on water.
-func land_path(from: Vector3, to: Vector3) -> PackedVector3Array:
+## A walkable route over land between two world points, as world points, for a body reaching `body` all round (a
+## column's half width: army.gd; below 0, ground.json land.way_body, one walker). Falls back to the straight line when
+## either end is on water.
+func land_path(from: Vector3, to: Vector3, body := -1.0) -> PackedVector3Array:
 	var out := PackedVector3Array()
 	if _astar == null:
 		out.append_array([from, to])
@@ -76,16 +77,15 @@ func land_path(from: Vector3, to: Vector3) -> PackedVector3Array:
 	for i in range(1, ids.size() - 1):
 		out.append(_t.world_pos(ids[i].x, ids[i].y))
 	out.append(to)
-	return _round_what_stands(out)
+	return _round_what_stands(out, body if body >= 0.0 else Data.num("ground", "land.way_body", 0.1))
 
 
 ## The tile route walked every land.way_step, each point that falls on something standing (a cottage, a hedge, a
-## tree, another host's ground: ground.gd is_clear) moved to the nearest clear ground, so a body crossing the land
-## goes round what stands on it (Mac 2026-11-15: hosts marched through cottages). Its ends are kept: they are where
-## it was and where it was sent.
-func _round_what_stands(way: PackedVector3Array) -> PackedVector3Array:
+## tree, another host's ground, a river's water: ground.gd is_clear, `reach` all round) moved to the nearest clear
+## ground, so a body crossing the land goes round what stands on it with its whole width (Mac 2026-11-15: hosts
+## marched through cottages; a column's flanks over a river). Its ends are kept: where it was and where it was sent.
+func _round_what_stands(way: PackedVector3Array, reach: float) -> PackedVector3Array:
 	var step := Data.num("ground", "land.way_step", 0.3)
-	var reach := Data.num("ground", "land.way_body", 0.1)
 	var out := PackedVector3Array([way[0]])
 	for i in way.size() - 1:
 		var a: Vector3 = way[i]

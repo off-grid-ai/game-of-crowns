@@ -3,7 +3,8 @@ extends RefCounted
 ## OOP, SOLID, SRP, SSOT, DRY"). Troops in the sea, a host in the cottages and townsfolk sitting in a house were one
 ## bug: every placer kept its own idea of clear ground. Now every placer asks here and nowhere else.
 ##
-## Clear ground is walkable land (terrain.walkable: dry, or a ford a road runs through) outside every footprint in
+## Clear ground is dry land (terrain.is_land: no sea, lake or river's drawn water; a ford is passed, never stood on,
+## unless the asker opens "ford") outside every footprint in
 ## a town (nav_ground.gd inside_something: read off what its builders set down and what its life put up, so the
 ## footprints are the buildings themselves, never a list kept beside them; a castle's open bailey is open).
 ## tools/rules_check.sh keeps every other script from asking the terrain or the footprints itself.
@@ -64,8 +65,8 @@ static func _is_clear(p: Vector3, radius := 0.0, props := true, free_of: Variant
 	var keys: Array = ["town", "life"] if props else ["town"]
 	for o in _reach_of(radius):
 		var q: Vector3 = p + o
-		if not walkable(q):
-			return false
+		if not (on_land(q) or ("ford" in open_kinds and walkable(q))):
+			return false  # a ford is passed, never stood on (a fight's grid opens it: "ford")
 		for t in TownNav.towns_at(towns, q):
 			if not NavGround.inside_something(t[1], q, terrain, keys).is_empty():
 				return false
@@ -164,14 +165,14 @@ static func _chunks(area: Rect2) -> Array:
 	return out
 
 
-## Whether a piece set down over `poly` (world XZ: a building site, a camp's tent) stands on walkable land at every
+## Whether a piece set down over `poly` (world XZ: a building site, a camp's tent) stands on dry land at every
 ## corner and its middle, and overlaps no footprint.
 static func area_clear(poly: PackedVector2Array) -> bool:
 	var mid := Vector2.ZERO
 	for v in poly:
 		mid += v / poly.size()
 	for v in Array(poly) + [mid]:
-		if not walkable(Vector3(v.x, 0, v.y)):
+		if not on_land(Vector3(v.x, 0, v.y)):
 			return false
 	for t in TownNav.towns_at(towns, Vector3(mid.x, 0, mid.y)):
 		var root: Node3D = t[1]

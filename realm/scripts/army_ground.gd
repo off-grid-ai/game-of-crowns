@@ -48,7 +48,7 @@ func _build() -> void:
 	# wall, fence or stall), a few rows a frame.
 	for y in cells:
 		for x in cells:
-			grid.set_point_solid(Vector2i(x, y), not Footing.is_clear(_world(Vector2i(x, y)), 0.0, true, null, ["host", "field"]))  # the hosts close over each other's ground
+			grid.set_point_solid(Vector2i(x, y), not Footing.is_clear(_world(Vector2i(x, y)), 0.0, true, null, ["host", "field", "ford"]))  # the hosts close over each other's ground; a ford is passed
 		if tree and y % ROWS_A_FRAME == ROWS_A_FRAME - 1:
 			await tree.process_frame
 	for o in _opened:

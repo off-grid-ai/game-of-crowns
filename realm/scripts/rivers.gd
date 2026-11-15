@@ -88,6 +88,9 @@ func _lay(pts: Array[Vector3], widths: Array[float]) -> void:
 	var river: Node3D = RiverManager.new()
 	river.curve = curve
 	river.widths = widths
+	# Cross-sections every share of a Waterways step (a step is about the river's width): at one, the ribbon's straight
+	# sides cut each bend and lay the water as flat sheets over the banks (Mac 2026-11-15: a flat slab on a hillside).
+	river.shape_step_length_divs = maxi(1, int(Data.num("ground", "rivers.lengthDivs", 4)))
 	add_child(river)
 	# A lowland river, not a torrent: peaty green-brown, a slow even current, a
 	# soft ripple and no white water (Waterways' defaults are a mountain stream).
