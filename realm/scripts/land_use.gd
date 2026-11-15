@@ -1,5 +1,6 @@
 extends Node3D
 const Bulk := preload("res://scripts/bulk.gd")  # the one drawer of repeated things
+const Ground := preload("res://scripts/ground.gd")  # the one answer to where a body may stand
 ## The land the towns work, drawn from Freeciv's own facts (Mac: "combine the engines with the visuals"; art set step 5,
 ## docs/research/look-audit-2026-11-12.md and docs/art/STANDARDS.md: fields in rows, hedges on every edge, clumps of
 ## trees, never bare lawn). The store's worked map (which town works each tile) and tilling (irrigation, farmland),
@@ -189,6 +190,12 @@ func _lay(t: Vector2i, w: Dictionary, town: Node3D) -> void:
 	if corner != Vector3.INF and rng.randf() < float(k.get("clump", 0.25)):
 		_clump(hedges, corner, k.get("clump_trees", [3, 7]), rng)
 	_batch(node, hedges, float(k.get("hedge_reach", 30.0)))
+	# Its hedges and clump trees are in the way (ground.gd, Mac 2026-11-15: entities through hedges and trees).
+	var area := Rect2(t.x * TILE, t.y * TILE, TILE, TILE)
+	for e in node.get_meta("bulk", []):
+		var o: Vector3 = node.global_transform * (e[1] as Transform3D).origin
+		area = area.expand(Vector2(o.x, o.z))
+	Ground.stands(node, area.grow(1.0))
 
 
 ## The crops a tile's strips take in turn: [ground texture, tint, the crop that grows].
@@ -311,11 +318,15 @@ func _batch(node: Node3D, hedges: Dictionary, reach: float) -> void:
 	var trees := {}
 	for v in Real.variants(String(Data.value("land_use", "fields.tree", "town_tree"))):
 		trees[String(v)] = true
+	var bulk: Array = []  # what it draws, in its own frame: ground.gd reads its hedges and trees off it (nav_ground meta bulk)
+	var to_node := node.global_transform.affine_inverse()
 	for kind in hedges:
 		var xfs: Array = hedges[kind]
 		for part in (_path_parts(kind.trim_prefix("path:")) if kind.begins_with("path:") else Real.parts(kind)):
 			for xf: Transform3D in xfs:
 				Bulk.add(part[0], xf * part[1], node, reach, trees.has(kind))
+				bulk.append([part[0], to_node * xf * part[1]])
+	node.set_meta("bulk", bulk)
 
 
 ## A ground-cover file as one part [mesh, its offset], baked once (house_builder.bake_path, as vegetation.gd does).
@@ -333,6 +344,7 @@ func _take_up(t: Vector2i) -> void:
 	if rec.is_empty():
 		return
 	if is_instance_valid(rec["node"]):
+		Ground.gone(rec["node"])
 		rec["node"].queue_free()
 	var terrain: Node3D = main.terrain
 	if terrain.land3d and terrain.land3d.land and not (rec["soil"] as Array).is_empty():
