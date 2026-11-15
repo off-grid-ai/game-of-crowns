@@ -98,11 +98,17 @@ func _city(id: int, c: Dictionary) -> void:
 			_changed(towns[id], c, house)
 			towns[id]["signature"] = sig
 			if _shows(towns[id]["data"], c):
-				_queue[id] = {"c": c, "house": house, "sig": sig, "was": towns[id]["data"]}  # its new pieces laid off-screen, then added
+				# Its new pieces laid off-screen, then added (_raise: _grow_standing). The town as it was rides along
+				# from its first change still waiting, so two steps of growth before it is raised are one growth.
+				var was: Dictionary = _queue[id]["was"] if _queue.has(id) and _queue[id].has("was") else towns[id]["data"]
+				_queue[id] = {"c": c, "house": house, "sig": sig, "was": was}
+			elif _queue.has(id):
+				_queue[id]["c"] = c  # a waiting growth takes its latest facts (a change of hands since)
+				_queue[id]["house"] = house
+				_queue[id]["sig"] = sig
 		towns[id]["data"] = c
 		# Its life (builders, recruits, crowds) is refreshed within the frame budget too.
 		_life_queue[id] = house
-		_queue.erase(id)
 		return
 	# The old town stands until its replacement is ready: no gaps while it rebuilds.
 	_queue[id] = {"c": c, "house": house, "sig": sig}
