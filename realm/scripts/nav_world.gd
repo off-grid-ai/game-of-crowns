@@ -44,7 +44,7 @@ static var _out := 0  # bakes on workers now
 static var _done: Array = []  # bakes back from workers: [kind, chunk, sig, {layer: NavigationMesh}, kept paths to write]
 static var _lock := Mutex.new()
 static var _pending := {}  # kind -> chunks not yet landed once
-static var _await := {}  # kind -> [[region, its iteration when set]]: every chunk landed, its regions still building
+static var _await := {}  # kind -> {regs: [[region, its iteration when set]], map_at: the map's iteration once all were built}
 static var _answers := {}  # kind -> true once the map answers for every chunk (read on any thread)
 static var _land_rev := {}  # chunk -> how many times its land was changed (terrain.ground_changed)
 static var _town_polys := {}  # root instance id -> [signature, [[world poly, its bounds]], [[way poly, bounds]]]
@@ -160,24 +160,27 @@ static func ready(kind: StringName) -> bool:
 
 
 ## On the main thread: a map whose every chunk has landed waits for its regions' builds (the server builds regions and
-## maps asynchronously), then for the map to hold them: the map's nearest point to each region's middle lies in that
-## region (map iterations alone can't tell a build that began before the last region was built from one after it).
+## maps asynchronously), then for two map iterations after that: the first may have begun before the last region was
+## built, the second began after, so it holds them all (or the first, when no other followed it nav.confirm_frames). Godot's own counters (region and map iteration ids), a few
+## cheap calls a frame. (It asked the map's nearest point to each region's middle every frame before: a regiment's
+## carved block over a middle never passed, and the ask ran on every region forever, 275 ms a frame in a battle.)
 static func _confirm() -> void:
 	for kind in _await.keys():
-		var regs: Array = _await[kind]
-		if not regs.all(func(e: Array) -> bool: return NavigationServer3D.region_get_iteration_id(e[0]) > int(e[1])):
+		var w: Dictionary = _await[kind]
+		var map_rid: RID = _maps[kind]
+		if int(w["map_at"]) < 0:
+			var regs: Array = w["regs"]
+			if regs.all(func(e: Array) -> bool: return NavigationServer3D.region_get_iteration_id(e[0]) > int(e[1])):
+				w["map_at"] = NavigationServer3D.map_get_iteration_id(map_rid)
 			continue
-		var held := true
-		for e: Array in regs:
-			var box: AABB = NavigationServer3D.region_get_bounds(e[0])
-			if box.size == Vector3.ZERO:
-				continue  # nothing to walk in it
-			var mid := box.get_center()
-			var q := NavigationServer3D.map_get_closest_point(_maps[kind], mid)
-			if not Rect2(box.position.x, box.position.z, box.size.x, box.size.z).grow(float(_cells[kind]) * 2.0).has_point(Vector2(q.x, q.z)):
-				held = false
-				break
-		if held:
+		var it := NavigationServer3D.map_get_iteration_id(map_rid)
+		if it != int(w.get("seen", -1)):
+			w["seen"] = it
+			w["still"] = 0
+		w["still"] = int(w["still"]) + 1
+		# A region built while an iteration was under way leaves the map dirty, so another follows at once; an
+		# iteration that stood still a while (nav.confirm_frames) after the regions were built began after them.
+		if it >= int(w["map_at"]) + 2 or (it >= int(w["map_at"]) + 1 and int(w["still"]) >= int(Data.num("ground", "nav.confirm_frames", 30))):
 			_await.erase(kind)
 			_answers[kind] = true
 
@@ -243,11 +246,19 @@ func _process(_delta: float) -> void:
 		return
 	var t0 := Time.get_ticks_usec()
 	_land_done()
+	var t1 := Time.get_ticks_usec()
 	if not _await.is_empty():
 		_confirm()
+	var t2 := Time.get_ticks_usec()
 	_watch()
+	var t3 := Time.get_ticks_usec()
 	_dispatch()
-	PerfTools.add("nav_world", Time.get_ticks_usec() - t0)
+	var t4 := Time.get_ticks_usec()
+	PerfTools.add("nav_world.landed", t1 - t0)
+	PerfTools.add("nav_world.confirm", t2 - t1)
+	PerfTools.add("nav_world.watch", t3 - t2)
+	PerfTools.add("nav_world.dispatch", t4 - t3)
+	PerfTools.add("nav_world", t4 - t0)
 
 
 static func _on_ground_changed(area: Rect2) -> void:
@@ -384,11 +395,17 @@ static func _inputs(c: Vector2i) -> Dictionary:
 			if String(k).begins_with("_") or String(k) == "field" or String(k) in BLOCKING_CLAIMS:
 				continue  # a hedged field is walked into by those who work it; held ground is read below
 			mask |= 1 << (int(L[k]) - 1)
+		var r0 := Time.get_ticks_usec()
 		var obstacles: Array = []
-		for e: Dictionary in Ground.obstacle_shapes(area, mask):
+		var shapes := Ground.obstacle_shapes(area, mask)
+		var r1 := Time.get_ticks_usec()
+		for e: Dictionary in shapes:
 			var o := _outline(e["shape"], e["xform"])
 			if o.size() >= 3:
 				obstacles.append(o)
+		PerfTools.add("nav_world.shapes", r1 - r0)
+		PerfTools.add("nav_world.outlines", Time.get_ticks_usec() - r1)
+		var r2 := Time.get_ticks_usec()
 		var ways: Array = []
 		var towns: Node = Ground.towns
 		if towns and is_instance_valid(towns):
@@ -411,8 +428,11 @@ static func _inputs(c: Vector2i) -> Dictionary:
 				if side == Vector2.ZERO:
 					continue
 				ways.append(PackedVector2Array([a + side, b + side, b - side, a - side]))
+		var r3 := Time.get_ticks_usec()
+		PerfTools.add("nav_world.ways", r3 - r2)
 		key = [Ground.shapes_rev_in(area), _roads_n(), int(_land_rev.get(c, 0))]  # as read: the read itself may lay a wood's trunks
 		kept = [key, str(hash([key[2], obstacles, ways])), obstacles, ways]
+		PerfTools.add("nav_world.hash", Time.get_ticks_usec() - r3)
 		_base[c] = kept
 	# The held ground (a regiment's block, an engine): the claims' own outlines, cheap to read every look.
 	var held: Array = []
@@ -805,7 +825,7 @@ static func _land_done() -> void:
 				var cd: Dictionary = _chunks[kind][cc]
 				for layer in cd["regions"]:
 					regs.append([cd["regions"][layer], int((cd.get("built", {}) as Dictionary).get(layer, -1))])
-			_await[kind] = regs
+			_await[kind] = {"regs": regs, "map_at": -1}
 
 
 static func _cost(layer: StringName) -> float:
