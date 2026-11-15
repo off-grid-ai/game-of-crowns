@@ -142,7 +142,7 @@ func _lay() -> void:
 		"tile": func(v: Vector2) -> String: return String(terrain.tile_at(int(v.x / terrain.TILE), int(v.y / terrain.TILE))),
 		"on_road": func(v: Vector2, m: float) -> bool: return roads.on_path(Vector3(v.x, 0, v.y), m),
 	}
-	var sites := Plan.plan(input, _d)
+	var sites: Array = await Plan.plan(input, _d)
 	if _root:
 		for n in _root.get_children():
 			Ground.gone(n)

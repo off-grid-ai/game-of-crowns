@@ -43,7 +43,7 @@ func _init() -> void:
 		"tile": func(v: Vector2) -> String: return "Forest" if v.x > 70.0 and v.x < 86.0 else "Grassland",
 		"on_road": near_road}
 	var t0 := Time.get_ticks_usec()
-	var sites := Plan.plan(input, d)
+	var sites: Array = await Plan.plan(input, d)  # worked out over frames on the budget
 	var ms := (Time.get_ticks_usec() - t0) / 1000.0
 	var count := {}
 	for s in sites:
@@ -85,6 +85,7 @@ func _init() -> void:
 	_towns = towns
 	_rivers = rivers
 	_bad = bad
+	_planned = true
 
 
 var _sites: Array
@@ -92,11 +93,14 @@ var _segs: Array
 var _towns: Array
 var _rivers: Array
 var _bad := 0
+var _planned := false  # the plan is worked out over frames (roadside_plan.gd): the raising below waits for it
 
 
 ## The raising, on stand-in land, roads and towns (flat, all dry): every site built from the
 ## catalogue as the game would, counted, so a broken piece shows here and not in the batch render.
 func _initialize() -> void:
+	while not _planned:
+		await process_frame
 	var m := MockMain.new()
 	m.terrain = MockTerrain.new()
 	m.roads = MockRoads.new()

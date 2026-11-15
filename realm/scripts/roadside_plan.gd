@@ -15,13 +15,23 @@ extends RefCounted
 ## dir: Vector2 (along the road), side: Vector2 (away from it), seed: int, ...}].
 
 const SNAP := 20.0  # road points this close (1/SNAP units) are one point
+const ViewTier := preload("res://scripts/view_tier.gd")  # the one frame budget every staged loop draws on
+const PerfTools := preload("res://scripts/perf_tools.gd")
 
 
+## Worked out a piece at a time on the frame budget (_turn: each step, each chain of the roads walked; live12:
+## resume.roadside:135 198 ms in one frame, the whole plan worked out at once): await it. The same sites as before.
 static func plan(input: Dictionary, d: Dictionary) -> Array:
 	var p := new()
 	p._in = input
 	p._d = d
-	return p._run()
+	return await p._run()
+
+
+## Waits for the next frame when this one's staging pot is spent (ViewTier.spend_ok).
+func _turn() -> void:
+	if not ViewTier.spend_ok(&"roadside"):
+		await PerfTools.next_frame(&"roadside:plan")
 
 
 var _in: Dictionary
@@ -69,19 +79,25 @@ func _run() -> Array:
 			_adj[kb] = {}
 		_adj[ka][kb] = true
 		_adj[kb][ka] = true
+	await _turn()
 	var chains := _chains()
 	# The rarest first, so the commonest never takes their places.
+	await _turn()
 	if _on("toll"):
 		_tolls(chains)
+	await _turn()
 	if _on("gallows"):
 		_gallows(chains)
+	await _turn()
 	if _on("bridge") or _on("ford"):
 		_crossings()
+	await _turn()
 	if _on("mill"):
 		_mills()
+	await _turn()
 	if _on("inn") and bool(_k("inn", "crossroads", true)):
 		_crossroads_inns()
-	_along(chains)
+	await _along(chains)
 	return _sites
 
 
@@ -202,6 +218,7 @@ func _along(chains: Array) -> void:
 	var order: Array = _d.get("along", ["inn", "hamlet", "woodcutter", "shrine", "waystone"])
 	var step := float(_d.get("step", 0.5))
 	for line in chains:
+		await _turn()
 		var walked := {}
 		var due := {}
 		var rng := RandomNumberGenerator.new()
