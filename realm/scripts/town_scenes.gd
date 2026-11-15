@@ -138,9 +138,9 @@ func stage(root: Node3D, life: Node3D, c: Dictionary, states: Array, tl: Object)
 				await PerfTools.next_frame(&"town_scenes:135")
 				if not is_instance_valid(root) or not is_instance_valid(life) or root.get_node_or_null("Life") != life:
 					return
-			var t1 := Time.get_ticks_usec()
-			_stage_role(k, role, anchors)
-			PerfTools.add("scenes.role." + String(row.get("id", "?")), Time.get_ticks_usec() - t1)  # GOC_PERF_PROBE
+			await _stage_role(k, role, anchors)  # body by body on the pot (_paced)
+			if not is_instance_valid(root) or not is_instance_valid(life) or root.get_node_or_null("Life") != life:
+				return
 		if row.has("march") and _meets(row["march"], root, states, size):
 			_begin_march(root, life, row["march"], rng)
 	root.set_meta("square_cast", int(census["cast"]))  # the census cast standing there: the villagers' room is what's left (village_slots square_full)
@@ -773,6 +773,19 @@ func _pick(list: Variant, i: int, k: Dictionary, random := false) -> String:
 
 
 ## Casts one role of a standing scene: who, how many, where, facing what, and their mind.
+## Whether staging goes on, after a wait for the next frame when this frame's staging pot (ViewTier.spend_ok) is spent:
+## a role is cast one body at a time, since a role's count grows with its town (a keeper at every stall, a knot on
+## every spot of the square's census) and a big town's role cast whole held the frame (battle run 2026-11-15:
+## Kingsmere's restaging, 88 cast, 0.4 s and 1.0 s pieces). False once the town was dressed anew meanwhile.
+func _paced(k: Dictionary, at: StringName) -> bool:
+	if ViewTier.spend_ok(&"town_scenes"):
+		return true
+	await PerfTools.next_frame(at)
+	var root: Node3D = k["root"]
+	var life: Node3D = k["life"]
+	return is_instance_valid(root) and is_instance_valid(life) and root.get_node_or_null("Life") == life
+
+
 func _stage_role(k: Dictionary, role: Dictionary, anchors: Dictionary) -> void:
 	var a := _anchor(String(role.get("at", "heart")), k, anchors)
 	if a.is_empty():
@@ -780,7 +793,7 @@ func _stage_role(k: Dictionary, role: Dictionary, anchors: Dictionary) -> void:
 		return
 	var does := String(role.get("does", "post"))
 	if does == "errand" or does == "cart" or does == "beat":
-		_stage_walkers(k, role, a, does)
+		await _stage_walkers(k, role, a, does)
 		return
 	var n := 0 if String(role.get("form", "")) == "each" else _count(role.get("n", 1), k)
 	if bool(role.get("cover", false)):
@@ -822,6 +835,8 @@ func _stage_role(k: Dictionary, role: Dictionary, anchors: Dictionary) -> void:
 	for s in spots:
 		if spare > 0 and placed.size() >= want_n:
 			break  # all stand: the spare spots go unused
+		if not await _paced(k, &"town_scenes.cast"):
+			return
 		i += 1
 		var want: Vector3 = s["at"]
 		if bool(role.get("off_centre", false)):
@@ -891,6 +906,8 @@ func _stage_role(k: Dictionary, role: Dictionary, anchors: Dictionary) -> void:
 			root.set_meta("keepers", keepers)
 	# Their minds: a posted person's post (npc_mind.gd), a walker's task.
 	for pi in placed.size():
+		if not await _paced(k, &"town_scenes.mind"):
+			return
 		var body: Node3D = placed[pi][0]
 		var s: Dictionary = placed[pi][1]
 		match does:
@@ -1002,6 +1019,8 @@ func _stage_walkers(k: Dictionary, role: Dictionary, a: Dictionary, does: String
 		n = mini(n, cap / 2 if does == "beat" else cap)  # a beat is walked by a pair
 	var r := float(root.get_meta("square_r", 1.0))
 	for i in n:
+		if not await _paced(k, &"town_scenes.walker"):
+			return
 		match does:
 			"beat":
 				var route := _beat(root, tl, r, i, rng, W)
