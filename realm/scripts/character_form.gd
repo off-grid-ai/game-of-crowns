@@ -20,7 +20,8 @@ func _init(owner: UI) -> void:
 ## Given someone already in the realm, the same form reshapes them instead, with what they remember.
 ## host: the person's own card (hero_view.gd) to write in place, the form inside it; done(spec) then takes the
 ## written spec ({} on Cancel) instead of the signals, and the card saves it.
-func show_character_form(house_id: int, house_name: String, opts: Dictionary, person := {}, host: Control = null, done := Callable()) -> void:
+## Returns the form's action row (Cancel and Make it so), for a host card to pin below its scrolling column.
+func show_character_form(house_id: int, house_name: String, opts: Dictionary, person := {}, host: Control = null, done := Callable()) -> Control:
 	var editing := not person.is_empty()
 	# One of the crown's family (the Lore's Edit, bridge royals.js): name, nature and story only; no lord, aim or vow.
 	var royal := bool(person.get("royal", false))
@@ -112,13 +113,19 @@ func show_character_form(house_id: int, house_name: String, opts: Dictionary, pe
 	var goal := OptionButton.new()
 	goal.visible = not royal
 	var goals: Array = opts.get("goals", []).duplicate()
+	# Their aim now, always shown: a person of the book as written carries its words as `goal`, one of the reign its
+	# kind with the words in `goals`.
 	if editing and person.get("goal") != null and not goals.any(func(g): return g["kind"] == person["goal"]):
-		goals.push_front({"kind": person["goal"], "text": String(person.get("goals", [""])[0])})
+		var said: Array = person.get("goals", []) if person.get("goals") is Array else []
+		goals.push_front({"kind": person["goal"], "text": String(said[0]) if not said.is_empty() else String(person["goal"])})
 	for g in goals:
 		goal.add_item(String(g["text"]).capitalize())
 	for i in goals.size():
 		if goals[i]["kind"] == person.get("goal"):
 			goal.selected = i
+	if goal.selected < 0 and goals.size() > 0:
+		goal.selected = 0
+	var aim_was := goal.selected
 	v.add_child(goal)
 	var loyal_row := HBoxContainer.new()
 	loyal_row.add_child(T.label("Loyalty to their lord  "))
@@ -127,11 +134,15 @@ func show_character_form(house_id: int, house_name: String, opts: Dictionary, pe
 	loyalty.max_value = 100
 	loyalty.value = int(person.get("loyalty", 60))
 	loyalty.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	loyalty.scrollable = false  # the wheel scrolls the form, never moves their loyalty
+	var loyalty_was := loyalty.value
 	loyal_row.add_child(loyalty)
 	loyal_row.visible = not royal
 	v.add_child(loyal_row)
 	# Their past, as their card tells it: yours to rewrite.
+	v.add_child(T.label("Their story"))
 	var story := TextEdit.new()
+	story.scroll_fit_content_height = true  # it grows with what's written: the form scrolls, not the box
 	story.text = String(person.get("story" if royal else "backstory", "")) if person.get("story" if royal else "backstory") is String else ""
 	story.placeholder_text = "Their past: where they come from, what they lost, whom they hate"
 	story.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
@@ -200,8 +211,13 @@ func show_character_form(house_id: int, house_name: String, opts: Dictionary, pe
 			finish.call(rs)
 			return
 		var spec := {"house": house_id, "name": name.text.strip_edges(), "gender": "female" if gender.selected == 1 else "male",
-			"age": int(age.value), "traits": picked, "other": other.text.strip_edges(), "goal": goals[goal.selected]["kind"],
-			"loyalty": int(loyalty.value), "backstory": past.text.strip_edges(), "past": story.text.strip_edges().left(300)}
+			"age": int(age.value), "traits": picked, "other": other.text.strip_edges(),
+			"backstory": past.text.strip_edges(), "past": story.text.strip_edges().left(300)}
+		# Their aim and loyalty change only when the player moved them (a reshaping never stirs a house on its own).
+		if goals.size() > 0 and (not editing or goal.selected != aim_was):
+			spec["goal"] = goals[goal.selected]["kind"]
+		if not editing or loyalty.value != loyalty_was:
+			spec["loyalty"] = int(loyalty.value)
 		if role.visible and not role_keys.is_empty():
 			spec["role"] = role_keys[role.selected]
 		if editing:
@@ -217,3 +233,4 @@ func show_character_form(house_id: int, house_name: String, opts: Dictionary, pe
 		else:
 			ui.character_created.emit(spec)
 		finish.call(spec)))
+	return go

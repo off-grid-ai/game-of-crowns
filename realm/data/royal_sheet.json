@@ -60,7 +60,7 @@
   { "above": 45, "says": "Loyal to {liege}, for now." },
   { "above": 30, "says": "Wavering: another house could buy this loyalty." },
   { "above": 0, "says": "Would sell {liege} for the right price." } ],
- "lord_sheet": { "_": "A person's sheet (hero_view.gd; CK3's character window): a wide card centred over the realm or the menu. dim: what lies behind it (r, g, b, a; dark enough that nothing behind reads); width of the card (narrower on a small screen); face: the painted portrait at the card's left (width, height; it shrinks to half on a narrow screen before the name does); name_min: the least width of the name column.", "dim": [0.03, 0.02, 0.02, 0.88], "width": 880, "face": [240, 320], "name_min": 380 },
+ "lord_sheet": { "_": "A person's sheet (hero_view.gd; CK3's character window): a wide card centred over the realm or the menu. dim: what lies behind it (r, g, b, a; dark enough that nothing behind reads); width of the card (narrower on a small screen); face: the painted portrait at the card's left (width, height; it shrinks to half on a narrow screen before the name does); name_min: the least width of the name column; edit_least: the least height of the column the form scrolls in (it keeps the view's height when that is taller).", "dim": [0.03, 0.02, 0.02, 0.88], "width": 880, "face": [240, 320], "name_min": 380, "edit_least": 320 },
  "lord_loyalty_danger": 30,
  "lord_holdings": { "_": "A lord's sheet, what he holds (hero_view.gd _holdings; bridge /world cities, vassals): head; towns ({towns}) and sworn ({houses}) for a great house's lord; vassal ({house}, {town}, {liege}) for a sworn lord.",
   "head": "Holds",

@@ -164,7 +164,7 @@ func _fill_panel(p: Dictionary, house: Dictionary, editing := false) -> void:
 	v.minimum_size_changed.connect(func(): _fit_panel(scroll, v))
 	_fit_panel.call_deferred(scroll, v)
 	if editing:
-		_editor(v, p, house)
+		_editor(v, p, house, right)
 		return
 	v.add_child(T.label("Nature"))
 	var nature := ", ".join(p.get("traits", []))
@@ -228,6 +228,12 @@ func _action(text: String, colour: Color, on_press: Callable) -> Button:
 	var b := Button.new()
 	b.text = text
 	b.focus_mode = Control.FOCUS_NONE
+	b.pressed.connect(on_press)
+	return _bare(b, colour)
+
+
+## A button worn as words alone (no box, no padding), so it lines up with the column.
+static func _bare(b: Button, colour: Color) -> Button:
 	b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	var none := StyleBoxEmpty.new()
 	none.set_content_margin_all(0)
@@ -236,7 +242,6 @@ func _action(text: String, colour: Color, on_press: Callable) -> Button:
 	b.add_theme_color_override("font_color", colour)
 	b.add_theme_color_override("font_hover_color", colour.lightened(0.3))
 	b.add_theme_color_override("font_pressed_color", T.ACCENT)
-	b.pressed.connect(on_press)
 	return b
 
 
@@ -255,7 +260,9 @@ static func _who(p: Dictionary) -> String:
 ## The card turned into the one character form (character_form.gd, written in place): name, nature, aim,
 ## loyalty, their story and what they remember. Saved through the bridge (main.gd save_person); the card then
 ## shows the new self.
-func _editor(v: VBoxContainer, p: Dictionary, house: Dictionary) -> void:
+## The form sits at the card's own size and place (its column scrolls, wheel and trackpad); its Cancel and Make it so
+## are pinned below the column where the card's actions stand, lined up with it.
+func _editor(v: VBoxContainer, p: Dictionary, house: Dictionary, right: VBoxContainer) -> void:
 	var ask := trait_options if trait_options.is_valid() else func(cb): cb.call({})
 	ask.call(func(opts):
 		if not is_instance_valid(v):
@@ -263,7 +270,7 @@ func _editor(v: VBoxContainer, p: Dictionary, house: Dictionary) -> void:
 		var person := p.duplicate()
 		if not person.get("backstory") and person.get("story"):
 			person["backstory"] = person["story"]
-		ui.form_card.show_character_form(int(house.get("id", -1)), String(house.get("name", "")), opts if opts is Dictionary else {}, person, v, func(spec: Dictionary):
+		var go: Control = ui.form_card.show_character_form(int(house.get("id", -1)), String(house.get("name", "")), opts if opts is Dictionary else {}, person, v, func(spec: Dictionary):
 			if spec.is_empty():
 				_fill_panel(p, house)
 				return
@@ -282,7 +289,15 @@ func _editor(v: VBoxContainer, p: Dictionary, house: Dictionary) -> void:
 					now["traits"] = spec["traits"]
 				ui.toast("%s is changed." % String(now.get("name", "")))
 				_fill_panel(now, house)
-				name_changed.emit())))
+				name_changed.emit()))
+		if go and is_instance_valid(right):
+			go.get_parent().remove_child(go)
+			right.add_child(go)
+			(go as BoxContainer).alignment = BoxContainer.ALIGNMENT_BEGIN
+			go.add_theme_constant_override("separation", 20)
+			for b in go.get_children():
+				if b is Button:
+					_bare(b, T.ACCENT if b.get_index() == go.get_child_count() - 1 else T.TEXT_2))
 
 
 ## The lord's sheet (CK3's character window: the opinion, its reasons on the sheet): what the head of a great
@@ -346,11 +361,19 @@ func _holdings(v: VBoxContainer, p: Dictionary, house: Dictionary) -> void:
 
 
 ## The card as tall as what it says, up to the screen's height (then it scrolls).
+## Writing on the card keeps the card as it was (the view's height): the form scrolls inside it.
+var _view_h := 0.0
+
+
 func _fit_panel(scroll: ScrollContainer, v: Control) -> void:
 	if not is_instance_valid(v) or not v.is_inside_tree():
 		return
 	var room := get_viewport().get_visible_rect().size.y - 64.0 - 48.0 - 150.0  # the screen's margin, the card's pads, the header and buttons
-	scroll.custom_minimum_size.y = minf(v.get_combined_minimum_size().y, room)
+	if _shown.get("editing", false):
+		scroll.custom_minimum_size.y = minf(maxf(_view_h, float(Data.num("royal_sheet", "lord_sheet.edit_least", 320))), room)
+	else:
+		scroll.custom_minimum_size.y = minf(v.get_combined_minimum_size().y, room)
+		_view_h = scroll.custom_minimum_size.y
 	_panel.reset_size()
 
 

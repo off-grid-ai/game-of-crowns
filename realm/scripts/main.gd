@@ -466,8 +466,10 @@ func _ready() -> void:
 			var was := String(p.get("name", ""))
 			if String(spec.get("name", was)) != was:
 				bridge.rename(was, String(spec["name"]), func(_c, _d): pass)
-			bridge.write_person({"id": spec.get("id", ""), "backstory": spec.get("past", ""), "memories": spec.get("memories", []),
-				"traits": spec.get("traits", []), "loyalty": spec.get("loyalty", 50)}, cb)
+			var change := {"id": spec.get("id", ""), "backstory": spec.get("past", ""), "memories": spec.get("memories", []), "traits": spec.get("traits", [])}
+			if spec.has("loyalty"):
+				change["loyalty"] = spec["loyalty"]  # only when the player moved it
+			bridge.write_person(change, cb)
 		else:
 			bridge.edit_character(spec, cb)
 	hero.name_changed.connect(lore.refresh)
