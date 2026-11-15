@@ -26,6 +26,7 @@ var _fruit: Array = []  # orchard trees: the catalogue's orchard_tree (the natur
 const FIELDS := ["field-wheat", "field-green", "field-fallow"]  # the kinds of field a farmstead ploughs (field_ground paints each)
 
 var _realm := ""  # the realm the farm sites were surveyed for
+var _city_sig := ""  # the cities (ids and tiles) the farms were last laid out for: none changed, none laid again
 var _sites: Array = []  # {tile, at, seed}: every farmstead the open land offers
 var _patches := {}  # "cx|cz" -> {sig, node, steads}: the farms drawn, by patch of land
 var _laid := 0  # goes up whenever a patch is laid or taken up
@@ -79,6 +80,7 @@ func _update(cities: Array) -> void:
 			if is_instance_valid(_patches[p]["node"]):
 				_patches[p]["node"].queue_free()
 		_patches.clear()
+		_city_sig = ""
 		if roads:
 			roads.clear_tracks()
 		_sites = await _survey()
@@ -88,7 +90,13 @@ func _update(cities: Array) -> void:
 			return
 		_realm = realm
 	# Which farms stand (none too close to a town) and where each one's track
-	# leads, gathered by patch; a patch is redrawn only when that changes.
+	# leads, gathered by patch; a patch is redrawn only when that changes. Read only when a town came, went or moved
+	# (the cities' ids and tiles): a world sync that changed none skips it (supervisor's battle run nav7: the
+	# countryside walked every farm site against every town on each world sync).
+	var city_sig := str(cities.map(func(c): return [c.get("id"), c.get("x"), c.get("y")]))
+	if city_sig == _city_sig:
+		await _grass(cities)
+		return
 	var want := {}
 	# Every farm site against every town, on every reading: paced like the raising below (FPS P0: 'countryside'
 	# held frames up to 360 ms before its first pause in the 6aaf2121 run).
@@ -131,6 +139,7 @@ func _update(cities: Array) -> void:
 			if realm != _realm:
 				return
 			slice = Time.get_ticks_msec()
+	_city_sig = city_sig
 	await _grass(cities)
 
 
@@ -784,11 +793,18 @@ func _grass(cities: Array) -> void:
 		var p: Vector3 = terrain.world_pos(float(r[0]["x"]), float(r[0]["y"]))
 		var key := "town:%d:%d:%d" % [int(r[0]["id"]), r[1].get_instance_id(), roads.paths_near(p, 5.5) if roads else 0]
 		places[key] = [p, 5.5, r[1], null, "town:%d" % int(r[0]["id"])]
+	var keys_slice := Time.get_ticks_msec()
 	for patch in _patches.values():
 		for s in patch["steads"]:
 			var p: Vector3 = s["at"]
 			var at := "farm:%d:%d" % [roundi(p.x * 10.0), roundi(p.z * 10.0)]
 			places["%s:%d" % [at, roads.paths_near(p, 3.0) if roads else 0]] = [p, 3.0, null, s, at]
+		if Time.get_ticks_msec() - keys_slice > 8:  # every farm's road count asked: paced like the growing below
+			await PerfTools.next_frame(&"countryside:grass_keys")
+			if _grass_root == null or not is_instance_valid(_grass_root):
+				_grass_sig = ""
+				return
+			keys_slice = Time.get_ticks_msec()
 	for key in _grass_nodes.keys():
 		if not places.has(key):
 			for n in _grass_nodes[key]:

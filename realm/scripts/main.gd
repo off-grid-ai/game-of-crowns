@@ -1166,6 +1166,7 @@ func _on_synced() -> void:
 		roads_laid = true
 		if Time.get_ticks_msec() - tt > 500:
 			print_verbose("BUILD roads+countryside %d ms" % (Time.get_ticks_msec() - tt))
+		await PerfTools.next_frame(&"main:countryside")  # the countryside's own frame; the scenes and the panels in the next
 		_laying = false
 	Engine.set_meta("stage", "scenes.sync")
 	var t_scenes_sync := Time.get_ticks_usec()
