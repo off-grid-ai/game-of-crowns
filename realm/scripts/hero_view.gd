@@ -57,6 +57,10 @@ func open(person: Dictionary, house: Dictionary, from := "the realm") -> void:
 	visible = true
 	if ui and _panel.get_node_or_null("Close") == null:
 		ui.close_x(_panel, close)
+		# The X on the arms' line: its box centred on the head row's 36 px arms, 24 px down (the card's pad).
+		var x := _panel.get_node("Close").get_child(0) as Control
+		x.offset_top = 24.0 + (36.0 - x.custom_minimum_size.y) / 2.0
+		x.offset_bottom = x.offset_top + x.custom_minimum_size.y
 	_fill_panel(person, house)
 	_panel.modulate.a = 0.0
 	_panel.create_tween().tween_property(_panel, "modulate:a", 1.0, 0.16).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
@@ -125,6 +129,10 @@ func _fill_panel(p: Dictionary, house: Dictionary, editing := false) -> void:
 	title.autowrap_mode = TextServer.AUTOWRAP_WORD  # whole words only, never a name broken letter by letter
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	head.add_child(title)
+	# Room at the line's end for the close X, which sits on this same line (open: centred on the arms).
+	var under_x := Control.new()
+	under_x.custom_minimum_size.x = 24.0
+	head.add_child(under_x)
 	var rank := str(p["role"]) if p.get("role") else (str(p["rank"]).capitalize() if p.get("rank") else "")
 	if str(p.get("gender", "")) == "female":
 		rank = {"Lord": "Lady", "Bannerman": "Bannerwoman", "Heir": "Heiress"}.get(rank, rank)
@@ -201,31 +209,35 @@ func _fill_panel(p: Dictionary, house: Dictionary, editing := false) -> void:
 	buttons.add_theme_constant_override("separation", 12)
 	right.add_child(buttons)
 	if save_person.is_valid() and ui:
-		var change := Button.new()
-		change.text = "Change who they are"
-		change.focus_mode = Control.FOCUS_NONE
-		change.add_theme_color_override("font_color", T.ACCENT)
-		change.pressed.connect(func(): _fill_panel(p, house, true))
-		buttons.add_child(change)
+		buttons.add_child(_action("Change who they are", T.ACCENT, func(): _fill_panel(p, house, true)))
 	# Their face from the player's own photo (likeness.gd: painted in the realm's style, or the photo as is).
 	if Likeness.one and not p.get("written", false):
 		var pid := str(p.get("id", ""))
 		if Likeness.one.painting(pid):
 			buttons.add_child(T.prose("Painting your portrait…", T.SIZE_BODY, T.TEXT_2))
 		else:
-			var photo := Button.new()
-			photo.text = "Add your photo"
-			photo.flat = true
-			photo.focus_mode = Control.FOCUS_NONE
+			var photo := _action("Add your photo", T.TEXT, func(): Likeness.one.pick(pid, _who(p)))
 			photo.tooltip_text = "Your own face, painted into the realm"
-			photo.pressed.connect(func(): Likeness.one.pick(pid, _who(p)))
 			buttons.add_child(photo)
-	var back := Button.new()
-	back.text = "←  Back to %s   (%s)" % [back_to, Keys.label("back").get_slice(" / ", 0)]
-	back.flat = true
-	back.focus_mode = Control.FOCUS_NONE
-	back.pressed.connect(close)
-	buttons.add_child(back)
+	buttons.add_child(_action("←  Back to %s (%s)" % [back_to, Keys.label("back").get_slice(" / ", 0)], T.TEXT_2, close))
+
+
+## One of the card's actions: its words alone, no box, so its first letter stands on the column's left edge like
+## every line above it (a button's own padding pushed the row in); brighter on hover.
+func _action(text: String, colour: Color, on_press: Callable) -> Button:
+	var b := Button.new()
+	b.text = text
+	b.focus_mode = Control.FOCUS_NONE
+	b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	var none := StyleBoxEmpty.new()
+	none.set_content_margin_all(0)
+	for st in ["normal", "hover", "pressed", "focus", "disabled", "hover_pressed"]:
+		b.add_theme_stylebox_override(st, none)
+	b.add_theme_color_override("font_color", colour)
+	b.add_theme_color_override("font_hover_color", colour.lightened(0.3))
+	b.add_theme_color_override("font_pressed_color", T.ACCENT)
+	b.pressed.connect(on_press)
+	return b
 
 
 ## A portrait began or arrived (likeness.gd): the card shows it, unless the player is writing on it.
