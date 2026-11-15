@@ -34,7 +34,7 @@ func _process(_delta: float) -> void:
 
 ## How much of the marks shows at the camera's distance; none while the painted overview is up (it draws its own).
 func _alpha() -> float:
-	if main == null or main.rig == null or not main.labels.visible:
+	if main == null or main.rig == null or main.labels == null or not main.labels.visible:  # no marks before the map's labels are made
 		return 0.0
 	if main.get("over") and main.over._over_open:
 		return 0.0

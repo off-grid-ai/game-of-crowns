@@ -1627,8 +1627,8 @@ func _where_line(reign: Dictionary) -> void:
 		for c in data.get("list", []):
 			if String(c.get("id", "")) == rid or (rid == "" and String(c.get("id", "")) == String(data.get("active", ""))):
 				var sv: Dictionary = c.get("save", {}) if c.get("save") is Dictionary else {}
-				if String(sv.get("lastRuling", "")) != "":
-					l.text = String(mw.get("last", "Last ruling: {ruling}")).replace("{ruling}", String(sv["lastRuling"]))
+				if sv.get("lastRuling") is String and String(sv["lastRuling"]) != "":  # null until the King has ruled
+					l.text = str(mw.get("last", "Last ruling: {ruling}")).replace("{ruling}", String(sv["lastRuling"]))
 					l.visible = true
 				return)
 

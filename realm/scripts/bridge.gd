@@ -492,7 +492,10 @@ func _post(path: String, body: Dictionary, cb: Callable) -> void:
 	add_child(req)
 	req.request_completed.connect(func(_r, code, _h, resp):
 		req.queue_free()
-		var data = JSON.parse_string(resp.get_string_from_utf8())
+		# A bridge restarting answers with nothing (code 0, an empty body): read only what is there, quietly.
+		var j := JSON.new()
+		var text := (resp as PackedByteArray).get_string_from_utf8()
+		var data = j.data if text != "" and j.parse(text) == OK else {}
 		cb.call(code, data if data is Dictionary or data is Array else {}))
 	req.request(BASE + path, ["Content-Type: application/json"], HTTPClient.METHOD_POST, JSON.stringify(body))
 

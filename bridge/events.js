@@ -202,7 +202,7 @@ export function answer(ctx, i) {
   Royals.ruled(ctx, `event:${card.id}`, Number(i), ch.against ?? []);  // a choice against his focus weighs on him (royals.js)
   if (ch.later) e.later.push({ turn: turn + (ch.later.in ?? 2), effect: { ...ch.later, text: wording(`event:${card.id}:later:${Number(i)}`, ch.later.text) }, subject: e.up.subject });
   const told = fill(said ?? ch.label, e.up.subject);
-  meta.lastRuling = told;  // the save card's line (reign.js saveCard)
+  if (told) meta.lastRuling = told;  // the save card's line (reign.js saveCard): never blanked by a choice with no words
   e.up = null;
   chron.saveMeta(meta);
   return [200, { ok: true, text: told }];
