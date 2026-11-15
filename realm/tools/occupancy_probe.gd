@@ -19,7 +19,10 @@ extends SceneTree
 ##   6. a town built piece by piece with is_clear asks between the pieces: the asks average under 5 us (or half again
 ##      a still town's on a loaded machine), each piece is read once (stamp_reads), the answers still equal the
 ##      reference over the town;
-##   7. obstacle_shapes (the navigation's bake contract) lists the shapes over an area with their layers.
+##   7. obstacle_shapes (the navigation's bake contract) lists the shapes over an area with their layers;
+##   8. a big town (thousands of shapes) hidden and shown, its life setting down and taking away a stall, and a host's
+##      regiments re-claiming their ground every frame (as a battle and a moving lens do) cost the engine's physics
+##      frame under 1 ms and the ground's own upkeep under 1 ms a frame (Mac's battle, 2026-11-15: physics 10-26 ms).
 ## Prints CHECK lines; exits 1 on a fail.   arch -arm64 godot --headless --path realm -s res://tools/occupancy_probe.gd
 
 const Ground := preload("res://scripts/ground.gd")
@@ -33,6 +36,8 @@ var height := 12
 func height_at(_x: float, _z: float) -> float:
 	return 0.0
 func is_land(x: float, z: float) -> bool:
+	if x < 0.0 or z < 0.0 or x > 48.0 or z > 48.0:
+		return false  # the sea round the realm
 	if z > 30.0 and z < 31.5:
 		return false  # a river across the land
 	return Vector2(x - 40.0, z - 8.0).length() > 4.0  # a lake
@@ -160,7 +165,7 @@ func _run() -> void:
 	while not Ground.land_ready() and waited < 600:
 		await process_frame
 		waited += 1
-	_check(Ground.land_ready(), "the land's mask is read off the terrain on a worker (%d frames)" % waited)
+	_check(Ground.land_ready(), "the land's mask is read off the terrain on the frame's budget (%d frames)" % waited)
 	_agree("set down", 20000)
 	_speed()
 	_rectangles()
@@ -168,6 +173,7 @@ func _run() -> void:
 	await _built_piece_by_piece()
 	_agree("after the changes", 8000)
 	_shapes()
+	await _churn()
 	print("OCCUPANCY %s (%d failed)" % ["PASS" if fail == 0 else "FAIL", fail])
 	quit(1 if fail else 0)
 
@@ -481,3 +487,46 @@ func _shapes() -> void:
 	print("obstacle shapes: %d over the realm, %d trees in the wood" % [all.size(), trees_only.size()])
 	_check(not all.is_empty() and whole, "obstacle_shapes lists every shape with its world transform, shape and layer (%d)" % all.size())
 	_check(trees_only.size() > 100 and trees_only.all(func(e: Dictionary) -> bool: return int(e["layer"]) == 1 << 2), "obstacle_shapes keeps to the layers asked for (%d trunks)" % trees_only.size())
+
+
+# --- 8. a battle's churn on the engine ------------------------------------------------------------------------------
+
+func _churn() -> void:
+	var c := Vector3(24, 0, 12)
+	var t := Node3D.new()
+	t.position = c
+	t.set_meta("reach", 8.0)
+	towns.add_child(t)
+	towns.towns[5] = {"node": t}
+	var life := Node3D.new()
+	life.name = "Life"
+	t.add_child(life)
+	var kit := {}
+	for i in 1500:  # a big town: houses and dressing
+		_kit(kit, t, Vector3(-7.5 + (i % 50) * 0.3, 0, -7.5 + (i / 50) * 0.5), Vector3(0.18, 0.3, 0.15))
+	Ground.is_clear(c)
+	for f in 3:
+		await physics_frame
+	var phys := 0.0
+	var upkeep := 0
+	var frames := 60
+	for f in frames:
+		if f % 10 == 0:
+			t.visible = not t.visible  # streamed out and in as the lens moves
+		var stall := _kit(kit, life, Vector3(rng.randf_range(-6, 6), 0, rng.randf_range(-6, 6)), Vector3(0.24, 0.2, 0.12))
+		for r in 30:  # a host's regiments stepping on
+			_claim("churn %d" % r, _rect(Vector2(4 + r * 1.3, 4 + f * 0.05), Vector2(0.5, 0.3), 0.1 * f), "host 7")
+		var t0 := Time.get_ticks_usec()
+		Ground.is_clear(c)  # the next ask brings what stands up to date
+		upkeep += Time.get_ticks_usec() - t0
+		await physics_frame  # resumed inside the physics frame: from here to the next process frame is the engine's step
+		var s0 := Time.get_ticks_usec()  # (Performance's physics monitor is a once-a-second max: no use for one step)
+		await process_frame
+		phys += (Time.get_ticks_usec() - s0) / 1000.0
+		stall.free()
+	t.visible = true
+	print("churn: physics frame %.2f ms, the ground's upkeep %.2f ms a frame" % [phys / frames, upkeep / 1000.0 / frames])
+	_check(phys / frames < 1.0, "a battle's churn costs the physics frame under 1 ms (%.2f ms)" % (phys / frames))
+	_check(upkeep / 1000.0 / frames < 1.0, "a battle's churn costs the ground's upkeep under 1 ms a frame (%.2f ms)" % (upkeep / 1000.0 / frames))
+	for r in 30:
+		_release("churn %d" % r)

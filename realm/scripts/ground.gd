@@ -16,7 +16,8 @@ extends RefCounted
 ## new bodies before every query); a body's shapes are set while it is out of the space, so Jolt builds its compound
 ## once, not once a shape.
 ## The land (dry, walkable) is the terrain's own static data (terrain.gd dry_rect, is_land), read once into a mask of
-## physics.land_cell cells on a WorkerThreadPool task, a cell dry only where its four corners are; a change to the
+## physics.land_cell cells a block at a time on the frame's budget, a cell dry only where its four corners are (never on
+## a worker: the terrain is a node, freed at quit and written while towns level their squares); a change to the
 ## land (terrain.ground_changed: a square levelled, a ford laid) is read again there. tools/rules_check.sh keeps every
 ## other script from asking the terrain or the footprints itself; tools/occupancy_probe.gd guards the answers.
 ##   is_clear(p, radius), area_free(poly), nearest_clear(p, radius, max_dist), obstacle_shapes(area): the asks.
@@ -57,6 +58,7 @@ const AROUND: Array[Vector2] = [Vector2(0, 0), Vector2(1, 0), Vector2(0.70710678
 
 static var TALL: float = Data.num("ground", "physics.tall", 100.0)  # half the height of every obstacle's prism
 static var CHUNK: float = Data.num("ground", "physics.chunk", 16.0)  # world units of a source's (the woods') body
+static var BIN: float = Data.num("ground", "physics.bin", 4.0)  # world units of a town's or a place's body: a piece changed refills only its bin
 static var _lc: float = Data.num("ground", "physics.land_cell", 0.125)  # world units of a land cell
 static var _lb: int = maxi(1, roundi(Data.num("ground", "physics.land_block", 2.0) / Data.num("ground", "physics.land_cell", 0.125)))  # land cells to a block's side
 
@@ -86,6 +88,7 @@ static var _kind_ids := {}  # claim kind -> {id: body}: an exact kind opened by 
 static var _sources: Array = []  # keepers of many small things in the way (the woods): obstacles(area) -> Array
 static var _src_bodies := {}  # chunk (Vector2i) -> {source instance id: [body, owned shapes]}
 static var _src_dirty := {}  # chunk (Vector2i) -> true: its trunks are read again (before an ask over it, or on the budget)
+static var shapes_rev := 0  # counts bodies filled and freed (what stands changed): the navigation reads again only then (nav_world.gd)
 static var claims_rev := 0  # counts claims made and released: a fight's crowd (army_melee.gd) lays the held ground afresh after
 
 # --- the land ---------------------------------------------------------------------------------------------------------
@@ -93,8 +96,10 @@ static var _lw := 0  # land cells across (x)
 static var _lh := 0  # and down (z)
 static var _land := PackedByteArray()  # cell (row-major) -> DRY | WALK; empty until read
 static var _lblocks := PackedByteArray()  # block -> the bits every cell of it has
-static var _land_task := -1  # the worker reading the land, while it reads
-static var _land_next: Array = []  # what it read: [cells, blocks]
+static var _reading := false  # the land is being read, a block at a time on the frame's budget (_tick)
+static var _read_cells := PackedByteArray()  # what has been read so far
+static var _read_blocks := PackedByteArray()
+static var _read_at := 0  # the next block to read
 static var _land_todo: Array = []  # Rect2: land changed since it was read, read again on the main thread
 static var _land_asked := false  # the read has been started
 
@@ -108,6 +113,7 @@ static var _land_asked := false  # the read has been started
 static func is_clear(p: Vector3, radius := 0.0, props := true, free_of: Variant = null, open_kinds: Array = []) -> bool:
 	if not PerfTools.probing:
 		return _is_clear(p, radius, props, free_of, open_kinds)
+	_fresh()  # what stands brought up to date: its own share (ground.stand), not the ask's
 	var t0 := Time.get_ticks_usec()
 	var ok := _is_clear(p, radius, props, free_of, open_kinds)
 	PerfTools.add("ground.is_clear", Time.get_ticks_usec() - t0)  # its share of the frame (GOC_PERF_PROBE)
@@ -140,6 +146,7 @@ static func _is_clear(p: Vector3, radius: float, props: bool, free_of: Variant, 
 static func area_free(poly: PackedVector2Array, props := true, free_of: Variant = null, open_kinds: Array = []) -> bool:
 	if not PerfTools.probing:
 		return _area_free(poly, props, free_of, open_kinds)
+	_fresh()  # its own share (ground.stand)
 	var t0 := Time.get_ticks_usec()
 	var ok := _area_free(poly, props, free_of, open_kinds)
 	PerfTools.add("ground.area_free", Time.get_ticks_usec() - t0)  # its share of the frame (GOC_PERF_PROBE)
@@ -250,12 +257,25 @@ static func open_floor(root: Node3D, poly: PackedVector2Array) -> void:
 ## A body holds `poly` (world XZ) while it stands: no other placement takes that ground. A new claim by `id` replaces
 ## its last. Its shape lies on its kind's layer (ground.json physics.layers: "host <id>" on host, an unnamed kind on claim).
 static func claim(id: Variant, poly: PackedVector2Array, kind := "body") -> void:
-	release(id)
+	var was: Array = _claims.get(id, [])
 	if poly.size() < 3:
+		release(id)
 		return
 	_sp()
 	var shapes: Array = []
 	_prisms(poly, shapes)
+	if not was.is_empty() and was[0] == kind:
+		# The same body moved (a regiment stepping on): its one body keeps its place in the space, its shapes swapped
+		# in place (a claim is a shape or a few: Jolt rebuilds it at once, no body taken out and put back).
+		var body: RID = was[3]
+		PhysicsServer3D.body_clear_shapes(body)
+		for sh: Array in shapes:
+			PhysicsServer3D.body_add_shape(body, sh[1], sh[0])
+		_free_shapes(was[4])
+		_claims[id] = [kind, poly, _bounds(poly), body, shapes]
+		claims_rev += 1
+		return
+	release(id)
 	var body := _body(_claim_bit(kind), "claim", id)
 	_fill(body, shapes)
 	_claims[id] = [kind, poly, _bounds(poly), body, shapes]
@@ -416,6 +436,8 @@ static func _lay_chunk(k: Vector2i) -> void:
 
 ## Every frame: chunks whose things changed are read on the frame's one budget, ahead of any ask.
 static func _tick() -> void:
+	if _reading:
+		_read_land()
 	while not _src_dirty.is_empty() and ViewTier.spend_ok(&"ground"):
 		_lay_chunk(_src_dirty.keys()[0])
 
@@ -438,24 +460,27 @@ static func gone(root: Node3D) -> void:
 	_drop(rec)
 
 
-## Brings what stands up to date before an ask: the land read in when its worker is done, the realm's towns read
+## Brings what stands up to date before an ask: the land's read started (and what changed re-read), the towns read
 ## once a frame (a town raised or razed), and every root something was set down under, taken from, turned or hidden
 ## since brought up to date: only the pieces set down since are read, the whole root again only when it was turned,
 ## hidden or shown, its yards or its walls changed.
 static func _fresh() -> void:
 	if not _space.is_valid():
 		_sp()
-	if _land_task >= 0 or not _land_todo.is_empty() or not _land_asked:
+	if not _land_asked or (not _reading and not _land_todo.is_empty()):
 		_land_fresh()
 	var f := Engine.get_process_frames()
 	if f != _towns_frame:
 		_sync_towns(f)
 	if not _dirty.is_empty():
+		var t0 := Time.get_ticks_usec() if PerfTools.probing else 0
 		var ids := _dirty.keys()
 		_dirty.clear()
 		for iid in ids:
 			if _roots.has(iid):
 				_stamp(_roots[iid])
+		if PerfTools.probing:
+			PerfTools.add("ground.stand", Time.get_ticks_usec() - t0)  # pieces read and their bins refilled: its share of the frame
 
 
 ## Whether the land has been read (a guard waits for it: tools/occupancy_probe.gd).
@@ -493,9 +518,11 @@ static func _sync_towns(f: int) -> void:
 static func _add_root(root: Node3D, clip: Rect2, town: bool) -> void:
 	_sp()
 	var iid := root.get_instance_id()
-	# kids: piece instance id -> ["town" or "life", its shapes]; new: pieces set down since, read at the next ask.
-	_roots[iid] = {"iid": iid, "root": root, "clip": clip, "town": town, "sig": [], "kids": {}, "new": {},
-		"bodies": {"town": _body(_bit("building"), "town", iid), "life": _body(_bit("life"), "life", iid)}, "refill": {}}
+	# kids: piece instance id -> ["town" or "life", the bins its shapes lie in]; bins: Vector3i (x, z by BIN, 0 its
+	# builders' or 1 its life's) -> {body, pieces: {piece id: shapes}}; new: pieces set down since, read at the next ask;
+	# on: whether its builders' and its life's bodies stand in the space (shown) or out of it (hidden).
+	_roots[iid] = {"iid": iid, "root": root, "clip": clip, "town": town, "sig": [], "kids": {}, "bins": {}, "new": {},
+		"refill": {}, "on": {"town": false, "life": false}}
 	_dirty[iid] = true
 	_hook(root, iid)
 
@@ -503,13 +530,11 @@ static func _add_root(root: Node3D, clip: Rect2, town: bool) -> void:
 ## A root's whole record let go: its pieces' shapes and its bodies freed.
 static func _drop(rec: Dictionary) -> void:
 	_unstamp(rec)
-	for b: RID in (rec["bodies"] as Dictionary).values():
-		_free_body(b, [])
 	_roots.erase(rec["iid"])
 
 
 ## A root's (or its Life's) pieces set down are read at the next ask, a piece taken away is lifted at once; its
-## showing or leaving the tree has it looked at again.
+## showing, leaving or entering the tree has it looked at again.
 static func _hook(n: Node, iid: int) -> void:
 	if _hooked.has(n.get_instance_id()):
 		return
@@ -517,6 +542,7 @@ static func _hook(n: Node, iid: int) -> void:
 	n.child_entered_tree.connect(func(c: Node) -> void: _entered(iid, c))
 	n.child_exiting_tree.connect(func(c: Node) -> void: _left(iid, c))
 	n.tree_exiting.connect(func() -> void: _dirty[iid] = true)
+	n.tree_entered.connect(func() -> void: _dirty[iid] = true)
 	if n is Node3D:
 		(n as Node3D).visibility_changed.connect(func() -> void: _dirty[iid] = true)
 
@@ -530,52 +556,63 @@ static func _entered(iid: int, c: Node) -> void:
 	_dirty[iid] = true
 
 
-## A piece taken away: its shapes let go, its body refilled at the next ask.
+## A piece taken away: its shapes let go, its bins refilled at the next ask.
 static func _left(iid: int, c: Node) -> void:
 	var rec: Dictionary = _roots.get(iid, {})
 	if rec.is_empty():
 		return
 	var k := c.get_instance_id()
 	(rec["new"] as Dictionary).erase(k)
-	var e: Array = rec["kids"].get(k, [])
-	if not e.is_empty():
-		_free_shapes(e[1])
-		(rec["kids"] as Dictionary).erase(k)
-		rec["refill"][e[0]] = true
+	if _lift(rec, k):
 		_dirty[iid] = true
 
 
-## Brings a root's shapes up to date: all of them afresh if it was shown, hidden, turned or moved, or its yards, its
-## Life's showing or its walls changed since; else only the pieces set down since, each read once ("town" for its
-## builders', "life" for its life's). Its bodies are refilled once after.
+## A piece's shapes lifted out of its bins (each bin refilled at the next commit); whether it had any.
+static func _lift(rec: Dictionary, k: int) -> bool:
+	var e: Array = rec["kids"].get(k, [])
+	if e.is_empty():
+		return false
+	for bk: Vector3i in e[1]:
+		var bin: Dictionary = rec["bins"][bk]
+		_free_shapes(bin["pieces"][k])
+		(bin["pieces"] as Dictionary).erase(k)
+		rec["refill"][bk] = true
+	(rec["kids"] as Dictionary).erase(k)
+	return true
+
+
+## Brings a root's shapes up to date. Turned or moved, its yards or its walls changed: every piece read afresh. Else
+## only the pieces set down since, each read once ("town" for its builders', "life" for its life's). Hidden or shown
+## (it, or its Life): its bodies taken out of the space or put back, nothing read again (a town drawn far off or
+## streamed out is hidden and shown as the lens moves). Only the bins that changed are refilled.
 static func _stamp(rec: Dictionary) -> void:
 	var root: Node3D = rec["root"] if is_instance_valid(rec["root"]) else null
 	if root == null:
 		_drop(rec)
 		return
-	var shown := root.is_inside_tree() and root.is_visible_in_tree()
-	var life: Node3D = root.get_node_or_null("Life") if shown else null
-	var sig: Array = [false]
-	if shown:
-		sig = [true, life != null and life.visible, int(root.get_meta("stone_walls_rev", 0)), (root.get_meta("yards", []) as Array).duplicate(), root.global_transform]
+	if not root.is_inside_tree():
+		_switch(rec, {"town": false, "life": false})
+		return
+	var life: Node3D = root.get_node_or_null("Life")
+	var shown := root.is_visible_in_tree()
+	var on := {"town": shown, "life": shown and life != null and life.visible}
+	var sig: Array = [int(root.get_meta("stone_walls_rev", 0)), (root.get_meta("yards", []) as Array).duplicate(), root.global_transform]
 	var news: Dictionary = rec["new"]
 	if sig != rec["sig"]:
 		_unstamp(rec)
 		rec["sig"] = sig
-		news.clear()
-		if shown:
-			rec["xf"] = sig[4]
-			rec["yards"] = _yards(sig[3], sig[4])
-			_read(rec, root, root, "town", false)  # what the root itself carries (a place's bulk-drawn dressing)
-			for c in root.get_children():
-				if c != life:
-					_read(rec, root, c, "town")
-			if life:
-				_hook(life, rec["iid"])
-				if sig[1]:
-					_read(rec, root, life, "life", false)
-					for c in life.get_children():
-						_read(rec, root, c, "life")
+		rec["on"] = on
+		rec["xf"] = sig[2]
+		rec["yards"] = _yards(sig[1], sig[2])
+		_read(rec, root, root, "town", false)  # what the root itself carries (a place's bulk-drawn dressing)
+		for c in root.get_children():
+			if c != life:
+				_read(rec, root, c, "town")
+		if life:
+			_hook(life, rec["iid"])
+			_read(rec, root, life, "life", false)
+			for c in life.get_children():
+				_read(rec, root, c, "life")
 	elif not news.is_empty():
 		var pieces := news.values()
 		news.clear()
@@ -583,29 +620,46 @@ static func _stamp(rec: Dictionary) -> void:
 			if not is_instance_valid(c) or not (c as Node).is_inside_tree():
 				continue
 			var up := (c as Node).get_parent()
-			if up == root:
+			if up == root and c != life:
 				_read(rec, root, c, "town")
-			elif life and up == life and sig[1]:
+			elif life and up == life:
 				_read(rec, root, c, "life")
+			elif c == life:
+				_hook(life, rec["iid"])
+				_read(rec, root, life, "life", false)
+				for l in life.get_children():
+					_read(rec, root, l, "life")
+	_switch(rec, on)
 	_commit(rec)
 
 
-## One piece's outlines (nav_ground.gd piece: it and all under it, `deep`) as prisms on its root's `what` body, in
-## place of what it stood on before. An outline outside the root's area, or wholly in its open floor, is left out.
+## A root's builders' and life's bodies put in the space or taken out of it as `on` says, its shapes kept.
+static func _switch(rec: Dictionary, on: Dictionary) -> void:
+	if on == rec["on"]:
+		return
+	rec["on"] = on
+	if not (rec["bins"] as Dictionary).is_empty():
+		shapes_rev += 1
+	for bk: Vector3i in rec["bins"]:
+		var body: RID = rec["bins"][bk]["body"]
+		var want: bool = on["life" if bk.z == 1 else "town"] and PhysicsServer3D.body_get_shape_count(body) > 0
+		PhysicsServer3D.body_set_space(body, _space if want else RID())
+
+
+## One piece's outlines (nav_ground.gd piece: it and all under it, `deep`) as prisms in its root's bins (BIN world
+## units a side, by each outline's middle), in place of what it stood on before. An outline outside the root's area
+## is left out, its open floor (yards) clipped out of it.
 static func _read(rec: Dictionary, root: Node3D, n: Node, what: String, deep := true) -> void:
 	var k := n.get_instance_id()
-	var old: Array = rec["kids"].get(k, [])
-	if not old.is_empty():
-		_free_shapes(old[1])
-		(rec["kids"] as Dictionary).erase(k)
-		rec["refill"][old[0]] = true
+	_lift(rec, k)
 	_reads += 1
 	var polys := NavGround.piece(n, root, terrain, deep)
 	if polys.is_empty():
 		return
 	var xf: Transform3D = rec["xf"]
 	var clip: Rect2 = rec["clip"]
-	var shapes: Array = []
+	var layer := 1 if what == "life" else 0
+	var keys: Array = []
 	for fp: PackedVector2Array in polys:
 		if fp.size() < 3:
 			continue
@@ -613,37 +667,57 @@ static func _read(rec: Dictionary, root: Node3D, n: Node, what: String, deep := 
 		for v in fp:
 			var g := xf * Vector3(v.x, 0.0, v.y)
 			w.append(Vector2(g.x, g.z))
-		if not _bounds(w).intersects(clip, true):
+		var box := _bounds(w)
+		if not box.intersects(clip, true):
 			continue
+		var shapes: Array = []
 		for part: PackedVector2Array in _minus_yards(w, rec["yards"]):
 			_prisms(part, shapes)
-	if shapes.is_empty():
-		return
-	rec["kids"][k] = [what, shapes]
-	rec["refill"][what] = true
+		if shapes.is_empty():
+			continue
+		var mid := box.get_center()
+		var bk := Vector3i(floori(mid.x / BIN), floori(mid.y / BIN), layer)
+		if not rec["bins"].has(bk):
+			rec["bins"][bk] = {"body": _body(_bit(what if what == "life" else "building"), what, rec["iid"]), "pieces": {}}
+		var pieces: Dictionary = rec["bins"][bk]["pieces"]
+		if not pieces.has(k):
+			pieces[k] = []
+			keys.append(bk)
+		(pieces[k] as Array).append_array(shapes)
+		rec["refill"][bk] = true
+	if not keys.is_empty():
+		rec["kids"][k] = [what, keys]
 
 
-## Every root body whose pieces changed filled again with its pieces' shapes, once.
+## Every bin whose pieces changed filled again with its pieces' shapes, once; standing in the space only while its
+## root (or its Life) is shown.
 static func _commit(rec: Dictionary) -> void:
 	var refill: Dictionary = rec["refill"]
 	if refill.is_empty():
 		return
-	for what in refill:
+	for bk: Vector3i in refill:
+		var bin: Dictionary = rec["bins"].get(bk, {})
+		if bin.is_empty():
+			continue
 		var shapes: Array = []
-		for e: Array in (rec["kids"] as Dictionary).values():
-			if e[0] == what:
-				shapes.append_array(e[1])
-		_fill(rec["bodies"][what], shapes)
+		for s: Array in (bin["pieces"] as Dictionary).values():
+			shapes.append_array(s)
+		if shapes.is_empty():
+			_free_body(bin["body"], [])
+			(rec["bins"] as Dictionary).erase(bk)
+			continue
+		_fill(bin["body"], shapes, rec["on"]["life" if bk.z == 1 else "town"])
 	refill.clear()
 
 
 static func _unstamp(rec: Dictionary) -> void:
-	for e: Array in (rec["kids"] as Dictionary).values():
-		_free_shapes(e[1])
+	for bin: Dictionary in (rec["bins"] as Dictionary).values():
+		for s: Array in (bin["pieces"] as Dictionary).values():
+			_free_shapes(s)
+		_free_body(bin["body"], [])
+	(rec["bins"] as Dictionary).clear()
 	(rec["kids"] as Dictionary).clear()
 	(rec["new"] as Dictionary).clear()
-	for b: RID in (rec["bodies"] as Dictionary).values():
-		_fill(b, [])
 	(rec["refill"] as Dictionary).clear()
 	rec["sig"] = []
 
@@ -756,19 +830,28 @@ static func _body(layer: int, what: String, key: Variant) -> RID:
 
 ## A body's shapes set to `shapes` ([Transform3D, shape RID] each) while it is out of the space, so Jolt builds its
 ## compound once; it stands in the space again only with something in it.
-static func _fill(body: RID, shapes: Array) -> void:
+static func _fill(body: RID, shapes: Array, on := true) -> void:
+	_changed(body)
 	PhysicsServer3D.body_set_space(body, RID())
 	PhysicsServer3D.body_clear_shapes(body)
 	for s: Array in shapes:
 		PhysicsServer3D.body_add_shape(body, s[1], s[0])
-	if not shapes.is_empty():
+	if on and not shapes.is_empty():
 		PhysicsServer3D.body_set_space(body, _space)
 
 
 static func _free_body(body: RID, owned: Array) -> void:
+	_changed(body)
 	_owner.erase(body)
 	PhysicsServer3D.free_rid(body)
 	_free_shapes(owned)
+
+
+## What stands changed (shapes_rev), unless `body` is a claim's: held ground is counted by claims_rev, so a regiment
+## stepping on never has the navigation read the land's shapes again.
+static func _changed(body: RID) -> void:
+	if String((_owner.get(body, [""]) as Array)[0]) != "claim":
+		shapes_rev += 1
 
 
 ## Frees the shapes made for one thing (never a shared trunk's or a sphere asked with).
@@ -871,12 +954,11 @@ static func _realm_rect() -> Rect2:
 
 
 static func _land_reset() -> void:
-	if _land_task >= 0:
-		WorkerThreadPool.wait_for_task_completion(_land_task)
-		_land_task = -1
 	_land = PackedByteArray()
 	_lblocks = PackedByteArray()
-	_land_next = []
+	_reading = false
+	_read_cells = PackedByteArray()
+	_read_blocks = PackedByteArray()
 	_land_todo.clear()
 	_land_asked = false
 
@@ -886,8 +968,8 @@ static func _land_changed(area: Rect2) -> void:
 	_land_todo.append(area)
 
 
-## Starts the land's read once the terrain is built, takes it in when the worker is done, and reads again what
-## changed since.
+## Starts the land's read once the terrain is built (_tick reads it on the budget), and reads again what changed
+## since it was read.
 static func _land_fresh() -> void:
 	if not _land_asked:
 		if terrain == null or not is_instance_valid(terrain) or terrain.get("built") == false:
@@ -898,56 +980,76 @@ static func _land_fresh() -> void:
 		_land_asked = true
 		_lw = ceili(r.size.x / _lc)
 		_lh = ceili(r.size.y / _lc)
-		_land_task = WorkerThreadPool.add_task(_land_read_all, false, "ground: the land")
+		_read_cells = PackedByteArray()
+		_read_cells.resize(_lw * _lh)
+		_read_blocks = PackedByteArray()
+		_read_blocks.resize(ceili(float(_lw) / _lb) * ceili(float(_lh) / _lb))
+		_read_at = 0
+		_reading = true
 		return
-	if _land_task >= 0:
-		if not WorkerThreadPool.is_task_completed(_land_task):
-			return
-		WorkerThreadPool.wait_for_task_completion(_land_task)
-		_land_task = -1
-		_land = _land_next[0]
-		_lblocks = _land_next[1]
-		_land_next = []
+	if _reading:
+		return
 	var todo := _land_todo.duplicate()
 	_land_todo.clear()
 	for a: Rect2 in todo:
 		_land_read(a)
 
 
-## The worker: every cell of the realm (no fords: a ford is laid by a road, terrain.ground_changed, read after).
-static func _land_read_all() -> void:
-	var cells := PackedByteArray()
-	cells.resize(_lw * _lh)
+## The land's read, a block at a time while the frame's budget lasts; taken in whole when done (until then an ask
+## asks the terrain itself).
+static func _read_land() -> void:
+	if terrain == null or not is_instance_valid(terrain):
+		_land_reset()
+		return
+	var t0 := Time.get_ticks_usec() if PerfTools.probing else 0
+	var cells := _read_cells
+	var blocks := _read_blocks
+	_read_cells = PackedByteArray()  # the writer's own copies while it writes (a static packed array written in place is copied)
+	_read_blocks = PackedByteArray()
 	var bw := ceili(float(_lw) / _lb)
-	var bh := ceili(float(_lh) / _lb)
-	var blocks := PackedByteArray()
-	blocks.resize(bw * bh)
-	for bz in bh:
-		for bx in bw:
-			blocks[bz * bw + bx] = _land_block(cells, bx, bz, false)
-	_land_next = [cells, blocks]
+	while _read_at < blocks.size():
+		blocks[_read_at] = _land_block(terrain, cells, _read_at % bw, _read_at / bw, true)
+		_read_at += 1
+		if not ViewTier.spend_ok(&"ground"):
+			break
+	if PerfTools.probing:
+		PerfTools.add("ground.land", Time.get_ticks_usec() - t0)  # reading the land: its share of the frame (GOC_PERF_PROBE)
+	if _read_at < blocks.size():
+		_read_cells = cells
+		_read_blocks = blocks
+		return
+	_reading = false
+	_land = cells
+	_lblocks = blocks
+	_land_fresh()  # what changed while it was read, read again
 
 
-## The land of `area` (world XZ) read again on the main thread, fords and all.
+## The land of `area` (world XZ) read again, fords and all.
 static func _land_read(area: Rect2) -> void:
 	if _land.is_empty():
 		return
+	var cells := _land
+	var blocks := _lblocks
+	_land = PackedByteArray()  # the writer's own copies while it writes
+	_lblocks = PackedByteArray()
 	var bw := ceili(float(_lw) / _lb)
 	var bs := _lb * _lc
 	for bz in range(maxi(0, floori(area.position.y / bs)), mini(ceili(float(_lh) / _lb) - 1, floori(area.end.y / bs)) + 1):
 		for bx in range(maxi(0, floori(area.position.x / bs)), mini(bw - 1, floori(area.end.x / bs)) + 1):
-			_lblocks[bz * bw + bx] = _land_block(_land, bx, bz, true)
+			blocks[bz * bw + bx] = _land_block(terrain, cells, bx, bz, true)
+	_land = cells
+	_lblocks = blocks
 
 
 ## One block's cells read off the terrain into `cells`: a cell is dry (or walkable) only where all four of its corners
 ## are. A block the terrain says is dry all over (terrain.gd dry_rect, read at the land's own resolution) is dry at
 ## every corner; else each corner is asked (is_land; `fords`: walkable too). Returns the bits every cell has.
-static func _land_block(cells: PackedByteArray, bx: int, bz: int, fords: bool) -> int:
+static func _land_block(land: Node3D, cells: PackedByteArray, bx: int, bz: int, fords: bool) -> int:
 	var x0 := bx * _lb
 	var z0 := bz * _lb
 	var w := mini(_lb, _lw - x0)
 	var h := mini(_lb, _lh - z0)
-	if terrain.has_method("dry_rect") and terrain.dry_rect(x0 * _lc, z0 * _lc, w * _lc, h * _lc):
+	if land.has_method("dry_rect") and land.dry_rect(x0 * _lc, z0 * _lc, w * _lc, h * _lc):
 		for j in h:
 			for i in w:
 				cells[(z0 + j) * _lw + x0 + i] = DRY | WALK
@@ -959,8 +1061,8 @@ static func _land_block(cells: PackedByteArray, bx: int, bz: int, fords: bool) -
 			var x := (x0 + i) * _lc
 			var z := (z0 + j) * _lc
 			var c := DRY | WALK
-			if not terrain.is_land(x, z):
-				c = WALK if fords and terrain.walkable(x, z) else 0
+			if not land.is_land(x, z):
+				c = WALK if fords and land.walkable(x, z) else 0
 			corner[j * (w + 1) + i] = c
 	var all := DRY | WALK
 	for j in h:
