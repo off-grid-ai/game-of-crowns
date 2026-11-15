@@ -626,26 +626,31 @@ func show_new() -> void:
 	var gap := Control.new()
 	gap.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	go.add_child(gap)
-	var next := _toggle("", go)
-	next.toggle_mode = false
-	next.custom_minimum_size = Vector2(240, 46)
+	# The button on the right is the one we want him to press (Mac): Next while there are pages left, then Begin.
+	# Begin stands to its left, plain, as the way to start at once with the rest at their defaults.
 	var begin := _toggle("Begin", go)
 	begin.toggle_mode = false
 	begin.custom_minimum_size = Vector2(240, 46)
+	var next := _toggle("", go)
+	next.toggle_mode = false
+	next.custom_minimum_size = Vector2(240, 46)
 	# The one primary action on the page: filled with the accent, not just tinted.
 	var T := preload("res://scripts/theme.gd")
-	begin.add_theme_stylebox_override("normal", T._box(Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.22), Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.55), 8, 10))
-	begin.add_theme_stylebox_override("hover", T._box(Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.34), Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.8), 8, 10))
-	begin.add_theme_color_override("font_color", T.ACCENT)
-	begin.add_theme_color_override("font_hover_color", T.TEXT)
-	begin.add_theme_font_size_override("font_size", 17)
+	var filled := {"normal": T._box(Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.22), Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.55), 8, 10), "hover": T._box(Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.34), Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.8), 8, 10)}
+	var primary := func(b: Button, on: bool) -> void:
+		for look in filled:
+			if on:
+				b.add_theme_stylebox_override(look, filled[look])
+			else:
+				b.remove_theme_stylebox_override(look)
+		if on:
+			b.add_theme_color_override("font_color", T.ACCENT)
+		else:
+			b.remove_theme_color_override("font_color")
+		b.add_theme_color_override("font_hover_color", T.TEXT)
+		b.add_theme_font_size_override("font_size", 17)
 	begin.pressed.connect(_begin)
-	# Next is the page's way on: the same gold as Begin.
-	for look in ["normal", "hover"]:
-		next.add_theme_stylebox_override(look, begin.get_theme_stylebox(look))
-	next.add_theme_color_override("font_color", T.ACCENT)
-	next.add_theme_color_override("font_hover_color", T.TEXT)
-	next.add_theme_font_size_override("font_size", 17)
+	primary.call(next, true)
 	# Showing a page: its own content, the steps lit to match, and the buttons
 	# it needs (no Begin until the story is chosen; Next names where it goes).
 	var show_step := func(i: int) -> void:
@@ -658,6 +663,7 @@ func show_new() -> void:
 		next.visible = _new_step < NEW_STEPS.size() - 1
 		next.text = ["Next: who you are", "Next: the reign", "Next: its story", "Customise the realm", ""][_new_step]
 		begin.visible = true  # Begin from the first page, the rest at their defaults (Reigns, Frostpunk: no setup before play)
+		primary.call(begin, not next.visible)  # filled only when it is the right-hand button, the last page
 		back.text = "Back" if _new_step > 0 else "Cancel"
 	for i in NEW_STEPS.size():
 		var st := Button.new()
