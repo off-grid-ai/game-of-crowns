@@ -6,6 +6,7 @@ extends Node3D
 ## around it.
 
 const Units := preload("res://scripts/world_units.gd")  # the world's one scale (Units.M)
+const MeshCpu := preload("res://scripts/mesh_cpu.gd")
 const Real = preload("res://scripts/realistic.gd")
 const Kept := preload("res://scripts/kept.gd")
 const Batch := preload("res://scripts/batch.gd")
@@ -488,7 +489,7 @@ static func crop_mesh(kind: String) -> Mesh:
 		var shift := Vector3(box.get_center().x, box.position.y, box.get_center().z)
 		var im := ImporterMesh.new()
 		for i in baked.get_surface_count():
-			var arr := baked.surface_get_arrays(i)
+			var arr := MeshCpu.arrays(baked, i).duplicate(true)
 			var verts: PackedVector3Array = arr[Mesh.ARRAY_VERTEX]
 			for v in verts.size():
 				verts[v] = (verts[v] - shift) * k

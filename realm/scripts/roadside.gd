@@ -9,6 +9,7 @@ extends Node3D
 ## Every number is realm/data/roadside.json's (docs/TUNING.md). On with `on: true` there.
 
 const Mover := preload("res://scripts/mover.gd")  # the one way to move (CLAUDE.md)
+const MeshCpu := preload("res://scripts/mesh_cpu.gd")
 const Data := preload("res://scripts/data.gd")
 const Real := preload("res://scripts/realistic.gd")
 const Plan := preload("res://scripts/roadside_plan.gd")
@@ -643,7 +644,7 @@ static func beast_fit(kind: String, metres: float, model_path := "") -> Array:
 					bi = skel.find_bone(m.skin.get_bind_name(b))
 				bones.append(sx * (skel.get_bone_global_rest(bi) if bi >= 0 else Transform3D.IDENTITY) * m.skin.get_bind_pose(b))
 		for sf in m.mesh.get_surface_count():
-			var a := m.mesh.surface_get_arrays(sf)
+			var a := MeshCpu.arrays(m.mesh, sf)
 			var verts: PackedVector3Array = a[Mesh.ARRAY_VERTEX]
 			var bi: Variant = a[Mesh.ARRAY_BONES]
 			var wt: Variant = a[Mesh.ARRAY_WEIGHTS]
