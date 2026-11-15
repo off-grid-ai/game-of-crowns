@@ -37,6 +37,7 @@ static var _places := {}  # chunk (Vector2i) -> {root instance id: root}: what b
 static var _place_area := {}  # root instance id -> [chunks, Rect2 it covers]
 static var _claims := {}  # chunk -> {id: [kind, outline (world XZ)]}: the ground bodies hold while they stand
 static var _claim_area := {}  # id -> [chunks, Rect2]
+static var _rev := 0  # counts places set down and claims made: nearest_clear's kept answers are asked afresh after
 static var _kept := {}  # tile (Vector2i) -> {[point, radius, reach] (Vector4i, hundredths) -> [answer, its towns' layouts]}
 static var _kept_n := 0
 
@@ -45,7 +46,7 @@ static var _kept_n := 0
 ## `props` false: only the buildings keep it out, not the life's own pieces (a keeper behind his stall's counter,
 ## a guest on the feast's bench, an elder on his doorstep's bench is at them, not in a building).
 ## `free_of`: a claim that doesn't count (the asker's own); `open_kinds`: kinds of claim stood on freely (a battle
-## over fields).
+## over fields; "host" for every host's ground, a battle's grid that both sides close over).
 static func is_clear(p: Vector3, radius := 0.0, props := true, free_of: Variant = null, open_kinds: Array = []) -> bool:
 	var keys: Array = ["town", "life"] if props else ["town"]
 	for o in _reach_of(radius):
@@ -62,7 +63,7 @@ static func is_clear(p: Vector3, radius := 0.0, props := true, free_of: Variant 
 		var at := Vector2(q.x, q.z)
 		for id in (_claims.get(c, {}) as Dictionary):
 			var held: Array = _claims[c][id]
-			if id != free_of and not (held[0] in open_kinds) and Geometry2D.is_point_in_polygon(at, held[1]):
+			if id != free_of and not _open(String(held[0]), open_kinds) and Geometry2D.is_point_in_polygon(at, held[1]):
 				return false
 	return true
 
@@ -76,6 +77,7 @@ static func stands(root: Node3D, area: Rect2) -> void:
 			_places[k] = {}
 		_places[k][root.get_instance_id()] = root
 	_place_area[root.get_instance_id()] = [cells, area]
+	_rev += 1
 	forget(area)
 
 
@@ -105,6 +107,7 @@ static func claim(id: Variant, poly: PackedVector2Array, kind := "body") -> void
 			_claims[k] = {}
 		_claims[k][id] = [kind, poly]
 	_claim_area[id] = [cells, area]
+	_rev += 1
 
 
 ## The body has left that ground.
@@ -114,6 +117,11 @@ static func release(id: Variant) -> void:
 	for k in _claim_area[id][0]:
 		(_claims.get(k, {}) as Dictionary).erase(id)
 	_claim_area.erase(id)
+
+
+## Whether a claim of `kind` is stood on freely: named in `open_kinds`, or a host's ("host <id>") when "host" is.
+static func _open(kind: String, open_kinds: Array) -> bool:
+	return kind in open_kinds or ("host" in open_kinds and kind.begins_with("host "))
 
 
 static func _chunk(p: Vector3) -> Vector2i:
@@ -193,16 +201,18 @@ static func inside(p: Vector3) -> PackedVector2Array:
 ## points of RINGS rings widening out to `max_dist`: a fixed cost, never a fine search (Mac's 70 s beach ball, 14 Nov:
 ## a company asked to stand in a packed town or the river ran 60 rings x 12 points x 9 reach points). `p` itself,
 ## grounded, when nothing near is clear.
-static func nearest_clear(p: Vector3, radius := 0.0, max_dist := REACH) -> Vector3:
+## `open_kinds`: kinds of claim stood on freely (a host's own ground; is_clear).
+static func nearest_clear(p: Vector3, radius := 0.0, max_dist := REACH, open_kinds: Array = []) -> Vector3:
 	var tile := Vector2i(floori(p.x), floori(p.z))
-	var key := Vector4i(roundi(p.x * 100.0), roundi(p.z * 100.0), roundi(radius * 100.0), roundi(max_dist * 100.0))
+	var key := [Vector4i(roundi(p.x * 100.0), roundi(p.z * 100.0), roundi(radius * 100.0), roundi(max_dist * 100.0)), open_kinds]
 	var near: Array = TownNav.towns_at(towns, p)
 	var lay := near.map(func(t: Array) -> Array: return NavGround.layout(t[1]) if is_instance_valid(t[1]) else [])
+	lay.append(_rev)  # a place set down or a claim made since: asked afresh
 	var here: Dictionary = _kept.get(tile, {})
 	var k: Array = here.get(key, [])
 	if not k.is_empty() and k[1] == lay:
 		return k[0]  # asked before, and nothing has been set down or taken away in its towns since
-	var q := _nearest(p, radius, max_dist, near)
+	var q := _nearest(p, radius, max_dist, near, open_kinds)
 	if _kept_n >= KEPT_MAX:
 		_kept.clear()
 		_kept_n = 0
@@ -224,19 +234,19 @@ static func forget(area: Rect2) -> void:
 				_kept.erase(t)
 
 
-static func _nearest(p: Vector3, radius: float, max_dist: float, near: Array) -> Vector3:
+static func _nearest(p: Vector3, radius: float, max_dist: float, near: Array, open_kinds: Array = []) -> Vector3:
 	for t in near:
 		var map: RID = TownNav._maps.get(int(t[0]), RID())
 		if map.is_valid() and TownNav.ready(map):
 			var c: Vector3 = (t[1] as Node3D).global_position
 			var m := TownNav.closest(map, Vector2(p.x - c.x, p.z - c.z))
 			return _grounded(Vector3(c.x + m.x, p.y, c.z + m.y), p)
-	if is_clear(p, radius):
+	if is_clear(p, radius, true, null, open_kinds):
 		return _grounded(p, p)
 	for ring in range(1, RINGS + 1):
 		for i in SPOKES:
 			var q := p + Vector3(cos(TAU * i / SPOKES), 0, sin(TAU * i / SPOKES)) * max_dist * ring / RINGS
-			if is_clear(q, radius):
+			if is_clear(q, radius, true, null, open_kinds):
 				return _grounded(q, p)
 	return _grounded(p, p)
 

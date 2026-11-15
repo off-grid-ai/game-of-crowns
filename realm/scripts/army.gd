@@ -269,7 +269,7 @@ func march_out(_to: Vector3) -> void:
 ## (03-army: a column of regiments, each under its banner), halted and at ease.
 func _stand_on_tile(at: Vector3, yaw: float) -> void:
 	var tail := _baggage_tail() + 1.0
-	at = Footing.nearest_clear(at, _column_half())
+	at = Footing.nearest_clear(at, _column_half(), Footing.REACH, [_host_kind()])
 	yaw = _dry_yaw(at, yaw, tail)
 	var dir := Vector3(sin(yaw), 0, cos(yaw))
 	_path = PackedVector3Array([_ground_at(at - dir * tail), _ground_at(at)])
@@ -311,7 +311,7 @@ func _dry_yaw(at: Vector3, yaw: float, tail: float) -> float:
 		var dry := 0
 		var d := 0.0
 		while d <= tail:
-			if Footing.is_clear(at - dir * d, half):
+			if Footing.is_clear(at - dir * d, half, true, null, [_host_kind()]):
 				dry += 1
 			d += step
 		if dry > most:
@@ -437,6 +437,7 @@ func board(hulls: Array) -> void:
 ## Gone (ashore, or the host disbanded): its regiments on a hull's deck go with it, since they are the hull's children.
 func _exit_tree() -> void:
 	for r in _regiments:
+		Footing.release(_claim_id(r))
 		var n: Variant = r.get("node")
 		if n != null and is_instance_valid(n) and not is_ancestor_of(n):
 			(n as Node).queue_free()
@@ -960,6 +961,8 @@ func _dress(r: Dictionary) -> void:
 			p.y = Footing.height(xf * Vector3(p.x, 0.0, p.z)) - xf.origin.y
 		vat.multimesh.set_instance_transform(s, Transform3D(b, p))
 	r["dressed_at"] = xf.origin
+	if node.is_inside_tree():
+		_claim(r, xf)
 
 
 ## Takes a regiment's shape at once (its men's places, its banner's pips, its rectangle and block fitted).
@@ -1200,7 +1203,7 @@ func _clear_at(mid: Vector3, right3: Vector3, fwd3: Vector3, w: float, d: float,
 	for i in nx:
 		for j in nz:
 			var q := mid + right3 * ((float(i) / (nx - 1) - 0.5) * (w + m * 2.0)) + fwd3 * ((float(j) / (nz - 1) - 0.5) * (d + m * 2.0))
-			if not Footing.is_clear(q, 0.05, true, null, [] if strict else ["field"]):
+			if not Footing.is_clear(q, 0.05, true, null, [_host_kind()] if strict else [_host_kind(), "field"]):
 				return false
 			if strict and roads and roads.has_method("on_path") and roads.on_path(q, 0.05):
 				return false
@@ -1329,7 +1332,7 @@ func _form_on_way(town: Vector3, to: Vector3, root: Node3D) -> void:
 		var side := Vector3(cos(h), 0, -sin(h))
 		for k in 5:
 			var t := q + side * half * (k / 2.0 - 1.0)
-			if not Footing.is_clear(t, 0.05):
+			if not Footing.is_clear(t, 0.05, true, null, [_host_kind()]):
 				return true
 		return false
 	# Every main way out of the town (towns.gd ways_main: where the realm's roads leave it), carried on straight out
@@ -1697,6 +1700,29 @@ func _at_ease(r: Dictionary, delta: float) -> void:
 
 ## The men drawn at every distance (their lighter detail levels from afar); banners and the standard keep their
 ## size on screen beyond banner.fixedFrom.
+## The ground a regiment holds where it stands (ground.gd claim): its rectangle, turned with it. Its own host's
+## regiments may stand on it (kind: this host), no other body or placement may (Mac 2026-11-15: hosts overlapping).
+func _claim(r: Dictionary, xf: Transform3D) -> void:
+	var hw := float(r.get("w", 0.0)) * 0.5
+	var hd := float(r.get("d", 0.0)) * 0.5
+	if hw <= 0.0 or hd <= 0.0:
+		return
+	var poly := PackedVector2Array()
+	for c in [Vector3(-hw, 0, -hd), Vector3(hw, 0, -hd), Vector3(hw, 0, hd), Vector3(-hw, 0, hd)]:
+		var w: Vector3 = xf * (c as Vector3)
+		poly.append(Vector2(w.x, w.z))
+	Footing.claim(_claim_id(r), poly, _host_kind())
+
+
+func _claim_id(r: Dictionary) -> String:
+	return "regiment %d" % (r["node"] as Object).get_instance_id()
+
+
+## The kind this host's regiments claim their ground under: its own regiments stand on it freely.
+func _host_kind() -> String:
+	return "host %d" % get_instance_id()
+
+
 ## Men laid again on the land under them once their regiment has moved (each man's own height; _dress), a few
 ## regiments a frame on the frame budget.
 func _settle() -> void:
@@ -1840,7 +1866,7 @@ func _ground(p: Vector3, size: float) -> bool:
 	for gx in 5:
 		for gz in 5:
 			var q := Vector3(p.x + (gx / 4.0 - 0.5) * size, 0, p.z + (gz / 4.0 - 0.5) * size)
-			if not Footing.is_clear(q, 0.1):
+			if not Footing.is_clear(q, 0.1, true, null, [_host_kind()]):
 				return false
 			if absf(main.terrain.height_at(q.x, q.z) - h) > slope:
 				return false
