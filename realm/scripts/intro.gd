@@ -64,11 +64,31 @@ func _ready() -> void:
 	visible = false
 
 
+## Built is not enough (Mac, 2026-11-16: "it started off at 1 FPS ... if we need a little more time to load everything
+## properly so that when the game starts it starts at a higher FPS let's do that"): once every part stands, the card
+## stays until the frames have run steady (none slower than ui.json loading.steady_fps) for loading.steady_s, or
+## loading.most_s have passed since it all stood.
+var _built_at := -1.0  # seconds: when ready_check first held
+var _steady_from := -1.0  # seconds: since when every frame has kept the pace
+
+
 func _is_ready() -> bool:
-	var ok: bool = not ready_check.is_valid() or ready_check.call()
-	if ok:
+	var built: bool = not ready_check.is_valid() or ready_check.call()
+	var now := Time.get_ticks_msec() / 1000.0
+	if not built:
+		_built_at = -1.0
+		return false
+	if _built_at < 0.0:
+		_built_at = now
+		_steady_from = now
 		preload("res://scripts/perf_tools.gd").mark("towns in view")
+	var D := preload("res://scripts/data.gd")
+	var ok := now - _steady_from >= D.num("ui", "loading.steady_s", 3.0) or now - _built_at >= D.num("ui", "loading.most_s", 90.0)
+	if ok and not _said_steady:
+		_said_steady = true
+		preload("res://scripts/perf_tools.gd").mark("steady")
 	return ok
+var _said_steady := false
 
 
 ## houses: the world's players' house dicts; seats: {house name: [town name, Vector2 tile]}.
@@ -235,6 +255,8 @@ func _process(delta: float) -> void:
 		_image.modulate.a = 1.0
 	if visible:
 		_frames += 1
+		if delta > 1.0 / preload("res://scripts/data.gd").num("ui", "loading.steady_fps", 30.0):
+			_steady_from = Time.get_ticks_msec() / 1000.0  # a slow frame: the steady run starts again
 		if delta > 0.034:  # a frame that missed 30 fps: what the realm was doing
 			_hitches.append([delta, String(Engine.get_meta("stage", ""))])
 	if visible and _hint:
