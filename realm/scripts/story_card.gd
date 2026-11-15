@@ -2,13 +2,17 @@ extends PanelContainer
 ## A story's card (Crusader Kings 3's event toast). When the King watches a story ("The Rise of Edith Ward") and
 ## the camera lands, a small card stands beside its person, or its town (world_anchor.gd): the story's name, who
 ## they are (their painted face, name and station), the one line of what just happened (the beat's own words,
-## the chronicle entry's text) and their own words when they spoke; whether it waits on him at court, and what he
-## can do about it (_verbs). A story that waits stays; news says so and fades after a few seconds (ui.json story_card).
-## One at a time; Esc, its X, or the camera leaving put it away. main.gd _follow_story opens it.
+## the chronicle entry's text) and their own words when they spoke; what is happening at the place now (its town's
+## state, map_tip.gd's words); whether it waits on him at court, and what he can do about it (_verbs). It stays while
+## the camera is there. One at a time; Esc, its X, another card or the camera leaving put it away, and a story still
+## going on leaves its mark over its place (StoryMark: a book and the story's name), which opens it again; acting on
+## it, or the story's end, takes the mark away. main.gd _follow_story opens it (Watch, the chronicle's story link,
+## the mark); any news place may too: show_story with an entry {thread: its name, text, city}.
 
 const T := preload("res://scripts/theme.gd")
 const UI := preload("res://scripts/ui.gd")
 const PaintedFaces := preload("res://scripts/painted_faces.gd")  # the one owner of who wears which face
+const MapTip := preload("res://scripts/map_tip.gd")  # what is happening at a town, in its words
 const NAME := "StoryCard"  # the one card on screen (ui.gd _step_back finds it by this)
 const FACE := Vector2(54, 72)  # a small painted face, as the court's mark on the map
 # "…the beat. Edith: \"I'll not bow again.\"": the beat's line, then who spoke and their words (bridge arcs.js enter).
@@ -22,7 +26,7 @@ var _radius := 0.5  # how wide the place is, so the card stands clear of it
 var _matter := ""  # the court matter this story waits on ("": it's news)
 var _landed := false
 var _flying := 0.0  # seconds since Watch, before the camera lands
-var _left := -1.0  # a news card's seconds left
+var _entry := {}
 var _closing := false
 var _face: TextureRect
 var _frame: PanelContainer
@@ -40,6 +44,8 @@ func show_story(m: Node, e: Dictionary, at: Vector3, follow: Node3D, radius: flo
 		ui.anchor.unpin(old)
 		ui.root.remove_child(old)
 		old.queue_free()
+	StoryMark.drop(ui, String(e.get("thread", "")))  # open again: its mark gives way to it
+	_entry = e
 	_place = at
 	_follow = follow
 	_radius = radius
@@ -50,7 +56,7 @@ func show_story(m: Node, e: Dictionary, at: Vector3, follow: Node3D, radius: flo
 	ui.root.add_child(self)
 	_matter = ui.story_matter(e)
 	_build(e)
-	ui.close_x(self, close)
+	ui.close_x(self, func(): close())
 	ui.card_shown.connect(_on_card)  # one thing on screen: a card that comes up puts this one away
 	_ask_who(who)
 
@@ -113,6 +119,11 @@ func _build(e: Dictionary) -> void:
 		said.add_theme_color_override("font_color", T.TEXT)
 		said.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		v.add_child(said)
+	var now := _town_now(e)
+	if now != "":
+		var there := T.prose(now, T.SIZE_DESC, T.TEXT_2)
+		there.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		v.add_child(there)
 	# What it asks of the King: waiting on him at court, or nothing (it's news); then what he can do about it.
 	var words: Dictionary = preload("res://scripts/data.gd").value("ui", "story_card", {})
 	var row := HBoxContainer.new()
@@ -124,7 +135,7 @@ func _build(e: Dictionary) -> void:
 	row.add_child(waits)
 	for verb in _verbs(e):
 		var b := ui.btn(String(verb["label"]), func():
-			close()
+			close(false)  # acted on: no mark left behind
 			(verb["do"] as Callable).call())
 		b.add_theme_color_override("font_color", T.ACCENT)
 		row.add_child(b)
@@ -136,6 +147,25 @@ func _verbs(_e: Dictionary) -> Array:
 	var rig: Node = main.rig
 	var at := _place  # where it stands as he asks (a person walks on; the card reads it each frame)
 	return [{"label": "Go there", "do": func(): rig.go_to(_place if _place != Vector3.INF else at, float(rig.goal_distance))}]
+
+
+## What is happening at the story's town now, as the map's hover says it (map_tip.gd: whose it is, besieged, hungry,
+## the plague, works rising): its town, else the nearest to where the camera goes.
+func _town_now(e: Dictionary) -> String:
+	var c := {}
+	if e.get("city") != null:
+		for x in main.awareness.rec("cities", []):
+			if int(x["id"]) == int(e["city"]):
+				c = x
+	if c.is_empty() and _place != Vector3.INF and main.towns:
+		c = main.towns.nearest(_place, 4.0)
+	if c.is_empty():
+		return ""
+	var tip: PanelContainer = MapTip.new()
+	tip.main = main
+	var line: String = tip._town(c)
+	tip.free()
+	return line
 
 
 ## Their face, name and station, from the realm: a commoner from their town's folk (bridge /townsfolk), a lord
@@ -218,8 +248,6 @@ func _process(delta: float) -> void:
 			visible = true
 			reset_size()
 			ui.ease_in(self)
-			if _matter == "":
-				_left = UI.ui_num("story_card.news_seconds", 6.0)
 		elif _flying > UI.ui_num("story_card.wait_land", 10.0):
 			close()
 			return
@@ -229,24 +257,89 @@ func _process(delta: float) -> void:
 		close()  # the camera has left it
 		return
 	ui.anchor.pin(self, _place + Vector3.UP * 0.2, true, _radius)
-	if _left > 0.0:
-		_left -= delta
-		if _left <= 0.0:
-			close()
 
 
 func _on_card(_c) -> void:
 	close()
 
 
-## Put away (Esc, its X, the camera leaving, the news read), with the cards' one ease out.
-func close() -> void:
+## Put away (Esc, its X, the camera leaving, another card), with the cards' one ease out; a story still going on
+## leaves its mark (mark false: acted on, nothing left behind).
+func close(mark := true) -> void:
 	if _closing:
 		return
 	_closing = true
 	if ui:
 		ui.anchor.unpin(self)
+		if mark and _landed:
+			StoryMark.leave(main, _entry, _follow, _place)
 	if visible and ui:
 		ui.ease_out(self, queue_free)
 	else:
 		queue_free()
+
+
+## A story's mark over its place while it goes on (Mac: "some card that can be closed and opened again"): a book and
+## the story's short name, words not colour, riding on its person or standing on its town (world_anchor.gd, marker).
+## Clicked, the camera goes there and the card opens again (main.gd _follow_story). It goes when the chronicle tells
+## the story's end, when it is acted on, or when its card opens again.
+class StoryMark extends Button:
+	static var _by_thread := {}  # story name -> its mark: one per story
+	var main: Node
+	var entry := {}
+	var _read := 0  # chronicle entries already looked through for the story's end
+	var _wait := 0.0
+
+	static func leave(m: Node, e: Dictionary, follow: Node3D, at: Vector3) -> void:
+		var thread := String(e.get("thread", ""))
+		if thread == "" or String(e.get("stage", "")) == "resolution" or at == Vector3.INF:
+			return  # news with no story, or a story already told to its end: nothing to come back to
+		drop(m.ui, thread)
+		var mark := StoryMark.new()
+		mark.main = m
+		mark.entry = e
+		mark._read = (m.ui.chronicle.entries as Array).size()
+		mark.text = thread if thread.length() <= 28 else thread.left(26).strip_edges() + "…"
+		mark.icon = m.ui.icon("book-open-text")
+		mark.add_theme_constant_override("icon_max_width", 16)
+		mark.add_theme_color_override("font_color", T.TEXT)
+		mark.add_theme_font_size_override("font_size", T.SIZE_LABEL)
+		mark.focus_mode = Control.FOCUS_NONE
+		mark.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		mark.tooltip_text = "%s: open its card again" % thread
+		mark.add_theme_stylebox_override("normal", T._box(T.SURFACE_SOLID, T.HAIRLINE, 7, 8))
+		mark.add_theme_stylebox_override("hover", T._box(T.SURFACE_SOLID, T.ACCENT, 7, 8))
+		mark.pressed.connect(mark._open)
+		m.ui.root.add_child(mark)
+		if is_instance_valid(follow) and follow.is_inside_tree():
+			m.ui.anchor.pin_on(mark, follow, 0.45)
+		else:
+			m.ui.anchor.pin(mark, at + Vector3.UP * 0.6, false)
+		_by_thread[thread] = mark
+
+	static func drop(ui: Node, thread: String) -> void:
+		var old = _by_thread.get(thread)
+		_by_thread.erase(thread)
+		if old != null and is_instance_valid(old):
+			ui.anchor.unpin(old)
+			old.queue_free()
+
+	func _open() -> void:
+		main._follow_story(entry)  # the King's own click: the camera goes, the card opens on landing
+
+	func _process(delta: float) -> void:
+		_wait -= delta
+		if _wait > 0.0 or main == null:
+			return
+		_wait = 1.0
+		# The story's end in the chronicle (bridge arcs.js: its last beat or its fading, stage resolution).
+		var all: Array = main.ui.chronicle.entries
+		var thread := String(entry.get("thread", ""))
+		for k in range(_read, all.size()):
+			var x: Dictionary = all[k]
+			if String(x.get("thread", "")) == thread and String(x.get("stage", "")) == "resolution":
+				drop(main.ui, thread)
+				return
+			if String(x.get("thread", "")) == thread:
+				entry = x  # its latest beat: the card opens on what happened last
+		_read = all.size()
