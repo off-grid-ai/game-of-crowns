@@ -303,14 +303,15 @@ func standing() -> Vector2i:
 	return Vector2i(n, _cities.size())
 
 
-## Every town the world names standing, with its life set up: what the loading screen waits for, so no town is
-## raised or peopled in play (Mac: "the transition from zoomed out to zoomed in is ... abrupt & laggy": towns were
-## still being raised and their life set up minutes into play, nearest the camera first, so a zoom landed on one).
+## The towns in view standing, with their life set up: what the loading screen waits for (supervisor, Mac 10:42: the
+## card stayed up 10.5 minutes after the towns in view were ready, waiting on every town in the realm). The towns
+## off screen are raised after, nearest the lens first, on the play pot (ViewTier), as the lens streams them in.
 func settled() -> bool:
-	if building() or not _life_queue.is_empty() or _cities.is_empty():
+	if not _life_queue.is_empty() or _cities.is_empty():
 		return false
 	for c in _cities:
-		if not towns.has(int(c["id"])):
+		var id := int(c["id"])
+		if ViewTier.on_screen(terrain.world_pos(float(c["x"]), float(c["y"])), 3.0) and (not towns.has(id) or _queue.has(id)):
 			return false
 	return true
 
