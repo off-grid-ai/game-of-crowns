@@ -1137,7 +1137,7 @@ func _on_synced() -> void:
 		var fresh: Rect2 = roads.uncut_bounds(LANE_MARGIN) if terrain.forest and terrain.forest.has_method("clear_where") else Rect2()
 		if fresh.has_area():
 			var t0 := Time.get_ticks_msec()
-			var n: int = await terrain.forest.clear_where(func(o: Vector3): return roads.near_road(o, LANE_MARGIN), 4000, fresh)  # over frames
+			var n: int = await terrain.forest.clear_where(func(o: Vector3): return roads.near_road(o, LANE_MARGIN), fresh)  # over frames
 			print("LANES %d trees, %d ms" % [n, Time.get_ticks_msec() - t0])
 			await get_tree().process_frame
 		Engine.set_meta("stage", "countryside")
