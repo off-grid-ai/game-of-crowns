@@ -111,9 +111,18 @@ static func ask(path: String) -> bool:
 	return true
 
 
-## The town kept at `path`, once read (null while it is still being read, or if it couldn't be): made a node again,
-## its node metas and groups turned back.
+## The town kept at `path`, once read (null while it is still being read or made, or false if it couldn't be): made a
+## node again on a worker thread (Godot builds a scene off the tree on any thread; on the main thread a town's
+## instantiate held the frame ~15 ms, combined run round11 resume.towns:377), its node metas and groups turned back.
+static var _making := {}  # path -> [the worker's task, [the town once made]]
 static func take(path: String) -> Variant:
+	if _making.has(path):
+		var job: Array = _making[path]
+		if not WorkerThreadPool.is_task_completed(int(job[0])):
+			return null
+		WorkerThreadPool.wait_for_task_completion(int(job[0]))
+		_making.erase(path)
+		return job[1][0] if not (job[1] as Array).is_empty() else false
 	var st := ResourceLoader.load_threaded_get_status(path)
 	if st == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
 		return null
@@ -122,7 +131,16 @@ static func take(path: String) -> Variant:
 		if path.begins_with(Kept.USER):
 			DirAccess.remove_absolute(path)  # unreadable: raised again
 		return false
+	var made: Array = []
+	_making[path] = [WorkerThreadPool.add_task(_make.bind(scene, path, made), false, "town " + path.get_file()), made]
+	return null
+
+
+## A kept town's scene made a node (on a worker: off the tree), its node metas and groups turned back, into `out`.
+static func _make(scene: PackedScene, path: String, out: Array) -> void:
 	var root := scene.instantiate() as Node3D
+	if root == null:
+		return
 	root.set_meta("kept_file", path)  # read back from this file (kept_name)
 	for n in [root] + root.find_children("*", "", true, false):
 		for g in n.get_meta("_groups", PackedStringArray()):
@@ -134,7 +152,7 @@ static func take(path: String) -> Variant:
 			var w: Variant = nodes(v, root)
 			if not _same(w, v):
 				n.set_meta(m, w)
-	return root
+	out.append(root)
 
 
 ## A meta's value with every node in it written as {"_node": its path from the town's root}.
