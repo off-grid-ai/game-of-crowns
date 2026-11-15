@@ -1077,8 +1077,9 @@ func _pick_by_body() -> void:
 	var P: GDScript = load("res://scripts/host_pick.gd") if ResourceLoader.exists("res://scripts/host_pick.gd") else null
 	_check(P != null, "a host is picked by its own body (host_pick.gd)")
 	var hc_src := FileAccess.get_file_as_string("res://scripts/host_command.gd")
-	_check(hc_src.contains("HostPick.pick(") and not hc_src.contains("pick_px") and not hc_src.contains("func _pick_regiment("),
-		"host_command.gd takes the pick at the press, with no screen-distance guess")
+	var hp_src := FileAccess.get_file_as_string("res://scripts/host_pick.gd")
+	_check(hc_src.contains("HostPick.pick(") and not hc_src.contains("func _pick_regiment(") and hp_src.find("intersect_ray") < hp_src.find("near(cam"),
+		"host_command.gd takes the pick at the press: the body the ray meets first, the nearest on screen only when it meets none")
 	if P == null:
 		return
 	var holder := Node3D.new()
