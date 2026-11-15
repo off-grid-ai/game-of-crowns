@@ -40,7 +40,7 @@ static func dress(root: Node3D, ground: Callable, seed: int, pace := Callable(),
 	if file != "" and Kept.has(file):
 		var got := load(file)
 		if got != null and got.has_meta("placed"):
-			return _lay(root, got.get_meta("placed"), got.get_meta("counts", {}), got.get_meta("fronts", []))
+			return await _lay(root, got.get_meta("placed"), got.get_meta("counts", {}), got.get_meta("fronts", []), pace)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed
 	var rank := float((Data.value("dressing", "rank", {}) as Dictionary).get(String(root.get_meta("rank", "village")), 0.5))
@@ -247,17 +247,17 @@ static func dress(root: Node3D, ground: Callable, seed: int, pace := Callable(),
 		keep.set_meta("counts", counts)
 		keep.set_meta("fronts", fronts)
 		Kept.keep(keep, file)  # laid out once: every later start reads it back (written on a worker)
-	return _lay(root, placed, counts, fronts)
+	return await _lay(root, placed, counts, fronts, pace)
 
 
 ## The dressing laid out (`placed`: "kit/model" -> [its places in the town's frame]) set down under a "Dressing" node.
 ## Drawn in bulk (bulk.gd, the one drawer of repeated small things), out to 30 from the lens (small things: near the
 ## camera only), owned by the Dressing node (they go when it does). The node keeps where each stands (meta "bulk":
-## [mesh, place in the town's frame, model]) for the walk map (nav_ground.gd) and the dressing probe.
-static func _lay(root: Node3D, placed: Dictionary, counts: Dictionary, fronts: Array) -> Dictionary:
+## [mesh, place in the town's frame, model]) for the walk map (nav_ground.gd) and the dressing probe. `pace` awaited
+## after each model's copies (a kept dressing is set down over frames too).
+static func _lay(root: Node3D, placed: Dictionary, counts: Dictionary, fronts: Array, pace := Callable()) -> Dictionary:
 	var node := Node3D.new()
-	node.name = "Dressing"
-	root.add_child(node)
+	node.name = "Dressing"  # put under the town once whole, so the ground reads every piece of it (nav_ground.gd)
 	var bulk: Array = []
 	for model in placed:
 		var m := mesh_of(model)
@@ -267,9 +267,16 @@ static func _lay(root: Node3D, placed: Dictionary, counts: Dictionary, fronts: A
 		for xf: Transform3D in placed[model]:
 			Bulk.add(mesh, root.global_transform * xf, node, 30.0, not model.begins_with("meshy/nt_"))
 			bulk.append([mesh, xf, model])
+		if pace.is_valid():
+			await pace.call()
+			if not is_instance_valid(root):
+				Bulk.remove_owner(node)
+				node.free()
+				return {}  # the town went meanwhile
 	node.set_meta("bulk", bulk)
 	node.set_meta("counts", counts)
 	node.set_meta("fronts", fronts)
+	root.add_child(node)
 	return counts
 
 
