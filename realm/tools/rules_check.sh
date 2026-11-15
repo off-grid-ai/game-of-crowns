@@ -28,6 +28,9 @@ check() {  # rule, pattern, files exempt (regex on the path)
 }
 check "one-way-to-move" 'tween_property\([^,]*, *"(global_)?position"|PathFollow3D\.new\(\)' \
   'scripts/(mover|intro|news_chips)\.gd'  # intro and news chips: screen-space UI slides, not travel
+#   one-way-to-move, the step form: a script walking a body by adding steps to its position itself (n.position.x += ...)
+#   follows a path of its own beside the Mover's (FPS audit 2026-11-15 item 6: villagers.gd _step walked the crowd).
+check "one-way-to-move-step" '\bposition\.[xz] *[-+]= ' 'scripts/mover\.gd'
 check "raw-world" 'world_updated\.connect|func [A-Za-z0-9_]+\([^)]*\bworld: Dictionary|bridge\.world\b|^var world\b|\.world = ' \
   'scripts/(awareness|bridge)\.gd'
 check "view-fetch" 'HTTPRequest\.new\(\)|bridge\.BASE|bridge\.gd"\)\.BASE|127\.0\.0\.1:8787' \

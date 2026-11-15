@@ -129,7 +129,6 @@ func _process_timed(delta: float) -> void:
 			a["owed"] = 0.0
 			_hold_load(a)
 			_step(a, minf(owed, 0.5), t)
-	_keep_apart()
 
 
 ## v3 (motion.gd `errand_load`): the body carries what this walk carries. The walk's
@@ -142,77 +141,24 @@ func _hold_load(a: Dictionary) -> void:
 		mo.errand_load = g if GAITS.has(g) and Weapons.can_play(g) else ""
 
 
-## Personal space, after everyone has moved: the crowd's avoidance steers
-## walkers round each other, but a frame late and not round everything (a
-## mind's small step, a traveller on the road). Any walker now inside someone's
-## space is eased out of it sideways, a few centimetres a frame: the walker
-## yields; someone standing, a scene's person or a traveller is never moved.
+## Personal space is the crowd's avoidance alone (Godot's RVO: every villager an agent, every horse, cart and fighter
+## an agent on the same walk map, everyone else an obstacle, _avoid_others). The hand-written pass that eased walkers
+## apart every frame after the avoidance is gone (FPS audit 2026-11-15 item 6, docs/research/fps-engine-swaps-2026-11-15.md:
+## villagers 0.5-3.3 ms a frame, the people group walked and hashed every frame).
 static var SPACE: float = preload("res://scripts/data.gd").num("crowd", "villagers.space", 0.07)  # about 0.6 m between middles
 const ARRIVE := 0.03  # a waypoint this near is reached (about a quarter of a metre): a step shorter than this barely moves anyone
-const EASE := 0.006  # at most this far a frame (about 5 cm): a sidestep, never a jump
-
-
-func _keep_apart() -> void:
-	var cam := get_viewport().get_camera_3d()
-	if cam == null or crowds.is_empty():
-		return
-	var all: Array[Node3D] = []
-	for p in get_tree().get_nodes_in_group("people"):
-		var n := p as Node3D
-		if n and n.is_visible_in_tree() and n.global_position.distance_to(cam.global_position) < 6.0:
-			all.append(n)
-	# Everyone near by cell of SPACE: a walker is eased only by those within SPACE of them, so only its own and the
-	# eight cells round it are looked at (a spatial hash; it was every walker against everyone near, every frame).
-	var grid := {}  # Vector2i cell -> Array[Node3D]
-	for o in all:
-		var key := Vector2i(floori(o.global_position.x / SPACE), floori(o.global_position.z / SPACE))
-		if not grid.has(key):
-			var cell: Array[Node3D] = []
-			grid[key] = cell
-		grid[key].append(o)
-	for id in crowds:
-		for a in crowds[id]:
-			var n: Node3D = a["node"]
-			if not a["placed"] or not n.visible:
-				continue
-			if PackedVector2Array(a["route"]).is_empty():
-				_make_way(a, all)
-				continue  # only someone on the move is eased
-			var me := n.global_position
-			if me.distance_to(cam.global_position) > 6.0:
-				continue
-			var push := Vector2.ZERO
-			var cx := floori(me.x / SPACE)
-			var cz := floori(me.z / SPACE)
-			var near: Array[Node3D] = []
-			for gx in range(cx - 1, cx + 2):
-				for gz in range(cz - 1, cz + 2):
-					near.append_array(grid.get(Vector2i(gx, gz), []))
-			for o in near:
-				if o == n:
-					continue
-				var d := Vector2(me.x - o.global_position.x, me.z - o.global_position.z)
-				var l := d.length()
-				if l < SPACE and absf(me.y - o.global_position.y) < 0.1:
-					var away := d / l if l > 0.0001 else Vector2.from_angle(float(a["i"]))
-					var share := 0.5 if o.has_meta("folk") and not PackedVector2Array(_folk_route(o)).is_empty() else 1.0  # two walkers part half each
-					push += away * (SPACE - l) * share
-			if push.length() > 0.0:
-				push = push.limit_length(EASE)
-				n.position.x += push.x
-				n.position.z += push.y
-				n.position.y = terrain.height_at(n.position.x, n.position.z)
 
 
 ## Someone standing with a road traveller inside their space (a carter waiting
-## on them) takes a real step aside, walking, once in a while: never pushed.
-func _make_way(a: Dictionary, all: Array[Node3D]) -> void:
+## on them) takes a real step aside, walking, once in a while: never pushed. Asked with the others' pass (_avoid_others),
+## the travellers it found.
+func _make_way(a: Dictionary, travellers: Array[Node3D]) -> void:
 	var now := Time.get_ticks_msec()
 	if now < int(a.get("made_way", 0)) + 3000:
 		return
 	var n: Node3D = a["node"]
-	for o in all:
-		if o == n or not _travelling(o):
+	for o in travellers:
+		if o == n:
 			continue
 		var d := Vector2(n.global_position.x - o.global_position.x, n.global_position.z - o.global_position.z)
 		if d.length() < SPACE:
@@ -221,15 +167,6 @@ func _make_way(a: Dictionary, all: Array[Node3D]) -> void:
 			route_to(a, n.position + Vector3(away.x, 0, away.y) * 0.2)
 			_set_off(a)
 			return
-
-
-## A villager's route by their node (folk meta), for the spacing pass.
-func _folk_route(n: Node) -> PackedVector2Array:
-	var f: Dictionary = n.get_meta("folk", {})
-	for a in crowds.get(int(f.get("town", -1)), []):
-		if int(a["i"]) == int(f.get("i", -1)):
-			return a["route"]
-	return PackedVector2Array()
 
 
 ## A town's crowd at its tier (view_tier.gd): NEAR, everyone out and thinking; MID, one in MID_EVERY walking on
@@ -536,12 +473,15 @@ func _avoid_others() -> void:
 	# a walker's reach is in nobody's way: not looked for (FPS P0: 1,100 people against every town, four times a second).
 	var cam := get_viewport().get_camera_3d()
 	var reach := AnimLOD.People.SEEN_TO + OTHERS_REACH
+	var travellers: Array[Node3D] = []  # road travellers near: those standing in their way step aside (_make_way)
 	for p in get_tree().get_nodes_in_group("people"):
 		var n := p as Node3D
 		if n == null or walkers.has(n) or not n.is_visible_in_tree():
 			continue
 		if cam and n.global_position.distance_to(cam.global_position) > reach:
 			continue
+		if _travelling(n):
+			travellers.append(n)
 		var g := to_local(n.global_position)
 		for id in crowds:
 			if crowds[id].is_empty():
@@ -571,6 +511,12 @@ func _avoid_others() -> void:
 		for i in range(here.size(), pool.size()):
 			NavigationServer3D.obstacle_set_position(pool[i], Vector3(1e5, 0, 1e5))  # nobody there now: out of the way
 		_others[id] = pool
+	if travellers.is_empty():
+		return
+	for id in crowds:
+		for a in crowds[id]:
+			if a["placed"] and (a["node"] as Node3D).visible and PackedVector2Array(a["route"]).is_empty():
+				_make_way(a, travellers)
 
 
 func _forget_others(id: int) -> void:
