@@ -1,6 +1,4 @@
 {
-  "batch_lod_bias": 0.4,
-  "_batch_lod_bias": "batch.gd: a town's batches (houses, walls' pieces, market produce) take their simpler versions this much sooner; 1 is Godot's own pick (Mac 2026-11-15: less detail at our fidelity).",
   "_": "Town building knobs (towns.gd reads them). castle: where a great house's castle may stand when the first, old search (eight headings on the square's ring, all dry) finds no plot: headings around, rings out from the square (0 is the old ring; -1 hugs the square), sizes tried in order, and the share of the plot's edge that may stand over water if the keep's middle is dry.",
   "forge": {"floor_half": 0.09},
   "life": {"linger": 3},
