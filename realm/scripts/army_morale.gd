@@ -175,6 +175,27 @@ static func step(sides: Array, dt: float, loser: int, commanders: Array, spent: 
 	return gone
 
 
+## Routed regiments that rally (research note step 7; Total War's rally by the general): a running regiment still on
+## the field (not yet gone) whose side's commander stands within morale.rally_rout.reach of where it broke regains
+## nerve at rally_rout.rate a second while the day isn't spent; back to rally_rout.at it reforms. Returns those.
+static func rallied(sides: Array, dt: float, spent: bool, commanders: Array) -> Array:
+	var out: Array = []
+	if spent:
+		return out
+	for side in sides.size():
+		var c = commanders[side] if side < commanders.size() else null
+		if not (c is Dictionary) or (c as Dictionary).is_empty() or not _standing(c):
+			continue
+		for q in sides[side]:
+			if String(q.get("state_name", "")) != "rout" or q.get("gone", false) or _apart(c, q) > _m("rally_rout.reach", 2.0):
+				continue
+			var m := of(q) + _m("rally_rout.rate", 0.15) * dt
+			_put_nerve(q, minf(m, _m("start", 1.0)), false)
+			if m >= _m("rally_rout.at", 0.55):
+				out.append(q)
+	return out
+
+
 ## The beaten side's regiment still standing whose nerve is lowest: where the line breaks next. {} when none stands.
 static func shakiest(sides: Array, loser: int) -> Dictionary:
 	var low := INF

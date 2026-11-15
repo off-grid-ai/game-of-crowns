@@ -976,7 +976,7 @@ func _dress(r: Dictionary) -> void:
 			p.y = Footing.height(xf * Vector3(p.x, 0.0, p.z)) - xf.origin.y
 		vat.multimesh.set_instance_transform(s, Transform3D(b, p))
 	r["dressed_at"] = xf.origin
-	if node.is_inside_tree():
+	if node.is_inside_tree() and not r.get("loose", false):
 		_claim(r, xf)
 
 
@@ -1901,6 +1901,19 @@ func _claim(r: Dictionary, xf: Transform3D, w := -1.0, d := -1.0) -> void:
 		var q: Vector3 = xf * (c as Vector3)
 		poly.append(Vector2(q.x, q.z))
 	Footing.claim(_claim_id(r), poly, _host_kind())
+
+
+## A broken regiment's ground let go (army_field.gd _break): its men are loose, the block holds nothing till it rallies.
+func let_go(r: Dictionary) -> void:
+	r["loose"] = true
+	Footing.release(_claim_id(r))
+	_held.erase(r["id"])
+
+
+## A rallied regiment holds its ground again where it stands.
+func hold_ground(r: Dictionary) -> void:
+	r["loose"] = false
+	_dress(r)
 
 
 func _claim_id(r: Dictionary) -> String:

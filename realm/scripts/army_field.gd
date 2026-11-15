@@ -433,6 +433,8 @@ func _morale(dt: float) -> void:
 				_straggle(r, Morale.waver(r), dt)
 	for r in gone:
 		_send(r, &"break")
+	for r in Morale.rallied(_rows(), dt, clock > Data.num(F, "field.longest", 45.0), [(sides[0] as Army).commander(), (sides[1] as Army).commander()]):
+		_send(r, &"rally")
 	var standing := 0
 	for r in (sides[loser] as Army).rows():
 		if r["state_name"] != "rout":
@@ -983,59 +985,151 @@ func _straggle(r: Dictionary, w: float, dt: float) -> void:
 	r["moved"] = true
 
 
-## It breaks: turns its back on the enemy, runs; its banner wavers its last.
+## It breaks (research note step 7; Total War's and Bannerlord's rout): the block comes apart into loose men, each his
+## own body walked by his Mover through the field's crowd (Godot's RVO, _rout_crowd), running away from its side's
+## front, each a little wide of the next (field.loose.spread); its ground is let go; its banner wavers its last. The
+## figures stay the block's one VAT draw, each laid where his runner is (_follow_runners).
 func _break(r: Dictionary) -> void:
 	var army: Army = r["army"]
 	if not r.has("broke_at"):
 		r["broke_at"] = (r["node"] as Node3D).global_position  # where its standard falls (_aftermath)
 	army.waver(r, 1.0)
 	Morale.broke(_rows(), r)  # those beside it are shaken: the chain
-	var yaws: PackedFloat32Array = r["yaws"]
-	for s in (r.get("strag", {}) as Dictionary):  # the stragglers turn with the rest, and run with them
-		yaws[s] -= PI
-	r["yaws"] = yaws
 	r["strag"] = {}
-	army.turn(r, float(r["yaw"]) + PI)
-	# The dead lie where they fell; the living face the other way in their places.
+	r["yaws0"] = (r["yaws"] as PackedFloat32Array).duplicate()  # each man's own turn in the ranks, for a rally
+	army.let_go(r)  # its ground is no one's: its men are loose
+	var node: Node3D = r["node"]
 	var local: PackedVector3Array = r["local"]
 	var alive: PackedByteArray = r["alive"]
+	var away := -_line_front(r)
+	var across := away.cross(Vector3.UP)
+	var spread := Data.num(F, "field.loose.spread", 0.6)
+	var pace := Data.num(F, "field.run", 0.42)
+	var crowd := _rout_crowd()
+	var runners := {}
 	for s in local.size():
-		if alive[s] == 1:
-			local[s] = Vector3(-local[s].x, 0.0, -local[s].z)
-	r["local"] = local
-	r["moved"] = true
+		if alive[s] == 0:
+			continue
+		var man := Node3D.new()
+		man.name = "Runner"
+		add_child(man)
+		man.global_position = node.to_global(local[s])
+		man.rotation.y = atan2(away.x, away.z)
+		var mo: Node = Mover.of(man)
+		mo.clip = ""  # his figure is the block's VAT draw
+		mo.fights(true)
+		mo.join(crowd, &"man", pace * 1.3)
+		runners[s] = {"node": man, "way": (away + across * _rng.randf_range(-spread, spread)).normalized(), "pace": pace * _rng.randf_range(0.85, 1.15)}
+	r["runners"] = runners
 	var vat: VATMultiMeshInstance3D = r["vat"]
 	var run := army.track(r, "run")
-	for s in local.size():
-		if alive[s] == 1:
-			vat.update_instance_track(s, run)
-			vat.update_instance_animation_offset(s, _rng.randf())
+	for s in runners:
+		vat.update_instance_track(s, run)
+		vat.update_instance_animation_offset(s, _rng.randf())
 	r["ran"] = 0.0
 	if play.is_empty() and ai == null: print("BATTLE t=%.0f a %s regiment breaks at %d%%" % [clock, "crown" if int(r["side"]) == 0 else "foe", int(float(r["strength"]) * 100.0)])
 
 
-## Running: away from the field at field.run, each man drifting from his place (field.scatter), gone after
-## field.fade.
+## The field's crowd for loose men (a NavigationServer3D avoidance map of its own, as army_melee.gd's): made on the
+## first rout, freed with the battle.
+var _crowd := RID()
+func _rout_crowd() -> RID:
+	if not _crowd.is_valid():
+		_crowd = NavigationServer3D.map_create()
+		NavigationServer3D.map_set_active(_crowd, true)
+	return _crowd
+
+
+func _exit_tree() -> void:
+	if _crowd.is_valid():
+		NavigationServer3D.free_rid(_crowd)
+		_crowd = RID()
+
+
+## Running: each loose man on, away from the field at his own pace, round the others (his Mover, steered every frame);
+## gone after field.fade.
 func _run(r: Dictionary, dt: float) -> void:
-	var node: Node3D = r["node"]
-	var fwd := node.global_transform.basis.z.normalized()
-	Mover.of(node).toward(node.global_position + fwd * 0.5, Data.num(F, "field.run", 0.42), fwd)
-	var local: PackedVector3Array = r["local"]
-	var alive: PackedByteArray = r["alive"]
-	var scatter := Data.num(F, "field.scatter", 0.05)
-	for s in local.size():
-		if alive[s] == 1:
-			local[s] += Vector3(sin(float(s) * 12.9898) * scatter, 0.0, absf(cos(float(s) * 78.233)) * scatter * 0.6) * dt
-	r["local"] = local
-	r["moved"] = true
+	var runners: Dictionary = r.get("runners", {})
+	if not r.get("gone", false):
+		for s in runners:
+			var m: Dictionary = runners[s]
+			var man: Node3D = m["node"]
+			if is_instance_valid(man):
+				Mover.of(man).toward(man.global_position + (m["way"] as Vector3) * 0.5, float(m["pace"]))
+	_follow_runners(r)
 	r["ran"] = float(r["ran"]) + dt
 	if float(r["ran"]) > Data.num(F, "field.fade", 7.0) and not r.get("gone", false):
 		r["gone"] = true
 		var vat: VATMultiMeshInstance3D = r["vat"]
-		for s in local.size():
-			if alive[s] == 1:
-				vat.fade_out_instance(s, 1.0, _rng.randf_range(0.0, 1.5))
+		for s in runners:
+			vat.fade_out_instance(s, 1.0, _rng.randf_range(0.0, 1.5))
 		(r["banner"] as Node3D).visible = false
+		get_tree().create_timer(3.0).timeout.connect(func(): _free_runners(r))
+
+
+## Each loose man's figure laid where his runner is and turned the way he faces (in the block's frame: its one draw).
+func _follow_runners(r: Dictionary) -> void:
+	var runners: Dictionary = r.get("runners", {})
+	if runners.is_empty():
+		return
+	var node: Node3D = r["node"]
+	var local: PackedVector3Array = r["local"]
+	var yaws: PackedFloat32Array = r["yaws"]
+	for s in runners:
+		var man: Node3D = runners[s]["node"]
+		if not is_instance_valid(man):
+			continue
+		var p := node.to_local(man.global_position)
+		local[s] = Vector3(p.x, 0.0, p.z)
+		yaws[s] = wrapf(man.global_rotation.y - node.global_rotation.y, -PI, PI)
+	r["local"] = local
+	r["yaws"] = yaws
+	r["moved"] = true
+
+
+func _free_runners(r: Dictionary) -> void:
+	for s in (r.get("runners", {}) as Dictionary):
+		var man: Node3D = r["runners"][s]["node"]
+		if is_instance_valid(man):
+			man.queue_free()
+	r["runners"] = {}
+
+
+## Rallied (army_morale.gd rallied: its commander near while the day isn't spent): every loose man walks back to his
+## place in its block by his Mover; all back, the block stands formed again where it broke, its ground held, and goes
+## back to its work.
+func _rally_in(r: Dictionary) -> void:
+	var node: Node3D = r["node"]
+	var form: PackedVector3Array = r[String(r.get("form", "line"))]["at"]
+	(r["army"] as Army).waver(r, 0.5)
+	_play(r, "walk")
+	for s in (r.get("runners", {}) as Dictionary):
+		var man: Node3D = r["runners"][s]["node"]
+		if is_instance_valid(man):
+			var mo: Node = Mover.of(man)
+			mo.speed = Data.num(F, "field.advance", 0.16)
+			mo.go(node.to_global(form[s]), func(): r["runners"][s]["back"] = true)
+
+
+func _rally(r: Dictionary, _dt: float) -> void:
+	_follow_runners(r)
+	var runners: Dictionary = r.get("runners", {})
+	for s in runners:
+		if not runners[s].get("back", false) and is_instance_valid(runners[s]["node"]):
+			return
+	_free_runners(r)
+	var form: PackedVector3Array = r[String(r.get("form", "line"))]["at"]
+	var local: PackedVector3Array = r["local"]
+	var alive: PackedByteArray = r["alive"]
+	for s in local.size():
+		if alive[s] == 1:
+			local[s] = form[s]
+	r["local"] = local
+	r["yaws"] = r.get("yaws0", r["yaws"])
+	r["moved"] = true
+	(r["army"] as Army).hold_ground(r)
+	_send(r, &"formed")
+	_send(r, &"volley" if r["role"] == "ranged" else (&"flank" if r["role"] == "cavalry" else &"advance"))
 
 
 ## The victors hold the field: they raise a cheer where they stand (Warcraft III and Total War: the winners cheer as

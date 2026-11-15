@@ -20,6 +20,8 @@ extends SceneTree
 ##      never its front, whichever side they come from; the cycle charge's states are in its mind (army.json minds);
 ##   8. a volley's arrows fly a true ballistic arc (field.volley angle and gravity): the flight from the range, the
 ##      arc's top g T^2 / 8, landing where aimed; every archer draws together and they loose within field.volley.step;
+##   9. a broken regiment comes apart into loose men, each his own body walked by his Mover through the field's crowd
+##      (RVO), its ground let go; a rally walks them back to their places by their Movers and it stands formed again;
 ##   4. a column marching to its place in the line keeps its column until deploy.range from it (army.gd _deploy cuts
 ##      its way there) and forms its line there; the road in is marched in column (army.gd _column_up).
 ## Prints "FORMATION PROBE …" lines and "FORMATION PROBE PASS" or "FORMATION PROBE FAIL n"; quits with 0 or 1.
@@ -50,6 +52,7 @@ func _run() -> void:
 	_siege_lanes()
 	_horse()
 	_volley()
+	_rout()
 	print("FORMATION PROBE PASS" if _fails == 0 else "FORMATION PROBE FAIL %d" % _fails)
 	quit(0 if _fails == 0 else 1)
 
@@ -291,3 +294,18 @@ func _volley() -> void:
 	var src := FileAccess.get_file_as_string("res://scripts/army_field.gd")
 	var body := src.substr(src.find("func _volley("), 3600)
 	_check(body.contains("draw_s") and body.contains("field.volley.step") and body.contains("their_alive"), "every archer draws together, they loose in step, each arrow onto a living man of the target block")
+
+
+## 9. The rout as loose men and the rally, as the regiment's mind and army_field.gd wire them.
+func _rout() -> void:
+	var go: Array = (Data.value("army", "minds.regiment", {}) as Dictionary).get("go", [])
+	_check(go.has(["rout", "rally", "rally"]) and go.has(["rally", "stand", "formed"]), "a routed regiment may rally and stand formed again (its mind)")
+	var src := FileAccess.get_file_as_string("res://scripts/army_field.gd")
+	var brk := src.substr(src.find("func _break("), 2600)
+	_check(brk.contains("Mover.of(man)") and brk.contains(".join(crowd") and brk.contains("let_go(r)"), "a broken regiment's men run loose, each by his Mover in the field's crowd, its ground let go")
+	var run := src.substr(src.find("func _run("), 900)
+	_check(run.contains("toward(") and not run.contains("Mover.of(node)"), "the loose men run, not the block (no Mover on the regiment's anchor while it runs)")
+	var ral := src.substr(src.find("func _rally_in("), 900)
+	_check(ral.contains("mo.go(node.to_global(form[s])"), "a rally walks every man back to his place by his Mover")
+	var M: GDScript = load("res://scripts/army_morale.gd")
+	_check((M.rallied([[], []], 0.1, true, [{}, {}]) as Array).is_empty(), "once the day is spent nobody rallies")
