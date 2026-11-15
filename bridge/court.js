@@ -1,5 +1,6 @@
-// The court's sitting and its rulings: once a season the court sits and the
-// realm holds still (courtSeason, hold, pace, callMatter), the Hand's word on
+// The court's sitting and its rulings: once a season the court sits while the
+// realm's time runs on (courtSeason, pace, callMatter; Mac 2026-11-15: only the
+// King's own pause stops time), the Hand's word on
 // each petition (handLine) and what stands before the King (docket); a ruling
 // on a petition and how the realm sees it (rule, rulingScene, say); the King
 // answering the Hand's matter (answerMatter) or closing the court and letting
@@ -7,8 +8,8 @@
 // what it has heard (courtYearOf, heardCtx, courtCtx). Nothing here reads
 // server.js: the realm's state and the bridge's own helpers come in as one
 // context argument, built fresh by server.js on each call (getters for what it
-// reassigns, which the sitting reads again after each await; setSitting for the
-// hold); server.js keeps wrappers of the same names.
+// reassigns, which the sitting reads again after each await); server.js keeps
+// wrappers of the same names.
 
 import { crownOf } from "./realm.js";
 import * as Royals from "./royals.js";
@@ -140,17 +141,6 @@ export const isCrisis = (o) => o.urgency >= 75 || /are at war$/.test(o.text);
 export const courtYearOf = (ctx) => (ctx.meta.court ??= { sitting: null, hand: {}, heard: {}, lastCall: 0 });
 export const heardCtx = (ctx) => ({ heard: (k) => courtYearOf(ctx).heard[k] != null, hear: (k) => { courtYearOf(ctx).heard[k] = ctx.world?.turn ?? 0; } });
 export const courtCtx = (ctx) => ({ favour: ctx.favourOf, shift: ctx.shiftFavour, send: (l) => ctx.send(`lua cmd ${l}`), watched: isWatched(), options: ctx.meta.options ?? {}, ...heardCtx(ctx) });
-
-export function hold(ctx, on) {
-  const { meta, send, timeoutNow } = ctx;
-  // An act told back holds the realm until the King has read it, whatever else lets go.
-  on = on || (meta?.status === "running" && meta?.interlude != null && !meta.interlude.seen);
-  // Only while the King watches: a realm left alone lives on, court or no court.
-  on = on && isWatched();
-  if (ctx.sitting === on) return;
-  ctx.setSitting(on);
-  send(`set timeout ${timeoutNow()}`);
-}
 
 function callMatter(ctx, o, turn, crisis) {
   const c = courtYearOf(ctx);
@@ -295,7 +285,6 @@ export async function courtSeason(ctx, turn, force = false) {
     if (push) c.lastPush = turn;
     else c.lastSat = turn;
     c.lastCall = Date.now();
-    hold(ctx, true);
     // Truces and wars the King ordered away from court reload now, behind the card.
     const pending = meta.pendingDiplomacy ?? [];
     meta.pendingDiplomacy = [];
@@ -329,10 +318,7 @@ export function closeCourt(ctx, turn) {
 export function closeIfDone(ctx, turn, closing = false) {
   const { meta, court, counselNow, record } = ctx;
   const c = courtYearOf(ctx);
-  if (c.sitting == null) {
-    hold(ctx, false);  // never held with no court sitting
-    return;
-  }
+  if (c.sitting == null) return;
   // A called matter holds the doors until the King answers it or closes the court (gameplay review #5:
   // a matter the counsel re-worded was dropped and the court shut before he saw it).
   follow(ctx, turn);
@@ -341,8 +327,7 @@ export function closeIfDone(ctx, turn, closing = false) {
   c.sitting = null;
   c.forced = false;
   c.lastCall = Date.now();
-  hold(ctx, false);
-  record({ turn, kind: "court", text: "The doors of the court close, and the realm moves again." });
+  record({ turn, kind: "court", text: "The doors of the court close." });
   chron.saveMeta(meta);
 }
 

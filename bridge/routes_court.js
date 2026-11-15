@@ -60,10 +60,8 @@ export async function sayAloud(ctx, req, res, url) {
 }
 
 export async function closeInterlude(ctx, req, res, url) {
-  const { hold } = ctx;
   if (ctx.meta.interlude) ctx.meta.interlude.seen = true;
   chron.saveMeta(ctx.meta);
-  if (ctx.meta.court?.sitting == null) hold(false);
   return json(res, 200, { ok: true });
 }
 

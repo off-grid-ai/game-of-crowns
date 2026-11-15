@@ -159,7 +159,6 @@ function load(id) {
   queueMicrotask(townStates);  // the towns' states, once the realm is loaded
   detailCache = { file: null, mtime: 0, data: null };
   turnSeconds = chron.PACE.season;  // one pace for every realm, with a court at each season (data/pace.json; GAME_DESIGN)
-  sitting = meta.court?.sitting != null;  // a realm reopened mid-sitting still holds
   paused = meta.status !== "running";
   favour = chron.readJson(path.join(P.state, "favour.json"), {});
   for (const k of Object.keys(favourWhy)) delete favourWhy[k];
@@ -516,7 +515,7 @@ async function talkToNamed(res, city, id, b) {
 
 // The court's sitting and its rulings (court.js). Its context, read fresh on
 // every call: getters for what the bridge reassigns (the sitting reads them
-// again after each await), setSitting for the hold.
+// again after each await).
 // A ruling on a petition, by option, and how the realm sees it (court.js).
 function rule(id, option) { return Sittings.rule(realmCtx(), id, option); }
 
@@ -766,17 +765,14 @@ function restingFavour(p) { return Book.restingFavour(realmCtx(), p); }
 function counsel(players, cities, threat) { return Counsel.counsel(realmCtx(), players, cities, threat); }
 
 // --- the court's season (court.js) ------------------------------------------------
-// Once a season the court sits and the realm holds still: its sitting, pace,
-// docket and rulings live in court.js. What the bridge's clock and routes read
-// stays here: the realm's matters, whether the court holds the realm, and
-// whether the King is away.
+// Once a season the court sits while time runs on: its sitting, pace, docket
+// and rulings live in court.js. What the bridge's clock and routes read stays
+// here: the realm's matters and whether the King is away.
 let counselNow = [];  // the realm's matters, as the last reading of the world found them
-let sitting = false;  // a sitting holds the realm until the court closes
 let away = false;  // no window is watching: the realm waits for the King (every strategy game pauses when the player isn't there)
-const timeoutNow = () => (paused || sitting || away ? 0 : turnSeconds);
+const timeoutNow = () => (paused || away ? 0 : turnSeconds);  // only the King's own pause stops time; the court sits while it runs (Mac 2026-11-15)
 const courtYearOf = () => Sittings.courtYearOf(realmCtx());
 const heardCtx = () => Sittings.heardCtx(realmCtx());
-function hold(on) { return Sittings.hold(realmCtx(), on); }
 function courtSeason(turn, force = false) { return Sittings.courtSeason(realmCtx(), turn, force); }
 // The King closes the court; every matter answered, the doors close (court.js).
 function closeCourt(turn) { return Sittings.closeCourt(realmCtx(), turn); }
@@ -910,11 +906,9 @@ setInterval(() => {
     }
   }
   if (away) return;
-  // The court holds the realm while the King watches.
-  if (meta?.court?.sitting != null || (meta?.status === "running" && meta?.interlude && !meta.interlude.seen)) hold(true);
   // An aim met is met at once, held clock or not: the King never reads "21 of 12".
   if (meta?.status === "running" && Freeciv.proc()) ladder();
-  if (!meta || paused || sitting || meta.status !== "running" || !Freeciv.proc()) return;  // the court sitting holds the clock too
+  if (!meta || paused || meta.status !== "running" || !Freeciv.proc()) return;
   Reign.tick(realmCtx());  // the clock, and what it brings: the last act, ambitions, the council, an act's end (reign.js)
 }, 5000);
 
@@ -957,15 +951,15 @@ function realmCtx() {
     get decreesIssued() { return decreesIssued; }, set decreesIssued(x) { decreesIssued = x; },
     get scenes() { return scenes; },
     get counselStale() { return counselStale; }, set counselStale(x) { counselStale = x; },
-    get counselNow() { return counselNow; }, get sitting() { return sitting; },
+    get counselNow() { return counselNow; },
     addMark, arcCtx, arrivals, BEAT_DOES, BEAT_WHEN, besiegers, canDecree, causeOf, CIVILIAN, closeCourt, closeIfDone,
     courtSeason, crownOf: crownNow, crowns, crownSeat, decreeScenes, deed, detail, diplomacy: diplomacyNow, DIR,
     docket, effects, endReign, FAVOUR, favourOf, favourPast, favourWhy, flushHeld, GOAL_FAVOUR, goalNow, greatHouses,
-    heardCtx, hold, inCrowns, isKing, keepTruce, KING, kingName, lapse, lapseOf, lastSeason, marchOdds, marchOn, marks,
+    heardCtx, inCrowns, isKing, keepTruce, KING, kingName, lapse, lapseOf, lastSeason, marchOdds, marchOn, marks,
     markSeasons: MARK_SEASONS, marksNow, nextEffect: () => ++effectSeq, noteFavour, OWN_STORIES, ownStory, picture,
     priceOf, record, recordDeed, refreshCounsel, reignInfo, resolveCampaigns, saveCard: () => Reign.saveCard(realmCtx()), restingFavour, rolesOf, royalWorks, rule,
     runArcs, runSeason, saveFavour, scene, seasonsLeft, send, setDiplomacy, setPaused: (v) => { paused = v; },
-    setSitting: (v) => { sitting = v; }, shiftAndTell, shiftFavour, snapshot, SOLDIER, soulsOf, startCampaign,
+    shiftAndTell, shiftFavour, snapshot, SOLDIER, soulsOf, startCampaign,
     storyForForm, storyNow, switchTo, sworn, talkToNamed, tally, temper, theirs, timeoutNow, townStates, turnHouses,
     TURNING, worldView, yearlyKey,
   });
