@@ -76,6 +76,9 @@ static var _ask_box := RID()  # a box asked with (obstacle_shapes' area)
 static var _ask_hull := RID()  # a prism asked with (area_free)
 static var _owner := {}  # body RID -> [what ("town", "life", "tree", "claim"), key, where its shapes lie (Rect2, world XZ)]
 const NONE: Array[RID] = []
+static var _layer_of := {}  # body RID -> its layer bits
+static var _body_shapes := {}  # standing body RID (not a claim's) -> its shapes ([Transform3D, shape RID, bounds])
+static var _cell_bodies := {}  # cell (Vector2i, SHAPES_CELL) -> {body RID: true}: the standing bodies whose bounds cover it
 
 # --- what stands ------------------------------------------------------------------------------------------------------
 static var _roots := {}  # root instance id -> {root, clip (world Rect2), town, sig, kids, new, bodies, refill, xf, yards}
@@ -412,7 +415,7 @@ static func _lay_chunk(k: Vector2i) -> void:
 			if o is Vector3:
 				var v: Vector3 = o
 				if rect.has_point(Vector2(v.x, v.y)):
-					shapes.append([Transform3D(Basis.IDENTITY, Vector3(v.x, 0.0, v.y)), _cyl(v.z)])
+					shapes.append([Transform3D(Basis.IDENTITY, Vector3(v.x, 0.0, v.y)), _cyl(v.z), Rect2(v.x - v.z, v.y - v.z, v.z * 2.0, v.z * 2.0)])
 			elif o is PackedVector2Array and (o as PackedVector2Array).size() > 2:
 				var poly: PackedVector2Array = o
 				var mid := Vector2.ZERO
@@ -764,23 +767,35 @@ static func _minus(p: PackedVector2Array, y: PackedVector2Array) -> Array:
 # --- every shape, for the navigation ----------------------------------------------------------------------------------
 
 ## Every shape standing over `area` (world XZ) on the layers in `mask` (all by default): [{xform (Transform3D, world),
-## shape (RID), layer (int, the body's layer bits)}]. A shape is a prism physics.tall above and below the ground (a
-## box or a convex hull; a trunk a cylinder). The navigation bakes from these (NavigationMeshSourceGeometryData3D,
-## by each shape's data: PhysicsServer3D.shape_get_type / shape_get_data); water is not a shape (the terrain's own).
+## shape (RID), layer (int, the body's layer bits), bounds (Rect2, world XZ)}]. A shape is a prism physics.tall above
+## and below the ground (a box or a convex hull; a trunk a cylinder). The navigation bakes from these; water is not a
+## shape (the terrain's own). Answered from ground.gd's own records (each body's shapes kept by SHAPES_CELL cell, each
+## shape's bounds kept as it was made), never an engine query: one returned 1000+ hits, three server calls each
+## (supervisor's battle run nav7: nav_world.shapes 3-4 ms a call).
 static func obstacle_shapes(area: Rect2, mask := 0xFFFFFFFF) -> Array:
 	_fresh()
 	if not _src_dirty.is_empty():
 		_clean_sources(area)
-	PhysicsServer3D.shape_set_data(_ask_box, Vector3(area.size.x * 0.5, TALL * 0.5, area.size.y * 0.5))
-	_sq.shape_rid = _ask_box
-	_sq.transform = Transform3D(Basis.IDENTITY, Vector3(area.get_center().x, 0.0, area.get_center().y))
-	_sq.collision_mask = mask
-	_sq.exclude = NONE
 	var out := []
-	for hit: Dictionary in _st.intersect_shape(_sq, 65536):
-		var body: RID = hit["rid"]
-		var i: int = hit["shape"]
-		out.append({"xform": PhysicsServer3D.body_get_shape_transform(body, i), "shape": PhysicsServer3D.body_get_shape(body, i), "layer": PhysicsServer3D.body_get_collision_layer(body)})
+	var seen := {}
+	for x in range(floori(area.position.x / SHAPES_CELL), floori(area.end.x / SHAPES_CELL) + 1):
+		for z in range(floori(area.position.y / SHAPES_CELL), floori(area.end.y / SHAPES_CELL) + 1):
+			for body: RID in (_cell_bodies.get(Vector2i(x, z), {}) as Dictionary):
+				if seen.has(body):
+					continue
+				seen[body] = true
+				var layer: int = _layer_of.get(body, 0)
+				if layer & mask == 0 or not (_owner[body][2] as Rect2).intersects(area, true) or not PhysicsServer3D.body_get_space(body).is_valid():
+					continue  # another layer, not over the area, or out of the space (its town hidden)
+				for sh: Array in _body_shapes[body]:
+					if (sh[2] as Rect2).intersects(area, true):
+						out.append({"xform": sh[0], "shape": sh[1], "layer": layer, "bounds": sh[2]})
+	for id in _claims:
+		var c: Array = _claims[id]
+		var layer: int = _layer_of.get(c[3], 0)
+		if layer & mask != 0 and (c[2] as Rect2).intersects(area, true):
+			for sh: Array in c[4]:
+				out.append({"xform": sh[0], "shape": sh[1], "layer": layer, "bounds": sh[2]})
 	return out
 
 
@@ -823,6 +838,7 @@ static func _body(layer: int, what: String, key: Variant) -> RID:
 	PhysicsServer3D.body_set_collision_layer(b, layer)
 	PhysicsServer3D.body_set_collision_mask(b, 0)
 	_owner[b] = [what, key]
+	_layer_of[b] = layer
 	return b
 
 
@@ -833,8 +849,11 @@ static func _fill(body: RID, shapes: Array, on := true) -> void:
 	if _owner.has(body) and (_owner[body] as Array)[0] != "claim":
 		var o: Array = _owner[body]
 		o.resize(3)
+		_unindex(body)
 		o[2] = _shapes_bounds(shapes)
 		_changed_at(body)  # and where it stands now
+		if not shapes.is_empty():
+			_index(body, shapes)
 	PhysicsServer3D.body_set_space(body, RID())
 	PhysicsServer3D.body_clear_shapes(body)
 	for s: Array in shapes:
@@ -845,7 +864,9 @@ static func _fill(body: RID, shapes: Array, on := true) -> void:
 
 static func _free_body(body: RID, owned: Array) -> void:
 	_changed(body)
+	_unindex(body)
 	_owner.erase(body)
+	_layer_of.erase(body)
 	PhysicsServer3D.free_rid(body)
 	_free_shapes(owned)
 
@@ -856,6 +877,28 @@ static func _changed(body: RID) -> void:
 	if String((_owner.get(body, [""]) as Array)[0]) != "claim":
 		shapes_rev += 1
 		_changed_at(body)
+
+
+## A standing body's shapes kept by the cells (SHAPES_CELL) its bounds cover, so obstacle_shapes answers from them.
+static func _index(body: RID, shapes: Array) -> void:
+	_body_shapes[body] = shapes
+	var r: Rect2 = _owner[body][2]
+	for x in range(floori(r.position.x / SHAPES_CELL), floori(r.end.x / SHAPES_CELL) + 1):
+		for z in range(floori(r.position.y / SHAPES_CELL), floori(r.end.y / SHAPES_CELL) + 1):
+			var c := Vector2i(x, z)
+			if not _cell_bodies.has(c):
+				_cell_bodies[c] = {}
+			_cell_bodies[c][body] = true
+
+
+static func _unindex(body: RID) -> void:
+	if not _body_shapes.has(body):
+		return
+	_body_shapes.erase(body)
+	var r: Rect2 = _owner[body][2]
+	for x in range(floori(r.position.x / SHAPES_CELL), floori(r.end.x / SHAPES_CELL) + 1):
+		for z in range(floori(r.position.y / SHAPES_CELL), floori(r.end.y / SHAPES_CELL) + 1):
+			(_cell_bodies.get(Vector2i(x, z), {}) as Dictionary).erase(body)
 
 
 ## The cells under where `body`'s shapes lie counted changed (shapes_at): the navigation reads only those chunks again.
@@ -879,32 +922,13 @@ static func shapes_rev_in(area: Rect2) -> int:
 	return n
 
 
-## Where shapes ([Transform3D, shape RID] each) lie on the ground (world XZ).
+## Where shapes lie on the ground (world XZ): their bounds, kept as each was made (never read back from the engine).
 static func _shapes_bounds(shapes: Array) -> Rect2:
-	var r := Rect2()
-	var first := true
-	for s: Array in shapes:
-		var xf: Transform3D = s[0]
-		var data: Variant = PhysicsServer3D.shape_get_data(s[1])
-		var pts: Array = []
-		match PhysicsServer3D.shape_get_type(s[1]):
-			PhysicsServer3D.SHAPE_CONVEX_POLYGON:
-				pts = Array(data as PackedVector3Array)
-			PhysicsServer3D.SHAPE_BOX:
-				var h: Vector3 = data
-				pts = [Vector3(-h.x, 0, -h.z), Vector3(h.x, 0, h.z), Vector3(h.x, 0, -h.z), Vector3(-h.x, 0, h.z)]
-			PhysicsServer3D.SHAPE_CYLINDER, PhysicsServer3D.SHAPE_CAPSULE:
-				var rad := float((data as Dictionary).get("radius", 0.05))
-				pts = [Vector3(-rad, 0, -rad), Vector3(rad, 0, rad)]
-			PhysicsServer3D.SHAPE_SPHERE:
-				pts = [Vector3(-float(data), 0, -float(data)), Vector3(float(data), 0, float(data))]
-		for v: Vector3 in pts:
-			var w := xf * v
-			if first:
-				r = Rect2(w.x, w.z, 0, 0)
-				first = false
-			else:
-				r = r.expand(Vector2(w.x, w.z))
+	if shapes.is_empty():
+		return Rect2()
+	var r: Rect2 = shapes[0][2]
+	for sh: Array in shapes:
+		r = r.merge(sh[2])
 	return r
 
 
@@ -914,7 +938,7 @@ static func _free_shapes(shapes: Array) -> void:
 		PhysicsServer3D.free_rid(s[1])
 
 
-## `poly` (world XZ) as prisms appended to `out` ([Transform3D, shape RID] each): a rectangle a box, any other convex
+## `poly` (world XZ) as prisms appended to `out` ([Transform3D, shape RID, its bounds (Rect2, world XZ)] each): a rectangle a box, any other convex
 ## outline a convex hull, a concave one cut into convex pieces first.
 static func _prisms(poly: PackedVector2Array, out: Array) -> void:
 	if poly.size() == 4:
@@ -927,7 +951,7 @@ static func _prisms(poly: PackedVector2Array, out: Array) -> void:
 			var box := PhysicsServer3D.box_shape_create()
 			PhysicsServer3D.shape_set_margin(box, 0.0)
 			PhysicsServer3D.shape_set_data(box, Vector3(a.length() * 0.5, TALL, b.length() * 0.5))
-			out.append([Transform3D(Basis(x, Vector3.UP, z), Vector3(mid.x, 0, mid.y)), box])
+			out.append([Transform3D(Basis(x, Vector3.UP, z), Vector3(mid.x, 0, mid.y)), box, _bounds(poly)])
 			return
 	if not _convex(poly):
 		for part in Geometry2D.decompose_polygon_in_convex(poly):
@@ -936,7 +960,7 @@ static func _prisms(poly: PackedVector2Array, out: Array) -> void:
 	var hull := PhysicsServer3D.convex_polygon_shape_create()
 	PhysicsServer3D.shape_set_margin(hull, 0.0)
 	PhysicsServer3D.shape_set_data(hull, _prism_points(poly))
-	out.append([Transform3D.IDENTITY, hull])
+	out.append([Transform3D.IDENTITY, hull, _bounds(poly)])
 
 
 static func _prism_points(poly: PackedVector2Array) -> PackedVector3Array:
