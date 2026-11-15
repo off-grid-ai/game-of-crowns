@@ -101,12 +101,18 @@ static func sigil(house: Dictionary) -> Texture2D:
 
 ## The player's own names (bridge names.js, {own word: shown word}), turned round: the arms follow the house, not
 ## the name the player gave it (House Sharma still flies the Wolfholt wolf). bridge.gd keeps it, at every rename.
-static var _own_of := {}  # shown word (lower case) -> own word (lower case)
+static var _own_of := {}  # shown word (lower case) -> own word (as the realm writes it)
 static func known_names(names: Dictionary) -> void:
 	_own_of.clear()
 	for own in names:
 		if String(names[own]) != "":
-			_own_of[String(names[own]).to_lower()] = String(own).to_lower()
+			_own_of[String(names[own]).to_lower()] = String(own)
+
+
+## A word as the realm itself writes it, from the name the player gave it ("Sharma" -> "Wolfholt"): what a rename
+## renames (names.js keys on the realm's own word), so a second rename never chains onto the first.
+static func own_word(shown: String) -> String:
+	return String(_own_of.get(shown.to_lower(), shown))
 
 
 ## "House Goldcrest" -> "goldcrest", "The Crown" -> "crown", "The Dead" -> "dead"; a renamed house by its own word.
@@ -114,7 +120,7 @@ static func slug(house: Dictionary) -> String:
 	var name := String(house.get("name", "")).to_lower()
 	for shown in _own_of:
 		if name.contains(shown):
-			name = name.replace(shown, _own_of[shown])
+			name = name.replace(shown, String(_own_of[shown]).to_lower())
 	if house.get("crown", false):
 		return "crown"
 	if house.get("sigil", "") == "banner":

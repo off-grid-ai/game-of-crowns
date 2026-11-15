@@ -1043,6 +1043,7 @@ const ROUTES = {
   "POST /court/say": (req, res, url) => CourtRoutes.say(realmCtx(), req, res, url),
   "* /house": (req, res, url) => PeopleRoutes.house(realmCtx(), req, res, url),
   "POST /lore/written/person": (req, res, url) => RealmRoutes.writePerson(realmCtx(), req, res, url),
+  "POST /lore/house": (req, res, url) => RealmRoutes.writeHouse(realmCtx(), req, res, url),
   "* /names": (req, res, url) => RealmRoutes.playerNames(realmCtx(), req, res, url),
   "* /lore/map": (req, res, url) => RealmRoutes.loreMap(realmCtx(), req, res, url),
   "* /lore": (req, res, url) => RealmRoutes.lore(realmCtx(), req, res, url),

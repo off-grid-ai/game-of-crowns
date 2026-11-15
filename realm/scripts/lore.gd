@@ -35,6 +35,7 @@ const MAP := -4  # the map of Aldmere as every chronicle finds it
 var fetch_map := Callable()  # (cb) -> void: asks the bridge for /lore/map
 var fetch_written := Callable()  # (cb) -> void: the book as written (/lore?as=written)
 var rename_name := Callable()  # (from, to, cb) -> void: the player's own name for a word
+var write_house := Callable()  # (spec, cb(code, d)) -> void: a house's page rewritten (bridge /lore/house)
 var _map := {}
 var _mark := ""  # the town the map was opened on, ringed in gold
 
@@ -247,39 +248,6 @@ func _show(id: Variant) -> void:
 
 # --- the realm ------------------------------------------------------------------
 
-## A small Rename: press it, type a new name, Enter keeps it (empty gives the
-## old name back). Every page and the realm itself then use the new one.
-func _renamer(own: String, now: String, label: String) -> Control:
-	var box := HBoxContainer.new()
-	box.add_theme_constant_override("separation", 6)
-	var b := Button.new()
-	b.text = label
-	b.flat = true
-	b.focus_mode = Control.FOCUS_NONE
-	b.add_theme_color_override("font_color", T.TEXT_3)
-	b.add_theme_font_size_override("font_size", T.SIZE_DESC)
-	box.add_child(b)
-	var edit := LineEdit.new()
-	edit.visible = false
-	edit.custom_minimum_size.x = 180
-	edit.text = now
-	edit.placeholder_text = "A new name"
-	box.add_child(edit)
-	b.pressed.connect(func():
-		b.visible = false
-		edit.visible = true
-		edit.grab_focus()
-		edit.select_all())
-	edit.text_submitted.connect(func(t: String):
-		var to := t.strip_edges()
-		rename_name.call(own, "" if to == own else to, func(code, d):
-			if code == 200:
-				refresh()  # the book again, in the new names
-			else:
-				edit.text = String(d.get("error", "That name won't do.")) if d is Dictionary else "That name won't do."))
-	return box
-
-
 ## The map of Aldmere opened on a town, ringed in gold.
 func show_on_map(town: String) -> void:
 	_mark = town
@@ -396,7 +364,7 @@ func _section(title: String, items: Array) -> void:
 
 # --- a house --------------------------------------------------------------------
 
-func _house(h: Dictionary) -> void:
+func _house(h: Dictionary, editing := false) -> void:
 	# The house's own painting across the top (the Crown's is Kingsmere), else the
 	# game's still of its seat; none, and the page starts with its arms.
 	var seat_still := "res://assets/intro/stills/seat_%s.png" % String(h.get("seat", ""))
@@ -419,14 +387,27 @@ func _house(h: Dictionary) -> void:
 	title_row.add_theme_constant_override("separation", 12)
 	names.add_child(title_row)
 	title_row.add_child(T.title(String(h.get("name", "")), 34))
-	var own_word := String(h.get("key", h.get("name", ""))).trim_prefix("House ").trim_prefix("The ")
-	if not h.get("crown", false) and rename_name.is_valid():
-		var r := _renamer(own_word, String(h.get("name", "")).trim_prefix("House "), "Edit")
-		r.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		title_row.add_child(r)
+	# Edit, beside its name: the house's page written on in place (its name, words, seat, character, wants, grudge).
+	if not editing and not h.get("crown", false) and rename_name.is_valid() and write_house.is_valid():
+		var edit := Button.new()
+		edit.text = "Edit"
+		edit.flat = true
+		edit.focus_mode = Control.FOCUS_NONE
+		edit.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		edit.add_theme_color_override("font_color", T.TEXT_3)
+		edit.add_theme_font_size_override("font_size", T.SIZE_DESC)
+		edit.pressed.connect(func():
+			for c in _page.get_children():
+				c.queue_free()
+			_house(h, true))
+		title_row.add_child(edit)
 	if String(h.get("words", "")) != "":
 		names.add_child(T.title("“%s”" % h["words"], 18, T.ACCENT))
 	var lore: Dictionary = h.get("lore", {}) if h.get("lore") is Dictionary else {}
+	if editing:
+		_page.add_child(HSeparator.new())
+		_house_editor(h, lore)
+		return
 	var facts := []
 	if lore.has("region"):
 		facts.append(lore["region"])
@@ -973,3 +954,79 @@ func _holds(p: Dictionary, h: Dictionary) -> void:
 				lines.append(String(w.get("vassal", "")).replace("{house}", String(vs.get("house", ""))).replace("{town}", town).replace("{liege}", String(vs.get("liege", ""))))
 	if not lines.is_empty():
 		_fact(String(w.get("head", "Holds")), "  ".join(lines))
+
+
+## Edit on a house's page (Mac 2026-11-15: 'is it possible to edit the name of the seat? words, character wants old
+## grudges'): its name and its seat's are the player's names (names.js, by the realm's own word: shown everywhere the
+## house or town is named, its arms kept); its words, character, wants and grudge go to the player's book (bridge
+## /lore/house). Cancel and Save at the page's foot; Esc puts the pen down.
+func _house_editor(h: Dictionary, lore: Dictionary) -> void:
+	_editing = true
+	var own_house := Heraldry.own_word(String(h.get("name", "")).trim_prefix("House "))
+	var seat_now := String(h.get("seat", "")) if h.get("seat") != null else ""
+	var own_seat := Heraldry.own_word(seat_now)
+	var field := func(label: String, text: String, long: bool) -> Control:
+		_page.add_child(T.label(label))
+		var e: Control
+		if long:
+			var te := TextEdit.new()
+			te.text = text
+			te.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
+			te.scroll_fit_content_height = true  # it grows: the page scrolls, not the box
+			te.custom_minimum_size.y = 64
+			e = te
+		else:
+			var le := LineEdit.new()
+			le.text = text
+			e = le
+		e.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		_page.add_child(e)
+		return e
+	var name_f: LineEdit = field.call("The house's name", String(h.get("name", "")).trim_prefix("House "), false)
+	var words_f: LineEdit = field.call("Its words", String(h.get("words", "")), false)
+	var seat_f: LineEdit = null
+	if seat_now != "":
+		seat_f = field.call("Its seat", seat_now, false)
+	var char_f: TextEdit = field.call("Character", String(lore.get("character", "")), true)
+	var wants_f: TextEdit = field.call("Wants", String(lore.get("wants", "")), true)
+	var grudge_f: TextEdit = field.call("Old grudge", String(lore.get("grudge", "")), true)
+	var go := HBoxContainer.new()
+	go.alignment = BoxContainer.ALIGNMENT_END
+	go.add_theme_constant_override("separation", 10)
+	_page.add_child(go)
+	var cancel := Button.new()
+	cancel.text = "Cancel"
+	cancel.focus_mode = Control.FOCUS_NONE
+	cancel.pressed.connect(func():
+		_editing = false
+		_show(_chosen))
+	go.add_child(cancel)
+	var save := Button.new()
+	save.text = "Save"
+	save.focus_mode = Control.FOCUS_NONE
+	save.add_theme_color_override("font_color", T.ACCENT)
+	go.add_child(save)
+	save.pressed.connect(func():
+		save.disabled = true
+		var errors: Array = []
+		var left := [1]  # answers still to come
+		var done := func(code, d):
+			if code != 200:
+				errors.append(String((d if d is Dictionary else {}).get("error", "That didn't save.")))
+			left[0] -= 1
+			if left[0] == 0:
+				_editing = false
+				if not errors.is_empty() and ui:
+					ui.toast(errors[0])
+				refresh()  # the book again, in its new words and names
+		# The house's own words for its page (the page's own text, by the house's own name).
+		var house_key := "House " + own_house
+		var to_name := name_f.text.strip_edges().trim_prefix("House ")
+		if to_name != String(h.get("name", "")).trim_prefix("House "):
+			left[0] += 1
+			rename_name.call(own_house, "" if to_name == own_house else to_name, done)
+		if seat_f and seat_f.text.strip_edges() != seat_now:
+			left[0] += 1
+			var to_seat := seat_f.text.strip_edges()
+			rename_name.call(own_seat, "" if to_seat == own_seat else to_seat, done)
+		write_house.call({"house": house_key, "words": words_f.text, "character": char_f.text, "wants": wants_f.text, "grudge": grudge_f.text}, done))

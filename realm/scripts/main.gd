@@ -442,6 +442,7 @@ func _ready() -> void:
 	lore.fetch_map = bridge.lore_map
 	lore.fetch_written = bridge.lore_written
 	lore.rename_name = bridge.rename
+	lore.write_house = bridge.write_house
 	# A person is a page of the Lore (lore.gd _person_page), written on in place with the one character form: the
 	# starting cast (from the menu's Lore) through the book's rewrites and the player's names (the given name only),
 	# the crown's family through /lore/royal, someone of the reign through /person.

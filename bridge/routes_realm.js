@@ -218,6 +218,14 @@ export async function writePerson(ctx, req, res, url) {
   return json(res, out.error ? 400 : 200, out);
 }
 
+// POST /lore/house {house, words?, character?, wants?, grudge?}: a great house's page rewritten from the Lore (its name
+// and its seat's are the player's names, POST /names); kept in the player's book (written.js setHouse).
+export async function writeHouse(ctx, req, res, url) {
+  const b = await body(req);
+  const out = rewrites.setHouse(b.house, b);
+  return json(res, out.error ? 400 : 200, out);
+}
+
 export async function playerNames(ctx, req, res, url) {
   if (req.method === "POST") {
     const raw = await new Promise((r) => { let b = ""; req.on("data", (d) => (b += d)); req.on("end", () => { try { r(JSON.parse(b || "{}")); } catch { r({}); } }); });
@@ -319,9 +327,9 @@ export async function lore(ctx, req, res, url) {
     // brothers and sisters, before the knights and officers sworn to him. In play only: the book as written has none.
     const royal = h.crown && !written ? royalsOf(ctx.meta?.royals) : [];
     return {
-      id: p.id, name: h.name, key: h.name, words: h.words, color: h.color, sigil: h.sigil, crown: !!h.crown,
+      id: p.id, name: h.name, key: h.name, words: rewrites.houseOf(h.name).words ?? h.words, color: h.color, sigil: h.sigil, crown: !!h.crown,
       seat: seat ? cityName(seat.id) : null, towns: ctx.world.cities.filter((c) => c.owner === p.id).length,
-      favour: h.crown ? null : favourOf(p.id), lore: b.houses[h.name] ?? rebel(h.name),
+      favour: h.crown ? null : favourOf(p.id), lore: { ...(b.houses[h.name] ?? rebel(h.name) ?? {}), ...rewrites.houseOf(h.name) },
       notables: [...royal, ...notables.map((c) => ({
         id: c.id, name: c.name, key: c.name, surname: c.surname ?? null, gender: c.gender, age: c.age, rank: c.rank, traits: c.traits,
         goal: c.goals?.[0]?.text ?? null, role: c.role ? ROLES[c.role]?.title : null,
@@ -338,8 +346,8 @@ export async function lore(ctx, req, res, url) {
   let n = 0;
   for (const h of Object.values(HOUSES)) {
     if (h.wild || h.crown || houses.some((x) => x.name === h.name)) continue;
-    houses.push({ id: -100 - n++, name: h.name, key: h.name, words: h.words, color: h.color, sigil: h.sigil, crown: false, fallen: true,
-      seat: null, towns: 0, favour: null, lore: b.houses[h.name] ?? null, notables: [] });
+    houses.push({ id: -100 - n++, name: h.name, key: h.name, words: rewrites.houseOf(h.name).words ?? h.words, color: h.color, sigil: h.sigil, crown: false, fallen: true,
+      seat: null, towns: 0, favour: null, lore: b.houses[h.name] ? { ...b.houses[h.name], ...rewrites.houseOf(h.name) } : null, notables: [] });
   }
   // The lesser families sworn to the great houses: one entry each, with
   // every town a branch of it holds, under which liege, and who heads it.

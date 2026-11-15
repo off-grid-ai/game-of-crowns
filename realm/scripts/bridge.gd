@@ -163,6 +163,11 @@ func person_fell(id: String, how: String, cb: Callable) -> void:
 
 
 ## Someone of the starting cast rewritten from the menu's Lore (kept on this Mac).
+## A great house's page rewritten from the Lore (bridge written.js setHouse): words, character, wants, grudge.
+func write_house(spec: Dictionary, cb: Callable) -> void:
+	_post("/lore/house", spec, cb)
+
+
 func write_person(spec: Dictionary, cb: Callable) -> void:
 	_post("/lore/written/person", spec, cb)
 

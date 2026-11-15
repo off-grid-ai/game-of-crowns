@@ -29,6 +29,26 @@ export function set(id, spec) {
   return { ok: true, person: e };
 }
 
+// A great house as the player rewrote it in the Lore (Mac 2026-11-15: 'words, character, wants, old grudges'): kept
+// in the same book under "house:<its own name>", laid over the world bible's page wherever the Lore is read. Only
+// what's given changes; an empty field gives the bible's words back.
+const HOUSE_FIELDS = ["words", "character", "wants", "grudge"];
+export function setHouse(name, spec) {
+  name = String(name ?? "").trim();
+  if (!/^House [A-Za-z' -]{2,40}$/.test(name)) return { error: "no such house" };
+  const e = (load()[`house:${name}`] ??= {});
+  for (const k of HOUSE_FIELDS) if (spec[k] != null) {
+    const v = String(spec[k]).trim().replace(/\s+/g, " ").slice(0, k === "words" ? 60 : 400);
+    if (v) e[k] = v; else delete e[k];
+  }
+  fs.mkdirSync(path.dirname(file()), { recursive: true });
+  fs.writeFileSync(file(), JSON.stringify(edits, null, 1));
+  return { ok: true, house: e };
+}
+
+// A great house's page fields as the player wrote them ({} if untouched).
+export const houseOf = (name) => load()[`house:${name}`] ?? {};
+
 // A starting character with the player's rewrites laid over it.
 export function apply(c) {
   const e = load()[c?.id];
@@ -43,7 +63,7 @@ export function apply(c) {
 
 // A new chronicle's cast, just copied from the baseline, rewritten as the player wants it.
 export function applyTo(dir) {
-  for (const id of Object.keys(load())) {
+  for (const id of Object.keys(load()).filter((k) => /^c\d+$/.test(k))) {
     const f = path.join(dir, `${id}.json`);
     try { fs.writeFileSync(f, JSON.stringify(apply(JSON.parse(fs.readFileSync(f, "utf8"))), null, 2)); } catch { /* not in this cast */ }
   }
