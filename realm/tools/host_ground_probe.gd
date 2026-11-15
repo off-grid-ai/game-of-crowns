@@ -3,12 +3,11 @@ extends SceneTree
 ## red block drawn through each other in one lump, part of one through a hedge into a ploughed field, a dead man flat
 ## in mid-air; then the assault's men walking straight through both sides' blocks, and every regiment standing and
 ## waiting). No realm: a flat-ish stub land (a river strip, a hedged field held as ground.gd "field") under the one
-## ground owner (ground.gd), and the real army.gd, army_ground.gd, army_field.gd and army_assault.gd. It proves:
+## ground owner (ground.gd), and the real army.gd, army_field.gd and army_assault.gd. It proves:
 ##   1. a host placed where another already stands (a battle's side: army.gd _clear_slots, then each regiment's claim)
 ##      lays no rectangle over another's, nor on a hedged field, water or a hedge; a host stood anew over its own old
 ##      ground (stand_at) still finds its places;
-##   2. a fight's route (army_ground.gd, the one route owner) goes round a regiment's held block, and still leaves a
-##      block it starts in and reaches one it ends in;
+##   2. (a route round a regiment's held block, and into the one it ends in: nav_probe.gd, the realm's one navigation);
 ##   3. a field battle's regiments closing on one foe each take their own place on its front, side by side;
 ##   4. the storm's regiments, queued at the gap and holding behind it, stand block by block, never over each other;
 ##   5. an open town (no wall at the front) stormed by Freeciv has its gap at once (army_assault.gd), never "wall" for ever;
@@ -18,7 +17,6 @@ extends SceneTree
 const Footing := preload("res://scripts/ground.gd")
 const ArmyScript := preload("res://scripts/army.gd")
 const FieldScript := preload("res://scripts/army_field.gd")
-const ArmyGround := preload("res://scripts/army_ground.gd")
 const Assault := preload("res://scripts/army_assault.gd")
 const VAT := preload("res://addons/godot_vat/vat_multi_mesh_instance_3d.gd")
 
@@ -80,7 +78,6 @@ func _run() -> void:
 	Footing.terrain = land
 	Footing.towns = null
 	await _placement()
-	await _routes()
 	_advance_spots()
 	_storm_blocks()
 	_open_town()
@@ -196,42 +193,6 @@ func _placement() -> void:
 	for r in all:
 		Footing.release(a._claim_id(r) if r in a._regiments else b._claim_id(r))
 	await process_frame
-
-
-# --- 2. routes round held ground ------------------------------------------------------------------------------
-
-func _routes() -> void:
-	var g: RefCounted = ArmyGround.around(main, Vector3.ZERO, 5.0)
-	for i in 200:
-		if g.built:
-			break
-		await process_frame
-	var block := PackedVector2Array([Vector2(-1.5, -0.4), Vector2(1.5, -0.4), Vector2(1.5, 0.4), Vector2(-1.5, 0.4)])
-	Footing.claim("regiment probe", block, "host 1")
-	await process_frame
-	var way: PackedVector3Array = g.route(Vector3(0, 0, -3), Vector3(0, 0, 3))
-	var through := _crosses(Vector3(0, 0, -3), way, block)
-	_check(g.built and not through, "a route goes round a regiment's held block (%d points)" % way.size())
-	way = g.route(Vector3(0.2, 0, 0.1), Vector3(0, 0, 3))
-	_check(not way.is_empty() and way[way.size() - 1].distance_to(Vector3(0, 0, 3)) < 0.1, "a route out of the block it starts in")
-	way = g.route(Vector3(0, 0, -3), Vector3(0.3, 0, 0.0))
-	_check(not way.is_empty() and Vector2(way[way.size() - 1].x - 0.3, way[way.size() - 1].z).length() < 0.1, "a route into the block it ends in (a man joining his own regiment)")
-	_check(g.open_at(Vector3(0, 0, 0)), "where a body may stand is the land's: a held block isn't shoved out of itself")
-	Footing.release("regiment probe")
-	await process_frame
-	way = g.route(Vector3(0, 0, -3), Vector3(0, 0, 3))
-	_check(way.size() == 1, "the block gone, the way runs straight again")
-
-
-func _crosses(from: Vector3, way: PackedVector3Array, poly: PackedVector2Array) -> bool:
-	var a := from
-	for p in way:
-		for k in 51:
-			var q := a.lerp(p, k / 50.0)
-			if Geometry2D.is_point_in_polygon(Vector2(q.x, q.z), poly):
-				return true
-		a = p
-	return false
 
 
 # --- 3. a field battle's regiments on one foe's front ---------------------------------------------------------

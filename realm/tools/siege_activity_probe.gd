@@ -15,16 +15,37 @@ extends SceneTree
 
 const Footing := preload("res://scripts/ground.gd")
 const ArmyScript := preload("res://scripts/army.gd")
-const ArmyGround := preload("res://scripts/army_ground.gd")
+const NavWorld := preload("res://scripts/nav_world.gd")  # the realm's one navigation: the tower's and regiments' routes
 const Camp := preload("res://scripts/siege_camp.gd")
 const Data := preload("res://scripts/data.gd")
 
 const LAND := """extends Node3D
-var width := 64
-var height := 64
+signal ground_changed(area: Rect2)
+const TILE := 4.0
+const SEA_LEVEL := -0.15
+const DRY_ABOVE := 0.04
+var width := 12
+var height := 12
 var built := true
+var _fords := {}
+var land3d = self
+var land = self
 func height_at(_x: float, _z: float) -> float:
 	return 0.0
+func tile_at(_x: int, _y: int) -> String:
+	return "Grassland"
+func in_river(_x: float, _z: float) -> bool:
+	return false
+func generate_nav_mesh_source_geometry(box: AABB, _require_nav: bool) -> PackedVector3Array:
+	var out := PackedVector3Array()
+	var x := maxf(box.position.x, 0.0)
+	while x < minf(box.end.x, 48.0) - 0.001:
+		var z := maxf(box.position.z, 0.0)
+		while z < minf(box.end.z, 48.0) - 0.001:
+			out.append_array([Vector3(x, 0, z), Vector3(x + 0.5, 0, z + 0.5), Vector3(x + 0.5, 0, z), Vector3(x, 0, z), Vector3(x, 0, z + 0.5), Vector3(x + 0.5, 0, z + 0.5)])
+			z += 0.5
+		x += 0.5
+	return out
 func is_land(_x: float, _z: float) -> bool:
 	return true
 func walkable(_x: float, _z: float) -> bool:
@@ -127,7 +148,7 @@ func breach() -> Dictionary:
 	return {}
 """
 
-const TOWN := Vector3(0, 0, 0)
+const TOWN := Vector3(24, 0, 24)  # the middle of the stub land (the navigation is baked from (0, 0) out)
 const R := 6.0
 
 var fail := 0
@@ -144,7 +165,7 @@ var watched := false
 
 
 func _init() -> void:
-	preload("res://tools/watchdog.gd").arm(self, 240.0)
+	preload("res://tools/watchdog.gd").arm(self, 360.0)  # the navigation's first bake, then the siege
 	_run.call_deferred()
 
 
@@ -187,21 +208,24 @@ func _run() -> void:
 	Engine.set_meta("stone_walls", wall)
 	siege = Node3D.new()
 	root.add_child(siege)
-	# The fight's ground, as the siege's assault lays it (army_assault.gd _field) and the storm stands on.
+	# The realm's navigation over the land, as main starts it: the tower and the regiments route on its host map.
+	root.add_child(NavWorld.new())
+	NavWorld.start(land, null)
+	var t_nav := Time.get_ticks_msec()
+	while not (NavWorld.ready(&"host") and NavWorld.ready(&"walk")) and Time.get_ticks_msec() - t_nav < 120000:
+		for k in [&"host", &"walk"]:
+			if NavWorld.map(k).is_valid():
+				NavigationServer3D.map_force_update(NavWorld.map(k))  # headless: synced at once
+		await process_frame
+	_check(NavWorld.ready(&"host"), "the realm's navigation is baked over the land (%d chunk layers)" % NavWorld.baked)
 	var ai: Node = _script(ASSAULT).new()
 	ai.town_at = TOWN
 	ai._wall = _arc(0.0, R)
-	ai.ground = ArmyGround.around(main, TOWN, R + 8.0)
 	siege.add_child(ai)
-	for i in 300:
-		if ai.ground.built:
-			break
-		await process_frame
 	# The storm: the besiegers' regiments storm_host.from_wall out from the wall, the holder's inside it, and one of
 	# the besiegers' in the tower's way to the wall (Sunspire).
 	storm = _script(STORM).new(main, "0")
 	storm.ai = ai
-	storm.ground = ai.ground
 	siege.add_child(storm)
 	storm._arrows = storm._arrow_pool()
 	var s0: Node = ArmyScript.new(main, 0, {"side": 0, "field": _arc(0.0, R + 3.6), "quiet": true})
@@ -254,7 +278,8 @@ func _reg(a: Node, at: Vector3, unit: String, role: String, w := 1.6, d := 0.6) 
 		"side_i": hosts.find(a), "local": PackedVector3Array(), "speed": 1.0}
 	a._regiments.append(r)
 	a._claim(r, n.global_transform)
-	var mo: Node = Mover.of(n).on(storm.ground)
+	var mo: Node = Mover.of(n).fights(true)
+	mo.nav = &"host"  # as army.gd stands a battle's regiments
 	mo.clip = ""
 	var seen := n.get_node_or_null("OnScreen")  # no camera headless: every body counts as seen
 	if seen:

@@ -19,7 +19,7 @@ extends RefCounted
 ## physics.land_cell cells on a WorkerThreadPool task, a cell dry only where its four corners are; a change to the
 ## land (terrain.ground_changed: a square levelled, a ford laid) is read again there. tools/rules_check.sh keeps every
 ## other script from asking the terrain or the footprints itself; tools/occupancy_probe.gd guards the answers.
-##   is_clear(p, radius), area_free(poly), nearest_clear(p, radius, max_dist), row_open(first, n): the asks.
+##   is_clear(p, radius), area_free(poly), nearest_clear(p, radius, max_dist), obstacle_shapes(area): the asks.
 ##   walkable(p), on_land(p), height(p), inside(p), area_clear(poly): the land under a step, a footprint, a site.
 ##   stands(root, area), gone(root), open_floor(root, poly): a builder outside a town says what it set down.
 ##   blocked_by(source), unblocked_by(source), forget(area): a keeper of many small things (the woods' trunks) answers
@@ -57,7 +57,6 @@ const AROUND: Array[Vector2] = [Vector2(0, 0), Vector2(1, 0), Vector2(0.70710678
 
 static var TALL: float = Data.num("ground", "physics.tall", 100.0)  # half the height of every obstacle's prism
 static var CHUNK: float = Data.num("ground", "physics.chunk", 16.0)  # world units of a source's (the woods') body
-static var _grid_cell: float = Data.num("ground", "physics.grid_cell", 0.08)  # a fight's route grid cell (cell_size)
 static var _lc: float = Data.num("ground", "physics.land_cell", 0.125)  # world units of a land cell
 static var _lb: int = maxi(1, roundi(Data.num("ground", "physics.land_block", 2.0) / Data.num("ground", "physics.land_cell", 0.125)))  # land cells to a block's side
 
@@ -71,7 +70,7 @@ static var _pq := PhysicsPointQueryParameters3D.new()
 static var _sq := PhysicsShapeQueryParameters3D.new()
 static var _spheres := {}  # radius (snapped) -> a sphere shape asked with
 static var _cyls := {}  # radius (snapped) -> a trunk's cylinder, shared by every trunk that size
-static var _ask_box := RID()  # a box asked with (row_open's strips, obstacle_shapes' area)
+static var _ask_box := RID()  # a box asked with (obstacle_shapes' area)
 static var _ask_hull := RID()  # a prism asked with (area_free)
 static var _owner := {}  # body RID -> [what ("town", "life", "tree", "claim"), key]
 const NONE: Array[RID] = []
@@ -87,7 +86,7 @@ static var _kind_ids := {}  # claim kind -> {id: body}: an exact kind opened by 
 static var _sources: Array = []  # keepers of many small things in the way (the woods): obstacles(area) -> Array
 static var _src_bodies := {}  # chunk (Vector2i) -> {source instance id: [body, owned shapes]}
 static var _src_dirty := {}  # chunk (Vector2i) -> true: its trunks are read again (before an ask over it, or on the budget)
-static var claims_rev := 0  # counts claims made and released: a fight's grid (army_ground.gd) lays the claimed ground afresh after
+static var claims_rev := 0  # counts claims made and released: a fight's crowd (army_melee.gd) lays the held ground afresh after
 
 # --- the land ---------------------------------------------------------------------------------------------------------
 static var _lw := 0  # land cells across (x)
@@ -104,7 +103,7 @@ static var _land_asked := false  # the read has been started
 ## `props` false: only the buildings keep it out, not the life's own pieces (a keeper behind his stall's counter,
 ## a guest on the feast's bench, an elder on his doorstep's bench is at them, not in a building).
 ## `free_of`: a claim that doesn't count (the asker's own); `open_kinds`: kinds of claim stood on freely ("host" for
-## every host's ground: a fight's grid lays that as it moves, army_ground.gd, shut to routes but not to standing;
+## every host's ground: carved out of the navigation's maps, nav_world.gd, shut to routes but not to standing;
 ## "ford": a ford's water passed).
 static func is_clear(p: Vector3, radius := 0.0, props := true, free_of: Variant = null, open_kinds: Array = []) -> bool:
 	if not PerfTools.probing:
@@ -210,53 +209,6 @@ static func _grounded(q: Vector3, p: Vector3) -> Vector3:
 	return Vector3(q.x, terrain.height_at(q.x, q.z) if terrain else p.y, q.z)
 
 
-## World units a cell of a fight's route grid spans (ground.json physics.grid_cell): army_ground.gd lays its grid on
-## these cells, a row at a time from row_open.
-static func cell_size() -> float:
-	return _grid_cell
-
-
-## A row of `n` cells of cell_size from cell `first` (realm-wide: a world point's cell is its coordinates over
-## cell_size, floored): 1 where a body may stand at the cell's middle (is_clear there, `open_kinds` stood on freely),
-## else 0. The row is asked as one thin strip, halved only where something stands in it.
-static func row_open(first: Vector2i, n: int, open_kinds: Array = []) -> PackedByteArray:
-	_fresh()
-	var out := PackedByteArray()
-	out.resize(n)
-	if n <= 0:
-		return out
-	var c := _grid_cell
-	var z := (first.y + 0.5) * c
-	if not _src_dirty.is_empty():
-		_clean_sources(Rect2(first.x * c, first.y * c, n * c, c))
-	_sq.collision_mask = _mask(true, open_kinds)
-	_sq.exclude = _exclude(null, open_kinds)
-	_sq.shape_rid = _ask_box
-	_strip(out, first.x, z, 0, n - 1)
-	var need := WALK if "ford" in open_kinds else DRY
-	for i in n:
-		if out[i] == 1 and not _land_ok((first.x + i + 0.5) * c, z, 0.0, need):
-			out[i] = 0
-	return out
-
-
-## Cells a..b of a row (their middles on the line z, from cell fx): open where nothing stands on their middles.
-static func _strip(out: PackedByteArray, fx: int, z: float, a: int, b: int) -> void:
-	var c := _grid_cell
-	PhysicsServer3D.shape_set_data(_ask_box, Vector3((b - a) * 0.5 * c + 0.0005, TALL * 0.5, 0.0005))
-	_sq.transform = Transform3D(Basis.IDENTITY, Vector3((fx + (a + b) * 0.5 + 0.5) * c, 0.0, z))
-	if _st.intersect_shape(_sq, 1).is_empty():
-		for i in range(a, b + 1):
-			out[i] = 1
-		return
-	if a == b:
-		out[a] = 0
-		return
-	var m := (a + b) / 2
-	_strip(out, fx, z, a, m)
-	_strip(out, fx, z, m + 1, b)
-
-
 ## Whether a foot may go at `p` (world), whatever stands there: dry land, or a ford a road runs through
 ## (terrain.walkable). A step along a walk map asks this; a place to stand asks is_clear.
 static func walkable(p: Vector3) -> bool:
@@ -328,7 +280,7 @@ static func release(id: Variant) -> void:
 
 
 ## Every claim over `area` (world XZ) whose kind is in `kinds` (or begins "host " when "host" is): id -> [kind,
-## outline]. A fight's grid (army_ground.gd) shuts what bodies hold, as they move.
+## outline]. A fight's crowd (army_melee.gd) steps round what bodies hold, as they move.
 static func claims_in(area: Rect2, kinds: Array) -> Dictionary:
 	var out := {}
 	for id in _claims:

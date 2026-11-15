@@ -508,12 +508,14 @@ func _roll(dt: float) -> void:
 			var pace := float(k.get("pace", 0.12))
 			if not g.get("rolling", false):
 				g["rolling"] = true
-				# It keeps its ground as it rolls (the claim goes with it, _stamp), on the fight's own ground (army_ground.gd:
-				# its route goes round every regiment's block; Mac 2026-11-15, Sunspire: a tower through a regiment); a
+				# It keeps its ground as it rolls (the claim goes with it, _stamp), by the host map (nav_world.gd: kept a
+				# host's width off what stands, every regiment's block carved out; Mac 2026-11-15, Sunspire: a tower through
+				# a regiment), and the fight's men step round its claim (army_melee.gd: held ground in their crowd); a
 				# regiment of its own side in its way opens a lane (army_field.gd _make_way reads way_to and half).
 				m.set_meta("way_to", g["to"])
 				m.set_meta("half", maxf(g["size"].x, g["size"].y))
-				var mv: Node = Mover.of(m).on(_fight_ground())
+				var mv: Node = Mover.of(m)
+				mv.nav = &"host"
 				mv.speed = pace
 				mv.clip = ""  # an engine: nothing to play
 				mv.turn_rate = 0.0  # it keeps the camp's aim at the wall
@@ -658,14 +660,6 @@ func _stamp(n: Node3D, size: Vector2) -> void:
 		poly.append(Vector2(w.x, w.z))
 	Ground.claim(_hold_id(n), poly, "engine")
 
-
-## The fight's ground the siege's assault laid (army_assault.gd, beside this camp under the siege), or null (the realm's).
-func _fight_ground() -> RefCounted:
-	var assault: Script = load("res://scripts/army_assault.gd")  # loaded, not preloaded: it reaches back here through the scene kinds
-	for c in root.get_children():
-		if is_instance_of(c, assault):
-			return c.get("ground")
-	return null
 
 
 func _hold_id(n: Node3D) -> String:

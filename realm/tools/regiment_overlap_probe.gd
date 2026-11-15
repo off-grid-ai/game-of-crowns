@@ -232,7 +232,7 @@ func _march_halt() -> void:
 	var halting := a.has_method("_halt")
 	_check(halting, "a column's halt is one placement (army.gd _halt)")
 	for r in a.get("_regiments"):
-		Mover.of(r["node"]).on(null)  # the realm's navigation, as every field host's regiment (army.gd _ready)
+		Mover.of(r["node"]).fights(false).nav = &"host"  # the realm's host map, as every field host's regiment (army.gd _ready)
 		var seen: Node = (r["node"] as Node).get_node_or_null("OnScreen")
 		if seen:  # headless there's no lens to be on screen for (on_screen.gd would hold its walk): seen, as in play
 			seen.free()

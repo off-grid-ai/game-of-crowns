@@ -4,12 +4,13 @@ extends "res://scripts/army_melee.gd"
 ## he waits in the camp, goes forward behind his shield when his party is sent, runs the last stretch, fights at
 ## the foot of the wall (a cut, a guard, another cut, each different), and falls back to the camp; or he is cut
 ## down there and stays down, and the camp sends a fresh man in his place for the next rush. Every step through
-## the Mover, on the siege's own ground (army_ground.gd: round the houses, never through the wall but at a breach).
+## the Mover, by the realm's navigation (nav_world.gd: round the houses, never through the wall but at a breach,
+## whose stones' footprints the ground drops and the navigation is baked afresh round).
 ##
 ## The breach changes the fight (docs/research/world-and-siege-rules.md, wall rule 12; Total War: Warhammer III's
 ## lesson that a gap nobody reacts to doesn't read): once a stone wall near the front stands open (walls.gd
 ## breaches_near; the wall's wear is the bridge's damage fact), every party is sent at once and from then on
-## through the gap, fanned across it, over the rubble ramp; the gap's cells open on the ground; and the holder's
+## through the gap, fanned across it, over the rubble ramp; and the holder's
 ## men form a block behind it, facing out (minds.gap_holder), cutting and guarding at whoever comes through.
 ## Knobs: data/walls.json assault.
 ##
@@ -382,7 +383,6 @@ func _watch_breaches() -> void:
 			m["foot"] = gap + inward * float(k.get("through", 0.08)) + across * fan
 			m["gap"] = key
 		if not _held_at.has(key):
-			ground.open(gap, float(k.get("spread", 0.16)) + 0.15)  # the gap stands open on the ground
 			_held_at[key] = {"gap": gap, "inward": inward, "across": across, "men": [], "reserve": _reserve(k), "phase": "hold", "at": 0.0}
 			_block(_held_at[key], k)
 		if fresh:
@@ -506,7 +506,7 @@ func _rout_in(d: Dictionary) -> void:
 	var to: Vector3 = (n as Node3D).global_position + (inward + Vector3(-inward.z, 0, inward.x) * r.randf_range(-0.4, 0.4)).normalized() * 1.8
 	var mo: Node = Mover.of(n)
 	mo.speed = RUN_S
-	mo.go(ground.keep_out(to), (n as Node).queue_free)
+	mo.go(to, (n as Node).queue_free)  # the route's end is the nearest ground he may stand on (mover.gd)
 
 
 func _holder_down(d: Dictionary) -> void:

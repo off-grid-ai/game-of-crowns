@@ -12,13 +12,17 @@ extends SceneTree
 ##   4. a ship's route and resting spot are on the water: every point of a route along the sea's coast lies where the
 ##      sea bed is deeper than nav.water.draft, and units.gd moors on the ships' map (NavWorld.on_map WATER);
 ##   5. a second start reads the kept navmeshes back: after stop() and start() again, nothing is baked, every chunk
-##      layer is read back from its kept file.
+##      layer is read back from its kept file;
+##   6. a fighter (mover.gd fights) steered toward a mark across the lake each frame never stands in it and arrives,
+##      and go() round it arrives and says so; a man sent into a regiment's held block (carved out of the map) walks
+##      on into it (standing is the land's: the route's last leg goes on to the mark).
 ## Exit 1 on any failure.
 ##   perl -e 'alarm shift; exec @ARGV' 300 arch -arm64 godot --headless --path realm -s res://tools/nav_probe.gd
 
 const NavWorld := preload("res://scripts/nav_world.gd")
 const Ground := preload("res://scripts/ground.gd")
 const Data := preload("res://scripts/data.gd")
+const Mover := preload("res://scripts/mover.gd")
 
 const SPAN := 32.0
 const LAKE := Vector2(16.0, 14.0)
@@ -171,7 +175,39 @@ func _run() -> void:
 		if Geometry2D.is_point_in_polygon(Vector2(p.x, p.z), reg):
 			through += 1
 	_check(fight.size() >= 3 and through == 0, "a battle route goes round a regiment's rectangle (%d points, %d samples inside)" % [fight.size(), through])
+	var join := NavWorld.path(Vector3(9.0, 0.5, 6.0), Vector3(12.0, 0.5, 6.0), &"walk")
+	var joiner := _man()
+	var joined: PackedVector3Array = Mover.of(joiner).call("_route", Vector3(9.0, 0.5, 6.0), Vector3(12.0, 0.5, 6.0))
+	joiner.queue_free()
+	_check(not joined.is_empty() and Vector2(joined[joined.size() - 1].x - 12.0, joined[joined.size() - 1].z - 6.0).length() < 0.01,
+		"a man sent into his regiment's block walks on into it (the map's route ends at its edge, %d points; the Mover's at the mark)" % join.size())
 	Ground.release("probe_regiment")
+	# 6. A fighter steered across the lake, each frame, as a fighter's mind steers him.
+	var man := _man()
+	var a := Vector3(16.0, 0.5, 9.0)
+	var b := Vector3(16.0, 0.5, 19.5)
+	man.global_position = a
+	var mo: Node = Mover.of(man).fights(true)
+	mo.clip = ""
+	var waded := 0
+	var frames := 0
+	var t0 := Time.get_ticks_msec()
+	while man.global_position.distance_to(b) > 0.05 and Time.get_ticks_msec() - t0 < 60000:
+		mo.toward(b, 2.0)
+		await process_frame
+		frames += 1
+		if not _land.is_land(man.global_position.x, man.global_position.z):
+			waded += 1
+	_check(waded == 0, "a steered fighter never stands in the lake (%d of %d frames in it)" % [waded, frames])
+	_check(man.global_position.distance_to(b) <= 0.05, "a steered fighter arrives (%.2f off after %d frames)" % [man.global_position.distance_to(b), frames])
+	var arrived := [false]
+	mo.speed = 2.0
+	mo.go(a, func(): arrived[0] = true)
+	t0 = Time.get_ticks_msec()
+	while not arrived[0] and Time.get_ticks_msec() - t0 < 60000:
+		await process_frame
+	_check(arrived[0], "go() round the lake arrives and says so")
+	man.queue_free()
 	# 5. A second start reads every kept navmesh back.
 	await _until(func() -> bool: return not preload("res://scripts/kept.gd").pending(), 20.0)
 	NavWorld.stop()
@@ -180,6 +216,12 @@ func _run() -> void:
 	_check(_all_ready() and NavWorld.baked == 0 and NavWorld.read_back > 0, "a second start reads the kept navmesh: %d baked, %d read back" % [NavWorld.baked, NavWorld.read_back])
 	print("NAV %s" % ("PASS" if _bad == 0 else "FAIL (%d)" % _bad))
 	quit(0 if _bad == 0 else 1)
+
+
+func _man() -> Node3D:
+	var n := Node3D.new()
+	root.add_child(n)
+	return n
 
 
 func _all_ready() -> bool:

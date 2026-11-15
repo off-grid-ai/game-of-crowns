@@ -5,13 +5,11 @@ extends SceneTree
 ## It proves:
 ##  1. every mind row in data/army.json is whole: its start and every state its events lead to are among its
 ##     states, and every method a state names is one its fight has (army_assault, army_field);
-##  2. the ground (army_ground.gd) shuts water: a field with a round lake in it, a route across goes round it;
-##  3. the Mover steers a man by that ground (toward, each frame): he never stands in the lake, and arrives;
-##  4. a Mover's follow and go arrive and say so;
+##  2-4. (a route round a lake, a steered fighter who never wades and arrives, go and follow arriving: nav_probe.gd,
+##     on the realm's one navigation);
 ##  5. never a straight line while a map is still being made (Mac's clip4: a horse and cart through Kingsmere's
-##     well): a man steered on a fight's ground not yet laid stands rather than wade the lake, and a man sent across
-##     a town whose walk map is still baking (headless Godot never syncs one, so it stays baking) waits rather than
-##     walk through its well;
+##     well): a fighter steered before the realm's navigation is baked stands rather than wade the lake, and a man
+##     sent across a town while it bakes waits rather than walk through its well;
 ##  6. one figure for ten (Mac, 12 Nov): every kind's regiment draws ceil(men x drawPerMan) figures and keeps its
 ##     men; in line and in march column no two figures stand closer than LEAST (about 0.8 m, shoulder room), and a
 ##     line stays a block (more than one rank);
@@ -94,7 +92,6 @@ extends SceneTree
 ## Prints "ARMY PROBE …" lines and "ARMY PROBE PASS" or "ARMY PROBE FAIL n"; quits with 0 or 1.
 
 const Data := preload("res://scripts/data.gd")
-const Ground := preload("res://scripts/army_ground.gd")
 const Mover := preload("res://scripts/mover.gd")
 
 const OWNERS := {"assault_man": "res://scripts/army_assault.gd", "gap_holder": "res://scripts/army_assault.gd",
@@ -117,7 +114,6 @@ func _check(ok: bool, what: String) -> void:
 
 func _run() -> void:
 	_minds()
-	await _ground_and_mover()
 	await _no_straight_line_while_baking()
 	_figures_and_room()
 	_panic_spreads()
@@ -245,8 +241,8 @@ func Formation_column_order(rows: Array) -> Array:
 
 
 ## 27. The push never pins: a straight way of points 0.05 apart from x 0 to 2, a round building of radius 0.3 at x 1,
-## pushed off by a place's keep, and again by a battle ground's keep_out (group render g5, host5.jpg: a column's
-## regiments on its ground piled at a cottage by the road).
+## pushed off by a place's keep (group render g5, host5.jpg: a column's regiments on its ground piled at a cottage by
+## the road).
 func _push_never_pins() -> void:
 	var hub := Vector3(1, 0, 0)
 	var push := func(p: Vector3) -> Vector3:
@@ -255,19 +251,11 @@ func _push_never_pins() -> void:
 			return p
 		var out := d.normalized() if d.length() > 0.001 else Vector2(0, 1)
 		return Vector3(hub.x + out.x * 0.3, p.y, hub.z + out.y * 0.3)
-	var fs := GDScript.new()
-	fs.source_code = "extends RefCounted\nvar push: Callable\nfunc keep_out(p: Vector3) -> Vector3:\n\treturn push.call(p)\n"
-	fs.reload()
-	for by in ["keep", "field"]:
+	for by in ["keep"]:
 		var man := Node3D.new()
 		root.add_child(man)
 		var mo: Node = Mover.of(man)
-		if by == "keep":
-			mo.keep = push
-		else:
-			var f: RefCounted = fs.new()
-			f.set("push", push)
-			mo.field = f
+		mo.keep = push
 		var inside := 0
 		var way := PackedVector3Array()
 		for i in 41:
@@ -646,86 +634,26 @@ func _minds() -> void:
 			_check(states.has(row["any"][ev]), "mind %s event %s leads to one of its states" % [kind, ev])
 
 
-## 2-4. A field with a lake: the ground shuts it, a route goes round, a steered man never wades and arrives.
-func _ground_and_mover() -> void:
-	var main := Node3D.new()
-	main.name = "ProbeMain"
-	main.set_script(_stub_main())
-	root.add_child(main)
-	var g: RefCounted = Ground.around(main, Vector3.ZERO, 4.0)
-	while not g.built:
-		await process_frame
-	_check(not g.open_at(Vector3(0, 0, 0)), "the ground shuts the lake")
-	_check(g.open_at(Vector3(3.0, 0, 0)), "the ground opens dry land")
-	var from := Vector3(-2.5, 0, 0.1)
-	var to := Vector3(2.5, 0, -0.1)
-	var way: PackedVector3Array = g.route(from, to)
-	var wet := 0
-	var prev := from
-	for p in way:
-		for k in 10:
-			var q := prev.lerp(p, k / 10.0)
-			if Vector2(q.x, q.z).distance_to(LAKE) < LAKE_R - 0.05:
-				wet += 1
-		prev = p
-	_check(way.size() >= 2 and wet == 0, "a route across goes round the lake (%d points, %d wet)" % [way.size(), wet])
-	# A man steered across by toward(), each frame, as a fighter's mind steers him.
-	var man := Node3D.new()
-	main.add_child(man)
-	man.global_position = from
-	var mo: Node = Mover.of(man).on(g)
-	mo.clip = ""
-	var waded := 0
-	var frames := 0
-	while man.global_position.distance_to(to) > 0.05 and frames < 3000:
-		mo.toward(to, 0.5)
-		await process_frame
-		frames += 1
-		if Vector2(man.global_position.x, man.global_position.z).distance_to(LAKE) < LAKE_R - 0.05:
-			waded += 1
-	_check(waded == 0, "a steered man never stands in the lake (%d frames in it)" % waded)
-	_check(man.global_position.distance_to(to) <= 0.05, "a steered man arrives (%.2f off after %d frames)" % [man.global_position.distance_to(to), frames])
-	# Unasked, he stands.
-	for k in 30:
-		await process_frame
-	_check(not mo.moving(), "a man nobody steers stands")
-	# go() by the ground's route, and follow() a given way, each say they've arrived.
-	var arrived := [false, false]
-	mo.speed = 1.0
-	mo.go(from, func(): arrived[0] = true)
-	var t0 := Time.get_ticks_msec()
-	while not arrived[0] and Time.get_ticks_msec() - t0 < 20000:  # by the clock: a headless frame is a few ms
-		await process_frame
-	_check(arrived[0], "go() arrives round the lake and says so")
-	mo.follow(PackedVector3Array([from + Vector3(0, 0, -2.0), from + Vector3(-0.5, 0, -2.0)]), func(): arrived[1] = true)
-	t0 = Time.get_ticks_msec()
-	while not arrived[1] and Time.get_ticks_msec() - t0 < 20000:  # by the clock: a headless frame is a few ms
-		await process_frame
-	_check(arrived[1], "follow() arrives and says so")
-	main.queue_free()
-
-
 ## 5. While the map is being made, nobody crosses in a straight line.
 func _no_straight_line_while_baking() -> void:
-	# A fight's ground asked for, not yet laid: a man steered across the lake stands.
+	# The realm's navigation not yet baked (nav_world.gd, not started here): a fighter steered across the lake stands.
 	var main := Node3D.new()
 	main.set_script(_stub_main())
 	root.add_child(main)
-	var g: RefCounted = Ground.around(main, Vector3.ZERO, 4.0)
 	var man := Node3D.new()
 	main.add_child(man)
 	man.global_position = Vector3(-1.4, 0, 0)
-	var mo: Node = Mover.of(man).on(g)
+	var mo: Node = Mover.of(man).fights(true)
 	mo.clip = ""
 	var waded := 0
 	var frames := 0
-	while not g.built and frames < 600:
+	while frames < 120:
 		mo.toward(Vector3(1.4, 0, 0), 0.5)
 		await process_frame
 		frames += 1
 		if Vector2(man.global_position.x, man.global_position.z).distance_to(LAKE) < LAKE_R - 0.05:
 			waded += 1
-	_check(waded == 0, "steered before the ground is laid, he never wades (%d of %d frames in the lake)" % [waded, frames])
+	_check(waded == 0, "steered before the navigation is baked, he never wades (%d of %d frames in the lake)" % [waded, frames])
 	main.queue_free()
 	# A town with a well, the realm's walk map still baking (nav_world.gd, not yet started here): a man sent across it
 	# never stands in the well.

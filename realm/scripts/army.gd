@@ -6,8 +6,8 @@ extends Node3D
 ## host as the bridge reports it, /world hosts, bridge/hosts.js), both sides of a field battle and the storm of a
 ## siege (army_field.gd raises them as battle sides and gives their regiments their minds).
 ##
-## Every regiment is one body with one Mover (mover.gd, CLAUDE.md's one way to move) standing on the host's
-## ground (army_ground.gd: round water, houses and walls): it marches the road in by the way the roads gave
+## Every regiment is one body with one Mover (mover.gd, CLAUDE.md's one way to move) on the realm's host map
+## (nav_world.gd: round water, houses, walls and every other block): it marches the road in by the way the roads gave
 ## (Mover.follow), goes to its place in the line by a route (Mover.go), and a battle steers it (Mover.toward). Its
 ## men hold their places in it, laid out by the formation rows in data/army.json (line, column); changing shape
 ## walks each man from his place in the one to his place in the other.
@@ -35,7 +35,6 @@ const HostPick := preload("res://scripts/host_pick.gd")  # a click on a regiment
 const KNIGHT := Visual.KNIGHT
 const Data := preload("res://scripts/data.gd")
 const Mover := preload("res://scripts/mover.gd")  # the one way to move (CLAUDE.md)
-const Ground := preload("res://scripts/army_ground.gd")
 const Footing := preload("res://scripts/ground.gd")  # the realm's one answer to where a body may stand
 const ViewTier := preload("res://scripts/view_tier.gd")  # the one frame budget staged work draws on
 const Heraldry := preload("res://scripts/heraldry.gd")
@@ -72,7 +71,7 @@ var _tilt := 0.0
 var _want_select := ""
 var _rng := RandomNumberGenerator.new()
 ## One side of a battle (army_field.gd raises two): {side: 0 or 1, field: the line's middle, face: its facing,
-## colour, house, shape, ground: the battle's one ground (army_ground.gd)}. Empty for the muster by the seat. A host in
+## colour, house, shape}. Empty for the muster by the seat. A host in
 ## the field (units.gd keeps one per King's host on the map): {host: its /world hosts entry, quiet}.
 var battle := {}
 var _pending := Vector3.INF  # a field host's march Freeciv gave before its regiments were raised (march_to)
@@ -91,7 +90,6 @@ var _aboard := false  # taken ship (board): its regiments filing to the hulls, t
 var _pending_hulls: Array = []  # hulls to board once mustered
 var _out := false  # marching out (march_out): halted at the road's end, it is gone after march.linger
 var _gone_in := 0.0
-var ground: RefCounted  # army_ground.gd: where its regiments may stand
 var _held := {}  # regiment id -> the rectangle it was set down on (world XZ, _set_down), while it stands there
 var _extent := Vector2.ZERO  # the line's width and depth (for re-placing it: stand_at)  # its regiments raised and its line placed (the battle waits on both sides)
 signal raised
@@ -164,14 +162,14 @@ func _ready() -> void:
 	var placed := Formation.line_places(_regiments)
 	var extent: Vector2 = placed["extent"]
 	_commander = placed["commander"]
-	ground = battle["ground"] if battle.has("ground") else null
 	_extent = extent
 	if battle.has("host"):  # a host in the field: in column on its tile, marching where Freeciv moves it (march_to)
 		_raise_baggage()
 		_stand_on_tile(town, _bound_yaw(battle["host"], town))
 		_raise_scouts(town, _bound_yaw(battle["host"], town))
 		for r in _regiments:
-			var mo: Node = Mover.of(r["node"]).on(null)  # the realm's navigation, as every marcher on the map
+			var mo: Node = Mover.of(r["node"]).fights(false)  # the realm's navigation, as every marcher on the map
+			mo.nav = &"host"
 			mo.clip = ""
 			mo.turn_rate = 3.0
 		_standard_up()
@@ -200,10 +198,9 @@ func _ready() -> void:
 		_take_field(extent)
 	PerfTools.add("army.raise.place", Time.get_ticks_usec() - t_raise)  # its share of the frame (GOC_PERF_PROBE)
 	t_raise = Time.get_ticks_usec()
-	if ground == null:
-		ground = Ground.around(main, _field, maxf(extent.x, extent.y) * 0.5 + Data.num("army", "march.lead", 5.0) + 3.0)
 	for r in _regiments:
-		var mo: Node = Mover.of(r["node"]).on(ground)
+		var mo: Node = Mover.of(r["node"]).fights(true)
+		mo.nav = &"host"
 		mo.keep = _block_keep(r)
 		mo.clip = ""  # its men's clips are the regiment's (VAT tracks)
 		mo.turn_rate = 3.0
@@ -271,7 +268,7 @@ func march_out(_to: Vector3) -> void:
 		first = float(r["off"]) if first < 0.0 else first
 		r["leave"] = (float(r["off"]) - first) / maxf(float(r["speed"]), 0.01)
 		r["state"] = "out"
-		Mover.of(r["node"]).on(null)
+		Mover.of(r["node"]).fights(false)
 
 
 ## A host in the field stands in column with its head on its lead company's tile, facing `yaw`, closed up behind it
@@ -436,7 +433,7 @@ func board(hulls: Array) -> void:
 			if not Footing.on_land(p):
 				break
 			edge = p
-		var mo: Node = Mover.of(r["node"]).on(null)
+		var mo: Node = Mover.of(r["node"]).fights(false)
 		mo.speed = Data.num("army", "march.speed", 0.16)
 		get_tree().create_timer(i * Data.num("army", "deck.file", 1.5)).timeout.connect(func():
 			if not is_instance_valid(hull) or not is_instance_valid(r["node"]):
@@ -529,7 +526,7 @@ func _raise_scouts(at: Vector3, yaw: float) -> void:
 		var rider: Node3D = scenes.people.make(_rng, "soldier", col, "adult")
 		horse.mount(rider)
 		add_child(horse)
-		var mo: Node = Mover.of(horse).on(null)
+		var mo: Node = Mover.of(horse)
 		mo.clip = ""  # the horse keeps its own gaits
 		mo.turn_rate = 3.0
 		_scouts.append(horse)
@@ -577,7 +574,7 @@ func _raise_baggage() -> void:
 		flag.position = Vector3(0.025, 0.03, -0.07)  # at the wagon's tail: the house's pennant over its baggage (WC3's worn colour)
 		cart.add_child(flag)
 		add_child(cart)
-		var mo: Node = Mover.of(cart).on(null)  # the realm's navigation, as the regiments
+		var mo: Node = Mover.of(cart)  # the realm's navigation, as the regiments
 		mo.clip = ""
 		mo.turn_rate = 2.0
 		_baggage.append({"node": cart, "carter": cart.get_meta("carter"), "off": tail + float(k.get("gap", 0.35)) * (i + 1), "s": 0.0})
@@ -1584,17 +1581,23 @@ func _halt(r: Dictionary) -> void:
 
 
 ## Where the column's head halts on a column order: the road's end, or back along the road until no regiment's place
-## in the column falls on a building (its ground's open_at), so the column halts whole and spaced, not each
+## in the column falls on a building (_open_at), so the column halts whole and spaced, not each
 ## regiment shoved off the building to its nearest open cell (group render g5, host5.jpg: the blocks piled at a cottage).
 func _halt_head() -> float:
 	var head := _cum[_cum.size() - 1]
-	if ground == null or not ground.has_method("open_at"):
-		return head
+	if battle.has("host"):
+		return head  # a host on the map: its march's end is Freeciv's tile
 	var step := 0.1
 	var least := Formation.column_length(_regiments)
-	while head - step >= least and not _regiments.all(func(r): return ground.open_at(_at(head - float(r["off"])))):
+	while head - step >= least and not _regiments.all(func(r): return _open_at(_at(head - float(r["off"])))):
 		head -= step
 	return head
+
+
+## Whether a man may stand at `p` (world): ground nothing stands on (ground.gd), the held blocks open (only routes
+## go round them; mover.gd FIGHT_OPEN).
+func _open_at(p: Vector3) -> bool:
+	return Footing.is_clear(p, 0.0, true, null, Mover.FIGHT_OPEN)
 
 
 ## A regiment's keep on its ground (mover.gd keep, each step): its block, not only its middle, clear of what the
@@ -1604,15 +1607,13 @@ func _halt_head() -> float:
 ## g6, host5.jpg: three blocks pressed against one cottage's walls.
 func _block_keep(r: Dictionary) -> Callable:
 	return func(p: Vector3) -> Vector3:
-		if ground == null or not ground.has_method("open_at"):
-			return p
 		var yaw := (r["node"] as Node3D).rotation.y
 		var right := Vector3(cos(yaw), 0, -sin(yaw))
 		var half := float(r.get("w", 0.0)) * 0.5
 		var step := 0.05
 		for k in int(ceil(half / step)):
-			var lo: bool = ground.open_at(p - right * half)
-			var hi: bool = ground.open_at(p + right * half)
+			var lo: bool = _open_at(p - right * half)
+			var hi: bool = _open_at(p + right * half)
 			if lo == hi:
 				break
 			p += right * (step if lo == false else -step)
@@ -1802,7 +1803,7 @@ func _at_ease(r: Dictionary, delta: float) -> void:
 ## size on screen beyond banner.fixedFrom.
 ## The ground a regiment holds where it stands (ground.gd claim): its rectangle, turned with it. No other body or
 ## placement may stand on it, its own host's other regiments neither (Mac 2026-11-15: blocks heaped in one lump); a
-## host placed anew lets all its ground go first (_unclaim). A fight's routes go round it (army_ground.gd).
+## host placed anew lets all its ground go first (_unclaim). Routes go round it (nav_world.gd carves it out).
 func _claim(r: Dictionary, xf: Transform3D, w := -1.0, d := -1.0) -> void:
 	var hw := (w if w >= 0.0 else float(r.get("w", 0.0))) * 0.5
 	var hd := (d if d >= 0.0 else float(r.get("d", 0.0))) * 0.5

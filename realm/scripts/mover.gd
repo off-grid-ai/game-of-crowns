@@ -6,14 +6,16 @@ extends Node
 ## the body's pace, turned to face its way, set on the ground as it goes. Nothing else tweens or sets a
 ## position to travel, so nothing can cross a well, a stall or a wall by forgetting to ask for a route.
 ## Arrived (or stopped), it says so: the `arrived` signal and the callable given to go().
-## A route the navigation can't give yet (its map still being baked at the first start, a fight's ground still laid) is
-## waited for, the body standing where it is: never a straight line meanwhile (Mac's clip4: a horse and cart
-## through Kingsmere's well).
+## A route the navigation can't give yet (its map still being baked at the first start) is waited for, the body
+## standing where it is: never a straight line meanwhile (Mac's clip4: a horse and cart through Kingsmere's well).
 ##
-## In a fight (the army layer, docs/research/army-layer-2026-11-12.md) a body stands on that fight's own ground
-## (`on(ground)`, army_ground.gd: Godot's AStarGrid2D over the field, water, houses and walls shut, a breach open),
-## so every route it asks for goes round them; a fighter chasing a moving foe asks `toward()` each frame, and
-## Godot's avoidance (RVO, `join(crowd)`) turns where he wants to go into a way through the men about him.
+## Design (Mac 2026-11-15, the engine's navigation for every body):
+##   1. One source of paths: nav_world.gd's NavigationServer3D maps (walk, wide, host, water), Recast-baked from the
+##      land on workers and kept; a body's `nav` (or its turn_radius: the wide map) picks the map, query_path answers.
+##   2. Held ground (a regiment's rectangle, an engine's) is carved into the maps when it settles: routes go round it.
+##   3. Moving bodies avoid each other by Godot's RVO (`join(crowd)`, the towns' walk-map agents), radius per body kind.
+##   4. A fighter (`fights(true)`) steers `toward()` a moving mark; each steered step is kept off what stands (ground.gd).
+##   5. Nothing else in the realm finds a way: no grids, no AStar of our own, no straight lines while a map bakes.
 ##
 ## A horse or a cart (a body that steers on an arc, turn_radius > 0) walks the wide map (nav_world.gd bodies.wide:
 ## kept a wagon's half-width off everything standing, so it never squeezes between benches a man can pass), stands in
@@ -43,7 +45,7 @@ var ground := Callable()  # (world point) -> height, where a place keeps its own
 var stride := false  # the walk clip's playback follows the pace (a marcher's legs match the ground he covers)
 var keep := Callable()  # (world point) -> world point: a place's own rule for where a body may stand, each step
 var _walk_at := Vector3.INF  # where its walk along the way has come to: keep moves the body, never this progress
-var field: RefCounted = null  # the fight's ground (army_ground.gd) this body stands on; else the realm's navigation
+var fighting := false  # in a fight: its steered steps are kept off what stands, and it steps every frame in sight
 var nav: StringName = &"walk"  # which of the realm's navigation maps its routes are asked of (nav_world.gd: water for a ship)
 var _face := true  # turns into its way (off for a step back from a blow, or a dodge)
 var _keep_y := false  # a given way keeps its own heights (a wall walk): no ground under it
@@ -69,9 +71,15 @@ func _ready() -> void:
 	set_process(false)
 
 
-## Stands the body on a fight's ground (army_ground.gd): its routes go round what the field shuts. Null: the realm's.
-func on(ground: RefCounted) -> Node:
-	field = ground
+## Claims a body may stand on in a fight (ground.gd kinds): its own and its fellows' held ground, a field, a ford.
+## Routes go round held ground (nav_world.gd carves it); standing is the land's (Mac 2026-11-15).
+const FIGHT_OPEN := ["host", "body", "engine", "field", "ford"]
+const Ground := preload("res://scripts/ground.gd")
+
+
+## The body in a fight (true) or out of it: a fighter's steered steps are kept off what stands, and it steps every frame.
+func fights(on: bool) -> Node:
+	fighting = on
 	return self
 
 
@@ -81,8 +89,7 @@ func go(to: Vector3, then := Callable()) -> void:
 
 
 ## The route from where the body stands to `to`, handed to `got` (way) once the navigation can give it: at once
-## where it can; else the body stands and asks again each frame until its town's walk map (or its fight's ground)
-## is ready. One waiting rule for every mover; nothing crosses a town in a straight line meanwhile.
+## where it can; else the body stands and asks again each frame until the navigation is ready. One waiting rule for every mover; nothing crosses a town in a straight line meanwhile.
 func route_to(to: Vector3, got: Callable) -> void:
 	var body := get_parent() as Node3D
 	if body == null:
@@ -106,16 +113,35 @@ func follow(way: PackedVector3Array, then := Callable()) -> void:
 	_begin(way, then, true, false)
 
 
-## The route from `from` to `to`: on the fight's ground where the body stands on one, else the realm's navigation
-## (nav_world.gd: the streets, the roads and the land on one navmesh). Empty while it can't be given yet: the fight's
-## ground not yet laid, the navigation still being baked at the first start.
+## The route from `from` to `to`: the realm's navigation (nav_world.gd: the streets, the roads and the land on one
+## navmesh, held ground carved out). Empty while it can't be given yet (the navigation still being baked at the first
+## start). Its last leg goes on to the mark itself where the mark is ground a body may stand on and the way in is
+## clear (a man joining his own regiment's block, which the map carves out: standing is the land's); a mark in water,
+## in a building or out of reach keeps the route's own end, the nearest point the map has.
 func _route(from: Vector3, to: Vector3) -> PackedVector3Array:
-	if field != null:
-		return field.route(from, to) if field.built else PackedVector3Array()
 	if nav == NavWorld.WATER:
 		return NavWorld.path(from, to, NavWorld.WATER)  # a ship: the sea's and lakes' map, never the land
 	# A horse or a cart (it steers on an arc) walks the wide map: kept a wagon's half-width off everything standing.
-	return NavWorld.path(from, to, &"wide" if turn_radius > 0.0 else nav)
+	var way := NavWorld.path(from, to, &"wide" if turn_radius > 0.0 else nav)
+	if way.is_empty():
+		return way
+	var end := way[way.size() - 1]
+	if Vector2(end.x - to.x, end.z - to.z).length() > 0.01 and _clear_leg(end, to):
+		way.append(to)
+	return way
+
+
+## Whether a body may walk straight from `a` to `b` (world) and stand there: every step of the way on ground nothing
+## stands on (ground.gd, held ground open), within the navigation's reach of the map's end (nav.join_reach).
+func _clear_leg(a: Vector3, b: Vector3) -> bool:
+	var d := Vector2(b.x - a.x, b.z - a.z).length()
+	if d > Data.num("ground", "nav.join_reach", 1.5):
+		return false
+	var n := maxi(1, ceili(d / 0.1))
+	for k in range(1, n + 1):
+		if not Ground.is_clear(a.lerp(b, float(k) / n), 0.0, true, null, FIGHT_OPEN):
+			return false
+	return true
 
 
 ## A short shift in `secs` without turning (a step back from a blow, a dodge, a shuffle in the ranks), still
@@ -189,7 +215,7 @@ var _flagged := false  # the crowd once held him still a whole second (CHECK lin
 
 
 ## Each frame a fighter's mind wants him somewhere (his man, his place in the rank, the open end of the wall):
-## the Mover carries him toward `goal` at `pace` by the fight's ground, round the men about him (RVO, if he has
+## the Mover carries him toward `goal` at `pace` by the realm's navigation, round the men about him (RVO, if he has
 ## joined a crowd), facing `look` (else the way he goes). Unasked for army.json steer.lapse, he stands.
 func toward(goal: Vector3, pace: float, look := Vector3.ZERO) -> void:
 	if _shifting:
@@ -216,21 +242,20 @@ func toward(goal: Vector3, pace: float, look := Vector3.ZERO) -> void:
 			return
 		if way.size() > 1 and Vector2(way[0].x - body.global_position.x, way[0].z - body.global_position.z).length() < 0.02:
 			way = way.slice(1)
+		# The route's end is the mark itself where it may be stood on (_route); a mark in water, in a building or out of
+		# reach keeps the route's own end (g37/g38: a goal in the sea or a cottage put back as the last step).
 		_way = way if not way.is_empty() else PackedVector3Array([goal])
-		# The mark itself, not its cell's middle, where the fight's ground takes it; a mark in water, in a building or
-		# past the field's edge keeps the route's own end, the nearest open cell (g37/g38: a goal in the sea or a
-		# cottage was put back as the last step, and the men walked into it).
-		if field == null or field.takes(goal):
-			_way[_way.size() - 1] = goal
 		_i = 0
 		_then = Callable()
 	_steer = true
 	set_process(true)
 
 
-## Joins a crowd (an avoidance map, NavigationServer3D's RVO): about a man's width, looking a few paces about him.
+## Joins a crowd (an avoidance map, NavigationServer3D's RVO) as a body of `kind` (ground.json nav.avoid: man, horse,
+## cart, engine: its width there), looking a few paces about him.
 ## The fallen keep their place in it, so the living step round them. Left when the body goes.
-func join(crowd: RID, radius := 0.055, top := 0.66) -> void:
+func join(crowd: RID, kind := &"man", top := 0.66) -> void:
+	var radius := Data.num("ground", "nav.avoid.%s" % kind, 0.055)  # each body kind's width in the crowd
 	if _agent.is_valid():
 		return
 	var body := get_parent() as Node3D
@@ -430,8 +455,8 @@ func _steer_step(body: Node3D, delta: float) -> void:
 func _put(body: Node3D, at: Vector3) -> void:
 	if keep.is_valid():
 		at = keep.call(at)
-	if field != null:
-		at = field.keep_out(at)
+	if fighting and (_steer or _shifting) and not Ground.is_clear(at, 0.0, true, null, FIGHT_OPEN):
+		at = Ground.nearest_clear(at, 0.0, 0.5, FIGHT_OPEN)  # avoidance pushed him into a house or the water: beside it
 	var main := _main()
 	if _keep_y:
 		pass
@@ -461,9 +486,9 @@ func _process(delta: float) -> void:
 
 
 ## The time to walk this frame, or 0 to wait (FPS P0, fps4: 330 mover steps a frame, ~5 ms): a person walking a plain
-## way (no steering, no beast's arc, not on a fight's ground, no route still being asked for) steps by anim_lod.gd's
+## way (no steering, no beast's arc, not in a fight, no route still being asked for) steps by anim_lod.gd's
 ## rule, on the frames their legs move, and out of sight once every UNSEEN_S, each step carrying all it is owed, so
-## nobody seen is ever anywhere but where their walk has brought them. A plain walk on a fight's ground steps every
+## nobody seen is ever anywhere but where their walk has brought them. A plain walk in a fight steps every
 ## frame in sight and once every UNSEEN_S out of it (far crowds, as Total War's off-screen regiments: ~300 soldiers
 ## marched every frame unseen, ~20 ms). Everyone else steps every frame.
 func _due(delta: float) -> float:
@@ -476,7 +501,7 @@ func _due(delta: float) -> float:
 		var n := AnimLOD.every(cam, body)
 		if n == 0 and _owed < UNSEEN_S:
 			return 0.0
-		if field == null and n > 1 and not AnimLOD.moves_now(body):
+		if not fighting and n > 1 and not AnimLOD.moves_now(body):
 			return 0.0
 	return _take_owed()
 
@@ -506,10 +531,10 @@ func _walk(delta: float) -> void:
 	if body == null or _i >= _way.size():
 		_finish()
 		return
-	# The walk goes on from where it had come to, not from where a place's keep (or a field's keep_out) put the body
+	# The walk goes on from where it had come to, not from where a place's keep (or a fighter's) put the body
 	# (pushed off a building on the way, a step from the pushed spot went straight back in: pinned while it walked;
 	# group render g5, host5.jpg: a column's regiments on a battle ground piled at a cottage by the road).
-	var kept := keep.is_valid() or field != null
+	var kept := keep.is_valid() or fighting
 	var at := body.global_position if _walk_at == Vector3.INF or not kept else Vector3(_walk_at.x, body.global_position.y, _walk_at.z)
 	var aim := _way[_i]
 	var flat := Vector2(aim.x - at.x, aim.z - at.z)

@@ -12,8 +12,7 @@ extends SceneTree
 ##   2. is_clear costs under 5 us an ask on average over 100,000 asks;
 ##   3. a claim released, a claim made this frame, a place gone, a stall set down in the town's life, trees felled and
 ##      a town razed change the answers at once (Jolt's space flushes new bodies before a query);
-##   4. a fight's route grid (army_ground.gd) on ground.gd's cell_size, laid from row_open: every cell shut or open
-##      as is_clear answers at its middle;
+##   4. (a fight's routes are the realm's navigation now: nav_probe.gd);
 ##   5. a regiment's rectangle asked in one call (area_free, as army.gd _clear_at asks it) at 1000 random placements:
 ##      never clear where the old grid of point asks refused, refused only where something stands within it, under
 ##      50 us an ask;
@@ -162,10 +161,8 @@ func _run() -> void:
 		await process_frame
 		waited += 1
 	_check(Ground.land_ready(), "the land's mask is read off the terrain on a worker (%d frames)" % waited)
-	_check(_cell_size() > 0.0, "a fight's route grid has a cell (ground.json physics.grid_cell)")
 	_agree("set down", 20000)
 	_speed()
-	await _route_grid()
 	_rectangles()
 	_changes()
 	await _built_piece_by_piece()
@@ -173,14 +170,6 @@ func _run() -> void:
 	_shapes()
 	print("OCCUPANCY %s (%d failed)" % ["PASS" if fail == 0 else "FAIL", fail])
 	quit(1 if fail else 0)
-
-
-## The map's cell (ground.gd cell_size), or 0 where the ground keeps no map.
-func _cell_size() -> float:
-	var g: GDScript = load("res://scripts/ground.gd")
-	if not g.get_script_method_list().any(func(m: Dictionary) -> bool: return m["name"] == "cell_size"):
-		return 0.0
-	return float(g.call("cell_size"))
 
 
 func _script(src: String) -> GDScript:
@@ -333,38 +322,6 @@ func _changes() -> void:
 	towns.towns.erase(3)
 	town.free()
 	_check(walled and Ground.is_clear(keep), "a town razed frees its ground (walled before %s)" % walled)
-
-
-# --- 4. a fight's route grid copies the map ---------------------------------------------------------------------------
-
-func _route_grid() -> void:
-	var t0 := Time.get_ticks_usec()
-	var g: RefCounted = preload("res://scripts/army_ground.gd").around(null, Vector3(24, 0, 24), 23.0)
-	await process_frame
-	var ms := (Time.get_ticks_usec() - t0) / 1000.0
-	var cells: int = g.get("cells")
-	var cell: float = g.get("cell")
-	var origin: Vector2 = g.get("origin")
-	var off := 0
-	for i in 20000:
-		var c := Vector2i(rng.randi() % cells, rng.randi() % cells)
-		var mid := Vector3(origin.x + (c.x + 0.5) * cell, 0, origin.y + (c.y + 0.5) * cell)
-		var open := Ground.is_clear(mid, 0.0, true, null, ["host", "field", "ford"])
-		if (g.get("grid") as AStarGrid2D).is_point_solid(c) == open and not _held(mid):
-			off += 1
-	print("route grid: %d x %d cells of %.3f, laid in %.0f ms; %d of 20000 cells off the map" % [cells, cells, cell, ms, off])
-	var on_cells := absf(origin.x / cell - roundf(origin.x / cell)) < 1e-4 and absf(origin.y / cell - roundf(origin.y / cell)) < 1e-4
-	_check(g.get("built") and is_equal_approx(cell, _cell_size()) and on_cells, "a fight's route grid lies on the map's own cells (%.3f)" % cell)
-	_check(off == 0, "a fight's route grid copies the map (%d of 20000 cells off)" % off)
-
-
-## Whether a body's ground (a host's or a body's claim, which the route grid shuts as it moves) holds `p`.
-func _held(p: Vector3) -> bool:
-	for id in claims:
-		var kind := String(claims[id][0])
-		if (kind == "body" or kind.begins_with("host ")) and Geometry2D.is_point_in_polygon(Vector2(p.x, p.z), claims[id][1]):
-			return true
-	return false
 
 
 # --- 5. a regiment's rectangle in one ask ------------------------------------------------------------------------------

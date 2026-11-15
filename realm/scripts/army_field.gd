@@ -3,7 +3,7 @@ extends Node3D
 ## a breach (the army layer, docs/research/army-layer-2026-11-12.md; Total War's field battle and its storm through
 ## the breach, Warcraft III's worn colour and density). Who wins is the realm's (Freeciv decides, the bridge
 ## tells): the beaten side bleeds faster and breaks, the victors never do. Every regiment moves by its Mover on the
-## battle's one ground (army_ground.gd), and decides by its mind (a LimboHSM from a data/army.json minds row,
+## realm's host map (nav_world.gd: round water and houses, every other block carved out), and decides by its mind (a LimboHSM from a data/army.json minds row,
 ## army_mind.gd). Numbers in data/battle.json field and data/siege.json storm_host (docs/TUNING.md).
 ##
 ## A field battle (stage(), from scenes.gd whenever the bridge tells of a battle, the one way a battle is fought; the test aid --army-battle=<men per side>[:foe|crown]): both hosts form facing each other, then
@@ -27,7 +27,6 @@ const Army := preload("res://scripts/army.gd")
 const Mover := preload("res://scripts/mover.gd")  # the one way to move (CLAUDE.md)
 const Mind := preload("res://scripts/army_mind.gd")
 const Morale := preload("res://scripts/army_morale.gd")  # panic spreads: a regiment's nerve, on its mind's blackboard
-const Ground := preload("res://scripts/army_ground.gd")
 const Footing := preload("res://scripts/ground.gd")  # the one owner of where a body may stand: a regiment stepping out asks it
 const Data := preload("res://scripts/data.gd")
 const Heraldry := preload("res://scripts/heraldry.gd")
@@ -40,7 +39,6 @@ var men := 0
 var loser := 1  # the side Freeciv beat: 0 the crown (or the besiegers' foe), 1 the foe
 var sides: Array = []  # the two hosts
 var clock := -1.0  # seconds since the battle began; below 0 while the hosts deploy
-var ground: RefCounted  # army_ground.gd: the battle's one field
 var _arrows: MultiMeshInstance3D
 var _flights: Array = []  # [from, to, start, flight, arc, on_land (Callable), light (Node3D or null)]
 var _rng := RandomNumberGenerator.new()
@@ -131,13 +129,12 @@ func _ready() -> void:
 	var face := crown.facing()
 	var fwd := Vector3(sin(face), 0, cos(face))
 	var house := _foe_house()
-	var foe: Army = Army.new(main, men, {"side": 1, "shape": "line", "frontage": deep, "field": crown.field() + fwd * gap, "face": face + PI, "ground": crown.ground,
+	var foe: Army = Army.new(main, men, {"side": 1, "shape": "line", "frontage": deep, "field": crown.field() + fwd * gap, "face": face + PI,
 		"colour": Heraldry.colour(house, Color(0.72, 0.12, 0.12)) if not house.is_empty() else Color(0.72, 0.12, 0.12), "house": house})
 	add_child(foe)
 	if not foe.mustered:
 		await foe.raised
 	sides = [crown, foe]
-	ground = crown.ground
 	_arrows = _arrow_pool()
 	_focus = (crown.field() + foe.field()) * 0.5
 	print("BATTLE raised %d a side, %s against %s, the %s beaten; lines %.1f apart, the foe's ground %d%% fit" % [men, "the crown", String(house.get("name", "a rebel host")),
@@ -153,7 +150,6 @@ func _raise_in_play() -> void:
 	var gap := Data.num(F, "field.play.gap", 5.0)
 	var per := int(Data.num(F, "field.play.perCompany", 150))
 	var most := int(Data.num(F, "field.play.companies", 12))
-	ground = Ground.around(main, at, gap + Data.num(F, "field.play.reach", 18.0))
 	var made: Array = []
 	for i in 2:
 		var house: Dictionary = (play["houses"] as Array)[i]
@@ -164,7 +160,7 @@ func _raise_in_play() -> void:
 		var face: float = play["face"] if i == 0 else (made[0] as Army).facing() + PI
 		var field: Vector3 = at if i == 0 else (made[0] as Army).field() - Vector3(sin(face), 0, cos(face)) * gap
 		var side: Army = Army.new(main, 0, {"side": i, "field": field, "face": face, "colour": colour, "house": house, "quiet": true,
-			"shape": "line", "frontage": Data.value(F, "field.frontage", [10, 14]), "ground": ground})
+			"shape": "line", "frontage": Data.value(F, "field.frontage", [10, 14])})
 		var specs: Array = []
 		var kinds: Array = (play["kinds"] as Array)[i]
 		for j in mini(kinds.size(), most):
@@ -1110,7 +1106,6 @@ func _storm_up(assault: Node, camp: Vector3, wall: Vector3, town: Vector3, foe_c
 	name = "SiegeStorm"
 	_rng.seed = hash(town)
 	clock = 0.0
-	ground = assault.ground
 	ai.root.add_child(self)
 	_arrows = _arrow_pool()
 	if OS.get_cmdline_user_args().has("--probe"):
@@ -1121,7 +1116,7 @@ func _storm_up(assault: Node, camp: Vector3, wall: Vector3, town: Vector3, foe_c
 	var face_out := atan2(out.x, out.z)
 	var inside: Vector3 = wall - out * k("holders_back", 0.9)
 	for i in 2:
-		var side := {"side": i, "field": camp if i == 0 else inside, "face": face_in if i == 0 else face_out, "ground": ground,
+		var side := {"side": i, "field": camp if i == 0 else inside, "face": face_in if i == 0 else face_out,
 			"colour": foe_col if i == 0 else held_col, "house": {}, "shape": "line", "quiet": true}
 		var a := Army.new(main, int(counts[i]), side)
 		# Connected before it enters the tree: with the land and the towns already up (a siege always is), its _ready
@@ -1335,7 +1330,7 @@ func _shields_up(r: Dictionary) -> void:
 ## A moving siege engine (siege_camp.gd sets "way_to" and "half" on it while it rolls) never goes through a
 ## regiment of its own side: one standing in its way steps aside to clear ground by its Mover and, once the engine
 ## has gone by and its place is free again, steps back (Total War's units parting for a tower). Its route goes round
-## the rest (army_ground.gd shuts every held block, engines' too).
+## the rest (nav_world.gd carves every held block out of the host map, engines' too).
 func _make_way() -> void:
 	var rolling: Array = get_tree().get_nodes_in_group(&"siege_engines").filter(func(n): return (n as Node).has_meta("way_to"))
 	for r in (sides[0] as Army).rows():

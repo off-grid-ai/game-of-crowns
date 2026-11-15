@@ -522,7 +522,7 @@ func dry_rect(x0: float, z0: float, sx: float, sz: float) -> bool:
 
 ## Where a person, a horse or a host may set foot: dry land, or a ford, where a road runs through a river (roads.gd
 ## lays them; the rivers are the drawn ones, which Freeciv's river tiles come from too). Every walk map cuts the
-## rest of the water out (town_nav.gd, army_ground.gd).
+## rest of the water out (nav_world.gd).
 func walkable(wx: float, wz: float) -> bool:
 	return is_land(wx, wz) or ford_at(wx, wz)
 

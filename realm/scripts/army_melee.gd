@@ -1,8 +1,9 @@
 extends Node
 ## Men fighting man to man: the army layer's close fight (docs/research/army-layer-2026-11-12.md). What every
 ## close fight shares, whatever staged it (army_assault.gd a siege's parties at the wall and in the breach):
-##  - the field's own ground (army_ground.gd: water, houses and walls shut) and one crowd (Godot's RVO), so every
-##    man goes round the lake, the house and the man beside him;
+##  - the realm's one navigation (nav_world.gd: water, houses, walls and every held block carved out) and one crowd
+##    (Godot's RVO, the regiments' and engines' held ground in it as obstacles), so every man goes round the lake,
+##    the house, the regiment's block, the rolling tower and the man beside him;
 ##  - every step through the Mover (mover.gd: toward a moving mark, shifted back by a blow, off at a run);
 ##  - every man's mind a LimboHSM made from a data/army.json minds row (army_mind.gd);
 ##  - one duel: close to a sword's length, circle a little, cut when ready (never the same cut twice running, now
@@ -13,7 +14,7 @@ extends Node
 const PerfTools := preload("res://scripts/perf_tools.gd")  # the frame-cost probe
 const Mover := preload("res://scripts/mover.gd")  # the one way to move (CLAUDE.md)
 const Mind := preload("res://scripts/army_mind.gd")
-const Ground := preload("res://scripts/army_ground.gd")
+const Ground := preload("res://scripts/ground.gd")  # the one owner of where a body may stand, and of held ground
 const Combat := preload("res://scripts/combat.gd")
 const Data := preload("res://scripts/data.gd")
 
@@ -27,30 +28,33 @@ var scenes: Node  # scenes.gd: stand, die, people, framing, arrows
 var root: Node3D
 var r: RandomNumberGenerator
 var clock := 0.0
-var ground: RefCounted  # army_ground.gd: this fight's field
+var _span := Rect2()  # world XZ the fight covers: the held ground in it stands in the crowd
+var _held := []  # the crowd's obstacles: every block and engine standing in the fight
+var _held_rev := -1  # ground.gd claims_rev they were laid at
+var _held_check := 0.0
 var reach := 0.2  # two duelists this far apart are at sword's length
 var fighters: Array = []  # every man fighting
 var _bodies: Array = []  # every body that joined the crowd (the fallen too), to leave it before it goes
 var _crowd := RID()
 
 
-## Lays the fight's ground `span` units round `centre` (world) and opens its crowd.
+## Opens the fight's crowd, `span` units round `centre` (world): its men's routes are the realm's (nav_world.gd).
 func _field(centre: Vector3, span: float) -> void:
-	ground = Ground.around(scenes.get_parent(), centre, span)
+	_span = Rect2(centre.x - span, centre.z - span, span * 2.0, span * 2.0)
 	_crowd = NavigationServer3D.map_create()
 	NavigationServer3D.map_set_active(_crowd, true)
 
 
-## A man joins the fight: he stands on its ground and in its crowd, and his mind is made from the row `kind`.
+## A man joins the fight: he fights (mover.gd) in its crowd, and his mind is made from the row `kind`.
 ## Every move a fighter makes is chosen here, so the walk-in-step keeper (anim_lod.gd) leaves him alone.
 func _enlist(m: Dictionary, kind: String) -> void:
 	var n: Node3D = m["node"]
 	n.set_meta("driven", true)
 	n.remove_meta("in_step")
-	var mo: Node = Mover.of(n).on(ground)
+	var mo: Node = Mover.of(n).fights(true)
 	mo.clip = ""  # his mind plays his moves
 	if _crowd.is_valid():
-		mo.join(_crowd, 0.055, RUN * 1.2)
+		mo.join(_crowd, &"man", RUN * 1.2)
 		_bodies.append(n)
 	if not fighters.has(m):
 		fighters.append(m)
@@ -67,7 +71,7 @@ func _steer(m: Dictionary, goal: Vector3, speed: float, look := Vector3.ZERO) ->
 
 ## Shoved back a step from a blow: routed, timed, no turn.
 func _shove(n: Node3D, back: Vector3, by: float, secs: float) -> void:
-	Mover.of(n).shift(ground.keep_out(n.global_position + back * by), secs)
+	Mover.of(n).shift(n.global_position + back * by, secs)  # routed, and kept off what stands (mover.gd)
 
 
 func _send(who: Dictionary, event: StringName) -> void:
@@ -86,6 +90,46 @@ func _process(dt: float) -> void:
 func _process_timed(dt: float) -> void:
 	clock += dt
 	_mind_the_crowd()
+	_hold_out(dt)
+
+
+## The held ground in the fight (ground.gd claims: a regiment's block, a siege engine) as the crowd's obstacles, laid
+## afresh when the claims change (at most every army.json steer.held_every seconds): the men's avoidance steps round
+## a block or a rolling tower as it does round a man (Godot's RVO obstacles).
+func _hold_out(dt: float) -> void:
+	_held_check -= dt
+	if not _crowd.is_valid() or not _span.has_area() or _held_check > 0.0 or Ground.claims_rev == _held_rev:
+		return
+	_held_check = Data.num("army", "steer.held_every", 0.25)
+	_held_rev = Ground.claims_rev
+	for o in _held:
+		NavigationServer3D.free_rid(o)
+	_held.clear()
+	var claims: Dictionary = Ground.claims_in(_span, ["host", "engine"])
+	var at := PackedVector2Array()
+	for m in fighters:
+		if m.get("alive", true) and is_instance_valid(m.get("node")):
+			at.append(Vector2((m["node"] as Node3D).global_position.x, (m["node"] as Node3D).global_position.z))
+	for id in claims:
+		var poly: PackedVector2Array = claims[id][1]
+		if poly.size() < 3:
+			continue
+		# A block a fighter stands in (his own regiment's, the one he is closing with) is no wall to him: only the ones
+		# he stands outside (as a route goes round every held block but the ones it starts or ends in).
+		var box := Rect2(poly[0], Vector2.ZERO)
+		for q in poly:
+			box = box.expand(q)
+		if Array(at).any(func(q: Vector2) -> bool: return box.has_point(q) and Geometry2D.is_point_in_polygon(q, poly)):
+			continue
+		var o := NavigationServer3D.obstacle_create()
+		NavigationServer3D.obstacle_set_map(o, _crowd)
+		NavigationServer3D.obstacle_set_use_3d_avoidance(o, false)
+		var verts := PackedVector3Array()
+		for q in poly:
+			verts.append(Vector3(q.x, 0.0, q.y))
+		NavigationServer3D.obstacle_set_vertices(o, verts)
+		NavigationServer3D.obstacle_set_avoidance_enabled(o, true)
+		_held.append(o)
 
 
 # --- The duel --------------------------------------------------------------------------------------------
@@ -288,6 +332,9 @@ func _exit_tree() -> void:
 	for n in _bodies:
 		if is_instance_valid(n):
 			Mover.of(n).leave()  # out of the crowd before the crowd goes
+	for o in _held:
+		NavigationServer3D.free_rid(o)
+	_held.clear()
 	if _crowd.is_valid():
 		NavigationServer3D.free_rid(_crowd)
 		_crowd = RID()
