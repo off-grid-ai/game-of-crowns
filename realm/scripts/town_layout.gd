@@ -21,6 +21,8 @@ const PLOT_SEED := 1031
 const YARD_SEED := 1033
 const EDGE_SEED := 1039
 const ORCHARD_SEED := 1049
+const TRADE_SEED := 1061  # a grown town's new trades
+const GRANARY_SEED := 1063  # a grown town's new granary
 static func stage_rng(seed: int, stage: int, state: Variant = null) -> RandomNumberGenerator:
 	var r := RandomNumberGenerator.new()
 	r.seed = seed + stage
@@ -50,14 +52,8 @@ func real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds:
 	await tb._pace()
 	# How many houses (data/towns.json density): the crown's seat packs its streets tighter and fuller
 	# (art target 01-town: plots shoulder to shoulder behind the square).
-	var dn: Dictionary = preload("res://scripts/data.gd").value("towns", "density", {})
 	var crown_town := seat and bool(tb._house.get("crown", false))
-	var dcrown: Dictionary = dn.get("crown", {}) if crown_town else {}
-	var want := clampi(int(dn.get("base", 14)) + size * int(dn.get("per_size", 3)), int(dn.get("min", 16)), int(dn.get("max", 40))) + (int(dn.get("seat", 8)) if seat else 0) + int(dcrown.get("extra", 0))
-	if not ways.is_empty():
-		want += int(tb._plot_knobs().get("extra", 0))  # plots pack a street shoulder to shoulder: more houses stand
-	if tb._rank == "manor":
-		want = int(tb._plot_knobs().get("houses", want))  # a manor's hamlet: its manor house and a few cottages (towns.json plots.manor)
+	var want := houses_wanted(size, seat, not ways.is_empty())
 	root.set_meta("crown_seat", crown_town)  # the crown's seat: its market is the realm's busiest (town_life, villagers; towns.json market.crown)
 	var placed := 0
 	# A seat's castle: stone walls, towers and gatehouse, on its own ground at
@@ -274,18 +270,36 @@ func real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds:
 	# The square's ring (above), then the lanes (laid now, round the castle and the landmarks), then burgage plots
 	# along the roads and lanes, the edge where they stop.
 	await tb._pace()
-	ways = ways + await lay_lanes(root, center, ways, clampi(int((size - 2) * float(pk.get("lanes_per_size", 0.5))), 0, int(pk.get("lanes_most", 6))), square_r, rng)
+	ways = ways + await lay_lanes(root, center, ways, lanes_wanted(size), square_r, rng)
 	root.set_meta("ways_all", ways)  # every street as laid: main, ring, quay, lanes (a town that grows adds to it)
 	await tb._pace()
-	var lanes_n := clampi(int((size - 2) * float(pk.get("lanes_per_size", 0.5))), 0, int(pk.get("lanes_most", 6)))
 	placed += await plot_lots(root, center, square_r, ways, kinds, lots, rng, want - placed, seat)
-	var growth: Dictionary = root.get_meta("growth", {})
-	growth.merge({"want": want, "placed": placed, "lanes": lanes_n}, true)
-	root.set_meta("growth", growth)
 	await tb._pace()
 	tb._square_trees(root, center, square_r, ways, lots, rng)
 	await tb._pace()
 	await tb._trades_beyond(root, center, square_r, float(root.get_meta("edge_r", square_r + 3.6)), ways, lots, rng)
+	var growth: Dictionary = root.get_meta("growth", {})
+	growth.merge({"want": want, "placed": placed, "lanes": lanes_wanted(size), "lots": lots}, true)
+	root.set_meta("growth", growth)
+
+
+## How many houses a town of `size` has (data/towns.json density): the crown's seat packs its streets tighter and
+## fuller (art target 01-town: plots shoulder to shoulder behind the square). `plots`: laid on plots (--towns=plots).
+func houses_wanted(size: int, seat: bool, plots: bool) -> int:
+	var dn: Dictionary = preload("res://scripts/data.gd").value("towns", "density", {})
+	var dcrown: Dictionary = dn.get("crown", {}) if seat and bool(tb._house.get("crown", false)) else {}
+	var want := clampi(int(dn.get("base", 14)) + size * int(dn.get("per_size", 3)), int(dn.get("min", 16)), int(dn.get("max", 40))) + (int(dn.get("seat", 8)) if seat else 0) + int(dcrown.get("extra", 0))
+	if plots:
+		want += int(tb._plot_knobs().get("extra", 0))  # plots pack a street shoulder to shoulder: more houses stand
+	if tb._rank == "manor":
+		want = int(tb._plot_knobs().get("houses", want))  # a manor's hamlet: its manor house and a few cottages (towns.json plots.manor)
+	return want
+
+
+## How many lanes a town of `size` lays off its main roads (towns.json plots lanes_per_size, lanes_most).
+func lanes_wanted(size: int) -> int:
+	var pk: Dictionary = tb._plot_knobs()
+	return clampi(int((size - 2) * float(pk.get("lanes_per_size", 0.5))), 0, int(pk.get("lanes_most", 6)))
 
 
 ## --towns=plots: the square enclosed (art target 01-town): a ring of houses on its edge
@@ -429,6 +443,9 @@ func lay_ways(root: Node3D, center: Vector3, c: Dictionary, size: int, square_r:
 	var pk: Dictionary = tb._plot_knobs()
 	TownPlots.tune(pk)
 	TownPlots.AXIS = float(great[0]) if not great.is_empty() else (float(headings[0]) if not headings.is_empty() else 0.0)  # the town squares to its great road
+	var growth: Dictionary = root.get_meta("growth", {})
+	growth["axis"] = TownPlots.AXIS  # the grid a town that grows lays its new plots square to
+	root.set_meta("growth", growth)
 	if TownPlots.GRID:
 		# Its streets run on that grid: each way out along the nearest of its four (path_on lays them straight), one a way.
 		var on_grid: Array = []
@@ -682,65 +699,22 @@ func plot_lots(root: Node3D, center: Vector3, square_r: float, ways: Array, kind
 		fronts = kinds
 	# Each plot's house by where it falls (town_tiers.gd): the square's end of a main street rich, a lane
 	# poorer, the edge poorest, a corner a rung up; a street trade takes the first plot in its window.
-	var main_n: int = (root.get_meta("ways_main", []) as Array).size() + int(root.get_meta("ways_ring", 0))  # the ring streets are main streets too
-	var edge_r := float(root.get_meta("plot_edge", square_r + 3.6))
-	var claimed := {}  # a street trade -> the plot handed to it
-	var widths := func(r: RandomNumberGenerator, ctx: Dictionary) -> Array:
-		var at: Vector2 = ctx.get("at", Vector2.ZERO)
-		var t := clampf((at.length() - square_r) / maxf(edge_r - square_r, 0.1), 0.0, 1.0)
-		var main := int(ctx.get("way", 0)) < main_n
-		for tr in tb._trades:
-			var where := String(tr["where"])
-			if claimed.has(tr) or not ((where in ["main", "gate"] and main) or (where == "lane" and not main)):
-				continue
-			var win: Array = tr.get("t", [0.0, 1.0])
-			if t >= float(win[0]) and t <= float(win[1]):
-				claimed[tr] = true
-				var tf: Vector2 = Real.footprint(String(tr["model"]))
-				return [tf.x, tf.y, String(tr["model"])]
-		var kind: String = tb._tier_pick(r, fronts, "main" if main else "lane", t, "%d%s" % [int(ctx.get("way", 0)), "+" if float(ctx.get("side", 1.0)) > 0.0 else "-"], bool(ctx.get("first", false)))
-		var f: Vector2 = Real.footprint(kind)
-		return [f.x, f.y, kind]
+	var widths := plot_widths(root, square_r, fronts)
 	tb._standing = buildings_standing(root)
 	var all: Array = TownPlots.plots(ways, square_r, float(root.get_meta("plot_edge", square_r + 3.6)), widths, rng.seed + 29, tb._standing)
 	# A plot whose house would stand on another street (a corner, a bend) or against a house
 	# already standing takes a shallower one on the same frontage before it is given up, as a
 	# corner plot in a real town holds a cottage.
-	# Every house model, biggest first, so a plot gives way to the next size down, not straight to a hovel.
-	var shallow: Array = fronts.duplicate()
-	shallow.sort_custom(func(a, b): return Real.footprint(a).x * Real.footprint(a).y > Real.footprint(b).x * Real.footprint(b).y)
+	var shallow := shallow_fronts(fronts)
 	var taken: Array = []
-	var bodies: Array = []  # each standing plot house's outline (town-local)
 	var why := {"another street": 0, "another house": 0, "the realm's road": 0, "crowded": 0, "water or a cliff": 0, "alone": 0}
 	var stood: Array = []  # [plot, house, face, footprint]: their yards are laid once every house stands
-	var placed := 0
-	# A town grows out from its heart: a house stands only within `near` (data/towns.json plots.near)
-	# of something already standing (the square, the castle, a landmark, a house), so the town keeps
-	# one edge and no house stands alone out on the fields. A plot passed over for that is tried
-	# again once the town has grown toward it.
-	var near := float(tb._plot_knobs().get("near", 0.0))
-	var pr: RandomNumberGenerator = stage_rng(rng.seed, PLOT_SEED)  # the plots' own sequence (towns.gd _stage_rng)
-	var left: Array = all
-	var grew := true
-	while grew and placed < budget and not left.is_empty():
-		grew = false
-		var later: Array = []
-		for pl0 in left:
-			if placed >= budget:
-				break
-			var at: Vector2 = pl0[0]
-			if near > 0.0 and not tb._crowded(lots, Vector3(at.x, 0, at.y), float(pl0[2]) * 0.45 + near):
-				later.append(pl0)  # nothing standing near it yet
-				continue
-			if await plot_one(root, center, pl0, ways, shallow, lots, pr, bodies, taken, stood, why):
-				placed += 1
-				grew = true
-		left = later
-	if placed < budget:
-		why["alone"] = left.size()
+	var pr := stage_rng(rng.seed, PLOT_SEED)  # the plots' own sequence (stage_rng)
+	var left: Array = []
+	var placed: int = await place_plots(root, center, all, ways, shallow, lots, pr, budget, taken, stood, why, left)
 	# The yards, once every house stands: their fences and kitchen gardens go round the houses,
 	# never take a house's ground.
-	var yr: RandomNumberGenerator = stage_rng(rng.seed, YARD_SEED)
+	var yr := stage_rng(rng.seed, YARD_SEED)
 	for s in stood + (root.get_meta("ring_yards", []) as Array):
 		tb._yard(root, center, s[0], s[1], s[2], s[3], lots, yr, int(s[4]))
 		await tb._pace()  # each yard its own step
@@ -758,6 +732,189 @@ func plot_lots(root: Node3D, center: Vector3, square_r: float, ways: Array, kind
 	root.set_meta("growth", growth)
 	await edge_round(root, center, square_r, taken, ways, lots, seat, stage_rng(rng.seed, EDGE_SEED))
 	tb._layout_check(root, taken, ways)
+	return placed
+
+
+## Every house model of `fronts`, biggest first, so a plot gives way to the next size down, not straight to a hovel.
+static func shallow_fronts(fronts: Array) -> Array:
+	var shallow: Array = fronts.duplicate()
+	shallow.sort_custom(func(a, b): return Real.footprint(a).x * Real.footprint(a).y > Real.footprint(b).x * Real.footprint(b).y)
+	return shallow
+
+
+## The houses on `all` (TownPlots.plots, nearest the square first), at most `budget`, each through plot_one (into
+## `taken`, `stood`, `why`). A town grows out from its heart: a house stands only within `near` (data/towns.json
+## plots.near) of something already standing (the square, the castle, a landmark, a house), so the town keeps one
+## edge and no house stands alone out on the fields; a plot passed over for that is tried again once the town has
+## grown toward it. `left`: filled with the plots still alone at the end. Returns how many stood.
+func place_plots(root: Node3D, center: Vector3, all: Array, ways: Array, shallow: Array, lots: Array, pr: RandomNumberGenerator, budget: int, taken: Array, stood: Array, why: Dictionary, left: Array) -> int:
+	var bodies: Array = []  # each plot house stood here (town-local outlines)
+	var placed := 0
+	var near := float(tb._plot_knobs().get("near", 0.0))
+	var rest: Array = all
+	var grew := true
+	while grew and placed < budget and not rest.is_empty():
+		grew = false
+		var later: Array = []
+		for pl0 in rest:
+			if placed >= budget:
+				break
+			var at: Vector2 = pl0[0]
+			if near > 0.0 and not tb._crowded(lots, Vector3(at.x, 0, at.y), float(pl0[2]) * 0.45 + near):
+				later.append(pl0)  # nothing standing near it yet
+				continue
+			if await plot_one(root, center, pl0, ways, shallow, lots, pr, bodies, taken, stood, why):
+				placed += 1
+				grew = true
+		rest = later
+	if placed < budget:
+		why["alone"] = rest.size()
+	left.append_array(rest)
+	return placed
+
+
+## Each plot's house by where it falls (town_tiers.gd): the square's end of a main street rich, a lane poorer, the
+## edge poorest, a corner a rung up; a street trade (tb._trades) takes the first plot in its window. For TownPlots.plots.
+func plot_widths(root: Node3D, square_r: float, fronts: Array) -> Callable:
+	var main_n: int = (root.get_meta("ways_main", []) as Array).size() + int(root.get_meta("ways_ring", 0))  # the ring streets are main streets too
+	var edge_r := float(root.get_meta("plot_edge", square_r + 3.6))
+	var claimed := {}  # a street trade -> the plot handed to it
+	return func(r: RandomNumberGenerator, ctx: Dictionary) -> Array:
+		var at: Vector2 = ctx.get("at", Vector2.ZERO)
+		var t := clampf((at.length() - square_r) / maxf(edge_r - square_r, 0.1), 0.0, 1.0)
+		var main := int(ctx.get("way", 0)) < main_n
+		for tr in tb._trades:
+			var where := String(tr["where"])
+			if claimed.has(tr) or not ((where in ["main", "gate"] and main) or (where == "lane" and not main)):
+				continue
+			var win: Array = tr.get("t", [0.0, 1.0])
+			if t >= float(win[0]) and t <= float(win[1]):
+				claimed[tr] = true
+				var tf: Vector2 = Real.footprint(String(tr["model"]))
+				return [tf.x, tf.y, String(tr["model"])]
+		var kind: String = tb._tier_pick(r, fronts, "main" if main else "lane", t, "%d%s" % [int(ctx.get("way", 0)), "+" if float(ctx.get("side", 1.0)) > 0.0 else "-"], bool(ctx.get("first", false)))
+		var f: Vector2 = Real.footprint(kind)
+		return [f.x, f.y, kind]
+
+
+## A standing town that grew (Mac: what is added is incremental; towns.gd _grow_town hands it `root`: its layout's
+## metas, its edge taken up). Only what its new size and buildings add is laid, on top of what stands, from where its
+## last build left each stage (meta growth `g`): its main roads run on out to the new edge, its new lanes leave them
+## at the slots past the old ones (TownPlots.lanes have), its new trades take their ground, the plots cut along every
+## street against everything standing take the new houses, their yards, and the edge (wall or palisade, the trees round
+## it) is laid round the whole. A walled town keeps its edge: it fills in within its wall. Returns how many houses stood.
+func grow(root: Node3D, center: Vector3, c: Dictionary, g: Dictionary, kinds: Array) -> int:
+	var size := int(c["size"])
+	var seat := bool(g["seat"])
+	var square_r := float(g["square_r"])
+	var seed := int(g["seed"])
+	var pk: Dictionary = tb._plot_knobs()
+	TownPlots.tune(pk)
+	TownPlots.AXIS = float(g.get("axis", 0.0))
+	var walled := root.has_meta("town_wall")
+	var old_edge := float(root.get_meta("plot_edge", square_r + 3.6))
+	var reach := maxf(clampf(1.6 + size * 0.32, 2.0, 6.0), square_r + 3.6)
+	var edge := old_edge if walled else maxf(old_edge, reach + float(pk.get("edge_more", 0.0)))
+	root.set_meta("plot_edge", edge)
+	var lots: Array = (g.get("lots", []) as Array).duplicate()
+	var gone: Array = (root.get_meta("edge_lots", []) as Array).duplicate()  # the trees round the old edge: laid anew round the new
+	gone.sort()
+	gone.reverse()
+	for i in gone:
+		if int(i) < lots.size():
+			lots.remove_at(int(i))
+	root.set_meta("edge_lots", [])
+	var main: Array = (root.get_meta("ways_main", []) as Array).duplicate()
+	var ways: Array = (root.get_meta("ways_all", main) as Array).duplicate()
+	var old_lanes: Array = ways.slice(main.size() + int(root.get_meta("ways_ring", 0)) + (1 if root.has_meta("quay") else 0))
+	var lanes_n := lanes_wanted(size)
+	var more_lanes := not walled and not main.is_empty() and lanes_n > int(g.get("lanes", 0))
+	var land := func(p: Vector2) -> bool: return tb.terrain.is_land(center.x + p.x, center.z + p.y)
+	var pace := Callable(tb, "_pace")
+	var new_lanes := 0
+	if edge > old_edge + 0.01 or more_lanes:
+		var height := func(p: Vector2) -> float: return tb._ground_y(center, Vector3(p.x, 0, p.y))
+		var grid: AStarGrid2D = await TownPlots.grid(edge + TownPlots.ROAD_PAST + 0.2, height, land, seed + 13, pace)
+		if edge > old_edge + 0.01:
+			# Each main road that ran out past the old edge runs on as far past the new (one that stopped short, at
+			# water or a castle, stays as it is); only the new stretch is painted.
+			for i in main.size():
+				var way: PackedVector2Array = main[i]
+				var n := way.size()
+				if n < 2 or way[n - 1].length() < old_edge + TownPlots.ROAD_PAST - TownPlots.CELL * 3.0:
+					continue
+				var dir := (way[n - 1] - way[n - 2]).normalized()
+				var t := edge - old_edge
+				var goal := way[n - 1] + dir * t
+				while t > TownPlots.CELL * 2.0 and not bool(land.call(goal)):
+					t -= TownPlots.CELL * 2.0
+					goal = way[n - 1] + dir * t
+				var ext := TownPlots.path_on(grid, way[n - 1], goal)
+				if ext.size() < 2:
+					continue
+				await keep_ways(root, center, [ext])
+				var longer := way.duplicate()
+				longer.append_array(ext.slice(1))
+				main[i] = longer
+				ways[i] = longer
+			root.set_meta("ways_main", main)
+		if more_lanes:
+			await TownPlots.block(grid, root.get_meta("footprints", []), pace)
+			var all_lanes: Array = await TownPlots.lanes(main, lanes_n, square_r, edge, grid, land, seed + 17, pace, old_lanes)
+			var fresh: Array = all_lanes.filter(func(l): return not old_lanes.has(l))
+			await keep_ways(root, center, fresh, false, true)
+			ways += fresh
+			new_lanes = fresh.size()
+	root.set_meta("ways_all", ways)
+	# Its new trades: those its plan at the new size and buildings has beyond the ones standing (the square's edge
+	# is full: a new square trade stands on a main street).
+	tb._tiers = TownTiers.new(size, seat)
+	var have := {}
+	for t in root.get_meta("trades", []):
+		have[String(t["component"])] = int(have.get(String(t["component"]), 0)) + 1
+	tb._trades = []
+	for tr in TownTrades.plan(size, root.get_meta("buildings", []), seat, seed + 53, tb._rank):
+		var comp := String(tr["component"])
+		if int(have.get(comp, 0)) > 0:
+			have[comp] = int(have[comp]) - 1
+			continue
+		var wr: Dictionary = tr.get("where_by_rank", {})
+		if wr.has(tb._rank):
+			tr["where"] = String(wr[tb._rank])
+		if String(tr["where"]) == "square":
+			tr["where"] = "main"
+		tb._trades.append(tr)
+	var trr := stage_rng(seed, TRADE_SEED)
+	for tr in tb._trades:
+		if String(tr["where"]) in ["castle", "water", "inn"]:
+			await tb._trade_off_plot(root, center, tr, square_r, square_r + 3.6, ways, lots, trr)
+	await tb._pace()
+	# The new houses: plots cut along every street against all that stands, from where the plots' sequence left off.
+	var fronts: Array = kinds.filter(func(k): return Real.KIT.get(k, [""])[0] != "barn")
+	if fronts.is_empty():
+		fronts = kinds
+	tb._standing = buildings_standing(root)
+	var all: Array = TownPlots.plots(ways, square_r, edge, plot_widths(root, square_r, fronts), seed + 29, tb._standing)
+	await tb._pace()
+	var pr := stage_rng(seed, PLOT_SEED, g.get("plot_rng"))
+	var taken: Array = []
+	var stood: Array = []
+	var why := {"another street": 0, "another house": 0, "the realm's road": 0, "crowded": 0, "water or a cliff": 0, "alone": 0}
+	var want := houses_wanted(size, seat, not main.is_empty())
+	var budget := maxi(want - int(g.get("placed", 0)), 0)
+	var placed: int = await place_plots(root, center, all, ways, shallow_fronts(fronts), lots, pr, budget, taken, stood, why, [])
+	var yr := stage_rng(seed, YARD_SEED, g.get("yard_rng"))
+	for s in stood:
+		tb._yard(root, center, s[0], s[1], s[2], s[3], lots, yr, int(s[4]))
+		await tb._pace()
+	var taken_all: Array = (g.get("taken", []) as Array) + taken
+	await edge_round(root, center, square_r, taken_all, ways, lots, seat, stage_rng(seed, EDGE_SEED))
+	await tb._trades_beyond(root, center, square_r, float(root.get_meta("edge_r", edge)), ways, lots, trr)
+	print("CHECK town grew: %s (size %d -> %d, edge %.1f -> %.1f): %d new houses of %d wanted, %d new lanes, %d new trades; turned away: %s" % [String(root.get_meta("title", "")), int(g.get("size", 0)), size, old_edge, edge, placed, budget, new_lanes, tb._trades.size(), str(why)])
+	g.merge({"size": size, "reach": reach, "want": want, "placed": int(g.get("placed", 0)) + placed,
+		"lanes": maxi(lanes_n, int(g.get("lanes", 0))) if not walled else int(g.get("lanes", 0)), "lots": lots, "taken": taken_all,
+		"plot_rng": pr.state, "yard_rng": yr.state, "buildings": (root.get_meta("buildings", []) as Array).duplicate()}, true)
+	root.set_meta("growth", g)
 	return placed
 
 

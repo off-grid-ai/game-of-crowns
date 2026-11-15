@@ -218,7 +218,7 @@ var _tier := {}  # city id -> the tier the lens last gave it (view_tier.gd)
 ## past NEAR, props, smoke), so nothing seen is lost. A town not yet kept on disk, or being raised, stays whole.
 func _shell(id: int) -> void:
 	var t: Dictionary = towns[id]
-	if t.get("shell", false) or _queue.has(id) or not FileAccess.file_exists(String(t.get("path", ""))):
+	if t.get("shell", false) or _queue.has(id) or id == _raising_id or not FileAccess.file_exists(String(t.get("path", ""))):
 		return
 	var root: Node3D = t["node"]
 	_put_out(root)  # its flames and smoke: never in the file, lit again on revive (relight)
@@ -373,8 +373,12 @@ func _process_timed(_delta: float) -> void:
 ## One town raised over frames (_pace), then shown whole in place of the old.
 func _raise(best: int, job: Dictionary) -> void:
 	_raising = true
+	_raising_id = best
 	_step_at = Time.get_ticks_usec()
 	terrain.hold_grading = true
+	if towns.has(best) and is_instance_valid(towns[best]["node"]) and _grows(towns[best], job):
+		await _grow_standing(best, job)
+		return
 	# Kept on disk (town_store.gd): read back on the loader's threads and its marks made on the world again; else
 	# laid out, and kept as it was built (before its life or a merge touch it) for next time.
 	var path := TownStore.path_of(job["c"], job["house"], terrain.terrain)
@@ -394,7 +398,7 @@ func _raise(best: int, job: Dictionary) -> void:
 		node = await _build_town(job["c"], job["house"])
 		await _occlude(node)
 		await _pace()  # the town packed for its file its own step (build@last: what is left after this pace)
-		TownStore.save(node, path)
+		await TownStore.save(node, path)  # off the tree: packed on a worker (town_store.gd)
 	var pt0 := Time.get_ticks_usec()
 	PerfTools.add("build@last", pt0 - _step_at)  # the build's last step, after its last _pace
 	if towns.has(best) and is_instance_valid(towns[best]["node"]):
@@ -420,6 +424,7 @@ func _raise(best: int, job: Dictionary) -> void:
 		PerfTools.add("towns.merge", Time.get_ticks_usec() - pt0)
 		terrain.hold_grading = false
 		_raising = false
+		_raising_id = -1
 		_graded_at = Time.get_ticks_msec()
 		terrain.commit_grading()  # only its new plots' ground (terrain.gd: each graded place on its own)
 		return
@@ -443,6 +448,7 @@ func _raise(best: int, job: Dictionary) -> void:
 	_raised += 1
 	terrain.hold_grading = false
 	_raising = false
+	_raising_id = -1
 	# Reshaping the ground is costly: do it now and then while building, and once at the end.
 	var now := Time.get_ticks_msec()
 	if _queue.is_empty() or now - _graded_at > 750:
@@ -454,6 +460,143 @@ func _raise(best: int, job: Dictionary) -> void:
 	if _queue.is_empty():
 		print_verbose("BUILD towns raised %d in %d ms, a few per frame" % [_raised, now - _raising_since])
 		_raising_since = 0
+
+
+var _raising_id := -1  # the town being raised or grown (_raise): never shelled meanwhile (_shell)
+
+
+## Whether a standing town's change is growth (Mac: what is added is incremental): the same rank, seat and square, no
+## smaller, no building lost and no bannerman's arms changed, and laid by a build that kept its growth (meta growth).
+## Then only what it adds is laid on top of it (_grow_standing); else its new layout is laid whole and merged (_merge).
+func _grows(t: Dictionary, job: Dictionary) -> bool:
+	var node: Node3D = t["node"]
+	var g: Dictionary = node.get_meta("growth", {})
+	if g.is_empty() or not node.has_meta("batch_raw"):
+		return false
+	var c: Dictionary = job["c"]
+	var was: Dictionary = job.get("was", {})
+	var size := int(c["size"])
+	var rank := town_rank(bool(c.get("capital", false)), bool((job["house"] as Dictionary).get("crown", false)), size, c.get("family") is String)
+	var seat := bool(c.get("capital", false)) and rank != "manor"
+	if rank != String(g.get("rank", "")) or seat != bool(g.get("seat", false)) or absf(square_for(rank, seat, size) - float(g.get("square_r", 0.0))) > 0.001:
+		return false
+	if size < int(g.get("size", 0)) or (g.get("buildings", []) as Array).any(func(b): return not (c["buildings"] as Array).has(b)):
+		return false
+	return not (c.get("family") is String and int(was.get("owner", -1)) != int(c["owner"]))
+
+
+## A standing town that grew: its additions laid off-screen on a copy of its layout's facts (_grow_town), added to it
+## (_add_on), its new houses rising as building sites (_grow), and the grown town kept on disk.
+func _grow_standing(best: int, job: Dictionary) -> void:
+	if towns[best].get("shell", false):
+		await _revive(best)  # whole again first: a shell's detail is in its old file
+	var standing: Node3D = towns[best]["node"]
+	var homes_before: Array = standing.get_meta("homes", [])
+	var add: Node3D = await _grow_town(standing, job["c"], job["house"])
+	await _occlude(add)
+	await _pace()
+	var pt0 := Time.get_ticks_usec()
+	PerfTools.add("build@last", pt0 - _step_at)
+	Engine.set_meta("stage", "towns.grow")
+	var path := TownStore.path_of(job["c"], job["house"], terrain.terrain)
+	if is_instance_valid(standing):
+		_add_on(standing, add)
+		towns[best]["data"] = job["c"]
+		towns[best]["path"] = path
+		towns[best]["shell"] = false
+		_grow(job.get("was", {}), homes_before, standing, job["c"])
+		terrain.season_on(standing)
+		TeamColour.take(standing)
+	else:
+		add.free()  # the town went while it grew
+	PerfTools.add("towns.grow", Time.get_ticks_usec() - pt0)
+	terrain.hold_grading = false
+	_raising = false
+	_raising_id = -1
+	_graded_at = Time.get_ticks_msec()
+	terrain.commit_grading()  # only its new plots' ground
+	if is_instance_valid(standing):
+		await TownStore.save(standing, path, true)  # its layout only: never its life, dressing or a fire's shell
+
+
+## The additions of a standing town that grew (Mac: what is added is incremental), laid off the tree on `root`, a copy
+## of its layout's facts (metas), its edge taken up (the palisade, the trees round it and its orchards: their copies,
+## footprints and lots, kept apart as the edge's): town_layout.grow lays its new streets, trades, plots and houses and
+## the edge round the whole; then a new granary, the cleared ground, the orchards anew, and every batch again from
+## its copies as placed (meta batch_raw) with the new ones beside them. Returns the root (_add_on adds it).
+func _grow_town(standing: Node3D, c: Dictionary, house: Dictionary) -> Node3D:
+	var g: Dictionary = (standing.get_meta("growth") as Dictionary).duplicate(true)
+	var root := Node3D.new()
+	root.position = standing.position
+	for key in standing.get_meta_list():
+		var v: Variant = standing.get_meta(key)
+		root.set_meta(key, v.duplicate(true) if v is Array or v is Dictionary else v)
+	var center := root.position
+	_imprint = []
+	_center = center
+	_house = house
+	_rank = String(g["rank"])
+	_house_colour = preload("res://scripts/heraldry.gd").colour(house, Color.GRAY, "#888888")
+	_batch_tag = ""
+	_batch = {}
+	var raw: Dictionary = root.get_meta("batch_raw", {})
+	for key: String in raw:
+		if not key.contains("@"):
+			_batch[key] = (raw[key] as Array).duplicate()
+	var fps: Array = root.get_meta("footprints", [])
+	var tops: Array = root.get_meta("tops", [])
+	var gone: Array = (root.get_meta("edge_fps", []) as Array).duplicate()
+	gone.sort()
+	gone.reverse()
+	for i in gone:
+		if int(i) < fps.size():
+			fps.remove_at(int(i))
+		if int(i) < tops.size():
+			tops.remove_at(int(i))
+	root.set_meta("edge_fps", [])
+	root.set_meta("orchards", [])
+	root.set_meta("size", int(c["size"]))
+	root.set_meta("buildings", c["buildings"])
+	await _pace()
+	var gained: Array = (c["buildings"] as Array).filter(func(b): return not (g.get("buildings", []) as Array).has(b))
+	await layout.grow(root, center, c, g, _house_kinds())
+	var seed := int(g["seed"])
+	var reach := maxf(clampf(1.6 + int(c["size"]) * 0.32, 2.0, 6.0), float(g["square_r"]) + 3.6)
+	if "Granary" in gained:
+		await _granary(root, center, float(g["base_ang"]), reach, TownLayout.stage_rng(seed, TownLayout.GRANARY_SEED))
+	await _pace()
+	var outer := maxf(reach + 0.35, float(root.get_meta("edge_r", 0.0)))
+	root.set_meta("reach", reach + 3.0)
+	root.set_meta("trodden", outer)
+	world("clear", [center, outer + 0.6])
+	await _pace()
+	_batch_tag = "@edge"
+	fields.edge(root, center, TownLayout.stage_rng(seed, TownLayout.ORCHARD_SEED))
+	_batch_tag = ""
+	await _pace()
+	await _flush(root)
+	await _pace()
+	_tag_layout(root)
+	root.set_meta("imprint", (root.get_meta("imprint", []) as Array) + _imprint)
+	return root
+
+
+## A standing town takes on what it grew (`fresh`, _grow_town): its batches and its occluder in place of its own
+## (the new ones hold every copy, old and new), every other new piece added, its layout's facts (metas) the grown
+## ones. Its life, its dressing and everything else standing are left as they are. `fresh` is freed.
+func _add_on(standing: Node3D, fresh: Node3D) -> void:
+	for n in standing.get_children():
+		if n.name in KEPT:
+			continue
+		if (n is MultiMeshInstance3D and n.get_script() == Batch and n.has_meta("kind")) or n is OccluderInstance3D:
+			standing.remove_child(n)
+			n.queue_free()
+	for n in fresh.get_children():
+		fresh.remove_child(n)
+		standing.add_child(n)
+	for key in fresh.get_meta_list():
+		standing.set_meta(key, fresh.get_meta(key))
+	fresh.free()
 
 
 ## A standing town takes from its new layout (`fresh`, built off-screen) only what it lacks: each piece is known by
@@ -2465,6 +2608,41 @@ func _pace() -> void:
 	_step_at = Time.get_ticks_usec()
 
 
+## The houses a town's plots take: townhouses mostly; now and then an inn-like timber house or a barn (the tavern
+## on the square stays the one that stands out).
+static func _house_kinds() -> Array:
+	var homes_only: Array = Real.names_of("house").filter(func(n): return not n in Real.variants("tavern"))
+	return homes_only + homes_only + Real.names_of("house") + Real.names_of("barn")
+
+
+## Every piece a town's layout laid (its root's children once built or grown), marked so: what is kept in its file
+## when a standing town that grew is saved (TownStore.save layout_only), never its life, its dressing or a fire's shell.
+static func _tag_layout(root: Node3D) -> void:
+	for n in root.get_children():
+		n.set_meta("_layout", true)
+
+
+## The square's size for a town of this rank (towns.json market.<rank>.square_r), else a seat's or a big town's.
+static func square_for(rank: String, seat: bool, size: int) -> float:
+	return float(market_knobs_for(rank).get("square_r", 1.25 if seat or size >= 12 else 1.0))
+
+
+## The granary's barn, out past the town by its roads (`base_ang`, `reach`), with hay stacked by it: for a town that
+## holds Freeciv's Granary and has no granary trade standing (a granary trade stood is the store).
+func _granary(root: Node3D, center: Vector3, base_ang: float, reach: float, rng: RandomNumberGenerator) -> void:
+	if (root.get_meta("trades", []) as Array).any(func(t): return String(t["component"]) == "granary") or _trade_of("granary").has("stood"):
+		return
+	var gp := Vector3(cos(base_ang - 0.5), 0, sin(base_ang - 0.5)) * (reach + 0.5)
+	if await _put(root, center, "old_wooden_barn", gp, Real.footprint("old_wooden_barn"), [], rng, false):
+		# Hay stacked by the granary's barn, against the winter: bales (assets.json haystack), not the
+		# scanned loose-hay pile, which lay flat as a pale orange disc from any height.
+		for k in 2:
+			var hp: Vector3 = gp + Vector3(-sin(base_ang - 0.5), 0, cos(base_ang - 0.5)) * (0.6 + k * 0.32) * (1 if k == 0 else -1)
+			if terrain.is_land(center.x + hp.x, center.z + hp.z):
+				var hyaw := rng.randf() * TAU
+				_place(root, Real.one("haystack"), hp + Vector3(0, _foot_y(center, hp, Real.footprint(Real.one("haystack")), hyaw), 0), hyaw)
+
+
 ## The build waits for the next frame (a model it needs still merging on its worker: Real.ready).
 func _wait_frame() -> void:
 	await PerfTools.next_frame(&"towns:wait")
@@ -2505,8 +2683,7 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 	for i in street_count:
 		streets.append(base_ang + TAU * i / street_count + rng.randf_range(-0.25, 0.25))
 
-	var square_r := 1.25 if seat or size >= 12 else 1.0  # a market square, room for stalls and a crowd
-	square_r = float(_market_knobs().get("square_r", square_r))  # by the town's rank: the realm's great market square at the crown's seat (art target town-b; the crown's 2.1 since round 6)
+	var square_r := square_for(_rank, seat, size)  # a market square, room for stalls and a crowd; by the town's rank: the realm's great market square at the crown's seat (art target town-b; the crown's 2.1 since round 6)
 	reach = maxf(reach, square_r + 3.6)  # the town reaches out to its palisade
 	var reps := roundi(square_r * 4.0)
 	# The square: a cobbled heart laid whole to its edge, and trodden earth
@@ -2535,8 +2712,7 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 
 	# Townhouses mostly; now and then an inn-like timber house or a barn
 	# (the tavern on the square stays the one that stands out).
-	var homes_only: Array = Real.names_of("house").filter(func(n): return not n in Real.variants("tavern"))
-	var real_houses: Array = homes_only + homes_only + Real.names_of("house") + Real.names_of("barn")
+	var real_houses := _house_kinds()
 	# --towns=plots: the roads come first, laid over the land toward where they
 	# lead, and lanes off them as the town grows; the spokes below stand aside.
 	await _pace()
@@ -2600,16 +2776,8 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 
 	await _pace()
 	# The church, hall and tavern stand on the square from the kit (town_layout.real_lots).
-	if "Granary" in buildings and not _trade_of("granary").has("stood"):  # a granary trade stood: it is the store
-		var gp := Vector3(cos(base_ang - 0.5), 0, sin(base_ang - 0.5)) * (reach + 0.5)
-		if await _put(root, center, "old_wooden_barn", gp, Real.footprint("old_wooden_barn"), [], rng, false):
-			# Hay stacked by the granary's barn, against the winter: bales (assets.json haystack), not the
-			# scanned loose-hay pile, which lay flat as a pale orange disc from any height.
-			for k in 2:
-				var hp: Vector3 = gp + Vector3(-sin(base_ang - 0.5), 0, cos(base_ang - 0.5)) * (0.6 + k * 0.32) * (1 if k == 0 else -1)
-				if terrain.is_land(center.x + hp.x, center.z + hp.z):
-					var hyaw := rng.randf() * TAU
-					_place(root, Real.one("haystack"), hp + Vector3(0, _foot_y(center, hp, Real.footprint(Real.one("haystack")), hyaw), 0), hyaw)
+	if "Granary" in buildings:
+		await _granary(root, center, base_ang, reach, rng)
 
 	await _pace()
 	var outer := reach + 0.35
@@ -2636,6 +2804,7 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 	root.set_meta("growth", growth)
 	await _flush(root)
 	await _pace()
+	_tag_layout(root)
 	root.set_meta("imprint", _imprint)  # what it did to the world beyond itself (world), replayed when it is loaded
 	# Its name on the map is drawn in screen space by map_labels.gd.
 	return root

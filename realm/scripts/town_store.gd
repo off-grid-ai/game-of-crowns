@@ -32,10 +32,14 @@ static func path_of(c: Dictionary, house: Dictionary, tiles: Array) -> String:
 
 ## A town just raised, packed and written (the writing on a worker thread). Its metas and groups are made savable on
 ## a copy of what they hold and put back after packing, so the town in play is untouched.
-static func save(root: Node3D, path: String) -> void:
+## A town off the tree (just raised) is packed on a worker thread, the build waiting a frame at a time (Godot builds and
+## reads a scene off the tree on any thread; on the main thread a town's pack was one long frame). A standing town (one
+## that grew, in the tree) is packed where it stands, `layout_only`: only the pieces its layout laid (towns.gd
+## _tag_layout), never its life, its dressing or a fire's shell.
+static func save(root: Node3D, path: String, layout_only := false) -> void:
 	var kept := []  # [node, meta, value as it was]
 	var batches := []  # [batch, its MultiMesh]: packed empty, so the file keeps the batch's own list, not the renderer's copy
-	for n in [root] + _owned(root, root, []):
+	for n in [root] + _owned(root, root, [], layout_only):
 		if n.get_script() == Batch and (n as MultiMeshInstance3D).multimesh:
 			var mm: MultiMesh = (n as MultiMeshInstance3D).multimesh
 			var empty := MultiMesh.new()
@@ -59,7 +63,17 @@ static func save(root: Node3D, path: String) -> void:
 				kept.append([n, m, v])
 				n.set_meta(m, w)
 	var scene := PackedScene.new()
-	var ok := scene.pack(root)
+	var ok := FAILED
+	if root.is_inside_tree():
+		ok = scene.pack(root)
+	else:
+		var out := [FAILED]
+		var task := WorkerThreadPool.add_task(func() -> void: out[0] = scene.pack(root), false, "pack " + path.get_file())
+		var tree := Engine.get_main_loop() as SceneTree
+		while not WorkerThreadPool.is_task_completed(task):
+			await tree.process_frame
+		WorkerThreadPool.wait_for_task_completion(task)
+		ok = int(out[0])
 	for b in batches:
 		(b[0] as MultiMeshInstance3D).multimesh = b[1]
 	for k in kept:
@@ -77,8 +91,10 @@ static func save(root: Node3D, path: String) -> void:
 ## The town's own nodes, each owned by the town so it is packed. A model placed whole from a file (a mill's sails, the
 ## map seat's keep) is packed as a link to that file, its insides left its own: the town's file never carries a copy.
 ## A node that builds its own insides (a horse: Godot's way, it owns them) is packed alone; it builds them again.
-static func _owned(n: Node, root: Node, out: Array) -> Array:
+static func _owned(n: Node, root: Node, out: Array, layout_only := false) -> Array:
 	for c in n.get_children():
+		if layout_only and n == root and not c.has_meta("_layout"):
+			continue  # not the town's layout (its life, dressing, a fire's shell): never in its file
 		if c is GPUParticles3D or c is CPUParticles3D:
 			c.owner = null  # never kept: a kept town's particles drew giant torn sheets and hung the GPU; towns.gd relights them
 			continue

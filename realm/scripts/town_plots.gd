@@ -85,8 +85,9 @@ static func roads(headings: Array, square_r: float, edge: float, g: AStarGrid2D,
 
 ## Lanes off the main roads, as many as the town's size calls for: each from a
 ## point along a road, out to one side, square to it, the cheapest way; one
-## that comes near another street ends on it (a junction).
-static func lanes(main: Array, count: int, square_r: float, edge: float, g: AStarGrid2D, land: Callable, seed: int, pace: Callable) -> Array:
+## that comes near another street ends on it (a junction). `have`: the lanes a town already laid (it grew): each
+## holds the slot it leaves its road from, and only the slots past them are laid anew (returned with them).
+static func lanes(main: Array, count: int, square_r: float, edge: float, g: AStarGrid2D, land: Callable, seed: int, pace: Callable, have: Array = []) -> Array:
 	if count <= 0 or main.is_empty():
 		return []
 	var rng := RandomNumberGenerator.new()
@@ -105,6 +106,10 @@ static func lanes(main: Array, count: int, square_r: float, edge: float, g: ASta
 				continue
 			var p: Vector2 = at[0]
 			var tan: Vector2 = at[1]
+			var had: Array = have.filter(func(h): return (h as PackedVector2Array).size() >= 2 and (h as PackedVector2Array)[0].distance_to(p) < CELL * 2.0 and not out.has(h))
+			if not had.is_empty():
+				out.append(had[0])  # laid already, where it stands
+				continue
 			var side := 1.0 if (k + r) % 2 == 0 else -1.0
 			var goal := p + tan.orthogonal() * side * LANE_LENGTH
 			# A street met on the way: the lane ends on it, a junction.
