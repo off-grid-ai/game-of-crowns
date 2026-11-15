@@ -268,6 +268,7 @@ func _ready() -> void:
 		return "The towns are rising: %d of %d" % [n.x, n.y] if terrain.built and n.y > 0 else "The realm is forming…"
 	add_child(intro)
 	_keep_running(intro)
+	intro.finished.connect(_hold_world)  # a realm saved paused holds once it is shown
 	lore = preload("res://scripts/lore.gd").new()
 	ui.royal_edited.connect(func(spec):
 		bridge.write_royal(spec, func(code, d):
@@ -713,9 +714,10 @@ var _menu_held := false  # the pause menu holds the realm (the King hadn't pause
 ## Pause, the Godot way (Mac 2026-11-16: "the town etc should not move when we say pause"): the whole scene tree stops
 ## (SceneTree.paused), so townsfolk, carts, hosts, scenes, flames' particles and every AnimationPlayer hold still with the
 ## realm's turns on the bridge. Paused when the King paused it (ui.paused, the realm's own word from /world) or the
-## Esc menu holds it.
+## Esc menu holds it. Never while the loading screen is up: the realm is still being raised (a chronicle saved paused
+## left its towns at "0 of 35" behind the card for good; every RTS loads its map before the pause can hold it).
 func _hold_world() -> void:
-	get_tree().paused = ui.paused or _menu_held
+	get_tree().paused = (ui.paused or _menu_held) and not preload("res://scripts/view_tier.gd").loading
 
 
 ## What goes on while the realm is paused, as in every RTS: the interface and menus, the camera (pan, zoom, turn), the

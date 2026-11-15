@@ -337,6 +337,8 @@ func _log_perf(delta: float) -> void:
 		Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME), Performance.get_monitor(Performance.RENDER_TOTAL_OBJECTS_IN_FRAME),
 		int(Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME) / 1000.0), Performance.get_monitor(Performance.OBJECT_NODE_COUNT),
 		main.rig.distance if main.rig else 0.0, main.towns.building() if main.towns and main.towns.has_method("building") else "?"])
+	if probing and main.towns and main.towns.building():
+		f.store_line("    raising %s" % main.towns.building_at())
 	if probing:
 		# The render's own clock (Godot measures it once asked): CPU submitting the frame, GPU drawing it.
 		var vp_rid := main.get_viewport().get_viewport_rid()

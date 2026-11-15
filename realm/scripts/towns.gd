@@ -311,6 +311,13 @@ func building() -> bool:
 	return not _queue.is_empty() or _raising
 
 
+## GOC_PERF_PROBE: which town is being raised, its last build step and how long since, and how many wait (perf.log).
+func building_at() -> String:
+	if not _raising:
+		return "idle, %d queued" % _queue.size()
+	return "town %d at %s %.1f s ago, %d queued" % [_raising_id, _step_where, (Time.get_ticks_usec() - _step_at) / 1e6, _queue.size()]
+
+
 ## How many of the towns the world names stand, of how many: the loading screen's line while they rise.
 func standing() -> Vector2i:
 	var n := 0
@@ -2634,10 +2641,12 @@ func _flat_enough(center: Vector3, off: Vector3, r: float) -> bool:
 ## town is built off the tree and shown whole when done; one is raised at a time
 ## (_raising), as the build keeps its town in members (_center, _house).
 var _raising := false
+var _step_where := ""  # GOC_PERF_PROBE: where the last build step ended (building_at)
 var _step_at := 0  # when the last build step ended (GOC_PERF_PROBE: a step over budget is named in the slow-frame log)
 func _pace() -> void:
 	if PerfTools.probing:
 		var now := Time.get_ticks_usec()
+		_step_where = "%s:%d" % [String((get_stack()[1] as Dictionary).get("source", "?")).get_file(), int((get_stack()[1] as Dictionary).get("line", 0))] if get_stack().size() > 1 else "?"
 		if _step_at > 0 and now - _step_at > int(ViewTier.STAGE_MS * 1000.0):
 			var at: Dictionary = get_stack()[1] if get_stack().size() > 1 else {}
 			PerfTools.add("build@%s:%d" % [String(at.get("source", "?")).get_file(), int(at.get("line", 0))], now - _step_at)
