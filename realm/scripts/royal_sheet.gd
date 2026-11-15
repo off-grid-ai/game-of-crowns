@@ -141,6 +141,9 @@ func open() -> void:
 		nature.add_theme_font_override("font", T.speech)
 		v.add_child(nature)
 		_say(v, _w("nature_tip", ""), T.TEXT_3)
+	# His past, as the player wrote it in the Lore (bridge royals.js rewrite, /world royals.king.story).
+	if king.get("story") is String and String(king["story"]) != "":
+		_say(v, "“%s”" % String(king["story"]), T.TEXT_2)
 	# How he bears what he has ruled against his own nature.
 	if String(sb.get("says", "")) != "":
 		_say(v, String(sb["says"]), T.DANGER if bool(sb.get("hard", false)) else T.TEXT_2)

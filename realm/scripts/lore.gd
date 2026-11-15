@@ -9,6 +9,7 @@ extends CanvasLayer
 signal person_opened(id: String, house: Dictionary)
 signal town_opened(title: String)  # go to this town on the map
 signal person_written(person: Dictionary, house: Dictionary)  # meet someone as the book has them
+signal royal_edit(person: Dictionary, house: Dictionary)  # write one of the crown's family (main.gd opens the character form)
 signal closed
 
 const T := preload("res://scripts/theme.gd")
@@ -574,6 +575,17 @@ func _person(p: Dictionary, h: Dictionary, into: Node = null) -> void:
 		top.add_child(meet)
 	else:
 		meet.free()
+		# Yours to write: their name, nature and story (the one character form; bridge POST /lore/royal).
+		var write := Button.new()
+		write.text = "Edit"
+		write.flat = true
+		write.focus_mode = Control.FOCUS_NONE
+		write.tooltip_text = "Write who they are: name, nature, story"
+		write.add_theme_color_override("font_color", T.ACCENT)
+		write.pressed.connect(func():
+			visible = false  # stepped aside: the form returns here
+			royal_edit.emit(p, h))
+		top.add_child(write)
 	var rank: String = String(p.get("role", "")) if p.get("role") != null else RANKS.get(String(p.get("rank", "")), "")
 	if String(p.get("gender", "")) == "female":
 		rank = {"Lord": "Lady", "Bannerman": "Bannerwoman", "Heir": "Heiress", "The King": "The Queen"}.get(rank, rank)

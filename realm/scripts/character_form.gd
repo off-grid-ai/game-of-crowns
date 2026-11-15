@@ -20,6 +20,8 @@ func _init(owner: UI) -> void:
 ## Given someone already in the realm, the same form reshapes them instead.
 func show_character_form(house_id: int, house_name: String, opts: Dictionary, person := {}) -> void:
 	var editing := not person.is_empty()
+	# One of the crown's family (the Lore's Edit, bridge royals.js): name, nature and story only; no lord, aim or vow.
+	var royal := bool(person.get("royal", false))
 	if _form_panel:
 		_form_panel.queue_free()
 	_form_panel = ui.card(ui.glass_panel())
@@ -56,7 +58,7 @@ func show_character_form(house_id: int, house_name: String, opts: Dictionary, pe
 	role.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	if editing:
 		# A lord or a born bannerman has no sworn role to pick; a written-in one keeps theirs.
-		role.visible = person.get("role_key") != null
+		role.visible = person.get("role_key") != null and not royal
 		if role.visible and role_keys.has(person["role_key"]):
 			role.selected = role_keys.find(person["role_key"])
 	row.add_child(role)
@@ -91,8 +93,11 @@ func show_character_form(house_id: int, house_name: String, opts: Dictionary, pe
 	other.text = ", ".join(others)
 	v.add_child(other)
 	preload("res://scripts/spark.gd").attach(other, ui.get_tree().current_scene.get("bridge"), "character-traits", func(): return "%s of %s." % [name.text if name.text != "" else "A person", house_name])
-	v.add_child(T.label("What they want"))
+	var want := T.label("What they want")
+	want.visible = not royal
+	v.add_child(want)
 	var goal := OptionButton.new()
+	goal.visible = not royal
 	var goals: Array = opts.get("goals", []).duplicate()
 	if editing and person.get("goal") != null and not goals.any(func(g): return g["kind"] == person["goal"]):
 		goals.push_front({"kind": person["goal"], "text": String(person.get("goals", [""])[0])})
@@ -110,25 +115,35 @@ func show_character_form(house_id: int, house_name: String, opts: Dictionary, pe
 	loyalty.value = int(person.get("loyalty", 60))
 	loyalty.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	loyal_row.add_child(loyalty)
+	loyal_row.visible = not royal
 	v.add_child(loyal_row)
 	# Their past, as their card tells it: yours to rewrite.
 	var story := TextEdit.new()
-	story.text = String(person.get("backstory", "")) if person.get("backstory") is String else ""
+	story.text = String(person.get("story" if royal else "backstory", "")) if person.get("story" if royal else "backstory") is String else ""
 	story.placeholder_text = "Their past: where they come from, what they lost, whom they hate"
 	story.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
 	story.custom_minimum_size.y = 84
 	v.add_child(story)
 	var past := LineEdit.new()
 	past.placeholder_text = "Something that happens to them now (they'll remember it)" if editing else "A moment they'll never forget"
+	past.visible = not royal
 	v.add_child(past)
 	preload("res://scripts/spark.gd").attach(past, ui.get_tree().current_scene.get("bridge"), "character-past", func(): return "%s of %s; %s." % [name.text if name.text != "" else "A person", house_name, other.text if other.text != "" else "no quirks named"])
 	var go := HBoxContainer.new()
 	go.alignment = BoxContainer.ALIGNMENT_END
 	v.add_child(go)
-	go.add_child(ui.btn("Cancel", func(): _form_panel.visible = false))
+	go.add_child(ui.btn("Cancel", func():
+		_form_panel.visible = false
+		ui.character_form_closed.emit()))
 	go.add_child(ui.btn("Make it so" if editing else "Bring them into the realm", func():
 		if name.text.strip_edges() == "":
 			ui.toast("Give them a name first.")
+			return
+		if royal:
+			ui.royal_edited.emit({"id": str(person.get("id", "")), "name": name.text.strip_edges(), "gender": "female" if gender.selected == 1 else "male",
+				"age": int(age.value), "traits": picked, "other": other.text.strip_edges(), "past": story.text.strip_edges().left(300)})
+			_form_panel.visible = false
+			ui.character_form_closed.emit()
 			return
 		var spec := {"house": house_id, "name": name.text.strip_edges(), "gender": "female" if gender.selected == 1 else "male",
 			"age": int(age.value), "traits": picked, "other": other.text.strip_edges(), "goal": goals[goal.selected]["kind"],
@@ -140,4 +155,5 @@ func show_character_form(house_id: int, house_name: String, opts: Dictionary, pe
 			ui.character_edited.emit(spec)
 		else:
 			ui.character_created.emit(spec)
-		_form_panel.visible = false))
+		_form_panel.visible = false
+		ui.character_form_closed.emit()))

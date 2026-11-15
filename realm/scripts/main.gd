@@ -272,6 +272,16 @@ func _ready() -> void:
 	lore.person_opened.connect(func(id, house):
 		_open_person(id, house, "the Lore")
 		hero.closed.connect(func(): lore.visible = true, CONNECT_ONE_SHOT))
+	# The crown's family written from the Lore: the one character form, then back to the Lore at that house.
+	lore.royal_edit.connect(func(p, house):
+		bridge.character_options(func(opts):
+			ui.show_character_form(int(house.get("id", -1)), String(house.get("name", "")), opts if opts is Dictionary else {}, p)
+			ui.character_form_closed.connect(func(): lore.visible = true, CONNECT_ONE_SHOT)))
+	ui.royal_edited.connect(func(spec):
+		bridge.write_royal(spec, func(code, d):
+			ui.toast(("%s is written." % spec["name"]) if code == 200 else String((d if d is Dictionary else {}).get("error", "That failed.")))
+			if code == 200:
+				lore.refresh()))
 	lore.town_opened.connect(func(title):
 		for c in awareness.rec("cities", []):
 			if String(c.get("title", c.get("name", ""))) == title:

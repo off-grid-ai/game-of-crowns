@@ -166,6 +166,11 @@ func write_person(spec: Dictionary, cb: Callable) -> void:
 	_post("/lore/written/person", spec, cb)
 
 
+## One of the crown's family written by the player from the Lore (bridge royals.js rewrite).
+func write_royal(spec: Dictionary, cb: Callable) -> void:
+	_post("/lore/royal", spec, cb)
+
+
 func edit_character(spec: Dictionary, cb: Callable) -> void:
 	_post("/person", spec, cb)
 

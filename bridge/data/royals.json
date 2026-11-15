@@ -278,5 +278,6 @@
     "words": "{king} means to leave a full treasury. The merchants bow lower; the lords guard their purses."
    }
   }
- }
+ },
+  "edit": { "_": "The player writes one of the crown's family from the Lore (royals.js rewrite): age kept within age, at most traits of the realm's own natures and own of the player's words, a story of at most story letters.", "age": [14, 90], "traits": 3, "own": 2, "story": 300 }
 }

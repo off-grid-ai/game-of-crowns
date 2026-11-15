@@ -1034,6 +1034,7 @@ const ROUTES = {
   "POST /abdicate": (req, res, url) => CourtRoutes.abdicate(realmCtx(), req, res, url),
   "POST /king/rest": (req, res, url) => CourtRoutes.rest(realmCtx(), req, res, url),
   "POST /king/focus": (req, res, url) => CourtRoutes.focus(realmCtx(), req, res, url),
+  "POST /lore/royal": (req, res, url) => CourtRoutes.writeRoyal(realmCtx(), req, res, url),
   "POST /court/answer": (req, res, url) => CourtRoutes.answer(realmCtx(), req, res, url),
   "POST /court/say": (req, res, url) => CourtRoutes.say(realmCtx(), req, res, url),
   "* /house": (req, res, url) => PeopleRoutes.house(realmCtx(), req, res, url),

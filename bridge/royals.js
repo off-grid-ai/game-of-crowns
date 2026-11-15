@@ -175,6 +175,25 @@ export function setFocus(ctx, focus) {
   return { ok: true, focus, text: F.words.replace("{king}", `${k.woman ? "Queen" : "King"} ${k.name}`) };
 }
 
+// The player writes one of the crown's family (the Lore's Edit, POST /lore/royal {id, name?, gender?, age?, traits?,
+// other?, past?}): their name, their nature (the King's traits, plus up to two in the player's own words) and their story,
+// kept on the royal as the reign goes on. The King's card (view) and the Lore read them from here.
+export function rewrite(ctx, spec) {
+  const h = of(ctx.meta);
+  const p = [h.king, h.consort, ...h.children, ...(h.kin ?? [])].find((x) => x?.alive !== false && x?.id === String(spec.id ?? ""));
+  if (!p) return { error: "No one of the royal house by that name." };
+  if (spec.name != null) p.name = String(spec.name).trim().slice(0, 40) || p.name;
+  if (spec.gender) p.woman = spec.gender === "female";
+  if (spec.age != null) p.age = Math.max(R.edit.age[0], Math.min(R.edit.age[1], Number(spec.age) || p.age));
+  if (spec.traits || spec.other != null) {
+    const own = String(spec.other ?? "").split(",").map((t) => t.trim().toLowerCase().replace(/[^a-z' -]/g, "").slice(0, 30)).filter(Boolean).slice(0, R.edit.own);
+    const ruled = (spec.traits ?? (p.traits ?? []).filter((t) => TRAITS.includes(t))).filter((t) => TRAITS.includes(t)).slice(0, R.edit.traits);
+    p.traits = [...new Set([...ruled, ...own])];
+  }
+  if (spec.past != null) p.story = String(spec.past).trim().slice(0, R.edit.story) || undefined;
+  return { ok: true, royal: { id: p.id, name: p.name, age: p.age, woman: p.woman, traits: p.traits, story: p.story ?? null } };
+}
+
 // What a court answer goes against, before it is chosen (court.js docket, for the court panel's tags): the focuses
 // whose against list holds kind.option (data/royals.json focus), the King's own traits it goes against (stress.against),
 // and the great houses it cools (its favour). {focus: [ids], traits: [names], houses: [names]}.
@@ -273,7 +292,7 @@ export function view(meta, turn = 0) {
   if (!h) return null;
   // The King's stress, and the seasons until he may next rest at all (Loop's sheet: 0 when one is ready).
   const wait = Math.min(...Object.entries(R.rest).filter(([k]) => k !== "_").map(([k, v]) => h.rested?.[k] == null ? 0 : Math.max(0, v.seasons - (turn - h.rested[k]))));
-  const who = (p) => p && { id: p.id, name: p.name, age: p.age, woman: p.woman, traits: p.traits ?? [], ...(p === h.king ? { stress: p.stress ?? 0, restWait: wait, focus: p.focus ?? null } : {}) };
+  const who = (p) => p && { id: p.id, name: p.name, age: p.age, woman: p.woman, traits: p.traits ?? [], story: p.story ?? null, ...(p === h.king ? { stress: p.stress ?? 0, restWait: wait, focus: p.focus ?? null } : {}) };
   const next = heir(h);
   return {
     king: who(h.king), consort: h.consort?.alive ? who(h.consort) : null, heir: who(next), match: next?.spouse ? { name: next.spouse.name, house: next.spouse.house } : null,

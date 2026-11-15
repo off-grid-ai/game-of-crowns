@@ -12,6 +12,8 @@ signal camera_nudge(action: String)
 signal character_form(house_id: int)
 signal character_created(spec: Dictionary)
 signal character_edited(spec: Dictionary)
+signal royal_edited(spec: Dictionary)  # one of the crown's family written (character_form.gd): main.gd sends it to the bridge
+signal character_form_closed  # the form put away, written or not (the Lore comes back)
 signal focus_city(city_id: int)
 signal pause_toggled(paused: bool)
 signal decree(action: String, building: String, to: int)

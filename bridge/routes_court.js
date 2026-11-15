@@ -82,6 +82,15 @@ export async function rest(ctx, req, res, url) {
   return json(res, 200, out);
 }
 
+// POST /lore/royal {id, name?, gender?, age?, traits?, other?, past?}: the player writes one of the crown's family
+// (royals.js rewrite), from the Lore's Edit.
+export async function writeRoyal(ctx, req, res, url) {
+  const out = Royals.rewrite(ctx, await body(req));
+  if (out.error) return json(res, 404, out);
+  chron.saveMeta(ctx.meta);
+  return json(res, 200, out);
+}
+
 // POST /king/focus {focus}: the King says who he means to be, once a crowning (royals.js setFocus).
 export async function focus(ctx, req, res, url) {
   const b = await body(req);
