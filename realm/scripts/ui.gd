@@ -124,7 +124,6 @@ signal event_chosen(choice: int)  # the King's answer to the event card (main.gd
 signal event_lapsed  # an event card left past its season: its cost landed (main.gd rings the bell)
 signal event_came  # an event card arrives (main.gd: a parchment sound)
 signal heard(kind: String)  # an interface sound (main.gd plays it: soundscape.ui, sounds.json ui)
-signal court_waits_at(at: Vector3, caption: String, id: String)  # a court matter waiting at its place (news.gd points the edge arrow at it)
 func event_arrived() -> void:
 	event_came.emit()
 # The court's state, read and set here by the cards it shares the screen with.
@@ -171,9 +170,6 @@ var _tithe_l: Label:
 var _pause_btn: Button:
 	get:
 		return top_bar._pause_btn
-var _court_badge: Label:  # the number of petitioners, on the crown key's corner
-	get:
-		return top_bar._court_badge
 var _houses_btn: Button:
 	get:
 		return top_bar._houses_btn
@@ -496,10 +492,6 @@ func _toggle_pause() -> void:
 	top_bar._toggle_pause()
 
 
-func _court_waiting_shown(n: int) -> void:
-	top_bar._court_waiting_shown(n)
-
-
 func _toggle_court() -> void:
 	court._toggle_court()
 
@@ -527,8 +519,6 @@ func _unhandled_key_input(event: InputEvent) -> void:
 	elif event.is_action_pressed(&"houses"):
 		_houses_btn.button_pressed = not _houses_btn.button_pressed
 		_houses_panel.visible = _houses_btn.button_pressed
-	elif event.is_action_pressed(&"counsel"):
-		_toggle_court()  # the Hand speaks at court now
 	elif event.is_action_pressed(&"tour"):
 		tour_asked.emit()
 	elif event.is_action_pressed(&"card_do") and not tour_up:
@@ -551,8 +541,6 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		_toggle_ledger()
 	elif event.is_action_pressed(&"lore"):
 		lore_opened.emit(-1)
-	elif event.is_action_pressed(&"court"):
-		_toggle_court()
 	elif event.is_action_pressed(&"back"):
 		# While you walk the realm, Esc is walking mode's: it closes a talk or
 		# steps you back up to the realm (control.gd). The interface only takes

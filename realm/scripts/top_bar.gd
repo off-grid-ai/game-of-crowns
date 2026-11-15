@@ -22,8 +22,6 @@ var _peace: Label
 var _souls: Label
 var _tithe_l: Label
 var _pause_btn: Button
-var _court_btn: Button
-var _court_badge: Label  # the number of petitioners, on the crown key's corner
 var _houses_btn: Button
 var _chron_btn: Button
 var _ledger_btn: Button
@@ -341,14 +339,7 @@ func _build_top_bar() -> void:
 	ui.get_viewport().size_changed.connect(_arrange_top)
 	_arrange_top.call_deferred()
 	act.add_theme_constant_override("separation", 6)  # each key stands on its own
-	_court_btn = ui.icon_btn("crown", ui.with_key("The court: what waits for the King", "court"), ui._toggle_court)
-	_court_btn.modulate.a = 0.45  # an empty court until someone comes
-	# Petitioners waiting: the crown in gold, and how many on a round badge on
-	# its corner, the way an app shows unread messages, never over the crown.
-	for look in ["normal", "hover", "pressed", "hover_pressed", "focus"]:
-		_court_btn.add_theme_color_override("icon_%s_color" % look, T.ACCENT)
-	_court_badge = _badge(_court_btn)
-	act.add_child(ui.named(_court_btn, "Court"))
+	# No court key of its own: its matters are the chronicle's cards (court_panel.gd _as_card; Mac 2026-11-16).
 	# The King himself (royal_sheet.gd): his nature, the name he is earning, his promises, his family, his line.
 	act.add_child(ui.named(ui.icon_btn("sword", "The King: your nature, the name you are earning, your promises and your family", func(): ui.royal.toggle()), "King"))
 	# You are the King: one press to walk among your people as him.
@@ -423,14 +414,6 @@ func chronicle_unread(n: int) -> void:
 	_chron_badge.visible = n > 0
 	_chron_badge.text = str(n) if n < 100 else "99+"
 	_chron_btn.tooltip_text = ui.with_key(("Chronicle of the realm: %d new" % n) if n > 0 else "Chronicle of the realm", "chronicle")
-
-
-## The court is always in the bar: full when petitioners wait (the badge counts
-## them), dimmed when nobody does.
-func _court_waiting_shown(n: int) -> void:
-	_court_btn.modulate.a = 1.0 if n > 0 else 0.45
-	_court_badge.visible = n > 0
-	_court_btn.tooltip_text = ui.with_key(("The court: %d matter%s wait%s for you" % [n, "" if n == 1 else "s", "s" if n == 1 else ""]) if n > 0 else "The court sits when it has matters for you; the Hand calls you sooner only for a crisis.", "court")
 
 
 var _aim: Label  # the royal ladder's current aim

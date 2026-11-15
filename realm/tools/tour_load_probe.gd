@@ -2,7 +2,7 @@ extends SceneTree
 ## Every lesson of the Hand's tour (data/opening.json tour) loads as a Dialogic timeline and parses to events, its
 ## spot signals naming parts hand_prompts.gd knows. PASS/FAIL. Run: godot --headless --path realm -s res://tools/tour_load_probe.gd
 
-const PARTS := ["chronicle", "card", "armies", "houses", "pause", "court", "top", "none"]
+const PARTS := ["chronicle", "card", "armies", "houses", "pause", "top", "none"]
 const TASKS := ["select", "march", "houses", "answer"]
 
 

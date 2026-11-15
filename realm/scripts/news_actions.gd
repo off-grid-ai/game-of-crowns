@@ -244,9 +244,11 @@ func _now(c: Dictionary) -> Dictionary:
 	return out
 
 
-## The court matter this news waits on: a story's by its name (ui.story_matter), or the lord come to court for it (the
+## The court matter this news waits on: a matter's own card by its id, a story's by its name (ui.story_matter), or the lord come to court for it (the
 ## court line "<name> of <house> comes to court: <thread>"), or "".
 func _matter(e: Dictionary) -> String:
+	if e.get("matter") != null:
+		return String(e["matter"])  # a court matter's own card (court_panel.gd _as_card)
 	var id: String = main.ui.story_matter(e) if e.get("thread") else ""
 	if id != "" or String(e.get("kind", "")) != "court":
 		return id
@@ -256,6 +258,9 @@ func _matter(e: Dictionary) -> String:
 		if String(p.get("name", "")) != "" and said.contains(String(p["name"])) and (th == "" or said.contains(th)):
 			return String(p["id"])
 	return ""
+
+
+static var _PRICE_RE := RegEx.create_from_string("\\s*\\([\\d,]+ crowns\\)\\s*$")  # "(50,000 crowns)" closing a court answer
 
 
 ## A matter's own answers as the card's buttons (at most answers_most, in the court's order: its first is the one we'd
@@ -271,7 +276,9 @@ func _answers(e: Dictionary) -> Array:
 			break
 		var opt := String(o.get("id", ""))
 		var short := String(o.get("short", ""))
-		out.append({"verb": "answer", "matter": id, "label": String(o.get("label", o.get("text", opt))), "cost": int(o.get("cost", 0)) * UI.CROWNS,
+		# Its price is on the button already (the cost below): "(50,000 crowns)" in the court's own label goes.
+		var label := _PRICE_RE.sub(String(o.get("label", o.get("text", opt))), "").strip_edges()
+		out.append({"verb": "answer", "matter": id, "label": label, "cost": int(o.get("cost", 0)) * UI.CROWNS,
 			"enabled": short == "", "why": short, "tip": String(o.get("hint", "")), "call": func(): main.ui.petition_answered.emit(id, opt)})
 	return out
 

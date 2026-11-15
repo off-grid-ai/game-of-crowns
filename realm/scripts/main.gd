@@ -414,7 +414,6 @@ func _ready() -> void:
 		var at: Vector3 = ui.town_point.call(ui.town_of.call(town))
 		if at != Vector3.INF:
 			news.point_at(at, said, func(): pass))
-	ui.court_waits_at.connect(func(at, caption, id): news.point_at(at, caption, ui.open_matter.bind(id)))
 	ui.event_back.connect(news._back_from_news)
 	ui.house_followed.connect(_follow_house)  # a house's sigil clicked: go with its host
 	# Every click answers (barks.gd, lines in data/barks.json): the house's lord, the host's captain, a townsman.

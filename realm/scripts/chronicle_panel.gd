@@ -374,8 +374,8 @@ func _card(e: Dictionary, loss: bool, watch := Callable()) -> Control:
 func _urgency(e: Dictionary, loss: bool) -> int:
 	var by: Dictionary = Data.value("ui", "chronicle.urgency", {})
 	var u := int(by.get(String(e.get("kind", "")), 0))
-	if loss:
-		u = maxi(u, 3)
+	if loss or e.get("crisis", false):
+		u = maxi(u, 3)  # a loss, or a crisis at court (court_panel.gd _as_card)
 	if String(e.get("text", "")).contains(" · 0:") or String(e.get("text", "")).contains("· 0:"):
 		u = maxi(u, 2)
 	return u

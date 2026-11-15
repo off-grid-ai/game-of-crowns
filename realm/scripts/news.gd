@@ -67,9 +67,8 @@ func _on_staged(s: Dictionary, follow: Node3D) -> void:
 		_offer(main.director.caption(s), _watch.bind(s, follow), kind in KINGS_OWN and not s.get("lord", false))
 
 
-## A court matter waiting at its place (court_panel.gd, through ui.court_waits_at): it
-## becomes the latest news, so the edge arrow points at it while it's off screen and
-## Space (or the arrow) opens it there; pressed again, back. Nothing moves by itself.
+## Something waiting at its place (a threat: news_actions.gd): it becomes the latest news, so the edge arrow points
+## at it while it's off screen and Space (or the arrow) opens it there; pressed again, back. Nothing moves by itself.
 ## until: while it says true the arrow stays past its 40 s (a threat to a royal town, news_actions.gd), in red.
 func point_at(at: Vector3, caption: String, go: Callable, until := Callable()) -> void:
 	_news = {"at": at, "caption": caption, "ms": Time.get_ticks_msec(), "new": true, "tone": "loss" if until.is_valid() else "crown", "go": go, "until": until}

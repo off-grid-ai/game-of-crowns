@@ -71,10 +71,9 @@ func _ready() -> void:
 			_said[String(l["id"])] = true
 	var ui = main.get("ui")
 	if ui:
-		ui.court_waits_at.connect(func(_at, _c, _id): _moment("court_waits"))
 		ui.petition_answered.connect(func(_id, _o): _moment("first_ruling"))
 		ui.counsel_answered.connect(func(_k): _moment("first_ruling"))
-		ui.chronicle_asked.connect(func(_e, urgent: bool): _moment("first_threat" if urgent else "first_card"))
+		ui.chronicle_asked.connect(func(e: Dictionary, urgent: bool): _moment("court_waits" if String(e.get("kind", "")) == "court" else ("first_threat" if urgent else "first_card")))
 		ui.tour_asked.connect(func(): _tell("welcome"))
 		_layer = CanvasLayer.new()
 		_layer.layer = 20  # over the interface (its layer 1) and under the loading cover (128)
@@ -229,8 +228,6 @@ func _target() -> Control:
 			return ui.top_bar._houses_btn
 		"pause":
 			return ui.top_bar._pause_btn
-		"court":
-			return ui.top_bar._court_btn
 		"top":
 			return ui._bar_pill
 	return null

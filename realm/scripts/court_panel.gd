@@ -124,13 +124,16 @@ func set_court(petitions: Array) -> void:
 	var had := _petitions.size()
 	_petitions = petitions
 	_mark(petitions)
-	ui._court_badge.text = str(petitions.size())
-	ui._court_waiting_shown(petitions.size())
-	var fresh := false
+	var cards := []
 	for p in petitions:
 		if not _court_seen.has(String(p["id"])):
 			_court_seen[String(p["id"])] = true
-			fresh = true
+			cards.append(_as_card(p))
+	# One place for what asks the King (Mac 2026-11-16: "court and chronicle should be combined ... otherwise its just
+	# too many things that are happening"): each new matter is a card in the chronicle, its own answers on it
+	# (news_actions.gd _answers), paced with the rest (chronicle_panel.gd); no line, badge or ping of its own.
+	if not cards.is_empty():
+		ui.chronicle.add_chronicle(cards)
 	if not petitions.is_empty():
 		_doors_shut = false  # a sitting: its doors will close once
 	if petitions.is_empty():
@@ -138,17 +141,29 @@ func set_court(petitions: Array) -> void:
 		if had > 0 and _court_met:
 			_close_doors()
 		return
-	# The court never takes the screen by itself (Mac, 2026-11-15: 'the court is a badge you open when you choose,
-	# never a freeze'): a new sitting is a line, the badge, and its faces on the map; the crown at the top right opens it.
-	if fresh and not _court_panel.visible:
-		_court_hidden = true
-		ui.toast("The court sits: %d wait for you. The crown at the top right opens them%s." % [petitions.size(), "; their faces are on the map" if _placed(petitions) else ""])
-		if _placed(petitions):
-			# The first face, if he can't see it, gets the edge arrow and Space (news.gd), as news does.
-			var first: Dictionary = petitions.filter(func(p): return p.get("place") is Dictionary)[0]
-			ui.court_waits_at.emit(ui.place_of.call(first), "%s waits at %s" % [String(first.get("name", "A lord")), String((first["place"] as Dictionary).get("name", "their town"))], String(first["id"]))
 	if _court_panel.visible and not ui.cinema_on:
 		_show_audience()  # what he has open shows the matters as they now stand
+
+
+## A matter as the chronicle's card: who asks and what, at its place, dated now; a crisis is urgent (it pauses the
+## realm, chronicle_panel.gd _urgency). `matter` ties the card to it (news_actions.gd _matter).
+func _as_card(p: Dictionary) -> Dictionary:
+	var who := String(p.get("name", "The Hand of the King"))
+	if String(p.get("house", "")) != "":
+		who += " of " + String(p["house"])
+	# The bridge's line names the speaker before their words ("Ysolde Ironreach of House Ironreach, who knows the
+	# bankers well: \"They want their gold...\""): the card's title says who waits (ui.json chronicle.court_title), its
+	# body only their words, so no name is said twice.
+	var said := String(p.get("text", ""))
+	var colon := said.find(": ")
+	var words := said.substr(colon + 2) if colon > 0 and colon < 160 else said
+	var title := String(Data.value("ui", "chronicle.court_title", "{who} awaits your ruling.")).format({"who": who})
+	var pl: Variant = p.get("place")
+	var e := {"kind": "court", "matter": String(p["id"]), "text": "%s %s" % [title, words],
+		"turn": int(Awareness.store().rec("turn", 0)), "crisis": bool(p.get("crisis", false))}
+	if pl is Dictionary and (pl as Dictionary).get("city") != null:
+		e["city"] = int((pl as Dictionary)["city"])
+	return e
 
 
 ## A marker on the map at each matter's place (the bridge's item.place; a matter
@@ -236,8 +251,7 @@ func open_matter(id: String) -> void:
 
 func _show_audience() -> void:
 	# The camera never steals (Mac's rule; batch 7: a sitting that came up mid-film took the camera to Rosehall):
-	# only the King's own press frames a matter's town; a sitting that comes by itself waits at its place, and the
-	# edge arrow and Space take him there (court_waits_at, news.gd).
+	# only the King's own press frames a matter's town; a matter that comes by itself is a chronicle card (_as_card).
 	var pressed := _kings_press
 	_kings_press = false
 	for c in _court_panel.get_children():
@@ -779,8 +793,6 @@ func _weighs_chips(w: Dictionary) -> Control:
 ## or the doors close.
 func _settled(it: Dictionary) -> void:
 	_petitions = _petitions.filter(func(p): return String(p["id"]) != String(it["id"]))
-	ui._court_badge.text = str(_petitions.size())
-	ui._court_waiting_shown(_petitions.size())
 	_see_it(it)
 
 
@@ -840,8 +852,6 @@ func ruled_in_words(id: String, d: Dictionary) -> void:
 	if String(d.get("reaction", "")) != "":
 		ui.toast("%s: “%s”" % [String(d.get("name", "")), String(d["reaction"])])
 	_petitions = _petitions.filter(func(x): return String(x["id"]) != id)
-	ui._court_badge.text = str(_petitions.size())
-	ui._court_waiting_shown(_petitions.size())
 	_kings_press = true  # his own words ruled it: on to the next matter, at its place
 	_show_audience()
 
@@ -854,8 +864,6 @@ func _answer(id: String, option: String) -> void:
 	ui.petition_answered.emit(id, option)
 	ui.guide_mark(0)
 	_petitions = _petitions.filter(func(x): return String(x["id"]) != id)
-	ui._court_badge.text = str(_petitions.size())
-	ui._court_waiting_shown(_petitions.size())
 	if not it.is_empty():
 		_see_it(it)
 		return

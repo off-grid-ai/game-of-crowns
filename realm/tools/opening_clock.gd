@@ -24,7 +24,7 @@ func _ready() -> void:
 	_mark("launch")
 	main.title.began.connect(func(): _mark("reign begun"))
 	main.intro.finished.connect(func(): _mark("landed (storybook over)"))
-	main.ui.court_waits_at.connect(func(_a, c, _i): _mark("first matter waits on the map: " + String(c)))
+	main.ui.chronicle_asked.connect(func(e, _u): if String(e.get("kind", "")) == "court": _mark("first matter waits in the chronicle: " + String(e.get("text", ""))))
 	main.ui.petition_answered.connect(func(_i, _o): _ruled = true; _news_before = main.news._news.duplicate(); _mark("first ruling"))
 	main.ui.counsel_answered.connect(func(_k): _ruled = true; _news_before = main.news._news.duplicate(); _mark("first ruling (the Hand's matter)"))
 	main.bridge.command_done.connect(func(ok, text): if _ruled: _mark("first ruling's result: %s %s" % ["ok" if ok else "refused", String(text).left(80)]))
