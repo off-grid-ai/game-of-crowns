@@ -68,11 +68,12 @@ func _ready() -> void:
 	_rng.randomize()
 	if main and main.awareness:
 		main.awareness.stimulus.connect(_on_stimulus)
-	NavigationServer3D.map_changed.connect(_on_map_changed)  # the walk map synced: a held scene can start
 
 
 func _process(delta: float) -> void:
 	_march(delta)
+	if not _held.is_empty():
+		_start_held()
 	_wait -= delta
 	if _wait > 0.0:
 		return
@@ -1418,8 +1419,11 @@ func _publish(id: int) -> void:
 	bb.set_var(&"claims", running.filter(func(s): return not bool(s["ending"])).map(func(s): return s["key"]))
 
 
-## A walk map synced: a scene held for it starts now (the realm's walk map, nav_world.gd: baked or read back, and synced).
-func _on_map_changed(_map: RID) -> void:
+## Scenes held for the walk map start once it answers (nav_world.gd ready: baked or read back, and confirmed held by
+## a map iteration). Asked each frame while any is held, not on NavigationServer3D.map_changed: the map is confirmed
+## ready on a frame after its last map_changed (c39a3f80), so a scene waiting on the signal was never started
+## (director_probe: 'gossip_at_well dropped, not played once the map landed').
+func _start_held() -> void:
 	if not TownNav.ready():
 		return
 	for id in _held.keys():
@@ -1502,7 +1506,7 @@ func _start(id: int, root: Node3D, row: Dictionary) -> Dictionary:
 	var last: Array = row.get("last", [30, 60])
 	var enter: Array = _d.get("director", {}).get("enter", [1.2, 2.0])
 	if not TownNav.ready():
-		_held[id] = {"row": row}  # its people walk in once the walk map can route them (_on_map_changed)
+		_held[id] = {"row": row}  # its people walk in once the walk map can route them (_start_held)
 		return {}
 	_seq += 1
 	var s := {"row": row, "key": "%s:%d" % [row["id"], _seq], "at": at, "cast": [], "ending": false,

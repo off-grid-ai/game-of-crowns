@@ -437,8 +437,8 @@ func _run() -> void:
 			main.scenes.middle = Vector3.INF
 			# Army-ui, r16: a scene that starts while the walk map bakes waits for it, then casts; it isn't dropped for
 			# some other scene on a later tick. Started while the navigation starts again (its chunks read back from
-			# their kept files on workers), it must be playing within a few frames of the map landing (the engine's
-			# map_changed), with nobody cast before.
+			# their kept files on workers), it must be playing within a few frames of the map landing (the
+			# map answering: _start_held), with nobody cast before.
 			NavWorld.stop()
 			NavWorld.start(land, null)
 			var row: Dictionary = director._d.get("scenes", [])[0]
