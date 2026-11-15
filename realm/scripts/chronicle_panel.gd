@@ -12,8 +12,9 @@ const NewsActions := preload("res://scripts/news_actions.gd")  # what the King c
 var ui: UI  # the interface that owns this drawer: its signals, its building blocks
 
 var _chron_panel: PanelContainer
-var _chronicle: RichTextLabel
-var _lines: Array[String] = []
+var _list: VBoxContainer  # the drawer's rows, newest at the top: a line each, its answers under it
+var _scroll: ScrollContainer
+var _focused: Control  # the row the camera just went to: its answers open, marked "Here now"
 var entries: Array = []  # every line of the reign as the bridge sent it, oldest first: the book of the reign reads these
 var _ticker: VBoxContainer
 var _stories := {}  # chronicle seq -> a story beat's entry, for its link
@@ -38,18 +39,17 @@ func _build_chronicle() -> void:
 	v.add_theme_constant_override("separation", 10)
 	_chron_panel.add_child(v)
 	v.add_child(T.label("Chronicle of the realm"))
-	_chronicle = RichTextLabel.new()
-	_chronicle.bbcode_enabled = true
-	_chronicle.scroll_active = true
-	_chronicle.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_chronicle.meta_underlined = false
-	_chronicle.meta_clicked.connect(func(meta):
-		var m := str(meta)
-		if m.begins_with("story:"):
-			ui.story_opened.emit(_stories.get(int(m.substr(6)), {}))
-		else:
-			ui.focus_city.emit(int(m)))
-	v.add_child(_chronicle)
+	# One place for the news and what to do about it (Mac: "when some news comes, I click on it, it pans, and the
+	# chronicle tab opens"; Total War's event feed, Stellaris' situation log): a row a line, newest first; a row's
+	# answers (news_actions.gd, the one owner) open under it when the camera goes there, or on its click.
+	_scroll = ScrollContainer.new()
+	_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	v.add_child(_scroll)
+	_list = VBoxContainer.new()
+	_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_list.add_theme_constant_override("separation", 10)
+	_scroll.add_child(_list)
 
 
 ## The three latest events, quietly along the bottom; click one to go there.
@@ -77,21 +77,130 @@ func add_chronicle(added: Array) -> void:
 		var said := String(e.get("text", ""))
 		var touches_crown := said.contains("The Crown") or said.contains("Kingsmere") or said.contains("the King's") or said.contains("the crown")
 		var loss: bool = kind in ["civil_war", "betrayal", "rebellion"] or (touches_crown and kind in ["city_shrank", "disaster", "city_destroyed", "building_lost", "city_transferred", "raid", "death", "unrest"])
-		var tone := "#e86b5c" if loss else ("#9a9a96" if kind == "year" else "#ecece8")
-		var text := "[color=%s]%s[/color]" % [tone, e.get("text", "")]
-		# A beat of a story arc is told under the story's own name, and the name
-		# takes you to its people; any other line with a town, to the town.
 		if e.get("thread"):
 			_stories[int(e.get("seq", 0))] = e
-			text = "[url=story:%d][color=#c9a45c]%s[/color][/url]   %s" % [int(e.get("seq", 0)), e["thread"], text]
-		elif e.has("city") and e["city"] != null:
-			text = "[url=%d]%s[/url]" % [int(e["city"]), text]
-		_lines.push_front("[font_size=11][color=#6f6f6c]%s[/color][/font_size]   %s" % [ui.season_of(int(e.get("turn", 0))), text])
+		_row(e, loss)
 		if kind != "year" and _ticks(e):
 			_tick(e, loss)
-	if _lines.size() > 300:
-		_lines.resize(300)
-	_chronicle.text = "\n\n".join(_lines)
+	while _list.get_child_count() > int(UI.ui_num("chronicle.rows", 150.0)):
+		_list.get_child(_list.get_child_count() - 1).free()
+
+
+## One line of the drawer: its season (and "Loss" in words, not colour alone: Mac is colour-blind), the story's name
+## when it is a story's beat, the line itself (a click goes there and opens its answers), and its answers, built
+## when first opened.
+func _row(e: Dictionary, loss: bool) -> Control:
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 3)
+	box.set_meta("entry", e)
+	var head := String(ui.season_of(int(e.get("turn", 0))))
+	if loss:
+		head += "  ·  Loss"
+	if e.get("thread"):
+		head += "  ·  " + String(e["thread"])
+	var h := T.label(head, T.ACCENT if e.get("thread") else T.TEXT_3)
+	h.add_theme_font_size_override("font_size", T.SIZE_DESC - 1)
+	box.add_child(h)
+	var l := Button.new()
+	l.text = String(e.get("text", ""))
+	l.flat = true
+	l.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	l.focus_mode = Control.FOCUS_NONE
+	l.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	l.add_theme_font_size_override("font_size", T.SIZE_DESC)
+	l.add_theme_color_override("font_color", T.TEXT_2 if String(e.get("kind", "")) == "year" else T.TEXT)
+	l.pressed.connect(func(): go(e))
+	box.add_child(l)
+	_list.add_child(box)
+	_list.move_child(box, 0)
+	return box
+
+
+## The camera to the line's place (a story's people or its town: main.gd _follow_story, ui.focus_city), and the
+## drawer open at it.
+func go(e: Dictionary) -> void:
+	if e.get("thread") or e.has("cast"):
+		ui.story_opened.emit(e)  # main.gd _follow_story: the camera goes, then focus(e)
+		return
+	if e.get("city") != null:
+		ui.focus_city.emit(int(e["city"]))
+	focus(e)
+
+
+## The drawer opens at this piece of news (Mac: click the news, the camera pans, the chronicle opens): its row marked
+## "Here now" with its answers open (news_actions.gd), scrolled into view. News the chronicle doesn't carry (a threat
+## seen in the realm, a scene watched) gets a row of its own at the top.
+func focus(e: Dictionary) -> void:
+	var row: Control = null
+	for r in _list.get_children():
+		var d: Dictionary = r.get_meta("entry", {})
+		if d == e or (e.has("seq") and d.get("seq") == e.get("seq") and String(d.get("text", "")) == String(e.get("text", ""))):
+			row = r
+			break
+	if row == null:
+		row = _row(e, false)
+	if is_instance_valid(_focused) and _focused != row:
+		_open(_focused, false)
+	_focused = row
+	_open(row, true)
+	_chron_panel.visible = true
+	if ui._chron_btn:
+		ui._chron_btn.set_pressed_no_signal(true)
+	_scroll.ensure_control_visible.call_deferred(row)
+
+
+## A row's answers shown or put away; built the first time (one row of buttons, news_actions.gd), with what is
+## happening at its town now (map_tip.gd's words). Go there is left off: the camera is there.
+func _open(row: Control, on: bool) -> void:
+	var ans: Control = row.get_node_or_null("Answers")
+	if on and ans == null:
+		var e: Dictionary = row.get_meta("entry", {})
+		ans = VBoxContainer.new()
+		ans.name = "Answers"
+		ans.add_theme_constant_override("separation", 4)
+		var here := T.label(String(Data.value("ui", "chronicle.here", "Here now")), T.ACCENT)
+		here.add_theme_font_size_override("font_size", T.SIZE_DESC - 1)
+		ans.add_child(here)
+		var now := _town_now(e)
+		if now != "":
+			var nl := T.label(now, T.TEXT_2)
+			nl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			nl.add_theme_font_size_override("font_size", T.SIZE_DESC - 1)
+			ans.add_child(nl)
+		var acts := NewsActions.one
+		if acts:
+			var flow := HFlowContainer.new()
+			flow.add_theme_constant_override("h_separation", 6)
+			flow.add_theme_constant_override("v_separation", 6)
+			for r in acts.verbs(e):
+				if String(r["verb"]) == "go":
+					continue
+				var b: Button = ui.btn(String(r["label"]), r["call"])
+				b.disabled = not bool(r["enabled"])
+				b.tooltip_text = String(r["why"]) if String(r["why"]) != "" else String(r["tip"])
+				b.add_theme_font_size_override("font_size", T.SIZE_DESC)
+				flow.add_child(b)
+			if flow.get_child_count() > 0:
+				ans.add_child(flow)
+		row.add_child(ans)
+	if ans:
+		ans.visible = on
+
+
+## What is happening at the line's town now, as the map's hover says it (map_tip.gd).
+func _town_now(e: Dictionary) -> String:
+	if e.get("city") == null:
+		return ""
+	var main: Node = ui.get_parent()
+	var c: Dictionary = main.awareness.city(int(e["city"])) if main and main.get("awareness") else {}
+	if c.is_empty():
+		return ""
+	var tip: PanelContainer = preload("res://scripts/map_tip.gd").new()
+	tip.main = main
+	var line: String = tip._town(c)
+	tip.free()
+	return line
 
 
 static var _ticker_rules = null
@@ -131,27 +240,10 @@ func _tick(e: Dictionary, loss: bool) -> void:
 	l.add_theme_stylebox_override("pressed", chip)
 	# What the King can do about it (news_actions.gd): one row of answers under the line, open at once for a threat
 	# to his town, else opened by a click on the line; with nothing to do but look, the click goes there.
+	# A click: the camera goes there and the chronicle opens at it, its answers on its row (go, focus): one place
+	# for the news and what to do about it.
 	var item: Control = l
-	var acts := NewsActions.one
-	var rows: Array = acts.verbs(e) if acts else []
-	if e.get("thread"):
-		l.pressed.connect(func(): ui.story_opened.emit(e))  # a story's beat: its card opens again, its answers on it (story_card.gd)
-	elif rows.size() > 1 or (rows.size() == 1 and String(rows[0]["verb"]) != "go"):
-		var box := VBoxContainer.new()
-		box.add_theme_constant_override("separation", 4)
-		box.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-		box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		box.add_child(l)
-		var answers: HBoxContainer = acts.buttons(e)
-		answers.visible = bool(e.get("open", false))
-		box.add_child(answers)
-		l.pressed.connect(func(): answers.visible = not answers.visible)
-		item = box
-	elif rows.size() == 1:
-		l.pressed.connect(rows[0]["call"])
-	elif e.has("city") and e["city"] != null:
-		var id := int(e["city"])
-		l.pressed.connect(func(): ui.focus_city.emit(id))
+	l.pressed.connect(func(): go(e))
 	_ticker.add_child(item)
 	while _ticker.get_child_count() > 3:
 		_ticker.get_child(0).free()
@@ -165,6 +257,7 @@ func _tick(e: Dictionary, loss: bool) -> void:
 ## the ticker like any other, with its answers.
 func show_news(e: Dictionary, loss: bool) -> void:
 	_tick(e, loss)
+	_row(e, loss)
 
 
 static var _dot_tex: Texture2D
@@ -183,8 +276,9 @@ static func _dot() -> Texture2D:
 
 
 func clear_chronicle() -> void:
-	_lines.clear()
 	entries.clear()
-	_chronicle.text = ""
+	_focused = null
+	for r in _list.get_children():
+		r.queue_free()
 	for c in _ticker.get_children():
 		c.queue_free()

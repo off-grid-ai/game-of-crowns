@@ -1335,7 +1335,7 @@ func open_matter(id: String) -> void:
 	court.open_matter(id)
 
 
-## The court matter a story waits on (story_card.gd), by the story's name and arc: its id, or "" (it's news).
+## The court matter a story waits on (news_actions.gd rule), by the story's name and arc: its id, or "" (it's news).
 func story_matter(e: Dictionary) -> String:
 	var thread := String(e.get("thread", ""))
 	for p in court._petitions:

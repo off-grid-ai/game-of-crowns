@@ -110,13 +110,13 @@ func _to_news() -> void:
 	_watch(_news["s"], f if is_instance_valid(f) else null)
 
 
-## The camera goes to a scene (Watch, Space) and its card opens there (story_card.gd): what it is, what is happening
-## at its town now, and what the King can do about it (news_actions.gd's rows for its kind and town).
+## The camera goes to a scene (Watch, Space) and the chronicle opens at it (chronicle_panel.gd focus): what it is,
+## what is happening at its town now, and what the King can do about it (news_actions.gd's rows for its kind and town).
 func _watch(s: Dictionary, follow: Node3D) -> void:
 	main.director.watch(s, follow)
 	var at: Vector3 = follow.global_position if is_instance_valid(follow) else main.terrain.world_pos(float(s.get("x", 0)), float(s.get("y", 0)))
 	var e := {"thread": main.director.caption(s), "text": String(s.get("text", "")), "city": s.get("city"), "kind": String(s.get("kind", "")), "scene": true}
-	preload("res://scripts/story_card.gd").new().show_story(main, e, at, follow, preload("res://scripts/ui.gd").ui_num("story_card.town_radius", 2.0), "")
+	main.ui.chronicle.focus(e)  # its line in the chronicle, with what the King can do about it
 
 
 func _back_from_news() -> void:

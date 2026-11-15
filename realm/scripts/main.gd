@@ -1274,26 +1274,22 @@ func _take_shot() -> void:
 
 
 ## A story's people: the commoner in it if they're walking their town (the
-## camera stays with them), else the town it happens in. When the camera lands,
-## the story's card stands beside them (story_card.gd): who, what just happened,
-## and what it asks of the King; it carries the story's name, so no caption.
+## camera stays with them), else the town it happens in; the chronicle opens at
+## the story's line with what the King can do about it (chronicle_panel.gd focus).
 func _follow_story(e: Dictionary) -> void:
 	if e.is_empty():
 		return
 	var title := String(e.get("thread", "The chronicle"))
 	var cast: Array = e.get("cast", [])
-	var face := ""  # whose face the card shows: the one the camera goes with, else the first of the story's people
 	for id in cast:
 		var parts := String(id).split(":")
-		if face == "":
-			face = String(id)
 		if parts.size() == 3 and parts[0] == "folk":
 			var crowd: Array = villagers.crowds.get(int(parts[1]), [])
 			var i := int(parts[2])
 			if i < crowd.size() and is_instance_valid(crowd[i]["node"]):
 				var n: Node3D = crowd[i]["node"]
 				director.watch_at(n.global_position, 2.2, "", n)
-				preload("res://scripts/story_card.gd").new().show_story(self, e, n.global_position, n, preload("res://scripts/ui.gd").ui_num("story_card.person_radius", 0.4), String(id))
+				ui.chronicle.focus(e)
 				return
 	var city := int(e.get("city", -1)) if e.get("city") != null else -1
 	for c in awareness.rec("cities", []):
@@ -1301,7 +1297,7 @@ func _follow_story(e: Dictionary) -> void:
 			towns.ensure(city)
 			var at: Vector3 = terrain.world_pos(float(c["x"]), float(c["y"]))
 			director.watch_at(at, 7.0, "")
-			preload("res://scripts/story_card.gd").new().show_story(self, e, at, null, preload("res://scripts/ui.gd").ui_num("story_card.town_radius", 2.0), face)
+			ui.chronicle.focus(e)
 			return
 	ui.toast("%s: far from any road the camera can take." % title)
 
