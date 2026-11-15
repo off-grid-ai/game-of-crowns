@@ -18,6 +18,9 @@ const T := preload("res://scripts/theme.gd")
 const GAP := 6.0  # pixels kept clear around every name
 
 var _tags := {}  # city id -> {box: Control, name: Label, house: Label, sigil: TextureRect}
+var _laid: Array = []  # what the names were last laid out by (_process_timed): unchanged, the layout stands
+var _order: Array = []  # the towns most important first (_rank), kept until their records change
+var _ranked_for := -1  # the towns' records the order was made for
 var _root: Control
 
 
@@ -53,9 +56,6 @@ func _process_timed(_delta: float) -> void:
 			_tags.erase(id)
 	var d: float = rig.distance
 	var view := get_viewport().get_visible_rect()
-	# Most important first: seats, then by size.
-	var order: Array = _tags.keys()
-	order.sort_custom(func(a, b): return _rank(a) > _rank(b))
 	var placed: Array[Rect2] = []
 	# The interface first: a name never sits under a bar, a card or the minimap.
 	if ui == null:
@@ -72,7 +72,26 @@ func _process_timed(_delta: float) -> void:
 			var at: Vector2 = cam.unproject_position(cap.global_position)
 			var w: float = cap.text.length() * 9.0
 			placed.append(Rect2(at - Vector2(w * 0.5, 22.0), Vector2(w, 44.0)))
-	for id in order:
+	# Laid out again only when something it is laid out by changed: the lens, the window, the towns (their records:
+	# a sync), the interface or a caption, or the next of a town's thoughts (FPS audit 2026-11-15 item 5: map_labels
+	# 1.2-1.9 ms a frame, every name placed afresh each frame with the lens still).
+	var towns_sig := 0
+	for id in towns.towns:
+		towns_sig = hash([towns_sig, id, (towns.towns[id]["data"] as Dictionary).hash()])
+	var tick := int(Time.get_ticks_msec() / 1000.0 / float(_thought_cfg().get("cycle_sec", 6.0)))
+	var key := [cam.global_transform, cam.fov, view, d, towns_sig, houses.hash(), placed, tick]
+	if key == _laid:
+		return
+	_laid = key
+	# Most important first: seats, then by size; ranked again only when the towns' records changed.
+	if towns_sig != _ranked_for:
+		_ranked_for = towns_sig
+		var rank := {}
+		for id in _tags:
+			rank[id] = _rank(id)
+		_order = _tags.keys()
+		_order.sort_custom(func(a, b): return rank[a] > rank[b])
+	for id in _order:
 		var tag: Dictionary = _tags[id]
 		var box: Control = tag["box"]
 		var data: Dictionary = towns.towns[id]["data"]
