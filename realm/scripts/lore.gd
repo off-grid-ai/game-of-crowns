@@ -726,7 +726,7 @@ func _para(text: String, color := T.TEXT) -> void:
 func _text(text: String, color := T.TEXT) -> Label:
 	var l := Label.new()
 	l.text = text
-	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD  # whole words only: never a word broken mid-word
 	l.add_theme_font_size_override("font_size", T.SIZE_BODY + 1)
 	l.add_theme_color_override("font_color", color)
 	l.custom_minimum_size.x = 400

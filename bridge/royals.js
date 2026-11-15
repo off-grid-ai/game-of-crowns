@@ -182,7 +182,12 @@ export function rewrite(ctx, spec) {
   const h = of(ctx.meta);
   const p = [h.king, h.consort, ...h.children, ...(h.kin ?? [])].find((x) => x?.alive !== false && x?.id === String(spec.id ?? ""));
   if (!p) return { error: "No one of the royal house by that name." };
-  if (spec.name != null) p.name = String(spec.name).trim().slice(0, 40) || p.name;
+  if (spec.name != null) {
+    // A first name no other living royal has (as born() deals them).
+    const to = String(spec.name).trim().slice(0, 40);
+    if (to && [h.king, h.consort, ...h.children, ...(h.kin ?? [])].some((x) => x && x !== p && x.alive !== false && x.name === to)) return { error: `${to} is already a name of the royal house.` };
+    if (to) p.name = to;
+  }
   if (spec.gender) p.woman = spec.gender === "female";
   if (spec.age != null) p.age = Math.max(R.edit.age[0], Math.min(R.edit.age[1], Number(spec.age) || p.age));
   if (spec.traits || spec.other != null) {
