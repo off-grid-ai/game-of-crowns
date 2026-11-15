@@ -1,5 +1,5 @@
 {
- "_": "The King's sheet and his family (royal_sheet.gd; CK3's ruler window), opened from the bar's heading. Each line's words; {name}, {age}, {traits}, {house}, {how} are filled from /world royals (bridge royals.js). nature_tip: why his nature matters at court; regency: while a child is King; no_heir: with none; abdicate_tip: what stepping down does. trust: what his word is worth, by bands of the bridge's trust (0..1; the first whose above it clears): says on his sheet, pledge under a promise at court (the council's tone), low in red. stress: how he bears his rulings, by bands of royals.king.stress (from; the bridge's stress.high is 3): says on his sheet, grade the colour laid on his portrait.",
+ "_": "The King's sheet and his family (royal_sheet.gd; CK3's ruler window), opened from the King key top-right. Each line's words; {name}, {age}, {traits}, {house}, {how} are filled from /world royals (bridge royals.js). nature_tip: why his nature matters at court; regency: while a child is King; no_heir: with none; abdicate_tip: what stepping down does. trust: what his word is worth, by bands of the bridge's trust (0..1; the first whose above it clears): says on his sheet, pledge under a promise at court (the council's tone), low in red. stress: how he bears his rulings, by bands of royals.king.stress (from; the bridge's stress.high is 3): says on his sheet, grade the colour laid on his portrait.",
  "none": "The royal house is not yet known.",
  "king": "King {name}",
  "age": "{age} years old",
@@ -111,5 +111,11 @@
   "feast": { "label": "Feast", "tip": "A feast in the great hall eases him, and every great house warms a little. Once a year.", "done": "The great hall is made ready for a feast." },
   "pilgrimage": { "label": "Pilgrimage", "tip": "Barefoot to the old shrine: it eases him most, and the pious lords warm to him. Once in two years.", "done": "The King sets out on pilgrimage." },
   "again": "Not again so soon: in {n} seasons.",
-  "poor": "The treasury holds too little for this." }
+  "poor": "The treasury holds too little for this." },
+ "reign": { "head": "The name you are earning", "called": "People call you {name}.", "next": "A few would say {name}.",
+  "ways": { "peace": { "rising": "Peace is rising,", "falling": "Peace is falling,", "holding": "Peace holds," },
+   "wealth": { "rising": "wealth rising", "falling": "wealth falling", "holding": "wealth holding" },
+   "strength": { "rising": "and strength rising against a year ago.", "falling": "and strength falling against a year ago.", "holding": "and strength holding against a year ago." } },
+  "promises": "Your three promises", "kept": "Kept: {text}", "open": "Not yet: {text}",
+  "_": "royal_sheet.gd _reign_row: the name the King is earning (bridge reign readings name and next), peace, wealth and strength against a year ago in words, and his three promises (reign ambitions); moved here from the date card (Mac: the top-left stacked six things)." }
 }

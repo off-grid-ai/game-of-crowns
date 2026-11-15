@@ -3,7 +3,7 @@ extends RefCounted
 ## how the lords take a King of that nature; his consort, his heir and the match made for the heir; his other
 ## children and kin; a regency while a child sits the throne; the Kings before him; and, once the heir is of
 ## age, the choice to step down. Read from /world royals (bridge royals.js view), deciding nothing but the
-## abdication, which the bridge settles. Owned by ui.gd; opened from the bar's heading (the King's name).
+## abdication, which the bridge settles. Owned by ui.gd; opened from the King key in the top bar.
 ## Words: realm/data/royal_sheet.json.
 
 const Data := preload("res://scripts/data.gd")
@@ -176,6 +176,7 @@ func open() -> void:
 		_say(v, _w("regency", ""), T.DANGER)
 	_focus_row(v, r)
 	_rest_row(v, r)
+	_reign_row(v)
 	v.add_child(HSeparator.new())
 	# The family.
 	if r.get("consort") is Dictionary:
@@ -340,6 +341,38 @@ func _rest_row(v: VBoxContainer, r: Dictionary) -> void:
 		v.add_child(row)
 		if odds != "":
 			_say(v, odds, T.TEXT_3)
+
+
+## The name he is earning and his three promises (bridge reign readings and ambitions, ui.reign_now; CK3's ruler
+## sheet): what people call him and what a few would say, peace, wealth and strength rising or falling against a
+## year ago, in words, and each promise kept or not yet. Words in royal_sheet.json reign.
+func _reign_row(v: VBoxContainer) -> void:
+	var rn: Dictionary = ui.reign_now if ui.reign_now is Dictionary else {}
+	if String(rn.get("status", "")) != "running":
+		return
+	var words: Dictionary = Data.value("royal_sheet", "reign", {})
+	var rd = rn.get("readings")
+	if rd is Dictionary:
+		v.add_child(T.label(String(words.get("head", "The name you are earning"))))
+		var called := String(words.get("called", "People call you {name}.")).replace("{name}", String(rd.get("name", "")))
+		if rd.get("next") != null and String(rd["next"]) != "":
+			called += " " + String(words.get("next", "A few would say {name}.")).replace("{name}", String(rd["next"]))
+		_say(v, called, T.ACCENT)
+		var ways: Dictionary = words.get("ways", {}) if words.get("ways") is Dictionary else {}
+		var lines := PackedStringArray()
+		for k in ["peace", "wealth", "strength"]:
+			var w := int((rd.get(k, {}) as Dictionary).get("way", 0)) if rd.get(k) is Dictionary else 0
+			var said: Dictionary = ways.get(k, {}) if ways.get(k) is Dictionary else {}
+			lines.append(String(said.get("rising" if w > 0 else ("falling" if w < 0 else "holding"), "")))
+		_say(v, " ".join(lines).strip_edges(), T.TEXT_2)
+	var am = rn.get("ambitions")
+	if am is Array and not (am as Array).is_empty():
+		v.add_child(T.label(String(words.get("promises", "Your three promises"))))
+		for a in am:
+			if not a is Dictionary:
+				continue
+			var kept: bool = (a as Dictionary).get("met") != null
+			_say(v, String(words.get("kept" if kept else "open", "{text}")).replace("{text}", String(a.get("text", ""))), T.ACCENT if kept else T.TEXT)
 
 
 func _say(v: VBoxContainer, text: String, colour: Color) -> void:
