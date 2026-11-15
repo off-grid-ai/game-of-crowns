@@ -295,29 +295,30 @@ func _column_half() -> float:
 	return float(files[files.size() - 1]) * Data.num("army", "column.fileMost", 0.1) * 0.5
 
 
-## A heading for a column standing with its head at `at` whose `tail` behind it stands clear (Mac 2026-11-15: a
-## coastal host stood out over the sea, another through a cottage): `yaw` when its whole length is clear, else of
-## field.turns bearings round it the one nearest `yaw` with the most clear ground under it (ground.gd is_clear,
-## dry land in no footprint across the column's width, every march.wetStep).
-func _dry_yaw(at: Vector3, yaw: float, tail: float) -> float:
-	var step := maxf(Data.num("army", "march.wetStep", 0.5), 0.1)
+## A heading for a column standing with its head at `at` whose every regiment stands clear (Mac 2026-11-15: a
+## coastal host stood out over the sea, another through a cottage, another into a castle's wall): `yaw` when every
+## regiment's whole block is clear, else of field.turns bearings round it the one nearest `yaw` with the most
+## regiments clear (_clear_at: each block's full rectangle, ground.gd is_clear; it may stand on a road or a field).
+func _dry_yaw(at: Vector3, yaw: float, _tail: float) -> float:
 	var turns := int(Data.num("battle", "field.turns", 12))
-	var half := _column_half()
+	var order := Formation.column_order(_regiments)
 	var best := yaw
 	var most := -1
 	for i in turns:
 		var a := yaw + TAU * float((i + 1) / 2) / turns * (1.0 if i % 2 == 1 else -1.0)
-		var dir := Vector3(sin(a), 0, cos(a))
-		var dry := 0
-		var d := 0.0
-		while d <= tail:
-			if Footing.is_clear(at - dir * d, half, true, null, [_host_kind()]):
-				dry += 1
-			d += step
-		if dry > most:
-			most = dry
+		var fwd := Vector3(sin(a), 0, cos(a))
+		var right := Vector3(cos(a), 0, -sin(a))
+		var clear := 0
+		for r in order:
+			var c: Dictionary = r.get("column", {})
+			var w := float(c.get("w", r.get("w", 0.5)))
+			var dd := float(c.get("d", r.get("d", 0.5)))
+			if _clear_at(at - fwd * float(r["off"]), right, fwd, w, dd, [], false):
+				clear += 1
+		if clear > most:
+			most = clear
 			best = a
-		if dry == int(tail / step) + 1:
+		if clear == order.size():
 			break
 	return best
 
