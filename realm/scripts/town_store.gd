@@ -173,6 +173,8 @@ static func _make(scene: PackedScene, path: String, out: Array) -> void:
 
 ## A meta's value with every node in it written as {"_node": its path from the town's root}.
 static func paths(v: Variant, root: Node) -> Variant:
+	if typeof(v) == TYPE_OBJECT and not is_instance_valid(v):
+		return null  # a node gone since the meta was set (reading `is` on it errors first)
 	if v is Node:
 		return {"_node": root.get_path_to(v)} if is_instance_valid(v) and (v == root or root.is_ancestor_of(v)) else null
 	if v is Array:
