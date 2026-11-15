@@ -31,10 +31,7 @@ static func path_of(c: Dictionary, house: Dictionary, tiles: Array) -> String:
 ## a copy of what they hold and put back after packing, so the town in play is untouched.
 static func save(root: Node3D, path: String) -> void:
 	var kept := []  # [node, meta, value as it was]
-	for n in [root] + root.find_children("*", "", true, false):
-		if n != root:
-			n.scene_file_path = ""  # a model read from a file is kept whole in the town's file, not as a link to it
-			n.owner = root
+	for n in [root] + _owned(root, root, []):
 		var groups := PackedStringArray()
 		for g in n.get_groups():
 			if not String(g).begins_with("_"):
@@ -59,6 +56,17 @@ static func save(root: Node3D, path: String) -> void:
 		push_warning("TOWNS a town could not be packed (%s): it is raised again next time" % error_string(ok))
 		return
 	Kept.keep(scene, path)
+
+
+## The town's own nodes, each owned by the town so it is packed. A model placed whole from a file (a mill's sails, the
+## map seat's keep) is packed as a link to that file, its insides left its own: the town's file never carries a copy.
+static func _owned(n: Node, root: Node, out: Array) -> Array:
+	for c in n.get_children():
+		c.owner = root
+		out.append(c)
+		if c.scene_file_path == "":
+			_owned(c, root, out)
+	return out
 
 
 ## Whether a town is kept at `path`; if so its reading is started on Godot's loader threads.
