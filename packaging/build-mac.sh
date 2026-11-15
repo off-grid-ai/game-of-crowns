@@ -38,6 +38,8 @@ RES="$APP/Contents/Resources"
 RT="$RES/runtime"
 
 if [ -z "${SKIP_EXPORT:-}" ]; then
+  echo "==> Bake the models' merged meshes into the game (realm/tools/bake.gd)"
+  (cd realm && "${GODOT[@]}" --headless --path . -s res://tools/bake.gd) || { echo "!! bake failed"; exit 1; }
   echo "==> Godot export (release, macOS)"
   rm -rf "$APP"
   (cd realm && "${GODOT[@]}" --headless --path . --export-release "macOS" "$APP")

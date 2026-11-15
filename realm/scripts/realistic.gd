@@ -606,18 +606,28 @@ static func _finish(name: String) -> Dictionary:
 	return _cache[name]
 
 
-## A model's merged mesh (or its low mesh, `which`), kept on disk once (user://models/), by the scripts' and data's
-## fingerprint (town_store.gd): towns kept on disk point at it rather than each holding a copy, and a later game reads
-## it back instead of merging again. It takes the file's path, so every town packed after shares it.
+## A model's merged mesh (or its low mesh, `which`), kept on disk once, by the scripts' and data's fingerprint
+## (town_store.gd): towns kept on disk point at it rather than each holding a copy, and a later game reads it back
+## instead of merging again. It takes the file's path, so every town packed after shares it. Shipped in the game
+## (BAKED, made by tools/bake.gd before every export) or, for one the bake didn't make, kept in the player's own
+## folder (MODELS) the first time it is merged.
 const MODELS := "user://models/"
+const BAKED := "res://baked/models/"
+static var baking := false  # tools/bake.gd: every mesh made afresh and written into the game (BAKED)
 static func _kept(name: String, which := "whole") -> String:
-	return MODELS + "%s_%s_%s.res" % [name, which, preload("res://scripts/town_store.gd").code()]
+	var f := "%s_%s_%s.res" % [name, which, preload("res://scripts/town_store.gd").code()]
+	if baking or FileAccess.file_exists(BAKED + f):
+		return BAKED + f
+	return MODELS + f
 
 
 static func _keep(mesh: ArrayMesh, path: String) -> void:
-	DirAccess.make_dir_recursive_absolute(path.get_base_dir())  # a kit's own folder (props/, town/) under MODELS
+	DirAccess.make_dir_recursive_absolute(path.get_base_dir())  # a kit's own folder (props/, town/)
 	mesh.take_over_path(path)
-	WorkerThreadPool.add_task(func(): ResourceSaver.save(mesh, path), false, "model save")
+	if baking:
+		ResourceSaver.save(mesh, path, ResourceSaver.FLAG_COMPRESS)
+	else:
+		WorkerThreadPool.add_task(func(): ResourceSaver.save(mesh, path), false, "model save")
 
 
 ## Kits whose walls are stone but whose file never says how metallic it is, so

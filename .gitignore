@@ -99,3 +99,6 @@ bridge/written.json
 
 # Python caches from tools
 __pycache__/
+
+# Baked meshes and towns (tools/bake.gd), made from third-party art before each export
+realm/baked/

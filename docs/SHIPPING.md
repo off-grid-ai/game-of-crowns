@@ -8,6 +8,9 @@ packaging/build-mac.sh
 ```
 
 `SKIP_EXPORT=1 packaging/build-mac.sh` reuses the last Godot export (handy when only the bridge changed).
+Before the export it bakes every model's merged mesh into the game (`realm/tools/bake.gd`, headless, about 4 s, 63 MB
+in `realm/baked/`, not in git), so a fresh install never merges them on the player's Mac. A script or data edit after a
+bake leaves it unused until the next build bakes again.
 After changing textures, re-import first: `cd realm && arch -arm64 godot --headless --path . --import`.
 
 ## What's in the app

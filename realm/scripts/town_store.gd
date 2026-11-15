@@ -13,32 +13,42 @@ extends RefCounted
 ## a node belongs to ("town_roots", "hearths") is written as a meta and joined again.
 
 const DIR := "user://towns/"
+const BAKED := "res://baked/towns/"  # the starting realm's towns, shipped in the game (tools/bake.gd, before every export)
+const STAMP := "res://baked/code.txt"  # the fingerprint the bake was made by (code())
+static var baking := false  # tools/bake.gd: towns written into the game (BAKED), not the player's folder
 
 static var _code := ""  # the scripts' and data's fingerprint, made once
 static var _land := {}  # the map's tiles -> their hash, for the map last asked
 
 
-## The file a town with these facts on this land is kept in.
+## The file a town with these facts on this land is kept in: the game's own (baked) if it ships one, else the player's.
 static func path_of(c: Dictionary, house: Dictionary, tiles: Array) -> String:
 	if not _land.has("tiles") or _land["tiles"] != tiles:
 		_land = {"tiles": tiles, "hash": str(tiles.hash())}
 	var facts := [c.get("x"), c.get("y"), c.get("size"), c.get("buildings"), c.get("capital"), c.get("owner"),
 		c.get("family"), c.get("title", c.get("name", "")), house.get("crown", false), house.get("name", ""),
 		house.get("colour", house.get("color", "")), _land["hash"], code()]
-	return DIR + "%d_%s_%s.scn" % [int(c["id"]), code(), str(facts).md5_text()]
+	var f := "%d_%s_%s.scn" % [int(c["id"]), code(), str(facts).md5_text()]
+	if baking or FileAccess.file_exists(BAKED + f):
+		return BAKED + f
+	return DIR + f
 
 
 ## Every script and data file's md5, as one, made once: a town (or a model's merged mesh, realistic.gd) is read back
-## only by the code and numbers that made it.
+## only by the code and numbers that made it. An exported game's scripts are tokens, not the .gd files the bake
+## hashed, so it takes the fingerprint the bake stamped (STAMP): its scripts are the baked tree's.
 static func code() -> String:
 	if _code != "":
 		return _code
-	var sums := PackedStringArray()
-	for dir in ["res://scripts/", "res://data/"]:
-		for f in DirAccess.get_files_at(dir):
-			if f.ends_with(".gd") or f.ends_with(".json"):
-				sums.append(f + FileAccess.get_md5(dir + f))
-	_code = "".join(sums).md5_text().substr(0, 12)
+	if OS.has_feature("template") and FileAccess.file_exists(STAMP):
+		_code = FileAccess.get_file_as_string(STAMP).strip_edges()
+	else:
+		var sums := PackedStringArray()
+		for dir in ["res://scripts/", "res://data/"]:
+			for f in DirAccess.get_files_at(dir):
+				if f.ends_with(".gd") or f.ends_with(".json"):
+					sums.append(f + FileAccess.get_md5(dir + f))
+		_code = "".join(sums).md5_text().substr(0, 12)
 	# What older code or numbers kept is never read again: gone, so the folders don't grow with every change.
 	for dir in [DIR, "user://models/"]:
 		_sweep(dir)
@@ -59,7 +69,7 @@ static func _sweep(dir: String) -> void:
 ## A town just raised, packed and written (the writing on a worker thread). Its metas and groups are made savable on
 ## a copy of what they hold and put back after packing, so the town in play is untouched.
 static func save(root: Node3D, path: String) -> void:
-	DirAccess.make_dir_recursive_absolute(DIR)
+	DirAccess.make_dir_recursive_absolute(path.get_base_dir())
 	var kept := []  # [node, meta, value as it was]
 	for n in [root] + root.find_children("*", "", true, false):
 		if n != root:
@@ -88,7 +98,10 @@ static func save(root: Node3D, path: String) -> void:
 	if ok != OK:
 		push_warning("TOWNS a town could not be packed (%s): it is raised again next time" % error_string(ok))
 		return
-	WorkerThreadPool.add_task(func(): ResourceSaver.save(scene, path), false, "town save")
+	if baking:
+		ResourceSaver.save(scene, path, ResourceSaver.FLAG_COMPRESS)
+	else:
+		WorkerThreadPool.add_task(func(): ResourceSaver.save(scene, path), false, "town save")
 
 
 ## Whether a town is kept at `path`; if so its reading is started on Godot's loader threads.
@@ -108,7 +121,8 @@ static func take(path: String) -> Variant:
 		return null
 	var scene := ResourceLoader.load_threaded_get(path) as PackedScene if st == ResourceLoader.THREAD_LOAD_LOADED else null
 	if scene == null:
-		DirAccess.remove_absolute(path)  # unreadable: raised again
+		if path.begins_with(DIR):
+			DirAccess.remove_absolute(path)  # unreadable: raised again
 		return false
 	var root := scene.instantiate() as Node3D
 	for n in [root] + root.find_children("*", "", true, false):
