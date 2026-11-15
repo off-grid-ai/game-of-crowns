@@ -192,7 +192,9 @@ Switches (`--name`) go after `--` on the game's command line.
 - Minds arranging a talk: how far they look for someone, how far apart two stand, how old news may be, how long an arranged talk and a partner are waited for, how long lines may hold a talk, the settle before the first word, and when they give up a walk with no way: `realm/data/crowd.json`: `minds.*`.
 - Overheard talk: how close the camera must come to a gathering, and a town, to hear it, how long a talk waits for the minds' words, how long a line said stays fresh: `realm/data/crowd.json`: `chatter.*`.
 - Where people keep out of: behind a stall's counter (its keeper), a road's lane, a town's heart, a fire's heat, and how far a building site rises before its building shows: `realm/data/town_scenes.json`: `life.*`.
-- How far a person is drawn: `realm/data/people.json`: `seen_to`.
+- How far a person is drawn: `realm/data/people.json`: `seen_to`. (14 since the fps round of 2026-11-15; was 18.)
+- How near a person animates every frame, casts a shadow, and how often a further one moves: `realm/data/people.json`: `lod.near`, `lod.shadow_near`, `lod.stride` (3.5, 3.5, 4 since the fps round; were 6, 6, 3).
+- How soon models swap to their simpler versions: `realm/project.godot`: `rendering/mesh_lod/lod_change/threshold_pixels` (16; was 4). Physics steps a second: `physics/common/physics_ticks_per_second` (30; was 60).
 - Where a person fades near the lens (gone nearer than, whole from): `realm/data/people.json`: `near_fade` (gone, solid).
 
 ## Every click answers (Builder 1; on by default, `--barks=off`)
