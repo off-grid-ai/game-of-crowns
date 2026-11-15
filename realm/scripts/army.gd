@@ -117,7 +117,7 @@ func _ready() -> void:
 		if a.begins_with("--dist="):  # a muster shot's lens (shot_harness --muster takes the army's own: _hold)
 			_dist = float(a.substr(7))  # g6: unread for a muster, the lens stood at 12, high over two towns
 	# Wait for the land and the realm's towns as the bridge reports them.
-	while main.terrain.width == 0 or not main.terrain.built or (main.awareness.rec("cities", []) as Array).is_empty():
+	while main.terrain.width == 0 or not main.terrain.built or (_rec("cities", []) as Array).is_empty():
 		await get_tree().create_timer(0.5).timeout
 	var in_field := battle.has("field") or battle.has("host")  # a battle side or a host in the field: no seat to muster by
 	var seat := _seat() if not in_field else {"name": "the field"}
@@ -800,14 +800,14 @@ static func order_face(h: Dictionary) -> float:
 
 
 func _from_world() -> Array:
-	var hosts: Array = main.awareness.hosts()
+	var hosts: Array = (_store().hosts() if _store() != null else [])
 	if hosts.is_empty() and not battle.has("host"):
 		return []
 	var h: Dictionary = battle["host"] if battle.has("host") else hosts[0]  # a field host its own; else the largest (the bridge sorts them)
 	host_id = int(h.get("id", 0))
 	_order_face = order_face(h)
 	var types := {}
-	for u in main.awareness.rec("units", []):
+	for u in _rec("units", []):
 		types[int(u.get("id", -1))] = u
 	var each := float(h.get("men", 0)) / maxf(1.0, float(h.get("companies", 1)))
 	var full := Data.num("army", "hpFull", 10.0)
@@ -1373,7 +1373,7 @@ func _road_in(town: Vector3) -> void:
 	var roads = main.get("roads")
 	var way := PackedVector3Array()
 	if roads and roads.has_method("route") and not battle.has("field"):
-		var others: Array = (main.awareness.rec("cities", []) as Array).duplicate()
+		var others: Array = (_rec("cities", []) as Array).duplicate()
 		var seat_xy := Vector2(town.x, town.z)
 		var pos := func(c) -> Vector3: return main.terrain.world_pos(float(c["x"]), float(c["y"]))
 		others = others.filter(func(c): return Vector2((pos.call(c) as Vector3).x, (pos.call(c) as Vector3).z).distance_to(seat_xy) > 1.0)
@@ -1971,11 +1971,11 @@ func _men() -> int:
 ## The host's seat: the town its muster names (battle seat: a city id), else the crown's (/world seatId), or
 ## Kingsmere by name.
 func _seat() -> Dictionary:
-	var cities: Array = main.awareness.rec("cities", [])
+	var cities: Array = _rec("cities", [])
 	for c in cities if battle.has("seat") else []:
 		if int(c.get("id", -2)) == int(battle["seat"]):
 			return c
-	var want := int(main.awareness.rec("seatId", -1))
+	var want := int(_rec("seatId", -1))
 	for c in cities:
 		if int(c.get("id", -2)) == want:
 			return c
@@ -1983,6 +1983,18 @@ func _seat() -> Dictionary:
 		if String(c.get("name", "")) == "Kingsmere":
 			return c
 	return {}
+
+
+## The realm's one store (awareness.gd, as every reader asks it: Awareness.store()), or null where none is up (a probe's
+## stand-in realm): the army then waits for the realm's towns rather than reading a member its parent lacks.
+static func _store() -> Node:
+	var st: Node = Awareness.store()
+	return st if st != null and st.has_method("rec") else null
+
+
+static func _rec(key: String, fallback: Variant) -> Variant:
+	var st := _store()
+	return st.rec(key, fallback) if st != null else fallback
 
 
 ## The crown's house as the view knows it ({} when not yet known).
