@@ -84,23 +84,48 @@ func land_path(from: Vector3, to: Vector3, body := -1.0) -> PackedVector3Array:
 ## tree, another host's ground, a river's water: ground.gd is_clear, `reach` all round) moved to the nearest clear
 ## ground, so a body crossing the land goes round what stands on it with its whole width (Mac 2026-11-15: hosts
 ## marched through cottages; a column's flanks over a river). Its ends are kept: where it was and where it was sent.
+## The points are asked a run of land.way_run at a time as one strip (ground.gd area_free: the cells under all their
+## reaches in one scan); only a run whose strip isn't free is asked point by point (Mac's game 2026-11-15: the King's
+## road, 1.5 s a frame, nine asks every 0.3 of every route).
 func _round_what_stands(way: PackedVector3Array, reach: float) -> PackedVector3Array:
 	var step := Data.num("ground", "land.way_step", 0.3)
+	var run := maxi(1, int(Data.num("ground", "land.way_run", 8)))
 	var out := PackedVector3Array([way[0]])
 	for i in way.size() - 1:
 		var a: Vector3 = way[i]
 		var b: Vector3 = way[i + 1]
 		var n := maxi(1, ceili(a.distance_to(b) / step))
-		for k in range(1, n + 1):
-			var p := a.lerp(b, float(k) / n)
-			if i == way.size() - 2 and k == n:
-				out.append(b)
-			elif Ground.is_clear(p, reach):
-				if k == n:
-					out.append(p)
-			else:
-				out.append(Ground.nearest_clear(p, reach))
+		var k := 1
+		while k <= n:
+			var last := mini(n, k + run - 1)
+			if last > k and _strip_free(a.lerp(b, float(k) / n), a.lerp(b, float(last) / n), reach):
+				if last == n:
+					out.append(b if i == way.size() - 2 else a.lerp(b, 1.0))
+				k = last + 1
+				continue
+			for j in range(k, last + 1):
+				var p := a.lerp(b, float(j) / n)
+				if i == way.size() - 2 and j == n:
+					out.append(b)
+				elif Ground.is_clear(p, reach):
+					if j == n:
+						out.append(p)
+				else:
+					out.append(Ground.nearest_clear(p, reach))
+			k = last + 1
 	return out
+
+
+## Whether a body reaching `reach` all round may stand at every point from `p` to `q` (a straight run): the strip
+## round them, a little wider than the reach, free on the ground's map (as is_clear answers at each point).
+func _strip_free(p: Vector3, q: Vector3, reach: float) -> bool:
+	var d := Vector2(q.x - p.x, q.z - p.z)
+	var dir := d.normalized() if d.length() > 0.0001 else Vector2.RIGHT
+	var r := reach + 0.001
+	var side := Vector2(-dir.y, dir.x) * r
+	var a := Vector2(p.x, p.z) - dir * r
+	var b := Vector2(q.x, q.z) + dir * r
+	return Ground.area_free(PackedVector2Array([a + side, b + side, b - side, a - side]))
 
 
 ## A ship's route over water between two world points (ships only carry armies: Mac), as world points. Its ends may

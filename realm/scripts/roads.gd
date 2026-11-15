@@ -99,14 +99,23 @@ func kings_road() -> void:
 	if hub.is_empty():
 		return
 	var from: Vector3 = terrain.world_pos(float(hub["x"]), float(hub["y"]))
+	# Its parts timed (GOC_PERF_PROBE: kings_road.route, .paint, .roadside, .lords; the whole was 1.5 s a call in one
+	# frame, Mac's game 2026-11-15; tools/kings_road_probe.gd guards the routes' cost).
 	for c in cities:
 		if not c.get("capital", false) or int(c["id"]) == int(hub["id"]):
 			continue
+		var t0 := Time.get_ticks_usec()
 		var route: PackedVector3Array = terrain.paths.land_path(from, terrain.world_pos(float(c["x"]), float(c["y"])))
+		var t1 := Time.get_ticks_usec()
+		PerfTools.add("kings_road.route", t1 - t0)
 		for i in route.size() - 1:
 			_segment(route[i], route[i + 1], _kings, WIDTH * 2.2, "kings")
+		var t2 := Time.get_ticks_usec()
+		PerfTools.add("kings_road.paint", t2 - t1)
 		_roadside(route)
+		PerfTools.add("kings_road.roadside", Time.get_ticks_usec() - t2)
 	# Lords' roads: every town to the seat of the house that holds it.
+	var t3 := Time.get_ticks_usec()
 	clear_tracks("lords")
 	for c in cities:
 		if c.get("capital", false):
@@ -114,6 +123,7 @@ func kings_road() -> void:
 		for seat in cities:
 			if seat.get("capital", false) and int(seat["owner"]) == int(c["owner"]):
 				track(terrain.world_pos(float(c["x"]), float(c["y"])), terrain.world_pos(float(seat["x"]), float(seat["y"])), WIDTH * 1.4, "lords")
+	PerfTools.add("kings_road.lords", Time.get_ticks_usec() - t3)
 	_plant_verges()
 
 
