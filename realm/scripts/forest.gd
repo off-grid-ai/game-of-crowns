@@ -135,6 +135,13 @@ func plant(trees: Array) -> void:
 	if _land():
 		for k in _trees:
 			_ids[k] = _land().plant([_full[k], _mid[k], _card[k]], [NEAR, MID, 1000.0], 1, _trees[k])
+	if not trees.is_empty():
+		var first: Vector3 = (trees[0][1] as Transform3D).origin
+		var planted := Rect2(first.x, first.z, 0, 0)
+		for t in trees:
+			var o: Vector3 = (t[1] as Transform3D).origin
+			planted = planted.expand(Vector2(o.x, o.z))
+		_moved(planted)
 
 
 ## Terrain3D's instancer cost ~400 ms a frame over a town on this Mac, working
@@ -513,12 +520,27 @@ func add_crown(at: Vector3, height: float) -> void:
 	if not _sight.has(cell):
 		_sight[cell] = []
 	_sight[cell].append(Vector4(at.x, at.z, at.y, height))
+	_moved(Rect2(at.x, at.z, 0, 0))
 
 
-## Whether a tree's trunk stands at `p` (within forest.json trunk of its foot): ground.gd asks, so nobody is placed
-## in a tree (Mac 2026-11-15: regiments through the woods).
-func in_way(p: Vector3) -> bool:
-	return trees_near(p, Data.num("forest", "trunk", 0.12)) > 0
+## The trunks in `area` (world XZ) as discs (x, z, forest.json trunk): the ground owner stamps them on its map, so
+## nobody is placed in a tree (Mac 2026-11-15: regiments through the woods). Wherever trees are planted or felled
+## the ground is told (Ground.forget).
+func obstacles(area: Rect2) -> Array:
+	var r := Data.num("forest", "trunk", 0.12)
+	var out: Array = []
+	var a := area.grow(r)
+	for cx in range(floori(a.position.x / SIGHT_CELL), floori(a.end.x / SIGHT_CELL) + 1):
+		for cz in range(floori(a.position.y / SIGHT_CELL), floori(a.end.y / SIGHT_CELL) + 1):
+			for t: Vector4 in _sight.get(Vector2i(cx, cz), []):
+				if a.has_point(Vector2(t.x, t.y)):
+					out.append(Vector3(t.x, t.y, r))
+	return out
+
+
+## Trees planted or felled over `area` (world XZ): the ground owner reads the trunks there again.
+func _moved(area: Rect2) -> void:
+	preload("res://scripts/ground.gd").forget(area)
 
 
 func _enter_tree() -> void:
@@ -548,6 +570,7 @@ func clear(center: Vector3, radius: float) -> void:
 			var c := Vector2i(cx, cz)
 			if _sight.has(c):
 				_sight[c] = _sight[c].filter(func(t: Vector4): return Vector2(t.x - center.x, t.y - center.z).length() >= radius)
+	_moved(Rect2(center.x - radius, center.z - radius, radius * 2.0, radius * 2.0))
 	if not _ids.is_empty():
 		for k in _trees:
 			var kept: Array = _trees[k].filter(func(t: Transform3D): return Vector2(t.origin.x - center.x, t.origin.z - center.z).length() >= radius)
@@ -604,6 +627,11 @@ func clear_where(standing_on: Callable, within := Rect2()) -> int:
 			i += 1
 			if i % 16 == 0 and not ViewTier.spend_ok(&"lanes"):
 				await PerfTools.next_frame(&"forest:605")
+	if within.has_area():
+		_moved(within)
+	else:
+		for c: Vector2i in _sight:
+			_moved(Rect2(Vector2(c) * SIGHT_CELL, Vector2.ONE * SIGHT_CELL))
 	return felled
 
 

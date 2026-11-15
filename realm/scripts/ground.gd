@@ -20,7 +20,8 @@ extends RefCounted
 ##     it the town's way (nav_ground.gd), so nothing keeps a list beside the pieces (Mac 2026-11-15: "entities need to
 ##     stop collision with each other": a host stood in a cottage and through a wood no check knew of).
 ##   blocked_by(source), unblocked_by(source): a keeper of many small things in the way, too many to read as outlines
-##     (the woods' trunks), answers in_way(p) -> bool from its own index.
+##     (the woods' trunks), answers obstacles(area: Rect2) -> Array from its own index: discs (Vector3: x, z, radius)
+##     or outlines (PackedVector2Array, world XZ); it says forget(area) wherever they change (trees felled).
 ##   claim(id, poly, kind), release(id): ground held while it lies (world XZ): a regiment's rectangle ("body"), a
 ##     hedged field ("field": a muster keeps off it, a battle may be fought over it).
 ##
@@ -79,7 +80,7 @@ static var _hooked := {}  # instance id -> true: a root (or its Life) whose chan
 static var _towns_frame := -1  # the frame the realm's towns were last read (Ground.towns)
 static var _claims := {}  # chunk -> {id: [kind, outline (world XZ)]}: the ground bodies hold while they stand
 static var _claim_area := {}  # id -> [chunks, Rect2]
-static var _sources: Array = []  # keepers of many small things in the way (the woods): in_way(p) -> bool
+static var _sources: Array = []  # keepers of many small things in the way (the woods): obstacles(area) -> Array
 static var _rev := 0  # counts places set down and claims made: nearest_clear's kept answers are asked afresh after
 static var claims_rev := 0  # counts claims made and released: a fight's grid (army_ground.gd) lays the claimed ground afresh after
 static var _kept := {}  # tile (Vector2i) -> {[point, radius, reach] (Vector4i, hundredths) -> [answer, its towns' layouts]}
@@ -102,7 +103,7 @@ static func is_clear(p: Vector3, radius := 0.0, props := true, free_of: Variant 
 
 static func _is_clear(p: Vector3, radius := 0.0, props := true, free_of: Variant = null, open_kinds: Array = []) -> bool:
 	_fresh()
-	var shut := TOWN_ALL | (LIFE_ALL if props else 0)  # a town's or a place's own pieces; its life's too unless `props` false
+	var shut := SRC | TOWN_ALL | (LIFE_ALL if props else 0)  # a town's or a place's own pieces; its life's too unless `props` false
 	var need := WALK if "ford" in open_kinds else DRY  # a ford is passed, never stood on (a fight's grid opens it: "ford")
 	for o in _reach_of(radius):
 		var q: Vector3 = p + o
@@ -110,9 +111,6 @@ static func _is_clear(p: Vector3, radius := 0.0, props := true, free_of: Variant
 		if bits & need == 0 or bits & shut != 0:
 			return false
 		var c := _chunk(q)
-		for src in _sources:
-			if is_instance_valid(src) and src.in_way(q):
-				return false
 		var at := Vector2(q.x, q.z)
 		for id in (_claims.get(c, {}) as Dictionary):
 			var held: Array = _claims[c][id]
@@ -143,15 +141,19 @@ static func gone(root: Node3D) -> void:
 	forget(rec["clip"])
 
 
-## A keeper of many small things in the way (the woods) answers for them: in_way(p: Vector3) -> bool.
+## A keeper of many small things in the way (the woods) answers for them: obstacles(area: Rect2) -> Array of discs
+## (Vector3: x, z, radius) and outlines (PackedVector2Array), world XZ. The map reads them with the land, a block at
+## a time; the keeper says forget(area) where they change.
 static func blocked_by(source: Object) -> void:
 	if not source in _sources:
 		_sources.append(source)
+		_relay_all()
 		_rev += 1
 
 
 static func unblocked_by(source: Object) -> void:
 	_sources.erase(source)
+	_relay_all()
 	_rev += 1
 
 
@@ -401,7 +403,39 @@ static func _lay(ch: Chunk, k: Vector2i, b: int) -> void:
 		for i in w:
 			var c := corner[j * (w + 1) + i] & corner[j * (w + 1) + i + 1] & corner[(j + 1) * (w + 1) + i] & corner[(j + 1) * (w + 1) + i + 1]
 			var at := (z0 + j) * _n + x0 + i
-			ch.cells[at] = (ch.cells[at] & ~(DRY | WALK)) | c
+			ch.cells[at] = (ch.cells[at] & ~(DRY | WALK | SRC)) | c
+	# What the sources (the woods) have in the way over the block: every cell a trunk touches.
+	var clip := Rect2i(gx, gz, w - 1, h - 1)
+	var area := Rect2(gx * _cell, gz * _cell, w * _cell, h * _cell)
+	var runs := PackedInt32Array()
+	for src in _sources:
+		if not is_instance_valid(src):
+			continue
+		for o in src.obstacles(area):
+			if o is Vector3:
+				_disc_spans(o.x, o.y, o.z, clip, runs)
+			elif o is PackedVector2Array and (o as PackedVector2Array).size() > 2:
+				_poly_spans(o, clip, {}, runs)
+	for r in range(0, runs.size(), 3):
+		var row := (runs[r] - k.y * _n) * _n - k.x * _n
+		for ix in range(runs[r + 1], runs[r + 2] + 1):
+			ch.cells[row + ix] |= SRC
+
+
+## Appends the runs of cells a disc touches (strictly within `r` of its middle): every cell whose square comes nearer.
+static func _disc_spans(cx: float, cz: float, r: float, clip: Rect2i, out: PackedInt32Array) -> void:
+	for iz in range(maxi(floori((cz - r) * _inv), clip.position.y), mini(floori((cz + r) * _inv), clip.end.y) + 1):
+		var dz := clampf(cz, iz * _cell, (iz + 1) * _cell) - cz
+		if dz * dz >= r * r:
+			continue
+		var half := sqrt(r * r - dz * dz)
+		_run(iz, maxi(floori((cx - half) * _inv), clip.position.x), mini(floori((cx + half) * _inv), clip.end.x), {}, out)
+
+
+## Every block's land and sources read again when next asked (a source came or went).
+static func _relay_all() -> void:
+	for k in _map:
+		(_map[k] as Chunk).laid.fill(0)
 
 
 ## The land under `area` (world XZ) is read again when next asked: every block it touches.

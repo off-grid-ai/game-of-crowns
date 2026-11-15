@@ -44,8 +44,8 @@ const HEDGE := """extends RefCounted
 var z := 0.0
 var x0 := 0.0
 var x1 := 0.0
-func in_way(p: Vector3) -> bool:
-	return absf(p.z - z) < 0.03 and p.x > x0 and p.x < x1
+func obstacles(_area: Rect2) -> Array:
+	return [PackedVector2Array([Vector2(x0, z - 0.03), Vector2(x1, z - 0.03), Vector2(x1, z + 0.03), Vector2(x0, z + 0.03)])]
 """
 
 var fail := 0
