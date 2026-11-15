@@ -699,7 +699,7 @@ static func _leaves(root: Node, path: String) -> void:
 # The most triangles a kind may stand at, near or far: a prop is not a hero. Godot's
 # own generated detail levels are the source: the first one under the budget becomes
 # the mesh placed (and gets its own lighter levels in turn).
-const BUDGET := {"stump": 3000, "ruin": 10000}
+static var BUDGET: Dictionary = Data.value("towns", "kind_tris", {})  # towns.json kind_tris (Mac 2026-11-15, the fps round: a barrel at 33k triangles)
 
 
 ## The parts' surfaces read out by material on the main thread (a mesh's arrays come from the renderer): material ->

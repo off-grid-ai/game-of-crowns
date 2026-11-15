@@ -1,21 +1,25 @@
 {
  "name": "sq_smithy",
- "source": "/Users/user/code/goc-kits/meshy/square/smithy/smithy_30k.glb",
- "tris_before": 30281,
- "tris_after": 30000,
- "scale": 3.9486470823113056,
+ "source": "/Users/user/code/goc-kits/meshy/remesh/sq_smithy.glb",
+ "tris_before": 6208,
+ "tris_after": 5999,
+ "scale": 3.7511200449386313,
  "size_m": [
-  6.42,
-  6.61,
+  6.38,
+  6.54,
   7.5
  ],
  "house_share": 0.0,
+ "leaves_share": 0.0,
  "mask_png": true,
  "materials": [
-  "BakedMaterial"
+  "BakedMaterial.001"
  ],
  "cut_faces": 0,
  "arm": false,
  "repainted": 0,
- "flattened": 0
+ "flattened": 0,
+ "smooth_leaves": 0,
+ "padded": 0,
+ "roots_tucked": 0
 }

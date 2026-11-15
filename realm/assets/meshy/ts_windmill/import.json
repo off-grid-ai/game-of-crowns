@@ -1,21 +1,25 @@
 {
  "name": "ts_windmill",
- "source": "/Users/user/code/goc-kits/meshy/trades/windmill/windmill_20k.glb",
- "tris_before": 20668,
- "tris_after": 20000,
- "scale": 5.7830089264828395,
+ "source": "/Users/user/code/goc-kits/meshy/remesh/ts_windmill.glb",
+ "tris_before": 4175,
+ "tris_after": 4000,
+ "scale": 5.517673297384671,
  "size_m": [
-  6.76,
-  7.81,
+  6.6,
+  7.69,
   11.0
  ],
  "house_share": 0.0,
+ "leaves_share": 0.0,
  "mask_png": true,
  "materials": [
-  "Material_0"
+  "BakedMaterial"
  ],
  "cut_faces": 0,
  "arm": false,
  "repainted": 0,
- "flattened": 0
+ "flattened": 0,
+ "smooth_leaves": 0,
+ "padded": 0,
+ "roots_tucked": 0
 }

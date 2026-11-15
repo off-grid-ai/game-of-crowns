@@ -1,23 +1,26 @@
 {
  "name": "ck_keep",
- "source": "/Users/user/code/goc-kits/meshy/castle/keep/keep.glb",
- "tris_before": 20537,
- "tris_after": 20537,
- "scale": 10.515778274940029,
+ "source": "/Users/user/code/goc-kits/meshy/remesh/ck_keep.glb",
+ "tris_before": 6222,
+ "tris_after": 5999,
+ "scale": 10.00910245661329,
  "size_m": [
-  15.71,
-  17.5,
+  15.58,
+  17.31,
   20.0
  ],
- "house_share": 0.146,
+ "house_share": 0.156,
  "leaves_share": 0.0,
  "mask_png": true,
  "materials": [
-  "Material_0",
+  "BakedMaterial",
   "MI_RoundTiles_house"
  ],
  "cut_faces": 0,
  "arm": false,
  "repainted": 0,
- "flattened": 0
+ "flattened": 0,
+ "smooth_leaves": 0,
+ "padded": 0,
+ "roots_tucked": 0
 }

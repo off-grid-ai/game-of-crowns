@@ -1,23 +1,26 @@
 {
  "name": "cv_guild_hall",
- "source": "/Users/user/code/goc-kits/meshy/civic/cv_guild_hall/cv_guild_hall.glb",
- "tris_before": 25487,
- "tris_after": 24999,
- "scale": 7.154233744861136,
+ "source": "/Users/user/code/goc-kits/meshy/remesh/cv_guild_hall.glb",
+ "tris_before": 5220,
+ "tris_after": 5000,
+ "scale": 6.804783002461087,
  "size_m": [
-  13.6,
-  7.89,
+  13.48,
+  7.82,
   11.0
  ],
- "house_share": 0.188,
+ "house_share": 0.212,
  "leaves_share": 0.0,
  "mask_png": true,
  "materials": [
-  "Material_0",
+  "BakedMaterial",
   "MI_RoundTiles_house"
  ],
  "cut_faces": 0,
  "arm": false,
  "repainted": 0,
- "flattened": 0
+ "flattened": 0,
+ "smooth_leaves": 0,
+ "padded": 0,
+ "roots_tucked": 0
 }

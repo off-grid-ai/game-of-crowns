@@ -18,7 +18,7 @@ func _ready() -> void:
 	label.anchor_left = 1.0
 	label.anchor_right = 1.0
 	label.offset_right = -14
-	label.offset_top = 56  # under the top bar's buttons
+	label.offset_top = 104  # under the top bar's buttons and the loading card's line ("The towns are rising")
 	label.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE

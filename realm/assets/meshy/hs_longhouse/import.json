@@ -1,21 +1,25 @@
 {
  "name": "hs_longhouse",
- "source": "/Users/user/code/goc-kits/meshy/houses/longhouse/longhouse.glb",
- "tris_before": 20311,
- "tris_after": 20311,
- "scale": 5.9388242079457285,
+ "source": "/Users/user/code/goc-kits/meshy/remesh/hs_longhouse.glb",
+ "tris_before": 5155,
+ "tris_after": 4999,
+ "scale": 5.7282625358972075,
  "size_m": [
-  11.35,
-  5.92,
+  11.36,
+  5.84,
   6.0
  ],
  "house_share": 0.0,
+ "leaves_share": 0.0,
  "mask_png": true,
  "materials": [
-  "Material_0"
+  "BakedMaterial"
  ],
  "cut_faces": 0,
  "arm": false,
  "repainted": 0,
- "flattened": 0
+ "flattened": 0,
+ "smooth_leaves": 0,
+ "padded": 0,
+ "roots_tucked": 0
 }

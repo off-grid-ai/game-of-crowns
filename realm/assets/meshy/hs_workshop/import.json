@@ -1,22 +1,26 @@
 {
  "name": "hs_workshop",
- "source": "/Users/user/code/goc-kits/meshy/houses/workshop/workshop.glb",
- "tris_before": 20087,
- "tris_after": 20087,
- "scale": 3.2060325709631563,
+ "source": "/Users/user/code/goc-kits/meshy/remesh/hs_workshop.glb",
+ "tris_before": 5128,
+ "tris_after": 5000,
+ "scale": 3.0636689670721458,
  "size_m": [
-  5.88,
-  6.09,
+  5.85,
+  6.08,
   6.0
  ],
- "house_share": 0.23,
+ "house_share": 0.275,
+ "leaves_share": 0.0,
  "mask_png": true,
  "materials": [
-  "Material_0",
+  "BakedMaterial",
   "MI_RoundTiles_house"
  ],
  "cut_faces": 0,
  "arm": false,
  "repainted": 0,
- "flattened": 0
+ "flattened": 0,
+ "smooth_leaves": 0,
+ "padded": 0,
+ "roots_tucked": 0
 }

@@ -11,6 +11,8 @@
 #       lays it on our soldiers' skeleton like any Mixamo clip; docs/art/army: Thrust Slash for the spearmen)
 #   python3 -I realm/tools/meshy_api.py motion <rigging task id> <seconds> <out.fbx> "<prompt>"   a move made from a
 #       sentence (text to motion, prime) and laid on a rigged character at 24 fps, as FBX (the spearmen's thrust)
+#   python3 -I realm/tools/meshy_api.py remesh <in.glb> <out.glb> <triangles>   a finished model rebuilt lighter (Remesh
+#       API: triangles, its paint kept), for the town houses' far levels (Mac 2026-11-15, the fps round)
 #   python3 -I realm/tools/meshy_api.py balance
 # model: the square set's settings (docs/research/meshy-square-set.md) as the API names them: latest (Meshy 7.1),
 # 2k geometry, Meshy 7 texture at 2k with PBR, image enhancement, remeshed in triangles (target_polycount, 10k unless
@@ -120,6 +122,17 @@ def rig(task_id, out, height):
         print("WROTE", out)
 
 
+def remesh(src, out, tris):
+    body = {"model_url": "data:application/octet-stream;base64," + base64.b64encode(open(src, "rb").read()).decode(),
+            "topology": "triangle", "target_polycount": int(tris), "target_formats": ["glb"]}
+    tid = _call("POST", "remesh", body)["result"]
+    print("TASK", tid, flush=True)
+    t = _wait("remesh", tid, 10)
+    if t["status"] == "SUCCEEDED":
+        urllib.request.urlretrieve(t["model_urls"]["glb"], out)
+        print("WROTE", out)
+
+
 if __name__ == "__main__":
     a = sys.argv[1:]
     if a[0] == "model":
@@ -134,5 +147,7 @@ if __name__ == "__main__":
         rig(a[1], a[2], float(a[3]) if len(a) > 3 else 1.75)
     elif a[0] == "fetch":
         fetch(a[1], a[2])
+    elif a[0] == "remesh":
+        remesh(a[1], a[2], a[3])
     elif a[0] == "balance":
         print(_call("GET", "balance"))
