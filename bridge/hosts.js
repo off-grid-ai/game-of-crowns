@@ -85,7 +85,8 @@ function save(meta, orders) {
   chron.saveMeta(meta);
 }
 
-// POST /host/order {host, order, x?, y?, city?}: returns [code, {ok, text} | {error}].
+// POST /host/order {host, order, x?, y?, city?, face?}: returns [code, {ok, text} | {error}]. order: hold, march (x,y or
+// city), besiege (city), relieve (city), attack (x,y: the foe's men there), garrison (city), return, split.
 // dry: true (a march only) answers as the order would, by land or by sea, and gives nothing: no order, none of the
 // season's orders spent, no declaration (GoC's render pass asks before it spends a host's one order).
 export function order(ctx, b) {
@@ -108,7 +109,18 @@ function give(ctx, b) {
   const hosts = list(ctx);
   const h = hosts.find((x) => x.id === Number(b.host));
   if (!h) return [404, { error: "no such host" }];
-  const kind = String(b.order ?? "");
+  let kind = String(b.order ?? "");
+  // Besiege and relieve are marches on a named town (Army command's right-click on a town): besiege a great house's
+  // town not sworn to the crown (the march lays siege at the walls), relieve one of the crown's or a sworn house's.
+  if (kind === "besiege" || kind === "relieve") {
+    const at = b.city != null ? world.cities.find((c) => c.id === Number(b.city)) : null;
+    if (!at) return [400, { error: `choose a town to ${kind}` }];
+    const p = world.players.find((q) => q.id === at.owner);
+    const open = !p || houseFor(p).crown || sworn?.(p.id);
+    if (kind === "besiege" && (open || houseFor(p).wild)) return [400, { error: `${cityName(at.id)} is not a foe's town to besiege` }];
+    if (kind === "relieve" && !open) return [400, { error: `${cityName(at.id)} is not the crown's, nor a sworn house's, to relieve` }];
+    kind = "march";
+  }
   if (b.dry && kind !== "march") return [400, { error: "only a march can be asked dry" }];
   // One order a season to each host (data/hosts.json ordersPerHost): another host may still be ordered.
   if (ordersLeft(ctx, h.id) < 1) return [400, { error: "This host has its orders for this season; the next goes with the season's turn. Another host may still be ordered." }];
