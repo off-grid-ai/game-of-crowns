@@ -1,6 +1,6 @@
 [signal arg="spot:card"]
 A foe on your land.
 Defend sends your nearest free host. It marches there and falls on them.
-Raise the levy, and fresh men muster at Kingsmere. Call the banners, and loyal houses send theirs.
+Raise new men, and fresh men muster at Kingsmere. Call your vassals, and loyal houses send theirs.
 [signal arg="do:answer"]
 Do nothing, and the town's own guards stand alone. Choose.

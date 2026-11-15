@@ -636,17 +636,8 @@ func show_new() -> void:
 	next.custom_minimum_size = Vector2(240, 46)
 	# The one primary action on the page: filled with the accent, not just tinted.
 	var T := preload("res://scripts/theme.gd")
-	var filled := {"normal": T._box(Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.22), Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.55), 8, 10), "hover": T._box(Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.34), Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.8), 8, 10)}
 	var primary := func(b: Button, on: bool) -> void:
-		for look in filled:
-			if on:
-				b.add_theme_stylebox_override(look, filled[look])
-			else:
-				b.remove_theme_stylebox_override(look)
-		if on:
-			b.add_theme_color_override("font_color", T.ACCENT)
-		else:
-			b.remove_theme_color_override("font_color")
+		T.primary(b, on)  # theme.gd: the one primary look
 		b.add_theme_color_override("font_hover_color", T.TEXT)
 		b.add_theme_font_size_override("font_size", 17)
 	begin.pressed.connect(_begin)

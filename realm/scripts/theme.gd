@@ -54,6 +54,31 @@ static func _box(bg: Color, border: Color, radius := 10, pad := 16) -> StyleBoxF
 	return sb
 
 
+## How an action looks (Mac: "it doesn't feel like an action button"): the one we'd have him press filled with the
+## accent (primary), the others framed (secondary), a way to look somewhere a quiet link (the theme's own Button).
+## One look for every button row: the setup pages, the chronicle's cards. on=false takes the look off again.
+static func primary(b: Button, on := true) -> void:
+	_look(b, {"normal": _box(Color(ACCENT.r, ACCENT.g, ACCENT.b, 0.22), Color(ACCENT.r, ACCENT.g, ACCENT.b, 0.55), 8, 10),
+		"hover": _box(Color(ACCENT.r, ACCENT.g, ACCENT.b, 0.34), Color(ACCENT.r, ACCENT.g, ACCENT.b, 0.8), 8, 10)}, on)
+	if on:
+		b.add_theme_color_override("font_color", ACCENT)
+	else:
+		b.remove_theme_color_override("font_color")
+
+
+static func secondary(b: Button, on := true) -> void:
+	_look(b, {"normal": _box(Color(1, 1, 1, 0.05), Color(1, 0.95, 0.85, 0.28), 8, 10),
+		"hover": _box(Color(1, 1, 1, 0.11), Color(1, 0.95, 0.85, 0.45), 8, 10)}, on)
+
+
+static func _look(b: Button, looks: Dictionary, on: bool) -> void:
+	for look in looks:
+		if on:
+			b.add_theme_stylebox_override(look, looks[look])
+		else:
+			b.remove_theme_stylebox_override(look)
+
+
 static func get_theme() -> Theme:
 	if _theme:
 		return _theme

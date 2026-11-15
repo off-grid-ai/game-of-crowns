@@ -455,6 +455,7 @@ func _actions(e: Dictionary) -> HFlowContainer:
 	for r in go_row + rows:
 		var b: Button = ui.btn(String(r["label"]), r["call"])
 		b.disabled = not bool(r["enabled"])
+		b.set_meta("go", String(r["verb"]) == "go")
 		b.tooltip_text = String(r["why"]) if String(r["why"]) != "" else String(r["tip"])
 		b.add_theme_font_size_override("font_size", T.SIZE_DESC)
 		flow.add_child(b)
@@ -462,15 +463,24 @@ func _actions(e: Dictionary) -> HFlowContainer:
 	return flow
 
 
-## The rightmost button that can be pressed is the one we'd have him press: in the accent.
+## The answers look like actions (Mac: "it doesn't feel like an action button"): the rightmost one he can press is
+## the one we'd have him press, filled (theme.gd primary); the other answers framed (secondary); Go there stays a
+## quiet link, a way to look and not an answer.
 func _mark_primary(flow: Container) -> void:
-	for b in flow.get_children():
-		(b as Button).remove_theme_color_override("font_color")
+	var lit := false
 	for i in range(flow.get_child_count() - 1, -1, -1):
 		var b := flow.get_child(i) as Button
-		if b and not b.disabled:
-			b.add_theme_color_override("font_color", T.ACCENT)
-			return
+		if b == null:
+			continue
+		T.primary(b, false)
+		T.secondary(b, false)
+		if bool(b.get_meta("go", false)):
+			continue
+		if not lit and not b.disabled:
+			T.primary(b)
+			lit = true
+		else:
+			T.secondary(b)
 
 
 ## The card's kind in a word or two (ui.json chronicle.kinds), with the story's name for a story's beat.

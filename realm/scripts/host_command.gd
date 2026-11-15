@@ -143,26 +143,25 @@ func ground_of(id: int) -> Vector3:
 	return _ground(host(id))
 
 
-## The host's men on screen: the rectangle round every company's drawn bodies (their meshes' bounds, projected), or
-## an empty one when none is in view. The Hand's tour rings this (hand_prompts.gd).
+## The host's men on screen: the rectangle round where each company stands, widened by a company's own breadth
+## (host_command.json company_reach, world units) as the lens sees it; empty when none is in view. Positions, not
+## mesh bounds: a host drawn in bulk has one mesh whose bounds span the land (Mac: "where is the host?").
 func screen_rect_of(id: int, cam: Camera3D) -> Rect2:
 	var out := Rect2()
 	var any := false
+	var reach := Data.num(FILE, "company_reach", 3.0)
 	for u in host(id).get("units", []):
 		var f: Node3D = main.units.figure_of(int(u))
 		if f == null or not is_instance_valid(f) or not f.is_visible_in_tree():
 			continue
-		for v in f.find_children("*", "VisualInstance3D", true, false):
-			if not (v as VisualInstance3D).is_visible_in_tree():
-				continue
-			var box: AABB = (v as VisualInstance3D).global_transform * (v as VisualInstance3D).get_aabb()
-			for i in 8:
-				var p := box.get_endpoint(i)
-				if cam.is_position_behind(p):
-					continue
-				var s2 := cam.unproject_position(p)
-				out = Rect2(s2, Vector2.ZERO) if not any else out.expand(s2)
-				any = true
+		var at := f.global_position
+		if cam.is_position_behind(at):
+			continue
+		var c := cam.unproject_position(at)
+		var r := c.distance_to(cam.unproject_position(at + cam.global_transform.basis.x * reach))
+		var box := Rect2(c - Vector2(r, r), Vector2(r, r) * 2.0)
+		out = box if not any else out.merge(box)
+		any = true
 	return out
 
 

@@ -269,7 +269,7 @@
   },
   "verbs": {
     "defend": {
-      "label": "Defend",
+      "label": "Defend with your host",
       "tip": "The royal host at {from} ({men} troops) marches to hold {town}",
       "going": "The royal host is on its way",
       "holds": "The royal host holds {town}",
@@ -279,7 +279,7 @@
       ]
     },
     "levy": {
-      "label": "Raise the levy",
+      "label": "Raise new men",
       "decree": "levy",
       "tip": "600 men muster at Kingsmere",
       "at": "seat",
@@ -322,7 +322,7 @@
       ]
     },
     "banners": {
-      "label": "Call the banners",
+      "label": "Call your vassals",
       "decree": "banners",
       "at": "seat",
       "tip": "Loyal houses send men to Kingsmere",
