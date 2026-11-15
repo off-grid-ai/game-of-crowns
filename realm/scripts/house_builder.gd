@@ -151,37 +151,53 @@ static func _tex_key(mat: Material) -> String:
 
 
 func _bake(parts: Array, remap := {}) -> ArrayMesh:
+	return _bake_cpu(parts, remap).get_mesh()
+
+
+## The pieces gathered as plain arrays, one surface a material (never read back from the renderer: a read waits on the
+## GPU, and while towns build that wait ran past Metal's fence timeout: 41 in the supervisor's run 3, torn frames).
+func _bake_cpu(parts: Array, remap := {}) -> ImporterMesh:
 	var tools := {}
 	for p in parts:
 		var n: Node3D = _piece(p[0])
 		var accent := "MI_Shutter" if String(p[0]).begins_with("WindowShutters") else ("MI_Door" if String(p[0]).begins_with("Door_") else "")
 		_collect(n, p[1], tools, accent, p[2] if (p as Array).size() > 2 else remap)  # a part's own remap: a dyed cloth (build_pieces)
 		n.free()
-	var mesh := ArrayMesh.new()
+	var mesh := ImporterMesh.new()
 	for key in tools:
 		var st: SurfaceTool = tools[key]["st"]
-		st.commit(mesh)
 		# Whatever comes right up to the lens (a wagon on the road, a bush, a cart at
 		# the street) dissolves, dithered, as the realistic kit's models and the
 		# people do: the camera never sits inside a prop (realistic.gd fade_near).
 		var mat = tools[key]["mat"]
 		if mat is BaseMaterial3D:
 			preload("res://scripts/realistic.gd").fade_near(mat)
-		mesh.surface_set_material(mesh.get_surface_count() - 1, mat)
+		mesh.add_surface(Mesh.PRIMITIVE_TRIANGLES, st.commit_to_arrays(), [], {}, mat)
 	return mesh
 
 
 ## Every house and model baked this session, by what it was baked from (a spec, a model's path): one house kind or
 ## one tree is baked, merged and given its detail levels once a session, never again (FPS: each town baked its
-## houses afresh). Callers get their own copy (they set their own materials on it: forest.gd's leaves, a castle's own).
-static var _baked := {}
+## houses afresh). Callers get their own copy (they set their own materials on it: forest.gd's leaves, a castle's own),
+## made from the bake's plain arrays (ImporterMesh) and handed to the renderer: never a copy read back from it (an
+## ArrayMesh's duplicate() reads every surface back from the GPU, and waited past Metal's fence timeout mid-build).
+static var _baked := {}  # key -> ImporterMesh (the plain arrays)
 
 
 static func _once(key: String, make: Callable) -> ArrayMesh:
 	if not _baked.has(key):
-		_baked[key] = make.call()
-	var mesh: ArrayMesh = _baked[key]
-	return mesh.duplicate() if mesh else null
+		var made: Variant = make.call()
+		_baked[key] = made if made is ImporterMesh or made == null else _plain(made)
+	var im: ImporterMesh = _baked[key]
+	return (im.duplicate() as ImporterMesh).get_mesh() if im else null
+
+
+## A mesh built straight to the renderer (a house's tiers, its pieces), read back once as plain arrays.
+static func _plain(mesh: ArrayMesh) -> ImporterMesh:
+	var im := ImporterMesh.new()
+	for s in mesh.get_surface_count():
+		im.add_surface(mesh.surface_get_primitive_type(s), mesh.surface_get_arrays(s), [], {}, mesh.surface_get_material(s), mesh.surface_get_name(s))
+	return im
 
 
 ## spec: {w: cells across (2-4), d: cells deep (2-4), floors: 1-3, style: "plaster"|"timber"|"brick", seed}
@@ -376,13 +392,12 @@ func bake_path(path: String) -> ArrayMesh:
 	return _once("path:" + path, _bake_lods.bind(path))
 
 
-func _bake_lods(path: String) -> ArrayMesh:
+func _bake_lods(path: String) -> ImporterMesh:
 	bake_ahead(path)
 	var job: Array = _ahead[path]
 	_ahead.erase(path)
 	WorkerThreadPool.wait_for_task_completion(int(job[0]))
-	var im: ImporterMesh = job[1][0]
-	return im.get_mesh()  # handed to the renderer on the main thread
+	return job[1][0]  # plain arrays: each caller's copy is handed to the renderer on the main thread (_once)
 
 
 ## A model's bake started ahead (dressing.gd warm, as the realm boots): its pieces gathered into one mesh here on
@@ -392,10 +407,10 @@ static var _ahead := {}  # path -> [worker task, [ImporterMesh when done]]
 func bake_ahead(path: String) -> void:
 	if _baked.has("path:" + path) or _ahead.has(path):
 		return
-	var mesh := _bake([[path, Transform3D()]])
+	var mesh := _bake_cpu([[path, Transform3D()]])
 	var surfs := []
 	for s in mesh.get_surface_count():
-		surfs.append([mesh.surface_get_arrays(s), mesh.surface_get_material(s)])
+		surfs.append([mesh.get_surface_arrays(s).duplicate(), mesh.get_surface_material(s)])
 	var out := [null]
 	_ahead[path] = [WorkerThreadPool.add_task(func(): out[0] = _lods_of(surfs), false, "bake " + path.get_file()), out]
 
