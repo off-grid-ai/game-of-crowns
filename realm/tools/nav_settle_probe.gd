@@ -4,7 +4,7 @@ extends SceneTree
 ## nav_world.bake 21-32 s of worker time per 10 s (66-89 bakes) while towns rose in small paced steps and roads painted
 ## stretch by stretch, physics+input 162 ms a frame (each region's new mesh rebuilds its map on the next physics step).
 ## nav_probe's made-up realm (2 x 2 chunks), baked; then a cottage rises in chunk (0, 0) every 0.5 s for 6 s (what
-## stands changes there: ground.gd shapes_at). Asserts:
+## stands changes there: the keeper says ground.gd forget over it, which re-lays its things and counts shapes_at). Asserts:
 ##   1. nothing is baked while it keeps rising (each change restarts the chunk's nav.settle);
 ##   2. once it stops, the chunk is baked no sooner than nav.settle after the last change, and once: no more layers
 ##      than one bake of the chunk on every land map;
@@ -66,8 +66,7 @@ func _run() -> void:
 	var first_bake := -1
 	for i in STEPS:
 		_rising.n += 1
-		Ground.shapes_at[Vector2i(0, 0)] = int(Ground.shapes_at.get(Vector2i(0, 0), 0)) + 1
-		Ground.shapes_rev += 1
+		Ground.forget(Rect2(0.0, 0.0, 16.0, 16.0))  # the keeper says its things changed there (as forest.gd does)
 		last_change = Time.get_ticks_msec()
 		while Time.get_ticks_msec() - last_change < EVERY_MS:
 			await process_frame
@@ -76,7 +75,7 @@ func _run() -> void:
 				laid_at.append(Time.get_ticks_msec())
 	_check(NavWorld.baked == baked0, "nothing is baked while the town keeps rising (%d layers)" % (NavWorld.baked - baked0))
 	var end := Time.get_ticks_msec() + 30000
-	while Time.get_ticks_msec() < end and not (_settled(Vector2i(0, 0)) and Time.get_ticks_msec() - last_change > settle + 2000):
+	while Time.get_ticks_msec() < end and not (first_bake >= 0 and _settled(Vector2i(0, 0)) and Time.get_ticks_msec() - last_change > settle + 2000):
 		await process_frame
 		if first_bake < 0 and NavWorld.baked != baked0:
 			first_bake = Time.get_ticks_msec()
@@ -84,16 +83,16 @@ func _run() -> void:
 			landings = NavWorld.landings
 			laid_at.append(Time.get_ticks_msec())
 	_check(_settled(Vector2i(0, 0)), "once it stops, chunk (0, 0) is baked from what stands now")
-	_check(first_bake >= last_change + int(settle) - 50, "baked %d ms after the last change (no sooner than nav.settle, %d)" % [first_bake - last_change, int(settle)])
+	_check(first_bake >= 0 and first_bake >= last_change + int(settle) - 50, "baked %d ms after the last change (no sooner than nav.settle, %d)" % [first_bake - last_change, int(settle)])
 	var layers := 0
 	for k in NavWorld.LAND_KINDS:
 		layers += (NavWorld._chunks[k][Vector2i(0, 0)]["regions"] as Dictionary).size()
-	_check(NavWorld.baked - baked0 <= layers, "baked once: %d layers (one bake on every land map: %d)" % [NavWorld.baked - baked0, layers])
+	_check(NavWorld.baked > baked0 and NavWorld.baked - baked0 <= layers, "baked once: %d layers (one bake on every land map: %d)" % [NavWorld.baked - baked0, layers])
 	var close := 0
 	for i in range(1, laid_at.size()):
 		if int(laid_at[i]) - int(laid_at[i - 1]) < int(land_every) - 20:
 			close += 1
-	_check(close == 0, "bakes laid on the maps together, nav.land_every apart (%d layings, %d too close)" % [laid_at.size(), close])
+	_check(not laid_at.is_empty() and close == 0, "bakes laid on the maps together, nav.land_every apart (%d layings, %d too close)" % [laid_at.size(), close])
 	print("NAV SETTLE %s" % ("PASS" if _bad == 0 else "FAIL (%d)" % _bad))
 	quit(0 if _bad == 0 else 1)
 
