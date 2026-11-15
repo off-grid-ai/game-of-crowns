@@ -141,12 +141,16 @@ func _build(e: Dictionary) -> void:
 		row.add_child(b)
 
 
-## What the King can do about this story, as buttons ({label, do}). The one owner of that is to be news_actions.gd
-## (news_actions.verbs(entry)); until it lands, the one verb is going there.
-func _verbs(_e: Dictionary) -> Array:
-	var rig: Node = main.rig
-	var at := _place  # where it stands as he asks (a person walks on; the card reads it each frame)
-	return [{"label": "Go there", "do": func(): rig.go_to(_place if _place != Vector3.INF else at, float(rig.goal_distance))}]
+## What the King can do about this story, as buttons ({label, do}): news_actions.gd's rows for it (the one owner:
+## Send relief, Hold a feast, Rule on it at court, Go there...), those he can give now; one he can't (the purse, the
+## year) is left off here, and its notice says why.
+func _verbs(e: Dictionary) -> Array:
+	var acts: Node = preload("res://scripts/news_actions.gd").one
+	var out := []
+	for r in (acts.verbs(e) if acts else []):
+		if bool(r["enabled"]):
+			out.append({"label": String(r["label"]), "do": r["call"]})
+	return out
 
 
 ## What is happening at the story's town now, as the map's hover says it (map_tip.gd: whose it is, besieged, hungry,

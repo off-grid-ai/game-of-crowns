@@ -61,7 +61,7 @@ func _on_staged(s: Dictionary, follow: Node3D) -> void:
 			return
 	if kind in KINGS_OWN or kind in WAR:
 		# The King's own deeds are always offered; what the lords do, at most every 20 s.
-		_offer(main.director.caption(s), main.director.watch.bind(s, follow), kind in KINGS_OWN and not s.get("lord", false))
+		_offer(main.director.caption(s), _watch.bind(s, follow), kind in KINGS_OWN and not s.get("lord", false))
 
 
 ## A court matter waiting at its place (court_panel.gd, through ui.court_waits_at): it
@@ -107,7 +107,16 @@ func _to_news() -> void:
 		(_news["go"] as Callable).call()
 		return
 	var f = _news.get("follow")
-	main.director.watch(_news["s"], f if is_instance_valid(f) else null)
+	_watch(_news["s"], f if is_instance_valid(f) else null)
+
+
+## The camera goes to a scene (Watch, Space) and its card opens there (story_card.gd): what it is, what is happening
+## at its town now, and what the King can do about it (news_actions.gd's rows for its kind and town).
+func _watch(s: Dictionary, follow: Node3D) -> void:
+	main.director.watch(s, follow)
+	var at: Vector3 = follow.global_position if is_instance_valid(follow) else main.terrain.world_pos(float(s.get("x", 0)), float(s.get("y", 0)))
+	var e := {"thread": main.director.caption(s), "text": String(s.get("text", "")), "city": s.get("city"), "kind": String(s.get("kind", ""))}
+	preload("res://scripts/story_card.gd").new().show_story(main, e, at, follow, preload("res://scripts/ui.gd").ui_num("story_card.town_radius", 2.0), "")
 
 
 func _back_from_news() -> void:

@@ -134,7 +134,9 @@ func _tick(e: Dictionary, loss: bool) -> void:
 	var item: Control = l
 	var acts := NewsActions.one
 	var rows: Array = acts.verbs(e) if acts else []
-	if rows.size() > 1 or (rows.size() == 1 and String(rows[0]["verb"]) != "go"):
+	if e.get("thread"):
+		l.pressed.connect(func(): ui.story_opened.emit(e))  # a story's beat: its card opens again, its answers on it (story_card.gd)
+	elif rows.size() > 1 or (rows.size() == 1 and String(rows[0]["verb"]) != "go"):
 		var box := VBoxContainer.new()
 		box.add_theme_constant_override("separation", 4)
 		box.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
