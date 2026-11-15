@@ -103,6 +103,10 @@ func _ready() -> void:
 	_dots_sel = _dots(gold)
 	_dots_rest = _dots(Color(gold, Data.num(FILE, "route.others_alpha", 0.4)))
 	_ghosts = _dots(Color.from_string(String(Data.value(FILE, "face.color", "#f0c878")), T.ACCENT), Data.num(FILE, "face.ghost", 0.12))
+	# The interface is raised after the realm (the title, then the chronicle's start): the card waits for it, or it
+	# was never built and a selected host showed no orders (Mac: "I've selected the host, what do I do now?").
+	while main.ui == null:
+		await get_tree().process_frame
 	_build_card()
 	_build_overlay()
 	add_child(load("res://scripts/battle_card.gd").new(main))  # the King's battles, when they are over (battle_card.gd)
