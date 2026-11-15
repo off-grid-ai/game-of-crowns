@@ -146,6 +146,7 @@ func _ready() -> void:
 		push_error("ARMY no host to show (the crown has no soldiers, and no head count was given)")
 		return
 	var colours := _colours()
+	var t_raise := Time.get_ticks_usec()
 	for i in specs.size():
 		var k := i % colours.size() if colour_mode() == "houses" else 0
 		var r := _regiment(specs[i], battle["colour"], battle.get("house", {})) if battle.has("colour") else _regiment(specs[i], colours[k], _worn[k] if k < _worn.size() else {})
@@ -156,6 +157,8 @@ func _ready() -> void:
 	if _regiments.is_empty():
 		push_error("ARMY no soldier mesh to raise the host with")
 		return
+	PerfTools.add("army.raise.regiments", Time.get_ticks_usec() - t_raise)  # its share of the frame (GOC_PERF_PROBE)
+	t_raise = Time.get_ticks_usec()
 	# The line: where it stands and the way it faces, every regiment's place in it.
 	var placed := Formation.line_places(_regiments)
 	var extent: Vector2 = placed["extent"]
@@ -171,6 +174,7 @@ func _ready() -> void:
 			mo.clip = ""
 			mo.turn_rate = 3.0
 		_standard_up()
+		PerfTools.add("army.raise.host", Time.get_ticks_usec() - t_raise)  # its share of the frame (GOC_PERF_PROBE)
 		mustered = true
 		raised.emit()
 		if not _pending_hulls.is_empty():
@@ -193,6 +197,8 @@ func _ready() -> void:
 	if not is_nan(_order_face):  # its order's facing (the card's drag): the line turns to it where it stands
 		_face = _order_face
 		_take_field(extent)
+	PerfTools.add("army.raise.place", Time.get_ticks_usec() - t_raise)  # its share of the frame (GOC_PERF_PROBE)
+	t_raise = Time.get_ticks_usec()
 	if ground == null:
 		ground = Ground.around(main, _field, maxf(extent.x, extent.y) * 0.5 + Data.num("army", "march.lead", 5.0) + 3.0)
 	for r in _regiments:
@@ -241,6 +247,7 @@ func _ready() -> void:
 	if not battle.get("quiet", false):
 		print("ARMY mustered men=%d regiments=%d %s host=%d shape=%s by %s at %s, line at %s facing %.2f, road in %.1f units" % [_men(), _regiments.size(), str(roles), host_id, shape,
 		String(seat.get("name", "?")), str(town), str(_field), _face, _cum[_cum.size() - 1] if not _cum.is_empty() else 0.0])
+	PerfTools.add("army.raise.form", Time.get_ticks_usec() - t_raise)  # its share of the frame (GOC_PERF_PROBE)
 	_hold = battle.is_empty()  # the camera on the army itself, at the shot's own --dist, for the whole take (a test aid); a battle frames itself
 	mustered = true
 	raised.emit()
