@@ -1,7 +1,7 @@
 extends SceneTree
 ## Bakes what every new game would otherwise make on the player's Mac at first launch, into the game itself (Mac,
 ## 2026-11-15: "cant you just bundle it"): every model's merged mesh and its low level (realistic.gd) and the starting
-## realm's towns (towns.gd, with the ground, crops and dressing they make), into res://baked/ through kept.gd, the one
+## realm's towns and the saved chronicle's as it stands (towns.gd, with the ground, crops and dressing they make), into res://baked/ through kept.gd, the one
 ## loader the game reads them by (an exported game: baked, else the player's own copy, else made and kept there), under
 ## the scripts' and data's fingerprint, stamped in res://baked/code.txt.
 ##
@@ -12,6 +12,8 @@ extends SceneTree
 const Real := preload("res://scripts/realistic.gd")
 const Kept := preload("res://scripts/kept.gd")
 const BASE := "res://../bridge/baseline/aldmere/"
+const BRIDGE := "res://../bridge"
+const CHRONICLES_OUT := "user://bake/chronicles"  # the chronicles' realms as read for the bake (chronicle-world.mjs)
 const WAIT_S := 1800.0
 
 
@@ -38,11 +40,38 @@ func _run() -> void:
 ## The starting realm's towns, raised as main.gd raises them and kept (towns.gd keeps each town it raises) from the
 ## world a new reign's first sync sends (bridge/baseline/aldmere/state/world_served.json, bridge/tools/baseline-world.mjs)
 ## on its land. Every reign seats the same bannermen in the starting towns (bridge 0ed3fcb8), so each keys as in play.
+## Then the towns of the saved chronicle the game continues (bridge/chronicles/active), as they stand now: a realm years
+## in has grown its towns past the starting ones, and each of those would otherwise be raised in play (Mac's game,
+## 2026-11-15: his chronicle's towns built for minutes at 1-10 fps). bridge/tools/chronicle-world.mjs reads the
+## chronicle's last snapshot in the shape the bridge serves it (no bridge needed); a town keyed as a starting one is
+## read back, not raised twice.
 func _towns() -> int:
 	var base := ProjectSettings.globalize_path(BASE).simplify_path()
 	var world: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(base + "/state/world_served.json"))
 	var map: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(base + "/state/map.json"))
 	map["land"] = (JSON.parse_string(FileAccess.get_file_as_string(base + "/baseline.json")) as Dictionary)["land"]
+	var stood := await _realm(world, map)
+	print("BAKE towns: the starting realm's %d" % stood)
+	var out := ProjectSettings.globalize_path(CHRONICLES_OUT)
+	var said := []
+	var bridge := ProjectSettings.globalize_path(BRIDGE).simplify_path()
+	if OS.execute("node", [bridge + "/tools/chronicle-world.mjs", out], said, true) != 0:
+		print("BAKE chronicles: none read (node %s/tools/chronicle-world.mjs: %s)" % [bridge, "".join(said).strip_edges()])
+		return stood
+	for id in "".join(said).strip_edges().split("\n", false):
+		if not FileAccess.file_exists(out.path_join(id + ".world.json")):
+			print("BAKE chronicles: %s" % id)  # what the reader said of a chronicle it couldn't read
+			continue
+		var w: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(out.path_join(id + ".world.json")))
+		var m: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(out.path_join(id + ".map.json")))
+		var n := await _realm(w, m)
+		print("BAKE towns: chronicle %s's %d (turn %d)" % [id, n, int(w.get("turn", 0))])
+		stood += n
+	return stood
+
+
+## One realm's towns raised on its land and kept, then the realm taken down: how many stand.
+func _realm(world: Dictionary, map: Dictionary) -> int:
 	var store: Node = load("res://scripts/awareness.gd").new()
 	root.add_child(store)
 	await process_frame
@@ -56,7 +85,12 @@ func _towns() -> int:
 	towns.sync(store.houses_by_id())
 	while towns.building():
 		await process_frame
-	return towns.towns.size()
+	var n: int = towns.towns.size()
+	for n2 in [towns, terrain, store]:
+		root.remove_child(n2)
+		n2.queue_free()
+	await process_frame
+	return n
 
 
 ## Everything under a folder of the bake's, gone (an older bake's files are never read again).
