@@ -88,9 +88,17 @@ func _look() -> String:
 func _nodes() -> String:
 	var counts := []
 	for child in get_parent().get_children():
-		counts.append([child.name, _count(child)])
+		counts.append([_label(child), _count(child)])
 	counts.sort_custom(func(a, b): return a[1] > b[1])
 	return "%s NODES %s" % [Time.get_time_string_from_system(), " ".join(counts.slice(0, 8).map(func(c): return "%s=%d" % c))]
+
+
+## A part's name, or for an unnamed one (@Node3D@16) the script that made it: which system is piling up.
+static func _label(n: Node) -> String:
+	var script: Script = n.get_script()
+	if String(n.name).begins_with("@") and script != null:
+		return "%s(%s)" % [n.name, script.resource_path.get_file().get_basename()]
+	return String(n.name)
 
 
 static func _count(n: Node) -> int:
