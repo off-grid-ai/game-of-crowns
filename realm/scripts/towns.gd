@@ -456,7 +456,7 @@ func _merge(standing: Node3D, fresh: Node3D) -> void:
 			fresh.remove_child(n)
 			standing.add_child(n)
 		elif n is MultiMeshInstance3D:
-			if not _same_batch((old as MultiMeshInstance3D).multimesh, (n as MultiMeshInstance3D).multimesh):
+			if not _same_batch(old as MultiMeshInstance3D, n as MultiMeshInstance3D):
 				(old as MultiMeshInstance3D).multimesh = (n as MultiMeshInstance3D).multimesh
 		elif _contents(old) != _contents(n):
 			# A holder whose contents grew (its fields, its castle's parts): the new one in its place.
@@ -509,11 +509,13 @@ static func _contents(n: Node) -> int:
 	return hash(parts)
 
 
-static func _same_batch(a: MultiMesh, b: MultiMesh) -> bool:
-	if a == null or b == null or a.instance_count != b.instance_count:
+static func _same_batch(a: MultiMeshInstance3D, b: MultiMeshInstance3D) -> bool:
+	var ax: Array = a.get("xfs") if a.get_script() == Batch else []
+	var bx: Array = b.get("xfs") if b.get_script() == Batch else []
+	if a.multimesh == null or b.multimesh == null or ax.is_empty() or ax.size() != bx.size():
 		return false
-	for i in a.instance_count:
-		if not a.get_instance_transform(i).is_equal_approx(b.get_instance_transform(i)):
+	for i in ax.size():
+		if not (ax[i] as Transform3D).is_equal_approx(bx[i]):
 			return false
 	return true
 
@@ -571,9 +573,10 @@ func _hide_home(node: Node3D, h: Array) -> Array:
 			continue
 		var mm: MultiMesh = (g as MultiMeshInstance3D).multimesh
 		var idx := int(h[4])
-		if mm == null or idx >= mm.instance_count:
+		var at: Array = g.get("xfs") if g.get_script() == Batch else []
+		if mm == null or idx >= at.size():
 			continue
-		var t := mm.get_instance_transform(idx)
+		var t: Transform3D = at[idx]  # its own list, never the renderer's copy
 		out.append([mm, idx, t])
 		mm.set_instance_transform(idx, Transform3D(Basis.from_scale(Vector3.ONE * 0.0001), t.origin))
 	return out
@@ -594,6 +597,7 @@ func nearest(pos: Vector3, max_dist := 6.0) -> Dictionary:
 
 const Fire := preload("res://scripts/fire.gd")  # fire v2: shaped flames (data/fire.json)
 const Real = preload("res://scripts/realistic.gd")
+const Batch := preload("res://scripts/batch.gd")  # one mesh many times, owning where each copy stands
 const TownTiers := preload("res://scripts/town_tiers.gd")  # which house on which plot (towns.json tiers)
 const TownTrades := preload("res://scripts/town_trades.gd")  # which working buildings, and where (towns.json trades)
 var _tiers: RefCounted = null  # the town being built's house decider (town_tiers.gd)
@@ -2177,14 +2181,7 @@ func _flush(root: Node3D) -> void:
 	for kind in _batch:
 		var xfs: Array = _batch[kind]
 		for part in Real.parts(kind):
-			var mm := MultiMesh.new()
-			mm.transform_format = MultiMesh.TRANSFORM_3D
-			mm.mesh = part[0]
-			mm.instance_count = xfs.size()
-			for i in xfs.size():
-				mm.set_instance_transform(i, xfs[i] * part[1])
-			var mmi := MultiMeshInstance3D.new()
-			mmi.multimesh = mm
+			var mmi := Batch.make("", part[0], xfs.map(func(x: Transform3D) -> Transform3D: return x * part[1]))
 			mmi.set_meta("kind", kind)  # which kit model it batches (fire.gd finds a burnt house's place in it)
 			if is_detail(kind):
 				detail(mmi, _reach_for(kind))  # a prop, cart or stall: gone by the far tier, faded
@@ -2248,14 +2245,7 @@ static func detail(g: GeometryInstance3D, end := DETAIL_END) -> void:
 static var HLOD_AT: float = preload("res://scripts/camera_rig.gd").knob("view_tier.near_below", 18.0)
 func _hlod(root: Node3D, high: MultiMeshInstance3D, low: Mesh, kind: String) -> void:
 	var fade := float((Data.value("towns", "hlod", {}) as Dictionary).get("fade", 3.0))
-	var mm := MultiMesh.new()
-	mm.transform_format = MultiMesh.TRANSFORM_3D
-	mm.mesh = low
-	mm.instance_count = high.multimesh.instance_count
-	for i in mm.instance_count:
-		mm.set_instance_transform(i, high.multimesh.get_instance_transform(i))
-	var far := MultiMeshInstance3D.new()
-	far.multimesh = mm
+	var far := Batch.make("", low, high.get("xfs"))  # where the whole copies stand, from their own list
 	far.set_meta("kind", kind)  # a burnt or rising house is hidden in it too (fire.gd, _hide_home: every batch of its kind)
 	far.set_meta("hlod", "low")
 	far.visibility_range_begin = HLOD_AT

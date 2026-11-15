@@ -13,6 +13,7 @@ extends Node3D
 
 const Awareness := preload("res://scripts/awareness.gd")  # the view's one store: minds are written through its reducer (assign)
 const Data := preload("res://scripts/data.gd")  # the one loader of realm/data (data.gd)
+const Batch := preload("res://scripts/batch.gd")  # a town's batches own where each copy stands
 const FLAME_SHADER := preload("res://scripts/stylized_fire.gdshader")
 const CHAR_SHADER := preload("res://scripts/charred.gdshader")
 const WeatherFx := preload("res://scripts/weather_fx.gd")
@@ -769,9 +770,10 @@ func _char(root: Node3D, key: String, h: Array) -> Dictionary:
 				continue
 			var mm: MultiMesh = (g as MultiMeshInstance3D).multimesh
 			var idx := int(h[4])
-			if mm == null or mm.mesh == null or idx >= mm.instance_count:
+			var at: Array = g.get("xfs") if g.get_script() == Batch else []
+			if mm == null or mm.mesh == null or idx >= at.size():
 				continue
-			var t := mm.get_instance_transform(idx)
+			var t: Transform3D = at[idx]  # the batch's own list, never the renderer's copy (batch.gd)
 			hidden.append([mm, idx, t])
 			mm.set_instance_transform(idx, Transform3D(Basis.from_scale(Vector3.ONE * 0.0001), t.origin))
 			var mi := MeshInstance3D.new()

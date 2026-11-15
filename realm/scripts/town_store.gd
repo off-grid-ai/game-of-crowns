@@ -13,6 +13,7 @@ extends RefCounted
 ## a node belongs to ("town_roots", "hearths") is written as a meta and joined again.
 
 const Kept := preload("res://scripts/kept.gd")  # where a town is kept: the game's baked copy, else the player's
+const Batch := preload("res://scripts/batch.gd")  # a batch keeps where its copies stand; it refills itself when read
 
 static var _land := {}  # the map's tiles -> their hash, for the map last asked
 
@@ -31,7 +32,17 @@ static func path_of(c: Dictionary, house: Dictionary, tiles: Array) -> String:
 ## a copy of what they hold and put back after packing, so the town in play is untouched.
 static func save(root: Node3D, path: String) -> void:
 	var kept := []  # [node, meta, value as it was]
+	var batches := []  # [batch, its MultiMesh]: packed empty, so the file keeps the batch's own list, not the renderer's copy
 	for n in [root] + _owned(root, root, []):
+		if n.get_script() == Batch and (n as MultiMeshInstance3D).multimesh:
+			var mm: MultiMesh = (n as MultiMeshInstance3D).multimesh
+			var empty := MultiMesh.new()
+			empty.transform_format = mm.transform_format
+			empty.use_colors = mm.use_colors
+			empty.use_custom_data = mm.use_custom_data
+			empty.mesh = mm.mesh
+			batches.append([n, mm])
+			(n as MultiMeshInstance3D).multimesh = empty
 		var groups := PackedStringArray()
 		for g in n.get_groups():
 			if not String(g).begins_with("_"):
@@ -47,6 +58,8 @@ static func save(root: Node3D, path: String) -> void:
 				n.set_meta(m, w)
 	var scene := PackedScene.new()
 	var ok := scene.pack(root)
+	for b in batches:
+		(b[0] as MultiMeshInstance3D).multimesh = b[1]
 	for k in kept:
 		if k[2] == null:
 			(k[0] as Node).remove_meta(k[1])

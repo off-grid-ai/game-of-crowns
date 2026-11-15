@@ -8,6 +8,7 @@ extends Node3D
 const Units := preload("res://scripts/world_units.gd")  # the world's one scale (Units.M)
 const Real = preload("res://scripts/realistic.gd")
 const Kept := preload("res://scripts/kept.gd")
+const Batch := preload("res://scripts/batch.gd")
 const S := Units.M  # game units per metre
 static var NEAR_TOWN: float = preload("res://scripts/data.gd").num("countryside", "near_town", 2.4)  # tiles kept clear around a town for its own fields
 const CHUNK := 20.0  # farms are kept and batched by patch of land, so distant ones still cull
@@ -578,16 +579,11 @@ static func sow(parent: Node3D, land: Node3D, origin: Vector3, kind: String, c: 
 	if pts.is_empty():
 		return
 	var at := Vector3(c.x, low, c.z)
-	var mm := MultiMesh.new()
-	mm.transform_format = MultiMesh.TRANSFORM_3D
-	mm.mesh = mesh
-	mm.instance_count = pts.size()
+	var xfs: Array = []
 	for i in pts.size():
 		var k := rng.randf_range(0.85, 1.15) * grow
-		mm.set_instance_transform(i, Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(k, k * rng.randf_range(0.9, 1.1), k)), pts[i] - at - Vector3(0, 0.01, 0)))
-	var mmi := MultiMeshInstance3D.new()
-	mmi.name = "Crop"
-	mmi.multimesh = mm
+		xfs.append(Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(k, k * rng.randf_range(0.9, 1.1), k)), pts[i] - at - Vector3(0, 0.01, 0)))
+	var mmi := Batch.make("Crop", mesh, xfs)  # it owns where each plant stands: a kept town keeps that, not the renderer's copy
 	mmi.position = at - origin
 	mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	mmi.visibility_range_end = CROP_REACH
