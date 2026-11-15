@@ -96,8 +96,13 @@ export class Stakes {
       return;
     }
     const crown = crownOf(world);
-    const seat = world.cities.find((c) => c.owner === crown?.id && c.capital) ?? world.cities.find((c) => c.title === "Kingsmere");
-    if (seat) this.s.seat = { id: seat.id, x: seat.x, y: seat.y };
+    // The crown's seat is fixed the first time it is known and never moves after: when Kingsmere falls, Freeciv hands
+    // the crown a new palace elsewhere, and re-reading "the crown's capital" every turn followed it there, so the
+    // loss below never saw Kingsmere go (Mac 2026-11-15: Kingsmere held by House Highfell and the reign went on).
+    if (!this.s.seat) {
+      const seat = world.cities.find((c) => c.owner === crown?.id && c.capital) ?? world.cities.find((c) => c.title === "Kingsmere");
+      if (seat) this.s.seat = { id: seat.id, x: seat.x, y: seat.y };
+    }
 
     // --- Losing the crown ---------------------------------------------------
     // Deposed: Kingsmere is in other hands, or the crown no longer exists at all.
