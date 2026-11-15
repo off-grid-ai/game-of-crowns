@@ -12,7 +12,10 @@ extends SceneTree
 ##   3. a claim released, a place gone, a stall set down in the town's life, trees felled and a town razed change
 ##      the answers at once;
 ##   4. a fight's route grid (army_ground.gd) lies on the map's own cells and copies them: every cell shut or open as
-##      is_clear answers at its middle.
+##      is_clear answers at its middle;
+##   5. a regiment's rectangle asked in one call (area_free, as army.gd _clear_at asks it) at 1000 random placements:
+##      never clear where the old grid of point asks (every muster.probe, 0.05 reach) refused, refused only where
+##      something stands within it (the grid stepped over a trunk or a hedge), under 50 us an ask.
 ## Prints CHECK lines; exits 1 on a fail.   arch -arm64 godot --headless --path realm -s res://tools/occupancy_probe.gd
 
 const Ground := preload("res://scripts/ground.gd")
@@ -152,6 +155,7 @@ func _run() -> void:
 	_agree("set down", 20000)
 	_speed()
 	await _route_grid()
+	_rectangles()
 	_changes()
 	_agree("after the changes", 8000)
 	print("OCCUPANCY %s (%d failed)" % ["PASS" if fail == 0 else "FAIL", fail])
@@ -346,3 +350,57 @@ func _held(p: Vector3) -> bool:
 		if (kind == "body" or kind.begins_with("host ")) and Geometry2D.is_point_in_polygon(Vector2(p.x, p.z), claims[id][1]):
 			return true
 	return false
+
+
+# --- 5. a regiment's rectangle in one ask ------------------------------------------------------------------------------
+
+func _rectangles() -> void:
+	var m := 0.15  # army.json muster.margin
+	var step := 0.35  # army.json muster.probe
+	var missed := 0
+	var between := 0  # refused for something the point grid stepped over
+	var wrong := 0
+	var cost := 0
+	for k in 1000:
+		var mid := Vector3(rng.randf_range(2, 46), 0, rng.randf_range(2, 46))
+		var face := rng.randf_range(0, TAU)
+		var right := Vector3(cos(face), 0, -sin(face))
+		var fwd := Vector3(sin(face), 0, cos(face))
+		var w := rng.randf_range(1.0, 2.5)
+		var d := rng.randf_range(0.5, 1.0)
+		var old := true
+		var nx := maxi(2, int(ceil((w + m * 2.0) / step)) + 1)
+		var nz := maxi(2, int(ceil((d + m * 2.0) / step)) + 1)
+		for i in nx:
+			for j in nz:
+				var q := mid + right * ((float(i) / (nx - 1) - 0.5) * (w + m * 2.0)) + fwd * ((float(j) / (nz - 1) - 0.5) * (d + m * 2.0))
+				if old and not _old_clear(q, 0.05, true, null, []):
+					old = false
+		var hw := (w + m * 2.0) * 0.5 + 0.05
+		var hd := (d + m * 2.0) * 0.5 + 0.05
+		var poly := PackedVector2Array()
+		for c in [Vector2(-hw, -hd), Vector2(hw, -hd), Vector2(hw, hd), Vector2(-hw, hd)]:
+			var q: Vector3 = mid + right * (c as Vector2).x + fwd * (c as Vector2).y
+			poly.append(Vector2(q.x, q.z))
+		var t0 := Time.get_ticks_usec()
+		var now := Ground.area_free(poly)
+		cost += Time.get_ticks_usec() - t0
+		if now and not old:
+			missed += 1
+		elif old and not now:
+			# Something must stand within the rectangle (or a cell of it) that the grid's points missed.
+			var found := false
+			var g := 0.03
+			for i in int((hw + 0.12) * 2.0 / g) + 1:
+				for j in int((hd + 0.12) * 2.0 / g) + 1:
+					if not found and not _old_clear(mid + right * (-hw - 0.12 + i * g) + fwd * (-hd - 0.12 + j * g), 0.0, true, null, []):
+						found = true
+			if found:
+				between += 1
+			else:
+				wrong += 1
+	var per := float(cost) / 1000.0
+	print("rectangles: 1000 placements, %d missed, %d wrong, %d refused for what the point grid stepped over; %.1f us an ask" % [missed, wrong, between, per])
+	_check(missed == 0, "a regiment's rectangle is never clear where the point grid refused it (%d of 1000)" % missed)
+	_check(wrong == 0, "a regiment's rectangle is refused only where something stands within it (%d of 1000)" % wrong)
+	_check(per < 50.0, "a regiment's rectangle costs under 50 us an ask (%.1f us)" % per)

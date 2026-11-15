@@ -1208,15 +1208,26 @@ func _clear_at(mid: Vector3, right3: Vector3, fwd3: Vector3, w: float, d: float,
 		var off: Vector3 = mid - (o["at"] as Vector3)
 		if absf(off.dot(right3)) < (w + float(o["w"])) * 0.5 + gap and absf(off.dot(fwd3)) < (d + float(o["d"])) * 0.5 + gap:
 			return false
+	# The rectangle and its margin, and a body's reach (0.05) round its edge: every cell of the ground owner's map under
+	# it, in one ask (a grid of point asks every muster.probe was 7.5 s of a battle's 9 s frame, Mac 2026-11-15).
+	var hw := (w + m * 2.0) * 0.5 + 0.05
+	var hd := (d + m * 2.0) * 0.5 + 0.05
+	var poly := PackedVector2Array()
+	for c in [Vector2(-hw, -hd), Vector2(hw, -hd), Vector2(hw, hd), Vector2(-hw, hd)]:
+		var q: Vector3 = mid + right3 * (c as Vector2).x + fwd3 * (c as Vector2).y
+		poly.append(Vector2(q.x, q.z))
+	if not Footing.area_free(poly):
+		return false
 	var roads = main.get("roads")
+	if not (strict and roads and roads.has_method("on_path")):
+		return true
+	# A muster keeps off the roads too (roads.gd's own answer, asked every muster.probe).
 	var nx := maxi(2, int(ceil((w + m * 2.0) / step)) + 1)
 	var nz := maxi(2, int(ceil((d + m * 2.0) / step)) + 1)
 	for i in nx:
 		for j in nz:
 			var q := mid + right3 * ((float(i) / (nx - 1) - 0.5) * (w + m * 2.0)) + fwd3 * ((float(j) / (nz - 1) - 0.5) * (d + m * 2.0))
-			if not Footing.is_clear(q, 0.05):
-				return false
-			if strict and roads and roads.has_method("on_path") and roads.on_path(q, 0.05):
+			if roads.on_path(q, 0.05):
 				return false
 	return true
 
@@ -1897,13 +1908,15 @@ func _ground(p: Vector3, size: float) -> bool:
 	var roads = main.get("roads")
 	if roads and roads.has_method("on_path") and roads.on_path(p, keep):
 		return false
-	# Every point of a 5 by 5 grid over its square, not only its middle and corners: a house
+	# All of its square and a body's reach (0.1) round it, every cell of the ground owner's map, in one ask: a house
 	# (0.7 units across) stood between the corners of a regiment 2.5 wide, and the men stood in it.
+	var half := size * 0.5 + 0.1
+	if not Footing.area_free(PackedVector2Array([Vector2(p.x - half, p.z - half), Vector2(p.x + half, p.z - half), Vector2(p.x + half, p.z + half), Vector2(p.x - half, p.z + half)])):
+		return false
+	# Level enough: the land's height at every point of a 5 by 5 grid over it.
 	for gx in 5:
 		for gz in 5:
 			var q := Vector3(p.x + (gx / 4.0 - 0.5) * size, 0, p.z + (gz / 4.0 - 0.5) * size)
-			if not Footing.is_clear(q, 0.1):
-				return false
 			if absf(main.terrain.height_at(q.x, q.z) - h) > slope:
 				return false
 	return true

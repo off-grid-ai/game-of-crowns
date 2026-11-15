@@ -13,7 +13,9 @@ extends RefCounted
 ##   walkable(p), on_land(p): the land under a step, or which way the shore lies; never a place to stand.
 ##   inside(p): the footprint `p` stands in, or an empty one.
 ##   height(p): the land's height under `p`, the one every body stands at.
-##   area_clear(poly): whether a piece set down over `poly` (world) stands on land and over no footprint.
+##   area_free(poly): whether bodies may stand on all of `poly` (world XZ): every cell under it, in one call.
+##   area_clear(poly): whether a piece set down over `poly` (world) stands on land and over no footprint (a builder's
+##     question, asked as a town is laid out: its exact outlines, so laid-out towns stay as they were built).
 ##   open_floor(root, poly): a builder says ground inside its own footprint is open floor (a bailey, a forge's).
 ##   stands(root, area), gone(root): a builder outside a town (a countryside farm, a roadside inn, the woods, a camp,
 ##     a ruin) says what it set down under `root`, within `area` (world XZ), is in the way; its outlines are read off
@@ -63,6 +65,7 @@ class Chunk:
 	var cells := PackedInt32Array()  # cell (row-major) -> its bits
 	var laid := PackedByteArray()  # block -> 1 once its land is read
 	var held := {}  # cell -> [claim id]: who holds it, where its CLAIM count isn't 0
+	var busy := PackedInt32Array()  # block -> its cells that aren't plain open land (an area ask skips a block with none)
 static var _n: int = roundi(CHUNK / Data.num("ground", "occupancy.cell", 0.08))  # cells to a chunk's side
 static var _cell: float = CHUNK / _n  # world units a cell spans
 static var _inv: float = _n / CHUNK
@@ -76,6 +79,8 @@ const LIFE := 1 << 12  # one of its life's pieces (nav_ground "life": a stall, a
 const LIFE_ALL := 511 << 12
 const CLAIM := 1 << 21  # a claim touches it (its holders in the chunk's side index): 10 bits
 const CLAIM_ALL := 1023 << 21
+const OPEN := DRY | WALK  # plain open land: dry, and nothing on it
+const KNOWN := DRY | WALK | SRC | TOWN_ALL | LIFE_ALL | CLAIM_ALL
 const AROUND: Array[Vector2] = [Vector2(0, 0), Vector2(1, 0), Vector2(0.70710678, 0.70710678), Vector2(0, 1), Vector2(-0.70710678, 0.70710678), Vector2(-1, 0), Vector2(-0.70710678, -0.70710678), Vector2(0, -1), Vector2(0.70710678, -0.70710678)]  # a body's middle and eight round it, at its reach
 static var _roots := {}  # root instance id -> {root, clip (world Rect2), town, sig, town_spans, life_spans}: what stands
 static var _dirty := {}  # root instance id -> true: something set down, taken away, turned or hidden under it
@@ -202,6 +207,64 @@ static func _chunks(area: Rect2) -> Array:
 		for z in range(floori(area.position.y / CHUNK), floori(area.end.y / CHUNK) + 1):
 			out.append(Vector2i(x, z))
 	return out
+
+
+## Whether bodies may stand on all of `poly` (world XZ: a regiment's rectangle and the margin round it): every cell
+## of the map it touches as is_clear answers there (`props`, `free_of`, `open_kinds` the same). One call scans the
+## cells, never a grid of point asks (Mac 2026-11-15: a battle's 9 s frame, a regiment's place asked as points).
+static func area_free(poly: PackedVector2Array, props := true, free_of: Variant = null, open_kinds: Array = []) -> bool:
+	if not PerfTools.probing:
+		return _area_free(poly, props, free_of, open_kinds)
+	var t0 := Time.get_ticks_usec()
+	var ok := _area_free(poly, props, free_of, open_kinds)
+	PerfTools.add("ground.area_free", Time.get_ticks_usec() - t0)  # its share of the frame (GOC_PERF_PROBE)
+	return ok
+
+
+static func _area_free(poly: PackedVector2Array, props: bool, free_of: Variant, open_kinds: Array) -> bool:
+	_fresh()
+	var need := WALK if "ford" in open_kinds else DRY
+	var shut := SRC | TOWN_ALL | (LIFE_ALL if props else 0)
+	var plain := need | shut | CLAIM_ALL  # a cell is plainly free when, of these, it has only the land asked for
+	var lo := poly[0]
+	var hi := poly[0]
+	for v in poly:
+		lo = lo.min(v)
+		hi = hi.max(v)
+	var runs := PackedInt32Array()
+	_poly_spans(poly, _cells_of(Rect2(lo, hi - lo)), {}, runs)
+	for s in range(0, runs.size(), 3):
+		var iz := runs[s]
+		var lz := posmod(iz, _n)
+		var ix := runs[s + 1]
+		var last := runs[s + 2]
+		while ix <= last:
+			var lx := posmod(ix, _n)
+			var k := Vector2i((ix - lx) / _n, (iz - lz) / _n)
+			var ch: Chunk = _map.get(k)
+			if ch == null:
+				ch = _chunk_at(k)
+			var stop := mini(last, ix + _n - 1 - lx)
+			var bz := (lz / _b) * _nb
+			var x := lx
+			var xe := lx + stop - ix
+			while x <= xe:  # block by block: one with nothing but open land on it is passed whole
+				var bx := x / _b
+				var bend := mini(xe, (bx + 1) * _b - 1)
+				if ch.laid[bz + bx] == 0:
+					_lay(ch, k, bz + bx)
+				if ch.busy[bz + bx] != 0:
+					var i := lz * _n + x
+					for bits in ch.cells.slice(i, lz * _n + bend + 1):
+						if bits & plain != need:  # anything but the land asked for: look closer
+							if bits & need == 0 or bits & shut != 0:
+								return false
+							if bits & CLAIM_ALL != 0 and not _holders_open(ch, i, free_of, open_kinds):
+								return false
+						i += 1
+				x = bend + 1
+			ix = stop + 1
+	return true
 
 
 ## Whether a piece set down over `poly` (world XZ: a building site, a camp's tent) stands on dry land at every
@@ -338,8 +401,11 @@ static func _ok(x: float, z: float, need: int, shut: int, free_of: Variant, open
 	var bits := ch.cells[i]
 	if bits & need == 0 or bits & shut != 0:
 		return false
-	if bits & CLAIM_ALL == 0:
-		return true
+	return bits & CLAIM_ALL == 0 or _holders_open(ch, i, free_of, open_kinds)
+
+
+## Whether every claim on cell `i` of `ch` is `free_of`'s or of a kind in `open_kinds`.
+static func _holders_open(ch: Chunk, i: int, free_of: Variant, open_kinds: Array) -> bool:
 	for id in ch.held[i]:
 		if id != free_of and not _open(String(_claim_area[id][3]), open_kinds):
 			return false
@@ -350,6 +416,7 @@ static func _chunk_at(k: Vector2i) -> Chunk:
 	var ch := Chunk.new()
 	ch.cells.resize(_n * _n)
 	ch.laid.resize(_nb * _nb)
+	ch.busy.resize(_nb * _nb)
 	_map[k] = ch
 	return ch
 
@@ -396,6 +463,12 @@ static func _lay(ch: Chunk, k: Vector2i, b: int) -> void:
 		var row := (runs[r] - k.y * _n) * _n - k.x * _n
 		for ix in range(runs[r + 1], runs[r + 2] + 1):
 			ch.cells[row + ix] |= SRC
+	var busy := 0
+	for j in h:
+		for c in ch.cells.slice((z0 + j) * _n + x0, (z0 + j) * _n + x0 + w):
+			if c & KNOWN != OPEN:
+				busy += 1
+	ch.busy[b] = busy
 
 
 ## Appends the runs of cells a disc touches (strictly within `r` of its middle): every cell whose square comes nearer.
@@ -561,29 +634,36 @@ static func _poly_spans(poly: PackedVector2Array, clip: Rect2i, skip: Dictionary
 	for v in poly:
 		lo = lo.min(v)
 		hi = hi.max(v)
+	# Each row's extent from the polygon's vertices in it and its edges' crossings of the lines between rows, walked
+	# edge by edge (each crossing found once, shared by the rows either side).
 	var n := poly.size()
-	for iz in range(maxi(floori(lo.y * _inv), clip.position.y), mini(floori(hi.y * _inv), clip.end.y) + 1):
-		var z0 := iz * _cell
-		var z1 := z0 + _cell
-		var xa := INF
-		var xb := -INF
-		for i in n:
-			var a := poly[i]
-			var b := poly[(i + 1) % n]
-			if a.y >= z0 and a.y <= z1:
-				xa = minf(xa, a.x)
-				xb = maxf(xb, a.x)
-			if (a.y - z0) * (b.y - z0) < 0.0:
-				var x := a.x + (z0 - a.y) / (b.y - a.y) * (b.x - a.x)
-				xa = minf(xa, x)
-				xb = maxf(xb, x)
-			if (a.y - z1) * (b.y - z1) < 0.0:
-				var x := a.x + (z1 - a.y) / (b.y - a.y) * (b.x - a.x)
-				xa = minf(xa, x)
-				xb = maxf(xb, x)
-		if xa > xb:
+	var r0 := floori(lo.y * _inv)
+	var rows := floori(hi.y * _inv) - r0 + 1
+	var xa := PackedFloat64Array()
+	var xb := PackedFloat64Array()
+	xa.resize(rows)
+	xb.resize(rows)
+	xa.fill(INF)
+	xb.fill(-INF)
+	for e in n:
+		var a := poly[e]
+		var b := poly[e + 1 if e + 1 < n else 0]
+		var ra := floori(a.y * _inv) - r0
+		var rb := floori(b.y * _inv) - r0
+		xa[ra] = minf(xa[ra], a.x)
+		xb[ra] = maxf(xb[ra], a.x)
+		if ra == rb:
 			continue
-		_run(iz, maxi(floori(xa * _inv), clip.position.x), mini(floori(xb * _inv), clip.end.x), skip, out)
+		var dxdz := (b.x - a.x) / (b.y - a.y)
+		for r in range(mini(ra, rb) + 1, maxi(ra, rb) + 1):
+			var x := a.x + ((r0 + r) * _cell - a.y) * dxdz
+			xa[r] = minf(xa[r], x)
+			xb[r] = maxf(xb[r], x)
+			xa[r - 1] = minf(xa[r - 1], x)
+			xb[r - 1] = maxf(xb[r - 1], x)
+	for r in range(maxi(0, clip.position.y - r0), mini(rows - 1, clip.end.y - r0) + 1):
+		if xa[r] <= xb[r]:
+			_run(r0 + r, maxi(floori(xa[r] * _inv), clip.position.x), mini(floori(xb[r] * _inv), clip.end.x), skip, out)
 
 
 ## Appends cells first..last of row `iz`, less any in `skip`.
@@ -668,13 +748,12 @@ static func _hold(spans: PackedInt32Array, id: Variant, on: bool) -> void:
 			if ch == null:
 				ch = _chunk_at(k)
 			var i := lz * _n + lx
+			_add(ch, i, (lz / _b) * _nb + lx / _b, CLAIM if on else -CLAIM)
 			if on:
-				ch.cells[i] += CLAIM
 				if not ch.held.has(i):
 					ch.held[i] = []
 				ch.held[i].append(id)
 			else:
-				ch.cells[i] -= CLAIM
 				var who: Array = ch.held.get(i, [])
 				who.erase(id)
 				if who.is_empty():
@@ -697,6 +776,16 @@ static func _apply(spans: PackedInt32Array, by: int) -> void:
 				ch = _chunk_at(k)
 			var stop := mini(last, ix + _n - 1 - lx)
 			var at := lz * _n + lx
+			var bz := (lz / _b) * _nb
 			for j in stop - ix + 1:
-				ch.cells[at + j] += by
+				_add(ch, at + j, bz + (lx + j) / _b, by)
 			ix = stop + 1
+
+
+## Adds `by` to cell `i` of `ch` (in block `b`), keeping the block's count of busy cells.
+static func _add(ch: Chunk, i: int, b: int, by: int) -> void:
+	var was := ch.cells[i]
+	ch.cells[i] = was + by
+	var open_was := was & KNOWN == OPEN
+	if open_was != ((was + by) & KNOWN == OPEN):
+		ch.busy[b] += 1 if open_was else -1
