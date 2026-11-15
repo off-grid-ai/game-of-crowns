@@ -189,7 +189,7 @@ func _census_cap(k: Dictionary, role: Dictionary) -> int:
 	c["weights"] = float(c["weights"]) - float(w)
 	var cap := maxi(0, int(round(share)))
 	if bool(role.get("pairs", false)) or String(role.get("does", "")) == "beat":
-		cap = maxi(2, cap) / 2 * 2 if share >= 1.5 else 0  # by twos
+		cap = maxi(2, cap) / 2 * 2 if share >= 1.0 else 0  # by twos: a pair is whole once its share is half of it, as a knot (below)
 	var fewest := _knot_fewest(role)
 	if fewest > 1 and cap < fewest:
 		cap = fewest if share >= fewest * 0.5 else 0  # a knot is whole: never one gossip talking to nobody

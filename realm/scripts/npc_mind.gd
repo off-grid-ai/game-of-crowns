@@ -532,6 +532,12 @@ static func post_activities(post: String) -> Array:
 				seq("laugh", [run(["Laughing"], 1, 2), once("Slow_Nod"), brk(["Weight_Shift", "Bored"])]),
 				seq("point", [once("Pointing_Forward"), run(["Talking", "Arguing"], 1, 2), once("Dismiss"), brk(LOOK)]),
 			]
+		"play":  # children at play by the well (town_scenes.json kids_play; it named this post, which had no activities: no mind)
+			return [
+				seq("clap", [run(["Clapping", "Cheering"], 2, 3), brk(["Laughing"])]),
+				seq("dance", [run(["Dance"], 2, 3), once("Laughing"), brk(["Waving"])]),
+				seq("wave", [run(["Waving", "Laughing"], 1, 2), step(0.15), brk(["Cheering"])]),
+			]
 		"yardhand":  # at the barn's beasts (town_life._yard)
 			return [
 				seq("milk", [run(["Milking"], 2, 3), get_up(), brk(REST)]),
