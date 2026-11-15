@@ -67,7 +67,14 @@ func close() -> void:
 	closed.emit()
 
 
+var _shown := {}  # the person on the card now, and their house: drawn again when their portrait arrives
+
+
 func _fill_panel(p: Dictionary, house: Dictionary, editing := false) -> void:
+	_shown = {"p": p, "house": house, "editing": editing}
+	var Likeness := preload("res://scripts/likeness.gd")
+	if Likeness.one and not Likeness.one.changed.is_connected(_portrait_came):
+		Likeness.one.changed.connect(_portrait_came)
 	for c in _panel.get_children():
 		if c.name == "Close":
 			continue
@@ -200,12 +207,37 @@ func _fill_panel(p: Dictionary, house: Dictionary, editing := false) -> void:
 		change.add_theme_color_override("font_color", T.ACCENT)
 		change.pressed.connect(func(): _fill_panel(p, house, true))
 		buttons.add_child(change)
+	# Their face from the player's own photo (likeness.gd: painted in the realm's style, or the photo as is).
+	if Likeness.one and not p.get("written", false):
+		var pid := str(p.get("id", ""))
+		if Likeness.one.painting(pid):
+			buttons.add_child(T.prose("Painting your portrait…", T.SIZE_BODY, T.TEXT_2))
+		else:
+			var photo := Button.new()
+			photo.text = "Add your photo"
+			photo.flat = true
+			photo.focus_mode = Control.FOCUS_NONE
+			photo.tooltip_text = "Your own face, painted into the realm"
+			photo.pressed.connect(func(): Likeness.one.pick(pid, _who(p)))
+			buttons.add_child(photo)
 	var back := Button.new()
 	back.text = "←  Back to %s   (%s)" % [back_to, Keys.label("back").get_slice(" / ", 0)]
 	back.flat = true
 	back.focus_mode = Control.FOCUS_NONE
 	back.pressed.connect(close)
 	buttons.add_child(back)
+
+
+## A portrait began or arrived (likeness.gd): the card shows it, unless the player is writing on it.
+func _portrait_came(id: String) -> void:
+	if visible and not _shown.is_empty() and str(_shown["p"].get("id", "")) == id and not _shown["editing"]:
+		_fill_panel(_shown["p"], _shown["house"])
+
+
+## Who they are in a few words, for the painter (bridge likeness.js): age, sex, rank.
+static func _who(p: Dictionary) -> String:
+	var woman := str(p.get("gender", "")) == "female" or bool(p.get("woman", false))
+	return "a %s of about %d, %s" % ["woman" if woman else "man", int(p.get("age", 40)), str(p.get("role", p.get("rank", "noble")))]
 
 
 ## The card turned into the one character form (character_form.gd, written in place): name, nature, aim,

@@ -11,6 +11,12 @@ const OLD := 55
 const CHILD := 16
 
 static var _pool: Array = []  # sources.json's portraits
+static var _own := {}  # id -> Texture2D: a portrait the player gave (likeness.gd, bridge likeness.js), over the dealt face
+
+
+## A person's own portrait, from the player's photo (likeness.gd): theirs on every screen from now on.
+static func own(id: String, tex: Texture2D) -> void:
+	_own[id] = tex
 
 
 static func _load() -> void:
@@ -26,6 +32,8 @@ static func _load() -> void:
 
 ## A person's painted face (person: the bridge's sitter, with id, gender, age), or null.
 static func face(person: Dictionary) -> Texture2D:
+	if _own.has(str(person.get("id", ""))):
+		return _own[str(person["id"])]
 	_load()
 	if _pool.is_empty():
 		return null

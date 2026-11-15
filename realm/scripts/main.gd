@@ -473,6 +473,12 @@ func _ready() -> void:
 	hero.name_changed.connect(lore.refresh)
 	add_child(title)
 	title.began.connect(func(): story._intro_due = true)
+	# The player's own portraits (likeness.gd, bridge likeness.js): laid over the dealt faces once a chronicle opens.
+	var likeness: Node = preload("res://scripts/likeness.gd").new()
+	add_child(likeness)
+	title.closed.connect(func():
+		likeness.load_all()
+		get_tree().create_timer(8.0).timeout.connect(likeness.load_all))  # again once a new reign has formed
 	# The menu stands alone: the game's interface hides behind it until a
 	# chronicle is open (and again whenever the menu is brought back).
 	title.visibility_changed.connect(func():

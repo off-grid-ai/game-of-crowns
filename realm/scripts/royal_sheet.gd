@@ -96,6 +96,12 @@ func toggle() -> void:
 	open()
 
 
+## The King's portrait began or arrived (likeness.gd): his card, if open, shows it.
+func _portrait_came(_id: String) -> void:
+	if _card and is_instance_valid(_card) and _card.visible:
+		open()
+
+
 func open() -> void:
 	var r := royals()
 	if r.is_empty() or not (r.get("king") is Dictionary):
@@ -144,6 +150,25 @@ func open() -> void:
 	# His past, as the player wrote it in the Lore (bridge royals.js rewrite, /world royals.king.story).
 	if king.get("story") is String and String(king["story"]) != "":
 		_say(v, "“%s”" % String(king["story"]), T.TEXT_2)
+	# Who you are, yours to write (the one character form, royal: name, age, nature, story; bridge POST /lore/royal),
+	# and your own face (likeness.gd: your photo, painted into the realm).
+	var mine := HBoxContainer.new()
+	mine.add_theme_constant_override("separation", 12)
+	v.add_child(mine)
+	var me := {"id": String(king.get("id", "")), "name": String(king.get("name", "")), "age": int(king.get("age", 40)), "traits": king.get("traits", []),
+		"gender": "female" if bool(king.get("woman", false)) else "male", "story": king.get("story"), "royal": true}
+	mine.add_child(ui.btn(_w("change", "Change who you are"), func():
+		_card.visible = false
+		ui.get_tree().current_scene.get("bridge").character_options(func(opts):
+			ui.show_character_form(-1, "the Crown", opts if opts is Dictionary else {}, me))))
+	var Likeness := preload("res://scripts/likeness.gd")
+	if Likeness.one:
+		if Likeness.one.painting(me["id"]):
+			mine.add_child(T.prose(_w("painting", "Painting your portrait…"), T.SIZE_DESC + 1, T.TEXT_2))
+		else:
+			mine.add_child(ui.btn(_w("photo", "Add your photo"), func(): Likeness.one.pick(me["id"], "a %s of about %d, a ruler" % ["woman" if me["gender"] == "female" else "man", me["age"]])))
+		if not Likeness.one.changed.is_connected(_portrait_came):
+			Likeness.one.changed.connect(_portrait_came)
 	# How he bears what he has ruled against his own nature.
 	if String(sb.get("says", "")) != "":
 		_say(v, String(sb["says"]), T.DANGER if bool(sb.get("hard", false)) else T.TEXT_2)

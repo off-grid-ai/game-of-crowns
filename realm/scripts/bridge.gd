@@ -167,6 +167,31 @@ func write_person(spec: Dictionary, cb: Callable) -> void:
 	_post("/lore/written/person", spec, cb)
 
 
+## The player's photo for a person (bridge likeness.js): the bytes as they are; 202 once it is being painted.
+func send_photo(id: String, ext: String, who: String, bytes: PackedByteArray, cb: Callable) -> void:
+	var req := HTTPRequest.new()
+	add_child(req)
+	req.request_completed.connect(func(_r, code, _h, _b):
+		req.queue_free()
+		cb.call(code))
+	req.request_raw(BASE + "/portrait?id=%s&ext=%s&who=%s" % [id.uri_encode(), ext, who.uri_encode()],
+		["Content-Type: application/octet-stream"], HTTPClient.METHOD_POST, bytes)
+
+
+## A GET whose answer isn't JSON (a portrait's bytes): cb(code, body, content_type).
+func fetch_raw(path: String, cb: Callable) -> void:
+	var req := HTTPRequest.new()
+	add_child(req)
+	req.request_completed.connect(func(_r, code, headers: PackedStringArray, body: PackedByteArray):
+		req.queue_free()
+		var type := ""
+		for h in headers:
+			if h.to_lower().begins_with("content-type:"):
+				type = h.to_lower()
+		cb.call(code, body, type))
+	req.request(BASE + path)
+
+
 ## One of the crown's family written by the player from the Lore (bridge royals.js rewrite).
 func write_royal(spec: Dictionary, cb: Callable) -> void:
 	_post("/lore/royal", spec, cb)

@@ -444,6 +444,26 @@ export async function transcribe(wav, language = "en") {
   }
 }
 
+// The gateway's image model (Off Grid AI Desktop, the same discovery as the words): a Flux Klein first (it takes a
+// reference image, for /v1/images/edits), else any image model it has loaded. {base, model}, or null.
+const IMAGE_WANT = [process.env.OFFGRID_IMAGE_MODEL, /klein/i, /flux/i, /(sdxl|stable.?diffusion|image)/i].filter(Boolean);
+export async function imageModel() {
+  for (const url of GATEWAYS) {
+    try {
+      const r = await fetch(url.replace(/\/v1$/, "/health"), { signal: AbortSignal.timeout(1500) });
+      if (!(r.ok && /off grid/i.test((await r.json()).name ?? ""))) continue;
+      const list = await (await fetch(`${url}/models`, { signal: AbortSignal.timeout(3000) })).json();
+      const ids = (list.data ?? list.models ?? []).map((m) => m.id ?? m.name ?? "").filter(Boolean);
+      for (const w of IMAGE_WANT) {
+        const id = ids.find((x) => (typeof w === "string" ? x === w : w.test(x)));
+        if (id) return { base: url, model: id };
+      }
+      return null;
+    } catch { /* try the next */ }
+  }
+  return null;
+}
+
 // For the settings page: is Off Grid there, which model writes, and can it
 // speak and listen.
 export async function aiStatus() {
