@@ -74,56 +74,100 @@ func sync() -> void:
 		_segment(terrain.world_pos(e[1].x, e[1].y), terrain.world_pos(e[2].x, e[2].y), _roads, WIDTH, "roads")
 
 
-## A track between two tile centres, bowed gently at the middle so roads don't
-## look ruled with a straightedge, painted onto the land in two runs.
-## The King's Road: a broad rutted way from Kingsmere to the seat of every
-## great house, following the land (around lakes, over the passes).
+## The King's Road: a broad rutted way from Kingsmere to the seat of every great house, following the land (around
+## lakes, over the passes); and the lords' roads, every town to the seat of the house that holds it. Each road is kept
+## by its ends (kings:<seat id>, lords:<town id>:<seat id>, at their places): a town changing hands redraws only its own
+## road, and the rest stand with their verges and stones (combined run 6: every road and its roadside redrawn on each
+## capture of a battle, 578 ms a paint, 1 fps). A road no longer wanted goes with its decals, verges and stones.
 func kings_road() -> void:
 	var st: Node = Awareness.store()
 	var cities: Array = st.rec("cities", [])
-	var sig := str(cities.map(func(c): return "%d:%d" % [int(c["id"]), int(c["owner"])]))
-	if sig == _kings_sig:
-		return
-	_kings_sig = sig
-	if _kings:
-		_kings.queue_free()
-	_kings = Node3D.new()
-	_kings.name = "KingsRoad"
-	add_child(_kings)
-	_forget("kings")
 	var hub: Dictionary = {}
 	for c in cities:
 		if String(c.get("title", "")) == "Kingsmere":
 			hub = c
-	if hub.is_empty():
-		return
-	var from: Vector3 = terrain.world_pos(float(hub["x"]), float(hub["y"]))
-	# Each road is routed on a worker (nav_world.gd: the navigation's query is thread-safe) and painted here on the
-	# frame's budget as its route comes back (Mac's game 2026-11-15: the lords' roads 5.2 s in one frame, every route
-	# asked on the main thread). Timed: kings_road.route (on the worker), kings_road.paint.
-	var road := _kings
-	var left := [0]
-	for c in cities:
-		if not c.get("capital", false) or int(c["id"]) == int(hub["id"]):
-			continue
-		left[0] += 1
-		_ask(from, terrain.world_pos(float(c["x"]), float(c["y"])), func(route: PackedVector3Array) -> void:
-			if road != _kings:
-				return  # redrawn meanwhile
-			for i in route.size() - 1:
-				_segment(route[i], route[i + 1], _kings, WIDTH * 2.2, "kings")
-			_roadside(route)
-			left[0] -= 1
-			if left[0] == 0:
-				_plant_verges())
-	# Lords' roads: every town to the seat of the house that holds it.
-	clear_tracks("lords")
+	var want := {}  # road key -> [its ends' sig, from, to, width, owner]
+	if not hub.is_empty():
+		var from: Vector3 = terrain.world_pos(float(hub["x"]), float(hub["y"]))
+		for c in cities:
+			if not c.get("capital", false) or int(c["id"]) == int(hub["id"]):
+				continue
+			want["kings:%d" % int(c["id"])] = ["%d,%d>%d,%d" % [int(hub["x"]), int(hub["y"]), int(c["x"]), int(c["y"])], from, terrain.world_pos(float(c["x"]), float(c["y"])), WIDTH * 2.2, "kings"]
 	for c in cities:
 		if c.get("capital", false):
 			continue
 		for seat in cities:
 			if seat.get("capital", false) and int(seat["owner"]) == int(c["owner"]):
-				track(terrain.world_pos(float(c["x"]), float(c["y"])), terrain.world_pos(float(seat["x"]), float(seat["y"])), WIDTH * 1.4, "lords")
+				want["lords:%d:%d" % [int(c["id"]), int(seat["id"])]] = ["%d,%d>%d,%d" % [int(c["x"]), int(c["y"]), int(seat["x"]), int(seat["y"])], terrain.world_pos(float(c["x"]), float(c["y"])), terrain.world_pos(float(seat["x"]), float(seat["y"])), WIDTH * 1.4, "track:lords"]
+	var sig := str(hash(want.keys())) + ":" + str(hash(want.values().map(func(w): return w[0])))
+	if sig == _kings_sig:
+		return
+	_kings_sig = sig
+	if _kings == null:
+		_kings = Node3D.new()
+		_kings.name = "KingsRoad"  # the King's road's stones (roadside.gd keeps its inns off them)
+		add_child(_kings)
+		_ways_root = Node3D.new()
+		_ways_root.name = "GreatRoads"  # each road's own painted stretches and verges
+		add_child(_ways_root)
+	for key in _ways.keys():
+		if not want.has(key) or String(want[key][0]) != String(_ways[key]["sig"]):
+			_drop(key)
+	for key in want:
+		if _ways.has(key):
+			continue
+		var w: Array = want[key]
+		var node := Node3D.new()
+		node.name = String(key).validate_node_name()
+		_ways_root.add_child(node)
+		_ways[key] = {"sig": w[0], "node": node, "owner": w[4], "stones": []}
+		# Routed on a worker (nav_world.gd: the navigation's query is thread-safe), painted a stretch at a time on the
+		# frame's budget (_process). Timed: kings_road.route (on the worker), kings_road.paint (a stretch).
+		var width: float = w[3]
+		var owner: String = w[4]
+		_ask(w[1], w[2], func(route: PackedVector3Array) -> void:
+			if (_ways.get(key, {}) as Dictionary).get("node") == node:
+				_paint_jobs.append([key, node, route, 0, width, owner]))
+
+
+var _ways := {}  # road key -> {sig: its ends, node: its painted stretches and verges, owner: its _paths owner, stones}
+var _ways_root: Node3D
+var _paint_jobs: Array = []  # [key, node, route, next stretch, width, owner]: painted a stretch at a time
+
+
+## A road no longer wanted (a town changed hands, a seat moved): its stretches, verges and stones go, and its bed.
+func _drop(key: String) -> void:
+	var w: Dictionary = _ways.get(key, {})
+	_ways.erase(key)
+	if w.is_empty():
+		return
+	var node: Node3D = w["node"]
+	for stone in w["stones"]:
+		if is_instance_valid(stone):
+			stone.queue_free()
+	_painted = _painted.filter(func(p: Array) -> bool: return p[4] != node and is_instance_valid(p[4]))
+	if is_instance_valid(node):
+		node.queue_free()  # its decals, and its verges with it (bulk.gd: a node owner's copies go when it leaves)
+	_forget_road(String(w["owner"]), key)
+
+
+## One stretch of a road's route painted (the frame's budget asks each): its verges and stones once all are.
+func _paint_next() -> void:
+	var job: Array = _paint_jobs[0]
+	var key: String = job[0]
+	var node: Node3D = job[1]
+	var route: PackedVector3Array = job[2]
+	if not is_instance_valid(node) or (_ways.get(key, {}) as Dictionary).get("node") != node:
+		_paint_jobs.pop_front()
+		return
+	var i: int = job[3]
+	if i < route.size() - 1:
+		_segment(route[i], route[i + 1], node, float(job[4]), String(job[5]), key)
+		job[3] = i + 1
+		return
+	_paint_jobs.pop_front()
+	if String(job[5]) == "kings":
+		_plant_verges(_roadside(route, key), node)
 
 
 # --- routes, asked off the main thread ----------------------------------------------------------------------------
@@ -155,19 +199,15 @@ func _process(_delta: float) -> void:
 	var got := _routed
 	_routed = []
 	_lock.unlock()
-	while not got.is_empty():
-		if not ViewTier.spend_ok(&"roads"):
-			_lock.lock()
-			_routed = got + _routed
-			_lock.unlock()
-			break
-		var e: Array = got.pop_front()
+	for e: Array in got:  # each only queues its road's stretches (or a track's): cheap
 		PerfTools.add("kings_road.route", int(e[2]))  # timed on the worker
-		var t0 := Time.get_ticks_usec()
 		if (e[1] as PackedVector3Array).size() >= 2:
 			(e[0] as Callable).call(e[1])
+	while not _paint_jobs.is_empty() and ViewTier.spend_ok(&"roads"):
+		var t0 := Time.get_ticks_usec()
+		_paint_next()
 		PerfTools.add("kings_road.paint", Time.get_ticks_usec() - t0)
-	if _routing < 0 and _asks.is_empty() and _routed.is_empty():
+	if _routing < 0 and _asks.is_empty() and _routed.is_empty() and _paint_jobs.is_empty():
 		set_process(false)
 
 
@@ -184,11 +224,11 @@ func _route_all(batch: Array) -> void:
 ## The life of a great road: bushes and brambles along both verges, a
 ## waystone now and then, and every so often, a day's walk from any town, an
 ## inn with its stable yard, carts and a fire, where travellers stop.
-var _verges: Array = []
 const Real = preload("res://scripts/realistic.gd")
 
 
-func _roadside(route: PackedVector3Array) -> void:
+func _roadside(route: PackedVector3Array, key: String) -> Array:
+	var spots: Array = []
 	var rng := RandomNumberGenerator.new()
 	rng.seed = int(route[0].x * 31.0 + route[route.size() - 1].z * 17.0)
 	var walked := 0.0
@@ -208,12 +248,13 @@ func _roadside(route: PackedVector3Array) -> void:
 				if rng.randf() < 0.55:
 					var q: Vector3 = p + side * sgn * rng.randf_range(0.42, 0.7) + dir * rng.randf_range(-0.2, 0.2)
 					if terrain.is_land(q.x, q.z):
-						_verges.append(q)
+						spots.append(q)
 			t += 0.3
 		walked += len
 		# The wayside inns are roadside.gd's (data/roadside.json): one owner, one sign each.
 		if rng.randf() < 0.08:
-			_waystone(p_side(b, side, 0.38), rng)
+			_waystone(p_side(b, side, 0.38), rng, key)
+	return spots
 
 
 func p_side(p: Vector3, side: Vector3, d: float) -> Vector3:
@@ -221,7 +262,7 @@ func p_side(p: Vector3, side: Vector3, d: float) -> Vector3:
 
 
 ## A milestone of grey stone by the verge.
-func _waystone(at: Vector3, rng: RandomNumberGenerator) -> void:
+func _waystone(at: Vector3, rng: RandomNumberGenerator, key: String) -> void:
 	if not terrain.is_land(at.x, at.z):
 		return
 	var st := MeshInstance3D.new()
@@ -235,23 +276,21 @@ func _waystone(at: Vector3, rng: RandomNumberGenerator) -> void:
 	st.position = Vector3(at.x, terrain.height_at(at.x, at.z) + 0.045, at.z)
 	st.rotation = Vector3(rng.randf_range(-0.08, 0.08), rng.randf() * TAU, rng.randf_range(-0.08, 0.08))
 	_kings.add_child(st)
+	((_ways.get(key, {}) as Dictionary).get("stones", []) as Array).append(st)  # it goes with its road
 
 
 ## All the roadside bushes in one batch, so a long road costs one draw.
 ## Planted once the towns stand and their plots are graded, at the ground's
 ## height then (not before, or they sank where a town levelled its lots), and
 ## never within a town's reach or on a road's bed.
-func _plant_verges() -> void:
-	if _verges.is_empty():
+func _plant_verges(spots: Array, road: Node3D) -> void:
+	if spots.is_empty():
 		return
-	var spots: Array = _verges
-	_verges = []
-	var road := _kings
 	var towns = get_parent().get("towns")
 	while towns and towns.building():
 		await PerfTools.next_frame(&"roads:187")
-		if road != _kings or not is_instance_valid(road):
-			return  # the road was redrawn meanwhile; its own verges follow it
+		if not is_instance_valid(road) or not road.is_inside_tree():
+			return  # the road went meanwhile
 	var places: Array = []
 	if towns:
 		for t in towns.towns.values():
@@ -272,7 +311,7 @@ func _plant_verges() -> void:
 	# for every verge of the realm's road was never culled and drew every bush (Mac's fps card, 2026-11-15: 2.3M).
 	for p in kept:
 		var k := Units.M * rng.randf_range(0.5, 1.0)  # 0.8-1.7 m: nt_bush is 1.69 m at scale 1
-		Bulk.add(bushes[0], Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(k, k * rng.randf_range(0.8, 1.3), k)), p - Vector3(0, 0.02, 0)), road, 60.0)
+		Bulk.add(bushes[0], Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(k, k * rng.randf_range(0.8, 1.3), k)), p - Vector3(0, 0.02, 0)), road, 60.0)  # go with the road's node
 
 
 ## A road or track along the land between two points. Tracks have a layer of
@@ -318,16 +357,26 @@ var version := 0  # goes up whenever a road or track is laid or taken up
 const CELL := 2.0
 
 
+## One road's bed taken up (kings_road's roads, kept by their ends), the rest of its owner's kept.
+func _forget_road(owner: String, road: String) -> void:
+	var was: Array = _paths.get(owner, [])
+	var kept := was.filter(func(s: Array) -> bool: return s.size() < 5 or String(s[4]) != road)
+	if kept.size() != was.size():
+		_paths[owner] = kept
+		_grid_stale = true
+		version += 1
+
+
 func _forget(owner: String) -> void:
 	if _paths.erase(owner):
 		_grid_stale = true
 		version += 1
 
 
-func _remember(owner: String, a: Vector3, b: Vector3, half: float) -> void:
+func _remember(owner: String, a: Vector3, b: Vector3, half: float, road := "") -> void:
 	if not _paths.has(owner):
 		_paths[owner] = []
-	_paths[owner].append([Vector2(a.x, a.z), Vector2(b.x, b.z), half, owner])
+	_paths[owner].append([Vector2(a.x, a.z), Vector2(b.x, b.z), half, owner, road])
 	_grid_stale = true
 	version += 1
 
@@ -425,7 +474,7 @@ func paths_near(p: Vector3, r: float) -> int:
 	return hash(near)
 
 
-func _segment(a: Vector3, b: Vector3, parent: Node3D = null, width := WIDTH, owner := "roads") -> void:
+func _segment(a: Vector3, b: Vector3, parent: Node3D = null, width := WIDTH, owner := "roads", road := "") -> void:
 	var fresh := _painted.size()  # only what this segment paints is trimmed against the setts below
 	var mid: Vector3 = terrain.paths.road_bow(a, b)  # the same bow travellers ride
 	for run in [[a, mid], [mid, b]]:
@@ -443,10 +492,10 @@ func _segment(a: Vector3, b: Vector3, parent: Node3D = null, width := WIDTH, own
 				sea = sea or not terrain.in_river(s.x, s.z)
 		if wet:
 			if not sea:
-				_remember(owner, p, q, width * 0.5)
+				_remember(owner, p, q, width * 0.5, road)
 				terrain.ford(p, q, width * 0.5)
 			continue
-		_remember(owner, p, q, width * 0.5)
+		_remember(owner, p, q, width * 0.5, road)
 		_painted.append([p, q, width, owner, parent if parent else self, _paint_run(p, q, width, owner, parent)])
 	# Every earlier stretch was trimmed when it was painted or when its disc was laid: rescanning them all for every
 	# segment was segments x towns x stretches (11:01 load, 2 fps for minutes in kings_road; SEGV trace clear_in).
