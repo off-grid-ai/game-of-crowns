@@ -442,6 +442,14 @@ func _cycle_step(delta: float) -> void:
 			_cycle.append(["fx:ssil", func(on: bool): env.ssil_enabled = on and bool(_fx_was.get("ssil", false))])
 			_cycle.append(["fx:volfog", func(on: bool): env.volumetric_fog_enabled = on and bool(_fx_was.get("vol", false))])
 			_cycle.append(["fx:glow", func(on: bool): env.glow_enabled = on and bool(_fx_was.get("glow", false))])
+			var vp := main.get_viewport()
+			var lod0 := vp.mesh_lod_threshold
+			_cycle.append(["fx:lod x4 (simpler meshes sooner)", func(on: bool): vp.mesh_lod_threshold = lod0 if on else lod0 * 4.0])
+			_cycle.append(["fx:lod x10", func(on: bool): vp.mesh_lod_threshold = lod0 if on else lod0 * 10.0])
+			var sd := sun.directional_shadow_max_distance
+			_cycle.append(["fx:shadow reach half", func(on: bool): sun.directional_shadow_max_distance = sd if on else sd * 0.5])
+			var sc := vp.scaling_3d_scale
+			_cycle.append(["fx:render scale 0.5", func(on: bool): vp.scaling_3d_scale = sc if on else 0.5])
 			_fx_was = {"sdfgi": env.sdfgi_enabled, "ssao": env.ssao_enabled, "ssil": env.ssil_enabled, "vol": env.volumetric_fog_enabled, "glow": env.glow_enabled}
 		_cycle_i = 0
 		_cycle_t = 0.0
