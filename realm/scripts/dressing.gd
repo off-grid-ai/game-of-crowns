@@ -299,7 +299,7 @@ static func mesh_of(model: String) -> Array:
 			_builder = preload("res://scripts/house_builder.gd").new()
 		m = _builder.bake_path(path)
 		if m and m.get_surface_count() > 0:
-			Kept.keep(m, kept)
+			Kept.keep(m, kept, preload("res://scripts/mesh_cpu.gd").plain(m))  # its bake's plain arrays, never read back
 	if m and m.get_surface_count() > 0:
 		out = [m, m.get_aabb().position.y]
 	_meshes[model] = out

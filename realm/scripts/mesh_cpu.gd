@@ -13,6 +13,12 @@ static func keep(mesh: Mesh, plain: ImporterMesh) -> void:
 	_of[mesh.get_instance_id()] = plain
 
 
+## The maker's plain arrays `mesh` was made from (keep), or null: what a kept mesh is written from (kept.gd).
+static func plain(mesh: Mesh) -> ImporterMesh:
+	var got: Variant = _of.get(mesh.get_instance_id())
+	return got if got is ImporterMesh else null
+
+
 ## Surface `s` of `mesh`, as Mesh.ARRAY_* arrays.
 static func arrays(mesh: Mesh, s: int) -> Array:
 	var id := mesh.get_instance_id()

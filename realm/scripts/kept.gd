@@ -30,64 +30,53 @@ static func has(path: String) -> bool:
 	return FileAccess.file_exists(path)
 
 
-## `res` given the file at `path` (every scene packed after points at it) and written there: at once while baking,
-## else a mesh or a texture on the main thread within the frame budget, and a town (a packed scene) on a worker.
-## A mesh or a texture never on a worker: saving one reads it back from the renderer, and a read from another thread
-## while the frame draws tore the GPU's copies (Mac 2026-11-15: grey sheets streaked over the land while towns were
-## built and kept; 'timeout waiting for fence', a hang). A kept town holds no such data of its own (town_store.gd: its
-## meshes and grounds are kept files it points at, its batches packed empty, its few shapes plain numbers), so its
-## packing and compressing, 76-178 ms a frame in Mac's game (kept.write), are off the frame.
-static var _to_write: Array = []  # [resource, path], oldest first
-static var _writing := {}  # path -> the worker task writing a town there
-static func keep(res: Resource, path: String) -> void:
+## `res` given the file at `path` (every scene packed after points at it) and written there on a worker thread
+## (at once while baking). What is written is never read back from the renderer: a mesh is written as its maker's plain
+## arrays (`plain`, an ImporterMesh: kept_mesh.gd), a texture as the Image it was painted on (`plain`: kept_texture.gd),
+## a town (a packed scene) as it is, holding no such data of its own (town_store.gd: its meshes and grounds are kept
+## files it points at, its batches packed empty). Saving an ArrayMesh or an ImageTexture itself reads its data back from
+## the GPU: on the main thread a 1.2 s beach ball (Mac's battle run, 2026-11-15: kept.write 1201 ms, 'timeout waiting
+## for fence'), on a worker torn GPU copies (grey sheets over the land).
+static var _writing := {}  # path -> the worker task writing it
+static func keep(res: Resource, path: String, plain: Resource = null) -> void:
 	DirAccess.make_dir_recursive_absolute(path.get_base_dir())
 	res.take_over_path(path)
+	_reap()
+	if _writing.has(path):
+		return  # already on its way there
+	var file: Resource = res
+	if res is ArrayMesh:
+		if not plain is ImporterMesh:
+			push_error("KEPT %s: a mesh is kept from its maker's arrays, none given" % path.get_file())
+			return
+		file = preload("res://scripts/kept_mesh.gd").new()
+		file.hold(res, plain)
+	elif res is Texture2D and res.get_script() != preload("res://scripts/kept_texture.gd"):
+		if not plain is Image:
+			push_error("KEPT %s: a texture is kept from the Image it was painted on, none given" % path.get_file())
+			return
+		file = preload("res://scripts/kept_texture.gd").new()
+		file.hold(plain, res)
 	if baking:
-		ResourceSaver.save(res, path, ResourceSaver.FLAG_COMPRESS)
+		_write_whole(file, path)
 		return
-	if res is PackedScene:
-		_writing[path] = WorkerThreadPool.add_task(_write_whole.bind(res, path), false, "keep " + path.get_file())
-		_reap()
-		return
-	if _to_write.is_empty():
-		var tree := Engine.get_main_loop() as SceneTree
-		if tree and not tree.process_frame.is_connected(_write_one):
-			tree.process_frame.connect(_write_one)
-	_to_write.append([res, path])
+	_writing[path] = WorkerThreadPool.add_task(_write_whole.bind(file, path), false, "keep " + path.get_file())
 
 
-## Files waiting, written on the main thread: the oldest each frame, then more while the frame's staging pot has
-## time (ViewTier.spend_ok). One a frame alone fell behind at a slow frame rate and the game quit with towns unwritten,
-## so every start raised them again (supervisor fps, v6: 16 towns raised on a load run).
-static func _write_one() -> void:
-	if _to_write.is_empty():
-		var tree := Engine.get_main_loop() as SceneTree
-		if tree and tree.process_frame.is_connected(_write_one):
-			tree.process_frame.disconnect(_write_one)
-		return
-	var ViewTier := preload("res://scripts/view_tier.gd")
-	var first := true
-	while not _to_write.is_empty() and (first or ViewTier.spend_ok(&"kept.write")):
-		first = false
-		_write(_to_write.pop_front())
-
-
-## Every file still waiting, written now (the game quitting: shot_harness.quit_clean, app_services' close).
+## Every file still being written, finished (the game quitting: shot_harness.quit_clean, app_services' close).
 static func flush() -> void:
-	while not _to_write.is_empty():
-		_write(_to_write.pop_front())
 	for p in _writing.keys():
 		WorkerThreadPool.wait_for_task_completion(int(_writing[p]))
 	_writing.clear()
 
 
-## Whether anything is still waiting to be written (a mesh or a texture queued, a town on its worker).
+## Whether anything is still being written.
 static func pending() -> bool:
 	_reap()
-	return not _to_write.is_empty() or not _writing.is_empty()
+	return not _writing.is_empty()
 
 
-## The towns' workers that have finished, let go.
+## The workers that have finished, let go.
 static func _reap() -> void:
 	for p in _writing.keys():
 		if WorkerThreadPool.is_task_completed(int(_writing[p])):
@@ -95,19 +84,16 @@ static func _reap() -> void:
 			_writing.erase(p)
 
 
-## A town written beside its file and then put in its place, so nothing reads it half written (town_store.ask).
+## A file written beside its place and then put there, so nothing reads it half written (town_store.ask); a mesh's
+## arrays or a ground's pixels let go once written.
 static func _write_whole(res: Resource, path: String) -> void:
 	var part := path.get_basename() + ".part." + path.get_extension()
 	if ResourceSaver.save(res, part, ResourceSaver.FLAG_COMPRESS) == OK:
 		DirAccess.rename_absolute(part, path)
 	else:
 		DirAccess.remove_absolute(part)
-
-
-static func _write(next: Array) -> void:
-	var t0 := Time.get_ticks_usec()
-	ResourceSaver.save(next[0], next[1], ResourceSaver.FLAG_COMPRESS)
-	preload("res://scripts/perf_tools.gd").add("kept.write", Time.get_ticks_usec() - t0)
+	if res.has_method("written"):
+		res.written()
 
 
 ## The kept things' fingerprint, made once from realm/data/kept.json's version. An exported game takes the one the

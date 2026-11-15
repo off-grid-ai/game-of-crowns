@@ -337,7 +337,7 @@ static func dyed(src: Material, rgb) -> Material:
 					img.set_pixel(x, y, Color(float(a[0]), float(a[1]), float(a[2])) if int(t) % 2 == 0 else Color(float(b[0]), float(b[1]), float(b[2])))
 			img.generate_mipmaps()
 			var s: BaseMaterial3D = src.duplicate()
-			s.albedo_texture = ImageTexture.create_from_image(img)
+			s.albedo_texture = preload("res://scripts/kept_texture.gd").new().paint(img)  # its pixels kept: a kept model's file holds them, never read back
 			s.albedo_color = Color(1, 1, 1, s.albedo_color.a)
 			s.vertex_color_use_as_albedo = false  # the kit cloth's vertex colours (dark orange and red) dulled the stripes to maroon and the white to orange (round 4)
 			s.roughness = maxf(s.roughness, 0.85)
@@ -572,6 +572,7 @@ static func _finish(name: String) -> Dictionary:
 	var merged: ArrayMesh = null
 	var low: ArrayMesh = null
 	var made := false  # merged in this game (else read back): kept on disk below
+	var plain: Array = [null, null]  # the merge's plain arrays (whole, low): what is kept, never read back
 	if p["out"][0] is String:
 		merged = ResourceLoader.load_threaded_get(_kept(name)) as ArrayMesh
 		if FileAccess.file_exists(_kept(name, "low")):
@@ -582,6 +583,7 @@ static func _finish(name: String) -> Dictionary:
 		var low_im: ImporterMesh = p["out"][1] if (p["out"] as Array).size() > 1 else null
 		low = low_im.get_mesh() if low_im else null
 		made = merged != null
+		plain = [im, low_im]
 	if merged:
 		if not BUILT.has(name):
 			merged.set_meta("path", _path(name))  # its model's file: the one drawer (bulk.gd) draws its impostor far off
@@ -611,9 +613,9 @@ static func _finish(name: String) -> Dictionary:
 			if (g as MeshInstance3D).mesh:
 				(g as MeshInstance3D).mesh.set_meta("meshy_piece", name.substr(6))
 	if made:
-		_keep(merged, _kept(name))
+		Kept.keep(merged, _kept(name), plain[0])
 		if low:
-			_keep(low, _kept(name, "low"))
+			Kept.keep(low, _kept(name, "low"), plain[1])
 	var scene := PackedScene.new()
 	scene.pack(root)
 	root.free()
@@ -627,9 +629,6 @@ static func _finish(name: String) -> Dictionary:
 static func _kept(name: String, which := "whole") -> String:
 	return Kept.path("models", "%s_%s" % [name, which])
 
-
-static func _keep(mesh: ArrayMesh, path: String) -> void:
-	Kept.keep(mesh, path)
 
 
 ## Kits whose walls are stone but whose file never says how metallic it is, so

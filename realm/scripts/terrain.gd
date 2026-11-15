@@ -1045,7 +1045,7 @@ func tiled(path: String, fx: float, fy: float, edge := "") -> Texture2D:
 	var dated := "" if Kept.baking or OS.has_feature("template") else str(FileAccess.get_modified_time(path))
 	var cached := Kept.path("tiled", (key + dated).md5_text())
 	if Kept.has(cached):
-		var kept := load(cached) as ImageTexture
+		var kept := load(cached) as Texture2D  # kept_texture.gd: drawn from the pixels the file holds
 		if kept:
 			_tiled[key] = kept
 			return kept
@@ -1155,5 +1155,5 @@ func tiled(path: String, fx: float, fy: float, edge := "") -> Texture2D:
 	img.generate_mipmaps()
 	_tiled[key] = ImageTexture.create_from_image(img)
 	_tiled[key].set_meta("copies", Vector2(fx, fy))
-	Kept.keep(_tiled[key], cached)
+	Kept.keep(_tiled[key], cached, img)  # written from these pixels on a worker, never read back from the renderer
 	return _tiled[key]

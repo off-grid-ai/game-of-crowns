@@ -501,7 +501,7 @@ static func crop_mesh(kind: String) -> Mesh:
 					sm.set_shader_parameter("sway", CROP_SWAY)
 					sm.set_shader_parameter("alpha_cut", CROP_CUT)
 		if mesh:
-			Kept.keep(mesh, kept)
+			Kept.keep(mesh, kept, im)  # written from its plain arrays (the wind's materials from the mesh), never read back
 	_crop_meshes[kind] = mesh
 	return mesh
 
@@ -734,8 +734,10 @@ const PLANT_WIND_SOLID := preload("res://scripts/plant_wind_solid.gdshader")  # 
 
 
 ## A plant mesh that bends in the wind: each surface keeps its own texture and colour.
+## `mesh` (the caller's own copy: a bake's, house_builder.gd _once) given the wind's materials. Never a duplicate():
+## an ArrayMesh's copy reads every surface back from the GPU.
 static func _windy(mesh: ArrayMesh, bury := -1.0) -> ArrayMesh:
-	var out := mesh.duplicate() as ArrayMesh
+	var out := mesh
 	for i in out.get_surface_count():
 		var src := out.surface_get_material(i) as BaseMaterial3D
 		var m := ShaderMaterial.new()
