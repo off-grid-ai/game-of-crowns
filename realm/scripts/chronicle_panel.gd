@@ -7,6 +7,7 @@ extends RefCounted
 const Data := preload("res://scripts/data.gd")  # the one loader of realm/data (data.gd)
 const T := preload("res://scripts/theme.gd")
 const UI := preload("res://scripts/ui.gd")
+const WorldClock := preload("res://scripts/world_clock.gd")  # the realm's clock: stops while paused
 const NewsActions := preload("res://scripts/news_actions.gd")  # what the King can do about a line (its answers)
 
 var ui: UI  # the interface that owns this drawer: its signals, its building blocks
@@ -21,6 +22,8 @@ var _focused: Control  # the row the camera just went to: its answers open, mark
 var entries: Array = []  # every line of the reign as the bridge sent it, oldest first: the book of the reign reads these
 var _unread := 0  # rows of the King's business come while the drawer was shut: the number on its key
 var _stories := {}  # chronicle seq -> a story beat's entry, for its link
+var _held: Array = []  # news waiting its turn to ask him (the pace): {e, loss}, oldest first
+var _asked_at := -1.0e12  # the realm's clock (WorldClock.msec) when the last card came
 
 
 func _init(owner: UI) -> void:
@@ -52,6 +55,12 @@ func _build_chronicle() -> void:
 	_list = VBoxContainer.new()
 	_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_chron_panel.visibility_changed.connect(_fit)
+	var pace := Timer.new()  # the pace's tick; it stops with the realm (pausable, while the drawer runs always)
+	pace.wait_time = 2.0
+	pace.autostart = true
+	pace.process_mode = Node.PROCESS_MODE_PAUSABLE
+	pace.timeout.connect(_release)
+	_chron_panel.add_child(pace)
 	_chron_panel.visibility_changed.connect(func():
 		if _chron_panel.visible and _unread > 0:
 			_unread = 0
@@ -105,7 +114,7 @@ func notice(text: String, entry := {}, watch := Callable()) -> void:
 				if r == _focused:
 					_focused = null
 				r.free()
-				_count_if(_row(e2, false, watch))
+				_count_if(_card(e2, false, watch))
 				return
 	var subject := preload("res://scripts/news_chips.gd")._subject(said)
 	var n := 0
@@ -225,12 +234,55 @@ func _fit() -> void:
 	_list.custom_minimum_size.x = maxf(r.size.x - pad - 12.0, 120.0)  # less the scroll bar
 
 
+## The pace of his business (Mac: "reduce the number of decisions significantly ... 1 per 90 seconds"; RimWorld's
+## storyteller spacing its incidents): a new card asks something of him at most once in chronicle.every seconds of
+## the realm's clock (it stops while paused). What comes sooner waits its turn, one per town or story, and is asked
+## then as the place stands (gone if it has passed); an attack on his own (urgency at pause_at) comes at once.
+func _row(e: Dictionary, loss: bool, watch := Callable()) -> Control:
+	var now := float(WorldClock.msec())
+	if _urgency(e, loss) >= int(UI.ui_num("chronicle.pause_at", 3.0)) or now - _asked_at >= UI.ui_num("chronicle.every", 90.0) * 1000.0:
+		var card := _card(e, loss, watch)
+		if card != null:
+			_asked_at = now
+		return card
+	if watch.is_valid():
+		return null  # a moment to watch is now or never
+	_held = _held.filter(func(h): return not _same(h["e"], e))
+	_held.append({"e": e, "loss": loss})
+	while _held.size() > int(UI.ui_num("chronicle.held", 6.0)):
+		_held.remove_at(0)
+	return null
+
+
+## Each tick of the pace: when his turn has come, the most urgent waiting news, newest first, asks him as things stand.
+func _release() -> void:
+	if _held.is_empty() or float(WorldClock.msec()) - _asked_at < UI.ui_num("chronicle.every", 90.0) * 1000.0:
+		return
+	_held.reverse()
+	_held.sort_custom(func(a, b): return _urgency(a["e"], a["loss"]) > _urgency(b["e"], b["loss"]))
+	while not _held.is_empty():
+		var h: Dictionary = _held.pop_front()
+		var card := _card(h["e"], h["loss"])
+		if card != null:
+			_asked_at = float(WorldClock.msec())
+			_count_if(card)
+			_trim()
+			return
+
+
+## Two pieces of news about one thing: the same town, or the same story.
+static func _same(a: Dictionary, b: Dictionary) -> bool:
+	if a.get("city") != null and b.get("city") != null and int(a["city"]) == int(b["city"]):
+		return true
+	return String(a.get("thread", "")) != "" and String(a.get("thread", "")) == String(b.get("thread", ""))
+
+
 ## One card of the drawer (Mac: "a bunch of action cards", not a scroll; CK3's alerts, Total War's event feed): a framed
 ## card with its kind and season in words ("Loss" too: Mac is colour-blind), its title (the story's name, else the line's
 ## first sentence), the rest of the line, and its buttons always at its foot, the one we'd have him press on the right
 ## in the accent (news_actions.gd, the one owner; Watch when there is a moment to see; Go there). A line with nothing
 ## to do or see is a slim card with no buttons. A click on the card goes there.
-func _row(e: Dictionary, loss: bool, watch := Callable()) -> Control:
+func _card(e: Dictionary, loss: bool, watch := Callable()) -> Control:
 	var acts := _actions(e)
 	var asks := false
 	for b in acts.get_children():
@@ -295,7 +347,7 @@ func _row(e: Dictionary, loss: bool, watch := Callable()) -> Control:
 	# story stands in for the older one.
 	for r in _needs.get_children():
 		var o: Dictionary = r.get_meta("entry", {})
-		if e.get("city") != null and o.get("city") != null and int(o["city"]) == int(e["city"]) or String(e.get("thread", "")) != "" and String(o.get("thread", "")) == String(e.get("thread", "")):
+		if _same(o, e):
 			_settle(r)
 	var u := _urgency(e, loss)
 	card.set_meta("urgency", u)
@@ -472,7 +524,7 @@ func focus(e: Dictionary) -> void:
 			row = r
 			break
 	if row == null:
-		row = _row(e, false)
+		row = _card(e, false)  # he went to it himself: its card now, whatever the pace
 	if row == null:
 		return  # it asks nothing of him: the camera goes, no card
 	if is_instance_valid(_focused) and _focused != row:
@@ -539,6 +591,7 @@ func show_news(e: Dictionary, loss: bool) -> void:
 
 func clear_chronicle() -> void:
 	entries.clear()
+	_held.clear()
 	_focused = null
 	for r in _rows():
 		r.queue_free()
