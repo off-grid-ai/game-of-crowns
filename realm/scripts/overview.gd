@@ -106,7 +106,9 @@ func _overview_close(tile := Vector2.INF, size := -1) -> void:
 	if not _over_open:
 		return
 	_over_open = false
-	main.get_viewport().disable_3d = false
+	# The land is drawn again unless the loading screen still covers it (intro.gd turns it on when it goes): the game's
+	# first move to Kingsmere closed the map under the loading card and drew the whole town behind it (16M prims).
+	main.get_viewport().disable_3d = main.intro != null and main.intro.visible
 	if tile != Vector2.INF:
 		var p: Vector3 = main.terrain.world_pos(tile.x, tile.y)
 		main.rig.snap(p, main.rig.OVERVIEW, 0.0)
