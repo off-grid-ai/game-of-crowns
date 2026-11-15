@@ -776,13 +776,20 @@ func _film() -> bool:
 	return (_shot.has("path") or _shot.has("hq")) and not _shot.has("perf")
 
 
+## Whether the realm is drawn Smooth: the player's choice in Settings (a measuring run's --perf), never a still or a
+## film take. The ground's and the water's shaders read it as they are built (land3d.gd, terrain.gd _drape_sea), so a
+## change in Settings reaches them at the next start; everything else here follows it at once.
+func smooth_chosen() -> bool:
+	var chosen := String(_shot["perf"]) if String(_shot.get("perf", "")) != "" else String(Settings.get_value("graphics"))
+	return chosen != "beautiful" and not _film()
+
+
 func apply_graphics() -> void:
 	if env == null or sun == null:
 		return
 	if _rich.is_empty():
 		_rich = {"sdfgi": env.sdfgi_enabled, "ssao": env.ssao_enabled, "ssil": env.ssil_enabled, "vol": env.volumetric_fog_enabled, "glow": env.glow_enabled, "shadow": sun.directional_shadow_max_distance}
-	var chosen := String(_shot["perf"]) if String(_shot.get("perf", "")) != "" else String(Settings.get_value("graphics"))
-	graphics_smooth = chosen != "beautiful" and not _film()
+	graphics_smooth = smooth_chosen()
 	env.sdfgi_enabled = _rich["sdfgi"] and not graphics_smooth
 	env.ssao_enabled = _rich["ssao"] and not graphics_smooth
 	env.ssil_enabled = _rich["ssil"] and not graphics_smooth
