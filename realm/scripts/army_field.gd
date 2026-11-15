@@ -627,11 +627,21 @@ func _advance(r: Dictionary, _dt: float) -> void:
 	# At blows only face to face (g17/g19: "at blows" with a foe two blocks aside; g20: a line that walked sideways
 	# facing its walk met the foe file to file, two thin columns side by side): it closes square on the foe's front,
 	# facing it, its own front at sword's length; at blows once the fronts are that close and overlap across the line.
+	# Square to its side's own front, the line meeting the foe's line as a line (Total War's battle lines; Mac
+	# 2026-11-15: a block set slanted to its neighbour, each squared to its own foe's facing): every regiment of a side
+	# faces its host's facing and closes to the foe's front along it, so neighbours stand parallel; only a foe beside
+	# or behind that front (a flank, the line broken through) is met square on his own front instead.
 	var b: Node3D = foe["node"]
-	var theirs := b.global_position + b.global_transform.basis.z.normalized() * float(foe["d"]) * 0.5
-	var look := -b.global_transform.basis.z
-	look.y = 0.0
-	look = look.normalized()
+	var look := _line_front(r)
+	var theirs: Vector3
+	if (b.global_position - at).dot(look) > 0.0:
+		var across := look.cross(Vector3.UP).normalized()
+		theirs = at + across * (b.global_position - at).dot(across) + look * ((b.global_position - at).dot(look) - _depth_along(foe, look) * 0.5)
+	else:
+		look = -b.global_transform.basis.z
+		look.y = 0.0
+		look = look.normalized()
+		theirs = b.global_position - look * float(foe["d"]) * 0.5
 	# Its own place on that front: beside any of its side already closing there, never on it (Mac 2026-11-15: three
 	# blocks heaped in one lump, each sent to the same foe's front).
 	var spot := _free_spot(r, theirs - look * (float(r["d"]) * 0.5 + contact), look)
@@ -645,6 +655,20 @@ func _advance(r: Dictionary, _dt: float) -> void:
 	if foe.get("state_name", "") in ["stand", "volley", "advance"]:
 		foe["foe"] = r
 		_send(foe, &"engage")
+
+
+## Its side's front (flat, world): the way its host's line faces (Army.facing), one for every regiment of the side.
+func _line_front(r: Dictionary) -> Vector3:
+	var face: float = (r["army"] as Army).facing()
+	return Vector3(sin(face), 0, cos(face))
+
+
+## How deep a regiment stands along `dir` (flat): its rectangle's extent that way, however it is turned.
+static func _depth_along(x: Dictionary, dir: Vector3) -> float:
+	var basis := (x["node"] as Node3D).global_transform.basis
+	var right := Vector3(basis.x.x, 0, basis.x.z).normalized()
+	var fwd := Vector3(basis.z.x, 0, basis.z.z).normalized()
+	return absf(right.dot(dir)) * float(x["w"]) + absf(fwd.dot(dir)) * float(x["d"])
 
 
 ## A regiment's place on a front: `spot` (world, its middle, facing `look`), or the nearest beside it along the

@@ -11,6 +11,9 @@ extends SceneTree
 ##   3. a block sent off to its side turns to face its way before it moves (never more than a hair off its spot while
 ##      its front is off its way by more than wheel.slide), then walks with its front to its way; sent behind it, its
 ##      men about-face where they stand (wheel.most) instead of backing;
+##   5. a field battle's regiments close square to their own side's front (army_field.gd _advance), never squared to
+##      their own foe's slant: two neighbours against two foes turned differently close to spots along the same front,
+##      each in front of its foe;
 ##   4. a column marching to its place in the line keeps its column until deploy.range from it (army.gd _deploy cuts
 ##      its way there) and forms its line there; the road in is marched in column (army.gd _column_up).
 ## Prints "FORMATION PROBE …" lines and "FORMATION PROBE PASS" or "FORMATION PROBE FAIL n"; quits with 0 or 1.
@@ -37,6 +40,7 @@ func _run() -> void:
 	await _faces_before_it_walks()
 	await _about_face()
 	_column_then_line()
+	_meets_as_a_line()
 	print("FORMATION PROBE PASS" if _fails == 0 else "FORMATION PROBE FAIL %d" % _fails)
 	quit(0 if _fails == 0 else 1)
 
@@ -171,3 +175,42 @@ func _column_then_line() -> void:
 	_check(up.find("_shape(r, \"column\")") >= 0 and up.find("_shape(r, \"column\")") < up.find("_march(r)"), "the road in is marched in column (army.gd _column_up)")
 	var dep := src.substr(src.find("func _deploy("), 1400)
 	_check(dep.contains("_short_of(") and dep.contains("_reform(r, \"line\""), "it deploys into line at deploy.range from its place (army.gd _deploy)")
+
+
+## 5. Two regiments of side 0 (facing +Z) against two foes in front of them, slanted 0.4 and -0.3 off square: each
+## closes to a spot square in front of its own foe on side 0's front, its foe's slanted depth before it.
+func _meets_as_a_line() -> void:
+	var ArmyS: GDScript = load("res://scripts/army.gd")
+	var FieldS: GDScript = load("res://scripts/army_field.gd")
+	var holder := Node3D.new()
+	root.add_child(holder)
+	var fb: Node = FieldS.new(holder, "100")
+	var mine: Node = ArmyS.new(holder, 0, {"side": 0})
+	var theirs: Node = ArmyS.new(holder, 0, {"side": 1})
+	var make := func(side: int, army: Node, at: Vector3, yaw: float) -> Dictionary:
+		var n := Node3D.new()
+		holder.add_child(n)
+		n.global_position = at
+		n.rotation.y = yaw
+		return {"node": n, "side": side, "w": 2.0, "d": 1.0, "army": army, "state_name": "advance", "living": 40, "yaw": yaw}
+	var a: Dictionary = make.call(0, mine, Vector3(-3.0, 0, 0), 0.0)
+	var b: Dictionary = make.call(0, mine, Vector3(3.0, 0, 0), 0.0)
+	var fa: Dictionary = make.call(1, theirs, Vector3(-3.0, 0, 5.0), PI + 0.4)
+	var fbr: Dictionary = make.call(1, theirs, Vector3(3.0, 0, 5.0), PI - 0.3)
+	mine.set("_regiments", [a, b])
+	theirs.set("_regiments", [fa, fbr])
+	fb.set("sides", [mine, theirs])
+	var contact := Data.num("battle", "field.contact", 0.12)
+	for pair in [[a, fa], [b, fbr]]:
+		var r: Dictionary = pair[0]
+		var foe: Dictionary = pair[1]
+		fb.call("_advance", r, 0.1)
+		var spot: Vector3 = r.get("spot", Vector3.INF)
+		var want_z := 5.0 - float(FieldS._depth_along(foe, Vector3(0, 0, 1))) * 0.5 - 0.5 - contact
+		var fx := (foe["node"] as Node3D).global_position.x
+		_check(spot != Vector3.INF and absf(spot.x - fx) < 0.01 and absf(spot.z - want_z) < 0.01,
+			"a regiment closes square on its side's front before its slanted foe: spot %s (want x %.2f, z %.2f)" % [str(spot), fx, want_z])
+	holder.free()
+	mine.free()
+	theirs.free()
+	fb.free()
