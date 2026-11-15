@@ -7,6 +7,7 @@ const PerfTools := preload("res://scripts/perf_tools.gd")  # the frame-cost prob
 ## move): the route the realm's navigation gives (town_nav.gd: a town's streets, the roads, the land), smoothed,
 ## followed at a soldier's pace across the season. The army layer's map presence (docs/research/army-layer-2026-11-12.md).
 
+var placed := false  # every unit of the first sync stands (the loading card waits for it, main.gd ready_check)
 var terrain: Node3D
 var towns: Node3D  # towns.gd: inside a town's reach, soldiers keep to its streets
 const Awareness := preload("res://scripts/awareness.gd")  # the realm's rules as the bridge sends them (season length, bands)
@@ -197,6 +198,7 @@ func _walk_some() -> void:
 				slot += 1
 		w["i"] = int(w["i"]) + 1
 	_walk = {}
+	placed = true
 	preload("res://scripts/perf_tools.gd").mark("units")
 
 

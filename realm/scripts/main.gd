@@ -258,7 +258,9 @@ func _ready() -> void:
 			if code == 200:
 				ui.house_opened.emit(int(spec["house"]))))
 	intro = preload("res://scripts/intro.gd").new()
-	intro.ready_check = func(): return terrain.built and towns != null and towns.settled()  # every town and its life standing
+	# Every town and its life standing, the roads and fields laid and the armies placed: nothing is still being made
+	# once the card goes (Mac 2026-11-15: 5 fps for the first 25 s of play, the roads and units laid after it closed).
+	intro.ready_check = func(): return terrain.built and towns != null and towns.settled() and roads_laid and units != null and units.placed
 	intro.forming = func() -> String:
 		var n: Vector2i = towns.standing() if towns else Vector2i.ZERO
 		return "The towns are rising: %d of %d" % [n.x, n.y] if terrain.built and n.y > 0 else "The realm is forming…"
@@ -1057,6 +1059,7 @@ func _on_map(map: Dictionary) -> void:
 
 
 const LANE_MARGIN := 0.8  # a pine's crown reaches about this far from its trunk
+var roads_laid := false  # the roads and the countryside laid once (the loading card waits for it)
 var _laying := false  # roads and countryside are being laid out, a frame at a time
 func _on_synced() -> void:
 	# The story needs only the houses and seats, not the land: it can begin
@@ -1145,6 +1148,7 @@ func _on_synced() -> void:
 		countryside.build(awareness.rec("cities", []))
 		PerfTools.add("countryside", Time.get_ticks_usec() - t_countryside)
 		PerfTools.mark("roads")
+		roads_laid = true
 		if Time.get_ticks_msec() - tt > 500:
 			print_verbose("BUILD roads+countryside %d ms" % (Time.get_ticks_msec() - tt))
 		_laying = false
