@@ -79,7 +79,7 @@
   "albedo": 0.85,
   "look": { "steelSat": 0.14, "steelMetal": 0.65, "steelRough": 0.38, "steelLift": 1.0, "steelGlow": 0.0, "rim": 0.2, "rimTint": 0.6, "footDark": 0.55, "footHeight": 0.14, "trimDark": 0.62, "varyValue": 0.08, "varyTint": 0.06 },
   "emblem": { "on": true, "rect": [0.0, 0.06, 1.0, 0.56], "light": 0.75 },
-  "team": { "rects": [[0.0, 0.25, 0.125, 0.5], [0.125, 0.0, 0.25, 0.25, 0.5], [0.375, 0.125, 0.5, 0.25, 0.65]], "shade": 1.1, "mask_edge": [0.15, 0.4] },
+  "team": { "rects": [[0.0, 0.25, 0.125, 0.5], [0.125, 0.0, 0.25, 0.25, 0.5], [0.375, 0.125, 0.5, 0.25, 0.65]], "shade": 0.78, "mask_edge": [0.15, 0.4] },
   "minds": {
     "_": "Every mind in the army layer (scripts/army_mind.gd builds a LimboHSM from a row): states (each: enter, tick, exit, the fight's methods it runs on entering, each frame and on leaving; guard, the method that says whether it may be entered), go (from, to, event), any (event: the state it leads to from any other), start. A man's minds run on army_melee.gd's stagings (army_skirmish.gd: line_soldier, knight; army_assault.gd: assault_man, gap_holder), a regiment's on army_field.gd (regiment, storm_regiment).",
     "assault_man": {
