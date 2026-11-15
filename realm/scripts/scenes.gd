@@ -24,6 +24,11 @@ const Ground := preload("res://scripts/ground.gd")  # the one answer to where a 
 const Data := preload("res://scripts/data.gd")
 const SceneKinds := preload("res://scripts/scene_kinds.gd")
 var _seen := {}  # scene key -> true, so each event plays once
+var _due: Array = []  # new scenes not yet played: one a frame (_stage)
+var _staging := false
+var _houses := {}  # the houses the latest world sync gave (the scenes play among them)
+const PerfTools := preload("res://scripts/perf_tools.gd")  # next_frame
+const ViewTier := preload("res://scripts/view_tier.gd")  # the one frame budget (spend_ok)
 var _kinds := {}  # a kind's class path (scene_kinds.gd "play") -> its one instance (scene_kind.gd): kinds sharing a class share it
 
 
@@ -78,12 +83,31 @@ func sync(houses: Dictionary) -> void:
 		if _seen.has(key):
 			continue
 		_seen[key] = true
+		_due.append(s)
+	_houses = houses
+	if not _staging and not _due.is_empty():
+		_stage()
+
+
+## The new scenes played one a frame, each in the frame's budget (supervisor's battle run nav7: scenes.sync 130 ms a
+## world sync, every new scene staged in one frame).
+func _stage() -> void:
+	_staging = true
+	while not _due.is_empty():
+		while not ViewTier.spend_ok(&"scenes"):
+			await PerfTools.next_frame(&"scenes:stage")
+		if not is_inside_tree():
+			break
+		var s: Dictionary = _due.pop_front()
 		var at: Vector3 = terrain.world_pos(float(s.get("x", 0)), float(s.get("y", 0)))
 		var follow: Node3D = null
 		var player = kind(String(s["kind"]))
 		if player:
-			follow = player.play(s, at, houses)
+			follow = player.play(s, at, _houses)
 		staged.emit(s, follow)
+		if not _due.is_empty():
+			await PerfTools.next_frame(&"scenes:stage")
+	_staging = false
 
 
 # --- the roads alive: carters and pedlars between the King's moments ---------------
