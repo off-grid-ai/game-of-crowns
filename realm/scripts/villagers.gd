@@ -1090,8 +1090,19 @@ func step_to(a: Dictionary, target: Vector3) -> bool:
 ## Once a second: a child further than CHILD_REACH from their parent goes back
 ## to them, a step or two from their side, wherever the parent's errand took
 ## them. The child's own play goes on round the parent, never across the town.
+## A child already on its way is routed again only once the parent has moved on from where it was routed to (a route a
+## second, each child, was 400-600 ms frames in a busy town, Mac's stutter 2026-11-16), and the children are walked on
+## the frame's one budget (ViewTier.spend_ok), the rest the next second, from where this one stopped.
+var _parents_at := {}  # town id -> the child to begin with next second
 func _follow_parents(id: int) -> void:
-	for a in crowds.get(id, []):
+	var folk: Array = crowds.get(id, [])
+	var n := folk.size()
+	var start := int(_parents_at.get(id, 0)) % maxi(n, 1)
+	for k in n:
+		var a: Dictionary = folk[(start + k) % n]
+		if not ViewTier.spend_ok(&"villagers.parents"):
+			_parents_at[id] = (start + k) % n
+			return
 		var parent = a.get("parent", null)
 		if not (parent is Dictionary) or not a["placed"] or not (parent["node"] as Node3D).visible:
 			continue
@@ -1104,6 +1115,10 @@ func _follow_parents(id: int) -> void:
 		# side, at a run when they're well behind (a child catches up).
 		var gap := Vector2(cp.x - pp.x, cp.z - pp.z).length()
 		if gap > CHILD_REACH * 0.5 or Vector2(goal_world.x - pp.x, goal_world.z - pp.z).length() > CHILD_REACH * 0.5:
+			var chased: Vector3 = a.get("chased", Vector3.INF)
+			if a.get("catch_up", false) and chased != Vector3.INF and Vector2(pp.x - chased.x, pp.z - chased.z).length() < CHILD_REACH * 0.5:
+				continue  # on its way to where the parent still is
+			a["chased"] = pp
 			_hurry(a, gap > CHILD_REACH * 0.6)
 			route_to(a, pp)
 			_set_off(a)
