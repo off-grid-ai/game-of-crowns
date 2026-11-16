@@ -723,5 +723,5 @@ Switches (`--name`) go after `--` on the game's command line.
 - The Hand's lessons: whether a lesson holds the realm while he speaks (`realm/data/opening.json` `tour[].hold`, default true; the first threat runs live). What he rings always takes its click; a lesson counts as heard once it ends.
 - The chronicle's Defend: the word while it waits (`realm/data/news_actions.json` `sending`), and why it was not sent when the host has no order left (`no_order`). A refusal stays on the card under its buttons.
 - How near a held tool is drawn: `realm/data/people.json` `held_seen_to` (world units; a weapon is drawn as far as its bearer, `seen_to`). Held things cast no shadow.
-- Whether the Hand teaches as things first happen: Settings "The Hand's lessons" (`realm/scripts/settings.gd` `hand_lessons`, default on); off, he speaks only from the ? or F122.
+- Whether the Hand teaches as things first happen: Settings "The Hand's lessons" (`realm/scripts/settings.gd` `hand_lessons`, default on); off, he speaks only from the ? or F12.
 - Where the Hand's answers stand: stacked on top of his text box, this many pixels above it (`realm/data/opening.json` `choices_gap`, 10).

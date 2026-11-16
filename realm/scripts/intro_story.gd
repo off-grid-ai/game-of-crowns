@@ -64,13 +64,14 @@ func _tell_the_story() -> void:
 		main.labels.visible = main.ui.visible
 		# The King is in his realm now; the first court may sit (Reigns' first card).
 		if main.ui.visible:
-			main.bridge.opening("realm")
-			# The crowning: the castle, the royal standard rising, the bells, his name (crowning.gd).
-			var Crowning := preload("res://scripts/crowning.gd")
-			if Crowning.on():
-				var c = Crowning.new(main)
-				main.add_child(c)
-				c.play()
+			# The crowning: the castle, the royal standard rising, the bells, his name (crowning.gd);
+			# once a reign, on the King's first landing (the bridge owns it: meta.firstCourt), not every load.
+			main.bridge.opening("realm", func(first: bool):
+				var Crowning := preload("res://scripts/crowning.gd")
+				if first and Crowning.on():
+					var c = Crowning.new(main)
+					main.add_child(c)
+					c.play())
 			if main.hand_prompts:
 				main.hand_prompts.landed(), CONNECT_ONE_SHOT)
 	main.intro.watching = _back_to_menu

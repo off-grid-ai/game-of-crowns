@@ -136,7 +136,8 @@ export async function end(ctx, req, res, url) {
 export async function opening(ctx, req, res) {
   const { at } = await body(req);
   const f = (ctx.meta.firstCourt ??= { landedAt: null });
-  if (at === "realm" && f.landedAt == null) {
+  const first = at === "realm" && f.landedAt == null;  // the King's first landing this reign: the view crowns him once (crowning.gd)
+  if (first) {
     f.landedAt = Date.now();
     // The court looks again just after the wait, not at the next season's turn (up to 40 s later):
     // the same gate decides (court.js), unforced.
@@ -144,7 +145,7 @@ export async function opening(ctx, req, res) {
     setTimeout(() => court(ctx.world?.turn ?? 0).catch(() => {}), OPENING.firstCourtAfterLandingSec * 1000 + 500);
   }
   chron.saveMeta(ctx.meta);
-  return json(res, 200, { ok: true, firstCourt: f });
+  return json(res, 200, { ok: true, firstCourt: f, first });
 }
 
 export async function continueReign(ctx, req, res, url) {

@@ -233,8 +233,11 @@ func house(id: int, cb: Callable) -> void:
 
 ## The v2 opening (docs/review/first-ten-minutes-plan.md): the King has landed in
 ## his realm ("realm"), so its first court may sit (the bridge's court.js waits for this).
-func opening(at: String) -> void:
-	_post("/reign/opening", {"at": at}, func(_c, _d): pass)
+## first: true when this is the King's first landing in this reign (the crowning plays once).
+func opening(at: String, cb := Callable()) -> void:
+	_post("/reign/opening", {"at": at}, func(_c, d):
+		if cb.is_valid():
+			cb.call(d is Dictionary and bool(d.get("first", false))))
 
 
 ## A reign whose clock ran out goes on, endless, in the same realm.
