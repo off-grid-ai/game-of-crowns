@@ -91,7 +91,7 @@ export async function issueDecree(ctx, req, res, url) {
     if (n > 0) return json(res, 400, { error: `That house gave the King's envoy its answer lately: ask again in ${n} season${n === 1 ? "" : "s"}.` });
   }
   const price = priceOf(cmd.action);
-  const result = decree({ ...cmd, host, war: War.current(ctx.meta), joinChance: (pid) => War.joinChance(ctx, pid), works: ctx.meta.works ?? {}, price, favourOf, causeOf, sworn, warded: (pid) => (ctx.stakes?.s.wards?.[pid] ?? -1) > (ctx.world.turn ?? 0), marching: (city) => (ctx.meta.campaigns ?? []).some((x) => x.city === city), atWar: (pid) => Peace.atWar(ctx, pid), usurper: ctx.stakes?.s.usurper, seat: ctx.stakes?.s.seat }, ctx.world);
+  const result = decree({ ...cmd, host, wars: War.wars(ctx.meta), askable: (pid) => War.askable(ctx.meta, pid), joinChance: (pid) => War.joinChance(ctx, pid), works: ctx.meta.works ?? {}, price, favourOf, causeOf, sworn, warded: (pid) => (ctx.stakes?.s.wards?.[pid] ?? -1) > (ctx.world.turn ?? 0), marching: (city) => (ctx.meta.campaigns ?? []).some((x) => x.city === city), atWar: (pid) => Peace.atWar(ctx, pid), usurper: ctx.stakes?.s.usurper, seat: ctx.stakes?.s.seat }, ctx.world);
   if (result.error) return json(res, 400, result);
   {
     const dc = ctx.world.cities.find((x) => x.id === Number(cmd.city));

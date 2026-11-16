@@ -1,7 +1,7 @@
 // The King's war on a great house (Mac 2026-11-16: "a campaign to eliminate a house, that will attack the smaller
 // houses and then try to topple the main house"; CK3's war goal and war score, Total War's campaign against a
-// faction's settlements, its capital last). One owner, meta.war {house, seat, since, plan, target, ordered, fallen,
-// passed, allies, asked, warned, struck, waits, atWarSeen}: declared by the King's decree (crown.js war), it plans the
+// faction's settlements, its capital last). One owner, meta.wars [{house, seat, since, plan, target, ordered, fallen,
+// passed, allies, commit, asked, warned, struck, waits, atWarSeen}], one a house the King makes war on: declared by the King's decree (crown.js war), it plans the
 // house's towns, its bannermen's outlying and weakest first and its seat last, and each season gives the King's
 // hosts the next town through the hosts' own orders (hosts.js besiege; campaigns.js lays and storms the siege, and
 // sworn houses send their men with it, campaigns.js startCampaign). Freeciv fights every blow and its AI, at war in
@@ -25,9 +25,20 @@ const cheb = (a, b) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
 const short = (p) => houseFor(p ?? {}).name?.replace(/^House /, "") ?? "the house";
 const soldiersAt = (world, pid, at) => (world.units ?? []).filter((u) => u.owner === pid && !CIVILIAN.has(u.type) && u.x === at.x && u.y === at.y).length;
 const atWarInFreeciv = (ctx, a, b) => !!ctx.detail?.()?.players?.find((p) => p.slot === a)?.atWarWith?.includes(b);
+// At war with the crown in truth: a war the King declared, or Freeciv's war with a house not warm to him (a house at
+// steady favour or more is not waging war on the King; the engine's state between them is old diplomacy: the same
+// reading view.js gives the houses' wars). What upkeep and the houses' sides count.
+export const crownFoe = (ctx, pid) => {
+  const crown = crownOf(ctx.world);
+  if (!crown || pid === crown.id) return false;
+  return warOn(ctx.meta, pid) != null || (atWarInFreeciv(ctx, crown.id, pid) && (ctx.favourOf?.(pid) ?? 50) < BANDS.steady);
+};
 
-// The war now, or null.
-export const current = (meta) => meta?.war ?? null;
+// The King's wars now (several at once, each its own plan, sides and upkeep), and the one on a house, or null.
+export const wars = (meta) => meta?.wars ?? [];
+export const warOn = (meta, house) => wars(meta).find((w) => w.house === Number(house)) ?? null;
+// The war the King's envoy asks a house to join: the latest the house is not already part of, or null.
+export const askable = (meta, pid) => [...wars(meta)].reverse().find((w) => w.house !== pid && !(w.allies ?? []).includes(pid)) ?? null;
 
 // The house's towns in the order the King's captains take them: its bannermen's first, the weakest held (fewest
 // companies inside) and the farthest from its seat before the rest, its seat last. [city ids].
@@ -53,9 +64,8 @@ export function odds(ctx, house) {
 // house bound to the foe by a pact or a marriage, or whose lord likes the foe's lord (join.friendly), refuses and
 // sends the foe word; one sworn to the crown comes all but surely; else its favour, and more if it is already at war
 // with the foe. null when there is no war, or the house is the foe, the crown's or the wild's.
-export function joinChance(ctx, pid) {
-  const { world, meta, court } = ctx;
-  const w = current(meta);
+export function joinChance(ctx, pid, w = askable(ctx.meta, pid)) {
+  const { world, court } = ctx;
   const p = world?.players?.find((q) => q.id === pid);
   if (!w || !p || pid === w.house || houseFor(p).crown || houseFor(p).wild || !(world.cities ?? []).some((c) => c.owner === pid)) return null;
   if ((w.allies ?? []).includes(pid)) return null;
@@ -93,7 +103,7 @@ export function sides(ctx, house) {
     const liking = a && b ? court.opinion(a.id, b.id) : 0;
     if (court?.boundTo?.(p.id)?.includes(house)) return { pid: p.id, side: "foe", chance: 1, commit: S.commit.eager, why: `bound to ${short(foe)}` };
     if (liking >= J.friendly) return { pid: p.id, side: "foe", chance: 0.9, commit: S.commit.eager, why: `a friend of ${short(foe)}` };
-    if (crownId != null && atWarInFreeciv(ctx, p.id, crownId)) return { pid: p.id, side: "foe", chance: 0.9, commit: S.commit.eager, why: "already at war with the crown" };
+    if (crownFoe(ctx, p.id)) return { pid: p.id, side: "foe", chance: 0.9, commit: S.commit.eager, why: "already at war with the crown" };
     if (swornOf(ctx, p.id)) return { pid: p.id, side: "crown", chance: J.sworn, commit: S.commit.sworn, why: "sworn to the crown" };
     const f = ctx.favourOf?.(p.id) ?? 50;
     const withKing = Math.max(0, Math.min(J.most, (f - J.floor) / J.span + (atWarInFreeciv(ctx, p.id, house) ? J.atWar : 0) - Math.max(0, liking) * J.likingWeight + S.bandwagon * (win - 0.5)));
@@ -114,7 +124,7 @@ export function sidesForecast(ctx, house) {
 
 // How long until the King may ask a house again (seasons), 0 when he may.
 export function askWait(meta, pid, turn) {
-  const at = current(meta)?.asked?.[pid];
+  const at = askable(meta, pid)?.asked?.[pid];
   return at == null ? 0 : Math.max(0, at + WAR.join.again - turn);
 }
 
@@ -129,7 +139,9 @@ export function declare(ctx, house) {
   const turn = world.turn ?? 0;
   const order = plan(world, house);
   const seat = (world.cities ?? []).find((c) => c.owner === house && c.capital)?.id ?? order.at(-1) ?? null;
-  meta.war = { house, seat, since: turn, plan: order, target: null, ordered: null, fallen: [], passed: [], allies: [], asked: {}, warned: [], struck: null, waits: null, atWarSeen: false };
+  if (warOn(meta, house)) return;
+  const war = { house, seat, since: turn, plan: order, target: null, ordered: null, fallen: [], passed: [], allies: [], commit: {}, asked: {}, warned: [], struck: null, waits: null, atWarSeen: false };
+  meta.wars = [...wars(meta), war];
   if (!atWarInFreeciv(ctx, crown.id, house)) ctx.diplomacy?.([crown.id, house, 0, "War"]);
   ctx.court?.answerWar?.(house, crown.id, world, turn);  // the foe's lord remembers it
   // Every other great house takes its side now (sides): with the King under oath for the war, with the foe at war
@@ -137,8 +149,10 @@ export function declare(ctx, house) {
   const taken = sides(ctx, house).map((x) => ({ ...x, yes: x.side !== "wait" && Math.random() < x.chance }));
   const joinedKing = taken.filter((x) => x.side === "crown" && x.yes);
   const joinedFoe = taken.filter((x) => x.side === "foe" && x.yes);
-  meta.war.allies = joinedKing.map((x) => x.pid);
-  meta.war.commit = Object.fromEntries(joinedKing.map((x) => [x.pid, x.commit]));
+  war.allies = joinedKing.map((x) => x.pid);
+  war.commit = Object.fromEntries(joinedKing.map((x) => [x.pid, x.commit]));
+  war.against = joinedFoe.map((x) => x.pid);  // the houses that took the foe's side
+  war.waiting = taken.filter((x) => !x.yes).map((x) => x.pid);
   for (const x of joinedKing) {
     (meta.alliances ??= {})[x.pid] = Math.max(meta.alliances[x.pid] ?? 0, turn + WAR.join.seasons);
     if (!atWarInFreeciv(ctx, x.pid, house)) ctx.diplomacy?.([x.pid, house, 0, "War"]);
@@ -151,16 +165,16 @@ export function declare(ctx, house) {
   record({ turn, kind: "battle", city: seat ?? undefined, attacker: crown.id, defender: house,
     text: `The King declares war on ${houseFor(foe).name}. ${towns} ${towns === 1 ? "town flies" : "towns fly"} its banner; the royal host takes them one by one${seat != null ? `, and ${cityName(seat)} last` : ""}.${joinedKing.length ? ` ${andList(named(joinedKing))} ${joinedKing.length > 1 ? "ride" : "rides"} with the King.` : " No house rides with the King."}${called.length ? ` ${andList(named(joinedFoe))} ${called.length > 1 ? "take" : "takes"} ${short(foe)}'s side against the crown.` : ""}${waiting.length ? ` ${andList(waiting)} ${waiting.length > 1 ? "wait" : "waits"} to see who wins.` : ""}` });
   chron.saveMeta(meta);
-  next(ctx, turn);
+  next(ctx, turn, war);
 }
 
 // The King's envoy has the house's answer (routes_decree.js, after crown.js join): {house, yes, warns}. Yes: the house
 // swears the oath for the war (meta.alliances, so it sends its men with each siege, campaigns.js startCampaign) and
 // goes to war with the foe in Freeciv. A friend of the foe refuses and sends it word: the foe's next town is warned
 // and raises men (Lua.levy, data/war.json join.warnLevy).
-export function joined(ctx, { house, yes, warns }) {
+export function joined(ctx, { house, yes, warns, on }) {
   const { world, meta, record } = ctx;
-  const w = current(meta);
+  const w = on != null ? warOn(meta, on) : askable(meta, house);
   if (!w) return;
   const turn = world.turn ?? 0;
   (w.asked ??= {})[house] = turn;
@@ -182,12 +196,12 @@ export function joined(ctx, { house, yes, warns }) {
 // The war is over at the peace table (peace.js ruled): said once, kept in the chronicle.
 export function ended(ctx, pid) {
   const { world, meta, record } = ctx;
-  const w = current(meta);
-  if (!w || w.house !== Number(pid)) return;
+  const w = warOn(meta, pid);
+  if (!w) return;
   const foe = world?.players?.find((p) => p.id === w.house);
   const fell = (w.fallen ?? []).map(cityName);
   record({ turn: world?.turn ?? 0, kind: "decree", text: `The war on ${short(foe)} ends at the peace table${fell.length ? `, with ${andList(fell)} taken` : ", and no town taken"}. ${houseFor(foe ?? {}).name} still stands.` });
-  meta.war = null;
+  meta.wars = wars(meta).filter((x) => x !== w);
   chron.saveMeta(meta);
 }
 
@@ -199,7 +213,7 @@ export function upkeepNow(ctx) {
   const { world } = ctx;
   const crown = crownOf(world);
   if (!crown) return { wars: 0, gold: 0 };
-  const n = greatHouses(world).filter((p) => p.id !== crown.id && atWarInFreeciv(ctx, crown.id, p.id)).length;
+  const n = greatHouses(world).filter((p) => crownFoe(ctx, p.id)).length;
   let gold = 0;
   for (let i = 0; i < n; i++) gold += WAR.upkeep.base * (1 + WAR.upkeep.step * i);
   return { wars: n, gold: Math.round(gold) };
@@ -219,16 +233,18 @@ export function upkeep(ctx, turn) {
 // Each season (season.js): towns fallen are told, the seat taken topples the house, a siege that came to nothing is
 // passed over for now, the next town is ordered, Freeciv kept at war, and the house strikes back.
 export function season(ctx, turn) {
+  for (const w of [...wars(ctx.meta)]) seasonOf(ctx, turn, w);
+}
+function seasonOf(ctx, turn, w) {
   const { world, meta, record } = ctx;
-  const w = current(meta);
-  if (!w || !world) return;
+  if (!world) return;
   const crown = crownOf(world);
   const foe = world.players.find((p) => p.id === w.house);
   const theirs = (id) => world.cities.some((c) => c.id === id && c.owner === w.house);
   if (!crown) return;
   // The house has no town left, or its seat is the crown's: toppled.
   const seat = world.cities.find((c) => c.id === w.seat);
-  if (!foe || !world.cities.some((c) => c.owner === w.house) || !seat || seat.owner !== w.house) return topple(ctx, turn);
+  if (!foe || !world.cities.some((c) => c.owner === w.house) || !seat || seat.owner !== w.house) return topple(ctx, turn, w);
   // Freeciv must be at war too: once it has been (the decree's diplomacy goes in at the next sitting), a truce its AI
   // made on its own is broken again; the King's war ends only at his peace table.
   const fighting = atWarInFreeciv(ctx, crown.id, w.house);
@@ -257,7 +273,7 @@ export function season(ctx, turn) {
     record({ turn, kind: "battle", city: was, attacker: crown.id, defender: w.house,
       text: `The war on ${short(foe)}: the royal host is gone from before ${cityName(was)}, and the town still flies ${short(foe)}'s banner. The captains regroup${nextId != null && nextId !== was ? `; ${cityName(nextId)} next` : ""}.` });
   }
-  next(ctx, turn);
+  next(ctx, turn, w);
   // The house answers in kind (characters.js retaliate): a raid on the King's nearest town or its own host on it.
   if (w.struck == null ? turn > w.since : turn - w.struck >= WAR.retaliate.every) {
     const hit = ctx.court?.retaliate?.(w.house, world, { send: (l) => ctx.send(`lua cmd ${l}`), crownId: crown.id, R: WAR.retaliate }, turn);
@@ -274,9 +290,8 @@ const besieging = (meta, city) => (meta.campaigns ?? []).some((c) => c.city === 
 // The next town given to a host: the first of the plan the house still holds, unless a siege of it is on or the
 // captains regroup. The King's biggest host standing at ease (no march, no siege) goes; standing in his seat, it
 // leaves half there (hosts.js split). With none fit to march (data/war.json minCompanies), said once until one is.
-function next(ctx, turn) {
+function next(ctx, turn, w) {
   const { world, meta, record } = ctx;
-  const w = current(meta);
   if (!w || (w.rest ?? -1) > turn) return;
   const target = w.target != null && world.cities.some((c) => c.id === w.target && c.owner === w.house) ? w.target : w.plan.find((id) => world.cities.some((c) => c.id === id && c.owner === w.house));
   if (target == null) return;
@@ -306,9 +321,8 @@ function next(ctx, turn) {
 
 // The seat has fallen, or the house holds nothing: the house is toppled. Its towns left pass to the crown (Freeciv's
 // transfer); the allies who marched beside the host ask their share of them at court (meta.spoils, characters.js).
-function topple(ctx, turn) {
+function topple(ctx, turn, w) {
   const { world, meta, record, send } = ctx;
-  const w = current(meta);
   const crown = crownOf(world);
   const foe = world.players.find((p) => p.id === w.house);
   const left = world.cities.filter((c) => c.owner === w.house);
@@ -320,17 +334,18 @@ function topple(ctx, turn) {
   record({ turn, kind: "sack", city: w.seat ?? undefined, attacker: crown.id, defender: w.house,
     text: `${houseFor(foe ?? {}).name} is toppled: ${seatNow ? `${cityName(w.seat)}, its seat, is ${seatNow.owner === crown.id ? "the crown's" : houseFor(world.players.find((p) => p.id === seatNow.owner) ?? {}).name + "'s"}` : w.seat != null ? `${cityName(w.seat)}, its seat, is no more` : "it holds no town"}${left.length ? `, and ${andList(left.map((c) => cityName(c.id)))} ${left.length > 1 ? "open their gates" : "opens its gates"} to the King` : ""}. ${fell.length} ${fell.length === 1 ? "town" : "towns"} taken in ${Math.max(1, turn - w.since)} ${turn - w.since === 1 ? "season" : "seasons"}.` });
   ctx.deed?.(kingDeeds.tagsFor("realm", "sack"), { act: false, place: w.seat != null ? cityName(w.seat) : "" });
-  meta.war = null;
+  meta.wars = wars(meta).filter((x) => x !== w);
   chron.saveMeta(meta);
 }
 
-// For /world war: the war now, in the view's terms, or null. {house, name, since, next, nextName, fallen, allies,
-// seat, seatName}.
+// For /world kingWars: the King's wars in the view's terms. [{house, name, since, next, nextName, fallen, allies,
+// against, waiting, seat, seatName}].
 export function view(meta, world) {
-  const w = current(meta);
-  if (!w || !world) return null;
-  const foe = world.players.find((p) => p.id === w.house);
-  const nextId = w.target ?? w.plan.find((id) => world.cities.some((c) => c.id === id && c.owner === w.house)) ?? null;
-  return { house: w.house, name: houseFor(foe ?? {}).name ?? "", since: w.since, next: nextId, nextName: nextId != null ? cityName(nextId) : null,
-    fallen: (w.fallen ?? []).map((id) => cityName(id)), allies: w.allies ?? [], seat: w.seat, seatName: w.seat != null ? cityName(w.seat) : null };
+  if (!world) return [];
+  return wars(meta).map((w) => {
+    const foe = world.players.find((p) => p.id === w.house);
+    const nextId = w.target ?? w.plan.find((id) => world.cities.some((c) => c.id === id && c.owner === w.house)) ?? null;
+    return { house: w.house, name: houseFor(foe ?? {}).name ?? "", since: w.since, next: nextId, nextName: nextId != null ? cityName(nextId) : null,
+      fallen: (w.fallen ?? []).map((id) => cityName(id)), allies: w.allies ?? [], against: w.against ?? [], waiting: w.waiting ?? [], seat: w.seat, seatName: w.seat != null ? cityName(w.seat) : null };
+  });
 }

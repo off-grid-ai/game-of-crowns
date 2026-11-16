@@ -102,7 +102,7 @@ export function seal(ctx, pid) {
 // Whether the crown is at war with the house now (Freeciv's diplomacy, or the King's own war).
 export function atWar(ctx, pid) {
   const crown = crownOf(ctx.world);
-  return !!crown && ((ctx.detail?.()?.players?.[crown.id]?.atWarWith ?? []).includes(pid) || War.current(ctx.meta)?.house === pid);
+  return !!crown && ((ctx.detail?.()?.players?.[crown.id]?.atWarWith ?? []).includes(pid) || War.warOn(ctx.meta, pid) != null);
 }
 
 // For /world wars: the crown's wars with the great houses, since when and the towns each side has lost.

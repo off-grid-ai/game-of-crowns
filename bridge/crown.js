@@ -384,13 +384,13 @@ const HANDLERS = {
     return { cost, lua: [pay], favour: { [owner.id]: DECREES.truce.favour ?? 5 }, truceWith: owner.id,
       text: `The King's herald rides to ${lord} under a white flag, with gold for its dead. ${lord} takes it: peace between the crown and ${lord}, as things stand.` };
   },
-  // The King's war on a house (war.js keeps it) and his envoy asking another house to join it. cmd.war: the war now
-  // (war.js current), cmd.joinChance(pid): the house's answer as war.js reckons it; both lent by routes_decree.js.
+  // The King's war on a house (war.js keeps them) and his envoy asking another house to join one. cmd.wars: the wars
+  // now; cmd.askable(pid): the war a house would be asked into; cmd.joinChance(pid): its answer as war.js reckons it.
   war(x) {
     const { cmd, world, cost, pay, owner, lord } = x;
     if (!owner || houseFor(owner).crown || houseFor(owner).wild) return { error: "choose a great house's town to make war on" };
-    const w = cmd.war;
-    if (w) return { error: w.house === owner.id ? `the crown is already at war with ${lord}` : `the crown is at war with ${houseFor(world.players.find((p) => p.id === w.house) ?? {}).name}; end that war first` };
+    // Several wars at once are allowed; each costs more than the last (war.js upkeep). Never two on one house.
+    if ((cmd.wars ?? []).some((w) => w.house === owner.id)) return { error: `the crown is already at war with ${lord}` };
     if ((cmd.sworn ?? (() => false))(owner.id)) return { error: `${lord} is sworn to the crown; its oath must run out before the King makes war on it` };
     const d = DECREES.war;
     const others = greatHouses(world).filter((p) => p.id !== owner.id);
@@ -400,17 +400,17 @@ const HANDLERS = {
   },
   join(x) {
     const { cmd, world, cost, pay, owner, lord } = x;
-    const w = cmd.war;
-    if (!w) return { error: "the crown is at war with no house" };
+    const w = owner ? cmd.askable?.(owner.id) : null;
+    if (!w) return { error: (cmd.wars ?? []).length ? `${lord} already marches with the King` : "the crown is at war with no house" };
     if (!owner || houseFor(owner).crown || houseFor(owner).wild) return { error: "choose a great house's town to send the envoy to" };
     if (owner.id === w.house) return { error: `${lord} is the house the King is at war with` };
     const foe = houseFor(world.players.find((p) => p.id === w.house) ?? {}).name;
     const a = cmd.joinChance?.(owner.id);
     if (!a) return { error: `${lord} already marches with the King` };
-    if (a.warns) return { cost, lua: [pay], favour: {}, join: { house: owner.id, yes: false, warns: true },
+    if (a.warns) return { cost, lua: [pay], favour: {}, join: { house: owner.id, yes: false, warns: true, on: w.house },
       text: `The King's envoy rides to ${lord}, and comes back with nothing: ${lord} is ${a.why}. Its riders are already on the road to warn ${foe}.` };
     const yes = (cmd.roll ?? Math.random)() < a.chance;
-    return { cost, lua: [pay], favour: yes ? { [owner.id]: 2 } : {}, join: { house: owner.id, yes, warns: false },
+    return { cost, lua: [pay], favour: yes ? { [owner.id]: 2 } : {}, join: { house: owner.id, yes, warns: false, on: w.house },
       text: yes ? `${lord} answers the King's envoy: its banners are called, and its men march with the royal host against ${foe}.`
         : `${lord} hears the King's envoy out and sends him home: it ${a.why === "is cold to the crown" ? "owes the crown nothing" : "will not bleed in the King's war"}.` };
   },

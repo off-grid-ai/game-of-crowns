@@ -90,10 +90,11 @@ export function worldView(ctx) {
     p.besieged = (meta.campaigns ?? []).filter((x) => x.house === p.id).map((x) => x.city);
     // The King's war (war.js): his chances against the whole house while he is at war with none, and, while he is, each
     // other house's answer to his envoy {chance, warns, why, wait} (the town card's war rows).
-    const warNow = War.current(meta);
-    p.warOdds = warNow || p.house.crown || p.house.wild ? null : War.odds(ctx, p.id);
+    const warOnIt = War.warOn(meta, p.id);
+    p.warOdds = warOnIt || p.house.crown || p.house.wild ? null : War.odds(ctx, p.id);
     p.warSides = p.warOdds == null ? null : War.sidesForecast(ctx, p.id);  // who would ride with the King, who with them (war.js sides)
-    p.joinWar = warNow ? ((a) => (a ? { ...a, on: houseFor(world.players.find((q) => q.id === warNow.house) ?? {}).name, wait: War.askWait(meta, p.id, world.turn ?? 0) } : null))(War.joinChance(ctx, p.id)) : null;
+    const askWar = War.askable(meta, p.id);  // the war the King's envoy would ask it into
+    p.joinWar = askWar && !p.house.crown && !p.house.wild ? ((a) => (a ? { ...a, on: houseFor(world.players.find((q) => q.id === askWar.house) ?? {}).name, wait: War.askWait(meta, p.id, world.turn ?? 0) } : null))(War.joinChance(ctx, p.id)) : null;
     // Whom the house is at odds with, by name: wars, and wars the King has
     // stilled (a commanded peace or a royal match) as truces.
     const lordOf = (pid) => court?.lordOfHouse(pid);
@@ -157,7 +158,7 @@ export function worldView(ctx) {
     // The King's side is his whole host: the garrisons defend Kingsmere too.
     ended: u?.ended && !u.ended.settled && (world?.turn ?? 0) - u.ended.turn <= 8 ? u.ended.house : null,
     theirs: u?.house != null ? fighting(u.house) : 0, ours: crownId != null ? (world?.units ?? []).filter((x) => x.owner === crownId && !CIVILIAN.has(x.type)).length : 0 };
-return { ...world, spentSeams: meta.spentSeams ?? [], players, cities, units, turnSeconds, bands: BANDS, civilian: [...CIVILIAN], ships: [...SHIPS], crownId: crownOf()?.id ?? null, seatId: crownSeat()?.id ?? null, reign: reignInfo(), story: storyNow(), date: calendar(world.turn), threat, counsel: counselNow, sitting: meta.court?.sitting ?? null, fallen: Object.values(HOUSES).filter((h) => !h.crown && !h.wild && !world.players.some((p) => houseFor(p).key === h.key && (world.cities.some((c) => c.owner === p.id) || (world.units ?? []).some((u) => u.owner === p.id)))).map((h) => ({ ...h, name: names.shown(h.name) })), effects: effects.slice(-10), peace: last?.peace ?? 1, prosperity: last?.pop ?? 0, souls: world.cities.reduce((t, c) => t + soulsOf(c.size), 0), crown, owners: d?.owners ?? [], worked: d?.worked ?? [], tilled: d?.tilled ?? [], scenes: scenes.filter((x) => Date.now() - x.at < 90000), marks: marksNow().map((m) => ({ ...m, seasons: ctx.markSeasons?.[m.kind] ?? null, line: scarLine({ world }, m) })), goal: goalNow(), war: War.view(meta, world), weather: meta.weather ?? null, intrigue: [...(world.intrigue ?? []), ...(meta.stage?.intrigue ?? [])] };
+return { ...world, spentSeams: meta.spentSeams ?? [], players, cities, units, turnSeconds, bands: BANDS, civilian: [...CIVILIAN], ships: [...SHIPS], crownId: crownOf()?.id ?? null, seatId: crownSeat()?.id ?? null, reign: reignInfo(), story: storyNow(), date: calendar(world.turn), threat, counsel: counselNow, sitting: meta.court?.sitting ?? null, fallen: Object.values(HOUSES).filter((h) => !h.crown && !h.wild && !world.players.some((p) => houseFor(p).key === h.key && (world.cities.some((c) => c.owner === p.id) || (world.units ?? []).some((u) => u.owner === p.id)))).map((h) => ({ ...h, name: names.shown(h.name) })), effects: effects.slice(-10), peace: last?.peace ?? 1, prosperity: last?.pop ?? 0, souls: world.cities.reduce((t, c) => t + soulsOf(c.size), 0), crown, owners: d?.owners ?? [], worked: d?.worked ?? [], tilled: d?.tilled ?? [], scenes: scenes.filter((x) => Date.now() - x.at < 90000), marks: marksNow().map((m) => ({ ...m, seasons: ctx.markSeasons?.[m.kind] ?? null, line: scarLine({ world }, m) })), goal: goalNow(), kingWars: War.view(meta, world), weather: meta.weather ?? null, intrigue: [...(world.intrigue ?? []), ...(meta.stage?.intrigue ?? [])] };
 }
 
 // The realm's states, one definition each (SSOT, Mac 2026-11-10): set on each
