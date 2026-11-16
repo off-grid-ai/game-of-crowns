@@ -745,3 +745,4 @@ Switches (`--name`) go after `--` on the game's command line.
 - How long the reign waits past its hour for the climax the last act named (Thronefall: the last night is fought, not timed out): `bridge/data/director.json` `finale.grace` (a share of the reign; 0.25).
 - The act cards (The Banner Saga's chapter titles): `realm/data/ui.json` `reign_cards.acts` (each act's name, painting, question), `reign_cards.act_hold` (seconds before it goes on unclicked).
 - The battle result moment (Total War): `realm/data/ui.json` `moment` (`words`, `heroic_ratio`, `at`, `hold`).
+- Which of the King's swings show as a moment, and their words: `bridge/data/moments.json` (threat met / unanswered, rising crushed, the crown endures, town lost, Kingsmere sacked).

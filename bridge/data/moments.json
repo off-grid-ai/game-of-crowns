@@ -1,0 +1,9 @@
+{
+  "_": "The King's swings told as moments (moments.js; the view's moment_banner.gd, Total War's result banner): a chronicle line that carries one shows its word across the screen with a sting, a win in the accent and fanfare, a loss in the danger tone and the toll bell, the line under it. Only what turns for the crown: a threat he answered or let break, a rising crushed, a pretender broken, a royal town taken. Battles tell their own (battle_card.gd). word: what shows; loss: which way it swings.",
+  "answered": { "word": "Threat Met", "loss": false },
+  "unanswered": { "word": "Unanswered", "loss": true },
+  "crushed": { "word": "Rising Crushed", "loss": false },
+  "endures": { "word": "The Crown Endures", "loss": false },
+  "town_lost": { "word": "Town Lost", "loss": true },
+  "seat_sacked": { "word": "Kingsmere Sacked", "loss": true }
+}

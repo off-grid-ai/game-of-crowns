@@ -5,6 +5,7 @@
 // Hostile hosts are raised as units of Freeciv's barbarian player, which is
 // at war with everyone, so Freeciv itself fights the battles.
 
+import { moment } from "./moments.js";
 import * as Lua from "./lua.js";
 import fs from "node:fs";
 import path from "node:path";
@@ -152,7 +153,7 @@ export class Stakes {
       u.peak = Math.max(u.peak ?? 0, near);
       if (turn - u.since >= 2 && near === 0 && !(ctx.marchingOn?.(u.house, this.s.seat.id) > 0)) {
         u.stage = "none";
-        this.record({ turn, kind: "decree", text: `${name}'s host is broken before the walls of Kingsmere. The crown endures, and the houses that stood by it take heart.` });
+        this.record({ turn, kind: "decree", text: `${name}'s host is broken before the walls of Kingsmere. The crown endures, and the houses that stood by it take heart.`, moment: moment("endures", `${name}'s host broken before Kingsmere`) });
         u.ended = { house: u.house, turn };  // the King decides what becomes of them
         const loyal = houses.filter((p) => p.id !== u.house && ctx.favour(p.id) >= BANDS.steady);
         if (loyal.length) ctx.shift?.(Object.fromEntries(loyal.map((p) => [p.id, 5])), "the crown stood firm against the pretender");

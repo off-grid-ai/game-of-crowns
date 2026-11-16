@@ -8,6 +8,7 @@
 // Nothing here reads server.js: what it needs comes in as one context argument.
 
 import { crownOf } from "./realm.js";
+import { moment } from "./moments.js";
 import * as Opening from "./opening.js";
 import * as Events from "./events.js";
 import fs from "node:fs";
@@ -223,7 +224,7 @@ function breaks(ctx, d, turn) {
     cost = "the loyal houses ask why the crown stayed silent";
   }
   kingDeeds.unheard(meta);  // the realm waited on him, and he said nothing: toward the Absent
-  record({ turn, kind: "rebellion", text: `${fill(spec.broke, th)}${cost ? `: ${cost}` : ""}.`, city: th.city });
+  record({ turn, kind: "rebellion", text: `${fill(spec.broke, th)}${cost ? `: ${cost}` : ""}.`, city: th.city, moment: moment("unanswered", th.townName ?? "") });
   d.last = th.kind;
   d.threat = null;
   d.rest = th.finale ? 0 : DIRECTOR.breather;  // the finale is the end's own peak: no breather after it
@@ -243,7 +244,7 @@ function marches(ctx, d, turn) {
     if (!target.capital) send(`lua cmd ${Lua.transferCity(target.id, m.house)}`);
     addMark?.("sack", target.x, target.y, turn);
     scene("sack", { x: target.x, y: target.y, city: target.id, owner: m.house });
-    record({ turn, kind: "rebellion", text: target.capital ? `${m.houseName}'s host reaches the King's own walls: ${cityName(target.id)} is sacked.` : `${m.houseName}'s host reaches ${cityName(target.id)}: it is stormed and taken, and flies ${m.houseName}'s banner now.`, city: target.id });
+    record({ turn, kind: "rebellion", text: target.capital ? `${m.houseName}'s host reaches the King's own walls: ${cityName(target.id)} is sacked.` : `${m.houseName}'s host reaches ${cityName(target.id)}: it is stormed and taken, and flies ${m.houseName}'s banner now.`, city: target.id, moment: moment(target.capital ? "seat_sacked" : "town_lost", `${cityName(target.id)} · ${m.houseName}`) });
     d.march = null;
     return;
   }
@@ -268,7 +269,7 @@ export function answered(meta, cmd, world, record) {
   if (!here) return false;
   const turn = world?.turn ?? 0;
   const pass = () => {
-    record({ turn, kind: "court", text: `${fill(spec.passed, th)}.`, city: th.city });
+    record({ turn, kind: "court", text: `${fill(spec.passed, th)}.`, city: th.city, moment: moment("answered", th.townName ?? "") });
     meta.director.last = th.kind;
     meta.director.threat = null;
     meta.director.rest = meta.lastAct ? 0 : DIRECTOR.breather;

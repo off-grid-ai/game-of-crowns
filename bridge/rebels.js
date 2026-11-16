@@ -6,6 +6,7 @@
 // court in chains: hang him, pardon him, or ransom him to his house. One owner: meta.rebels {pid: {since, units,
 // city, lord, terms, chains}}, the rising's men by id (the march's order lets them go at the walls; the rising
 // doesn't). Numbers and words' prices: data/favour.json rebel. /world rebels.
+import { moment } from "./moments.js";
 import * as Lua from "./lua.js";
 import { REBEL } from "./favour.js";
 import { cityName, houseFor } from "./narrator.js";
@@ -38,7 +39,7 @@ export function season(ctx, turn) {
     const men = r.units.filter((id) => alive.has(id));
     if (!men.length) {
       r.chains = turn;
-      record({ turn, kind: "rebellion", text: `The rising of ${houseFor(house).name} is crushed. ${lord.name} is taken in the field and brought to Kingsmere in chains.`, city: r.city });
+      record({ turn, kind: "rebellion", text: `The rising of ${houseFor(house).name} is crushed. ${lord.name} is taken in the field and brought to Kingsmere in chains.`, city: r.city, moment: moment("crushed", `${houseFor(house).name} · ${lord.name} in chains`) });
       const C = T.crushed;
       const ransom = Math.max(0, Math.min(C.ransom.gold, Math.floor(house.gold ?? 0)));
       court.arcPetition({ arc: "rebel", beat: `rebel-${pid}-${turn}-chains`, thread: `${lord.name} in chains`, from: lord,

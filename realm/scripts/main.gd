@@ -1304,6 +1304,12 @@ func _on_chronicle(entries: Array) -> void:
 		_try_digest()
 	elif _digest_done and not entries.is_empty():
 		_mark_seen(entries)
+		# The King's swings, as moments (the bridge's moment on a line: moments.js; moment_banner.gd): the latest one.
+		for i in range(entries.size() - 1, -1, -1):
+			var mo = entries[i].get("moment")
+			if mo is Dictionary:
+				ui.moment.show(String(mo.get("word", "")), String(mo.get("line", "")), bool(mo.get("loss", false)))
+				break
 		# A story turns: offer to go and see the people it happens to.
 		for e in entries:
 			if e.get("thread") and String(e.get("stage", "")) in ["crisis", "resolution", "rising"]:
