@@ -39,6 +39,7 @@ func _stage_marks() -> void:
 		m.name = "StageMark_" + t[0]
 		m.tag = t[0]
 		m.process_priority = t[1]
+		m.process_mode = Node.PROCESS_MODE_ALWAYS  # under a pause too: else the frame's middle stages and the coroutines' laps go unclosed
 		main.add_child(m)
 	main.get_tree().process_frame.connect(stage.bind("process_frame"))
 	main.get_tree().physics_frame.connect(stage.bind("physics_frame"))
