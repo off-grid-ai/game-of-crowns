@@ -102,7 +102,7 @@ func _process_timed(delta: float) -> void:
 	if _check <= 0.0:
 		_check = 1.0
 		_refresh()
-		_square_count()
+		PerfTools.timed("villagers.square_count", _square_count)
 	if _crowd_probe:
 		_crowd_check()
 	_others_at -= delta
@@ -200,7 +200,7 @@ func _refresh() -> void:
 		# that reach, unmade SEEN_MARGIN past it so a small pan doesn't make and unmake one.
 		var off := (cam.global_position.distance_to(node.global_position) - TownLife.centre_reach(node) - AnimLOD.People.SEEN_TO) if cam else 0.0
 		if (tier == ViewTier.NEAR or tier == ViewTier.MID) and off <= 0.0 and not crowds.has(id) and not _spawning.has(id):
-			_spawn(id)
+			PerfTools.timed("villagers.spawn", _spawn.bind(id))
 		elif (tier == ViewTier.FAR or off > SEEN_MARGIN) and crowds.has(id):
 			for a in crowds[id]:
 				a["node"].queue_free()  # its Mover's crowd agent with it
@@ -210,20 +210,20 @@ func _refresh() -> void:
 			_at_tier(id, tier)
 	for id in crowds.keys():
 		if towns.towns.has(id) and int(_tier.get(id, ViewTier.NEAR)) != ViewTier.OFF:
-			_keep_up(id)
+			PerfTools.timed("villagers.keep_up", _keep_up.bind(id))
 	_minds_at -= 1.0
 	if _minds_at <= 0.0:
 		_minds_at = 4.0
 		for id in crowds:
 			if int(_tier.get(id, ViewTier.NEAR)) == ViewTier.NEAR:
-				_ask_plans(id)
-				_tell_attention(id)
+				PerfTools.timed("villagers.plans", _ask_plans.bind(id))
+				PerfTools.timed("villagers.attention", _tell_attention.bind(id))
 	for id in crowds:
 		if int(_tier.get(id, ViewTier.NEAR)) != ViewTier.NEAR:
 			continue  # only a NEAR town's people think, see and talk
-		_witness(id)
+		PerfTools.timed("villagers.witness", _witness.bind(id))
 		talk.prune(id)
-		_follow_parents(id)
+		PerfTools.timed("villagers.parents", _follow_parents.bind(id))
 	if _audit:
 		talk.audit()
 	for id in crowds.keys():
