@@ -128,6 +128,7 @@ func _far() -> void:
 # --- how the smoke looks (batch 8b look2: bright white blobs; hearths.json look) ----------------
 
 var _mat: StandardMaterial3D = null  # one for every chimney, so the town's smoke draws as one
+var _quads := {}  # Vector2 size -> the styled QuadMesh every chimney of that size draws (_style)
 var _styled: Array = []  # the chimneys restyled, for the wind's drift
 
 
@@ -173,9 +174,15 @@ func _style(smoke: GPUParticles3D) -> void:
 		preload("res://scripts/particles.gd").near_fade(_mat)  # smoke right at the lens fades out (camera.json clarity.smoke)
 	var q := smoke.draw_pass_1 as QuadMesh
 	if q:
-		q = q.duplicate()
-		q.material = _mat
-		smoke.draw_pass_1 = q
+		# One quad per size, made here and shared by every chimney (not a copy of the town's own: copied as a town
+		# was raised it had no mesh yet, live51 'Parameter "mesh" is null' 29 a run).
+		var key := q.size
+		if not _quads.has(key):
+			var nq := QuadMesh.new()
+			nq.size = q.size
+			nq.material = _mat
+			_quads[key] = nq
+		smoke.draw_pass_1 = _quads[key]
 	_styled.append(weakref(smoke))
 
 
