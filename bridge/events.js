@@ -20,6 +20,7 @@ import { houseFor, cityName } from "./narrator.js";
 import { calendar } from "./calendar.js";
 import { pick as wording } from "./say.js";  // a choice's, its later's and a card's ignore text may be a list of wordings
 import * as chron from "./chronicles.js";
+import * as Consequence from "./consequence.js";
 
 export const EVENTS = JSON.parse(fs.readFileSync(new URL("./data/events.json", import.meta.url), "utf8"));
 EVENTS.cards.push(...Rivals.RIVAL.cards);  // the rival King's envoys, drawn with the realm's (rivals.js)
@@ -159,14 +160,20 @@ function moves(ctx, ch, sub) {
 }
 
 // What an effect does, with the existing verbs: favour, the crown's gold, a line in the chronicle, the threat eased.
-function apply(ctx, fx = {}, sub = {}, turn) {
-  const { world } = ctx;
+// An effect's favour by house ({pid: delta}): "all" the great houses, "house" the card's, "rival" its rival.
+function shiftOf(world, fx = {}, sub = {}) {
   const shift = {};
   for (const [who, d] of Object.entries(fx.favour ?? {})) {
     if (who === "all") for (const p of great(world)) shift[p.id] = (shift[p.id] ?? 0) + d;
     else if (who === "house" && sub.pid != null) shift[sub.pid] = (shift[sub.pid] ?? 0) + d;
     else if (who === "rival" && sub.rpid != null) shift[sub.rpid] = (shift[sub.rpid] ?? 0) + d;
   }
+  return shift;
+}
+
+function apply(ctx, fx = {}, sub = {}, turn) {
+  const { world } = ctx;
+  const shift = shiftOf(world, fx, sub);
   if (Object.keys(shift).length) ctx.shiftFavour?.(shift, fx.why ?? "the King's answer to an event");
   const crown = crownOf(world);
   if (fx.gold && crown) {
@@ -198,17 +205,20 @@ export function answer(ctx, i) {
   const crown = crownOf(world);
   if ((ch.cost ?? 0) > (crown?.gold ?? 0)) return [400, { error: `the treasury holds too little: this costs ${(ch.cost * 100).toLocaleString("en-GB")} crowns` }];
   const turn = world?.turn ?? 0;
+  const was = Consequence.before(ctx, e.up.subject?.city);  // for the reckoning, before the answer spends
   if (ch.cost) apply(ctx, { gold: -ch.cost }, e.up.subject, turn);
   // A text written as a list of wordings: one not heard lately (say.js), the same in the chronicle and the reply.
   const said = wording(`event:${card.id}:${Number(i)}`, ch.text);
-  apply(ctx, { ...ch, text: said }, e.up.subject, turn);
+  apply(ctx, { ...ch, favour: null, text: said }, e.up.subject, turn);
+  // Its favour settled as every choice is (consequence.js): told, and what it changed shown at once.
+  const settled = Consequence.settle(ctx, was, { favour: shiftOf(world, ch, e.up.subject), why: ch.why ?? "the King's answer to an event", cost: ch.cost ?? 0 });
   Royals.ruled(ctx, `event:${card.id}`, Number(i), ch.against ?? []);  // a choice against his focus weighs on him (royals.js)
   if (ch.later) e.later.push({ turn: turn + (ch.later.in ?? 2), effect: { ...ch.later, text: wording(`event:${card.id}:later:${Number(i)}`, ch.later.text) }, subject: e.up.subject });
   const told = fill(said ?? ch.label, e.up.subject);
   if (told) meta.lastRuling = told;  // the save card's line (reign.js saveCard): never blanked by a choice with no words
   e.up = null;
   chron.saveMeta(meta);
-  return [200, { ok: true, text: told }];
+  return [200, { ok: true, text: told + (settled.text ? `\n${settled.text}` : ""), changes: settled.changes }];
 }
 
 // A test reign's hook (routes_test.js): draw a card now, past the opening's quiet, or let the one up lapse.

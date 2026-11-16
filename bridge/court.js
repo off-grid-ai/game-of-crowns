@@ -27,13 +27,13 @@ import * as chron from "./chronicles.js";
 import * as kingDeeds from "./ledger.js";
 import { recordRuling } from "./favourbook.js";
 import * as Rulings from "./rulings.js";
-import * as Reckoning from "./reckoning.js";
+import * as Consequence from "./consequence.js";
 
 // A ruling on a petition, by option: the treasury pays, the realm changes,
 // favour shifts, the chronicle and the world show it. Shared by a chosen
 // option and a ruling in the King's own words.
 export function rule(ctx, id, option) {
-  const { world, meta, court, crowns, deed, send, marchOn, shiftAndTell, record } = ctx;
+  const { world, meta, court, crowns, deed, send, marchOn, record } = ctx;
   const asked = court.petitions.find((x) => x.id === id && !x.answered)?.options?.find((o) => o.id === option);
   const petition = court.petitions.find((x) => x.id === id);
   // The price as the docket showed it: worn with use (treasury.js), like a decree's.
@@ -45,6 +45,7 @@ export function rule(ctx, id, option) {
     petition.answered = true;
     return { error: "The siege is already over; the herald's terms no longer stand." };
   }
+  const was = Consequence.before(ctx, petition?.city);  // for the reckoning, before the ruling spends
   const out = court.answer(id, option, world);
   if (out.error) return out;
   if (out.cost && price) out.cost = price;
@@ -68,7 +69,8 @@ export function rule(ctx, id, option) {
   out.lua.forEach((l) => send(`lua cmd ${l}`));
   // A ruling that sends the royal host (the siege plea's "relieve"): the same march as the decree.
   if (out.march != null) marchOn(Number(out.march));
-  const told = shiftAndTell(out.favour, "your ruling at court", out.cost);
+  // A ruling names its own winners and losers: settled as every choice is (consequence.js), not weighed again.
+  const told = Consequence.settle(ctx, was, { favour: out.favour, why: "your ruling at court", cost: out.cost ?? 0 });
   const effects = told.text;
   // The lord who asked will be back about it, by name, in two seasons: to repay a favour or demand amends.
   const asker = petition && court.people?.[petition.from];
@@ -93,7 +95,7 @@ export function rule(ctx, id, option) {
   meta.lastRuling = out.text;  // the save card's line (reign.js saveCard)
   rulingScene(ctx, id, option, out);
   Rulings.note(ctx, petition, asked ?? { id: option }, out);  // its answer stands at the town it touches for a season or two (rulings.js)
-  return { ok: true, text: crowns(out.text) + (effects ? `\n${effects}` : ""), changes: Reckoning.of({ favour: told.moves, gold: out.cost ? [(crownNow?.gold ?? 0) + out.cost, crownNow?.gold ?? 0] : null }) };
+  return { ok: true, text: crowns(out.text) + (effects ? `\n${effects}` : ""), changes: told.changes };
 }
 
 // A ruling at court made visible: what the King gives goes out from

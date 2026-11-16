@@ -1002,7 +1002,7 @@ const ROUTES = {
   // An event card answered (events.js): its cost paid, its effect now, its later one queued.
   "POST /event/answer": async (req, res, url) => {
     const b = await body(req);
-    const [code, out] = Events.answer({ meta, world, court, detail, send, record, shiftFavour, favourOf }, b.choice);
+    const [code, out] = Events.answer({ meta, world, court, detail, send, record, shiftFavour, shiftAndTell, favourOf }, b.choice);
     return json(res, code, out);
   },
   // An order to one of the King's hosts (hosts.js: the view asks, the bridge decides and moves it).

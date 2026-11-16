@@ -24,16 +24,13 @@ import { decree, DECREES } from "./crown.js";
 import * as kingDeeds from "./ledger.js";
 import * as Damage from "./damage.js";
 import * as Rulings from "./rulings.js";
-import * as Reckoning from "./reckoning.js";
-import * as Aftermath from "./aftermath.js";
-import * as Rivalry from "./rivalry.js";
-import * as Meddling from "./meddling.js";
+import * as Consequence from "./consequence.js";
 import { moodFrom, moodRules } from "./claude.js";
 import { body, json } from "./http_util.js";
 import * as names from "./names.js";
 
 export async function issueDecree(ctx, req, res, url) {
-  const { yearlyKey, seasonsLeft, priceOf, favourOf, causeOf, sworn, deed, startCampaign, temper, send, shiftAndTell, scene, keepTruce, decreeScenes, record, snapshot, crowns } = ctx;
+  const { yearlyKey, seasonsLeft, priceOf, favourOf, causeOf, sworn, deed, startCampaign, send, scene, keepTruce, decreeScenes, record, snapshot, crowns } = ctx;
   ctx.counselStale = true;
   ctx.decreesIssued++;
   const cmd = await body(req);
@@ -98,7 +95,7 @@ export async function issueDecree(ctx, req, res, url) {
   const result = decree({ ...cmd, host, wars: War.wars(ctx.meta), askable: (pid) => War.askable(ctx.meta, pid), joinChance: (pid) => War.joinChance(ctx, pid), works: ctx.meta.works ?? {}, price, favourOf, causeOf, sworn, warded: (pid) => (ctx.stakes?.s.wards?.[pid] ?? -1) > (ctx.world.turn ?? 0), marching: (city) => (ctx.meta.campaigns ?? []).some((x) => x.city === city), atWar: (pid) => Peace.atWar(ctx, pid), usurper: ctx.stakes?.s.usurper, seat: ctx.stakes?.s.seat }, ctx.world);
   if (result.error) return json(res, 400, result);
   // What stood before the order, for the reckoning (reckoning.js): the treasury, the alarm, the town's lord.
-  const before = { gold: crownOf(ctx.world)?.gold ?? 0, alarm: ctx.meta.alarm ?? 0, owner: ctx.world.cities.find((c) => c.id === Number(cmd.city))?.owner ?? null };
+  const before = Consequence.before(ctx, cmd.city);
   {
     const dc = ctx.world.cities.find((x) => x.id === Number(cmd.city));
     const dp = dc ? ctx.world.players.find((p) => p.id === dc.owner) : ctx.world.players.find((p) => p.id === Number(cmd.house ?? cmd.to));
@@ -131,10 +128,8 @@ export async function issueDecree(ctx, req, res, url) {
   // Bought: the same decree again within the year costs more (treasury.js wear).
   Treasury.spend(ctx.meta, `decree:${cmd.action}`, ctx.world.turn ?? 0); chron.saveMeta(ctx.meta);
   if (cmd.city != null) { (ctx.meta.answeredAt ??= {})[Number(cmd.city)] = ctx.world.turn ?? 0; chron.saveMeta(ctx.meta); }
-  const warmed = ctx.world.cities.find((c) => c.id === Number(cmd.city))?.owner ?? (cmd.house != null ? Number(cmd.house) : null);
-  result.favour = temper(cmd.action, warmed, result.favour);
-  result.favour = Rivalry.jealous(ctx, result.favour);  // the warmed house's rival cools, by the aid given (rivalry.js)
-  result.favour = Meddling.apply(ctx, cmd.action, cmd.city, result.favour);  // an order inside another house's lands (meddling.js)
+  // As the realm takes it: kindness wears thin, the rival is jealous, help inside another's lands is meddling.
+  result.favour = Consequence.weigh(ctx, { action: cmd.action, city: cmd.city, house: cmd.house, favour: result.favour });
   // A ward holds the house for its seasons (data/decrees.json ward.seasons).
   if (result.ward != null && ctx.stakes) { (ctx.stakes.s.wards ??= {})[result.ward] = (ctx.world.turn ?? 0) + (DECREES.ward.seasons ?? 12); ctx.stakes.save(); }
   // A town taken from a house is remembered, so the Hand can offer it back.
@@ -154,7 +149,9 @@ export async function issueDecree(ctx, req, res, url) {
   if (crownNow) crownNow.gold -= result.cost;
   // The result card says what the order cost and whose favour moved, so the
   // King learns the price of his word.
-  const told = shiftAndTell(result.favour, { gift: "a gift of crowns", feast: "a feast in their honour", relief: "grain from the crown", build: "a building paid by the crown", grant: "a town granted or taken", banners: "the King's banners: answered or refused", marriage: "a royal match", peace: "the King's peace", back: "the King took a side", settle: "the King's peace, kept by another house", buyoff: "the King bought off the pretender", ward: "their heir taken as the King's ward", alliance: "an oath to the crown", march: "the royal host", war: "the King's war", join: "the King's war", truce: "the King's peace with them" }[cmd.action] ?? "a royal decree", result.cost);
+  const why = ({ gift: "a gift of crowns", feast: "a feast in their honour", relief: "grain from the crown", build: "a building paid by the crown", grant: "a town granted or taken", banners: "the King's banners: answered or refused", marriage: "a royal match", peace: "the King's peace", back: "the King took a side", settle: "the King's peace, kept by another house", buyoff: "the King bought off the pretender", ward: "their heir taken as the King's ward", alliance: "an oath to the crown", march: "the royal host", war: "the King's war", join: "the King's war", truce: "the King's peace with them" }[cmd.action] ?? "a royal decree");
+  // Settled the one way every choice is (consequence.js): told, kept to come back, and what it changed.
+  const told = Consequence.settle(ctx, before, { action: cmd.action, city: cmd.city, house: cmd.house, to: cmd.to, building: cmd.building, favour: result.favour, why, cost: result.cost, war: result.war });
   const seat = ctx.world.cities.find((c) => c.owner === crownNow?.id && c.capital);
   const target = ctx.world.cities.find((c) => c.id === Number(cmd.city));
   // No journey to where the King already is: an order for his own seat simply takes effect there.
@@ -210,15 +207,7 @@ export async function issueDecree(ctx, req, res, url) {
     const fav = Object.entries(result.favour ?? {});
     ctx.chatter?.afterRuling({ city: cmd.city ?? seat?.id, text: result.text, helps: fav.filter(([, d]) => d > 0).map(([k]) => house(k)).filter(Boolean), hurts: fav.filter(([, d]) => d < 0).map(([k]) => house(k)).filter(Boolean) })?.catch?.(() => {});
   }
-  const house = (pid) => houseFor(ctx.world.players.find((p) => p.id === Number(pid)) ?? {}).name?.replace(/^House /, "") ?? "";
-  const handed = ["back", "grant", "cede"].includes(cmd.action) && cmd.city != null && before.owner != null && cmd.to != null && Number(cmd.to) !== before.owner;
-  // The order comes back in a few seasons, judged on what the realm is then (aftermath.js).
-  const touched = ctx.world.cities.find((c) => c.id === Number(cmd.city))?.owner ?? (cmd.house != null ? Number(cmd.house) : null);
-  Aftermath.keep(ctx, cmd.action, cmd.action === "back" ? { house: before.owner, other: Number(cmd.to), city: Number(cmd.city) }
-    : { house: touched, other: cmd.to != null ? Number(cmd.to) : null, city: cmd.city != null ? Number(cmd.city) : null, building: cmd.building ?? null });
-  const changes = Reckoning.of({ favour: told.moves, gold: [before.gold, before.gold - (result.cost ?? 0)], alarm: [before.alarm, ctx.meta.alarm ?? 0],
-    towns: handed ? [{ town: cityName(Number(cmd.city)), from: house(before.owner), to: house(cmd.to) }] : [], war: result.war != null ? house(result.war) : null });
-  return json(res, 200, { ok: true, text: crowns(result.text) + (told.text ? `\n${told.text}` : ""), cost: result.cost ?? 0, sealed, changes });
+  return json(res, 200, { ok: true, text: crowns(result.text) + (told.text ? `\n${told.text}` : ""), cost: result.cost ?? 0, sealed, changes: told.changes });
 }
 
 export async function arrived(ctx, req, res, url) {
@@ -293,13 +282,12 @@ export async function tithe(ctx, req, res, url) {
 // or null when it can't be weighed (an unknown order, or one with no favour).
 const UNWEIGHED = new Set(["banners"]);  // its answer depends on the houses' mood on the day, and running it counts the call
 export function weigh(ctx, act) {
-  const { priceOf, favourOf, causeOf, sworn, temper } = ctx;
+  const { priceOf, favourOf, causeOf, sworn } = ctx;
   if (!act?.action || UNWEIGHED.has(act.action) || !ctx.world) return null;
   const price = priceOf(act.action);
   const plan = decree({ ...act, works: ctx.meta.works ?? {}, price, favourOf, causeOf, sworn, marching: (city) => (ctx.meta.campaigns ?? []).some((x) => x.city === city), atWar: (pid) => Peace.atWar(ctx, pid), usurper: ctx.stakes?.s.usurper, seat: ctx.stakes?.s.seat }, { ...ctx.world, players: ctx.world.players.map((p) => houseFor(p).crown ? { ...p, gold: Math.max(p.gold ?? 0, price) } : p) });
   if (!plan || plan.error) return null;
-  const warmed = ctx.world.cities.find((c) => c.id === Number(act.city))?.owner ?? (act.house != null ? Number(act.house) : null);
-  const favour = temper(act.action, warmed, plan.favour ?? {}, true);
+  const favour = Consequence.weigh(ctx, { action: act.action, city: act.city, house: act.house, favour: plan.favour }, true);
   const name = (pid) => names.shown(houseFor(ctx.world.players.find((p) => p.id === Number(pid)) ?? {}).name);
   const rows = Object.entries(favour).filter(([, d]) => d).map(([pid, d]) => ({ house: name(pid), d })).filter((r) => r.house);
   return { cost: price, helps: rows.filter((r) => r.d > 0).sort((a, b) => b.d - a.d), hurts: rows.filter((r) => r.d < 0).sort((a, b) => a.d - b.d) };

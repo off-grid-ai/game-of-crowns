@@ -3,6 +3,7 @@
 //   node tools/tension_rules_probe.mjs        (from bridge/)   exits 1 on a failure
 import * as Rivalry from "../rivalry.js";
 import * as Meddling from "../meddling.js";
+import * as Consequence from "../consequence.js";
 
 const world = {
   players: [
@@ -34,4 +35,8 @@ const own = Meddling.apply(ctx(true), "relief", 12, { 2: 12 });
 check("meddling: unasked help warms little", own[2] > 0 && own[2] < 12);
 // The crown's own town is no one's lands but the King's.
 check("the crown's town is not meddling", Meddling.apply(ctx(true), "relief", 14, { 9: 0 })[9] === 0);
+// The forecast and the settled order weigh alike (consequence.js): grain to a vassal at war moves its foe and its liege.
+const fore = Consequence.weigh(ctx(true), { action: "relief", city: 13, favour: { 2: 12 } }, true);
+check("one weighing: the forecast shows the foe's war aid", fore[1] === -12);
+check("one weighing: the forecast shows the liege passed over", fore[2] < 12);
 process.exit(bad ? 1 : 0);

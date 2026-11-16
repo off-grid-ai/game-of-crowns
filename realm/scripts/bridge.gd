@@ -88,7 +88,9 @@ func decree(action: String, city_id: int, building := "", to := -1, matter := ""
 ## The King's answer to the event card (bridge events.js): cb(ok, text).
 func event_answer(choice: int, cb: Callable) -> void:
 	_post("/event/answer", {"choice": choice}, func(code, data):
-		cb.call(code == 200, String(data.get("text", data.get("error", "")))))
+		cb.call(code == 200, String(data.get("text", data.get("error", ""))))
+		if code == 200 and data.get("changes") is Array:
+			reckoned.emit(data["changes"], ""))
 
 
 func set_mood(text: String) -> void:
