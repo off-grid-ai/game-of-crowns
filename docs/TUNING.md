@@ -5,7 +5,7 @@ Each line: to change X, edit `<file>`: `<key>`. Bridge files take effect after t
 Switches (`--name`) go after `--` on the game's command line.
 
 ## Camera (Builder 2)
-- How close the camera may come (the floor): `realm/data/camera.json`: `floor` (6.0; Mac 2026-11-17: "it can't zoom in so much ... slightly zoomed out more than this should be the max zoom in level"; was 4.0).
+- How close the camera may come (the floor): `realm/data/camera.json`: `floor` (8.0; Mac 2026-11-17: "it can't zoom in so much ... slightly zoomed out more than this should be the max zoom in level", then "maybe 8"; was 4.0).
 - How far a town, a castle or a followed host is framed from: `realm/data/camera.json`: `go_to.*`.
 - How many headings "go to" tries before settling for the least blocked: `realm/data/camera.json`: `sight_steps`.
 - How close a roof, wall or tree may come before it dissolves out of the view (gone nearer than, whole from): `realm/data/camera.json`: `near_fade.buildings`, `near_fade.trees`, `near_fade.castle` (a castle's walls, sooner).
