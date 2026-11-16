@@ -58,6 +58,7 @@ var _shade_t := 0.0  # seconds to the next look at who casts shadows (army_visua
 var banners := Banners.new()  # every regiment's banner and the host's standard (army_banners.gd)
 var _commander: Dictionary = {}
 var _report := 0.0
+var battle_order := ""  # the battle order it stands in (data/battle_orders.json; battle_orders.gd picks it)
 var _field := Vector3.ZERO  # the line's middle, on the ground
 var _face := 0.0  # the line's facing (yaw; the soldier faces +Z)
 var _path := PackedVector3Array()  # the column's road in, ending where it turns off for the muster
@@ -169,7 +170,11 @@ func _ready() -> void:
 		return
 	var t_raise := Time.get_ticks_usec()
 	# The line: where it stands and the way it faces, every regiment's place in it.
-	var placed := Formation.line_places(_regiments)
+	# A battle side stands in the order its commander picks (battle_orders.gd, through battle.pick: army_field.gd); a
+	# muster stands in the realm's default.
+	battle_order = String(battle["pick"].call(_regiments)) if battle.get("pick") is Callable else ""
+	var placed := Formation.line_places(_regiments, battle_order)
+	battle_order = String(placed["order"])
 	var extent: Vector2 = placed["extent"]
 	_commander = placed["commander"]
 	_extent = extent

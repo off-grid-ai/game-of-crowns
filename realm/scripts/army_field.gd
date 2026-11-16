@@ -22,6 +22,7 @@ extends Node3D
 ## the town side, their banners wavering as the fight goes on. When the holder's block breaks, its regiments run
 ## into the town and the besiegers pour in through the gap and spread out among the houses. Never moves the camera.
 
+const BattleOrders := preload("res://scripts/battle_orders.gd")
 const PerfTools := preload("res://scripts/perf_tools.gd")  # the frame-cost probe
 const Army := preload("res://scripts/army.gd")
 const Mover := preload("res://scripts/mover.gd")  # the one way to move (CLAUDE.md)
@@ -35,6 +36,7 @@ const Fire := preload("res://scripts/fire.gd")
 const F := "battle"  # data/battle.json, its field block
 const Formation := preload("res://scripts/army_formation.gd")  # a regiment's formation templates (horse: the wedge)
 
+var orders := ["", ""]  # the battle order each side stands in (battle_orders.gd)
 var main: Node
 var men := 0
 var loser := 1  # the side Freeciv beat: 0 the crown (or the besiegers' foe), 1 the foe
@@ -117,7 +119,7 @@ func _ready() -> void:
 	_dist = lens_distance()
 	while main.terrain.width == 0 or not main.terrain.built or (Army._rec("cities", []) as Array).is_empty():
 		await get_tree().create_timer(0.5, false).timeout
-	var crown: Army = Army.new(main, men, {"side": 0, "shape": "line"})
+	var crown: Army = Army.new(main, men, {"side": 0, "shape": "line", "pick": _pick.bind(0, {}, 0.0, "the crown")})
 	add_child(crown)
 	if not crown.mustered:
 		await crown.raised
@@ -131,8 +133,11 @@ func _ready() -> void:
 	var house := _foe_house()
 	var foe_col := Heraldry.colour(house, Color(0.72, 0.12, 0.12)) if not house.is_empty() else Color(0.72, 0.12, 0.12)
 	var foe_worn := apart(Heraldry.field_colour(house, foe_col) if not house.is_empty() else foe_col, crown.rows()[0]["worn"])
-	var foe: Army = Army.new(main, men, {"side": 1, "shape": "line", "field": crown.field() + fwd * gap, "face": face + PI,
-		"colour": foe_col, "worn": foe_worn, "house": house})
+	var foe_at := crown.field() + fwd * gap
+	var rise: float = main.terrain.height_at(foe_at.x, foe_at.z) - main.terrain.height_at(crown.field().x, crown.field().z)
+	var foe: Army = Army.new(main, men, {"side": 1, "shape": "line", "field": foe_at, "face": face + PI,
+		"colour": foe_col, "worn": foe_worn, "house": house,
+		"pick": _pick.bind(1, BattleOrders.count(crown.rows()), rise, String(house.get("name", "the foe")))})
 	add_child(foe)
 	if not foe.mustered:
 		await foe.raised
@@ -162,8 +167,10 @@ func _raise_in_play() -> void:
 		# The victors form first at the battle's place, turned to the ground; the beaten form facing them across the gap.
 		var face: float = play["face"] if i == 0 else (made[0] as Army).facing() + PI
 		var field: Vector3 = at if i == 0 else (made[0] as Army).field() - Vector3(sin(face), 0, cos(face)) * gap
+		var other: Vector3 = at - Vector3(sin(face), 0, cos(face)) * gap if i == 0 else (made[0] as Army).field()
+		var rise: float = main.terrain.height_at(field.x, field.z) - main.terrain.height_at(other.x, other.z)
 		var side: Army = Army.new(main, 0, {"side": i, "field": field, "face": face, "colour": colour, "worn": worn, "house": house, "quiet": true,
-			"shape": "line"})
+			"shape": "line", "pick": _pick.bind(i, _count_kinds((play["kinds"] as Array)[1 - i], per, most), rise, String(house.get("name", "")))})
 		var specs: Array = []
 		var kinds: Array = (play["kinds"] as Array)[i]
 		for j in mini(kinds.size(), most):
@@ -178,6 +185,33 @@ func _raise_in_play() -> void:
 	sides = made
 	_arrows = _arrow_pool()
 	_focus = ((made[0] as Army).field() + (made[1] as Army).field()) * 0.5
+
+
+## The order a side stands in (battle_orders.gd, its commander's choice): asked by its Army as its regiments form.
+## foe: the other side's head count ({} when not yet known: the test aid's crown, which forms first, reads it as its
+## own); rise: how much higher its ground stands than the foe's.
+func _pick(regiments: Array, side: int, foe: Dictionary, rise: float, house: String) -> String:
+	var own := BattleOrders.count(regiments)
+	var key := BattleOrders.pick(own, own if foe.is_empty() else foe, rise, house, _rng)
+	orders[side] = key
+	print("BATTLE %s stands in %s (%d men against %d, ground %+.1f)" % [house, BattleOrders.title(key), int(own["men"]),
+		int((own if foe.is_empty() else foe)["men"]), rise])
+	return key
+
+
+## A side's head count from its Freeciv kinds (the realm's battle: field.play.perCompany men each, at most `most`).
+static func _count_kinds(kinds: Array, per: int, most: int) -> Dictionary:
+	var out := {"men": 0, "melee": 0, "ranged": 0, "cavalry": 0}
+	var units: Dictionary = Data.value("army", "units", {})
+	for j in mini(kinds.size(), most):
+		var role := "melee"
+		for u in units:
+			if ((units[u] as Dictionary).get("freeciv", []) as Array).has(String(kinds[j])):
+				role = String((units[u] as Dictionary).get("role", "melee"))
+				break
+		out[role] = int(out.get(role, 0)) + 1
+		out["men"] = int(out["men"]) + per
+	return out
 
 
 ## The battle turned to fit the ground (batch 8b: the foe formed across a lake): of field.turns bearings round the

@@ -117,30 +117,54 @@ static func assign(from: PackedVector3Array, to: PackedVector3Array) -> PackedVe
 	return out
 
 
-## Every regiment's place in the line, in the line's frame (x right, z forward, its middle at 0): melee rows
-## at the front (line.maxFront abreast, more rows behind), cavalry on the front row's wings, ranged rows behind
-## the melee. The commander's regiment is the front row's middle. Returns {extent: the line's width and depth,
-## commander: that regiment}.
-static func line_places(regiments: Array) -> Dictionary:
+## Every regiment's place in the line, in the line's frame (x right, z forward, its middle at 0), by a battle order
+## (data/battle_orders.json orders.<order>, the approved formation pictures in docs/art/battle_formations): its rows
+## front to back, each up to `abreast` regiments of a role, `gap` before it; the horse on the wings, in reserve behind,
+## or on one flank; regiments no row took in rows of two behind. Each regiment is told its line (r.line_no: 1 the front,
+## 2 a second line that relieves it) and its post (r.post: row, wing, reserve, flank). The commander's regiment is the
+## front row's middle. Returns {extent: the line's width and depth, commander: that regiment, order: the order's key}.
+static func line_places(regiments: Array, order := "") -> Dictionary:
 	var gap := Data.num("army", "gap", 0.35)
 	var row_gap := Data.num("army", "line.rowGap", 0.7)
 	var wing_gap := Data.num("army", "line.wingGap", 0.6)
-	var most := int(Data.num("army", "line.maxFront", 8))
-	var melee: Array = regiments.filter(func(r): return r["role"] == "melee")
-	var ranged: Array = regiments.filter(func(r): return r["role"] == "ranged")
+	var orders: Dictionary = Data.value("battle_orders", "orders", {})
+	if not orders.has(order):
+		order = String(Data.value("battle_orders", "default", "line"))
+	var spec: Dictionary = orders.get(order, {"rows": [], "horse": "wings"})
+	var left_by: Dictionary = {
+		"melee": regiments.filter(func(r): return r["role"] == "melee"),
+		"ranged": regiments.filter(func(r): return r["role"] == "ranged"),
+	}
 	var horse: Array = regiments.filter(func(r): return r["role"] == "cavalry")
-	if melee.is_empty():  # a host of archers and horse still stands a front
-		melee = ranged
-		ranged = []
-	var rows: Array = []
-	for list in [melee, ranged]:
-		for i in range(0, list.size(), most):
-			rows.append(list.slice(i, i + most))
+	if (left_by["melee"] as Array).is_empty() and (left_by["ranged"] as Array).is_empty():  # a host of horse alone: the horse is its front
+		left_by["melee"] = horse
+		horse = []
+	var rows: Array = []  # [regiments, gap before, line]
+	for row in (spec.get("rows", []) as Array):
+		var role := String(row.get("role", "melee"))
+		var pool: Array = left_by.get(role, [])
+		if pool.is_empty() and role == "melee":
+			pool = left_by["ranged"]  # no foot of the line: whatever foot is left stands its front
+		var n := mini(int(row.get("abreast", 2)), pool.size())
+		if n == 0:
+			continue
+		rows.append([pool.slice(0, n), float(row.get("gap", row_gap)), int(row.get("line", 0))])
+		for k in n:
+			pool.pop_front()
+	for role in ["melee", "ranged"]:  # what no row took: rows of two behind
+		var pool: Array = left_by[role]
+		for i in range(0, pool.size(), 2):
+			rows.append([pool.slice(i, i + 2), row_gap, 0])
+	var horse_at := String(spec.get("horse", "wings"))
+	if horse_at == "reserve" and not horse.is_empty():
+		rows.append([horse, row_gap, 0])
 	var z := 0.0
 	var wide := 0.0
 	var commander: Dictionary = {}
 	for ri in rows.size():
-		var row: Array = rows[ri]
+		var row: Array = rows[ri][0]
+		if ri > 0:
+			z -= float(rows[ri][1])
 		var deep := 0.0
 		var span := 0.0
 		for r in row:
@@ -151,28 +175,33 @@ static func line_places(regiments: Array) -> Dictionary:
 		for r in row:
 			var w := float(r["line"]["w"])
 			r["place"] = Vector2(x + w * 0.5, z - deep * 0.5)
+			r["line_no"] = int(rows[ri][2])
+			r["post"] = "reserve" if horse.has(r) else "row"
 			x += w + gap
 		if ri == 0:
 			commander = row[row.size() / 2]
-			# The wings: horse outward from the front row's ends, left and right in turn.
-			var left := -span * 0.5 - wing_gap
-			var right := span * 0.5 + wing_gap
-			for i in horse.size():
-				var h: Dictionary = horse[i]
-				var w := float(h["line"]["w"])
-				if i % 2 == 0:
-					h["place"] = Vector2(right + w * 0.5, z - deep * 0.5)
-					right += w + gap
-				else:
-					h["place"] = Vector2(left - w * 0.5, z - deep * 0.5)
-					left -= w + gap
-			span = right - left
+			if horse_at != "reserve":
+				# The wings (or one flank): horse outward from the front row's ends, right then left in turn.
+				var left := -span * 0.5 - wing_gap
+				var right := span * 0.5 + wing_gap
+				for i in horse.size():
+					var h: Dictionary = horse[i]
+					var w := float(h["line"]["w"])
+					h["line_no"] = 0
+					h["post"] = horse_at
+					if i % 2 == 0 or horse_at == "flank":
+						h["place"] = Vector2(right + w * 0.5, z - deep * 0.5)
+						right += w + gap
+					else:
+						h["place"] = Vector2(left - w * 0.5, z - deep * 0.5)
+						left -= w + gap
+				span = right - left
 		wide = maxf(wide, span)
-		z -= deep + row_gap
-	var depth := -z - row_gap
+		z -= deep
+	var depth := -z
 	for r in regiments:  # the line's middle at 0
-		r["place"] = (r["place"] as Vector2) + Vector2(0.0, depth * 0.5)
-	return {"extent": Vector2(wide, depth), "commander": commander}
+		r["place"] = (r.get("place", Vector2.ZERO) as Vector2) + Vector2(0.0, depth * 0.5)
+	return {"extent": Vector2(wide, depth), "commander": commander, "order": order}
 
 
 ## The host's regiments in column.order (by role), each given its place in the column (off: its middle's distance

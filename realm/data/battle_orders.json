@@ -1,0 +1,86 @@
+{
+  "_": "Battle orders (Mac 2026-11-16: 'it would be awesome if game of crowns adhered to those formations'; docs/art/battle_formations, the approved pictures): how a side stands for a battle, one row each. rows: front to back, each takes up to `abreast` regiments of `role` (melee, ranged; melee falls back to whatever foot is left), `gap` before it (world units; army.json line.rowGap when absent), `line` its number (1 the front line, 2 a second line that relieves it). horse: wings (beside the front row, left and right in turn), reserve (behind the last row, in the middle), flank (beside the front row on one side). Regiments a row didn't take stand in rows of two behind. army_formation.gd line_places reads it; army_field.gd picks the order (pick).",
+  "default": "line",
+  "orders": {
+    "line": {
+      "name": "The battle line",
+      "rows": [
+        {
+          "role": "melee",
+          "abreast": 2,
+          "line": 1
+        },
+        {
+          "role": "melee",
+          "abreast": 2,
+          "line": 1
+        },
+        {
+          "role": "ranged",
+          "abreast": 2
+        }
+      ],
+      "horse": "wings"
+    },
+    "two_lines": {
+      "name": "Two lines and a reserve",
+      "rows": [
+        {
+          "role": "melee",
+          "abreast": 2,
+          "line": 1
+        },
+        {
+          "role": "ranged",
+          "abreast": 2
+        },
+        {
+          "role": "melee",
+          "abreast": 2,
+          "line": 2,
+          "gap": 0.9
+        }
+      ],
+      "horse": "reserve"
+    },
+    "shield_wall": {
+      "name": "The shield wall",
+      "rows": [
+        {
+          "role": "melee",
+          "abreast": 4,
+          "line": 1
+        },
+        {
+          "role": "ranged",
+          "abreast": 2
+        }
+      ],
+      "horse": "flank"
+    }
+  },
+  "pick": {
+    "_": "battle_orders.gd pick: a commander's choice (utility scoring, as Total War's and Age of Empires' battle AIs weigh their options; Mac 2026-11-16: 'different strategies for different battles given the size of the other army, terrain etc', 'well thought of and not repetitive'). Each order scores base, plus outnumbered times how far it is outnumbered (1 - its men over the foe's, 0 when it is not), plus outnumbers times how far it outnumbers the foe, plus rise times how much higher its ground stands than the foe's (world units), plus foe_horse times the foe's share of horse, plus foot times its foot regiments past foot_from, plus horse times its own share of horse; less repeat when its house stood so last time; plus up to jitter at random. The highest wins.",
+    "repeat": 0.9,
+    "jitter": 0.35,
+    "scores": {
+      "line": {
+        "base": 1.0,
+        "outnumbers": 0.6,
+        "horse": 0.8
+      },
+      "two_lines": {
+        "base": 0.5,
+        "outnumbered": 0.8,
+        "foot": 0.35,
+        "foot_from": 3
+      },
+      "shield_wall": {
+        "base": 0.2,
+        "outnumbered": 1.0,
+        "rise": 1.6,
+        "foe_horse": 1.2
+      }
+    }
+  }
+}
