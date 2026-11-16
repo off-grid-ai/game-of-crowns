@@ -15,7 +15,7 @@
     "cavalry": { "near": 0.5, "stall": 1.0, "ride": 0.45, "charge": 0.55, "wide": 1.0, "behind": 0.5, "shock": 12, "melee_s": 4.0, "out": 1.2, "out_s": 8.0, "form_s": 1.5 },
     "run": 0.42, "loose": { "spread": 0.6, "most": 2048 }, "fade": 7.0,
     "square": { "slack": 0.03 }, "gait": { "still": 0.02, "wheel": 0.1, "hold": 0.5 },
-    "camera": { "dist": 5.0, "quarter": 0.25, "follow": 1.2, "close": 0.55, "pitch": 30.0 },
+    "camera": { "dist": 5.0, "quarter": 0.0, "follow": 1.2, "close": 0.55, "pitch": 30.0 },
     "play": { "gap": 5.0, "reach": 18.0, "perCompany": 150, "companies": 12, "most": 1, "linger": 60.0, "aftermath": 1.0, "dropped": 0.45, "cheer_s": 4.0, "prisoners": {"_": "Prisoners led away after the battle (army_field.gd _prisoners): per_regiment men for each beaten regiment that broke, most at most, guards of the victors at the head and at the tail, gap between them in the file, pace (world units a second), back: how far behind the victors' line they are led.", "per_regiment": 4, "most": 12, "guards": 2, "gap": 0.11, "pace": 0.12, "back": 4.0}, "kinds": [["Pikemen", "Archers"], ["Pikemen", "Knights"]] }
   },
   "ground": { "field": 3.4, "rise": 0.3, "rings": 40, "town_clear": 0.4, "farm_clear": 4.8,
