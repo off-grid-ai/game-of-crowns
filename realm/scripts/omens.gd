@@ -11,6 +11,12 @@ var blood := 0.0
 var drain := 0.0
 var _blood := 0.0
 var _drain := 0.0
+var _surge := 0.0  # a moment's blood at the edge (a war declared), fading back to the realm's own
+
+
+## The edge goes to war for a moment (WAR.md step 7: the declaration), then fades back to what the realm's peace says.
+func surge(v: float) -> void:
+	_surge = maxf(_surge, v)
 
 const SHADER := """
 shader_type canvas_item;
@@ -74,12 +80,14 @@ func _process(delta: float) -> void:
 	# The signs creep in and out over a few seconds, never in a jump.
 	_blood = move_toward(_blood, blood, delta * 0.25)
 	_drain = move_toward(_drain, drain, delta * 0.25)
-	visible = _blood > 0.01 or _drain > 0.01
+	_surge = move_toward(_surge, 0.0, delta * 0.12)
+	var b := maxf(_blood, _surge)
+	visible = b > 0.01 or _drain > 0.01
 	if visible:
 		# The whole screen, always (it once came up with no size and drew nothing).
 		var screen := get_viewport().get_visible_rect().size
 		if size != screen:
 			position = Vector2.ZERO
 			size = screen
-		(material as ShaderMaterial).set_shader_parameter("blood", _blood)
+		(material as ShaderMaterial).set_shader_parameter("blood", b)
 		(material as ShaderMaterial).set_shader_parameter("drain", _drain)

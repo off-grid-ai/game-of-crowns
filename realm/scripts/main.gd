@@ -428,6 +428,7 @@ func _ready() -> void:
 	ui.town_closed.connect(func(): _selected = -1)
 	ui.open_settings.connect(func(): title.open_settings())
 	ui.decree.connect(_on_decree)
+	ui.war_declared.connect(func(_foe): sound.event("horn"))  # the war horn, at the declaration (WAR.md step 7)
 	ui.decree_at.connect(func(action, city, to, building, matter): _order(action, city, building, to, matter))
 	ui.mood_decreed.connect(func(t): bridge.set_mood(t); ui.toast("The realm hears your will…"))
 	ui.decree_revoked.connect(func(id): bridge.revoke_decree(id, ui.set_decrees))

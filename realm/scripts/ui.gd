@@ -125,6 +125,7 @@ var events := preload("res://scripts/event_card.gd").new(self)  # an event card 
 signal event_chosen(choice: int)  # the King's answer to the event card (main.gd sends it to the bridge)
 signal event_lapsed  # an event card left past its season: its cost landed (main.gd rings the bell)
 signal event_came  # an event card arrives (main.gd: a parchment sound)
+signal war_declared(foe: int)  # the crown went to war on a house (main.gd: the war horn)
 signal heard(kind: String)  # an interface sound (main.gd plays it: soundscape.ui, sounds.json ui)
 func event_arrived() -> void:
 	event_came.emit()
@@ -873,6 +874,50 @@ func toast(text: String, entry := {}) -> void:
 
 
 ## entry: what the caption shows (a scene, a story's beat), for its answers under the words (news_chips.gd).
+var _wars_known = null  # the houses the crown was at war with at the last reading; null before the first
+
+
+## A war declared is a moment, not a toast (WAR.md step 7): the war horn, the screen's edge goes to war, and the
+## sides as they fell told in one line (bridge war.js declare rolled them; kingWars[].camps holds them). Whoever gave
+## the order (the council, the Hand), it is read off the realm: a war that wasn't there at the last reading.
+func _war_moment(st: Node) -> void:
+	var wars = st.rec("kingWars")
+	var now := {}
+	for w in (wars if wars is Array else []):
+		if w is Dictionary:
+			now[int(w.get("house", -1))] = w
+	var known = _wars_known
+	_wars_known = now.keys()
+	if known == null:
+		return  # the first reading: wars already running are not news
+	var names := {}
+	for p in st.rec("players", []):
+		names[int(p.get("id", -1))] = String((p.get("house", {}) as Dictionary).get("name", p.get("name", ""))).trim_prefix("House ")
+	var words: Dictionary = Data.value("ui", "war_moment", {})
+	for foe in now:
+		if foe in known:
+			continue
+		var k: Dictionary = now[foe].get("camps", {}) if now[foe].get("camps") is Dictionary else {}
+		var name_of := func(ids: Array, skip: int) -> String:
+			var out := PackedStringArray()
+			for id in ids:
+				if int(id) != skip and names.has(int(id)):
+					out.append(names[int(id)])
+			return ", ".join(out)
+		var line := String(words.get("line", "War on {foe}.")).format({"foe": names.get(foe, "")})
+		var with: String = name_of.call(k.get("crown", []), int(st.rec("crownId", -1)) if st.rec("crownId") != null else -1)
+		var against: String = name_of.call(k.get("foe", []), foe)
+		var waits: String = name_of.call(k.get("waiting", []), -1)
+		line += " " + (String(words.get("with", "{houses} ride with you.")).format({"houses": with}) if with != "" else String(words.get("alone", "No house rides with you.")))
+		if against != "":
+			line += " " + String(words.get("against", "{houses} take their side.")).format({"houses": against})
+		if waits != "":
+			line += " " + String(words.get("waits", "{houses} wait.")).format({"houses": waits})
+		omens.surge(Data.num("ui", "war_moment.edge", 0.7))
+		war_declared.emit(foe)
+		caption(line)
+
+
 func caption(text: String, entry := {}) -> void:
 	news.caption(text, entry)
 
@@ -1252,6 +1297,7 @@ func set_world(houses: Dictionary) -> void:
 	var t_ui_omens := Time.get_ticks_usec()
 	omens.read(float(st.rec("peace", 1.0)), float((st.rec("crown", {}) as Dictionary).get("treasury", -1)) if st.rec("crown") != null else -1.0)
 	PerfTools.add("ui.omens", Time.get_ticks_usec() - t_ui_omens)
+	_war_moment(st)
 	for pid in houses:
 		house_by_name[String(houses[pid].get("name", ""))] = houses[pid]
 	var t_ui_reign := Time.get_ticks_usec()
