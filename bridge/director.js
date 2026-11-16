@@ -50,8 +50,10 @@ export function season(ctx, turn) {
   else if (meta.lastAct) finale(ctx, d, turn);
   else {
     // The build-up: each act the realm stays quiet for less long before the next threat.
-    d.calm = Opening.quiet(meta) ? 0 : t < DIRECTOR.quietBelow ? d.calm + 1 : 0;  // the opening's quiet: nothing rises before the first winter (opening.js)
-    if (d.calm >= (DIRECTOR.quietByAct?.[actOf(meta)] ?? DIRECTOR.quietSeasons)) raise(ctx, d, turn);
+    // Seasons since the King's last crisis, whatever the houses do among themselves (the Last Accord, 2026-11-16: their
+    // own wars held the realm's tension over quietBelow every season, so no threat rose in 25 seasons). The opening's
+    // quiet: nothing rises before the first winter (opening.js).
+    if (beatDue(meta, d)) raise(ctx, d, turn);
   }
   // A town taken from the crown or a sworn ally is a crisis to the King, whoever took it
   // (Freeciv's own wars included): the breather follows. Wars between other houses stay background.
@@ -69,6 +71,15 @@ export function season(ctx, turn) {
 
 // The act of the reign (0-3) by its clock; a reign without a clock stays in the second.
 const actOf = (meta) => meta?.minutes ? Math.max(0, Math.min(3, Math.floor((meta.elapsedMs ?? 0) / (meta.minutes * 60000) * 4))) : 1;
+
+// The seasons of build-up before the director's next threat, shorter each act (director.json quietByAct; Left 4 Dead's
+// director: build-up, peak, relax, every minute or two).
+const gap = (meta) => DIRECTOR.quietByAct[actOf(meta)];
+// A season of build-up counted; whether the next threat is due now.
+export function beatDue(meta, d) {
+  d.calm = Opening.quiet(meta) ? 0 : (d.calm ?? 0) + 1;
+  return d.calm >= gap(meta);
+}
 
 // After a crisis, a breather (tension in waves): while it lasts no house rises
 // (season.js mayRise) and no threat of the director's begins. The last act starts
@@ -313,7 +324,7 @@ function pushback(ctx, d, turn, peace) {
   const strongest = [...houses].sort((a, b) => world.cities.filter((c) => c.owner === b.id).length - world.cities.filter((c) => c.owner === a.id).length)[0];
   d.pushedAt = turn;
   d.envious = strongest.id;  // the next threat is theirs
-  d.calm = Math.max(d.calm, DIRECTOR.quietSeasons - 1);  // the next threat comes sooner
+  d.calm = Math.max(d.calm, gap(meta) - 1);  // the next threat comes sooner
   shiftFavour({ [strongest.id]: -p.envy }, "envy of a crown grown too strong");
   record({ turn, kind: "unrest", text: `${houseFor(strongest).name} watches the crown grow rich and sure of itself, and does not like it.` });
 }
