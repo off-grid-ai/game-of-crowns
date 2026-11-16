@@ -347,7 +347,7 @@ func politics(p: Dictionary, st: Node) -> Control:
 	if at_war:
 		add.call("truce", "Make peace", "Make peace with %s as things stand  %s" % [lord, tc._price("truce", 20000)])
 	elif p.get("warOdds") != null and not sworn:
-		add.call("war", "War", "Wage war on them: their bannermen's towns first, their seat last  %s  ·  %s" % [tc._price("war", 15000), tc._forecast(float(p["warOdds"]))] + tc._sides(p.get("warSides")))
+		add.call("war", "War", "Wage war on them: their bannermen's towns first, their seat last  %s  ·  %s" % [tc._price("war", 15000), tc._forecast(float(p["warOdds"]))])
 	return row
 
 

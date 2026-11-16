@@ -428,7 +428,7 @@ func _ready() -> void:
 	ui.town_closed.connect(func(): _selected = -1)
 	ui.open_settings.connect(func(): title.open_settings())
 	ui.decree.connect(_on_decree)
-	ui.decree_at.connect(func(action, city, to, building, matter): bridge.decree(action, city, building, to, matter))
+	ui.decree_at.connect(func(action, city, to, building, matter): _order(action, city, building, to, matter))
 	ui.mood_decreed.connect(func(t): bridge.set_mood(t); ui.toast("The realm hears your will…"))
 	ui.decree_revoked.connect(func(id): bridge.revoke_decree(id, ui.set_decrees))
 	bridge.decrees_changed.connect(ui.set_decrees)
@@ -1454,7 +1454,16 @@ func _on_decree(action: String, building: String, to: int) -> void:
 	if _selected < 0 and action != "levy" and action != "banners":
 		ui.toast("First choose a town: click one on the map.")
 		return
-	bridge.decree(action, _selected, building, to)
+	_order(action, _selected, building, to)
+
+
+## Every order the King gives goes out here; a war first sits the war council (war_council.gd), and goes only if he
+## declares.
+func _order(action: String, city: int, building := "", to := -1, matter := "") -> void:
+	if action == "war":
+		ui.war_council.ask(city, func(): bridge.decree(action, city, building, to, matter))
+		return
+	bridge.decree(action, city, building, to, matter)
 
 
 ## The character view on one person; the house record is swapped for the

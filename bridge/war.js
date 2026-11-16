@@ -17,6 +17,7 @@ import { BANDS } from "./favour.js";
 import * as Hosts from "./hosts.js";
 import * as Lua from "./lua.js";
 import * as Peace from "./peace.js";
+import * as Coalition from "./coalition.js";
 import * as chron from "./chronicles.js";
 import * as kingDeeds from "./ledger.js";
 
@@ -114,13 +115,24 @@ export function sides(ctx, house) {
   });
 }
 
-// The forecast in words for the war order (view.js): who is likely with the King, who may join the foe.
-export function sidesForecast(ctx, house) {
-  const name = (pid) => short(ctx.world.players.find((q) => q.id === pid));
-  const all = sides(ctx, house);
-  const sure = (x) => x.chance >= WAR.sides.likely;
-  return { with: all.filter((x) => x.side === "crown" && sure(x)).map((x) => name(x.pid)), may: all.filter((x) => x.side === "crown" && !sure(x)).map((x) => name(x.pid)),
-    against: all.filter((x) => x.side === "foe" && sure(x)).map((x) => name(x.pid)), mayAgainst: all.filter((x) => x.side === "foe" && !sure(x)).map((x) => name(x.pid)) };
+// The war council (WAR.md step 1; EU4's declare-war screen, CK3's call to arms): everything the King weighs before he
+// declares, from the one reckoning of the sides. {odds, sides: [{house, side, likely, why, men}], ours, theirs (the
+// companies each camp would field, counting only the likely), towns (the foe's, the seat last), upkeep (what each
+// season costs once this war is on, rising with the wars already run), alarm (what it adds, and the league's line)}.
+const companies = (world, pid) => (world.units ?? []).filter((u) => u.owner === pid && !CIVILIAN.has(u.type)).length;
+export function council(ctx, house) {
+  const { world, meta } = ctx;
+  const crown = crownOf(world);
+  const foe = world?.players?.find((q) => q.id === house);
+  if (!crown || !foe) return null;
+  const likely = (x) => x.chance >= WAR.sides.likely;
+  const all = sides(ctx, house).map((x) => ({ house: short(world.players.find((q) => q.id === x.pid)), side: x.side, likely: likely(x), why: x.why, men: Math.max(x.side === "wait" ? 0 : 1, Math.round(companies(world, x.pid) * x.commit)) }));
+  const sum = (side) => all.filter((x) => x.side === side && x.likely).reduce((n, x) => n + x.men, 0);
+  const now = upkeepNow(ctx);
+  let gold = 0;
+  for (let i = 0; i <= now.wars; i++) gold += WAR.upkeep.base * (1 + WAR.upkeep.step * i);
+  return { odds: odds(ctx, house), sides: all, ours: companies(world, crown.id) + sum("crown"), theirs: companies(world, house) + sum("foe"),
+    towns: plan(world, house).length, upkeep: Math.round(gold), alarm: { adds: Coalition.raiseOf("war"), now: Math.round(meta?.alarm ?? 0), at: Coalition.view(meta).at } };
 }
 
 // How long until the King may ask a house again (seasons), 0 when he may.

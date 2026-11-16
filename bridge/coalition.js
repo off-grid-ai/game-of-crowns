@@ -80,6 +80,9 @@ export function alarm(meta, deed) {
   meta.alarm = Math.min(C.alarm.at, (meta.alarm ?? 0) + (C.alarm.raise[deed] ?? 0));
 }
 
+// What a deed adds to the alarm (the war council shows it before the King declares).
+export const raiseOf = (deed) => C.alarm.raise[deed] ?? 0;
+
 export function view(meta) {
   const k = meta?.coalition;
   return { alarm: Math.round(meta?.alarm ?? 0), at: C.alarm.at, league: k ? { against: k.against, since: k.since, members: k.members, crown: !!k.crown } : null };

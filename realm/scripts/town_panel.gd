@@ -143,19 +143,6 @@ const BUILT_AS := {"temple": "Temple", "granary": "Granary", "walls": "City Wall
 
 
 ## The royal host's chances against a town, as a captain would put them.
-## Who takes which side if the King declares (bridge war.js sides): "with you: Goldcrest · against: Stormhold".
-func _sides(f) -> String:
-	if not f is Dictionary:
-		return ""
-	var parts := PackedStringArray()
-	var w := PackedStringArray(f.get("with", [])) + PackedStringArray(f.get("may", []))
-	var a := PackedStringArray(f.get("against", [])) + PackedStringArray(f.get("mayAgainst", []))
-	parts.append("with you: " + (", ".join(w) if not w.is_empty() else "none"))
-	if not a.is_empty():
-		parts.append("against: " + ", ".join(a))
-	return "\n" + "  ·  ".join(parts)
-
-
 func _forecast(odds: float) -> String:
 	if odds >= 0.75:
 		return "they'd break before us"
@@ -226,7 +213,7 @@ func _name_decrees(c: Dictionary, house: Dictionary) -> void:
 		"march": "" if mine or (_town_player.get("besieged", []) as Array).has(int(c["id"])) else ("Besiege %s  %s  ·  %s" % [town, _price("march", 25000), _forecast(float(c["odds"]))] if c.get("odds") != null else "Besiege %s  %s" % [town, _price("march", 25000)]),
 		# The King's war on the whole house (bridge war.js): its towns one by one, its seat last; and, while a war is
 		# on, his envoy asking this house to join it, with its likely answer.
-		"war": "" if mine or _town_player.get("sworn") != null or _town_player.get("warOdds") == null else "War on all of %s  %s  ·  %s%s" % [lord, _price("war", 15000), _forecast(float(_town_player["warOdds"])), _sides(_town_player.get("warSides"))],
+		"war": "" if mine or _town_player.get("sworn") != null or _town_player.get("warOdds") == null else "War on all of %s  %s  ·  %s" % [lord, _price("war", 15000), _forecast(float(_town_player["warOdds"]))],
 		"join": "" if mine or not (_town_player.get("joinWar") is Dictionary) else "Ask %s to join the war on %s  %s  ·  %s" % [lord, String(_town_player["joinWar"].get("on", "")).replace("House ", ""), _price("join", 5000), _answer(_town_player["joinWar"])],
 	}
 	_marriage_menu.text = "Arrange a marriage with…  " + _price("marriage", 40000)
