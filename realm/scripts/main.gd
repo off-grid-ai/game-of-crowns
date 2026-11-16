@@ -1140,8 +1140,10 @@ func _on_synced() -> void:
 	Engine.set_meta("stage", "towns.sync")
 	var t_towns_sync := Time.get_ticks_usec()
 	towns.sync(_houses)
+	var t_land := Time.get_ticks_usec()
 	land_use.sync()  # the land each town works, as Freeciv has it this season (drawn as each town stands)
-	PerfTools.add("towns.sync", Time.get_ticks_usec() - t_towns_sync)
+	PerfTools.add("towns.sync", t_land - t_towns_sync)
+	PerfTools.add("land_use.sync", Time.get_ticks_usec() - t_land)
 	if Time.get_ticks_msec() - tt > 500:
 		print_verbose("BUILD towns %d ms" % (Time.get_ticks_msec() - tt))
 	# The companies on the map as soon as the towns stand: the first reading's road and countryside laying below waits
