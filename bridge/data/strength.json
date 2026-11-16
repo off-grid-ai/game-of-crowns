@@ -1,4 +1,0 @@
-{
-  "_": "A house's strength in one figure, 0-100 (view.js; the houses strip's number and its arrow; Mac 2026-11-16: 'strength is composite based on money, people, army, resources, land'). Each measure is the house's share of the realm's best in it, weighted: armies (its men-at-arms), towns (its land), souls (its people), gold (its crowns), grain (its stores). The weights sum to 1.",
-  "weights": { "armies": 0.35, "towns": 0.2, "souls": 0.2, "gold": 0.15, "grain": 0.1 }
-}

@@ -18,6 +18,7 @@ import { HOUSES, cityName, houseFor, nameIn } from "./narrator.js";
 import { ROLES } from "./characters.js";
 import { aiStatus, usageToday, watched } from "./claude.js";
 import * as chron from "./chronicles.js";
+import { powerOf } from "./power.js";
 import { OPENING } from "./court.js";
 import * as names from "./names.js";
 import * as rewrites from "./written.js";
@@ -48,7 +49,10 @@ export async function chronicle(ctx, req, res, url) {
 }
 
 export async function ledger(ctx, req, res, url) {
-  return json(res, 200, ctx.history.slice(-400).map((r) => r.souls !== undefined ? r : { ...r, souls: r.pop * 600, houses: Object.fromEntries(Object.entries(r.houses).map(([k, h]) => [k, { ...h, souls: h.pop * 600 }])) }));
+  // Each row's houses carry their power (power.js), measured among that row's great houses, so the ledger ranks it too.
+  const great = (name) => !/^the crown$/i.test(name);
+  return json(res, 200, ctx.history.slice(-400).map((r) => r.souls !== undefined ? r : { ...r, souls: r.pop * 600, houses: Object.fromEntries(Object.entries(r.houses).map(([k, h]) => [k, { ...h, souls: h.pop * 600 }])) })
+    .map((r) => { const hs = Object.entries(r.houses ?? {}); const of = powerOf(hs.filter(([k]) => great(k)).map(([, h]) => h)); return { ...r, houses: Object.fromEntries(hs.map(([k, h]) => [k, { ...h, power: of(h) }])) }; }));
 }
 
 export async function records(ctx, req, res, url) {

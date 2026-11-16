@@ -4,7 +4,6 @@
 // own helpers come in as one context argument, built fresh by server.js on
 // each call (server.js keeps wrappers of the same names).
 
-import fs from "node:fs";
 import { crownOf, northTowns } from "./realm.js";
 import * as Contagion from "./contagion.js";
 import * as Prices from "./prices.js";
@@ -15,7 +14,7 @@ import { houseFor, cityName, HOUSES } from "./narrator.js";
 import { BUILD_COST, granarySize } from "./rules.js";
 import { menOf, SHIPS } from "./hosts.js";
 import { DECREES, TITHE_HIGH } from "./crown.js";
-const STRENGTH = JSON.parse(fs.readFileSync(new URL("./data/strength.json", import.meta.url), "utf8"));
+import { powerOf } from "./power.js";
 import { shortOf, titheWait } from "./treasury.js";
 import { BANDS, band } from "./favour.js";
 import { calendar } from "./calendar.js";
@@ -129,23 +128,18 @@ export function worldView(ctx) {
     return { towns: mine.length, pop: mine.reduce((t, c) => t + c.size, 0), souls: mine.reduce((t, c) => t + soulsOf(c.size), 0), gold: p.gold, armies: p.units, grain: mine.reduce((t, c) => t + (d?.cities[c.id]?.foodStock ?? 0), 0) };
   };
   for (const p of players) p.measures = last?.houses?.[p.house.name] ?? (p.house.crown ? own(p) : null);
-  // A house's strength in one figure, 0-100: its share of the realm's best in men, land, people, crowns and grain,
-  // weighted (data/strength.json; Mac 2026-11-16: "strength is composite"), and how it has moved over the ledger's
-  // last year: the houses strip's number and "who is rising" (Crusader Kings III's realm strength).
-  const strengthOf = (rows) => {
-    const best = {};
-    for (const k of Object.keys(STRENGTH.weights)) best[k] = Math.max(1, ...rows.map((m) => Number(m?.[k] ?? 0)));
-    return (m) => (m ? Math.round(100 * Object.entries(STRENGTH.weights).reduce((t, [k, w]) => t + w * Number(m[k] ?? 0) / best[k], 0)) : 0);
-  };
+  // A house's power (power.js) and how it has moved over the ledger's last year: the houses strip's number and
+  // "who is rising" (Crusader Kings III's realm strength), measured among the great houses.
   const yearBack = history[Math.max(0, history.length - 5)];
-  const peers = players.filter((p) => !p.house.crown && !p.house.wild);  // the great houses measured against each other
-  const now = strengthOf(peers.map((p) => p.measures));
-  const then = strengthOf(peers.map((p) => yearBack?.houses?.[p.house.name] ?? null));
+  const peers = players.filter((p) => !p.house.crown && !p.house.wild);
+  const now = powerOf(peers.map((p) => p.measures));
+  const then = powerOf(peers.map((p) => yearBack?.houses?.[p.house.name] ?? null));
   for (const p of players) {
-    p.strength = now(p.measures);
+    p.power = now(p.measures);
     const was = then(yearBack?.houses?.[p.house.name] ?? null);
-    p.strengthTrend = was > 0 ? Math.round((p.strength - was) / was * 100) : 0;  // percent over the year
+    p.powerTrend = was > 0 ? Math.round((p.power - was) / was * 100) : 0;  // percent over the year
   }
+
   const usurper = stakes?.s.usurper.stage ?? "none";
   const u = stakes?.s.usurper;
   // The odds at Kingsmere: fighting companies of the pretender and of the crown

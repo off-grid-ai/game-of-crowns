@@ -117,14 +117,14 @@ func show_ledger(rows: Array, houses: Dictionary) -> void:
 				tcol = T.DANGER
 			row.add_child(T.datum(trend, T.SIZE_DESC, tcol))
 			board.add_child(row)
-	for spec in [["gold", "Treasury"], ["souls", "Souls"], ["armies", "Men-at-arms"], ["towns", "Towns"], ["grain", "Grain"]]:
+	for spec in [["power", "Power"], ["gold", "Treasury"], ["souls", "Souls"], ["armies", "Men-at-arms"], ["towns", "Towns"], ["grain", "Grain"]]:  # power first: all of them in one figure (bridge power.js; Mac 2026-11-16)
 		var key: String = spec[0]
 		var b := ui.btn(spec[1], func(): draw_houses.call(key))
 		buttons[key] = b
 		pick.add_child(b)
 	v.add_child(board)
 	v.add_child(T.label("Change over the last year"))
-	draw_houses.call("gold")
+	draw_houses.call("power")
 	ui._court_panel.visible = false
 
 

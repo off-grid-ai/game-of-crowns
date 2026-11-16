@@ -2,10 +2,10 @@ extends RefCounted
 ## The great houses at a glance (Crusader Kings III's realm list, Total War's faction strip; Mac 2026-11-16: "who is
 ## gaining power, who is with me, and who is against me, then I can click on them for the full view"). Top-left, one
 ## chip a house, strongest first: its sigil, its stance toward the King in a word (Sworn, Loyal, Content, Cold, Angry,
-## At war) and an arrow when its strength is rising or falling. The word carries the meaning, never the colour alone.
+## At war) and an arrow when its power is rising or falling. The word carries the meaning, never the colour alone.
 ## A click opens the house (the same as its name in the table). Hidden while the full table is open.
-## It keeps nothing of the realm's: it reads the mirror's players (bridge view.js: favour, wars, sworn, strength,
-## strengthTrend) when the world is read. Owned by ui.gd; words and sizes: realm/data/ui.json houses_strip.
+## It keeps nothing of the realm's: it reads the mirror's players (bridge view.js: favour, wars, sworn, power,
+## powerTrend) when the world is read. Owned by ui.gd; words and sizes: realm/data/ui.json houses_strip.
 
 const T := preload("res://scripts/theme.gd")
 const Data := preload("res://scripts/data.gd")
@@ -45,13 +45,13 @@ func fill() -> void:
 		var h: Dictionary = p.get("house", {})
 		if p.get("favour") != null and not h.get("wild", false) and int(p.get("cities", 0)) > 0:
 			players.append(p)
-	players.sort_custom(func(a, b): return int(a.get("strength", 0)) > int(b.get("strength", 0)))
-	var sig := hash([players.map(func(p): return [p["id"], _stance(p), _arrow(p), p.get("strength", 0)]), Awareness.bands])
+	players.sort_custom(func(a, b): return int(a.get("power", 0)) > int(b.get("power", 0)))
+	var sig := hash([players.map(func(p): return [p["id"], _stance(p), _arrow(p), p.get("power", 0)]), Awareness.bands])
 	if sig != _said:
 		_said = sig
 		for c in _row.get_children():
 			c.queue_free()
-		var head := T.label(String(Data.value("ui", "houses_strip.head", "By strength")), T.TEXT_3)
+		var head := T.label(String(Data.value("ui", "houses_strip.head", "By power")), T.TEXT_3)
 		head.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		_row.add_child(head)
 		for p in players:
@@ -76,15 +76,15 @@ func _stance(p: Dictionary) -> String:
 	return ui.mood(int(p["favour"]))
 
 
-## Its strength over the last year: up, down, or holding (houses_strip.rise: the percent that counts as a move).
+## Its power over the last year: up, down, or holding (houses_strip.rise: the percent that counts as a move).
 func _arrow(p: Dictionary) -> String:
-	var t := int(p.get("strengthTrend", 0))
+	var t := int(p.get("powerTrend", 0))
 	var rise := int(Data.num("ui", "houses_strip.rise", 10.0))
 	return " ▲" if t >= rise else (" ▼" if t <= -rise else "")
 
 
-## A house's chip: its sigil, name and stance, then its strength (towns and men) with an arrow if it is moving
-## (Mac 2026-11-16: "how do I know which one is more powerful?"); the strip says it runs by strength, strongest first.
+## A house's chip: its sigil, name and stance, then its power (bridge power.js) with an arrow if it is moving
+## (Mac 2026-11-16: "how do I know which one is more powerful?"); the strip says it runs by power, strongest first.
 func _chip(p: Dictionary) -> Button:
 	var h: Dictionary = p["house"]
 	var name := String(h.get("name", p.get("name", ""))).trim_prefix("House ")
@@ -96,14 +96,14 @@ func _chip(p: Dictionary) -> Button:
 	b.icon = Heraldry.sigil(h)
 	b.add_theme_constant_override("icon_max_width", int(Data.num("ui", "houses_strip.sigil", 20.0)))
 	b.add_theme_font_size_override("font_size", int(Data.num("ui", "houses_strip.size", 14.0)))
-	b.text = "%s · %s   %d%s" % [name, stance, int(p.get("strength", 0)), _arrow(p)]  # its strength as a number, the arrow beside it (Mac: the bar read as an underline)
+	b.text = "%s · %s   %d%s" % [name, stance, int(p.get("power", 0)), _arrow(p)]  # its power as a number, the arrow beside it (Mac: the bar read as an underline)
 	# Against the King reads red and loud, with him bright, the rest muted: the word says it first.
 	var against := stance in [String(Data.value("ui", "houses_strip.words.war", "At war")), ui.mood(0)]
 	b.add_theme_color_override("font_color", T.DANGER if against else (T.TEXT if stance in [String(Data.value("ui", "houses_strip.words.sworn", "Sworn")), "Loyal"] else T.TEXT_2))
-	var t := int(p.get("strengthTrend", 0))
+	var t := int(p.get("powerTrend", 0))
 	var tips: Dictionary = Data.value("ui", "houses_strip.tips", {})
-	b.tooltip_text = String(tips.get("line", "House {name}: {stance}, favour {favour} of 100\nStrength {strength} of 100 (men, land, people, crowns and grain, against the strongest house), {trend} over the year\nClick for the house")).format({
-		"name": name, "stance": stance, "favour": int(p["favour"]), "strength": int(p.get("strength", 0)),
+	b.tooltip_text = String(tips.get("line", "House {name}: {stance}, favour {favour} of 100\nPower {power} of 100 (men, land, people, crowns and grain, against the strongest house), {trend} over the year\nClick for the house")).format({
+		"name": name, "stance": stance, "favour": int(p["favour"]), "power": int(p.get("power", 0)),
 		"trend": ("up %d%%" % t) if t > 0 else (("down %d%%" % -t) if t < 0 else "holding")})
 	var owner := int(p["id"])
 	b.pressed.connect(func():
