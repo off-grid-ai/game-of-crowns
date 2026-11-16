@@ -304,9 +304,8 @@ func _fill_houses() -> void:
 ## names its price and odds), sent at the house's seat. One row for the houses table and the house card; the most
 ## telling answer stands rightmost (peace while at war, war otherwise).
 func politics(p: Dictionary, st: Node) -> Control:
-	var row := HFlowContainer.new()
-	row.add_theme_constant_override("h_separation", 6)
-	row.add_theme_constant_override("v_separation", 6)
+	var row := HBoxContainer.new()  # one line a house, never wrapped (a flow in the table's narrow column stood the icons in a tower)
+	row.add_theme_constant_override("separation", 4)
 	var owner := int(p.get("id", -1))
 	if p.get("favour") == null:
 		return row  # the crown itself
@@ -326,7 +325,11 @@ func politics(p: Dictionary, st: Node) -> Control:
 	var icons: Dictionary = Data.value("ui", "politics_icons", {})
 	var add := func(action: String, label: String, tip: String) -> void:
 		var b: Button = ui.icon_btn(String(icons.get(action, "scroll")), "%s: %s" % [label, tip], func(): ui.decree_at.emit(action, city, owner, "", ""))
-		b.custom_minimum_size = Vector2.ONE * Data.num("ui", "politics_icon_size", 34.0)
+		b.custom_minimum_size = Vector2.ONE * Data.num("ui", "politics_icon_size", 28.0)
+		b.flat = true  # bare glyphs in a line (CK3's row of diplomacy icons), lit on hover; a box round each made a wall of tiles
+		b.modulate = Color(1, 1, 1, 0.75)
+		b.mouse_entered.connect(func(): b.modulate = Color.WHITE)
+		b.mouse_exited.connect(func(): b.modulate = Color(1, 1, 1, 0.75))
 		row.add_child(b)
 	var at_war := (p.get("wars", []) as Array).has("the Crown")
 	var sworn := p.get("sworn") != null

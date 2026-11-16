@@ -19,7 +19,7 @@
     "tips": { "open": "A promise not yet kept.", "kept": "Kept. The great houses took note.", "lost": "Broken: it can no longer be kept.",
       "houses": "Click: the great houses, where it is kept.", "town": "Click: go to Kingsmere and hold it.", "ledger": "Click: the ledger, the realm's growth over time." } },
   "politics_icons": {"gift": "gift", "feast": "wine", "join": "flag", "alliance": "handshake", "march": "sword", "truce": "peace", "war": "flag-banner", "_": "houses_panel.gd politics: one icon a deed in the houses table and the house card, its words and price in the tooltip (Mac: just use icons here)."},
- "politics_icon_size": 34,
+ "politics_icon_size": 28,
  "next": { "quiet": ["ladder", "court"], "_": "top_bar.gd: the next line (bridge next.js) stays quiet for these kinds: the ladder's step is the objective's own line, the court's sitting is its badge (Mac: 'I should know what the hell to do'; one thing to do at a time)." },
  "close": { "size": 28, "inset": 10, "icon": 16, "radius_least": 6, "_": "ui.gd close_x: the one close X on a card (town, house, court; CK3's and Total War's panel close): its square box's size, its inset from the card's top and right edges (the same both ways; Mac: 'this is not centered'), the X's width (centred in the box), and the least corner radius of its hover box, which is otherwise the card's own less the inset (concentric with the card's corner)." },
  "toast": { "width": 400 },
