@@ -134,6 +134,7 @@ func _melee(_g: Dictionary, dt: float) -> void:
 		return
 	_foot(foes)
 	_horse(foes)
+	_answer_horse(foes)
 	_archers(foes)
 	_relief()
 	_change_order()
@@ -214,6 +215,45 @@ func _horse(foes: Array) -> void:
 		if st == "stand":
 			field._send(r, &"flank")
 			_say("the reserve rides out" if String(r.get("post", "")) == "reserve" else "the horse goes round their flank")
+
+
+## A foe horse in among one of its blocks is answered (Total War: a unit charged turns on the horse, and its general
+## sends spears or his own horse at it; Mac 2026-11-16: "obviously they should try to retaliate"): the block struck
+## fights it man to man (army_field.gd _press takes every foe at blows with it); its own horse, free or riding round,
+## goes at it; and the nearest foot block standing free (the second line, a block whose foe broke) goes in at it.
+func _answer_horse(foes: Array) -> void:
+	var rows := _rows()
+	for h in foes:
+		if h["role"] != "cavalry" or String(h.get("state_name", "")) not in ["charge", "fight"]:
+			continue
+		var hit: Variant = h.get("foe") if String(h.get("state_name", "")) == "fight" else h.get("target")
+		if not hit is Dictionary or int((hit as Dictionary).get("side", -1)) != side:
+			continue
+		var at: Vector3 = (h["node"] as Node3D).global_position
+		var best := {}
+		var bd := INF
+		for r in rows:
+			if not _standing(r) or r.has("relieve") or r.has("relief") or is_same(r, hit):
+				continue
+			var st := String(r.get("state_name", ""))
+			var free: bool = (r["role"] == "cavalry" and st in ["stand", "flank"] and not is_same(r.get("target"), h)) \
+				or (r["role"] == "melee" and (st == "stand" or (st == "advance" and not _standing(r.get("task")))))
+			if not free:
+				continue
+			var d := at.distance_to((r["node"] as Node3D).global_position)
+			if d < bd and d <= Data.num(F, "field.general.answer", 4.0):
+				bd = d
+				best = r
+		if best.is_empty():
+			continue
+		if best["role"] == "cavalry":
+			best["target"] = h
+			if String(best.get("state_name", "")) == "stand":
+				field._send(best, &"flank")
+		else:
+			best["task"] = h
+			field._send(best, &"advance")
+		_say("%s turn on their horse" % ("our horse" if best["role"] == "cavalry" else "a block"))
 
 
 ## Archers: on the nearest foe not at blows (never into the press).

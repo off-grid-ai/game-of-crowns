@@ -864,6 +864,8 @@ func _lane_foe(r: Dictionary) -> Dictionary:
 ## on him and both fight.
 func _advance(r: Dictionary, _dt: float) -> void:
 	var task: Variant = r.get("task")
+	if task is Dictionary and (task as Dictionary)["role"] == "cavalry" and String((task as Dictionary).get("state_name", "")) not in ["charge", "fight"]:
+		task = null  # a horse that rode off is never chased across the field on foot: back to its place
 	if task is Dictionary and String((task as Dictionary).get("state_name", "")) != "rout" and int((task as Dictionary).get("living", 0)) > 0:
 		_close(r, _dt, task)
 		return
@@ -1343,25 +1345,104 @@ func _flank(r: Dictionary, _dt: float) -> void:
 	var right := Vector3(cos(face), 0, -sin(face))
 	var fwd := Vector3(sin(face), 0, cos(face))
 	var end_at: Vector3 = (end["node"] as Node3D).global_position
-	var side_sign := signf((end_at - foe_army.field()).dot(right))  # its outer flank, away from the foe's middle
-	if side_sign == 0.0:
-		side_sign = signf((node.global_position - end_at).dot(right)) if (node.global_position - end_at).dot(right) != 0.0 else 1.0
-	var goal := end_at + right * side_sign * (float(end["w"]) * 0.5 + Data.num(F, "field.cavalry.wide", 2.2)) - fwd * Data.num(F, "field.cavalry.behind", 1.0)
-	# In on the flank once round it (Mac 2026-11-16: "they aren't participating in the battle": the horse rode at a
-	# point beside the foe's end that was often off the walkable ground, never got within 0.05 of it, and circled the
-	# whole fight). It charges within field.cavalry.near of its ride's end, or once its ride has stalled
-	# field.cavalry.stall seconds (the ground ends short of the point), or once its target is at blows (Total War:
-	# the horse hit a line the foot hold).
+	var wide := Data.num(F, "field.cavalry.wide", 2.2)
+	# Its flank to strike: the outer one, away from the foe's middle, unless its own side already fights there; else
+	# the other; else his rear (Total War's horse: in on a free flank or the rear, never into its own men's backs; Mac
+	# 2026-11-16: "the horses are just walking through walls and other troops").
+	var outer := signf((end_at - foe_army.field()).dot(right))
+	if outer == 0.0:
+		outer = 1.0
+	# Chosen once a ride (Mac 2026-11-16: "stuttering and jitters": re-chosen every frame as the blocks shifted, the
+	# horse swung from flank to flank on the spot): r.ride_side, 1/-1 a flank, 0 his rear; cleared when it charges.
+	if not r.has("ride_side") or not is_same(r.get("ride_for"), end):
+		r["ride_for"] = end
+		r.erase("ride_wing")
+		r["ride_side"] = 0.0
+		for sgn in [outer, -outer]:
+			if not _own_near(r, end_at + right * sgn * float(end["w"]) * 0.5, float(r["w"]) * 0.5):
+				r["ride_side"] = sgn
+				break
+	var sgn_now := float(r["ride_side"])
+	var goal: Vector3 = end_at + right * sgn_now * (float(end["w"]) * 0.5 + wide) - fwd * Data.num(F, "field.cavalry.behind", 1.0) \
+		if sgn_now != 0.0 else end_at - fwd * (float(end["d"]) * 0.5 + wide)  # a flank, or his rear
+	# In on the flank once round it: it charges within field.cavalry.near of its ride's end, or once its ride has
+	# stalled field.cavalry.stall seconds with a clear way in (the ground ends short of the point). Never straight in
+	# from behind its own line because its target is at blows: that rode through its own foot.
 	var at := node.global_position
 	var moved: Vector3 = r.get("ride_at", at)
 	r["ride_still"] = float(r.get("ride_still", 0.0)) + _dt if Vector2(at.x - moved.x, at.z - moved.z).length() < 0.01 else 0.0
 	r["ride_at"] = at
 	var near := Vector2(goal.x - at.x, goal.z - at.z).length() <= Data.num(F, "field.cavalry.near", 0.5)
-	if near or float(r["ride_still"]) >= Data.num(F, "field.cavalry.stall", 1.0) or String(end.get("state_name", "")) == "fight":
+	if near or (float(r["ride_still"]) >= Data.num(F, "field.cavalry.stall", 1.0) and _way_clear(r, at, end_at, end)):
 		r["ride_still"] = 0.0
+		r.erase("ride_side")
+		r.erase("ride_wing")
 		_send(r, &"charge")
 		return
-	Mover.of(node).toward(goal, Data.num(F, "field.cavalry.ride", 0.3))
+	Mover.of(node).toward(_ride_way(r, at, goal), Data.num(F, "field.cavalry.ride", 0.3))
+
+
+## Whether any regiment of r's side but r stands within `room` (plus its own half width) of `p`.
+func _own_near(r: Dictionary, p: Vector3, room: float) -> bool:
+	for x in (sides[int(r["side"])] as Army).rows():
+		if is_same(x, r) or int(x.get("living", 0)) <= 0 or String(x.get("state_name", "")) == "rout":
+			continue
+		var o: Vector3 = (x["node"] as Node3D).global_position
+		if Vector2(o.x - p.x, o.z - p.z).length() < room + maxf(float(x["w"]), float(x["d"])) * 0.5:
+			return true
+	return false
+
+
+## Whether a ride from `a` to `b` passes clear of every block on the field but r and `skip` (each by its half extent
+## and r's half width).
+func _way_clear(r: Dictionary, a: Vector3, b: Vector3, skip: Dictionary = {}) -> bool:
+	var ab := Vector2(b.x - a.x, b.z - a.z)
+	var len2 := maxf(ab.length_squared(), 1e-6)
+	for i in 2:
+		for x in (sides[i] as Army).rows():
+			if is_same(x, r) or is_same(x, skip) or int(x.get("living", 0)) <= 0 or String(x.get("state_name", "")) == "rout":
+				continue
+			var o: Vector3 = (x["node"] as Node3D).global_position
+			var ao := Vector2(o.x - a.x, o.z - a.z)
+			var t := clampf(ao.dot(ab) / len2, 0.0, 1.0)
+			if (ao - ab * t).length() < maxf(float(x["w"]), float(x["d"])) * 0.5 + float(r["w"]) * 0.5:
+				return false
+	return true
+
+
+## Where the horse rides next on its way to `goal`: straight there if the way is clear, else round the end of its own
+## side's line nearest the goal first (a wing point field.cavalry.wide past its last block, level with where it is).
+func _ride_way(r: Dictionary, at: Vector3, goal: Vector3) -> Vector3:
+	# Its way round, once chosen, kept until it is reached (never re-chosen each frame: the horse swung on the spot).
+	if r.has("ride_wing"):
+		var w: Vector3 = r["ride_wing"]
+		if Vector2(w.x - at.x, w.z - at.z).length() > Data.num(F, "field.cavalry.near", 0.5):
+			return w
+		r["ride_wing"] = Vector3.INF  # reached: on to the goal from here
+	if r.get("ride_wing", null) is Vector3 and (r["ride_wing"] as Vector3) == Vector3.INF:
+		return goal
+	if _way_clear(r, at, goal):
+		return goal
+	var mine: Army = sides[int(r["side"])]
+	var face := mine.facing()
+	var right := Vector3(cos(face), 0, -sin(face))
+	var fwd := Vector3(sin(face), 0, cos(face))
+	var mid := mine.field()
+	var sgn := signf((goal - mid).dot(right))
+	if sgn == 0.0:
+		sgn = signf((at - mid).dot(right)) if (at - mid).dot(right) != 0.0 else 1.0
+	var far := 0.0
+	for x in mine.rows():
+		if is_same(x, r) or int(x.get("living", 0)) <= 0:
+			continue
+		far = maxf(far, ((x["node"] as Node3D).global_position - mid).dot(right * sgn) + float(x["w"]) * 0.5)
+	var wing := mid + right * sgn * (far + float(r["w"]) * 0.5 + Data.num(F, "field.cavalry.wide", 2.2) * 0.5) + fwd * (at - mid).dot(fwd)
+	wing.y = at.y
+	# Past the wing's depth already (level with the line or ahead of it): on along the wing to the goal's depth.
+	if Vector2(wing.x - at.x, wing.z - at.z).length() < Data.num(F, "field.cavalry.near", 0.5):
+		wing += fwd * (goal - at).dot(fwd)
+	r["ride_wing"] = wing
+	return wing
 
 
 
@@ -1382,15 +1463,25 @@ func _charge(r: Dictionary, _dt: float) -> void:
 	var target: Dictionary = t
 	var tn: Node3D = target["node"]
 	var at: Vector3 = (r["node"] as Node3D).global_position
-	var hit := charge_face(tn.global_transform, float(target["w"]), float(target["d"]), at)
-	var side: Vector3 = hit[0]
-	var reach := float(hit[1]) + float(r["d"]) * 0.5 + Data.num(F, "field.contact", 0.12)
+	# The face it strikes is chosen once, as the charge sets off, and kept in the target's own frame (Mac 2026-11-16:
+	# "the entire troop still spins like a pinwheel": re-chosen each frame from where it rode, the nearest face kept
+	# changing and the horse circled its target): r.charge_face [local outward way, half extent].
+	if not r.has("charge_face") or not is_same(r.get("charge_for"), target):
+		var h := charge_face(tn.global_transform, float(target["w"]), float(target["d"]), at)
+		r["charge_for"] = target
+		r["charge_face"] = [tn.global_basis.inverse() * (h[0] as Vector3), float(h[1])]
+	var cf: Array = r["charge_face"]
+	var side: Vector3 = tn.global_basis * (cf[0] as Vector3)
+	side.y = 0.0
+	side = side.normalized()
+	var reach := float(cf[1]) + float(r["d"]) * 0.5 + Data.num(F, "field.contact", 0.12)
 	var spot := tn.global_position + side * reach
 	spot.y = at.y
 	r["charge_t"] = float(r.get("charge_t", 0.0)) + _dt
 	var off := Vector2(at.x - spot.x, at.z - spot.z).length()
 	if off <= Data.num(F, "field.contact", 0.12) or (float(r["charge_t"]) > Data.num(F, "field.cavalry.charge_most", 3.0) and off < reach):
 		r["charge_t"] = 0.0
+		r.erase("charge_face")
 		r["foe"] = target
 		r["met_at"] = clock
 		target["flanked"] = true
@@ -1405,6 +1496,7 @@ func _charge(r: Dictionary, _dt: float) -> void:
 		return
 	if float(r["charge_t"]) > Data.num(F, "field.cavalry.charge_most", 3.0) * 2.0:
 		r["charge_t"] = 0.0
+		r.erase("charge_face")
 		_send(r, &"flank")  # the target moved off or the way is shut: round again for another
 		return
 	Mover.of(r["node"]).toward(spot, Data.num(F, "field.cavalry.charge", 0.55), -side)

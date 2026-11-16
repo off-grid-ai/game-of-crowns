@@ -53,16 +53,13 @@ func _run() -> void:
 		print("FIELD CLASH: the realm never came up: FAIL")
 		quit(2)
 		return
-	var field: Node = load("res://scripts/army_field.gd").new(main, "900")  # its order: --battle-order=<key> (battle_orders.json), else the commanders pick
-	main.add_child(field)
-	if not await _wait(func() -> bool: return (field.get("sides") as Array).size() == 2, 120.0):
-		print("FIELD CLASH: the battle was never raised: FAIL")
-		quit(2)
-		return
-	# The loading card's "Click to begin": a key, as a player gives it, until it is gone; then the clock starts with the
-	# battle itself (army_field clock), so the frames are the fight, not the card.
+	# The loading card's "Click to begin": a key, as a player gives it, until it is gone; only then the battle is raised
+	# (Mac 2026-11-16: the battle ran hidden behind the card, its hitches keeping the card up), so the film is the fight.
 	await _wait(func() -> bool:
 		var intro: Node = main.get("intro")
+		if intro and intro.visible and Engine.get_process_frames() % 300 == 0:
+			# What holds the loading card (main.gd ready_check), named so a stuck card is never a guess.
+			print("CARD held: land %s, towns settled %s (%s), roads %s, units placed %s" % [str(main.terrain.built), str(main.towns.settled()), main.towns.building_at(), str(main.get("roads_laid")), str(main.units != null and main.units.placed)])
 		if intro and intro.visible:
 			var k := InputEventKey.new()
 			k.keycode = KEY_SPACE
@@ -71,7 +68,14 @@ func _run() -> void:
 		var ui: Node = main.get("ui")
 		if ui and bool(ui.get("paused")) and (intro == null or not intro.visible):
 			ui.top_bar._toggle_pause()  # a new reign opens paused (Press P to go on): P, as a player gives it
-		return (intro == null or not intro.visible) and float(field.get("clock")) >= 0.0, 300.0)
+		return (intro == null or not intro.visible), 300.0)
+	var field: Node = load("res://scripts/army_field.gd").new(main, "900")  # its order: --battle-order=<key> (battle_orders.json), else the commanders pick
+	main.add_child(field)
+	if not await _wait(func() -> bool: return (field.get("sides") as Array).size() == 2, 120.0):
+		print("FIELD CLASH: the battle was never raised: FAIL")
+		quit(2)
+		return
+	await _wait(func() -> bool: return float(field.get("clock")) >= 0.0, 120.0)
 	var start := Time.get_ticks_msec()
 	var reported := false
 	var out := ""
@@ -87,9 +91,11 @@ func _run() -> void:
 	var shot := 0
 	var every := 0.125  # eight frames a second: motion read off a strip, not one still a second
 	var secs := SECS
+	var whole := false  # --secs given: watched to the day's end (or the time asked), never cut once all have closed
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--secs="):
 			secs = float(a.substr(7))  # watch longer, to the day's end
+			whole = true
 	while Time.get_ticks_msec() - start < int(secs * 1000.0) and not bool(field.get("_over")):
 		for k in 16:
 			await create_timer(every).timeout
@@ -136,7 +142,7 @@ func _run() -> void:
 						str(node.is_inside_tree()), node.process_mode])
 					field._advance(r, 0.016)
 					print("    one advance step by hand: spot %s" % str(r.get("spot", "none")))
-		if closed.size() == foot.size() and not foot.is_empty() and (out == "" or Time.get_ticks_msec() - start >= 24000):
+		if not whole and closed.size() == foot.size() and not foot.is_empty() and (out == "" or Time.get_ticks_msec() - start >= 24000):
 			break  # filming: the whole 24 s, the press too
 	var foot := _foot(field)
 	var states := {}
