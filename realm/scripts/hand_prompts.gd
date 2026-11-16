@@ -14,6 +14,7 @@ const Data := preload("res://scripts/data.gd")  # the one loader of realm/data (
 const T := preload("res://scripts/theme.gd")
 const SEEN := "hand_prompts"  # settings.cfg section: which lessons this player has heard
 const TOUR := "res://data/tour/%s.dtl"
+var _next := ""  # the lesson chosen from the list (lessons.dtl tell:<id>), told when the list ends
 
 var main: Node
 var _lessons: Array = []
@@ -74,7 +75,7 @@ func _ready() -> void:
 		ui.petition_answered.connect(func(_id, _o): _moment("first_ruling"))
 		ui.counsel_answered.connect(func(_k): _moment("first_ruling"))
 		ui.chronicle_asked.connect(func(e: Dictionary, urgent: bool): _moment("court_waits" if String(e.get("kind", "")) == "court" else ("first_threat" if urgent else "first_card")))
-		ui.tour_asked.connect(func(): _tell("welcome"))
+		ui.tour_asked.connect(func(): _tell("lessons"))  # F12 or the ?: the list of what he can tell again (StarCraft II's help topics)
 		_layer = CanvasLayer.new()
 		_layer.layer = 20  # over the interface (its layer 1) and under the loading cover (128)
 		_layer.process_mode = Node.PROCESS_MODE_ALWAYS
@@ -209,11 +210,17 @@ func _told() -> void:
 	if _held_it and main.ui.paused:
 		main.ui.top_bar._toggle_pause()
 	_held_it = false
+	if _next != "":
+		_tell.call_deferred(_next)
+		_next = ""
 
 
 ## A timeline's word to the screen: spot:<part> rings that part (and opens the chronicle when he speaks of it).
 func _on_signal(arg: Variant) -> void:
 	var said := String(arg)
+	if said.begins_with("tell:"):
+		_next = said.substr(5)  # a lesson chosen from the list: told once this timeline ends
+		return
 	if said.begins_with("do:"):
 		_guide(said.substr(3))
 		return

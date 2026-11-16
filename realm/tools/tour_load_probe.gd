@@ -10,6 +10,9 @@ func _init() -> void:
 	await process_frame
 	var fails := []
 	var d: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/opening.json"))
+	var ids := []
+	for l in d.get("tour", []):
+		ids.append(String(l["id"]))
 	for l in d.get("tour", []):
 		var path := "res://data/tour/%s.dtl" % String(l.get("timeline", l["id"]))
 		var t = load(path)
@@ -22,7 +25,7 @@ func _init() -> void:
 			n += 1
 			if e.get_class() != "" and e.has_method("get_shortcode") and e.get_shortcode() == "signal":
 				var arg := String(e.argument)
-				var ok := arg.begins_with("spot:") and arg.substr(5) in PARTS or arg.begins_with("do:") and arg.substr(3) in TASKS
+				var ok := arg.begins_with("spot:") and arg.substr(5) in PARTS or arg.begins_with("do:") and arg.substr(3) in TASKS or arg.begins_with("tell:") and arg.substr(5) in ids
 				if not ok:
 					fails.append("%s: unknown signal %s" % [path, arg])
 		print("TOUR %s: %d events" % [l["id"], n])

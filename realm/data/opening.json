@@ -30,6 +30,11 @@
   ],
   "tour": [
     {
+      "id": "lessons",
+      "on": "asked",
+      "timeline": "lessons"
+    },
+    {
       "id": "welcome",
       "on": "landed",
       "after_sec": 8,
