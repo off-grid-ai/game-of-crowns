@@ -144,27 +144,17 @@ export function counsel(ctx, players, cities, threat) {
     // The Hand never offers an order he knows will be refused: a house too cold
     // to obey (under 40) is to be won first, and he says so.
     const cold = [war, foe].filter((p) => favourOf(p.id) < 40).sort((a, b) => favourOf(a.id) - favourOf(b.id))[0];
-    // The King's answers to a war: stop it (by command if both are warm, else by
-    // sending a loyal house to keep the peace), take a side (the weaker one), or
-    // let them bleed. A royal match is the rare, dear bond.
-    const [weak, strong] = [war, foe].sort((a, b) => (a.units ?? 0) - (b.units ?? 0));
-    const keeper = great.filter((p) => p.id !== war.id && p.id !== foe.id).sort((a, b) => favourOf(b.id) - favourOf(a.id))[0];
-    const acts = [
-      { label: "Make them stop", action: "peace", city: seatOf(war.id)?.id, to: foe.id, scale: peaceScale(favourOf(war.id), favourOf(foe.id)) },
-      { label: "Sit it out", ui: "sitout", war: `${war.id}:${foe.id}` },
-      matchFor(ctx, war.id, foe.id) ? { label: "Wed them to each other", action: "marriage", city: seatOf(war.id)?.id, to: foe.id } : null,
-    ].filter((a) => a && (a.ui || a.city !== undefined));
+    // The King's answers to a war (warChoices): judge it for a side, make them stop, wed them, or let them bleed.
+    // Each costs something: a town and a house's hatred, crowns and the winner's grudge, a bloc of two.
+    const acts = [...warChoices(ctx, war, foe, cities), { label: "Sit it out", ui: "sitout", war: `${war.id}:${foe.id}` }];
     const wed = acts.some((a) => a.action === "marriage");  // the marriage is spoken of only when a match can be made
-    const why = cold
-      ? `Every season of war burns fields and lowers the realm's peace. ${cold.house.name} is cold to the crown: made to stop, it will resent it, and the blood-price comes dearer.${wed ? " Or bind the two by marriage." : ""}`
-      : "Every season of war burns fields and lowers the realm's peace. Both are warm enough to stop gladly at the King's word.";
+    const why = `Every season of war burns fields and lowers the realm's peace. Judge it for one side and the other gives up a town and hates you; make them stop and the side that was winning resents it${cold ? `, and ${cold.house.name}, cold to the crown, makes the blood-price dearer` : ""}.${wed ? " Or bind the two by marriage, and they stand together after, against you too." : ""}`;
     out.push({ urgency: 50, text: `${war.house.name} and ${foe.house.name} are at war`, why, acts });  // "Sit it out" is a choice too (it was filtered out with the town-less ones)
   }
   if (purse < ECONOMY.thin) out.push({ urgency: 40, text: "The royal treasury is thin", why: "Every decree costs crowns; a higher tithe fills the purse but cools the houses.", acts: [{ label: "Raise the tithe", ui: "tithe_up" }] });
   if (!out.length) out.push({ urgency: 0, text: "The realm is quiet", why: "A good season to win a house's love before you need it.", acts: [] });
   // Every order shows its price before the King gives it, as the town card does: "Command peace  6k cr".
   // And what it does, so the King weighs effect against price: "Gift crowns  15k cr · +10".
-  const DOES = { sitout: "the war goes on",  tithe_down: `slower to cool; ${(Math.round(lastSeason.net * 50) / 1000).toFixed(1)}k less a season`, grant: "+20 them, −30 the holder", gift: "+10", feast: "+15", relief: "+12, eases it, cannot end it", marriage: "+8 each, bound in peace", peace: "a truce; a cold house resents it", banners: "+3 if they come", levy: "600 men", buyoff: "+25, others −2", alliance: "sworn 4 years, +5", march: "the host besieges; −25 them" };
   // The realm's lesser matters: plague, unrest, a thin granary, bare walls, a
   // house grown too strong, a loyal one unrewarded, a full treasury, an heir of
   // age. The Hand raises the one he has raised least lately, so his counsel
@@ -255,17 +245,7 @@ export function counsel(ctx, players, cities, threat) {
     const best = [...o.acts].sort((a, b) => rank(a) - rank(b))[0];
     if (best && o.acts.length > 1) best.pick = true;
   }
-  for (const o of out) for (const a of o.acts) {
-    // The price the crown will really pay (a share of a full treasury), never the base.
-    if (DECREES[a.action]?.cost) {
-      a.cost = Math.round(priceOf(a.action) * (a.scale ?? 1));  // "Make them stop" is dearer the colder the two houses (crown.js peaceScale)
-      const short = shortOf(crownOf(world)?.gold ?? 0, a.cost);
-      if (short) a.short = short;
-      a.label += `  ${a.cost >= 10000 ? `${Math.round(a.cost / 1000) / 10}m` : `${Math.round(a.cost / 10)}k`} cr`;  // gold ×100 crowns
-    }
-    const does = DOES[a.action ?? a.ui];
-    if (does && !a.label.includes("(")) a.label += ` · ${does}`;
-  }
+  for (const o of out) for (const a of o.acts) priced(ctx, a);
   // Every crisis has at least one answer the King can give (gameplay review #1): when the purse can
   // pay for none of its orders, the crown pays in something else. A march on Kingsmere is answered with
   // a royal town for their claim; any other, with a seat at the council promised to the house, paid
@@ -305,6 +285,49 @@ const heardKey = (o) => `${o.text.replace(/[\d.,]+/g, "#").replace(/:.*$/, "")}$
 
 // A royal match needs an unwed son or daughter of age from each house, one of
 // each. The Hand offers a match only when this finds one.
+// An answer's price and what it does, on its label (the court's cards and the King's promises alike): the price the
+// crown will really pay (a share of a full treasury), never the base, and whether the purse can bear it.
+export function priced(ctx, a) {
+  const { world, lastSeason, priceOf } = ctx;
+  const DOES = { sitout: "the war goes on",  tithe_down: `slower to cool; ${(Math.round((lastSeason?.net ?? 0) * 50) / 1000).toFixed(1)}k less a season`, grant: "+20 them, −30 the holder", gift: "+10", feast: "+15", relief: "+12, eases it, cannot end it", marriage: "+8 each, bound in peace", peace: "a truce; the house that was winning resents it", back: "free; the loser hates you", banners: "+3 if they come", levy: "600 men", buyoff: "+25, others −2", alliance: "sworn 4 years, +5", march: "the host besieges; −25 them" };
+  if (DECREES[a.action]?.cost) {
+    a.cost = Math.round(priceOf(a.action) * (a.scale ?? 1));  // "Make them stop" is dearer the colder the two houses (crown.js peaceScale)
+    const short = shortOf(crownOf(world)?.gold ?? 0, a.cost);
+    if (short) a.short = short;
+    a.label += `  ${a.cost >= 10000 ? `${Math.round(a.cost / 1000) / 10}m` : `${Math.round(a.cost / 10)}k`} cr`;  // gold ×100 crowns
+  }
+  const does = DOES[a.action ?? a.ui];
+  if (does && !a.label.includes("(")) a.label += ` · ${does}`;
+  return a;
+}
+
+// The King's answers to a war between two great houses, each with its own cost (Mac 2026-11-16: "it doesn't really
+// feel like I'm making a tough decision"; CK3's arbitration, Reigns' two-sided card): judge it for either side (the
+// loser gives up a town, free of crowns, and hates him), make them stop (crowns; the house that was winning resents
+// being robbed of it), or wed them (if each has an heir to give; bound, they stand together, against him too).
+export function warChoices(ctx, a, b, cities) {
+  const { favourOf } = ctx;
+  const power = (p) => (p.units ?? 0) + cities.filter((c) => c.owner === p.id).length * 2;
+  const [strong, weak] = [a, b].sort((p, q) => power(q) - power(p));
+  const seat = (pid) => cities.find((c) => c.owner === pid && c.capital) ?? cities.find((c) => c.owner === pid);
+  const short = (p) => p.house.name.replace(/^House /, "");
+  // The town a judgement takes: the loser's nearest to the winner's seat, never its own seat.
+  const ceded = (loser, winner) => {
+    const at = seat(winner.id);
+    return at ? cities.filter((c) => c.owner === loser.id && !c.capital).sort((x, y) => Math.hypot(x.x - at.x, x.y - at.y) - Math.hypot(y.x - at.x, y.y - at.y))[0] : null;
+  };
+  const judge = (winner, loser) => {
+    const t = ceded(loser, winner);
+    return t ? { label: `Judge for ${short(winner)}: ${short(loser)} gives up ${cityName(t.id)}`, action: "back", city: t.id, to: winner.id } : null;
+  };
+  return [
+    judge(strong, weak),
+    judge(weak, strong),
+    { label: "Make them stop", action: "peace", city: seat(a.id)?.id, to: b.id, scale: peaceScale(favourOf(a.id), favourOf(b.id)) },
+    matchFor(ctx, a.id, b.id) ? { label: "Wed them to each other", action: "marriage", city: seat(a.id)?.id, to: b.id } : null,
+  ].filter((x) => x && x.city != null);
+}
+
 export function matchFor(ctx, pa, pb) {
   const { court } = ctx;
   if (!court) return null;

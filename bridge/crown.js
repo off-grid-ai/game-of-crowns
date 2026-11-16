@@ -212,13 +212,19 @@ const HANDLERS = {
       text: `The King buys off ${lord}: gold for their claim. Their host breaks camp and goes home, and the other houses mutter that treason pays.` };
   },
   back(x) {
-    const { cmd, world, cost, pay, owner } = x;
-    // The King takes a side: gold to the house he favours (the town chosen is
-    // theirs). They love him for it; the other side will not forget.
+    const { cmd, world, c, owner } = x;
+    // The King judges a war for one side (Mac 2026-11-16: "it doesn't really feel like I'm making a tough decision";
+    // CK3's arbitration, Reigns' two-sided card): the losing house gives up the town chosen to the winner and the war
+    // ends. No crowns: the price is the loser's hatred (decrees.json back: favourWin, favourLose).
+    if (!c || !owner) return { error: "choose the town the losing house gives up" };
     const to = world.players.find((p) => p.id === Number(cmd.to));
-    if (!owner || !to || houseFor(owner).crown || houseFor(to).crown) return { error: "choose two great houses" };
-    return { cost, favour: { [owner.id]: 12, [to.id]: -12 }, lua: [pay, Lua.gold(owner.id, cost)],
-      text: `The King backs ${houseFor(owner).name} against ${houseFor(to).name}: crowns for swords, and every lord at court knows whose side the crown is on.` };
+    if (!to || to.id === owner.id || houseFor(owner).crown || houseFor(to).crown || houseFor(owner).wild || houseFor(to).wild) return { error: "choose two great houses" };
+    if (c.capital) return { error: "a house's seat is never judged away" };
+    const d = DECREES.back ?? {};
+    const home = (p, q) => ({ owner: p, units: menNear(world, p, byTownsOf(world, q)) });
+    return { cost: 0, favour: { [to.id]: d.favourWin ?? 15, [owner.id]: d.favourLose ?? -25 }, lua: [Lua.transferCity(c.id, to.id)],
+      homeward: [home(owner.id, to.id), home(to.id, owner.id)], truce: [owner.id, to.id],
+      text: `The King judges the war for ${houseFor(to).name}. ${houseFor(owner).name} must give up ${cityName(c.id)}, and the two houses lay down arms. ${houseFor(owner).name} kneels, and will not forget it.` };
   },
   settle(x) {
     const { cmd, world, cost, pay, owner } = x;
@@ -255,8 +261,12 @@ const HANDLERS = {
     const pay = Lua.gold(crown.id, -cost);
     const cold = [owner, to].filter((p) => fav(p.id) < (DECREES.peace.coldBelow ?? 40));
     const home = (x, y) => ({ owner: x, units: menNear(world, x, byTownsOf(world, y)) });
-    const favour = Object.fromEntries([owner, to].map((p) => [p.id, cold.includes(p) ? -3 : 2]));
-    const grudging = cold.length ? ` ${cold.map((p) => houseFor(p).name).join(" and ")} ${cold.length > 1 ? "obey" : "obeys"} with bad grace, and the crown pays the blood-price.` : " Both bow to the crown.";
+    // The house that was winning is robbed of its win and resents it; the losing one is spared and grateful (Mac
+    // 2026-11-16: "just spends some money"). A cold house's grudge comes on top (decrees.json peace).
+    const d = DECREES.peace ?? {};
+    const [strong, weak] = [owner, to].sort((p, q) => (q.units ?? 0) + (q.cities ?? 0) * 2 - ((p.units ?? 0) + (p.cities ?? 0) * 2));
+    const favour = { [strong.id]: (d.favourStrong ?? -8) + (cold.includes(strong) ? -3 : 0), [weak.id]: (d.favourWeak ?? 4) + (cold.includes(weak) ? -3 : 0) };
+    const grudging = ` ${houseFor(strong).name}, robbed of its win, obeys with bad grace; ${houseFor(weak).name} thanks the crown for its life.${cold.length ? " The crown pays the blood-price." : ""}`;
     return { cost, favour, lua: [pay], homeward: [home(owner.id, to.id), home(to.id, owner.id)], text: `The King tells ${a} and ${b} to stop.${grudging} They pull their hosts back from each other's towns, and riders carry the King's word to both houses: a truce for sixteen seasons.`, truce: [owner.id, to.id] };
   },
   marriage(x) {

@@ -16,6 +16,7 @@ import { say } from "./say.js";
 import * as Events from "./events.js";
 import * as Seals from "./seals.js";
 import * as Next from "./next.js";
+import * as Counsel from "./counsel.js";
 import * as Director from "./director.js";
 import { houseFor, cityName } from "./narrator.js";
 import { BANDS } from "./favour.js";
@@ -138,10 +139,42 @@ export const AMBITIONS = [
   { key: "grow", text: "Grow the realm by a fifth", met: ({ meta, history }) => meta.ambitionsFrom?.pop > 0 && (history.at(-1)?.pop ?? 0) >= meta.ambitionsFrom.pop * 1.2 },
 ];
 
+// The orders that keep a promise, priced, for the control plane's checklist (Mac 2026-11-16: "clicking on these
+// should give a direct action"): each a real choice with its cost (counsel.js warChoices, priced).
+export function promiseActs(ctx, a) {
+  const { world, court, favourOf, crownSeat } = ctx;
+  if (!world) return [];
+  const great = world.players.filter((p) => !houseFor(p).wild && !houseFor(p).crown && world.cities.some((c) => c.owner === p.id)).map((p) => ({ ...p, house: houseFor(p) }));
+  const seat = (pid) => world.cities.find((c) => c.owner === pid && c.capital) ?? world.cities.find((c) => c.owner === pid);
+  const short = (p) => p.house.name.replace(/^House /, "");
+  const warOf = () => { for (const p of great) for (const q of great) if (p.id < q.id && atWar(ctx, p.id, q.id)) return [p, q]; return null; };
+  let acts = [];
+  if (a.key === "endwar" || a.key === "peace") {
+    const pair = a.key === "endwar" ? [great.find((p) => p.id === a.a), great.find((p) => p.id === a.b)] : warOf();
+    if (pair && pair[0] && pair[1] && atWar(ctx, pair[0].id, pair[1].id)) acts = Counsel.warChoices(ctx, pair[0], pair[1], world.cities);
+  } else if (a.key === "wed") {
+    for (const p of great) for (const q of great) if (!acts.length && p.id < q.id && Counsel.matchFor(ctx, p.id, q.id))
+      acts = [{ label: `Wed ${short(p)} to ${short(q)}`, action: "marriage", city: seat(p.id)?.id, to: q.id }];
+  } else if (a.key === "loyal") {
+    // The house nearest to loyal that isn't yet: a gift or a feast in its honour.
+    const next = great.filter((p) => favourOf(p.id) < BANDS.loyal).sort((p, q) => favourOf(q.id) - favourOf(p.id))[0];
+    if (next) acts = [{ label: `Gift ${short(next)} crowns`, action: "gift", city: seat(next.id)?.id }, { label: `Feast in ${short(next)}'s honour`, action: "feast", city: seat(next.id)?.id }];
+  } else if (a.key === "grow") {
+    const crown = crownOf(world);
+    const town = world.cities.find((c) => c.owner === crown?.id && !(c.buildings ?? []).includes("Granary") && !ctx.meta.works?.[c.id]);
+    if (town) acts = [{ label: `Raise a granary in ${cityName(town.id)}`, action: "build", city: town.id, building: "Granary" }];
+  } else if (a.key === "seat") {
+    const s = crownSeat?.();
+    if (s) acts = [{ label: `Raise new men at ${cityName(s.id)}`, action: "levy", city: s.id }];
+  }
+  return acts.filter((x) => x && x.city != null).map((x) => Counsel.priced(ctx, x));
+}
+
 // The royal ladder: one objective always before the King, each with a reward he can see in the realm, each leading
 // to the next (data/objectives.json; Warcraft III's and Age of Empires II's campaign objectives): the war king's
 // chain (beat the raiders, raise the levy, march on a town, win a house's oath), then the realm's own (nextAim).
 // Checked every few seconds; met, the reward lands at once and the next is named.
+const PROMISES = JSON.parse(fs.readFileSync(new URL("./data/promises_king.json", import.meta.url), "utf8"));
 const OBJ = JSON.parse(fs.readFileSync(new URL("./data/objectives.json", import.meta.url), "utf8"));
 
 // The most companies the crown has had under its banner at once, wherever they stand (the muster
@@ -321,7 +354,8 @@ export function ambitions(ctx) {
     const hash = (t) => t.split("").reduce((h, ch) => (Math.imul(h, 31) + ch.charCodeAt(0)) >>> 0, 7);
     const first = drawn.filter((a) => a.draw);
     const rest = drawn.filter((a) => !a.draw).sort((a, b) => hash(meta.id + a.key) - hash(meta.id + b.key));
-    meta.ambitions = [...first, ...rest].slice(0, 3).map((a) => ({ key: a.key, text: a.text, met: null, ...(a.a != null ? { a: a.a, b: a.b } : {}) }));
+    meta.ambitions = [...first, ...rest].slice(0, 3).map((a, i) => ({ key: a.key, text: a.text, met: null, ...(a.a != null ? { a: a.a, b: a.b } : {}),
+      ...(a.key !== "seat" ? { due: world.turn + (PROMISES.due?.[i] ?? 12) } : {}) }));
     chron.saveMeta(meta);
   }
   // Kingsmere besieged (a pretender's host at its walls, or any siege of it) fails "keep it unbesieged".
@@ -330,10 +364,19 @@ export function ambitions(ctx) {
   for (const a of meta.ambitions) {
     const spec = AMBITIONS.find((x) => x.key === a.key);
     if (a.met != null || a.failed != null) continue;
-    if (spec?.fail?.(ctx, a)) { a.failed = world.turn; chron.saveMeta(meta); continue; }
+    const great = world.players.filter((p) => !houseFor(p).wild && !houseFor(p).crown);
+    if (spec?.fail?.(ctx, a) || (a.due != null && world.turn >= a.due && !spec?.met(ctx, a))) {
+      // A promise broken, by the realm or by its time: every great house hears the King's word is worth less.
+      a.failed = world.turn;
+      for (const p of great) favour[p.id] = Math.max(0, favourOf(p.id) + (PROMISES.broken ?? -8));
+      saveFavour();
+      record({ turn: world.turn, kind: "ambition", text: `The King's promise is broken: ${a.text.toLowerCase()}. The great houses take note, and trust his word the less.` });
+      chron.saveMeta(meta);
+      continue;
+    }
     if (!spec?.met(ctx, a)) continue;
     a.met = world.turn;
-    for (const p of world.players.filter((p) => !houseFor(p).wild && !houseFor(p).crown)) favour[p.id] = Math.min(100, favourOf(p.id) + 5);
+    for (const p of great) favour[p.id] = Math.min(100, favourOf(p.id) + (PROMISES.kept ?? 5));
     saveFavour();
     record({ turn: world.turn, kind: "ambition", text: `The King's ambition is fulfilled: ${a.text.toLowerCase()}. The great houses take note.` });
     chron.saveMeta(meta);
@@ -645,7 +688,7 @@ export function reignInfo(ctx) {
     id: meta.id, name: meta.name, test: chron.isTest(meta), scenario: meta.scenario, status: meta.status, paused, minutes: meta.minutes,
     elapsedMs: meta.elapsedMs, remainingMs: meta.minutes > 0 ? Math.max(0, meta.minutes * 60000 - meta.elapsedMs) : null,
     score: meta.score, verdict: meta.verdict, title: meta.title, why: meta.why ?? null, outcome: meta.outcome, ended: meta.endedAt,
-    epilogue: meta.epilogue ?? null, epitaph: meta.epitaph ?? null, ledger: meta.endLedger ?? null, grudge: meta.status === "ended" ? meta.grudgeLeft ?? null : null, lastAct: meta.lastAct ?? null, interlude: meta.interlude && !meta.interlude.seen ? meta.interlude : null, ambitions: meta.ambitions ? meta.ambitions.map((a) => ({ ...a, at: a.key === "seat" ? (ctx.crownSeat?.()?.id ?? null) : null })) : null,  // at: the town a promise is kept at (the control plane goes there) aim: aim ? { n: Math.min(meta.ladder.i, LADDER.length) + (meta.ladder.n ?? 0) + 1, of: meta.ladder.i < LADDER.length ? LADDER.length : null, key: aim.key, text: aimText(ctx, aim), how: fill(ctx, aim, aim.how), input: aim.input ? aim.input.map((t) => fill(ctx, aim, t)) : null, progress: aimProgress(ctx, aim), at: aimPlace(ctx, aim) } : null,
+    epilogue: meta.epilogue ?? null, epitaph: meta.epitaph ?? null, ledger: meta.endLedger ?? null, grudge: meta.status === "ended" ? meta.grudgeLeft ?? null : null, lastAct: meta.lastAct ?? null, interlude: meta.interlude && !meta.interlude.seen ? meta.interlude : null, ambitions: meta.ambitions ? meta.ambitions.map((a) => ({ ...a, at: a.key === "seat" ? (ctx.crownSeat?.()?.id ?? null) : null, acts: a.met == null && a.failed == null ? promiseActs(ctx, a) : [], left: a.due != null ? Math.max(0, a.due - (world?.turn ?? 0)) : null })) : null,  // at: its town; acts: the orders that keep it; left: seasons before it is broken aim: aim ? { n: Math.min(meta.ladder.i, LADDER.length) + (meta.ladder.n ?? 0) + 1, of: meta.ladder.i < LADDER.length ? LADDER.length : null, key: aim.key, text: aimText(ctx, aim), how: fill(ctx, aim, aim.how), input: aim.input ? aim.input.map((t) => fill(ctx, aim, t)) : null, progress: aimProgress(ctx, aim), at: aimPlace(ctx, aim) } : null,
     aimDone: meta.ladder?.just && Date.now() - meta.ladder.just.at < 8000 ? { text: meta.ladder.just.text, says: meta.ladder.just.says ?? null } : null, readings: meta.status === "running" ? readings(ctx) : null,
     souls: world?.cities?.reduce((t, c) => t + soulsOf(c.size), 0) ?? 0,
     next,

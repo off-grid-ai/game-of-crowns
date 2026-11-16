@@ -693,7 +693,10 @@ func _show_promises(am) -> void:
 		var state := "kept" if a.get("met") != null else ("lost" if a.get("failed") != null else "open")
 		var go := String(goes.get(String(a.get("key", "")), "houses"))
 		var at := int(a["at"]) if a.get("at") != null else -1
-		var b := ui.btn(String(a.get("text", "")), func(): _keep_promise(go, at))
+		var acts: Array = a.get("acts", []) if a.get("acts") is Array else []
+		var left := ("  ·  " + String(cfg.get("left", "{n} seasons left")).replace("{n}", str(int(a["left"])))) if state == "open" and a.get("left") != null else ""
+		var b := ui.btn(String(a.get("text", "")) + left, func(): pass)
+		b.pressed.connect(func(): _keep_promise(go, at, acts, b))
 		b.flat = true
 		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		b.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
@@ -706,8 +709,24 @@ func _show_promises(am) -> void:
 		_promises.add_child(b)
 
 
-## Act on a promise: go to its town, or open the table where it's kept (ui.json promises.do).
-func _keep_promise(go: String, at: int) -> void:
+## Act on a promise: its orders as a short menu under it, each with its price and what it costs him (bridge
+## reign.js promiseActs; Mac 2026-11-16: "clicking on these should give a direct action"); with none to give, go to
+## its town or open the table where it's kept (ui.json promises.do).
+func _keep_promise(go: String, at: int, acts: Array, from: Control) -> void:
+	if not acts.is_empty():
+		var menu := PopupMenu.new()
+		menu.add_theme_font_size_override("font_size", int(Data.num("ui", "promises.size", 15.0)))
+		for i in acts.size():
+			var x: Dictionary = acts[i]
+			menu.add_item(String(x.get("label", "")) + ("  ·  " + String(x["short"]) if x.get("short") != null else ""), i)
+			menu.set_item_disabled(i, x.get("short") != null)  # the purse can't bear it: shown, not given
+		menu.id_pressed.connect(func(i: int):
+			var x: Dictionary = acts[i]
+			ui.decree_at.emit(String(x.get("action", "")), int(x.get("city", -1)), int(x["to"]) if x.get("to") != null else -1, String(x.get("building", "")), ""))
+		menu.popup_hide.connect(menu.queue_free)
+		from.add_child(menu)
+		menu.popup(Rect2i(Vector2i(from.get_screen_position() + Vector2(0, from.size.y)), Vector2i.ZERO))
+		return
 	match go:
 		"town":
 			if at >= 0:
