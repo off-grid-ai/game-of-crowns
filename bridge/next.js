@@ -70,7 +70,9 @@ export function nextThing(ctx, aim) {
   const counsel = (ctx.counselNow ?? []).filter((o) => o.urgency < 75 && o.acts?.length).map((o) => {
     const a = o.acts.find((x) => !x.ui && x.action);
     const city = a?.city ?? seat?.id ?? null;
-    return a && city != null ? { kind: "counsel", text: `${o.text}. ${String(a.label).split("  ")[0]} at ${cityName(city)}`, city, act: { action: a.action, city, ...(a.to != null ? { to: a.to } : {}), ...(a.building ? { building: a.building } : {}) } } : null;
+    // The matter itself, by its key: its card offers the matter's own answers (counsel.js decides them), not one of
+    // them spelled into its line.
+    return a && city != null ? { kind: "counsel", text: o.text, counsel: o.key, city, act: { action: a.action, city, ...(a.to != null ? { to: a.to } : {}), ...(a.building ? { building: a.building } : {}) } } : null;
   }).filter(Boolean);
   // The wider pool (data/next.json pool): what the realm's state makes worth a seal beyond the above.
   const great = world.players.filter((p) => !houseFor(p).wild && !houseFor(p).crown && world.cities.some((c) => c.owner === p.id));

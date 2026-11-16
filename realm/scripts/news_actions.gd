@@ -138,6 +138,10 @@ func _raise(id: int) -> void:
 ##   when the place says nothing; then the kind's own verbs. A verb whose condition no longer holds (news_actions.json
 ##   verbs.needs) is dropped: no Defend when nothing threatens, no Send relief once the plague has passed.
 func verbs(entry: Dictionary) -> Array:
+	# A matter of the Hand's counsel carries its own answers (bridge counsel.js, the one decider of them): those and
+	# going there, never answers worked out here from the place (Mac 2026-11-16: a war's card offered grain).
+	if String(entry.get("counsel", "")) != "":
+		return _counsel_rows(entry)
 	var kinds: Dictionary = Data.value(FILE, "kinds", {})
 	var kind := String(entry.get("kind", ""))
 	var list: Array = (kinds.get(kind, kinds.get("other", ["go"])) as Array).duplicate()
@@ -189,6 +193,25 @@ func verbs(entry: Dictionary) -> Array:
 		rows = rows.filter(func(x): return not (String(x["verb"]) == "court" or String(x["verb"]) == "rule" and whole))
 	elif rows.any(func(x): return String(x["verb"]) == "rule"):
 		rows = rows.filter(func(x): return String(x["verb"]) != "court")
+	return rows
+
+
+## The Hand's matter's own answers as rows, each gated as every card gates it (ui.gd act_gate), and Go there;
+## only Go there once the matter is answered or gone.
+func _counsel_rows(entry: Dictionary) -> Array:
+	var key := String(entry["counsel"])
+	var rows := []
+	for it in main.awareness.rec("counsel", []):
+		if not (it is Dictionary and String(it.get("key", "")) == key):
+			continue
+		for a in it.get("acts", []):
+			var act: Dictionary = a
+			var gate: Dictionary = main.ui.act_gate(act)
+			rows.append({"verb": "counsel", "label": String(act.get("label", "")) + String(gate["suffix"]), "cost": int(act.get("cost", 0)) * UI.CROWNS,
+				"enabled": bool(gate["enabled"]), "why": String(gate["why"]), "tip": "", "call": func(): main.ui.answer_counsel(act, key)})
+	var go := _row("go", entry, {})
+	if not go.is_empty():
+		rows.append(go)
 	return rows
 
 

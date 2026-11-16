@@ -1030,6 +1030,36 @@ func reading() -> bool:
 	return false
 
 
+## Whether one of the Hand's answers gives an order (a decree: it takes a royal seal) or only answers the matter
+## (the tithe, sitting it out, going to court). The one reading of it, for every card that offers counsel.
+func gives_order(act: Dictionary) -> bool:
+	return not ["court", "tithe_up", "tithe_down", "sitout"].has(String(act.get("ui", "")))
+
+
+## The gate on one of the Hand's answers, the same on every card that offers it (court_panel.gd, news_actions.gd):
+## {suffix: what the label adds (its seal), enabled, why: what stops it}. An order takes a seal and its price;
+## saying no takes neither (bridge seals.js, counsel.js priced).
+func act_gate(act: Dictionary) -> Dictionary:
+	var orders := gives_order(act)
+	var price := int(act.get("cost", (act.get("weighs", {}) as Dictionary).get("cost", 0) if act.get("weighs") is Dictionary else 0))
+	var out := {"suffix": ("  ·  " + String(Data.value("court", "seal_word", "1 seal"))) if orders and seals < 99 else "", "enabled": true, "why": ""}
+	if price > purse:
+		out["enabled"] = false
+		out["why"] = String(act.get("short", "The treasury holds too little for this."))
+	elif orders and seals < 1:
+		out["enabled"] = false
+		out["why"] = String(Data.value("court", "no_seal", "No royal seal is left: the next comes with the season."))
+	return out
+
+
+## Gives one of the Hand's answers to the matter `key`: an order answers it in the same request (bridge
+## routes_decree.js); anything else answers it here.
+func answer_counsel(act: Dictionary, key: String) -> void:
+	if not gives_order(act):
+		counsel_answered.emit(key)
+	counsel_act(act, key if gives_order(act) else "")
+
+
 ## matter: the key of the court matter this order answers ("" from anywhere else): the
 ## bridge answers it with the order, in one request (no seal; the ultimatum judged after).
 func counsel_act(act: Dictionary, matter := "") -> void:
