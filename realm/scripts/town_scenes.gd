@@ -810,7 +810,7 @@ static func _took(what: String, t0: int) -> void:
 func _stage_role(k: Dictionary, role: Dictionary, anchors: Dictionary) -> void:
 	var a0 := Time.get_ticks_usec()
 	var a := _anchor(String(role.get("at", "heart")), k, anchors)
-	_took("anchor", a0)
+	_took("anchor." + String(((_d.get("anchors", {}) as Dictionary).get(String(role.get("at", "heart")), {}) as Dictionary).get("by", "place")), a0)  # by kind: open, castle, stops, place
 	if a.is_empty():
 		(k["tally"]["no_place"] as Array).append("%s.%s" % [k["row"]["id"], role.get("at", "heart")])
 		return
