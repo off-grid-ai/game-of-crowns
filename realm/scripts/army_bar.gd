@@ -46,6 +46,9 @@ func _build() -> void:
 	ui.get_viewport().size_changed.connect(_place)
 	if ui._houses_panel:
 		ui._houses_panel.visibility_changed.connect(_place)
+	if ui.houses_strip._panel:
+		ui.houses_strip._panel.visibility_changed.connect(_place)
+		ui.houses_strip._panel.resized.connect(_place)
 
 
 ## host_command.gd is up: the bar follows the mirror and the selection from now on.
@@ -166,14 +169,14 @@ func _clicked(e: InputEvent, id: int) -> void:
 	ui.heard.emit("click")
 
 
-## Top-left, or under the great houses while they are open; never down into the control plane.
+## Top-left, under the houses strip or the great houses while they are open; never down into the control plane.
 func _place() -> void:
 	if _panel == null or not _panel.visible:
 		return
 	var top := Data.num("ui", "plane.top", 12.0)  # the top-left is free: the date is in the control plane
-	var houses: Control = ui._houses_panel
-	if houses and houses.is_visible_in_tree():
-		top = maxf(top, houses.get_global_rect().end.y)
+	for above in [ui._houses_panel, ui.houses_strip._panel]:  # under the great houses, open or at a glance
+		if above and (above as Control).is_visible_in_tree():
+			top = maxf(top, (above as Control).get_global_rect().end.y)
 	top += Data.num(FILE, "gap", 8.0)
 	_panel.offset_top = top
 	var room := ui.plane.top_y() - top - Data.num(FILE, "gap", 8.0)  # down to the control plane, never into it

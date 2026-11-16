@@ -127,6 +127,15 @@ export function worldView(ctx) {
     return { towns: mine.length, pop: mine.reduce((t, c) => t + c.size, 0), souls: mine.reduce((t, c) => t + soulsOf(c.size), 0), gold: p.gold, armies: p.units, grain: mine.reduce((t, c) => t + (d?.cities[c.id]?.foodStock ?? 0), 0) };
   };
   for (const p of players) p.measures = last?.houses?.[p.house.name] ?? (p.house.crown ? own(p) : null);
+  // A house's strength in one figure (towns count double, then its men), and how it has moved over the last year of
+  // the ledger: the houses strip's "who is rising" (Mac 2026-11-16; Crusader Kings III's realm-size arrow).
+  const strength = (m) => (m ? (m.towns ?? 0) * 2 + (m.armies ?? 0) : 0);
+  const yearBack = history[Math.max(0, history.length - 5)];
+  for (const p of players) {
+    p.strength = strength(p.measures);
+    const was = strength(yearBack?.houses?.[p.house.name]);
+    p.strengthTrend = was > 0 ? Math.round((p.strength - was) / was * 100) : 0;  // percent over the year
+  }
   const usurper = stakes?.s.usurper.stage ?? "none";
   const u = stakes?.s.usurper;
   // The odds at Kingsmere: fighting companies of the pretender and of the crown

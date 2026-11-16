@@ -199,6 +199,7 @@ var _form_panel: PanelContainer:
 	get:
 		return form_card._form_panel
 var minimap: Control
+var houses_strip := preload("res://scripts/houses_strip.gd").new(self)  # the great houses at a glance, top-left (houses_strip.gd)
 var army_bar := preload("res://scripts/army_bar.gd").new(self)  # the King's hosts down the left edge (army_bar.gd): its state lives there
 var _army_panel: PanelContainer:
 	get:
@@ -233,6 +234,7 @@ func _ready() -> void:
 	_build_court()
 	_build_minimap()
 	_build_camera_controls()
+	houses_strip._build()
 	army_bar._build()
 
 
@@ -1236,6 +1238,7 @@ func set_world(houses: Dictionary) -> void:
 	PerfTools.add("ui.top_bar", Time.get_ticks_usec() - t_ui_top_bar)
 	var t_ui_houses := Time.get_ticks_usec()
 	houses_drawer._fill_houses()
+	houses_strip.fill()
 	PerfTools.add("ui.houses", Time.get_ticks_usec() - t_ui_houses)
 
 
