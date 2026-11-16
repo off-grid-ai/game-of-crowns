@@ -473,9 +473,11 @@ func show_new() -> void:
 	var spark_label := func() -> void:
 		if is_instance_valid(spark):
 			spark.text = "✦  Get Off Grid AI to write it for you" if not ai_ready[0] else ("✦  Carry it on" if premise.text.strip_edges() != "" else "✦  Write it for me")
+	var spark_held: WeakRef = weakref(spark)  # the reply may come after the menu is gone (spark_label captures it)
 	bridge.ai_status(func(st):
 		ai_ready[0] = st is Dictionary and bool(st.get("words", false))
-		spark_label.call())
+		if spark_held.get_ref():
+			spark_label.call())
 	premise.text_changed.connect(spark_label)
 	spark.pressed.connect(func():
 		if not ai_ready[0]:
@@ -526,8 +528,9 @@ func show_new() -> void:
 			for b in tales.get_children():
 				if b is Button and b.toggle_mode:
 					b.set_pressed_no_signal(b.get_index() == tales.get_child_count() - 1)))
+	var tales_list: WeakRef = weakref(tales)  # the reply may come after the menu is gone
 	bridge.stories(func(list):
-		if not is_instance_valid(tales):
+		if tales_list.get_ref() == null:
 			return
 		for t in list:
 			var tags: Array = t.get("tags", [])
@@ -920,9 +923,11 @@ func _fill_beats(box: VBoxContainer, d: Dictionary) -> void:
 			spark.text = "✦  Get Off Grid AI to write it for you"
 		else:
 			spark.text = "✦  Carry it on" if what.text.strip_edges() != "" else "✦  Write it for me"
+	var spark_held: WeakRef = weakref(spark)  # the reply may come after the menu is gone (spark_label captures it)
 	bridge.ai_status(func(st):
 		ai_ready[0] = st is Dictionary and bool(st.get("words", false))
-		spark_label.call())
+		if spark_held.get_ref():
+			spark_label.call())
 	what.text_changed.connect(spark_label)
 	spark.pressed.connect(func():
 		if not ai_ready[0]:
