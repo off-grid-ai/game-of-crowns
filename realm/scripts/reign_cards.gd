@@ -433,7 +433,6 @@ func _reign_end(r: Dictionary) -> void:
 	on.add_theme_stylebox_override("hover", T._box(Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.36), Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.85), 8, 10))
 	on.add_theme_color_override("font_color", Color(1, 0.93, 0.78))
 	on.tooltip_text = "The same realm, with no clock. This reign stays in the Hall of Records."
-	go.add_child(on)
 	# The reign's ledger (Civilization's and Total War's end-of-campaign summary, drawn as a chronicle page): what he
 	# had when crowned and what he left, the towns kept, won and lost, the weightiest rulings (bridge reign.js ledger).
 	if r.get("ledger") is Dictionary:
@@ -461,6 +460,7 @@ func _reign_end(r: Dictionary) -> void:
 	menu.custom_minimum_size = Vector2(200, 48)
 	menu.add_theme_font_size_override("font_size", T.SIZE_BODY)
 	go.add_child(menu)
+	go.add_child(on)  # the one to press stands at the right, the ways out at its left
 	var tw := root.create_tween()
 	tw.tween_interval(0.6)
 	tw.tween_property(root, "modulate:a", 1.0, 2.2).set_trans(Tween.TRANS_SINE)
