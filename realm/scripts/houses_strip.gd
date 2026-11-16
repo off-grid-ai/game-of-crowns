@@ -46,17 +46,62 @@ func fill() -> void:
 		if p.get("favour") != null and not h.get("wild", false) and int(p.get("cities", 0)) > 0:
 			players.append(p)
 	players.sort_custom(func(a, b): return int(a.get("power", 0)) > int(b.get("power", 0)))
-	var sig := hash([players.map(func(p): return [p["id"], _stance(p), _arrow(p), p.get("power", 0)]), Awareness.bands])
+	# At war, the strip runs by camp (WAR.md step 5; CK3's war's two sides): with you, waiting, against you, each group
+	# strongest first, under its heading, and each chip's word is its camp's.
+	_camp = _camps()
+	if not _camp.is_empty():
+		var order := {"crown": 0, "wait": 1, "foe": 2}
+		players.sort_custom(func(a, b):
+			var ca: int = order[_camp.get(int(a["id"]), "wait")]
+			var cb: int = order[_camp.get(int(b["id"]), "wait")]
+			return ca < cb if ca != cb else int(a.get("power", 0)) > int(b.get("power", 0)))
+	var sig := hash([players.map(func(p): return [p["id"], _stance(p), _arrow(p), p.get("power", 0)]), Awareness.bands, _camp])
 	if sig != _said:
 		_said = sig
 		for c in _row.get_children():
 			c.queue_free()
-		var head := T.label(String(Data.value("ui", "houses_strip.head", "By power")), T.TEXT_3)
-		head.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		_row.add_child(head)
+		var heads: Dictionary = Data.value("ui", "houses_strip.camps", {})
+		var group := ""
+		if _camp.is_empty():
+			_head(String(Data.value("ui", "houses_strip.head", "By power")))
 		for p in players:
+			var c: String = _camp.get(int(p["id"]), "wait") if not _camp.is_empty() else ""
+			if c != group:
+				group = c
+				_head(String(heads.get(c, c)))
 			_row.add_child(_chip(p))
 	_show()
+
+
+var _camp := {}  # house id -> its camp in the crown's wars ("crown", "foe", "wait"); empty at peace
+
+
+func _head(text: String) -> void:
+	var head := T.label(text, T.TEXT_3)
+	head.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_row.add_child(head)
+
+
+## Every house's camp in the crown's wars, from the bridge's one reading (/world kingWars[].camps): a house against
+## the crown in any war is a foe there; one with the crown in any is an ally; the rest wait.
+func _camps() -> Dictionary:
+	var out := {}
+	var wars = Awareness.store().rec("kingWars")
+	if not wars is Array:
+		return out
+	for w in wars:
+		var k = w.get("camps") if w is Dictionary else null
+		if not k is Dictionary:
+			continue
+		for id in k.get("crown", []):
+			if out.get(int(id), "") != "foe":
+				out[int(id)] = "crown"
+		for id in k.get("foe", []):
+			out[int(id)] = "foe"
+		for id in k.get("waiting", []):
+			if not out.has(int(id)):
+				out[int(id)] = "wait"
+	return out
 
 
 func _show() -> void:
@@ -69,6 +114,8 @@ func _show() -> void:
 ## Where the house stands with the King, in a word: at war with him, sworn to him, or its mood (the bridge's bands).
 func _stance(p: Dictionary) -> String:
 	var w: Dictionary = Data.value("ui", "houses_strip.words", {})
+	if not _camp.is_empty():
+		return String(w.get({"crown": "ally", "foe": "foe"}.get(_camp.get(int(p["id"]), "wait"), "waits"), "Waits"))
 	if (p.get("wars", []) as Array).has("the Crown"):
 		return String(w.get("war", "At war"))
 	if p.get("sworn") != null or String(p.get("band", "")) == "sworn":
@@ -98,8 +145,8 @@ func _chip(p: Dictionary) -> Button:
 	b.add_theme_font_size_override("font_size", int(Data.num("ui", "houses_strip.size", 14.0)))
 	b.text = "%s · %s   %d%s" % [name, stance, int(p.get("power", 0)), _arrow(p)]  # its power as a number, the arrow beside it (Mac: the bar read as an underline)
 	# Against the King reads red and loud, with him bright, the rest muted: the word says it first.
-	var against := stance in [String(Data.value("ui", "houses_strip.words.war", "At war")), ui.mood(0)]
-	b.add_theme_color_override("font_color", T.DANGER if against else (T.TEXT if stance in [String(Data.value("ui", "houses_strip.words.sworn", "Sworn")), "Loyal"] else T.TEXT_2))
+	var against := stance in [String(Data.value("ui", "houses_strip.words.war", "At war")), String(Data.value("ui", "houses_strip.words.foe", "Foe")), ui.mood(0)]
+	b.add_theme_color_override("font_color", T.DANGER if against else (T.TEXT if stance in [String(Data.value("ui", "houses_strip.words.sworn", "Sworn")), String(Data.value("ui", "houses_strip.words.ally", "Ally")), "Loyal"] else T.TEXT_2))
 	var t := int(p.get("powerTrend", 0))
 	var tips: Dictionary = Data.value("ui", "houses_strip.tips", {})
 	b.tooltip_text = String(tips.get("line", "House {name}: {stance}, favour {favour} of 100\nPower {power} of 100 (men, land, people, crowns and grain, against the strongest house), {trend} over the year\nClick for the house")).format({

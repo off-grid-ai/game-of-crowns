@@ -80,7 +80,7 @@ Declaring war opens a council card, not a one-click order (EU4's declare-war dia
 2. **Built** (`/world kingWars[].camps`, `.standing` from peace.js). `/world wars` carries each war's camps (crown side, foe side, waiting) and score.
 3. **Built** (`war_council.gd`, bridge `war.js council` on `/world players[].warCouncil`). The war council card: every war order (town card, houses table, the Hand) opens it in main.gd `_order`; Declare war and Not now.
 4. **Built** (political_overlay.gd `_war_mode`, from `/world kingWars[].camps`; tints in data/map.json war_mode). The map's war mode: political_overlay paints by camp while a war runs.
-5. The houses strip groups by camp with Ally / Foe / Waits words.
+5. **Built** (houses_strip.gd `_camps`; words in ui.json houses_strip.camps and .words). The houses strip groups by camp with Ally / Foe / Waits words.
 6. The war banner in the control plane, opening the war card.
 7. The declaration moment (horn, edge, chronicle line, the sides as they fell).
 8. Camps move during the war (allies leave, waiters join the winner or, with alarm high, the loser).
