@@ -5,6 +5,8 @@ extends RefCounted
 ## (terrain.politics); main.gd hands it the store's owners, houses, intrigue and marks; the minimap reads its
 ## standing texture and its flood; ruins read how long a scar lasts.
 
+const Data := preload("res://scripts/data.gd")
+
 var _t: Node3D  # terrain.gd: the tile map's size, its land3d and its material
 
 
@@ -86,7 +88,39 @@ static func _relief() -> Vector4:
 const VASSAL_FIRST := 32
 
 
-func set_realm(owners: Array, players: Array, intrigue: Array = [], vassals: Array = [], cities: Array = []) -> void:
+## The map's war mode (docs/WAR.md step 4; CK3's war map mode, Total War's diplomacy colours): while the crown is at
+## war every realm is painted by its camp, from the bridge's one reading of them (/world kingWars[].camps): the crown
+## and the houses riding with it in the crown's colour (its allies a lighter tint), each foe and the houses with it in
+## that foe's colour (its allies a tint), every house that waits greyed. Borders between camps are the front. The
+## words that carry the same (Ally, Foe, Waits) are the houses strip's; here colour and its lightness only add.
+## Tints: data/map.json war_mode.
+func _war_mode(colour: Dictionary, king_wars: Array) -> void:
+	var camps: Array = []
+	for w in king_wars:
+		if w is Dictionary and w.get("camps") is Dictionary:
+			camps.append(w["camps"])
+	if camps.is_empty():
+		return
+	var ally := Data.num("map", "war_mode.ally", 0.4)
+	var grey := Color(String(Data.value("map", "war_mode.waits", "#6b6b66")))
+	var painted := {}
+	for k in camps:
+		for side in ["crown", "foe"]:
+			var ids: Array = k.get(side, [])
+			if ids.is_empty() or not colour.has(int(ids[0])):
+				continue
+			var lead: Color = colour[int(ids[0])]
+			for i in ids.size():
+				var id := int(ids[i])
+				if colour.has(id) and not (painted.get(id, "") == "foe"):
+					colour[id] = lead if i == 0 else lead.lerp(Color.WHITE, ally)
+					painted[id] = side
+	for id in colour.keys():
+		if not painted.has(id) and colour[id].a > 0.0:
+			colour[id] = Color(grey, colour[id].a)
+
+
+func set_realm(owners: Array, players: Array, intrigue: Array = [], vassals: Array = [], cities: Array = [], king_wars: Array = []) -> void:
 	if _t._land_mat == null or owners.size() != _t.height or _t.land3d == null or _t.land3d.land == null:
 		return  # (the 3D land is still being raised: the next reading paints it)
 	var wars := {}
@@ -99,6 +133,7 @@ func set_realm(owners: Array, players: Array, intrigue: Array = [], vassals: Arr
 		sworn[int(p["id"])] = p.get("sworn") != null
 		var h: Dictionary = p.get("house", {})
 		colour[int(p["id"])] = Color(0, 0, 0, 0) if h.get("wild", false) else preload("res://scripts/heraldry.gd").colour(h, Color.GRAY, "#888")
+	_war_mode(colour, king_wars)
 	# The bridge names the foes ("Wolfholt", "the Crown"); the map wants their ids.
 	var by_name := {}
 	for p in players:
@@ -137,7 +172,7 @@ func set_realm(owners: Array, players: Array, intrigue: Array = [], vassals: Arr
 		var b := int(it.get("to", -1))
 		schemes["%d:%d" % [mini(a, b), maxi(a, b)]] = SCHEME[k]
 	_set_politics(players, colour, by_name, kin)
-	var sig := str(hash(owners)) + str(hash(wars)) + str(hash(truces)) + str(hash(sworn)) + str(hash(schemes))
+	var sig := str(hash(owners)) + str(hash(wars)) + str(hash(truces)) + str(hash(sworn)) + str(hash(schemes)) + str(hash(colour))  # colour: the war mode's camps too
 	if sig == _realm_sig:
 		return
 	_realm_sig = sig

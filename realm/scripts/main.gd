@@ -1157,7 +1157,7 @@ func _on_synced() -> void:
 	# The land's borders, scars and ruins, from the mirror (awareness.gd), not from /world.
 	var realm_bb: Blackboard = awareness.realm
 	var pt := Time.get_ticks_usec()
-	terrain.politics.set_realm(realm_bb.get_var(&"owners", []), realm_bb.get_var(&"houses", []), realm_bb.get_var(&"intrigue", [], false), realm_bb.get_var(&"vassals", [], false), awareness.rec("cities", []))
+	terrain.politics.set_realm(realm_bb.get_var(&"owners", []), realm_bb.get_var(&"houses", []), realm_bb.get_var(&"intrigue", [], false), realm_bb.get_var(&"vassals", [], false), awareness.rec("cities", []), awareness.rec("kingWars") if awareness.rec("kingWars") is Array else [])
 	PerfTools.add("borders", Time.get_ticks_usec() - pt)
 	pt = Time.get_ticks_usec()
 	terrain.politics.set_marks(realm_bb.get_var(&"marks", []), int(realm_bb.get_var(&"turn", 0)))
