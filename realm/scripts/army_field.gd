@@ -479,6 +479,8 @@ func _walk_in(r: Dictionary) -> void:
 	r["gait"] = "walk"
 	r["moving"] = "walk"
 	r.erase("ran")
+	r.erase("struck")
+	r.erase("duel")
 	r["gait_still"] = 0.0
 	r.erase("gait_at")
 	r.erase("gait_yaw")
@@ -691,6 +693,15 @@ func _advance(r: Dictionary, _dt: float) -> void:
 			_square(r, look, _dt)  # held where it stands (its way blocked, its place taken): its front to the foe, never askew
 		return
 	r["foe"] = foe
+	if r.get("ran", false) and not r.get("struck", false):
+		# The impact (Total War's charge: the line it hits reels, its front men knocked back, some go down): the foe's
+		# front men take a hit, field.charge.shock men fall at once.
+		r["struck"] = true
+		var fv: VATMultiMeshInstance3D = foe["vat"]
+		for m in _front_men(foe):
+			fv.update_instance_track(int(m), (foe["army"] as Army).track(foe, "hit"))
+			(foe["back"] as Dictionary)[int(m)] = clock + 0.9
+		_fell(foe, int(Data.num(F, "field.charge.shock", 20)), true)
 	_send(r, &"engage")
 	if foe.get("state_name", "") in ["stand", "volley", "advance"]:
 		foe["foe"] = r
@@ -844,14 +855,30 @@ func _fight(r: Dictionary, dt: float) -> void:
 	var local: PackedVector3Array = r["local"]
 	var marks: PackedVector3Array = r.get("marks", PackedVector3Array())
 	var line: PackedVector3Array = r[String(r.get("form", "line"))]["at"]
+	var foes := _pair(r, foe as Dictionary, front)
+	var duel: Dictionary = r.get("duel", {})
+	var reach := Data.num(F, "field.fight.reach", 0.09)
+	var leash := Data.num(F, "field.fight.leash", 0.2)
 	for s in front:
 		var v := local[s]
 		var beat := clock * (1.6 + float((s * 31) % 7) * 0.15) + float(s) * 1.7
 		v.z = line[s].z + press + sin(beat) * surge
 		v.x = line[s].x + sin(beat * 0.6 + float(s)) * sway
+		if foes.has(s):
+			# His man (Total War's matched combat: each front man fights one foe, facing him at a weapon's reach): he
+			# turns to him and steps to within field.fight.reach of him, never more than field.fight.leash off his place.
+			var them: Vector3 = foes[s]
+			var to := Vector3(them.x - v.x, 0.0, them.z - v.z)
+			if to.length() > 0.001:
+				duel[s] = atan2(to.x, to.z)
+				var stand := them - to.normalized() * reach
+				var off := Vector3(stand.x - line[s].x, 0.0, stand.z - line[s].z).limit_length(leash)
+				v.x = line[s].x + off.x
+				v.z = line[s].z + off.z + sin(beat) * surge * 0.5
 		local[s] = v
 		if s < marks.size():
 			marks[s] = Vector3(v.x, marks[s].y, v.z)
+	r["duel"] = duel
 	r["local"] = local
 	if not marks.is_empty():
 		r["marks"] = marks
@@ -872,6 +899,32 @@ func _fight(r: Dictionary, dt: float) -> void:
 		var n := int(r["bleed"])
 		r["bleed"] = float(r["bleed"]) - n
 		_fell(r, n, true)
+
+
+## The foe man each of `front` fights (Total War's matched pairs): for each, the nearest living man of `foe`'s front,
+## where he stands, in `r`'s own frame. {man: local position}.
+func _pair(r: Dictionary, foe: Dictionary, front: Array) -> Dictionary:
+	var out := {}
+	var theirs: Array = _front_men(foe)
+	var foe_at: PackedVector3Array = foe.get("men_at", foe["local"])
+	var to_mine := (r["node"] as Node3D).global_transform.affine_inverse() * (foe["node"] as Node3D).global_transform
+	var pts: Array = []
+	for t in theirs:
+		if int(t) < foe_at.size():
+			pts.append(to_mine * foe_at[int(t)])
+	if pts.is_empty():
+		return out
+	var local: PackedVector3Array = r["local"]
+	for s in front:
+		var best := Vector3.INF
+		var bd := INF
+		for q: Vector3 in pts:
+			var d := Vector2(q.x - local[s].x, q.z - local[s].z).length_squared()
+			if d < bd:
+				bd = d
+				best = q
+		out[s] = best
+	return out
 
 
 ## Dust along a regiment's front (scenes.gd dust over each third of its width: the massed front is wider and

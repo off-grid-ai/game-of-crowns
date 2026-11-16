@@ -2051,6 +2051,7 @@ func _follow(r: Dictionary, dt: float) -> void:
 	var vat: VATMultiMeshInstance3D = r["vat"]
 	var tall := float(r.get("tall_k", 1.0))
 	var still := not moving
+	var duel: Dictionary = r.get("duel", {})
 	for s in marks.size():
 		if not alive.is_empty() and s < alive.size() and alive[s] == 0:
 			continue  # the fallen lie where they fell
@@ -2061,7 +2062,7 @@ func _follow(r: Dictionary, dt: float) -> void:
 			want += Vector3(sin(now * TAU * own_hz + ph) * float(sw[0]), 0.0, sin(now * TAU * own_hz * 0.7 + ph * 1.9) * float(sw[1]))
 		var d := Vector2(want.x - at[s].x, want.z - at[s].z)
 		var len := d.length()
-		var goal_yaw := yaws[s]
+		var goal_yaw: float = duel.get(s, yaws[s])  # at blows: toward the foe man he fights (army_field.gd _pair)
 		if len > snap:
 			at[s] = want
 		elif len > 0.004:
