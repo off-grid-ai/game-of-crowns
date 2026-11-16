@@ -1088,6 +1088,12 @@ func reading() -> bool:
 
 ## Whether one of the Hand's answers gives an order (a decree: it takes a royal seal) or only answers the matter
 ## (the tithe, sitting it out, going to court). The one reading of it, for every card that offers counsel.
+## Whether an answer is a decision and takes the season's seal: all but Leave it and opening the court (the ruling
+## there takes it). Bridge: routes_court counselAnswer, routes_decree, court.js rule.
+func takes_seal(act: Dictionary) -> bool:
+	return not ["court", "leave"].has(String(act.get("ui", "")))
+
+
 func gives_order(act: Dictionary) -> bool:
 	return not ["court", "tithe_up", "tithe_down", "leave", "defend", "host"].has(String(act.get("ui", "")))
 
@@ -1096,7 +1102,7 @@ func gives_order(act: Dictionary) -> bool:
 ## {suffix: what the label adds (its seal), enabled, why: what stops it}. An order takes a seal and its price;
 ## saying no takes neither (bridge seals.js, counsel.js priced).
 func act_gate(act: Dictionary) -> Dictionary:
-	var orders := gives_order(act)
+	var orders := takes_seal(act)
 	var price := int(act.get("cost", (act.get("weighs", {}) as Dictionary).get("cost", 0) if act.get("weighs") is Dictionary else 0))
 	var out := {"suffix": ("  ·  " + String(Data.value("court", "seal_word", "1 seal"))) if orders and seals < 99 else "", "enabled": true, "why": ""}
 	if price > purse:

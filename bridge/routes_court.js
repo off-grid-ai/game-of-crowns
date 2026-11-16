@@ -12,6 +12,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import * as Sittings from "./court.js";
+import * as Seals from "./seals.js";
 import * as chron from "./chronicles.js";
 import * as Royals from "./royals.js";
 import * as names from "./names.js";
@@ -22,6 +23,14 @@ import { weigh } from "./routes_decree.js";
 export async function counselAnswer(ctx, req, res, url) {
   // The King answered the Hand's matter: it rests a year, and the next one comes up (court.js).
   const { key, leave } = await body(req);
+  // Every answer but Leave it is a decision and takes the season's seal (seals.js), whether it sends the host, sets the
+  // tithe or gives an order (Mac 2026-11-16: "I can still rule on multiple things one after the other": the host's and
+  // the tithe's answers went free).
+  if (!leave) {
+    const noSeal = Seals.refuse(ctx.meta);
+    if (noSeal) return json(res, 400, { error: noSeal });
+    Seals.spend(ctx.meta, `matter:${key}`, ctx.world?.turn ?? 0);
+  }
   return json(res, 200, Sittings.answerMatter(ctx, key, Boolean(leave)));
 }
 
