@@ -25,6 +25,8 @@ import * as kingDeeds from "./ledger.js";
 import * as Damage from "./damage.js";
 import * as Rulings from "./rulings.js";
 import * as Consequence from "./consequence.js";
+import * as Nature from "./matters/nature.js";
+import * as Royals from "./royals.js";
 import { moodFrom, moodRules } from "./claude.js";
 import { body, json } from "./http_util.js";
 import * as names from "./names.js";
@@ -151,6 +153,8 @@ export async function issueDecree(ctx, req, res, url) {
   // King learns the price of his word.
   const why = ({ gift: "a gift of crowns", feast: "a feast in their honour", relief: "grain from the crown", build: "a building paid by the crown", grant: "a town granted or taken", banners: "the King's banners: answered or refused", marriage: "a royal match", peace: "the King's peace", back: "the King took a side", settle: "the King's peace, kept by another house", buyoff: "the King bought off the pretender", ward: "their heir taken as the King's ward", alliance: "an oath to the crown", march: "the royal host", war: "the King's war", join: "the King's war", truce: "the King's peace with them" }[cmd.action] ?? "a royal decree");
   // Settled the one way every choice is (consequence.js): told, kept to come back, and what it changed.
+  // An order against the King's nature (a warlord paying a lord off) weighs on him (matters/nature.js, royals.js ruled).
+  if (Nature.against(ctx.meta, cmd)) Royals.ruled(ctx, "order", cmd.action, [Royals.of(ctx.meta)?.king?.focus].filter(Boolean));
   const told = Consequence.settle(ctx, before, { action: cmd.action, city: cmd.city, house: cmd.house, to: cmd.to, building: cmd.building, favour: result.favour, why, cost: result.cost, war: result.war });
   const seat = ctx.world.cities.find((c) => c.owner === crownNow?.id && c.capital);
   const target = ctx.world.cities.find((c) => c.id === Number(cmd.city));

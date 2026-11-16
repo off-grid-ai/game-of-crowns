@@ -737,3 +737,6 @@ Switches (`--name`) go after `--` on the game's command line.
 - Royal seals (2026-11-16): `bridge/data/seals.json` perSeason 1, bank 3 (every order takes one, a chronicle matter's too); `realm/data/court.json` seal_word, no_seal (the words on a matter's order).
 - Rivals (2026-11-16): `bridge/data/rivalry.json` min, share, word (a warmed house's rival cools by share of it); `bridge/data/aftermath.json` after, cooled, forgiven, kinds (an order told again seasons on).
 - Meddling (2026-11-16): `bridge/data/meddling.json` actions, keep, liege, word (grain or a building in another house's town); `rivalry.json` warShare, warWord (help to a house at war is aid to its foe).
+- The realm's matters (2026-11-16): `bridge/data/matters.json` answers (most a matter offers before Leave it), silence (each kind's price for saying nothing, in a house's favour), attack (a foe on a town: its words).
+- The King's nature on his answers (2026-11-16): `bridge/data/nature.json` hard and soft orders, leans by focus and trait, the "against your nature" words.
+- One decision a season (2026-11-16): `bridge/data/seals.json` bank 1 (no saving up); orders, rulings and event answers each take the seal, Leave it none.

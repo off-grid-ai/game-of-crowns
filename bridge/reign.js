@@ -17,6 +17,7 @@ import * as Events from "./events.js";
 import * as Seals from "./seals.js";
 import * as Next from "./next.js";
 import * as Counsel from "./counsel.js";
+import * as Choices from "./matters/choices.js";
 import * as Director from "./director.js";
 import { houseFor, cityName } from "./narrator.js";
 import { BANDS } from "./favour.js";
@@ -151,9 +152,9 @@ export function promiseActs(ctx, a) {
   let acts = [];
   if (a.key === "endwar" || a.key === "peace") {
     const pair = a.key === "endwar" ? [great.find((p) => p.id === a.a), great.find((p) => p.id === a.b)] : warOf();
-    if (pair && pair[0] && pair[1] && atWar(ctx, pair[0].id, pair[1].id)) acts = Counsel.warChoices(ctx, pair[0], pair[1], world.cities);
+    if (pair && pair[0] && pair[1] && atWar(ctx, pair[0].id, pair[1].id)) acts = Choices.warChoices(ctx, pair[0], pair[1], world.cities);
   } else if (a.key === "wed") {
-    for (const p of great) for (const q of great) if (!acts.length && p.id < q.id && Counsel.matchFor(ctx, p.id, q.id))
+    for (const p of great) for (const q of great) if (!acts.length && p.id < q.id && Choices.matchFor(ctx, p.id, q.id))
       acts = [{ label: `Wed ${short(p)} to ${short(q)}`, action: "marriage", city: seat(p.id)?.id, to: q.id }];
   } else if (a.key === "loyal") {
     // The house nearest to loyal that isn't yet: a gift or a feast in its honour.

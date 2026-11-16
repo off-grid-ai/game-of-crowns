@@ -21,8 +21,8 @@ import { weigh } from "./routes_decree.js";
 
 export async function counselAnswer(ctx, req, res, url) {
   // The King answered the Hand's matter: it rests a year, and the next one comes up (court.js).
-  const { key } = await body(req);
-  return json(res, 200, Sittings.answerMatter(ctx, key));
+  const { key, leave } = await body(req);
+  return json(res, 200, Sittings.answerMatter(ctx, key, Boolean(leave)));
 }
 
 export async function court(ctx, req, res, url) {

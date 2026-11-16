@@ -41,6 +41,7 @@ import * as Risings from "./risings.js";
 import * as Diplomacy from "./diplomacy.js";
 import { CIVILIAN } from "./campaigns.js";
 import * as Counsel from "./counsel.js";
+import * as Choices from "./matters/choices.js";
 import * as Treasury from "./treasury.js";
 import { FAVOUR } from "./treasury.js";
 import * as Reign from "./reign.js";
@@ -789,11 +790,10 @@ function closeIfDone(turn, closing = false) { return Sittings.closeIfDone(realmC
 function docket() { return Sittings.docket(realmCtx()); }
 
 // What the King's silence costs, matter by matter (counsel.js).
-function lapseOf(o) { return Counsel.lapseOf(realmCtx(), o); }
 function lapse(m, turn) { return Counsel.lapse(realmCtx(), m, turn); }
 
 // A royal match needs an unwed son or daughter of age from each house (counsel.js).
-function matchFor(pa, pb) { return Counsel.matchFor(realmCtx(), pa, pb); }
+function matchFor(pa, pb) { return Choices.matchFor(realmCtx(), pa, pb); }
 
 // --- What the crown's favour costs -------------------------------------------------
 
@@ -964,7 +964,7 @@ function realmCtx() {
     addMark, arcCtx, arrivals, BEAT_DOES, BEAT_WHEN, besiegers, canDecree, causeOf, CIVILIAN, closeCourt, closeIfDone,
     courtSeason, crownOf: crownNow, crowns, crownSeat, decreeScenes, deed, detail, diplomacy: diplomacyNow, DIR,
     docket, effects, endReign, FAVOUR, favourOf, favourPast, favourWhy, flushHeld, GOAL_FAVOUR, goalNow, greatHouses,
-    heardCtx, inCrowns, isKing, keepTruce, KING, kingName, lapse, lapseOf, lastSeason, marchOdds, marchOn, marks,
+    heardCtx, inCrowns, isKing, keepTruce, KING, kingName, lapse, lastSeason, marchOdds, marchOn, marks,
     markSeasons: MARK_SEASONS, marksNow, nextEffect: () => ++effectSeq, noteFavour, OWN_STORIES, ownStory, picture,
     priceOf, record, recordDeed, refreshCounsel, reignInfo, resolveCampaigns, saveCard: () => Reign.saveCard(realmCtx()), restingFavour, rolesOf, royalWorks, rule,
     runArcs, runSeason, saveFavour, scene, seasonsLeft, send, setDiplomacy, setPaused: (v) => { paused = v; },

@@ -28,12 +28,16 @@ import * as kingDeeds from "./ledger.js";
 import { recordRuling } from "./favourbook.js";
 import * as Rulings from "./rulings.js";
 import * as Consequence from "./consequence.js";
+import * as Seals from "./seals.js";
 
 // A ruling on a petition, by option: the treasury pays, the realm changes,
 // favour shifts, the chronicle and the world show it. Shared by a chosen
 // option and a ruling in the King's own words.
 export function rule(ctx, id, option) {
   const { world, meta, court, crowns, deed, send, marchOn, record } = ctx;
+  // A ruling is a decision like any order: it takes the season's seal (seals.js).
+  const noSeal = Seals.refuse(meta);
+  if (noSeal) return { error: noSeal };
   const asked = court.petitions.find((x) => x.id === id && !x.answered)?.options?.find((o) => o.id === option);
   const petition = court.petitions.find((x) => x.id === id);
   // The price as the docket showed it: worn with use (treasury.js), like a decree's.
@@ -48,6 +52,7 @@ export function rule(ctx, id, option) {
   const was = Consequence.before(ctx, petition?.city);  // for the reckoning, before the ruling spends
   const out = court.answer(id, option, world);
   if (out.error) return out;
+  Seals.spend(meta, `court:${petition?.kind ?? "ruling"}`, world.turn ?? 0);
   if (out.cost && price) out.cost = price;
   // A ruling that raises the tithe (the thin treasury's answer): never lowers it.
   if (out.tithe != null) { meta.tithe = Math.max(meta.tithe ?? 0, out.tithe); chron.saveMeta(meta); }
@@ -153,7 +158,7 @@ function callMatter(ctx, o, turn, crisis) {
 }
 // A called matter as the King was shown it, kept with the card so it stays until he answers it or
 // closes the court (Reigns: the card stays until you swipe it; gameplay review #5).
-const snap = (o) => ({ text: o.text, why: o.why, acts: o.acts, kind: o.kind ?? null, subject: o.subject ?? null, occur: o.occur ?? null, urgency: o.urgency ?? 0, place: o.place ?? null });
+const snap = (o) => ({ text: o.text, why: o.why, acts: o.acts, kind: o.kind ?? null, subject: o.subject ?? null, occur: o.occur ?? null, urgency: o.urgency ?? 0, place: o.place ?? null, city: o.city ?? null, places: o.places ?? null, lapse: o.lapse ?? null });
 // The called matters against the realm's matters now: one still there is shown as it is now; one the
 // realm turned worse for the same house (cold, then an ultimatum, then a march) is replaced in place,
 // with a short glow (worse); one the realm settled on its own keeps its card until the King answers
@@ -318,13 +323,13 @@ export async function courtSeason(ctx, turn, force = false) {
 // The King closes the court: whatever he left settles itself. Each house takes
 // his silence as an answer, the chronicle says so, and the realm moves again.
 export function closeCourt(ctx, turn) {
-  const { meta, court, counselNow, lapse, lapseOf, shiftFavour } = ctx;
+  const { meta, court, counselNow, lapse, shiftFavour } = ctx;
   const c = courtYearOf(ctx);
   follow(ctx, turn);
   for (const key of Object.keys(c.hand)) {
     const o = matterOf(ctx, key);
     if (o) {
-      lapse({ key: matterKey(o), text: o.text, lapse: lapseOf(o) }, turn);
+      lapse({ key: matterKey(o), text: o.text, lapse: o.lapse }, turn);
       // An ultimatum met with silence is refused: now the lord may rise.
       if (o.kind === "ultimatum") for (const t of Object.values(meta.turning ?? {})) if (t.state === "sent" && t.at === o.occur) t.state = "refused";
     }
@@ -481,11 +486,13 @@ export function docket(ctx) {
 
 // POST /counsel/answer: the King answered the Hand's matter: it rests a year,
 // and the next one comes up.
-export function answerMatter(ctx, key) {
+export function answerMatter(ctx, key, leave = false) {
   const { world, meta, counselNow } = ctx;
   if (key) {
     // A matter at court is keyed by the matter itself; it rests as its kind does.
     const o = matterOf(ctx, String(key));
+    // Left: the King chose silence, and pays what the matter says it costs (matters/matter.js silence).
+    if (leave && o) ctx.lapse({ key: matterKey(o), text: o.text, lapse: o.lapse }, world?.turn ?? 0);
     (meta.mattersRest ??= {})[o ? matterKey(o) : String(key)] = world?.turn ?? 0;
     // An ultimatum answered: the house's anger starts over (it may turn again).
     // Met only if the answer won the house back above cooling; otherwise it stands refused, and the house rises (season.js).

@@ -1,8 +1,8 @@
 // The royal seal (King of Dragon Pass, Six Ages: a few actions a season, and
 // always something left undone). Every order the King gives takes a seal as well as its gold, the answer to a
 // chronicle matter too (Mac 2026-11-16: "I can take any action"; every matter's order went free of the seal, so
-// nothing was left undone). Saying no, sitting a war out or a petition's answer at court takes none. Seals come with each season and
-// keep up to a bank, so a quiet season can be saved for a hard one. The one
+// nothing was left undone). A ruling at court and an answer to an event take one too (court.js rule, events.js answer); only Leave it takes
+// none, and costs the house's favour instead. Seals come with each season, kept up to a bank (data: 1, no saving up). The one
 // owner of the count is the reign's meta; the numbers are data (data/seals.json).
 
 import fs from "node:fs";

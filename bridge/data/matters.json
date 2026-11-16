@@ -1,0 +1,7 @@
+{
+  "_": "The realm's matters (bridge/matters/*.js; Mac 2026-11-16: 'is this really filled with tension?'). answers: at most this many answers a matter offers, before Leave it. leave: Leave it's words (label; shrinks and alone, its cost said when no house's favour moves). silence: what saying nothing costs, in a house's favour, kind by kind (the town's or house's own; loyalWonder each loyal house; warLeft each of the two at war). attack: a foe on a town of the realm, its lines by how it came ({house} {town}), foe (an unnamed one), why, defend (the answer that sends a host).",
+  "answers": 3,
+  "leave": { "label": "Leave it", "shrinks": "the town shrinks", "alone": "the town may fall" },
+  "silence": { "cold": -6, "starving": -8, "granary": -3, "plague": -5, "unrest": -5, "walls": -4, "loyal": -5, "match": -3, "ultimatum": -6, "loyalWonder": -2, "warLeft": -3, "attack": -6, "other": -4 },
+  "attack": { "march": "{house} marches on {town}", "siege": "{house} lays siege to {town}", "raid": "Raiders fall on {town}", "foe": "A foe", "why": "A town of the realm looks to its King. Send a host, call the banners or raise new men; left alone it may fall, and its house remembers who came.", "defend": "Send your nearest host" }
+}

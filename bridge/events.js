@@ -21,6 +21,7 @@ import { calendar } from "./calendar.js";
 import { pick as wording } from "./say.js";  // a choice's, its later's and a card's ignore text may be a list of wordings
 import * as chron from "./chronicles.js";
 import * as Consequence from "./consequence.js";
+import * as Seals from "./seals.js";
 
 export const EVENTS = JSON.parse(fs.readFileSync(new URL("./data/events.json", import.meta.url), "utf8"));
 EVENTS.cards.push(...Rivals.RIVAL.cards);  // the rival King's envoys, drawn with the realm's (rivals.js)
@@ -203,8 +204,11 @@ export function answer(ctx, i) {
   const ch = card?.choices?.[Number(i)];
   if (!ch) return [400, { error: "no such answer" }];
   const crown = crownOf(world);
+  const noSeal = Seals.refuse(meta);  // an answer is a decision: it takes the season's seal (seals.js)
+  if (noSeal) return [400, { error: noSeal }];
   if ((ch.cost ?? 0) > (crown?.gold ?? 0)) return [400, { error: `the treasury holds too little: this costs ${(ch.cost * 100).toLocaleString("en-GB")} crowns` }];
   const turn = world?.turn ?? 0;
+  Seals.spend(meta, `event:${card.id}`, turn);
   const was = Consequence.before(ctx, e.up.subject?.city);  // for the reckoning, before the answer spends
   if (ch.cost) apply(ctx, { gold: -ch.cost }, e.up.subject, turn);
   // A text written as a list of wordings: one not heard lately (say.js), the same in the chronicle and the reply.

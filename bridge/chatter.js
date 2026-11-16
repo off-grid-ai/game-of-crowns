@@ -16,6 +16,8 @@ import path from "node:path";
 const THOUGHTS = JSON.parse(fs.readFileSync(new URL("./data/thoughts.json", import.meta.url), "utf8"));
 import { cityName } from "./narrator.js";
 
+const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];  // one of a list, at random (03e67722 took it, its callers stayed)
+
 // Who carries news between towns.
 const TRAVELLERS = new Set(["carter", "friar", "anchoress", "pedlar", "soldier", "minstrel"]);
 // Seasons a rumour keeps travelling after someone heard it (data/thoughts.json rumourSeasons).
