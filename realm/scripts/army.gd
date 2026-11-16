@@ -2009,79 +2009,75 @@ func _unclaim() -> void:
 		Footing.release(_claim_id(r))
 
 
-## Each man walks to his own place in the block (Total War's and 0 A.D.'s formations: every member steers to its slot;
-## Mac 2026-11-16, "the troops move weirdly and unnaturally": the block slid and turned as one stamp, no man stepping).
-## His place is his mark (_dress) carried by the regiment as it moves and turns; he goes to it at the regiment's pace
-## times army.json follow.pace (each man a little quicker or slower, follow.vary), facing the way he walks, and once
-## on it turns to the block's facing. A wheel bends the block, the rear catches up, a start and a stop ripple through
-## the ranks. Further than follow.snap he is set on it (a regiment raised or reshaped at once). The fallen stay where
-## they fell. A block whose men all stand on their marks and that has not moved is not touched.
+## Each man keeps his own place in the block (Total War's and 0 A.D.'s formations: the block carries its men as it
+## marches and wheels, each man in his slot; Mac 2026-11-16: "the troops move weirdly and unnaturally", then "these guys
+## still move in a fucking file": men chasing their marks across the world streamed in diagonal files whenever a block
+## turned). So he stands in the block's own frame: the block's walk and turn carry him, never sheared. He walks on
+## his own only to a new mark in it (_dress: a reshape, a re-dress), at the regiment's pace times follow.pace (each a
+## little quicker or slower, follow.vary), facing his way, then turns to the block's facing (follow.turn). On the move
+## he drifts a little about his place (follow.sway at follow.sway_hz, his own phase), so a marching block is men, not
+## a stamp. Further than follow.snap from his mark he is set on it. The fallen stay where they fell. A block whose men
+## all stand on their marks and that has not moved is not touched.
 func _follow(r: Dictionary, dt: float) -> void:
 	var node: Node3D = r["node"]
 	var marks: PackedVector3Array = r.get("marks", PackedVector3Array())
 	if marks.is_empty() or not node.is_inside_tree():
 		return
 	var xf := node.global_transform
-	if r.get("men_still", false) and xf.is_equal_approx(r.get("follow_xf", Transform3D())):
+	var was_xf: Transform3D = r.get("follow_was", xf)
+	r["follow_was"] = xf
+	var moving := dt > 0.0 and (Vector2(xf.origin.x - was_xf.origin.x, xf.origin.z - was_xf.origin.z).length() / dt > 0.01 \
+		or not xf.basis.is_equal_approx(was_xf.basis))
+	if r.get("men_still", false) and not moving:
 		return
-	r["follow_xf"] = xf
 	var yaws: PackedFloat32Array = r["yaws"]
 	var sizes: PackedFloat32Array = r["sizes"]
 	var alive: PackedByteArray = r.get("alive", PackedByteArray())
-	var at: PackedVector3Array = r.get("men_at", PackedVector3Array())
-	var face: PackedFloat32Array = r.get("men_yaw", PackedFloat32Array())
+	var at: PackedVector3Array = r.get("men_at", PackedVector3Array())  # each man where he stands in the block (local)
+	var face: PackedFloat32Array = r.get("men_yaw", PackedFloat32Array())  # each man's facing in the block (local)
 	if at.size() != marks.size():
-		at.resize(marks.size())
+		at = marks.duplicate()
 		face.resize(marks.size())
 		for s in marks.size():
-			at[s] = xf * marks[s]
-			face[s] = node.rotation.y + yaws[s]
-	var inv := xf.affine_inverse()
+			face[s] = yaws[s]
 	var mo: Node = node.get_node_or_null("Mover")
 	var pace := maxf(float(mo.get("speed")) if mo else 0.2, 0.12) * Data.num("army", "follow.pace", 1.6)
 	var vary := Data.num("army", "follow.vary", 0.15)
 	var snap := Data.num("army", "follow.snap", 1.5)
 	var turn := Data.num("army", "follow.turn", 7.0)
-	var vat: VATMultiMeshInstance3D = r["vat"]
-	var tall := float(r.get("tall_k", 1.0))
-	var still := true
-	# On the move no man keeps his mark to the inch (Total War's and Mount & Blade's marching blocks: each man drifts a
-	# little about his place, his own way and pace; Mac 2026-11-16: "the entire troops keep moving rigidly"):
-	# follow.sway (world units across, along) at follow.sway_hz, each man his own phase; a block at rest stands dressed.
-	var was_xf: Transform3D = r.get("follow_was", xf)
-	r["follow_was"] = xf
-	var moving := dt > 0.0 and Vector2(xf.origin.x - was_xf.origin.x, xf.origin.z - was_xf.origin.z).length() / dt > 0.01
 	var sw: Array = Data.value("army", "follow.sway", [0.03, 0.05])
 	var hz := Data.num("army", "follow.sway_hz", 0.35)
 	var now := Time.get_ticks_msec() / 1000.0
+	var vat: VATMultiMeshInstance3D = r["vat"]
+	var tall := float(r.get("tall_k", 1.0))
+	var still := not moving
 	for s in marks.size():
 		if not alive.is_empty() and s < alive.size() and alive[s] == 0:
 			continue  # the fallen lie where they fell
-		var mark := marks[s]
+		var want := marks[s]
 		if moving:
 			var ph := float((s * 7919) % 101) / 101.0 * TAU
 			var own_hz := hz * (0.75 + float((s * 104729) % 17) / 32.0)
-			mark += Vector3(sin(now * TAU * own_hz + ph) * float(sw[0]), 0.0, sin(now * TAU * own_hz * 0.7 + ph * 1.9) * float(sw[1]))
-		var want: Vector3 = xf * mark
+			want += Vector3(sin(now * TAU * own_hz + ph) * float(sw[0]), 0.0, sin(now * TAU * own_hz * 0.7 + ph * 1.9) * float(sw[1]))
 		var d := Vector2(want.x - at[s].x, want.z - at[s].z)
 		var len := d.length()
-		var goal_yaw := node.rotation.y + yaws[s]
+		var goal_yaw := yaws[s]
 		if len > snap:
 			at[s] = want
 		elif len > 0.004:
 			var own := pace * (1.0 + vary * (float((s * 7919) % 13) / 6.0 - 1.0))
 			var step := minf(len, own * dt)
 			at[s] = Vector3(at[s].x + d.x / len * step, want.y, at[s].z + d.y / len * step)
-			if len > 0.03:
-				goal_yaw = atan2(d.x, d.y)  # he faces the way he walks
-			still = false
+			if len > 0.08:
+				goal_yaw = atan2(d.x, d.y)  # re-dressing: he faces the way he walks
+			if not moving:
+				still = false
 		else:
 			at[s] = want
 		face[s] = lerp_angle(face[s], goal_yaw, minf(1.0, dt * turn))
 		if absf(angle_difference(face[s], goal_yaw)) > 0.02:
 			still = false
-		var local := inv * at[s]
-		vat.multimesh.set_instance_transform(s, Transform3D(Basis(Vector3.UP, face[s] - node.rotation.y).scaled(Vector3.ONE * tall * sizes[s]), local))
+		vat.multimesh.set_instance_transform(s, Transform3D(Basis(Vector3.UP, face[s]).scaled(Vector3.ONE * tall * sizes[s]), at[s]))
 	r["men_at"] = at
 	r["men_yaw"] = face
 	r["men_still"] = still

@@ -686,7 +686,7 @@ func _advance(r: Dictionary, _dt: float) -> void:
 			if main.get("sound") and main.sound.has_method("event"):
 				main.sound.event("charge")
 		r["moving"] = "run" if runs else "walk"
-		Mover.of(r["node"]).toward(spot, Data.num(F, "field.charge.pace", 0.45) if runs else Data.num(F, "field.advance", 0.12), look)
+		Mover.of(r["node"]).toward(spot, Data.num(F, "field.charge.pace", 0.45) if runs else Data.num(F, "field.advance", 0.12) * _dress_pace(r, look), look)
 		if _gait(r, _dt) == "ready":
 			_square(r, look, _dt)  # held where it stands (its way blocked, its place taken): its front to the foe, never askew
 		return
@@ -695,6 +695,24 @@ func _advance(r: Dictionary, _dt: float) -> void:
 	if foe.get("state_name", "") in ["stand", "volley", "advance"]:
 		foe["foe"] = r
 		_send(foe, &"engage")
+
+
+## Its pace in the walk-in kept to its side's line (Total War's lines advance dressed, as one front; Mac 2026-11-16:
+## "fix the lines"): a block ahead of its side's other advancing foot (along the side's front) slows, one behind
+## quickens, by field.dress.k a world unit, within field.dress.slow and field.dress.fast. A share of field.advance.
+func _dress_pace(r: Dictionary, look: Vector3) -> float:
+	var at: Vector3 = (r["node"] as Node3D).global_position
+	var sum := 0.0
+	var n := 0
+	for x in (sides[int(r["side"])] as Army).rows():
+		if is_same(x, r) or String(x.get("role", "")) != "melee" or String(x.get("state_name", "")) != "advance":
+			continue
+		sum += ((x["node"] as Node3D).global_position - at).dot(look)
+		n += 1
+	if n == 0:
+		return 1.0
+	var ahead := -sum / n  # how far this block stands ahead of the others' mean, along the front
+	return clampf(1.0 - ahead * Data.num(F, "field.dress.k", 1.5), Data.num(F, "field.dress.slow", 0.3), Data.num(F, "field.dress.fast", 1.4))
 
 
 ## The way a regiment faces to meet `foe` (flat, world; research note step 4): its side's front while the foe stands
