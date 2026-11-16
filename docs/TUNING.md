@@ -750,3 +750,4 @@ Switches (`--name`) go after `--` on the game's command line.
 - camera.json arrive.wait (2.5 s): the longest a "go there" waits for the town to stand whole before the camera glides (main._look_city).
 - army.json drawPerMan (0.1): figures a man, on the map and in battle alike (one for ten, ~17 a company).
 - battle.json field.camera.dist (5.0): the test battle lens distance, both lines in frame; never under camera.json floor. field.reach (0.4), field.opposite (0.3), field.charge.from/pace (2.2 / 0.45), field.advance 0.24.
+- camera.json floor 2.4 -> 4.0 and town_view.dist 4.0 (Mac 2026-11-16: "really restrict the zoom-in level"): the closest the lens comes, well above the roofs.

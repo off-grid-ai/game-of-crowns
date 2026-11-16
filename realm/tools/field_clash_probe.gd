@@ -12,6 +12,7 @@ const SECS := 45.0
 
 var main: Node
 var fail := 0
+var _was_pause: Variant = true
 
 
 func _init() -> void:
@@ -41,6 +42,9 @@ func _run() -> void:
 	root.add_child(main)
 	current_scene = main
 	await _wait(func() -> bool: return main.get("title") != null, 30.0)
+	var Settings := preload("res://scripts/settings.gd")
+	_was_pause = Settings.get_value("pause_when_needed")
+	Settings.set_value("pause_when_needed", false)  # the realm's news never stops the fight under test (put back at the end)
 	main.title.visible = false
 	main.title.closed.emit()
 	var up: bool = await _wait(func() -> bool: return main.terrain != null and main.terrain.width > 0 and main.towns != null \
@@ -62,12 +66,13 @@ func _run() -> void:
 		if a.begins_with("--frames="):
 			out = a.substr(9)  # a frame a second of the clash saved here, to judge the look (the numbers are not the look)
 	var shot := 0
+	var every := 0.125  # eight frames a second: motion read off a strip, not one still a second
 	while Time.get_ticks_msec() - start < int(SECS * 1000.0):
-		for k in 2:
-			await create_timer(1.0).timeout
-			if out != "":
+		for k in 16:
+			await create_timer(every).timeout
+			if out != "" and Time.get_ticks_msec() - start < 24000:
 				shot += 1
-				root.get_texture().get_image().save_jpg("%s/f%02d.jpg" % [out, shot], 0.85)
+				root.get_texture().get_image().save_jpg("%s/f%03d.jpg" % [out, shot], 0.8)
 		var foot := _foot(field)
 		for r in foot:
 			if String(r.get("state_name", "")) in ["fight", "rout", "hold"]:
@@ -99,6 +104,7 @@ func _run() -> void:
 	var ran := foot.filter(func(r): return r.get("ran", false)).size()
 	_check(ran == foot.size(), "every foot regiment ran the last stretch (%d of %d)" % [ran, foot.size()])
 	_check(waiting == 0, "every foot regiment of both sides closes to blows within %d s (%d still short; %s)" % [int(SECS), waiting, str(states)])
+	preload("res://scripts/settings.gd").set_value("pause_when_needed", _was_pause)
 	quit(1 if fail > 0 else 0)
 
 
