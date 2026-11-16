@@ -49,9 +49,8 @@ var _flights: Array = []  # [from, to, start, flight, arc, on_land (Callable), l
 var _rng := RandomNumberGenerator.new()
 var _dist := 0.0  # the test aid's lens distance: the town view's (camera.json town_view.dist), or --dist
 var _focus := Vector3.ZERO
-var _yaw := 0.0  # the battle lens's heading (lens_yaw, followed)
+var _yaw := 0.0  # the battle lens's heading (_frame: behind the crown's line)
 var _yawed := false
-var _near := 1.0  # the battle lens's distance as a share of _dist: field.camera.close at blows, eased in
 var _report := 0.0
 var _over := false
 var _formed := 0.0  # seconds both lines have stood formed
@@ -567,24 +566,42 @@ func _bleed(dt: float) -> void:
 				_fell(r, n, true)
 
 
-## The lens on where it is decided (the test aid only), low and oblique off the lines' quarter at the square's
-## distance: while the lines close, the middle of every regiment in the field; at blows, the line where it breaks.
+## The lens on the whole battle (the test aid only; Total War's tactical view: Mac 2026-11-16, "I can't see the
+## strategy play out ... maybe its a zoom level problem"): over the middle of every regiment still in the field, from
+## behind the crown's line, as far back as frames them all (field.camera.fit times their span across or along the
+## lens, never under field.camera.dist), at field.camera.pitch: every block, flank and reserve in sight at once.
 func _frame(delta: float) -> void:
 	if main.rig == null:
 		return
-	_focus = _focus.lerp(lens_aim(_rows(), loser, met(), _focus), minf(1.0, delta * Data.num(F, "field.camera.follow", 1.2)))
 	var crown: Army = sides[0]
-	_yaw = lerp_angle(_yaw if _yawed else crown.facing() + Data.num(F, "field.camera.quarter", 0.9), lens_yaw(_rows(), loser, crown.facing()),
-			minf(1.0, delta * Data.num(F, "field.camera.follow", 1.2)))
+	var face := crown.facing()
+	var fwd := Vector3(sin(face), 0, cos(face))
+	var right := Vector3(cos(face), 0, -sin(face))
+	var lo := Vector2(INF, INF)
+	var hi := Vector2(-INF, -INF)
+	for side in _rows():
+		for r in side:
+			if String(r.get("state_name", "")) == "rout" or int(r.get("living", 0)) <= 0:
+				continue
+			var p: Vector3 = (r["node"] as Node3D).global_position
+			var half := Vector2(float(r.get("w", 0.0)), float(r.get("d", 0.0))) * 0.5
+			var q := Vector2(p.dot(right), p.dot(fwd))
+			lo = Vector2(minf(lo.x, q.x - half.x), minf(lo.y, q.y - half.y))
+			hi = Vector2(maxf(hi.x, q.x + half.x), maxf(hi.y, q.y + half.y))
+	if lo.x == INF:
+		return
+	var mid := (lo + hi) * 0.5
+	var want := right * mid.x + fwd * mid.y
+	want.y = main.terrain.height_at(want.x, want.z)
+	var k := minf(1.0, delta * Data.num(F, "field.camera.follow", 1.2))
+	_focus = want if not _yawed else _focus.lerp(want, k)
+	var span := maxf((hi.x - lo.x) * Data.num(F, "field.camera.fit_across", 1.0), (hi.y - lo.y) * Data.num(F, "field.camera.fit", 0.85))
+	var d := maxf(maxf(span, Data.num(F, "field.camera.dist", 5.0)), main.rig.min_distance)
+	_dist = d if not _yawed else lerpf(_dist, d, k)
+	_yaw = face + Data.num(F, "field.camera.quarter", 0.0)
 	_yawed = true
-	# At blows the lens comes in on the press, so the men fighting fill the frame (g38 battle: from the lines' own
-	# distance the clash read as two diagonal lines on a lawn), and lower, across the fronts rather than down on them.
-	var at_blows := met()
-	_near = lerpf(_near, Data.num(F, "field.camera.close", 0.55) if at_blows else 1.0, minf(1.0, delta * Data.num(F, "field.camera.follow", 1.2)))
-	var d := maxf(_dist * _near, main.rig.min_distance)  # never under the lens's floor, roof height (Mac 2026-11-16: "almost FPS zoom")
-	main.rig.snap(_focus, d, _yaw)
-	var pitch := Data.num(F, "field.camera.pitch", 30.0) if at_blows else Data.num("army", "camera.pitch", 38.0)
-	main.rig.tilt = main.rig.tilt_for(pitch, maxf(d, main.rig.min_distance))  # 03-army's pitch; lower at blows
+	main.rig.snap(_focus, _dist, _yaw)
+	main.rig.tilt = main.rig.tilt_for(Data.num(F, "field.camera.pitch", 45.0), _dist)
 	main.rig.goal_tilt = main.rig.tilt
 
 
@@ -613,74 +630,6 @@ static func lens_distance() -> float:
 		if a.begins_with("--dist="):
 			return float(a.substr(7))
 	return Data.num(F, "field.camera.dist", 5.0)  # both lines in the frame (Mac 2026-11-16: the square's distance was "almost FPS zoom")
-
-
-## Where the battle's lens looks (rows: [side 0's, side 1's]): before the lines meet, the middle of every regiment
-## not running; at blows, where the beaten regiment whose nerve is lowest (army_morale.gd: where the line breaks next)
-## meets its nearest foe still standing, so both lines are in frame at the point of contact (g15 battle.jpg: the lens
-## on one flanking cavalry regiment alone, over empty grass) and the rout is framed as it starts and runs along the
-## line; once none of the beaten stands, `last` (the lens stays where the rout ended).
-static func lens_aim(rows: Array, loser: int, met: bool, last: Vector3) -> Vector3:
-	if met:
-		# Where two fronts are locked (a beaten regiment at blows with its foe, the shakiest of them): midway between
-		# the two, so the frame holds the press itself, front ranks cutting, men falling, both standards over it (g17
-		# battle.jpg: the shakiest regiment and its nearest foe were not the pair fighting; grey horse and red pikes in
-		# frame, apart).
-		var pair := locked_pair(rows, loser)
-		if not pair.is_empty():
-			return ((pair[0]["node"] as Node3D).global_position).lerp((pair[1]["node"] as Node3D).global_position, 0.5)
-		var next := Morale.shakiest(rows, loser)
-		if next.is_empty():
-			return last
-		var at: Vector3 = (next["node"] as Node3D).global_position
-		var foe := at
-		var bd := INF
-		for x in rows[1 - loser]:
-			if String(x.get("state_name", "")) != "rout":
-				var p: Vector3 = (x["node"] as Node3D).global_position
-				if at.distance_squared_to(p) < bd:
-					bd = at.distance_squared_to(p)
-					foe = p
-		return at.lerp(foe, 0.5)
-	var sum := Vector3.ZERO
-	var n := 0
-	for side in rows:
-		for r in side:
-			if String(r.get("state_name", "")) != "rout":
-				sum += (r["node"] as Node3D).global_position
-				n += 1
-	return sum / n if n > 0 else last
-
-
-## The press the lens holds (rows: [side 0's, side 1's]): the shakiest beaten regiment at blows with its foe,
-## [it, its foe]; a pair front to front (Total War's lines meeting) before one hit in the flank; [] when none fights.
-static func locked_pair(rows: Array, loser: int) -> Array:
-	var low := INF
-	var pair: Array = []
-	for r in rows[loser]:
-		var f: Variant = r.get("foe")
-		if String(r.get("state_name", "")) != "fight" or not f is Dictionary or String((f as Dictionary).get("state_name", "")) == "rout":
-			continue
-		var score := Morale.of(r) + (0.0 if bool(r.get("flanked", false)) == false else 10.0)
-		if score < low:
-			low = score
-			pair = [r, f]
-	return pair
-
-
-## The lens's heading on the battle (the test aid): off the quarter of the locked pair's line of attack, the victor's
-## regiment facing into the beaten one (field.camera.quarter), so the lens looks across both fronts where they meet,
-## not down a line's length (g20 battle.jpg: two thin columns seen straight along); before blows, off the crown's
-## line, as it was.
-static func lens_yaw(rows: Array, loser: int, crown_face: float) -> float:
-	var q := Data.num(F, "field.camera.quarter", 0.9)
-	var pair := locked_pair(rows, loser)
-	if pair.is_empty():
-		return crown_face + q
-	var a: Vector3 = (pair[0]["node"] as Node3D).global_position
-	var b: Vector3 = (pair[1]["node"] as Node3D).global_position
-	var into := a - b if loser == 1 else b - a  # the crown's side's regiment facing into its foe
-	return atan2(into.x, into.z) + q
 
 
 ## How many of the beaten side's regiments have broken (autoplay's `rout` step waits on it, so a film starts at

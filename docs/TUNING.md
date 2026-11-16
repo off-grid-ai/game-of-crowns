@@ -765,3 +765,4 @@ Switches (`--name`) go after `--` on the game's command line.
 - battle_orders.json command: the King's order bar (battle_orders_bar.gd): pace of the re-form, regroup_back, buttons, words.
 - battle.json field.alarm_every 6 s; towns.json raid.battle_hold 12 s: towns within a battle's reach go indoors while it lasts.
 - battle.json ground.field 3.4 -> 4.5: a battle's fighting ground radius kept clear of towns and farms, now that lines stand deep (two lines, a reserve). The test aid's battle uses the same chooser (army_field.gd _open_field_near_seat).
+- Battle lens (test aid, army_field.gd _frame): battle.json field.camera pitch 45, fit 0.85 / fit_across 1.0 (distance per unit of the battle's span, front to back / across), dist 5 the least: the whole battle in frame, Total War's tactical view. Tighter blocks: army.json spacing.rank 0.16 (horse 0.32), field.fight.leash 0.07 (how far a man leaves his place to duel).
