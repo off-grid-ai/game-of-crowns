@@ -439,14 +439,20 @@ static func _dispatch() -> void:
 		var ch: Dictionary = _chunks[kind][c]
 		if ch["out"]:
 			continue
+		var f0 := Time.get_ticks_usec()
 		var faces := _faces(c)
+		var f1 := Time.get_ticks_usec()
 		var inputs := _inputs(c) if kind != WATER else {"sig": "", "obstacles": [], "engines": [], "ways": [], "claims_only": false}
+		PerfTools.add("nav_world.faces", f1 - f0)  # the land's triangles (Terrain3D), against what stands and the ways
+		PerfTools.add("nav_world.inputs", Time.get_ticks_usec() - f1)
 		if kind == &"walk":
 			_why(ch, inputs)
 		ch["out"] = true
 		ch["want"] = inputs["sig"]
 		_out += 1
+		var d0 := Time.get_ticks_usec()
 		var fords: Array = (terrain.get("_fords") as Dictionary).values().duplicate(true)
+		PerfTools.add("nav_world.fords", Time.get_ticks_usec() - d0)
 		WorkerThreadPool.add_task(_bake.bind(_gen, kind, c, faces, inputs, fords), false, "nav %s %s" % [kind, c])
 
 
