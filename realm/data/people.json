@@ -5,7 +5,7 @@
   "readable": 1.1,
   "_held": "held: what's in a hand (weapons.gd: swords, spears, bows, shields, hammers, baskets, pails) drawn this much larger again, from the grip (quality-deep-dive.md #9: tools and weapons read at the town view at about 1.3 over the bodies' scale).",
   "held": 1.0,
-  "held_seen_to": 9.0,
+  "held_seen_to": 14.0,
   "_build": "build (Mac 2026-11-12: the NPCs on steroids at 1.5x): female, a woman's height against a man's; slim_cast, a Meshy cast body narrowed across (x and z) on its skeleton (its upper arms stood 26% of its height apart, a man's are about 20%); slim_kit the same for the kit bodies. 1.0 leaves them as made.",
   "_dress": "dress (the supervisor's dress code, 12 Nov; people.gd _tabard, _gold_belt): tabard, the watch's livery over the house-coloured tunic: a panel down the chest (panel colour; width: share of the chest's half width either side; tall: its height to its width; drop: how far below the chest bone, share of its height; out: metres off the chest's front, read off the body's own vertices within band metres of the bone) with the house's sigil on it in the house's colour (arms: its size to the panel's width), the house found by its colour among the realm's houses. gold: a merchant's or a gentlewoman's gold belt at the waist (colour, fit: its radius to the waist's, thick metres, up: metres above the hips bone). on: off for none.",
   "dress": { "tabard": { "on": true, "panel": [0.95, 0.92, 0.84], "width": 0.6, "tall": 1.5, "drop": 0.2, "out": 0.012, "band": 0.08, "arms": 0.8 }, "gold": { "on": true, "colour": [0.95, 0.74, 0.25], "fit": 1.04, "thick": 0.035, "up": 0.08, "band": 0.06, "across": 0.3 } },
@@ -83,7 +83,7 @@
   "clip_drop_bones": ["mixamorig_LeftToe_End", "headfront", "mixamorig_LeftHandMiddle4"],
   "lod": {"near": 3.5, "shadow_near": 3.5, "stride": 4, "recheck": 4, "decide_s": 1.0, "mind_budget_ms": 3.0, "move_unseen_s": 1.0},
   "_seen_to": "seen_to: world units beyond which a person isn't drawn or animated (a few pixels tall). near_fade: within gone of the lens a person is gone, beyond solid fully there (about 0.7 m and 1.5 m).",
-  "seen_to": 9.0,
+  "seen_to": 22.0,
   "near_fade": {"gone": 0.08, "solid": 0.18},
   "motion": {"_": "How a body moves between its clips (motion.gd): xfade_hit, seconds into a blow, a reel or a fall; settle, seconds moving or still before a standing move gives way or comes back; xfade_stand, seconds between two standing moves; turn_ease, how quickly a turn settles (per second); step_floor and step_ceil, the slowest and quickest cadence a moving walk plays at, of its own speed (past step_ceil it breaks into the run).", "xfade_hit": 0.1, "settle": 0.3, "xfade_stand": 0.45, "turn_ease": 6.0, "step_floor": 0.35, "step_ceil": 1.35}
 }
