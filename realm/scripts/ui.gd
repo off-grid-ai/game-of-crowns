@@ -200,6 +200,7 @@ var _form_panel: PanelContainer:
 		return form_card._form_panel
 var minimap: Control
 var houses_strip := preload("res://scripts/houses_strip.gd").new(self)  # the great houses at a glance, top-left (houses_strip.gd)
+var reckoning := preload("res://scripts/reckoning.gd").new(self)  # what a choice changed, over the control plane (reckoning.gd)
 var army_bar := preload("res://scripts/army_bar.gd").new(self)  # the King's hosts down the left edge (army_bar.gd): its state lives there
 var _army_panel: PanelContainer:
 	get:
@@ -235,6 +236,7 @@ func _ready() -> void:
 	_build_minimap()
 	_build_camera_controls()
 	houses_strip._build()
+	reckoning._build()
 	army_bar._build()
 
 

@@ -8,6 +8,7 @@ signal map_loaded(map: Dictionary)
 signal world_updated(world: Dictionary)
 signal chronicle_added(entries: Array)
 signal command_done(ok: bool, text: String)
+signal reckoned(rows: Array)  ## what an order or ruling changed (bridge reckoning.js), for the reckoning card
 signal realm_changed
 signal decrees_changed(list: Array)
 signal paid(cost: float)  # a decree went through and the treasury paid for it
@@ -79,7 +80,9 @@ func decree(action: String, city_id: int, building := "", to := -1, matter := ""
 			paid.emit(float(data["cost"]))
 		if code == 200 and data.get("sealed", false):
 			sealed.emit()
-		command_done.emit(code == 200, data.get("text", data.get("error", ""))))
+		command_done.emit(code == 200, data.get("text", data.get("error", "")))
+		if code == 200 and data.get("changes") is Array:
+			reckoned.emit(data["changes"]))
 
 
 ## The King's answer to the event card (bridge events.js): cb(ok, text).
@@ -301,7 +304,9 @@ func close_court(cb: Callable) -> void:
 
 func answer_petition(id: String, option: String) -> void:
 	_post("/court/answer", {"id": id, "option": option}, func(code, data):
-		command_done.emit(code == 200, data.get("text", data.get("error", ""))))
+		command_done.emit(code == 200, data.get("text", data.get("error", "")))
+		if code == 200 and data.get("changes") is Array:
+			reckoned.emit(data["changes"]))
 
 
 func set_tithe(rate: float) -> void:

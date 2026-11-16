@@ -13,6 +13,7 @@
     "size": 14, "sigil": 20, "rise": 10, "head": "By power",
     "words": { "war": "At war", "sworn": "Sworn" },
     "tips": { "line": "House {name}: {stance}, favour {favour} of 100\nPower {power} of 100 (men, land, people, crowns and grain, against the strongest house), {trend} over the year\nClick for the house" } },
+  "reckoning": { "_": "What a choice changed, over the control plane (reckoning.gd; rows from bridge reckoning.js): head (its title), size (px), most (rows shown), step (seconds between rows landing), hold (seconds shown), linger (seconds after the mouse leaves).", "head": "What it changed", "size": 17, "most": 8, "step": 0.18, "hold": 7.0, "linger": 2.0 },
   "promises": { "_": "The King's three promises as checkboxes under the goal (top_bar.gd _show_promises): size and icon (px), do (where a click on an open promise goes, by ambition key: houses opens the great houses, town goes to its town, ledger opens the ledger), tips (the tooltip by state and by where it goes), left (the seasons before an open promise breaks). A click on an open promise opens its orders (bridge reign.js promiseActs) when it has any.",
     "size": 15, "icon": 18, "left": "{n} seasons left", "said": {"kept": "kept", "lost": "broken"},
     "do": { "endwar": "houses", "wed": "houses", "loyal": "houses", "peace": "houses", "seat": "town", "grow": "ledger" },

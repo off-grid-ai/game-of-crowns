@@ -561,6 +561,7 @@ func _ready() -> void:
 			order_at[1] = Engine.get_process_frames()  # told at the town: no toast as well
 		order_at[0] = Vector3.INF)
 	ui.petition_answered.connect(func(_id, _o): sound.ui("seal"))  # a ruling is sealed at the click too
+	bridge.reckoned.connect(ui.reckoning.show)  # what the choice changed, row by row (reckoning.gd)
 	ui.event_chosen.connect(func(i):
 		sound.ui("seal")
 		# Seen where it lands, as a ruling is: the answer becomes the latest news at the card's town (edge arrow, Space).

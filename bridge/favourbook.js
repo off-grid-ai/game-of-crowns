@@ -131,21 +131,14 @@ export function favourWord(d) {
   return d > 0 ? (d >= W.big ? W.bigUp : W.up) : (-d >= W.big ? W.bigDown : W.down);
 }
 
-// Shifts favour and says what it did, for the result card: "6,000 crowns · Thornvale cooler".
+// Shifts favour and tells it: `text`, the line under a decree's result ("15,000 crowns · Wolfholt much warmer"), and
+// `moves`, each house's favour from and to, for the reckoning card that shows what a choice changed (reckoning.gd).
 export function shiftAndTell(ctx, changes, why, cost = 0) {
-  const { world } = ctx;
-  const was = Object.fromEntries(Object.keys(changes ?? {}).map((id) => [id, Math.round(favourOf(ctx, Number(id)))]));
-  shiftFavour(ctx, changes ?? {}, why, true);
-  const moved = Object.keys(was).map((id) => {
-    const p = world?.players.find((x) => x.id === Number(id));
-    const now = Math.round(favourOf(ctx, Number(id)));
-    // Direction and size in words, never the arithmetic (data/court.json favourWords).
-    const word = favourWord(now - was[id]);
-    return p && now !== was[id] ? `${houseFor(p).name.replace(/^House /, "")} ${word}` : null;
-  }).filter(Boolean);
+  const moves = shiftFavour(ctx, changes ?? {}, why, true);
+  const moved = moves.map((m) => `${m.house} ${m.word}`);
   const price = cost ? [`${(cost * 100).toLocaleString("en-US")} crowns`] : [];
   const shown = moved.length > 7 ? [...moved.slice(0, 6), `and ${moved.length - 6} more`] : moved;
-  return [...price, ...shown].join("  ·  ");
+  return { text: [...price, ...shown].join("  ·  "), moves };
 }
 
 export function shiftFavour(ctx, changes, why = "", told = false) {
@@ -167,6 +160,7 @@ export function shiftFavour(ctx, changes, why = "", told = false) {
     while (effects.length > 20) effects.shift();
     if (P) fs.writeFileSync(path.join(P.state, "effects.json"), JSON.stringify(effects));
   }
+  return moves;
 }
 
 // Each house's own history with the crown (the world bible), within the reign's mood.

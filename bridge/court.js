@@ -27,6 +27,7 @@ import * as chron from "./chronicles.js";
 import * as kingDeeds from "./ledger.js";
 import { recordRuling } from "./favourbook.js";
 import * as Rulings from "./rulings.js";
+import * as Reckoning from "./reckoning.js";
 
 // A ruling on a petition, by option: the treasury pays, the realm changes,
 // favour shifts, the chronicle and the world show it. Shared by a chosen
@@ -67,7 +68,8 @@ export function rule(ctx, id, option) {
   out.lua.forEach((l) => send(`lua cmd ${l}`));
   // A ruling that sends the royal host (the siege plea's "relieve"): the same march as the decree.
   if (out.march != null) marchOn(Number(out.march));
-  const effects = shiftAndTell(out.favour, "your ruling at court", out.cost);
+  const told = shiftAndTell(out.favour, "your ruling at court", out.cost);
+  const effects = told.text;
   // The lord who asked will be back about it, by name, in two seasons: to repay a favour or demand amends.
   const asker = petition && court.people?.[petition.from];
   if (asker && asked && court.deedsOf) {
@@ -91,7 +93,7 @@ export function rule(ctx, id, option) {
   meta.lastRuling = out.text;  // the save card's line (reign.js saveCard)
   rulingScene(ctx, id, option, out);
   Rulings.note(ctx, petition, asked ?? { id: option }, out);  // its answer stands at the town it touches for a season or two (rulings.js)
-  return { ok: true, text: crowns(out.text) + (effects ? `\n${effects}` : "") };
+  return { ok: true, text: crowns(out.text) + (effects ? `\n${effects}` : ""), changes: Reckoning.of({ favour: told.moves, gold: out.cost ? [(crownNow?.gold ?? 0) + out.cost, crownNow?.gold ?? 0] : null }) };
 }
 
 // A ruling at court made visible: what the King gives goes out from
