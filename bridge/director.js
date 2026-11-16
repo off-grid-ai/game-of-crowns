@@ -63,7 +63,7 @@ export function season(ctx, turn) {
   const before = d.held ?? {};
   if (Object.entries(before).some(([id, owner]) => world.cities.find((c) => c.id === Number(id))?.owner !== owner)) crisis(meta);
   d.held = Object.fromEntries(world.cities.filter(ours).map((c) => [c.id, c.owner]));
-  pushback(ctx, d, turn, peace);
+  pushback(ctx, d, turn, peace, meta);
   // Between courts, a card from the realm as it is (events.js): the director decides the
   // wave (a breather draws only low stakes, and seldom); the deck decides which card.
   Events.season(ctx, turn, resting(meta));
@@ -315,7 +315,7 @@ export function matter(meta) {
 }
 
 // A King too comfortable draws envy: the strongest other house cools, and the next threat comes sooner.
-function pushback(ctx, d, turn, peace) {
+function pushback(ctx, d, turn, peace, meta) {
   const { world, favourOf, shiftFavour, record } = ctx;
   const p = DIRECTOR.pushback;
   const houses = great(world);
