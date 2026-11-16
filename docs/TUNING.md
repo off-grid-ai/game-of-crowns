@@ -748,4 +748,4 @@ Switches (`--name`) go after `--` on the game's command line.
 - Which of the King's swings show as a moment, and their words: `bridge/data/moments.json` (threat met / unanswered, rising crushed, the crown endures, town lost, Kingsmere sacked).
 - The reign track under the houses (Frostpunk): `realm/data/ui.json` `reign_track` (`below`, `width`).
 - camera.json arrive.wait (2.5 s): the longest a "go there" waits for the town to stand whole before the camera glides (main._look_city).
-- army.json drawPerManBattle (0.1): figures a man in a field battle or storm (one for ten); the map keeps drawPerMan (three a company).
+- army.json drawPerMan (0.1): figures a man, on the map and in battle alike (one for ten, ~17 a company).
