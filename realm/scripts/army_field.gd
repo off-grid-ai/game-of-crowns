@@ -263,6 +263,7 @@ func _enlist(r: Dictionary, side: int, kind: String) -> void:
 	r["moved"] = false
 	var mo: Node = Mover.of(r["node"])
 	mo.turn_rate = 1.8
+	preload("res://scripts/on_screen.gd").keep_on(r["node"])  # it fights on whether seen or not (field_clash_probe)
 	Mind.make(kind, r, r["node"], self)
 	Morale.start(r)
 
@@ -460,8 +461,7 @@ func _frame(delta: float) -> void:
 	# distance the clash read as two diagonal lines on a lawn), and lower, across the fronts rather than down on them.
 	var at_blows := met()
 	_near = lerpf(_near, Data.num(F, "field.camera.close", 0.55) if at_blows else 1.0, minf(1.0, delta * Data.num(F, "field.camera.follow", 1.2)))
-	var d := _dist * _near
-	main.rig.step_floor = d if d < main.rig.min_distance else 0.0
+	var d := maxf(_dist * _near, main.rig.min_distance)  # never under the lens's floor, roof height (Mac 2026-11-16: "almost FPS zoom")
 	main.rig.snap(_focus, d, _yaw)
 	var pitch := Data.num(F, "field.camera.pitch", 30.0) if at_blows else Data.num("army", "camera.pitch", 38.0)
 	main.rig.tilt = main.rig.tilt_for(pitch, maxf(d, main.rig.min_distance))  # 03-army's pitch; lower at blows
@@ -477,6 +477,8 @@ func _ready_in(r: Dictionary) -> void:
 func _walk_in(r: Dictionary) -> void:
 	_play(r, "walk")
 	r["gait"] = "walk"
+	r["moving"] = "walk"
+	r.erase("ran")
 	r["gait_still"] = 0.0
 	r.erase("gait_at")
 	r.erase("gait_yaw")
@@ -488,7 +490,7 @@ static func lens_distance() -> float:
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--dist="):
 			return float(a.substr(7))
-	return Data.num("camera", "town_view.dist", 6.0)
+	return Data.num(F, "field.camera.dist", 5.0)  # both lines in the frame (Mac 2026-11-16: the square's distance was "almost FPS zoom")
 
 
 ## Where the battle's lens looks (rows: [side 0's, side 1's]): before the lines meet, the middle of every regiment
@@ -646,7 +648,7 @@ static func ballistic(from: Vector3, to: Vector3, angle: float, gravity: float) 
 
 ## Foot: forward until its front is at sword's length from the nearest enemy's front; then both fight.
 func _advance(r: Dictionary, _dt: float) -> void:
-	var foe := _nearest_foe(r)
+	var foe := _opposite_foe(r)
 	if foe.is_empty():
 		return
 	var at: Vector3 = (r["node"] as Node3D).global_position
@@ -672,8 +674,19 @@ func _advance(r: Dictionary, _dt: float) -> void:
 	var spot := _free_spot(r, theirs - look * (float(r["d"]) * 0.5 + contact), look)
 	spot.y = at.y
 	r["spot"] = spot
-	if Vector2(spot.x - at.x, spot.z - at.z).length() > contact or gap > contact * 2.0:
-		Mover.of(r["node"]).toward(spot, Data.num(F, "field.advance", 0.12), look)
+	# At sword's length from its foe's front, it is at blows wherever its spot was (Mac 2026-11-16: blocks stopping a
+	# step short of the press, their place in it taken; field_clash_probe): field.reach.
+	var touching := gap < Data.num(F, "field.reach", 0.4) and gap > -float(r["d"])
+	if not touching and (Vector2(spot.x - at.x, spot.z - at.z).length() > contact or gap > contact * 2.0):
+		# The last stretch at a run, a cry going up (Total War's charge: the lines walk in, then run the last of it; Mac
+		# 2026-11-16: "standing instead of charging"): within field.charge.from of the foe's front, field.charge.pace.
+		var runs := gap < Data.num(F, "field.charge.from", 2.2)
+		if runs and not r.get("ran", false):
+			r["ran"] = true
+			if main.get("sound") and main.sound.has_method("event"):
+				main.sound.event("charge")
+		r["moving"] = "run" if runs else "walk"
+		Mover.of(r["node"]).toward(spot, Data.num(F, "field.charge.pace", 0.45) if runs else Data.num(F, "field.advance", 0.12), look)
 		if _gait(r, _dt) == "ready":
 			_square(r, look, _dt)  # held where it stands (its way blocked, its place taken): its front to the foe, never askew
 		return
@@ -725,7 +738,7 @@ func _gait(r: Dictionary, dt: float) -> String:
 	var goes := dt > 0.0 and (Vector2(at.x - was.x, at.z - was.z).length() / dt > Data.num(F, "field.gait.still", 0.02)
 		or absf(angle_difference(yaw_was, node.rotation.y)) / dt > Data.num(F, "field.gait.wheel", 0.1))
 	r["gait_still"] = 0.0 if goes else float(r.get("gait_still", 0.0)) + dt
-	var want := "walk" if float(r["gait_still"]) < Data.num(F, "field.gait.hold", 0.5) else "ready"
+	var want := String(r.get("moving", "walk")) if float(r["gait_still"]) < Data.num(F, "field.gait.hold", 0.5) else "ready"
 	if want != String(r.get("gait", "walk")):
 		_play(r, want)
 	r["gait"] = want
@@ -1307,6 +1320,27 @@ func _front_men(r: Dictionary) -> Array:
 			order.append(s)
 	order.sort_custom(func(a, b): return line[a].z > line[b].z)
 	return order.slice(0, files * ranks)
+
+
+## The enemy regiment across from it (Total War's lines: each block meets the block in front of it, not the nearest one
+## all at once; Mac 2026-11-16, blocks piling on one foe and the rest standing short): by its place along its side's
+## line first (the distance across the front, field.opposite times the distance ahead), still in the field, or {}.
+func _opposite_foe(r: Dictionary) -> Dictionary:
+	var best := {}
+	var bd := INF
+	var at: Vector3 = (r["node"] as Node3D).global_position
+	var look := _line_front(r)
+	var across := look.cross(Vector3.UP).normalized()
+	var ahead_w := Data.num(F, "field.opposite", 0.3)
+	for x in (sides[1 - int(r["side"])] as Army).rows():
+		if x.get("state_name", "") == "rout" or int(x.get("living", 1)) <= 0:
+			continue
+		var off: Vector3 = (x["node"] as Node3D).global_position - at
+		var d := absf(off.dot(across)) + absf(off.dot(look)) * ahead_w
+		if d < bd:
+			bd = d
+			best = x
+	return best
 
 
 ## The nearest enemy regiment still in the field, or {}.

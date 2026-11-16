@@ -85,6 +85,7 @@ const CALM_GAP := Vector2(25.0, 70.0)  # seconds of silence between calm pieces
 # gets a quiet fanfare.
 const STINGS := {
 	"battle": [["sfx/war_horn.ogg|sfx/war_horn_near.ogg", -2.0, 0.0], ["sfx/charge_yell.ogg", -4.0, 2.5]],
+	"charge": [["sfx/charge_yell.ogg", -9.0, 0.0]],  # a regiment breaks into its run at the foe (army_field.gd _advance)
 	"clash": [["sfx/sword_clash_1.wav|sfx/sword_clash_2.wav|sfx/sword_clash_3.wav", -6.0, 0.0]],
 	"unit_killed": [["sfx/sword_clash_1.wav|sfx/sword_clash_2.wav|sfx/sword_clash_3.wav|sfx/hit_metal_0.wav|sfx/hit_metal_1.wav|sfx/hit_metal_2.wav|sfx/hit_plate_0.wav|sfx/hit_plate_1.wav|sfx/hit_plate_2.wav|sfx/hit_metal_3.ogg|sfx/hit_metal_4.ogg|sfx/hit_plate_3.ogg|sfx/hit_plate_4.ogg", -8.0, 0.0]],
 	"horn": [["sfx/war_horn.ogg|sfx/war_horn_near.ogg", -3.0, 0.0]],

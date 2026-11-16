@@ -18,12 +18,22 @@ static func attach(body: Node3D) -> void:
 	seen.enable_node_path = NodePath("..")
 
 
-## A body's box in its own frame, from its meshes (each mesh's box carried up through its parents to the figure).
+## `body` goes on off screen too: what the realm needs done whether or not it is seen (a regiment in a battle: its
+## mind closes, fights and breaks as the realm decided; Mac 2026-11-16, the foot "just standing instead of charging":
+## a regiment's men are one bulk draw, not meshes, so its box was a guess and it stood switched off with its mind).
+static func keep_on(body: Node3D) -> void:
+	var seen := body.get_node_or_null("OnScreen")
+	if seen:
+		seen.free()
+	body.process_mode = Node.PROCESS_MODE_INHERIT
+
+
+## A body's box in its own frame, from what draws it (each piece's box carried up through its parents to the figure).
 static func _box_of(person: Node3D) -> AABB:
 	var box := AABB()
 	var first := true
-	for mi in person.find_children("*", "MeshInstance3D", true, false):
-		var m := mi as MeshInstance3D
+	for mi in person.find_children("*", "GeometryInstance3D", true, false):  # every drawn piece: a mesh, a bulk draw (a regiment's men), a sprite
+		var m := mi as GeometryInstance3D
 		var xf := Transform3D.IDENTITY
 		var n: Node = m
 		while n and n != person:
