@@ -509,6 +509,14 @@ static func open_spots(root: Node3D, apart_m: float, within: float) -> Array:
 	# Within a square's radius past its edge: a footprint further out is never the nearest to a cell on it (the square is
 	# ringed by its stalls and houses), and the whole town's footprints made a stage 50 ms (live46, Kingsmere).
 	var feats: Array = _near_square(root, pr * (within + 1.0))
+	# The same footprints, roads and asks give the same spots: kept on the town until one of them changes (live48: a
+	# stage's errand stops asked them again, 514 ms in one frame, the roads asked once a cell).
+	var holder: Node = root.get_parent().get_parent() if root.get_parent() else null
+	var roads: Variant = holder.get("roads") if holder else null
+	var key := hash([apart_m, within, pr, feats, int(roads.get("version")) if roads is Object and is_instance_valid(roads) else 0])
+	var kept: Dictionary = root.get_meta("open_spots", {})
+	if kept.has(key):
+		return (kept[key] as Array).duplicate()
 	var far := func(q: Vector2) -> float:
 		var best := INF
 		for poly in feats:
@@ -550,6 +558,10 @@ static func open_spots(root: Node3D, apart_m: float, within: float) -> Array:
 		spots.append(q)
 		for i in cells.size():
 			gap[i] = minf(float(gap[i]), q.distance_to(cells[i][1]))
+	if kept.size() >= 8:
+		kept = {}  # a town's asks are few (the anchors' apart and within): an old shape's answers go
+	kept[key] = spots.duplicate()
+	root.set_meta("open_spots", kept)
 	return spots
 
 
