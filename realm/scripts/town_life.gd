@@ -1519,7 +1519,7 @@ func _dress_rotor(root: Node3D, b: Dictionary, turner: Node3D, kind: String) -> 
 func _spinner(root: Node3D, b: Dictionary, kind: String) -> Node3D:
 	var names: Array = Data.value("works", "mill.spin_names", [])
 	var bodies: Array = []
-	if b.get("node") is Node3D and is_instance_valid(b["node"]):
+	if is_instance_valid(b.get("node")) and b["node"] is Node3D:  # valid first: 'is' on a freed one is a script error (live53)
 		bodies.append(b["node"])
 	else:
 		for ch in root.get_children():

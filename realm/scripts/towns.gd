@@ -605,8 +605,7 @@ func _add_on(standing: Node3D, fresh: Node3D) -> void:
 			standing.remove_child(n)
 			n.queue_free()
 	for n in fresh.get_children():
-		fresh.remove_child(n)
-		standing.add_child(n)
+		standing.add_child(_moved(fresh, n))
 	for key in fresh.get_meta_list():
 		standing.set_meta(key, fresh.get_meta(key))
 	fresh.free()
@@ -629,8 +628,7 @@ func _merge(standing: Node3D, fresh: Node3D) -> void:
 		seen[k] = true
 		var old: Node = have.get(k)
 		if old == null:
-			fresh.remove_child(n)
-			standing.add_child(n)
+			standing.add_child(_moved(fresh, n))
 		elif n is MultiMeshInstance3D:
 			if not _same_batch(old as MultiMeshInstance3D, n as MultiMeshInstance3D):
 				(old as MultiMeshInstance3D).multimesh = (n as MultiMeshInstance3D).multimesh
@@ -676,6 +674,7 @@ static func _piece_key(n: Node) -> String:
 
 static func _moved(from: Node, n: Node) -> Node:
 	from.remove_child(n)
+	n.owner = null  # the fresh layout's, not the town's: unset before it moves (live53: 19 'owner inconsistent' a merge); town_store.gd owns it when it packs
 	return n
 
 
