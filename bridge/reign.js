@@ -181,7 +181,24 @@ const NEVER_PASSED = ["raiders", "town"];  // never true at a reign's start in a
 function fill(ctx, a, text) {
   const seat = ctx.world?.cities?.find((x) => x.owner === ctx.crownOf()?.id && x.capital);
   const raid = ctx.meta?.ladder?.raid;
-  return String(text ?? "").replace("{town}", raid != null ? cityName(raid) : "the border").replace("{seat}", seat ? cityName(seat.id) : "your seat");
+  let t = String(text ?? "").replace("{town}", raid != null ? cityName(raid) : "the border").replace("{seat}", seat ? cityName(seat.id) : "your seat");
+  if (t.includes("{prize}")) {
+    const on = (ctx.meta?.campaigns ?? [])[0]?.city;
+    const c = on != null ? ctx.world.cities.find((x) => x.id === on) : prize(ctx);
+    if (!c) return t.replace(/\{prize\}/g, "a town").replace(" from {house}", "");
+    t = t.replace(/\{prize\}/g, cityName(c.id)).replace("{house}", houseName(ctx.world, c.owner, "its house"));
+  }
+  return t;
+}
+// The town the King could take next: a great house's town nearest his seat, never a seat (Warcraft III's
+// objectives name the place: "Destroy the orc base", not "attack something"). Null when none stands.
+function prize(ctx) {
+  const { world, crownOf } = ctx;
+  const crown = crownOf();
+  const seat = world?.cities?.find((x) => x.owner === crown?.id && x.capital);
+  if (!seat) return null;
+  return world.cities.filter((c) => c.owner !== crown.id && !c.capital && !houseFor(world.players.find((p) => p.id === c.owner) ?? {}).wild)
+    .sort((a, b) => Math.hypot(a.x - seat.x, a.y - seat.y) - Math.hypot(b.x - seat.x, b.y - seat.y))[0] ?? null;
 }
 export function aimText(ctx, a) {
   return fill(ctx, a, a.key === "raiders" && ctx.meta?.ladder?.raid == null && a.wait ? a.wait : a.text);
@@ -225,7 +242,7 @@ export function aimPlace(ctx, a) {
       const best = warmest(ctx);
       return best ? (world.cities.find((x) => x.owner === best.id && x.capital)?.id ?? null) : null;
     }
-    case "town": return (meta.campaigns ?? [])[0]?.city ?? null;
+    case "town": return (meta.campaigns ?? [])[0]?.city ?? prize(ctx)?.id ?? null;
   }
   if (a.pid != null) return world.cities.find((x) => x.owner === a.pid && x.capital)?.id ?? null;
   return a.city ?? null;
@@ -628,7 +645,7 @@ export function reignInfo(ctx) {
     id: meta.id, name: meta.name, test: chron.isTest(meta), scenario: meta.scenario, status: meta.status, paused, minutes: meta.minutes,
     elapsedMs: meta.elapsedMs, remainingMs: meta.minutes > 0 ? Math.max(0, meta.minutes * 60000 - meta.elapsedMs) : null,
     score: meta.score, verdict: meta.verdict, title: meta.title, why: meta.why ?? null, outcome: meta.outcome, ended: meta.endedAt,
-    epilogue: meta.epilogue ?? null, epitaph: meta.epitaph ?? null, ledger: meta.endLedger ?? null, grudge: meta.status === "ended" ? meta.grudgeLeft ?? null : null, lastAct: meta.lastAct ?? null, interlude: meta.interlude && !meta.interlude.seen ? meta.interlude : null, ambitions: meta.ambitions ?? null, aim: aim ? { n: Math.min(meta.ladder.i, LADDER.length) + (meta.ladder.n ?? 0) + 1, of: meta.ladder.i < LADDER.length ? LADDER.length : null, key: aim.key, text: aimText(ctx, aim), how: fill(ctx, aim, aim.how), input: aim.input ? aim.input.map((t) => fill(ctx, aim, t)) : null, progress: aimProgress(ctx, aim), at: aimPlace(ctx, aim) } : null,
+    epilogue: meta.epilogue ?? null, epitaph: meta.epitaph ?? null, ledger: meta.endLedger ?? null, grudge: meta.status === "ended" ? meta.grudgeLeft ?? null : null, lastAct: meta.lastAct ?? null, interlude: meta.interlude && !meta.interlude.seen ? meta.interlude : null, ambitions: meta.ambitions ? meta.ambitions.map((a) => ({ ...a, at: a.key === "seat" ? (ctx.crownSeat?.()?.id ?? null) : null })) : null,  // at: the town a promise is kept at (the control plane goes there) aim: aim ? { n: Math.min(meta.ladder.i, LADDER.length) + (meta.ladder.n ?? 0) + 1, of: meta.ladder.i < LADDER.length ? LADDER.length : null, key: aim.key, text: aimText(ctx, aim), how: fill(ctx, aim, aim.how), input: aim.input ? aim.input.map((t) => fill(ctx, aim, t)) : null, progress: aimProgress(ctx, aim), at: aimPlace(ctx, aim) } : null,
     aimDone: meta.ladder?.just && Date.now() - meta.ladder.just.at < 8000 ? { text: meta.ladder.just.text, says: meta.ladder.just.says ?? null } : null, readings: meta.status === "running" ? readings(ctx) : null,
     souls: world?.cities?.reduce((t, c) => t + soulsOf(c.size), 0) ?? 0,
     next,

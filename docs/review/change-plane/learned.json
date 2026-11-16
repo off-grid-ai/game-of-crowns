@@ -1,0 +1,15 @@
+{
+  "_": "What the change-plane loop has learned from Mac's notes (graph-engineering-loop). Each rule: what he said, the rule behind it, and every place it was carried to.",
+  "rules": [
+    { "id": "fit-his-screen", "said": "the chronicle tab is clearly off screen; I had to scroll", "rule": "Check every panel on Mac's 1920x1080 display at scale 0.96, not only on the retina screen. Panels fit their content without scrolling when they can.", "places": ["chronicle_panel.gd _refit", "top_bar.gd sizes (ui.json plane.*)"] },
+    { "id": "studio-console", "said": "look at the top studio houses and think how they do things", "rule": "Copy a named big-studio screen: the command card's large keys with hotkeys in the corners (Warcraft III, Age of Empires IV), the quest tracker under the date (Anno 1800).", "places": ["top_bar.gd _cmd", "top_bar.gd _show_promises"] },
+    { "id": "no-jumping", "said": "this looks a bit weird (the strip unfolding on hover)", "rule": "Nothing changes width or position on hover. Show the figures always or put them in a tooltip.", "places": ["top_bar.gd treasury figures"] },
+    { "id": "icons-not-stacked-words", "said": "just use icons here", "rule": "A row of actions in a table is a row of icon keys, with the name and price in the tooltip, never stacked words that make the row tall.", "places": ["houses_panel.gd politics"] },
+    { "id": "compact-rows", "said": "this is taking more space than it needs to", "rule": "A list item is one line: the figure, then what it's doing. Its place goes to the tooltip unless the place is the news.", "places": ["army_bar.gd _row"] },
+    { "id": "centred", "said": "at least needs to be center aligned", "rule": "A group of keys sits centred in its slot, never hung from the top.", "places": ["top_bar.gd command grid"] },
+    { "id": "name-the-thing", "said": "IDK what this means (March on a town: relieve it or besiege it)", "rule": "A goal names its place and its foe: 'Take Gildport from House Goldcrest', never 'a town'. Two orders that look alike are told apart by name.", "places": ["bridge/data/objectives.json town", "bridge/reign.js fill {prize}"] },
+    { "id": "every-answer-offered", "said": "how come there is only one option here?", "rule": "A matter offers every answer its words name (stop it, sit it out, wed them), and names none it can't give.", "places": ["bridge/counsel.js war matter"] },
+    { "id": "act-on-goals", "said": "the 3 promises should be checkboxes, and I should be able to action them", "rule": "Every goal on screen is a checkbox that says its state by shape and word, and a click goes where it's kept.", "places": ["top_bar.gd _show_promises", "bridge/reign.js ambitions at"] },
+    { "id": "who-is-with-me", "said": "a compact version of houses on the screen: who is gaining power, who is with me, who is against me", "rule": "The houses are always on screen as a compact strip: stance word (sworn, warm, cold, at war), power and its trend; a click opens the full house.", "places": ["houses_strip.gd"] }
+  ]
+}

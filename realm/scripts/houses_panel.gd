@@ -321,10 +321,12 @@ func politics(p: Dictionary, st: Node) -> Control:
 	var town := String(seat.get("name", ""))
 	var lord := String(p.get("name", ""))
 	var tc = ui.town_card
+	# One icon a deed, its words and price in the tooltip (Mac 2026-11-16: "just use icons here"; CK3's diplomacy
+	# buttons on a character's row): the row stays one line, the table one row a house.
+	var icons: Dictionary = Data.value("ui", "politics_icons", {})
 	var add := func(action: String, label: String, tip: String) -> void:
-		var b: Button = ui.btn(label, func(): ui.decree_at.emit(action, city, owner, "", ""))
-		b.tooltip_text = tip
-		b.add_theme_font_size_override("font_size", T.SIZE_DESC)
+		var b: Button = ui.icon_btn(String(icons.get(action, "scroll")), "%s: %s" % [label, tip], func(): ui.decree_at.emit(action, city, owner, "", ""))
+		b.custom_minimum_size = Vector2.ONE * Data.num("ui", "politics_icon_size", 34.0)
 		row.add_child(b)
 	var at_war := (p.get("wars", []) as Array).has("the Crown")
 	var sworn := p.get("sworn") != null

@@ -64,6 +64,10 @@ func _build_chronicle() -> void:
 	ui.get_viewport().size_changed.connect(_fit)
 	_list.add_theme_constant_override("separation", 10)
 	_scroll.add_child(_list)
+	# As tall as its cards once their wrapped lines are laid out (a card's height is known only after its width is): the
+	# list's own size is measured again whenever it changes, so the drawer never cuts a card short and makes him scroll
+	# (Mac 2026-11-16: "I had to scroll").
+	_list.minimum_size_changed.connect(_refit)
 	# Only what asks something of him (Mac: "the chronicle should only be things that need to be taken action on ...
 	# the book of the realm is there for the other stuff"): a card each, its buttons always there. The latest word on
 	# his own orders sits above them as one quiet line; the whole story is in the book of the reign (chronicle_book.gd,
@@ -237,6 +241,18 @@ func _count() -> void:
 
 ## The drawer stands at the top right, chronicle.width wide (the bar is in the control plane), as tall as its cards up
 ## to the plane's top: it scrolls past that, and an empty drawer is one line, not a column of glass.
+var _refit_due := false
+
+
+func _refit() -> void:
+	if _refit_due:
+		return
+	_refit_due = true
+	(func():
+		_refit_due = false
+		_fit()).call_deferred()
+
+
 func _fit() -> void:
 	if not _chron_panel.visible:
 		return

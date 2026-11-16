@@ -71,19 +71,21 @@ func _pill(slot: Container) -> HBoxContainer:
 	return h
 
 
-var _state_more: HBoxContainer  # beside the treasury: peace, souls, the tithe, on hover
+var _state_more: HBoxContainer  # beside the treasury: peace, souls, the tithe
 var _state_pill: Control
 
 
-## What rests folded opens while the pointer is on its pill, and folds again after.
-func _hover_check() -> void:
-	if _state_pill == null or not is_instance_valid(_state_pill):
-		return
-	var m := ui.get_viewport().get_mouse_position()
-	var on_state := _state_pill.is_visible_in_tree() and _state_pill.get_global_rect().grow(6).has_point(m)
-	if _state_more.visible != on_state:
-		_state_more.visible = on_state
-		_state_pill.reset_size()
+## The realm's figures read at a glance from the strip (Age of Empires IV's resource chips, CK3's top bar): their
+## figures, icons and words at the plane's sizes (ui.json plane.figure_size, figure_icon, figure_word).
+func _enlarge(row: Control) -> void:
+	var icon := Data.num("ui", "plane.figure_icon", 20.0)
+	var figure := int(Data.num("ui", "plane.figure_size", 17.0))
+	var word := int(Data.num("ui", "plane.figure_word", 13.0))
+	for n in row.find_children("*", "", true, false):
+		if n is TextureRect:
+			(n as TextureRect).custom_minimum_size = Vector2.ONE * icon
+		elif n is Label:
+			(n as Label).add_theme_font_size_override("font_size", figure if n in [_gold, _seals, _peace, _souls, _tithe_l] else word)
 
 
 var _date_pill: Control  # the date card, top-left: the houses table keeps below it
@@ -199,11 +201,11 @@ func _build_top_bar() -> void:
 	var line := HBoxContainer.new()
 	line.add_theme_constant_override("separation", 12)
 	who.add_child(line)
-	_year = T.title("The realm is forming", 15)
+	_year = T.title("The realm is forming", int(Data.num("ui", "plane.date_size", 22.0)))
 	line.add_child(_year)
 	# The goal, in gold: what to do now. Click it and go where it's done (a quest log's marker).
 	_aim = Label.new()
-	_aim.add_theme_font_size_override("font_size", T.SIZE_DESC)
+	_aim.add_theme_font_size_override("font_size", int(Data.num("ui", "plane.goal_size", 17.0)))
 	_aim.add_theme_font_override("font", T.sans)
 	_aim.add_theme_color_override("font_color", T.ACCENT)
 	_aim.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -227,9 +229,16 @@ func _build_top_bar() -> void:
 	_step_btn = ui.btn("", _do_step)
 	_step_btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_step_btn.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	_step_btn.add_theme_font_size_override("font_size", T.SIZE_DESC)
+	_step_btn.add_theme_font_size_override("font_size", int(Data.num("ui", "plane.goal_size", 17.0)))
+	T.primary(_step_btn)  # the one thing to do now, the button he presses (Warcraft III's first mission: the click shown)
 	_step_btn.visible = false
 	who.add_child(_step_btn)
+	# The King's three promises (reign ambitions), a checklist under the goal (Anno 1800's and Total War's quest
+	# tracker): a box ticked when kept, crossed when lost; a click goes where it's done (ui.json promises).
+	_promises = VBoxContainer.new()
+	_promises.add_theme_constant_override("separation", 0)
+	_promises.visible = false
+	who.add_child(_promises)
 	# An event card waiting, on its own line: gold, with the season's clock running down (Frostpunk's law timer),
 	# opened with a click.
 	_event_row = ui.btn("", func():
@@ -268,8 +277,7 @@ func _build_top_bar() -> void:
 	# At rest one pill, the treasury and the seals; peace, souls and the tithe open beside it on hover.
 	_state_more = HBoxContainer.new()
 	_state_more.add_theme_constant_override("separation", 14)
-	_state_more.visible = false
-	state.add_child(_state_more)
+	state.add_child(_state_more)  # always shown: the strip never grows on hover (Mac's recording: it jumped)
 	_peace = ui.gauge(_state_more, "scales", "Peace: how much of the realm is free of war between the great houses. A host marching on the throne halves it.", "Peace")
 	_souls = ui.gauge(_state_more, "users-three", "Souls in the realm", "Souls")
 	var tithe := HBoxContainer.new()
@@ -287,14 +295,15 @@ func _build_top_bar() -> void:
 	more.add_theme_constant_override("icon_max_width", 11)
 	tithe.add_child(more)
 	_state_more.add_child(tithe)
-	# Opened while the pointer is on the pill (polled: its children take the pointer).
 	_state_pill = state.get_parent()
-	ui.get_tree().process_frame.connect(_hover_check)
+	_enlarge(state)
 	# The plane's right: what you can do, in a grid (Age of Empires IV's and Warcraft III's command grid).
 	var act := GridContainer.new()
 	act.columns = int(Data.num("ui", "plane.key_columns", 5.0))
 	act.add_theme_constant_override("h_separation", 6)
 	act.add_theme_constant_override("v_separation", 6)
+	act.size_flags_vertical = Control.SIZE_SHRINK_CENTER  # centred in the console, not hung from its top (Mac 2026-11-16)
+	act.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	ui.plane.keys_slot.add_child(act)
 	_bar_pill = act
 	_top.append(act)
@@ -302,7 +311,7 @@ func _build_top_bar() -> void:
 	_fit_realm.call_deferred()
 	# No court key of its own: its matters are the chronicle's cards (court_panel.gd _as_card; Mac 2026-11-16).
 	# The King himself (royal_sheet.gd): his nature, the name he is earning, his promises, his family, his line.
-	act.add_child(ui.named(ui.icon_btn("sword", "The King: your nature, the name you are earning, your promises and your family", func(): ui.royal.toggle()), "King"))
+	act.add_child(_cmd(ui.icon_btn("sword", "The King: your nature, the name you are earning, your promises and your family", func(): ui.royal.toggle()), "King", ""))
 	# You are the King: one press to walk among your people as him.
 	if Features.WALKING:
 		var walk := ui.btn("Walk as the King", func(): ui.walk_as_king.emit())
@@ -311,23 +320,48 @@ func _build_top_bar() -> void:
 		act.add_child(walk)
 	_houses_btn = ui.icon_btn("shield", ui.with_key("The great houses: their strength, their wars and their favour", "houses"), func(): ui._houses_panel.visible = _houses_btn.button_pressed)
 	_houses_btn.toggle_mode = true
-	act.add_child(ui.named(_houses_btn, "Houses"))
+	act.add_child(_cmd(_houses_btn, "Houses", "houses"))
 	_chron_btn = ui.icon_btn("scroll", ui.with_key("Chronicle of the realm", "chronicle"), func(): ui._chron_panel.visible = _chron_btn.button_pressed)
 	_chron_btn.toggle_mode = true
 	_chron_badge = _badge(_chron_btn)  # what came while the drawer was shut (chronicle_panel.gd _count)
-	act.add_child(ui.named(_chron_btn, "Chronicle"))
-	act.add_child(ui.named(ui.icon_btn("hourglass-medium", "The book of the reign: every year of it, as the chronicle wrote it", func(): ui.book.toggle()), "Reign"))
+	act.add_child(_cmd(_chron_btn, "Chronicle", "chronicle"))
+	act.add_child(_cmd(ui.icon_btn("hourglass-medium", "The book of the reign: every year of it, as the chronicle wrote it", func(): ui.book.toggle()), "Reign", ""))
 	_lore_btn = ui.icon_btn("book-open-text", ui.with_key("The Lore of Aldmere: its houses and people", "lore"), func(): ui.lore_opened.emit(-1))
-	act.add_child(ui.named(_lore_btn, "Lore"))
+	act.add_child(_cmd(_lore_btn, "Lore", "lore"))
 	_ledger_btn = ui.icon_btn("chart-line", ui.with_key("The ledger: the realm over time", "ledger"), ui._toggle_ledger)
 	_ledger_btn.toggle_mode = true
-	act.add_child(ui.named(_ledger_btn, "Ledger"))
+	act.add_child(_cmd(_ledger_btn, "Ledger", "ledger"))
 	_pause_btn = ui.icon_btn("pause", ui.with_key("Pause", "pause"), _toggle_pause)
 	_pause_btn.toggle_mode = true
-	act.add_child(ui.named(_pause_btn, "Pause"))
-	act.add_child(ui.named(ui.icon_btn("question", ui.with_key("The Hand's tour: how the realm answers you", "tour"), func(): ui.tour_asked.emit()), "Tour"))
-	act.add_child(ui.named(ui.icon_btn("gear-six", "Settings: this reign, voices, the local model", func(): ui.open_settings.emit()), "Settings"))
-	act.add_child(ui.named(ui.icon_btn("list", "Chronicles, new realms, records", func(): ui.open_menu.emit()), "Menu"))
+	act.add_child(_cmd(_pause_btn, "Pause", "pause"))
+	act.add_child(_cmd(ui.icon_btn("question", ui.with_key("The Hand's tour: how the realm answers you", "tour"), func(): ui.tour_asked.emit()), "Tour", "tour"))
+	act.add_child(_cmd(ui.icon_btn("gear-six", "Settings: this reign, voices, the local model", func(): ui.open_settings.emit()), "Settings", ""))
+	act.add_child(_cmd(ui.icon_btn("list", "Chronicles, new realms, records", func(): ui.open_menu.emit()), "Menu", "back"))
+
+
+## A key of the command card (Warcraft III's and Age of Empires IV's grid): a large square with its icon, its hotkey in
+## the corner so the hand learns it at a glance, its name in the tooltip. Sizes: ui.json plane.key_size, key_icon.
+func _cmd(b: Button, word: String, action: String) -> Button:
+	ui.named(b, word)
+	b.custom_minimum_size = Vector2.ONE * Data.num("ui", "plane.key_size", 52.0)
+	b.add_theme_constant_override("icon_max_width", int(Data.num("ui", "plane.key_icon", 26.0)))
+	b.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	b.vertical_icon_alignment = VERTICAL_ALIGNMENT_CENTER
+	var key := preload("res://scripts/keys.gd").label(action).get_slice(" / ", 0) if action != "" else ""
+	if key != "" and key.length() <= 3:
+		var k := Label.new()
+		k.text = key
+		k.add_theme_font_override("font", T.mono)
+		k.add_theme_font_size_override("font_size", T.SIZE_LABEL)
+		k.add_theme_color_override("font_color", T.TEXT_3)
+		k.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		k.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+		k.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+		k.grow_vertical = Control.GROW_DIRECTION_BEGIN
+		k.offset_right = -4
+		k.offset_bottom = -1
+		b.add_child(k)
+	return b
 
 
 func _toggle_pause() -> void:
@@ -376,6 +410,8 @@ func chronicle_unread(n: int) -> void:
 
 
 var _aim: Label  # the royal ladder's current aim
+var _promises: VBoxContainer  # the three promises, one checkbox row each
+var _promises_said := ""
 var _lore_btn: Button
 var _season := ""  # the realm's season, as last read
 var _winter_seen := false  # the reign's first winter has come (the first ten minutes end)
@@ -444,6 +480,7 @@ func _show_heading(r: Dictionary) -> void:
 		if _aim_at >= 0:
 			_aim.tooltip_text += "\nClick to go there"
 	_step_at = _aim_at
+	_show_promises(r.get("ambitions"))
 	var prog = aim.get("progress") if aim is Dictionary else null
 	_aim_count.visible = prog is Dictionary and String(prog.get("text", "")) != ""
 	if _aim_count.visible:
@@ -633,6 +670,51 @@ func _tell_act(story: Dictionary) -> void:
 	if promise != "":
 		says += "\n" + String(words.get("promise", "Your promise: {text}")).replace("{text}", promise)
 	ui.toast(says)
+
+
+## The three promises as checkboxes: kept (a tick), lost (a cross) or open (an empty box, the line he can act on).
+## The shape says it, not the colour (Mac is colour-blind); the tooltip says it in words. Rebuilt only when they change.
+func _show_promises(am) -> void:
+	_promises.visible = am is Array and not (am as Array).is_empty()
+	var said := JSON.stringify(am)
+	if not _promises.visible or said == _promises_said:
+		return
+	_promises_said = said
+	for c in _promises.get_children():
+		c.queue_free()
+	var cfg: Dictionary = Data.value("ui", "promises", {})
+	var goes: Dictionary = cfg.get("do", {})
+	var tips: Dictionary = cfg.get("tips", {})
+	for a in am:
+		if not a is Dictionary:
+			continue
+		var state := "kept" if a.get("met") != null else ("lost" if a.get("failed") != null else "open")
+		var go := String(goes.get(String(a.get("key", "")), "houses"))
+		var at := int(a["at"]) if a.get("at") != null else -1
+		var b := ui.btn(String(a.get("text", "")), func(): _keep_promise(go, at))
+		b.flat = true
+		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		b.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+		b.icon = ui.icon({"kept": "check-square", "lost": "x-square"}.get(state, "square"))
+		b.add_theme_constant_override("icon_max_width", int(Data.num("ui", "promises.icon", 18.0)))
+		b.add_theme_font_size_override("font_size", int(Data.num("ui", "promises.size", 15.0)))
+		b.add_theme_color_override("font_color", T.TEXT if state == "open" else T.TEXT_3)
+		b.tooltip_text = String(tips.get(state, "")) + ("" if state != "open" else "\n" + String(tips.get(go, "")))
+		b.disabled = state != "open"
+		_promises.add_child(b)
+
+
+## Act on a promise: go to its town, or open the table where it's kept (ui.json promises.do).
+func _keep_promise(go: String, at: int) -> void:
+	match go:
+		"town":
+			if at >= 0:
+				ui.focus_city.emit(at)
+		"ledger":
+			ui._toggle_ledger()
+		_:
+			ui._houses_btn.button_pressed = true
+			ui._houses_panel.visible = true
 
 
 ## The first of the King's three promises not yet kept (reign ambitions), or "".

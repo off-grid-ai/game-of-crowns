@@ -93,8 +93,8 @@ func _row(id: int) -> Dictionary:
 	row.set_anchors_preset(Control.PRESET_FULL_RECT)
 	row.offset_left = 8
 	row.offset_right = -8
-	row.offset_top = 6
-	row.offset_bottom = -6
+	row.offset_top = 3
+	row.offset_bottom = -3
 	row.add_theme_constant_override("separation", T.GAP)
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	b.add_child(row)
@@ -113,46 +113,40 @@ func _row(id: int) -> Dictionary:
 	group.position = Vector2(10, 6)
 	group.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	sword.add_child(group)
-	var col := VBoxContainer.new()
-	col.add_theme_constant_override("separation", 0)
-	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	col.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row.add_child(col)
-	var top := HBoxContainer.new()
-	top.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	col.add_child(top)
-	var place := T.prose("", T.SIZE_DESC, T.TEXT)
-	var troops := T.datum("", T.SIZE_LABEL, T.TEXT_2)
+	# One line a host (Warcraft III's group strip, Age of Empires IV's army list): its men, then what it's doing or
+	# where it rests (Mac 2026-11-16: "taking more space than it needs").
+	var troops := T.datum("", T.SIZE_LABEL, T.TEXT)
+	troops.custom_minimum_size.x = Data.num(FILE, "men_width", 44.0)
 	var doing := T.prose("", T.SIZE_LABEL, T.TEXT_2)
 	var chosen := T.label(String(Data.value(FILE, "selected", "Selected")), T.TEXT)
-	for l in [place, troops, doing]:
-		(l as Label).clip_text = true
-		(l as Label).text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-		(l as Label).size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	for l in [place, troops, doing, chosen]:
+	doing.clip_text = true
+	doing.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	doing.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	for l in [troops, doing, chosen]:
 		(l as Label).mouse_filter = Control.MOUSE_FILTER_IGNORE
-	top.add_child(place)
-	top.add_child(chosen)
-	col.add_child(troops)
-	col.add_child(doing)
+		(l as Label).size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		row.add_child(l)
 	b.gui_input.connect(_clicked.bind(id))
 	_list.add_child(b)
-	b.custom_minimum_size.y = maxf(row.get_combined_minimum_size().y + 12.0, 54.0)
-	return {"button": b, "place": place, "troops": troops, "doing": doing, "chosen": chosen, "group": group}
+	b.custom_minimum_size.y = maxf(row.get_combined_minimum_size().y + 6.0, Data.num(FILE, "row_height", 30.0))
+	return {"button": b, "troops": troops, "doing": doing, "chosen": chosen, "group": group}
 
 
 func _fill(r: Dictionary, h: Dictionary, on: bool) -> void:
 	var at: Variant = h.get("at")
-	(r["place"] as Label).text = String(Data.value(FILE, "place", "At {town}")).format({"town": String(at.get("name", ""))}) if at is Dictionary else String(Data.value(FILE, "field", "In the field"))
-	(r["troops"] as Label).text = String(Data.value(FILE, "troops", "{men} troops")).format({"men": ui.heads(int(h.get("men", 0)))})
+	var place := String(Data.value(FILE, "place", "At {town}")).format({"town": String(at.get("name", ""))}) if at is Dictionary else String(Data.value(FILE, "field", "In the field"))
+	(r["troops"] as Label).text = ui.heads(int(h.get("men", 0)))
 	var doing: String = _cmd._doing(h)
-	(r["doing"] as Label).text = doing.left(1).to_upper() + doing.substr(1)
+	doing = doing.left(1).to_upper() + doing.substr(1)
+	# At rest in a town, the town is the news ("At Kingsmere"); on the move, what it's doing is.
+	(r["doing"] as Label).text = place if at is Dictionary and doing.to_lower() in (Data.value(FILE, "resting", ["at ease", "holding"]) as Array) else doing
+	(r["troops"] as Label).tooltip_text = String(Data.value(FILE, "troops", "{men} troops")).format({"men": ui.heads(int(h.get("men", 0)))})
 	(r["chosen"] as Label).visible = on
 	var n: int = _cmd.group_of(int(h.get("id", -1)))
 	(r["group"] as Label).text = str(n) if n > 0 else ""
 	var b: Button = r["button"]
 	b.add_theme_stylebox_override("normal", _sel_box if on else _rest_box)
-	b.tooltip_text = "%s\n%s" % [(r["doing"] as Label).text, String(Data.value(FILE, "tip", ""))]
+	b.tooltip_text = "%s  ·  %s\n%s\n%s" % [String(Data.value(FILE, "troops", "{men} troops")).format({"men": ui.heads(int(h.get("men", 0)))}), place, doing, String(Data.value(FILE, "tip", ""))]
 	if n > 0:
 		b.tooltip_text += "\n" + String((Data.value(FILE, "groups", {}) as Dictionary).get("badge", "")).format({"n": n})
 

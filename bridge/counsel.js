@@ -154,10 +154,11 @@ export function counsel(ctx, players, cities, threat) {
       { label: "Sit it out", ui: "sitout", war: `${war.id}:${foe.id}` },
       matchFor(ctx, war.id, foe.id) ? { label: "Wed them to each other", action: "marriage", city: seatOf(war.id)?.id, to: foe.id } : null,
     ].filter((a) => a && (a.ui || a.city !== undefined));
+    const wed = acts.some((a) => a.action === "marriage");  // the marriage is spoken of only when a match can be made
     const why = cold
-      ? `Every season of war burns fields and lowers the realm's peace. ${cold.house.name} is cold to the crown: made to stop, it will resent it, and the blood-price comes dearer. Or bind the two by marriage.`
+      ? `Every season of war burns fields and lowers the realm's peace. ${cold.house.name} is cold to the crown: made to stop, it will resent it, and the blood-price comes dearer.${wed ? " Or bind the two by marriage." : ""}`
       : "Every season of war burns fields and lowers the realm's peace. Both are warm enough to stop gladly at the King's word.";
-    out.push({ urgency: 50, text: `${war.house.name} and ${foe.house.name} are at war`, why, acts: acts.filter((a) => a.city !== undefined) });
+    out.push({ urgency: 50, text: `${war.house.name} and ${foe.house.name} are at war`, why, acts });  // "Sit it out" is a choice too (it was filtered out with the town-less ones)
   }
   if (purse < ECONOMY.thin) out.push({ urgency: 40, text: "The royal treasury is thin", why: "Every decree costs crowns; a higher tithe fills the purse but cools the houses.", acts: [{ label: "Raise the tithe", ui: "tithe_up" }] });
   if (!out.length) out.push({ urgency: 0, text: "The realm is quiet", why: "A good season to win a house's love before you need it.", acts: [] });

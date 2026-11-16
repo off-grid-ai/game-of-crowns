@@ -725,3 +725,4 @@ Switches (`--name`) go after `--` on the game's command line.
 - How near a held tool is drawn: `realm/data/people.json` `held_seen_to` (world units; a weapon is drawn as far as its bearer, `seen_to`). Held things cast no shadow.
 - Whether the Hand teaches as things first happen: Settings "The Hand's lessons" (`realm/scripts/settings.gd` `hand_lessons`, default on); off, he speaks only from the ? or F12.
 - Where the Hand's answers stand: stacked on top of his text box, this many pixels above it (`realm/data/opening.json` `choices_gap`, 10).
+- Control plane (2026-11-16, Mac's notes): `ui.json` plane.date_size, goal_size, figure_size, figure_icon, figure_word, key_size, key_icon (the date, goal, treasury figures and command keys, px); promises.size/icon/do/tips (the three promises as checkboxes, where a click goes); politics_icons/politics_icon_size (the houses table's deeds as icons). `army_bar.json` men_width, row_height, resting (one line a host).
