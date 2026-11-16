@@ -84,4 +84,4 @@ Declaring war opens a council card, not a one-click order (EU4's declare-war dia
 6. **Built** (top_bar.gd `_show_wars`; words in ui.json war_banner; it opens the foe's house card, which holds the war). The war banner in the control plane, opening the war card.
 7. **Built** (ui.gd `_war_moment`, omens.gd `surge`, main.gd the horn; words in ui.json war_moment). The declaration moment (horn, edge, chronicle line, the sides as they fell).
 8. Camps move during the war (allies leave, waiters join the winner or, with alarm high, the loser).
-9. War score in peace.js from towns and battles; the peace table's terms by it.
+9. **Built** (peace.js `standing`, `tally`, `offer`; numbers in bridge/data/peace.json score and terms; probe bridge/tools/war_score_probe.mjs). War score in peace.js from towns and battles; the peace table's terms by it.

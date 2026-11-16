@@ -26,7 +26,8 @@ export function season(ctx, turn) {
   for (const pid of foes) {
     const house = world.players.find((p) => p.id === pid);
     if (!house || houseFor(house).wild || houseFor(house).crown || !townsOf(world, pid).length) continue;
-    const w = (wars[pid] ??= { since: turn, towns: townsOf(world, pid).length, crown: townsOf(world, crown.id).length, offered: null });
+    const w = (wars[pid] ??= { since: turn, towns: townsOf(world, pid).length, crown: townsOf(world, crown.id).length, seats: townsOf(world, pid).filter((c) => c.capital).map((c) => c.id), offered: null });
+    tally(meta, w, pid, crown.id);
     if (turn - w.since < P.after || (w.offered != null && turn - w.offered < P.every)) continue;
     const lord = court.lordOfHouse(pid);
     if (!lord) continue;
@@ -35,44 +36,70 @@ export function season(ctx, turn) {
   }
 }
 
-// How the crown's war with a house stands: towns each side has lost since it began (meta.crownWars, this file's), and
-// the score, the towns it took less the towns it lost (> 0: the crown is winning). Null when no war is counted.
+// How the crown's war with a house stands (CK3's war score, data/peace.json score): towns each side has lost since it
+// began and battles each side has won (meta.crownWars, this file's; battles counted once by tally), and the score from
+// them, −most..+most (> 0: the crown is winning). It sets the peace terms (offer) and the war banner's word. Null when
+// no war is counted.
 export function standing(meta, world, pid) {
   const w = meta.crownWars?.[pid];
   const crown = crownOf(world);
   if (!w || !crown) return null;
-  const taken = w.towns - townsOf(world, pid).length, lost = w.crown - townsOf(world, crown.id).length;
-  return { taken, lost, score: taken - lost };
+  const S = P.score;
+  const taken = Math.max(0, w.towns - townsOf(world, pid).length), lost = Math.max(0, w.crown - townsOf(world, crown.id).length);
+  const seat = (w.seats ?? []).some((id) => (world.cities ?? []).some((c) => c.id === id && c.owner !== pid)) ? S.seat - S.town : 0;
+  const won = w.won ?? 0, beaten = w.beaten ?? 0;
+  const score = Math.max(-S.most, Math.min(S.most, (taken - lost) * S.town + seat + (won - beaten) * S.battle));
+  return { taken, lost, won, beaten, score };
+}
+
+// The crown's battles against the house since the war began (battles.js result cards, meta.battles), each told once.
+function tally(meta, w, pid, crownId) {
+  w.fought ??= [];
+  for (const b of meta.battles ?? []) {
+    if (b.turn < w.since || w.fought.includes(b.id)) continue;
+    if (!b.sides?.some((x) => x.house === pid) || !b.sides.some((x) => x.house === crownId)) continue;
+    w.fought.push(b.id);
+    if (b.crown === "won") w.won = (w.won ?? 0) + 1;
+    else w.beaten = (w.beaten ?? 0) + 1;
+  }
+  w.fought = w.fought.slice(-40);
 }
 
 function offer(ctx, crown, house, lord, w, turn) {
   const { world, court } = ctx;
   const name = houseFor(house).name;
-  const { taken: theirLoss, lost: ourLoss, score } = standing(ctx.meta, world, house.id);
-  const gold = Math.round(P.gold);
+  const { taken: theirLoss, lost: ourLoss, won, beaten, score } = standing(ctx.meta, world, house.id);
+  const T = P.terms;
+  // Gold by how far the war leans (data/peace.json terms): gold times the score over goldAt, at most twice gold.
+  const goldFor = (sc) => Math.round(Math.min(P.gold * 2, P.gold * Math.abs(sc) / T.goldAt));
+  const lady = lord.gender === "female" ? "lady" : "lord";
   const beat = `peace-${house.id}-${turn}`;
   const fight = { id: "fight", label: "Fight on", favour: { [house.id]: P.favour.fight }, hint: `the war goes on · ${name} ${signed(P.favour.fight)}`, result: `The King sends ${lord.name}'s herald home. The war goes on.` };
+  const plural = (n, one) => `${n} ${n === 1 ? one : `${one}s`}`;
+  // What the war has come to, in the herald's words: towns and fields lost each way.
+  const toll = (towns, fields) => [towns ? plural(towns, "town") : "", fields ? plural(fields, "battle") : ""].filter(Boolean).join(" and ");
   let text, options;
-  if (score > 0) {
-    const t = smallest(world, house.id);
-    const pay = Math.min(gold, Math.max(0, Math.floor(house.gold ?? 0)));
-    text = `${lord.name}'s herald kneels. "${name} has lost ${theirLoss} ${theirLoss === 1 ? "town" : "towns"} to the royal host, Your Grace. My ${lord.gender === "female" ? "lady" : "lord"} asks for peace${t ? `, and will give up ${cityName(t.id)} for it` : ""}${pay > 0 ? `, or pay ${pay} in gold` : ""}."`;
+  if (score >= T.gold) {
+    const t = score >= T.town ? smallest(world, house.id) : null;
+    const pay = Math.min(goldFor(score), Math.max(0, Math.floor(house.gold ?? 0)));
+    text = `${lord.name}'s herald kneels. "${name} has lost ${toll(theirLoss, won) || "the field"} to the royal host, Your Grace. My ${lady} asks for peace${t ? `, and will give up ${cityName(t.id)} for it` : ""}${pay > 0 ? `${t ? ", or" : ", and will"} pay ${pay} in gold` : ""}."`;
     options = [
       ...(t ? [{ id: "town", label: `Peace, and ${cityName(t.id)} is the crown's`, favour: { [house.id]: P.favour.yieldTown }, hint: `${cityName(t.id)} to the crown · ${name} ${signed(P.favour.yieldTown)}`, result: `Peace is sealed. ${cityName(t.id)} opens its gates to the King's men.`, town: t.id }] : []),
       ...(pay > 0 ? [{ id: "gold", label: `Peace for ${pay} gold`, favour: { [house.id]: P.favour.yieldGold }, hint: `+${pay} gold · ${name} ${signed(P.favour.yieldGold)}`, result: `Peace is sealed, and ${name}'s gold comes to Kingsmere in carts.`, gold: pay }] : []),
       { id: "white", label: "Peace, nothing asked", favour: { [house.id]: P.favour.white }, hint: `${name} ${signed(P.favour.white)}: a generous King`, result: `The King asks nothing of ${name} but peace. ${lord.name} did not expect it.` },
       fight,
     ];
-  } else if (score < 0) {
-    const t = smallest(world, crown.id);
-    text = `${lord.name}'s herald does not kneel. "The crown has lost ${-score} ${-score === 1 ? "town" : "towns"} to ${name}, Your Grace. My ${lord.gender === "female" ? "lady" : "lord"} will have peace${t ? ` for ${cityName(t.id)}` : ""}, or ${gold} in gold."`;
+  } else if (score <= -T.gold) {
+    const t = score <= -T.town ? smallest(world, crown.id) : null;
+    const gold = goldFor(score);
+    text = `${lord.name}'s herald does not kneel. "The crown has lost ${toll(ourLoss, beaten) || "the field"} to ${name}, Your Grace. My ${lady} will have peace${t ? ` for ${cityName(t.id)}, or` : " for"} ${gold} in gold."`;
     options = [
       ...(t ? [{ id: "cede", label: `Give up ${cityName(t.id)}`, favour: { [house.id]: P.favour.cede, ...others(world, house.id, crown.id, P.favour.weak) }, hint: `${cityName(t.id)} to ${name} · ${name} ${signed(P.favour.cede)} · every other great house ${signed(P.favour.weak)}`, result: `Peace, and ${cityName(t.id)} is ${name}'s. The King's banner comes down over its gate.`, town: t.id }] : []),
       { id: "pay", label: `Pay ${gold} gold`, cost: gold, favour: { [house.id]: P.favour.paid, ...others(world, house.id, crown.id, P.favour.weak) }, hint: `${name} ${signed(P.favour.paid)} · every other great house ${signed(P.favour.weak)}`, result: `The crown pays for its peace. ${name} rides home richer.` },
       fight,
     ];
   } else {
-    text = `${lord.name}'s herald comes under a white flag. "Neither side is winning this, Your Grace. My ${lord.gender === "female" ? "lady" : "lord"} offers peace as things stand."`;
+    text = `${lord.name}'s herald comes under a white flag. "Neither side is winning this, Your Grace. My ${lady} offers peace as things stand."`;
     options = [{ id: "white", label: "Peace as things stand", favour: { [house.id]: P.favour.white }, hint: `${name} ${signed(P.favour.white)}`, result: `Peace between the crown and ${name}, and neither side the richer.` }, fight];
   }
   court.arcPetition({ arc: "peace", beat, thread: `terms from ${name}`, from: lord, text, options }, world);

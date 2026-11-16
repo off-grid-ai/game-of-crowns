@@ -1,8 +1,27 @@
 {
- "_": "Peace terms after a war between the crown and a great house (peace.js; CK3's peace by war score, Total War's peace treaty). A war run after seasons brings the house's lord with terms, again every every seasons while it lasts. A house that has lost more towns than the crown offers a town or gold (up to gold, from its chest) or takes a white peace; one winning asks a crown town or gold paid; even, a white peace. favour: what each answer does (yieldTown, yieldGold: the losing house; white; fight: refusing; cede, paid: the winning house; weak: every other great house when the crown pays). Peace is an armistice of armistice turns in Freeciv, which turns to peace.",
+ "_": "Peace terms after a war between the crown and a great house (peace.js; CK3's peace by war score, Total War's peace treaty). A war run after seasons brings the house's lord with terms, again every every seasons while it lasts. A house that has lost more towns than the crown offers a town or gold (up to gold, from its chest) or takes a white peace; one winning asks a crown town or gold paid; even, a white peace. favour: what each answer does (yieldTown, yieldGold: the losing house; white; fight: refusing; cede, paid: the winning house; weak: every other great house when the crown pays). Peace is an armistice of armistice turns in Freeciv, which turns to peace. score (CK3's war score): what a war has come to, from −most (the crown beaten) to +most: each town the house lost to the war worth town (its seat seat), each the crown lost the same against; each battle the crown won against the house worth battle, each lost the same against (meta.battles, told once). terms: the peace each score can ask, by how far it leans: under gold neither side asks anything (a white peace); from gold the side ahead asks gold (gold times the score over goldAt, at most gold times 2); from town it asks a town as well.",
  "after": 3,
  "every": 3,
  "gold": 150,
  "armistice": 16,
- "favour": { "yieldTown": -10, "yieldGold": -5, "white": 10, "fight": -5, "cede": 10, "paid": 5, "weak": -3 }
+ "favour": {
+  "yieldTown": -10,
+  "yieldGold": -5,
+  "white": 10,
+  "fight": -5,
+  "cede": 10,
+  "paid": 5,
+  "weak": -3
+ },
+ "score": {
+  "town": 20,
+  "seat": 40,
+  "battle": 10,
+  "most": 100
+ },
+ "terms": {
+  "gold": 10,
+  "goldAt": 50,
+  "town": 30
+ }
 }
