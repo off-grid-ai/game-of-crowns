@@ -26,6 +26,9 @@ var life = preload("res://scripts/town_life.gd").new()
 func _ready() -> void:
 	life.terrain = terrain
 	life.towns_node = self
+	# Raising towns is the map loading in, not the realm living: it goes on while the realm is paused (every RTS loads
+	# its map under the pause), on the tree's frame signal, which a pause never holds. Their life waits (_process).
+	get_tree().process_frame.connect(_take_next)
 
 
 ## Brings the towns in line with the world: its roads and the towns' list each report; the towns themselves walked
@@ -354,12 +357,26 @@ var _first := -1  # a town wanted at once (ensure): raised next
 
 
 func _process_timed(_delta: float) -> void:
-	if _raising:
-		return  # a town is being raised over frames (_raise)
-	if _queue.is_empty():
-		_life_near()
-		_refresh_life()
+	if _raising or not _queue.is_empty():
+		return  # a town is being raised over frames (_raise), or waits its turn (_take_next): life comes after
+	_life_near()
+	_refresh_life()
+
+
+## The next town off the queue, the one nearest the camera (one wanted at once before all), raised over frames. Each
+## frame, paused or not (_ready); not under a still screen (world_cover.gd disables the realm's view: nothing is seen).
+func _take_next() -> void:
+	if _raising or _queue.is_empty() or not is_inside_tree() or process_mode == Node.PROCESS_MODE_DISABLED:
 		return
+	if not PerfTools.probing:
+		_take_nearest()
+		return
+	var t0 := Time.get_ticks_usec()
+	_take_nearest()
+	PerfTools.add("towns.take", Time.get_ticks_usec() - t0)
+
+
+func _take_nearest() -> void:
 	var start := Time.get_ticks_msec()
 	Engine.set_meta("stage", "towns.build")
 	if _raising_since == 0:
