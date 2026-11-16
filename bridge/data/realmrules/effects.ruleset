@@ -705,6 +705,27 @@ reqs    =
       "OutputType", "Food", "Local"
     }
 
+; The King's wars eat the realm's grain (war.js upkeep, Mac 2026-11-16: 'maybe it depletes the grain much more'): while
+; the crown bears War Levy every soldier eats one more food, and with Second Front (two wars or more) one more again, so
+; a second war starves towns that one war only pinched. Freeciv's own food upkeep and famine do the rest.
+[effect_war_levy_food]
+type    = "Upkeep_Factor"
+value   = 1
+reqs    =
+    { "type", "name", "range"
+      "OutputType", "Food", "Local"
+      "Building", "War Levy", "Player"
+    }
+
+[effect_second_front_food]
+type    = "Upkeep_Factor"
+value   = 1
+reqs    =
+    { "type", "name", "range"
+      "OutputType", "Food", "Local"
+      "Building", "Second Front", "Player"
+    }
+
 [effect_unit_unhappiness]
 type    = "Unhappy_Factor"
 value   = 1

@@ -2337,6 +2337,52 @@ helptext	= _("\
 Raised in the house's seat while the crown's tithe weighs on it: in every town of the house one townsman fewer is content.\
 ")
 
+[building_war_levy]
+name		= _("War Levy")
+genus		= "SmallWonder"
+reqs	=
+    { "type", "name", "range"
+      "Tech", "Forbidden Lore", "Player"
+    }
+graphic         = "b.temple"
+graphic_alt     = "-"
+graphic_alt2    = "-"
+obsolete_by	=
+    { "type", "name", "range"
+    }
+build_cost	= 1
+upkeep		= 0
+sabotage	= 0
+sound		= "b_generic"
+sound_alt	= "b_generic"
+sound_alt2      = "-"
+helptext	= _("\
+Raised in the crown's seat while the King makes war: every soldier of the crown eats a further measure of grain.\
+")
+
+[building_second_front]
+name		= _("Second Front")
+genus		= "SmallWonder"
+reqs	=
+    { "type", "name", "range"
+      "Tech", "Forbidden Lore", "Player"
+    }
+graphic         = "b.temple"
+graphic_alt     = "-"
+graphic_alt2    = "-"
+obsolete_by	=
+    { "type", "name", "range"
+    }
+build_cost	= 1
+upkeep		= 0
+sabotage	= 0
+sound		= "b_generic"
+sound_alt	= "b_generic"
+sound_alt2      = "-"
+helptext	= _("\
+Raised in the crown's seat while the King makes war on two houses or more: every soldier eats yet another measure of grain.\
+")
+
 [building_grievance]
 name		= _("Grievance")
 genus		= "SmallWonder"

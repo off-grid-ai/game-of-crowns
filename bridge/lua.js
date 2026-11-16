@@ -88,6 +88,9 @@ export const risingEnd = (id, how) => `realm_rising_end(${n(id)}, "${how === "ke
 const bear = (name, pids) => `realm_bear("${name}", "${pids.map(n).join(",")}")`;
 export const heavyTithe = (pids) => bear("Heavy Tithe", pids);
 export const grievance = (pids) => bear("Grievance", pids);
+// The crown's wars eat grain (war.js upkeep): War Levy while it wages one, Second Front with two or more; each
+// makes every soldier of the crown eat one more food (effects.ruleset), lifted when the wars end.
+export const warLevy = (crownId, wars) => `${bear("War Levy", wars >= 1 ? [crownId] : [])}; ${bear("Second Front", wars >= 2 ? [crownId] : [])}`;
 
 // Men a decree sends home (hosts.js homeward orders; realmrules/script.lua): held from their house's AI,
 // walked along `way` ([[x, y], ...]) by Freeciv's own moves, and disbanded into their seat's work.

@@ -222,11 +222,13 @@ export function upkeep(ctx, turn) {
   const { world, meta, record } = ctx;
   const crown = crownOf(world);
   const u = upkeepNow(ctx);
-  if (!crown || !u.gold) return;
+  if (!crown) return;
+  ctx.send(`lua cmd ${Lua.warLevy(crown.id, u.wars)}`);  // the soldiers eat more grain while the wars run (lua.js warLevy)
+  if (!u.gold) return;
   ctx.send(`lua cmd ${Lua.gold(crown.id, -u.gold)}`);
   if ((meta.upkeepSaid ?? -99) + 4 <= turn) {
     meta.upkeepSaid = turn;
-    record({ turn, kind: "decree", text: `The crown's ${u.wars === 1 ? "war costs" : `${u.wars} wars cost`} ${(u.gold * 100).toLocaleString("en-GB")} crowns a season in bread, iron and wages. The treasury feels it.` });
+    record({ turn, kind: "decree", text: `The crown's ${u.wars === 1 ? "war costs" : `${u.wars} wars cost`} ${(u.gold * 100).toLocaleString("en-GB")} crowns a season in iron and wages, and every soldier eats ${u.wars >= 2 ? "two more measures" : "a further measure"} of grain. The treasury and the granaries feel it.` });
   }
 }
 
