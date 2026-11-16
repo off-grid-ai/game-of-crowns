@@ -32,6 +32,8 @@ var _hold := [0, 0]
 var _occ := {}  # Vector2i -> man
 var _mid := [0.0, 0.0]  # each side's middle file this moment
 var _rng := RandomNumberGenerator.new()
+var _open_memo := {}  # cell -> whether open says a man may stand there
+var behind: Callable  # whether a man's figure still walks to his cell (army_field.gd); unset, never
 var open: Callable  # whether a man may stand on a world point (army_field.gd: ground.gd is_clear); unset, everywhere
 
 
@@ -81,7 +83,9 @@ func order(side: int, key: String) -> void:
 ## The day won (Mac 2026-11-17: "the winning host comes back in formation"): every man of `side` given a cell in his
 ## troop's own template (formations.json templates.<field_form>: foot three across, horse two), its troops side by
 ## side field.cells.reform.gap cells apart in the order they stand across the field, the shooters' line .back cells
-## behind the rest, the whole host centred where it stands now. His Mover walks him there as to any cell.
+## behind the rest, the whole host centred where it stands now. The rule walks him there a cell a moment (_homeward):
+## a square tens of cells off is no far mark for the walk map, which has no way on a field it hasn't baked yet (men
+## stood 5-47 cells short with an empty route, Mac 2026-11-17).
 func reform(side: int) -> void:
 	var mine: Array = men.filter(func(m): return int(m["side"]) == side)
 	if mine.is_empty():
@@ -97,7 +101,6 @@ func reform(side: int) -> void:
 			troops[id] = []
 		(troops[id] as Array).append(m)
 		mid += Vector2(m["c"])
-		_occ.erase(m["c"])
 		m["fight"] = false
 		m["tgt"] = null
 		m["shot"] = null
@@ -110,6 +113,7 @@ func reform(side: int) -> void:
 			x += float((m["c"] as Vector2i).x)
 		lines[1 if Troops.of(ms[0]["r"]).shoots() else 0].append([x / ms.size(), ms])
 	var row0 := roundi(mid.y)
+	var taken := {}  # the homes given so far
 	for li in 2:
 		var line: Array = lines[li]
 		if line.is_empty():
@@ -134,14 +138,9 @@ func reform(side: int) -> void:
 			ms.sort_custom(func(a, b): return int(a["s"]) < int(b["s"]))
 			for j in ms.size():
 				var c := Vector2i(x0 + j % int(cols[ti]), row0 - f * (depth + j / int(cols[ti])))
-				c = _nearest_open(c)
-				var m: Dictionary = ms[j]
-				m["from"] = m["c"]
-				m["c"] = c
-				_occ[c] = m
-				m["moved"] = true
-				m["t0"] = n
-				m["dur"] = 1
+				c = _nearest_open(c, taken)
+				taken[c] = true
+				(ms[j] as Dictionary)["home"] = c
 			x0 += int(cols[ti]) + gap
 
 
@@ -177,15 +176,75 @@ func _nearest_free(c: Vector2i) -> Vector2i:
 	return c
 
 
-## The free cell nearest c that a man may stand on (not in a tree, a field's crop, a building).
-func _nearest_open(c: Vector2i) -> Vector2i:
+## The free cell nearest c that a man may stand on (not in a tree, a field's crop, a building), looked for within
+## field.cells.reform.reach cells; none there, the nearest free one (a square is never torn across the field: a run
+## on crops sent men 58 cells off).
+func _nearest_open(c: Vector2i, taken: Dictionary) -> Vector2i:
+	var reach := int(Data.num(F, "field.cells.reform.reach", 3))
 	for k in 40:
 		for dx in range(-k, k + 1):
 			for dy in range(-k, k + 1):
 				var q := c + Vector2i(dx, dy)
-				if maxi(absi(dx), absi(dy)) == k and _free(q) and (not open.is_valid() or bool(open.call(world(q)))):
+				if maxi(absi(dx), absi(dy)) == k and not taken.has(q) and (k > reach or _open(q)):
 					return q
-	return _nearest_free(c)
+	return c
+
+
+## Whether a man may stand on cell c (open, memoised: the ground under a field doesn't change in a battle).
+func _open(c: Vector2i) -> bool:
+	if not open.is_valid():
+		return true
+	if not _open_memo.has(c):
+		_open_memo[c] = bool(open.call(world(c)))
+	return _open_memo[c]
+
+
+## The day won: each man not yet on his home (reform) takes the free cell beside him nearest it, as in the fight a
+## step a moment. Boxed out (his home deep in the square, the ring round it filled first: men stood 2-7 cells off), the
+## troop-mate home beside his empty home nearest him steps into it and gives him his own: the gap walks out to him a
+## cell a moment (a trade between the two kept them swapping homes for good). A troop-mate still on his way who
+## stands on his home takes it, and gives him his own: one more man home each time, so it ends.
+func _homeward() -> void:
+	var order := men.filter(func(m): return m.has("home") and m["c"] != m["home"])
+	order.shuffle()
+	for m in order:
+		if behind.is_valid() and bool(behind.call(m)):
+			continue  # a step at a time his figure can follow: one left behind asked the walk map, which has no way here
+		var home: Vector2i = m["home"]
+		var c: Vector2i = m["c"]
+		var best := c
+		var best_d := Vector2(home - c).length()
+		for dx in range(-1, 2):
+			for dy in range(-1, 2):
+				var q := c + Vector2i(dx, dy)
+				var d := Vector2(home - q).length()
+				if d < best_d - 0.01 and _free(q) and (q == home or _open(q)):
+					best = q
+					best_d = d
+		var holder: Variant = _occ.get(home)
+		if holder != null and is_same((holder as Dictionary)["r"], m["r"]) and (holder as Dictionary).get("home") != home:
+			m["home"] = (holder as Dictionary).get("home", c)  # a troop-mate on his way stands on my home: it's his now
+			(holder as Dictionary)["home"] = home
+		elif best != c:
+			_go(m, best)
+		elif _free(home):
+			var mate: Variant = null  # the troop-mate home beside the gap, nearest him
+			var mate_d := Vector2(home - c).length()
+			for dx in range(-1, 2):
+				for dy in range(-1, 2):
+					var q := home + Vector2i(dx, dy)
+					if not _occ.has(q):
+						continue
+					var o: Dictionary = _occ[q]
+					var d := Vector2(c - q).length()
+					if d < mate_d - 0.01 and is_same(o["r"], m["r"]) and o.get("home", Vector2i(1 << 20, 0)) == q:
+						mate = o
+						mate_d = d
+			if mate != null:
+				var was: Vector2i = (mate as Dictionary)["c"]
+				_go(mate, home)
+				(mate as Dictionary)["home"] = home
+				m["home"] = was
 
 
 static func _cheb(a: Vector2i, b: Vector2i) -> int:
@@ -211,6 +270,10 @@ func tick() -> void:
 	men = men.filter(_alive)
 	var sides: Array = [men.filter(func(m): return int(m["side"]) == 0), men.filter(func(m): return int(m["side"]) == 1)]
 	if (sides[0] as Array).is_empty() or (sides[1] as Array).is_empty():
+		for m in men:
+			if n >= int(m["t0"]) + int(m["dur"]):
+				m["from"] = m["c"]
+		_homeward()
 		n += 1
 		return
 	for side in 2:

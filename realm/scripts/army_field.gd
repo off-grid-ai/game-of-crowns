@@ -311,6 +311,13 @@ func _begin() -> void:
 	# stands on, and from here the field's rule moves him (field_cells.gd); every troop the same, whatever its kind.
 	cells = FieldCells.new((sides[0] as Army).field(), (sides[1] as Army).field(), Data.num(F, "field.cells.size", 0.26))
 	cells.open = func(p: Vector3) -> bool: return Footing.is_clear(p, 0.0, true, null, ["host", "field", "ford"])  # a cell a man may stand on (ground.gd)
+	cells.behind = func(m: Dictionary) -> bool:  # his runner not yet on his cell (field_cells.gd _homeward waits for him)
+		var rn: Dictionary = (m["r"] as Dictionary).get("runners", {})
+		if not rn.has(int(m["s"])) or not is_instance_valid(rn[int(m["s"])]["node"]):
+			return false
+		var at: Vector3 = (rn[int(m["s"])]["node"] as Node3D).global_position
+		var want := cells.world(m["c"])
+		return Vector2(at.x - want.x, at.z - want.z).length() > cells.size * Data.num(F, "field.cells.reform.lag", 0.5)
 	for i in 2:
 		cells.order(i, String(orders[i]))
 		for r in (sides[i] as Army).rows():
@@ -502,7 +509,7 @@ func _day() -> void:
 			_over = true
 			print("BATTLE the %s fall; the %s hold the field at t=%.0f" % ["crown's men" if i == 0 else "foe", "foe" if i == 0 else "crown's men", clock])
 			_say({}, "The day is %s" % ("lost" if i == 0 else "won"))
-			cells.reform(1 - i)  # the winners walk back into their troops' squares (field_cells.gd reform)
+			cells.reform(1 - i)  # the winners walk back into their troops' squares (field_cells.gd reform; Mac 2026-11-17: both hosts, each marches on)
 			for r in (sides[1 - i] as Army).rows():
 				_send(r, &"won")
 			return
@@ -808,6 +815,7 @@ func _into_cells(r: Dictionary) -> void:
 		man.global_position = node.to_global(local[s])
 		man.rotation.y = node.global_rotation.y
 		var mo: Node = Mover.of(man)
+		preload("res://scripts/on_screen.gd").keep_on(man)  # he walks to his cell seen or not: the battle is the realm's (a point with nothing drawn, he stood switched off out of the lens; men 60 cells off their square)
 		mo.clip = ""  # his figure is the block's VAT draw
 		mo.fights(true)
 		runners[s] = {"node": man}

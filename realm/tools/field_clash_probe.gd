@@ -155,6 +155,9 @@ func _run() -> void:
 			if _all_home(field):
 				formed = (Time.get_ticks_msec() - t0) / 1000.0
 				break
+		if formed < 0.0:
+			_tell = true
+			_all_home(field)
 	var troops := _troops(field)
 	var waiting := troops.filter(func(r): return not r.get("probe_met", false)).size()
 	_check(doubled == 0, "never two men in one cell (%d moments with two)" % doubled)
@@ -170,6 +173,7 @@ func _run() -> void:
 
 
 var most_busy := 0.0
+var _tell := false  # _all_home names the men off their cells (the last look, when the square never formed)
 var away := 0  # men not yet on their re-form cell at the last look (_all_home)
 var away_most := 0.0  # the furthest of them, in cells
 var flips := 0  # a man's clip turned between walk and ready (_watch)
@@ -191,11 +195,18 @@ func _all_home(field: Node) -> bool:
 		if not runners.has(int(m["s"])) or not is_instance_valid(runners[int(m["s"])]["node"]):
 			continue
 		var at: Vector3 = (runners[int(m["s"])]["node"] as Node3D).global_position
-		var want: Vector3 = cells.call("world", m["c"])
+		var want: Vector3 = cells.call("world", m.get("home", m["c"]))
 		var off := Vector2(at.x - want.x, at.z - want.z).length()
 		if off > size * 0.35:
 			away += 1
 			away_most = maxf(away_most, off / size)
+			if _tell and away <= 4:
+				var mo: Node = (runners[int(m["s"])]["node"] as Node).get_node_or_null("Mover")
+				var now_c: Vector3 = cells.call("world", m["c"])
+				var way: PackedVector3Array = mo.call("_route", at, now_c) if mo else PackedVector3Array()
+				print("REFORM-OFF his route to his cell: %d points, ends %s; the leg clear %s" % [way.size(), str(way[way.size() - 1]) if way.size() > 0 else "-", str(mo.call("_clear_leg", at, now_c)) if mo else "-"])
+				print("REFORM-OFF cell %s home %s; runner off his cell %.1f cells; home open %s" % [str(m["c"]), str(m.get("home", "-")), Vector2(at.x - now_c.x, at.z - now_c.z).length() / size, str(preload("res://scripts/ground.gd").is_clear(want, 0.0, true, null, ["host", "field", "ford"]))])
+				print("REFORM-OFF troop %d side %d man %d state %s at %s cell %s %s off %.1f cells; mover %s" % [int((m["r"] as Dictionary)["id"]), int(m["side"]), int(m["s"]), String((m["r"] as Dictionary).get("state_name", "")), str(at), str(want), str(m["c"]), off / size, mo.call("moving") if mo else "none"])
 	return away == 0
 
 
