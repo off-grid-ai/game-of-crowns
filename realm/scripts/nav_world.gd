@@ -213,7 +213,9 @@ static func _confirm() -> void:
 ## (funnel), from the navmesh point nearest `from` to the one nearest `to`. Empty while the map isn't ready. Safe on
 ## any thread (NavigationServer3D's map queries are).
 static func path(from: Vector3, to: Vector3, kind: StringName = &"walk") -> PackedVector3Array:
-	if not ready(kind):
+	# A route needs the ground it crosses, not the whole realm (Mac 2026-11-16, the field battle: every foot block stood
+	# 24 s with an empty route while far chunks were still baking): the chunks under its start and end have landed.
+	if not ready(kind) and not (_chunk_landed(from, kind) and _chunk_landed(to, kind)):
 		return PackedVector3Array()
 	var q := NavigationPathQueryParameters3D.new()
 	q.map = _maps[kind]
@@ -225,6 +227,15 @@ static func path(from: Vector3, to: Vector3, kind: StringName = &"walk") -> Pack
 	var r := NavigationPathQueryResult3D.new()
 	NavigationServer3D.query_path(q, r)
 	return r.path
+
+
+## Whether the chunk under `p` (world) has its first mesh on `kind`'s map (baked or read back once).
+static func _chunk_landed(p: Vector3, kind: StringName) -> bool:
+	if not _chunks.has(kind):
+		return false
+	var chunk := _chunk_size()
+	var c := Vector2i(floori(p.x / chunk), floori(p.z / chunk))
+	return (_chunks[kind] as Dictionary).has(c) and not (_pending.get(kind, {}) as Dictionary).has(c)
 
 
 ## The point of `kind`'s map nearest `p` (world); `p` itself while the map isn't ready.

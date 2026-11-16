@@ -751,3 +751,4 @@ Switches (`--name`) go after `--` on the game's command line.
 - army.json drawPerMan (0.1): figures a man, on the map and in battle alike (one for ten, ~17 a company).
 - battle.json field.camera.dist (5.0): the test battle lens distance, both lines in frame; never under camera.json floor. field.reach (0.4), field.opposite (0.3), field.charge.from/pace (2.2 / 0.45), field.advance 0.24.
 - camera.json floor 2.4 -> 4.0 and town_view.dist 4.0 (Mac 2026-11-16: "really restrict the zoom-in level"): the closest the lens comes, well above the roofs.
+- `army.json follow.sway` [across, along] world units and `follow.sway_hz`: how far and how often each marching man drifts about his place (army.gd _follow); 0 makes a moving block one rigid stamp. `jitter.step` 0.22: how far each man's step is off his regiment's (0 = lockstep).

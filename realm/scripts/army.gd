@@ -2045,10 +2045,24 @@ func _follow(r: Dictionary, dt: float) -> void:
 	var vat: VATMultiMeshInstance3D = r["vat"]
 	var tall := float(r.get("tall_k", 1.0))
 	var still := true
+	# On the move no man keeps his mark to the inch (Total War's and Mount & Blade's marching blocks: each man drifts a
+	# little about his place, his own way and pace; Mac 2026-11-16: "the entire troops keep moving rigidly"):
+	# follow.sway (world units across, along) at follow.sway_hz, each man his own phase; a block at rest stands dressed.
+	var was_xf: Transform3D = r.get("follow_was", xf)
+	r["follow_was"] = xf
+	var moving := dt > 0.0 and Vector2(xf.origin.x - was_xf.origin.x, xf.origin.z - was_xf.origin.z).length() / dt > 0.01
+	var sw: Array = Data.value("army", "follow.sway", [0.03, 0.05])
+	var hz := Data.num("army", "follow.sway_hz", 0.35)
+	var now := Time.get_ticks_msec() / 1000.0
 	for s in marks.size():
 		if not alive.is_empty() and s < alive.size() and alive[s] == 0:
 			continue  # the fallen lie where they fell
-		var want: Vector3 = xf * marks[s]
+		var mark := marks[s]
+		if moving:
+			var ph := float((s * 7919) % 101) / 101.0 * TAU
+			var own_hz := hz * (0.75 + float((s * 104729) % 17) / 32.0)
+			mark += Vector3(sin(now * TAU * own_hz + ph) * float(sw[0]), 0.0, sin(now * TAU * own_hz * 0.7 + ph * 1.9) * float(sw[1]))
+		var want: Vector3 = xf * mark
 		var d := Vector2(want.x - at[s].x, want.z - at[s].z)
 		var len := d.length()
 		var goal_yaw := node.rotation.y + yaws[s]

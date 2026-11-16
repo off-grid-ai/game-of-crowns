@@ -59,6 +59,16 @@ func _run() -> void:
 		print("FIELD CLASH: the battle was never raised: FAIL")
 		quit(2)
 		return
+	# The loading card's "Click to begin": a key, as a player gives it, until it is gone; then the clock starts with the
+	# battle itself (army_field clock), so the frames are the fight, not the card.
+	await _wait(func() -> bool:
+		var intro: Node = main.get("intro")
+		if intro and intro.visible:
+			var k := InputEventKey.new()
+			k.keycode = KEY_SPACE
+			k.pressed = true
+			Input.parse_input_event(k)
+		return (intro == null or not intro.visible) and float(field.get("clock")) >= 0.0, 300.0)
 	var start := Time.get_ticks_msec()
 	var reported := false
 	var out := ""
@@ -88,6 +98,11 @@ func _run() -> void:
 					var way: PackedVector3Array = mv._route(node.global_position, spot) if spot != Vector3.INF else PackedVector3Array()
 					print("  side %d %s at %s spot %s: route %d points, gait %s, still %.1f s" % [int(r["side"]), String(r.get("role", "")),
 						node.global_position, spot, way.size(), String(r.get("gait", "")), float(r.get("gait_still", 0.0))])
+					var NW := preload("res://scripts/nav_world.gd")
+					var kind: StringName = mv.get("nav")
+					print("    nav %s: ready %s, on map here %s (nearest %s), on map at the spot %s (nearest %s), plain path %d points" % [kind,
+						str(NW.ready(kind)), str(NW.on_map(node.global_position, kind)), str(NW.closest(node.global_position, kind)),
+						str(NW.on_map(spot, kind)), str(NW.closest(spot, kind)), NW.path(node.global_position, spot, kind).size()])
 					var hsm: Node = r.get("hsm")
 					print("    mind active %s, mind can process %s, body can process %s, body in tree %s, process mode %d" % [
 						str(hsm != null and (hsm as LimboHSM).is_active()), str(hsm != null and hsm.can_process()), str(node.can_process()),
