@@ -45,9 +45,10 @@ func _build() -> void:
 	_sel_box = _key(Color(1, 0.97, 0.9, 0.14), T.TEXT, 2)  # the thicker, white outline: selected reads without colour
 	ui.get_viewport().size_changed.connect(_place)
 	if ui._houses_panel:
-		ui._houses_panel.visibility_changed.connect(_place)
+		ui._houses_panel.visibility_changed.connect(_place.call_deferred)  # after the table has laid itself out
+		ui._houses_panel.resized.connect(_place)  # and again as it grows: the host list never lies over it (Mac 2026-11-16)
 	if ui.houses_strip._panel:
-		ui.houses_strip._panel.visibility_changed.connect(_place)
+		ui.houses_strip._panel.visibility_changed.connect(_place.call_deferred)
 		ui.houses_strip._panel.resized.connect(_place)
 
 
