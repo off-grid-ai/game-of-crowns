@@ -196,6 +196,15 @@ func _lands_of() -> Texture2D:
 
 ## A siege's ring pulses and an uproar's torch flickers: the painting redraws while one stands.
 func _process(_delta: float) -> void:
+	if not preload("res://scripts/perf_tools.gd").probing:
+		_process_timed(_delta)
+		return
+	var t0 := Time.get_ticks_usec()
+	_process_timed(_delta)
+	preload("res://scripts/perf_tools.gd").add("realm_map", Time.get_ticks_usec() - t0)  # its share of the frame (GOC_PERF_PROBE)
+
+
+func _process_timed(_delta: float) -> void:
 	if visible and (not _sieges().is_empty() or not unrest.is_empty()):
 		queue_redraw()
 

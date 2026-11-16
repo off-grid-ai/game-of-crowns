@@ -742,6 +742,15 @@ func _set_aim(kind: String) -> void:
 # --- in the world ----------------------------------------------------------------------------
 
 func _process(delta: float) -> void:
+	if not preload("res://scripts/perf_tools.gd").probing:
+		_process_timed(delta)
+		return
+	var t0 := Time.get_ticks_usec()
+	_process_timed(delta)
+	preload("res://scripts/perf_tools.gd").add("host_command", Time.get_ticks_usec() - t0)  # its share of the frame (GOC_PERF_PROBE)
+
+
+func _process_timed(delta: float) -> void:
 	var h := host(selected) if selected >= 0 else {}
 	if selected >= 0 and h.is_empty() and not hosts().is_empty():
 		select(-1)  # the host is no more (fallen, or joined another)

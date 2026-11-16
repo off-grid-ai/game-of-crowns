@@ -745,6 +745,15 @@ func _click(screen: Vector2) -> void:
 
 
 func _process(delta: float) -> void:
+	if not preload("res://scripts/perf_tools.gd").probing:
+		_process_timed(delta)
+		return
+	var t0 := Time.get_ticks_usec()
+	_process_timed(delta)
+	preload("res://scripts/perf_tools.gd").add("camera_rig", Time.get_ticks_usec() - t0)  # its share of the frame (GOC_PERF_PROBE)
+
+
+func _process_timed(delta: float) -> void:
 	# Real time, but one long frame (a town built, a save) never throws the view: at most rig.max_step a frame.
 	delta = minf(delta, MAX_STEP)
 	_center_land()

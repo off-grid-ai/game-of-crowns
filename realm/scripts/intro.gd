@@ -247,6 +247,15 @@ func _build() -> void:
 
 
 func _process(delta: float) -> void:
+	if not preload("res://scripts/perf_tools.gd").probing:
+		_process_timed(delta)
+		return
+	var t0 := Time.get_ticks_usec()
+	_process_timed(delta)
+	preload("res://scripts/perf_tools.gd").add("intro", Time.get_ticks_usec() - t0)  # its share of the frame (GOC_PERF_PROBE)
+
+
+func _process_timed(delta: float) -> void:
 	if visible and _page >= 0 and Time.get_ticks_msec() >= _turn_at:
 		_next()
 	# A page's painting is fully in a second after it turns; if anything ever

@@ -536,6 +536,15 @@ static func share_order(town: int, homes: Array) -> Array:
 ## Once a second: each town's burnt houses follow the fact (charred while it says so, whole again once
 ## rebuilt), and the smoke and embers follow the wind.
 func _process(delta: float) -> void:
+	if not preload("res://scripts/perf_tools.gd").probing:
+		_process_timed(delta)
+		return
+	var t0 := Time.get_ticks_usec()
+	_process_timed(delta)
+	preload("res://scripts/perf_tools.gd").add("fire", Time.get_ticks_usec() - t0)  # its share of the frame (GOC_PERF_PROBE)
+
+
+func _process_timed(delta: float) -> void:
 	_tick -= delta
 	if _tick > 0.0:
 		return

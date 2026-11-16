@@ -293,6 +293,15 @@ func _clarity(key: String, fallback: Variant) -> Variant:
 
 
 func _process(_delta: float) -> void:
+	if not preload("res://scripts/perf_tools.gd").probing:
+		_process_timed(_delta)
+		return
+	var t0 := Time.get_ticks_usec()
+	_process_timed(_delta)
+	preload("res://scripts/perf_tools.gd").add("look", Time.get_ticks_usec() - t0)  # its share of the frame (GOC_PERF_PROBE)
+
+
+func _process_timed(_delta: float) -> void:
 	if _fill:
 		_aim_fill()
 	if _attrs == null or main.rig == null:

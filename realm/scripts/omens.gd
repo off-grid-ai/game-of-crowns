@@ -77,6 +77,15 @@ func read(peace: float, purse: float) -> void:
 
 
 func _process(delta: float) -> void:
+	if not preload("res://scripts/perf_tools.gd").probing:
+		_process_timed(delta)
+		return
+	var t0 := Time.get_ticks_usec()
+	_process_timed(delta)
+	preload("res://scripts/perf_tools.gd").add("omens", Time.get_ticks_usec() - t0)  # its share of the frame (GOC_PERF_PROBE)
+
+
+func _process_timed(delta: float) -> void:
 	# The signs creep in and out over a few seconds, never in a jump.
 	_blood = move_toward(_blood, blood, delta * 0.25)
 	_drain = move_toward(_drain, drain, delta * 0.25)
