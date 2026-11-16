@@ -695,6 +695,9 @@ func _show_promises(am) -> void:
 		var at := int(a["at"]) if a.get("at") != null else -1
 		var acts: Array = a.get("acts", []) if a.get("acts") is Array else []
 		var left := ("  ·  " + String(cfg.get("left", "{n} seasons left")).replace("{n}", str(int(a["left"])))) if state == "open" and a.get("left") != null else ""
+		var ends: Dictionary = cfg.get("said", {})
+		if state != "open" and ends.has(state):
+			left = "  ·  " + String(ends[state])  # the word carries it, not the shade (Mac is colour-blind)
 		var b := ui.btn(String(a.get("text", "")) + left, func(): pass)
 		b.pressed.connect(func(): _keep_promise(go, at, acts, b))
 		b.flat = true
@@ -706,7 +709,18 @@ func _show_promises(am) -> void:
 		b.add_theme_color_override("font_color", T.TEXT if state == "open" else T.TEXT_3)
 		b.tooltip_text = String(tips.get(state, "")) + ("" if state != "open" else "\n" + String(tips.get(go, "")))
 		b.disabled = state != "open"
+		if state == "lost":
+			b.draw.connect(func(): _strike(b))  # a broken promise is struck through
 		_promises.add_child(b)
+
+
+## A line through a broken promise's words, from after its box to the end of its text.
+func _strike(b: Button) -> void:
+	var sb := b.get_theme_stylebox("disabled")
+	var x0 := sb.get_margin(SIDE_LEFT) + float(b.get_theme_constant("icon_max_width")) + float(b.get_theme_constant("h_separation"))
+	var x1 := b.size.x - sb.get_margin(SIDE_RIGHT)
+	var y := b.size.y * 0.5 + 1.0
+	b.draw_line(Vector2(x0, y), Vector2(x1, y), T.TEXT_3, 1.5)
 
 
 ## Act on a promise: its orders as a short menu under it, each with its price and what it costs him (bridge
