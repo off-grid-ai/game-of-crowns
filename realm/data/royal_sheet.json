@@ -114,6 +114,6 @@
   "ways": { "peace": { "rising": "Peace is rising,", "falling": "Peace is falling,", "holding": "Peace holds," },
    "wealth": { "rising": "wealth rising", "falling": "wealth falling", "holding": "wealth holding" },
    "strength": { "rising": "and strength rising against a year ago.", "falling": "and strength falling against a year ago.", "holding": "and strength holding against a year ago." } },
-  "promises": "Your three promises", "kept": "Kept: {text}", "open": "Not yet: {text}",
+  "promises": "Your three promises", "kept": "Kept: {text}", "open": "Open: {text}", "lost": "Broken: {text}",
   "_": "royal_sheet.gd _reign_row: the name the King is earning (bridge reign readings name and next), peace, wealth and strength against a year ago in words, and his three promises (reign ambitions); moved here from the date card (Mac: the top-left stacked six things)." }
 }

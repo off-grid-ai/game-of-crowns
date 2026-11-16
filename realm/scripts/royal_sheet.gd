@@ -364,8 +364,8 @@ func _reign_row(v: VBoxContainer) -> void:
 		for a in am:
 			if not a is Dictionary:
 				continue
-			var kept: bool = (a as Dictionary).get("met") != null
-			_say(v, String(words.get("kept" if kept else "open", "{text}")).replace("{text}", String(a.get("text", ""))), T.ACCENT if kept else T.TEXT)
+			var state := "kept" if (a as Dictionary).get("met") != null else ("lost" if (a as Dictionary).get("failed") != null else "open")
+			_say(v, String(words.get(state, "{text}")).replace("{text}", String(a.get("text", ""))), T.TEXT if state == "open" else T.TEXT_3)
 
 
 func _say(v: VBoxContainer, text: String, colour: Color) -> void:
