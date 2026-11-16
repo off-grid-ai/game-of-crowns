@@ -77,6 +77,73 @@ func order(side: int, key: String) -> void:
 	_hold[side] = 0
 
 
+## The day won (Mac 2026-11-17: "the winning host comes back in formation"): every man of `side` given a cell in his
+## troop's own template (formations.json templates.<field_form>: foot three across, horse two), its troops side by
+## side field.cells.reform.gap cells apart in the order they stand across the field, the shooters' line .back cells
+## behind the rest, the whole host centred where it stands now. His Mover walks him there as to any cell.
+func reform(side: int) -> void:
+	var mine: Array = men.filter(func(m): return int(m["side"]) == side)
+	if mine.is_empty():
+		return
+	var k: Dictionary = Data.value(F, "field.cells.reform", {})
+	var gap := int(k.get("gap", 1))
+	var f := 1 if side == 0 else -1  # his host's way to the foe, in rows
+	var troops := {}  # regiment id -> its men
+	var mid := Vector2.ZERO
+	for m in mine:
+		var id := int((m["r"] as Dictionary)["id"])
+		if not troops.has(id):
+			troops[id] = []
+		(troops[id] as Array).append(m)
+		mid += Vector2(m["c"])
+		_occ.erase(m["c"])
+		m["fight"] = false
+		m["tgt"] = null
+		m["shot"] = null
+	mid /= float(mine.size())
+	var lines := [[], []]  # the front (foot and horse), the shooters behind
+	for id in troops:
+		var ms: Array = troops[id]
+		var x := 0.0
+		for m in ms:
+			x += float((m["c"] as Vector2i).x)
+		lines[1 if Troops.of(ms[0]["r"]).shoots() else 0].append([x / ms.size(), ms])
+	var row0 := roundi(mid.y)
+	for li in 2:
+		var line: Array = lines[li]
+		if line.is_empty():
+			continue
+		line.sort_custom(func(a, b): return a[0] < b[0])
+		var cols: Array = []
+		var width := -gap
+		for t in line:
+			var form := Troops.of((t[1] as Array)[0]["r"]).field_form()
+			var c := maxi(1, int(Data.num("formations", "templates.%s.minColumns" % form, 3)))
+			cols.append(c)
+			width += c + gap
+		var x0 := roundi(mid.x - width * 0.5)
+		var depth := 0
+		if li == 1:
+			for t in lines[0]:
+				var form0 := Troops.of((t[1] as Array)[0]["r"]).field_form()
+				depth = maxi(depth, ceili(float((t[1] as Array).size()) / maxf(Data.num("formations", "templates.%s.minColumns" % form0, 3), 1.0)))
+			depth += int(k.get("back", 2)) - 1
+		for ti in line.size():
+			var ms: Array = line[ti][1]
+			ms.sort_custom(func(a, b): return int(a["s"]) < int(b["s"]))
+			for j in ms.size():
+				var c := Vector2i(x0 + j % int(cols[ti]), row0 - f * (depth + j / int(cols[ti])))
+				c = _nearest_free(c)
+				var m: Dictionary = ms[j]
+				m["from"] = m["c"]
+				m["c"] = c
+				_occ[c] = m
+				m["moved"] = true
+				m["t0"] = n
+				m["dur"] = 1
+			x0 += int(cols[ti]) + gap
+
+
 ## The men of r and where each stands: man s -> his cell's man record.
 func of(r: Dictionary) -> Array:
 	return men.filter(func(m): return is_same(m["r"], r))

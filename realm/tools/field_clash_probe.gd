@@ -142,12 +142,26 @@ func _run() -> void:
 				r["probe_met"] = true  # it fought, shot, or broke at blows at least once
 		if not whole and (out == "" or Time.get_ticks_msec() - start >= 24000) and _troops(field).all(func(r): return r.get("probe_met", false)) and float(field.get("clock")) > 30.0:
 			break
+	# The day won, the winners walk back into their troops' squares (Mac 2026-11-17: "the winning host comes back in
+	# formation"): every man still standing reaches the cell field_cells.gd reform gave him.
+	var formed := -1.0
+	if bool(field.get("_over")) and field.get("cells") != null:
+		var t0 := Time.get_ticks_msec()
+		while Time.get_ticks_msec() - t0 < 12000:
+			await create_timer(0.25).timeout
+			if out != "":
+				late += 1
+				root.get_texture().get_image().save_jpg("%s/r%03d.jpg" % [out, late], 0.7)
+			if _all_home(field):
+				formed = (Time.get_ticks_msec() - t0) / 1000.0
+				break
 	var troops := _troops(field)
 	var waiting := troops.filter(func(r): return not r.get("probe_met", false)).size()
 	_check(doubled == 0, "never two men in one cell (%d moments with two)" % doubled)
 	_check(waiting == 0, "every troop of both sides fights or shoots within %d s (%d never did)" % [int(secs), waiting])
 	_check(most_busy >= BUSY_LEAST, "at the most, %d%% of the men standing fight at once (at least %d%%)" % [int(most_busy * 100.0), int(BUSY_LEAST * 100.0)])
 	_check(idle_most <= IDLE_MOST, "no man stands idle over %d s once the lines have met (longest %.1f s)" % [int(IDLE_MOST), idle_most])
+	_check(formed >= 0.0, "the winners stand in their troops' squares after the day (%s)" % ("in %.1f s" % formed if formed >= 0.0 else "not within 12 s" if bool(field.get("_over")) else "the day not over in the time watched"))
 	_check(fps_n > 0 and fps_sum / fps_n >= FPS_LEAST, "the fight keeps %d frames a second (mean %.0f over %d reads)" % [int(FPS_LEAST), fps_sum / maxf(fps_n, 1.0), fps_n])
 	preload("res://scripts/settings.gd").set_value("pause_when_needed", _was_pause)
 	quit(1 if fail > 0 else 0)
@@ -157,6 +171,21 @@ var most_busy := 0.0
 var doubled := 0
 var idle_most := 0.0
 var _idle := {}  # a man's id -> [his cell, seconds there idle]
+
+
+## Whether every man still in the field's cells stands on his own cell (his runner within a third of a cell of it).
+func _all_home(field: Node) -> bool:
+	var cells: Object = field.get("cells")
+	var size: float = cells.get("size")
+	for m in cells.get("men"):
+		var runners: Dictionary = (m["r"] as Dictionary).get("runners", {})
+		if not runners.has(int(m["s"])) or not is_instance_valid(runners[int(m["s"])]["node"]):
+			continue
+		var at: Vector3 = (runners[int(m["s"])]["node"] as Node3D).global_position
+		var want: Vector3 = cells.call("world", m["c"])
+		if Vector2(at.x - want.x, at.z - want.z).length() > size * 0.35:
+			return false
+	return true
 
 
 ## [men fighting or shooting, men standing] over both hosts, by the field's cells.

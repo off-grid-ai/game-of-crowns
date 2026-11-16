@@ -501,6 +501,7 @@ func _day() -> void:
 			_over = true
 			print("BATTLE the %s fall; the %s hold the field at t=%.0f" % ["crown's men" if i == 0 else "foe", "foe" if i == 0 else "crown's men", clock])
 			_say({}, "The day is %s" % ("lost" if i == 0 else "won"))
+			cells.reform(1 - i)  # the winners walk back into their troops' squares (field_cells.gd reform)
 			for r in (sides[1 - i] as Army).rows():
 				_send(r, &"won")
 			return

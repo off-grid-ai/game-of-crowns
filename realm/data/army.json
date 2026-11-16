@@ -116,7 +116,7 @@
         "volley": { "enter": "_ready_in", "tick": "_volley" },
         "advance": { "enter": "_walk_in", "tick": "_advance" },
         "fight": { "enter": "_fight_in", "tick": "_fight", "exit": "_fight_out" },
-        "hold": { "enter": "_hold", "guard": "_may_hold" }
+        "hold": { "enter": "_hold", "tick": "_walk_men", "guard": "_may_hold" }
       },
       "go": [["stand", "volley", "volley"], ["stand", "advance", "advance"], ["advance", "fight", "engage"], ["volley", "fight", "engage"], ["stand", "fight", "engage"], ["fight", "advance", "advance"], ["advance", "volley", "volley"], ["volley", "advance", "advance"]],
       "any": { "won": "hold" }
