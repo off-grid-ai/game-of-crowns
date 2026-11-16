@@ -98,7 +98,12 @@ export function startCampaign(ctx, { city, house }) {
     record({ turn, kind: "betrayal", text: `The King marches on a house sworn to him. Every lord who ever knelt to the crown takes note.`, city });
   }
   const allies = greatHouses().filter((p) => p.id !== house && sworn(ctx, p.id) && world.cities.some((c) => c.owner === p.id));
-  for (const a of allies) send(`lua cmd ${Lua.warHost(a.id, at.id, ["Pikemen", "Knights"], 3)}`);  // from their own town, by the road (hosts.js warpath)
+  // Each sends what it committed when it took the King's side (war.js sides: its share of its companies), else three.
+  const men = (pid) => (world.units ?? []).filter((u) => u.owner === pid && !CIVILIAN.has(u.type)).length;
+  for (const a of allies) {
+    const share = meta.war?.commit?.[a.id];
+    send(`lua cmd ${Lua.warHost(a.id, at.id, ["Pikemen", "Knights"], share != null ? Math.max(1, Math.round(men(a.id) * share)) : 3)}`);  // from their own town, by the road (hosts.js warpath)
+  }
   if (allies.length) record({ turn, kind: "decree", text: `${allies.map((p) => houseFor(p).name).join(" and ")} ${allies.length > 1 ? "answer their oaths" : "answers its oath"} and ${allies.length > 1 ? "send" : "sends"} men to march with the King.`, city });
   (meta.campaigns ??= []).push({ city, house, turn, allies: allies.map((p) => p.id) });
   chron.saveMeta(meta);

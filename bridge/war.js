@@ -73,6 +73,45 @@ export function joinChance(ctx, pid) {
   return { chance, warns: false, why: f >= BANDS.sworn ? "trusts the crown" : f >= BANDS.steady ? "is wary" : "is cold to the crown" };
 }
 
+// Where every other great house stands if the King makes war on a house (data/war.json sides; Mac 2026-11-16: "the
+// houses take a side, some commit men, some don't, some join the other side"; CK3's call to arms, Diplomacy's
+// balancing and bandwagoning). Each: {pid, side "crown"|"foe"|"wait", chance (of the side it leans to), commit
+// (share of its companies), why}. A house bound to the foe or a friend of its lord goes with the foe; one sworn to the
+// crown comes; the rest weigh their favour, who is likely to win (they want to be on the winning side) and, for the
+// foe, how frightened the realm is of the King (coalition.js alarm). The forecast the King sees before he declares
+// (view.js warSides) and the roll when he does (declare) are this one reckoning.
+export function sides(ctx, house) {
+  const { world, meta, court } = ctx;
+  const S = WAR.sides, J = WAR.join;
+  const foe = world?.players?.find((q) => q.id === house);
+  if (!foe) return [];
+  const win = odds(ctx, house) ?? 0.5;  // the crown's chance of beating the foe
+  const crownId = crownOf(world)?.id;
+  const b = court?.lordOfHouse?.(house);
+  return greatHouses(world).filter((p) => p.id !== house && !houseFor(p).crown && (world.cities ?? []).some((c) => c.owner === p.id)).map((p) => {
+    const a = court?.lordOfHouse?.(p.id);
+    const liking = a && b ? court.opinion(a.id, b.id) : 0;
+    if (court?.boundTo?.(p.id)?.includes(house)) return { pid: p.id, side: "foe", chance: 1, commit: S.commit.eager, why: `bound to ${short(foe)}` };
+    if (liking >= J.friendly) return { pid: p.id, side: "foe", chance: 0.9, commit: S.commit.eager, why: `a friend of ${short(foe)}` };
+    if (crownId != null && atWarInFreeciv(ctx, p.id, crownId)) return { pid: p.id, side: "foe", chance: 0.9, commit: S.commit.eager, why: "already at war with the crown" };
+    if (swornOf(ctx, p.id)) return { pid: p.id, side: "crown", chance: J.sworn, commit: S.commit.sworn, why: "sworn to the crown" };
+    const f = ctx.favourOf?.(p.id) ?? 50;
+    const withKing = Math.max(0, Math.min(J.most, (f - J.floor) / J.span + (atWarInFreeciv(ctx, p.id, house) ? J.atWar : 0) - Math.max(0, liking) * J.likingWeight + S.bandwagon * (win - 0.5)));
+    const against = f < BANDS.cooling ? Math.max(0, Math.min(J.most, S.against + S.bandwagon * (0.5 - win) + (meta?.alarm ?? 0) * S.alarmWeight)) : 0;
+    if (against > withKing) return { pid: p.id, side: "foe", chance: against, commit: S.commit.grudging, why: "cold to the crown" };
+    return { pid: p.id, side: withKing >= 0.2 ? "crown" : "wait", chance: withKing, commit: withKing >= S.likely ? S.commit.eager : S.commit.grudging, why: f >= BANDS.sworn ? "trusts the crown" : f >= BANDS.steady ? "is wary" : "is cold to the crown" };
+  });
+}
+
+// The forecast in words for the war order (view.js): who is likely with the King, who may join the foe.
+export function sidesForecast(ctx, house) {
+  const name = (pid) => short(ctx.world.players.find((q) => q.id === pid));
+  const all = sides(ctx, house);
+  const sure = (x) => x.chance >= WAR.sides.likely;
+  return { with: all.filter((x) => x.side === "crown" && sure(x)).map((x) => name(x.pid)), may: all.filter((x) => x.side === "crown" && !sure(x)).map((x) => name(x.pid)),
+    against: all.filter((x) => x.side === "foe" && sure(x)).map((x) => name(x.pid)), mayAgainst: all.filter((x) => x.side === "foe" && !sure(x)).map((x) => name(x.pid)) };
+}
+
 // How long until the King may ask a house again (seasons), 0 when he may.
 export function askWait(meta, pid, turn) {
   const at = current(meta)?.asked?.[pid];
@@ -80,7 +119,7 @@ export function askWait(meta, pid, turn) {
 }
 
 // The King declares war (routes_decree.js, after crown.js war): the war is kept, Freeciv is told (both ways, its AI
-// fights it), the house's lord answers (characters.js answerWar: its own allies called), and the first town is
+// fights it), every other great house takes its side (sides), and the first town is
 // ordered this season.
 export function declare(ctx, house) {
   const { world, meta, record } = ctx;
@@ -92,10 +131,25 @@ export function declare(ctx, house) {
   const seat = (world.cities ?? []).find((c) => c.owner === house && c.capital)?.id ?? order.at(-1) ?? null;
   meta.war = { house, seat, since: turn, plan: order, target: null, ordered: null, fallen: [], passed: [], allies: [], asked: {}, warned: [], struck: null, waits: null, atWarSeen: false };
   if (!atWarInFreeciv(ctx, crown.id, house)) ctx.diplomacy?.([crown.id, house, 0, "War"]);
-  const called = ctx.court?.answerWar?.(house, crown.id, world, turn) ?? [];
+  ctx.court?.answerWar?.(house, crown.id, world, turn);  // the foe's lord remembers it
+  // Every other great house takes its side now (sides): with the King under oath for the war, with the foe at war
+  // with the crown, or it waits. The men each sends: its share of its companies, with each siege (campaigns.js).
+  const taken = sides(ctx, house).map((x) => ({ ...x, yes: x.side !== "wait" && Math.random() < x.chance }));
+  const joinedKing = taken.filter((x) => x.side === "crown" && x.yes);
+  const joinedFoe = taken.filter((x) => x.side === "foe" && x.yes);
+  meta.war.allies = joinedKing.map((x) => x.pid);
+  meta.war.commit = Object.fromEntries(joinedKing.map((x) => [x.pid, x.commit]));
+  for (const x of joinedKing) {
+    (meta.alliances ??= {})[x.pid] = Math.max(meta.alliances[x.pid] ?? 0, turn + WAR.join.seasons);
+    if (!atWarInFreeciv(ctx, x.pid, house)) ctx.diplomacy?.([x.pid, house, 0, "War"]);
+  }
+  for (const x of joinedFoe) ctx.court?.onWar?.([x.pid, crown.id]);
+  const called = joinedFoe.map((x) => x.pid);
+  const named = (xs) => xs.map((x) => houseFor(world.players.find((p) => p.id === x.pid) ?? {}).name);
+  const waiting = named(taken.filter((x) => !x.yes));
   const towns = order.length;
   record({ turn, kind: "battle", city: seat ?? undefined, attacker: crown.id, defender: house,
-    text: `The King declares war on ${houseFor(foe).name}. ${towns} ${towns === 1 ? "town flies" : "towns fly"} its banner; the royal host takes them one by one${seat != null ? `, and ${cityName(seat)} last` : ""}.${called.length ? ` ${called.map((pid) => houseFor(world.players.find((p) => p.id === pid) ?? {}).name).join(" and ")} ${called.length > 1 ? "answer" : "answers"} ${short(foe)}'s call and ${called.length > 1 ? "take" : "takes"} up arms against the crown.` : ""}` });
+    text: `The King declares war on ${houseFor(foe).name}. ${towns} ${towns === 1 ? "town flies" : "towns fly"} its banner; the royal host takes them one by one${seat != null ? `, and ${cityName(seat)} last` : ""}.${joinedKing.length ? ` ${andList(named(joinedKing))} ${joinedKing.length > 1 ? "ride" : "rides"} with the King.` : " No house rides with the King."}${called.length ? ` ${andList(named(joinedFoe))} ${called.length > 1 ? "take" : "takes"} ${short(foe)}'s side against the crown.` : ""}${waiting.length ? ` ${andList(waiting)} ${waiting.length > 1 ? "wait" : "waits"} to see who wins.` : ""}` });
   chron.saveMeta(meta);
   next(ctx, turn);
 }
@@ -138,6 +192,29 @@ export function ended(ctx, pid) {
 }
 
 const andList = (xs) => (xs.length > 1 ? `${xs.slice(0, -1).join(", ")} and ${xs.at(-1)}` : xs[0] ?? "");
+
+// What the crown's wars cost this season (data/war.json upkeep): every great house at war with it, each dearer than
+// the last, so two wars outrun the season's income. {wars, gold}. Paid each season (season.js), shown on /world.
+export function upkeepNow(ctx) {
+  const { world } = ctx;
+  const crown = crownOf(world);
+  if (!crown) return { wars: 0, gold: 0 };
+  const n = greatHouses(world).filter((p) => p.id !== crown.id && atWarInFreeciv(ctx, crown.id, p.id)).length;
+  let gold = 0;
+  for (let i = 0; i < n; i++) gold += WAR.upkeep.base * (1 + WAR.upkeep.step * i);
+  return { wars: n, gold: Math.round(gold) };
+}
+export function upkeep(ctx, turn) {
+  const { world, meta, record } = ctx;
+  const crown = crownOf(world);
+  const u = upkeepNow(ctx);
+  if (!crown || !u.gold) return;
+  ctx.send(`lua cmd ${Lua.gold(crown.id, -u.gold)}`);
+  if ((meta.upkeepSaid ?? -99) + 4 <= turn) {
+    meta.upkeepSaid = turn;
+    record({ turn, kind: "decree", text: `The crown's ${u.wars === 1 ? "war costs" : `${u.wars} wars cost`} ${(u.gold * 100).toLocaleString("en-GB")} crowns a season in bread, iron and wages. The treasury feels it.` });
+  }
+}
 
 // Each season (season.js): towns fallen are told, the seat taken topples the house, a siege that came to nothing is
 // passed over for now, the next town is ordered, Freeciv kept at war, and the house strikes back.

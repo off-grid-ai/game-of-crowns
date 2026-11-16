@@ -218,15 +218,9 @@ export class Court {
   // The King makes war on a house (war.js declare): the houses bound to it by a pact or a marriage answer its call and
   // go to war on the crown too (Freeciv's diplomacy, onWar), and its lord remembers. Their ids.
   answerWar(pid, crownId, world, turn) {
+    // The foe's lord remembers it; who takes which side is war.js sides' one reckoning (the bound houses among them).
     const lord = this.lordOfHouse(pid);
     if (lord) { this.remember(lord.id, "The King made war on my house."); this.save(lord); }
-    const called = [...new Set(this.boundTo(pid))].filter((a) => a !== crownId && (world.cities ?? []).some((c) => c.owner === a));
-    for (const a of called) {
-      this.onWar?.([a, crownId]);
-      const al = this.lordOfHouse(a);
-      if (al) { this.remember(al.id, `I took up arms beside ${lord?.house ?? "my friends"} against the crown.`); this.save(al); }
-    }
-    return called;
   }
 
   // The house at war with the crown strikes back (war.js, every data/war.json retaliate.every seasons) at the King's

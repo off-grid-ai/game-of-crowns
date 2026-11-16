@@ -18,6 +18,7 @@ import * as Director from "./director.js";
 import * as Treasury from "./treasury.js";
 import { WORK_SEASONS } from "./treasury.js";
 import * as chron from "./chronicles.js";
+import * as Coalition from "./coalition.js";
 import { cityName, houseFor } from "./narrator.js";
 import { decree, DECREES } from "./crown.js";
 import * as kingDeeds from "./ledger.js";
@@ -108,6 +109,7 @@ export async function issueDecree(ctx, req, res, url) {
   if (result.march) startCampaign(result.march);
   // The King's war (war.js): declared, its first town ordered; or an envoy's answer, an ally or a warning.
   if (result.war != null) War.declare(ctx, result.war);
+  if (["war", "march", "back"].includes(cmd.action)) Coalition.alarm(ctx.meta, cmd.action);  // the realm takes fright (coalition.js alarm)
   if (result.join) War.joined(ctx, result.join);
   if (result.truceWith != null) Peace.seal(ctx, result.truceWith);  // the King's herald made peace (crown.js truce)
   if (result.hostMarch) {

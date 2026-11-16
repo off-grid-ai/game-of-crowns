@@ -76,6 +76,7 @@ export function turn(ctx, ev) {
   Rebels.season(ctx, Number(ev.turn));
   Peace.season(ctx, Number(ev.turn));
   War.season(ctx, Number(ev.turn));  // the King's war on a house: the next town, the house's answer (war.js)
+  War.upkeep(ctx, Number(ev.turn));  // what the crown's wars cost this season (war.js upkeep)
   Coalition.season(ctx, Number(ev.turn));
   Contagion.season(ctx, Number(ev.turn));
   Prices.season(ctx, Number(ev.turn));  // the market's prices follow the harvest, the wars and the roads (prices.js)  // the sickness walks the trade roads (contagion.js)  // the rival King beyond the border probes it (rivals.js)  // the King's named men after last season's battles: some fall, some rise (captains.js)  // the great houses' sieges change approach after a failed storm (siegecraft.js)  // the King's promises kept or broken (promises.js)  // the King's household ages; a King may die and his heir reign (royals.js)

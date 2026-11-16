@@ -1,7 +1,24 @@
 {
- "_": "The brake on the blob (coalition.js; EU4's coalitions, CK3's factions against a too-great vassal). A great house holding share of the realm's towns or more (a share of 1) faces a league: up to members great houses, the nearest seats first, swear a pact and go to war on it; the league holds until the house falls under release. A crown holding crown.share or more is feared: every great house loses crown.fear favour each season it stays so.",
+ "_": "The brake on the blob (coalition.js; EU4's coalitions, CK3's factions against a too-great vassal). A great house holding share of the realm's towns or more (a share of 1) faces a league: up to members great houses, the nearest seats first, swear a pact and go to war on it; the league holds until the house falls under release. A crown holding crown.share or more is feared: every great house loses crown.fear favour each season it stays so. alarm: the league against the crown itself, by its deeds rather than its size.",
  "share": 0.3,
  "release": 0.22,
  "members": 3,
- "crown": { "share": 0.45, "fear": 1 }
+ "crown": {
+  "share": 0.45,
+  "fear": 1
+ },
+ "alarm": {
+  "_": "The realm's alarm at the crown's wars (coalition.js alarm; EU4's aggressive expansion, Mac 2026-11-16: 'what happens if I wage war on multiple houses? ... almost like there is no cost'). raise: what each deed adds (war declared, a royal march on a town, a war judged for a side so a town changes hands, a town the crown takes); ease: what a quiet season takes off; at: the line where the great houses not sworn to the crown (favour under the sworn band) swear a league and go to war on it, at least min of them; after: the alarm once the league stands; release: the league breaks up once the alarm falls under it.",
+  "raise": {
+   "war": 30,
+   "march": 12,
+   "back": 10,
+   "taken": 15
+  },
+  "ease": 4,
+  "at": 100,
+  "min": 2,
+  "after": 60,
+  "release": 30
+ }
 }

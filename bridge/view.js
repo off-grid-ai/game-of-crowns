@@ -92,6 +92,7 @@ export function worldView(ctx) {
     // other house's answer to his envoy {chance, warns, why, wait} (the town card's war rows).
     const warNow = War.current(meta);
     p.warOdds = warNow || p.house.crown || p.house.wild ? null : War.odds(ctx, p.id);
+    p.warSides = p.warOdds == null ? null : War.sidesForecast(ctx, p.id);  // who would ride with the King, who with them (war.js sides)
     p.joinWar = warNow ? ((a) => (a ? { ...a, on: houseFor(world.players.find((q) => q.id === warNow.house) ?? {}).name, wait: War.askWait(meta, p.id, world.turn ?? 0) } : null))(War.joinChance(ctx, p.id)) : null;
     // Whom the house is at odds with, by name: wars, and wars the King has
     // stilled (a commanded peace or a royal match) as truces.
