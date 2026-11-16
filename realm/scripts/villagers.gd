@@ -666,8 +666,8 @@ var _square_t := 0.0
 
 
 func _square_count() -> void:
-	if not " ".join(OS.get_cmdline_user_args()).contains("--shot") and not PerfTools.probing and not _crowd_probe:
-		return
+	if not " ".join(OS.get_cmdline_user_args()).contains("--shot") and not _crowd_probe:
+		return  # a test aid: never under the perf probe, where it was its own 10-280 ms each second (live49)
 	_square_t += 1.0
 	if fmod(_square_t, 5.0) > 0.5:
 		return
