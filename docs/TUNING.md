@@ -764,3 +764,4 @@ Switches (`--name`) go after `--` on the game's command line.
 - battle_orders.json orders.<key>.defence: an order's guard on its front against foot, horse and arrows (shield wall 1.5/1.8/2.0, regroup 1.2/1.3/1.2).
 - battle_orders.json command: the King's order bar (battle_orders_bar.gd): pace of the re-form, regroup_back, buttons, words.
 - battle.json field.alarm_every 6 s; towns.json raid.battle_hold 12 s: towns within a battle's reach go indoors while it lasts.
+- battle.json ground.field 3.4 -> 4.5: a battle's fighting ground radius kept clear of towns and farms, now that lines stand deep (two lines, a reserve). The test aid's battle uses the same chooser (army_field.gd _open_field_near_seat).

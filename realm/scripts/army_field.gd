@@ -121,7 +121,14 @@ func _ready() -> void:
 	_dist = lens_distance()
 	while main.terrain.width == 0 or not main.terrain.built or (Army._rec("cities", []) as Array).is_empty():
 		await get_tree().create_timer(0.5, false).timeout
-	var crown: Army = Army.new(main, men, {"side": 0, "shape": "line", "pick": _pick.bind(0, {}, 0.0, "the crown")})
+	# The ground the realm's own battles are fought on (scene_kinds/battle.gd battlefield: open land clear of every
+	# town and farm), as near the crown's seat as there is: never among its houses and fields.
+	var spec := {"side": 0, "shape": "line", "pick": _pick.bind(0, {}, 0.0, "the crown")}
+	var site: Vector3 = await _open_field_near_seat()
+	if site != Vector3.INF:
+		spec["field"] = site
+		spec["face"] = 0.0
+	var crown: Army = Army.new(main, men, spec)
 	add_child(crown)
 	if not crown.mustered:
 		await crown.raised
@@ -187,6 +194,22 @@ func _raise_in_play() -> void:
 	sides = made
 	_arrows = _arrow_pool()
 	_focus = ((made[0] as Army).field() + (made[1] as Army).field()) * 0.5
+
+
+## Open ground for the test aid's battle near the crown's seat (/world seatId, else Kingsmere): the realm's battles'
+## own chooser (scene_kinds/battle.gd battlefield). Vector3.INF when there is none.
+func _open_field_near_seat() -> Vector3:
+	var want := int(Army._rec("seatId", -1))
+	var seat := {}
+	for c in Army._rec("cities", []):
+		if int(c.get("id", -2)) == want or (seat.is_empty() and String(c.get("name", "")) == "Kingsmere"):
+			seat = c
+	var kind: Variant = main.scenes.kind("battle") if main.get("scenes") else null
+	if seat.is_empty() or kind == null:
+		return Vector3.INF
+	while not main.scenes._towns_up():
+		await get_tree().create_timer(0.5, false).timeout
+	return kind.battlefield(main.terrain.world_pos(float(seat.get("x", 0)), float(seat.get("y", 0))))
 
 
 ## The order a side stands in (battle_orders.gd, its commander's choice): asked by its Army as its regiments form.
