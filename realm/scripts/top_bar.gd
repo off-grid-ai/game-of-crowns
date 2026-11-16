@@ -298,10 +298,12 @@ func _build_top_bar() -> void:
 	_state_pill = state.get_parent()
 	_enlarge(state)
 	# The plane's right: what you can do, in a grid (Age of Empires IV's and Warcraft III's command grid).
-	var act := GridContainer.new()
-	act.columns = int(Data.num("ui", "plane.key_columns", 5.0))
+	# A flow, centred: a short last row sits in the middle under the full one, not hung off the left (Mac 2026-11-16).
+	var act := HFlowContainer.new()
+	act.alignment = FlowContainer.ALIGNMENT_CENTER
 	act.add_theme_constant_override("h_separation", 6)
 	act.add_theme_constant_override("v_separation", 6)
+	act.custom_minimum_size.x = Data.num("ui", "plane.key_columns", 5.0) * (Data.num("ui", "plane.key_size", 52.0) + 6.0) - 6.0
 	act.size_flags_vertical = Control.SIZE_SHRINK_CENTER  # centred in the console, not hung from its top (Mac 2026-11-16)
 	act.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	ui.plane.keys_slot.add_child(act)
@@ -348,7 +350,7 @@ func _cmd(b: Button, word: String, action: String) -> Button:
 	b.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	b.vertical_icon_alignment = VERTICAL_ALIGNMENT_CENTER
 	var key := preload("res://scripts/keys.gd").label(action).get_slice(" / ", 0) if action != "" else ""
-	if key != "" and key.length() <= 3:
+	if key != "" and key.length() <= 2:  # a long key (F12) crowds its corner: the tooltip says it
 		var k := Label.new()
 		k.text = key
 		k.add_theme_font_override("font", T.mono)

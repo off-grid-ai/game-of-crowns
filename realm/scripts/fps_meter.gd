@@ -15,12 +15,16 @@ var _tris := ""  # triangles in view by part, the dearest eight (DrawCensus)
 func _ready() -> void:
 	layer = 120
 	add_child(label)
-	# Top centre under the realm's numbers: the right side is the chronicle drawer's (Mac: it lay over its heading).
-	label.anchor_left = 0.5
-	label.anchor_right = 0.5
-	label.offset_top = 64
-	label.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	# Bottom right, just over the control plane: the top centre is the notices' and the welcome card's (Mac 2026-11-16:
+	# it lay over "while you were away"), the right side the chronicle drawer's heading.
+	label.anchor_left = 1.0
+	label.anchor_right = 1.0
+	label.anchor_top = 1.0
+	label.anchor_bottom = 1.0
+	label.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	label.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	label.offset_right = -12
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	label.add_theme_font_size_override("font_size", 15)
 	# White on a dark panel, never a colour code (Mac is colour-blind: the old green, amber and red read alike).
@@ -46,6 +50,9 @@ func _process(delta: float) -> void:
 		_t = 0.5
 		return
 	_t = 0.5
+	var main := get_parent()
+	if main and main.get("ui") and main.ui.get("plane"):
+		label.offset_bottom = main.ui.plane.top_y() - get_viewport().get_visible_rect().size.y - 8.0
 	var fps := Engine.get_frames_per_second()
 	var lines := PackedStringArray(["%d fps  ·  %.0f ms  ·  %s" % [fps, 1000.0 / maxf(fps, 1.0), "smooth" if fps >= 60 else "playable" if fps >= 30 else "slow" if fps >= 15 else "very slow"]])
 	lines.append("%.1fM triangles  ·  %d draws" % [Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME) / 1000000.0, int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME))])
