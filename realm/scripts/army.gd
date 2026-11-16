@@ -938,15 +938,18 @@ func _unit_for(kind: String) -> String:
 ## One drawn soldier stands for this many men (data/army.json drawPerMan: 0.1, one figure for ten; Mac: fewer and
 ## further apart). Every regiment's figures come from here (_regiment); its men, the number the player reads, stay
 ## its full strength.
-static func ratio() -> float:
-	return clampf(Data.num("army", "drawPerMan", 0.1), 0.001, 1.0)
+## In a fight on the field or at a breach (`fight`) a regiment draws drawPerManBattle instead (Total War: one figure on
+## the campaign map, the whole company on the battlefield; Mac 2026-11-16, three men a company "doesn't even seem
+## like a battle"): its lines stand as blocks of men, the map's hosts stay light.
+static func ratio(fight := false) -> float:
+	return clampf(Data.num("army", "drawPerManBattle" if fight else "drawPerMan", 0.1), 0.001, 1.0)
 
 
 ## How many figures a regiment of `men` draws: army.json figureFloor, so every regiment reads as a formed block, and
 ## one for every 1 / ratio() men above it (drawPerMan, Mac's), so a bigger regiment still looks bigger. The plate and
 ## the card show its real men.
-static func figures(men: int) -> int:
-	return int(Data.num("army", "figureFloor", 0.0)) + maxi(1, ceili(men * ratio() - 0.0001))
+static func figures(men: int, fight := false) -> int:
+	return int(Data.num("army", "figureFloor", 0.0)) + maxi(1, ceili(men * ratio(fight) - 0.0001))
 
 
 ## crown (every regiment in the crown's colour and arms) or houses (each its house's): data/army.json colours, or
@@ -979,7 +982,7 @@ func _regiment(spec: Dictionary, colour: Color, house: Dictionary = {}) -> Dicti
 	var kit := Visual.soldier(String(row["asset"]), row, battle.get("quiet", false))
 	if kit.is_empty():
 		return {}
-	var count := figures(int(spec["men"]))  # drawn: one figure for every 1 / ratio() men
+	var count := figures(int(spec["men"]), battle.has("side"))  # drawn (a battle side draws its whole company): one figure for every 1 / ratio() men
 	var node := Node3D.new()
 	add_child(node)
 	var vat: VATMultiMeshInstance3D = VAT.new()
