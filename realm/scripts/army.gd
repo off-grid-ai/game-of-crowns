@@ -1390,7 +1390,10 @@ func _clear_slots(right3: Vector3, fwd3: Vector3) -> void:
 ## first. INF when none is (Total War's deployment never stands men in a house or in another regiment).
 func _free_near(at: Vector3, right3: Vector3, fwd3: Vector3, w: float, d: float, taken: Array, strict: bool, own: Variant = null) -> Vector3:
 	var pitch := Data.num("army", "muster.cell", 2.0) * 0.5
-	var reach := Data.num("army", "muster.search", 8.0)
+	# A side in the field keeps its line (Mac 2026-11-16: "the battle is too stretched, think of a leaner battle": a
+	# block on rough ground was moved up to muster.search 8 away, the line strewn over the field): within
+	# muster.field_search of its place; a muster in a town still looks wide for clear ground.
+	var reach := Data.num("army", "muster.search" if strict else "muster.field_search", 8.0)
 	at.y = 0.0
 	if _clear_at(at, right3, fwd3, w, d, taken, strict, own):
 		return at

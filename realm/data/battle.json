@@ -12,7 +12,7 @@
     "charge": { "shock": 20,"_": "army_field.gd _advance: foot walk in at advance, then run the last stretch: within from (world units) of the foe's front, at pace, the run clip and the charge cry (soundscape charge).", "from": 2.2, "pace": 0.45}, "contact": 0.12, "overlap": 0.6, "longest": 45.0,
     "volley": { "every": [2.5, 3.6], "arrows": 70, "draw_s": 0.8, "step": 0.15, "angle": 0.75, "gravity": 3.0, "spread": 0.05, "kills": [1, 4], "until": 3.0 },
     "fight": { "loss": { "beaten": 2.4, "victors": 0.9 }, "swing": [0.7, 1.8], "hitOdds": 0.2, "blockOdds": 0.25, "ranks": 2, "surge": 0.06, "press": 0.1, "sway": 0.04, "reach": 0.09, "leash": 0.2, "flanked": 1.6, "dustEvery": 6.0 },
-    "cavalry": { "near": 0.5, "stall": 1.0, "ride": 0.45, "charge": 0.55, "wide": 2.2, "behind": 1.0, "shock": 12, "melee_s": 4.0, "out": 2.5, "out_s": 8.0, "form_s": 1.5 },
+    "cavalry": { "near": 0.5, "stall": 1.0, "ride": 0.45, "charge": 0.55, "wide": 1.0, "behind": 0.5, "shock": 12, "melee_s": 4.0, "out": 1.2, "out_s": 8.0, "form_s": 1.5 },
     "run": 0.42, "loose": { "spread": 0.6, "most": 2048 }, "fade": 7.0,
     "square": { "slack": 0.03 }, "gait": { "still": 0.02, "wheel": 0.1, "hold": 0.5 },
     "camera": { "dist": 5.0, "quarter": 0.25, "follow": 1.2, "close": 0.55, "pitch": 30.0 },
