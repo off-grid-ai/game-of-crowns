@@ -314,8 +314,13 @@ func track(delta: float) -> void:
 	# Once moving, below walking pace the walk plays whole at a slower cadence
 	# (never half stance, half walk at full cadence: short quick sliding steps).
 	var walk := _leg_pace("walk")
+	var run := _leg_pace("run")
 	var slow := _pace > walk * 0.12 and _pace < walk * STEP_CEIL
-	set(_at + "rest/feet/blend_position", walk if slow else _pace)
+	# Past a brisk walk the run plays whole at a slower cadence, as the walk does below its pace: half walk, half run,
+	# the two clips' footfalls never meet and the planted feet skate (motion probe at Kingsmere, Mac 2026-11-17: the
+	# runners skated on 47% of their planted frames, 45% of it in a steady stride; the run's own floor is 16%).
+	var jog := not slow and _pace >= walk * STEP_CEIL and _pace < run
+	set(_at + "rest/feet/blend_position", walk if slow else (run if jog else _pace))
 	var now := _now()
 	var going := _pace > MOVING or now_pace > MOVING
 	if going and now.begins_with("loop"):
@@ -339,11 +344,11 @@ func track(delta: float) -> void:
 		_for = 0.0
 	# Past a run's pace the legs go quicker to keep up.
 	if now == "rest":
-		speed = maxf(1.0, _pace / _leg_pace("run"))
+		speed = maxf(1.0, _pace / run)
 		if slow:
 			speed = maxf(STEP_FLOOR, _pace / walk)
-		elif _pace > walk and _pace < _leg_pace("run"):
-			speed = _pace / _between(_pace)
+		elif jog:
+			speed = maxf(STEP_FLOOR, _pace / run)
 	# What's in hand goes with the move (weapons.gd CLIP_TOOLS): a bowl while
 	# drinking, a basket while carrying, nothing once the move is over.
 	sync_held()
@@ -503,20 +508,6 @@ func _assign(n: AnimationNodeAnimation, clip: String, loop: int, phase: float) -
 ## the world.
 func _leg_pace(leg: String) -> float:
 	return float(strides.get(String(_legs[leg].animation), strides.get("Walk" if leg == "walk" else "Running", 0.0))) * _sk_scale
-
-
-## the ground the legs cover a second at speed 1 part way from the walk to
-## the run. The blend keeps the two in step (SYNC_MODE_CYCLIC_MUTABLE): one
-## cycle as long as the blend of theirs, each step as long as the blend of
-## theirs; so its pace is the blended step over the blended cycle, not the
-## blended pace (played at the blended pace, a child keeping a grown pace slid).
-func _between(pace: float) -> float:
-	var pw := _leg_pace("walk")
-	var pr := _leg_pace("run")
-	var lw := get_animation(String(_legs["walk"].animation)).length if has_animation(String(_legs["walk"].animation)) else 1.0
-	var lr := get_animation(String(_legs["run"].animation)).length if has_animation(String(_legs["run"].animation)) else 1.0
-	var f := clampf((pace - pw) / maxf(pr - pw, 0.0001), 0.0, 1.0)
-	return maxf(lerpf(pw * lw, pr * lr, f) / lerpf(lw, lr, f), 0.0001)
 
 
 ## the legs' walk and run points at this body's own stride in the world,
