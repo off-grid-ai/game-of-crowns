@@ -327,6 +327,13 @@ func _log_perf(delta: float) -> void:
 	if _perf_at > 0.0:
 		return
 	_perf_at = 10.0
+	var t_log := Time.get_ticks_usec()
+	_write_perf()
+	add("perf.log", Time.get_ticks_usec() - t_log)  # the probe's own cost, named, so a SLOW-FRAME never blames the game for it
+
+
+## The ten-second line in user://perf.log (and, measuring, the PERF line and the minute's node walks).
+func _write_perf() -> void:
 	var f := FileAccess.open("user://perf.log", FileAccess.READ_WRITE if FileAccess.file_exists("user://perf.log") else FileAccess.WRITE)
 	if f == null:
 		return
@@ -345,7 +352,9 @@ func _log_perf(delta: float) -> void:
 		RenderingServer.viewport_set_measure_render_time(vp_rid, true)
 		var render_cpu := RenderingServer.viewport_get_measured_render_time_cpu(vp_rid) + RenderingServer.get_frame_setup_time_cpu()
 		var render_gpu := RenderingServer.viewport_get_measured_render_time_gpu(vp_rid)
-		var folk := main.get_tree().get_nodes_in_group("people")
+		# The people walked once a minute with the other node walks (every ten seconds they were the probe's own hitch).
+		var walk := _walks % 6 == 0
+		var folk: Array = main.get_tree().get_nodes_in_group("people") if walk else []
 		var minds := folk.filter(func(n): return n.get_node_or_null("Mind") != null).size()
 		# The jobs' tally since the last line, on this line too (the run's log is what is read; perf.log has it below).
 		var tallied := PackedStringArray()
@@ -353,12 +362,12 @@ func _log_perf(delta: float) -> void:
 			tallied.append("%s:%.1fms/%d" % [k, tally[k][0] / 1000.0, tally[k][1]])
 		print("PERF video=%.0fMB buffers=%.0fMB static=%.0fMB frames=%d over_200ms=%d fps=%d process=%.1fms render_cpu=%.1fms gpu=%.1fms people=%d minds=%d view=%dx%d scale=%.2f jobs=%s holders=%s" % [Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0,
 			Performance.get_monitor(Performance.RENDER_BUFFER_MEM_USED) / 1048576.0, Performance.get_monitor(Performance.MEMORY_STATIC) / 1048576.0, _frames, _slow,
-			Engine.get_frames_per_second(), Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0, render_cpu, render_gpu, folk.size(), minds, main.get_viewport().get_visible_rect().size.x, main.get_viewport().get_visible_rect().size.y, main.get_viewport().scaling_3d_scale, ",".join(tallied), _holders(folk)])
+			Engine.get_frames_per_second(), Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0, render_cpu, render_gpu, folk.size(), minds, main.get_viewport().get_visible_rect().size.x, main.get_viewport().get_visible_rect().size.y, main.get_viewport().scaling_3d_scale, ",".join(tallied), _holders(folk) if walk else "-"])
 	if probing:
-		f.store_line("    people by holder (all/visible) " + _holders(main.get_tree().get_nodes_in_group("people")))
 		f.store_line("    stages " + _stages_line())
 		_walks += 1
-		if _walks % 6 == 1:  # the node walks once a minute: every ten seconds they were the probe's own 250-350 ms hitch
+		if _walks % 6 == 1:
+			f.store_line("    people by holder (all/visible) " + _holders(main.get_tree().get_nodes_in_group("people")))  # the node walks once a minute: every ten seconds they were the probe's own 250-350 ms hitch
 			f.store_line("    every frame " + _tickers())
 			f.store_line("    textures " + _textures())
 			var torn := _torn()
@@ -369,8 +378,9 @@ func _log_perf(delta: float) -> void:
 		for k in tally:
 			jobs.append("%s:%.1fms/%d" % [k, tally[k][0] / 1000.0, tally[k][1]])
 		f.store_line("    jobs (10 s) " + ", ".join(jobs))
-		f.store_line("    engine " + _engine_counts())
-		if main.terrain and main.terrain.forest and main.get_viewport().get_camera_3d():
+		if _walks % 6 == 1:
+			f.store_line("    engine " + _engine_counts())  # every node in the tree: once a minute with the other walks
+		if _walks % 6 == 1 and main.terrain and main.terrain.forest and main.get_viewport().get_camera_3d():
 			f.store_line("    woods " + main.terrain.forest.census(main.get_viewport().get_camera_3d()))  # forest.gd: tiers in range and on screen
 	if probing and not ring_clips.is_empty():
 		var by := ring_clips.keys()
