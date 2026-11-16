@@ -144,9 +144,31 @@ func verbs(entry: Dictionary) -> Array:
 		return _counsel_rows(e)
 	var rows := _answers(entry)
 	var go := _row("go", entry, {})
+	for r in rows:
+		if not String(r.get("verb", "")) in ["leave", "rule"]:
+			_follows(r, go)
 	if not go.is_empty():
 		rows.append(go)
 	return rows
+
+
+## An answer takes the camera to where it lands, as Go there does (Mac 2026-11-16: "I'm not seeing the camera pan when
+## I select an answer"; his own click, so the camera follows him: it never moves on its own, and Space goes back,
+## news.gd). Leave it and opening the court stay put.
+func _follows(r: Dictionary, go: Dictionary) -> void:
+	if go.is_empty() or not go.has("call"):
+		return
+	var did: Callable = r.get("call", Callable())
+	var there: Callable = go["call"]
+	r["call"] = func():
+		if did.is_valid():
+			did.call()
+		there.call()
+	if r.has("answer"):
+		var waits: Callable = r["answer"]
+		r["answer"] = func(done: Callable):
+			waits.call(done)
+			there.call()
 
 
 ## The realm's matter this news is about (bridge /world counsel): the one it names, else the one standing at its town
@@ -178,8 +200,11 @@ func _counsel_rows(entry: Dictionary) -> Array:
 			var act: Dictionary = a
 			var gate: Dictionary = main.ui.act_gate(act)
 			rows.append({"verb": "counsel", "label": String(act.get("label", "")) + String(gate["suffix"]), "cost": int(act.get("cost", 0)) * UI.CROWNS,
-				"enabled": bool(gate["enabled"]), "why": String(gate["why"]), "tip": "", "call": func(): main.ui.answer_counsel(act, key)})
+				"enabled": bool(gate["enabled"]), "why": String(gate["why"]), "tip": "", "call": func(): main.ui.answer_counsel(act, key), "ui": String(act.get("ui", ""))})
 	var go := _row("go", entry, {})
+	for r in rows:
+		if not String(r.get("ui", "")) in ["leave", "court"]:
+			_follows(r, go)
 	if not go.is_empty():
 		rows.append(go)
 	return rows
