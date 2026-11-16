@@ -1,5 +1,5 @@
 {
- "_": "The one look (PLAN.md Phase 2 item 1; retargeted by Mac to Warcraft III Reforged at the RTS camera: chunky readable shapes, rich saturated colour, bold house colours, crisp light). look.gd reads it. on: the switch (or --look=one); off keeps today's light. sun_elevation: degrees above the horizon (25-35: long soft shadows). sun_energy: the sun's strength (Sky3D, 1 its default; art target town-b: bright late-afternoon sun); shadow_opacity: how dark its shadows fall (1 black; town-b: soft); ambient_energy: the shade's fill. sun_color / horizon_color: the warm key (about 4000 K, late afternoon) at height and near the horizon. sky_contribution: how much of the shade's light comes from the sky (the rest is ambient_color: the cool blue fill in the shadows). lut: the one colour grade, on every view (assets/grade/v3b.png: fitted to 01-town by tools/fit_look_lut.py from Kingsmere's frames, round 8's correction composed after the earlier v3 grade; the earlier golden-hour and v3 grades are gone; empty: none). saturation, contrast: the gentle S-curve after AgX. exposure. haze_color: the warm distance haze. kit_tints: the free kit's materials re-graded by name (a multiply on their colour: earthy terracotta roofs, honey stone, darker oak, deeper leaves; kit.py's unify table). ssao / ssil: soft contact shadows (radius, intensity, power) and bounced light. haze: the volumetric haze's density near the ground (fades out as the camera pulls back) and the distance fog's density.",
+ "_": "The one look (PLAN.md Phase 2 item 1; retargeted by Mac to Warcraft III Reforged at the RTS camera: chunky readable shapes, crisp light; the colour muted and weathered since Mac 2026-11-16: "bright red everywhere looks like a joke", "the right medieval feel, not too playful", so house colours stay readable but never bold). look.gd reads it. on: the switch (or --look=one); off keeps today's light. sun_elevation: degrees above the horizon (25-35: long soft shadows). sun_energy: the sun's strength (Sky3D, 1 its default; art target town-b: bright late-afternoon sun); shadow_opacity: how dark its shadows fall (1 black; town-b: soft); ambient_energy: the shade's fill. sun_color / horizon_color: the warm key (about 4000 K, late afternoon) at height and near the horizon. sky_contribution: how much of the shade's light comes from the sky (the rest is ambient_color: the cool blue fill in the shadows). lut: the one colour grade, on every view (assets/grade/v3b.png: fitted to 01-town by tools/fit_look_lut.py from Kingsmere's frames, round 8's correction composed after the earlier v3 grade; the earlier golden-hour and v3 grades are gone; empty: none). saturation, contrast: the gentle S-curve after AgX. exposure. haze_color: the warm distance haze. kit_tints: the free kit's materials re-graded by name (a multiply on their colour: earthy terracotta roofs, honey stone, darker oak, deeper leaves; kit.py's unify table). ssao / ssil: soft contact shadows (radius, intensity, power) and bounced light. haze: the volumetric haze's density near the ground (fades out as the camera pulls back) and the distance fog's density.",
  "on": false,
  "sun_elevation": 38.0,
  "sun_energy": 1.3,
@@ -30,7 +30,7 @@
   0.92
  ],
  "lut": "res://assets/grade/v3b.png",
- "saturation": 1.3,
+ "saturation": 0.85,
  "contrast": 1.15,
  "exposure": 1.16,
  "haze_color": [
@@ -121,7 +121,7 @@
    "MI_WoodTrim": 0.04,
    "MI_Banner": 0.95
   },
-  "saturation": 1.0,
+  "saturation": 0.7,
   "mask": {"_": "A Meshy building's own team mask (tools/meshy_import.py mask.png: white where the colour goes, by data/meshy.json mask rules, its red roof tiles; team_colour.gd _meshy_mask): amount, how much of the colour the masked parts take; ordinary, the share of that an ordinary house (ranks 0 and 1) wears, the castle, the hall and the manor all of it. The square set's masks are blank, so the crown's Kingsmere keeps its own red roofs.", "amount": 0.85, "ordinary": 0.45},
   "ranks": {
    "house_hovel": 0,
@@ -156,9 +156,9 @@
     0.0
    ],
    "thatch": [
-    0.72,
-    0.53,
-    0.27
+    0.6,
+    0.5,
+    0.36
    ],
    "thatch_old": [
     0.5,
@@ -181,7 +181,7 @@
   },
   "paint": {
    "ordinary_share": 0.75,
-   "saturation": 0.8,
+   "saturation": 0.55,
    "warm": [
     1.0,
     0.93,
@@ -191,7 +191,7 @@
  },
   "clarity": {
     "_": "With the camera's clarity on (data/camera.json clarity.on; --clarity=old for the before shot): the town seen in its true colours at its own zoom, not washed orange (Mac, 2026-11-12; art target 01-town). Over the one look's values: saturation, contrast, sun_color, haze_color (the haze's and the depth fog's light). hazeTown: the volumetric haze's share of its density at the closest zoom, rising to all of it by hazeFull (camera distance). No near blur at all; the far blur only beyond farBlurFrom camera-distances (past the town's far edge), at farBlur strength.",
-    "saturation": 1.12,
+    "saturation": 0.85,
     "contrast": 1.14,
     "sun_color": [1.0, 0.94, 0.86],
     "haze_color": [0.86, 0.9, 0.96],
@@ -217,7 +217,7 @@
     "fill": { "energy": 0.45, "color": [0.92, 0.95, 1.0] },
     "ssao": { "radius": 0.9, "intensity": 1.6, "power": 1.6, "light_affect": 0.12 },
     "haze": { "volumetric": 0.0015, "fade_from": 14.0, "fade_to": 40.0, "fog": 0.0003, "fog_far": 0.0001, "fog_from": 20.0, "fog_to": 60.0, "depth": { "_": "look.gd: the drawn-back views' air by depth (WC3, AoE2: the far land fades into the air, the subject stays clear): between from and to (camera distance) Godot's depth fog comes in, clear to begin camera-distances past the lens, rising (curve) to most by end; its colour the haze's (map_air warms it at the map), with the sky's through fog_aerial_perspective.", "from": 40.0, "to": 60.0, "begin": 1.3, "end": 5.0, "curve": 1.6, "most": 0.45, "near_begin": 3.0, "near_end": 9.0, "near_most": 0.75, "_near": "Below from (town and army zoom): the depth fog clear to near_begin camera-distances (the town and what stands round it), most near_most by near_end, so the far land past the town fades into soft blue-grey haze, never flat stretched bands (Mac, Kingsmere low view). 0 near_most: none." } },
-    "clarity": { "hazeTown": 0.08, "contrast": 1.0, "saturation": 1.36, "sun_color": [1.0, 0.96, 0.9], "haze_color": [0.84, 0.89, 0.98] },
+    "clarity": { "hazeTown": 0.08, "contrast": 1.0, "saturation": 0.85, "sun_color": [1.0, 0.96, 0.9], "haze_color": [0.84, 0.89, 0.98] },
     "kit_tints": { "MI_Plaster": [1.05, 1.05, 1.03], "MI_UnevenBrick": [0.97, 0.97, 0.98] },
     "outline": {
       "_": "The painted line and edge light (look.gd _add_outline, scripts/outline.gdshader: a full-screen pass over depth and normals, built on EMBYR's High Quality Post Process Outline and Leo Peltola's outline & highlight, both MIT, godotshaders.com; art target 01-town's bold painted edges; the measured fine-detail gap, docs/review/look-gap.md). on: the switch (v3 only). line_color: the line's colour and strength [r, g, b, a] (warm dark brown, never black). width_near / width_far: its width in pixels at near_at / far_at (game units from the lens), gone by fade_far. depth_threshold: a depth jump of this share of the distance (summed over the 8 neighbours) draws a silhouette line; grazing and grazing_power: how much larger it must be on a surface seen edge-on (the ground at a low pitch, or it fills with lines). normal_threshold / normal_smoothing: how sharp an inward fold draws a line (a wall meeting the ground, the eave under a roof), at normal_line of the silhouette's strength. light_color: the edge light's colour and strength on outward folds (a roof's ridge, a beam's corner, trims), from convexity light_from to light_to, only within same_surface of the distance (one surface). near_soft: the line's and edge light's strength at near_at, whole again by soft_to (game units), so the close view isn't inked. Round 3 (focus r3, close view dist 6: heavy dark ink on everything, roofs and people muddy; 01-town's lines are thin, soft and warm): line_color a lighter warm brown at 0.38 (was 0.16/0.09/0.05 at 0.7), width_near 1.0 / width_far 0.7 (were 1.6 / 0.8), near_soft 0.35 to soft_to 18 (new), depth_threshold 0.05 (was 0.035: fewer lines round small props), normal_threshold 1.3 and normal_line 0.15 (were 0.9 / 0.6: the scene's normals carry the normal maps, so every roof tile and cobble drew a crease line), light_color's strength 0.16 (was 0.22). Every value an estimate until filmed; tune for Kingsmere's square at the default town view.",
