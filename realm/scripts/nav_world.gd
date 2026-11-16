@@ -35,6 +35,7 @@ const PerfTools := preload("res://scripts/perf_tools.gd")
 const LAND_KINDS: Array[StringName] = [&"host", &"wide", &"walk", &"engine"]  # baked in this order: the roads and hosts first
 const WATER: StringName = &"water"
 const LAYERS: Array[StringName] = [&"ways", &"open", &"river"]
+const PARTITIONS := {"watershed": NavigationMesh.SAMPLE_PARTITION_WATERSHED, "monotone": NavigationMesh.SAMPLE_PARTITION_MONOTONE, "layers": NavigationMesh.SAMPLE_PARTITION_LAYERS}
 const BLOCKING_CLAIMS := ["host", "body", "engine"]  # held ground carved out of the maps (ground.gd claims) once it stands
 
 static var terrain: Node3D  # terrain.gd: the land, its water and its Terrain3D
@@ -898,7 +899,9 @@ static func _recast(kind: StringName, c: Vector2i) -> NavigationMesh:
 	nm.edge_max_error = 1.3
 	nm.detail_sample_distance = 6.0
 	nm.detail_sample_max_error = 1.0
-	nm.sample_partition_type = NavigationMesh.SAMPLE_PARTITION_WATERSHED
+	# Recast's partition (ground.json nav.partition): watershed. Measured on a walk chunk (tools/nav_partition_bench.gd):
+	# watershed 33 ms and 936 polygons, monotone 26 ms but twice the polygons, layers 1,060 ms.
+	nm.sample_partition_type = PARTITIONS.get(String(Data.value("ground", "nav.partition", "watershed")), NavigationMesh.SAMPLE_PARTITION_WATERSHED)
 	nm.filter_baking_aabb = AABB(Vector3(c.x * chunk, -50.0, c.y * chunk), Vector3(chunk, 100.0, chunk))
 	return nm
 
