@@ -1,13 +1,15 @@
 extends "res://scripts/army.gd"
 ## A host on a battle's field (army_field.gd, field_cells.gd: Mac 2026-11-17, "everything is a cell"). The same host
-## as any other, with the answers a battle asks of it: every troop draws the same few men (battle.json
-## field.cells.troop: "5 visual soldiers per troop. 221"), a man a cell (field.cells.size), its troops packed
+## as any other, with the answers a battle asks of it: every troop draws a few men by its kind (troop.gd field_men:
+## foot 3-3-2, horse 2-2-1), a man a cell (field.cells.size), its troops packed
 ## close (field.cells.packed), stood where its order puts it (no muster ground cleared around it), and each figure
 ## drawn where his runner stands, with no chase or sway of its own (the cell rule and his Mover already walked him).
 
+const Troops := preload("res://scripts/troops.gd")  # each regiment as its Troop: how many men it draws, its shape
 
-func _drawn(_spec: Dictionary) -> int:
-	return int(Data.num("battle", "field.cells.troop", 5))
+
+func _drawn(spec: Dictionary) -> int:
+	return Troops.of({"role": String(_unit(String(spec["unit"])).get("role", "melee"))}).field_men()
 
 
 func _room(r: Dictionary) -> void:
@@ -15,8 +17,8 @@ func _room(r: Dictionary) -> void:
 	r["sr"] = r["sf"]
 
 
-func _line_form(_r: Dictionary) -> String:
-	return "troop"
+func _line_form(r: Dictionary) -> String:
+	return Troops.of(r).field_form()
 
 
 func _packed() -> Vector2:

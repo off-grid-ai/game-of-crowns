@@ -3,6 +3,8 @@ extends "res://scripts/fighting_unit.gd"
 ## owns them); this is what the battle asks instead of reading its role. Every kind keeps the field's one rule
 ## (field_cells.gd); a kind overrides only the answers below. Made by troops.gd.
 
+const Data := preload("res://scripts/data.gd")
+
 var r: Dictionary
 
 
@@ -35,6 +37,16 @@ func shoots() -> bool:
 ## Whether its men ride (what they look like and the room each needs; never what they do).
 func mounted() -> bool:
 	return false
+
+
+## Its men on a battle's field and the template they stand in (battle.json field.cells.troop.<this>, formations.json
+## templates.<form>; Mac 2026-11-17: foot "3-3-2. 8 soldiers per troop", horse "5 horses in a troop").
+func field_men() -> int:
+	return int((Data.value("battle", "field.cells.troop", {}) as Dictionary).get("foot", 8))
+
+
+func field_form() -> String:
+	return "troop"
 
 
 ## The row of a battle order it stands in (battle_orders.json orders.<key>.rows[].role).

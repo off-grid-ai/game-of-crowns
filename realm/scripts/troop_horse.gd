@@ -7,5 +7,13 @@ func mounted() -> bool:
 	return true
 
 
+func field_men() -> int:
+	return int((Data.value("battle", "field.cells.troop", {}) as Dictionary).get("horse", 5))
+
+
+func field_form() -> String:
+	return "troop_horse"
+
+
 func strikes_as() -> String:
 	return "horse"

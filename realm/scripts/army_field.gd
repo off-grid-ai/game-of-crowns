@@ -419,6 +419,21 @@ func _process_timed(delta: float) -> void:
 					print("WHERE %d %s %s at grips %d cells %s" % [i, r["role"], r["state_name"], fighting, ",".join(cs)])
 					var wp: Vector3 = (r["node"] as Node3D).global_position
 					print("WORLD %d %s %s %.3f %.3f %.3f" % [i, r["role"], r["state_name"], wp.x, wp.z, (r["node"] as Node3D).rotation.y])
+					# Where its men are by the rule (cells), by their bodies (runners) and as drawn (figures), each their middle.
+					var by := [Vector3.ZERO, Vector3.ZERO, Vector3.ZERO]
+					var nm := 0
+					var marks: PackedVector3Array = r.get("marks", PackedVector3Array())
+					var run: Dictionary = r.get("runners", {})
+					for m in (r.get("cell_men", []) as Array):
+						var k := int(m["s"])
+						if not run.has(k) or not is_instance_valid(run[k]["node"]) or k >= marks.size():
+							continue
+						by[0] += cells.world(m["c"])
+						by[1] += (run[k]["node"] as Node3D).global_position
+						by[2] += (r["node"] as Node3D).to_global(marks[k])
+						nm += 1
+					if nm > 0:
+						print("BODY %d %s cells %.2f,%.2f runners %.2f,%.2f figures %.2f,%.2f" % [i, r["role"], by[0].x / nm, by[0].z / nm, by[1].x / nm, by[1].z / nm, by[2].x / nm, by[2].z / nm])
 
 
 ## The battle is over and gone (casebook, War and sieges: the field remembers): the living march off (they fade), the
