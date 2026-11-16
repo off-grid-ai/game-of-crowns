@@ -46,6 +46,7 @@ var _changed := false  # the foe has changed his order once (_foe_order)
 var _alarm_t := 0.0  # seconds to the battle's next alarm to the folk about it (_alarm)  # the battle order each side stands in (battle_orders.gd)
 var main: Node
 var men := 0
+var _house_heart := [1.0, 1.0]  # each side's house's heart, fixed as the battle begins (_house_hearts)
 var loser := 1  # the side losing now (_day: the fewer men standing), and once a side has none standing, the side beaten
 var sides: Array = []  # the two hosts
 var clock := -1.0  # seconds since the battle began; below 0 while the hosts deploy
@@ -305,6 +306,7 @@ func _foe_house() -> Dictionary:
 
 func _begin() -> void:
 	clock = 0.0
+	_house_hearts()
 	# One rule for every soldier (Mac 2026-11-17: "everything is a cell"): every man of both hosts takes the cell he
 	# stands on, and from here the field's rule moves him (field_cells.gd); every troop the same, whatever its kind.
 	cells = FieldCells.new((sides[0] as Army).field(), (sides[1] as Army).field(), Data.num(F, "field.cells.size", 0.26))
@@ -513,16 +515,65 @@ func _standing_men() -> Array:
 	return men
 
 
-## Each side's morale: the larger host has the heart (Mac 2026-11-17: "if you're the larger force you'll have a
-## better chance"): its men standing over the foe's, to field.combat.morale.power, held between least and most.
+## Each side's morale (Mac 2026-11-17: "if you're the larger force you'll have a better chance", "morale is affected
+## not only by the size of the current host, but obviously richness of the house, total army, previous wins, losses"):
+## its men standing over the foe's to field.combat.morale.power, times its house's heart (_house_hearts), held between
+## least and most.
 func _morale() -> Array:
 	var men := _standing_men()
 	var k: Dictionary = Data.value(F, "field.combat.morale", {})
 	var out := [1.0, 1.0]
 	for i in 2:
 		var ratio := float(men[i]) / maxf(float(men[1 - i]), 1.0)
-		out[i] = clampf(pow(ratio, float(k.get("power", 0.5))), float(k.get("least", 0.5)), float(k.get("most", 2.0)))
+		out[i] = clampf(pow(ratio, float(k.get("power", 0.5))) * float(_house_heart[i]), float(k.get("least", 0.5)), float(k.get("most", 2.0)))
 	return out
+
+
+## Each side's house's heart as the battle begins (the realm's mirror, awareness.gd; Freeciv owns the purse and the
+## armies, the bridge the battle cards): its purse over the foe house's to field.combat.morale.purse, its whole army
+## (every company it has in the realm) over the foe's to .army, and .record a battle for each it won less each it lost
+## among the King's battle cards (/world battles), that held between .record_least and .record_most. A side whose house
+## the realm doesn't know (a band without banners) has a plain heart.
+func _house_hearts() -> void:
+	var k: Dictionary = Data.value(F, "field.combat.morale", {})
+	var pids := [_side_pid(0), _side_pid(1)]
+	var by := {}
+	for pl in Army._rec("players", []):
+		by[int(pl.get("id", -1))] = pl
+	var cards: Array = []
+	var st := Army._store()
+	if st != null and st.has_method("battles"):
+		cards = st.call("battles")
+	for i in 2:
+		var me: Dictionary = by.get(pids[i], {})
+		var foe: Dictionary = by.get(pids[1 - i], {})
+		if me.is_empty() or foe.is_empty():
+			_house_heart[i] = 1.0
+			continue
+		var purse := pow(maxf(float(me.get("gold", 0)), 1.0) / maxf(float(foe.get("gold", 0)), 1.0), float(k.get("purse", 0.1)))
+		var army := pow(maxf(float(me.get("units", 0)), 1.0) / maxf(float(foe.get("units", 0)), 1.0), float(k.get("army", 0.2)))
+		var net := 0
+		for c in cards:
+			if (c.get("sides", []) as Array).any(func(x): return int(x.get("house", -1)) == pids[i]):
+				net += 1 if int(c.get("victor", -1)) == pids[i] else -1
+		var record := clampf(1.0 + float(k.get("record", 0.05)) * net, float(k.get("record_least", 0.75)), float(k.get("record_most", 1.25)))
+		_house_heart[i] = purse * army * record
+		if play.is_empty():
+			print("BATTLE heart %s: purse %.2f, army %.2f, record %+d %.2f, %.2f" % ["crown" if i == 0 else "foe", purse, army, net, record, _house_heart[i]])
+
+
+## The realm's player id of side i's house (main._houses; the test aid's crown side, the crown's), -1 if none.
+func _side_pid(i: int) -> int:
+	var house: Dictionary = (sides[i] as Army).battle.get("house", {})
+	var houses: Variant = main.get("_houses")
+	if not (houses is Dictionary):
+		return -1
+	for pid in houses:
+		var h: Variant = houses[pid]
+		if h is Dictionary and (is_same(h, house) or (house.is_empty() and i == player_side() and h.get("crown", false)) \
+				or (not house.is_empty() and String(h.get("name", "")) == String(house.get("name", "?")))):
+			return int(pid)
+	return -1
 
 
 ## Steel near: the battle is news where it is fought (scene_kinds.gd battle, hostile), every field.alarm_every seconds
@@ -811,6 +862,13 @@ func _step_cells(delta: float) -> void:
 
 ## Each man of r on his way to his cell, or standing at grips (see _advance).
 func _walk_men(r: Dictionary, _dt: float) -> void:
+	var t0 := Time.get_ticks_usec() if PerfTools.probing else 0
+	_walk_men_timed(r)
+	if PerfTools.probing:
+		PerfTools.add("field.walk_men", Time.get_ticks_usec() - t0)
+
+
+func _walk_men_timed(r: Dictionary) -> void:
 	var runners: Dictionary = r.get("runners", {})
 	if cells == null or runners.is_empty():
 		return
@@ -845,7 +903,10 @@ func _walk_men(r: Dictionary, _dt: float) -> void:
 		elif Vector2(goal.x - at.x, goal.z - at.z).length() > 0.02:
 			look = Vector3(goal.x - at.x, 0.0, goal.z - at.z).normalized()
 		var far := Vector2(goal.x - at.x, goal.z - at.z).length() > 0.03
+		var tw := Time.get_ticks_usec() if PerfTools.probing else 0
 		Mover.of(man).toward(goal, pace / float(m["dur"]) if far else 0.0, look)
+		if PerfTools.probing:
+			PerfTools.add("field.toward", Time.get_ticks_usec() - tw)
 		var want := "walk" if far else "ready"
 		if m["fight"]:
 			want = "grips"
@@ -860,7 +921,10 @@ func _walk_men(r: Dictionary, _dt: float) -> void:
 			vat.update_instance_track(s, army.track(r, want))
 			vat.update_instance_animation_offset(s, _rng.randf())
 		gait[s] = want
+	var tf := Time.get_ticks_usec() if PerfTools.probing else 0
 	_follow_runners(r)
+	if PerfTools.probing:
+		PerfTools.add("field.follow_runners", Time.get_ticks_usec() - tf)
 	if count > 0:
 		# The block's body at its men's middle: its banner and plate go with them.
 		mid /= float(count)
