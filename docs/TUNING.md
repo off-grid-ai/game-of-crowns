@@ -747,3 +747,4 @@ Switches (`--name`) go after `--` on the game's command line.
 - The battle result moment (Total War): `realm/data/ui.json` `moment` (`words`, `heroic_ratio`, `at`, `hold`).
 - Which of the King's swings show as a moment, and their words: `bridge/data/moments.json` (threat met / unanswered, rising crushed, the crown endures, town lost, Kingsmere sacked).
 - The reign track under the houses (Frostpunk): `realm/data/ui.json` `reign_track` (`below`, `width`).
+- camera.json arrive.wait (2.5 s): the longest a "go there" waits for the town to stand whole before the camera glides (main._look_city).

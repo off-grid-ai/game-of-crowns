@@ -1448,11 +1448,38 @@ func _focus_city(city_id: int) -> void:
 
 
 ## The camera to a town, its card left shut (news and the chronicle go to a place; picking the town is the King's click).
+## The camera goes to a town on the King's click (Go there, an answer, a name): the town is made whole first, its
+## buildings raised and its people staged, then the camera glides there (Mac 2026-11-16: "when it pans it should make
+## sure the stuff is rendered"; open worlds load the destination before they arrive). A word at once that it's on its
+## way; at most camera.json arrive.wait seconds before it goes regardless.
+var _look_run := 0
 func _look_city(city_id: int) -> void:
 	for c in awareness.rec("cities", []):
 		if int(c["id"]) == city_id:
-			rig.frame_town(terrain.world_pos(float(c["x"]), float(c["y"])), int(c.get("size", 4)))
+			var at: Vector3 = terrain.world_pos(float(c["x"]), float(c["y"]))
+			_look_run += 1
+			var run := _look_run
+			var wait := float(Data.num("camera", "arrive.wait", 2.5))
+			preload("res://scripts/view_tier.gd").prefetch(at, wait + 3.0)
+			if not _town_ready(city_id):
+				ui.toast("To %s…" % String(c.get("title", c.get("name", "the town"))))
+			var until := Time.get_ticks_msec() + int(wait * 1000.0)
+			towns.ensure(city_id)
+			while not _town_ready(city_id) and Time.get_ticks_msec() < until:
+				await get_tree().process_frame
+			if run == _look_run:
+				rig.frame_town(at, int(c.get("size", 4)))
 			return
+
+
+## Whether a town stands whole: raised, and its life (its people, stalls and scenes) staged (towns.gd Life's sig).
+func _town_ready(city_id: int) -> bool:
+	var t: Dictionary = towns.towns.get(city_id, {})
+	var node = t.get("node")
+	if not (node is Node3D) or not is_instance_valid(node) or towns._queue.has(city_id):
+		return false
+	var life: Node = (node as Node3D).get_node_or_null("Life")
+	return life != null and life.has_meta("sig")
 
 
 func _focus_house(owner: int) -> void:

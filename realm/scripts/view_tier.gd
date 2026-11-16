@@ -172,8 +172,19 @@ func _at(at: Variant) -> Vector3:
 
 ## A place's tier at `at`; `was` its tier now, so a lens resting by FAR_FROM doesn't flip it every frame (it leaves
 ## FAR only under FAR_FROM less FAR_BACK).
+## A place about to be looked at (the camera going there on the King's click): everything within its reach is NEAR
+## until `seconds` pass, so its life is staged before the camera arrives (open worlds load the destination first).
+static var _ahead := Vector3.INF
+static var _ahead_until := 0
+static func prefetch(at: Vector3, seconds: float) -> void:
+	_ahead = at
+	_ahead_until = Time.get_ticks_msec() + int(seconds * 1000.0)
+
+
 func _tier(at: Vector3, radius: float, was := -1) -> int:
 	if rig == null:
+		return NEAR
+	if _ahead != Vector3.INF and Time.get_ticks_msec() < _ahead_until and Vector2(at.x - _ahead.x, at.z - _ahead.z).length() < NEAR_REACH * 0.5 + radius:
 		return NEAR
 	if not _seen(at, radius):
 		return OFF
