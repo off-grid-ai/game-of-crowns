@@ -43,5 +43,19 @@
   "_": "What the crown's wars cost each season (war.js upkeep; Total War's upkeep, Mac 2026-11-16: 'its very cheap'): every great house at war with the crown, in gold (x100 crowns): the first base, each further one step more than the last (two wars: base + base*(1+step)). Paid from the treasury each season; said in the chronicle once a year.",
   "base": 30,
   "step": 1.0
+ },
+ "camps": {
+  "_": "The camps move while a war runs (war.js camps; WAR.md step 8; Diplomacy's bandwagoning and balancing, CK3's allies leaving a lost war). Looked at every `every` seasons from the war's second: an ally whose favour has fallen under `leaveBelow`, or whose side is losing by `losing` or more (peace.js war score), leaves with chance `leave`; a house that waits joins the side ahead by `ahead` or more with chance `bandwagon` (the crown's side only if its favour is at least `joinFloor`); with the realm's alarm at `alarmAt` or more and the crown ahead, a house cold to the crown (under the cooling band) joins the foe instead with chance `balance`; the foe's allies leave when the crown is ahead by `foeQuits` with chance `leave`. A house that leaves makes an armistice of `armistice` turns with the side it fought. At most one house moves a look.",
+  "every": 2,
+  "leaveBelow": 35,
+  "losing": 30,
+  "leave": 0.35,
+  "ahead": 30,
+  "bandwagon": 0.3,
+  "joinFloor": 40,
+  "alarmAt": 60,
+  "balance": 0.3,
+  "foeQuits": 50,
+  "armistice": 16
  }
 }

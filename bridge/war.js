@@ -289,6 +289,7 @@ function seasonOf(ctx, turn, w) {
       text: `The war on ${short(foe)}: the royal host is gone from before ${cityName(was)}, and the town still flies ${short(foe)}'s banner. The captains regroup${nextId != null && nextId !== was ? `; ${cityName(nextId)} next` : ""}.` });
   }
   next(ctx, turn, w);
+  camps(ctx, turn, w);
   // The house answers in kind (characters.js retaliate): a raid on the King's nearest town or its own host on it.
   if (w.struck == null ? turn > w.since : turn - w.struck >= WAR.retaliate.every) {
     const hit = ctx.court?.retaliate?.(w.house, world, { send: (l) => ctx.send(`lua cmd ${l}`), crownId: crown.id, R: WAR.retaliate }, turn);
@@ -298,6 +299,76 @@ function seasonOf(ctx, turn, w) {
     }
   }
   chron.saveMeta(meta);
+}
+
+// The camps move while the war runs (data/war.json camps; WAR.md step 8; Diplomacy's bandwagoning and balancing, CK3's
+// allies leaving a lost war): an ally gone cold or on the losing side leaves; a house that waits joins the side that is
+// ahead, or, with the realm afraid of the King and him ahead, the foe; the foe's allies leave a war it is losing badly.
+// At most one house moves a look, so each move is news. Its men follow its oath (meta.alliances, campaigns.js) and
+// Freeciv's diplomacy (the one writer, ctx.diplomacy); the camps on /world (view) and so the map's war mode, the
+// houses strip and the war banner follow from w.allies, w.against and w.waiting. seasonOf saves the realm after.
+export function camps(ctx, turn, w) {
+  const { world, meta, record } = ctx;
+  const C = WAR.camps;
+  if (!C || turn <= w.since || (turn - w.since) % C.every !== 0) return;
+  const crown = crownOf(world);
+  const foe = world.players.find((p) => p.id === w.house);
+  if (!crown || !foe) return;
+  const holds = (pid) => (world.cities ?? []).some((c) => c.owner === pid);
+  const nameOf = (pid) => houseFor(world.players.find((p) => p.id === pid) ?? {}).name;
+  const score = Peace.standing(meta, world, w.house)?.score ?? 0;
+  const fav = (pid) => ctx.favourOf?.(pid) ?? 50;
+  const roll = (chance) => Math.random() < chance;
+  const leaves = (pid, from, why) => {
+    w.waiting = [...new Set([...(w.waiting ?? []), pid])];
+    ctx.diplomacy?.([pid, from, C.armistice, "Armistice"]);
+    record({ turn, kind: "battle", attacker: pid, defender: from, text: why });
+  };
+  // An ally of the crown, cold to it or on the losing side.
+  for (const pid of [...(w.allies ?? [])].filter(holds)) {
+    const cold = fav(pid) < C.leaveBelow, losing = score <= -C.losing;
+    if (!(cold || losing) || !roll(C.leave)) continue;
+    w.allies = w.allies.filter((x) => x !== pid);
+    delete (w.commit ?? {})[pid];
+    if (meta.alliances) delete meta.alliances[pid];
+    leaves(pid, w.house, `${nameOf(pid)} leaves the war on ${short(foe)}: ${losing ? "it will not bleed for a war the crown is losing" : "it has no love left for the crown"}. Its men march home.`);
+    return;  // seasonOf saves the realm
+  }
+  // The foe's allies, when the crown is well ahead.
+  for (const pid of [...(w.against ?? [])].filter(holds)) {
+    if (score < C.foeQuits || !roll(C.leave)) continue;
+    w.against = w.against.filter((x) => x !== pid);
+    leaves(pid, crown.id, `${nameOf(pid)} makes its peace with the crown and leaves ${short(foe)} to fight alone.`);
+    return;  // seasonOf saves the realm
+  }
+  // A house that waits: with the side ahead, or against the King when the realm fears him.
+  for (const pid of [...(w.waiting ?? [])].filter(holds)) {
+    if (pid === crown.id || pid === w.house) continue;
+    const afraid = (meta.alarm ?? 0) >= C.alarmAt && score >= C.ahead && fav(pid) < BANDS.cooling;
+    if (afraid && roll(C.balance)) {
+      w.waiting = w.waiting.filter((x) => x !== pid);
+      w.against = [...new Set([...(w.against ?? []), pid])];
+      ctx.court?.onWar?.([pid, crown.id]);
+      record({ turn, kind: "battle", attacker: pid, defender: crown.id, text: `${nameOf(pid)} will not watch the crown swallow ${short(foe)}: it takes ${short(foe)}'s side.` });
+      return;  // seasonOf saves the realm
+    }
+    if (score >= C.ahead && fav(pid) >= C.joinFloor && roll(C.bandwagon)) {
+      w.waiting = w.waiting.filter((x) => x !== pid);
+      (w.allies ??= []).push(pid);
+      (w.commit ??= {})[pid] = WAR.sides.commit.grudging;
+      (meta.alliances ??= {})[pid] = Math.max(meta.alliances[pid] ?? 0, turn + WAR.join.seasons);
+      if (!atWarInFreeciv(ctx, pid, w.house)) ctx.diplomacy?.([pid, w.house, 0, "War"]);
+      record({ turn, kind: "battle", attacker: pid, defender: w.house, text: `${nameOf(pid)} sees which way the war goes and rides with the King against ${short(foe)}.` });
+      return;  // seasonOf saves the realm
+    }
+    if (score <= -C.ahead && roll(C.bandwagon)) {
+      w.waiting = w.waiting.filter((x) => x !== pid);
+      w.against = [...new Set([...(w.against ?? []), pid])];
+      ctx.court?.onWar?.([pid, crown.id]);
+      record({ turn, kind: "battle", attacker: pid, defender: crown.id, text: `${nameOf(pid)} sees the crown falter and takes ${short(foe)}'s side.` });
+      return;  // seasonOf saves the realm
+    }
+  }
 }
 
 const besieging = (meta, city) => (meta.campaigns ?? []).some((c) => c.city === city) || (meta.hostOrders ?? []).some((o) => o.kind === "march" && o.siege && o.city === city);
