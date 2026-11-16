@@ -59,6 +59,7 @@ func _process(_delta: float) -> void:
 	var side: int = field.player_side()
 	var over: bool = bool(field.get("_over")) or side < 0
 	_panel.visible = not over
+	_place()  # the control plane grows and shrinks with what it shows
 	var now := String((field.orders as Array)[maxi(side, 0)])
 	if now != _shown:
 		_shown = now
@@ -97,8 +98,8 @@ func _place() -> void:
 	_panel.reset_size()
 	var sz := _panel.get_combined_minimum_size()
 	var ui: Node = field.main.get("ui")
-	var foot: float = float(ui.plane.room()) if ui and ui.get("plane") else 0.0  # above the control plane, never over it
-	_panel.position = Vector2((vp.x - sz.x) * 0.5, vp.y - foot - sz.y - 12.0)
+	var top: float = float(ui.plane.top_y()) if ui and ui.get("plane") else vp.y  # above the control plane, never over it
+	_panel.position = Vector2((vp.x - sz.x) * 0.5, minf(top, vp.y) - sz.y - 12.0)
 
 
 static func _box(bg: Color, line: Color, width: int) -> StyleBoxFlat:

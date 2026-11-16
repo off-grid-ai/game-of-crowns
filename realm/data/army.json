@@ -11,7 +11,7 @@
   },
   "fallbackUnit": "men_at_arms",
   "_drawPerMan": "drawPerMan: one drawn soldier for this many men (0.1: one for ten, ~17 figures a 150-man company with the floor, on the map and in battle alike; Mac 2026-11-16: 'the same stuff everywhere ... no hacks'). Every regiment's figures come from it (the muster, field battles, the storm); its men, the number the player reads, stay its full strength; losses drop figures in step with its men (army_field.gd _fell). figureFloor: the figures every regiment draws before its one for ten, so each reads as a formed block (supervisor 12 Nov, after GoC's muster frames); figureBudget: the most figures the realm's biggest host may draw (6,000 figures ran 23-36 fps in batch 8, half of it against the 10 fps bar; army_probe 24).",
-  "drawPerMan": 0.1,
+  "drawPerMan": 0.2,
   "figureFloor": 2,
   "follow": {"_": "army.gd _follow: each man walks to his place in the block (Total War / 0 A.D. formation slots). pace: times his regiment's pace; vary: how much quicker or slower each man is (share); snap: further than this (world units) he is set on his place at once; turn: how fast he turns to his way (per second).", "sway": [0.03, 0.05], "sway_hz": 0.35, "pace": 1.6, "vary": 0.15, "snap": 1.5, "turn": 7.0},
   "figureBudget": 300,

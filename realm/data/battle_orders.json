@@ -7,12 +7,7 @@
       "rows": [
         {
           "role": "melee",
-          "abreast": 2,
-          "line": 1
-        },
-        {
-          "role": "melee",
-          "abreast": 2,
+          "abreast": 4,
           "line": 1
         },
         {
@@ -84,12 +79,7 @@
       "rows": [
         {
           "role": "melee",
-          "abreast": 2,
-          "line": 1
-        },
-        {
-          "role": "melee",
-          "abreast": 2,
+          "abreast": 4,
           "line": 1
         },
         {

@@ -32,7 +32,7 @@ func _capture_quality() -> void:
 	vp.scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR
 	vp.scaling_3d_scale = 1.0
 	vp.msaa_3d = Viewport.MSAA_4X
-	vp.use_taa = true
+	vp.use_taa = false  # TAA smeared the soldiers: their motion is in the shader, so it has no motion vectors (MSAA does the edges)
 	vp.screen_space_aa = Viewport.SCREEN_SPACE_AA_DISABLED
 	vp.mesh_lod_threshold = 1.0  # every mesh at full detail (play simplifies at 4 px)
 	RenderingServer.directional_shadow_atlas_set_size(8192, true)

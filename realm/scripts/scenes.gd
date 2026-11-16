@@ -512,26 +512,6 @@ func drop_banner(b: Node3D, face := Vector3.ZERO) -> void:
 		b.transform.basis = Basis(axis, -k * deg_to_rad(84)) * start, 1.0, 0.96, 0.15)
 
 
-func dust(root: Node3D, p: Vector3, along: Vector3, width: float) -> void:
-	# A thin haze kicked up along the line where the ranks meet, low and faint.
-	var d := puffs(Color(0.58, 0.52, 0.42, 0.07), 8, 1.6, 0.04, 0.09)
-	d.direction = Vector3(0, 0.2, 0)
-	d.spread = 70
-	d.initial_velocity_min = 0.02
-	d.initial_velocity_max = 0.06
-	d.gravity = Vector3(0, -0.01, 0)
-	d.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
-	d.emission_box_extents = Vector3(width * 0.5, 0.01, 0.05)
-	d.position = p
-	d.rotation.y = atan2(along.x, along.z) - PI / 2
-	d.emitting = true
-	var gd := Particles.to_gpu(d)
-	root.add_child(gd)
-	var tw := gd.create_tween()
-	tw.tween_interval(10.0)
-	tw.tween_callback(func(): gd.emitting = false)
-
-
 # --- sieges ------------------------------------------------------------------------------
 
 ## Whether a body reaching `body` all round (a man: 0; an engine: half its length) could stand here: clear ground

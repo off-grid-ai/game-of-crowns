@@ -95,6 +95,12 @@ func _run() -> void:
 			await create_timer(every).timeout
 			if bool(main.ui.paused):
 				main.ui.top_bar._toggle_pause()  # nothing in the realm holds the fight under test
+			for h in main.get_children():
+				if h is Node3D and h.get("battle") is Dictionary and (h.get("battle") as Dictionary).has("host"):
+					(h as Node3D).visible = false  # the realm's hosts on the march put out of the film: it is of this battle
+			for c in main.ui.cards:
+				if is_instance_valid(c) and c.visible:
+					c.visible = false  # the realm's cards put away: the film is of the fight
 			if not orders_at.is_empty() and Time.get_ticks_msec() - start >= int(float(orders_at[0][0]) * 1000.0):
 				var bar: Node = field.get_node_or_null("BattleOrdersBar")
 				if bar:
