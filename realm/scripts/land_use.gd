@@ -27,6 +27,7 @@ const TILE := 4.0
 
 var main: Node  # main.gd: its terrain and towns
 var _tiles := {}  # Vector2i -> {sig, town, node, fields: [[world middle, size, yaw]], soil: [[middle, size, yaw]]}
+var _sig := 0  # what the last sync read (worked, tilled, the towns plan reads): unchanged, nothing to redo
 var _want := {}  # Vector2i -> {sig, town, kind, from}: the tiles as the latest reading has them (from: its town's tile)
 var _queue: Array[Vector2i] = []  # tiles still to draw
 
@@ -61,8 +62,16 @@ func sync() -> void:
 	var worked: Array = st.realm.get_var(&"worked", [])
 	var tilled: Array = st.realm.get_var(&"tilled", [])
 	var cities := {}
+	var said := []  # what plan reads of each town: its place, hunger, mood and burning
 	for c in st.rec("cities", []):
 		cities[int(c["id"])] = c
+		said.append([c["id"], c.get("x"), c.get("y"), c.get("famine"), c.get("mood"), (c.get("damage", {}) as Dictionary).get("burnt") if c.get("damage") is Dictionary else null])
+	# Nothing the fields are read from has changed (most world syncs): nothing to walk (every sync walked the whole map,
+	# 200-245 ms frames in the live probe, 2026-11-16).
+	var sig := hash([worked, tilled, said, terrain.width, terrain.height])
+	if sig == _sig:
+		return
+	_sig = sig
 	var want := {}
 	for y in worked.size():
 		var row := String(worked[y]).split(",")
