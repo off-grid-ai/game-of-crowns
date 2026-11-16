@@ -16,6 +16,7 @@ import { CIVILIAN, sworn as swornOf } from "./campaigns.js";
 import { BANDS } from "./favour.js";
 import * as Hosts from "./hosts.js";
 import * as Lua from "./lua.js";
+import * as Peace from "./peace.js";
 import * as chron from "./chronicles.js";
 import * as kingDeeds from "./ledger.js";
 
@@ -344,10 +345,15 @@ function topple(ctx, turn, w) {
 // against, waiting, seat, seatName}].
 export function view(meta, world) {
   if (!world) return [];
+  const crownId = crownOf(world)?.id ?? null;
   return wars(meta).map((w) => {
     const foe = world.players.find((p) => p.id === w.house);
     const nextId = w.target ?? w.plan.find((id) => world.cities.some((c) => c.id === id && c.owner === w.house)) ?? null;
     return { house: w.house, name: houseFor(foe ?? {}).name ?? "", since: w.since, next: nextId, nextName: nextId != null ? cityName(nextId) : null,
-      fallen: (w.fallen ?? []).map((id) => cityName(id)), allies: w.allies ?? [], against: w.against ?? [], waiting: w.waiting ?? [], seat: w.seat, seatName: w.seat != null ? cityName(w.seat) : null };
+      fallen: (w.fallen ?? []).map((id) => cityName(id)), allies: w.allies ?? [], against: w.against ?? [], waiting: w.waiting ?? [], seat: w.seat, seatName: w.seat != null ? cityName(w.seat) : null,
+      // The two camps as they fell (the map's war mode and the houses strip paint by them; docs/WAR.md) and how it
+      // stands (peace.js standing: towns taken and lost, the score that sets the peace terms).
+      camps: { crown: [crownId, ...(w.allies ?? [])].filter((x) => x != null), foe: [w.house, ...(w.against ?? [])], waiting: w.waiting ?? [] },
+      standing: Peace.standing(meta, world, w.house) };
   });
 }

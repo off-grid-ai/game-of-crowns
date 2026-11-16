@@ -65,7 +65,7 @@ Declaring war opens a council card, not a one-click order (EU4's declare-war dia
 
 | Fact | Owner |
 | --- | --- |
-| The King's wars (plan, target, allies, commitment, since) | war.js, `meta.wars` (a list; today `meta.war`, one) |
+| The King's wars (plan, target, allies, commitment, since) | war.js, `meta.wars` (a list) |
 | Who sides with whom, forecast and roll | war.js `sides` |
 | War score and the peace terms | peace.js |
 | Upkeep | war.js `upkeepNow` |
@@ -75,9 +75,9 @@ Declaring war opens a council card, not a one-click order (EU4's declare-war dia
 
 ## Build order (each a ten-minute piece)
 
-1. `meta.war` becomes `meta.wars`: several wars, each its own plan and sides; upkeep counts them (no more silent
+1. **Built.** `meta.war` becomes `meta.wars`: several wars, each its own plan and sides; upkeep counts them (no more silent
    replace).
-2. `/world wars` carries each war's camps (crown side, foe side, waiting) and score.
+2. **Built** (`/world kingWars[].camps`, `.standing` from peace.js). `/world wars` carries each war's camps (crown side, foe side, waiting) and score.
 3. The war council card: opened by the war order on the town card and the houses table; Declare and Not now.
 4. The map's war mode: political_overlay paints by camp while a war runs.
 5. The houses strip groups by camp with Ally / Foe / Waits words.

@@ -35,11 +35,20 @@ export function season(ctx, turn) {
   }
 }
 
+// How the crown's war with a house stands: towns each side has lost since it began (meta.crownWars, this file's), and
+// the score, the towns it took less the towns it lost (> 0: the crown is winning). Null when no war is counted.
+export function standing(meta, world, pid) {
+  const w = meta.crownWars?.[pid];
+  const crown = crownOf(world);
+  if (!w || !crown) return null;
+  const taken = w.towns - townsOf(world, pid).length, lost = w.crown - townsOf(world, crown.id).length;
+  return { taken, lost, score: taken - lost };
+}
+
 function offer(ctx, crown, house, lord, w, turn) {
   const { world, court } = ctx;
   const name = houseFor(house).name;
-  const theirLoss = w.towns - townsOf(world, house.id).length, ourLoss = w.crown - townsOf(world, crown.id).length;
-  const score = theirLoss - ourLoss;  // > 0: the crown is winning
+  const { taken: theirLoss, lost: ourLoss, score } = standing(ctx.meta, world, house.id);
   const gold = Math.round(P.gold);
   const beat = `peace-${house.id}-${turn}`;
   const fight = { id: "fight", label: "Fight on", favour: { [house.id]: P.favour.fight }, hint: `the war goes on · ${name} ${signed(P.favour.fight)}`, result: `The King sends ${lord.name}'s herald home. The war goes on.` };
