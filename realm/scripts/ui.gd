@@ -903,16 +903,20 @@ func _war_moment(st: Node) -> void:
 			for id in ids:
 				if int(id) != skip and names.has(int(id)):
 					out.append(names[int(id)])
-			return ", ".join(out)
+			# One house is "Goldcrest rides"; several, "Goldcrest and Thornvale ride" (the _one words).
+			return ("" if out.is_empty() else (out[0] if out.size() == 1 else ", ".join(out.slice(0, -1)) + " and " + out[-1])) + ("|1" if out.size() == 1 else "")
 		var line := String(words.get("line", "War on {foe}.")).format({"foe": names.get(foe, "")})
 		var with: String = name_of.call(k.get("crown", []), int(st.rec("crownId", -1)) if st.rec("crownId") != null else -1)
 		var against: String = name_of.call(k.get("foe", []), foe)
 		var waits: String = name_of.call(k.get("waiting", []), -1)
-		line += " " + (String(words.get("with", "{houses} ride with you.")).format({"houses": with}) if with != "" else String(words.get("alone", "No house rides with you.")))
+		var say := func(key: String, houses: String) -> String:
+			var one := houses.ends_with("|1")
+			return String(words.get(key + ("_one" if one else ""), "{houses}")).format({"houses": houses.trim_suffix("|1")})
+		line += " " + (say.call("with", with) if with != "" else String(words.get("alone", "No house rides with you.")))
 		if against != "":
-			line += " " + String(words.get("against", "{houses} take their side.")).format({"houses": against})
+			line += " " + say.call("against", against)
 		if waits != "":
-			line += " " + String(words.get("waits", "{houses} wait.")).format({"houses": waits})
+			line += " " + say.call("waits", waits)
 		omens.surge(Data.num("ui", "war_moment.edge", 0.7))
 		war_declared.emit(foe)
 		caption(line)
