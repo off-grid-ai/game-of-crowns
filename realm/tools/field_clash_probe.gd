@@ -109,8 +109,8 @@ func _run() -> void:
 						str(node.is_inside_tree()), node.process_mode])
 					field._advance(r, 0.016)
 					print("    one advance step by hand: spot %s" % str(r.get("spot", "none")))
-		if closed.size() == foot.size() and not foot.is_empty():
-			break
+		if closed.size() == foot.size() and not foot.is_empty() and (out == "" or Time.get_ticks_msec() - start >= 24000):
+			break  # filming: the whole 24 s, the press too
 	var foot := _foot(field)
 	var states := {}
 	for r in foot:

@@ -833,15 +833,29 @@ func _fight(r: Dictionary, dt: float) -> void:
 			var roll := _rng.randf()
 			vat.update_instance_track(s, army.track(r, "hit" if roll < hit_odds else ("block" if roll < hit_odds + block_odds else "attack")))
 			back[s] = clock + 0.9
-	# The front surges: each front man a little forward and back on his own beat (his place in the formation).
+	# The press (Total War's melee: the fronts close into one mixed seam, men pairing off, shoving in and giving
+	# ground; Mac 2026-11-16: "the pikemen and the swordsmen aren't doing anything spectacular"): each front man steps
+	# into the seam (field.fight.press, the foe's front a contact away), surging forward and back and sidestepping on his
+	# own beat (field.fight.surge, field.fight.sway). His mark moves (army.gd _follow walks him to it); the ranks behind
+	# close up behind him.
 	var surge := Data.num(F, "field.fight.surge", 0.02)
+	var press := Data.num(F, "field.fight.press", 0.1)
+	var sway := Data.num(F, "field.fight.sway", 0.04)
 	var local: PackedVector3Array = r["local"]
+	var marks: PackedVector3Array = r.get("marks", PackedVector3Array())
 	var line: PackedVector3Array = r[String(r.get("form", "line"))]["at"]
 	for s in front:
 		var v := local[s]
-		v.z = line[s].z + sin(clock * 2.1 + float(s) * 1.7) * surge
+		var beat := clock * (1.6 + float((s * 31) % 7) * 0.15) + float(s) * 1.7
+		v.z = line[s].z + press + sin(beat) * surge
+		v.x = line[s].x + sin(beat * 0.6 + float(s)) * sway
 		local[s] = v
+		if s < marks.size():
+			marks[s] = Vector3(v.x, marks[s].y, v.z)
 	r["local"] = local
+	if not marks.is_empty():
+		r["marks"] = marks
+		r["men_still"] = false
 	r["moved"] = true
 	# Dust thrown up along its front where the lines grind (scenes.gd dust, the skirmish's own), raised again as it
 	# thins (field.fight.dustEvery), so the press has weight in the frame (g21: a clean seam).
@@ -898,7 +912,18 @@ func _flank(r: Dictionary, _dt: float) -> void:
 	var end_at: Vector3 = (end["node"] as Node3D).global_position
 	var goal := end_at + right * side_sign * (float(end["w"]) * 0.5 + Data.num(F, "field.cavalry.wide", 2.2)) - fwd * Data.num(F, "field.cavalry.behind", 1.0)
 	r["target"] = end
-	if Vector2(goal.x - node.global_position.x, goal.z - node.global_position.z).length() <= 0.05:
+	# In on the flank once round it (Mac 2026-11-16: "they aren't participating in the battle": the horse rode at a
+	# point beside the foe's end that was often off the walkable ground, never got within 0.05 of it, and circled the
+	# whole fight). It charges within field.cavalry.near of its ride's end, or once its ride has stalled
+	# field.cavalry.stall seconds (the ground ends short of the point), or once its target is at blows (Total War:
+	# the horse hit a line the foot hold).
+	var at := node.global_position
+	var moved: Vector3 = r.get("ride_at", at)
+	r["ride_still"] = float(r.get("ride_still", 0.0)) + _dt if Vector2(at.x - moved.x, at.z - moved.z).length() < 0.01 else 0.0
+	r["ride_at"] = at
+	var near := Vector2(goal.x - at.x, goal.z - at.z).length() <= Data.num(F, "field.cavalry.near", 0.5)
+	if near or float(r["ride_still"]) >= Data.num(F, "field.cavalry.stall", 1.0) or String(end.get("state_name", "")) == "fight":
+		r["ride_still"] = 0.0
 		_send(r, &"charge")
 		return
 	Mover.of(node).toward(goal, Data.num(F, "field.cavalry.ride", 0.3))
