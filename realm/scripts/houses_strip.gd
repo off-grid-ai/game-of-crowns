@@ -46,13 +46,16 @@ func fill() -> void:
 		if p.get("favour") != null and not h.get("wild", false) and int(p.get("cities", 0)) > 0:
 			players.append(p)
 	players.sort_custom(func(a, b): return int(a.get("strength", 0)) > int(b.get("strength", 0)))
-	var sig := hash([players.map(func(p): return [p["id"], _stance(p), _arrow(p)]), Awareness.bands])
+	var sig := hash([players.map(func(p): return [p["id"], _stance(p), _arrow(p), p.get("strength", 0)]), Awareness.bands])
 	if sig != _said:
 		_said = sig
 		for c in _row.get_children():
 			c.queue_free()
+		var most := 1
 		for p in players:
-			_row.add_child(_chip(p))
+			most = maxi(most, int(p.get("strength", 0)))
+		for p in players:
+			_row.add_child(_chip(p, float(p.get("strength", 0)) / most))
 	_show()
 
 
@@ -80,7 +83,9 @@ func _arrow(p: Dictionary) -> String:
 	return " ▲" if t >= rise else (" ▼" if t <= -rise else "")
 
 
-func _chip(p: Dictionary) -> Button:
+## A house's chip: its sigil, name and stance, and under it a bar as long as its strength against the strongest house
+## (Mac 2026-11-16: "how do I know which one is more powerful?"; the strongest stands first and its bar is full).
+func _chip(p: Dictionary, share: float) -> Button:
 	var h: Dictionary = p["house"]
 	var name := String(h.get("name", p.get("name", ""))).trim_prefix("House ")
 	var stance := _stance(p)
@@ -97,9 +102,21 @@ func _chip(p: Dictionary) -> Button:
 	b.add_theme_color_override("font_color", T.DANGER if against else (T.TEXT if stance in [String(Data.value("ui", "houses_strip.words.sworn", "Sworn")), "Loyal"] else T.TEXT_2))
 	var t := int(p.get("strengthTrend", 0))
 	var tips: Dictionary = Data.value("ui", "houses_strip.tips", {})
-	b.tooltip_text = String(tips.get("line", "House {name}: {stance}, favour {favour} of 100\nStrength {strength}, {trend} over the year\nClick for the house")).format({
+	b.tooltip_text = String(tips.get("line", "House {name}: {stance}, favour {favour} of 100\nStrength {strength} (towns and men; the bar under it, against the strongest), {trend} over the year\nClick for the house")).format({
 		"name": name, "stance": stance, "favour": int(p["favour"]), "strength": int(p.get("strength", 0)),
 		"trend": ("up %d%%" % t) if t > 0 else (("down %d%%" % -t) if t < 0 else "holding")})
+	var bar := ColorRect.new()
+	bar.color = Color(T.TEXT, 0.55)
+	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bar.anchor_top = 1.0
+	bar.anchor_bottom = 1.0
+	bar.anchor_left = 0.0
+	bar.anchor_right = clampf(share, 0.04, 1.0)
+	bar.offset_left = 6
+	bar.offset_right = -6 * share
+	bar.offset_top = -3
+	bar.offset_bottom = -1
+	b.add_child(bar)
 	var owner := int(p["id"])
 	b.pressed.connect(func():
 		ui.focus_house.emit(owner)
