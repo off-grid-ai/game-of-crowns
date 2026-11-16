@@ -11,10 +11,10 @@ extends RefCounted
 ##   - its side's commander within steady.reach takes the edge off every shake (steady.share of it), so men beside
 ##     him break later but still break when they bleed; with nothing shaking it for steady.after seconds it calms
 ##     (rally);
-##   - once the day is spent (the field's field.longest) the beaten side's nerve drains (spent a second): the most
-##     shaken goes first and its break carries the rest, never all of them at once;
-##   - below `break` a regiment of the beaten side breaks (Freeciv decided who lost: the victors waver but never run,
-##     their nerve kept above floor_victor), one at a time: after a break the rest hold `between` seconds;
+##   - hit in the flank it is shaken every second (beset.flank), in the rear harder (beset.rear); with its wind gone
+##     a little (beset.spent) (army_combat.gd marks `beset` and keeps its wind);
+##   - below `break` it breaks, on either side (the field decides the day), one a side at a time: after a break the
+##     rest of its side hold `between` seconds;
 ## Every reach is open ground between regiments' edges (their widths along the line and depths front to back), so a
 ## neighbour is a neighbour however wide or deep a battle's regiments stand.
 
@@ -122,14 +122,14 @@ static func broke(sides: Array, r: Dictionary) -> void:
 
 
 ## One step of `dt` seconds: the commander steadies those about him (marks them, so every shake reaches them
-## softened), the running shake those near them, the unshaken calm, and once the day is `spent` the beaten side's
-## nerve drains. Returns the regiments of the beaten side `loser` whose nerve has gone (below morale.break): the
-## field breaks them. Victors' nerve is kept above morale.floor_victor.
-static func step(sides: Array, dt: float, loser: int, commanders: Array, spent: bool) -> Array:
+## softened), the running shake those near them, a flank or rear attack and a spent wind shake, the unshaken calm.
+## Returns the regiments whose nerve has gone (below morale.break), at most one a side: the field breaks them.
+static func step(sides: Array, dt: float, commanders: Array) -> Array:
 	var near := _m("near.reach", 1.0)
 	var reach := _m("steady.reach", 1.2)
 	var gone: Array = []
 	for side in sides.size():
+		var due: Array = []
 		for q in sides[side]:
 			if not _standing(q):
 				continue
@@ -146,42 +146,42 @@ static func step(sides: Array, dt: float, loser: int, commanders: Array, spent: 
 				if d < near:
 					m -= _m("flight", 0.12) * (1.0 - d / near) * dt * _felt(q)
 					shaken = true
-			if spent and side == loser:
-				m -= _m("spent", 0.1) * dt * _felt(q)
+			var beset := int(q.get("beset", 0))
+			if beset > 0:
+				m -= _m("beset.flank" if beset == 1 else "beset.rear", 0.03) * dt * _felt(q)
+				shaken = true
+			if float(q.get("stamina", 1.0)) < _m("beset.spent_below", 0.25):
+				m -= _m("beset.spent", 0.01) * dt * _felt(q)
 				shaken = true
 			var calm: float = float(bb.get_var(&"calm_for", 0.0, false)) + dt if bb else 0.0
 			if bb and not shaken:
 				bb.set_var(&"calm_for", calm)
 			if not shaken and calm > _m("steady.after", 2.0):
 				m += _m("rally", 0.02) * dt
-			if side != loser:
-				m = maxf(m, _m("floor_victor", 0.4))
 			_put_nerve(q, minf(m, _m("start", 1.0)), shaken)
 			var held: float = float(bb.get_var(&"held", 0.0, false)) if bb else 0.0  # unset until a break holds the side
 			if bb and held > 0.0:
 				bb.set_var(&"held", held - dt)
-			if side == loser and m < _m("break", 0.35) and held <= 0.0:
-				gone.append(q)
-	# One break a moment (Mac, round 15: three broke in one tick): of those due, the shakiest goes; the rest of its
-	# side hold morale.between seconds before the next can, so the rout reads as a chain however close they stood.
-	if gone.size() > 1:
-		gone.sort_custom(func(x, y): return of(x) < of(y))
-		gone = [gone[0]]
-	for q in gone:
-		for p in sides[loser]:
+			if m < _m("break", 0.35) and held <= 0.0:
+				due.append(q)
+		# One break a moment a side (Mac, round 15: three broke in one tick): of those due, the shakiest goes; the rest
+		# of its side hold morale.between seconds before the next can, so the rout reads as a chain.
+		if due.is_empty():
+			continue
+		due.sort_custom(func(x, y): return of(x) < of(y))
+		gone.append(due[0])
+		for p in sides[side]:
 			var pb := _bb(p)
-			if not is_same(p, q) and _standing(p) and pb:
+			if not is_same(p, due[0]) and _standing(p) and pb:
 				pb.set_var(&"held", _m("between", 1.25))
 	return gone
 
 
 ## Routed regiments that rally (research note step 7; Total War's rally by the general): a running regiment still on
 ## the field (not yet gone) whose side's commander stands within morale.rally_rout.reach of where it broke regains
-## nerve at rally_rout.rate a second while the day isn't spent; back to rally_rout.at it reforms. Returns those.
-static func rallied(sides: Array, dt: float, spent: bool, commanders: Array) -> Array:
+## nerve at rally_rout.rate a second; back to rally_rout.at it reforms. Returns those.
+static func rallied(sides: Array, dt: float, commanders: Array) -> Array:
 	var out: Array = []
-	if spent:
-		return out
 	for side in sides.size():
 		var c = commanders[side] if side < commanders.size() else null
 		if not (c is Dictionary) or (c as Dictionary).is_empty() or not _standing(c):

@@ -266,7 +266,7 @@ func _keep_up(id: int) -> void:
 ## A plague (its scope's plague): towns.json plague.indoors of them keep to their houses, quietly, while it lasts.
 func _raid_indoors(id: int) -> void:
 	var bb: Variant = Engine.get_meta("awareness").town(id) if Engine.has_meta("awareness") else null
-	var raid := bb != null and bool(bb.get_var(&"raid", false, false))
+	var raid := bb != null and bool(bb.get_var(&"raid", false, false)) or _steel_near(id)
 	var sick := bb != null and bool(bb.get_var(&"plague", false, false))
 	var share := Data.num("towns", "plague.indoors", 0.7)
 	var within: Array = Data.value("towns", "raid.indoors", [2.0, 5.0])
@@ -278,6 +278,18 @@ func _raid_indoors(id: int) -> void:
 				_flee(a, a["center"])
 		elif not go_in:
 			a.erase("in_at")
+
+
+## A battle fought within its reach of the town's middle, now (awareness.gd steel_near): its folk go in as for raiders.
+func _steel_near(id: int) -> bool:
+	if not Engine.has_meta("awareness") or crowds[id].is_empty():
+		return false
+	var c: Vector3 = crowds[id][0]["center"]
+	var now := WorldClock.msec()
+	for b in Engine.get_meta("awareness").realm.get_var(&"steel_near", [], false):
+		if int(b["until"]) > now and Vector2(c.x - (b["at"] as Vector3).x, c.z - (b["at"] as Vector3).z).length() < float(b["reach"]):
+			return true
+	return false
 
 
 ## A house's banner colour (main.gd's houses, by the player who holds the town); none when unknown.

@@ -705,7 +705,6 @@ func _panic_spreads() -> void:
 	_check(t.has("neighbour") and float(t["neighbour"]) < float(t.get("far", INF)), "its neighbour breaks sooner than an equal regiment far off (the chain)")
 	_check(not t.has("fresh"), "a fresh regiment beside the rout holds")
 	_check(float((steadied["broke"] as Dictionary).get("neighbour", INF)) > float(t.get("neighbour", INF)), "the commander beside the neighbour steadies it")
-	_check(not t.has("victor") and float(plain["victor_low"]) >= Data.num("army", "morale.floor_victor", 0.4) - 0.001, "the victors never break (lowest nerve %.2f)" % float(plain["victor_low"]))
 
 
 func _panic_run(M: GDScript, commander: bool) -> Dictionary:
@@ -807,16 +806,16 @@ func _rout_runs_along_the_line() -> void:
 	var victor: Dictionary = make.call("victors", 0, kind_of.call("melee"))
 	(victor["node"] as Node3D).global_position = Vector3(0, 0, -float(beaten[1]["d"]) - Data.num("battle", "field.fight.contact", 0.12))
 	var sides := [[victor], beaten]
-	var loss: Dictionary = Data.value("battle", "field.fight.loss", {"beaten": 2.4, "victors": 0.9})
+	var base := Data.num("battle", "field.combat.base", 1.6)  # army_combat.gd: one foe of equal strength on the front
+	var loss := {"beaten": base * 1.5, "victors": base * 0.6}  # the beaten outnumbered, the victors fresh
 	var vol: Dictionary = Data.value("battle", "field.volley", {})
 	var kills: Array = vol.get("kills", [1, 4])
 	var every: Array = vol.get("every", [2.5, 3.6])
 	var shot := (float(kills[0]) + float(kills[1])) / (float(every[0]) + float(every[1]))  # the victors' archers on ours: men a second (beaten fall twice as often)
-	var bleed := {"foot0": float(loss["beaten"]) * Data.num("battle", "field.fight.flanked", 1.6), "foot1": float(loss["beaten"]), "foot2": float(loss["beaten"]),
+	var bleed := {"foot0": float(loss["beaten"]) * Data.num("battle", "field.combat.flank", 1.8), "foot1": float(loss["beaten"]), "foot2": float(loss["beaten"]),
 		"archers": shot * 2.0, "victors": float(loss["victors"])}
 	var longest := Data.num("battle", "field.longest", 45.0)
 	var run := Data.num("battle", "field.run", 0.42)
-	var spent_aware: bool = M.get_script_method_list().any(func(m): return m["name"] == "step" and (m["args"] as Array).size() >= 5)
 	var broke := {}
 	var owed := {}
 	var dt := 0.25
@@ -833,8 +832,8 @@ func _rout_runs_along_the_line() -> void:
 				owed[r["name"]] = float(owed[r["name"]]) - men
 				var front: Vector3 = (r["node"] as Node3D).global_position + Vector3(0, 0, (-1.0 if int(r["side"]) == 1 else 1.0) * float(r["d"]) * 0.5)
 				M.fell(sides, r, men, front if r["role"] != "ranged" else (r["node"] as Node3D).global_position)
-		var gone: Array = M.step(sides, dt, 1, [victor, beaten[1]], clock > longest) if spent_aware else M.step(sides, dt, 1, [victor, beaten[1]])
-		if not spent_aware and clock > longest:  # HEAD's field: past field.longest every beaten regiment standing breaks
+		var gone: Array = M.step(sides, dt, [victor, beaten[1]])
+		if clock > longest:  # past field.longest every beaten regiment standing breaks
 			for r in beaten:
 				if r["state_name"] != "rout" and not gone.has(r):
 					gone.append(r)

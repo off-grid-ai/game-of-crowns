@@ -20,7 +20,13 @@
           "abreast": 2
         }
       ],
-      "horse": "wings"
+      "horse": "wings",
+      "advance": true,
+      "defence": {
+        "foot": 1.0,
+        "horse": 1.0,
+        "arrows": 1.0
+      }
     },
     "two_lines": {
       "name": "Two lines and a reserve",
@@ -41,7 +47,13 @@
           "gap": 0.9
         }
       ],
-      "horse": "reserve"
+      "horse": "reserve",
+      "advance": true,
+      "defence": {
+        "foot": 1.0,
+        "horse": 0.9,
+        "arrows": 1.0
+      }
     },
     "shield_wall": {
       "name": "The shield wall",
@@ -56,7 +68,40 @@
           "abreast": 2
         }
       ],
-      "horse": "flank"
+      "horse": "flank",
+      "advance": false,
+      "defence": {
+        "foot": 1.5,
+        "horse": 1.8,
+        "arrows": 2.0
+      }
+    },
+    "regroup": {
+      "name": "Regroup",
+      "rows": [
+        {
+          "role": "melee",
+          "abreast": 2,
+          "line": 1
+        },
+        {
+          "role": "melee",
+          "abreast": 2,
+          "line": 1
+        },
+        {
+          "role": "ranged",
+          "abreast": 2
+        }
+      ],
+      "horse": "wings",
+      "advance": false,
+      "hold": true,
+      "defence": {
+        "foot": 1.2,
+        "horse": 1.3,
+        "arrows": 1.2
+      }
     }
   },
   "pick": {
@@ -88,5 +133,25 @@
     "at": 0.65,
     "near": 1.0,
     "back": 0.8
-  }
+  },
+  "command": {
+    "_": "army_field.gd reorder, the King's orders in a battle (Total War's and Bannerlord's formation orders): the crown's side forms anew about its front's middle, each regiment marching to its new place at pace times field.advance (a regiment at blows breaks off), then acts by the order: advance (its first line goes in; a second line and a horse reserve wait), hold (all stand where they formed, the foe must come to them; ranged loose from there). regroup_back: how far behind its front a regroup (an order with hold) forms. buttons: the orders on battle_orders_bar.gd, left to right; chosen: the word on the order the side stands in.",
+    "pace": 2.0,
+    "regroup_back": 1.2,
+    "buttons": [
+      "line",
+      "two_lines",
+      "shield_wall",
+      "regroup"
+    ],
+    "chosen": "Now",
+    "title": "Orders",
+    "hints": {
+      "line": "Two blocks abreast, archers behind, horse on the wings. All go in.",
+      "two_lines": "A second line waits to relieve the first. Horse held back.",
+      "shield_wall": "Close ranks and hold. The foe must come to you.",
+      "regroup": "Break off, fall back, and form again."
+    }
+  },
+  "_defence": "orders.<key>.defence: army_combat.gd, how much better a regiment in that order stands against foot, a charge (horse) and arrows on its front (1 as it is): the shield wall's locked shields; the regroup's closed ranks."
 }

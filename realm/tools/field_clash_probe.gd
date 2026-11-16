@@ -68,18 +68,39 @@ func _run() -> void:
 			k.keycode = KEY_SPACE
 			k.pressed = true
 			Input.parse_input_event(k)
+		var ui: Node = main.get("ui")
+		if ui and bool(ui.get("paused")) and (intro == null or not intro.visible):
+			ui.top_bar._toggle_pause()  # a new reign opens paused (Press P to go on): P, as a player gives it
 		return (intro == null or not intro.visible) and float(field.get("clock")) >= 0.0, 300.0)
 	var start := Time.get_ticks_msec()
 	var reported := false
 	var out := ""
+	var orders_at: Array = []
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--frames="):
 			out = a.substr(9)  # a frame a second of the clash saved here, to judge the look (the numbers are not the look)
+		elif a.begins_with("--orders="):
+			for o in a.substr(9).split(","):  # the King's orders mid-fight, "<seconds>:<order>,...": pressed on the orders bar as a player would
+				var kv := o.split(":")
+				if kv.size() == 2:
+					orders_at.append([float(kv[0]), kv[1]])
 	var shot := 0
 	var every := 0.125  # eight frames a second: motion read off a strip, not one still a second
-	while Time.get_ticks_msec() - start < int(SECS * 1000.0):
+	var secs := SECS
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--secs="):
+			secs = float(a.substr(7))  # watch longer, to the day's end
+	while Time.get_ticks_msec() - start < int(secs * 1000.0) and not bool(field.get("_over")):
 		for k in 16:
 			await create_timer(every).timeout
+			if bool(main.ui.paused):
+				main.ui.top_bar._toggle_pause()  # nothing in the realm holds the fight under test
+			if not orders_at.is_empty() and Time.get_ticks_msec() - start >= int(float(orders_at[0][0]) * 1000.0):
+				var bar: Node = field.get_node_or_null("BattleOrdersBar")
+				if bar:
+					(bar._buttons[String(orders_at[0][1])]["button"] as Button).pressed.emit()
+				print("PROBE order %s at %.0f s (bar %s)" % [orders_at[0][1], orders_at[0][0], bar != null])
+				orders_at.pop_front()
 			if out != "" and Time.get_ticks_msec() - start < 24000:
 				shot += 1
 				root.get_texture().get_image().save_jpg("%s/f%03d.jpg" % [out, shot], 0.8)

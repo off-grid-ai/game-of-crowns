@@ -57,6 +57,8 @@ var _by_id := {}  # kind -> id -> the record as last sent (CHANGES)
 var _changed: Array = []  # this /world's [kind, id, now, was], fired once it is reduced
 
 const SceneKinds := preload("res://scripts/scene_kinds.gd")  # reach, power and tone of each kind
+const Data := preload("res://scripts/data.gd")
+const WorldClock := preload("res://scripts/world_clock.gd")  # the realm's clock: stops while paused
 
 
 func _ready() -> void:
@@ -94,6 +96,7 @@ func dispatch(action: StringName, p: Dictionary) -> void:
 			_tell_changes()
 			synced.emit()
 		STIMULUS:
+			_reduce_steel_near(String(p["kind"]), p["at"])
 			_reduce_minds_perceive(String(p["kind"]), p["at"], String(p.get("house", "")), float(p.get("strength", -1.0)))
 		JOIN:
 			_reduce_minds_join(p["mind"], int(p["town"]), p.get("vars", {}))
@@ -468,6 +471,18 @@ func _reduce_news(world: Dictionary) -> void:
 		if kind == "rider" and int(s.get("owner", -2)) == crown_id:
 			kind = "king"  # the King's own rider: his banner passing
 		emit(kind, terrain.world_pos(float(s.get("x", 0)), float(s.get("y", 0))), house, float(s.get("strength", -1.0)))
+
+
+## The realm slice, on a battle fought in sight (army_field.gd _alarm): where steel is out now, [{at, reach, until}]
+## (until: WorldClock msec, towns.json raid.battle_hold seconds on), so the towns within its reach go indoors as
+## for raiders (villagers.gd _raid_indoors). Old ones drop off as they pass.
+func _reduce_steel_near(kind: String, pos: Vector3) -> void:
+	if kind != "battle":
+		return
+	var now := WorldClock.msec()
+	var keep: Array = (realm.get_var(&"steel_near", [], false) as Array).filter(func(b): return int(b["until"]) > now and (b["at"] as Vector3).distance_to(pos) > 0.5)
+	keep.append({"at": pos, "reach": float(SceneKinds.of(kind)["reach"]), "until": now + int(Data.num("towns", "raid.battle_hold", 12.0) * 1000.0)})
+	realm.set_var(&"steel_near", keep)
 
 
 ## The minds slice, on a stimulus: every mind within its reach perceives it.
