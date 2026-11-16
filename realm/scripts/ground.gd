@@ -694,6 +694,8 @@ static func _switch(rec: Dictionary, on: Dictionary) -> void:
 	rec["on"] = on
 	if not (rec["bins"] as Dictionary).is_empty():
 		shapes_rev += 1
+		if PerfTools.probing:  # a root shown or hidden, its town's or its life's (perf.log jobs: ground.rev.switch.*)
+			PerfTools.add("ground.rev.switch.%s%s" % ["town" if on["town"] else "", "life" if on["life"] else ""], 0)
 	for bk: Vector3i in rec["bins"]:
 		var body: RID = rec["bins"][bk]["body"]
 		_changed_at(body)
@@ -946,6 +948,8 @@ static func _changed(body: RID) -> void:
 	if String((_owner.get(body, [""]) as Array)[0]) != "claim":
 		shapes_rev += 1
 		_changed_at(body)
+		if PerfTools.probing:  # which kind of thing's shapes changed (perf.log jobs: ground.rev.<kind>)
+			PerfTools.add("ground.rev." + String((_owner.get(body, ["?"]) as Array)[0]), 0)
 
 
 ## A standing body's shapes kept by the cells (SHAPES_CELL) its bounds cover, so obstacle_shapes answers from them.
