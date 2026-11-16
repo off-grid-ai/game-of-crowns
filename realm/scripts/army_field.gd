@@ -35,9 +35,12 @@ const Heraldry := preload("res://scripts/heraldry.gd")
 const Awareness := preload("res://scripts/awareness.gd")  # the season's length: the field keeps its dead a season
 const Fire := preload("res://scripts/fire.gd")
 const F := "battle"  # data/battle.json, its field block
+const General := preload("res://scripts/army_general.gd")  # each host's captain: the one decider of its regiments' tasks
 const Formation := preload("res://scripts/army_formation.gd")  # a regiment's formation templates (horse: the wedge)
 
 var orders := ["", ""]
+var generals: Array = []  # each side's captain (army_general.gd)
+var _blocks := RID()  # every regiment's block in one crowd (NavigationServer3D RVO): blocks step round each other, never into each other
 var lines := [{}, {}]  # each side's line as one formation (Total War's group move): {at: its middle on the ground, face}; every regiment's `slot` is its place in it (x across, y ahead)
 var _alarm_t := 0.0  # seconds to the battle's next alarm to the folk about it (_alarm)  # the battle order each side stands in (battle_orders.gd)
 var main: Node
@@ -305,6 +308,10 @@ func _begin() -> void:
 		for r in (sides[i] as Army).rows():
 			_enlist(r, i, "regiment")
 		_set_line(i, (sides[i] as Army).field())
+	_crowd_blocks()
+	for i in 2:
+		generals.append(General.new(self, i))
+		add_child(generals[i])  # its plan: the line marches or holds, each regiment in its place
 	if player_side() >= 0:
 		add_child(preload("res://scripts/battle_orders_bar.gd").new(self))  # the King's orders in the fight (battle_orders_bar.gd)
 	if play.is_empty():
@@ -364,9 +371,6 @@ func _process_timed(delta: float) -> void:
 			_formed += delta
 			if _formed >= Data.num(F, "field.start", 2.0):
 				_begin()
-				for i in 2:
-					for r in (sides[i] as Army).rows():
-						_act_by_order(r)  # by its side's order: a second line and a horse reserve wait their beat, a wall holds
 		if play.is_empty():
 			_frame(delta)
 		return
@@ -374,10 +378,10 @@ func _process_timed(delta: float) -> void:
 	_fly()
 	_keep_up()
 	_alarm(delta)
+	_keep_crowd()
 	_march_lines(delta)
 	_bleed(delta)
 	_morale(delta)
-	_orders_tick()
 	if not play.is_empty():
 		# In play: the field held a while, then the battle is gone (its dead too); the camera is never moved.
 		if _over and _over_at < 0.0:
@@ -670,12 +674,13 @@ func _may_hold(r: Dictionary) -> bool:
 
 ## Archers: a volley every field.volley.every seconds at the nearest enemy regiment, while the lines are apart.
 func _volley(r: Dictionary, dt: float) -> void:
-	var foe := _nearest_foe(r)
+	var t: Variant = r.get("target")  # its captain's mark once the lines are locked (army_general.gd), else the nearest
+	var foe: Dictionary = t if t is Dictionary and String((t as Dictionary).get("state_name", "")) != "rout" and int((t as Dictionary).get("living", 0)) > 0 else _nearest_foe(r)
 	if foe.is_empty():
 		return
 	_face_toward(r, (foe["node"] as Node3D).global_position, dt)
-	if _front_gap(r, foe) < Data.num(F, "field.volley.until", 3.0) or met():
-		return  # the lines are at blows: no shooting into the press
+	if _front_gap(r, foe) < Data.num(F, "field.volley.until", 3.0) or String(foe.get("state_name", "")) == "fight":
+		return  # never into the press
 	r["volley_t"] = float(r["volley_t"]) - dt
 	if float(r["volley_t"]) > 0.0:
 		return
@@ -744,6 +749,40 @@ func _set_line(i: int, at: Vector3) -> void:
 		r["slot"] = Vector2(off.dot(right), off.dot(fwd))
 
 
+## Every regiment's block one body in a crowd of blocks (Godot's RVO avoidance, the proven block for units that must
+## never walk into each other; Total War's and every RTS's unit separation; Mac 2026-11-16: "literally its like a sabji
+## market", horse inside the foot, blocks heaped): each sized to its block (half its width and depth's mean); a block
+## steps round its own side's (_keep_crowd: avoidance layers by side), so a line never heaps, while the foe's front it
+## may meet (the fight's own contact holds them front to front).
+func _crowd_blocks() -> void:
+	_blocks = NavigationServer3D.map_create()
+	NavigationServer3D.map_set_active(_blocks, true)
+	for i in 2:
+		for r in (sides[i] as Army).rows():
+			var size := (float(r["w"]) + float(r["d"])) * 0.25 * Data.num(F, "field.block_room", 1.0)
+			Mover.of(r["node"]).join(_blocks, &"block", Data.num(F, "field.charge.pace", 0.45) * 1.5, size)
+
+
+## Each moment, the blocks the crowd can't see moving (standing, at blows) told where they stand and that they hold
+## (the walkers give way round them); a horse on its charge or ride and a broken regiment out of the crowd's sums (a
+## charge goes home into its target; the routed are loose men).
+func _keep_crowd() -> void:
+	if not _blocks.is_valid():
+		return
+	for i in 2:
+		for r in (sides[i] as Army).rows():
+			var mo := Mover.of(r["node"])
+			var st := String(r.get("state_name", ""))
+			var out := st in ["rout", "charge"] or int(r.get("living", 0)) <= 0
+			mo.crowd_on(not out)
+			# Its own side's blocks it never walks into; the foe's front it may meet. Horse riding round (and out) keeps
+			# off the foe's blocks too: it goes round them, never through (Mac 2026-11-16: "this troop just walked through them").
+			var own := 1 << i
+			mo.crowd_layers(own, own | ((1 << (1 - i)) if st in ["flank", "rideout"] else 0))
+			if not out and not mo.moving():
+				mo.crowd_want((r["node"] as Node3D).global_position, Vector2.ZERO, 1.0)
+
+
 ## Where regiment r's place in its side's line is now (world).
 func _slot_at(r: Dictionary) -> Vector3:
 	var ln: Dictionary = lines[int(r["side"])]
@@ -765,22 +804,13 @@ func _march_lines(dt: float) -> void:
 		if ln.is_empty():
 			continue
 		var rows := (sides[i] as Army).rows()
-		var holds := not bool(Data.value("battle_orders", "orders.%s.advance" % String(orders[i]), true))
 		var engaged := rows.any(func(x): return String(x.get("state_name", "")) in ["fight", "reform"] and x["role"] == "melee")
-		var foe_rows := (sides[1 - i] as Army).rows().filter(func(x): return String(x.get("state_name", "")) != "rout")
-		if not holds and not engaged and not foe_rows.is_empty():
+		if i < generals.size() and (generals[i] as General).marching():  # its captain marches the line (army_general.gd)
 			var fwd := Vector3(sin(float(ln["face"])), 0, cos(float(ln["face"])))
-			var ahead := INF  # open ground from its front blocks' fronts to the nearest foe ahead
-			for r in rows:
-				if r["role"] == "melee" and String(r.get("state_name", "")) == "advance":
-					var f := _lane_foe(r)
-					if not f.is_empty():
-						ahead = minf(ahead, _front_gap(r, f))
-			if ahead > Data.num(F, "field.charge.from", 2.2):
-				ln["at"] = (ln["at"] as Vector3) + fwd * Data.num(F, "field.advance", 0.24) * dt
+			ln["at"] = (ln["at"] as Vector3) + fwd * Data.num(F, "field.advance", 0.24) * dt
 		for r in rows:  # the second line, the reserve and the archers keep their places as the line goes
 			var st := String(r.get("state_name", ""))
-			if (st == "stand" and (int(r.get("line_no", 1)) == 2 or String(r.get("post", "")) == "reserve")) or (st == "volley" and not engaged):
+			if (st == "stand" and (int(r.get("line_no", 1)) == 2 or String(r.get("post", "")) == "reserve" or r["role"] == "cavalry")) or (st == "volley" and not engaged):
 				var to := _slot_at(r)
 				if Vector2(to.x - (r["node"] as Node3D).global_position.x, to.z - (r["node"] as Node3D).global_position.z).length() > Data.num(F, "field.contact", 0.12):
 					Mover.of(r["node"]).toward(to, Data.num(F, "field.advance", 0.24) * 1.1, _line_front(r))
@@ -808,29 +838,24 @@ func _lane_foe(r: Dictionary) -> Dictionary:
 	return best
 
 
-## Foot: in its place in the line as the line marches (_march_lines); within charge.from of the foe in its lane it
-## runs straight in on him; its lane clear once the lines have met, it wheels on the nearest foe (a flank). Then both
-## fight.
+## Foot: in its place in the line as the line marches or stands (_march_lines) until its captain gives it a foe
+## (army_general.gd: r.task, the whole front at once on his charge, a flank once the lines are locked); then it closes
+## on him and both fight.
 func _advance(r: Dictionary, _dt: float) -> void:
-	var lane := _lane_foe(r)
-	if not lines[int(r["side"])].is_empty() and r.get("relieve") == null and (lane.is_empty() or _front_gap(r, lane) > Data.num(F, "field.charge.from", 2.2)):
-		var met_any := (sides[int(r["side"])] as Army).rows().any(func(x): return String(x.get("state_name", "")) == "fight" and x["role"] == "melee")
-		if not (lane.is_empty() and met_any):
-			var to := _slot_at(r)
-			r["moving"] = "walk"
-			Mover.of(r["node"]).toward(to, Data.num(F, "field.advance", 0.24) * 1.15, _line_front(r))
-			if _gait(r, _dt) == "ready":
-				_square(r, _line_front(r), _dt)
-			return
-	_close(r, _dt, lane)
-
-
-## Closing on a foe: `lane` (the one head on in its lane) or, its lane clear, the nearest; square on his front, the
-## last stretch at a run.
-func _close(r: Dictionary, _dt: float, lane: Dictionary) -> void:
-	var foe := lane if not lane.is_empty() else _opposite_foe(r)
-	if foe.is_empty():
+	var task: Variant = r.get("task")
+	if task is Dictionary and String((task as Dictionary).get("state_name", "")) != "rout" and int((task as Dictionary).get("living", 0)) > 0:
+		_close(r, _dt, task)
 		return
+	r.erase("task")
+	var to := _slot_at(r)
+	r["moving"] = "walk"
+	Mover.of(r["node"]).toward(to, Data.num(F, "field.advance", 0.24) * 1.15, _line_front(r))
+	if _gait(r, _dt) == "ready":
+		_square(r, _line_front(r), _dt)
+
+
+## Closing on its foe (its captain's task): square on his front, the last stretch at a run.
+func _close(r: Dictionary, _dt: float, foe: Dictionary) -> void:
 	var at: Vector3 = (r["node"] as Node3D).global_position
 	var gap := _front_gap(r, foe)
 	var contact := Data.num(F, "field.contact", 0.12)
@@ -999,7 +1024,8 @@ func _fight(r: Dictionary, dt: float) -> void:
 		if _nearest_foe(r).is_empty():
 			return
 		r["foe"] = null
-		_send(r, &"advance")  # its foe broke or broke off (a new order, a relief): on to the next, or after him
+		r.erase("task")
+		_send(r, &"advance")  # its foe broke or broke off (a new order, a relief): back to its place until its captain gives it the next
 		return
 	if r["role"] == "cavalry" and clock - float(r.get("met_at", clock)) > Data.num(F, "field.cavalry.melee_s", 4.0):
 		_send(r, &"rideout")  # horse never stays stuck in: it rides out to charge again (Total War's cycle charge)
@@ -1064,53 +1090,6 @@ func _fight(r: Dictionary, dt: float) -> void:
 	r["moved"] = true
 
 
-## The battle order's beats (data/battle_orders.json relief; the approved pictures, docs/art/battle_formations): a
-## worn front regiment at blows is relieved by the nearest second-line regiment still standing, which marches up to
-## its place in the fight (_advance, its spot the worn one's); once it is near, the worn one falls back to where its
-## relief stood (_fall_back) and stands, ready to go in again. A horse reserve rides out once its side is at blows.
-func _orders_tick() -> void:
-	var k: Dictionary = Data.value("battle_orders", "relief", {})
-	for i in 2:
-		var rows := (sides[i] as Army).rows()
-		var at_blows := rows.any(func(x): return String(x.get("state_name", "")) == "fight")
-		for r in rows:
-			var st := String(r.get("state_name", ""))
-			if st == "stand" and String(r.get("post", "")) == "reserve" and r["role"] == "cavalry" and at_blows:
-				_send(r, &"flank")
-				_say(r, "The reserve rides out")
-				continue
-			if st != "fight" or r.has("relief") or r["role"] == "cavalry":
-				continue
-			if float(r["living"]) > float(k.get("at", 0.65)) * float(r["figures"]):
-				continue
-			var at: Vector3 = (r["node"] as Node3D).global_position
-			var best: Dictionary = {}
-			var bd := INF
-			for x in rows:
-				if int(x.get("line_no", 0)) != 2 or String(x.get("state_name", "")) != "stand" or x.has("relieve") or int(x.get("living", 0)) <= 0:
-					continue
-				var d := at.distance_squared_to((x["node"] as Node3D).global_position)
-				if d < bd:
-					bd = d
-					best = x
-			if best.is_empty():
-				continue
-			r["relief"] = best
-			best["relieve"] = r
-			best["relief_from"] = (best["node"] as Node3D).global_position
-			_send(best, &"advance")
-			_say(best, "The second line goes in")
-		for r in rows:  # a relief near its worn regiment: the worn one falls back
-			var worn: Variant = r.get("relieve")
-			if not worn is Dictionary or String((worn as Dictionary).get("state_name", "")) != "fight":
-				continue
-			var apart := ((r["node"] as Node3D).global_position - ((worn as Dictionary)["node"] as Node3D).global_position).length()
-			if apart <= float(k.get("near", 1.0)) + float(r["d"]):
-				(worn as Dictionary)["back_to"] = r["relief_from"]
-				_send(worn, &"relieve")
-				r.erase("relieve")
-
-
 ## A worn regiment falls back through its relief to where the relief stood, facing the foe, and stands there.
 func _fall_back(r: Dictionary, dt: float) -> void:
 	var to: Vector3 = r.get("back_to", (r["node"] as Node3D).global_position)
@@ -1128,7 +1107,7 @@ func _fall_back(r: Dictionary, dt: float) -> void:
 ## The King's order in the fight (Mac 2026-11-16: "if I'm given an option to change the formation, regroup etc ... I'd
 ## love to see that happen real time"; Total War's and Bannerlord's formation orders): side `side` forms anew in order
 ## `key` (battle_orders.json orders) about its front's middle, facing its line's way. Every regiment still in the
-## field marches to its new place (a regiment at blows breaks off), then acts by the order (_act_by_order).
+## field marches to its new place (a regiment at blows breaks off), then acts by it (its captain's plan, army_general.gd).
 func reorder(side: int, key: String) -> void:
 	if sides.size() < 2 or clock < 0.0 or not (Data.value("battle_orders", "orders", {}) as Dictionary).has(key):
 		return
@@ -1163,6 +1142,7 @@ func reorder(side: int, key: String) -> void:
 		r.erase("relief")
 		r.erase("relieve")
 		r.erase("said")
+		r.erase("task")
 		r["foe"] = null
 		_send(r, &"reform")
 	orders[side] = key
@@ -1189,26 +1169,10 @@ func _reform_tick(r: Dictionary, dt: float) -> void:
 	if Vector2(to.x - at.x, to.z - at.z).length() <= Data.num(F, "field.contact", 0.12):
 		r.erase("form_to")
 		_square(r, _line_front(r), dt)
-		_send(r, &"formed")
-		_act_by_order(r)
+		_send(r, &"formed")  # it stands in its place; its captain gives the side its plan once all stand (army_general.gd)
 		return
 	Mover.of(r["node"]).toward(to, Data.num(F, "field.advance", 0.24) * float(Data.value("battle_orders", "command.pace", 1.4)), _line_front(r))
 	_gait(r, dt)
-
-
-## What a formed regiment does under its side's order: under one that advances, its first line goes in (archers loose,
-## horse on the wings ride round), a second line and a horse reserve wait their beat (_orders_tick); under one that
-## holds, it stands where it formed and the foe must come to it (archers still loose).
-func _act_by_order(r: Dictionary) -> void:
-	var o: Dictionary = Data.value("battle_orders", "orders.%s" % String(orders[int(r["side"])]), {})
-	if r["role"] == "ranged":
-		_send(r, &"volley")
-		return
-	var theirs: Dictionary = Data.value("battle_orders", "orders.%s" % String(orders[1 - int(r["side"])]), {})
-	var holds := not bool(o.get("advance", true)) and bool(theirs.get("advance", true))  # two walls never stand all day: one goes in
-	if holds or int(r.get("line_no", 1)) == 2 or String(r.get("post", "")) == "reserve":
-		return
-	_send(r, &"flank" if r["role"] == "cavalry" else &"advance")
 
 
 ## A beat of the battle order, said where the player reads the realm's news (ui.toast), once per regiment and beat.
@@ -1248,29 +1212,24 @@ func _pair(r: Dictionary, foe: Dictionary, front: Array) -> Dictionary:
 	return out
 
 
-## Horse: round the end of the enemy's line nearest its own wing, wide of it (field.cavalry.wide), then in on his
-## flank.
+## Horse: round to the outer flank of the foe its captain sends it at (army_general.gd: r.target, a foe block at
+## blows or the foe's horse), wide of it (field.cavalry.wide), then in on him. With no target it stands.
 func _flank(r: Dictionary, _dt: float) -> void:
-	var foe_army: Army = sides[1 - int(r["side"])]
-	var rows := foe_army.rows().filter(func(x): return x.get("state_name", "") != "rout" and int(x.get("living", 1)) > 0)
-	if rows.is_empty():
+	var t: Variant = r.get("target")
+	if not t is Dictionary or String((t as Dictionary).get("state_name", "")) == "rout" or int((t as Dictionary).get("living", 0)) <= 0:
 		return
+	var end: Dictionary = t
+	var foe_army: Army = sides[1 - int(r["side"])]
 	var node: Node3D = r["node"]
 	_morph_step(r, _dt)  # back into its ranks as it rides round (after a ride out)
 	var face := foe_army.facing()
 	var right := Vector3(cos(face), 0, -sin(face))
 	var fwd := Vector3(sin(face), 0, cos(face))
-	var mid := foe_army.field()
-	var side_sign := signf((node.global_position - mid).dot(right))
-	if side_sign == 0.0:
-		side_sign = 1.0
-	var end: Dictionary = rows[0]
-	for x in rows:
-		if ((x["node"] as Node3D).global_position - mid).dot(right) * side_sign > ((end["node"] as Node3D).global_position - mid).dot(right) * side_sign:
-			end = x
 	var end_at: Vector3 = (end["node"] as Node3D).global_position
+	var side_sign := signf((end_at - foe_army.field()).dot(right))  # its outer flank, away from the foe's middle
+	if side_sign == 0.0:
+		side_sign = signf((node.global_position - end_at).dot(right)) if (node.global_position - end_at).dot(right) != 0.0 else 1.0
 	var goal := end_at + right * side_sign * (float(end["w"]) * 0.5 + Data.num(F, "field.cavalry.wide", 2.2)) - fwd * Data.num(F, "field.cavalry.behind", 1.0)
-	r["target"] = end
 	# In on the flank once round it (Mac 2026-11-16: "they aren't participating in the battle": the horse rode at a
 	# point beside the foe's end that was often off the walkable ground, never got within 0.05 of it, and circled the
 	# whole fight). It charges within field.cavalry.near of its ride's end, or once its ride has stalled
@@ -1312,14 +1271,25 @@ func _charge(r: Dictionary, _dt: float) -> void:
 	var reach := float(hit[1]) + float(r["d"]) * 0.5 + Data.num(F, "field.contact", 0.12)
 	var spot := tn.global_position + side * reach
 	spot.y = at.y
-	if Vector2(at.x - spot.x, at.z - spot.z).length() <= Data.num(F, "field.contact", 0.12):
+	r["charge_t"] = float(r.get("charge_t", 0.0)) + _dt
+	var off := Vector2(at.x - spot.x, at.z - spot.z).length()
+	if off <= Data.num(F, "field.contact", 0.12) or (float(r["charge_t"]) > Data.num(F, "field.cavalry.charge_most", 3.0) and off < reach):
+		r["charge_t"] = 0.0
 		r["foe"] = target
 		r["met_at"] = clock
 		target["flanked"] = true
+		# The block it strikes turns on it and fights (Mac 2026-11-16: "they didn't even react").
+		if String(target.get("state_name", "")) in ["stand", "volley", "advance"]:
+			target["foe"] = r
+			_send(target, &"engage")
 		# The shock of the charge: men go down at once where the horse strikes (Total War's charge impact).
 		if target.get("state_name", "") != "rout" and int(target.get("living", 0)) > 0:
 			_fell(target, Combat.shock(target, Data.num(F, "field.cavalry.shock", 12.0), at, true, String(orders[int(target["side"])])), true)
 		_send(r, &"engage")
+		return
+	if float(r["charge_t"]) > Data.num(F, "field.cavalry.charge_most", 3.0) * 2.0:
+		r["charge_t"] = 0.0
+		_send(r, &"flank")  # the target moved off or the way is shut: round again for another
 		return
 	Mover.of(r["node"]).toward(spot, Data.num(F, "field.cavalry.charge", 0.55), -side)
 
@@ -1509,9 +1479,11 @@ func _rout_crowd() -> RID:
 
 
 func _exit_tree() -> void:
-	if _crowd.is_valid():
-		NavigationServer3D.free_rid(_crowd)
-		_crowd = RID()
+	for c in [_crowd, _blocks]:
+		if (c as RID).is_valid():
+			NavigationServer3D.free_rid(c)
+	_crowd = RID()
+	_blocks = RID()
 
 
 ## Running: each loose man on, away from the field at his own pace, round the others (his Mover, steered every frame);
@@ -1597,7 +1569,8 @@ func _rally(r: Dictionary, _dt: float) -> void:
 	r["moved"] = true
 	(r["army"] as Army).hold_ground(r)
 	_send(r, &"formed")
-	_send(r, &"volley" if r["role"] == "ranged" else (&"flank" if r["role"] == "cavalry" else &"advance"))
+	if r["role"] != "cavalry":
+		_send(r, &"volley" if r["role"] == "ranged" else &"advance")  # back in the line; horse stands until its captain sends it
 
 
 ## The victors hold the field: they raise a cheer where they stand (Warcraft III and Total War: the winners cheer as

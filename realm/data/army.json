@@ -129,6 +129,12 @@
       "go": [["fight", "relieved", "relieve"], ["relieved", "stand", "formed"], ["reform", "stand", "formed"], ["stand", "volley", "volley"], ["stand", "advance", "advance"], ["stand", "flank", "flank"], ["advance", "fight", "engage"], ["volley", "fight", "engage"], ["flank", "charge", "charge"], ["charge", "fight", "engage"], ["fight", "advance", "advance"], ["charge", "flank", "flank"], ["fight", "rideout", "rideout"], ["rideout", "flank", "flank"], ["rout", "rally", "rally"], ["rally", "stand", "formed"]],
       "any": { "break": "rout", "won": "hold", "reform": "reform" }
     },
+    "general": {"_": "A host's captain in a field battle (army_general.gd; Total War's battle AI): the one decider of its regiments' tasks. form until its plan; advance (the line marches as one) or hold (it stands, the foe comes to it); charge (the whole front runs in together); melee (the lines locked: flanks, horse, archers, relief, the foe's changed order); reform (the side forming anew on an order).",
+      "start": "form",
+      "states": {"form": {}, "advance": {"tick": "_advance"}, "hold": {"tick": "_hold"}, "charge": {"enter": "_charge_in", "tick": "_charge"}, "melee": {"tick": "_melee"}, "reform": {"tick": "_reform"}},
+      "go": [["form", "advance", "advance"], ["form", "hold", "hold"], ["reform", "advance", "advance"], ["reform", "hold", "hold"], ["advance", "charge", "charge"], ["advance", "melee", "met"], ["hold", "melee", "met"], ["charge", "melee", "met"]],
+      "any": {"reform": "reform"}
+    },
     "storm_regiment": {
       "start": "stand",
       "states": {

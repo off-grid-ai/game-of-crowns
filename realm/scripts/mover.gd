@@ -266,10 +266,10 @@ func toward(goal: Vector3, pace: float, look := Vector3.ZERO) -> void:
 
 
 ## Joins a crowd (an avoidance map, NavigationServer3D's RVO) as a body of `kind` (ground.json nav.avoid: man, horse,
-## cart, engine: its width there), looking a few paces about him.
+## cart, engine: its width there; or `size`, a regiment's block by its own), looking a few paces about him.
 ## The fallen keep their place in it, so the living step round them. Left when the body goes.
-func join(crowd: RID, kind := &"man", top := 0.66) -> void:
-	var radius := Data.num("ground", "nav.avoid.%s" % kind, 0.055)  # each body kind's width in the crowd
+func join(crowd: RID, kind := &"man", top := 0.66, size := -1.0) -> void:
+	var radius := size if size > 0.0 else Data.num("ground", "nav.avoid.%s" % kind, 0.055)  # each body kind's width in the crowd (a regiment's block: its own)
 	if _agent.is_valid():
 		return
 	var body := get_parent() as Node3D
@@ -279,7 +279,7 @@ func join(crowd: RID, kind := &"man", top := 0.66) -> void:
 	NavigationServer3D.agent_set_map(_agent, crowd)
 	NavigationServer3D.agent_set_avoidance_enabled(_agent, true)
 	NavigationServer3D.agent_set_radius(_agent, radius)
-	NavigationServer3D.agent_set_neighbor_distance(_agent, 0.6)
+	NavigationServer3D.agent_set_neighbor_distance(_agent, maxf(0.6, radius * 5.0))  # a block sees the blocks a few of its widths about it
 	NavigationServer3D.agent_set_max_neighbors(_agent, 12)
 	NavigationServer3D.agent_set_time_horizon_agents(_agent, 0.5)
 	NavigationServer3D.agent_set_max_speed(_agent, top)
@@ -331,6 +331,14 @@ func crowd_safe() -> Vector2:
 func crowd_on(on: bool) -> void:
 	if _agent.is_valid():
 		NavigationServer3D.agent_set_avoidance_enabled(_agent, on)
+
+
+## Who it is to the crowd (`layer`, bits) and whom it steps round (`mask`, bits): a regiment keeps from its own side's
+## blocks, and its horse riding round from the foe's too, while two fronts may still meet.
+func crowd_layers(layer: int, mask: int) -> void:
+	if _agent.is_valid():
+		NavigationServer3D.agent_set_avoidance_layers(_agent, layer)
+		NavigationServer3D.agent_set_avoidance_mask(_agent, mask)
 
 
 ## A child hurrying (`on`) slips through: less room, quicker, a short look ahead; else as a grown walker's.
