@@ -310,6 +310,7 @@ func _begin() -> void:
 	# One rule for every soldier (Mac 2026-11-17: "everything is a cell"): every man of both hosts takes the cell he
 	# stands on, and from here the field's rule moves him (field_cells.gd); every troop the same, whatever its kind.
 	cells = FieldCells.new((sides[0] as Army).field(), (sides[1] as Army).field(), Data.num(F, "field.cells.size", 0.26))
+	cells.open = func(p: Vector3) -> bool: return Footing.is_clear(p, 0.0, true, null, ["host", "field", "ford"])  # a cell a man may stand on (ground.gd)
 	for i in 2:
 		cells.order(i, String(orders[i]))
 		for r in (sides[i] as Army).rows():
@@ -908,7 +909,15 @@ func _walk_men_timed(r: Dictionary) -> void:
 		Mover.of(man).toward(goal, pace / float(m["dur"]) if far else 0.0, look)
 		if PerfTools.probing:
 			PerfTools.add("field.toward", Time.get_ticks_usec() - tw)
-		var want := "walk" if far else "ready"
+		# Walking while his cell keeps changing, not by the gap to it: a step a tick took him there and back to standing
+		# each tick, the clip restarted every step and the men glided (Mac 2026-11-17: "walking isn't happening").
+		# He keeps his stride field.cells.stride_hold seconds past his last step, so the beat between one step and the
+		# next, or a breath behind the man ahead, never stops his legs.
+		var strides: Dictionary = r.get("stride_until", {})
+		if far or m["c"] != m["from"]:
+			strides[s] = clock + Data.num(F, "field.cells.stride_hold", 0.6)
+		r["stride_until"] = strides
+		var want := "walk" if clock < float(strides.get(s, -1.0)) else "ready"
 		if m["fight"]:
 			want = "grips"
 			if not swing.has(s):
@@ -1020,8 +1029,18 @@ func _free_runners(r: Dictionary) -> void:
 ## The victors hold the field: they raise a cheer where they stand (Warcraft III and Total War: the winners cheer as
 ## the beaten run; every action gets a reaction), field.play.cheer_s seconds, then stand at ease.
 func _hold(r: Dictionary) -> void:
-	_play(r, "cheer")
 	r["foe"] = null
+	r["man_gait"] = {}  # every man's clip chosen afresh: those walking to their square walk
+	r["cheered"] = false
+
+
+## The day won: its men walk to their square (field_cells.gd reform); once all stand there, they cheer, then rest.
+func _hold_walk(r: Dictionary, dt: float) -> void:
+	_walk_men(r, dt)
+	if bool(r.get("cheered", true)) or (r["man_gait"] as Dictionary).values().has("walk"):
+		return
+	r["cheered"] = true
+	_play(r, "cheer")
 	var t := Timer.new()
 	t.one_shot = true
 	t.wait_time = Data.num(F, "field.play.cheer_s", 4.0) * _rng.randf_range(0.8, 1.2)

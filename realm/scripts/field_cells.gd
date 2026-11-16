@@ -32,6 +32,7 @@ var _hold := [0, 0]
 var _occ := {}  # Vector2i -> man
 var _mid := [0.0, 0.0]  # each side's middle file this moment
 var _rng := RandomNumberGenerator.new()
+var open: Callable  # whether a man may stand on a world point (army_field.gd: ground.gd is_clear); unset, everywhere
 
 
 func _init(from: Vector3, to: Vector3, cell: float) -> void:
@@ -133,7 +134,7 @@ func reform(side: int) -> void:
 			ms.sort_custom(func(a, b): return int(a["s"]) < int(b["s"]))
 			for j in ms.size():
 				var c := Vector2i(x0 + j % int(cols[ti]), row0 - f * (depth + j / int(cols[ti])))
-				c = _nearest_free(c)
+				c = _nearest_open(c)
 				var m: Dictionary = ms[j]
 				m["from"] = m["c"]
 				m["c"] = c
@@ -174,6 +175,17 @@ func _nearest_free(c: Vector2i) -> Vector2i:
 				if maxi(absi(dx), absi(dy)) == k and _free(c + Vector2i(dx, dy)):
 					return c + Vector2i(dx, dy)
 	return c
+
+
+## The free cell nearest c that a man may stand on (not in a tree, a field's crop, a building).
+func _nearest_open(c: Vector2i) -> Vector2i:
+	for k in 40:
+		for dx in range(-k, k + 1):
+			for dy in range(-k, k + 1):
+				var q := c + Vector2i(dx, dy)
+				if maxi(absi(dx), absi(dy)) == k and _free(q) and (not open.is_valid() or bool(open.call(world(q)))):
+					return q
+	return _nearest_free(c)
 
 
 static func _cheb(a: Vector2i, b: Vector2i) -> int:

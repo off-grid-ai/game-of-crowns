@@ -161,13 +161,20 @@ func _run() -> void:
 	_check(waiting == 0, "every troop of both sides fights or shoots within %d s (%d never did)" % [int(secs), waiting])
 	_check(most_busy >= BUSY_LEAST, "at the most, %d%% of the men standing fight at once (at least %d%%)" % [int(most_busy * 100.0), int(BUSY_LEAST * 100.0)])
 	_check(idle_most <= IDLE_MOST, "no man stands idle over %d s once the lines have met (longest %.1f s)" % [int(IDLE_MOST), idle_most])
-	_check(formed >= 0.0, "the winners stand in their troops' squares after the day (%s)" % ("in %.1f s" % formed if formed >= 0.0 else "not within 12 s" if bool(field.get("_over")) else "the day not over in the time watched"))
+	_check(formed >= 0.0, "the winners stand in their troops' squares after the day (%s)" % ("in %.1f s" % formed if formed >= 0.0 else ("not within 12 s: %d men off their cell, the furthest %.1f cells" % [away, away_most]) if bool(field.get("_over")) else "the day not over in the time watched"))
+	var flip_rate := float(flips) / maxf(float(walk_reads) * 0.125, 0.001)  # flips a man a second
+	_check(flip_rate <= 0.5, "a man's walk keeps going: his clip turns between walking and standing %.2f times a second (at most 0.5)" % flip_rate)
 	_check(fps_n > 0 and fps_sum / fps_n >= FPS_LEAST, "the fight keeps %d frames a second (mean %.0f over %d reads)" % [int(FPS_LEAST), fps_sum / maxf(fps_n, 1.0), fps_n])
 	preload("res://scripts/settings.gd").set_value("pause_when_needed", _was_pause)
 	quit(1 if fail > 0 else 0)
 
 
 var most_busy := 0.0
+var away := 0  # men not yet on their re-form cell at the last look (_all_home)
+var away_most := 0.0  # the furthest of them, in cells
+var flips := 0  # a man's clip turned between walk and ready (_watch)
+var walk_reads := 0  # reads of a man walking or standing ready
+var _gait := {}
 var doubled := 0
 var idle_most := 0.0
 var _idle := {}  # a man's id -> [his cell, seconds there idle]
@@ -177,15 +184,19 @@ var _idle := {}  # a man's id -> [his cell, seconds there idle]
 func _all_home(field: Node) -> bool:
 	var cells: Object = field.get("cells")
 	var size: float = cells.get("size")
+	away = 0
+	away_most = 0.0
 	for m in cells.get("men"):
 		var runners: Dictionary = (m["r"] as Dictionary).get("runners", {})
 		if not runners.has(int(m["s"])) or not is_instance_valid(runners[int(m["s"])]["node"]):
 			continue
 		var at: Vector3 = (runners[int(m["s"])]["node"] as Node3D).global_position
 		var want: Vector3 = cells.call("world", m["c"])
-		if Vector2(at.x - want.x, at.z - want.z).length() > size * 0.35:
-			return false
-	return true
+		var off := Vector2(at.x - want.x, at.z - want.z).length()
+		if off > size * 0.35:
+			away += 1
+			away_most = maxf(away_most, off / size)
+	return away == 0
 
 
 ## [men fighting or shooting, men standing] over both hosts, by the field's cells.
@@ -207,6 +218,16 @@ func _watch(field: Node, dt: float) -> void:
 		return
 	var seen := {}
 	var sides_left := [0, 0]
+	# A walking man's clip: how often it flips between walking and standing (each flip restarts it; a flip a step made
+	# them glide, Mac 2026-11-17 "walking isn't happening").
+	for m in cells.get("men"):
+		var key := "%d:%d" % [int((m["r"] as Dictionary)["id"]) * 2 + int(m["side"]), int(m["s"])]
+		var g := String(((m["r"] as Dictionary).get("man_gait", {}) as Dictionary).get(int(m["s"]), ""))
+		if g == "walk" or g == "ready":
+			if _gait.has(key) and _gait[key] != g:
+				flips += 1
+			_gait[key] = g
+			walk_reads += 1
 	for m in cells.get("men"):
 		sides_left[int(m["side"])] += 1
 		if seen.has(m["c"]):
