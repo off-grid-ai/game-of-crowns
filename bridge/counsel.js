@@ -6,7 +6,7 @@
 // bridge's own helpers come in as one context argument, built fresh by
 // server.js on each call (server.js keeps wrappers of the same names).
 
-import { crownOf } from "./realm.js";
+import { crownOf, greatHouses } from "./realm.js";
 import { houseFor, cityName } from "./narrator.js";
 import { DECREES, bannersReady, ECONOMY, peaceScale } from "./crown.js";  // ECONOMY.thin: below it the treasury is thin (data/economy.json)
 import { BANDS } from "./favour.js";
@@ -14,6 +14,7 @@ import { calendar, yearsIn } from "./calendar.js";
 import * as chron from "./chronicles.js";
 import { shortOf } from "./treasury.js";
 import * as Director from "./director.js";
+import * as Rivalry from "./rivalry.js";
 
 // The Hand of the King advises: the two or three most pressing matters in the
 // realm, worst first, each with why it matters in one line and the decrees that
@@ -298,6 +299,12 @@ export function priced(ctx, a) {
   }
   const does = DOES[a.action ?? a.ui];
   if (does && !a.label.includes("(")) a.label += ` · ${does}`;
+  // Who loses by it (rivalry.js): an order that warms a great house names its rival, jealous, before it is given.
+  if (["gift", "feast", "relief", "build", "alliance", "reinforce"].includes(a.action)) {
+    const pid = a.to != null && a.to >= 0 ? Number(a.to) : world.cities.find((c) => c.id === Number(a.city))?.owner;
+    const jealous = greatHouses(world).some((p) => p.id === pid) ? Rivalry.word(ctx, pid) : "";
+    if (jealous) a.label += ` · ${jealous}`;
+  }
   return a;
 }
 

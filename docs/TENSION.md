@@ -36,10 +36,15 @@ theory and mechanics deeply: cause and effect, consequences". This is the plan e
   realm's alarm; quiet seasons ease it. At 100 the great houses not sworn to the King band together and go to war
   on him (`coalition.json alarm`). The meter stands in the control plane.
 
+- **Gifts make rivals.** An order that warms a great house cools its rival by half as much: the house it is at war
+  with, else its nearest neighbour; the order names it first ("Stormhold jealous") (`rivalry.json`).
+- **Few orders a season.** Every order takes a royal seal, a chronicle matter's too; one comes each season, kept up to
+  three (`seals.json`). Saying no is free.
+- **Seen as it lands, and again later.** A card over the control plane shows what a choice moved; four seasons on the
+  order comes back judged on the realm then (`reckoning.js`, `aftermath.js`).
+
 ## Next, in order
 
 1. **Taken towns resent the crown.** A town won by force is restless for seasons (lower tithe, a chance to rise
    back to its old house) unless the King spends to settle it.
-2. **Gifts make rivals.** Favour given to one house cools its rival (the house it is at war with, or whose lord
-   hates its lord).
-3. **Bandwagoning.** A King who keeps his promises and wins his wars draws the weak houses to swear to him unasked.
+2. **Bandwagoning.** A King who keeps his promises and wins his wars draws the weak houses to swear to him unasked.
