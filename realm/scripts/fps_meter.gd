@@ -14,6 +14,7 @@ var _tris := ""  # triangles in view by part, the dearest eight (DrawCensus)
 
 func _ready() -> void:
 	layer = 120
+	process_mode = Node.PROCESS_MODE_ALWAYS  # the rate under a pause too (a paused realm still draws; frozen, it lied)
 	add_child(label)
 	# Bottom right, just over the control plane: the top centre is the notices' and the welcome card's (Mac 2026-11-16:
 	# it lay over "while you were away"), the right side the chronicle drawer's heading.
