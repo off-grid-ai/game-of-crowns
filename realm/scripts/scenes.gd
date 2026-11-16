@@ -171,6 +171,7 @@ func cart(r: RandomNumberGenerator, cloth: Color) -> Node3D:
 func _cart_rig(r: RandomNumberGenerator, carter: Node3D) -> Node3D:
 	var rig := Node3D.new()
 	rig.name = "Cart"
+	rig.add_to_group(&"sounding", true)  # heard by sound_v2.gd (SOUNDING): no walk of the scene to find it
 	var wagon := MeshInstance3D.new()
 	wagon.mesh = wagon_mesh
 	var big := float(Data.num("people", "readable", 1.0))  # drawn larger, as the people and horses are

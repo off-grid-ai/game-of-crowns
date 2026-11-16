@@ -81,6 +81,7 @@ var _idle_life: Array = []  # standing about, the moves of its idle life (animal
 
 
 func _init(coat := -1) -> void:
+	add_to_group(&"sounding", true)  # heard by sound_v2.gd (SOUNDING): no walk of the scene to find it
 	_model = (load(MODEL) as PackedScene).instantiate()
 	add_child(_model)
 	_model.owner = self  # its own insides, made again by _init: a kept town (town_store.gd) packs the horse, not its model

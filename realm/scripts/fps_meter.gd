@@ -64,6 +64,11 @@ func _process_timed(delta: float) -> void:
 		label.offset_bottom = main.ui.plane.top_y() - get_viewport().get_visible_rect().size.y - 8.0
 	var fps := Engine.get_frames_per_second()
 	var lines := PackedStringArray(["%d fps  ·  %.0f ms  ·  %s" % [fps, 1000.0 / maxf(fps, 1.0), "smooth" if fps >= 60 else "playable" if fps >= 30 else "slow" if fps >= 15 else "very slow"]])
+	# The rate alone (Settings "rate"): nothing else is worked out. The census of what is drawn walks every town, person
+	# and wood each two seconds (a hitch of its own in Mac's 9 fps game, 2026-11-16), so it runs only when shown or measured.
+	if mode == "rate" and not preload("res://scripts/perf_tools.gd").probing:
+		label.text = lines[0]
+		return
 	lines.append("%.1fM triangles  ·  %d draws" % [Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME) / 1000000.0, int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME))])
 	var PerfTools := preload("res://scripts/perf_tools.gd")
 	var st: String = PerfTools.live_split()  # draw against our code, while the probe measures (GOC_PERF_PROBE)

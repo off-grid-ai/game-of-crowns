@@ -17,6 +17,7 @@ extends Node
 
 const Data := preload("res://scripts/data.gd")
 const Works := preload("res://scripts/works.gd")
+const SOUNDING := &"sounding"  # every sound source, joined where it is made (_find)
 
 var scape: Node  # soundscape.gd: its loader, its view (season, zoom) and the log
 var _rows := {}  # sound name -> its row
@@ -147,7 +148,7 @@ func tick(delta: float) -> void:
 	var eye := cam.global_position
 	var want := {}  # source key -> [node to sit on, sound, gain 0..1]
 	var calls: Array = []  # [key, node, sound rule]
-	_find(get_tree().root, eye, hear, want, calls)
+	_find(eye, hear, want, calls)
 	# Loops: in when wanted, faded to their gain; out when not.
 	for key in _loops.keys():
 		if not want.has(key) or not is_instance_valid(_loops[key]["node"]):
@@ -197,17 +198,20 @@ func tick(delta: float) -> void:
 	_ambient(eye)
 
 
-## Walks the scene near the camera for sound sources (sounds.json sources): towns' working buildings and
-## squares, the inn, carts, fires, bonfires, a levy marching out, and the living things that call.
-func _find(top: Node, eye: Vector3, hear: float, want: Dictionary, calls: Array) -> void:
+## The sound sources near the camera (sounds.json sources): towns' working buildings and squares, the inn, carts,
+## fires, bonfires, a levy marching out, and the living things that call. Each source joins SOUNDING when it is made
+## (works.gd Tick, scenes.gd cart, fire.gd, the bell and mourning dress, town_scenes.gd levy, town_life.gd bonfire,
+## animals.gd, horse.gd); this reads that group, never the whole scene (it walked 45,000 nodes every half second:
+## 8 ms a frame at Kingsmere, Mac's 9 fps game, 2026-11-16).
+func _find(eye: Vector3, hear: float, want: Dictionary, calls: Array) -> void:
 	var S: Dictionary = Data.value("sounds", "sources", {})
 	var near := func(n: Node3D) -> bool: return n.is_inside_tree() and n.global_position.distance_to(eye) < hear
-	var stack: Array = [top]
 	var hour := Works.hour()
-	var seen := 0
-	while not stack.is_empty() and seen < 20000:
-		var n: Node = stack.pop_back()
-		seen += 1
+	var folk: Array = []  # everyone in earshot, once a look: a market's crowd is counted from these
+	for p in get_tree().get_nodes_in_group(&"people"):
+		if p is Node3D and (p as Node3D).global_position.distance_to(eye) < hear + 6.0:
+			folk.append(p)
+	for n: Node in get_tree().get_nodes_in_group(SOUNDING):
 		var n3 := n as Node3D
 		var nm := String(n.name)
 		if n is Works.Tick:
@@ -225,8 +229,8 @@ func _find(top: Node, eye: Vector3, hear: float, want: Dictionary, calls: Array)
 			if is_instance_valid(root) and near.call(root) and S.has("market"):
 				var r := float(root.get_meta("square_r", 1.0))
 				var count := 0
-				for p in root.find_children("*", "Node3D", true, false):
-					if p.has_node("Anim") and Vector2(p.global_position.x - root.global_position.x, p.global_position.z - root.global_position.z).length() < r:
+				for p: Node3D in folk:
+					if Vector2(p.global_position.x - root.global_position.x, p.global_position.z - root.global_position.z).length() < r:
 						count += 1
 				var full := float(S["market"].get("full", 30))
 				var day := 1.0 if Works.within(hour, "work") else 0.15
@@ -271,13 +275,6 @@ func _find(top: Node, eye: Vector3, hear: float, want: Dictionary, calls: Array)
 			var rule: Dictionary = (S.get("calls", {}) as Dictionary).get("horse", {})
 			if not rule.is_empty():
 				calls.append(["horse#%d" % n.get_instance_id(), n3, rule])
-		# Down into it, unless it's a person (their bones make no sound of their own) or a town far off.
-		if n.has_node("Anim") or n is Skeleton3D or n is MeshInstance3D or n is MultiMeshInstance3D or n is GPUParticles3D:
-			continue
-		if n3 and (n.has_meta("homes") or n.has_meta("works")) and n3.global_position.distance_to(eye) > hear + 6.0:
-			continue
-		for ch in n.get_children():
-			stack.append(ch)
 
 
 ## Birds and night things by season and hour, near the camera (sounds.json ambient: sound, seasons,

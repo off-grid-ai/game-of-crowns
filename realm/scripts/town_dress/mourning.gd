@@ -43,6 +43,7 @@ func dress(root: Node3D, life: Node3D, _row: Dictionary, rng: RandomNumberGenera
 				(gi as GeometryInstance3D).material_override = black
 	var toll := Node3D.new()
 	toll.name = "Tolling"
+	toll.add_to_group(&"sounding", true)  # heard by sound_v2.gd (SOUNDING): no walk of the scene to find it
 	toll.set_meta("toll", g.get("toll", [9.0, 12.0]))
 	var sept: Vector3 = places.get("sept", well)
 	toll.position = Vector3(sept.x, tl._y(center, sept) + 0.3, sept.z)

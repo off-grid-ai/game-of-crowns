@@ -1389,6 +1389,7 @@ func _leave(k: Dictionary, role: Dictionary, group: Array, a: Dictionary) -> voi
 func _begin_march(root: Node3D, life: Node3D, m: Dictionary, rng: RandomNumberGenerator) -> void:
 	var marker := Node3D.new()
 	marker.name = "Leaving"  # the drum and the boots are heard by it (sound_v2.gd)
+	marker.add_to_group(&"sounding", true)  # heard by sound_v2.gd (SOUNDING): no walk of the scene to find it
 	life.add_child(marker)
 	var every: Array = m.get("every", [7.0, 13.0])
 	var e := {"root": root, "life": life, "marker": marker, "every": every, "file": int(m.get("file", 1)), "spacing": float(m.get("spacing", 0.13)),

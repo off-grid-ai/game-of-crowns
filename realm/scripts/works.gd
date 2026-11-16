@@ -399,6 +399,7 @@ class Tick extends Node:
 	var _swing := {}  # smith -> where in his Hammer_Swing he was last frame (0-1)
 
 	func _ready() -> void:
+		add_to_group(&"sounding", true)  # heard by sound_v2.gd (SOUNDING): no walk of the scene to find it
 		_rng.randomize()
 
 	func _process(delta: float) -> void:

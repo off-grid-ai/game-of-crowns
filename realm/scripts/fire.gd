@@ -627,6 +627,7 @@ func _alight(root: Node3D, key: String, h: Array, town: int) -> void:
 	var top := box.end.y
 	var fire := Node3D.new()
 	fire.name = "Burning"
+	fire.add_to_group(&"sounding", true)  # heard by sound_v2.gd (SOUNDING): no walk of the scene to find it
 	root.add_child(fire)
 	_burning[key] = fire
 	# A ruin stays a ruin until the realm rebuilds it (batch 9: it stood whole again by 90 s): the bridge keeps it.

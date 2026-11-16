@@ -10,6 +10,7 @@ func dress(root: Node3D, life: Node3D, row: Dictionary, _rng: RandomNumberGenera
 	var b: Array = row.get("bell", ["bell", [6.0, 9.0]])
 	var toll := Node3D.new()
 	toll.name = "Tolling"
+	toll.add_to_group(&"sounding", true)  # heard by sound_v2.gd (SOUNDING): no walk of the scene to find it
 	toll.set_meta("sound", String(b[0]))
 	toll.set_meta("toll", b[1] if b.size() > 1 else [6.0, 9.0])
 	toll.position = Vector3(sept.x, tl._y(center, sept) + 0.3, sept.z)

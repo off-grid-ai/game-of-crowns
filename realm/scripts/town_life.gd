@@ -642,6 +642,7 @@ func _bonfire(life: Node3D, center: Vector3) -> void:
 	# step of heat past its stones, is ground nobody claims (_fires reads "bonfires").
 	var keep := fire_reach()
 	life.set_meta("bonfires", [[Vector2(_fire_at.x, _fire_at.z), keep]])
+	life.add_to_group(&"sounding", true)  # heard by sound_v2.gd (SOUNDING): no walk of the scene to find it
 	var light := OmniLight3D.new()
 	light.light_color = Color(1.0, 0.6, 0.3)
 	light.light_energy = float(B.get("light", 1.6))
