@@ -133,13 +133,29 @@ func follow(way: PackedVector3Array, then := Callable()) -> void:
 func _route(from: Vector3, to: Vector3) -> PackedVector3Array:
 	if nav == NavWorld.WATER:
 		return NavWorld.path(from, to, NavWorld.WATER)  # a ship: the sea's and lakes' map, never the land
+	# A step to the next cell or so on clear ground goes straight (_clear_leg: nothing stands on it, off every engine):
+	# the map is asked only round what stands. Each ask of the realm's map costs ~2 ms however short; a field battle's
+	# men asked one a cell step (ground.json nav.straight; Mac 2026-11-17, "fix the FPS").
+	if Vector2(to.x - from.x, to.z - from.z).length() < Data.num("ground", "nav.straight", 0.6):
+		var ts := Time.get_ticks_usec() if PerfTools.probing else 0
+		var clear := _clear_leg(from, to)
+		if PerfTools.probing:
+			PerfTools.add("mover.straight", Time.get_ticks_usec() - ts)
+		if clear:
+			return PackedVector3Array([to])
 	# A horse or a cart (it steers on an arc) walks the wide map: kept a wagon's half-width off everything standing.
+	var tp := Time.get_ticks_usec() if PerfTools.probing else 0
 	var way := NavWorld.path(from, to, &"wide" if turn_radius > 0.0 else nav)
+	if PerfTools.probing:
+		PerfTools.add("mover.path", Time.get_ticks_usec() - tp)
 	if way.is_empty():
 		return way
 	var end := way[way.size() - 1]
+	var tc := Time.get_ticks_usec() if PerfTools.probing else 0
 	if Vector2(end.x - to.x, end.z - to.z).length() > 0.01 and _clear_leg(end, to):
 		way.append(to)
+	if PerfTools.probing:
+		PerfTools.add("mover.clear_leg", Time.get_ticks_usec() - tc)
 	return way
 
 
@@ -223,7 +239,7 @@ var _look := Vector3.ZERO
 var _vel := Vector3.ZERO
 var _lapse := 0.0
 var _asked := 0  # the frame toward() was last called
-var _reroute := 0.0
+var _reroute := 0  # when (Time msec) a steered body asks the ground afresh for its way (steer.reroute after the last)
 var _agent := RID()
 var _safe := Vector3.ZERO
 var _in_crowd := true  # out of the crowd (crowd_on(false)) the crowd answers nothing: it steers by its own way, never by the crowd's last word (a horse on its charge rode off the field on it)
@@ -244,9 +260,15 @@ func toward(goal: Vector3, pace: float, look := Vector3.ZERO) -> void:
 	_asked = Engine.get_process_frames()
 	_look = look
 	speed = pace
-	_reroute -= get_process_delta_time()
-	if not _steer or _reroute <= 0.0 or Vector2(goal.x - _goal.x, goal.z - _goal.z).length() > 0.05:
-		_reroute = _steer_num("reroute", 0.5)
+	# Timed on the clock, not by the frame's length at each ask: a fighter asks every physics step, so a slow frame
+	# counted twice re-routed every man every ask and made the next frame slower still.
+	# A body standing on a mark that hasn't moved has no way to find: the timed re-ask is for one still on his way (a
+	# field battle's men at grips asked twice a second, 4-5 ms each on the realm's map, Mac 2026-11-17 "fix the FPS").
+	var now := Time.get_ticks_msec()
+	var moved := Vector2(goal.x - _goal.x, goal.z - _goal.z).length() > 0.05
+	var there := Vector2(goal.x - body.global_position.x, goal.z - body.global_position.z).length() < 0.03
+	if not _steer or moved or (now >= _reroute and not there):
+		_reroute = now + int(_steer_num("reroute", 0.5) * 1000.0)
 		_goal = goal
 		var way := _route(body.global_position, goal)
 		if way.is_empty():
@@ -254,7 +276,7 @@ func toward(goal: Vector3, pace: float, look := Vector3.ZERO) -> void:
 			_way = PackedVector3Array()
 			_steer = false
 			_vel = Vector3.ZERO
-			_reroute = 0.0
+			_reroute = 0
 			if not _ask_got.is_valid():
 				set_process(false)
 			return

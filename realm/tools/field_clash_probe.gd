@@ -148,7 +148,7 @@ func _run() -> void:
 	_check(waiting == 0, "every troop of both sides fights or shoots within %d s (%d never did)" % [int(secs), waiting])
 	_check(most_busy >= BUSY_LEAST, "at the most, %d%% of the men standing fight at once (at least %d%%)" % [int(most_busy * 100.0), int(BUSY_LEAST * 100.0)])
 	_check(idle_most <= IDLE_MOST, "no man stands idle over %d s once the lines have met (longest %.1f s)" % [int(IDLE_MOST), idle_most])
-	_check(fps_n == 0 or fps_sum / fps_n >= FPS_LEAST, "the fight keeps %d frames a second (mean %.0f over %d reads)" % [int(FPS_LEAST), fps_sum / maxf(fps_n, 1.0), fps_n])
+	_check(fps_n > 0 and fps_sum / fps_n >= FPS_LEAST, "the fight keeps %d frames a second (mean %.0f over %d reads)" % [int(FPS_LEAST), fps_sum / maxf(fps_n, 1.0), fps_n])
 	preload("res://scripts/settings.gd").set_value("pause_when_needed", _was_pause)
 	quit(1 if fail > 0 else 0)
 

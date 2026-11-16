@@ -26,6 +26,13 @@ func _packed() -> Vector2:
 	return Vector2(float(pk[0]), float(pk[1]))
 
 
+## A battle's troop holds no ground in the walk map (Mac 2026-11-17, "why does the red banner run away first"): a held
+## block was a hole in the map, so each man's way to the cell ahead first led him out of it, often backward, and every
+## route into a hole searched the whole realm. On the field the cells keep one man a cell (field_cells.gd).
+func _claim(_r: Dictionary, _xf: Transform3D, _w := -1.0, _d := -1.0) -> void:
+	pass
+
+
 func _free_near(at: Vector3, _right3: Vector3, _fwd3: Vector3, _w: float, _d: float, _taken: Array, _strict: bool, _own: Variant = null) -> Vector3:
 	return Vector3(at.x, 0.0, at.z)  # a battle's host stands where its order puts it (Mac 2026-11-17: no muster rules on the field)
 
