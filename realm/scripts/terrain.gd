@@ -191,10 +191,14 @@ func set_season(name: String, towns: Array = [], settle := 10.0) -> void:
 			var has := {}
 			for u in (mat.shader.get_shader_uniform_list() if mat.shader else []):
 				has[u["name"]] = true
-			if has.has("albedo"):
-				create_tween().tween_property(mat, "shader_parameter/albedo", Forest.tint(mat), settle)
-			if has.has("turn"):
-				create_tween().tween_property(mat, "shader_parameter/turn", Forest.turn_of(mat), settle)
+			# A uniform never set reads back null and can't be tweened from: it takes its value at once instead.
+			for u: Array in [["albedo", Forest.tint(mat)], ["turn", Forest.turn_of(mat)]]:
+				if not has.has(u[0]):
+					continue
+				if mat.get_shader_parameter(u[0]) == null:
+					mat.set_shader_parameter(u[0], u[1])
+				else:
+					create_tween().tween_property(mat, "shader_parameter/" + String(u[0]), u[1], settle)
 	if s["snow"] > 0.0 and OVERLAY_SNOW and vegetation:
 		for mmi in vegetation.batches:
 			mmi.material_overlay = _snow  # left on as it melts; the fade takes it to nothing

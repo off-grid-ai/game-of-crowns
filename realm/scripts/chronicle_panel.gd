@@ -595,7 +595,9 @@ func focus(e: Dictionary) -> void:
 	_chron_panel.visible = true
 	if ui._chron_btn:
 		ui._chron_btn.set_pressed_no_signal(true)
-	_scroll.ensure_control_visible.call_deferred(row)
+	(func() -> void:  # next frame, if the row still stands in the list (a rebuilt list took it: 7 errors a run)
+		if is_instance_valid(row) and _scroll.is_ancestor_of(row):
+			_scroll.ensure_control_visible(row)).call_deferred()
 
 
 ## The card the camera went to: its frame in the accent, "Here now" and what is happening at its town (map_tip.gd), or
