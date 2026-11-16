@@ -173,8 +173,7 @@ func _ready() -> void:
 	# A battle side stands in the order its commander picks (battle_orders.gd, through battle.pick: army_field.gd); a
 	# muster stands in the realm's default.
 	battle_order = String(battle["pick"].call(_regiments)) if battle.get("pick") is Callable else ""
-	var pk: Array = Data.value("battle", "field.cells.packed", [0.26, 0.0])
-	var placed := Formation.line_places(_regiments, battle_order, bool(battle.get("mirror", false)), Vector2(float(pk[0]), float(pk[1])) if battle.get("cells", false) else Vector2(-1.0, -1.0))
+	var placed := Formation.line_places(_regiments, battle_order, bool(battle.get("mirror", false)), _packed())
 	battle_order = String(placed["order"])
 	var extent: Vector2 = placed["extent"]
 	_commander = placed["commander"]
@@ -782,11 +781,6 @@ func rows() -> Array:
 	return _regiments
 
 
-## The regiment the host's commander rides with (his presence steadies those about him: army_morale.gd); {} if none.
-func commander() -> Dictionary:
-	return _commander
-
-
 func field() -> Vector3:
 	return _field
 
@@ -980,6 +974,27 @@ func _unit(name: String) -> Dictionary:
 	return out
 
 
+## The figures a regiment of spec's men draws (figures(): one for every 1 / ratio() men). A host of another kind
+## answers its own (field_host.gd: a battle's).
+func _drawn(spec: Dictionary) -> int:
+	return figures(int(spec["men"]))
+
+
+## A regiment's room (its sf and sr, its unit's spacing, set by _regiment); a host of another kind sets its own.
+func _room(_r: Dictionary) -> void:
+	pass
+
+
+## The formation template a regiment stands in on the field (formations.json field.<role>).
+func _line_form(r: Dictionary) -> String:
+	return Formation.field_form(r["role"])
+
+
+## The gaps between its regiments in its line (across, between rows; negative: army.json gap and line.rowGap).
+func _packed() -> Vector2:
+	return Vector2(-1.0, -1.0)
+
+
 ## One regiment: its node (at its middle, on the ground), its men (one VAT draw), its banner, its ground
 ## rectangle and its far block. Its men keep who they are (turn, size) through every shape.
 func _regiment(spec: Dictionary, colour: Color, house: Dictionary = {}) -> Dictionary:
@@ -987,9 +1002,7 @@ func _regiment(spec: Dictionary, colour: Color, house: Dictionary = {}) -> Dicti
 	var kit := Visual.soldier(String(row["asset"]), row, battle.get("quiet", false))
 	if kit.is_empty():
 		return {}
-	# drawn: one figure for every 1 / ratio() men; on a battle's field every troop the same few (battle.json
-	# field.cells.troop: Mac 2026-11-17, "5 visual soldiers per troop. 221", the same for every kind)
-	var count := int(Data.num("battle", "field.cells.troop", 5)) if battle.get("cells", false) else figures(int(spec["men"]))
+	var count := _drawn(spec)
 	var node := Node3D.new()
 	add_child(node)
 	var vat: VATMultiMeshInstance3D = VAT.new()
@@ -1028,11 +1041,9 @@ func _regiment(spec: Dictionary, colour: Color, house: Dictionary = {}) -> Dicti
 		"yaws": yaws, "sizes": sizes, "local": PackedVector3Array(), "from": PackedVector3Array(), "to": PackedVector3Array(),
 		"shape": "line", "state": "rest", "s": 0.0, "off": 0.0, "slot": Vector3.ZERO, "place": Vector2.ZERO, "t": 0.0,
 		"fidget": _rng.randf_range(0.5, 3.0), "backs": [], "selected": false, "w": 1.0, "d": 1.0, "house": house, "worn": worn}
-	if battle.get("cells", false):  # on a battle's field: a man a cell, every kind alike (army_field.gd, field_cells.gd)
-		r["sf"] = Data.num("battle", "field.cells.size", 0.26)
-		r["sr"] = r["sf"]
-	# Its shapes (data/formations.json): on the field its role's template (a battle's: the troop, two, two and one), on the road the march's, aboard the deck's.
-	r["line"] = Formation.layout(r, "troop" if battle.get("cells", false) else Formation.field_form(r["role"]), _rng)
+	_room(r)
+	# Its shapes (data/formations.json): on the field its role's template, on the road the march's, aboard the deck's.
+	r["line"] = Formation.layout(r, _line_form(r), _rng)
 	r["column"] = Formation.layout(r, String(Data.value("formations", "march", "column")), _rng)
 	r["deck"] = Formation.layout(r, String(Data.value("formations", "aboard", "deck")), _rng)
 	_wheels(r)
@@ -1400,8 +1411,6 @@ func _clear_slots(right3: Vector3, fwd3: Vector3) -> void:
 ## clear of the blocks in `taken`): `at` itself, else rings of muster.cell / 2 outward to muster.search, nearest
 ## first. INF when none is (Total War's deployment never stands men in a house or in another regiment).
 func _free_near(at: Vector3, right3: Vector3, fwd3: Vector3, w: float, d: float, taken: Array, strict: bool, own: Variant = null) -> Vector3:
-	if battle.get("cells", false):
-		return Vector3(at.x, 0.0, at.z)  # a battle's host stands where its order puts it, packed (Mac 2026-11-17: no muster rules on the field)
 	var pitch := Data.num("army", "muster.cell", 2.0) * 0.5
 	# A side in the field keeps its line (Mac 2026-11-16: "the battle is too stretched, think of a leaner battle": a
 	# block on rough ground was moved up to muster.search 8 away, the line strewn over the field): within

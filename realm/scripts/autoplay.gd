@@ -30,7 +30,6 @@ extends Node
 ##                       besiege the nearest town not the crown's the bridge accepts, attack the nearest foe's men
 ##   answer              give the matter on the court card its first answer
 ##   director            let the camera director run, as it does in play
-##   rout 120            wait (at most 120 s) for the field battle's first break (--army-battle), so the film starts there
 ##   view /out/frames/x  the next view of a render pass in the same run: its own folder and play.log, the screen reset
 ##   post /test/court {"sit":true}   a bridge test hook (X-Test), as the pass's curl was
 ##   cue /out/raid.cue 600   wait for the pass to stage a view and write its steps there, then play them
@@ -904,16 +903,6 @@ func _step(w: PackedStringArray) -> void:
 					await get_tree().create_timer(0.25).timeout
 					field = main.get_node_or_null("FieldBattle")
 				_note("  clash: %s after %.0f s" % ["the lines met" if field != null and bool(field.call("met")) else "no meeting", (Time.get_ticks_msec() - t0) / 1000.0])
-			"rout":
-				# rout [most]: waits until a regiment of the field battle (--army-battle, army_field.gd) breaks, at most
-				# `most` seconds (120); the lens is already on the line where it breaks (army_field.lens_aim).
-				var most := float(w[1]) if w.size() > 1 else 120.0
-				var t0 := Time.get_ticks_msec()
-				var field: Node = main.get_node_or_null("FieldBattle")
-				while (Time.get_ticks_msec() - t0) / 1000.0 < most and (field == null or int(field.call("routed")) == 0):
-					await get_tree().create_timer(0.25).timeout
-					field = main.get_node_or_null("FieldBattle")
-				_note("  rout: %s after %.0f s" % ["the first break" if field != null and int(field.call("routed")) > 0 else "no break", (Time.get_ticks_msec() - t0) / 1000.0])
 			"muster":
 				# muster [phase] [most]: waits until a host raised for war (a war, a decree or --muster; army.gd, out_to)
 				# reaches `phase` (formed, out, halted, gone; default out), at most `most` seconds (120), so a round films

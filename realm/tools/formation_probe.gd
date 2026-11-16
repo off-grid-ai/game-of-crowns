@@ -252,19 +252,13 @@ func _volley() -> void:
 	_check(body.contains("draw_s") and body.contains("field.volley.step") and body.contains("their_alive"), "every archer draws together, they loose in step, each arrow onto a living man of the target block")
 
 
-## 9. The rout as loose men and the rally, as the regiment's mind and army_field.gd wire them.
+## 9. No fleeing on the field (Mac 2026-11-17: "no fleeing, fight to the death"): the regiment's mind has no rout or
+## rally, and no panic decider is left.
 func _rout() -> void:
-	var go: Array = (Data.value("army", "minds.regiment", {}) as Dictionary).get("go", [])
-	_check(go.has(["rout", "rally", "rally"]) and go.has(["rally", "stand", "formed"]), "a routed regiment may rally and stand formed again (its mind)")
-	var src := FileAccess.get_file_as_string("res://scripts/army_field.gd")
-	var brk := src.substr(src.find("func _break("), 2600)
-	_check(brk.contains("Mover.of(man)") and brk.contains(".join(crowd") and brk.contains("let_go(r)"), "a broken regiment's men run loose, each by his Mover in the field's crowd, its ground let go")
-	var run := src.substr(src.find("func _run("), 900)
-	_check(run.contains("toward(") and not run.contains("Mover.of(node)"), "the loose men run, not the block (no Mover on the regiment's anchor while it runs)")
-	var ral := src.substr(src.find("func _rally_in("), 900)
-	_check(ral.contains("mo.go(node.to_global(form[s])"), "a rally walks every man back to his place by his Mover")
-	var M: GDScript = load("res://scripts/army_morale.gd")
-	_check((M.rallied([[], []], 0.1, true, [{}, {}]) as Array).is_empty(), "once the day is spent nobody rallies")
+	var mind: Dictionary = Data.value("army", "minds.regiment", {})
+	var states: Dictionary = mind.get("states", {})
+	_check(not states.has("rout") and not states.has("rally") and not (mind.get("any", {}) as Dictionary).has("break"), "a field troop never breaks or rallies: it fights to the death (its mind)")
+	_check(not ResourceLoader.exists("res://scripts/army_morale.gd") and not FileAccess.file_exists("res://scripts/army_morale.gd"), "no panic: army_morale.gd is gone")
 
 
 ## 10. The defenders by lanes, as scene_kinds/siege.gd and siege_camp.gd wire them.

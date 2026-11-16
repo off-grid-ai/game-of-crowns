@@ -1,15 +1,17 @@
 extends RefCounted
-## Who bleeds at blows (Total War's melee: attack against defence, the charge's shock, flank and rear, fatigue and
-## nerve; the casebook's War and sieges: a battle is won on the field). The one decider of losses in a field battle:
-## army_field.gd asks it each moment how many men each regiment loses to those fighting it, and lays them down.
+## Who falls at blows (Total War's melee: attack against defence, fatigue and the larger host's heart; the casebook's
+## War and sieges: a battle is won on the field). The one decider of losses in a field battle: army_field.gd asks it,
+## for every man at grips each moment of the field, the odds his blow fells his man (blow), and for every volley how
+## many arrows land (arrows).
 ## Mac 2026-11-16: "if that actually helps change the course of the battle", "troops need to have morale ... see that
 ## impact the outcome". Numbers in data/battle.json field.combat and data/battle_orders.json orders.<key>.defence.
-##   - each regiment fighting r hits it with its kind's attack, by the share of its men still standing, its nerve and
-##     its wind; from r's flank harder (flank), from its rear harder still (rear);
+##   - each man at grips with a man of r strikes with his kind's attack, his host's morale (the larger host's
+##     heart: army_field.gd _morale) and his wind, from wherever he stands (Mac 2026-11-17: 2.5 s
+##     a kill; a man in the press is struck from every side, so no side counts more);
 ##   - r stands against it with its kind's defence and its order's (a shield wall's against foot and horse, its
 ##     shields against arrows), less when its wind is gone;
-##   - wind (stamina 1 fresh .. 0 spent) drains at blows and on the run and comes back standing: a relieved line
-##     comes back fresh, a line never relieved tires and bleeds.
+##   - wind (stamina 1 fresh .. 0 spent) drains at blows and on the run and comes back standing: a troop long at
+##     blows tires and falls faster.
 
 const Data := preload("res://scripts/data.gd")
 const Troops := preload("res://scripts/troops.gd")
@@ -43,53 +45,22 @@ static func breathe(r: Dictionary, dt: float) -> void:
 	var d := 0.0
 	if st == "fight":
 		d = -_c("wind.fight", 0.012)
-	elif st in ["charge", "rout"] or String(r.get("gait", "")) == "run":
+	elif st == "charge" or String(r.get("gait", "")) == "run":
 		d = -_c("wind.run", 0.02)
 	elif st in ["stand", "relieved", "hold", "volley"]:
 		d = _c("wind.rest", 0.03)
 	r["stamina"] = clampf(wind(r) + d * dt, 0.0, 1.0)
 
 
-## Where a blow from `from` lands on r: 0 its front, 1 a flank, 2 its rear (by the angle off its facing).
-static func face_hit(r: Dictionary, from: Vector3) -> int:
-	var node: Node3D = r["node"]
-	var fwd := Vector3(node.global_basis.z.x, 0, node.global_basis.z.z).normalized()
-	var to := Vector3(from.x - node.global_position.x, 0, from.z - node.global_position.z)
-	if to.length() < 0.001:
-		return 0
-	var c := fwd.dot(to.normalized())
-	return 0 if c > _c("front_cos", 0.5) else (1 if c > _c("rear_cos", -0.5) else 2)
-
-
-## How hard regiment `a` hits now (its kind's attack by the share standing, nerve and wind).
-static func hits(a: Dictionary, nerve: float) -> float:
-	var share := float(a.get("living", 0)) / maxf(float(a.get("figures", 1)), 1.0)
-	return kind(a, "attack") * share * lerpf(_c("nerve_floor", 0.5), 1.0, nerve) * lerpf(_c("wind_floor", 0.6), 1.0, wind(a))
-
-
-## Men r loses a second to `attackers` ([{r: regiment, nerve: float, press: its order's attack}]), fighting in order `order`; also marks r's
-## `beset` (0 front only, 1 a flank, 2 its rear), which army_morale.gd reads.
-static func loss_rate(r: Dictionary, attackers: Array, order: String) -> float:
-	var sum := 0.0
-	var beset := 0
-	for x in attackers:
-		var a: Dictionary = x["r"]
-		var face := face_hit(r, (a["node"] as Node3D).global_position)
-		beset = maxi(beset, face)
-		var hit: float = hits(a, float(x["nerve"])) * float(x.get("press", 1.0)) * [1.0, _c("flank", 1.8), _c("rear", 2.5)][face]
-		var against := Troops.of(a).strikes_as()
-		var guard := (kind(r, "horse") if against == "horse" else kind(r, "defence")) * (order_guard(order, against) if face == 0 else 1.0)
-		sum += hit / maxf(guard * lerpf(_c("wind_floor", 0.6), 1.0, wind(r)), 0.05)
-	r["beset"] = beset
-	return _c("base", 1.6) * sum * float(r.get("men", 1)) / maxf(_c("men_ref", 140.0), 1.0)
-
-
-## Men a charge's shock `shock` lays down in r, struck from `from` (its order's guard against horse or foot on its
-## front, its kind's against a charge).
-static func shock(r: Dictionary, shock: float, from: Vector3, horse: bool, order: String) -> int:
-	var face := face_hit(r, from)
-	var guard := (kind(r, "horse") if horse else kind(r, "defence")) * (order_guard(order, "horse" if horse else "foot") if face == 0 else 1.0)
-	return int(round(shock * [1.0, _c("flank", 1.8), _c("rear", 2.5)][face] / maxf(guard, 0.05)))
+## The odds that one blow of a man of `a` fells the man of r he fights, each moment of the field (field_cells.gd tick; Mac 2026-11-17: "it shouldn't take so long to kill"): blow
+## times his kind's attack, his host's morale and his wind and his order's attack, over r's guard
+## (its kind's defence, or against a horseman its guard against horse; its order's guard; its wind).
+static func blow(a: Dictionary, morale: float, order_a: String, r: Dictionary, order_r: String) -> float:
+	var hit: float = kind(a, "attack") * morale * lerpf(_c("wind_floor", 0.6), 1.0, wind(a)) \
+		* order_guard(order_a, "attack")
+	var against := Troops.of(a).strikes_as()
+	var guard := (kind(r, "horse") if against == "horse" else kind(r, "defence")) * order_guard(order_r, against)
+	return _c("blow", 0.104) * hit / maxf(guard * lerpf(_c("wind_floor", 0.6), 1.0, wind(r)), 0.05)
 
 
 ## Arrows that land of `n` loosed at r in order `order` (its shields).

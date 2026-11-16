@@ -15,7 +15,7 @@ func living() -> int:
 
 
 func standing() -> bool:
-	return String(r.get("state_name", "")) != "rout" and living() > 0
+	return living() > 0
 
 
 func where() -> Vector3:

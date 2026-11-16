@@ -13,18 +13,7 @@ extends SceneTree
 ##  6. one figure for ten (Mac, 12 Nov): every kind's regiment draws ceil(men x drawPerMan) figures and keeps its
 ##     men; in line and in march column no two figures stand closer than LEAST (about 0.8 m, shoulder room), and a
 ##     line stays a block (more than one rank);
-##  7. panic spreads (the casebook's War and sieges: Bannerlord): on the beaten side, a flanked regiment bleeding
-##     hard breaks first; its neighbour breaks sooner than an equal regiment far off (the chain); a fresh regiment
-##     beside the rout holds; the commander beside the neighbour steadies it (it breaks later or not at all); the
-##     victors never break. Nerve kept on each mind's LimboAI blackboard (army_morale.gd);
-##  8. the rout runs along a real line (round 15: one regiment broke at t=29, then three in one tick at t=49): the
-##     beaten side drawn up as a field battle draws it (army.gd's own line layout, formations.json's line template, its
-##     gaps and rows), bleeding at field.fight.loss, its commander in the middle; its first break shakes the next so
-##     the breaks run along the line one after another from the flanked end, a second or more apart and no more
-##     than SPREAD apart, the far end last; never two in one moment;
-##  9. the battle's lens frames the rout (round 15: the camera sat far back over open grass and nothing read): it
-##     stands at the town view's distance (camera.json town_view.dist, the square's), and at blows it looks at the
-##     beaten regiment that breaks next, then at the next as the rout runs along the line, and stays where it ended;
+##  7-9. (panic, the rout and the lens on it: gone; Mac 2026-11-17, "no fleeing, fight to the death": formation_probe.gd 9);
 ## 10. the right banner (READY line 4): a regiment raised for a house with arms flies those arms on its banner (its
 ##     kind's glyph in the canton) and its men wear them on shield and tabard, in its colour; a house with none
 ##     drawn flies its colour with the glyph; the host's standard flies the same arms (heraldry.gd arms, one place);
@@ -51,7 +40,7 @@ extends SceneTree
 ##     reads no tile;
 ## 17. the film waits for the lines to meet (GoC's battle take: a fixed `wait 20` filmed the last of the walk-in and the
 ##     hold, and no meeting read): army_field.gd says when its lines have met (met()), and autoplay has a `clash`
-##     step that waits on it, as `rout` waits on the first break;
+##     step that waits on it;
 ## 18. a company's figure keeps up with its company (READY line 10, the reign replay: 310 off-tile faults in 20
 ##     seasons, the lag growing): sent any distance, it arrives within the season, at its steady march when that
 ##     does, running (a forced march) when it must go faster (units.gd march_pace);
@@ -116,9 +105,6 @@ func _run() -> void:
 	_minds()
 	await _no_straight_line_while_baking()
 	_figures_and_room()
-	_panic_spreads()
-	_rout_runs_along_the_line()
-	_lens_on_the_rout()
 	_the_right_banner()
 	await _march_out()
 	await _pick_by_body()
@@ -690,233 +676,8 @@ const WELL_R := 0.2
 const LEAST := 0.09  # game units: about 0.7 m, the nominal file (0.12) less both men's jitter (jitter.place) between any two men's middles, at rest and on the march (a man is 0.22)
 
 
-## 7. Panic spreads. A made-up field, 60 seconds in tenths: the beaten side (1) bleeds as army_field's fight does
-## (men a second), the flanked one hardest; the broken run off at field.run.
-func _panic_spreads() -> void:
-	var M: GDScript = load("res://scripts/army_morale.gd") if ResourceLoader.exists("res://scripts/army_morale.gd") else null
-	_check(M != null, "a regiment's nerve has one decider (army_morale.gd)")
-	if M == null:
-		return
-	var plain := _panic_run(M, false)
-	var steadied := _panic_run(M, true)
-	var t: Dictionary = plain["broke"]
-	print("ARMY PROBE panic: broke at %s; with the commander by the neighbour: %s" % [str(t), str(steadied["broke"])])
-	_check(t.has("flanked") and t.values().min() == t["flanked"], "the flanked regiment breaks first")
-	_check(t.has("neighbour") and float(t["neighbour"]) < float(t.get("far", INF)), "its neighbour breaks sooner than an equal regiment far off (the chain)")
-	_check(not t.has("fresh"), "a fresh regiment beside the rout holds")
-	_check(float((steadied["broke"] as Dictionary).get("neighbour", INF)) > float(t.get("neighbour", INF)), "the commander beside the neighbour steadies it")
-
-
-func _panic_run(M: GDScript, commander: bool) -> Dictionary:
-	var holder := Node3D.new()
-	root.add_child(holder)
-	var make := func(nm: String, side: int, at: Vector3) -> Dictionary:
-		var n := Node3D.new()
-		holder.add_child(n)
-		n.global_position = at
-		var hsm := LimboHSM.new()
-		n.add_child(hsm)
-		var r := {"name": nm, "node": n, "side": side, "men": 150, "state_name": "fight", "hsm": hsm, "w": 0.36}
-		M.start(r)
-		return r
-	var rows := {"flanked": make.call("flanked", 1, Vector3(0, 0, 0)), "neighbour": make.call("neighbour", 1, Vector3(0.7, 0, 0)),
-		"far": make.call("far", 1, Vector3(5, 0, 0)), "fresh": make.call("fresh", 1, Vector3(-0.7, 0, 0)),
-		"victor": make.call("victor", 0, Vector3(0, 0, 1.0))}
-	var bleed := {"flanked": 4.0, "neighbour": 2.0, "far": 2.0, "fresh": 0.0, "victor": 2.0}
-	var lord := {}
-	if commander:
-		lord = make.call("lord", 1, Vector3(0.7, 0, -0.5))
-	var sides := [[rows["victor"]], [rows["flanked"], rows["neighbour"], rows["far"], rows["fresh"]] + ([lord] if commander else [])]
-	var broke := {}
-	var owed := {}
-	var low := 1.0
-	var dt := 0.1
-	var run := Data.num("battle", "field.run", 0.42)
-	for k in 600:
-		for nm in rows:
-			var r: Dictionary = rows[nm]
-			if r["state_name"] == "rout":
-				(r["node"] as Node3D).global_position += Vector3(0, 0, -run * dt)  # running off the field
-				continue
-			owed[nm] = float(owed.get(nm, 0.0)) + float(bleed[nm]) * dt
-			if float(owed[nm]) >= 1.0:
-				var men := int(owed[nm])
-				owed[nm] = float(owed[nm]) - men
-				M.fell(sides, r, men, (r["node"] as Node3D).global_position + Vector3(0, 0, 0.1))
-		for r in M.step(sides, dt, 1, [{}, lord], false):
-			r["state_name"] = "rout"
-			broke[r["name"]] = k * dt
-			M.broke(sides, r)
-		low = minf(low, M.of(rows["victor"]))
-	holder.free()
-	return {"broke": broke, "victor_low": low}
-
-
 const SPREAD := 8.0  # seconds: the most between one regiment's break and the next along the line
 const SEED := 3118  # the line's layout (its regiments' frontage)
-
-
-## 8. The rout runs along a real line. The beaten side (1): three foot regiments abreast and archers a row behind,
-## each as army.gd lays a battle's regiment out (its width from formations.json's template and its kind's spacing), army.gap
-## between them; the victors (0) at sword's length. Steps of a slow frame (0.25 s); the end regiment is flanked.
-func _rout_runs_along_the_line() -> void:
-	var M: GDScript = load("res://scripts/army_morale.gd")
-	var ArmyS: GDScript = load("res://scripts/army.gd")
-	var a: Object = ArmyS.new(Node.new(), 0, {"side": 1})
-	(a.get("_rng") as RandomNumberGenerator).seed = SEED
-	var units: Dictionary = Data.value("army", "units", {})
-	var kind_of := func(role: String) -> String:
-		for k in units:
-			if String((units[k] as Dictionary).get("role", "")) == role:
-				return k
-		return ""
-	var holder := Node3D.new()
-	root.add_child(holder)
-	var make := func(nm: String, side: int, kind: String) -> Dictionary:
-		var row: Dictionary = units.get(kind, {})
-		var sp: Dictionary = row.get("spacing", {})
-		var r := {"name": nm, "side": side, "men": 150, "figures": int(a.call("figures", 150)), "role": String(row.get("role", "melee")),
-			"sf": float(sp.get("file", Data.num("army", "spacing.file", 0.1))), "sr": float(sp.get("rank", Data.num("army", "spacing.rank", 0.12))),
-			"state_name": "fight"}
-		var l: Dictionary = (load("res://scripts/army_formation.gd") as GDScript).call("layout", r, String((load("res://scripts/army_formation.gd") as GDScript).call("field_form", r["role"])), a.get("_rng"))
-		r["w"] = float(l["w"])
-		r["d"] = float(l["d"])
-		var n := Node3D.new()
-		holder.add_child(n)
-		var hsm := LimboHSM.new()
-		n.add_child(hsm)
-		r["node"] = n
-		r["hsm"] = hsm
-		M.start(r)
-		return r
-	var gap := Data.num("army", "gap", 0.35)
-	var beaten: Array = []
-	for i in 3:
-		beaten.append(make.call("foot%d" % i, 1, kind_of.call("melee")))
-	var span := -gap
-	for r in beaten:
-		span += float(r["w"]) + gap
-	var x := -span * 0.5
-	for r in beaten:  # the front row, facing -Z (the victors stand at -Z)
-		(r["node"] as Node3D).global_position = Vector3(x + float(r["w"]) * 0.5, 0, 0)
-		x += float(r["w"]) + gap
-	var bows: Dictionary = make.call("archers", 1, kind_of.call("ranged"))
-	(bows["node"] as Node3D).global_position = Vector3(0, 0, float(beaten[1]["d"]) * 0.5 + Data.num("army", "line.rowGap", 0.7) + float(bows["d"]) * 0.5)
-	beaten.append(bows)
-	var victor: Dictionary = make.call("victors", 0, kind_of.call("melee"))
-	(victor["node"] as Node3D).global_position = Vector3(0, 0, -float(beaten[1]["d"]) - Data.num("battle", "field.fight.contact", 0.12))
-	var sides := [[victor], beaten]
-	var base := Data.num("battle", "field.combat.base", 1.6)  # army_combat.gd: one foe of equal strength on the front
-	var loss := {"beaten": base * 1.5, "victors": base * 0.6}  # the beaten outnumbered, the victors fresh
-	var vol: Dictionary = Data.value("battle", "field.volley", {})
-	var kills: Array = vol.get("kills", [1, 4])
-	var every: Array = vol.get("every", [2.5, 3.6])
-	var shot := (float(kills[0]) + float(kills[1])) / (float(every[0]) + float(every[1]))  # the victors' archers on ours: men a second (beaten fall twice as often)
-	var bleed := {"foot0": float(loss["beaten"]) * Data.num("battle", "field.combat.flank", 1.8), "foot1": float(loss["beaten"]), "foot2": float(loss["beaten"]),
-		"archers": shot * 2.0, "victors": float(loss["victors"])}
-	var longest := Data.num("battle", "field.longest", 45.0)
-	var run := Data.num("battle", "field.run", 0.42)
-	var broke := {}
-	var owed := {}
-	var dt := 0.25
-	var clock := 0.0
-	while clock < longest + 30.0 and broke.size() < beaten.size():
-		clock += dt
-		for r in beaten + [victor]:
-			if r["state_name"] == "rout":
-				(r["node"] as Node3D).global_position += Vector3(0, 0, run * dt)  # running off, away from the victors
-				continue
-			owed[r["name"]] = float(owed.get(r["name"], 0.0)) + float(bleed[r["name"]]) * dt
-			if float(owed[r["name"]]) >= 1.0:
-				var men := int(owed[r["name"]])
-				owed[r["name"]] = float(owed[r["name"]]) - men
-				var front: Vector3 = (r["node"] as Node3D).global_position + Vector3(0, 0, (-1.0 if int(r["side"]) == 1 else 1.0) * float(r["d"]) * 0.5)
-				M.fell(sides, r, men, front if r["role"] != "ranged" else (r["node"] as Node3D).global_position)
-		var gone: Array = M.step(sides, dt, [victor, beaten[1]])
-		if clock > longest:  # past field.longest every beaten regiment standing breaks
-			for r in beaten:
-				if r["state_name"] != "rout" and not gone.has(r):
-					gone.append(r)
-		for r in gone:
-			r["state_name"] = "rout"
-			broke[r["name"]] = clock
-			M.broke(sides, r)
-	holder.free()
-	a.free()
-	var order := broke.keys()
-	order.sort_custom(func(p, q): return float(broke[p]) < float(broke[q]))
-	var at := PackedStringArray()
-	for nm in order:
-		at.append("%s %.2f" % [nm, float(broke[nm])])
-	print("ARMY PROBE rout along the line (widths %.2f, gap %.2f): %s" % [float(beaten[0]["w"]), gap, ", ".join(at)])
-	_check(broke.size() == beaten.size(), "every beaten regiment breaks (%d of %d)" % [broke.size(), beaten.size()])
-	_check(order.size() > 0 and order[0] == "foot0", "the flanked end breaks first")
-	_check(order.size() > 1 and order[1] != "foot2", "the second break is beside the first (along the line or the archers behind), not the far end")
-	_check(order.size() > 2 and order.find("foot2") > order.find("foot1"), "the far end breaks after the middle: the rout runs along the line")
-	var worst := 0.0
-	var least := INF
-	for i in range(1, order.size()):
-		var step := float(broke[order[i]]) - float(broke[order[i - 1]])
-		worst = maxf(worst, step)
-		least = minf(least, step)
-	_check(order.size() > 1 and worst <= SPREAD, "each break follows the one before within %.0f s (longest wait %.2f s)" % [SPREAD, worst])
-	_check(order.size() > 1 and least >= 1.0, "never two in one moment: a second or more between breaks (closest %.2f s)" % least)
-
-
-## 9. The lens on the rout: a beaten line of three (nerve 0.9, 0.5, 0.7) and a victor; lens_aim at blows, then as
-## they break one by one.
-func _lens_on_the_rout() -> void:
-	var M: GDScript = load("res://scripts/army_morale.gd")
-	var FieldS: GDScript = load("res://scripts/army_field.gd")
-	var has := FieldS.get_script_method_list().any(func(m): return m["name"] == "lens_aim") and FieldS.get_script_method_list().any(func(m): return m["name"] == "lens_distance")
-	_check(has, "the battle's lens has one rule (army_field.gd lens_aim, lens_distance)")
-	if not has:
-		return
-	_check(FieldS.get_script_method_list().any(func(m): return m["name"] == "routed") and FileAccess.get_file_as_string("res://scripts/autoplay.gd").contains("\"rout\":"),
-		"a film can wait for the first break (army_field.routed, autoplay's rout step)")
-	var want := Data.num("camera", "town_view.dist", 6.0)
-	_check(absf(float(FieldS.call("lens_distance")) - want) < 0.01, "the lens stands at the square's distance (%.1f, want %.1f)" % [float(FieldS.call("lens_distance")), want])
-	var holder := Node3D.new()
-	root.add_child(holder)
-	var make := func(nm: String, side: int, at: Vector3, nerve: float) -> Dictionary:
-		var n := Node3D.new()
-		holder.add_child(n)
-		n.global_position = at
-		var hsm := LimboHSM.new()
-		n.add_child(hsm)
-		var r := {"name": nm, "node": n, "side": side, "men": 150, "state_name": "fight", "hsm": hsm, "w": 0.48}
-		hsm.get_blackboard().set_var(&"morale", nerve)
-		return r
-	var line := [make.call("left", 1, Vector3(-0.85, 0, 0), 0.9), make.call("mid", 1, Vector3(0, 0, 0), 0.5), make.call("right", 1, Vector3(0.85, 0, 0), 0.7)]
-	var rows := [[make.call("victor", 0, Vector3(0, 0, -0.5), 1.0)], line]
-	var start := Vector3(0, 0, -4.5)  # the middle of the field, where the lines formed
-	var aim: Vector3 = FieldS.call("lens_aim", rows, 1, true, start)
-	# At blows: midway between the regiment that breaks next and its nearest foe (the victor at 0,0,-0.5), so both lines
-	# are in frame (g15 battle.jpg: the lens on one regiment alone).
-	_check(aim.distance_to(Vector3(0, 0, -0.25)) < 0.01, "at blows the lens looks where the regiment that breaks next meets its foe (%s)" % str(aim))
-	# Locked fronts first: the shakiest regiment at blows with a foe of its own (not its nearest) is the frame (g17).
-	var locked: Dictionary = make.call("locked", 0, Vector3(0, 0, 1.0), 1.0)
-	line[1]["foe"] = locked
-	var at_blows: Vector3 = FieldS.call("lens_aim", rows, 1, true, start)
-	_check(at_blows.distance_to(Vector3(0, 0, 0.5)) < 0.01, "at blows the lens looks at the press where the shakiest locked pair fights (%s)" % str(at_blows))
-	# Front to front before a flank: a shakier pair hit in the flank yields to a locked pair face to face (g20).
-	line[1]["flanked"] = true
-	line[0]["foe"] = locked
-	_check((FieldS.call("locked_pair", rows, 1) as Array)[0] == line[0], "the lens holds a pair front to front before one hit in the flank")
-	var yaw: float = FieldS.call("lens_yaw", rows, 1, 0.0)
-	var into: Vector3 = Vector3(-0.85, 0, 0) - Vector3(0, 0, 1.0)
-	_check(absf(angle_difference(yaw, atan2(into.x, into.z) + Data.num("battle", "field.camera.quarter", 0.9))) < 0.01, "the lens looks across the locked pair's line of attack, off its quarter")
-	line[1].erase("foe")
-	line[1].erase("flanked")
-	line[0].erase("foe")
-	line[1]["state_name"] = "rout"
-	aim = FieldS.call("lens_aim", rows, 1, true, aim)
-	_check(aim.distance_to(Vector3(0.85, 0, 0).lerp(Vector3(0, 0, -0.5), 0.5)) < 0.01, "as it breaks, the lens moves along the line to the next (%s)" % str(aim))
-	line[2]["state_name"] = "rout"
-	line[0]["state_name"] = "rout"
-	var after: Vector3 = FieldS.call("lens_aim", rows, 1, true, aim)
-	_check(after.distance_to(aim) < 0.01, "once none stands, the lens stays where the rout ended")
-	holder.free()
 
 
 ## 10. The right banner: regiments raised (army.gd _regiment, as every host raises them) for House Ashby, whose arms

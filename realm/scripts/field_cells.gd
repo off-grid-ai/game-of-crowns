@@ -4,8 +4,10 @@ extends RefCounted
 ## field battle stands and whom he fights. Every moment (field.cells.tick seconds) each man, nearest the enemy first:
 ##   1. an enemy in the next cell: he fights him, and keeps him until one of them falls;
 ##   2. a shooter with an enemy in range who is not in the press: he shoots him and stands;
-##   3. the cell ahead (toward the nearest enemy) is free: he steps into it;
-##   4. a friend ahead is still walking: he follows; a friend ahead has stopped: he goes round him.
+##   3. a free cell beside him, toward his host's middle, touches an enemy: he slides into it (Mac 2026-11-17: "if
+##      someone dies on my side, I should move to the side to fill that gap ... so it clusters towards the center");
+##   4. the cell ahead (toward the nearest enemy) is free: he steps into it;
+##   5. a friend ahead is still walking: he follows; a friend ahead has stopped: he goes round him, toward the middle.
 ## So the men behind come round the sides, portrait opens to landscape, everyone fights at once, and a man who falls
 ## leaves a cell the man behind steps into: there are no gaps. Every kind of soldier keeps this rule (troop.gd only says
 ## who shoots). A battle order changes only how a host starts and comes on (battle_orders.json orders.<key>.cells):
@@ -28,6 +30,7 @@ var traits := [{}, {}]  # each side's order's cells traits
 var _back := [0, 0]
 var _hold := [0, 0]
 var _occ := {}  # Vector2i -> man
+var _mid := [0.0, 0.0]  # each side's middle file this moment
 var _rng := RandomNumberGenerator.new()
 
 
@@ -131,6 +134,11 @@ func tick() -> void:
 	if (sides[0] as Array).is_empty() or (sides[1] as Array).is_empty():
 		n += 1
 		return
+	for side in 2:
+		var cx := 0.0
+		for x in sides[side]:
+			cx += float((x["c"] as Vector2i).x)
+		_mid[side] = cx / float((sides[side] as Array).size())
 	for m in men:
 		m["shot"] = null
 		m["fight"] = false
@@ -175,6 +183,25 @@ func tick() -> void:
 	for m in order:
 		_act(m, sides[1 - int(m["side"])], sides[int(m["side"])], reach)
 	n += 1
+
+
+## The way across (+1 or -1) toward his host's middle file; either way at random on it.
+func _inward(m: Dictionary) -> int:
+	var x := float((m["c"] as Vector2i).x)
+	var mid: float = _mid[int(m["side"])]
+	if absf(x - mid) < 0.5:
+		return 1 if _rng.randf() < 0.5 else -1
+	return 1 if x < mid else -1
+
+
+## Whether a man of the other side stands next to cell c.
+func _touches_foe(c: Vector2i, side: int) -> bool:
+	for dx in range(-1, 2):
+		for dy in range(-1, 2):
+			var o: Variant = _occ.get(c + Vector2i(dx, dy))
+			if o is Dictionary and int((o as Dictionary)["side"]) != side:
+				return true
+	return false
 
 
 ## How far a man stands toward the enemy (side 0 goes +row, side 1 -row).
@@ -234,7 +261,15 @@ func _act(m: Dictionary, foes: Array, mine: Array, reach: int) -> void:
 	if _hold[int(m["side"])] > 0 and _cheb(at, near["c"]) > 3:
 		m["moved"] = true  # standing its ground until they come
 		return
-	# 3. The cell ahead (toward the nearest enemy) is free: step into it.
+	var inward := _inward(m)
+	# 3. Close the gap: a free cell beside him, toward his host's middle, that touches an enemy.
+	if _cheb(at, near["c"]) <= 2:
+		for k in [inward, -inward]:
+			var c := at + Vector2i(k, 0)
+			if _free(c) and _touches_foe(c, int(m["side"])):
+				_go(m, c)
+				return
+	# 4. The cell ahead (toward the nearest enemy) is free: step into it.
 	var to: Vector2i = near["c"]
 	var dy := signi(to.y - at.y)
 	var dx := signi(to.x - at.x)
@@ -247,14 +282,8 @@ func _act(m: Dictionary, foes: Array, mine: Array, reach: int) -> void:
 	if g is Dictionary and int((g as Dictionary)["side"]) == int(m["side"]) and (g as Dictionary)["moved"]:
 		m["moved"] = true  # he is still moving: follow him
 		return
-	# 4. A friend ahead has stopped: go round him (the side he leans to, else outward from his host's middle).
-	var s0 := int(m["pref"]) if int(m["pref"]) != 0 else dx
-	if s0 == 0:
-		var cx := 0.0
-		for x in mine:
-			cx += float((x["c"] as Vector2i).x)
-		cx /= float(mine.size())
-		s0 = 1 if at.x > cx else (-1 if at.x < cx else (1 if _rng.randf() < 0.5 else -1))
+	# 5. A friend ahead has stopped: go round him (the side he leans to, else toward his host's middle).
+	var s0 := int(m["pref"]) if int(m["pref"]) != 0 else (dx if dx != 0 else inward)
 	var f := 1 if int(m["side"]) == 0 else -1
 	var tries: Array = [Vector2i(s0, dy), Vector2i(-s0, dy), Vector2i(s0, 0), Vector2i(-s0, 0)] if dy != 0 else [Vector2i(dx, f), Vector2i(dx, -f), Vector2i(0, f), Vector2i(0, -f)]
 	for k in tries:
