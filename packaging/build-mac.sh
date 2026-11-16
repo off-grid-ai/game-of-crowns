@@ -9,14 +9,14 @@
 # No model ships with the game: the realm plays by its rules, and lords speak in their own
 # words when Off Grid AI (https://getoffgridai.co/desktop) is running Omni on the same Mac.
 #
-# Signing and notarisation follow Off Grid AI Desktop's release (OGAD .github/workflows/release.yml),
+# Signing follows Off Grid AI Desktop's release (OGAD .github/workflows/release.yml),
 # with the same secrets:
 #   CSC_LINK, CSC_KEY_PASSWORD     base64 Developer ID Application .p12 and its password
 #                                  (or SIGN_IDENTITY naming one already in the keychain)
-#   APPLE_API_KEY, APPLE_API_KEY_ID, APPLE_API_ISSUER   App Store Connect API key (.p8 path) for notarytool
 # With none of these the build is ad-hoc signed: it runs on this Mac but Gatekeeper blocks it elsewhere.
+# Notarisation is the release's, on GitHub (.github/workflows/notarise.yml, where the App Store Connect key lives).
 #
-# Usage: packaging/build-mac.sh            (export with Godot, bundle, sign, notarise, dmg)
+# Usage: packaging/build-mac.sh            (export with Godot, bundle, sign, dmg)
 #        SKIP_EXPORT=1 packaging/build-mac.sh   (reuse the last Godot export)
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -114,33 +114,6 @@ find "$APP/Contents/Frameworks" -mindepth 1 -maxdepth 1 2>/dev/null | while read
 sign "$APP"
 codesign --verify --strict --deep "$APP"
 
-notarize() {
-  # The upload to Apple sometimes drops partway (abortedUpload); try again before failing the build.
-  for i in 1 2 3; do
-    xcrun notarytool submit "$1" --key "$APPLE_API_KEY" --key-id "$APPLE_API_KEY_ID" --issuer "$APPLE_API_ISSUER" --wait --timeout 60m && return 0
-    echo "    notarisation attempt $i failed; retrying in 60s"; sleep 60
-  done
-  return 1
-}
-staple() {
-  for i in 1 2 3 4 5 6 7 8 9 10; do
-    xcrun stapler staple -v "$1" && return 0
-    echo "    staple attempt $i lost Apple's ticket service; retrying in 30s"; sleep 30
-  done
-  return 1
-}
-NOTARIZE=""
-if [ "$SIGN_IDENTITY" != "-" ] && [ -n "${APPLE_API_KEY:-}" ] && [ -n "${APPLE_API_KEY_ID:-}" ] && [ -n "${APPLE_API_ISSUER:-}" ]; then
-  NOTARIZE=1
-  echo "==> Notarise the app"
-  ditto -c -k --keepParent "$APP" "$CACHE/notarize.zip"
-  notarize "$CACHE/notarize.zip"
-  rm -f "$CACHE/notarize.zip"
-  staple "$APP"
-else
-  echo "==> Not notarised (needs a Developer ID and APPLE_API_KEY, APPLE_API_KEY_ID, APPLE_API_ISSUER)"
-fi
-
 echo "==> DMG"
 stage="$CACHE/dmg"
 rm -rf "$stage" "$DMG" && mkdir -p "$stage"
@@ -153,12 +126,6 @@ if [ "$SIGN_IDENTITY" != "-" ]; then
   codesign --force --sign "$SIGN_IDENTITY" ${KEYCHAIN:+--keychain "$KEYCHAIN"} --timestamp "$DMG" ||
     codesign --force --sign "$SIGN_IDENTITY" ${KEYCHAIN:+--keychain "$KEYCHAIN"} --timestamp "$DMG" ||
     codesign --force --sign "$SIGN_IDENTITY" ${KEYCHAIN:+--keychain "$KEYCHAIN"} --timestamp "$DMG"
-fi
-if [ -n "$NOTARIZE" ]; then
-  echo "==> Notarise the dmg"
-  notarize "$DMG"
-  staple "$DMG"
-  spctl --assess --type open --context context:primary-signature -v "$DMG"
 fi
 [ -n "$KEYCHAIN" ] && security delete-keychain "$KEYCHAIN"
 
