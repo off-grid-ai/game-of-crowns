@@ -847,7 +847,7 @@ func apply_graphics() -> void:
 	# drops buy nearly all its frame rate. (Stills and films draw at full size in
 	# _capture_quality (shot_harness.gd), which sets its own.)
 	if not _film():
-		# Smooth draws the world at half the window's pixels and MetalFX brings it to full size; the interface stays sharp
+		# Smooth draws the world at half the window's pixels and MetalFX spatial brings it to full size (temporal smeared the soldiers: their shader-driven motion has no motion vectors; Mac 2026-11-16 "it needs to be clean"), FXAA smooths the edges; the interface stays sharp
 		# (Mac 2026-11-15, the fps round: "half retina pixels is fine by me"; ui.json smooth_scale). Beautiful keeps the
 		# project's scale.
 		var full: float = ProjectSettings.get_setting("rendering/scaling_3d/scale", 0.67)

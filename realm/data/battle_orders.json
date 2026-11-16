@@ -25,7 +25,8 @@
       "defence": {
         "foot": 1.0,
         "horse": 1.0,
-        "arrows": 1.0
+        "arrows": 1.0,
+        "attack": 1.0
       }
     },
     "two_lines": {
@@ -52,7 +53,8 @@
       "defence": {
         "foot": 1.0,
         "horse": 0.9,
-        "arrows": 1.0
+        "arrows": 1.0,
+        "attack": 1.0
       }
     },
     "shield_wall": {
@@ -73,7 +75,8 @@
       "defence": {
         "foot": 1.5,
         "horse": 1.8,
-        "arrows": 2.0
+        "arrows": 2.0,
+        "attack": 0.75
       }
     },
     "regroup": {
@@ -100,7 +103,8 @@
       "defence": {
         "foot": 1.2,
         "horse": 1.3,
-        "arrows": 1.2
+        "arrows": 1.2,
+        "attack": 0.7
       }
     }
   },
@@ -153,5 +157,5 @@
       "regroup": "Break off, fall back, and form again."
     }
   },
-  "_defence": "orders.<key>.defence: army_combat.gd, how much better a regiment in that order stands against foot, a charge (horse) and arrows on its front (1 as it is): the shield wall's locked shields; the regroup's closed ranks."
+  "_defence": "orders.<key>.defence: army_combat.gd, how much better a regiment in that order stands against foot, a charge (horse) and arrows on its front (1 as it is): the shield wall's locked shields; the regroup's closed ranks. attack: how hard its men press their foe (a wall stands, it doesn't press)."
 }

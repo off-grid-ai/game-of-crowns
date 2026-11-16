@@ -13,7 +13,7 @@ const FILE := "battle_orders"
 
 var field: Node  # army_field.gd
 var _panel: PanelContainer
-var _buttons := {}  # order key -> {button, chosen}
+var _buttons := {}  # order key -> {button}
 var _shown := ""
 var _rest: StyleBoxFlat
 var _hover: StyleBoxFlat
@@ -65,48 +65,40 @@ func _process(_delta: float) -> void:
 		for key in _buttons:
 			var b: Dictionary = _buttons[key]
 			(b["button"] as Button).add_theme_stylebox_override("normal", _sel if key == now else _rest)
-			(b["chosen"] as Label).visible = key == now
+			(b["button"] as Button).text = BattleOrders.title(key) + "\n" + (String(Data.value(FILE, "command.chosen", "Now")).to_upper() if key == now else " ")
 
 
-## One order's button: its name, and the word that says the side stands in it.
+## One order's button: its name, and under it the word that says the side stands in it. It sizes to its words.
 func _button(key: String) -> Button:
 	var b := Button.new()
 	b.focus_mode = Control.FOCUS_NONE
 	b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	b.tooltip_text = String((Data.value(FILE, "command.hints", {}) as Dictionary).get(key, ""))
+	b.text = BattleOrders.title(key) + "\n "
+	b.add_theme_font_override("font", T.sans)
+	b.add_theme_font_size_override("font_size", T.SIZE_DESC)
+	b.add_theme_color_override("font_color", T.TEXT)
+	b.add_theme_color_override("font_hover_color", T.TEXT)
+	b.add_theme_color_override("font_pressed_color", T.TEXT)
+	b.custom_minimum_size = Vector2(120, 0)
 	b.add_theme_stylebox_override("normal", _rest)
 	b.add_theme_stylebox_override("hover", _hover)
 	b.add_theme_stylebox_override("pressed", _sel)
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 0)
-	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	box.set_anchors_preset(Control.PRESET_FULL_RECT)
-	box.offset_left = 10
-	box.offset_right = -10
-	box.offset_top = 4
-	box.offset_bottom = -4
-	b.add_child(box)
-	var name_l := T.datum(BattleOrders.title(key), T.SIZE_DESC, T.TEXT)
-	var chosen := T.label(String(Data.value(FILE, "command.chosen", "Now")), T.TEXT)
-	chosen.visible = false
-	for l in [name_l, chosen]:
-		(l as Label).mouse_filter = Control.MOUSE_FILTER_IGNORE
-		(l as Label).horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		box.add_child(l)
-	b.custom_minimum_size = Vector2(maxf(120.0, name_l.get_minimum_size().x + 24.0), 46)
 	b.pressed.connect(func(): field.reorder(field.player_side(), key))  # pressed: the toast says the order at once, the blocks move
-	_buttons[key] = {"button": b, "chosen": chosen}
+	_buttons[key] = {"button": b}
 	return b
 
 
-## Bottom centre, clear of the edge.
+## Bottom centre, above the control plane along the screen's foot.
 func _place() -> void:
 	if _panel == null:
 		return
 	var vp := _panel.get_viewport_rect().size
 	_panel.reset_size()
 	var sz := _panel.get_combined_minimum_size()
-	_panel.position = Vector2((vp.x - sz.x) * 0.5, vp.y - sz.y - 18.0)
+	var ui: Node = field.main.get("ui")
+	var foot: float = float(ui.plane.room()) if ui and ui.get("plane") else 0.0  # above the control plane, never over it
+	_panel.position = Vector2((vp.x - sz.x) * 0.5, vp.y - foot - sz.y - 12.0)
 
 
 static func _box(bg: Color, line: Color, width: int) -> StyleBoxFlat:
@@ -115,6 +107,8 @@ static func _box(bg: Color, line: Color, width: int) -> StyleBoxFlat:
 	sb.border_color = line
 	sb.set_border_width_all(width)
 	sb.set_corner_radius_all(8)
-	sb.content_margin_left = 6
-	sb.content_margin_right = 6
+	sb.content_margin_left = 12
+	sb.content_margin_right = 12
+	sb.content_margin_top = 4
+	sb.content_margin_bottom = 4
 	return sb

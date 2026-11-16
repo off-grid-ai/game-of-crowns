@@ -533,7 +533,7 @@ func _bleed(dt: float) -> void:
 			var at: Array = []
 			for a in foes:
 				if String(a.get("state_name", "")) == "fight" and is_same(a.get("foe"), r) and int(a.get("living", 0)) > 0:
-					at.append({"r": a, "nerve": Morale.of(a)})
+					at.append({"r": a, "nerve": Morale.of(a), "press": Combat.order_guard(String(orders[1 - i]), "attack")})
 			if at.is_empty():
 				r["beset"] = 0
 				continue
@@ -1072,9 +1072,12 @@ func reorder(side: int, key: String) -> void:
 	# The new formation's front row where the old front stood: its middle shifted back by half its depth.
 	var depth := float((placed["extent"] as Vector2).y)
 	var at := mid - fwd * depth * 0.5
-	if bool(Data.value("battle_orders", "orders.%s.hold" % key, false)):
+	var regroup := bool(Data.value("battle_orders", "orders.%s.hold" % key, false))
+	if regroup:
 		at -= fwd * float(Data.value("battle_orders", "command.regroup_back", 1.2))  # a regroup breaks off and forms behind where it fought
 	for r in live:
+		if not regroup and String(r.get("state_name", "")) == "fight":
+			continue  # at blows it stays in, under the new order's guard (a wall locks shields where it fights; turning its back would be a rout)
 		var pl: Vector2 = r["place"]
 		var to := at + right * pl.x + fwd * pl.y
 		to.y = main.terrain.height_at(to.x, to.z)

@@ -66,7 +66,7 @@ static func hits(a: Dictionary, nerve: float) -> float:
 	return kind(a, "attack") * share * lerpf(_c("nerve_floor", 0.5), 1.0, nerve) * lerpf(_c("wind_floor", 0.6), 1.0, wind(a))
 
 
-## Men r loses a second to `attackers` ([{r: regiment, nerve: float}]), fighting in order `order`; also marks r's
+## Men r loses a second to `attackers` ([{r: regiment, nerve: float, press: its order's attack}]), fighting in order `order`; also marks r's
 ## `beset` (0 front only, 1 a flank, 2 its rear), which army_morale.gd reads.
 static func loss_rate(r: Dictionary, attackers: Array, order: String) -> float:
 	var sum := 0.0
@@ -75,7 +75,7 @@ static func loss_rate(r: Dictionary, attackers: Array, order: String) -> float:
 		var a: Dictionary = x["r"]
 		var face := face_hit(r, (a["node"] as Node3D).global_position)
 		beset = maxi(beset, face)
-		var hit: float = hits(a, float(x["nerve"])) * [1.0, _c("flank", 1.8), _c("rear", 2.5)][face]
+		var hit: float = hits(a, float(x["nerve"])) * float(x.get("press", 1.0)) * [1.0, _c("flank", 1.8), _c("rear", 2.5)][face]
 		var against := "horse" if String(a.get("role", "")) == "cavalry" else "foot"
 		var guard := (kind(r, "horse") if against == "horse" else kind(r, "defence")) * (order_guard(order, against) if face == 0 else 1.0)
 		sum += hit / maxf(guard * lerpf(_c("wind_floor", 0.6), 1.0, wind(r)), 0.05)
