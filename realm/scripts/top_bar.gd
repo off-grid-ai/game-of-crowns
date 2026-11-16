@@ -239,6 +239,12 @@ func _build_top_bar() -> void:
 	_promises.add_theme_constant_override("separation", 0)
 	_promises.visible = false
 	who.add_child(_promises)
+	# The crown's wars, one banner each, in the goal's place while they run (WAR.md step 6; CK3's war score in the
+	# corner): whom, how far, which way it goes, what it costs a season. A click opens the foe's house.
+	_wars = VBoxContainer.new()
+	_wars.add_theme_constant_override("separation", 0)
+	_wars.visible = false
+	who.add_child(_wars)
 	# An event card waiting, on its own line: gold, with the season's clock running down (Frostpunk's law timer),
 	# opened with a click.
 	_event_row = ui.btn("", func():
@@ -585,8 +591,48 @@ func _follow_step() -> void:
 ## The realm's numbers in the bar and the date, from the world as the realm reports it (ui.set_world hands over the
 ## crown's report). The reign's story and the dangers to the crown are told when they turn, and kept in the date's
 ## tooltip and the story so far.
+var _wars: VBoxContainer
+var _wars_said := 0
+
+
+## The war banners: one line a war, rebuilt only when what it says changed (ui.json war_banner).
+func _show_wars(st: Node) -> void:
+	var wars = st.rec("kingWars")
+	var list: Array = wars if wars is Array else []
+	var up := int((st.rec("warUpkeep", {}) as Dictionary).get("gold", 0)) if st.rec("warUpkeep") is Dictionary else 0
+	var said := hash([list.map(func(w): return [w.get("house"), w.get("fallen"), w.get("standing"), w.get("towns")]), up])
+	if said == _wars_said:
+		return
+	_wars_said = said
+	for c in _wars.get_children():
+		c.queue_free()
+	_wars.visible = not list.is_empty()
+	var words: Dictionary = Data.value("ui", "war_banner", {})
+	for w in list:
+		if not w is Dictionary:
+			continue
+		var s = w.get("standing")
+		var score := int(s.get("score", 0)) if s is Dictionary else 0
+		var way := String(words.get("winning" if score > 0 else ("losing" if score < 0 else "even"), ""))
+		var text := String(words.get("line", "War on {foe} · {taken} of {towns} towns taken · {way}")).format({
+			"foe": String(w.get("name", "")).trim_prefix("House "), "taken": (w.get("fallen", []) as Array).size(),
+			"towns": int(w.get("towns", 0)), "way": way})
+		if up > 0:
+			text += String(words.get("cost", " · {cost} a season")).format({"cost": ui.crowns(up / maxi(1, list.size()))})
+		var b := ui.btn(text, Callable())
+		var foe := int(w.get("house", -1))
+		b.pressed.connect(func(): ui.house_opened.emit(foe))
+		b.flat = true
+		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		b.add_theme_font_size_override("font_size", T.SIZE_LABEL)
+		b.add_theme_color_override("font_color", T.DANGER if score < 0 else T.TEXT)
+		b.tooltip_text = String(words.get("tip", "Click for the house you are at war with"))
+		_wars.add_child(b)
+
+
 func _show_world(c: Dictionary) -> void:
 	var st: Node = Awareness.store()
+	_show_wars(st)
 	var date = st.rec("date")
 	if date is Dictionary:
 		_season = String(date.get("season", ""))

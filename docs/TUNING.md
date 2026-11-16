@@ -732,6 +732,7 @@ Switches (`--name`) go after `--` on the game's command line.
 - What a choice changed (2026-11-16): `ui.json` reckoning.head, size, most, step, hold, linger (the card over the control plane after an order or ruling; rows from bridge reckoning.js).
 - The war council (2026-11-16): `ui.json` war_council (its words, width, title_size); its numbers come from `bridge/data/war.json` sides, upkeep and `coalition.json` alarm.raise.war.
 - The map's war mode (2026-11-16): `data/map.json` war_mode.ally (how much lighter an ally is than its camp leader), war_mode.waits (a waiting house's grey).
+- The war banner (2026-11-16): `ui.json` war_banner (its line and words).
 - Royal seals (2026-11-16): `bridge/data/seals.json` perSeason 1, bank 3 (every order takes one, a chronicle matter's too); `realm/data/court.json` seal_word, no_seal (the words on a matter's order).
 - Rivals (2026-11-16): `bridge/data/rivalry.json` min, share, word (a warmed house's rival cools by share of it); `bridge/data/aftermath.json` after, cooled, forgiven, kinds (an order told again seasons on).
 - Meddling (2026-11-16): `bridge/data/meddling.json` actions, keep, liege, word (grain or a building in another house's town); `rivalry.json` warShare, warWord (help to a house at war is aid to its foe).

@@ -361,7 +361,7 @@ export function view(meta, world) {
   return wars(meta).map((w) => {
     const foe = world.players.find((p) => p.id === w.house);
     const nextId = w.target ?? w.plan.find((id) => world.cities.some((c) => c.id === id && c.owner === w.house)) ?? null;
-    return { house: w.house, name: houseFor(foe ?? {}).name ?? "", since: w.since, next: nextId, nextName: nextId != null ? cityName(nextId) : null,
+    return { house: w.house, name: houseFor(foe ?? {}).name ?? "", since: w.since, towns: (w.plan ?? []).length, next: nextId, nextName: nextId != null ? cityName(nextId) : null,
       fallen: (w.fallen ?? []).map((id) => cityName(id)), allies: w.allies ?? [], against: w.against ?? [], waiting: w.waiting ?? [], seat: w.seat, seatName: w.seat != null ? cityName(w.seat) : null,
       // The two camps as they fell (the map's war mode and the houses strip paint by them; docs/WAR.md) and how it
       // stands (peace.js standing: towns taken and lost, the score that sets the peace terms).
