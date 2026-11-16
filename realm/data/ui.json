@@ -12,7 +12,7 @@
  "houses_strip": { "_": "The great houses at a glance, top-left (houses_strip.gd): size and sigil (px), rise (the percent of strength over the year that shows an arrow), words (the stances not told by favour), tips.line (the tooltip), head (the strip's first word: the chips run strongest first).",
     "size": 14, "sigil": 20, "rise": 10, "head": "By strength",
     "words": { "war": "At war", "sworn": "Sworn" },
-    "tips": { "line": "House {name}: {stance}, favour {favour} of 100\nStrength {strength} (two for each town, one for each company), {trend} over the year\nClick for the house" } },
+    "tips": { "line": "House {name}: {stance}, favour {favour} of 100\nStrength {strength} of 100 (men, land, people, crowns and grain, against the strongest house), {trend} over the year\nClick for the house" } },
   "promises": { "_": "The King's three promises as checkboxes under the goal (top_bar.gd _show_promises): size and icon (px), do (where a click on an open promise goes, by ambition key: houses opens the great houses, town goes to its town, ledger opens the ledger), tips (the tooltip by state and by where it goes), left (the seasons before an open promise breaks). A click on an open promise opens its orders (bridge reign.js promiseActs) when it has any.",
     "size": 15, "icon": 18, "left": "{n} seasons left",
     "do": { "endwar": "houses", "wed": "houses", "loyal": "houses", "peace": "houses", "seat": "town", "grow": "ledger" },

@@ -102,7 +102,7 @@ func _chip(p: Dictionary) -> Button:
 	b.add_theme_color_override("font_color", T.DANGER if against else (T.TEXT if stance in [String(Data.value("ui", "houses_strip.words.sworn", "Sworn")), "Loyal"] else T.TEXT_2))
 	var t := int(p.get("strengthTrend", 0))
 	var tips: Dictionary = Data.value("ui", "houses_strip.tips", {})
-	b.tooltip_text = String(tips.get("line", "House {name}: {stance}, favour {favour} of 100\nStrength {strength} (two for each town, one for each company), {trend} over the year\nClick for the house")).format({
+	b.tooltip_text = String(tips.get("line", "House {name}: {stance}, favour {favour} of 100\nStrength {strength} of 100 (men, land, people, crowns and grain, against the strongest house), {trend} over the year\nClick for the house")).format({
 		"name": name, "stance": stance, "favour": int(p["favour"]), "strength": int(p.get("strength", 0)),
 		"trend": ("up %d%%" % t) if t > 0 else (("down %d%%" % -t) if t < 0 else "holding")})
 	var owner := int(p["id"])
