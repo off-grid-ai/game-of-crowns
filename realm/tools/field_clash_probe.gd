@@ -137,6 +137,19 @@ func _run() -> void:
 				fps_sum += Engine.get_frames_per_second()  # read while no frame is being saved (the saving costs its own)
 				fps_n += 1
 			_watch(field, watch, every)
+		# How many men of each side are at grips with a foe man, of those standing (Mac 2026-11-16: "too much waiting and
+		# watching and not fighting"): the number to judge it by.
+		var grips := [0, 0]
+		var stand := [0, 0]
+		var hosts: Array = field.get("sides")
+		for i in hosts.size():
+			for r in hosts[i].rows():
+				if String(r.get("state_name", "")) == "rout":
+					continue
+				stand[i] += int(r.get("living", 0))
+				if String(r.get("state_name", "")) == "fight":
+					grips[i] += (r.get("contact", []) as Array).size()
+		print("GRIPS t=%.0f crown %d of %d, foe %d of %d" % [float(field.get("clock")), grips[0], stand[0], grips[1], stand[1]])
 		var foot := _foot(field)
 		for r in foot:
 			if String(r.get("state_name", "")) in ["fight", "rout", "hold"]:
@@ -210,7 +223,7 @@ func _watch(field: Node, watch: Dictionary, dt: float) -> void:
 			var w: Dictionary = watch.get_or_add(node.get_instance_id(), {"side": i, "role": String(r.get("role", "")), "state": st,
 				"yaw": node.rotation.y, "turned": 0.0, "spin": 0.0, "spin_in": st, "at": node.global_position, "still": 0.0, "idle": 0.0, "idle_in": st})
 			var job: Variant = r.get("task") if r.get("task") is Dictionary else r.get("target")
-			var key := st if not job is Dictionary else "%s at %d" % [st, ((job as Dictionary)["node"] as Object).get_instance_id()]  # a new mark is a new task
+			var key := st if not (job is Dictionary and (job as Dictionary).has("node")) else "%s at %d" % [st, ((job as Dictionary)["node"] as Object).get_instance_id()]  # a new mark is a new task
 			if key != String(w["state"]):
 				w["state"] = key
 				w["turned"] = 0.0

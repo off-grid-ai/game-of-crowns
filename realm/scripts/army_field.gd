@@ -313,7 +313,7 @@ func _begin() -> void:
 		generals.append(General.new(self, i))
 		add_child(generals[i])  # its plan: the line marches or holds, each regiment in its place
 	if player_side() >= 0:
-		add_child(preload("res://scripts/battle_orders_bar.gd").new(self))  # the King's orders in the fight (battle_orders_bar.gd)
+		pass  # the King's orders bar is off the screen for now (Mac 2026-11-16: "remove the orders for now"); battle_orders_bar.gd stays for when it comes back
 	if play.is_empty():
 		print("BATTLE begins")
 
@@ -506,16 +506,72 @@ func _prisoners() -> void:
 	Mover.road(self, way, file, float(k.get("pace", 0.12)), {"name": "Prisoners", "min": 10.0, "max": maxf(12.0, Awareness.season_seconds)})
 
 
+## Any two enemy blocks that touch are at blows, whatever they were about (Mac 2026-11-16: "the cavalry of the 2
+## armies just went through each other", "when they collide ... they cannot pass through"; Standard of Iron's
+## lock_touching_enemies): each one not already fighting takes the other as its foe and fights where it stands. They
+## touch when their middles are nearer than field.melee.touch of their two half sizes together.
+func _lock_touching() -> void:
+	if sides.size() < 2:
+		return
+	var share := Data.num(F, "field.melee.touch", 0.8)
+	for a in (sides[0] as Army).rows():
+		if int(a.get("living", 0)) <= 0 or String(a.get("state_name", "")) in ["rout", "rally", ""]:
+			continue
+		var ap: Vector3 = (a["node"] as Node3D).global_position
+		var ah := maxf(float(a["w"]), float(a["d"])) * 0.5
+		for b in (sides[1] as Army).rows():
+			if int(b.get("living", 0)) <= 0 or String(b.get("state_name", "")) in ["rout", "rally", ""]:
+				continue
+			var a_free := String(a.get("state_name", "")) != "fight"
+			var b_free := String(b.get("state_name", "")) != "fight"
+			if not a_free and not b_free:
+				continue
+			var bp: Vector3 = (b["node"] as Node3D).global_position
+			if Vector2(ap.x - bp.x, ap.z - bp.z).length() > (ah + maxf(float(b["w"]), float(b["d"])) * 0.5) * share:
+				continue
+			for pair in [[a, b, a_free], [b, a, b_free]]:
+				if pair[2]:
+					var r: Dictionary = pair[0]
+					r["foe"] = pair[1]
+					r["met_at"] = clock
+					if r["role"] == "cavalry":
+						r["target"] = pair[1]
+					Mover.of(r["node"]).toward((r["node"] as Node3D).global_position, 0.0)
+					_send(r, &"engage")
+
+
+## The ground each man at blows stands on, a man a cell (field.melee.body across): [his side, his own number, where
+## he stands]. Laid afresh each frame from where the men of every regiment at blows stand; army.gd _follow steps a
+## man only onto a cell no other holds, and _press reads it for the foe men near each man.
+var men_cells := {}
+func _lay_men_cells() -> void:
+	men_cells.clear()
+	var size := Data.num(F, "field.melee.body", 0.08)
+	for i in sides.size():
+		for r in (sides[i] as Army).rows():
+			if String(r.get("state_name", "")) != "fight" or not r.has("men_world"):
+				continue
+			var world: PackedVector3Array = r["men_world"]
+			var alive: PackedByteArray = r["alive"]
+			var rid := int(r.get("id", 0))
+			for s in mini(world.size(), alive.size()):
+				if alive[s] == 1:
+					var key := Army._cell(world[s], size)
+					if not men_cells.has(key):
+						men_cells[key] = [i, rid * 1000 + s, world[s]]
+
+
 ## Every regiment's men brought back to their stance after a one-shot, and its fallen kept where they fell while it
 ## moves on.
 func _keep_up() -> void:
+	_lock_touching()
+	_lay_men_cells()
+	_draw_host_boxes()
 	for a in sides:
 		for r in (a as Army).rows():
 			if not r.has("alive"):
 				continue
 			_backs(r)
-			if r.get("regather", false):
-				_regather(r)
 			# Any change to where it stands (a move, a turn where it stands, a wheel): its fallen put back where they
 			# fell, each on the land under him (Mac 2026-11-15: a dead man flat in mid-air; a turn swung the fallen
 			# round the block's middle, off the ground they lay on).
@@ -540,8 +596,10 @@ func _morale(dt: float) -> void:
 				_straggle(r, Morale.waver(r), dt)
 	for r in gone:
 		_send(r, &"break")
-	for r in Morale.rallied(_rows(), dt, cmd):
-		_send(r, &"rally")
+	if not _over:  # the day once called, the broken stay broken (Mac 2026-11-16: "how come I won when these guys are still fighting": a block that broke rallied and came back after the day was won)
+		for r in Morale.rallied(_rows(), dt, cmd):
+			if clock - float(r.get("broke_clock", -INF)) >= Data.num(F, "field.rally_after", 8.0):  # broken men run a while before any officer turns them (a block broke and stood again a second later)
+				_send(r, &"rally")
 	var standing := [0, 0]
 	var worth := [0.0, 0.0]
 	for i in 2:
@@ -843,15 +901,28 @@ func _march_lines(dt: float) -> void:
 			continue
 		var rows := (sides[i] as Army).rows()
 		var engaged := rows.any(func(x): return String(x.get("state_name", "")) in ["fight", "reform"] and x["role"] == "melee")
+		var fwd := Vector3(sin(float(ln["face"])), 0, cos(float(ln["face"])))
 		if i < generals.size() and (generals[i] as General).marching():  # its captain marches the line (army_general.gd)
-			var fwd := Vector3(sin(float(ln["face"])), 0, cos(float(ln["face"])))
 			ln["at"] = (ln["at"] as Vector3) + fwd * Data.num(F, "field.advance", 0.24) * dt
+		else:
+			# The host is one body (Mac 2026-11-16: "think of the host as one unit ... draw some square around all of
+			# these troops"): once its foot have gone in, its middle goes with them, so the archers and the horse keep
+			# their places close behind and its square stays tight round all of it (the middle stopped where the charge
+			# set off, and the rest of the host was left two blocks back).
+			var lead := 0.0
+			var n := 0
+			for r in rows:
+				if r["role"] == "melee" and int(r.get("line_no", 1)) != 2 and int(r.get("living", 0)) > 0 and String(r.get("state_name", "")) in ["advance", "fight"]:
+					lead += ((r["node"] as Node3D).global_position - _slot_at(r)).dot(fwd)
+					n += 1
+			if n > 0:
+				ln["at"] = (ln["at"] as Vector3) + fwd * (lead / n) * minf(1.0, dt * 4.0)
 		for r in rows:  # the second line, the reserve and the archers keep their places as the line goes
 			var st := String(r.get("state_name", ""))
-			if (st == "stand" and (int(r.get("line_no", 1)) == 2 or String(r.get("post", "")) == "reserve" or r["role"] == "cavalry")) or (st == "volley" and not engaged):
+			if (st == "stand" and (int(r.get("line_no", 1)) == 2 or String(r.get("post", "")) == "reserve" or r["role"] == "cavalry")) or st == "volley":  # archers keep their place just behind the foot all through (left behind, they stretched the host's square)
 				var to := _slot_at(r)
 				if Vector2(to.x - (r["node"] as Node3D).global_position.x, to.z - (r["node"] as Node3D).global_position.z).length() > Data.num(F, "field.contact", 0.12):
-					Mover.of(r["node"]).toward(to, Data.num(F, "field.advance", 0.24) * 1.1, _line_front(r))
+					Mover.of(r["node"]).toward(to, Data.num(F, "field.charge.pace", 0.45), _line_front(r))
 					_gait(r, dt)
 
 
@@ -1076,46 +1147,55 @@ func _free_spot(r: Dictionary, spot: Vector3, look: Vector3) -> Vector3:
 	return spot
 
 
-## At blows, man to man (Total War's melee: the blocks meet, their men break ranks into one press, each finds a foe and
-## fights him; Mac 2026-11-16: "there is no proper fight", rectangles fighting at a seam read as a toy). On contact its
-## men loosen (_fight_in): each his own body in the field's crowd of loose men (Godot's RVO, _rout_crowd), so no man
-## walks through another and the two fronts mesh into one press. Each moment every man (_press) goes at the nearest foe
-## man within field.melee.engage, stopping a weapon's reach from him (field.melee.reach), and cuts on his own beat; with
-## no foe near he leans in behind his front (field.melee.press ahead of his place), never further than field.melee.leash
-## from his place in the block. Its fallen are those at grips (_fell, _front_men). What it loses is _bleed's
-## (army_combat.gd). The fight over (_fight_out), its men walk back into their ranks (_regather).
+## At blows: its foot take a fighting shape round the foe's block and every man fights by _press's rules; its men are
+## solid bodies among the men at blows (men_cells) and step at a fighting pace. What it loses is _bleed's
+## (army_combat.gd), its fallen among those at grips (_front_men). The fight over (_fight_out), its men walk back into
+## their ranks.
 func _fight_in(r: Dictionary) -> void:
 	_play(r, "ready")
 	r.erase("regather")
-	if not r.has("runners"):
-		r["runners"] = {}
+	r.erase("place")
+	r["solid"] = men_cells  # its men are bodies among the men at blows (army.gd _follow)
+	# In the press a man steps, a rider walks his horse (Mac 2026-11-16: "why are the horses running so much": each
+	# rider moved at the troop's charging pace between one foe and the next).
+	r["men_pace"] = Data.num(F, "field.melee.pace", 0.28) * (Data.num(F, "field.melee.horse_pace", 1.4) if r["role"] == "cavalry" else 1.0)
+	r["solid_cell"] = Data.num(F, "field.melee.body", 0.08)
+	r["solid_wide"] = int(Data.num(F, "field.melee.horse_body", 2)) if r["role"] == "cavalry" else 0  # a horse's ground, in men's (Mac 2026-11-16: two riders stood one inside the other)
 	r["contact"] = []
-	r["loosen_at"] = 0.0
-
-
-## One man of r steps out of his rank as his own body in the field's crowd of loose men (_press: a foe man is near
-## him). Only those who can reach a foe are loose, the ranks behind hold their places (Mac 2026-11-16: "the press
-## looks like a mob"; and every man of every block at blows as his own avoiding body was 100 ms a frame, 5 fps).
-func _loosen(r: Dictionary, s: int) -> void:
-	var node: Node3D = r["node"]
-	var horse: bool = r["role"] == "cavalry"
-	var man := Node3D.new()
-	man.name = "Fighter"
-	add_child(man)
-	man.global_position = node.to_global((r["local"] as PackedVector3Array)[s])
-	man.rotation.y = node.global_rotation.y
-	var mo: Node = Mover.of(man)
-	mo.clip = ""  # his figure is the block's VAT draw
-	mo.fights(true)
-	mo.join(_rout_crowd(), &"horse" if horse else &"man", Data.num(F, "field.melee.pace", 0.35) * 1.5)
-	(r["runners"] as Dictionary)[s] = {"node": man, "pace": Data.num(F, "field.melee.pace", 0.35) * _rng.randf_range(0.85, 1.15) * (2.0 if horse else 1.0)}
+	r["press_at"] = 0.0
 
 
 func _fight_out(r: Dictionary) -> void:
-	if String(r.get("state_name", "")) == "rout":
-		return
-	r["regather"] = true  # its men walk back into their ranks (_regather, each moment from _keep_up)
 	r["contact"] = []
+	r.erase("solid")
+	r.erase("men_pace")
+	r.erase("duel")
+	r.erase("quarry")
+	r.erase("grip")
+	r.erase("place")
+	r.erase("press_sig")
+	r.erase("was_at")
+	r.erase("press_mid")
+	r["man_gait"] = {}
+	if String(r.get("state_name", "")) == "rout":
+		_stand_where_they_are(r)  # they run from where they stood in the press
+		return
+	# Back into its ranks: every man's place is his own in the block again, and he walks to it.
+	var form: PackedVector3Array = r[String(r.get("form", "line"))]["at"]
+	var local: PackedVector3Array = r["local"]
+	var alive: PackedByteArray = r["alive"]
+	for s in local.size():
+		if alive[s] == 1:
+			local[s] = form[s]
+	r["local"] = local
+	r["moved"] = true
+
+
+## Every man's place is where he stands now (the press over: a rout runs from where each man stood).
+func _stand_where_they_are(r: Dictionary) -> void:
+	var at: PackedVector3Array = r.get("men_at", PackedVector3Array())
+	if at.size() == (r["local"] as PackedVector3Array).size():
+		r["local"] = at.duplicate()
 
 
 func _fight(r: Dictionary, dt: float) -> void:
@@ -1134,163 +1214,314 @@ func _fight(r: Dictionary, dt: float) -> void:
 		r.erase("task")
 		_send(r, &"advance")  # its foe broke or broke off (a new order, a relief): back to its place until its captain gives it the next
 		return
-	if r["role"] == "cavalry" and clock - float(r.get("met_at", clock)) > Data.num(F, "field.cavalry.melee_s", 4.0):
-		_send(r, &"rideout")  # horse never stays stuck in: it rides out to charge again (Total War's cycle charge)
-		return
+	# Horse that has gone home stays at blows until its mark breaks (Mac 2026-11-16: "the horses go away come back").
 	_press(r, dt)
+	if r["role"] == "cavalry" and r.has("press_mid"):
+		var mid: Vector3 = r["press_mid"]
+		var here: Vector3 = (r["node"] as Node3D).global_position
+		if Vector2(mid.x - here.x, mid.z - here.z).length() > 0.3:
+			Mover.of(r["node"]).toward(mid, Data.num(F, "field.cavalry.ride", 0.3))
 
 
-## Every loose man of r at blows: at the nearest foe man near him, or leaning in behind his front (see _fight_in).
-func _press(r: Dictionary, dt: float) -> void:
-	if not r.has("runners"):
-		r["runners"] = {}
-	var runners: Dictionary = r["runners"]
+## The places of r's fighting shape round `foe`, best first (world): [place, the way a man in it faces, whether he
+## fights there]. Mac 2026-11-16: "the surface area of attack from portrait will go to landscape ... the first two rows
+## are fighting, so the rows behind it will move on the sides, to try to attack the other person's sides". Two rows
+## along the face of the foe's block it stands before, a weapon's length (field.melee.reach) between the two fronts;
+## then two rows along each side of his block that is open (no other block beside it), facing in; then rows behind its
+## own front. Which sides are open is kept in r.press_sig_now: a side opening lays the shape afresh.
+func _press_places(r: Dictionary, foe: Dictionary) -> Array:
 	var node: Node3D = r["node"]
-	var form: PackedVector3Array = r[String(r.get("form", "line"))]["at"]
+	var fn: Node3D = foe["node"]
+	var fpos := fn.global_position
+	var fx := Vector3(fn.global_basis.x.x, 0.0, fn.global_basis.x.z).normalized()
+	var fz := Vector3(fn.global_basis.z.x, 0.0, fn.global_basis.z.z).normalized()
+	var hw := float(foe["w"]) * 0.5
+	var hd := float(foe["d"]) * 0.5
+	var off := Vector3(node.global_position.x - fpos.x, 0.0, node.global_position.z - fpos.z)
+	var face: Array = []
+	var most := -INF
+	for f in [[fz, hd, fx, hw], [-fz, hd, fx, hw], [fx, hw, fz, hd], [-fx, hw, fz, hd]]:  # [outward, half that way, along, half along]
+		var before := off.dot(f[0]) - float(f[1])
+		if before > most:
+			most = before
+			face = f
+	var n: Vector3 = face[0]
+	var hn := float(face[1])
+	var t: Vector3 = face[2]
+	var ht := float(face[3])
+	var form: Dictionary = r[String(r.get("form", "line"))]
+	var file := maxf(float(r["w"]) / maxf(float(int(form.get("files", 9)) - 1), 1.0), 0.08)
+	var rank := file * Data.num(F, "field.melee.rank", 1.2)
+	var reach := Data.num(F, "field.melee.reach", 0.09)
+	var gap := clampf(most - float(r["d"]) * 0.5, 0.0, 0.4)  # open ground between the two blocks' faces
+	var first := hn + gap * 0.5 + reach * 0.5  # its front row, half a weapon's length its own side of the seam
+	var out: Array = []
+	var across := int(floor(ht * 2.0 / file)) + 1
+	var order: Array = []  # the files of a row from its middle outward
+	for j in across:
+		order.append(float((j + 1) / 2) * (1.0 if j % 2 == 1 else -1.0) * file)
+	for k in 2:
+		for a in order:
+			out.append([fpos + n * (first + rank * k) + t * float(a), -n, true])
+	var sig := ""
+	var open_sides: Array = []
+	for sgn in [1.0, -1.0]:
+		var open: bool = not _block_near(r, foe, fpos + t * sgn * (ht + file * 2.0), file)
+		sig += "o" if open else "x"
+		if open:
+			open_sides.append(sgn)
+	r["press_sig_now"] = sig
+	var along := int(floor(hn * 2.0 / file)) + 1
+	for k in 2:
+		for a in along:
+			for sgn in open_sides:
+				out.append([fpos + t * float(sgn) * (ht + reach + rank * k) + n * (hn - file * a), -t * float(sgn), true])
+	for k in range(2, 12):
+		for a in order:
+			out.append([fpos + n * (first + rank * k) + t * float(a), -n, false])
+	return out
+
+
+## A fallen man's place taken by the nearest man in a lesser place, and his by the next (Mac: "the soldiers in the
+## troop need to move ahead to fill in those gaps"). `hole` the place left empty, `at` each man's place now (world).
+func _fill(hole: int, places: Array, place: Dictionary, at: Dictionary) -> void:
+	for step in 12:
+		var best := -1
+		var bd := INF
+		var here: Vector3 = places[hole][0]
+		for s in place:
+			if int(place[s]) > hole:
+				var d: float = (at[s] as Vector3).distance_squared_to(here)
+				if d < bd:
+					bd = d
+					best = int(s)
+		if best < 0:
+			return
+		var was := int(place[best])
+		place[best] = hole
+		at[best] = here
+		hole = was
+
+
+## Each read (field.melee.read apart) of a block at blows. Its foot stand in a fighting shape round the foe's block
+## (_press_places), the fallen's places filled from behind (_fill). Over that, for every man (Mac 2026-11-16):
+##   - a foe man within reach (field.melee.near): he walks no further, turns on him and fights; the one he fights he
+##     keeps until that man is down or gone from reach (r.grip);
+##   - else a foot man walks to his place in the shape; one whose place is not a fighting one goes instead at a foe man
+##     within field.melee.join who has fewer than field.melee.per_foe of his block on him (the gaps and the ends);
+##   - a rider keeps no place: he goes at the nearest foe man not yet taken by another rider, and keeps him (r.quarry);
+##   - a man in his place, or his way shut, stands ready (never walking on the spot).
+## Bodies are solid (army.gd _follow on men_cells); no man is sent outside the two hosts' squares.
+func _press(r: Dictionary, _dt: float) -> void:
+	if clock < float(r.get("press_at", 0.0)):
+		return
+	r["press_at"] = clock + Data.num(F, "field.melee.read", 0.3)
+	var foe: Dictionary = r["foe"]
+	var node: Node3D = r["node"]
 	var alive: PackedByteArray = r["alive"]
 	var vat: VATMultiMeshInstance3D = r["vat"]
 	var army: Army = r["army"]
-	var foe: Dictionary = r["foe"]
-	# The foe men it may meet: every living man of each foe regiment at blows with it, or it with them, where he
-	# stands (loose, or in his rank).
+	var form: PackedVector3Array = r[String(r.get("form", "line"))]["at"]
+	var men_at: PackedVector3Array = r.get("men_at", r["local"])
+	var local: PackedVector3Array = r["local"]
+	var riders: bool = r["role"] == "cavalry"
+	var per_foe := 1 if riders else int(Data.num(F, "field.melee.per_foe", 2))
+	var where := func(s: int) -> Vector3: return node.to_global(men_at[s] if s < men_at.size() else local[s])
+	# Its fighting shape (foot): laid afresh when it has none, a side of the foe's block opens or its foe changes; the
+	# fallen leave their places and the men nearest step up into them.
+	var places: Array = []
+	var place: Dictionary = r.get("place", {})
+	if not riders:
+		places = _press_places(r, foe)
+		if place.is_empty() or String(r.get("press_sig", "")) != String(r["press_sig_now"]) or not is_same(r.get("press_foe"), foe):
+			place = {}
+			var free: Array = []
+			for s in alive.size():
+				if alive[s] == 1:
+					free.append(s)
+			for i in mini(places.size(), free.size()):
+				var best := -1
+				var bd := INF
+				for k in free.size():
+					var d: float = (where.call(int(free[k])) as Vector3).distance_squared_to(places[i][0])
+					if d < bd:
+						bd = d
+						best = k
+				place[int(free[best])] = i
+				free.remove_at(best)
+			r["press_sig"] = r["press_sig_now"]
+			r["press_foe"] = foe
+		else:
+			var at := {}
+			for s in place:
+				at[s] = places[mini(int(place[s]), places.size() - 1)][0]
+			for s in place.keys():
+				if alive[int(s)] == 0:
+					var hole := int(place[s])
+					place.erase(s)
+					at.erase(s)
+					_fill(hole, places, place, at)
+		r["place"] = place
+	# Where every man of the foe blocks at blows near it stands, and who each is.
 	var theirs: Array = []
+	var their_key: Array = []
+	var index_of := {}
+	var reach_of := Data.num(F, "field.melee.seek", 3.0)
 	for x in (sides[1 - int(r["side"])] as Army).rows():
-		if is_same(x, foe) or is_same(x.get("foe"), r):
-			var xn: Node3D = x["node"]
-			var xl: PackedVector3Array = x["local"]
+		var close: bool = riders and String(x.get("state_name", "")) == "fight" and (x["node"] as Node3D).global_position.distance_to(node.global_position) < reach_of
+		if (is_same(x, foe) or is_same(x.get("foe"), r) or close) and x.has("men_world"):
+			var xw: PackedVector3Array = x["men_world"]
 			var xa: PackedByteArray = x["alive"]
-			for t in xl.size():
-				if xa[t] == 1:
-					theirs.append(xn.to_global(xl[t]))
-	var fwd := ((foe["node"] as Node3D).global_position - node.global_position)
-	fwd.y = 0.0
-	fwd = fwd.normalized() if fwd.length() > 0.001 else node.global_basis.z
-	var engage := Data.num(F, "field.melee.engage", 0.6)
-	var reach := Data.num(F, "field.melee.reach", 0.09)
-	var leash := Data.num(F, "field.melee.leash", 0.7)
-	if r["role"] == "cavalry":  # riders range wider in the press than men on foot
-		engage *= Data.num(F, "field.melee.horse", 2.0)
-		leash *= Data.num(F, "field.melee.horse", 2.0)
-	var range_s: Array = Data.value(F, "field.fight.swing", [0.7, 1.8])
-	var hit_odds := Data.num(F, "field.fight.hitOdds", 0.2)
-	var block_odds := Data.num(F, "field.fight.blockOdds", 0.25)
+			var xid := int((x["node"] as Object).get_instance_id() % 1000000) * 1000
+			for k in mini(xw.size(), xa.size()):
+				if xa[k] == 1:
+					index_of[xid + k] = theirs.size()
+					their_key.append(xid + k)
+					theirs.append(xw[k])
+	var quarry: Dictionary = r.get("quarry", {})
+	var taken: Array = []
+	taken.resize(theirs.size())
+	taken.fill(0)
+	for s in quarry.keys():
+		if alive[int(s)] == 1 and index_of.has(quarry[s]):
+			taken[int(index_of[quarry[s]])] = int(taken[int(index_of[quarry[s]])]) + 1
+		else:
+			quarry.erase(s)
+	# The two hosts' squares taken together, once for the read.
+	var face := (sides[0] as Army).facing()
+	var right := Vector3(cos(face), 0, -sin(face))
+	var fwd := Vector3(sin(face), 0, cos(face))
+	var lo := Vector2(INF, INF)
+	var hi := Vector2(-INF, -INF)
+	for i in sides.size():
+		var b := host_box(i)
+		if not b.is_empty():
+			lo = Vector2(minf(lo.x, (b[0] as Vector2).x), minf(lo.y, (b[0] as Vector2).y))
+			hi = Vector2(maxf(hi.x, (b[1] as Vector2).x), maxf(hi.y, (b[1] as Vector2).y))
+	var duel := {}
+	var contact: Array = []
 	var swing: Dictionary = r["swing"]
 	var back: Dictionary = r["back"]
 	var gait: Dictionary = r.get("man_gait", {})
-	# Who steps out of his rank: each man in it with a foe man within reach of a few steps, read field.melee.loosen_s
-	# apart (those already loose are read every moment, below).
-	if clock >= float(r.get("loosen_at", 0.0)):
-		r["loosen_at"] = clock + Data.num(F, "field.melee.loosen_s", 0.3)
-		var out := engage * 1.5
-		for s in alive.size():
-			if alive[s] == 0 or runners.has(s):
-				continue
-			var m := node.to_global(form[s])
-			for q: Vector3 in theirs:
-				if absf(q.x - m.x) < out and absf(q.z - m.z) < out and Vector2(q.x - m.x, q.z - m.z).length() < out:
-					_loosen(r, s)
-					break
-	var contact: Array = []
-	var local: PackedVector3Array = r["local"]
-	var back_in: Array = []
-	for s in runners:
-		if alive[int(s)] == 0:
+	var grip: Dictionary = r.get("grip", {})  # a man's number -> the foe man he is fighting (his number on the field)
+	var was_at: Dictionary = r.get("was_at", {})
+	var now_at := {}
+	var range_s: Array = Data.value(F, "field.fight.swing", [0.7, 1.8])
+	var hit_odds := Data.num(F, "field.fight.hitOdds", 0.2)
+	var block_odds := Data.num(F, "field.fight.blockOdds", 0.25)
+	var shout := Data.num(F, "field.melee.shout", 0.04)
+	var join := Data.num(F, "field.melee.join", 0.5)
+	var inv := node.global_transform.affine_inverse()
+	var node_yaw := node.global_rotation.y
+	var size := Data.num(F, "field.melee.body", 0.08)
+	var near := Data.num(F, "field.melee.near", 0.14) * (Data.num(F, "field.melee.horse", 1.8) if riders else 1.0)
+	var span := int(ceil(near * 1.4 / size))
+	var mine := int(r["side"])
+	var mid := Vector3.ZERO
+	var count := 0
+	for s in alive.size():
+		if alive[s] == 0:
 			continue
-		var man: Node3D = runners[s]["node"]
-		if not is_instance_valid(man):
-			continue
-		var at := man.global_position
-		var mark := node.to_global(form[int(s)])
-		var near := Vector3.INF
-		var nd := engage
-		for q: Vector3 in theirs:
-			var d := Vector2(q.x - at.x, q.z - at.z).length()
-			if d < nd:
-				nd = d
-				near = q
-		var goal: Vector3
-		var look := fwd
-		if near != Vector3.INF:
-			var to := Vector3(near.x - at.x, 0.0, near.z - at.z)
-			look = to.normalized()
-			goal = near - look * reach
+		var here: Vector3 = where.call(s)
+		now_at[s] = here
+		mid += here
+		count += 1
+		# The foe man within reach: the one he already fights while he stays in reach, else the nearest.
+		var foe_at := Vector3.INF
+		var foe_id := -1
+		var fd := near
+		var kept := int(grip.get(s, -1))
+		var c := Army._cell(here, size)
+		for cx in range(c.x - span, c.x + span + 1):
+			for cz in range(c.y - span, c.y + span + 1):
+				var e: Variant = men_cells.get(Vector2i(cx, cz))
+				if e == null or int((e as Array)[0]) == mine:
+					continue
+				var d := Vector2(((e as Array)[2] as Vector3).x - here.x, ((e as Array)[2] as Vector3).z - here.z).length()
+				if int((e as Array)[1]) == kept and d < near * 1.4:
+					d = -1.0  # his own man, still in reach: no other is taken instead
+				if d < fd:
+					fd = d
+					foe_at = (e as Array)[2]
+					foe_id = int((e as Array)[1])
+		var fights := foe_at != Vector3.INF
+		var stand_at := here
+		var looks := node.global_basis.z
+		var fighting_place := true
+		if fights:
+			grip[s] = foe_id
+			looks = foe_at - here
 		else:
-			goal = mark  # no foe near him: back to his place in his rank
-			if Vector2(mark.x - at.x, mark.z - at.z).length() < 0.03 and not back.has(s):
-				back_in.append(s)
-				continue
-		var off := Vector3(goal.x - mark.x, 0.0, goal.z - mark.z).limit_length(leash)
-		goal = Vector3(mark.x + off.x, at.y, mark.z + off.z)
-		var at_grips := near != Vector3.INF and nd <= reach * 1.6
-		if at_grips:
-			contact.append(int(s))
-			Mover.of(man).toward(at, 0.0, look)  # he stands his ground and faces his man
+			grip.erase(s)
+			var p: Array = []
+			if place.has(s):
+				p = places[mini(int(place[s]), places.size() - 1)]
+				stand_at = p[0]
+				looks = p[1]
+				fighting_place = bool(p[2])
+			if riders or not fighting_place:
+				# A rider, or a man whose place is behind the fight: at a foe man of his own (kept until he is down).
+				var pick := -1
+				if quarry.has(s):
+					pick = int(index_of[quarry[s]])
+				else:
+					var bd := INF if riders else join * join
+					for k in theirs.size():
+						if int(taken[k]) >= per_foe:
+							continue
+						var q: Vector3 = theirs[k]
+						var d2 := Vector2(q.x - here.x, q.z - here.z).length_squared()
+						if d2 < bd:
+							bd = d2
+							pick = k
+					if pick >= 0:
+						taken[pick] = int(taken[pick]) + 1
+						quarry[s] = their_key[pick]
+				if pick >= 0:
+					stand_at = theirs[pick]
+					looks = stand_at - here
+				elif riders:
+					stand_at = node.to_global(form[s])
+			if lo.x != INF:
+				var a := clampf(stand_at.dot(right), lo.x, hi.x)
+				var b2 := clampf(stand_at.dot(fwd), lo.y, hi.y)
+				stand_at = Vector3(right.x * a + fwd.x * b2, stand_at.y, right.z * a + fwd.z * b2)
+		var to: Vector3 = inv * stand_at
+		local[s] = Vector3(to.x, 0.0, to.z)
+		if Vector2(looks.x, looks.z).length() > 0.001:
+			duel[s] = wrapf(atan2(looks.x, looks.z) - node_yaw, -PI, PI)
+		var want := "walk"
+		var last: Vector3 = was_at.get(s, Vector3.INF)
+		if fights:
+			want = "grips"
+			contact.append(s)
 			if not swing.has(s):
 				swing[s] = clock + _rng.randf_range(0.0, float(range_s[1]))
 			if clock >= float(swing[s]):
 				swing[s] = clock + _rng.randf_range(float(range_s[0]), float(range_s[1]))
 				var roll := _rng.randf()
-				vat.update_instance_track(int(s), army.track(r, "hit" if roll < hit_odds else ("block" if roll < hit_odds + block_odds else "attack")))
+				vat.update_instance_track(s, army.track(r, "hit" if roll < hit_odds else ("block" if roll < hit_odds + block_odds else "attack")))
 				back[s] = clock + 0.9
-			gait[s] = "grips"
-		else:
-			var far := Vector2(goal.x - at.x, goal.z - at.z).length() > 0.03
-			Mover.of(man).toward(goal, float(runners[s]["pace"]), look)
-			var want := "walk" if far else "ready"
-			if String(gait.get(s, "")) != want and not back.has(s):
-				vat.update_instance_track(int(s), army.track(r, want))
-				vat.update_instance_animation_offset(int(s), _rng.randf())
-				gait[s] = want
+		elif Vector2(stand_at.x - here.x, stand_at.z - here.z).length() < 0.05 or Vector2(here.x - last.x, here.z - last.z).length() < 0.01:
+			want = "ready"  # in his place, or his way shut: he stands ready, never walking on the spot
+			if not riders and not back.has(s) and _rng.randf() < shout:  # behind the fight a man shouts or raises his shield now and then
+				vat.update_instance_track(s, army.track(r, "cheer" if _rng.randf() < 0.6 else "block"))
+				back[s] = clock + _rng.randf_range(1.0, 1.8)
+		if String(gait.get(s, "")) != want and not back.has(s):
+			if want != "grips":
+				vat.update_instance_track(s, army.track(r, want))
+				vat.update_instance_animation_offset(s, _rng.randf())
+			gait[s] = want
+	r["was_at"] = now_at
+	r["grip"] = grip
+	r["quarry"] = quarry
+	r["local"] = local
+	r["duel"] = duel
 	r["man_gait"] = gait
 	r["contact"] = contact
-	_follow_runners(r)
-	local = r["local"]
-	var yaws: PackedFloat32Array = r["yaws"]
-	var yaws0: PackedFloat32Array = r.get("yaws0", yaws)
-	for s in back_in:  # in his rank again: one of the block's own once more
-		yaws[int(s)] = yaws0[int(s)]
-		var held: Node3D = runners[s]["node"]
-		if is_instance_valid(held):
-			held.queue_free()
-		runners.erase(s)
-		local[int(s)] = form[int(s)]
-		if String(gait.get(s, "")) != "ready":
-			vat.update_instance_track(int(s), army.track(r, "ready"))
-			gait[s] = "ready"
-	if not back_in.is_empty():
-		r["local"] = local
-		r["yaws"] = yaws
-		r["moved"] = true
-
-
-## Its men back into their ranks after a fight: each walks to his place in the block; all back, they are one body again.
-func _regather(r: Dictionary) -> void:
-	var runners: Dictionary = r.get("runners", {})
-	var node: Node3D = r["node"]
-	var form: PackedVector3Array = r[String(r.get("form", "line"))]["at"]
-	var all_in := true
-	for s in runners:
-		var man: Node3D = runners[s]["node"]
-		if not is_instance_valid(man):
-			continue
-		var mark := node.to_global(form[int(s)])
-		if Vector2(mark.x - man.global_position.x, mark.z - man.global_position.z).length() > 0.04:
-			all_in = false
-			Mover.of(man).toward(mark, float(runners[s]["pace"]) * 1.3, node.global_basis.z)
-	_follow_runners(r)
-	if all_in:
-		_free_runners(r)
-		var local: PackedVector3Array = r["local"]
-		var alive: PackedByteArray = r["alive"]
-		for s in local.size():
-			if alive[s] == 1:
-				local[s] = form[s]
-		r["local"] = local
-		r["yaws"] = r.get("yaws0", r["yaws"])
-		r["man_gait"] = {}
-		r["moved"] = true
-		r.erase("regather")
-		_play(r, "ready" if String(r.get("state_name", "")) in ["stand", "volley", "fight"] else "walk")
+	r["moved"] = true
+	if riders and count > 0:
+		r["press_mid"] = mid / float(count)  # its standard goes in with its riders (_fight walks the block there)
 
 
 ## A worn regiment falls back through its relief to where the relief stood, facing the foe, and stands there.
@@ -1425,6 +1656,109 @@ func _flank(r: Dictionary, _dt: float) -> void:
 	Mover.of(node).toward(ride[i], Data.num(F, "field.cavalry.ride", 0.3))
 
 
+## A host's square (Mac 2026-11-16: "draw like a physical circle or a square around what we are calling a host, and
+## make sure the troops are not moving out of the boundary"): the box round the place in the host of every troop of
+## it still standing (foot, archers and horse: _slot_at, the host's own layout), field.bounds.margin wider all round,
+## along the crown's own front. [low corner, high corner] in (across, along) of that front, or [] when none stand.
+func host_box(i: int) -> Array:
+	var face := (sides[0] as Army).facing()
+	var right := Vector3(cos(face), 0, -sin(face))
+	var fwd := Vector3(sin(face), 0, cos(face))
+	var lo := Vector2(INF, INF)
+	var hi := Vector2(-INF, -INF)
+	for x in (sides[i] as Army).rows():
+		if int(x.get("living", 0)) <= 0 or String(x.get("state_name", "")) == "rout":
+			continue
+		var o: Vector3 = _slot_at(x) if not (lines[i] as Dictionary).is_empty() else (x["node"] as Node3D).global_position
+		var half := maxf(float(x["w"]), float(x["d"])) * 0.5
+		lo = Vector2(minf(lo.x, o.dot(right) - half), minf(lo.y, o.dot(fwd) - half))
+		hi = Vector2(maxf(hi.x, o.dot(right) + half), maxf(hi.y, o.dot(fwd) + half))
+	if lo.x == INF:
+		return []
+	var m := Data.num(F, "field.bounds.margin", 1.2)
+	return [lo - Vector2(m, m), hi + Vector2(m, m)]
+
+
+## `p` brought inside the two hosts' squares taken together: no ride, pull-back or re-forming goes outside them (a
+## rider reaches the foe's flank inside the foe's own square). The routed are not held.
+func keep_in(p: Vector3) -> Vector3:
+	var face := (sides[0] as Army).facing()
+	var right := Vector3(cos(face), 0, -sin(face))
+	var fwd := Vector3(sin(face), 0, cos(face))
+	var lo := Vector2(INF, INF)
+	var hi := Vector2(-INF, -INF)
+	for i in sides.size():
+		var b := host_box(i)
+		if not b.is_empty():
+			lo = Vector2(minf(lo.x, (b[0] as Vector2).x), minf(lo.y, (b[0] as Vector2).y))
+			hi = Vector2(maxf(hi.x, (b[1] as Vector2).x), maxf(hi.y, (b[1] as Vector2).y))
+	if lo.x == INF:
+		return p
+	var a := clampf(p.dot(right), lo.x, hi.x)
+	var b2 := clampf(p.dot(fwd), lo.y, hi.y)
+	return Vector3(right.x * a + fwd.x * b2, p.y, right.z * a + fwd.z * b2)
+
+
+## Each host's square drawn on the ground as a band (the crown's white, the foe's black: told apart by tone, not hue),
+## laid afresh each frame as its blocks move.
+var _box_draw: Array = []
+var _box_laid := -1.0
+func _draw_host_boxes() -> void:
+	for i in _box_draw.size():  # the crown's pulse, every frame; the bands themselves laid afresh five times a second
+		if i == 0:
+			var lit: StandardMaterial3D = (_box_draw[i] as MeshInstance3D).material_override
+			lit.emission_energy_multiplier = Data.num(F, "field.bounds.glow", 2.2) * (0.75 + 0.25 * sin(Time.get_ticks_msec() / 1000.0 * TAU * 0.6))
+	if clock >= 0.0 and clock - _box_laid < 0.2 and not _box_draw.is_empty():
+		return
+	_box_laid = clock
+	var face := (sides[0] as Army).facing()
+	var right := Vector3(cos(face), 0, -sin(face))
+	var fwd := Vector3(sin(face), 0, cos(face))
+	var band := Data.num(F, "field.bounds.band", 0.05)
+	for i in sides.size():
+		var wide := band * (1.6 if i == 0 else 1.0)
+		if _box_draw.size() <= i:
+			var mi := MeshInstance3D.new()
+			mi.name = "HostSquare%d" % i
+			mi.mesh = ImmediateMesh.new()
+			# The crown's square glows and pulses as a thing held and chosen (Mac 2026-11-16: "glowing like its active
+			# and selected"); the foe's is a dim outline. Told apart by brightness, not hue.
+			var mat := StandardMaterial3D.new()
+			mat.albedo_color = Color(0, 0, 0)
+			mat.emission_enabled = true
+			mat.emission = Color(1.0, 0.92, 0.7) if i == 0 else Color(0.5, 0.5, 0.5)  # sides[0] is the crown's host
+			mat.emission_energy_multiplier = 2.0 if i == 0 else 0.5
+			mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+			mi.material_override = mat
+			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			add_child(mi)
+			_box_draw.append(mi)
+		var im: ImmediateMesh = (_box_draw[i] as MeshInstance3D).mesh
+		im.clear_surfaces()
+		var b := host_box(i)
+		if b.is_empty():
+			continue
+		var lo: Vector2 = b[0]
+		var hi: Vector2 = b[1]
+		var corners := [Vector2(lo.x, lo.y), Vector2(hi.x, lo.y), Vector2(hi.x, hi.y), Vector2(lo.x, hi.y)]
+		im.surface_begin(Mesh.PRIMITIVE_TRIANGLES)
+		for e in 4:
+			var a: Vector2 = corners[e]
+			var c: Vector2 = corners[(e + 1) % 4]
+			var dir := (c - a).normalized()
+			var nrm := Vector2(-dir.y, dir.x) * wide * 0.5
+			for k in 12:  # the band laid along the land, a piece at a time
+				var p0 := a.lerp(c, k / 12.0)
+				var p1 := a.lerp(c, (k + 1) / 12.0)
+				var quad := []
+				for q in [p0 - nrm, p0 + nrm, p1 + nrm, p1 - nrm]:
+					var w := right * (q as Vector2).x + fwd * (q as Vector2).y
+					quad.append(Vector3(w.x, main.terrain.height_at(w.x, w.z) + 0.04, w.z))
+				for idx in [0, 1, 2, 0, 2, 3]:
+					im.surface_add_vertex(quad[idx])
+		im.surface_end()
+
+
 ## Whether any regiment on the field but r and `skip` stands within `room` (plus its own half extent) of `p`.
 func _block_near(r: Dictionary, skip: Dictionary, p: Vector3, room: float) -> bool:
 	for i in 2:
@@ -1456,7 +1790,7 @@ func _way_clear(r: Dictionary, a: Vector3, b: Vector3, skip: Dictionary = {}) ->
 
 ## The charge home (Total War's cycle charge): from its run-up straight in on the face of its mark it stands before, a flank or his
 ## rear, whichever it is nearest, never its front; the shock where it strikes (field.cavalry.shock men down at once),
-## at blows for field.cavalry.melee_s, then it rides out (field.cavalry.out away from the target), forms its ranks again
+## at blows until its mark breaks, then it rides out (field.cavalry.out past its run-up), forms its ranks again
 ## as it rides round, and charges again: the cycle charge, never stuck in the press.
 func _charge_in(r: Dictionary) -> void:
 	_play(r, "run")  # in its ranks, a loose mass at the gallop (Mac 2026-11-16: the wedge slid across the field as a rigid triangle, "they still move in a triangle and weirdly")
@@ -1540,14 +1874,14 @@ func _ride_out_in(r: Dictionary) -> void:
 		away = at - ((foe as Dictionary)["node"] as Node3D).global_position
 		(foe as Dictionary)["flanked"] = false
 	away.y = 0.0
-	r["out_to"] = at + away.normalized() * Data.num(F, "field.cavalry.out", 2.5)
+	r["out_to"] = keep_in(at + away.normalized() * Data.num(F, "field.cavalry.out", 2.5))
 	var ride: Array = r.get("ride", [])
 	if not ride.is_empty():
 		# Out the way it came in and on past its run-up (field.cavalry.out), to wheel about in the open and come down
 		# the same line again (Total War's cycle charge; never a turn about on its run-up).
 		var run: Vector3 = ride.back()
 		var past := Vector3(run.x - at.x, 0.0, run.z - at.z)
-		r["out_to"] = run + (past.normalized() if past.length() > 0.01 else away.normalized()) * Data.num(F, "field.cavalry.out", 2.5)
+		r["out_to"] = keep_in(run + (past.normalized() if past.length() > 0.01 else away.normalized()) * Data.num(F, "field.cavalry.out", 2.5))
 		r["ride_i"] = ride.size() - 1  # then back in by its run-up
 	r["foe"] = null
 	r["ride_t"] = 0.0
@@ -1659,8 +1993,10 @@ func _straggle(r: Dictionary, w: float, dt: float) -> void:
 ## figures stay the block's one VAT draw, each laid where his runner is (_follow_runners).
 func _break(r: Dictionary) -> void:
 	var army: Army = r["army"]
-	_free_runners(r)  # at blows its men were loose: they run from where they stood
+	_free_runners(r)
+	_stand_where_they_are(r)  # at blows its men stood in their fighting shape: they run from where they stand
 	r.erase("regather")
+	r["broke_clock"] = clock
 	if not r.has("broke_at"):
 		r["broke_at"] = (r["node"] as Node3D).global_position  # where its standard falls (_aftermath)
 	army.waver(r, 1.0)
@@ -1853,15 +2189,11 @@ func _fell(r: Dictionary, men: int, front: bool) -> void:
 			continue
 		alive[s] = 0
 		r["living"] = int(r["living"]) - 1
-		var run: Dictionary = r.get("runners", {})
-		if run.has(s) and String(r.get("state_name", "")) != "rout":
-			if is_instance_valid(run[s]["node"]):
-				(run[s]["node"] as Node3D).queue_free()
-			run.erase(s)
 		vat.update_instance_track(s, army.track(r, "death"))
 		if fade:
 			vat.fade_out_instance(s, 1.0, 0.0)  # no fall of his own (army.json meshes.<dir>.fallen): never left standing
-		(r["dead_at"] as Dictionary)[s] = node.to_global(local[s])
+		var stood: PackedVector3Array = r.get("men_at", local)  # where he stood, not the place he was walking to
+		(r["dead_at"] as Dictionary)[s] = node.to_global(stood[s] if s < stood.size() else local[s])
 		(r["swing"] as Dictionary).erase(s)
 		(r["back"] as Dictionary).erase(s)
 	r["alive"] = alive

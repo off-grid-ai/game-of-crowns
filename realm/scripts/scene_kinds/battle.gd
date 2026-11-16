@@ -98,27 +98,30 @@ func battlefield(near: Vector3) -> Vector3:
 	for b in _fighting:
 		walls.append([b[0], field])
 	var why := {"town": 0, "ground": 0, "ploughland": 0, "a building or water": 0}
-	for ring in rings:
-		var found: Array = []  # [score, place] of this ring's places clear of every town and farm, on ground that can be fought on
-		var n := maxi(1, ring * 8)
-		for i in n:
-			var a := TAU * i / n
-			var p: Vector3 = stage.ground(near + Vector3(cos(a), 0, sin(a)) * ring * 0.8)
-			if not _clear_field(p, walls):
-				why["town"] += 1
-				continue
-			var score := _field_cost(p, roads)
-			if score == INF:
-				why["ground"] += 1
-				continue
-			found.append([score, p])
-		# The best few of the ring asked of the ground itself, best first (the costly question, asked of few).
-		found.sort_custom(func(x, y): return float(x[0]) < float(y[0]))
-		for k in mini(found.size(), int(Data.num("battle", "ground.asked", 4))):
-			var reason := _stands_on(found[k][1])
-			if reason == "":
-				return found[k][1]
-			why[reason] += 1
+	# The clear ground asked for (ground.stand), then less of it (ground.shrink): a tighter field on open ground beats
+	# the seat's muster ground among its houses (near some seats no place had all of it clear).
+	for room in Data.value("battle", "ground.shrink", [1.0, 0.8, 0.6]):
+		for ring in rings:
+			var found: Array = []  # [score, place] of this ring's places clear of every town and farm, on ground that can be fought on
+			var n := maxi(1, ring * 8)
+			for i in n:
+				var a := TAU * i / n
+				var p: Vector3 = stage.ground(near + Vector3(cos(a), 0, sin(a)) * ring * 0.8)
+				if not _clear_field(p, walls):
+					why["town"] += 1
+					continue
+				var score := _field_cost(p, roads)
+				if score == INF:
+					why["ground"] += 1
+					continue
+				found.append([score, p])
+			# The best few of the ring asked of the ground itself, best first (the costly question, asked of few).
+			found.sort_custom(func(x, y): return float(x[0]) < float(y[0]))
+			for k in mini(found.size(), int(Data.num("battle", "ground.asked", 4))):
+				var reason := _stands_on(found[k][1], float(room))
+				if reason == "":
+					return found[k][1]
+				why[reason] += 1
 	if OS.get_cmdline_user_args().has("--where"):
 		print("BATTLE no field within %d rings of %s: places turned down for %s" % [rings, str(near), str(why)])
 	return Vector3.INF
@@ -139,8 +142,8 @@ func _clear_field(c: Vector3, walls: Array) -> bool:
 ## stand): "" if nothing, else what (Mac 2026-11-16: battles set among ploughland, a tavern and a village's houses,
 ## "walking through walls": a town's reach and 25 points across the field missed all three). The lines' own ground
 ## (ground.stand, the middle of the field) must be clear of every ploughed strip, building and water.
-func _stands_on(c: Vector3) -> String:
-	var r := Data.num("battle", "ground.stand", 4.0)
+func _stands_on(c: Vector3, share := 1.0) -> String:
+	var r := Data.num("battle", "ground.stand", 4.0) * share
 	if not Ground.claims_in(Rect2(c.x - r, c.z - r, r * 2.0, r * 2.0), ["field"]).is_empty():
 		return "ploughland"
 	var edge := PackedVector2Array()

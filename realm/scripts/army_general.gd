@@ -177,6 +177,8 @@ func _plan_ride(r: Dictionary, mark: Dictionary) -> Array:
 			way.append(first)
 		way.append(level)
 	way.append(runup)
+	for i in way.size():  # no point of its ride outside the battle's boundary (army_field.gd keep_in)
+		way[i] = field.keep_in(way[i])
 	return way
 
 
@@ -234,7 +236,6 @@ func _hold(_g: Dictionary, _dt: float) -> void:
 ## The whole front runs in together, each block on the foe in its lane (or, its lane clear, the nearest ahead).
 func _charge_in(_g: Dictionary) -> void:
 	_say("the line charges")
-	_horse(_foes())  # the horse sets off round the wing as the foot go in, to strike as the lines lock (Mac 2026-11-16: "why dont the horses attack", "they just go and wait there": sent only once the lines had locked, it was 15 s riding round)
 	for r in _rows():
 		if r["role"] == "melee" and int(r.get("line_no", 1)) != 2 and String(r.get("state_name", "")) == "advance":
 			r["task"] = _mark(r)
@@ -316,6 +317,28 @@ func _horse(_foes: Array) -> void:
 				list.erase(was)
 				list.append(was)
 			r.erase("target")
+		# The horse follows its foot into the fight: the moment the lines are locked it goes in at the nearest foe block
+		# at blows, round the end of its own line (Mac 2026-11-16: "the cavalry then follows them ... some will replace
+		# the dead, some will attack from the side", "everyone needs to be bloodthirsty for war").
+		if st == "stand" and not _standing(r.get("target")):
+			var near := _nearest_fighting(r)
+			if near.is_empty():
+				continue
+			# From its place in the host, close behind its foot: a troop off its place (rallied where its flight
+			# ended) is on its way back to it as a formed body (army_field.gd _march_lines) and goes in from there,
+			# never its riders one by one across the field.
+			if (r["node"] as Node3D).global_position.distance_to(field._slot_at(r)) > Data.num(F, "field.cavalry.join", 1.0):
+				continue
+			# Straight in from behind its foot, no ride out wide and no hard turn (Mac 2026-11-16: "they should proceed
+			# straight, and then attack the sides gradually ... portrait to landscape but gradual"): it is at blows where
+			# it stands, and each rider goes at the nearest foe man he can reach (army_field.gd _press); his own foot
+			# being solid, the riders flow out round its ends as they come up.
+			r["foe"] = near
+			r["target"] = near
+			r["met_at"] = field.clock
+			field._send(r, &"engage")
+			_say("the horse follows the foot in")
+			continue
 		if _standing(r.get("target")) and r.has("ride"):
 			# Its mark has moved since its ride was planned (field.cavalry.moved): planned anew to where he stands now.
 			var m: Dictionary = r["target"]
@@ -329,6 +352,21 @@ func _horse(_foes: Array) -> void:
 			continue
 		_send_horse(r, next)
 		_say("the reserve rides out" if String(r.get("post", "")) == "reserve" else "the horse goes round their flank")
+
+
+## The nearest foe block of foot or archers at blows; {} while none is.
+func _nearest_fighting(r: Dictionary) -> Dictionary:
+	var at: Vector3 = (r["node"] as Node3D).global_position
+	var best := {}
+	var bd := INF
+	for f in _foes():
+		if String(f.get("state_name", "")) != "fight" or f["role"] == "cavalry":
+			continue
+		var d := at.distance_to((f["node"] as Node3D).global_position)
+		if d < bd:
+			bd = d
+			best = f
+	return best
 
 
 ## A horse block sent at `mark` by a ride planned now.

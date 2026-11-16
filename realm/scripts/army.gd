@@ -2066,6 +2066,8 @@ func _follow(r: Dictionary, dt: float) -> void:
 			face[s] = wrapf(face[s] + was_yaw - node_yaw, -PI, PI)
 	var mo: Node = node.get_node_or_null("Mover")
 	var pace := maxf(float(mo.get("speed")) if mo else 0.2, 0.12) * Data.num("army", "follow.pace", 1.6)
+	if r.has("men_pace"):
+		pace = float(r["men_pace"])  # at blows its men step at a fighting pace, whatever pace the block last moved at (army_field.gd _fight_in)
 	var vary := Data.num("army", "follow.vary", 0.15)
 	var snap := Data.num("army", "follow.snap", 1.5)
 	var turn := Data.num("army", "follow.turn", 7.0)
@@ -2076,6 +2078,11 @@ func _follow(r: Dictionary, dt: float) -> void:
 	var tall := float(r.get("tall_k", 1.0))
 	var still := not moving
 	var duel: Dictionary = r.get("duel", {})
+	var solid: Variant = r.get("solid")  # the field's cells of men at blows while this regiment is among them, else null
+	var cell := float(r.get("solid_cell", 0.08))
+	var wide_body := int(r.get("solid_wide", 0))
+	var rid := int(r.get("id", 0))
+	var side_of := int(r.get("side", 0))
 	for s in marks.size():
 		if not alive.is_empty() and s < alive.size() and alive[s] == 0:
 			continue  # the fallen lie where they fell
@@ -2092,7 +2099,38 @@ func _follow(r: Dictionary, dt: float) -> void:
 		elif len > 0.004:
 			var own := pace * (1.0 + vary * (float((s * 7919) % 13) / 6.0 - 1.0))
 			var step := minf(len, own * dt)
-			at[s] = Vector3(at[s].x + d.x / len * step, want.y, at[s].z + d.y / len * step)
+			var to := Vector3(at[s].x + d.x / len * step, want.y, at[s].z + d.y / len * step)
+			if solid != null:
+				# Men are bodies (Mac 2026-11-16: "armies should not be able to walk through each other ... they have to
+				# collide, they cannot pass through"): he steps only onto ground no other man stands on (army_field.gd's
+				# cells of the men at blows, one man a cell); his way shut, he steps round to either side, else he waits.
+				var me := rid * 1000 + s
+				var from_key := _cell(xf * at[s], cell)
+				var took := false
+				var pref := 1.0 if s % 2 == 0 else -1.0  # half the men step round to the left first, half to the right: a press spreads both ways
+				for side in [0.0, pref, -pref]:
+					var p := to if side == 0.0 else Vector3(at[s].x - d.y / len * step * side, want.y, at[s].z + d.x / len * step * side)
+					var key := _cell(xf * p, cell)
+					var there: Variant = (solid as Dictionary).get(key)
+					var room := true
+					if wide_body > 0:  # a horse takes more ground than a man: none but he within that many cells of where he steps
+						for cx in range(key.x - wide_body, key.x + wide_body + 1):
+							for cz in range(key.y - wide_body, key.y + wide_body + 1):
+								var o: Variant = (solid as Dictionary).get(Vector2i(cx, cz))
+								if o != null and int((o as Array)[1]) != me:
+									room = false
+					if room and (key == from_key or there == null or int((there as Array)[1]) == me):
+						if key != from_key:
+							var was: Variant = (solid as Dictionary).get(from_key)
+							if was != null and int((was as Array)[1]) == me:
+								(solid as Dictionary).erase(from_key)
+							(solid as Dictionary)[key] = [side_of, me, xf * p]
+						to = p
+						took = true
+						break
+				if not took:
+					to = at[s]
+			at[s] = to
 			if len > 0.08:
 				goal_yaw = atan2(d.x, d.y)  # re-dressing: he faces the way he walks
 			if not moving:
@@ -2108,6 +2146,11 @@ func _follow(r: Dictionary, dt: float) -> void:
 	r["men_at"] = at
 	r["men_yaw"] = face
 	r["men_still"] = still
+
+
+## The cell of the field a man at `p` (world) stands in, `size` across.
+static func _cell(p: Vector3, size: float) -> Vector2i:
+	return Vector2i(int(floor(p.x / size)), int(floor(p.z / size)))
 
 
 ## Men laid again on the land under them once their regiment has moved (each man's own height; _dress), a few
