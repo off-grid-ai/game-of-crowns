@@ -414,10 +414,7 @@ static func cover_people(root: Node3D, seeds: Array, budget: int, within: float)
 			break
 	if pr <= 0.0 or budget <= 0:
 		return []
-	var feats: Array = []
-	for fp in load("res://scripts/town_nav.gd").footprints(root):
-		if (fp as PackedVector2Array).size() >= 3:
-			feats.append(fp)
+	var feats: Array = _near_square(root, pr * within + um)  # only what stands over the square can cover a cell of it
 	var near := float(Data.num("towns", "square.near_m", 2.0)) * um
 	var cells: Array = []  # Vector2i
 	var n := int(ceil(pr / um))
@@ -476,6 +473,25 @@ static func cover_people(root: Node3D, seeds: Array, budget: int, within: float)
 	return spots
 
 
+## A town's footprints (town_nav.gd) whose bounds come within `reach` of its heart, town-local: the ones a spot on its
+## square can meet.
+static func _near_square(root: Node3D, reach: float) -> Array:
+	var box := Rect2(-reach, -reach, reach * 2.0, reach * 2.0)
+	var feats: Array = []
+	for fp in load("res://scripts/town_nav.gd").footprints(root):
+		var poly := fp as PackedVector2Array
+		if poly.size() < 3:
+			continue
+		var lo := poly[0]
+		var hi := poly[0]
+		for v in poly:
+			lo = lo.min(v)
+			hi = hi.max(v)
+		if Rect2(lo, hi - lo).intersects(box, true):
+			feats.append(poly)
+	return feats
+
+
 ## The open setts' spots, town-local, the emptiest first: grid points on the paved square (within `within` of its
 ## radius) outside every footprint, chosen one by one farthest from anything standing and from the spots already
 ## chosen (farthest-point sampling), none nearer than `apart_m` metres to another or to a footprint. Static, so a probe
@@ -490,11 +506,9 @@ static func open_spots(root: Node3D, apart_m: float, within: float) -> Array:
 			break
 	if pr <= 0.0:
 		return []
-	var feats: Array = []
-	for fp in load("res://scripts/town_nav.gd").footprints(root):
-		var poly := fp as PackedVector2Array
-		if poly.size() >= 3:
-			feats.append(poly)
+	# Within a square's radius past its edge: a footprint further out is never the nearest to a cell on it (the square is
+	# ringed by its stalls and houses), and the whole town's footprints made a stage 50 ms (live46, Kingsmere).
+	var feats: Array = _near_square(root, pr * (within + 1.0))
 	var far := func(q: Vector2) -> float:
 		var best := INF
 		for poly in feats:
