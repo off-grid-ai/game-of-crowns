@@ -509,11 +509,9 @@ func _show_heading(r: Dictionary) -> void:
 	if il_key != "" and il_key != ui._interlude_told and not ui._interlude_on:
 		ui._interlude_told = il_key
 		ui._tell_interlude(il)
-	# The last act, named at three quarters of the reign, once; it stays in the story so far.
+	# The last act, named at three quarters of the reign (told by the act card, reign_cards.gd); it stays in the story so far.
 	var la = r.get("lastAct")
 	if la is Dictionary and _last_act_told != String(la.get("threat", "")):
-		if _last_act_told == "" and ui._court_met:
-			ui.toast("The last act of the reign begins. What comes for the throne now: %s." % String(la.get("threat", "")))
 		_last_act_told = String(la.get("threat", ""))
 
 

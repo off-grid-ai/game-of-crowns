@@ -72,11 +72,7 @@ var _interlude_on := false  # an act is being told back: the court waits behind 
 
 func _tell_interlude(il: Dictionary) -> void:
 	_interlude_on = true
-	var deed = il.get("deed")
-	if deed is Dictionary and String(deed.get("line", "")) != "":
-		await _act_moment(il, deed)
-	else:
-		await _epilogue(il, String(il.get("title", "The act ends")), true)  # nothing to name: the act told as before
+	await _act_card(il)
 	_interlude_on = false
 	ui.interlude_closed.emit()
 	# The court that waited behind the telling: a realm-wide matter comes up; matters
@@ -85,45 +81,107 @@ func _tell_interlude(il: Dictionary) -> void:
 		ui._show_audience()
 
 
-## An act of the reign turns: a moment, not a card (Frostpunk's ending shows what
-## you did where you did it). The bells over Kingsmere, and one line naming the
-## King's weightiest deed of the act, standing at its place on the map if it is in
-## view (else at the top), for a few seconds; the realm plays on under it. The
-## camera stays where he put it; the full flight is the reign's end.
-static var ACT_SECONDS: float = preload("res://scripts/data.gd").num("ui", "reign_cards.act_seconds", 5.0)  # ui.json reign_cards.act_seconds
-func _act_moment(il: Dictionary, deed: Dictionary) -> void:
+## An act of the reign turns: a chapter card over a painting (The Banner Saga's chapter titles; Frostpunk's scenario
+## beats stop the city to say what is coming). The act that begins, its name, what the King did in the act gone, and,
+## for the last act, what comes for the throne over that house's own painting. The realm waits under it (the bridge
+## holds the clock for an unread act); a click or a key, or act_hold seconds, and the realm plays on.
+## Names, paintings and the hold: realm/data/ui.json reign_cards.
+const ROMAN := ["I", "II", "III", "IV"]
+func _act_card(il: Dictionary) -> void:
+	var q := clampi(int(il.get("q", 1)), 1, 3)  # the quarter just ended: act q+1 begins
+	var acts: Array = Data.value("ui", "reign_cards.acts", [])
+	var act: Dictionary = acts[q] if q < acts.size() and acts[q] is Dictionary else {}
+	var la = ui.reign_now.get("lastAct") if ui.get("reign_now") is Dictionary else null
+	var last := q == 3 and la is Dictionary
+	var art_name := String(act.get("art", "realm_land"))
+	if last and String(la.get("key", "")) != "":
+		art_name = "house_" + String(la["key"]).trim_prefix("House ").to_lower().replace(" ", "_")
 	var main: Node = ui.get_parent()
 	var sound: Node = main.get("sound") if main else null
-	var at := Vector3.INF
-	if deed.get("x") != null and main and main.get("terrain"):
-		at = main.terrain.world_pos(float(deed["x"]), float(deed["y"]))
 	if sound and sound.has_method("event"):
-		sound.event("act")
-	var card := ui.glass_panel()
-	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 2)
-	card.add_child(v)
-	v.add_child(T.label(String(il.get("title", "The act ends")).to_upper()))
-	v.add_child(T.title(String(deed["line"]), 20))
-	var cam := ui.get_viewport().get_camera_3d()
-	var seen := at != Vector3.INF and cam and not cam.is_position_behind(at) and ui.get_viewport().get_visible_rect().has_point(cam.unproject_position(at))
-	if seen:
-		ui.anchor.pin(card, at, true, 0.8)
-	else:
-		card.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
-		card.offset_top = 70
-		card.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	card.modulate.a = 0.0
-	var tw := ui.create_tween()
-	tw.tween_property(card, "modulate:a", 1.0, 0.6)
-	await ui.get_tree().create_timer(ACT_SECONDS).timeout
-	if is_instance_valid(card):
+		sound.event("act" if not last else "rebellion")  # the bells; the last act's horn
+	var layer := CanvasLayer.new()
+	layer.layer = 40  # over the map, the cards and the bar; under the menu
+	ui.add_child(layer)
+	var root := Control.new()
+	root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	root.mouse_filter = Control.MOUSE_FILTER_STOP
+	root.modulate.a = 0.0
+	layer.add_child(root)
+	var art := TextureRect.new()
+	var path := "res://assets/intro/art/%s.jpg" % art_name
+	art.texture = load(path) if ResourceLoader.exists(path) else load("res://assets/intro/art/realm_land.jpg")
+	art.set_anchors_preset(Control.PRESET_FULL_RECT)
+	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	root.add_child(art)
+	var Cover := preload("res://scripts/world_cover.gd")
+	Cover.cover("act card", true)  # the painting covers the window: the realm under it isn't drawn
+	var shade := TextureRect.new()
+	var g := Gradient.new()
+	g.set_color(0, Color(0.05, 0.04, 0.03, 0.15))
+	g.set_color(1, Color(0.05, 0.04, 0.03, 0.9))
+	var gt := GradientTexture2D.new()
+	gt.gradient = g
+	gt.fill_to = Vector2(0, 1)
+	shade.texture = gt
+	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	shade.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	root.add_child(shade)
+	var col := VBoxContainer.new()
+	col.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
+	col.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	col.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	col.offset_bottom = -90
+	col.alignment = BoxContainer.ALIGNMENT_CENTER
+	col.add_theme_constant_override("separation", T.GAP_SECTION)
+	root.add_child(col)
+	var head := T.label("ACT %s OF IV" % ROMAN[q], T.ACCENT)
+	head.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	col.add_child(head)
+	var name := T.title(String(act.get("name", "The act turns")), 54)
+	name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	col.add_child(name)
+	# Behind: the weightiest deed of the act gone, or how the chroniclers have him so far.
+	var deed = il.get("deed")
+	var behind := String(deed.get("line", "")) if deed is Dictionary else ""
+	if behind == "":
+		var ch: Array = il.get("choices", [])
+		behind = String((ch[0] as Dictionary).get("text", "")) if not ch.is_empty() and ch[0] is Dictionary else ""
+	if behind != "":
+		var b := T.prose(behind, T.SIZE_BODY + 2, T.TEXT_2)
+		b.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		b.autowrap_mode = TextServer.AUTOWRAP_WORD
+		b.custom_minimum_size.x = 760
+		col.add_child(b)
+	# Ahead: the last act names what comes for the throne; the others, the act's own question.
+	var aim = ui.reign_now.get("aim") if ui.get("reign_now") is Dictionary else null
+	var aim_text := String(aim.get("text", "")) if aim is Dictionary else ""
+	var ahead := ("What comes for the throne: %s." % String(la.get("threat", ""))) if last else (("Now: " + aim_text) if aim_text != "" else String(act.get("asks", "")))
+	if ahead != "":
+		var a := T.title(ahead, 24, T.DANGER if last else T.TEXT)
+		a.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		a.autowrap_mode = TextServer.AUTOWRAP_WORD
+		a.custom_minimum_size.x = 900
+		col.add_child(a)
+	var go := T.label("Click to go on", T.TEXT_3)
+	go.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	col.add_child(go)
+	ui.create_tween().tween_property(root, "modulate:a", 1.0, 0.8)
+	var done := [false]
+	root.gui_input.connect(func(e: InputEvent):
+		if (e is InputEventMouseButton and e.pressed) or (e is InputEventKey and e.pressed):
+			done[0] = true)
+	var left := float(Data.num("ui", "reign_cards.act_hold", 12.0))
+	while not done[0] and left > 0.0 and is_instance_valid(root):
+		await ui.get_tree().process_frame
+		left -= ui.get_process_delta_time()
+	if is_instance_valid(root):
 		var out := ui.create_tween()
-		out.tween_property(card, "modulate:a", 0.0, 0.8)
+		out.tween_property(root, "modulate:a", 0.0, 0.6)
 		await out.finished
-		ui.anchor.unpin(card)
-		card.queue_free()
+	Cover.cover("act card", false)
+	layer.queue_free()
 
 
 ## The reign's last flight: each defining choice where it happened (the camera

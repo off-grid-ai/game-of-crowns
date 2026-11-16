@@ -106,7 +106,8 @@ export function lastAct(ctx) {
     : story && story.status === "running" ? story.title
     : (stakes?.s.north?.waves ?? 0) > 0 ? "the dead from the North"
     : cold ? `${houseFor(cold).name}'s host, by the ${when.season} of ${when.year}` : "the houses' own ambitions";
-  meta.lastAct = { threat, kind, turn, ...(cold ? { house: cold.id, lands } : {}) };
+  const face = pretender ?? cold;  // whose painting the last act's card shows (reign_cards.gd)
+  meta.lastAct = { threat, kind, turn, ...(face ? { key: houseFor(face).key } : {}), ...(cold ? { house: cold.id, lands } : {}) };
   chron.saveMeta(meta);
   record({ turn: world?.turn ?? 0, kind: "act", text: `The last act of the reign begins. What comes for the throne now: ${threat}.` });
 }
