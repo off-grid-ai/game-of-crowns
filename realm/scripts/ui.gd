@@ -204,6 +204,7 @@ var _form_panel: PanelContainer:
 var minimap: Control
 var houses_strip := preload("res://scripts/houses_strip.gd").new(self)  # the great houses at a glance, top-left (houses_strip.gd)
 var reckoning := preload("res://scripts/reckoning.gd").new(self)  # what a choice changed, over the control plane (reckoning.gd)
+var moment := preload("res://scripts/moment_banner.gd").new(self)  # a win or a loss of the King's, as a moment (moment_banner.gd)
 var war_council := preload("res://scripts/war_council.gd").new(self)  # the one screen before a war is declared (war_council.gd)
 var army_bar := preload("res://scripts/army_bar.gd").new(self)  # the King's hosts down the left edge (army_bar.gd): its state lives there
 var _army_panel: PanelContainer:

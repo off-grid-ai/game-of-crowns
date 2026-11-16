@@ -93,7 +93,9 @@ const STINGS := {
 	"death": [["sfx/funeral_bell.ogg", -3.0, 0.0]],
 	"crown": [["sfx/fanfare.ogg", -3.0, 0.0], ["sfx/cheer.ogg", -8.0, 3.0], ["ambience/church_bells.ogg", -8.0, 5.0]],
 	"marriage": [["ambience/church_bells.ogg", -5.0, 0.0], ["sfx/cheer.ogg", -10.0, 4.0]],
-	"act": [["ambience/church_bells.ogg", -6.0, 0.0]],  # an act of the reign turns: the bells over Kingsmere
+	"act": [["ambience/church_bells.ogg", -6.0, 0.0]],
+	"victory": [["sfx/fanfare.ogg", -3.0, 0.0], ["sfx/cheer.ogg", -6.0, 0.8]],  # a battle of the King's won (moment_banner.gd)
+	"defeat": [["sfx/toll_bell.ogg", -4.0, 0.0], ["sfx/famine_drone.ogg", -10.0, 0.5]],  # and lost  # an act of the reign turns: the bells over Kingsmere
 	"alliance": [["sfx/fanfare.ogg", -8.0, 0.0]],
 	"dead": [["sfx/dead_horde.ogg", -2.0, 0.0], ["sfx/wolf_howl.ogg", -6.0, 6.0]],
 	"famine": [["sfx/famine_drone.ogg", -6.0, 0.0], ["sfx/toll_bell.ogg", -8.0, 2.0]],
@@ -112,7 +114,7 @@ const ALIASES := {"succession": "crown", "coronation": "crown", "reign_end": "de
 	"raid": "rebellion", "city_destroyed": "sack", "razed": "sack", "city_transferred": "handover"}
 const LIFT_BED := {"battle": ["battle", 40.0], "siege": ["drums", 45.0], "feast": ["feast", 50.0], "dead": ["dead_north", 90.0]}
 const LIFT_MOOD := {"battle": ["battle", 60.0], "siege": ["battle", 60.0], "feast": ["feast", 90.0], "dead": ["dead", 120.0],
-	"death": ["unrest", 40.0], "famine": ["unrest", 60.0], "rebellion": ["unrest", 60.0], "sack": ["unrest", 60.0]}
+	"death": ["unrest", 40.0], "defeat": ["unrest", 60.0], "famine": ["unrest", 60.0], "rebellion": ["unrest", 60.0], "sack": ["unrest", 60.0]}
 const MAX_STINGERS := 12
 
 var _beds := {}  # name -> {player, level (0..1), target}

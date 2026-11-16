@@ -80,5 +80,14 @@ func _show(c: Dictionary) -> void:
 		if not said.is_empty():
 			parts.append(", ".join(said) + ".")
 	main.ui.chronicle.notice(" ".join(parts), {"kind": "battle", "loss": not won})
-
-
+	# The moment before the numbers (Total War's result banner): the word, and where. The crown's side comes first
+	# (bridge battles.js card).
+	var sides: Array = c.get("sides", [])
+	var theirs_lost := 0
+	for i in range(1, sides.size()):
+		theirs_lost += int((sides[i] as Dictionary).get("lost", 0))
+	var ours_lost := int((sides[0] as Dictionary).get("lost", 0)) if not sides.is_empty() else 0
+	var place := String(c.get("place", "")).strip_edges()
+	if place != "":
+		place = place.left(1).to_upper() + place.substr(1)
+	main.ui.moment.show(preload("res://scripts/moment_banner.gd").word_for(won, ours_lost, theirs_lost), place, not won)
