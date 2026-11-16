@@ -171,7 +171,7 @@ static func _area_free(poly: PackedVector2Array, props: bool, free_of: Variant, 
 		_clean_sources(box)
 	var mask := _mask(props, open_kinds)
 	var excl := _exclude(free_of, open_kinds)
-	for part: PackedVector2Array in ([poly] if _convex(poly) else Geometry2D.decompose_polygon_in_convex(poly)):
+	for part: PackedVector2Array in convex_parts(poly):
 		PhysicsServer3D.shape_set_data(_ask_hull, _prism_points(part))
 		_sq.shape_rid = _ask_hull
 		_sq.transform = Transform3D.IDENTITY
@@ -1027,8 +1027,9 @@ static func _prisms(poly: PackedVector2Array, out: Array) -> void:
 			out.append([Transform3D(Basis(x, Vector3.UP, z), Vector3(mid.x, 0, mid.y)), box, _bounds(poly)])
 			return
 	if not _convex(poly):
-		for part in Geometry2D.decompose_polygon_in_convex(poly):
-			_prisms(part, out)
+		for part in convex_parts(poly):
+			if _convex(part):
+				_prisms(part, out)
 		return
 	var hull := PhysicsServer3D.convex_polygon_shape_create()
 	PhysicsServer3D.shape_set_margin(hull, 0.0)
@@ -1075,6 +1076,22 @@ static func _bounds(poly: PackedVector2Array) -> Rect2:
 		lo = lo.min(v)
 		hi = hi.max(v)
 	return Rect2(lo, hi - lo)
+
+
+## A footprint as convex parts. A polygon that isn't simple (a repeated corner, a crossing edge, a spike: towns
+## and props make them) is first cleaned by Clipper's union, which Godot's decomposer needs (it fails on them:
+## "Convex decomposing failed!"). Holes the union finds are left out: a footprint's whole outline stands.
+static func convex_parts(poly: PackedVector2Array) -> Array:
+	if poly.size() < 3:
+		return []
+	if _convex(poly):
+		return [poly]
+	var out := []
+	for g: PackedVector2Array in Geometry2D.merge_polygons(poly, PackedVector2Array()):
+		if g.size() < 3 or Geometry2D.is_polygon_clockwise(g):
+			continue
+		out.append_array([g] if _convex(g) else Geometry2D.decompose_polygon_in_convex(g))
+	return out
 
 
 static func _convex(poly: PackedVector2Array) -> bool:

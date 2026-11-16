@@ -931,7 +931,7 @@ static func _obstruct(src: NavigationMeshSourceGeometryData3D, o: PackedVector2A
 	for g: PackedVector2Array in grown:
 		if Geometry2D.is_polygon_clockwise(g):
 			continue
-		for part in Geometry2D.decompose_polygon_in_convex(g):
+		for part in Ground.convex_parts(g):
 			var v := PackedVector3Array()
 			for p in part:
 				v.append(Vector3(p.x, 0, p.y))
