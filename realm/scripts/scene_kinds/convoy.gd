@@ -6,6 +6,8 @@ extends "res://scripts/scene_kind.gd"
 
 const Data := preload("res://scripts/data.gd")
 const Mover := preload("res://scripts/mover.gd")
+const ViewTier := preload("res://scripts/view_tier.gd")  # the one frame budget staged work draws on
+const PerfTools := preload("res://scripts/perf_tools.gd")
 
 
 func play(s: Dictionary, at: Vector3, _houses: Dictionary) -> Node3D:
@@ -42,10 +44,7 @@ func convoy(from: Vector3, to: Vector3, grain: bool, label := "", scene := {}) -
 	# through any wood it crosses, wide enough that no crown closes over it, so
 	# what travels it can be watched (drawn roads have their lanes already).
 	var track: Curve3D = stage.terrain.paths.smooth_road(way)
-	var along := 0.0
-	while along < track.get_baked_length():
-		stage.terrain.clear_around(track.sample_baked(along), 0.85)  # a crown reaches about 0.8 from its trunk (main.gd LANE_MARGIN)
-		along += 0.4
+	_clear_track(track)  # on the frame's budget, from its start: well ahead of the wagon's slow wheels
 	var tag: Label3D = stage.caption(root, label if label != "" else ("The King's grain" if grain else "The King's gold"), stage.ground(from) + Vector3(0, 0.45, 0))
 	var there := func() -> void:
 		# Arrived: off the road, the escort hails the town it was sent to.
@@ -68,3 +67,19 @@ func convoy(from: Vector3, to: Vector3, grain: bool, label := "", scene := {}) -
 		stage.people.play(e, "Walk")
 	tag_over(root, tag, wagon)
 	return wagon
+
+
+## The convoy's track cleared of any crown that would close over it (a crown reaches about 0.8 from its trunk: main.gd
+## LANE_MARGIN), a stretch at a time on the frame's budget (live run anchor47: a tribute's whole road cleared in one
+## frame, 586 ms).
+func _clear_track(track: Curve3D) -> void:
+	var along := 0.0
+	var length := track.get_baked_length()
+	while along < length:
+		if not ViewTier.spend_ok(&"scenes"):
+			await PerfTools.next_frame(&"scenes:track")
+			if not is_instance_valid(stage) or not stage.is_inside_tree():
+				return
+			continue
+		stage.terrain.clear_around(track.sample_baked(along), 0.85)
+		along += 0.4
