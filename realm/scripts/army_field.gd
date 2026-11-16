@@ -193,7 +193,11 @@ func _raise_in_play() -> void:
 func _pick(regiments: Array, side: int, foe: Dictionary, rise: float, house: String) -> String:
 	var own := BattleOrders.count(regiments)
 	var key := BattleOrders.pick(own, own if foe.is_empty() else foe, rise, house, _rng)
+	for a in (OS.get_cmdline_user_args() if play.is_empty() else PackedStringArray()):
+		if a.begins_with("--battle-order="):  # the test aid: both sides in one order, to film it
+			key = a.substr(15)
 	orders[side] = key
+	_say({}, "%s stands in %s" % [house.capitalize() if house.begins_with("the") else house, BattleOrders.title(key).to_lower()])
 	print("BATTLE %s stands in %s (%d men against %d, ground %+.1f)" % [house, BattleOrders.title(key), int(own["men"]),
 		int((own if foe.is_empty() else foe)["men"]), rise])
 	return key
@@ -332,6 +336,8 @@ func _process_timed(delta: float) -> void:
 				_begin()
 				for i in 2:
 					for r in (sides[i] as Army).rows():
+						if int(r.get("line_no", 1)) == 2 or String(r.get("post", "")) == "reserve":
+							continue  # a second line and a horse reserve stand until their order sends them (_orders_tick)
 						_send(r, &"volley" if r["role"] == "ranged" else (&"flank" if r["role"] == "cavalry" else &"advance"))
 		if play.is_empty():
 			_frame(delta)
@@ -340,6 +346,7 @@ func _process_timed(delta: float) -> void:
 	_fly()
 	_keep_up()
 	_morale(delta)
+	_orders_tick()
 	if not play.is_empty():
 		# In play: the field held a while, then the battle is gone (its dead too); the camera is never moved.
 		if _over and _over_at < 0.0:
@@ -835,7 +842,7 @@ func _free_spot(r: Dictionary, spot: Vector3, look: Vector3) -> Vector3:
 		var q := spot + across * step * (w + gap)
 		var free := true
 		for x in (sides[int(r["side"])] as Army).rows():
-			if is_same(x, r) or x.get("state_name", "") == "rout" or int(x.get("living", 1)) <= 0:
+			if is_same(x, r) or is_same(x, r.get("relieve")) or x.get("state_name", "") in ["rout", "relieved"] or int(x.get("living", 1)) <= 0:
 				continue
 			var there: Vector3 = x["spot"] if x.has("spot") and x.get("state_name", "") in ["advance", "fight"] else (x["node"] as Node3D).global_position
 			var off := there - q
@@ -933,6 +940,78 @@ func _fight(r: Dictionary, dt: float) -> void:
 		var n := int(r["bleed"])
 		r["bleed"] = float(r["bleed"]) - n
 		_fell(r, n, true)
+
+
+## The battle order's beats (data/battle_orders.json relief; the approved pictures, docs/art/battle_formations): a
+## worn front regiment at blows is relieved by the nearest second-line regiment still standing, which marches up to
+## its place in the fight (_advance, its spot the worn one's); once it is near, the worn one falls back to where its
+## relief stood (_fall_back) and stands, ready to go in again. A horse reserve rides out once its side is at blows.
+func _orders_tick() -> void:
+	var k: Dictionary = Data.value("battle_orders", "relief", {})
+	for i in 2:
+		var rows := (sides[i] as Army).rows()
+		var at_blows := rows.any(func(x): return String(x.get("state_name", "")) == "fight")
+		for r in rows:
+			var st := String(r.get("state_name", ""))
+			if st == "stand" and String(r.get("post", "")) == "reserve" and r["role"] == "cavalry" and at_blows:
+				_send(r, &"flank")
+				_say(r, "The reserve rides out")
+				continue
+			if st != "fight" or r.has("relief") or r["role"] == "cavalry":
+				continue
+			if float(r["living"]) > float(k.get("at", 0.65)) * float(r["figures"]):
+				continue
+			var at: Vector3 = (r["node"] as Node3D).global_position
+			var best: Dictionary = {}
+			var bd := INF
+			for x in rows:
+				if int(x.get("line_no", 0)) != 2 or String(x.get("state_name", "")) != "stand" or x.has("relieve") or int(x.get("living", 0)) <= 0:
+					continue
+				var d := at.distance_squared_to((x["node"] as Node3D).global_position)
+				if d < bd:
+					bd = d
+					best = x
+			if best.is_empty():
+				continue
+			r["relief"] = best
+			best["relieve"] = r
+			best["relief_from"] = (best["node"] as Node3D).global_position
+			_send(best, &"advance")
+			_say(best, "The second line goes in")
+		for r in rows:  # a relief near its worn regiment: the worn one falls back
+			var worn: Variant = r.get("relieve")
+			if not worn is Dictionary or String((worn as Dictionary).get("state_name", "")) != "fight":
+				continue
+			var apart := ((r["node"] as Node3D).global_position - ((worn as Dictionary)["node"] as Node3D).global_position).length()
+			if apart <= float(k.get("near", 1.0)) + float(r["d"]):
+				(worn as Dictionary)["back_to"] = r["relief_from"]
+				_send(worn, &"relieve")
+				r.erase("relieve")
+
+
+## A worn regiment falls back through its relief to where the relief stood, facing the foe, and stands there.
+func _fall_back(r: Dictionary, dt: float) -> void:
+	var to: Vector3 = r.get("back_to", (r["node"] as Node3D).global_position)
+	var at: Vector3 = (r["node"] as Node3D).global_position
+	if Vector2(to.x - at.x, to.z - at.z).length() <= Data.num(F, "field.contact", 0.12):
+		r.erase("relief")
+		r.erase("back_to")
+		r["foe"] = null
+		_send(r, &"formed")
+		return
+	Mover.of(r["node"]).toward(to, Data.num(F, "field.advance", 0.24) * float(Data.value("battle_orders", "relief.back", 0.8)), _line_front(r))
+	_gait(r, dt)
+
+
+## A beat of the battle order, said where the player reads the realm's news (ui.toast), once per regiment and beat.
+func _say(r: Dictionary, text: String) -> void:
+	if String(r.get("said", "")) == text:
+		return
+	r["said"] = text
+	print("BATTLE beat: %s" % text)
+	var ui: Variant = main.get("ui")
+	if ui and ui.has_method("toast"):
+		ui.toast(text)
 
 
 ## The foe man each of `front` fights (Total War's matched pairs): for each, the nearest living man of `foe`'s front,

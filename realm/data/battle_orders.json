@@ -82,5 +82,11 @@
         "foe_horse": 1.2
       }
     }
+  },
+  "relief": {
+    "_": "army_field.gd _orders_tick, a second line's relief (the Strategikon's and the Roman triplex acies' line relief): a front regiment at blows with no more than at of its figures standing is relieved by the nearest second-line regiment still standing; once its relief is within near (plus its depth) of it, the worn regiment falls back to where its relief stood, at back times field.advance, and stands. A horse reserve rides out once any regiment of its side is at blows.",
+    "at": 0.65,
+    "near": 1.0,
+    "back": 0.8
   }
 }

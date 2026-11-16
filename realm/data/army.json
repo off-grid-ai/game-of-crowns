@@ -122,9 +122,10 @@
         "fight": { "enter": "_ready_in", "tick": "_fight" },
         "rout": { "enter": "_break", "tick": "_run", "guard": "_may_break" },
         "rally": { "enter": "_rally_in", "tick": "_rally" },
-        "hold": { "enter": "_hold", "guard": "_may_hold" }
+        "hold": { "enter": "_hold", "guard": "_may_hold" },
+        "relieved": { "enter": "_walk_in", "tick": "_fall_back" }
       },
-      "go": [["stand", "volley", "volley"], ["stand", "advance", "advance"], ["stand", "flank", "flank"], ["advance", "fight", "engage"], ["volley", "fight", "engage"], ["flank", "charge", "charge"], ["charge", "fight", "engage"], ["fight", "advance", "advance"], ["charge", "flank", "flank"], ["fight", "rideout", "rideout"], ["rideout", "flank", "flank"], ["rout", "rally", "rally"], ["rally", "stand", "formed"]],
+      "go": [["fight", "relieved", "relieve"], ["relieved", "stand", "formed"], ["stand", "volley", "volley"], ["stand", "advance", "advance"], ["stand", "flank", "flank"], ["advance", "fight", "engage"], ["volley", "fight", "engage"], ["flank", "charge", "charge"], ["charge", "fight", "engage"], ["fight", "advance", "advance"], ["charge", "flank", "flank"], ["fight", "rideout", "rideout"], ["rideout", "flank", "flank"], ["rout", "rally", "rally"], ["rally", "stand", "formed"]],
       "any": { "break": "rout", "won": "hold" }
     },
     "storm_regiment": {

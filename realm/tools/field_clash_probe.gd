@@ -53,7 +53,7 @@ func _run() -> void:
 		print("FIELD CLASH: the realm never came up: FAIL")
 		quit(2)
 		return
-	var field: Node = load("res://scripts/army_field.gd").new(main, "900")
+	var field: Node = load("res://scripts/army_field.gd").new(main, "900")  # its order: --battle-order=<key> (battle_orders.json), else the commanders pick
 	main.add_child(field)
 	if not await _wait(func() -> bool: return (field.get("sides") as Array).size() == 2, 120.0):
 		print("FIELD CLASH: the battle was never raised: FAIL")
