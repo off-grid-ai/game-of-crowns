@@ -49,7 +49,7 @@ signal house_followed(player_id: int)
 signal chronicle_asked(entry: Dictionary, urgent: bool)  # a new card asks him something (chronicle_panel.gd): the Hand may explain it
 signal tour_asked  # the Hand's tour again, from the top bar's ? or F12 (hand_prompts.gd)  # a sigil on the ladder clicked: the camera goes with that house's host
 signal matter_opened(at: Vector3)  # a matter's marker clicked: the King looks at its place (his own click)
-signal counsel_answered(key: String)  # the King answered the Hand's matter  # a story's name clicked in the chronicle
+signal counsel_answered(key: String, leave: bool)  # leave: the King chose silence, and pays its price (bridge matters silence)  # the King answered the Hand's matter  # a story's name clicked in the chronicle
 
 ## The finesse pass (docs/review/ui-pass.md; data/ui.json version): the world the hero,
 ## panels compact and in the corners, no camera buttons on screen unless asked for.
@@ -125,6 +125,8 @@ var events := preload("res://scripts/event_card.gd").new(self)  # an event card 
 signal event_chosen(choice: int)  # the King's answer to the event card (main.gd sends it to the bridge)
 signal event_lapsed  # an event card left past its season: its cost landed (main.gd rings the bell)
 signal event_came  # an event card arrives (main.gd: a parchment sound)
+signal defend_at(city: int)  # a matter answered by sending the nearest free host to a town (main.gd -> news_actions.gd)
+signal host_sent(host: int, order: String, city: int)  # a matter answered by one host's order (main.gd -> host_command.gd)
 signal war_declared(foe: int)  # the crown went to war on a house (main.gd: the war horn)
 signal heard(kind: String)  # an interface sound (main.gd plays it: soundscape.ui, sounds.json ui)
 func event_arrived() -> void:
@@ -1084,7 +1086,7 @@ func reading() -> bool:
 ## Whether one of the Hand's answers gives an order (a decree: it takes a royal seal) or only answers the matter
 ## (the tithe, sitting it out, going to court). The one reading of it, for every card that offers counsel.
 func gives_order(act: Dictionary) -> bool:
-	return not ["court", "tithe_up", "tithe_down", "sitout"].has(String(act.get("ui", "")))
+	return not ["court", "tithe_up", "tithe_down", "leave", "defend", "host"].has(String(act.get("ui", "")))
 
 
 ## The gate on one of the Hand's answers, the same on every card that offers it (court_panel.gd, news_actions.gd):
@@ -1107,7 +1109,7 @@ func act_gate(act: Dictionary) -> Dictionary:
 ## routes_decree.js); anything else answers it here.
 func answer_counsel(act: Dictionary, key: String) -> void:
 	if not gives_order(act):
-		counsel_answered.emit(key)
+		counsel_answered.emit(key, String(act.get("ui", "")) == "leave")
 	counsel_act(act, key if gives_order(act) else "")
 
 
@@ -1125,9 +1127,12 @@ func counsel_act(act: Dictionary, matter := "") -> void:
 		set_tithe(tithe + 0.05)
 	elif on == "tithe_down":
 		set_tithe(tithe - 0.05)
-	elif on == "sitout":
-		# The King lets them fight it out: answered, the court never brings this war again.
-		toast("The King stays out of it. Let them bleed; the war is theirs.")
+	elif on == "leave":
+		pass  # the bridge tells it: the silence's line in the chronicle, its price in favour
+	elif on == "defend":
+		defend_at.emit(int(act.get("city", -1)))  # the nearest free host, or the levy (news_actions.gd _defend)
+	elif on == "host":
+		host_sent.emit(int(act.get("host", -1)), String(act.get("order", "garrison")), int(act.get("city", -1)))
 	else:
 		decree_at.emit(String(act.get("action", "")), int(act.get("city", -1)), int(act.get("to", -1)), String(act.get("building", "")), matter)
 

@@ -36,6 +36,7 @@ var mic: Node  # speaking instead of typing
 var interior: CanvasLayer  # inside a building
 var _selected := -1
 var _time_of_day := 0.36
+const NewsActions := preload("res://scripts/news_actions.gd")  # the matters' "send your host" answer (defend)
 const Awareness := preload("res://scripts/awareness.gd")  # the realm's rules as the bridge sends them (season length, bands)
 const Ground := preload("res://scripts/ground.gd")  # the one answer to where a body may stand
 const Real := preload("res://scripts/realistic.gd")  # the world's models (warm: read ahead on worker threads)
@@ -401,7 +402,13 @@ func _ready() -> void:
 			bridge.set_paused(true)
 		_hold_world()
 		title.open_paused())
-	ui.counsel_answered.connect(func(key): bridge.counsel_answered(key))
+	ui.counsel_answered.connect(func(key, leave): bridge.counsel_answered(key, leave))
+	ui.defend_at.connect(func(city): if NewsActions.one: NewsActions.one.defend(city))
+	ui.host_sent.connect(func(host, order, city):
+		var cmd: Node = get_node_or_null("HostCommand")
+		if cmd:
+			cmd.select(host)
+			cmd.order(order, {"city": city}, func(code: int, said: String): if code != 200 and said != "": ui.toast(said)))
 	ui.court_closed.connect(func(): director.soon())  # the doors shut: the camera goes to look
 	ui.last_event.connect(news._to_news)
 	ui.speed_stepped.connect(_step_speed)

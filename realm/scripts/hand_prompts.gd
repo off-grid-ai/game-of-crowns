@@ -73,7 +73,7 @@ func _ready() -> void:
 	var ui = main.get("ui")
 	if ui:
 		ui.petition_answered.connect(func(_id, _o): _moment("first_ruling"))
-		ui.counsel_answered.connect(func(_k): _moment("first_ruling"))
+		ui.counsel_answered.connect(func(_k, _leave): _moment("first_ruling"))
 		ui.chronicle_asked.connect(func(e: Dictionary, urgent: bool): _moment("court_waits" if String(e.get("kind", "")) == "court" else ("first_threat" if urgent else "first_card")))
 		ui.tour_asked.connect(func(): _tell("lessons"))  # F12 or the ?: the list of what he can tell again (StarCraft II's help topics)
 		_layer = CanvasLayer.new()

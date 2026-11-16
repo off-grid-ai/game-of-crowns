@@ -125,8 +125,8 @@ func set_reign_options(changes: Dictionary, cb: Callable) -> void:
 	_post("/reign/options", changes, cb)
 
 
-func counsel_answered(key: String) -> void:
-	_post("/counsel/answer", {"key": key}, func(_c, _d): pass)
+func counsel_answered(key: String, leave := false) -> void:
+	_post("/counsel/answer", {"key": key, "leave": leave}, func(_c, _d): pass)
 
 
 func ai_status(cb: Callable) -> void:

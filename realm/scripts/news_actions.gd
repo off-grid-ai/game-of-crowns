@@ -131,69 +131,39 @@ func _raise(id: int) -> void:
 # --- what can be done about a piece of news ----------------------------------------------------
 
 ## The answers to a news entry ({kind, text, city?, thread?, ...}, as the chronicle has it): rows of
-## {verb, label, cost (crowns, 0 for none), enabled, why, tip, call}, best first. Only what fits NOW is there:
-##   the Hand's advised decree; a matter waiting at court, its own answers straight on the card (court_panel's options,
-##   answered the one way: ui.petition_answered); what the place's state asks now (the mirror: a threat, a siege,
-##   hunger, sickness, unrest, war with the crown, a cold lord; news_actions.json states); the story's title theme only
-##   when the place says nothing; then the kind's own verbs. A verb whose condition no longer holds (news_actions.json
-##   verbs.needs) is dropped: no Defend when nothing threatens, no Send relief once the plague has passed.
+## {verb, label, cost (crowns, 0 for none), enabled, why, tip, call}.
 func verbs(entry: Dictionary) -> Array:
-	# A matter of the Hand's counsel carries its own answers (bridge counsel.js, the one decider of them): those and
-	# going there, never answers worked out here from the place (Mac 2026-11-16: a war's card offered grain).
-	if String(entry.get("counsel", "")) != "":
-		return _counsel_rows(entry)
-	var kinds: Dictionary = Data.value(FILE, "kinds", {})
-	var kind := String(entry.get("kind", ""))
-	var list: Array = (kinds.get(kind, kinds.get("other", ["go"])) as Array).duplicate()
-	var first := []
-	# The Hand's counsel names the decree it advises (bridge next.js act): that answer first.
-	var act = entry.get("act")
-	if act is Dictionary:
-		var by_act: Dictionary = Data.value(FILE, "acts", {})
-		if by_act.has(String(act.get("action", ""))):
-			first.append(String(by_act[String(act["action"])]))
-		if act.get("city") != null and entry.get("city") == null:
-			entry = entry.duplicate()
-			entry["city"] = act["city"]
-	var c: Dictionary = main.awareness.city(int(entry["city"])) if entry.get("city") != null else {}
-	var now := _now(c)
-	# Fresh news of a foe at a town of the realm is a threat there, whoever's riders they are (a rival king's raiders
-	# over the border, rivals.js, aren't Freeciv's raids the mirror sees): Defend and the levy answer it.
-	var turn := int(main.awareness.rec("turn", 0))
-	if kind in (Data.value(FILE, "threat_kinds", []) as Array) and not c.is_empty() and _realm_town(c, int(main.awareness.rec("crownId", -1))) and turn - int(entry.get("turn", turn)) <= int(Data.num(FILE, "fresh_seasons", 1.0)):
-		now["threat"] = true
-		now["war"] = true
-	var stated := []
-	if not kind in (Data.value(FILE, "no_state", []) as Array):
-		for s in Data.value(FILE, "states", []):
-			if s is Dictionary and now.has(String(s.get("when", ""))) and not kind in ((s as Dictionary).get("skip", []) as Array):
-				stated.append_array(s.get("verbs", []))
-	# The title's theme ("The Pestilence of Thunderhold") only where the place itself says nothing now.
-	if stated.is_empty() and (kind in (Data.value(FILE, "theme_kinds", []) as Array) or not kinds.has(kind)):
-		first.append_array(_themed(entry))
-	var answers := _answers(entry)
-	var rows := answers.duplicate()
-	var seen := {}
-	# A threat's own answers (defend, the levy, the banners) come before what else the place asks (Mac: a rising
-	# offered a feast first); a cold lord's gifts are no answer to raiders (states' skip).
-	var order: Array = first + list + stated if kind in (Data.value(FILE, "threat_kinds", []) as Array) else first + stated + list
-	for v in order:
-		if seen.has(v):
-			continue
-		seen[v] = true
-		var r := _row(String(v), entry, now)
-		if r.is_empty() or (r.has("key") and seen.has(r["key"])):
-			continue  # one decree once (Send grain and Send relief are both the relief)
-		if r.has("key"):
-			seen[r["key"]] = true
-		rows.append(r)
-	# The matter's answers on the card stand in for "Rule on it" (kept only when they didn't all fit) and "To court".
-	if not answers.is_empty():
-		var whole: bool = answers.size() >= int((main.ui.court.matter(String(answers[0]["matter"])).get("options", []) as Array).size())
-		rows = rows.filter(func(x): return not (String(x["verb"]) == "court" or String(x["verb"]) == "rule" and whole))
-	elif rows.any(func(x): return String(x["verb"]) == "rule"):
-		rows = rows.filter(func(x): return String(x["verb"]) != "court")
+	# The bridge decides what needs the King and how he may answer it (bridge matters/*.js, the one decider; Mac
+	# 2026-11-16: a war's card offered grain, a starving army a granary, an angry lord a gift). A card shows the
+	# answers of the matter it is about, or a court matter's own rulings, and Go there; nothing is worked out here
+	# from the place.
+	var key := _matter_at(entry)
+	if key != "":
+		var e := entry.duplicate()
+		e["counsel"] = key
+		return _counsel_rows(e)
+	var rows := _answers(entry)
+	var go := _row("go", entry, {})
+	if not go.is_empty():
+		rows.append(go)
 	return rows
+
+
+## The realm's matter this news is about (bridge /world counsel): the one it names, else the one standing at its town
+## (a matter's places: hunger names every hungry town), or "".
+func _matter_at(entry: Dictionary) -> String:
+	if String(entry.get("counsel", "")) != "":
+		return String(entry["counsel"])
+	if entry.get("city") == null:
+		return ""
+	var city := int(entry["city"])
+	for it in main.awareness.rec("counsel", []):
+		if not it is Dictionary:
+			continue
+		var places: Array = it.get("places") if it.get("places") is Array else ([it["city"]] if it.get("city") != null else [])
+		if places.any(func(x): return x != null and int(x) == city):
+			return String(it.get("key", ""))
+	return ""
 
 
 ## The Hand's matter's own answers as rows, each gated as every card gates it (ui.gd act_gate), and Go there;
@@ -213,58 +183,6 @@ func _counsel_rows(entry: Dictionary) -> Array:
 	if not go.is_empty():
 		rows.append(go)
 	return rows
-
-
-## A story's beat speaks of what it is about ("The Pestilence of Thunderhold"): its theme's verbs (news_actions.json
-## themes), matched in its name and its line. The fallback when the place's state says nothing.
-func _themed(entry: Dictionary) -> Array:
-	var said := ("%s %s %s" % [entry.get("thread", ""), entry.get("text", ""), entry.get("label", "")]).to_lower()
-	var out := []
-	var themes: Dictionary = Data.value(FILE, "themes", {})
-	for k in themes:
-		var t = themes[k]
-		if not t is Dictionary:
-			continue
-		for w in (t as Dictionary).get("words", []):
-			if said.contains(String(w)):
-				out.append_array((t as Dictionary).get("verbs", []))
-				break
-	return out
-
-
-## The place's state now, from the mirror: the keys news_actions.json states and verbs.needs ask after. war: the crown
-## at war with anyone, or a foe's host on one of its towns (realm-wide); threat (a foe's host on this town of his:
-## threats), besieged, hungry (starved this season, its granary low, or its siege biting), plague, unrest (disorder),
-## crown_war (the town's house at war with the crown) and cold (its house's favour under cold_below).
-func _now(c: Dictionary) -> Dictionary:
-	var aw: Node = main.awareness
-	var crown := int(aw.rec("crownId", -1))
-	var out := {}
-	if not threats.is_empty() or not (_player(crown).get("wars", []) as Array).is_empty():
-		out["war"] = true
-	if int(main.ui.court.waiting()) > 0:
-		out["court_waits"] = true  # To court only when a matter waits there (Mac: "why would that even come up")
-	if c.is_empty():
-		return out
-	if threats.has(int(c["id"])):
-		out["threat"] = true
-	if bool(c.get("besieged", false)):
-		out["besieged"] = true
-	var siege: Dictionary = c.get("siege") if c.get("siege") is Dictionary else {}
-	if bool(c.get("famine", false)) or bool(c.get("granaryLow", false)) or bool(siege.get("hungry", false)):
-		out["hungry"] = true
-	if bool(c.get("plague", false)):
-		out["plague"] = true
-	if bool(c.get("disorder", false)):
-		out["unrest"] = true
-	var owner := int(c.get("owner", -2))
-	if owner != crown:
-		var pl := _player(owner)
-		if (pl.get("wars", []) as Array).has(String(Data.value(FILE, "crown_word", "the Crown"))):
-			out["crown_war"] = true
-		if pl.get("favour") != null and float(pl["favour"]) < Data.num(FILE, "cold_below", 35.0):
-			out["cold"] = true
-	return out
 
 
 ## The court matter this news waits on: a matter's own card by its id, a story's by its name (ui.story_matter), or the lord come to court for it (the
@@ -344,8 +262,8 @@ func _row(verb: String, e: Dictionary, now: Dictionary) -> Dictionary:
 			else:
 				var from: String = String((h["at"] as Dictionary).get("name", "")) if h.get("at") is Dictionary else "the field"
 				r["tip"] = String(words.get("tip", "")).format({"from": from, "men": UI.heads(int(h.get("men", 0))), "town": fill["town"]})
-				r["call"] = _defend.bind(city)
-				r["answer"] = func(done: Callable): _defend(city, done)  # the card waits for the bridge's word (chronicle_panel.gd _answer)
+				r["call"] = defend.bind(city)
+				r["answer"] = func(done: Callable): defend(city, done)  # the card waits for the bridge's word (chronicle_panel.gd _answer)
 		"rule":
 			var id := _matter(e)
 			if id == "":
@@ -478,7 +396,7 @@ func _host_bound(city: int) -> Dictionary:
 ## (host_command.gd select + order: POST /host/order, its captain's answer, the horn, the men's cry).
 ## With none free, the levy is raised in its place; with no purse for it, the King is told so.
 ## done(ok, said), when given: the bridge's answer, or why nothing was asked (pressed -> working -> done).
-func _defend(city: int, done := Callable()) -> void:
+func defend(city: int, done := Callable()) -> void:
 	var tell := func(ok: bool, said: String) -> void:
 		if done.is_valid():
 			done.call(ok, said)
@@ -495,7 +413,7 @@ func _defend(city: int, done := Callable()) -> void:
 		if not asked:
 			tell.call(false, String(Data.value(FILE, "no_order", "Your host has no order left this season. Raise new men instead.")))
 		return
-	var levy := _row("levy", {"kind": "attack", "city": city}, _now(main.awareness.city(city)))
+	var levy := _row("levy", {"kind": "attack", "city": city}, {"threat": true})
 	if not levy.is_empty() and bool(levy["enabled"]):
 		(levy["call"] as Callable).call()
 		tell.call(true, "")
@@ -507,7 +425,7 @@ func _defend(city: int, done := Callable()) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed(&"defend") and not event.is_echo():
 		if _latest >= 0 and threats.has(_latest):
-			_defend(_latest)
+			defend(_latest)
 			get_viewport().set_input_as_handled()
 
 
