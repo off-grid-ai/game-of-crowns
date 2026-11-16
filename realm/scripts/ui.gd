@@ -203,6 +203,7 @@ var _form_panel: PanelContainer:
 		return form_card._form_panel
 var minimap: Control
 var houses_strip := preload("res://scripts/houses_strip.gd").new(self)  # the great houses at a glance, top-left (houses_strip.gd)
+var reign_track := preload("res://scripts/reign_track.gd").new(self)  # the reign's four acts and what comes, under the houses (reign_track.gd)
 var reckoning := preload("res://scripts/reckoning.gd").new(self)  # what a choice changed, over the control plane (reckoning.gd)
 var moment := preload("res://scripts/moment_banner.gd").new(self)  # a win or a loss of the King's, as a moment (moment_banner.gd)
 var war_council := preload("res://scripts/war_council.gd").new(self)  # the one screen before a war is declared (war_council.gd)
@@ -241,6 +242,7 @@ func _ready() -> void:
 	_build_minimap()
 	_build_camera_controls()
 	houses_strip._build()
+	reign_track._build()
 	reckoning._build()
 	war_council._build()
 	army_bar._build()
@@ -1178,6 +1180,7 @@ func set_reign(r: Dictionary) -> void:
 		return
 	reign_now = r
 	_show_heading(r)
+	reign_track.update(r)
 	var clock := "endless reign"
 	if r.get("remainingMs") != null:
 		var secs := int(float(r["remainingMs"]) / 1000.0)

@@ -746,3 +746,4 @@ Switches (`--name`) go after `--` on the game's command line.
 - The act cards (The Banner Saga's chapter titles): `realm/data/ui.json` `reign_cards.acts` (each act's name, painting, question), `reign_cards.act_hold` (seconds before it goes on unclicked).
 - The battle result moment (Total War): `realm/data/ui.json` `moment` (`words`, `heroic_ratio`, `at`, `hold`).
 - Which of the King's swings show as a moment, and their words: `bridge/data/moments.json` (threat met / unanswered, rising crushed, the crown endures, town lost, Kingsmere sacked).
+- The reign track under the houses (Frostpunk): `realm/data/ui.json` `reign_track` (`below`, `width`).
