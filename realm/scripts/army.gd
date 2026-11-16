@@ -2043,11 +2043,27 @@ func _follow(r: Dictionary, dt: float) -> void:
 	var alive: PackedByteArray = r.get("alive", PackedByteArray())
 	var at: PackedVector3Array = r.get("men_at", PackedVector3Array())  # each man where he stands in the block (local)
 	var face: PackedFloat32Array = r.get("men_yaw", PackedFloat32Array())  # each man's facing in the block (local)
+	# Each man runs to his place in the world, not glued to the block (Total War: every soldier his own agent chasing his
+	# formation slot; Mac 2026-11-16: "something is causing a lot of rigidness"): where he stood last frame in the
+	# world is where he stands now, the block's move or turn only moves his mark, so a block bends on a turn, stretches
+	# on a run and its outer files swing wide.
+	var world: PackedVector3Array = r.get("men_world", PackedVector3Array())
+	var node_yaw := atan2(xf.basis.z.x, xf.basis.z.z)
+	var was_yaw := atan2(was_xf.basis.z.x, was_xf.basis.z.z)
+	var inv := xf.affine_inverse()
 	if at.size() != marks.size():
 		at = marks.duplicate()
 		face.resize(marks.size())
 		for s in marks.size():
 			face[s] = yaws[s]
+	if world.size() != marks.size():
+		world.resize(marks.size())
+		for s in marks.size():
+			world[s] = was_xf * at[s]
+	else:
+		for s in marks.size():  # last frame's world place, seen from the block as it stands now
+			at[s] = inv * world[s]
+			face[s] = wrapf(face[s] + was_yaw - node_yaw, -PI, PI)
 	var mo: Node = node.get_node_or_null("Mover")
 	var pace := maxf(float(mo.get("speed")) if mo else 0.2, 0.12) * Data.num("army", "follow.pace", 1.6)
 	var vary := Data.num("army", "follow.vary", 0.15)
@@ -2087,6 +2103,8 @@ func _follow(r: Dictionary, dt: float) -> void:
 		if absf(angle_difference(face[s], goal_yaw)) > 0.02:
 			still = false
 		vat.multimesh.set_instance_transform(s, Transform3D(Basis(Vector3.UP, face[s]).scaled(Vector3.ONE * tall * sizes[s]), at[s]))
+		world[s] = xf * at[s]
+	r["men_world"] = world
 	r["men_at"] = at
 	r["men_yaw"] = face
 	r["men_still"] = still

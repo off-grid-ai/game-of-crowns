@@ -338,6 +338,7 @@ func _enlist(r: Dictionary, side: int, kind: String) -> void:
 	r["moved"] = false
 	var mo: Node = Mover.of(r["node"])
 	mo.turn_rate = 1.8
+	mo.wheel = 0.0  # in the field a block keeps its front to the foe and steps to its place (Total War); it never stands to wheel round to its way and back (Mac 2026-11-16: "struggling to move")
 	preload("res://scripts/on_screen.gd").keep_on(r["node"])  # it fights on whether seen or not (field_clash_probe)
 	Mind.make(kind, r, r["node"], self)
 	Morale.start(r)
@@ -375,6 +376,12 @@ func _process_timed(delta: float) -> void:
 			_frame(delta)
 		return
 	clock += delta
+	if OS.get_cmdline_user_args().has("--track"):  # the test aid: one block's step each frame, to read its motion
+		var tr: Dictionary = (sides[0] as Army).rows()[1]
+		var tp: Vector3 = (tr["node"] as Node3D).global_position
+		var was: Vector3 = tr.get("track_at", tp)
+		tr["track_at"] = tp
+		print("TRACK %.3f dt %.4f step %.4f speed %.3f yaw %.3f state %s gait %s" % [clock, delta, Vector2(tp.x - was.x, tp.z - was.z).length(), Vector2(tp.x - was.x, tp.z - was.z).length() / maxf(delta, 0.0001), (tr["node"] as Node3D).rotation.y, tr.get("state_name", ""), tr.get("gait", "")])
 	_fly()
 	_keep_up()
 	_alarm(delta)
@@ -410,8 +417,10 @@ func _process_timed(delta: float) -> void:
 				for r in (sides[i] as Army).rows():
 					var off: Vector3 = (r["node"] as Node3D).global_position - o3
 					var sl: Vector2 = r.get("slot", Vector2.ZERO)
-					print("WHERE %d %s %s line%d slot(%.1f,%.1f) at(%.1f,%.1f) %s" % [i, r["role"], r["state_name"], int(r.get("line_no", 0)), sl.x, sl.y,
-						off.dot(Vector3(cos(face), 0, -sin(face))), off.dot(Vector3(sin(face), 0, cos(face))), "lane" if not _lane_foe(r).is_empty() else "-"])
+					var fo: Variant = r.get("foe")
+					var fgap := _front_gap(r, fo) if fo is Dictionary else -99.0
+					print("WHERE %d %s %s line%d slot(%.1f,%.1f) at(%.1f,%.1f) %s foe_gap %.2f" % [i, r["role"], r["state_name"], int(r.get("line_no", 0)), sl.x, sl.y,
+						off.dot(Vector3(cos(face), 0, -sin(face))), off.dot(Vector3(sin(face), 0, cos(face))), "lane" if not _lane_foe(r).is_empty() else "-", fgap])
 
 
 ## The battle is over and gone (casebook, War and sieges: the field remembers): the living march off (they fade), the
@@ -737,16 +746,15 @@ static func ballistic(from: Vector3, to: Vector3, angle: float, gravity: float) 
 	return Vector2(t, g * t * t / 8.0 / maxf(from.distance_to(to), 0.01))
 
 
-## Side `i`'s line stands at `at` facing its host's way: every regiment of it takes its place there as it stands
-## now (slot: across and ahead of the middle), so the line moves as one and keeps its shape.
+## Side `i`'s line stands at `at` (its host's field) facing its host's way: every regiment's place in it is its
+## order's (army_formation.gd line_places: place, across and ahead of the middle), not where it was set down (a block
+## moved off a field or a house to clear ground stood crooked, and the line kept the slant; Mac 2026-11-16: lines
+## meeting askew), so the line dresses straight as it marches and keeps its shape.
 func _set_line(i: int, at: Vector3) -> void:
 	var face := (sides[i] as Army).facing()
 	lines[i] = {"at": at, "face": face}
-	var fwd := Vector3(sin(face), 0, cos(face))
-	var right := Vector3(cos(face), 0, -sin(face))
 	for r in (sides[i] as Army).rows():
-		var off: Vector3 = (r["node"] as Node3D).global_position - at
-		r["slot"] = Vector2(off.dot(right), off.dot(fwd))
+		r["slot"] = r.get("place", Vector2.ZERO)
 
 
 ## Every regiment's block one body in a crowd of blocks (Godot's RVO avoidance, the proven block for units that must
@@ -777,8 +785,16 @@ func _keep_crowd() -> void:
 			mo.crowd_on(not out)
 			# Its own side's blocks it never walks into; the foe's front it may meet. Horse riding round (and out) keeps
 			# off the foe's blocks too: it goes round them, never through (Mac 2026-11-16: "this troop just walked through them").
+			# A block holding its place in the line steers by no one: the line's slots keep it apart (Total War's formation
+			# march), and side by side in the crowd every block's pace was haggled each frame (Mac 2026-11-16: "they keep
+			# stuttering"). Only one crossing others' ground steps round them: re-forming, falling back, rallying.
 			var own := 1 << i
-			mo.crowd_layers(own, own | ((1 << (1 - i)) if st in ["flank", "rideout"] else 0))
+			var mask := 0
+			if st in ["flank", "rideout"]:
+				mask = own | (1 << (1 - i))
+			elif st in ["reform", "relieved", "rally"]:
+				mask = own
+			mo.crowd_layers(own, mask)
 			if not out and not mo.moving():
 				mo.crowd_want((r["node"] as Node3D).global_position, Vector2.ZERO, 1.0)
 
@@ -869,9 +885,21 @@ func _close(r: Dictionary, _dt: float, foe: Dictionary) -> void:
 	var b: Node3D = foe["node"]
 	var look := _meet_look(r, foe)
 	var theirs: Vector3
-	if look.is_equal_approx(_line_front(r)):
-		var across := look.cross(Vector3.UP).normalized()
-		theirs = at + across * (b.global_position - at).dot(across) + look * ((b.global_position - at).dot(look) - _depth_along(foe, look) * 0.5)
+	var busy: Variant = foe.get("foe")
+	if String(foe.get("state_name", "")) == "fight" and busy is Dictionary and int((busy as Dictionary).get("side", -1)) == int(r["side"]) and not is_same(busy, r):
+		# Its captain sent it to help (army_general.gd _foot): the foe is at blows with one of its side, so it goes
+		# round onto his flank (charge_face, as the horse does), never in behind its own neighbour (Mac 2026-11-16:
+		# blocks heaped two deep on one foe).
+		var hit := charge_face(b.global_transform, float(foe["w"]), float(foe["d"]), at)
+		look = -(hit[0] as Vector3)
+		theirs = b.global_position + (hit[0] as Vector3) * float(hit[1])
+		gap = (theirs - at).dot(look) - float(r["d"]) * 0.5  # open ground from its front to his flank
+	elif look.is_equal_approx(_line_front(r)):
+		# Head on, straight ahead from its place in the line, never sliding across to square on the foe (Total War's
+		# lines meet as lines; Mac 2026-11-16: blocks slid across to their foes and stood two deep): the foe's front
+		# where its own lane meets it.
+		theirs = at + look * ((b.global_position - at).dot(look) - _depth_along(foe, look) * 0.5)
+		gap = (theirs - at).dot(look) - float(r["d"]) * 0.5  # to his face where its lane meets it, along its line's front
 	else:
 		theirs = b.global_position - look * float(foe["d"]) * 0.5
 	# Its own place on that front: beside any of its side already closing there, never on it (Mac 2026-11-15: three
@@ -895,6 +923,8 @@ func _close(r: Dictionary, _dt: float, foe: Dictionary) -> void:
 		if _gait(r, _dt) == "ready":
 			_square(r, look, _dt)  # held where it stands (its way blocked, its place taken): its front to the foe, never askew
 		return
+	if OS.get_cmdline_user_args().has("--where"):
+		print("ENGAGE side%d gap %.2f touching %s spot_off %.2f at %s spot %s look %s" % [int(r["side"]), gap, str(touching), Vector2(spot.x - at.x, spot.z - at.z).length(), str(at), str(spot), str(look)])
 	r["foe"] = foe
 	if r.get("ran", false) and not r.get("struck", false):
 		# The impact (Total War's charge: the line it hits reels, its front men knocked back, some go down): the foe's
@@ -1247,14 +1277,13 @@ func _flank(r: Dictionary, _dt: float) -> void:
 	Mover.of(node).toward(goal, Data.num(F, "field.cavalry.ride", 0.3))
 
 
-## Horse in a wedge (research note step 6; Total War's cavalry, 0 A.D.'s wedge template): on its charge it forms the
-## wedge as it runs (formations.json templates.wedge, each man to his nearest place), then in on its target's flank or
+
+
 ## rear, whichever it is nearest, never its front; the shock where it strikes (field.cavalry.shock men down at once),
 ## at blows for field.cavalry.melee_s, then it rides out (field.cavalry.out away from the target), forms its ranks again
 ## as it rides round, and charges again: the cycle charge, never stuck in the press.
 func _charge_in(r: Dictionary) -> void:
-	_play(r, "run")
-	_morph(r, "wedge")
+	_play(r, "run")  # in its ranks, a loose mass at the gallop (Mac 2026-11-16: the wedge slid across the field as a rigid triangle, "they still move in a triangle and weirdly")
 
 
 func _charge(r: Dictionary, _dt: float) -> void:
@@ -1733,14 +1762,14 @@ func _nearest_foe(r: Dictionary) -> Dictionary:
 	return best
 
 
-## The gap between two regiments' fronts, along the first's facing.
+## The open ground between a regiment's front and the near face of `foe`, along the first's facing: the foe's
+## rectangle's extent that way, however he is turned (his node's own facing was taken for his front, and a foe turned
+## off it read as touching 2.6 away: blocks at blows across open ground, Mac 2026-11-16).
 func _front_gap(r: Dictionary, foe: Dictionary) -> float:
 	var a: Node3D = r["node"]
 	var b: Node3D = foe["node"]
-	var fwd := a.global_transform.basis.z.normalized()
-	var mine := a.global_position + fwd * float(r["d"]) * 0.5
-	var theirs := b.global_position + b.global_transform.basis.z.normalized() * float(foe["d"]) * 0.5
-	return (theirs - mine).dot(fwd)
+	var fwd := Vector3(a.global_basis.z.x, 0, a.global_basis.z.z).normalized()
+	return (b.global_position - a.global_position).dot(fwd) - _depth_along(foe, fwd) * 0.5 - float(r["d"]) * 0.5
 
 
 ## The lines have met: a regiment of either side is at blows (the film's clash step waits on it).

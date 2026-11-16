@@ -155,8 +155,9 @@ func _gap() -> float:
 	return g
 
 
-## Foot with no foe (its foe broke, it rallied, the lane was clear): onto the flank of the nearest foe fighting one of
-## its side, else at the nearest foe.
+## Foot with no foe (the foe charged first, its foe broke, it rallied): on the foe head on in its lane, so the line
+## meets the line where it stands (Mac 2026-11-16: the foe's charge drew every block to the first fight, the line
+## folded into a column); its lane clear, onto the flank of the nearest foe fighting one of its side; else the nearest.
 func _foot(foes: Array) -> void:
 	if not bool(Data.value("battle_orders", "orders.%s.advance" % String(field.orders[side]), true)):
 		return  # a wall holds: a block whose foe broke stands back in its place
@@ -164,6 +165,10 @@ func _foot(foes: Array) -> void:
 		if r["role"] != "melee" or int(r.get("line_no", 1)) == 2 or r.has("relieve"):
 			continue
 		if String(r.get("state_name", "")) != "advance" or _standing(r.get("task")):
+			continue
+		var lane: Dictionary = field._lane_foe(r)
+		if not lane.is_empty():
+			r["task"] = lane
 			continue
 		var at: Vector3 = (r["node"] as Node3D).global_position
 		var best := {}
