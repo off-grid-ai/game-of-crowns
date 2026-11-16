@@ -25,9 +25,13 @@ func _build() -> void:
 	_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_panel.anchor_left = 0.5
 	_panel.anchor_right = 0.5
-	_panel.anchor_top = float(Data.num("ui", "pause_note.at", 0.08))
-	_panel.anchor_bottom = _panel.anchor_top
+	# Just above the control plane (RimWorld's pause at the foot): the top middle is the centre cards' and the moments'
+	# (Mac 2026-11-16: three cards stacked unreadable at the top middle).
+	_panel.anchor_top = 1.0
+	_panel.anchor_bottom = 1.0
+	_panel.offset_bottom = -float(Data.num("ui", "pause_note.above", 230))
 	_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_panel.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	_panel.visible = false
 	var col := VBoxContainer.new()
 	col.alignment = BoxContainer.ALIGNMENT_CENTER

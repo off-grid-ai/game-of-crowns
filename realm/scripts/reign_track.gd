@@ -45,8 +45,7 @@ func _build() -> void:
 	_bar.custom_minimum_size.y = 8
 	_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_bar.draw.connect(_draw_bar)
-	v.add_child(_bar)
-	ui.add_child(_panel)
+	v.add_child(_bar)  # the panel is ui.glass_panel()'s, already in the interface's root
 	for a in Data.value("ui", "reign_cards.acts", []):
 		_names.append(String((a as Dictionary).get("name", "")) if a is Dictionary else "")
 
