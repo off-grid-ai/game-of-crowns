@@ -12,7 +12,8 @@ Where things stand, so any agent can take over. Newest first, short. The full hi
 - Mac tests the game himself. Launch it for him (`./realm.sh open`, one Godot only); never run test games beside
   his. When his game freezes, copy his `godot.log` first, then `kill -SEGV` it for the GDScript backtrace.
 
-## Now (2026-11-15)
+## Now (2026-11-16)
+- **Mac's three (audit, 2026-11-16), worked autonomously.** 1. Freeze: probe's own walks, villagers.parents, land_use.sync fixed; last run 60 fps, 1 slow frame (load); recheck with towns in view. 2. One decision path: bridge/consequence.js settles orders, rulings and event answers alike (weigh, tell, reckoning, aftermath). 3. War on the map: WAR.md steps 3-7 built (council card, map war mode, strip by camp, war banner, declaration moment); 8-9 left (camps move, war score).
 - TODO after FPS (Mac 2026-11-15): troops never do anything, they just stand. A siege waits for the bridge's assault turn with nothing to do (Oldhall); a host in a town stands still. Every army needs visible work while it waits: engines throwing, archers loosing, the wall taking hits, men drilling, shifting, resting.
 - In work (Mac 2026-11-15, siege of Sunspire): the siege tower rolls through a regiment; camp tents and the stake row stand inside regiment blocks. Routed to the siege-activity and placement builders.
 - TODO after FPS (Mac 2026-11-15, siege of Saltkeep): a blue regiment drawn through a red one beside the catapults (a walled town's siege; a6242eaf's fix doesn't reach it); only a handful of men by the engines active.
