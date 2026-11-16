@@ -15,6 +15,7 @@ import * as chron from "./chronicles.js";
 import { shortOf } from "./treasury.js";
 import * as Director from "./director.js";
 import * as Rivalry from "./rivalry.js";
+import * as Meddling from "./meddling.js";
 
 // The Hand of the King advises: the two or three most pressing matters in the
 // realm, worst first, each with why it matters in one line and the decrees that
@@ -305,6 +306,8 @@ export function priced(ctx, a) {
     const jealous = greatHouses(world).some((p) => p.id === pid) ? Rivalry.word(ctx, pid) : "";
     if (jealous) a.label += ` · ${jealous}`;
   }
+  const over = Meddling.word(ctx, a.action, a.city);  // grain or a building in a lesser lord's town passes over his liege
+  if (over) a.label += ` · ${over}`;
   return a;
 }
 

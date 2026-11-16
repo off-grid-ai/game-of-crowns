@@ -1,0 +1,7 @@
+{
+ "_": "Orders given inside another house's lands (meddling.js; CK3's interference in a vassal's realm; Mac 2026-11-16: 'shouldn't the liege lord be pissed with me for bypassing him?'): actions are the orders that reach into a town (grain, a building). In a lesser lord's town, his liege (the great house that holds it) was passed over and takes it ill: its favour moves by liege instead of warming. In a great house's own town, a gift it never asked for warms it only by keep of what it would. word: what the order's label says ({liege}).",
+ "actions": ["relief", "build"],
+ "keep": 0.25,
+ "liege": -6,
+ "word": "over {liege}'s head"
+}

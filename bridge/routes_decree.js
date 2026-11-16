@@ -27,6 +27,7 @@ import * as Rulings from "./rulings.js";
 import * as Reckoning from "./reckoning.js";
 import * as Aftermath from "./aftermath.js";
 import * as Rivalry from "./rivalry.js";
+import * as Meddling from "./meddling.js";
 import { moodFrom, moodRules } from "./claude.js";
 import { body, json } from "./http_util.js";
 import * as names from "./names.js";
@@ -132,7 +133,8 @@ export async function issueDecree(ctx, req, res, url) {
   if (cmd.city != null) { (ctx.meta.answeredAt ??= {})[Number(cmd.city)] = ctx.world.turn ?? 0; chron.saveMeta(ctx.meta); }
   const warmed = ctx.world.cities.find((c) => c.id === Number(cmd.city))?.owner ?? (cmd.house != null ? Number(cmd.house) : null);
   result.favour = temper(cmd.action, warmed, result.favour);
-  result.favour = Rivalry.jealous(ctx, result.favour);  // the warmed house's rival cools (rivalry.js)
+  result.favour = Rivalry.jealous(ctx, result.favour);  // the warmed house's rival cools, by the aid given (rivalry.js)
+  result.favour = Meddling.apply(ctx, cmd.action, cmd.city, result.favour);  // an order inside another house's lands (meddling.js)
   // A ward holds the house for its seasons (data/decrees.json ward.seasons).
   if (result.ward != null && ctx.stakes) { (ctx.stakes.s.wards ??= {})[result.ward] = (ctx.world.turn ?? 0) + (DECREES.ward.seasons ?? 12); ctx.stakes.save(); }
   // A town taken from a house is remembered, so the Hand can offer it back.

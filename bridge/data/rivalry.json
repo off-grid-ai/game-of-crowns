@@ -1,6 +1,8 @@
 {
- "_": "Favour given makes rivals (rivalry.js; CK3's jealous rivals, docs/TENSION.md 'someone loses'): when an order warms a great house by min or more, its rival cools by share of it (rounded, at least 1). Its rival: the great house it is at war with, else the great house whose seat lies nearest its own. word: what an order's label says of it, {rival} the rival's name.",
+ "_": "Favour given makes rivals (rivalry.js; CK3's jealous rivals, docs/TENSION.md 'someone loses'): when an order warms a great house by min or more, its rival cools by share of it (rounded, at least 1); a rival at war with it takes it as aid to its foe and cools by warShare (Mac 2026-11-16: 'if they are at war, why am I sending food?'). Its rival: the great house it is at war with, else the great house whose seat lies nearest its own. word / warWord: what an order's label says, {rival} the rival's name.",
  "min": 5,
  "share": 0.5,
- "word": "{rival} jealous"
+ "word": "{rival} jealous",
+ "warShare": 1.0,
+ "warWord": "{rival} takes it as war aid"
 }
