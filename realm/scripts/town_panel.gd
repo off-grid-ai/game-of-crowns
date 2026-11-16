@@ -208,10 +208,12 @@ func _name_decrees(c: Dictionary, house: Dictionary) -> void:
 		"banners": ("Call your vassals  " + _price("banners", 5000) + says.call("banners", true)) if seat else "",
 		# Politics with teeth: an oath that binds a house to the crown's wars, and the royal host.
 		"alliance": "" if mine or _town_player.get("sworn") != null else "Swear an alliance with %s  %s" % [lord, _price("alliance", 20000)],
-		"march": "" if mine or (_town_player.get("besieged", []) as Array).has(int(c["id"])) else ("March on %s  %s  ·  %s" % [town, _price("march", 25000), _forecast(float(c["odds"]))] if c.get("odds") != null else "March on %s  %s" % [town, _price("march", 25000)]),
+		# Two orders told apart by name (Mac 2026-11-16: "what's the difference between the 2?"): Besiege takes this one
+		# town with the royal host; War on all of a house takes its towns one by one, its seat last.
+		"march": "" if mine or (_town_player.get("besieged", []) as Array).has(int(c["id"])) else ("Besiege %s  %s  ·  %s" % [town, _price("march", 25000), _forecast(float(c["odds"]))] if c.get("odds") != null else "Besiege %s  %s" % [town, _price("march", 25000)]),
 		# The King's war on the whole house (bridge war.js): its towns one by one, its seat last; and, while a war is
 		# on, his envoy asking this house to join it, with its likely answer.
-		"war": "" if mine or _town_player.get("sworn") != null or _town_player.get("warOdds") == null else "Wage war on %s  %s  ·  %s" % [lord, _price("war", 15000), _forecast(float(_town_player["warOdds"]))],
+		"war": "" if mine or _town_player.get("sworn") != null or _town_player.get("warOdds") == null else "War on all of %s  %s  ·  %s" % [lord, _price("war", 15000), _forecast(float(_town_player["warOdds"]))],
 		"join": "" if mine or not (_town_player.get("joinWar") is Dictionary) else "Ask %s to join the war on %s  %s  ·  %s" % [lord, String(_town_player["joinWar"].get("on", "")).replace("House ", ""), _price("join", 5000), _answer(_town_player["joinWar"])],
 	}
 	_marriage_menu.text = "Arrange a marriage with…  " + _price("marriage", 40000)
