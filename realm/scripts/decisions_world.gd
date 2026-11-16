@@ -16,6 +16,7 @@ extends Node3D
 ## Always on: the one way the King's decisions show at the towns they land on. Numbers: realm/data/decisions.json.
 
 const Data := preload("res://scripts/data.gd")  # the one loader of realm/data (data.gd)
+const Later := preload("res://scripts/later.gd")
 const Realistic := preload("res://scripts/realistic.gd")
 const Heraldry := preload("res://scripts/heraldry.gd")
 const Awareness := preload("res://scripts/awareness.gd")
@@ -134,7 +135,7 @@ func _lower(key: String) -> void:
 	if not is_instance_valid(root):
 		return
 	_fade(root, 0.0, 1.0)
-	get_tree().create_timer(float(CFG.get("ease", 1.2)) + 0.1, false).timeout.connect(func():
+	Later.after(root, float(CFG.get("ease", 1.2)) + 0.1, func():
 		if is_instance_valid(root):
 			root.queue_free())
 
@@ -313,7 +314,7 @@ func _garrison(root: Node3D, node: Node3D, centre: Vector3, id: int, rng: Random
 		var a := (float(k) / maxf(1.0, cheer - 1) - 0.5) * 2.0
 		var p := _person(root, rng, "peasant", Color.WHITE, gate - out * float(g.get("cheer_back", 0.35)) + side * a * gap * 3.0 + out * rng.randf_range(-0.05, 0.05), gate + out)
 		_play(p, ["Cheering", "Cheering", "Salute", "Cheering"][k % 4], rng)
-		get_tree().create_timer(float(g.get("cheer_s", 25.0)) + rng.randf_range(0.0, 4.0), false).timeout.connect(func():
+		Later.after(p, float(g.get("cheer_s", 25.0)) + rng.randf_range(0.0, 4.0), func():
 			if is_instance_valid(p):
 				_play(p, "Idle_Talking" if k % 2 else "Idle", rng))
 	for k in int(g.get("standards", 2)):

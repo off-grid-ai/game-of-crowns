@@ -6,6 +6,7 @@ extends RefCounted
 ## Sizes are in metres; `unit` is how many world units a metre is where it happens.
 
 const DROPS := preload("res://assets/props/blood/drops.png")
+const Later := preload("res://scripts/later.gd")
 const SPATTER := preload("res://assets/props/blood/spatter.png")
 const SPATTER_N := preload("res://assets/props/blood/spatter_normal.png")
 const STAINS := [
@@ -51,7 +52,7 @@ static func spray(parent: Node, at: Vector3, dir: Vector3, ground_y: float, unit
 	p.finished.connect(p.queue_free)
 	# Where the spray comes down: a spatter thrown out the way the blow went.
 	var land := Vector3(at.x, ground_y, at.z) + dir * 0.55 * unit
-	parent.get_tree().create_timer(0.3, false).timeout.connect(func():
+	Later.after(parent, 0.3, func():
 		if is_instance_valid(parent):
 			_mark(parent, land, dir, SPATTER, SPATTER_N, 0.9 * unit, 0.85))
 

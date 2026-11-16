@@ -1,5 +1,6 @@
 extends Node3D
 const PerfTools := preload("res://scripts/perf_tools.gd")
+const Later := preload("res://scripts/later.gd")
 ## A seat's kit castle lived in (North Star docs/art/target/01-town.jpg; Stronghold's walls walked by their
 ## guards, Total War's banners on the towers): the lord's standard on every corner and gate tower (towns.gd's
 ## standards, so they rise and fall with the house's favour as its other banners do), a guard walking each
@@ -553,7 +554,7 @@ func _walker(path: Array, colour: Color, k: Dictionary, scale: float, i: int) ->
 ## walker's side (a groom's horse), walking each leg beside him at his pace with its own Mover. The castle's folk
 ## (castle_folk.gd) walk their rounds here too: one round for the bailey.
 func rounds(f: Node3D, legs: Array, waits: Array, first: float, at := 0, rest: Array = REST, led: Node3D = null) -> void:
-	get_tree().create_timer(first, false).timeout.connect(func():
+	Later.after(f, first, func():
 		if not is_instance_valid(f):
 			return
 		var leg: PackedVector3Array = legs[at % legs.size()]

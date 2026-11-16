@@ -32,6 +32,7 @@ static var FALL: float = preload("res://scripts/data.gd").num("siege", "assault.
 static var WALK_S: float = preload("res://scripts/data.gd").num("siege", "assault.walk", 0.17)  # a man's walk at the wall, units a second (siege.json assault.walk)
 static var RUN_S: float = preload("res://scripts/data.gd").num("siege", "assault.run", 0.45)  # siege.json assault.run
 const Fire := preload("res://scripts/fire.gd")
+const Later := preload("res://scripts/later.gd")
 const Works := preload("res://scripts/works.gd")  # the sky's night: torches in a night assault
 const Weapons := preload("res://scripts/weapons.gd")  # a torch in the off hand
 const Field := preload("res://scripts/army_field.gd")
@@ -84,7 +85,7 @@ func start(s: Node, siege: Node3D, rng: RandomNumberGenerator, colour: Color, gr
 		t.wait_time = WAVE
 		t.timeout.connect(_send_party.bind(p))
 		add_child(t)
-		get_tree().create_timer(first[p], false).timeout.connect(func():
+		Later.after(t, first[p], func():
 			if is_instance_valid(t):
 				_send_party(p)
 				t.start())

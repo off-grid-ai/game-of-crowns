@@ -5,6 +5,7 @@ extends "res://scripts/scene_kind.gd"
 ## first when none stands there yet, ending as Freeciv decided. One of these serves both kinds (scenes.kind).
 
 const ArmyAssault := preload("res://scripts/army_assault.gd")
+const Later := preload("res://scripts/later.gd")
 const Ground := preload("res://scripts/ground.gd")  # the one answer to where a body may stand
 const Awareness := preload("res://scripts/awareness.gd")
 const Data := preload("res://scripts/data.gd")
@@ -216,7 +217,7 @@ func _hungry_walls(archers: Array, spears: Array, r: RandomNumberGenerator) -> v
 				men[i][1]["kit"] = ""  # no more volleys from him (scenes.gd _arrows looses only bows)
 			spears.erase(f)
 			stage.people.play(f, "Defeated", 1.0)
-			stage.get_tree().create_timer(2.5).timeout.connect(func():
+			Later.after(f, 2.5, func():
 				if is_instance_valid(f) and not f.has_meta("dead"):
 					stage.people.play(f, "Sitting_Ground", r.randf_range(0.8, 1.0)))
 		else:

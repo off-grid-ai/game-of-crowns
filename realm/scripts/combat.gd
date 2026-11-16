@@ -11,6 +11,7 @@ extends RefCounted
 ## falls, falls away from it and stains the ground.
 
 const Mover := preload("res://scripts/mover.gd")  # the one way to move (CLAUDE.md)
+const Later := preload("res://scripts/later.gd")
 const Weapons := preload("res://scripts/weapons.gd")
 const Blood := preload("res://scripts/blood.gd")
 
@@ -246,7 +247,7 @@ func take(attacker, damage: float) -> bool:
 		if bladed or attacker.armed:
 			var at := node.global_position
 			var parent := node.get_parent()
-			node.get_tree().create_timer(1.4, false).timeout.connect(func():
+			Later.after(parent, 1.4, func():
 				if is_instance_valid(parent):
 					Blood.pool(parent, at, -to_attacker, unit))
 		return false

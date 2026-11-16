@@ -17,6 +17,7 @@ extends Node3D
 ## Knobs: data/siege.json. Pitched with every siege (scenes.gd _siege).
 
 const Data := preload("res://scripts/data.gd")
+const Later := preload("res://scripts/later.gd")
 const Real := preload("res://scripts/realistic.gd")
 const Particles := preload("res://scripts/particles.gd")
 const Heraldry := preload("res://scripts/heraldry.gd")  # the besieger's pennants over its tents
@@ -233,7 +234,7 @@ func _turn_coat() -> void:
 		scenes.people.play(man, "Telling_Secret", 1.0)
 		if is_instance_valid(t["officer"]):
 			scenes.people.play(t["officer"], "Nod_Yes", 1.0)
-		get_tree().create_timer(float(k.get("talk_s", 6.0)), false).timeout.connect(func():
+		Later.after(man, float(k.get("talk_s", 6.0)), func():
 			if not is_instance_valid(man):
 				return
 			if is_instance_valid(t["officer"]):

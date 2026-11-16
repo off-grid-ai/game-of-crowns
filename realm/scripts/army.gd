@@ -29,6 +29,7 @@ extends Node3D
 ## data/army.json (docs/TUNING.md); units, their roles, meshes and clips are rows there (tools/rig/README.md's hook).
 
 const PerfTools := preload("res://scripts/perf_tools.gd")  # the frame-cost probe
+const Later := preload("res://scripts/later.gd")
 const WorldClock := preload("res://scripts/world_clock.gd")  # the realm's clock: stops while paused
 const Formation := preload("res://scripts/army_formation.gd")  # its shapes: line, column, places, order
 const Visual := preload("res://scripts/army_visual.gd")
@@ -503,7 +504,7 @@ func board(hulls: Array) -> void:
 			edge = p
 		var mo: Node = Mover.of(r["node"]).fights(false)
 		mo.speed = Data.num("army", "march.speed", 0.16)
-		get_tree().create_timer(i * Data.num("army", "deck.file", 1.5), false).timeout.connect(func():
+		Later.after(hull, i * Data.num("army", "deck.file", 1.5), func():
 			if not is_instance_valid(hull) or not is_instance_valid(r["node"]):
 				return
 			_clips(r, "walk")
