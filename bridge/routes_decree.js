@@ -51,7 +51,7 @@ export async function issueDecree(ctx, req, res, url) {
     return json(res, 400, { error: `${h} has had that of the King once this reign` });
   }
   // Between sittings each decree takes a royal seal (seals.js); at a sitting it's a ruling, and free.
-  const noSeal = Seals.refuse(ctx.meta, ruling);
+  const noSeal = Seals.refuse(ctx.meta);
   if (noSeal) return json(res, 400, { error: noSeal });
   // A royal match needs a pair: an unwed son or daughter of age from each house,
   // one of each, chosen before a crown is spent. Nobody is wed twice.
@@ -198,7 +198,7 @@ export async function issueDecree(ctx, req, res, url) {
   decreeScenes(cmd, result, seat, target);
   record({ turn: ctx.world?.turn ?? 0, kind: "decree", text: result.text, city: cmd.city });
   setTimeout(snapshot, 600);
-  const sealed = Seals.spend(ctx.meta, cmd.action, ctx.world.turn ?? 0, ruling);
+  const sealed = Seals.spend(ctx.meta, cmd.action, ctx.world.turn ?? 0);
   if (ruling) Sittings.answerMatter(ctx, String(cmd.matter));
   // A matter ruled by an order becomes its town's talk too (chatter.afterRuling, as routes_court.answer does).
   if (ruling) {

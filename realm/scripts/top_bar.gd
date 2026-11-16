@@ -271,7 +271,7 @@ func _build_top_bar() -> void:
 	_top = [when.get_parent(), state.get_parent()]
 	_gold = ui.gauge(state, "coins", "Royal treasury, in crowns. The figure after it is what the tithe brings each season, less the court and the castles.", "Treasury")
 	# The royal seals in hand, beside the treasury at rest: a filled pip for each, a hollow one for each he could hold.
-	_seals = ui.gauge(state, "scroll", "Royal seals: each order you choose between sittings takes one. A new one comes each season; at court your rulings take none.", "Seals")
+	_seals = ui.gauge(state, "scroll", "Royal seals: every order you give takes one, a chronicle matter's too. A new one comes each season; saying no takes none.", "Seals")
 	_seals.add_theme_color_override("font_color", T.ACCENT)
 	_seals.get_parent().visible = false
 	# At rest one pill, the treasury and the seals; peace, souls and the tithe open beside it on hover.
@@ -801,6 +801,7 @@ func _show_seals(sl) -> void:
 		return
 	var n := int(sl.get("n", 0))
 	var of := int(sl.get("of", 2))
+	ui.seals = n
 	_seals.text = "●".repeat(n) + "○".repeat(maxi(0, of - n))
 	if _seals_n >= 0 and n < _seals_n:
 		_seals.modulate.a = 0.35

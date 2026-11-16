@@ -1,7 +1,7 @@
 {
- "_": "The royal seal (seals.js; King of Dragon Pass's actions a season): each decree the King chooses between sittings takes a seal as well as its gold; a ruling while the court sits takes none. on: the default for a reign that doesn't say (its options.seals). perSeason seals come with each season, kept up to bank (bankLastAct in the last act). perSeason 0.5: a seal every other season (a 40 s season: about 0.75 sealed decisions a minute beside the court's one; PLAN.md's 1.5-2.5 a minute in all).",
+ "_": "The royal seal (seals.js; King of Dragon Pass's actions a season): every order the King gives takes a seal as well as its gold, a chronicle matter's order too; saying no, sitting a war out and a petition's answer at court take none. on: the default for a reign that doesn't say (its options.seals). perSeason seals come with each season, kept up to bank (bankLastAct in the last act). perSeason 1 with an 80 s season and a matter every 45 s: he can act on about half the matters; the rest he sits out or lets lapse (Mac 2026-11-16: 'I can take any action').",
  "on": true,
- "perSeason": 0.5,
- "bank": 2,
+ "perSeason": 1,
+ "bank": 3,
  "bankLastAct": 3
 }

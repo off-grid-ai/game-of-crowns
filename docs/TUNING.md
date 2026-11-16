@@ -730,3 +730,4 @@ Switches (`--name`) go after `--` on the game's command line.
 - Interface size (2026-11-16): `ui.json` scale.default 0.7, what a new player starts at and Cmd0 returns to (Mac: "interface at 70% looks ok").
 - Promises and wars (2026-11-16): `bridge/data/promises_king.json` due (seasons per promise), kept/broken (favour with every great house); `decrees.json` back.favourWin/favourLose (judging a war for one side: the loser gives up a town), peace.favourStrong/favourWeak (making them stop: the winner robbed, the loser spared); `ui.json` promises.left.
 - What a choice changed (2026-11-16): `ui.json` reckoning.head, size, most, step, hold, linger (the card over the control plane after an order or ruling; rows from bridge reckoning.js).
+- Royal seals (2026-11-16): `bridge/data/seals.json` perSeason 1, bank 3 (every order takes one, a chronicle matter's too); `realm/data/court.json` seal_word, no_seal (the words on a matter's order).

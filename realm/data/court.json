@@ -1,4 +1,6 @@
 {
- "_": "The court's card as it shows a ruling's weight (court_panel.gd). big_move: favour points from which a move shows two marks and reads 'much warmer' or 'much colder'.",
- "big_move": 10
+ "_": "The court's card as it shows a ruling's weight (court_panel.gd). big_move: favour points from which a move shows two marks and reads 'much warmer' or 'much colder'. seal_word: what an order's answer adds to say it takes a royal seal; no_seal: its tooltip when none is left (bridge seals.js).",
+ "big_move": 10,
+ "seal_word": "1 seal",
+ "no_seal": "No royal seal is left: the next comes with the season. Sit it out, or let it wait."
 }

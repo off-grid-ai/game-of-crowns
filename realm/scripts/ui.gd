@@ -878,6 +878,7 @@ func caption(text: String, entry := {}) -> void:
 var _tithe_asked := -1.0  # a tithe the King set that the realm hasn't reported back yet
 var _tithe_asked_at := 0  # when; after half a minute the realm's word stands
 var purse := 0  # the royal treasury, in the bridge's gold (×100 crowns)
+var seals := 99  # the royal seals in hand (bridge seals.js, via top_bar.gd); 99 while the reign keeps none
 # --- the first reign's guide ---------------------------------------------------------
 # Five steps the Hand teaches inside his own card in the first minutes (Age of Empires' and Anno's opening
 # objectives), each ticked when the King does it; kept once per player in settings.cfg, never shown again once

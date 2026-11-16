@@ -1,7 +1,7 @@
 // The royal seal (King of Dragon Pass, Six Ages: a few actions a season, and
-// always something left undone). Each decree the King chooses between sittings
-// takes a seal as well as its gold; a ruling (his answer to a matter put to him at court) takes
-// none: the realm asks there, everywhere else the King chooses. Seals come with each season and
+// always something left undone). Every order the King gives takes a seal as well as its gold, the answer to a
+// chronicle matter too (Mac 2026-11-16: "I can take any action"; every matter's order went free of the seal, so
+// nothing was left undone). Saying no, sitting a war out or a petition's answer at court takes none. Seals come with each season and
 // keep up to a bank, so a quiet season can be saved for a hard one. The one
 // owner of the count is the reign's meta; the numbers are data (data/seals.json).
 
@@ -23,17 +23,15 @@ export function season(meta, turn) {
   chron.saveMeta(meta);
 }
 
-// Whether a decree may be given now: a ruling (an order that answers a matter put to him at
-// court) always may; any other takes a seal, at a sitting or not (gameplay review #3: every
-// decree given while the court sat went free of the seal).
-export function refuse(meta, ruling = false) {
-  if (!on(meta) || ruling) return null;
+// Whether an order may be given now: it takes a seal, whatever it answers.
+export function refuse(meta) {
+  if (!on(meta)) return null;
   return state(meta).n >= 1 ? null : "No royal seal is left: the next comes with the season.";
 }
 
-// A decree given (routes_decree.js): its seal spent, unless it answered a matter at court.
-export function spend(meta, action, turn, ruling = false) {
-  if (!on(meta) || ruling) return false;
+// An order given (routes_decree.js): its seal spent.
+export function spend(meta, action, turn) {
+  if (!on(meta)) return false;
   const s = state(meta);
   s.n = Math.max(0, s.n - 1);
   s.spent = [...(s.spent ?? []), { turn, action }].slice(-200);

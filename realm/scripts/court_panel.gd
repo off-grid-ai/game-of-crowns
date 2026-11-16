@@ -690,6 +690,10 @@ func _realm_matter(v: VBoxContainer, it: Dictionary) -> void:
 			name = name.get_slice("  ", 0).get_slice(" · ", 0)
 			if int(w.get("cost", 0)) > 0:
 				name += "  ·  %s" % ui.crowns(int(w["cost"]))
+		# An order takes a royal seal, a matter's answer too (bridge seals.js); saying no takes none.
+		var orders := String(act.get("ui", "")) == "" or not ["court", "tithe_up", "tithe_down", "sitout"].has(String(act.get("ui", "")))
+		if orders and ui.seals < 99:
+			name += "  ·  " + String(Data.value("court", "seal_word", "1 seal"))
 		var b := ui.btn(name, func(): pass)
 		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		b.autowrap_mode = TextServer.AUTOWRAP_WORD  # a long answer wraps, never cut off (the audit)
@@ -715,6 +719,10 @@ func _realm_matter(v: VBoxContainer, it: Dictionary) -> void:
 		if price > ui.purse:
 			b.disabled = true
 			b.tooltip_text = String(act.get("short", "The treasury holds too little for this."))
+			b.add_theme_color_override("font_disabled_color", T.TEXT_3)
+		elif orders and ui.seals < 1:
+			b.disabled = true
+			b.tooltip_text = String(Data.value("court", "no_seal", "No royal seal is left: the next comes with the season. Sit it out, or let it wait."))
 			b.add_theme_color_override("font_disabled_color", T.TEXT_3)
 		var row := VBoxContainer.new()
 		row.add_theme_constant_override("separation", T.GAP_TIGHT)
