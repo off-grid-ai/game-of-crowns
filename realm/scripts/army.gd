@@ -173,7 +173,8 @@ func _ready() -> void:
 	# A battle side stands in the order its commander picks (battle_orders.gd, through battle.pick: army_field.gd); a
 	# muster stands in the realm's default.
 	battle_order = String(battle["pick"].call(_regiments)) if battle.get("pick") is Callable else ""
-	var placed := Formation.line_places(_regiments, battle_order)
+	var pk: Array = Data.value("battle", "field.cells.packed", [0.26, 0.0])
+	var placed := Formation.line_places(_regiments, battle_order, bool(battle.get("mirror", false)), Vector2(float(pk[0]), float(pk[1])) if battle.get("cells", false) else Vector2(-1.0, -1.0))
 	battle_order = String(placed["order"])
 	var extent: Vector2 = placed["extent"]
 	_commander = placed["commander"]
@@ -986,7 +987,9 @@ func _regiment(spec: Dictionary, colour: Color, house: Dictionary = {}) -> Dicti
 	var kit := Visual.soldier(String(row["asset"]), row, battle.get("quiet", false))
 	if kit.is_empty():
 		return {}
-	var count := figures(int(spec["men"]))  # drawn: one figure for every 1 / ratio() men: one figure for every 1 / ratio() men
+	# drawn: one figure for every 1 / ratio() men; on a battle's field every troop the same few (battle.json
+	# field.cells.troop: Mac 2026-11-17, "5 visual soldiers per troop. 221", the same for every kind)
+	var count := int(Data.num("battle", "field.cells.troop", 5)) if battle.get("cells", false) else figures(int(spec["men"]))
 	var node := Node3D.new()
 	add_child(node)
 	var vat: VATMultiMeshInstance3D = VAT.new()
@@ -1025,8 +1028,11 @@ func _regiment(spec: Dictionary, colour: Color, house: Dictionary = {}) -> Dicti
 		"yaws": yaws, "sizes": sizes, "local": PackedVector3Array(), "from": PackedVector3Array(), "to": PackedVector3Array(),
 		"shape": "line", "state": "rest", "s": 0.0, "off": 0.0, "slot": Vector3.ZERO, "place": Vector2.ZERO, "t": 0.0,
 		"fidget": _rng.randf_range(0.5, 3.0), "backs": [], "selected": false, "w": 1.0, "d": 1.0, "house": house, "worn": worn}
-	# Its shapes (data/formations.json): on the field its role's template, on the road the march's, aboard the deck's.
-	r["line"] = Formation.layout(r, Formation.field_form(r["role"]), _rng)
+	if battle.get("cells", false):  # on a battle's field: a man a cell, every kind alike (army_field.gd, field_cells.gd)
+		r["sf"] = Data.num("battle", "field.cells.size", 0.26)
+		r["sr"] = r["sf"]
+	# Its shapes (data/formations.json): on the field its role's template (a battle's: the troop, two, two and one), on the road the march's, aboard the deck's.
+	r["line"] = Formation.layout(r, "troop" if battle.get("cells", false) else Formation.field_form(r["role"]), _rng)
 	r["column"] = Formation.layout(r, String(Data.value("formations", "march", "column")), _rng)
 	r["deck"] = Formation.layout(r, String(Data.value("formations", "aboard", "deck")), _rng)
 	_wheels(r)
@@ -1394,6 +1400,8 @@ func _clear_slots(right3: Vector3, fwd3: Vector3) -> void:
 ## clear of the blocks in `taken`): `at` itself, else rings of muster.cell / 2 outward to muster.search, nearest
 ## first. INF when none is (Total War's deployment never stands men in a house or in another regiment).
 func _free_near(at: Vector3, right3: Vector3, fwd3: Vector3, w: float, d: float, taken: Array, strict: bool, own: Variant = null) -> Vector3:
+	if battle.get("cells", false):
+		return Vector3(at.x, 0.0, at.z)  # a battle's host stands where its order puts it, packed (Mac 2026-11-17: no muster rules on the field)
 	var pitch := Data.num("army", "muster.cell", 2.0) * 0.5
 	# A side in the field keeps its line (Mac 2026-11-16: "the battle is too stretched, think of a leaner battle": a
 	# block on rough ground was moved up to muster.search 8 away, the line strewn over the field): within
@@ -2066,8 +2074,6 @@ func _follow(r: Dictionary, dt: float) -> void:
 			face[s] = wrapf(face[s] + was_yaw - node_yaw, -PI, PI)
 	var mo: Node = node.get_node_or_null("Mover")
 	var pace := maxf(float(mo.get("speed")) if mo else 0.2, 0.12) * Data.num("army", "follow.pace", 1.6)
-	if r.has("men_pace"):
-		pace = float(r["men_pace"])  # at blows its men step at a fighting pace, whatever pace the block last moved at (army_field.gd _fight_in)
 	var vary := Data.num("army", "follow.vary", 0.15)
 	var snap := Data.num("army", "follow.snap", 1.5)
 	var turn := Data.num("army", "follow.turn", 7.0)
@@ -2078,11 +2084,6 @@ func _follow(r: Dictionary, dt: float) -> void:
 	var tall := float(r.get("tall_k", 1.0))
 	var still := not moving
 	var duel: Dictionary = r.get("duel", {})
-	var solid: Variant = r.get("solid")  # the field's cells of men at blows while this regiment is among them, else null
-	var cell := float(r.get("solid_cell", 0.08))
-	var wide_body := int(r.get("solid_wide", 0))
-	var rid := int(r.get("id", 0))
-	var side_of := int(r.get("side", 0))
 	for s in marks.size():
 		if not alive.is_empty() and s < alive.size() and alive[s] == 0:
 			continue  # the fallen lie where they fell
@@ -2099,38 +2100,7 @@ func _follow(r: Dictionary, dt: float) -> void:
 		elif len > 0.004:
 			var own := pace * (1.0 + vary * (float((s * 7919) % 13) / 6.0 - 1.0))
 			var step := minf(len, own * dt)
-			var to := Vector3(at[s].x + d.x / len * step, want.y, at[s].z + d.y / len * step)
-			if solid != null:
-				# Men are bodies (Mac 2026-11-16: "armies should not be able to walk through each other ... they have to
-				# collide, they cannot pass through"): he steps only onto ground no other man stands on (army_field.gd's
-				# cells of the men at blows, one man a cell); his way shut, he steps round to either side, else he waits.
-				var me := rid * 1000 + s
-				var from_key := _cell(xf * at[s], cell)
-				var took := false
-				var pref := 1.0 if s % 2 == 0 else -1.0  # half the men step round to the left first, half to the right: a press spreads both ways
-				for side in [0.0, pref, -pref]:
-					var p := to if side == 0.0 else Vector3(at[s].x - d.y / len * step * side, want.y, at[s].z + d.x / len * step * side)
-					var key := _cell(xf * p, cell)
-					var there: Variant = (solid as Dictionary).get(key)
-					var room := true
-					if wide_body > 0:  # a horse takes more ground than a man: none but he within that many cells of where he steps
-						for cx in range(key.x - wide_body, key.x + wide_body + 1):
-							for cz in range(key.y - wide_body, key.y + wide_body + 1):
-								var o: Variant = (solid as Dictionary).get(Vector2i(cx, cz))
-								if o != null and int((o as Array)[1]) != me:
-									room = false
-					if room and (key == from_key or there == null or int((there as Array)[1]) == me):
-						if key != from_key:
-							var was: Variant = (solid as Dictionary).get(from_key)
-							if was != null and int((was as Array)[1]) == me:
-								(solid as Dictionary).erase(from_key)
-							(solid as Dictionary)[key] = [side_of, me, xf * p]
-						to = p
-						took = true
-						break
-				if not took:
-					to = at[s]
-			at[s] = to
+			at[s] = Vector3(at[s].x + d.x / len * step, want.y, at[s].z + d.y / len * step)
 			if len > 0.08:
 				goal_yaw = atan2(d.x, d.y)  # re-dressing: he faces the way he walks
 			if not moving:
@@ -2146,11 +2116,6 @@ func _follow(r: Dictionary, dt: float) -> void:
 	r["men_at"] = at
 	r["men_yaw"] = face
 	r["men_still"] = still
-
-
-## The cell of the field a man at `p` (world) stands in, `size` across.
-static func _cell(p: Vector3, size: float) -> Vector2i:
-	return Vector2i(int(floor(p.x / size)), int(floor(p.z / size)))
 
 
 ## Men laid again on the land under them once their regiment has moved (each man's own height; _dress), a few

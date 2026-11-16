@@ -85,7 +85,7 @@ func _button(key: String) -> Button:
 	b.add_theme_stylebox_override("normal", _rest)
 	b.add_theme_stylebox_override("hover", _hover)
 	b.add_theme_stylebox_override("pressed", _sel)
-	b.pressed.connect(func(): (field.generals[field.player_side()]).order(key))  # pressed: its captain gives it (army_general.gd): the toast says the order at once, the blocks move
+	b.pressed.connect(func(): field.reorder(field.player_side(), key))  # pressed: the side comes on by it at once (army_field.gd reorder), the toast says it
 	_buttons[key] = {"button": b}
 	return b
 

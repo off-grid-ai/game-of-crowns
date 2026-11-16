@@ -130,4 +130,11 @@ for f in assets/armies/*/(offsets.exr|normals.png).import(N); do
   [[ $f == *.bak/* ]] && continue
   grep -q '^compress/mode=0' $f && grep -q '^mipmaps/generate=false' $f || { echo "$f: baked motion must import lossless without mipmaps   <- vat-data-lossless"; fail=1; }
 done
+#   ask-the-troop: battle code never branches on what kind a regiment is (Mac 2026-11-17: "all kinds of soldiers need to
+#   implement some interface", after a day of horse-only branches drifting from the foot's). It asks the regiment's
+#   Troop (troops.gd of(r): holds_line, shoots, mounted...); a kind's own answer lives in its troop_<kind>.gd.
+for f in scripts/army*.gd scripts/field_cells.gd scripts/troop*.gd scripts/fighting_unit.gd scripts/scene_kinds/battle.gd; do
+  [[ $f == scripts/troops.gd ]] && continue
+  grep -nE '"role"\] *[!=]=|"role"\] in |"role", *"[a-z]*"\) *[!=]=' $f | sed "s#^#$f:#;s#\$#   <- ask-the-troop#" | grep . && fail=1
+done
 exit $fail

@@ -35,6 +35,22 @@ well, a horse spinning) is a symptom. Before any code:
 3. **Fix the system, not the instance.** The probe passes; it stays as a guard and runs on every later change.
 No fix lands without its probe. Patching the same area twice means the first fix was a hack: stop and redesign.
 
+## Stop at the second special case (Mac, 2026-11-17)
+
+A day went on horse-only fixes because the battle asked each regiment its role in 37 places, so the horse ran other
+code than the foot and every fix landed in a horse-only branch. Mac: "these are just different objects of type
+FightingUnit, right?" They were not, and nothing made anyone notice.
+
+- **Before fixing a bug in one kind of thing, ask why that kind has its own code.** If two kinds do the same job
+  (stand, advance, fight), they share one base and a kind only answers what differs for it (`fighting_unit.gd`,
+  `troop.gd`, `troop_<kind>.gd`). The fix is to remove the branch, not to mend it.
+- **Count before you patch.** `grep -c` the type check you are about to add to (`"role"] ==`, `kind ==`, `is_horse`).
+  Two or more hits: move the rule into the kind first, in the same change.
+- **A second fix in the same branch in one day is the stop sign** ("Patching the same area twice", above): say so to
+  Mac in one line and do the redesign, not a third patch.
+- **The rule checks itself.** `rules_check.sh` `ask-the-troop` fails on any branch on a regiment's role in battle
+  code. A new family of things that gets a base class gets its own line there in the same change.
+
 ## Before any change: who already solved this? (Mac, 2026-11-10)
 
 Every change, even a one-line fix, passes this gate first. A fix that places, times or decides something by

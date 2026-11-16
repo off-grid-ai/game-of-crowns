@@ -51,7 +51,6 @@ func _run() -> void:
 	await _faces_before_it_walks()
 	await _about_face()
 	_column_then_line()
-	_meets_as_a_line()
 	_siege_lanes()
 	_horse()
 	_volley()
@@ -194,45 +193,6 @@ func _column_then_line() -> void:
 	_check(dep.contains("_short_of(") and dep.contains("_reform(r, \"line\""), "it deploys into line at deploy.range from its place (army.gd _deploy)")
 
 
-## 5. Two regiments of side 0 (facing +Z) against two foes in front of them, slanted 0.4 and -0.3 off square: each
-## closes to a spot square in front of its own foe on side 0's front, its foe's slanted depth before it.
-func _meets_as_a_line() -> void:
-	var ArmyS: GDScript = load("res://scripts/army.gd")
-	var FieldS: GDScript = load("res://scripts/army_field.gd")
-	var holder := Node3D.new()
-	root.add_child(holder)
-	var fb: Node = FieldS.new(holder, "100")
-	var mine: Node = ArmyS.new(holder, 0, {"side": 0})
-	var theirs: Node = ArmyS.new(holder, 0, {"side": 1})
-	var make := func(side: int, army: Node, at: Vector3, yaw: float) -> Dictionary:
-		var n := Node3D.new()
-		holder.add_child(n)
-		n.global_position = at
-		n.rotation.y = yaw
-		return {"node": n, "side": side, "w": 2.0, "d": 1.0, "army": army, "state_name": "advance", "living": 40, "yaw": yaw}
-	var a: Dictionary = make.call(0, mine, Vector3(-3.0, 0, 0), 0.0)
-	var b: Dictionary = make.call(0, mine, Vector3(3.0, 0, 0), 0.0)
-	var fa: Dictionary = make.call(1, theirs, Vector3(-3.0, 0, 5.0), PI + 0.4)
-	var fbr: Dictionary = make.call(1, theirs, Vector3(3.0, 0, 5.0), PI - 0.3)
-	mine.set("_regiments", [a, b])
-	theirs.set("_regiments", [fa, fbr])
-	fb.set("sides", [mine, theirs])
-	var contact := Data.num("battle", "field.contact", 0.12)
-	for pair in [[a, fa], [b, fbr]]:
-		var r: Dictionary = pair[0]
-		var foe: Dictionary = pair[1]
-		fb.call("_advance", r, 0.1)
-		var spot: Vector3 = r.get("spot", Vector3.INF)
-		var want_z := 5.0 - float(FieldS._depth_along(foe, Vector3(0, 0, 1))) * 0.5 - 0.5 - contact
-		var fx := (foe["node"] as Node3D).global_position.x
-		_check(spot != Vector3.INF and absf(spot.x - fx) < 0.01 and absf(spot.z - want_z) < 0.01,
-			"a regiment closes square on its side's front before its slanted foe: spot %s (want x %.2f, z %.2f)" % [str(spot), fx, want_z])
-	holder.free()
-	mine.free()
-	theirs.free()
-	fb.free()
-
-
 ## 6. The engines' lane and the ram inside its crew.
 func _siege_lanes() -> void:
 	var line := Formation.layout(_reg("men_at_arms", 150), "line", RandomNumberGenerator.new())
@@ -254,7 +214,7 @@ func _siege_lanes() -> void:
 	camp.free()
 
 
-## 7. The wedge, the face a charge strikes, and the cycle charge in the regiment's mind.
+## 7. The wedge.
 func _horse() -> void:
 	var w := Formation.layout(_reg("horse", 100), "wedge", RandomNumberGenerator.new())
 	var at: PackedVector3Array = w["at"]
@@ -271,15 +231,6 @@ func _horse() -> void:
 			counts[counts.size() - 1] += 1
 	_check(counts.size() > 2 and int(counts[0]) == 1 and int(counts[1]) > 1, "the horse's wedge has one rider at its point and wider ranks behind (%s)" % str(counts))
 	_check(float(w["d"]) <= float(w["w"]), "the horse's wedge stands no deeper than it is wide (%.2f by %.2f)" % [float(w["w"]), float(w["d"])])
-	var F: GDScript = load("res://scripts/army_field.gd")
-	var xf := Transform3D(Basis(Vector3.UP, 0.0), Vector3.ZERO)  # a block facing +z
-	for c in [[Vector3(0, 0, 5), "in front"], [Vector3(4, 0, 1), "on its right"], [Vector3(-4, 0, 0.5), "on its left"], [Vector3(0.5, 0, -5), "behind"]]:
-		var hit: Array = F.charge_face(xf, 2.0, 1.0, c[0])
-		var face: Vector3 = hit[0]
-		_check(face.z < 0.5, "horse coming %s strike its flank or rear, never its front (the face %s)" % [c[1], str(face)])
-	var row: Dictionary = Data.value("army", "minds.regiment", {})
-	var go: Array = row.get("go", [])
-	_check(go.has(["fight", "rideout", "rideout"]) and go.has(["rideout", "flank", "flank"]), "the cycle charge: from the press they ride out and round to charge again")
 
 
 ## 8. The ballistic arc: loosed at `angle` with the speed that reaches the range, under `gravity`.

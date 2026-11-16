@@ -1,22 +1,20 @@
 extends SceneTree
-## Guard for foot that never charge (Mac 2026-11-16, the test field battle: "the guys with the spears are just standing
-## instead of charging and fighting"; its log: four foot regiments a side in "advance" for 50 s, none ever at blows,
-## only the archers fighting). In the realm itself (main.tscn headless at a player's window size, against the running
-## bridge, read only): the field battle the test aid stages (army_field.gd, --army-battle) is raised beside a town, and
-## within SECS every foot regiment of both sides must reach blows at least once (fight, or broke there) and run
-## the last stretch (field.charge). Each advancing regiment's route to its spot is printed (Mover's own route), so a stand for want of a way
-## shows. Exits 1 on a fail, 2 if the realm or the battle never came up.
-##   arch -arm64 godot --headless --path realm -s res://tools/field_clash_probe.gd
+## Guard for the field battle's one rule (Mac 2026-11-17: "everything is a cell", "everyone fights at the same time",
+## "don't wait around"; the Battle Orders board, https://claude.ai/artifact/GyP4s5kSiKJFNzQKovt55f). In the realm
+## itself (main.tscn headless at a player's window size, against the running bridge, read only): the test aid's field
+## battle (army_field.gd) is raised beside a town and watched. It fails on:
+##   - two men in one cell, ever (field_cells.gd);
+##   - a troop of either side that never fights or shoots within SECS;
+##   - the most men fighting at once under BUSY_LEAST of those standing (the board's "Fighting: X of Y men");
+##   - a man who stands in the same cell, neither fighting nor shooting, over IDLE_MOST seconds once the lines have
+##     met while a foe stands;
+##   - under FPS_LEAST frames a second, read while no frame is saved.
+## --battle-order=<key> picks both sides' order; --frames=DIR saves the game's own frames; --secs=N watches to N s.
+## Exits 1 on a fail, 2 if the realm or the battle never came up.
+##   arch -arm64 godot --path realm -s res://tools/field_clash_probe.gd -- --battle-order=line --frames=DIR
 
 const SECS := 45.0
-## What Mac's eye caught, caught here instead (2026-11-16: "the entire troop still spins like a pinwheel", "half of
-## the troops aren't really doing anything", "6 fps very slow"): a block's most turning in one task (radians: a ride
-## round a wing turns it about once; the foot hardly at all), its longest stand with a task and a foe on the field
-## once the lines have met (seconds), and the fight's mean frames a second.
-const SPIN_MOST := {"flank": TAU, "rideout": TAU, "reform": TAU, "relieved": TAU, "rally": TAU, "rout": 1000.0, "charge": 1.25 * PI}  # a charge may turn in from its run-up and home on its mark, never circle him
-const SPIN_ELSE := PI
-const TURN_WINDOW := 10.0  # and its most turning in any stretch this long, whatever its tasks (a horse that turned round and round between a ride and a charge)
-const TURN_MOST := 4.0 * PI  # a cycle charge wheels about once in the open (a whole turn) and turns in again
+const BUSY_LEAST := 0.5
 const IDLE_MOST := 8.0
 const FPS_LEAST := 20.0
 
@@ -87,7 +85,6 @@ func _run() -> void:
 		return
 	await _wait(func() -> bool: return float(field.get("clock")) >= 0.0, 120.0)
 	var start := Time.get_ticks_msec()
-	var reported := false
 	var out := ""
 	var orders_at: Array = []
 	for a in OS.get_cmdline_user_args():
@@ -107,7 +104,6 @@ func _run() -> void:
 			secs = float(a.substr(7))  # watch longer, to the day's end
 			whole = true
 	var late := 0
-	var watch := {}  # a regiment's body id -> what _watch keeps of it
 	var fps_sum := 0.0
 	var fps_n := 0
 	while Time.get_ticks_msec() - start < int(secs * 1000.0) and not bool(field.get("_over")):
@@ -136,127 +132,70 @@ func _run() -> void:
 			else:
 				fps_sum += Engine.get_frames_per_second()  # read while no frame is being saved (the saving costs its own)
 				fps_n += 1
-			_watch(field, watch, every)
-		# How many men of each side are at grips with a foe man, of those standing (Mac 2026-11-16: "too much waiting and
-		# watching and not fighting"): the number to judge it by.
-		var grips := [0, 0]
-		var stand := [0, 0]
-		var hosts: Array = field.get("sides")
-		for i in hosts.size():
-			for r in hosts[i].rows():
-				if String(r.get("state_name", "")) == "rout":
-					continue
-				stand[i] += int(r.get("living", 0))
-				if String(r.get("state_name", "")) == "fight":
-					grips[i] += (r.get("contact", []) as Array).size()
-		print("GRIPS t=%.0f crown %d of %d, foe %d of %d" % [float(field.get("clock")), grips[0], stand[0], grips[1], stand[1]])
-		var foot := _foot(field)
-		for r in foot:
-			if String(r.get("state_name", "")) in ["fight", "rout", "hold"]:
-				r["probe_met"] = true  # it reached blows (or broke at them) at least once
-		var closed := foot.filter(func(r): return r.get("probe_met", false))
-		if not reported and Time.get_ticks_msec() - start > 15000:
-			reported = true
-			for r in foot:
-				if String(r.get("state_name", "")) == "advance":
-					var node: Node3D = r["node"]
-					var spot: Vector3 = r.get("spot", Vector3.INF)
-					var mv: Node = preload("res://scripts/mover.gd").of(node)
-					var way: PackedVector3Array = mv._route(node.global_position, spot) if spot != Vector3.INF else PackedVector3Array()
-					print("  side %d %s at %s spot %s: route %d points, gait %s, still %.1f s" % [int(r["side"]), String(r.get("role", "")),
-						node.global_position, spot, way.size(), String(r.get("gait", "")), float(r.get("gait_still", 0.0))])
-					var NW := preload("res://scripts/nav_world.gd")
-					var kind: StringName = mv.get("nav")
-					print("    nav %s: ready %s, on map here %s (nearest %s), on map at the spot %s (nearest %s), plain path %d points" % [kind,
-						str(NW.ready(kind)), str(NW.on_map(node.global_position, kind)), str(NW.closest(node.global_position, kind)),
-						str(NW.on_map(spot, kind)), str(NW.closest(spot, kind)), NW.path(node.global_position, spot, kind).size()])
-					var hsm: Node = r.get("hsm")
-					print("    mind active %s, mind can process %s, body can process %s, body in tree %s, process mode %d" % [
-						str(hsm != null and (hsm as LimboHSM).is_active()), str(hsm != null and hsm.can_process()), str(node.can_process()),
-						str(node.is_inside_tree()), node.process_mode])
-					field._advance(r, 0.016)
-					print("    one advance step by hand: spot %s" % str(r.get("spot", "none")))
-		if not whole and closed.size() == foot.size() and not foot.is_empty() and (out == "" or Time.get_ticks_msec() - start >= 24000):
-			break  # filming: the whole 24 s, the press too
-	var foot := _foot(field)
-	var states := {}
-	for r in foot:
-		states[String(r.get("state_name", ""))] = int(states.get(String(r.get("state_name", "")), 0)) + 1
-	var waiting := foot.filter(func(r): return not r.get("probe_met", false)).size()
-	var ran := foot.filter(func(r): return r.get("ran", false)).size()
-	_check(ran == foot.size(), "every foot regiment ran the last stretch (%d of %d)" % [ran, foot.size()])
-	_check(waiting == 0, "every foot regiment of both sides closes to blows within %d s (%d still short; %s)" % [int(SECS), waiting, str(states)])
-	var spun := []
-	var idled := []
-	for id in watch:
-		var w: Dictionary = watch[id]
-		var who := "side %d %s" % [int(w["side"]), String(w["role"])]
-		if float(w["spin"]) > float(SPIN_MOST.get(String(w["spin_in"]), SPIN_ELSE)):
-			spun.append("%s turned %.1f rad in one %s" % [who, float(w["spin"]), String(w["spin_in"])])
-		if float(w.get("wheeled", 0.0)) > TURN_MOST:
-			spun.append("%s turned %.1f rad within %d s" % [who, float(w["wheeled"]), int(TURN_WINDOW)])
-		if float(w["idle"]) > IDLE_MOST:
-			idled.append("%s stood %.0f s in %s" % [who, float(w["idle"]), String(w["idle_in"])])
-	_check(spun.is_empty(), "no block spins on the spot (%s)" % ("none" if spun.is_empty() else "; ".join(spun)))
-	_check(idled.is_empty(), "no block with a foe on the field stands idle over %d s once the lines have met (%s)" % [int(IDLE_MOST), "none" if idled.is_empty() else "; ".join(idled)])
+			_watch(field, every)
+		# How many men are fighting or shooting, of those standing (the board's number).
+		var line := _count(field)
+		most_busy = maxf(most_busy, float(line[0]) / maxf(float(line[1]), 1.0))
+		print("FIGHTING t=%.0f %d of %d men" % [float(field.get("clock")), line[0], line[1]])
+		for r in _troops(field):
+			if String(r.get("state_name", "")) in ["fight", "volley", "rout", "hold"]:
+				r["probe_met"] = true  # it fought, shot, or broke at blows at least once
+		if not whole and (out == "" or Time.get_ticks_msec() - start >= 24000) and _troops(field).all(func(r): return r.get("probe_met", false)) and float(field.get("clock")) > 30.0:
+			break
+	var troops := _troops(field)
+	var waiting := troops.filter(func(r): return not r.get("probe_met", false)).size()
+	_check(doubled == 0, "never two men in one cell (%d moments with two)" % doubled)
+	_check(waiting == 0, "every troop of both sides fights or shoots within %d s (%d never did)" % [int(secs), waiting])
+	_check(most_busy >= BUSY_LEAST, "at the most, %d%% of the men standing fight at once (at least %d%%)" % [int(most_busy * 100.0), int(BUSY_LEAST * 100.0)])
+	_check(idle_most <= IDLE_MOST, "no man stands idle over %d s once the lines have met (longest %.1f s)" % [int(IDLE_MOST), idle_most])
 	_check(fps_n == 0 or fps_sum / fps_n >= FPS_LEAST, "the fight keeps %d frames a second (mean %.0f over %d reads)" % [int(FPS_LEAST), fps_sum / maxf(fps_n, 1.0), fps_n])
 	preload("res://scripts/settings.gd").set_value("pause_when_needed", _was_pause)
 	quit(1 if fail > 0 else 0)
 
 
-## One read of every regiment standing: how far it has turned in its present task (the most kept, with the task), and
-## how long it has stood where it is while it has a task to move on and a foe stands (the longest kept).
-var _ever_met := false
-func _watch(field: Node, watch: Dictionary, dt: float) -> void:
-	var sides: Array = field.get("sides")
-	_ever_met = _ever_met or bool(field.met())
-	for i in sides.size():
-		var foe_stands := false
-		for f in sides[1 - i].rows():
-			if int(f.get("living", 0)) > 0 and String(f.get("state_name", "")) != "rout":
-				foe_stands = true
-		for r in sides[i].rows():
-			if int(r.get("living", 0)) <= 0:
-				continue
-			var node: Node3D = r["node"]
-			var st := String(r.get("state_name", ""))
-			var w: Dictionary = watch.get_or_add(node.get_instance_id(), {"side": i, "role": String(r.get("role", "")), "state": st,
-				"yaw": node.rotation.y, "turned": 0.0, "spin": 0.0, "spin_in": st, "at": node.global_position, "still": 0.0, "idle": 0.0, "idle_in": st})
-			var job: Variant = r.get("task") if r.get("task") is Dictionary else r.get("target")
-			var key := st if not (job is Dictionary and (job as Dictionary).has("node")) else "%s at %d" % [st, ((job as Dictionary)["node"] as Object).get_instance_id()]  # a new mark is a new task
-			if key != String(w["state"]):
-				w["state"] = key
-				w["turned"] = 0.0
-				w["still"] = 0.0
-			var dyaw := absf(angle_difference(float(w["yaw"]), node.rotation.y))
-			var turns: Array = w.get_or_add("turns", [])
-			turns.append(dyaw)
-			if turns.size() > int(TURN_WINDOW / dt):
-				turns.pop_front()
-			var sum := 0.0
-			for x in turns:
-				sum += float(x)
-			if st != "rout" and sum > float(w.get("wheeled", 0.0)):
-				w["wheeled"] = sum
-			w["turned"] = float(w["turned"]) + dyaw
-			w["yaw"] = node.rotation.y
-			if float(w["turned"]) > float(w["spin"]):
-				w["spin"] = w["turned"]
-				w["spin_in"] = st
-			var was: Vector3 = w["at"]
-			var moved := Vector2(node.global_position.x - was.x, node.global_position.z - was.z).length()
-			w["at"] = node.global_position
-			var waits: bool = _ever_met and foe_stands and String(r.get("role", "")) != "ranged" and st in ["stand", "flank", "advance", "charge", "reform"] and moved < 0.002
-			w["still"] = float(w["still"]) + dt if waits else 0.0
-			if float(w["still"]) > float(w["idle"]):
-				w["idle"] = w["still"]
-				w["idle_in"] = st
+var most_busy := 0.0
+var doubled := 0
+var idle_most := 0.0
+var _idle := {}  # a man's id -> [his cell, seconds there idle]
 
 
-func _foot(field: Node) -> Array:
+## [men fighting or shooting, men standing] over both hosts, by the field's cells.
+func _count(field: Node) -> Array:
+	var cells: Object = field.get("cells")
+	if cells == null:
+		return [0, 0]
+	var busy := 0
+	for m in cells.get("men"):
+		if m["fight"] or m["shot"] != null:
+			busy += 1
+	return [busy, (cells.get("men") as Array).size()]
+
+
+## One read of every man: two in one cell, and how long each has stood idle in his cell once the lines have met.
+func _watch(field: Node, dt: float) -> void:
+	var cells: Object = field.get("cells")
+	if cells == null:
+		return
+	var seen := {}
+	var sides_left := [0, 0]
+	for m in cells.get("men"):
+		sides_left[int(m["side"])] += 1
+		if seen.has(m["c"]):
+			doubled += 1
+		seen[m["c"]] = true
+	if not bool(cells.get("met")) or sides_left[0] == 0 or sides_left[1] == 0:
+		return
+	for m in cells.get("men"):
+		var id := int(m["id"])
+		var was: Array = _idle.get(id, [m["c"], 0.0])
+		var idle: bool = not m["fight"] and m["shot"] == null and was[0] == m["c"]
+		was = [m["c"], float(was[1]) + dt if idle else 0.0]
+		_idle[id] = was
+		idle_most = maxf(idle_most, float(was[1]))
+
+
+func _troops(field: Node) -> Array:
 	var out := []
-	for s in field.get("sides"):
-		for r in s.rows():
-			if String(r.get("role", "")) == "melee":
-				out.append(r)
+	for h in field.get("sides"):
+		out.append_array(h.rows())
 	return out

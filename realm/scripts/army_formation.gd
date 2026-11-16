@@ -7,6 +7,7 @@ extends RefCounted
 ## data/formations.json and data/army.json (line.*, column.gap/order, gap, jitter.*).
 
 const Data := preload("res://scripts/data.gd")
+const Troops := preload("res://scripts/troops.gd")
 
 
 ## A formation template's row (data/formations.json templates.<name>; 0 A.D.'s formation templates), line's if unknown.
@@ -37,7 +38,7 @@ static func layout(r: Dictionary, form: String, rng: RandomNumberGenerator) -> D
 	var sr: float = float(r["sr"]) * float(sep[1])
 	var closed: Dictionary = t.get("closed", {})
 	if not closed.is_empty():  # on the march or a deck: closed ranks, men shoulder to shoulder; a horse keeps its own room
-		var horse: bool = r.get("role", "") == "cavalry"
+		var horse: bool = Troops.of(r).mounted()
 		sr = maxf(sr, float(closed.get("rankLeast", 0.0)))
 		if horse:
 			sr = minf(sr, float(closed.get("horseRankMost", sr)))
@@ -122,23 +123,20 @@ static func assign(from: PackedVector3Array, to: PackedVector3Array) -> PackedVe
 ## front to back, each up to `abreast` regiments of a role, `gap` before it; the horse on the wings, in reserve behind,
 ## or on one flank; regiments no row took in rows of two behind. Each regiment is told its line (r.line_no: 1 the front,
 ## 2 a second line that relieves it) and its post (r.post: row, wing, reserve, flank). The commander's regiment is the
-## front row's middle. Returns {extent: the line's width and depth, commander: that regiment, order: the order's key}.
-static func line_places(regiments: Array, order := "") -> Dictionary:
-	var gap := Data.num("army", "gap", 0.35)
-	var row_gap := Data.num("army", "line.rowGap", 0.7)
+## front row's middle. `packed` (across, between rows), when given, sets the gaps instead (a battle's field: troops
+## packed a cell apart across and rank on rank, battle.json field.cells.packed). Returns {extent: the line's width and depth, commander: that regiment, order: the order's key}.
+static func line_places(regiments: Array, order := "", mirror := false, packed := Vector2(-1.0, -1.0)) -> Dictionary:
+	var gap := packed.x if packed.x >= 0.0 else Data.num("army", "gap", 0.35)
+	var row_gap := packed.y if packed.y >= 0.0 else Data.num("army", "line.rowGap", 0.7)
 	var wing_gap := Data.num("army", "line.wingGap", 0.6)
 	var orders: Dictionary = Data.value("battle_orders", "orders", {})
 	if not orders.has(order):
 		order = String(Data.value("battle_orders", "default", "line"))
 	var spec: Dictionary = orders.get(order, {"rows": [], "horse": "wings"})
-	var left_by: Dictionary = {
-		"melee": regiments.filter(func(r): return r["role"] == "melee"),
-		"ranged": regiments.filter(func(r): return r["role"] == "ranged"),
-	}
-	var horse: Array = regiments.filter(func(r): return r["role"] == "cavalry")
-	if (left_by["melee"] as Array).is_empty() and (left_by["ranged"] as Array).is_empty():  # a host of horse alone: the horse is its front
-		left_by["melee"] = horse
-		horse = []
+	# Every troop stands in the row its kind names (troop.gd line_row): horse in the front row with the foot.
+	var left_by: Dictionary = {"melee": [], "ranged": []}
+	for r in regiments:
+		(left_by[Troops.of(r).line_row()] as Array).append(r)
 	var rows: Array = []  # [regiments, gap before, line]
 	for row in (spec.get("rows", []) as Array):
 		var role := String(row.get("role", "melee"))
@@ -148,16 +146,13 @@ static func line_places(regiments: Array, order := "") -> Dictionary:
 		var n := mini(int(row.get("abreast", 2)), pool.size())
 		if n == 0:
 			continue
-		rows.append([pool.slice(0, n), float(row.get("gap", row_gap)), int(row.get("line", 0))])
+		rows.append([pool.slice(0, n), row_gap if packed.y >= 0.0 else float(row.get("gap", row_gap)), int(row.get("line", 0))])
 		for k in n:
 			pool.pop_front()
 	for role in ["melee", "ranged"]:  # what no row took: rows of two behind
 		var pool: Array = left_by[role]
 		for i in range(0, pool.size(), 2):
 			rows.append([pool.slice(i, i + 2), row_gap, 0])
-	var horse_at := String(spec.get("horse", "wings"))
-	if horse_at == "reserve" and not horse.is_empty():
-		rows.append([horse, row_gap, 0])
 	var z := 0.0
 	var wide := 0.0
 	var commander: Dictionary = {}
@@ -176,31 +171,18 @@ static func line_places(regiments: Array, order := "") -> Dictionary:
 			var w := float(r["line"]["w"])
 			r["place"] = Vector2(x + w * 0.5, z - deep * 0.5)
 			r["line_no"] = int(rows[ri][2])
-			r["post"] = "reserve" if horse.has(r) else "row"
+			r["post"] = "row"
 			x += w + gap
 		if ri == 0:
 			commander = row[row.size() / 2]
-			if horse_at != "reserve":
-				# The wings (or one flank): horse outward from the front row's ends, right then left in turn.
-				var left := -span * 0.5 - wing_gap
-				var right := span * 0.5 + wing_gap
-				for i in horse.size():
-					var h: Dictionary = horse[i]
-					var w := float(h["line"]["w"])
-					h["line_no"] = 0
-					h["post"] = horse_at
-					if i % 2 == 0 or horse_at == "flank":
-						h["place"] = Vector2(right + w * 0.5, z - deep * 0.5)
-						right += w + gap
-					else:
-						h["place"] = Vector2(left - w * 0.5, z - deep * 0.5)
-						left -= w + gap
-				span = right - left
 		wide = maxf(wide, span)
 		z -= deep
 	var depth := -z
-	for r in regiments:  # the line's middle at 0
-		r["place"] = (r.get("place", Vector2.ZERO) as Vector2) + Vector2(0.0, depth * 0.5)
+	# The line's middle at 0. A host that faces another is laid the other way round (mirror), so the two lines are the
+	# same line seen from each side: every block stands square before the block across from it, horse before horse.
+	for r in regiments:
+		var pl: Vector2 = (r.get("place", Vector2.ZERO) as Vector2) + Vector2(0.0, depth * 0.5)
+		r["place"] = Vector2(-pl.x, pl.y) if mirror else pl
 	return {"extent": Vector2(wide, depth), "commander": commander, "order": order}
 
 
@@ -209,7 +191,8 @@ static func line_places(regiments: Array, order := "") -> Dictionary:
 static func column_order(regiments: Array) -> Array:
 	var order: Array = Data.value("army", "column.order", ["cavalry", "melee", "ranged"])
 	var sorted := regiments.duplicate()
-	sorted.sort_custom(func(a, b): return order.find(a["role"]) < order.find(b["role"]) if a["role"] != b["role"] else int(a["id"]) > int(b["id"]))
+	var rank := func(r: Dictionary) -> int: return order.find(r["role"])
+	sorted.sort_custom(func(a, b): return int(rank.call(a)) < int(rank.call(b)) if int(rank.call(a)) != int(rank.call(b)) else int(a["id"]) > int(b["id"]))
 	var gap := Data.num("army", "column.gap", 0.3)
 	var off := 0.0
 	var slowest := INF

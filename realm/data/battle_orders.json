@@ -1,5 +1,5 @@
 {
-  "_": "Battle orders (Mac 2026-11-16: 'it would be awesome if game of crowns adhered to those formations'; docs/art/battle_formations, the approved pictures): how a side stands for a battle, one row each. rows: front to back, each takes up to `abreast` regiments of `role` (melee, ranged; melee falls back to whatever foot is left), `gap` before it (world units; army.json line.rowGap when absent), `line` its number (1 the front line, 2 a second line that relieves it). horse: wings (beside the front row, left and right in turn), reserve (behind the last row, in the middle), flank (beside the front row on one side). Regiments a row didn't take stand in rows of two behind. army_formation.gd line_places reads it; army_field.gd picks the order (pick).",
+  "_": "Battle orders (Mac 2026-11-16: 'it would be awesome if game of crowns adhered to those formations'; docs/art/battle_formations, the approved pictures): how a side stands for a battle, one row each. rows: front to back, each takes up to `abreast` regiments of `role` (melee, ranged; melee falls back to whatever foot is left), `gap` before it (world units; army.json line.rowGap when absent), `line` its number (1 the front line, 2 a second line that relieves it). cells (field_cells.gd, Mac 2026-11-17: 'these are just different formations but they only move straight towards the enemy host'): step, ticks a man's step takes until the lines meet (the shield wall's long slow step, 2); back, cells the host steps straight back before it comes on (regroup), then stand, ticks it stands. After that every man keeps the field's one rule. army_formation.gd line_places reads rows; army_field.gd picks the order (pick).",
   "default": "line",
   "orders": {
     "line": {
@@ -7,7 +7,7 @@
       "rows": [
         {
           "role": "melee",
-          "abreast": 4,
+          "abreast": 2,
           "line": 1
         },
         {
@@ -15,8 +15,7 @@
           "abreast": 2
         }
       ],
-      "horse": "reserve",
-      "advance": true,
+      "cells": { "step": 1 },
       "defence": {
         "foot": 1.0,
         "horse": 1.0,
@@ -43,8 +42,7 @@
           "gap": 0.9
         }
       ],
-      "horse": "reserve",
-      "advance": true,
+      "cells": { "step": 1 },
       "defence": {
         "foot": 1.0,
         "horse": 0.9,
@@ -57,7 +55,7 @@
       "rows": [
         {
           "role": "melee",
-          "abreast": 4,
+          "abreast": 2,
           "line": 1
         },
         {
@@ -65,8 +63,7 @@
           "abreast": 2
         }
       ],
-      "horse": "reserve",
-      "advance": false,
+      "cells": { "step": 2 },
       "defence": {
         "foot": 1.5,
         "horse": 1.8,
@@ -79,7 +76,7 @@
       "rows": [
         {
           "role": "melee",
-          "abreast": 4,
+          "abreast": 2,
           "line": 1
         },
         {
@@ -87,9 +84,7 @@
           "abreast": 2
         }
       ],
-      "horse": "reserve",
-      "advance": false,
-      "hold": true,
+      "cells": { "step": 1, "back": 6, "stand": 16 },
       "defence": {
         "foot": 1.2,
         "horse": 1.3,
@@ -122,16 +117,8 @@
       }
     }
   },
-  "relief": {
-    "_": "army_field.gd _orders_tick, a second line's relief (the Strategikon's and the Roman triplex acies' line relief): a front regiment at blows with no more than at of its figures standing is relieved by the nearest second-line regiment still standing; once its relief is within near (plus its depth) of it, the worn regiment falls back to where its relief stood, at back times field.advance, and stands. A horse reserve rides out once any regiment of its side is at blows.",
-    "at": 0.65,
-    "near": 1.0,
-    "back": 0.8
-  },
   "command": {
-    "_": "army_field.gd reorder, the King's orders in a battle (Total War's and Bannerlord's formation orders): the crown's side forms anew about its front's middle, each regiment marching to its new place at pace times field.advance (a regiment at blows breaks off), then acts by the order: advance (its first line goes in; a second line and a horse reserve wait), hold (all stand where they formed, the foe must come to them; ranged loose from there). regroup_back: how far behind its front a regroup (an order with hold) forms. buttons: the orders on battle_orders_bar.gd, left to right; chosen: the word on the order the side stands in.",
-    "pace": 2.0,
-    "regroup_back": 1.2,
+    "_": "army_field.gd reorder, the King's orders in a battle (Total War's and Bannerlord's formation orders): the side comes on by the order from that moment (its cells traits, field_cells.gd order: a regroup steps back and stands, a shield wall comes on at its long slow step) under the order's guard (defence). buttons: the orders the bar offers; chosen: the word under the order it stands in; hints: each button's tooltip.",
     "buttons": [
       "line",
       "two_lines",
@@ -141,10 +128,10 @@
     "chosen": "Now",
     "title": "Orders",
     "hints": {
-      "line": "Two blocks abreast, archers behind, horse on the wings. All go in.",
-      "two_lines": "A second line waits to relieve the first. Horse held back.",
-      "shield_wall": "Close ranks and hold. The foe must come to you.",
-      "regroup": "Break off, fall back, and form again."
+      "line": "Troops abreast, archers behind. All walk straight in.",
+      "two_lines": "A deep column. The men behind come round the sides.",
+      "shield_wall": "Shoulder to shoulder at half pace. Harder to break.",
+      "regroup": "Step back, stand a moment, then come on again."
     }
   },
   "_defence": "orders.<key>.defence: army_combat.gd, how much better a regiment in that order stands against foot, a charge (horse) and arrows on its front (1 as it is): the shield wall's locked shields; the regroup's closed ranks. attack: how hard its men press their foe (a wall stands, it doesn't press)."

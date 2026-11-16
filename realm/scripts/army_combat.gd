@@ -12,6 +12,7 @@ extends RefCounted
 ##     comes back fresh, a line never relieved tires and bleeds.
 
 const Data := preload("res://scripts/data.gd")
+const Troops := preload("res://scripts/troops.gd")
 const F := "battle"
 
 
@@ -76,7 +77,7 @@ static func loss_rate(r: Dictionary, attackers: Array, order: String) -> float:
 		var face := face_hit(r, (a["node"] as Node3D).global_position)
 		beset = maxi(beset, face)
 		var hit: float = hits(a, float(x["nerve"])) * float(x.get("press", 1.0)) * [1.0, _c("flank", 1.8), _c("rear", 2.5)][face]
-		var against := "horse" if String(a.get("role", "")) == "cavalry" else "foot"
+		var against := Troops.of(a).strikes_as()
 		var guard := (kind(r, "horse") if against == "horse" else kind(r, "defence")) * (order_guard(order, against) if face == 0 else 1.0)
 		sum += hit / maxf(guard * lerpf(_c("wind_floor", 0.6), 1.0, wind(r)), 0.05)
 	r["beset"] = beset
