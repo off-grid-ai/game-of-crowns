@@ -682,7 +682,8 @@ const UI_SCALE_FILE := "user://ui_size.txt"  # your adjustment, 1.0 = in step wi
 const UI_BASE := Vector2(1600, 900)
 static var UI_MIN: float = preload("res://scripts/data.gd").num("ui", "scale.min", 0.75)  # never smaller than this, however small the window
 static var UI_MAX: float = preload("res://scripts/data.gd").num("ui", "scale.max", 2.2)  # never larger, however big the screen
-var ui_scale := 1.0
+static var UI_DEFAULT: float = preload("res://scripts/data.gd").num("ui", "scale.default", 0.7)  # the size a new player starts at (Mac 2026-11-16: "interface at 70% looks ok")
+var ui_scale := UI_DEFAULT
 
 
 func _load_ui_scale() -> void:
@@ -788,7 +789,7 @@ func _input(event: InputEvent) -> void:
 				_set_ui_scale(ui_scale - 0.1)
 				get_viewport().set_input_as_handled()
 			KEY_0:
-				_set_ui_scale(1.0)
+				_set_ui_scale(UI_DEFAULT)
 				get_viewport().set_input_as_handled()
 			KEY_F:
 				if event.meta_pressed and event.ctrl_pressed:

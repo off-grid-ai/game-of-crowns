@@ -727,3 +727,4 @@ Switches (`--name`) go after `--` on the game's command line.
 - Where the Hand's answers stand: stacked on top of his text box, this many pixels above it (`realm/data/opening.json` `choices_gap`, 10).
 - Control plane (2026-11-16, Mac's notes): `ui.json` plane.date_size, goal_size, figure_size, figure_icon, figure_word, key_size, key_icon (the date, goal, treasury figures and command keys, px); promises.size/icon/do/tips (the three promises as checkboxes, where a click goes); politics_icons/politics_icon_size (the houses table's deeds as icons). `army_bar.json` men_width, row_height, resting (one line a host).
 - Houses strip (2026-11-16): `ui.json` houses_strip.size/sigil (px), rise (percent of strength over a year that shows ▲/▼), words, tips. Strength = towns×2 + men (bridge view.js).
+- Interface size (2026-11-16): `ui.json` scale.default 0.7, what a new player starts at and Cmd0 returns to (Mac: "interface at 70% looks ok").
