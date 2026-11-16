@@ -100,7 +100,7 @@ func _show_scar() -> void:
 func _scar_under_cursor() -> String:
 	if main == null or main.rig == null or main.terrain == null or main.rig.distance >= MARKS_NEAR:
 		return ""
-	if get_viewport().gui_get_hovered_control() != null:
+	if get_viewport().gui_get_hovered_control() != null or main.ui.tour_up:  # over the interface, or the Hand speaking
 		return ""
 	var p: Vector3 = main.rig._ground_under(get_viewport().get_mouse_position())
 	if p == Vector3.INF:
@@ -136,7 +136,7 @@ func _ask(node: Node3D) -> Dictionary:
 func _under_cursor() -> Dictionary:
 	if main == null or main.rig == null or main.villagers == null or main.rig.distance >= NEAR:
 		return {}
-	if get_viewport().gui_get_hovered_control() != null:
+	if get_viewport().gui_get_hovered_control() != null or main.ui.tour_up:  # over the interface, or the Hand speaking
 		return {}
 	var cam := get_viewport().get_camera_3d()
 	if cam == null:

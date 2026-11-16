@@ -51,7 +51,7 @@ static func _w(key: String, vars := {}) -> String:
 func _under_cursor() -> String:
 	if main == null or main.rig == null or main.terrain == null or main.towns == null:
 		return ""
-	if (folk and folk.visible) or get_viewport().gui_get_hovered_control() != null or not main.ui.visible:
+	if (folk and folk.visible) or get_viewport().gui_get_hovered_control() != null or not main.ui.visible or main.ui.tour_up:  # the Hand holds the screen (his list may come up under a still cursor)
 		return ""
 	var p: Vector3 = main.rig._ground_under(get_viewport().get_mouse_position())
 	if p == Vector3.INF:
