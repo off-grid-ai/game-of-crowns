@@ -41,32 +41,29 @@ func show(word: String, line: String, loss: bool) -> void:
 	_layer = CanvasLayer.new()
 	_layer.layer = 30  # over the map and the plane, under the act card and the menu
 	ui.add_child(_layer)
+	# The game's own card, small and quiet (Mac 2026-11-16: the shouting band was "grotesque"; "lean, compact, classy"):
+	# a glass card at the top middle, the word in the body's type, one line under it.
 	var band := PanelContainer.new()
-	var box := StyleBoxFlat.new()
-	box.bg_color = Color(0.05, 0.04, 0.03, 0.72)
-	box.border_color = T.DANGER if loss else T.ACCENT
-	box.border_width_top = 1
-	box.border_width_bottom = 1
-	box.content_margin_top = 18
-	box.content_margin_bottom = 18
-	band.add_theme_stylebox_override("panel", box)
+	band.add_theme_stylebox_override("panel", T._box(T.SURFACE, T.HAIRLINE, 10, 12))
 	band.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	band.anchor_left = 0.0
-	band.anchor_right = 1.0
-	band.anchor_top = float(Data.num("ui", "moment.at", 0.22))
+	band.anchor_left = 0.5
+	band.anchor_right = 0.5
+	band.anchor_top = float(Data.num("ui", "moment.at", 0.12))
 	band.anchor_bottom = band.anchor_top
+	band.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	band.grow_vertical = Control.GROW_DIRECTION_BOTH
 	_layer.add_child(band)
 	var col := VBoxContainer.new()
 	col.alignment = BoxContainer.ALIGNMENT_CENTER
-	col.add_theme_constant_override("separation", T.GAP)
+	col.add_theme_constant_override("separation", T.GAP_TIGHT)
 	col.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	band.add_child(col)
-	var big := T.title(word.to_upper(), 60, T.DANGER if loss else T.ACCENT)
+	var big := T.label(word, T.DANGER if loss else T.TEXT)
+	big.add_theme_font_size_override("font_size", int(Data.num("ui", "moment.size", 20)))
 	big.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	col.add_child(big)
 	if line != "":
-		var l := T.prose(line, T.SIZE_BODY + 2, T.TEXT)
+		var l := T.label(line, T.TEXT_2)
 		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		col.add_child(l)
 	band.modulate.a = 0.0
