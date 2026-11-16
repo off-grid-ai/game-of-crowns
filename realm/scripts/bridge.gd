@@ -8,7 +8,7 @@ signal map_loaded(map: Dictionary)
 signal world_updated(world: Dictionary)
 signal chronicle_added(entries: Array)
 signal command_done(ok: bool, text: String)
-signal reckoned(rows: Array)  ## what an order or ruling changed (bridge reckoning.js), for the reckoning card
+signal reckoned(rows: Array, head: String)  ## what an order or ruling changed, or what came of one (bridge reckoning.js, aftermath.js), for the reckoning card
 signal realm_changed
 signal decrees_changed(list: Array)
 signal paid(cost: float)  # a decree went through and the treasury paid for it
@@ -82,7 +82,7 @@ func decree(action: String, city_id: int, building := "", to := -1, matter := ""
 			sealed.emit()
 		command_done.emit(code == 200, data.get("text", data.get("error", "")))
 		if code == 200 and data.get("changes") is Array:
-			reckoned.emit(data["changes"]))
+			reckoned.emit(data["changes"], ""))
 
 
 ## The King's answer to the event card (bridge events.js): cb(ok, text).
@@ -306,7 +306,7 @@ func answer_petition(id: String, option: String) -> void:
 	_post("/court/answer", {"id": id, "option": option}, func(code, data):
 		command_done.emit(code == 200, data.get("text", data.get("error", "")))
 		if code == 200 and data.get("changes") is Array:
-			reckoned.emit(data["changes"]))
+			reckoned.emit(data["changes"], ""))
 
 
 func set_tithe(rate: float) -> void:
@@ -560,3 +560,6 @@ func _on_chronicle(data) -> void:
 	if data is Array and data.size() > 0:
 		_last_seq = int(data[-1]["seq"])
 		chronicle_added.emit(data)
+		for e in data:  # what came of an order, seasons on: shown as its answer was (aftermath.js)
+			if e is Dictionary and e.get("kind") == "aftermath":
+				reckoned.emit(e.get("changes", []) if e.get("changes") is Array else [], String(e.get("text", "")))

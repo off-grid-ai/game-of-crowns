@@ -25,6 +25,7 @@ import * as kingDeeds from "./ledger.js";
 import * as Damage from "./damage.js";
 import * as Rulings from "./rulings.js";
 import * as Reckoning from "./reckoning.js";
+import * as Aftermath from "./aftermath.js";
 import { moodFrom, moodRules } from "./claude.js";
 import { body, json } from "./http_util.js";
 import * as names from "./names.js";
@@ -207,6 +208,10 @@ export async function issueDecree(ctx, req, res, url) {
   }
   const house = (pid) => houseFor(ctx.world.players.find((p) => p.id === Number(pid)) ?? {}).name?.replace(/^House /, "") ?? "";
   const handed = ["back", "grant", "cede"].includes(cmd.action) && cmd.city != null && before.owner != null && cmd.to != null && Number(cmd.to) !== before.owner;
+  // The order comes back in a few seasons, judged on what the realm is then (aftermath.js).
+  const touched = ctx.world.cities.find((c) => c.id === Number(cmd.city))?.owner ?? (cmd.house != null ? Number(cmd.house) : null);
+  Aftermath.keep(ctx, cmd.action, cmd.action === "back" ? { house: before.owner, other: Number(cmd.to), city: Number(cmd.city) }
+    : { house: touched, other: cmd.to != null ? Number(cmd.to) : null, city: cmd.city != null ? Number(cmd.city) : null, building: cmd.building ?? null });
   const changes = Reckoning.of({ favour: told.moves, gold: [before.gold, before.gold - (result.cost ?? 0)], alarm: [before.alarm, ctx.meta.alarm ?? 0],
     towns: handed ? [{ town: cityName(Number(cmd.city)), from: house(before.owner), to: house(cmd.to) }] : [], war: result.war != null ? house(result.war) : null });
   return json(res, 200, { ok: true, text: crowns(result.text) + (told.text ? `\n${told.text}` : ""), cost: result.cost ?? 0, sealed, changes });

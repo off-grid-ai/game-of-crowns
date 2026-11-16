@@ -1,0 +1,43 @@
+{
+  "_": "What came of the King's orders (aftermath.js): after, the seasons before an order comes back (a kind may set its own); cooled, how far a house's favour may fall from the day of a kindness and still feel it; forgiven, the favour at which a house judged against has let it go. kinds: per decree action, its test (favour: the house still warm; grudge: the loser remembers; fed: the town not starving; stands: the town still the house's; peace: the two houses not at war again) and its good and bad lines ({town}, {house}, {other}, {seasons}, {building}, {holder}).",
+  "after": 4,
+  "cooled": 5,
+  "forgiven": 40,
+  "kinds": {
+    "feast": {
+      "test": "favour",
+      "good": "House {house} still speaks of the King's feast, {seasons} seasons on.",
+      "bad": "The warmth of the King's feast is gone from House {house}."
+    },
+    "gift": {
+      "test": "favour",
+      "good": "House {house} has not forgotten the crown's gift.",
+      "bad": "The crown's gold is spent, and House {house} has cooled again."
+    },
+    "alliance": {
+      "test": "favour",
+      "good": "House {house} keeps its oath to the crown.",
+      "bad": "House {house} swore to the crown, and its oath already wears thin."
+    },
+    "back": {
+      "test": "grudge",
+      "good": "House {house} has let {town} go, and speaks of the King's judgement without bitterness.",
+      "bad": "House {house} has not forgotten {town}. Its lord still names the King's judgement as a wrong."
+    },
+    "relief": {
+      "test": "fed",
+      "good": "{town} came through on the crown's grain.",
+      "bad": "{town} is hungry again; the crown's grain is long eaten."
+    },
+    "build": {
+      "test": "stands",
+      "good": "The {building} the crown paid for stands in {town}, and the town is the better for it.",
+      "bad": "{town} is {holder}'s now, and the {building} the crown paid for with it."
+    },
+    "peace": {
+      "test": "peace",
+      "good": "The King's peace between {house} and {other} holds, {seasons} seasons on.",
+      "bad": "{house} and {other} are at war again. The King's peace bought {seasons} seasons."
+    }
+  }
+}

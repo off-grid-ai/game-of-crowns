@@ -15,6 +15,8 @@ var ui: UI
 var _panel: PanelContainer
 var _grid: GridContainer
 var _tw: Tween
+var _head: Label
+var _line: Label  # what came of an order, in the chronicle's words (aftermath); hidden for a choice's own answer
 
 
 func _init(owner: UI) -> void:
@@ -33,7 +35,12 @@ func _build() -> void:
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", T.GAP)
 	_panel.add_child(box)
-	box.add_child(T.label(String(Data.value("ui", "reckoning.head", "What it changed")).to_upper(), T.TEXT_3))
+	_head = T.label("", T.TEXT_3)
+	box.add_child(_head)
+	_line = T.label("", T.TEXT)
+	_line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_line.custom_minimum_size.x = Data.num("ui", "reckoning.width", 460.0)
+	box.add_child(_line)
 	_grid = GridContainer.new()
 	_grid.columns = 4
 	_grid.add_theme_constant_override("h_separation", T.GAP_WIDE)
@@ -41,10 +48,14 @@ func _build() -> void:
 	box.add_child(_grid)
 
 
-## Shows the rows a choice moved ([{label, from, to, word, sign}]); nothing when it moved nothing.
-func show(rows: Array) -> void:
-	if _panel == null or rows.is_empty():
+## Shows the rows a choice moved ([{label, from, to, word, sign}]); nothing when it moved nothing. `said`: what came of
+## an order seasons on (aftermath.js), headed "What came of it" with its line; empty for a choice's own answer.
+func show(rows: Array, said := "") -> void:
+	if _panel == null or (rows.is_empty() and said == ""):
 		return
+	_head.text = String(Data.value("ui", "reckoning.came" if said != "" else "reckoning.head", "What came of it" if said != "" else "What it changed")).to_upper()
+	_line.text = said
+	_line.visible = said != ""
 	for c in _grid.get_children():
 		c.queue_free()
 	var size := int(Data.num("ui", "reckoning.size", 17.0))
@@ -61,6 +72,7 @@ func show(rows: Array) -> void:
 			l.modulate.a = 0.0
 			_grid.add_child(l)
 			cells.append(l)
+	_grid.visible = not cells.is_empty()
 	_panel.reset_size()
 	_place()
 	_panel.modulate.a = 1.0

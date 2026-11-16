@@ -36,6 +36,7 @@ import * as Next from "./next.js";
 import * as Director from "./director.js";
 import * as Lua from "./lua.js";
 import * as Reign from "./reign.js";
+import * as Aftermath from "./aftermath.js";
 import { houseFor, cityName } from "./narrator.js";
 import { say } from "./say.js";
 import { decree, clampFavour } from "./crown.js";
@@ -80,6 +81,7 @@ export function turn(ctx, ev) {
   War.upkeep(ctx, Number(ev.turn));  // what the crown's wars cost this season (war.js upkeep)
   Coalition.season(ctx, Number(ev.turn));
   Reign.ambitions(ctx);  // the King's promises are judged when the season turns, not only on the reign clock (which waits through a sitting): a promise never stands open at its due season
+  Aftermath.season(ctx, Number(ev.turn));  // the King's orders come back, judged on the realm now (aftermath.js)
   Contagion.season(ctx, Number(ev.turn));
   Prices.season(ctx, Number(ev.turn));  // the market's prices follow the harvest, the wars and the roads (prices.js)  // the sickness walks the trade roads (contagion.js)  // the rival King beyond the border probes it (rivals.js)  // the King's named men after last season's battles: some fall, some rise (captains.js)  // the great houses' sieges change approach after a failed storm (siegecraft.js)  // the King's promises kept or broken (promises.js)  // the King's household ages; a King may die and his heir reign (royals.js)
   setTimeout(() => ctx.runArcs(1), 4000);
