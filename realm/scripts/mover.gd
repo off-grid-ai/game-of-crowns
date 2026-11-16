@@ -53,6 +53,7 @@ var _face := true  # turns into its way (off for a step back from a blow, or a d
 # walks, never crabbing sideways or backing. wheel: radians a second it wheels on the spot (0: not a block); wheel_slide:
 # the most its front may stand off its way while it walks; wheel_near: within this of its mark it faces the look it
 # was given and may sidestep; wheel_most: a turn wider than this calls `about` (its men about-face where they stand).
+var steer_arc := 0.0  # a block of horse steering toward a mark (toward): it turns only by riding forward on an arc at least this wide, as turn_radius does on a road; 0, it steps any way
 var wheel := 0.0
 var wheel_slide := 0.35
 var wheel_near := 0.3
@@ -225,6 +226,7 @@ var _asked := 0  # the frame toward() was last called
 var _reroute := 0.0
 var _agent := RID()
 var _safe := Vector3.ZERO
+var _in_crowd := true  # out of the crowd (crowd_on(false)) the crowd answers nothing: it steers by its own way, never by the crowd's last word (a horse on its charge rode off the field on it)
 var _held := 0.0
 var _flagged := false  # the crowd once held him still a whole second (CHECK line said)
 
@@ -331,6 +333,7 @@ func crowd_safe() -> Vector2:
 ## The walker in the crowd's sums (`on`) or out of them (its town off screen, or it stood down): an agent out of them
 ## costs the avoidance nothing and is in nobody's way.
 func crowd_on(on: bool) -> void:
+	_in_crowd = on
 	if _agent.is_valid():
 		NavigationServer3D.agent_set_avoidance_enabled(_agent, on)
 
@@ -713,7 +716,10 @@ func _steer_step(body: Node3D, delta: float) -> void:
 		set_process(false)
 		return
 	var at := body.global_position
-	while _i < _way.size() - 1 and Vector2(_way[_i].x - at.x, _way[_i].z - at.z).length() < 0.03:
+	# A corner of its way is passed within a step of it; a body on an arc (horse) within its arc of it (it cannot turn
+	# tightly enough to touch every corner: it circled one for a whole ride, 21 rad by field_clash_probe).
+	var pass_r := maxf(0.03, (turn_radius if turn_radius > 0.0 else steer_arc) * 0.9)
+	while _i < _way.size() - 1 and Vector2(_way[_i].x - at.x, _way[_i].z - at.z).length() < pass_r:
 		_i += 1
 	var aim := _way[mini(_i, _way.size() - 1)]
 	var to := Vector3(aim.x - at.x, 0, aim.z - at.z)
@@ -728,7 +734,7 @@ func _steer_step(body: Node3D, delta: float) -> void:
 	if _agent.is_valid():
 		NavigationServer3D.agent_set_position(_agent, at)
 		NavigationServer3D.agent_set_velocity(_agent, want)
-		if NavigationServer3D.map_is_active(NavigationServer3D.agent_get_map(_agent)):
+		if _in_crowd and NavigationServer3D.map_is_active(NavigationServer3D.agent_get_map(_agent)):
 			# Held stock-still by the crowd for a whole second while he means to move: let through (a crowd must
 			# never freeze silently).
 			_held = _held + delta if want.length() > 0.05 and _safe.length() < 0.005 else 0.0
@@ -737,6 +743,25 @@ func _steer_step(body: Node3D, delta: float) -> void:
 			elif not _flagged:
 				_flagged = true
 				print("CHECK avoidance held a fighter still for a second")  # once a man, as battle_ai did; the round greps it
+	var arc := turn_radius if turn_radius > 0.0 else steer_arc
+	if arc > 0.0:
+		# Horse goes where it faces and turns by going (Mac 2026-11-16: "horse movement sideways is a big problem",
+		# "the horses just rotate on the same spot, instead of gradually moving ahead, and moving left like they
+		# should"): its heading turns toward its way by at most its step over its arc, and it steps along its heading.
+		# Near its mark the arc tightens to half what is left, so it rides in to it and never circles it.
+		var pace := want.length()
+		if pace < 0.01:
+			_vel = _vel.lerp(Vector3.ZERO, minf(1.0, delta * 6.0))
+			_put(body, at + _vel * delta)
+			return
+		var left := to.length()  # to the point it steers at
+		var step := (maxf(pace, speed * 0.4) if left > arc else pace) * delta  # it keeps riding through a turn, slower; near its mark it slows in to it
+		var bend := minf(arc, maxf(left * 0.5, 0.02))
+		var yaw := body.rotation.y + clampf(angle_difference(body.rotation.y, atan2(want.x, want.z)), -step / bend, step / bend)
+		body.rotation.y = yaw
+		_vel = Vector3(sin(yaw), 0, cos(yaw)) * (step / maxf(delta, 0.0001))
+		_put(body, at + _vel * delta)
+		return
 	_vel = _vel.lerp(want, minf(1.0, delta * 6.0)) if is_nan(wheel_to) else Vector3.ZERO
 	at += _vel * delta
 	_put(body, at)

@@ -9,6 +9,16 @@ extends SceneTree
 ##   arch -arm64 godot --headless --path realm -s res://tools/field_clash_probe.gd
 
 const SECS := 45.0
+## What Mac's eye caught, caught here instead (2026-11-16: "the entire troop still spins like a pinwheel", "half of
+## the troops aren't really doing anything", "6 fps very slow"): a block's most turning in one task (radians: a ride
+## round a wing turns it about once; the foot hardly at all), its longest stand with a task and a foe on the field
+## once the lines have met (seconds), and the fight's mean frames a second.
+const SPIN_MOST := {"flank": TAU, "rideout": TAU, "reform": TAU, "relieved": TAU, "rally": TAU, "rout": 1000.0, "charge": 1.25 * PI}  # a charge may turn in from its run-up and home on its mark, never circle him
+const SPIN_ELSE := PI
+const TURN_WINDOW := 10.0  # and its most turning in any stretch this long, whatever its tasks (a horse that turned round and round between a ride and a charge)
+const TURN_MOST := 4.0 * PI  # a cycle charge wheels about once in the open (a whole turn) and turns in again
+const IDLE_MOST := 8.0
+const FPS_LEAST := 20.0
 
 var main: Node
 var fail := 0
@@ -96,6 +106,10 @@ func _run() -> void:
 		if a.begins_with("--secs="):
 			secs = float(a.substr(7))  # watch longer, to the day's end
 			whole = true
+	var late := 0
+	var watch := {}  # a regiment's body id -> what _watch keeps of it
+	var fps_sum := 0.0
+	var fps_n := 0
 	while Time.get_ticks_msec() - start < int(secs * 1000.0) and not bool(field.get("_over")):
 		for k in 16:
 			await create_timer(every).timeout
@@ -116,6 +130,13 @@ func _run() -> void:
 			if out != "" and Time.get_ticks_msec() - start < 24000:
 				shot += 1
 				root.get_texture().get_image().save_jpg("%s/f%03d.jpg" % [out, shot], 0.8)
+			elif out != "" and k % 4 == 0:
+				late += 1  # the rest of the fight, two frames a second (the game's own picture, never the screen)
+				root.get_texture().get_image().save_jpg("%s/g%03d.jpg" % [out, late], 0.7)
+			else:
+				fps_sum += Engine.get_frames_per_second()  # read while no frame is being saved (the saving costs its own)
+				fps_n += 1
+			_watch(field, watch, every)
 		var foot := _foot(field)
 		for r in foot:
 			if String(r.get("state_name", "")) in ["fight", "rout", "hold"]:
@@ -152,8 +173,71 @@ func _run() -> void:
 	var ran := foot.filter(func(r): return r.get("ran", false)).size()
 	_check(ran == foot.size(), "every foot regiment ran the last stretch (%d of %d)" % [ran, foot.size()])
 	_check(waiting == 0, "every foot regiment of both sides closes to blows within %d s (%d still short; %s)" % [int(SECS), waiting, str(states)])
+	var spun := []
+	var idled := []
+	for id in watch:
+		var w: Dictionary = watch[id]
+		var who := "side %d %s" % [int(w["side"]), String(w["role"])]
+		if float(w["spin"]) > float(SPIN_MOST.get(String(w["spin_in"]), SPIN_ELSE)):
+			spun.append("%s turned %.1f rad in one %s" % [who, float(w["spin"]), String(w["spin_in"])])
+		if float(w.get("wheeled", 0.0)) > TURN_MOST:
+			spun.append("%s turned %.1f rad within %d s" % [who, float(w["wheeled"]), int(TURN_WINDOW)])
+		if float(w["idle"]) > IDLE_MOST:
+			idled.append("%s stood %.0f s in %s" % [who, float(w["idle"]), String(w["idle_in"])])
+	_check(spun.is_empty(), "no block spins on the spot (%s)" % ("none" if spun.is_empty() else "; ".join(spun)))
+	_check(idled.is_empty(), "no block with a foe on the field stands idle over %d s once the lines have met (%s)" % [int(IDLE_MOST), "none" if idled.is_empty() else "; ".join(idled)])
+	_check(fps_n == 0 or fps_sum / fps_n >= FPS_LEAST, "the fight keeps %d frames a second (mean %.0f over %d reads)" % [int(FPS_LEAST), fps_sum / maxf(fps_n, 1.0), fps_n])
 	preload("res://scripts/settings.gd").set_value("pause_when_needed", _was_pause)
 	quit(1 if fail > 0 else 0)
+
+
+## One read of every regiment standing: how far it has turned in its present task (the most kept, with the task), and
+## how long it has stood where it is while it has a task to move on and a foe stands (the longest kept).
+var _ever_met := false
+func _watch(field: Node, watch: Dictionary, dt: float) -> void:
+	var sides: Array = field.get("sides")
+	_ever_met = _ever_met or bool(field.met())
+	for i in sides.size():
+		var foe_stands := false
+		for f in sides[1 - i].rows():
+			if int(f.get("living", 0)) > 0 and String(f.get("state_name", "")) != "rout":
+				foe_stands = true
+		for r in sides[i].rows():
+			if int(r.get("living", 0)) <= 0:
+				continue
+			var node: Node3D = r["node"]
+			var st := String(r.get("state_name", ""))
+			var w: Dictionary = watch.get_or_add(node.get_instance_id(), {"side": i, "role": String(r.get("role", "")), "state": st,
+				"yaw": node.rotation.y, "turned": 0.0, "spin": 0.0, "spin_in": st, "at": node.global_position, "still": 0.0, "idle": 0.0, "idle_in": st})
+			var job: Variant = r.get("task") if r.get("task") is Dictionary else r.get("target")
+			var key := st if not job is Dictionary else "%s at %d" % [st, ((job as Dictionary)["node"] as Object).get_instance_id()]  # a new mark is a new task
+			if key != String(w["state"]):
+				w["state"] = key
+				w["turned"] = 0.0
+				w["still"] = 0.0
+			var dyaw := absf(angle_difference(float(w["yaw"]), node.rotation.y))
+			var turns: Array = w.get_or_add("turns", [])
+			turns.append(dyaw)
+			if turns.size() > int(TURN_WINDOW / dt):
+				turns.pop_front()
+			var sum := 0.0
+			for x in turns:
+				sum += float(x)
+			if st != "rout" and sum > float(w.get("wheeled", 0.0)):
+				w["wheeled"] = sum
+			w["turned"] = float(w["turned"]) + dyaw
+			w["yaw"] = node.rotation.y
+			if float(w["turned"]) > float(w["spin"]):
+				w["spin"] = w["turned"]
+				w["spin_in"] = st
+			var was: Vector3 = w["at"]
+			var moved := Vector2(node.global_position.x - was.x, node.global_position.z - was.z).length()
+			w["at"] = node.global_position
+			var waits: bool = _ever_met and foe_stands and String(r.get("role", "")) != "ranged" and st in ["stand", "flank", "advance", "charge", "reform"] and moved < 0.002
+			w["still"] = float(w["still"]) + dt if waits else 0.0
+			if float(w["still"]) > float(w["idle"]):
+				w["idle"] = w["still"]
+				w["idle_in"] = st
 
 
 func _foot(field: Node) -> Array:

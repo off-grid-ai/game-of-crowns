@@ -106,7 +106,9 @@ func _look_round() -> void:
 		if p == null:
 			continue
 		var n := (p as Node).get_parent() as Node3D
-		if n and n.has_meta("glance") and n.global_position.distance_squared_to(from) < r2 and n.is_visible_in_tree():
+		# In the world first (a body of a town put away is still held live: asking where it stood logged an engine
+		# error with its whole backtrace, thousands a minute beside a battle).
+		if n and n.is_inside_tree() and n.has_meta("glance") and n.global_position.distance_squared_to(from) < r2 and n.is_visible_in_tree():
 			near.append(n)
 	# Who stands where, in cells a notice wide: each person looks only at the 3x3 cells round them, never at every
 	# other person near the lens (a packed square or a siege's ranks: hundreds near, n x n checks, 9 ms+ a look round).

@@ -6,7 +6,7 @@
     "levy": { "role": "melee", "glyph": "spear", "share": 0.0, "men": 150, "asset": "armies/levy", "cloth": { "undyed": [0.52, 0.45, 0.35], "band": [0.78, 0.88] }, "freeciv": ["Warriors"] },
     "archers": { "role": "ranged", "glyph": "bow", "share": 0.2, "men": 150, "asset": "armies/meshy_ranger", "cloth": {"undyed": [0.32, 0.35, 0.22], "band": [0.62, 0.8]}, "freeciv": ["Archers"] },
     "knights": { "role": "melee", "glyph": "sword", "share": 0.1, "men": 120, "asset": "armies/meshy_knight", "cloth": {"undyed": [0.26, 0.27, 0.3], "band": [0.36, 0.84]}, "freeciv": ["Legion"] },
-    "horse": { "role": "cavalry", "glyph": "horse", "share": 0.15, "men": 100, "asset": "armies/cavalry", "spacing": { "file": 0.19, "rank": 0.32 }, "cloth": { "undyed": [0.8, 0.77, 0.7], "band": [0.5, 1.0] }, "freeciv": ["Horsemen", "Chariot", "Knights", "Crusaders", "Elephants", "Dragoons", "Cavalry"] },
+    "horse": { "role": "cavalry", "glyph": "horse", "share": 0.15, "men": 100, "asset": "armies/cavalry", "spacing": { "file": 0.27, "rank": 0.46 }, "cloth": { "undyed": [0.8, 0.77, 0.7], "band": [0.5, 1.0] }, "freeciv": ["Horsemen", "Chariot", "Knights", "Crusaders", "Elephants", "Dragoons", "Cavalry"] },
     "engines": { "role": "ranged", "glyph": "engine", "share": 0.0, "men": 100, "asset": "armies/meshy_knight", "spacing": { "file": 0.25, "rank": 0.3 }, "freeciv": ["Catapult", "Cannon", "Artillery", "Howitzer"] }
   },
   "fallbackUnit": "men_at_arms",

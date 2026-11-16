@@ -76,6 +76,7 @@ func plan() -> void:
 		elif r["role"] == "melee" and int(r.get("line_no", 1)) != 2:
 			r.erase("task")
 			field._send(r, &"advance")  # in its place in the line, marching with it or standing
+	_write_plan()
 	Mind.send(me, &"hold" if holds else &"advance")
 
 
@@ -83,6 +84,126 @@ func plan() -> void:
 func order(key: String) -> void:
 	field.reorder(side, key)
 	Mind.send(me, &"reform")
+
+
+# --- The battle plan ---------------------------------------------------------------------------------------
+
+## The captain's plan, written before the lines move and again when a new order has formed them (Mac 2026-11-16: "you
+## need to create a routine or battle plan for both the armies that they need to follow properly", "this on the fly
+## stuff is really weird"; Total War's battle AI plans its line, its flanks and its reserve before it advances). Every
+## regiment gets its list of marks, in the order it takes them (r.plan):
+##   - foot: the foe's block across from its own place in the line (first to first, last to last along the front),
+##     then that block's neighbours, nearest first: its own foe broken, it wheels onto the next one's flank;
+##   - horse: the foe's block at the end of the line on its own wing, then inward (it rolls the line up from its end);
+##   - archers: the foe across from them, then outward.
+## Regiments only work down their lists (_mark); nothing is re-picked while a mark stands.
+func _write_plan() -> void:
+	var face: float = (field.sides[side]).facing()
+	var right := Vector3(cos(face), 0, -sin(face))
+	var lat := func(x: Dictionary) -> float: return ((x["node"] as Node3D).global_position).dot(right)
+	var foes := _foes()
+	var front: Array = foes.filter(func(f): return f["role"] == "melee")
+	if front.is_empty():
+		front = foes
+	if front.is_empty():
+		return
+	front.sort_custom(func(a, b): return float(lat.call(a)) < float(lat.call(b)))
+	var mine: Array = _rows().filter(func(r): return _standing(r) and r["role"] == "melee" and int(r.get("line_no", 1)) != 2)
+	mine.sort_custom(func(a, b): return float(lat.call(a)) < float(lat.call(b)))
+	for i in mine.size():
+		var j := int(round(float(i) * float(front.size() - 1) / float(mine.size() - 1))) if mine.size() > 1 else front.size() / 2
+		(mine[i] as Dictionary)["plan"] = _by_nearness(front, float(lat.call(front[j])), lat)
+	var rest: Array = foes.filter(func(f): return not front.has(f) and f["role"] != "cavalry")  # their archers, last
+	for r in _rows():
+		if not _standing(r) or mine.has(r):
+			continue
+		(r as Dictionary)["plan"] = _by_nearness(front, float(lat.call(r)), lat) + _by_nearness(rest, float(lat.call(r)), lat)
+
+
+## `list` in order of nearness along the front to the place `at`.
+func _by_nearness(list: Array, at: float, lat: Callable) -> Array:
+	var out := list.duplicate()
+	out.sort_custom(func(a, b): return absf(float(lat.call(a)) - at) < absf(float(lat.call(b)) - at))
+	return out
+
+
+## The next mark on r's list still standing (clear of the press, for archers); {} when its list is spent.
+func _mark(r: Dictionary, clear := false) -> Dictionary:
+	for f in r.get("plan", []):
+		if _standing(f) and not (clear and String((f as Dictionary).get("state_name", "")) == "fight"):
+			return f
+	return {}
+
+
+## A horse block's ride at `mark`, planned whole before it sets off: the points of its way to its run-up, from where
+## it charges straight in (army_field.gd _flank follows them, _charge rides the last straight, _ride_out_in pulls it
+## back to the run-up to charge again). The flank of its mark on the horse's own wing if no other block stands there,
+## else his rear; and round the outside of both lines (field.cavalry.wide clear of the last block) when the straight
+## way to the run-up is shut, never through its own foot.
+func _plan_ride(r: Dictionary, mark: Dictionary) -> Array:
+	var mine: Node = field.sides[side]
+	var face: float = mine.facing()
+	var right := Vector3(cos(face), 0, -sin(face))
+	var fwd := Vector3(sin(face), 0, cos(face))
+	var mid: Vector3 = mine.field()
+	var at: Vector3 = (r["node"] as Node3D).global_position
+	var to := _will_stand(mark)
+	var sgn := signf((at - mid).dot(right))
+	if sgn == 0.0:
+		sgn = 1.0
+	var run := float(r["d"]) * 0.5 + Data.num(F, "field.cavalry.run", 1.2)
+	var runup: Vector3 = to + right * sgn * (float(mark["w"]) * 0.5 + run)  # out on his flank, on its own wing
+	if field._block_near(r, mark, to + right * sgn * float(mark["w"]) * 0.5, float(r["w"]) * 0.5):
+		runup = to + fwd * (float(mark["d"]) * 0.5 + run)  # that flank is taken: behind him
+	var way: Array = []
+	# Already by its run-up (planned again after a charge there): straight in from it, never out round the wing and
+	# back (a whole loop on the spot, 8 rad by field_clash_probe).
+	var there := Vector2(runup.x - at.x, runup.z - at.z).length() <= Data.num(F, "field.cavalry.near", 0.5) * 2.0
+	if not there and not field._way_clear(r, at, runup, mark):
+		# Round the outside of both lines: out past the last block on its wing, level with where it stands, then up
+		# that side level with its run-up.
+		var far := 0.0
+		for i in 2:
+			for x in (field.sides[i]).rows():
+				if _standing(x) and not is_same(x, r):
+					far = maxf(far, ((x["node"] as Node3D).global_position - mid).dot(right * sgn) + float(x["w"]) * 0.5)
+		var out := far + float(r["w"]) * 0.5 + Data.num(F, "field.cavalry.wide", 1.0)
+		var level: Vector3 = mid + right * sgn * out + fwd * (runup - mid).dot(fwd)  # out on that side, level with its run-up
+		var first: Vector3 = mid + right * sgn * out + fwd * (at - mid).dot(fwd)  # out on that side, level with where it stands
+		# The first only when it is on its way and ahead of where it heads (never a point behind it: it doubled back in
+		# a loop to one, 10 rad by field_clash_probe) and the straight way to the second is shut.
+		var heads: Vector3 = (r["node"] as Node3D).global_basis.z
+		if (first - at).dot(level - at) > 0.0 and (first - at).dot(heads) > 0.0 and not field._way_clear(r, at, level, mark):
+			way.append(first)
+		way.append(level)
+	way.append(runup)
+	return way
+
+
+## Where a mark will stand once the lines are locked: where it stands, or, still closing on the block it was sent at,
+## where the two will meet (its own side of their middle). A ride is planned to there, so it needn't be planned again
+## as the mark marches in.
+func _will_stand(mark: Dictionary) -> Vector3:
+	var at: Vector3 = (mark["node"] as Node3D).global_position
+	if String(mark.get("state_name", "")) != "advance":
+		return at
+	# Whom it will meet: the block it was sent at, or (its own captain's word not yet given) the block of this side
+	# whose plan sends it at him first.
+	var foe: Variant = mark.get("task")
+	if not _standing(foe):
+		foe = null
+		for x in _rows():
+			if x["role"] == "melee" and _standing(x) and is_same(_mark(x), mark):
+				foe = x
+				break
+	if not _standing(foe):
+		return at
+	var theirs: Vector3 = ((foe as Dictionary)["node"] as Node3D).global_position
+	var apart := Vector3(at.x - theirs.x, 0.0, at.z - theirs.z)
+	if apart.length() < 0.01:
+		return at
+	var meet := (at + theirs) * 0.5 + apart.normalized() * (float(mark["d"]) * 0.5 + Data.num(F, "field.contact", 0.12) * 0.5)
+	return Vector3(meet.x, at.y, meet.z)
 
 
 func _say(text: String) -> void:
@@ -113,10 +234,10 @@ func _hold(_g: Dictionary, _dt: float) -> void:
 ## The whole front runs in together, each block on the foe in its lane (or, its lane clear, the nearest ahead).
 func _charge_in(_g: Dictionary) -> void:
 	_say("the line charges")
+	_horse(_foes())  # the horse sets off round the wing as the foot go in, to strike as the lines lock (Mac 2026-11-16: "why dont the horses attack", "they just go and wait there": sent only once the lines had locked, it was 15 s riding round)
 	for r in _rows():
 		if r["role"] == "melee" and int(r.get("line_no", 1)) != 2 and String(r.get("state_name", "")) == "advance":
-			var foe: Dictionary = field._lane_foe(r)
-			r["task"] = foe if not foe.is_empty() else field._opposite_foe(r)
+			r["task"] = _mark(r)
 
 
 func _charge(_g: Dictionary, _dt: float) -> void:
@@ -156,65 +277,70 @@ func _gap() -> float:
 	return g
 
 
-## Foot with no foe (the foe charged first, its foe broke, it rallied): on the foe head on in its lane, so the line
-## meets the line where it stands (Mac 2026-11-16: the foe's charge drew every block to the first fight, the line
-## folded into a column); its lane clear, onto the flank of the nearest foe fighting one of its side; else the nearest.
-func _foot(foes: Array) -> void:
+## Foot with no foe (the foe charged first, its foe broke, it rallied): the next on its list in the plan (its own
+## foe across the line first, so the line meets the line where it stands; then his neighbours, nearest first, onto
+## their flank).
+func _foot(_foes: Array) -> void:
 	if not bool(Data.value("battle_orders", "orders.%s.advance" % String(field.orders[side]), true)):
 		return  # a wall holds: a block whose foe broke stands back in its place
 	for r in _rows():
 		if r["role"] != "melee" or int(r.get("line_no", 1)) == 2 or r.has("relieve"):
 			continue
+		if String(r.get("state_name", "")) == "stand" and String(r.get("post", "")) != "reserve":
+			field._send(r, &"advance")  # formed again after a rally: back into the fight (it stood out the battle, 12 s idle by field_clash_probe)
 		if String(r.get("state_name", "")) != "advance" or _standing(r.get("task")):
 			continue
-		var lane: Dictionary = field._lane_foe(r)
-		if not lane.is_empty():
-			r["task"] = lane
+		var next := _mark(r)
+		if next.is_empty():
 			continue
-		var at: Vector3 = (r["node"] as Node3D).global_position
-		var best := {}
-		var bd := INF
-		for f in foes:
-			if String(f.get("state_name", "")) != "fight" or f["role"] == "cavalry":
-				continue
-			var d := at.distance_to((f["node"] as Node3D).global_position)
-			if d < bd:
-				bd = d
-				best = f
-		if best.is_empty():
-			best = field._nearest_foe(r)
-		if not best.is_empty():
-			r["task"] = best
-			if String(best.get("state_name", "")) == "fight":
-				_say("a block wheels onto their flank")
+		r["task"] = next
+		if String(next.get("state_name", "")) == "fight":
+			_say("a block wheels onto their flank")
 
 
-## The horse: once the lines are locked, round at the flank of the foe block at blows nearest its wing (the hammer),
-## the reserve with them; a foe's horse already at our flank first.
-func _horse(foes: Array) -> void:
+## The horse: once the lines are locked, at the next mark on its list in the plan (the foe's block at the end of the
+## line on its own wing first, then inward: it rolls up the line), by a ride planned whole before it sets off
+## (_plan_ride). Its mark is kept while it stands; a ride that proved shut puts that mark last and plans the next.
+func _horse(_foes: Array) -> void:
 	for r in _rows():
 		if r["role"] != "cavalry" or not _standing(r):
 			continue
 		var st := String(r.get("state_name", ""))
 		if not st in ["stand", "flank"]:
 			continue
-		var at: Vector3 = (r["node"] as Node3D).global_position
-		var best := {}
-		var bd := INF
-		for f in foes:
-			var busy := String(f.get("state_name", "")) == "fight"
-			if not busy and f["role"] != "cavalry":
-				continue
-			var d := at.distance_to((f["node"] as Node3D).global_position) * (1.0 if busy else Data.num(F, "field.general.horse_vs_horse", 0.8))
-			if d < bd:
-				bd = d
-				best = f
-		if best.is_empty():
+		if r.get("ride_failed", false):
+			r.erase("ride_failed")
+			var list: Array = r.get("plan", [])
+			var was: Variant = r.get("target")
+			if was is Dictionary and list.has(was):
+				list.erase(was)
+				list.append(was)
+			r.erase("target")
+		if _standing(r.get("target")) and r.has("ride"):
+			# Its mark has moved since its ride was planned (field.cavalry.moved): planned anew to where he stands now.
+			var m: Dictionary = r["target"]
+			if st == "flank" and (_will_stand(m) - (r.get("ride_mark_at", _will_stand(m)) as Vector3)).length() > Data.num(F, "field.cavalry.moved", 1.0):
+				_send_horse(r, m)
+			elif st == "stand":
+				_send_horse(r, m)  # formed again with its mark still standing: off at him by a ride planned from where it stands now (it stood 10 s, field_clash_probe)
 			continue
-		r["target"] = best
-		if st == "stand":
-			field._send(r, &"flank")
-			_say("the reserve rides out" if String(r.get("post", "")) == "reserve" else "the horse goes round their flank")
+		var next := _mark(r)
+		if next.is_empty():
+			continue
+		_send_horse(r, next)
+		_say("the reserve rides out" if String(r.get("post", "")) == "reserve" else "the horse goes round their flank")
+
+
+## A horse block sent at `mark` by a ride planned now.
+func _send_horse(r: Dictionary, mark: Dictionary) -> void:
+	r["target"] = mark
+	r["ride"] = _plan_ride(r, mark)
+	r["ride_i"] = 0
+	r["ride_mark_at"] = _will_stand(mark)
+	if OS.get_cmdline_user_args().has("--where"):  # test aid: the planned ride, to read against the block's track
+		print("PLAN side%d horse from %s at mark %s by %s" % [side, str((r["node"] as Node3D).global_position), str((mark["node"] as Node3D).global_position), str(r["ride"])])
+	if String(r.get("state_name", "")) == "stand":
+		field._send(r, &"flank")
 
 
 ## A foe horse in among one of its blocks is answered (Total War: a unit charged turns on the horse, and its general
@@ -247,31 +373,23 @@ func _answer_horse(foes: Array) -> void:
 		if best.is_empty():
 			continue
 		if best["role"] == "cavalry":
-			best["target"] = h
-			if String(best.get("state_name", "")) == "stand":
-				field._send(best, &"flank")
+			_send_horse(best, h)
 		else:
 			best["task"] = h
 			field._send(best, &"advance")
 		_say("%s turn on their horse" % ("our horse" if best["role"] == "cavalry" else "a block"))
 
 
-## Archers: on the nearest foe not at blows (never into the press).
-func _archers(foes: Array) -> void:
+## Archers: on the first mark on their list in the plan that stands clear of the press (never into it), kept while
+## it does.
+func _archers(_foes: Array) -> void:
 	for r in _rows():
 		if r["role"] != "ranged" or String(r.get("state_name", "")) != "volley":
 			continue
-		var at: Vector3 = (r["node"] as Node3D).global_position
-		var best := {}
-		var bd := INF
-		for f in foes:
-			if String(f.get("state_name", "")) == "fight":
-				continue
-			var d := at.distance_to((f["node"] as Node3D).global_position)
-			if d < bd:
-				bd = d
-				best = f
-		r["target"] = best
+		var has: Variant = r.get("target")
+		if _standing(has) and String((has as Dictionary).get("state_name", "")) != "fight":
+			continue
+		r["target"] = _mark(r, true)
 
 
 ## The second line relieves a worn block (battle_orders.json relief): the nearest second-line block still standing
