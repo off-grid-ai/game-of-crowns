@@ -16,7 +16,12 @@ import path from "node:path";
 const THOUGHTS = JSON.parse(fs.readFileSync(new URL("./data/thoughts.json", import.meta.url), "utf8"));
 import { cityName } from "./narrator.js";
 
-const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];  // one of a list, at random (03e67722 took it, its callers stayed)
+const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+// A rumour's gist, for a bond's note: its "they say" and end stop dropped, at most 60 letters.
+const short = (t) => {
+  const s = String(t).replace(/^they say( that)?\s*/i, "").replace(/[.!]+$/, "");
+  return s.length <= 60 ? s : `${s.slice(0, 60).replace(/\s+\S*$/, "")}…`;
+};  // one of a list, at random (03e67722 took it, its callers stayed)
 
 // Who carries news between towns.
 const TRAVELLERS = new Set(["carter", "friar", "anchoress", "pedlar", "soldier", "minstrel"]);
@@ -214,6 +219,11 @@ export class Chatter {
       if (x < d) { d = x; best = o.id; }
     }
     return best;
+  }
+
+  // The teller's freshest rumour that someone here hasn't heard yet, or null.
+  news(m, listeners) {
+    return this.minds.rumours(m.id).filter((b) => listeners.some((l) => !this.minds.knows(l.id, b.rumour))).at(-1) ?? null;
   }
 
   // Gossip without words (cold minds): the teller's freshest rumour passes on, grown a little.
