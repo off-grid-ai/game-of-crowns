@@ -646,13 +646,32 @@ function grudgeOf(ctx) {
   return { key: houseFor(p).key, house: houseFor(p).name, favour: Math.round(favourOf(p.id)), cause: causeOf?.(p.id) || null };
 }
 
+// Whether the climax the last act named is still coming (director.json finale.grace holds the clock for it):
+// the pretender's rumour or march, the finale's host on the road, or the named story still running.
+export function climaxComing(ctx) {
+  const { meta, stakes, arcs } = ctx;
+  const kind = meta.lastAct?.kind;
+  if (kind === "pretender") return ["rumour", "march"].includes(stakes?.s?.usurper?.stage);
+  if (kind === "houses") return !!meta.director?.threat?.finale;
+  if (kind === "story") return arcs?.reignView?.()?.status === "running";
+  return false;
+}
+
 // The reign's clock, every five seconds while the realm runs and the King
 // watches (server.js holds it for a sitting, an unread act or an empty window).
 export function tick(ctx) {
   const { meta } = ctx;
   meta.elapsedMs += 5000;
   ledgerFrom(ctx);
-  if (meta.minutes > 0 && meta.elapsedMs >= meta.minutes * 60000) endReign(ctx, "The appointed time has passed. The reign ends.");
+  const hour = meta.minutes * 60000;
+  // The hour come while what the last act named is still on its way: the reign ends when it is decided (finale.grace).
+  const waits = meta.minutes > 0 && meta.elapsedMs >= hour && climaxComing(ctx) && meta.elapsedMs < hour * (1 + (Director.DIRECTOR.finale?.grace ?? 0));
+  if (waits && !meta.climaxWait) {
+    meta.climaxWait = ctx.world?.turn ?? 0;
+    chron.saveMeta(meta);
+    ctx.record?.({ turn: ctx.world?.turn ?? 0, kind: "act", text: `The reign's hour has come, but ${meta.lastAct.threat} is still coming. It ends when that is decided.` });
+  }
+  if (meta.minutes > 0 && meta.elapsedMs >= hour && !waits) endReign(ctx, "The appointed time has passed. The reign ends.");
   else {
     lastAct(ctx);
     ambitions(ctx);

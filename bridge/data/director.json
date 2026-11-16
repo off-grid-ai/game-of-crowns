@@ -4,7 +4,7 @@
   "quietSeasons": 9,
   "quietByAct": [9, 9, 6, 3],
   "breather": 6,
-  "finale": { "landAt": 0.92, "kind": "host" },
+  "finale": { "landAt": 0.92, "kind": "host", "_grace": "reign.js tick: the reign's clock waits while the climax the last act named is still coming (the pretender's rumour or march, the finale's host, the named story running), at most grace of the reign's length past its hour; Thronefall's last night is fought, not timed out (the Last Accord, 2026-11-16: Thornvale's host named at turn 55 was still on the road when the clock ended the reign at 63).", "grace": 0.25 },
   "threats": {
     "host": {
       "weight": 3,
