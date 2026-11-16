@@ -119,7 +119,7 @@
         "flank": { "enter": "_walk_in", "tick": "_flank" },
         "charge": { "enter": "_charge_in", "tick": "_charge" },
         "rideout": { "enter": "_ride_out_in", "tick": "_ride_out" },
-        "fight": { "enter": "_ready_in", "tick": "_fight" },
+        "fight": { "enter": "_fight_in", "tick": "_fight", "exit": "_fight_out" },
         "rout": { "enter": "_break", "tick": "_run", "guard": "_may_break" },
         "rally": { "enter": "_rally_in", "tick": "_rally" },
         "hold": { "enter": "_hold", "guard": "_may_hold" },

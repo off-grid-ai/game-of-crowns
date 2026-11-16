@@ -221,6 +221,7 @@ var _goal := Vector3.INF
 var _look := Vector3.ZERO
 var _vel := Vector3.ZERO
 var _lapse := 0.0
+var _asked := 0  # the frame toward() was last called
 var _reroute := 0.0
 var _agent := RID()
 var _safe := Vector3.ZERO
@@ -238,6 +239,7 @@ func toward(goal: Vector3, pace: float, look := Vector3.ZERO) -> void:
 	if body == null:
 		return
 	_lapse = 0.0
+	_asked = Engine.get_process_frames()
 	_look = look
 	speed = pace
 	_reroute -= get_process_delta_time()
@@ -703,7 +705,9 @@ func _held_by(body: Node3D, by: Node3D, delta: float) -> void:
 ## One frame of steering: along the way toward the mark, the crowd's safe velocity taken where it is live, eased.
 func _steer_step(body: Node3D, delta: float) -> void:
 	_lapse += delta
-	if _lapse > _steer_num("lapse", 0.2):
+	# Unasked for steer.lapse seconds AND more than a frame (on a slow frame a mark asked every frame read as given
+	# up: every block in a battle stopped dead and started again from a stand, falling behind its line).
+	if _lapse > _steer_num("lapse", 0.2) and Engine.get_process_frames() - _asked > 1:
 		_steer = false
 		_vel = Vector3.ZERO
 		set_process(false)

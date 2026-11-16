@@ -85,6 +85,16 @@ func battlefield(near: Vector3) -> Vector3:
 			var reach := float(t.get_meta("reach", 6.0)) if is_instance_valid(t) else 0.0
 			if reach > 0.0 and stage._flat_gap(t.global_position, near) < span + reach:
 				walls.append([t.global_position, reach])
+	# A town the store names but not yet raised (far towns stream in) counts too, at its size's reach (towns.gd's own
+	# rule, +3 as its built reach): Mac 2026-11-16, a battle set against a walled town still streaming in.
+	var terrain = main.get("terrain")
+	for c in Awareness.store().rec("cities", []):
+		if towns and stage.towns.towns.has(int(c["id"])) or terrain == null:
+			continue
+		var at: Vector3 = terrain.world_pos(float(c["x"]), float(c["y"]))
+		var reach := clampf(1.6 + int(c.get("size", 1)) * 0.32, 2.0, 6.0) + 3.0
+		if stage._flat_gap(at, near) < span + reach:
+			walls.append([at, reach])
 	# A field already being fought over is taken: the next battle finds its own.
 	_fighting = _fighting.filter(func(b): return is_instance_valid(b[1]))
 	for b in _fighting:
