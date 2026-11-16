@@ -613,10 +613,11 @@ func _show_wars(st: Node) -> void:
 			continue
 		var s = w.get("standing")
 		var score := int(s.get("score", 0)) if s is Dictionary else 0
-		var way := String(words.get("winning" if score > 0 else ("losing" if score < 0 else "even"), ""))
-		var text := String(words.get("line", "War on {foe} · {taken} of {towns} towns taken · {way}")).format({
+		var leans := String(s.get("way", "even")) if s is Dictionary else "even"  # the bridge's reading (peace.js standing)
+		var way := String(words.get(leans, ""))
+		var text := String(words.get("line", "War on {foe} · {taken} of {towns} towns taken · {way}, war score {score}")).format({
 			"foe": String(w.get("name", "")).trim_prefix("House "), "taken": (w.get("fallen", []) as Array).size(),
-			"towns": int(w.get("towns", 0)), "way": way})
+			"towns": int(w.get("towns", 0)), "way": way, "score": ("+%d" % score) if score > 0 else str(score)})
 		if up > 0:
 			text += String(words.get("cost", " · {cost} a season")).format({"cost": ui.crowns(up / maxi(1, list.size()))})
 		var b := ui.btn(text, Callable())
@@ -625,7 +626,7 @@ func _show_wars(st: Node) -> void:
 		b.flat = true
 		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		b.add_theme_font_size_override("font_size", T.SIZE_LABEL)
-		b.add_theme_color_override("font_color", T.DANGER if score < 0 else T.TEXT)
+		b.add_theme_color_override("font_color", T.DANGER if leans == "losing" else T.TEXT)
 		b.tooltip_text = String(words.get("tip", "Click for the house you are at war with"))
 		_wars.add_child(b)
 

@@ -49,7 +49,9 @@ export function standing(meta, world, pid) {
   const seat = (w.seats ?? []).some((id) => (world.cities ?? []).some((c) => c.id === id && c.owner !== pid)) ? S.seat - S.town : 0;
   const won = w.won ?? 0, beaten = w.beaten ?? 0;
   const score = Math.max(-S.most, Math.min(S.most, (taken - lost) * S.town + seat + (won - beaten) * S.battle));
-  return { taken, lost, won, beaten, score };
+  // The way it leans, by the same line the peace terms draw (terms.gold): under it neither side can ask anything.
+  const way = score >= P.terms.gold ? "winning" : score <= -P.terms.gold ? "losing" : "even";
+  return { taken, lost, won, beaten, score, way };
 }
 
 // The crown's battles against the house since the war began (battles.js result cards, meta.battles), each told once.
