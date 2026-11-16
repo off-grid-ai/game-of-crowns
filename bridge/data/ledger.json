@@ -972,6 +972,12 @@
      "give": -1
     },
     "says": "the gold asked of an old friend"
+   },
+   "hostage": {
+    "axes": {
+     "mercy": -1
+    },
+    "says": "the child taken for a grievance"
    }
   },
   "raise": {

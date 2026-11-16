@@ -1059,11 +1059,14 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
         : turn - deed.turn < 4 ? `In the ${when.season} of ${when.year}, you ${deed.what}`
         : `${ago === 1 ? "A year" : ago === 2 ? "Two years" : ago === 3 ? "Three years" : `${ago} years`} ago, in the ${when.season} of ${when.year}, you ${deed.what}`;
       if (deed.d < 0) {
+        const ward = c.hostage && this.people[c.hostage]?.alive ? null : c.children.map((id) => this.people[id]).find((k) => k?.alive && !k.ward && k.age >= 8);
         const threat = fav < 35 ? " Do not look for our banners until it is set right." : " I would hear the crown set it right.";
         return { kind: "remembers", deed: deed.what, grudge: true, text: `${c.name} of ${c.house}: "${said}. ${c.house} has not forgotten it, Your Grace.${threat}"`, facts: facts(c.playerId), options: [
           { id: "amend", label: "Make amends (120 gold)", hint: `${c.house} +15 · the grudge is laid to rest`, cost: 120, favour: { [c.playerId]: 15 } },
           { id: "hear", label: "Hear him out, promise nothing", hint: `${c.house} +3 now · the grudge deepens, and they'll be back within the year`, favour: { [c.playerId]: 3 } },
           { id: "firm", label: "The crown did what it must", hint: `${c.house} −8 · ${c.name} adds this to the account`, favour: { [c.playerId]: -8 } },
+          // The hard answer (Mac 2026-11-16: "i should be teaching him a fucking lesson"): his child to Kingsmere.
+          ...(ward ? [{ id: "hostage", label: `Take ${ward.name} to Kingsmere as a ward`, hint: `${c.house} −12 · ${c.name} will not rise while you hold his child, and will not forget`, favour: { [c.playerId]: -12 } }] : []),
         ] };
       }
       return { kind: "remembers", deed: deed.what, grudge: false, text: `${c.name} of ${c.house}: "${said}. ${c.house} remembers its friends, Your Grace. Our swords are yours when you call."`, facts: facts(c.playerId), options: [
