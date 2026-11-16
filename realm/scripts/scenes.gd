@@ -288,7 +288,7 @@ static func arm(person: Node3D, kit: String, paint := Color.TRANSPARENT) -> void
 		_paint(shield, paint)
 	_hold(skel, "LeftHand", shield, SHIELD_GRIP)
 	if kit == "lance":
-		var h: Node = person.get_meta("mounted", null)
+		var h: Node = (person.get_meta("mounted") if person.has_meta("mounted") else null)
 		if h:
 			h.bear_lance()
 		return

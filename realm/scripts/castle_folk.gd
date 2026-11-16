@@ -205,7 +205,7 @@ static func dress(host: Node, main: Node, xf: Transform3D, sp: Dictionary, colou
 		var cp: Vector3 = at.call(float(sto[0]) - 0.2, float(sto[1]) + 0.28)
 		put.call(cart, cp)
 		face.call(cart, cp + (xf.basis * Vector3(0, 0, -1)))
-		var carter: Variant = cart.get_meta("carter", null)
+		var carter: Variant = (cart.get_meta("carter") if cart.has_meta("carter") else null)
 		if carter is Node3D:
 			People.play(carter, "Idle_Talking")
 		for i in 2:

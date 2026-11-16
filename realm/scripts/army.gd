@@ -319,7 +319,7 @@ func _outside_walls(at: Vector3, from: Vector3, beyond := 0.0) -> Vector3:
 		# Out past its walls where it has them (towns.gd's plan, meta town_wall: every curtain bay), else its reach (Mac:
 		# a host stood in Kingsmere's square, its walls further out than the town's reach).
 		var r := float(root.get_meta("reach", 3.0))
-		var plan: Variant = root.get_meta("town_wall", null)
+		var plan: Variant = (root.get_meta("town_wall") if root.has_meta("town_wall") else null)
 		if plan is Dictionary:
 			for bay in (plan as Dictionary).get("bays", []):
 				var w := root.to_global(bay[0] as Vector3)

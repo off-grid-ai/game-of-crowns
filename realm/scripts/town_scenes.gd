@@ -1293,7 +1293,7 @@ func _cart(k: Dictionary, role: Dictionary, W: Dictionary, r: float) -> void:
 	Mover.of(rig).turn_radius = float(W.get("turn_radius", 0.45))  # a cart steers round, never spins
 	_walker(rig, Round.new(), {"route": route.map(func(q): return root.to_global(q)), "plan": {"goal": Vector3.INF, "until": 0, "leg": 0}, "lead": true, "side": 0.0,
 		"pause": W.get("stop", [6.0, 12.0]), "rest": [], "waits": waits, "market": root.to_global(mkt), "tail": float(W.get("tail", 0.22)), "town": root,
-		"carter": rig.get_meta("carter", null)}, "", float(W.get("pace", 0.16)))
+		"carter": (rig.get_meta("carter") if rig.has_meta("carter") else null)}, "", float(W.get("pace", 0.16)))
 	# Someone walking beside it (the role's `beside`: the plague's dead cart, its bell-ringer calling at each stop):
 	# at its side, stopping when it stops, playing one of `rest` there.
 	var bs: Dictionary = role.get("beside", {})
