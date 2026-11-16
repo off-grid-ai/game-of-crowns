@@ -162,7 +162,7 @@ static func _cell(kind: StringName) -> float:
 
 static func radius(kind: StringName) -> float:
 	if kind == WATER:
-		return Data.num("ground", "nav.water.radius", 0.25)
+		return Data.num("ground", "nav.water.radius", 0.3)
 	return Data.num("ground", "nav.bodies.%s.radius" % kind, 0.05)
 
 
