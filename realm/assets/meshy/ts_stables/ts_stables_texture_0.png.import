@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dib4arwiiepew"
-path="res://.godot/imported/ts_stables_texture_0.png-518fba4bf48a38b10cb0c869b85b1436.ctex"
+path.s3tc="res://.godot/imported/ts_stables_texture_0.png-518fba4bf48a38b10cb0c869b85b1436.s3tc.ctex"
+path.etc2="res://.godot/imported/ts_stables_texture_0.png-518fba4bf48a38b10cb0c869b85b1436.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "62dbc442aba49e95bfd75dc1c3f8f67a"
@@ -14,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/meshy/ts_stables/ts_stables_texture_0.png"
-dest_files=["res://.godot/imported/ts_stables_texture_0.png-518fba4bf48a38b10cb0c869b85b1436.ctex"]
+dest_files=["res://.godot/imported/ts_stables_texture_0.png-518fba4bf48a38b10cb0c869b85b1436.s3tc.ctex", "res://.godot/imported/ts_stables_texture_0.png-518fba4bf48a38b10cb0c869b85b1436.etc2.ctex"]
 
 [params]
 

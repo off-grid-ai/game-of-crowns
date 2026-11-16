@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://do2xtxd1pbqcg"
-path="res://.godot/imported/ck_corner_tower_texture_0.png-9f69fee480d15080bcca8bf007a32442.ctex"
+path.s3tc="res://.godot/imported/ck_corner_tower_texture_0.png-9f69fee480d15080bcca8bf007a32442.s3tc.ctex"
+path.etc2="res://.godot/imported/ck_corner_tower_texture_0.png-9f69fee480d15080bcca8bf007a32442.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "692d318728178803e3db04e0fdca6f30"
@@ -14,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/meshy/ck_corner_tower/ck_corner_tower_texture_0.png"
-dest_files=["res://.godot/imported/ck_corner_tower_texture_0.png-9f69fee480d15080bcca8bf007a32442.ctex"]
+dest_files=["res://.godot/imported/ck_corner_tower_texture_0.png-9f69fee480d15080bcca8bf007a32442.s3tc.ctex", "res://.godot/imported/ck_corner_tower_texture_0.png-9f69fee480d15080bcca8bf007a32442.etc2.ctex"]
 
 [params]
 

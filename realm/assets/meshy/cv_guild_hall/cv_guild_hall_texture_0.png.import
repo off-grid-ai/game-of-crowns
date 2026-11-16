@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cii7wl1tpaad"
-path="res://.godot/imported/cv_guild_hall_texture_0.png-788048a64c3c050568b067243100eebe.ctex"
+path.s3tc="res://.godot/imported/cv_guild_hall_texture_0.png-788048a64c3c050568b067243100eebe.s3tc.ctex"
+path.etc2="res://.godot/imported/cv_guild_hall_texture_0.png-788048a64c3c050568b067243100eebe.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "0a644ffcbf759b72fd6f861b500f043c"
@@ -14,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/meshy/cv_guild_hall/cv_guild_hall_texture_0.png"
-dest_files=["res://.godot/imported/cv_guild_hall_texture_0.png-788048a64c3c050568b067243100eebe.ctex"]
+dest_files=["res://.godot/imported/cv_guild_hall_texture_0.png-788048a64c3c050568b067243100eebe.s3tc.ctex", "res://.godot/imported/cv_guild_hall_texture_0.png-788048a64c3c050568b067243100eebe.etc2.ctex"]
 
 [params]
 

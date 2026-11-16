@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://kiaqf3ygjgl2"
-path="res://.godot/imported/house_texture_0_metallic_roughness.png-b7a7b3c699b9b42a45d53906f3b544e2.ctex"
+path.s3tc="res://.godot/imported/house_texture_0_metallic_roughness.png-b7a7b3c699b9b42a45d53906f3b544e2.s3tc.ctex"
+path.etc2="res://.godot/imported/house_texture_0_metallic_roughness.png-b7a7b3c699b9b42a45d53906f3b544e2.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "725590b066a77d7d27b8dcc6741e72ac"
@@ -14,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/meshy/house/house_texture_0_metallic_roughness.png"
-dest_files=["res://.godot/imported/house_texture_0_metallic_roughness.png-b7a7b3c699b9b42a45d53906f3b544e2.ctex"]
+dest_files=["res://.godot/imported/house_texture_0_metallic_roughness.png-b7a7b3c699b9b42a45d53906f3b544e2.s3tc.ctex", "res://.godot/imported/house_texture_0_metallic_roughness.png-b7a7b3c699b9b42a45d53906f3b544e2.etc2.ctex"]
 
 [params]
 

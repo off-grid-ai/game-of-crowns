@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cw0384epwwjo4"
-path="res://.godot/imported/hs_hovel_texture_0.png-289bfaf1104fc7c0ccdb5a531a89a548.ctex"
+path.s3tc="res://.godot/imported/hs_hovel_texture_0.png-289bfaf1104fc7c0ccdb5a531a89a548.s3tc.ctex"
+path.etc2="res://.godot/imported/hs_hovel_texture_0.png-289bfaf1104fc7c0ccdb5a531a89a548.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "56f54b9597b83ce75eb6052483bfc883"
@@ -14,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/meshy/hs_hovel/hs_hovel_texture_0.png"
-dest_files=["res://.godot/imported/hs_hovel_texture_0.png-289bfaf1104fc7c0ccdb5a531a89a548.ctex"]
+dest_files=["res://.godot/imported/hs_hovel_texture_0.png-289bfaf1104fc7c0ccdb5a531a89a548.s3tc.ctex", "res://.godot/imported/hs_hovel_texture_0.png-289bfaf1104fc7c0ccdb5a531a89a548.etc2.ctex"]
 
 [params]
 

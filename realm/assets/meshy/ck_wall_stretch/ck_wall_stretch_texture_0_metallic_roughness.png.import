@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dva85vp8oyqw2"
-path="res://.godot/imported/ck_wall_stretch_texture_0_metallic_roughness.png-9977c226a02666f51313fbcbddf62d89.ctex"
+path.s3tc="res://.godot/imported/ck_wall_stretch_texture_0_metallic_roughness.png-9977c226a02666f51313fbcbddf62d89.s3tc.ctex"
+path.etc2="res://.godot/imported/ck_wall_stretch_texture_0_metallic_roughness.png-9977c226a02666f51313fbcbddf62d89.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "6ec9e92c6f45962b697a43f3e8a7a694"
@@ -14,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/meshy/ck_wall_stretch/ck_wall_stretch_texture_0_metallic_roughness.png"
-dest_files=["res://.godot/imported/ck_wall_stretch_texture_0_metallic_roughness.png-9977c226a02666f51313fbcbddf62d89.ctex"]
+dest_files=["res://.godot/imported/ck_wall_stretch_texture_0_metallic_roughness.png-9977c226a02666f51313fbcbddf62d89.s3tc.ctex", "res://.godot/imported/ck_wall_stretch_texture_0_metallic_roughness.png-9977c226a02666f51313fbcbddf62d89.etc2.ctex"]
 
 [params]
 

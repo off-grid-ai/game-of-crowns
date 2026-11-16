@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bvl5hgg83w3iq"
-path="res://.godot/imported/ck_wall_tower_texture_0.png-34f8baacc9a932277338e1d911153e12.ctex"
+path.s3tc="res://.godot/imported/ck_wall_tower_texture_0.png-34f8baacc9a932277338e1d911153e12.s3tc.ctex"
+path.etc2="res://.godot/imported/ck_wall_tower_texture_0.png-34f8baacc9a932277338e1d911153e12.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "0b9b5e08f1d780ef9a0b0908b43a50b8"
@@ -14,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/meshy/ck_wall_tower/ck_wall_tower_texture_0.png"
-dest_files=["res://.godot/imported/ck_wall_tower_texture_0.png-34f8baacc9a932277338e1d911153e12.ctex"]
+dest_files=["res://.godot/imported/ck_wall_tower_texture_0.png-34f8baacc9a932277338e1d911153e12.s3tc.ctex", "res://.godot/imported/ck_wall_tower_texture_0.png-34f8baacc9a932277338e1d911153e12.etc2.ctex"]
 
 [params]
 

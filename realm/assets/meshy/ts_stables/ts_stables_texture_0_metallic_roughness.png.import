@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://btxdxwmbyiqta"
-path="res://.godot/imported/ts_stables_texture_0_metallic_roughness.png-2819b21d78f6781509db40c160f0b377.ctex"
+path.s3tc="res://.godot/imported/ts_stables_texture_0_metallic_roughness.png-2819b21d78f6781509db40c160f0b377.s3tc.ctex"
+path.etc2="res://.godot/imported/ts_stables_texture_0_metallic_roughness.png-2819b21d78f6781509db40c160f0b377.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "b7f98542b3879ecb0c8c17b6932b33c0"
@@ -14,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/meshy/ts_stables/ts_stables_texture_0_metallic_roughness.png"
-dest_files=["res://.godot/imported/ts_stables_texture_0_metallic_roughness.png-2819b21d78f6781509db40c160f0b377.ctex"]
+dest_files=["res://.godot/imported/ts_stables_texture_0_metallic_roughness.png-2819b21d78f6781509db40c160f0b377.s3tc.ctex", "res://.godot/imported/ts_stables_texture_0_metallic_roughness.png-2819b21d78f6781509db40c160f0b377.etc2.ctex"]
 
 [params]
 

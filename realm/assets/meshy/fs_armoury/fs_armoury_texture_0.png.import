@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://yq3kom1e538h"
-path="res://.godot/imported/fs_armoury_texture_0.png-63ee835fe08e1cf6ed634d9b3288d94f.ctex"
+path.s3tc="res://.godot/imported/fs_armoury_texture_0.png-63ee835fe08e1cf6ed634d9b3288d94f.s3tc.ctex"
+path.etc2="res://.godot/imported/fs_armoury_texture_0.png-63ee835fe08e1cf6ed634d9b3288d94f.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "2fbab599de3cea04c235f88c46618fe8"
@@ -14,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/meshy/fs_armoury/fs_armoury_texture_0.png"
-dest_files=["res://.godot/imported/fs_armoury_texture_0.png-63ee835fe08e1cf6ed634d9b3288d94f.ctex"]
+dest_files=["res://.godot/imported/fs_armoury_texture_0.png-63ee835fe08e1cf6ed634d9b3288d94f.s3tc.ctex", "res://.godot/imported/fs_armoury_texture_0.png-63ee835fe08e1cf6ed634d9b3288d94f.etc2.ctex"]
 
 [params]
 

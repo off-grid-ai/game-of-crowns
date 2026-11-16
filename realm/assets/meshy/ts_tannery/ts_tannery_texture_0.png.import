@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dr0u3bnih0j6l"
-path="res://.godot/imported/ts_tannery_texture_0.png-259f62f68662f2c4dccfe07dfc459033.ctex"
+path.s3tc="res://.godot/imported/ts_tannery_texture_0.png-259f62f68662f2c4dccfe07dfc459033.s3tc.ctex"
+path.etc2="res://.godot/imported/ts_tannery_texture_0.png-259f62f68662f2c4dccfe07dfc459033.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "14a4135661e7b3ae4604272f91cceb95"
@@ -14,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/meshy/ts_tannery/ts_tannery_texture_0.png"
-dest_files=["res://.godot/imported/ts_tannery_texture_0.png-259f62f68662f2c4dccfe07dfc459033.ctex"]
+dest_files=["res://.godot/imported/ts_tannery_texture_0.png-259f62f68662f2c4dccfe07dfc459033.s3tc.ctex", "res://.godot/imported/ts_tannery_texture_0.png-259f62f68662f2c4dccfe07dfc459033.etc2.ctex"]
 
 [params]
 

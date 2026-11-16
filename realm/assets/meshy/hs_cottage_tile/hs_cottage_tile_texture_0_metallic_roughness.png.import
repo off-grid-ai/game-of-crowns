@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://b8ln3d1qq6bwe"
-path="res://.godot/imported/hs_cottage_tile_texture_0_metallic_roughness.png-6e1a464f5516181045e56fda79a72706.ctex"
+path.s3tc="res://.godot/imported/hs_cottage_tile_texture_0_metallic_roughness.png-6e1a464f5516181045e56fda79a72706.s3tc.ctex"
+path.etc2="res://.godot/imported/hs_cottage_tile_texture_0_metallic_roughness.png-6e1a464f5516181045e56fda79a72706.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "6ec9e92c6f45962b697a43f3e8a7a694"
@@ -14,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/meshy/hs_cottage_tile/hs_cottage_tile_texture_0_metallic_roughness.png"
-dest_files=["res://.godot/imported/hs_cottage_tile_texture_0_metallic_roughness.png-6e1a464f5516181045e56fda79a72706.ctex"]
+dest_files=["res://.godot/imported/hs_cottage_tile_texture_0_metallic_roughness.png-6e1a464f5516181045e56fda79a72706.s3tc.ctex", "res://.godot/imported/hs_cottage_tile_texture_0_metallic_roughness.png-6e1a464f5516181045e56fda79a72706.etc2.ctex"]
 
 [params]
 

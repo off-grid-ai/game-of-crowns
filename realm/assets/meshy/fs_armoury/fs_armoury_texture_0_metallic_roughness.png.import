@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bmpskf171mfo7"
-path="res://.godot/imported/fs_armoury_texture_0_metallic_roughness.png-dae285cd4e5e50a699485e608228eea9.ctex"
+path.s3tc="res://.godot/imported/fs_armoury_texture_0_metallic_roughness.png-dae285cd4e5e50a699485e608228eea9.s3tc.ctex"
+path.etc2="res://.godot/imported/fs_armoury_texture_0_metallic_roughness.png-dae285cd4e5e50a699485e608228eea9.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "39aced0b2ac4ac59e1fcf3bff8346ff0"
@@ -14,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/meshy/fs_armoury/fs_armoury_texture_0_metallic_roughness.png"
-dest_files=["res://.godot/imported/fs_armoury_texture_0_metallic_roughness.png-dae285cd4e5e50a699485e608228eea9.ctex"]
+dest_files=["res://.godot/imported/fs_armoury_texture_0_metallic_roughness.png-dae285cd4e5e50a699485e608228eea9.s3tc.ctex", "res://.godot/imported/fs_armoury_texture_0_metallic_roughness.png-dae285cd4e5e50a699485e608228eea9.etc2.ctex"]
 
 [params]
 

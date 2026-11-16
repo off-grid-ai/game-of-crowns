@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cxsexy0dr7unf"
-path="res://.godot/imported/hs_townhouse_narrow_texture_0.png-4944da3fca614c35bf9d9c8f0374e150.ctex"
+path.s3tc="res://.godot/imported/hs_townhouse_narrow_texture_0.png-4944da3fca614c35bf9d9c8f0374e150.s3tc.ctex"
+path.etc2="res://.godot/imported/hs_townhouse_narrow_texture_0.png-4944da3fca614c35bf9d9c8f0374e150.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "3cf40542201bda5fe6813a323e1a21ee"
@@ -14,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/meshy/hs_townhouse_narrow/hs_townhouse_narrow_texture_0.png"
-dest_files=["res://.godot/imported/hs_townhouse_narrow_texture_0.png-4944da3fca614c35bf9d9c8f0374e150.ctex"]
+dest_files=["res://.godot/imported/hs_townhouse_narrow_texture_0.png-4944da3fca614c35bf9d9c8f0374e150.s3tc.ctex", "res://.godot/imported/hs_townhouse_narrow_texture_0.png-4944da3fca614c35bf9d9c8f0374e150.etc2.ctex"]
 
 [params]
 

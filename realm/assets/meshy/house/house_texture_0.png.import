@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dn7pwcjfjksmg"
-path="res://.godot/imported/house_texture_0.png-4aed054eaf278b3b7ee0d58d1e87b21c.ctex"
+path.s3tc="res://.godot/imported/house_texture_0.png-4aed054eaf278b3b7ee0d58d1e87b21c.s3tc.ctex"
+path.etc2="res://.godot/imported/house_texture_0.png-4aed054eaf278b3b7ee0d58d1e87b21c.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "47dda79489a7c5ea7bce87d70a32f1ae"
@@ -14,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/meshy/house/house_texture_0.png"
-dest_files=["res://.godot/imported/house_texture_0.png-4aed054eaf278b3b7ee0d58d1e87b21c.ctex"]
+dest_files=["res://.godot/imported/house_texture_0.png-4aed054eaf278b3b7ee0d58d1e87b21c.s3tc.ctex", "res://.godot/imported/house_texture_0.png-4aed054eaf278b3b7ee0d58d1e87b21c.etc2.ctex"]
 
 [params]
 

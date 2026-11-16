@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://d3r78nlu3wu3i"
-path="res://.godot/imported/cv_church_texture_0.png-dad72d5edadae109584a398db41972d8.ctex"
+path.s3tc="res://.godot/imported/cv_church_texture_0.png-dad72d5edadae109584a398db41972d8.s3tc.ctex"
+path.etc2="res://.godot/imported/cv_church_texture_0.png-dad72d5edadae109584a398db41972d8.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "a888722289dbdd3bd72717e04d833a2a"
@@ -14,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/meshy/cv_church/cv_church_texture_0.png"
-dest_files=["res://.godot/imported/cv_church_texture_0.png-dad72d5edadae109584a398db41972d8.ctex"]
+dest_files=["res://.godot/imported/cv_church_texture_0.png-dad72d5edadae109584a398db41972d8.s3tc.ctex", "res://.godot/imported/cv_church_texture_0.png-dad72d5edadae109584a398db41972d8.etc2.ctex"]
 
 [params]
 

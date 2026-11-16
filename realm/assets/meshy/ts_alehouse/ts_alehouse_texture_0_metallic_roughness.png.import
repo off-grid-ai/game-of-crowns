@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dtm7svqy4w60p"
-path="res://.godot/imported/ts_alehouse_texture_0_metallic_roughness.png-751dbafce435887fd39d9e35e775789e.ctex"
+path.s3tc="res://.godot/imported/ts_alehouse_texture_0_metallic_roughness.png-751dbafce435887fd39d9e35e775789e.s3tc.ctex"
+path.etc2="res://.godot/imported/ts_alehouse_texture_0_metallic_roughness.png-751dbafce435887fd39d9e35e775789e.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "a705db6fb88710c8b40b1f5274c8c02d"
@@ -14,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/meshy/ts_alehouse/ts_alehouse_texture_0_metallic_roughness.png"
-dest_files=["res://.godot/imported/ts_alehouse_texture_0_metallic_roughness.png-751dbafce435887fd39d9e35e775789e.ctex"]
+dest_files=["res://.godot/imported/ts_alehouse_texture_0_metallic_roughness.png-751dbafce435887fd39d9e35e775789e.s3tc.ctex", "res://.godot/imported/ts_alehouse_texture_0_metallic_roughness.png-751dbafce435887fd39d9e35e775789e.etc2.ctex"]
 
 [params]
 

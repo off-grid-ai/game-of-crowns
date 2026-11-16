@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://caxqsqel1vk21"
-path="res://.godot/imported/hs_cottage_tile_texture_0.png-264c2d2a1addf34ca66a293d82200c57.ctex"
+path.s3tc="res://.godot/imported/hs_cottage_tile_texture_0.png-264c2d2a1addf34ca66a293d82200c57.s3tc.ctex"
+path.etc2="res://.godot/imported/hs_cottage_tile_texture_0.png-264c2d2a1addf34ca66a293d82200c57.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "87d8f0d9d97e95a1ac4bb3511fc164c3"
@@ -14,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/meshy/hs_cottage_tile/hs_cottage_tile_texture_0.png"
-dest_files=["res://.godot/imported/hs_cottage_tile_texture_0.png-264c2d2a1addf34ca66a293d82200c57.ctex"]
+dest_files=["res://.godot/imported/hs_cottage_tile_texture_0.png-264c2d2a1addf34ca66a293d82200c57.s3tc.ctex", "res://.godot/imported/hs_cottage_tile_texture_0.png-264c2d2a1addf34ca66a293d82200c57.etc2.ctex"]
 
 [params]
 

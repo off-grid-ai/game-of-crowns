@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://vrbhhthxyst0"
-path="res://.godot/imported/fs_granary_texture_0.png-0b1921b2d94fb7410ea0d74bb1968b44.ctex"
+path.s3tc="res://.godot/imported/fs_granary_texture_0.png-0b1921b2d94fb7410ea0d74bb1968b44.s3tc.ctex"
+path.etc2="res://.godot/imported/fs_granary_texture_0.png-0b1921b2d94fb7410ea0d74bb1968b44.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "b99115f6c9d41b79e40ecd6945ef7797"
@@ -14,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/meshy/fs_granary/fs_granary_texture_0.png"
-dest_files=["res://.godot/imported/fs_granary_texture_0.png-0b1921b2d94fb7410ea0d74bb1968b44.ctex"]
+dest_files=["res://.godot/imported/fs_granary_texture_0.png-0b1921b2d94fb7410ea0d74bb1968b44.s3tc.ctex", "res://.godot/imported/fs_granary_texture_0.png-0b1921b2d94fb7410ea0d74bb1968b44.etc2.ctex"]
 
 [params]
 

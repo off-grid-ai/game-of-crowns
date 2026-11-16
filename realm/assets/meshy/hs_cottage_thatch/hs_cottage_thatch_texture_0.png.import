@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://do2qohxolm0r2"
-path="res://.godot/imported/hs_cottage_thatch_texture_0.png-3eb6e4f23127ffef6a31ef69fc9a288e.ctex"
+path.s3tc="res://.godot/imported/hs_cottage_thatch_texture_0.png-3eb6e4f23127ffef6a31ef69fc9a288e.s3tc.ctex"
+path.etc2="res://.godot/imported/hs_cottage_thatch_texture_0.png-3eb6e4f23127ffef6a31ef69fc9a288e.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "2b672bf96fc87ee30b23280cd85e7c32"
@@ -14,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/meshy/hs_cottage_thatch/hs_cottage_thatch_texture_0.png"
-dest_files=["res://.godot/imported/hs_cottage_thatch_texture_0.png-3eb6e4f23127ffef6a31ef69fc9a288e.ctex"]
+dest_files=["res://.godot/imported/hs_cottage_thatch_texture_0.png-3eb6e4f23127ffef6a31ef69fc9a288e.s3tc.ctex", "res://.godot/imported/hs_cottage_thatch_texture_0.png-3eb6e4f23127ffef6a31ef69fc9a288e.etc2.ctex"]
 
 [params]
 

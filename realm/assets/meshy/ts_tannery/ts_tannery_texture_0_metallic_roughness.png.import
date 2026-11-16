@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dxqc1wvrbev8o"
-path="res://.godot/imported/ts_tannery_texture_0_metallic_roughness.png-85bb56f3a4d15245c0d5a2fd17d458d0.ctex"
+path.s3tc="res://.godot/imported/ts_tannery_texture_0_metallic_roughness.png-85bb56f3a4d15245c0d5a2fd17d458d0.s3tc.ctex"
+path.etc2="res://.godot/imported/ts_tannery_texture_0_metallic_roughness.png-85bb56f3a4d15245c0d5a2fd17d458d0.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "ac3133b1d77dc0bf3df65e7f64b617b9"
@@ -14,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/meshy/ts_tannery/ts_tannery_texture_0_metallic_roughness.png"
-dest_files=["res://.godot/imported/ts_tannery_texture_0_metallic_roughness.png-85bb56f3a4d15245c0d5a2fd17d458d0.ctex"]
+dest_files=["res://.godot/imported/ts_tannery_texture_0_metallic_roughness.png-85bb56f3a4d15245c0d5a2fd17d458d0.s3tc.ctex", "res://.godot/imported/ts_tannery_texture_0_metallic_roughness.png-85bb56f3a4d15245c0d5a2fd17d458d0.etc2.ctex"]
 
 [params]
 

@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://tmr5lpgd55e6"
-path="res://.godot/imported/hs_longhouse_texture_0.png-975309d4009f59f2c2ed4a1e88926c55.ctex"
+path.s3tc="res://.godot/imported/hs_longhouse_texture_0.png-975309d4009f59f2c2ed4a1e88926c55.s3tc.ctex"
+path.etc2="res://.godot/imported/hs_longhouse_texture_0.png-975309d4009f59f2c2ed4a1e88926c55.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "436efb10c4accdca6b22497b8c35dfe0"
@@ -14,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/meshy/hs_longhouse/hs_longhouse_texture_0.png"
-dest_files=["res://.godot/imported/hs_longhouse_texture_0.png-975309d4009f59f2c2ed4a1e88926c55.ctex"]
+dest_files=["res://.godot/imported/hs_longhouse_texture_0.png-975309d4009f59f2c2ed4a1e88926c55.s3tc.ctex", "res://.godot/imported/hs_longhouse_texture_0.png-975309d4009f59f2c2ed4a1e88926c55.etc2.ctex"]
 
 [params]
 

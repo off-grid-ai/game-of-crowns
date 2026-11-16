@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://io4b8ubp8e07"
-path="res://.godot/imported/ts_alehouse_texture_0.png-1ee84219081b14bd810e0683537d733f.ctex"
+path.s3tc="res://.godot/imported/ts_alehouse_texture_0.png-1ee84219081b14bd810e0683537d733f.s3tc.ctex"
+path.etc2="res://.godot/imported/ts_alehouse_texture_0.png-1ee84219081b14bd810e0683537d733f.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "0f0bf30d47508d4208cca29b50d745e8"
@@ -14,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/meshy/ts_alehouse/ts_alehouse_texture_0.png"
-dest_files=["res://.godot/imported/ts_alehouse_texture_0.png-1ee84219081b14bd810e0683537d733f.ctex"]
+dest_files=["res://.godot/imported/ts_alehouse_texture_0.png-1ee84219081b14bd810e0683537d733f.s3tc.ctex", "res://.godot/imported/ts_alehouse_texture_0.png-1ee84219081b14bd810e0683537d733f.etc2.ctex"]
 
 [params]
 

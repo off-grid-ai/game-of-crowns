@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bg7otlie88raq"
-path="res://.godot/imported/hs_hovel_texture_0_metallic_roughness.png-6513d64db5bfd2bb53534b4f34799270.ctex"
+path.s3tc="res://.godot/imported/hs_hovel_texture_0_metallic_roughness.png-6513d64db5bfd2bb53534b4f34799270.s3tc.ctex"
+path.etc2="res://.godot/imported/hs_hovel_texture_0_metallic_roughness.png-6513d64db5bfd2bb53534b4f34799270.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "6ec9e92c6f45962b697a43f3e8a7a694"
@@ -14,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/meshy/hs_hovel/hs_hovel_texture_0_metallic_roughness.png"
-dest_files=["res://.godot/imported/hs_hovel_texture_0_metallic_roughness.png-6513d64db5bfd2bb53534b4f34799270.ctex"]
+dest_files=["res://.godot/imported/hs_hovel_texture_0_metallic_roughness.png-6513d64db5bfd2bb53534b4f34799270.s3tc.ctex", "res://.godot/imported/hs_hovel_texture_0_metallic_roughness.png-6513d64db5bfd2bb53534b4f34799270.etc2.ctex"]
 
 [params]
 

@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://d17qjqevdxay7"
-path="res://.godot/imported/fs_granary_texture_0_metallic_roughness.png-af5647f0bff95c30b66c3d0bd6e9180c.ctex"
+path.s3tc="res://.godot/imported/fs_granary_texture_0_metallic_roughness.png-af5647f0bff95c30b66c3d0bd6e9180c.s3tc.ctex"
+path.etc2="res://.godot/imported/fs_granary_texture_0_metallic_roughness.png-af5647f0bff95c30b66c3d0bd6e9180c.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "5007b05c6a372ca6115058e2b67d66d6"
@@ -14,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/meshy/fs_granary/fs_granary_texture_0_metallic_roughness.png"
-dest_files=["res://.godot/imported/fs_granary_texture_0_metallic_roughness.png-af5647f0bff95c30b66c3d0bd6e9180c.ctex"]
+dest_files=["res://.godot/imported/fs_granary_texture_0_metallic_roughness.png-af5647f0bff95c30b66c3d0bd6e9180c.s3tc.ctex", "res://.godot/imported/fs_granary_texture_0_metallic_roughness.png-af5647f0bff95c30b66c3d0bd6e9180c.etc2.ctex"]
 
 [params]
 

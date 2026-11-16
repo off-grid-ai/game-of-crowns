@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dxa6nkug2hwov"
-path="res://.godot/imported/tavern_texture_0.png-f9f8737fcc5be58b1109fbfa303710ad.ctex"
+path.s3tc="res://.godot/imported/tavern_texture_0.png-f9f8737fcc5be58b1109fbfa303710ad.s3tc.ctex"
+path.etc2="res://.godot/imported/tavern_texture_0.png-f9f8737fcc5be58b1109fbfa303710ad.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "3f1c444aa903803b9ef86bc5b22ba7b0"
@@ -14,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/meshy/tavern/tavern_texture_0.png"
-dest_files=["res://.godot/imported/tavern_texture_0.png-f9f8737fcc5be58b1109fbfa303710ad.ctex"]
+dest_files=["res://.godot/imported/tavern_texture_0.png-f9f8737fcc5be58b1109fbfa303710ad.s3tc.ctex", "res://.godot/imported/tavern_texture_0.png-f9f8737fcc5be58b1109fbfa303710ad.etc2.ctex"]
 
 [params]
 
