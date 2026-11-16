@@ -449,6 +449,8 @@ func _wait_for_him(card: Control) -> void:
 	if not bool(preload("res://scripts/settings.gd").get_value("pause_when_needed")):
 		return
 	if not ui.paused:
+		var e: Dictionary = card.get_meta("entry", {})
+		ui.pause_why = String(e.get("text", "")).get_slice(":", 0)  # what stopped the realm, in its first words
 		ui.top_bar._toggle_pause()
 		_paused_for = card  # answered, the realm goes on by itself
 	focus(card.get_meta("entry", {}))

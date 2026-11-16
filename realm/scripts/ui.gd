@@ -203,6 +203,8 @@ var _form_panel: PanelContainer:
 		return form_card._form_panel
 var minimap: Control
 var houses_strip := preload("res://scripts/houses_strip.gd").new(self)  # the great houses at a glance, top-left (houses_strip.gd)
+var pause_note := preload("res://scripts/pause_note.gd").new(self)  # "Paused", why and how to go on, while the realm holds (pause_note.gd)
+var pause_why := ""  # the matter the realm stopped for (chronicle_panel.gd _wait_for_him), "" when he paused it
 var reign_track := preload("res://scripts/reign_track.gd").new(self)  # the reign's four acts and what comes, under the houses (reign_track.gd)
 var reckoning := preload("res://scripts/reckoning.gd").new(self)  # what a choice changed, over the control plane (reckoning.gd)
 var moment := preload("res://scripts/moment_banner.gd").new(self)  # a win or a loss of the King's, as a moment (moment_banner.gd)
@@ -243,6 +245,8 @@ func _ready() -> void:
 	_build_camera_controls()
 	houses_strip._build()
 	reign_track._build()
+	pause_note._build()
+	pause_toggled.connect(_on_pause_toggled)
 	reckoning._build()
 	war_council._build()
 	army_bar._build()
@@ -1195,6 +1199,9 @@ func set_reign(r: Dictionary) -> void:
 		clock = "%s · score %d" % [String(r.get("title", "reign ended")), int(r.get("score", 0))]
 	paused = bool(r.get("paused", false))
 	_pause_btn.button_pressed = paused
+	if not paused:
+		pause_why = ""
+	pause_note.update()
 	_pause_btn.disabled = r.get("status", "") == "ended"
 	# A locked button says what unlocks it (the casebook's silent locked button).
 	_pause_btn.tooltip_text = "The reign has ended. Rule on from the last card or the menu, and the realm moves again." if _pause_btn.disabled else with_key("Pause", "pause")
@@ -1406,6 +1413,13 @@ func set_decrees(list: Array) -> void:
 
 
 ## A tooltip with the key that does the same, as set in Settings → Controls.
+## The realm paused or moving again: the note says so (pause_note.gd); moving, the reason it stopped is gone.
+func _on_pause_toggled(p: bool) -> void:
+	if not p:
+		pause_why = ""
+	pause_note.update()
+
+
 func with_key(text: String, action: String) -> String:
 	var key := Keys.label(action).get_slice(" / ", 0)
 	return text if key == "" else "%s  (%s)" % [text, key]
