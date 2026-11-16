@@ -436,9 +436,11 @@ func show_new() -> void:
 		maker_scroll.visible = on
 		if on:
 			_layers.append(maker_scroll)
+	var tales_held: WeakRef = weakref(tales_scroll)  # not captured itself: the menu's pages are freed in any order
 	maker_scroll.visibility_changed.connect(func():
-		if is_instance_valid(tales_scroll):
-			tales_scroll.visible = not maker_scroll.visible)
+		var t: Control = tales_held.get_ref()
+		if t:
+			t.visible = not maker_scroll.visible)
 	own.pressed.connect(open_maker.bind(true))
 	maker.add_child(_label("Write your own", 19, GOLD))
 	_offgrid_line(maker, "Off Grid AI shapes your story and writes beats for it, on your Mac.")
@@ -883,9 +885,11 @@ func _fill_beats(box: VBoxContainer, d: Dictionary) -> void:
 		if form.visible:
 			_layers.append(form)
 			_reveal(form))
+	var add_held: WeakRef = weakref(add)  # not captured itself: the form may outlive its button as the page is freed
 	form.visibility_changed.connect(func():
-		if is_instance_valid(add):
-			add.visible = not form.visible)
+		var a: Control = add_held.get_ref()
+		if a:
+			a.visible = not form.visible)
 	var beat := {"who": String(people[0]["id"]) if not people.is_empty() else "", "when": "act2", "does": "nothing"}
 	if _probe_beats:
 		form.visible = true

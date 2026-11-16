@@ -315,9 +315,11 @@ func close_x(p: PanelContainer, on_close: Callable) -> void:
 	layer.name = "Close"
 	layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	p.add_child(layer)
+	var held: WeakRef = weakref(layer)  # not captured itself: a panel being freed reorders its children after the X has gone
 	p.child_order_changed.connect(func():
-		if is_instance_valid(layer) and layer.get_parent() == p and layer.get_index() != p.get_child_count() - 1:
-			p.move_child.call_deferred(layer, -1))
+		var l: Control = held.get_ref()
+		if l and l.get_parent() == p and l.get_index() != p.get_child_count() - 1:
+			p.move_child.call_deferred(l, -1))
 	var b := Button.new()
 	b.icon = icon("x")
 	b.focus_mode = Control.FOCUS_NONE
