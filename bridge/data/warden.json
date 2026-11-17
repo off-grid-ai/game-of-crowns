@@ -1,0 +1,27 @@
+{
+  "_": "A beaten great house's land and its lord (bridge/warden.js, matters/warden.js; Mac 2026-11-17, GAME_DESIGN 'The game': a conquered house's land always goes to a minor house as warden, of the King's choosing; the beaten lord kneels and the King decides his fate; choosing the wrong warden must cause trouble). candidates: how many minor houses are offered. risk: how likely a warden is to defy the King later (0..most, in percent): base, plus each trait's weight, plus perLoyalty for each point of his own loyalty under loyaltyMid (less above it), plus kin when he was the beaten house's own bannerman or wed into it, plus friend when he liked the beaten lord (opinion over friendAt), less perFavour for each point his liege house's favour stands over sworn; kinBeheaded / kinSpared when the beaten lord is beheaded or spared and the warden is his kin. words: the risk read on the card, [under this risk, the words]. defy: a warden who will defy does so between after[0] and after[1] seasons from his naming; while he defies, the house is not the King's (warden.js lost). pick.liege: the favour of the house whose bannerman is raised to warden. fate: what the other great houses make of the beaten lord's fate, warm (at or over steady favour: they respect the crown) and cold (under it: mercy reads to them as weakness, the axe as a warning). regrant.loyalty: what buying a defiant warden's oath back adds to his loyalty (decrees.json regrant: its price). silence.defy: favour of every great house when the King leaves a defiant warden be.",
+  "candidates": 3,
+  "risk": {
+    "base": 10,
+    "traits": { "ambitious": 25, "vengeful": 15, "proud": 10, "greedy": 10, "wrathful": 10, "cunning": 5, "paranoid": 5, "honourable": -20, "content": -15, "just": -10, "patient": -10, "pious": -5, "generous": -5 },
+    "loyaltyMid": 60,
+    "perLoyalty": 0.6,
+    "kin": 30,
+    "friend": 10,
+    "friendAt": 20,
+    "perFavour": 0.3,
+    "kinBeheaded": 15,
+    "kinSpared": -10,
+    "most": 90,
+    "words": [[20, "holds steady"], [45, "may waver"], [101, "may defy you"]]
+  },
+  "defy": { "after": [4, 12] },
+  "pick": { "liege": 5 },
+  "fate": {
+    "spare": { "warm": 4, "cold": -4 },
+    "imprison": { "warm": 0, "cold": 2 },
+    "behead": { "warm": -2, "cold": 5 }
+  },
+  "regrant": { "loyalty": 15 },
+  "silence": { "defy": -3 }
+}

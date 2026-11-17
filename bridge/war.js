@@ -6,8 +6,8 @@
 // hosts the next town through the hosts' own orders (hosts.js besiege; campaigns.js lays and storms the siege, and
 // sworn houses send their men with it, campaigns.js startCampaign). Freeciv fights every blow and its AI, at war in
 // Freeciv (the one diplomacy writer), fights back; the house's lord answers in kind (characters.js retaliate). It ends
-// when the seat falls (the house toppled: its towns pass to the crown, the allies who marched ask their share through
-// the spoils, characters.js) or at the peace table (peace.js ruled -> ended). /world war. Numbers: data/war.json.
+// when the seat falls (the house toppled: the crown holds its towns until the King names a warden, warden.js) or at
+// the peace table (peace.js ruled -> ended). /world war. Numbers: data/war.json.
 // Nothing here reads server.js: the realm's state and helpers come in as one context (season.js, routes_decree.js).
 import fs from "node:fs";
 import { crownOf, greatHouses } from "./realm.js";
@@ -20,6 +20,7 @@ import * as Peace from "./peace.js";
 import * as Coalition from "./coalition.js";
 import * as chron from "./chronicles.js";
 import * as kingDeeds from "./ledger.js";
+import * as Warden from "./warden.js";
 
 export const WAR = JSON.parse(fs.readFileSync(new URL("./data/war.json", import.meta.url), "utf8"));
 
@@ -406,7 +407,8 @@ function next(ctx, turn, w) {
 }
 
 // The seat has fallen, or the house holds nothing: the house is toppled. Its towns left pass to the crown (Freeciv's
-// transfer); the allies who marched beside the host ask their share of them at court (meta.spoils, characters.js).
+// transfer) to hold until the King names a warden for its land, and its lord kneels for his fate (warden.js raise;
+// Mac 2026-11-17: a conquered house's land always goes to a minor house as warden, never kept by the crown).
 function topple(ctx, turn, w) {
   const { world, meta, record, send } = ctx;
   const crown = crownOf(world);
@@ -414,11 +416,10 @@ function topple(ctx, turn, w) {
   const left = world.cities.filter((c) => c.owner === w.house);
   const seatNow = world.cities.find((c) => c.id === w.seat && c.owner !== w.house) ?? null;
   for (const c of left) send(`lua cmd ${Lua.transferCity(c.id, crown.id)}`);
-  const allies = (w.allies ?? []).filter((pid) => world.players.some((p) => p.id === pid));
-  if (allies.length) for (const c of left) meta.spoils = [...(meta.spoils ?? []).filter((s) => turn - s.turn < 8), { city: c.id, allies, turn, settled: false }];
   const fell = [...(w.fallen ?? []), ...left.map((c) => c.id)];
+  Warden.raise(ctx, w, fell.filter((id) => world.cities.some((c) => c.id === id && (c.owner === crown.id || left.includes(c)))), turn);
   record({ turn, kind: "sack", city: w.seat ?? undefined, attacker: crown.id, defender: w.house,
-    text: `${houseFor(foe ?? {}).name} is toppled: ${seatNow ? `${cityName(w.seat)}, its seat, is ${seatNow.owner === crown.id ? "the crown's" : houseFor(world.players.find((p) => p.id === seatNow.owner) ?? {}).name + "'s"}` : w.seat != null ? `${cityName(w.seat)}, its seat, is no more` : "it holds no town"}${left.length ? `, and ${andList(left.map((c) => cityName(c.id)))} ${left.length > 1 ? "open their gates" : "opens its gates"} to the King` : ""}. ${fell.length} ${fell.length === 1 ? "town" : "towns"} taken in ${Math.max(1, turn - w.since)} ${turn - w.since === 1 ? "season" : "seasons"}.` });
+    text: `${houseFor(foe ?? {}).name} is toppled: ${seatNow ? `${cityName(w.seat)}, its seat, is ${seatNow.owner === crown.id ? "the crown's" : houseFor(world.players.find((p) => p.id === seatNow.owner) ?? {}).name + "'s"}` : w.seat != null ? `${cityName(w.seat)}, its seat, is no more` : "it holds no town"}${left.length ? `, and ${andList(left.map((c) => cityName(c.id)))} ${left.length > 1 ? "open their gates" : "opens its gates"} to the King` : ""}. Its lord kneels, and its lands wait for a warden of the King's choosing. ${fell.length} ${fell.length === 1 ? "town" : "towns"} taken in ${Math.max(1, turn - w.since)} ${turn - w.since === 1 ? "season" : "seasons"}.` });
   ctx.deed?.(kingDeeds.tagsFor("realm", "sack"), { act: false, place: w.seat != null ? cityName(w.seat) : "" });
   meta.wars = wars(meta).filter((x) => x !== w);
   chron.saveMeta(meta);

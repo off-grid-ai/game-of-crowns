@@ -12,6 +12,7 @@ import { crownOf } from "./realm.js";
 import * as Seals from "./seals.js";
 import * as Hosts from "./hosts.js";
 import * as War from "./war.js";
+import * as Warden from "./warden.js";
 import * as Peace from "./peace.js";
 import * as Sittings from "./court.js";
 import * as Director from "./director.js";
@@ -93,6 +94,11 @@ export async function issueDecree(ctx, req, res, url) {
     const n = pid != null ? War.askWait(ctx.meta, pid, ctx.world.turn ?? 0) : 0;
     if (n > 0) return json(res, 400, { error: `That house gave the King's envoy its answer lately: ask again in ${n} season${n === 1 ? "" : "s"}.` });
   }
+  // A beaten house's land and lord (warden.js): only for a matter that stands, and a man who can take it.
+  if (Warden.ACTS.has(cmd.action)) {
+    const no = Warden.refuse(ctx, cmd);
+    if (no) return json(res, 400, { error: no });
+  }
   const price = priceOf(cmd.action);
   const result = decree({ ...cmd, host, wars: War.wars(ctx.meta), askable: (pid) => War.askable(ctx.meta, pid), joinChance: (pid) => War.joinChance(ctx, pid), works: ctx.meta.works ?? {}, price, favourOf, causeOf, sworn, warded: (pid) => (ctx.stakes?.s.wards?.[pid] ?? -1) > (ctx.world.turn ?? 0), marching: (city) => (ctx.meta.campaigns ?? []).some((x) => x.city === city), atWar: (pid) => Peace.atWar(ctx, pid), usurper: ctx.stakes?.s.usurper, seat: ctx.stakes?.s.seat }, ctx.world);
   if (result.error) return json(res, 400, result);
@@ -114,7 +120,14 @@ export async function issueDecree(ctx, req, res, url) {
   if (result.march) startCampaign(result.march);
   // The King's war (war.js): declared, its first town ordered; or an envoy's answer, an ally or a warning.
   if (result.war != null) War.declare(ctx, result.war);
-  if (["war", "march", "back"].includes(cmd.action)) Coalition.alarm(ctx.meta, cmd.action);  // the realm takes fright (coalition.js alarm)
+  // Joined on a house's side (crown.js side): that house is the war's ally, whatever its own sides said.
+  if (result.side != null) {
+    const w = War.warOn(ctx.meta, result.war);
+    if (w) w.waiting = (w.waiting ?? []).filter((pid) => pid !== result.side);
+    if (w && !(w.allies ?? []).includes(result.side)) War.joined(ctx, { house: result.side, yes: true, warns: false, on: result.war });
+  }
+  if (result.warden) result.text = Warden.apply(ctx, result.warden);
+  if (["war", "side", "march", "back"].includes(cmd.action)) Coalition.alarm(ctx.meta, cmd.action);  // the realm takes fright (coalition.js alarm)
   if (result.join) War.joined(ctx, result.join);
   if (result.truceWith != null) Peace.seal(ctx, result.truceWith);  // the King's herald made peace (crown.js truce)
   if (result.hostMarch) {
@@ -151,7 +164,7 @@ export async function issueDecree(ctx, req, res, url) {
   if (crownNow) crownNow.gold -= result.cost;
   // The result card says what the order cost and whose favour moved, so the
   // King learns the price of his word.
-  const why = ({ gift: "a gift of crowns", feast: "a feast in their honour", relief: "grain from the crown", build: "a building paid by the crown", grant: "a town granted or taken", banners: "the King's banners: answered or refused", marriage: "a royal match", peace: "the King's peace", back: "the King took a side", settle: "the King's peace, kept by another house", buyoff: "the King bought off the pretender", ward: "their heir taken as the King's ward", alliance: "an oath to the crown", march: "the royal host", war: "the King's war", join: "the King's war", truce: "the King's peace with them" }[cmd.action] ?? "a royal decree");
+  const why = ({ gift: "a gift of crowns", feast: "a feast in their honour", relief: "grain from the crown", build: "a building paid by the crown", grant: "a town granted or taken", banners: "the King's banners: answered or refused", marriage: "a royal match", peace: "the King's peace", back: "the King took a side", settle: "the King's peace, kept by another house", buyoff: "the King bought off the pretender", ward: "their heir taken as the King's ward", alliance: "an oath to the crown", march: "the royal host", war: "the King's war", side: "the King's war", join: "the King's war", warden: "a warden named", spare: "the beaten lord spared", imprison: "the beaten lord imprisoned", behead: "the beaten lord beheaded", regrant: "a warden's oath bought back", unseat: "a warden stripped", truce: "the King's peace with them" }[cmd.action] ?? "a royal decree");
   // Settled the one way every choice is (consequence.js): told, kept to come back, and what it changed.
   // An order against the King's nature (a warlord paying a lord off) weighs on him (matters/nature.js, royals.js ruled).
   if (Nature.against(ctx.meta, cmd)) Royals.ruled(ctx, "order", cmd.action, [Royals.of(ctx.meta)?.king?.focus].filter(Boolean));

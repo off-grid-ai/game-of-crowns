@@ -1,7 +1,7 @@
 {
   "_": "How the King's nature weighs on his answers (matters/nature.js; Mac 2026-11-16: 'the personality I've chosen should have some weightage'; CK3's stress from acting against your traits). Each focus (data/royals.json focus) and trait leans hard or soft. hard: the orders that make a lord fear the crown; soft: the ones that buy his love. A King who leans one way sees those answers first on every matter, and the other kind is marked 'against your nature' and adds to his stress when given (royals.js ruled).",
-  "hard": ["march", "war", "ward", "grant", "back"],
-  "soft": ["feast", "gift", "buyoff", "cede", "promise"],
+  "hard": ["march", "war", "side", "ward", "grant", "back", "behead", "unseat"],
+  "soft": ["feast", "gift", "buyoff", "cede", "promise", "spare", "regrant"],
   "leans": { "war": "hard", "court": "soft", "faith": "soft" },
   "traits": { "wrathful": "hard", "vengeful": "hard", "brave": "hard", "generous": "soft", "patient": "soft", "just": "soft" },
   "against": "against your nature"

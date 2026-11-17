@@ -1,7 +1,9 @@
-// Two great houses at war: judge it for a side, make them stop, wed them, or let them bleed. A war the King has
+// Two great houses at war: join one side's war (the alliance path, Mac 2026-11-17: stand by a house in its wars and in
+// time it swears to you; crown.js side, war.js declare), judge it for a side, make them stop, wed them, or let them bleed. A war the King has
 // stilled (his peace, or a royal match) is no longer his worry, though the engine still counts them at war.
 import { Matter, MATTERS } from "./matter.js";
 import { warChoices } from "./choices.js";
+import { warOn } from "../war.js";
 
 export class HouseWar extends Matter {
   static kind = "house_war";
@@ -16,9 +18,13 @@ export class HouseWar extends Matter {
   }
   answers(ctx, s, m) {
     const war = s.players.find((p) => p.id === m.subject), foe = s.players.find((p) => p.id === m.other);
-    const acts = warChoices(ctx, war, foe, s.cities);
-    const wed = acts.some((a) => a.action === "marriage");
-    m.why = `Every season of war burns fields and lowers the realm's peace. Judge it for one side and the other gives up a town and hates you; make them stop and the side that was winning resents it${m.cold ? `, and ${m.cold.house.name}, cold to the crown, makes the blood-price dearer` : ""}.${wed ? " Or bind the two by marriage, and they stand together after, against you too." : ""}`;
+    const rest = warChoices(ctx, war, foe, s.cities);
+    const wed = rest.some((a) => a.action === "marriage");
+    // Join a side: the King's war on the other house, beside this one; never on a house he is at war with or sworn to.
+    const join = (a, b) => (warOn(ctx.meta, b.id) || ctx.sworn?.(b.id) || !s.seatOf(b.id) ? null : { label: `Join ${s.short(a)} against ${s.short(b)}`, action: "side", city: s.seatOf(b.id).id, to: a.id });
+    const [warm, cold] = [war, foe].sort((a, b) => ctx.favourOf(b.id) - ctx.favourOf(a.id));
+    const acts = [join(warm, cold), ...rest.filter((a) => a.action === "peace"), join(cold, warm), ...rest.filter((a) => a.action !== "peace")].filter(Boolean);
+    m.why = `Every season of war burns fields and lowers the realm's peace. Judge it for one side and the other gives up a town and hates you; make them stop and the side that was winning resents it${m.cold ? `, and ${m.cold.house.name}, cold to the crown, makes the blood-price dearer` : ""}.${wed ? " Or bind the two by marriage, and they stand together after, against you too." : ""} Or join one side: war on the other, and the house you stand by may swear to you in time.`;
     return acts;
   }
   silence(ctx, s, m) {

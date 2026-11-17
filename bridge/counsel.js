@@ -113,7 +113,7 @@ const heardKey = (o) => `${o.text.replace(/[\d.,]+/g, "#").replace(/:.*$/, "")}$
 // crown will really pay (a share of a full treasury), never the base, and whether the purse can bear it.
 export function priced(ctx, a) {
   const { world, lastSeason, priceOf } = ctx;
-  const DOES = {  tithe_down: `slower to cool; ${(Math.round((lastSeason?.net ?? 0) * 50) / 1000).toFixed(1)}k less a season`, grant: "+20 them, −30 the holder", gift: "+10", feast: "+15", relief: "+12, eases it, cannot end it", marriage: "+8 each, bound in peace", peace: "a truce; the house that was winning resents it", back: "free; the loser hates you", banners: "+3 if they come", levy: "600 men", buyoff: "+25, others −2", alliance: "sworn 4 years, +5", march: "the host besieges; −25 them" };
+  const DOES = {  tithe_down: `slower to cool; ${(Math.round((lastSeason?.net ?? 0) * 50) / 1000).toFixed(1)}k less a season`, grant: "+20 them, −30 the holder", gift: "+10", feast: "+15", relief: "+12, eases it, cannot end it", marriage: "+8 each, bound in peace", peace: "a truce; the house that was winning resents it", back: "free; the loser hates you", banners: "+3 if they come", levy: "600 men", buyoff: "+25, others −2", alliance: "sworn 4 years, +5", march: "the host besieges; −25 them", side: "war on the other; they stand with you" };
   if (DECREES[a.action]?.cost) {
     a.cost = Math.round(priceOf(a.action) * (a.scale ?? 1));  // "Make them stop" is dearer the colder the two houses (crown.js peaceScale)
     const short = shortOf(crownOf(world)?.gold ?? 0, a.cost);

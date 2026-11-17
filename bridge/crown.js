@@ -6,6 +6,7 @@ import { cityName, houseFor } from "./narrator.js";
 import { greatHouses, crownOf } from "./realm.js";
 import { BANDS } from "./favour.js";
 import * as Lua from "./lua.js";
+import * as Warden from "./warden.js";
 import fs from "node:fs";
 // The crown's money in one place (the purse, the tithe's yield, wear, thin): data/economy.json.
 export const ECONOMY = JSON.parse(fs.readFileSync(new URL("./data/economy.json", import.meta.url), "utf8"));
@@ -398,6 +399,22 @@ const HANDLERS = {
     return { cost, lua: [pay], war: owner.id, favour: { [owner.id]: d.favour ?? -30, ...Object.fromEntries(others.map((p) => [p.id, d.others ?? -3])) },
       text: `The King's heralds ride to ${lord}'s gates with his defiance: war, until its ${towns} ${towns === 1 ? "town is" : "towns are"} the crown's.` };
   },
+  // The King joins a war between two houses on one side (matters/house_war.js; Mac 2026-11-17, the alliance path:
+  // stand by a house in its wars): his war on the other (war.js declare), the house he stands by its ally.
+  side(x) {
+    const { cmd, world, cost, pay, owner, lord } = x;
+    const ally = world.players.find((p) => p.id === Number(cmd.to));
+    if (!owner || houseFor(owner).crown || houseFor(owner).wild || !ally || houseFor(ally).crown || houseFor(ally).wild) return { error: "choose two great houses" };
+    if ((cmd.wars ?? []).some((w) => w.house === owner.id)) return { error: `the crown is already at war with ${lord}` };
+    if ((cmd.sworn ?? (() => false))(owner.id)) return { error: `${lord} is sworn to the crown; its oath must run out before the King makes war on it` };
+    const d = DECREES.side;
+    const others = greatHouses(world).filter((p) => p.id !== owner.id && p.id !== ally.id);
+    return { cost, lua: [pay], war: owner.id, side: ally.id, favour: { [owner.id]: d.favour, [ally.id]: d.ally, ...Object.fromEntries(others.map((p) => [p.id, d.others])) },
+      text: `The King stands by ${houseFor(ally).name}: his heralds ride to ${lord}'s gates with his defiance, and his host marches beside ${houseFor(ally).name}'s.` };
+  },
+  // A beaten house's land and lord (warden.js): the warden named, the lord's fate, a defiant warden bought back or unseated.
+  warden: (x) => Warden.decree(x), spare: (x) => Warden.decree(x), imprison: (x) => Warden.decree(x), behead: (x) => Warden.decree(x),
+  regrant: (x) => Warden.decree(x), unseat: (x) => Warden.decree(x),
   join(x) {
     const { cmd, world, cost, pay, owner, lord } = x;
     const w = owner ? cmd.askable?.(owner.id) : null;
