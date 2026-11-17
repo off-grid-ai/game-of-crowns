@@ -8,6 +8,7 @@
 // come in as one context argument, built fresh by server.js on each call
 // (getters for what it reassigns, setPaused for the clock's hold); server.js
 // keeps wrappers of the same names.
+import * as Warden from "./warden.js";
 import fs from "node:fs";
 import { crownOf, houseName } from "./realm.js";
 import { HEIRLESS, dynastyOf } from "./royals.js";
@@ -62,7 +63,8 @@ export function goalNow(ctx) {
   const ids = new Set(great.map((p) => p.id));
   const d = detail();
   const fighting = great.filter((p) => p.cities > 0 && (d?.players?.[p.id]?.atWarWith ?? []).some((q) => ids.has(q))).length;
-  const beaten = great.filter((p) => !(p.cities > 0)).length;
+  const off = new Set(Warden.lost(ctx.meta, world));  // a beaten house counts only while a loyal warden holds its land (warden.js)
+  const beaten = great.filter((p) => !(p.cities > 0) && !off.has(p.id)).length;
   const firm = great.filter((p) => p.cities > 0 && favourOf(p.id) >= GOAL_FAVOUR).length + beaten;
   return { bar: GOAL_FAVOUR, firm, beaten, of: great.length, fighting, won: great.length > 0 && firm === great.length };
 }
