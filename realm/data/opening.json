@@ -1,4 +1,5 @@
 {
+  "reign_minutes": 30,
   "choices_gap": 10,
   "_": "The first ten minutes in the view (--opening=v2; docs/review/first-ten-minutes-plan.md). Tune here, not in code. crowning: the King's first moment (crowning.gd): on, the line and the one under it, seconds it holds, how high on the screen, the royal standard's height and seconds to rise. tracker: the date card's one goal until the first winter (on, its words, %d the seasons to go). hideUntilWinter: the toolbar keys at rest, hidden in the first reign until the first winter (UI v2; their keys still work).",
   "storybook": [

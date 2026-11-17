@@ -21,7 +21,7 @@ var _body: VBoxContainer
 var _logo: TextureRect
 var _art: Array[Control] = []  # the painted vista and its fade: hidden while the menu pauses a reign in play
 var _in_game := false  # opened from play (Esc): the realm shows dimmed behind, not the painting
-var _minutes := 15  # a 15-minute reign unless the player picks another length
+var _minutes := int(Data.value("opening", "reign_minutes", 30))  # the reign's length unless the player picks another (Mac 2026-11-17: 30 minutes, seven houses to win)
 var _preset := "Balanced"  # the card chosen on the new-chronicle page
 var _more := false  # every other choice unfolded (unused since setup has pages)
 var _new_show_step: Callable  # the page shown on New Chronicle; Esc steps back through them
@@ -1097,9 +1097,9 @@ func _step_back() -> bool:
 func _use_scenario(sc: Dictionary) -> void:
 	_scenario = String(sc.get("scenario", "aldmere"))
 	# Every reign has a clock (Mac, 2026-11-09): a story saved as endless starts at 15 minutes.
-	_minutes = int(sc.get("minutes", 15))
+	_minutes = int(sc.get("minutes", Data.value("opening", "reign_minutes", 30)))
 	if _minutes <= 0:
-		_minutes = 15
+		_minutes = int(Data.value("opening", "reign_minutes", 30))
 	_wealth = String(sc.get("wealth", "comfortable"))
 	_opt = _default_opt()
 	_opt.merge(sc.get("options", {}), true)
