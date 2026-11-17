@@ -1018,8 +1018,17 @@ const ROUTES = {
   },
   // An order to one of the King's hosts (hosts.js: the view asks, the bridge decides and moves it).
   "POST /host/order": async (req, res, url) => {
-    const [code, out] = Hosts.order({ world, meta, sworn, crownSeat, send, record, besiege: (c) => startCampaign(c), detail: detail() }, await body(req));  // send etc.: the order's first step at once (hosts.js atOnce)
+    const b = await body(req);
+    const leaving = Hosts.list({ world, meta }).find((h) => h.id === Number(b.host));  // where it stands before the order
+    const [code, out] = Hosts.order({ world, meta, sworn, crownSeat, send, record, besiege: (c) => startCampaign(c), detail: detail() }, b);  // send etc.: the order's first step at once (hosts.js atOnce)
     if (code === 200 && !out.dry) { record({ turn: world?.turn ?? 0, kind: "decree", text: out.text }); meta.lastActAt = world?.turn ?? 0; meta.idleTold = false; }  // an order is an act (season.js idle)
+    // A host ordered out from the seat marches out of its gate in columns, banners up (the muster scene the march
+    // decree plays; Mac 2026-11-17: "seeing bannermen or knights leave the town/castle and travel elsewhere").
+    const seat = crownSeat();
+    const goal = b.city != null ? world?.cities?.find((c) => c.id === Number(b.city)) : (b.x != null ? { x: Number(b.x), y: Number(b.y) } : null);
+    if (code === 200 && !out.dry && seat && leaving && goal && ["march", "advance", "besiege", "relieve"].includes(String(b.order))
+      && Math.max(Math.abs(leaving.x - seat.x), Math.abs(leaving.y - seat.y)) <= (Hosts.HOSTS.musterReach ?? 2))
+      scene("muster", { x: seat.x, y: seat.y, tx: goal.x, ty: goal.y, city: seat.id });
     // A march on a great house's town is declared as it is ordered: the house and the realm hear of it.
     if (code === 200 && out.declare) {
       const d = DECREES.march;
