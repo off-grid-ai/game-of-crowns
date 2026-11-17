@@ -76,7 +76,7 @@ const ROOF_BREAK := 0.2  # a frame-share line fails when more than this share of
 var _job := [0.0, 0.0]  # [person-seconds with a visible job, person-seconds in view]
 var _no_job := {}  # "why: activity (group) at place" -> person-seconds without a visible job
 var _unsorted := {}  # clips not in GROUPS, standing -> person-seconds (the table to grow)
-var _drawn := DisplayServer.get_name() != "headless"  # a renderer that draws: only then does OnScreen say what is seen
+var _renders := DisplayServer.get_name() != "headless"  # a renderer that draws: only then does OnScreen say what is seen
 var _reach_n := 0  # people within reach of the aim this frame, drawn or not (the waiting line)
 var _statues := {}  # person -> their longest idle stretch, seconds
 var _idle_for := {}  # person -> how long they've stood idle so far
@@ -209,7 +209,7 @@ func _process(delta: float) -> void:
 			_reach_n += 1
 			var seen := p.get_node_or_null("OnScreen")
 			# Headless nothing is drawn, so nothing reports itself on screen: the 132 in reach all dropped (2026-11-17).
-			if _drawn and seen != null and seen.has_method("is_on_screen") and not seen.call("is_on_screen"):
+			if _renders and seen != null and seen.has_method("is_on_screen") and not seen.call("is_on_screen"):
 				continue
 			near.append(p)
 	if _start < 0.0:
@@ -839,7 +839,7 @@ func _report() -> void:
 			homes_in += (vg.registry.who_is_home(id) as Dictionary).size()
 	print("MOTION hearths: %d of %d chimneys lit; %d homes with someone home (towns with folk drawn)" % [lit, hearths.size(), homes_in])
 	print("MOTION roof statues: %s  %d people idle over %.0f s (longest %.1f s)  %s" % [verdict.call(stood.is_empty()), stood.size(), STATUE,
-		_statues.values().max() if not _statues.is_empty() else 0.0, ", ".join(stood.slice(0, 5).map(func(k): return "%s %.1fs at (%.1f,%.1f) from %s" % [_name(k) if is_instance_valid(k) else "?", _statues[k], (k as Node3D).global_position.x if is_instance_valid(k) else 0.0, (k as Node3D).global_position.z if is_instance_valid(k) else 0.0, _owner_of(k)]))])
+		_statues.values().max() if not _statues.is_empty() else 0.0, ", ".join(stood.slice(0, 5).map(func(k): return "%s %.1fs [%s] at (%.1f,%.1f) from %s" % [_name(k) if is_instance_valid(k) else "?", _statues[k], preload("res://scripts/spacing.gd").held(k) if is_instance_valid(k) else "", (k as Node3D).global_position.x if is_instance_valid(k) else 0.0, (k as Node3D).global_position.z if is_instance_valid(k) else 0.0, _owner_of(k)]))])
 	var why_all := {}
 	for k in stood:
 		var t: Dictionary = _still_why.get(k, {})

@@ -109,17 +109,27 @@ static func _cell(at: Vector3) -> Vector2i:
 ## Standing, and his to move: his Mover not on its way, not in a fight or a formed block, not carried by
 ## something that moves (a rider, a man on a cart).
 static func _stands(body: Node3D) -> bool:
+	return held(body) == ""
+
+
+## Why the pass leaves a body be ("" when it is his to move): read by the motion probe beside a statue.
+static func held(body: Node3D) -> String:
 	var mv := body.get_node_or_null("Mover")
-	if mv and (mv.travels() or mv.fighting or mv.wheel > 0.0 or mv.nav == &"host"):
-		return false
+	if mv:
+		if mv.travels():
+			return "on his way"
+		if mv.fighting:
+			return "fighting"
+		if mv.wheel > 0.0 or mv.nav == &"host":
+			return "formed block"
 	var up := body.get_parent()
 	for _k in 3:
 		if up == null:
 			break
 		if up.get_node_or_null("Mover") != null:
-			return false
+			return "carried by %s" % up.name
 		up = up.get_parent()
-	return true
+	return ""
 
 
 ## Another standing body on his spot, or null.
