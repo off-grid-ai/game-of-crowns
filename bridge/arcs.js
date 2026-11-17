@@ -7,9 +7,12 @@
 // wrong, and for whoever that memory names. The simulation decides the
 // ending: every branch reads live Freeciv state (armies, gold, towns held,
 // hunger, war) and beats act through the same levers the court uses. The
-// local model only writes the words. Every beat goes into the chronicle under
-// the arc's name and into the memories of the people in it, so one story's
-// beats can cast the next.
+// local model only writes the words. A beat or an answer can give the King
+// what its words promise: "crown": { "levy": ["Pikemen", ...], "gold": 200 }
+// raises those companies for the royal host at Kingsmere and adds (or, with a
+// negative number, takes) crowns from the King's chest (act, below).
+// Every beat goes into the chronicle under the arc's name and into the
+// memories of the people in it, so one story's beats can cast the next.
 //
 // With minds (minds.js) the stories reach the common folk too: a role can be
 // cast from any commoner's mind, and every beat moves the minds of those in
@@ -38,6 +41,8 @@ export function ownStories(dir) { OWN = dir; fs.mkdirSync(dir, { recursive: true
 export function storiesChanged() { cache = null; }
 // How many stories run, how often one begins, how many one person carries (data/stories.json).
 const STORIES = readJson(new URL("./data/stories.json", import.meta.url));
+// The kinds of company a story can raise for the crown (data/hosts.json menOf: the Freeciv unit types the hosts count).
+const HOST_KINDS = readJson(new URL("./data/hosts.json", import.meta.url))?.menOf ?? {};
 const MAX_ACTIVE = STORIES.maxActive, START_CHANCE = STORIES.startChance, MAX_ARCS_EACH = STORIES.maxEach;
 const PERSON_RANKS = ["lord", "bannerman", "heir", "child", "spouse", "ward", "sworn", "exile"];
 // How a beat moves those in it, when the file doesn't say.
@@ -117,6 +122,15 @@ export function check(t) {
     if (b.speaker && !roles.includes(b.speaker)) errs.push(`your beat ${b.id} is told by ${b.speaker}, who isn't in the story`);
     for (const [, r] of String(b.text ?? "").matchAll(/\{(\w+)/g)) if (!roles.includes(r) && r !== "thread") errs.push(`your beat ${b.id} names {${r}}, which isn't a role`);
     for (const r of refsInDo(b.do)) if (!roles.includes(r)) errs.push(`your beat ${b.id} acts on ${r}, who isn't in the story`);
+  }
+  // The crown's part of any effect (act: d.crown): companies of kinds Freeciv knows, and a whole number of crowns.
+  const dos = [...beats.flatMap((b) => [b.do, ...(b.court?.options ?? []).map((o) => o.do)]), ...(t.asides ?? []).map((b) => b.do)].filter(Boolean);
+  for (const d of dos) {
+    if (d.crown == null) continue;
+    if (typeof d.crown !== "object" || Array.isArray(d.crown)) { errs.push(`a crown effect must be { levy, gold }`); continue; }
+    for (const k of Object.keys(d.crown)) if (!["levy", "gold"].includes(k)) errs.push(`a crown effect has ${k}; it takes only levy and gold`);
+    if (d.crown.levy != null && (!Array.isArray(d.crown.levy) || d.crown.levy.some((u) => !(u in HOST_KINDS)))) errs.push(`a crown levy must list companies by kind (${Object.keys(HOST_KINDS).join(", ")}): ${JSON.stringify(d.crown.levy)}`);
+    if (d.crown.gold != null && !Number.isInteger(d.crown.gold)) errs.push(`a crown's gold must be a whole number: ${JSON.stringify(d.crown.gold)}`);
   }
   for (const n of t.interrupts ?? []) if (!ids.includes(n.to)) errs.push(`an interrupt goes to ${n.to}, which isn't a beat`);
   for (const [r, id] of Object.entries(t.onDeath ?? {})) if (!ids.includes(id)) errs.push(`onDeath ${r} goes to ${id}, which isn't a beat`);
@@ -747,6 +761,16 @@ export class Arcs {
       const h = this.house(who, ctx);
       const at = who?.town ? who : ctx.world.cities.find((x) => x.id === who?.seat) ?? ctx.world.cities.find((x) => x.owner === h?.id && x.capital) ?? ctx.world.cities.find((x) => x.owner === h?.id);
       if (at) send(Lua.levy(at.id, Array(Number(v.count ?? v) || 1).fill(`${v.type ?? "Pikemen"}|Warriors`)));
+    }
+    // The crown's own part: "crown": { "levy": [kinds], "gold": n }. levy raises those companies for the royal host at
+    // Kingsmere (Lua.levy, as the crowning's start host, data/hosts.json start); gold adds crowns to the King's chest,
+    // or takes them with a negative n. What a story promises the King (a town's pikes, a house's spears, a lender's
+    // silver) is given here, never only in words.
+    if (d.crown) {
+      const crown = ctx.world.players.find((p) => houseFor(p).crown);
+      const seat = crown && ctx.world.cities.find((c) => c.owner === crown.id && c.capital);
+      if (seat && (d.crown.levy ?? []).length) send(Lua.levy(seat.id, d.crown.levy));
+      if (crown && Number(d.crown.gold)) gold(crown.id, Number(d.crown.gold));
     }
     // Men without banners: Freeciv's barbarians raised beside the victim's town (realm_raid); its AI raids.
     if (d.raid && R(d.raid[0]) && R(d.raid[1])) {

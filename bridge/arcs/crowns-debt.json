@@ -27,7 +27,7 @@
         "text": "{rich} of {rich.house}: \"My silver paid for your father's spears, Your Grace. Give me a voice in your war council, or give me my silver.\"",
         "options": [
           { "id": "pay", "label": "Pay the first part from the treasury (500 gold)", "hint": "{rich.houseName} is owed less · the war chest is empty", "cost": 500, "do": { "threat": -20 }, "result": "The crown pays. {rich}'s steward counts it twice and says he'll be back in a year for the rest." },
-          { "id": "council", "label": "Give {rich} a seat at the war council", "hint": "{rich.houseName} +15 · {poor.houseName} −10, who sees a lender steering the King's host", "favour": { "rich": 15, "poor": -10 }, "do": { "threat": -15 }, "result": "{rich} takes a chair at the war table. Every other lord at court counts the chairs and sees whose is new." },
+          { "id": "council", "label": "Give {rich} a seat at the war council", "hint": "{rich.houseName} +15 · {poor.houseName} −10, who sees a lender steering the King's host · {rich.house} lends 200 gold for the next campaign", "favour": { "rich": 15, "poor": -10 }, "do": { "threat": -15, "gold": { "rich": -200 }, "crown": { "gold": 200 } }, "result": "{rich} takes a chair at the war table, and {rich.his} steward leaves a chest of silver for the next campaign. Every other lord at court counts the chairs and sees whose is new." },
           { "id": "refuse", "label": "Refuse: the crown doesn't pay its father's debts", "hint": "nothing now · {rich.houseName} has other ways to collect", "favour": { "rich": -10 }, "do": { "threat": 20 }, "result": "The King tears the note in half. The steward picks up both halves and rides home to {bank}." }
         ]
       },
@@ -76,7 +76,7 @@
         "from": "poor",
         "text": "{poor}: \"Five thousand sellswords at {bank}, Your Grace, paid with the interest on your father's war. Buy them, or they'll come for the debt with a different King.\"",
         "options": [
-          { "id": "outbid", "label": "Outbid {rich} for the sellswords (700 gold)", "hint": "the company changes sides · the debt is still owed", "cost": 700, "do": { "threat": -30 }, "result": "The crown pays more than {rich}. The sellsword captain kneels to the King, for a year." },
+          { "id": "outbid", "label": "Outbid {rich} for the sellswords (700 gold)", "hint": "the company changes sides: three companies of knights for the King · the debt is still owed", "cost": 700, "do": { "threat": -30, "crown": { "levy": ["Knights", "Knights", "Knights"] } }, "result": "The crown pays more than {rich}. The sellsword captain kneels to the King, for a year." },
           { "id": "seize-bank", "label": "Take {bank} from {rich} and give it to {poor.house}", "hint": "{rich.houseName} −40 · {poor.houseName} +15 · {poor.house} holds it for the crown", "favour": { "rich": -40, "poor": 15 }, "do": { "transfer": ["bank", "poor"], "threat": 5 }, "result": "By royal decree, {bank} goes to {poor.house} to hold for the King. {rich} doesn't open the gates." }
         ]
       },

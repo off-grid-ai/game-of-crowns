@@ -91,7 +91,7 @@
         "text": "{named}: \"The letters are yours, Your Grace. Read them out, and you'll have to fight half the names in them. Keep them, and every one of those houses is yours to command.\"",
         "options": [
           { "id": "burn", "label": "Read {thief}'s name alone, and burn the rest", "hint": "{named.houseName} +15 · {thief.houseName} −10 · the bought houses owe you their necks", "favour": { "named": 15, "thief": -10 }, "do": { "threat": -20 }, "result": "The King reads one name aloud in the great hall and burns the rest unread. The lords breathe again, and know who spared them." },
-          { "id": "keep", "label": "Keep them all, and call the named houses to the muster", "hint": "the named houses send their spears · every one holds a grudge", "favour": { "named": -10, "thief": -10 }, "do": { "threat": -10 }, "result": "The letters go into the King's own chest. Every house named in them sends men to the next muster, and nobody asks why." }
+          { "id": "keep", "label": "Keep them all, and call the named houses to the muster", "hint": "the named houses send their spears: three companies for the King · every one holds a grudge", "favour": { "named": -10, "thief": -10 }, "do": { "threat": -10, "crown": { "levy": ["Pikemen", "Pikemen", "Archers"] } }, "result": "The letters go into the King's own chest. Every house named in them sends men to the next muster, and nobody asks why." }
         ]
       },
       "after": [2, 3],

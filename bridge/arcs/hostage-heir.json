@@ -90,7 +90,7 @@
         "from": "lord",
         "text": "{lord}: \"{rival} sent a knife for my child, Your Grace. Give me justice, or I'll take it myself.\"",
         "options": [
-          { "id": "justice", "label": "Fine {rival.house} and guard the heir yourself (150 gold)", "hint": "{rival.houseName} −20 · {lord.houseName} +10", "cost": 150, "favour": { "rival": -20, "lord": 10 }, "do": { "gold": { "rival": -60 }, "threat": -15 }, "result": "{rival.house} pays a blood fine, and {ward} sleeps behind the King's own guard." },
+          { "id": "justice", "label": "Fine {rival.house} and guard the heir yourself (150 gold)", "hint": "{rival.houseName} −20 · {lord.houseName} +10", "cost": 150, "favour": { "rival": -20, "lord": 10 }, "do": { "gold": { "rival": -60 }, "crown": { "gold": 60 }, "threat": -15 }, "result": "{rival.house} pays a blood fine, and {ward} sleeps behind the King's own guard." },
           { "id": "doubt", "label": "Say there's no proof", "hint": "{lord.houseName} −20 · {lord} goes to war", "favour": { "lord": -20 }, "do": { "threat": 15 }, "result": "The King finds no proof. {lord} has all the proof {lord} needs." }
         ]
       },

@@ -49,7 +49,15 @@ function subject(ctx, kind) {
     case "sick_town": return town(pick(world.cities.filter((c) => Contagion.sick(ctx.meta, c.id) && !Contagion.closed(ctx.meta, c.id))) ?? null);
     case "crown_town": return town(pick(world.cities.filter((c) => c.owner === crown?.id && !c.capital)) ?? null);
     case "seat": return town(world.cities.find((c) => c.owner === crown?.id && c.capital));
-    case "hungry_town": return town(pick(world.cities.filter((c) => (c.famine || c.granaryLow) && (c.owner === crown?.id || houses.some((h) => h.id === c.owner)))) ?? null);
+    case "hungry_town": {
+      const c = pick(world.cities.filter((x) => (x.famine || x.granaryLow) && (x.owner === crown?.id || houses.some((h) => h.id === x.owner))));
+      if (!c || c.owner !== crown?.id) return town(c ?? null);
+      // The crown's own town starving: the house whose favour it moves is the great house nearest it (by its nearest
+      // town), the neighbour who sells to it, feeds it or lets it starve; never "The Crown".
+      const far = (p) => Math.min(...world.cities.filter((x) => x.owner === p.id).map((x) => Math.hypot(x.x - c.x, x.y - c.y)));
+      const near = [...houses].sort((a, b) => far(a) - far(b))[0];
+      return near ? { ...town(c), house: houseFor(near).name, pid: near.id, lord: lord(near.id), face: face(near.id) } : null;
+    }
     case "house_cold": return house([...houses].sort((a, b) => favourOf(a.id) - favourOf(b.id))[0]);
     case "house_warm": return house([...houses].sort((a, b) => favourOf(b.id) - favourOf(a.id))[0]);
     case "house_any": return house(pick(houses));

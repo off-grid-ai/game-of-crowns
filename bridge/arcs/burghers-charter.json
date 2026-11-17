@@ -27,7 +27,7 @@
         "from": "lord",
         "text": "{lord} of {lord.house} followed them to court: \"Those are my men, Your Grace. My father raised that levy. Take it from me and you can take my sword too, because I won't be using it for you.\"",
         "options": [
-          { "id": "grant", "label": "Take the levy, and seal {town}'s charter", "hint": "{lord.houseName} −25 · six hundred pikes for the King's campaign", "favour": { "lord": -25 }, "do": { "threat": -5, "gold": { "lord": -40 } }, "result": "The King seals {town}'s charter. Six hundred men drill in the square under the royal banner, and {lord} rides past them without a word." },
+          { "id": "grant", "label": "Take the levy, and seal {town}'s charter", "hint": "{lord.houseName} −25 · six hundred pikes for the King's campaign", "favour": { "lord": -25 }, "do": { "threat": -5, "gold": { "lord": -40 }, "crown": { "levy": ["Pikemen", "Pikemen", "Pikemen", "Pikemen"] } }, "result": "The King seals {town}'s charter. Six hundred men drill in the square under the royal banner, and {lord} rides past them without a word." },
           { "id": "refuse", "label": "Refuse: {town}'s levy is its lord's", "hint": "{lord.houseName} +10 · the guilds go home angry", "favour": { "lord": 10 }, "do": { "threat": 10 }, "result": "The roll goes back unsealed. On the road home the wardens stop talking about the King's war and start talking about their gates." },
           { "id": "lord", "label": "Let {lord} deal with them", "hint": "{lord.houseName} +15 · {lord.he} will settle it hard", "favour": { "lord": 15 }, "do": { "threat": 10 }, "result": "The King hands the muster roll to {lord}, who folds it small and tucks it in {lord.his} boot." }
         ]
@@ -106,7 +106,7 @@
         "from": "lord",
         "text": "{lord}: \"They're starving my host to make a point, Your Grace. Send me men and I'll make a point of my own.\"",
         "options": [
-          { "id": "grant", "label": "Take the levy and seal the charter after all", "hint": "{lord.houseName} −25 · six hundred pikes for the King", "favour": { "lord": -25 }, "do": { "threat": -10 }, "result": "The King seals {town}'s charter. The forges start again by noon, making royal spearheads." },
+          { "id": "grant", "label": "Take the levy and seal the charter after all", "hint": "{lord.houseName} −25 · six hundred pikes for the King", "favour": { "lord": -25 }, "do": { "threat": -10, "crown": { "levy": ["Pikemen", "Pikemen", "Pikemen", "Pikemen"] } }, "result": "The King seals {town}'s charter. The forges start again by noon, making royal spearheads." },
           { "id": "soldiers", "label": "Send soldiers to drive the men to {lord}'s muster", "hint": "{lord.houseName} +10 · the guilds dig in", "favour": { "lord": 10 }, "do": { "units": { "lord": { "type": "Pikemen", "count": 2 } }, "threat": 15 }, "result": "Pikemen kick in the guild-hall doors of {town}. They find the pikes, and nobody to carry them." },
           { "id": "buy", "label": "Quietly pay off the guild masters (200 gold)", "hint": "the men go back to {lord} · the anger stays", "cost": 200, "do": { "threat": -10 }, "result": "Purses go to the right houses at night. The levy falls in behind {lord}'s banner by the end of the week, and nobody admits taking anything." }
         ]
@@ -132,7 +132,7 @@
         "from": "protector",
         "text": "{protector} of {protector.house}: \"{town}'s levy has asked to march under my banner, Your Grace. I'd rather it marched under yours. Will you take it, or shall I?\"",
         "options": [
-          { "id": "recognise", "label": "Take {town} and its levy under the crown", "hint": "{lord.houseName} −35 · six hundred pikes for the King · every town watches", "favour": { "lord": -35, "protector": -5 }, "do": { "threat": -15 }, "result": "The King's banner goes up over {town}'s gate beside the guilds' own. The levy marches out to join the royal host. {lord} isn't there to see it." },
+          { "id": "recognise", "label": "Take {town} and its levy under the crown", "hint": "{lord.houseName} −35 · six hundred pikes for the King · every town watches", "favour": { "lord": -35, "protector": -5 }, "do": { "threat": -15, "crown": { "levy": ["Pikemen", "Pikemen", "Pikemen", "Pikemen"] } }, "result": "The King's banner goes up over {town}'s gate beside the guilds' own. The levy marches out to join the royal host. {lord} isn't there to see it." },
           { "id": "storm", "label": "Storm the gates and end it", "hint": "{lord.houseName} +15 · {protector.houseName} −20 · blood in the streets", "favour": { "lord": 15, "protector": -20 }, "do": { "units": { "lord": { "type": "Knights", "count": 2 } }, "threat": 15, "die": { "who": "master", "chance": 0.6, "how": "They broke our gates and I died in the guild-hall door." } }, "result": "{lord}'s knights go over {town}'s walls with the King's leave." },
           { "id": "protector", "label": "Give {town} and its levy to {protector}", "hint": "{protector.houseName} +25 · {lord.houseName} −40", "favour": { "protector": 25, "lord": -40 }, "do": { "transfer": ["town", "protector"], "threat": 5 }, "result": "{town} opens its gates to {protector}'s banner. Its levy swears to a lord who promises to leave its charter alone." }
         ]
