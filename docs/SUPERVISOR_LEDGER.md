@@ -12,7 +12,22 @@ Where things stand, so any agent can take over. Newest first, short. The full hi
 - Mac tests the game himself. Launch it for him (`./realm.sh open`, one Godot only); never run test games beside
   his. When his game freezes, copy his `godot.log` first, then `kill -SEGV` it for the GDScript backtrace.
 
-## Now (2026-11-16)
+## Now (2026-11-17): the game has its purpose
+- **The game, decided (Mac 2026-11-17, GAME_DESIGN.md "The game"):** win all seven great houses (total domination),
+  by war (beat a house; a minor house of the King's choosing wards its land, and a bad pick costs him) or by
+  alliance (fight its wars, be generous; generosity can read as weakness). A new King starts with no friends and
+  one house at war with him; raiders and barbarians roam. War and formation battles are the crux; politics and
+  famine run alongside. Camera travels for war only. Reign 30 minutes. Win = all seven sworn or beaten.
+- **Landed today:** seasons 40 s; first threat after 2 seasons; every matter its own chronicle card (no town guess);
+  seals close every card when spent; hostile start (no house above favour 45, the nearest house at war, fresh.js);
+  the win ends the reign ('united'); camera follows war answers only; a host leaving Kingsmere plays the muster.
+- **Building now (builders):** crown battles always staged on the field (battle.json, scene_kinds/battle.gd); the
+  warden grant and the beaten lord's fate (matters/warden.js, data/warden.json) with candidates' traits, loyalty and
+  lore deciding if a warden holds; join a house's war (house_war.js); peace-only stories cut or rewired to war (data).
+- **Next:** battle outcome decided on the field, not replayed from Freeciv (needs a design pass); sworn houses' hosts
+  marching with the King; the league finale; respect/fear/weakness shown per house.
+
+## Earlier (2026-11-16)
 - **Houses speak their words (Mac 2026-11-17, done).** Open a town: its house says its words once, in its own voice
   ("Hold Fast" low and slow for Wolfholt, "The Sea Provides!" rough for Ironreach, "Our Sword Is Bloody." at Kingsmere). Recorded
   with OGAD's Kokoro (`realm/tools/record_house_words.sh`), `sounds.json` `house_words` (120 s per house). Not yet heard
