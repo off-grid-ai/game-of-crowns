@@ -11,7 +11,7 @@ export const HOUSES = {
   welsh: { name: "House Stormhold", seat: "the storm coast", words: "We Weather All", color: "#b8862b", sigil: "stag" },
   castilian: { name: "House Sunspire", seat: "the sands of the South", words: "The Sun Waits", color: "#c2562a", sigil: "sun" },
   irish: { name: "House Highfell", seat: "the high passes", words: "Sworn and Steadfast", color: "#4a7bb7", sigil: "falcon" },
-  norman: { name: "The Crown", seat: "Kingsmere", words: "Toil. Endure. Prevail.", color: "#b8202a", sigil: "crown", crown: true },
+  norman: { name: "The Crown", seat: "Kingsmere", words: "We Work. We Wait. We Win.", color: "#b8202a", sigil: "crown", crown: true },
   animals: { name: "the wild beasts", color: "#6b5a44", sigil: "beast", wild: true },
   barbarian: { name: "barbarian raiders", color: "#7a2222", sigil: "skull", wild: true },
   pirate: { name: "sea raiders", color: "#2a2a3a", sigil: "skull", wild: true },

@@ -27,10 +27,11 @@ HOUSES=(
   "stormhold|We weather all!|0.45"
   "sunspire|The sun waits.|0.4"
   "highfell|Sworn, and steadfast.|0.55"
-  "crown|Toil. / Endure. / Prevail!|0.6"
+  "crown|We work. / We wait. / We win!|0.6"
 )
 # Words in beats ("a / b / c"): each beat said on its own, trimmed, and joined with BEAT_GAP seconds between.
 BEAT_GAP=0.3
+LAST_DB=3  # the last beat this much louder than the others
 TRIM="silenceremove=start_periods=1:start_threshold=-40dB,areverse,silenceremove=start_periods=1:start_threshold=-40dB,areverse"
 speak() {  # text voice -> $TMP/raw.wav
   local beats=("${(@s: / :)1}") ins=() parts="" n=0
@@ -41,7 +42,8 @@ speak() {  # text voice -> $TMP/raw.wav
   ffmpeg -loglevel error -y -f lavfi -i "anullsrc=r=24000:cl=mono" -t $BEAT_GAP -c:a pcm_s16le $TMP/gap.wav < /dev/null
   for b in $beats; do
     curl -sf -m 60 $GW/audio/speech -H 'content-type: application/json' -d "{\"model\":\"kokoro\",\"input\":\"$b\",\"voice\":\"$2\"}" -o $TMP/beat.wav
-    ffmpeg -loglevel error -y -i $TMP/beat.wav -af "$TRIM" -ar 24000 -ac 1 -c:a pcm_s16le $TMP/b$n.wav < /dev/null
+    local lift=$(( n == ${#beats} - 1 ? LAST_DB : 0 ))  # the last beat lands hardest
+    ffmpeg -loglevel error -y -i $TMP/beat.wav -af "$TRIM,volume=${lift}dB" -ar 24000 -ac 1 -c:a pcm_s16le $TMP/b$n.wav < /dev/null
     (( n > 0 )) && { ins+=(-i $TMP/gap.wav); parts+="[$(( ${#ins} / 2 - 1 )):a]"; }
     ins+=(-i $TMP/b$n.wav); parts+="[$(( ${#ins} / 2 - 1 )):a]"
     n=$(( n + 1 ))
