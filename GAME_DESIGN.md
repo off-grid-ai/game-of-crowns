@@ -23,6 +23,13 @@ its land, loyal to him. **Alliance:** stand by it in its wars, be generous to it
 house may read it as weakness and try to take the throne; his strength decides which. That is how every house
 ends up loyal.
 
+The rules under it (Mac 2026-11-17): an ally is a step, not the end: fight beside a house and be generous, and in
+time it **swears** to you. A conquered house's land **always** goes to a minor house as warden (never kept by the
+crown). Each house shows how it sees the King (respects you, fears you, thinks you weak), from his host against
+theirs and his recent wins and losses; a gift from a strong king buys loyalty, from a weak one an attack. A sworn
+house can break away after a great defeat. War costs men and crowns and pushes the others toward a league.
+**The win: all seven great houses sworn to the King.**
+
 ## The first ten minutes
 - **0:00** Your royal host stands at Kingsmere, in your colours. One objective is on screen
   ("Raiders burn Ashford. Drive them off.").
