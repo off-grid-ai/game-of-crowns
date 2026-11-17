@@ -77,11 +77,9 @@ var _ready_sides := 0
 
 ## A battle the bridge told of (its scene: x, y, owner the beaten, victor, men [beaten, victors], kinds [beaten,
 ## victors]) staged as a field battle at `at` (open ground near it), or null when it can't be: switched off, no
-## victors known, or field.play.most already fighting (the battle is then told, not shown).
+## victors known (the battle is then told, not shown); whether there is room for it is has_room's. s.crown: a crown battle.
 static func stage(m: Node, s: Dictionary, houses: Dictionary, at: Vector3) -> Node:
 	if at == Vector3.INF or int(s.get("victor", -1)) < 0 or not (s.get("kinds") is Array):
-		return null
-	if m.get_tree().get_nodes_in_group(&"field_battles").size() >= int(Data.num(F, "field.play.most", 1)):
 		return null
 	var kinds: Array = s["kinds"]
 	var men_: Array = s.get("men", [200, 200])
@@ -91,10 +89,38 @@ static func stage(m: Node, s: Dictionary, houses: Dictionary, at: Vector3) -> No
 	var seed := hash(String(s.get("id", "%d,%d,%d" % [int(s["x"]), int(s["y"]), int(s.get("turn", 0))])))
 	b.play = {"at": at, "face": float(posmod(seed, 6283)) / 1000.0, "id": seed,
 		"houses": [houses.get(int(s["victor"]), {}), houses.get(int(s.get("owner", -1)), {})],
-		"kinds": [kinds[1], kinds[0]], "men": [int(men_[1]) if men_.size() > 1 else 200, int(men_[0])]}
+		"kinds": [kinds[1], kinds[0]], "men": [int(men_[1]) if men_.size() > 1 else 200, int(men_[0])], "crown": bool(s.get("crown", false))}
 	b.add_to_group(&"field_battles")
 	m.add_child(b)
 	return b
+
+
+## Whether a battle may take the field now (field.play.most battles at once). The King's battles first (Mac 2026-11-17:
+## war in formation is the crux): a crown battle (his host or a sworn house's fought) clears a lord's battle off the
+## field to take its place; a lord's battle is told, not shown, while any crown battle is on. False: no room.
+static func has_room(m: Node, crown: bool) -> bool:
+	var on: Array = m.get_tree().get_nodes_in_group(&"field_battles")
+	if not crown and on.any(func(b): return b.is_crown()):
+		return false
+	if on.size() < int(Data.num(F, "field.play.most", 1)):
+		return true
+	if crown:
+		for b in on:
+			if not b.is_crown():
+				b.give_way()
+				return true
+	return false
+
+
+## A crown battle (the test aid's always is): has_room never clears it off the field.
+func is_crown() -> bool:
+	return play.is_empty() or bool(play.get("crown", false))
+
+
+## A lord's battle cleared off the field for a crown battle (has_room): gone at once, as at its end.
+func give_way() -> void:
+	remove_from_group(&"field_battles")
+	queue_free()
 
 
 static func k(path: String, fallback: float) -> float:
