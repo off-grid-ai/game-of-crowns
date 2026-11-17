@@ -51,12 +51,16 @@ export class Defiant extends Matter {
     // occur: heard again each year he still defies (a defiance left stands, and comes back).
     return [{ urgency: 96, subject: e.house, city: e.seat, occur: `${e.defiesAt}.${Math.floor((s.turn - e.defiesAt) / 4)}`, places: e.towns,
       text: `${e.wardenName} defies the King`,
-      why: `${W.defiance(ctx, e)}. While it defies you, ${e.name}'s lands are not yours. Buy its oath back, or strip it and name another warden.` }];
+      why: `${W.defiance(ctx, e)}. While it defies you, ${e.name}'s lands are not yours. Buy its oath back, strip it and name another warden${e.risen ? ", or march the royal host on its seat and put it down" : ""}.` }];
   }
   answers(ctx, s, m) {
     const e = W.of(ctx.meta, m.subject);
+    // In arms, his seat held against the King: the royal host marches on it (crown.js march), and taking it puts him
+    // down (warden.js season).
+    const seat = e.risen ? s.cities?.find((c) => c.id === e.seat && c.owner === e.risen.side) : null;
     return [{ label: `Buy back ${e.wardenName}'s oath`, action: "regrant", city: m.city, to: e.house },
-      { label: `Strip ${e.wardenName} and name another`, action: "unseat", city: m.city, to: e.house }];
+      { label: `Strip ${e.wardenName} and name another`, action: "unseat", city: m.city, to: e.house },
+      ...(seat ? [{ label: `Put ${e.wardenName} down: march on ${cityName(seat.id)}`, action: "march", city: seat.id }] : [])];
   }
   silence(ctx, s, m) {
     const d = W.WARDEN.silence.defy;

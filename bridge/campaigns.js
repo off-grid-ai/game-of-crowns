@@ -18,6 +18,7 @@ import * as kingDeeds from "./ledger.js";
 import * as Lua from "./lua.js";
 import { view as damageOf } from "./damage.js";
 import { HITPOINTS } from "./rules.js";
+import { wardenLand } from "./warden.js";
 
 // A town is besieged while an enemy host stands at its walls: three or more
 // fighting units of another house on the tiles around it. One scene per turn.
@@ -227,7 +228,8 @@ export function resolveCampaigns(ctx, turn) {
       shiftFavour({ [c.house]: -20 }, "the royal host");
       shiftFavour(Object.fromEntries((c.allies ?? []).map((id) => [id, 6])), "the royal host");
       // The allies who marched want their share (characters.js spoils; Bannerlord's allies are rivals).
-      if (town && (c.allies ?? []).length) meta.spoils = [...(meta.spoils ?? []).filter((s) => turn - s.turn < 8), { city: c.city, allies: c.allies, turn, settled: false }];
+      // Never a town of a beaten house's land, or of a house the King wars on: that goes to a warden (warden.js).
+      if (town && (c.allies ?? []).length && !wardenLand(meta, c.city, c.house)) meta.spoils = [...(meta.spoils ?? []).filter((s) => turn - s.turn < 8), { city: c.city, allies: c.allies, turn, settled: false }];
       deed(kingDeeds.tagsFor("realm", "sack"), { act: false, place: cityName(c.city) });
       record({ turn, kind: "sack", text: `${cityName(c.city)} falls to the royal host: ${why} ${houseFor(foe).name} has learned what the crown's anger costs.`, city: c.city });
       continue;

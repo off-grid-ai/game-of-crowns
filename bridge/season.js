@@ -28,6 +28,7 @@ import * as Rebels from "./rebels.js";
 import * as Battles from "./battles.js";
 import * as Peace from "./peace.js";
 import * as War from "./war.js";
+import * as Warden from "./warden.js";
 import * as Coalition from "./coalition.js";
 import * as Contagion from "./contagion.js";
 import * as Prices from "./prices.js";
@@ -78,6 +79,7 @@ export function turn(ctx, ev) {
   Rebels.season(ctx, Number(ev.turn));
   Peace.season(ctx, Number(ev.turn));
   War.season(ctx, Number(ev.turn));  // the King's war on a house: the next town, the house's answer (war.js)
+  Warden.season(ctx, Number(ev.turn));  // a defiant warden's towns take up arms; his seat retaken puts him down (warden.js)
   War.upkeep(ctx, Number(ev.turn));  // what the crown's wars cost this season (war.js upkeep)
   Coalition.season(ctx, Number(ev.turn));
   Reign.ambitions(ctx);  // the King's promises are judged when the season turns, not only on the reign clock (which waits through a sitting): a promise never stands open at its due season

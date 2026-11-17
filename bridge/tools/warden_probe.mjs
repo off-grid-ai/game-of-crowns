@@ -1,6 +1,7 @@
 // Guards a beaten house's land and lord (warden.js, matters/warden.js; Mac 2026-11-17: a conquered house's land always
 // goes to a minor house as warden, of the King's choosing; the wrong warden causes trouble; the beaten lord's fate) and
-// the alliance path in a war between two houses (matters/house_war.js "Join A against B"). Pure: a made-up realm, a
+// the alliance path in a war between two houses (matters/house_war.js "Join A against B"), and a defiant warden taking
+// up arms (warden.js season: his towns go over, a host marches, the royal host puts him down; spoils never his land). Pure: a made-up realm, a
 // stand-in court, no Freeciv, no bridge; the meta is saved under a throwaway GOC_HOME.
 //   node tools/warden_probe.mjs        (from bridge/)   exits 1 on a failure
 import fs from "node:fs";
@@ -97,4 +98,40 @@ const view2 = players.map((p) => ({ ...p, house: houseFor(p) }));
 const hw = new HouseWar().build(ctx, scope(ctx, view2, cities, {}));
 const side = hw[0]?.acts.find((a) => a.action === "side");
 check("house war: Join the warmer house against the other", side && /^Join Goldcrest against Thornvale/.test(side.label) && side.to === 2 && side.city === 30);
+
+// The wrong warden takes up arms: his towns go over to a house that will have them and march on the crown.
+const Lua = await import("../lua.js");
+const sent = [], dips = [], said = [];
+let atWar = {};
+Object.assign(ctx, { send: (l) => sent.push(l), diplomacy: (d) => dips.push(d), record: (r) => said.push(r.text),
+  detail: () => ({ players: players.map((p) => ({ slot: p.id, atWarWith: atWar[p.id] ?? [] })) }) });
+const dale = W.candidates(ctx, e).find((x) => x.c.id === "c4");
+check("a new warden can be named after the first is stripped", !!dale);
+W.apply(ctx, { act: "warden", house: 1, city: 31 });
+e.defiesAt = world.turn;
+atWar = { 0: [3], 3: [0] }; fav[3] = 30;
+check("tied: a defiant warden sides with his old liege at war with the crown", W.sideOf(ctx, e)?.join() === "3,tie");
+atWar = {}; fav[3] = 55;
+check("no tie at war: the beaten house raised again under him, while Freeciv has it", W.sideOf(ctx, e)?.join() === "1,old");
+players[1].alive = false;
+check("the beaten house gone: the King's coldest foe takes his towns", W.sideOf(ctx, e)?.join() === "4,cold");
+meta.wars = [{ house: 4, seat: 40, since: 10, plan: [40], fallen: [], allies: [], against: [], waiting: [] }];
+W.season(ctx, world.turn);
+check("risen: his towns go over by Freeciv's transfer", sent.includes(`lua cmd ${Lua.transferCity(11, 4)}`) && sent.includes(`lua cmd ${Lua.transferCity(12, 4)}`));
+check("risen: a host raised at his towns marches on the crown's town nearest his seat", sent.some((l) => l === "lua cmd " + Lua.warHost(4, 10, W.WARDEN.rise.kinds, W.WARDEN.rise.host + 2 * W.WARDEN.rise.perTown)));
+check("risen: Freeciv puts the crown and that house at war", dips.some((d) => d.join() === "0,4,0,War"));
+check("risen: the King's war on that house takes his towns before its seat", meta.wars[0].plan.join() === "11,12,40");
+check("risen: the chronicle says it plainly", said.some((t) => /breaks its oath/.test(t) && /march out of/.test(t) && /in arms against the King/.test(t)));
+check("risen: the house is not the King's", W.lost(meta, world).includes(1) && e.risen?.side === 4);
+check("risen once, not every season", (W.season(ctx, world.turn), sent.filter((l) => l.includes("transfer_city")).length === 2));
+cities.find((c) => c.id === 11).owner = 4; cities.find((c) => c.id === 12).owner = 4;
+const dm2 = new Defiant().build(ctx, s());
+const put = dm2[0]?.acts.find((a) => a.action === "march");
+check("defiant matter: Put him down marches the royal host on his seat, beside buy back and strip", put && put.city === 11 && /^Put .* down: march on/.test(put.label) && dm2[0].acts.some((a) => a.action === "regrant") && dm2[0].acts.some((a) => a.action === "unseat") && /in arms/.test(dm2[0].why));
+check("spoils: never a town of a warden's land or of a house the King wars on", W.wardenLand(meta, 12, 9) && W.wardenLand(meta, 99, 4) && !W.wardenLand(meta, 99, 3));
+W.season(ctx, world.turn);
+check("his seat seen held by the rising", e.risen?.held === true && e.warden === "c4");
+cities.find((c) => c.id === 11).owner = 0;
+W.season(ctx, world.turn + 1);
+check("the royal host takes his seat: he is put down and stripped, the land wants a warden", e.warden == null && e.risen == null && people.c4.seat == null && said.some((t) => /is put down/.test(t)));
 process.exit(bad ? 1 : 0);

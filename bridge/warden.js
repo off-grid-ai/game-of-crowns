@@ -1,7 +1,7 @@
 // A beaten great house's land and its lord (Mac 2026-11-17, GAME_DESIGN "The game": "a minor house of his choosing
 // becomes warden of its land, loyal to him"; "choosing the wrong warden must cause trouble"; CK3's title grant to a
 // vassal whose traits and ties decide if he stays loyal). One owner, meta.wardens [{house, name, seat, towns, turn,
-// lord, fate, warden, wardenName, liege, kin, risk, since, defiesAt, passed}], one a house the King toppled (war.js
+// lord, fate, warden, wardenName, liege, kin, risk, since, defiesAt, passed, risen}], one a house the King toppled (war.js
 // topple): until the King names a warden its towns are held by the crown; the warden he names, a bannerman of the
 // beaten house or of a house loyal to him, holds them for the crown. Who he is decides how he holds them: his traits,
 // his loyalty, his ties to the beaten house (kin, a friend of its lord) give a risk, read on the card, and a warden
@@ -15,6 +15,8 @@ import { houseFor, cityName } from "./narrator.js";
 import { BANDS } from "./favour.js";
 import { FAMILIES } from "./lore.js";
 import * as chron from "./chronicles.js";
+import * as Lua from "./lua.js";
+import { crownFoe, warOn } from "./war.js";
 
 export const WARDEN = JSON.parse(fs.readFileSync(new URL("./data/warden.json", import.meta.url), "utf8"));
 export const ACTS = new Set(["warden", "spare", "imprison", "behead", "regrant", "unseat"]);
@@ -152,20 +154,112 @@ export function apply(ctx, { act, house, city }) {
     if (w) { w.loyalty = Math.min(100, (w.loyalty ?? 50) + WARDEN.regrant.loyalty); court.remember(w.id, "I defied the King, and he bought my oath back."); court.save(w); }
     e.risk = w ? riskOf(ctx, e, w, e.kin, false) : e.risk;
     schedule(e, turn);
-    text = `${e.wardenName} takes the King's gold and swears again to hold ${lands} for the crown.`;
+    // Risen, his towns come back to the crown with his oath (the side he went to keeps the men it raised).
+    const back = e.risen ? e.towns.filter((id) => world.cities?.some((c) => c.id === id && c.owner === e.risen.side)) : [];
+    for (const id of back) ctx.send?.(`lua cmd ${Lua.transferCity(id, crown.id)}`);
+    e.risen = null;
+    text = `${e.wardenName} takes the King's gold and swears again to hold ${lands} for the crown.${back.length ? ` ${andList(back.map(cityName))} ${back.length > 1 ? "open their gates" : "opens its gates"} to the King's men again.` : ""}`;
   } else if (act === "unseat") {
     const w = court.people?.[e.warden];
     if (w) { w.seat = null; w.warden = null; court.remember(w.id, "I defied the King, and he took the lands he gave me."); court.save(w); }
     e.passed = [...(e.passed ?? []), e.warden];
     text = `The King strips ${e.wardenName} of ${lands}. Another must be named to hold them.`;
-    Object.assign(e, { warden: null, wardenName: null, liege: null, kin: false, risk: 0, since: null, defiesAt: null });
+    Object.assign(e, { warden: null, wardenName: null, liege: null, kin: false, risk: 0, since: null, defiesAt: null, risen: null });
   }
   chron.saveMeta(meta);
   return text;
 }
 
+// A defiant warden takes up arms (Mac 2026-11-17: the wrong warden must cause real trouble). The season he defies, his
+// towns go over to a house that will have them, by Freeciv's own transfer (Lua.transferCity): the house he is tied to
+// (his old liege, or the beaten house when he is its kin) if it is at war with the crown; else the beaten house itself,
+// raised again under him, if Freeciv still has it; else the King's coldest foe (at war with the crown, or under
+// data/warden.json rise.coldBelow, which goes to war for the towns). That house raises a host at his towns and marches
+// it on the crown's town nearest his seat (Lua.warHost: realm_war_host, hosts.js warpath), the war its own; if the King
+// wars on that house, the towns join his war's plan (war.js), taken before its seat. Once risen, the crown's host
+// taking his seat back puts him down: he is stripped, and the land wants a warden again. e.risen {turn, side, towns,
+// prey}. Called each season (season.js); returns nothing, tells the chronicle.
+export function season(ctx, turn) {
+  const { world, meta, court, record } = ctx;
+  const crown = crownOf(world);
+  if (!crown || !court) return;
+  for (const e of list(meta)) {
+    if (e.risen) { putDown(ctx, e, turn, crown); continue; }
+    if (!defies(e, turn)) continue;
+    rise(ctx, e, turn, crown);
+  }
+}
+
+const alive = (world, pid) => pid != null && (world.players ?? []).some((p) => p.id === pid && p.alive !== false);
+
+// Who takes his towns: [pid, why] or null.
+export function sideOf(ctx, e) {
+  const { world, favourOf } = ctx;
+  const R = WARDEN.rise;
+  const crown = crownOf(world);
+  const foe = (pid) => alive(world, pid) && pid !== crown?.id && crownFoe(ctx, pid);
+  const ties = [e.liege, e.kin ? e.house : null].filter((pid) => pid != null);
+  const tied = ties.find(foe);
+  if (tied != null) return [tied, "tie"];
+  if (alive(world, e.house) && !houseFor(world.players.find((p) => p.id === e.house)).wild) return [e.house, "old"];
+  const cold = greatHouses(world).filter((p) => p.id !== e.house && (foe(p.id) || (favourOf?.(p.id) ?? 50) < R.coldBelow))
+    .sort((a, b) => (favourOf?.(a.id) ?? 50) - (favourOf?.(b.id) ?? 50))[0];
+  return cold ? [cold.id, "cold"] : null;
+}
+
+function rise(ctx, e, turn, crown) {
+  const { world, meta, record } = ctx;
+  const R = WARDEN.rise;
+  const s = sideOf(ctx, e);
+  const towns = e.towns.filter((id) => world.cities?.some((c) => c.id === id && c.owner === crown.id));
+  if (!s || !towns.length) return;
+  const [side, why] = s;
+  const send = (l) => ctx.send?.(`lua cmd ${l}`);
+  for (const id of towns) send(Lua.transferCity(id, side));
+  const seat = world.cities.find((c) => c.id === e.seat) ?? world.cities.find((c) => c.id === towns[0]);
+  const cheb = (a, b) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
+  const prey = world.cities.filter((c) => c.owner === crown.id && !towns.includes(c.id)).sort((a, b) => cheb(a, seat) - cheb(b, seat))[0] ?? null;
+  const men = R.host + R.perTown * towns.length;
+  if (prey) send(Lua.warHost(side, prey.id, R.kinds, men));
+  // The crown and the side are at war in Freeciv (the one writer): taking the King's towns is war.
+  ctx.diplomacy?.([crown.id, side, 0, "War"]);
+  // The King's war on that house, if he wages one, takes his towns before its seat.
+  const w = warOn(meta, side);
+  if (w) w.plan = [...towns.filter((id) => !w.plan.includes(id)), ...w.plan];
+  e.risen = { turn, side, why, towns, prey: prey?.id ?? null };
+  const sideName = houseFor(world.players.find((p) => p.id === side) ?? {}).name ?? "the King's foes";
+  const went = why === "old" ? `raises the old banner of ${e.name} over ${andList(towns.map(cityName))}`
+    : `opens the gates of ${andList(towns.map(cityName))} to ${sideName}${why === "tie" ? `, ${e.kin && side === e.house ? "the house it was sworn to" : "its old liege"}, at war with the crown` : ", the crown's foe"}`;
+  record({ turn, kind: "rebellion", city: e.seat ?? towns[0], attacker: side, defender: crown.id,
+    text: `${e.wardenName} breaks its oath and ${went}. ${prey ? `${men} companies march out of ${cityName(seat.id)} on ${cityName(prey.id)}.` : ""} ${e.name}'s lands are in arms against the King.`.replace(/\s+/g, " ").trim() });
+  chron.saveMeta(meta);
+}
+
+// The crown holds his seat again (the royal host took it): the warden is put down, stripped, and the land wants another.
+function putDown(ctx, e, turn, crown) {
+  const { world, meta, court, record } = ctx;
+  const seat = world.cities?.find((c) => c.id === e.seat);
+  if (seat && seat.owner === e.risen.side && !e.risen.held) { e.risen.held = true; chron.saveMeta(meta); }  // his rising has his seat
+  if (!seat || seat.owner !== crown.id || !e.risen.held) return;
+  const w = court.people?.[e.warden];
+  if (w) { w.seat = null; w.warden = null; w.loyalty = Math.max(0, (w.loyalty ?? 50) - (WARDEN.rise.putDownLoyalty ?? 0)); court.remember(w.id, "I defied the King, and his host took my seat from me."); court.save(w); }
+  const name = e.wardenName;
+  e.passed = [...(e.passed ?? []), e.warden];
+  Object.assign(e, { warden: null, wardenName: null, liege: null, kin: false, risk: 0, since: null, defiesAt: null, risen: null });
+  record({ turn, kind: "rebellion", city: seat.id, attacker: crown.id, text: `The royal host takes ${cityName(seat.id)} back: ${name} is put down and stripped of ${e.name}'s lands. Another must be named to hold them.` });
+  chron.saveMeta(meta);
+}
+
+// A town of a beaten house's land, or of a house the King wars on (its towns go to a warden when it is toppled): never
+// an ally's to claim as spoils (campaigns.js).
+export const wardenLand = (meta, city, house) => list(meta).some((e) => e.towns.includes(Number(city))) || warOn(meta, house) != null;
+
 // How a defiant warden defies, by what made him: his blood, his ambition, or his greed.
 export function defiance(ctx, e) {
+  if (e.risen) {
+    const side = houseFor(ctx.world.players.find((p) => p.id === e.risen.side) ?? {}).name ?? "the King's foes";
+    return `${e.wardenName} is in arms: ${andList(e.risen.towns.map(cityName))} ${e.risen.towns.length > 1 ? "fly" : "flies"} ${e.risen.why === "old" ? `${e.name}'s old banner again` : `${side}'s banner`}${e.risen.prey != null ? `, and its host marches on ${cityName(e.risen.prey)}` : ""}`;
+  }
   const w = ctx.court?.people?.[e.warden];
   const traits = w?.traits ?? [];
   if (e.kin) return `${e.wardenName} remembers whose banner it once flew: it shuts the gates of ${cityName(e.seat)} to the King's men and sends word to his foes`;
