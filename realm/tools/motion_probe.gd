@@ -78,6 +78,7 @@ var _no_job := {}  # "why: activity (group) at place" -> person-seconds without 
 var _unsorted := {}  # clips not in GROUPS, standing -> person-seconds (the table to grow)
 var _statues := {}  # person -> their longest idle stretch, seconds
 var _idle_for := {}  # person -> how long they've stood idle so far
+var _still_why := {}  # person -> {his Mover's state while idle: seconds} (asking, held, walking, off, none)
 var _variety := [0, 0, 0]  # [frames one activity held over ONE_THING, frames under KINDS kinds of work, frames]
 var _crowded := {}  # the activity most held, in frames it held over ONE_THING -> frames
 var _knot := [0, 0, 0]  # [frames the biggest knot passed the square's cap, biggest knot seen, its cap]
@@ -538,6 +539,11 @@ func _roof(near: Array[Node3D], delta: float) -> void:
 		# The idle stretch (a statue): standing in an idle clip, uninterrupted.
 		_idle_for[p] = float(_idle_for.get(p, 0.0)) + delta if g == "idle" else 0.0
 		_statues[p] = maxf(float(_statues.get(p, 0.0)), float(_idle_for[p]))
+		if g == "idle":  # what his Mover was doing while he stood: the cause of a statue, by seconds
+			var tally: Dictionary = _still_why.get(p, {})
+			var st := _mover_state(p)
+			tally[st] = float(tally.get(st, 0.0)) + delta
+			_still_why[p] = tally
 	for p in near:
 		var g := String(groups[p])
 		var clip := String(shown[p])
@@ -659,7 +665,7 @@ func _aimed(a: Node3D, b: Node3D) -> bool:
 ## Who someone is, for the report: what placed them, and their move.
 func _name(p: Node3D) -> String:
 	var up := p.get_parent()
-	var by := String(up.name) if up else "?"
+	var by := ("%s@%d<%s@%d" % [up.name, up.get_instance_id(), up.get_parent().name if up.get_parent() else "?", up.get_parent().get_instance_id() if up.get_parent() else 0]) if up else "?"
 	if up and up.get_parent() and by.begins_with("@"):
 		by = String(up.get_parent().name)
 	var held := []  # what's in his hands, so one of the castle's or a town's many unnamed folk can be told apart
@@ -829,6 +835,24 @@ func _report() -> void:
 	print("MOTION hearths: %d of %d chimneys lit; %d homes with someone home (towns with folk drawn)" % [lit, hearths.size(), homes_in])
 	print("MOTION roof statues: %s  %d people idle over %.0f s (longest %.1f s)  %s" % [verdict.call(stood.is_empty()), stood.size(), STATUE,
 		_statues.values().max() if not _statues.is_empty() else 0.0, ", ".join(stood.slice(0, 5).map(func(k): return "%s %.1fs at (%.1f,%.1f) from %s" % [_name(k) if is_instance_valid(k) else "?", _statues[k], (k as Node3D).global_position.x if is_instance_valid(k) else 0.0, (k as Node3D).global_position.z if is_instance_valid(k) else 0.0, _owner_of(k)]))])
+	var why_all := {}
+	for k in stood:
+		var t: Dictionary = _still_why.get(k, {})
+		for st in t:
+			why_all[st] = float(why_all.get(st, 0.0)) + float(t[st])
+	print("MOTION statue movers (seconds idle by the Mover's state): %s" % str(why_all))
+	# Everyone still asking now: the map kind, whether it answers, whether the chunks under both ends landed, the answer.
+	var NW = load("res://scripts/nav_world.gd")
+	var asks := []
+	for b in get_tree().get_nodes_in_group("people"):
+		var mv := (b as Node).get_node_or_null("Mover")
+		if mv == null or not mv.is_processing() or not (mv.get("_ask_got") as Callable).is_valid():
+			continue
+		var kind: StringName = mv.get("nav")
+		var from: Vector3 = (b as Node3D).global_position
+		var to: Vector3 = mv.get("_ask_to")
+		asks.append("%s kind %s ready %s landed %s/%s from (%.2f,%.2f) to (%.2f,%.2f) path %d" % [_owner_of(b), kind, NW.ready(kind), NW._chunk_landed(from, kind), NW._chunk_landed(to, kind), from.x, from.z, to.x, to.z, NW.path(from, to, kind).size()])
+	print("MOTION askers now: %d  %s" % [asks.size(), "; ".join(asks.slice(0, 6))])
 	var vf: float = maxf(1, _variety[2])
 	print("MOTION roof variety: %s  one activity over %d%% of the crowd in %d%% of frames (%s); under %d kinds of work in %d%% of frames" % [
 		verdict.call(_variety[0] / vf <= ROOF_BREAK and _variety[1] / vf <= ROOF_BREAK), int(ONE_THING * 100), int(100 * _variety[0] / vf), _top(_crowded), KINDS, int(100 * _variety[1] / vf)])
@@ -844,6 +868,25 @@ func _top(counts: Dictionary) -> String:
 	var keys := counts.keys()
 	keys.sort_custom(func(a, b): return counts[a] > counts[b])
 	return ", ".join(keys.slice(0, 5).map(func(k): return "%s %d" % [k if k != "" else "?", counts[k]]))
+
+
+## A person's Mover, as a statue's cause: none, off (switched off: stands), asking (a route the map can't give yet),
+## held (waiting on a body in its way), steer, walking (a way with points left: on screen, it should be stepping).
+static func _mover_state(p: Node) -> String:
+	var mv := p.get_node_or_null("Mover")
+	if mv == null:
+		return "none"
+	if not mv.is_processing():
+		return "off"
+	if (mv.get("_ask_got") as Callable).is_valid():
+		return "asking"
+	if mv.get("_steer"):
+		return "steer"
+	if is_instance_valid(mv.get("_blocked")):
+		return "held"
+	if int(mv.get("_i")) < (mv.get("_way") as PackedVector3Array).size():
+		return "walking"
+	return "on, no way"
 
 
 ## Which script put a person there: the nearest ancestor with a script (a statue's owner, named).

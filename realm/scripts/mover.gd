@@ -65,6 +65,7 @@ var _i := 0
 var _then := Callable()
 var _ask_to := Vector3.INF  # a route asked for that the navigation can't give yet: asked again each frame
 var _ask_got := Callable()  # (way) -> what to do with it once given
+var _asked_s := 0.0  # seconds this route has been asked for without an answer
 
 
 ## The body's Mover, made on first ask: everything that moves has exactly one.
@@ -116,6 +117,7 @@ func route_to(to: Vector3, got: Callable) -> void:
 	_steer = false
 	_ask_to = to
 	_ask_got = got
+	_asked_s = 0.0
 	set_process(true)
 
 
@@ -936,7 +938,23 @@ func _walk(delta: float) -> void:
 	if body != null and _ask_got.is_valid():
 		var way := _route(body.global_position, _ask_to)
 		if way.is_empty():
-			return  # still baking: he stands
+			# The map can't give the whole route yet (chunks on its far end not landed; far towns stream, so they may
+			# not for minutes). Past ground.json nav.ask_s he walks the part of it that has landed, toward the mark,
+			# and asks again from there (Kingsmere 2026-11-17: 108 of 145 statue-seconds were men asking).
+			_asked_s += delta
+			if _asked_s < Data.num("ground", "nav.ask_s", 1.0):
+				return
+			_asked_s = 0.0
+			var part := NavWorld.path_landed(body.global_position, _ask_to, nav)
+			var here := Vector2(body.global_position.x, body.global_position.z)
+			var mark := Vector2(_ask_to.x, _ask_to.z)
+			if part.size() < 2 or here.distance_to(mark) - Vector2(part[part.size() - 1].x, part[part.size() - 1].z).distance_to(mark) < 0.1:
+				return  # nothing landed nearer the mark: he stands and asks again
+			var to := _ask_to
+			var got_later := _ask_got
+			_ask_got = Callable()
+			_begin(part, func(): route_to(to, got_later), true, false)
+			return
 		var got := _ask_got
 		_ask_got = Callable()
 		got.call(way)

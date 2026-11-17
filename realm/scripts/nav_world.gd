@@ -229,6 +229,24 @@ static func path(from: Vector3, to: Vector3, kind: StringName = &"walk") -> Pack
 	return r.path
 
 
+## The route from `from` toward `to` over what of `kind`'s map has landed, as soon as the chunk under `from` has: to
+## `to`, or to the nearest point to it the landed map holds (a mark on ground still streaming). mover.gd walks it when
+## path() can't answer yet, then asks again from its end.
+static func path_landed(from: Vector3, to: Vector3, kind: StringName = &"walk") -> PackedVector3Array:
+	if not _maps.has(kind) or not _chunk_landed(from, kind):
+		return PackedVector3Array()
+	var q := NavigationPathQueryParameters3D.new()
+	q.map = _maps[kind]
+	q.start_position = from
+	q.target_position = to
+	q.pathfinding_algorithm = NavigationPathQueryParameters3D.PATHFINDING_ALGORITHM_ASTAR
+	q.path_postprocessing = NavigationPathQueryParameters3D.PATH_POSTPROCESSING_CORRIDORFUNNEL
+	q.simplify_path = false
+	var r := NavigationPathQueryResult3D.new()
+	NavigationServer3D.query_path(q, r)
+	return r.path
+
+
 ## Whether the chunk under `p` (world) has its first mesh on `kind`'s map (baked or read back once).
 static func _chunk_landed(p: Vector3, kind: StringName) -> bool:
 	if not _chunks.has(kind):
@@ -444,7 +462,7 @@ static func _dispatch() -> void:
 	while _out < most and not _queue.is_empty():
 		if not ViewTier.spend_ok(&"nav_world"):
 			return
-		var job: Array = _queue.pop_front()
+		var job: Array = _queue.pop_at(_next_job())
 		var kind: StringName = job[0]
 		var c: Vector2i = job[1]
 		var ch: Dictionary = _chunks[kind][c]
@@ -465,6 +483,31 @@ static func _dispatch() -> void:
 		var fords: Array = (terrain.get("_fords") as Dictionary).values().duplicate(true)
 		PerfTools.add("nav_world.fords", Time.get_ticks_usec() - d0)
 		WorkerThreadPool.add_task(_bake.bind(_gen, kind, c, faces, inputs, fords), false, "nav %s %s" % [kind, c])
+
+
+## The queue's job to bake next: the chunk nearest where the camera stands first (rings of chunks round it), as a
+## streaming world loads round the player (Minecraft's chunk queue, Unreal's World Partition): the ground the King
+## looks at answers routes first (Kingsmere 2026-11-17: the castle's own chunk had not landed 60 s in, row by row
+## across the realm, and its guards stood asking). Within a ring, the kinds in LAND_KINDS order, water last.
+static func _next_job() -> int:
+	var cam: Camera3D = (Engine.get_main_loop() as SceneTree).root.get_camera_3d() if Engine.get_main_loop() is SceneTree else null
+	if cam == null:
+		return 0
+	var chunk := _chunk_size()
+	var at := Vector2i(floori(cam.global_position.x / chunk), floori(cam.global_position.z / chunk))
+	var best := 0
+	var score := INF
+	for i in _queue.size():
+		var c: Vector2i = _queue[i][1]
+		var ring := maxi(absi(c.x - at.x), absi(c.y - at.y))
+		var k := LAND_KINDS.find(_queue[i][0])
+		var sc := ring * 10.0 + (k if k >= 0 else LAND_KINDS.size())
+		if sc < score:
+			score = sc
+			best = i
+			if sc == 0.0:
+				break
+	return best
 
 
 ## What changed in chunk `ch` since its last bake, counted by cause (GOC_PERF_PROBE, nav_world.why.<cause>: shapes what
