@@ -859,6 +859,24 @@ func moving() -> bool:
 	return is_processing()
 
 
+## On its way somewhere: a walk with points left, a steer, a shift, or a route asked for. A body whose mover is
+## switched on with none of these stands (spacing.gd reads it).
+func travels() -> bool:
+	return is_processing() and (_i < _way.size() or _steer or _shifting or _ask_got.is_valid())
+
+
+## A short step off the spot it stands on (spacing.gd: a man inside another, or idle too long): along the place's own
+## heights where its last walk kept them (a wall walk), else routed on the ground.
+func step_aside(to: Vector3, then := Callable()) -> void:
+	var body := get_parent() as Node3D
+	if body == null:
+		return
+	if _keep_y:
+		walk(PackedVector3Array([Vector3(to.x, body.global_position.y, to.z)]), then)
+	else:
+		go(to, then)
+
+
 ## Each frame while walking; every mover's walking timed together for the frame-cost probe (perf_tools.gd
 ## GOC_PERF_PROBE, off in play): "movers" in the slow-frame log.
 ## Probing, its parts are timed too: movers.due (whether it steps this frame), and each step by what it is doing:

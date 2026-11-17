@@ -205,6 +205,9 @@ func _ready() -> void:
 	var anim_lod := preload("res://scripts/anim_lod.gd").new()
 	anim_lod.name = "AnimLOD"
 	add_child(anim_lod)
+	var spacing := preload("res://scripts/spacing.gd").new()  # no two on one spot, nobody a statue (spacing.gd)
+	spacing.name = "Spacing"
+	add_child(spacing)
 	rig = preload("res://scripts/camera_rig.gd").new()
 	rig.terrain = terrain
 	rig.towns = towns  # so the camera keeps above roofs
@@ -1323,7 +1326,7 @@ func _on_staged(s: Dictionary, follow: Node3D) -> void:
 
 ## The realm's view (world_cover.gd VIEW): what stops moving and thinking while a still screen covers the window.
 func _view_group() -> void:
-	for n in [terrain, towns, roads, countryside, scenes, units, villagers, labels, get_node_or_null("Traffic"), get_node_or_null("AnimLOD"), get_node_or_null("Decisions")]:
+	for n in [terrain, towns, roads, countryside, scenes, units, villagers, labels, get_node_or_null("Traffic"), get_node_or_null("AnimLOD"), get_node_or_null("Spacing"), get_node_or_null("Decisions")]:
 		if n:
 			n.add_to_group(preload("res://scripts/world_cover.gd").VIEW)
 
