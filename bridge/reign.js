@@ -53,14 +53,18 @@ export function deed(ctx, tag, opts = {}) {
 // The reign's goal, as the top bar shows it: how many great houses stand
 // firmly with the King, of how many, and how many are at war with another.
 export const GOAL_FAVOUR = BANDS.sworn;  // sworn and up counts as firmly the King's (data/favour.json)
+// The win (Mac 2026-11-17, GAME_DESIGN "The game": "all seven sworn is the win", "total domination"): every great
+// house sworn to the King, by oath (favour at sworn) or by the sword (a house beaten and its seat lost: its lands went
+// to a warden of the King's choosing). Wars between the houses no longer stop it.
 export function goalNow(ctx) {
   const { world, detail, favourOf } = ctx;
-  const great = (world?.players ?? []).filter((p) => !houseFor(p).wild && !houseFor(p).crown && p.cities > 0);
+  const great = (world?.players ?? []).filter((p) => !houseFor(p).wild && !houseFor(p).crown);
   const ids = new Set(great.map((p) => p.id));
   const d = detail();
-  const fighting = great.filter((p) => (d?.players?.[p.id]?.atWarWith ?? []).some((q) => ids.has(q))).length;
-  const firm = great.filter((p) => favourOf(p.id) >= GOAL_FAVOUR).length;
-  return { bar: GOAL_FAVOUR, firm, of: great.length, fighting, won: great.length > 0 && firm === great.length && fighting === 0 };
+  const fighting = great.filter((p) => p.cities > 0 && (d?.players?.[p.id]?.atWarWith ?? []).some((q) => ids.has(q))).length;
+  const beaten = great.filter((p) => !(p.cities > 0)).length;
+  const firm = great.filter((p) => p.cities > 0 && favourOf(p.id) >= GOAL_FAVOUR).length + beaten;
+  return { bar: GOAL_FAVOUR, firm, beaten, of: great.length, fighting, won: great.length > 0 && firm === great.length };
 }
 
 // Where the reign is heading: peace, wealth and strength, each against a year
@@ -544,6 +548,7 @@ export function endReign(ctx, why, outcome = "completed") {
   if (meta.status !== "running") return;
   const s = score(ctx);
   if (outcome === "deposed") { s.score = Math.round(s.score * 0.4); s.verdict = "Deposed. The crown passed to another while you watched."; }
+  if (outcome === "united") { s.score = Math.round(s.score * 2); s.verdict = "Every great house bent the knee, by oath or by the sword. The realm answers to one crown."; }
   if (outcome === "won") { s.score = Math.round(s.score * 1.5); s.verdict = "The crown held. The tale that came for it is told, and the King is still in his seat."; }
   if (outcome === "fallen") { s.score = Math.round(s.score * 0.3); s.verdict = "The realm fell to the dead. No one is left to remember."; }
   if (outcome === "heirless") { s.score = Math.round(s.score * HEIRLESS.score); s.verdict = HEIRLESS.verdict; }

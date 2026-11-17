@@ -270,7 +270,8 @@ export function collectTithe(ctx, turn) {
   if (united && !meta.united) {
     meta.united = true;
     chron.saveMeta(meta);
-    record({ turn, kind: "decree", text: `All ${ctx.goalNow().of} great houses stand behind the King, and none is at war with another. For the first time in a generation the realm answers to one crown, in truth and not in name.` });
+    record({ turn, kind: "decree", text: `All ${ctx.goalNow().of} great houses have bent the knee, by oath or by the sword. The realm answers to one crown.` });
+    ctx.endReign?.("every great house sworn to the King", "united");  // the win (Mac 2026-11-17: "all seven sworn is the win")
   } else if (!united && meta.united) {
     meta.united = false;
     chron.saveMeta(meta);
