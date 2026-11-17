@@ -144,15 +144,19 @@ func verbs(entry: Dictionary) -> Array:
 		return _counsel_rows(e)
 	var rows := _answers(entry)
 	var go := _row("go", entry, {})
-	for r in rows:
-		if not String(r.get("verb", "")) in ["leave", "rule"]:
-			_follows(r, go)
 	if not go.is_empty():
 		rows.append(go)
 	return rows
 
 
-## An answer takes the camera to where it lands, as Go there does (Mac 2026-11-16: "I'm not seeing the camera pan when
+## Whether an answer is an act of war, whose order the camera follows (data/news_actions.json follow): a march, the
+## banners, the levy, a host sent; never grain, a gift or a feast (Mac 2026-11-17: the camera travels for war).
+func _is_war(act: Dictionary) -> bool:
+	return Data.value("news_actions", "follow.actions", []).has(String(act.get("action", ""))) \
+		or Data.value("news_actions", "follow.ui", []).has(String(act.get("ui", "")))
+
+
+## An answer of war takes the camera to where it lands, as Go there does (Mac 2026-11-16: "I'm not seeing the camera pan when
 ## I select an answer"; his own click, so the camera follows him: it never moves on its own, and Space goes back,
 ## news.gd). Leave it and opening the court stay put.
 func _follows(r: Dictionary, go: Dictionary) -> void:
@@ -193,7 +197,7 @@ func _counsel_rows(entry: Dictionary) -> Array:
 				"enabled": bool(gate["enabled"]), "why": String(gate["why"]), "tip": "", "call": func(): main.ui.answer_counsel(act, key), "ui": String(act.get("ui", "")), "act": act})
 	var go := _row("go", entry, {})
 	for r in rows:
-		if not String(r.get("ui", "")) in ["leave", "court"]:
+		if _is_war(r.get("act", {})):
 			_follows(r, go)
 	if not go.is_empty():
 		rows.append(go)

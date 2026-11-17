@@ -1,5 +1,6 @@
 {
  "_": "What the King can do about a piece of news (news_actions.gd): the bridge decides a card's answers (bridge matters/*.js, /world counsel); a card shows its matter's answers, or a court matter's own rulings, and Go there. verbs: the words of the few the view gives itself (defend and levy for a threat's notice and the defend key, go, rule). threat_words: a foe at a town of the realm, by how it came. answers_most: a court matter's rulings shown on a card. The rest: the words of a price, a wait, an order refused.",
+ "follow": {"_": "The answers whose order takes the camera there (news_actions.gd _follows; Mac 2026-11-17: 'if I send out something to the granary it's not worth panning', the camera travels for war): by the answer's action, or its ui.", "actions": ["march", "banners", "levy", "war", "back", "ward", "stern", "besiege"], "ui": ["defend", "host"]},
  "verbs": {
   "defend": {
    "label": "Defend with your host",
