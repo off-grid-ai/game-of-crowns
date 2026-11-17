@@ -200,6 +200,11 @@ func _process(delta: float) -> void:
 	for n in all:
 		var p := n as Node3D
 		if p and p.is_visible_in_tree() and Vector2(p.global_position.x - focus.x, p.global_position.z - focus.z).length() < reach:
+			# Not drawn (behind a building: the renderer's occlusion, the same test that switches the body off), not seen:
+			# a guard behind the keep counted as a statue the player never sees (Mac 2026-11-17, "fix the square").
+			var seen := p.get_node_or_null("OnScreen")
+			if seen != null and seen.has_method("is_on_screen") and not seen.call("is_on_screen"):
+				continue
 			near.append(p)
 	if _start < 0.0:
 		# Waited out on the wall clock: under --fixed-fps the game's own time runs
@@ -855,6 +860,7 @@ func _owner_of(k) -> String:
 ## node that made them, its count in the tree, each one's child index, whether he's shown, and his clip.
 func _stacked() -> void:
 	var lives := get_tree().root.find_children("CastleLife*", "", true, false)
+	lives.append_array(get_tree().root.find_children("Life*", "Node3D", true, false).filter(func(n): return n.get_parent() != null and n.get_parent().has_meta("title")))
 	var at := {}
 	for host in lives:
 		for p in host.get_children():
@@ -863,6 +869,6 @@ func _stacked() -> void:
 				var key := "%.2f,%.2f" % [q.x, q.z]
 				if not at.has(key):
 					at[key] = []
-				(at[key] as Array).append("%s#%d %s %s" % [host.name, p.get_index(), "shown" if (p as Node3D).is_visible_in_tree() else "hidden", String(People.clip(p))])
+				(at[key] as Array).append("%s@%d#%d %s %s scene %s" % [host.name, host.get_instance_id(), p.get_index(), "shown" if (p as Node3D).is_visible_in_tree() else "hidden", String(People.clip(p)), String(p.get_meta("scene", "-"))])
 	var twice := at.keys().filter(func(k): return (at[k] as Array).size() > 1)
-	print("MOTION stacked: %d castle-life nodes, %d spots with more than one man of %d spots  %s" % [lives.size(), twice.size(), at.size(), ", ".join(twice.slice(0, 6).map(func(k): return "%s: %s" % [k, " | ".join(at[k])]))])
+	print("MOTION stacked: %d castle-life and town-life nodes, %d spots with more than one man of %d spots  %s" % [lives.size(), twice.size(), at.size(), ", ".join(twice.slice(0, 6).map(func(k): return "%s: %s" % [k, " | ".join(at[k])]))])
