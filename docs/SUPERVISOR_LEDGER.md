@@ -29,6 +29,16 @@ Where things stand, so any agent can take over. Newest first, short. The full hi
   partner).
 
 ## Log
+- 11-17 Crowd and battle round (Mac: 'fix it once and for all', 'fix all 3', orders only in front of me). Landed:
+  c52e84cc battle re-form (both hosts back into their troops' squares, cell by cell); f87cbdee runs play whole
+  (no half walk, half run); 827e6ebd/9a8e000e castle yard and square (no castle occluder prism, guards' stretches
+  apart, pairs abreast, carters tend horses); spacing.gd, the one rule for everyone in sight (no two on one spot,
+  nobody idle over 4 s, walkers in step give way); nav chunks bake nearest the camera first and a route to unloaded
+  ground walks its landed part (108 of 145 statue-seconds were men asking); a town's life settles 3 s and is
+  swapped in whole (Kingsmere cast 3 -> 1 times a run); scene rows cast once a life; Orders bar only while the
+  King's fight is on screen. Kingsmere zoom 10: statues 67 -> 0-2, pairs longest 12.9 s -> 1.4 s, skate worst
+  85% -> 30%, visible job 74% -> 87%, crowd moving 12% -> 24%. Open: first fill waits on the realm's load
+  (roads -> units 8-14 s; town staged ~4 s after it is read); double funeral guarded, not reproduced since.
 - 11-16 16:30 Story staging (Mac: 'no direction ... not sensing the highs and lows'). Audit of the Last Accord: the story was there (Thornvale's bastard arc, two Stormhold risings, the named last act) but drowned in 527 lines; the director raised 0 threats in 25 seasons (its calm gate never passed under the houses' own wars); the named climax was still marching when the clock ended the reign. Landed: the reign waits for its climax (finale.grace), the director's beat by seasons since the King's last crisis (quietByAct 4,3,3,2, breather 2), act chapter cards (Banner Saga), victory/defeat and other swings as moments (Total War), the reign track (Frostpunk). Colour muted (look.json; Mac: 'right medieval feel, not too playful'). Next: show it live to Mac; the background noise of the chronicle; the threat's own countdown on the track.
 - 11-16 14:35 After the cuts (612e4ea3, 082aada5), same Kingsmere view, paused: 27-30 fps (was 9). Nodes' _process 3.5 ms (was 34); sound_v2 0.07 ms (was 8.5); nav_world 0.4 (its first bakes done). Draw is now 21 ms of a 33-37 ms frame (1,060 draws, 2.2M prims): the next target. 'resume.main:countryside' 26 ms was a probe bug (stage markers stopped under pause), fixed.
 - 11-16 14:20 Freeze split (named run at Kingsmere, paused by 'Pause when you're needed', as Mac's was): per frame nav_world 13 ms (dispatch 10: Terrain3D faces for first chunk builds, 1,032 in the first minutes; kept files miss), sound_v2 8.5 ms (walked all 45k nodes every 0.5 s: ~250 ms hitch each), draw 26-34 ms (2,050 draws, 5.9M prims at dist 16), map_labels 1.6, camera_rig 0.8. Cut: sound sources join a group (no walk); the fps readout's 'rate' no longer runs the draw census. Next: nav dispatch off the main thread or keyed without the faces; then draw.
