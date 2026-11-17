@@ -68,3 +68,11 @@ snow={
 
 import/blender/enabled=false
 
+
+[threading]
+
+; Every task the game hands the worker pool is low-priority (merges, town packs, kept writes, navigation, roads), and
+; some wait on others; at Godot's default 0.3 a 3-core Mac (GitHub's build runner) had one thread for them and the
+; bake froze at Gildport for the 5-hour timeout (reproduced with worker_pool/max_threads=3). No task is high-priority, so
+; the whole pool is theirs.
+worker_pool/low_priority_thread_ratio=1.0
