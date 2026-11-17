@@ -18,9 +18,10 @@ across the map, battles fought in formation on the field. Politics and famine ru
 always something to do, but they serve the war, never replace it. The camera travels for war (a march,
 a siege, a battle), never for a granary or a gift. Every story, event and matter is wired to this goal:
 it wins a house over, turns one against him, or puts a host on the road.
-After a victory he chooses: give the land to a minor house as its warden (a new loyal house), or show mercy
-to the beaten one. Mercy can win them over, or make them think him weak and come back at him; his strength
-decides which. That is how every house ends up loyal.
+Each great house is won one of two ways. **War:** beat it, and a minor house of his choosing becomes warden of
+its land, loyal to him. **Alliance:** stand by it in its wars, be generous to it. But generosity is a gamble: a
+house may read it as weakness and try to take the throne; his strength decides which. That is how every house
+ends up loyal.
 
 ## The first ten minutes
 - **0:00** Your royal host stands at Kingsmere, in your colours. One objective is on screen
