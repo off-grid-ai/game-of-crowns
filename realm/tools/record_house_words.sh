@@ -27,15 +27,34 @@ HOUSES=(
   "stormhold|We weather all!|0.45"
   "sunspire|The sun waits.|0.4"
   "highfell|Sworn, and steadfast.|0.55"
-  "crown|Kneel... to none!|0.6"
+  "crown|Toil. / Endure. / Prevail!|0.6"
 )
+# Words in beats ("a / b / c"): each beat said on its own, trimmed, and joined with BEAT_GAP seconds between.
+BEAT_GAP=0.3
+TRIM="silenceremove=start_periods=1:start_threshold=-40dB,areverse,silenceremove=start_periods=1:start_threshold=-40dB,areverse"
+speak() {  # text voice -> $TMP/raw.wav
+  local beats=("${(@s: / :)1}") ins=() parts="" n=0
+  if (( ${#beats} == 1 )); then
+    curl -sf -m 60 $GW/audio/speech -H 'content-type: application/json' -d "{\"model\":\"kokoro\",\"input\":\"$1\",\"voice\":\"$2\"}" -o $TMP/raw.wav
+    return
+  fi
+  ffmpeg -loglevel error -y -f lavfi -i "anullsrc=r=24000:cl=mono" -t $BEAT_GAP -c:a pcm_s16le $TMP/gap.wav < /dev/null
+  for b in $beats; do
+    curl -sf -m 60 $GW/audio/speech -H 'content-type: application/json' -d "{\"model\":\"kokoro\",\"input\":\"$b\",\"voice\":\"$2\"}" -o $TMP/beat.wav
+    ffmpeg -loglevel error -y -i $TMP/beat.wav -af "$TRIM" -ar 24000 -ac 1 -c:a pcm_s16le $TMP/b$n.wav < /dev/null
+    (( n > 0 )) && { ins+=(-i $TMP/gap.wav); parts+="[$(( ${#ins} / 2 - 1 )):a]"; }
+    ins+=(-i $TMP/b$n.wav); parts+="[$(( ${#ins} / 2 - 1 )):a]"
+    n=$(( n + 1 ))
+  done
+  ffmpeg -loglevel error -y $ins -filter_complex "${parts}concat=n=$(( ${#ins} / 2 )):v=0:a=1" -c:a pcm_s16le $TMP/raw.wav < /dev/null
+}
 for h in $HOUSES; do
   IFS='|' read id txt e <<< "$h"
   [[ -n $1 && $1 != $id ]] && continue  # one house only: zsh record_house_words.sh crown
   mkdir -p $OUT/$id
   for pr in $PROFILES; do
     IFS='|' read prof v p t <<< "$pr"
-    curl -sf -m 60 $GW/audio/speech -H 'content-type: application/json' -d "{\"model\":\"kokoro\",\"input\":\"$txt\",\"voice\":\"$v\"}" -o $TMP/raw.wav
+    speak "$txt" $v
     r=$(python3 -c "print(round(24000*$p))"); at=$(python3 -c "print(round($t/$p,3))"); e2=$(python3 -c "print(round($e*0.5,2))")
     ffmpeg -loglevel error -y -i $TMP/raw.wav -af "asetrate=$r,aresample=24000,atempo=$at,aecho=0.8:0.5:60|110:$e|$e2,highpass=f=70,loudnorm=I=-18:TP=-2,apad=pad_dur=0.25,adelay=80" -ac 1 -ar 22050 $TMP/fx.wav < /dev/null
     oggenc -Q -q 3 -o $OUT/$id/$prof.ogg $TMP/fx.wav 2>/dev/null
