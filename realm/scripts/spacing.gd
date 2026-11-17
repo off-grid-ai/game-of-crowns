@@ -9,6 +9,7 @@ extends Node
 ##   his spot, and of two standing the later-made one moves;
 ## - one held in an idle clip for spacing.still_s: he shuffles a step (forward, then back toward where he first
 ##   stood, so he never drifts off), takes another idle and his mind, if he has one, is woken to choose again.
+## - two walking in step, one inside the other: the later-made one stands spacing.give_s and lets the other on.
 ## Every step goes through his Mover (step_aside): routed, never set. Men in a fight or a formed block keep their
 ## place (their host's own rules space them: field_cells.gd, army_formation.gd).
 const AnimLOD := preload("res://scripts/anim_lod.gd")
@@ -20,6 +21,7 @@ static var AFTER_S: float = Data.num("people", "spacing.after_s", 0.3)  # second
 static var STILL_S: float = Data.num("people", "spacing.still_s", 4.0)  # seconds in one idle before a shuffle
 static var STEP: float = Data.num("people", "spacing.step", 0.08)  # world units of a step aside
 static var BEAT_S: float = Data.num("people", "spacing.beat_s", 0.1)  # seconds between looks
+static var GIVE_S: float = Data.num("people", "spacing.give_s", 0.6)  # seconds a walker stands to let one on his spot on
 static var REST_S: float = Data.num("people", "spacing.rest_s", 3.0)  # seconds a man who stepped is left alone
 ## The idle clips: standing doing nothing. Guards and archers keep to their own stances.
 const IDLE := ["Idle", "Weight_Shift", "Breathing_Idle", "Bored", "Relieved_Sigh", "Looking_Around", "Thinking",
@@ -43,11 +45,12 @@ func _process(delta: float) -> void:
 	var now := Time.get_ticks_msec()
 	var stood: Array[Node3D] = []
 	var still := {}  # instance ids of those standing
+	var walking: Array[Node3D] = []  # on a plain walk
 	var grid := {}  # Vector2i cell -> [bodies in sight]
 	for id in AnimLOD.live.keys():
 		var p := (AnimLOD.live[id] as WeakRef).get_ref() as Node
 		var body := p.get_parent() as Node3D if p else null
-		if body == null or not body.is_in_group("people") or not body.is_inside_tree():
+		if body == null or not body.is_in_group("people") or not body.is_visible_in_tree():
 			continue
 		var bid := body.get_instance_id()
 		var mo := People.motion(body)
@@ -59,8 +62,12 @@ func _process(delta: float) -> void:
 		(grid[c] as Array).append(body)  # everyone in sight: a walker on a man's spot counts too
 		if not _stands(body):
 			_idle.erase(bid)
-			_close.erase(bid)
 			_home.erase(bid)
+			var mv := body.get_node_or_null("Mover")
+			if mv and mv.travels() and not mv.fighting and mv.wheel <= 0.0:
+				walking.append(body)
+			else:
+				_close.erase(bid)
 			continue
 		stood.append(body)
 		still[bid] = true
@@ -80,6 +87,16 @@ func _process(delta: float) -> void:
 			_step(body, other.global_position, grid, clip)
 		elif float(_idle[bid]) >= STILL_S:
 			_step(body, Vector3.INF, grid, clip)
+	# Two walking one route in step, one inside the other: the later-made one stands a moment and lets the other on.
+	for body in walking:
+		var bid := body.get_instance_id()
+		var other := _sharing(body, grid)
+		var behind := other != null and not still.has(other.get_instance_id()) and other.get_instance_id() < bid
+		_close[bid] = float(_close.get(bid, 0.0)) + dt if behind else 0.0
+		if float(_close[bid]) >= AFTER_S and int(_rest.get(bid, 0)) <= now:
+			_close[bid] = 0.0
+			_rest[bid] = now + int(REST_S * 1000.0)
+			body.get_node("Mover").give_way(GIVE_S)
 	for k in _rest.keys():
 		if int(_rest[k]) <= now:
 			_rest.erase(k)

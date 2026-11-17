@@ -867,6 +867,20 @@ func travels() -> bool:
 	return is_processing() and (_i < _way.size() or _steer or _shifting or _ask_got.is_valid())
 
 
+var _give := 0.0  # seconds left standing to let a walker on its spot draw ahead (give_way)
+
+
+## Stands `secs` where it is, its walk kept, so one walking on its spot draws ahead (spacing.gd: two walking one route
+## in step, one inside the other). A plain walk only; a steer, a shift, a fight or a route asked never waits.
+func give_way(secs: float) -> void:
+	if not is_processing() or _steer or _shifting or fighting or _ask_got.is_valid() or _i >= _way.size():
+		return
+	var body := get_parent() as Node3D
+	if body and clip != "":
+		People.play(body, "Idle")
+	_give = secs
+
+
 ## A short step off the spot it stands on (spacing.gd: a man inside another, or idle too long): along the place's own
 ## heights where its last walk kept them (a wall walk), else routed on the ground.
 func step_aside(to: Vector3, then := Callable()) -> void:
@@ -885,6 +899,13 @@ func step_aside(to: Vector3, then := Callable()) -> void:
 ## movers.ask (a route asked again), movers.steer (a fighter steered), movers.drive (a horse or a cart), movers.host
 ## (a formed block), movers.walk (a plain walk); movers.put_clear (a fighter's step checked against what stands).
 func _process(delta: float) -> void:
+	if _give > 0.0:
+		_give -= delta
+		if _give <= 0.0 and clip != "" and _i < _way.size():
+			var body := get_parent() as Node3D
+			if body:
+				People.play(body, clip, clampf(speed / People.WALK_PACE, 0.6, 1.5) if stride else 1.0)  # on his way again
+		return
 	if not PerfTools.probing:
 		delta = _due(delta)
 		if delta > 0.0:

@@ -130,9 +130,16 @@ func stage(root: Node3D, life: Node3D, c: Dictionary, states: Array, tl: Object)
 					census["weights"] = float(census["weights"]) + float(w)
 	# Staged over frames, on the frame's one staging pot (ViewTier.spend_ok; FPS: a town's whole cast in one frame held it
 	# 5.5 s); a town redressed meanwhile (its Life replaced) ends this one.
+	var cast_rows: Dictionary = life.get_meta("rows_cast", {})  # each row once into a life, whoever asks twice
 	for row in _d.get("standing", []):
 		if not _meets(row, root, states, size):
 			continue
+		var rid := String(row.get("id", ""))
+		if rid != "" and cast_rows.has(rid):
+			continue
+		if rid != "":
+			cast_rows[rid] = true
+			life.set_meta("rows_cast", cast_rows)
 		if not ViewTier.spend_ok(&"town_scenes"):
 			await PerfTools.next_frame(&"town_scenes:124")
 			if TownLife()._gone(root, life):

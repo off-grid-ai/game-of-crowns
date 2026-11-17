@@ -75,7 +75,25 @@ static func minds_on(town: int) -> bool:
 ## fps4, a new town's life held 278 ms a frame, up to 1.3 s).
 var _staging := false
 var _waiting := {}  # town root id -> its newest facts, while another town's staging runs: the latest only is staged
+## A standing town's facts settle towns.json life.settle_s before it is looked at again: a burst of reports (a season
+## turning, then a birth, then a dear market, one sync after another) is staged once, with the newest (Kingsmere
+## 2026-11-17: its square cast three times in 30 s).
+var _settling := {}  # town root id -> its newest facts while they settle
 func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:
+	var lived := root.get_node_or_null("Life")
+	if lived and lived.has_meta("sig"):
+		var rid := root.get_instance_id()
+		var settling := _settling.has(rid)
+		_settling[rid] = [c, house]
+		if settling:
+			return
+		await root.get_tree().create_timer(Data.num("towns", "life.settle_s", 3.0)).timeout
+		var latest: Array = _settling.get(rid, [c, house])
+		_settling.erase(rid)
+		if not is_instance_valid(root):
+			return
+		c = latest[0]
+		house = latest[1]
 	if _staging:
 		var id := root.get_instance_id()
 		var queued := _waiting.has(id)
@@ -105,6 +123,9 @@ func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 ## Its growing houses' sites stay (towns.gd _grow: each house waits on its own to stand), in a bare Life.
 func unstage(root: Node3D) -> void:
 	_waiting.erase(root.get_instance_id())
+	for old in root.get_children():
+		if old.has_meta("outgoing"):  # a life a restaging was replacing
+			old.free()
 	var life := root.get_node_or_null("Life")
 	if life == null or not life.has_meta("sig"):
 		return
@@ -114,15 +135,16 @@ func unstage(root: Node3D) -> void:
 
 ## A bare Life in `old`'s place, with `old`'s growing houses' sites (raise_site's "raising" holders) carried over:
 ## a house rising season by season is the town's growth, not its life's scenes.
-static func _bare_life(root: Node3D, old: Node3D) -> Node3D:
+static func _bare_life(root: Node3D, old: Node3D, carry := true) -> Node3D:
 	old.name = "LifeGone"
 	var life := Node3D.new()
 	life.name = "Life"
 	life.set_meta("standing", PackedVector2Array())
 	root.add_child(life)
-	for n in old.get_children():
-		if n.has_meta("raising"):
-			n.reparent(life, true)
+	if carry:
+		for n in old.get_children():
+			if n.has_meta("raising"):
+				n.reparent(life, true)
 	return life
 
 
@@ -201,9 +223,12 @@ func _stage_town(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 				if i >= a.size() or i >= b.size() or a[i] != b[i]:
 					moved.append("%d:%s->%s" % [i, a[i] if i < a.size() else "", b[i] if i < b.size() else ""])
 			print("LIFE-RESTAGE %s: %s" % [root.get_meta("title", ""), ", ".join(moved)])
+		# Staged anew out of sight: the town's people stand where they are until the new life stands whole, then the
+		# two swap at once (_swap): the square never empties while a new one is cast over seconds.
 		var old := life
-		life = _bare_life(root, old)  # its growing houses' sites carried over
-		old.free()
+		life = _bare_life(root, old, false)
+		old.set_meta("outgoing", true)
+		life.visible = false
 	else:
 		life = Node3D.new()
 		life.name = "Life"
@@ -258,7 +283,20 @@ func _stage_town(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 			return
 	_near_only(life)
 	_pin(life, center)
+	_swap(root, life)
 	await _pace("pin")
+
+
+## The new life stands whole: the one it replaces goes (its growing houses' sites carried over), the new shown.
+static func _swap(root: Node3D, life: Node3D) -> void:
+	for old in root.get_children():
+		if old == life or not old.has_meta("outgoing"):
+			continue
+		for n in old.get_children():
+			if n.has_meta("raising"):
+				n.reparent(life, true)
+		old.free()
+	life.visible = true
 
 
 const Heraldry := preload("res://scripts/heraldry.gd")
