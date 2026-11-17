@@ -31,7 +31,9 @@ static func word_for(won: bool, ours_lost: int, theirs_lost: int) -> String:
 	return String(w.get("victory", "Victory"))
 
 
-func show(word: String, line: String, loss: bool) -> void:
+## at: where it happened (a battle's field, the town): the card is clicked to go there (Mac 2026-11-17: "I should
+## be able to click this ... and go there"), as Space goes to the news and back; Vector3.INF, nowhere to go.
+func show(word: String, line: String, loss: bool, at := Vector3.INF) -> void:
 	var main: Node = ui.get_parent()
 	var sound: Node = main.get("sound") if main else null
 	if sound and sound.has_method("event"):
@@ -50,6 +52,17 @@ func show(word: String, line: String, loss: bool) -> void:
 	var band := PanelContainer.new()
 	band.add_theme_stylebox_override("panel", T._box(T.SURFACE, T.HAIRLINE, 10, 12))
 	band.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if at != Vector3.INF and main and main.get("news") and main.get("rig"):
+		band.mouse_filter = Control.MOUSE_FILTER_STOP
+		band.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		band.tooltip_text = String(Data.value("ui", "moment.go_tip", "Go there"))
+		var dist := float(Data.num("ui", "moment.go_dist", 12.0))
+		band.gui_input.connect(func(e: InputEvent):
+			if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
+				band.accept_event()
+				main.news.go_to(at, "%s %s" % [word, line], func(): main.rig.go_to(at, dist))
+				if is_instance_valid(_layer):
+					_layer.queue_free())
 	band.anchor_left = 0.5
 	band.anchor_right = 0.5
 	band.anchor_top = float(Data.num("ui", "moment.at", 0.12))
@@ -79,3 +92,11 @@ func show(word: String, line: String, loss: bool) -> void:
 	out.tween_callback(func():
 		if is_instance_valid(layer):
 			layer.queue_free())
+	if band.mouse_filter == Control.MOUSE_FILTER_STOP:  # the mouse on it holds it, so it can be clicked
+		band.mouse_entered.connect(func():
+			if out.is_valid():
+				out.pause()
+				band.modulate.a = 1.0)
+		band.mouse_exited.connect(func():
+			if out.is_valid():
+				out.play())

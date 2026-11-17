@@ -90,4 +90,5 @@ func _show(c: Dictionary) -> void:
 	var place := String(c.get("place", "")).strip_edges()
 	if place != "":
 		place = place.left(1).to_upper() + place.substr(1)
-	main.ui.moment.show(preload("res://scripts/moment_banner.gd").word_for(won, ours_lost, theirs_lost), place, not won)
+	var field: Vector3 = main.terrain.world_pos(float(c["x"]), float(c["y"])) if c.has("x") and c.has("y") else Vector3.INF
+	main.ui.moment.show(preload("res://scripts/moment_banner.gd").word_for(won, ours_lost, theirs_lost), place, not won, field)

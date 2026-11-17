@@ -1313,7 +1313,9 @@ func _on_chronicle(entries: Array) -> void:
 		for i in range(entries.size() - 1, -1, -1):
 			var mo = entries[i].get("moment")
 			if mo is Dictionary:
-				ui.moment.show(String(mo.get("word", "")), String(mo.get("line", "")), bool(mo.get("loss", false)))
+				var town: Dictionary = awareness.city(int(entries[i].get("city", -1))) if entries[i].get("city") != null else {}
+				var at: Vector3 = terrain.world_pos(float(town["x"]), float(town["y"])) if town.has("x") else Vector3.INF
+				ui.moment.show(String(mo.get("word", "")), String(mo.get("line", "")), bool(mo.get("loss", false)), at)
 				break
 		# A story turns: offer to go and see the people it happens to.
 		for e in entries:
