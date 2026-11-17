@@ -76,6 +76,8 @@ const ROOF_BREAK := 0.2  # a frame-share line fails when more than this share of
 var _job := [0.0, 0.0]  # [person-seconds with a visible job, person-seconds in view]
 var _no_job := {}  # "why: activity (group) at place" -> person-seconds without a visible job
 var _unsorted := {}  # clips not in GROUPS, standing -> person-seconds (the table to grow)
+var _drawn := DisplayServer.get_name() != "headless"  # a renderer that draws: only then does OnScreen say what is seen
+var _reach_n := 0  # people within reach of the aim this frame, drawn or not (the waiting line)
 var _statues := {}  # person -> their longest idle stretch, seconds
 var _idle_for := {}  # person -> how long they've stood idle so far
 var _still_why := {}  # person -> {his Mover's state while idle: seconds} (asking, held, walking, off, none)
@@ -195,6 +197,7 @@ func _process(delta: float) -> void:
 	var main := get_parent()
 	var focus: Vector3 = main.rig.goal_target if "goal_target" in main.rig else Vector3.ZERO
 	var near: Array[Node3D] = []
+	_reach_n = 0
 	var all := get_tree().get_nodes_in_group("people")
 	# At the roof-height cap the lens sits ~4.5 out and ~30 deg down: what it reads well lies within about 0.9 of that round the aim.
 	var reach := maxf(REACH, float(main.rig.distance) * 0.9) if "distance" in main.rig else REACH
@@ -203,8 +206,10 @@ func _process(delta: float) -> void:
 		if p and p.is_visible_in_tree() and Vector2(p.global_position.x - focus.x, p.global_position.z - focus.z).length() < reach:
 			# Not drawn (behind a building: the renderer's occlusion, the same test that switches the body off), not seen:
 			# a guard behind the keep counted as a statue the player never sees (Mac 2026-11-17, "fix the square").
+			_reach_n += 1
 			var seen := p.get_node_or_null("OnScreen")
-			if seen != null and seen.has_method("is_on_screen") and not seen.call("is_on_screen"):
+			# Headless nothing is drawn, so nothing reports itself on screen: the 132 in reach all dropped (2026-11-17).
+			if _drawn and seen != null and seen.has_method("is_on_screen") and not seen.call("is_on_screen"):
 				continue
 			near.append(p)
 	if _start < 0.0:
@@ -213,7 +218,7 @@ func _process(delta: float) -> void:
 		var real := Time.get_ticks_msec() / 1000.0
 		if real - _said > 10.0:
 			_said = real
-			print("MOTION waiting: %.0f s, %d people in the realm, %d near the camera at %s" % [real, all.size(), near.size(), focus])
+			print("MOTION waiting: %.0f s, %d people in the realm, %d in reach, %d near the camera at %s" % [real, all.size(), _reach_n, near.size(), focus])
 		if near.size() >= CROWD:
 			_start = _t
 		elif real > WARMUP:
