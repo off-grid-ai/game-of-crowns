@@ -1,19 +1,20 @@
 # The houses' words
 
-Each great house's words (and the Crown's), spoken once when the King opens one of its towns
-(`realm/data/sounds.json` `house_words`). Made with Off Grid AI Desktop (OGAD): its local Kokoro
-text-to-speech (`/v1/audio/speech`), then pitch, pace and a hall echo by ffmpeg, encoded with oggenc.
-Remake them with `zsh realm/tools/record_house_words.sh` (OGAD running).
+Each great house's words (and the Crown's), spoken when the King opens one of its towns, in the voice of whoever
+rules the house now (`realm/data/sounds.json` `house_words`; the voice is chosen by `sound_v2.gd` `voice_profile`
+from the lord's age and sex, the King's at Kingsmere). Every house is recorded in every profile, so a new lord
+needs no new recording: `<house>/<profile>.ogg`.
+
+Made with Off Grid AI Desktop (OGAD): its local Kokoro text-to-speech (`/v1/audio/speech`), then pitch, pace and
+a hall echo by ffmpeg, encoded with oggenc. Remake them with `zsh realm/tools/record_house_words.sh` (OGAD running).
 
 Licence: our own art, made for Game of Crowns; Kokoro's voices are Apache-2.0.
 
-| File | House | Words | Kokoro voice |
-|---|---|---|---|
-| wolfholt.ogg | House Wolfholt | Hold Fast | bm_daniel, low and slow |
-| goldcrest.ogg | House Goldcrest | Wealth Is Strength | bf_emma, smooth |
-| ironreach.ogg | House Ironreach | The Sea Provides | am_adam, rough and low |
-| thornvale.ogg | House Thornvale | Root and Thorn | af_heart, a smile in it |
-| stormhold.ogg | House Stormhold | We Weather All | am_michael, a shout |
-| sunspire.ogg | House Sunspire | The Sun Waits | em_alex, southern, unhurried |
-| highfell.ogg | House Highfell | Sworn and Steadfast | af_river, in a high hall |
-| crown.ogg | The Crown | One Realm | bm_daniel, deepest |
+| Profile | Kokoro voice | Shaping |
+|---|---|---|
+| old_man | bm_daniel | lowest, slowest |
+| man | am_adam | low |
+| young_man | am_michael | as spoken |
+| old_woman | bf_emma | low, slow |
+| woman | af_sarah | a little low |
+| young_woman | af_heart | a little high |

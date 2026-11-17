@@ -592,7 +592,7 @@ func _ready() -> void:
 	for n in get_tree().root.find_children("*", "BaseButton", true, false):
 		_hook_click(n)
 	ui.heard.connect(sound.ui)  # the interface's own sounds (the treasury counting down, a lord answering)
-	ui.house_visited.connect(func(h): sound.sounds_v2.house_words(h))  # a house says its words as the King opens its town
+	ui.house_visited.connect(_house_speaks)  # a house says its words, in its ruler's voice, as the King opens its town
 	bridge.command_done.connect(func(ok, text):
 		if not ok and text == "no such petition":
 			# The court moved on (answered, or gone with an old session): show who
@@ -1430,6 +1430,16 @@ func _follow_house(pid: int) -> void:
 			_focus_city(int(c["id"]))
 			return
 
+
+## A house's words as the King opens its town, in its ruler's voice: the Crown's is the King himself (/world royals.king,
+## bridge royals.js), a great house's its lord (the bridge's court, /house lord). sound_v2.gd chooses the voice.
+func _house_speaks(owner: int, house: Dictionary) -> void:
+	if bool(house.get("crown", false)):
+		var royals = awareness.rec("royals", {})
+		var king = royals.get("king", {}) if royals is Dictionary else {}
+		sound.sounds_v2.house_words(house, king if king is Dictionary else {})
+		return
+	bridge.house(owner, func(d): sound.sounds_v2.house_words(house, d.get("lord", {}) if d is Dictionary and d.get("lord") is Dictionary else {}))
 
 ## A seat's castle in the middle of the view, seen from its town's side (its gate
 ## faces the square), at the low oblique angle, turned so no tall building hides it.

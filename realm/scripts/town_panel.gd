@@ -280,7 +280,7 @@ func show_town(c: Dictionary, house: Dictionary, _player: Dictionary) -> void:
 			ui._court_panel.visible = false
 			ui._court_hidden = true
 		if fresh:
-			ui.house_visited.emit(house)  # the house's words, heard as the King arrives (sounds.json house_words)
+			ui.house_visited.emit(int(c["owner"]), house)  # the house's words, heard as the King arrives (sounds.json house_words)
 	_town_title.text = "%s  ·  %s" % [c.get("title", c["name"]), house.get("name", "")]
 	# The town's orders stand by the town itself, following it as the camera moves
 	# (Civilization's unit actions), not in a strip at the bottom of the screen.

@@ -22,7 +22,7 @@ signal decree_at(action: String, city: int, to: int, building: String, matter: S
 signal tithe_changed(rate: float)
 signal open_menu
 signal town_closed  # the King put the town card away (Esc): main stops refreshing it
-signal house_visited(house: Dictionary)  # the King opened a town (town_panel.gd, a fresh open): its house speaks its words (main.gd -> sound_v2.house_words)
+signal house_visited(owner: int, house: Dictionary)  # the King opened a town (town_panel.gd, a fresh open): its house speaks its words in its ruler's voice (main.gd -> sound_v2.house_words)
 signal mood_decreed(text: String)
 signal petition_answered(id: String, option: String)
 signal petition_spoken(id: String, words: String, confirm: String)

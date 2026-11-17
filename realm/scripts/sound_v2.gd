@@ -103,11 +103,11 @@ func play(name: String, at := Vector3.INF, why := "", db_shift := 0.0) -> void:
 	p.connect("finished", p.queue_free)
 
 
-## A house's words, spoken once when the King opens one of its towns (sounds.json house_words; ui.house_visited).
-## Nothing for a house with no recording, or whose words the King rewrote in the Lore; the same house is not
-## heard again within cooldown_s.
+## A house's words, spoken once when the King opens one of its towns, in its ruler's voice (sounds.json house_words;
+## ui.house_visited; main.gd finds the ruler). Nothing for a house with no recording, or whose words the King rewrote
+## in the Lore; the same house is not heard again within cooldown_s.
 var _words_last := {}  # house name -> msec it last spoke
-func house_words(house: Dictionary) -> void:
+func house_words(house: Dictionary, ruler: Dictionary) -> void:
 	var cfg: Dictionary = Data.value("sounds", "house_words", {})
 	var name := String(house.get("name", ""))
 	var rec: Dictionary = (cfg.get("houses", {}) as Dictionary).get(name, {})
@@ -120,13 +120,28 @@ func house_words(house: Dictionary) -> void:
 	if _words_last.has(name) and now - int(_words_last[name]) < int(float(cfg.get("cooldown_s", 120.0)) * 1000.0):
 		return
 	_words_last[name] = now
+	# A row of the table for this house in this voice, made the first time it is heard (play() does the rest).
+	var sound := "words:%s/%s" % [rec["id"], voice_profile(ruler)]
+	if not _rows.has(sound):
+		_rows[sound] = {"takes": ["voice/houses/%s/%s.ogg" % [rec["id"], voice_profile(ruler)]], "db": 0.0, "pitch": [1.0, 1.0], "gain": 0.0, "bus": "Voice"}
+	var go := play.bind(sound, Vector3.INF, "words:" + name, float(cfg.get("db", 0.0)))
 	var delay := float(cfg.get("delay_s", 0.35))
-	var go := play.bind(String(rec["sound"]), Vector3.INF, "words:" + name, float(cfg.get("db", 0.0)))
 	if delay > 0.0 and is_inside_tree():
 		get_tree().create_timer(delay).timeout.connect(go)
 	else:
 		go.call()
 
+
+## The voice a ruler speaks in: a man or a woman, young, grown or old (sounds.json house_words.profiles). The one place
+## this is chosen; a ruler not known speaks as `unknown`.
+static func voice_profile(ruler: Dictionary) -> String:
+	var bands: Dictionary = Data.value("sounds", "house_words", {}).get("profiles", {})
+	if ruler.is_empty() or not ruler.has("age"):
+		return String(bands.get("unknown", "man"))
+	var woman := bool(ruler.get("woman", false)) or String(ruler.get("gender", "")) == "female"
+	var age := int(ruler["age"])
+	var band := "young_" if age < int(bands.get("young_below", 25)) else ("old_" if age >= int(bands.get("old_from", 55)) else "")
+	return band + ("woman" if woman else "man")
 
 func _note(why: String, name: String, dist: float) -> void:
 	if keep_log:
