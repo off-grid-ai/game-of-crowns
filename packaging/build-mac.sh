@@ -119,7 +119,9 @@ stage="$CACHE/dmg"
 rm -rf "$stage" "$DMG" && mkdir -p "$stage"
 ditto "$APP" "$stage/Game of Crowns.app"
 ln -s /Applications "$stage/Applications"
-hdiutil create -volname "Game of Crowns" -srcfolder "$stage" -fs HFS+ -format UDZO -ov "$DMG" >/dev/null
+# LZMA (ULMO, macOS 10.15+): zlib's UDZO made a 2.1 GB dmg of the 3.7 GB app (run 44160580763), over GitHub's 2 GB
+# limit on a release's file.
+hdiutil create -volname "Game of Crowns" -srcfolder "$stage" -fs HFS+ -format ULMO -ov "$DMG" >/dev/null
 rm -rf "$stage"
 if [ "$SIGN_IDENTITY" != "-" ]; then
   # Same retry as sign(): the timestamp server can drop a request.
