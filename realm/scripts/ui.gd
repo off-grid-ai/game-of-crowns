@@ -22,6 +22,7 @@ signal decree_at(action: String, city: int, to: int, building: String, matter: S
 signal tithe_changed(rate: float)
 signal open_menu
 signal town_closed  # the King put the town card away (Esc): main stops refreshing it
+signal announced(moment: String, name: String)  # a big moment told (royal_sheet.gd, top_bar.gd, reign_cards.gd): the realm's call, then the name (main.gd -> sound_v2.announce)
 signal house_visited(owner: int, house: Dictionary)  # the King opened a town (town_panel.gd, a fresh open): its house speaks its words in its ruler's voice (main.gd -> sound_v2.house_words)
 signal mood_decreed(text: String)
 signal petition_answered(id: String, option: String)

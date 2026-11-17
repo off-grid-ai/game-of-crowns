@@ -47,6 +47,7 @@ var _alarm_t := 0.0  # seconds to the battle's next alarm to the folk about it (
 var main: Node
 var men := 0
 var _house_heart := [1.0, 1.0]  # each side's house's heart, fixed as the battle begins (_house_hearts)
+var _orders_bar: Node  # battle_orders_bar.gd, while the King commands this fight (in_front: his fight on screen)
 var loser := 1  # the side losing now (_day: the fewer men standing), and once a side has none standing, the side beaten
 var sides: Array = []  # the two hosts
 var clock := -1.0  # seconds since the battle began; below 0 while the hosts deploy
@@ -325,7 +326,8 @@ func _begin() -> void:
 			_into_cells(r)
 			_send(r, &"advance")
 	if player_side() >= 0:
-		add_child(preload("res://scripts/battle_orders_bar.gd").new(self))  # the King's orders in the fight (battle_orders_bar.gd; off for a night, back 2026-11-17: "get the different formation strategies back")
+		_orders_bar = preload("res://scripts/battle_orders_bar.gd").new(self)
+		add_child(_orders_bar)  # the King's orders in the fight (battle_orders_bar.gd; off for a night, back 2026-11-17: "get the different formation strategies back")
 	if play.is_empty():
 		print("BATTLE begins")
 
@@ -980,6 +982,11 @@ func _foe_order(dt: float) -> void:
 		return
 	_changed = true
 	reorder(foe, key)
+	# The King's fight in front of him (the orders bar's rule): "They break!" (sounds.json calls), once a battle.
+	if _orders_bar and is_instance_valid(_orders_bar) and _orders_bar.in_front():
+		var sound: Node = main.get("sound") if main else null
+		if sound and sound.get("sounds_v2"):
+			sound.sounds_v2.announce("break")
 
 
 ## The side the King commands in this fight: the crown's (side 0 in the test aid; in play, the side whose house is

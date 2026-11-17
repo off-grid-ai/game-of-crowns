@@ -352,6 +352,8 @@ func _reign_end(r: Dictionary) -> void:
 	if key == _end_seen:
 		return
 	_end_seen = key
+	if not String(r.get("outcome", "")) in ["won", "deposed"]:
+		ui.announced.emit("king_dead", "")  # the King is gone (sounds.json calls); a reign won or a crown taken from a living King is not
 	# Before the name, the reign told back: the camera goes where the King's
 	# weightiest choices were made, a line at each, then what became of every
 	# great house. A report, not a judgement.

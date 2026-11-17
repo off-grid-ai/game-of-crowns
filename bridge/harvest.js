@@ -23,7 +23,7 @@ export function season(ctx, turn) {
   const more = lean.length > 4 ? ` and ${lean.length - 4} more` : "";
   record({ turn, kind: "famine", text: lean.length
     ? `The harvest rots in the wet fields. Towns without a granary will eat lean this winter: ${names.join(", ")}${more}.`
-    : "The harvest rots in the wet fields, but every town has a granary to carry it through." });
+    : "The harvest rots in the wet fields, but every town has a granary to carry it through.", starving: lean.map((c) => c.id) });
 }
 
 // For /world: this year's harvest while its lean seasons last, else null.

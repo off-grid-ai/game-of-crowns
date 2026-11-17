@@ -120,10 +120,7 @@ func house_words(house: Dictionary, ruler: Dictionary) -> void:
 	if _words_last.has(name) and now - int(_words_last[name]) < int(float(cfg.get("cooldown_s", 120.0)) * 1000.0):
 		return
 	_words_last[name] = now
-	# A row of the table for this house in this voice, made the first time it is heard (play() does the rest).
-	var sound := "words:%s/%s" % [rec["id"], voice_profile(ruler)]
-	if not _rows.has(sound):
-		_rows[sound] = {"takes": ["voice/houses/%s/%s.ogg" % [rec["id"], voice_profile(ruler)]], "db": 0.0, "pitch": [1.0, 1.0], "gain": 0.0, "bus": "Voice"}
+	var sound := _voice_row("voice/houses/%s/%s.ogg" % [rec["id"], voice_profile(ruler)])
 	var go := play.bind(sound, Vector3.INF, "words:" + name, float(cfg.get("db", 0.0)))
 	var delay := float(cfg.get("delay_s", 0.35))
 	if delay > 0.0 and is_inside_tree():
@@ -131,6 +128,34 @@ func house_words(house: Dictionary, ruler: Dictionary) -> void:
 	else:
 		go.call()
 
+
+## A big moment's call (sounds.json calls): its one fixed take, then the name where one is given and recorded ("House
+## Sunspire", "Sunspire", "Kingsmere": its last word, as voice/names/<it>.ogg). Not called again within its cooldown.
+var _called := {}  # moment -> msec it was last called
+func announce(moment: String, name := "") -> void:
+	var cfg: Dictionary = Data.value("sounds", "calls", {})
+	var now := Time.get_ticks_msec()
+	var wait := float((cfg.get("cooldown", {}) as Dictionary).get(moment, cfg.get("cooldown_s", 60.0)))
+	if _called.has(moment) and now - int(_called[moment]) < int(wait * 1000.0):
+		return
+	var take: AudioStream = scape._load("voice/events/%s.ogg" % moment) if scape else null
+	if take == null:
+		return
+	_called[moment] = now
+	var db := float(cfg.get("db", 0.0))
+	play(_voice_row("voice/events/%s.ogg" % moment), Vector3.INF, "call:" + moment, db)
+	var said := name.strip_edges().get_slice(" ", name.strip_edges().get_slice_count(" ") - 1).to_lower() if name.strip_edges() != "" else ""
+	if said == "" or scape._load("voice/names/%s.ogg" % said) == null or not is_inside_tree():
+		return
+	get_tree().create_timer(take.get_length() + float(cfg.get("name_gap_s", 0.15))).timeout.connect(
+		play.bind(_voice_row("voice/names/%s.ogg" % said), Vector3.INF, "call:" + moment, db))
+
+
+## A row of the table for one spoken take on the Voice bus, made the first time it is heard (play() does the rest).
+func _voice_row(path: String) -> String:
+	if not _rows.has(path):
+		_rows[path] = {"takes": [path], "db": 0.0, "pitch": [1.0, 1.0], "gain": 0.0, "bus": "Voice"}
+	return path
 
 ## The voice a ruler speaks in: a man or a woman, young, grown or old (sounds.json house_words.profiles). The one place
 ## this is chosen; a ruler not known speaks as `unknown`.

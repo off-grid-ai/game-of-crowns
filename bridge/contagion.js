@@ -31,7 +31,7 @@ function fall(ctx, c, turn, from) {
   s.towns[c.id] = { since: turn, until: turn + C.lasts, closed: false, size: c.size ?? 0 };
   (s.wave ??= { since: turn, towns: [], lost: 0 }).towns.includes(c.id) || s.wave.towns.push(c.id);
   ctx.send(`lua cmd ${Lua.decree(c.id, "blight", C.blight)}`);
-  ctx.record({ turn, kind: "plague", text: from != null ? `The sickness comes to ${cityName(c.id)} with the carts from ${cityName(from)}.` : `A sickness breaks out in ${cityName(c.id)}. The death-carts go out at night.`, city: c.id });
+  ctx.record({ turn, kind: "plague", text: from != null ? `The sickness comes to ${cityName(c.id)} with the carts from ${cityName(from)}.` : `A sickness breaks out in ${cityName(c.id)}. The death-carts go out at night.`, city: c.id, onset: true });
 }
 
 export function season(ctx, turn) {

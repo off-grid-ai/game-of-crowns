@@ -687,6 +687,10 @@ func _show_world(c: Dictionary) -> void:
 		_danger_told = gravest
 		if gravest != "":
 			ui.toast(gravest + ".")
+			if th.get("usurper", "none") == "march":
+				ui.announced.emit("danger", "Kingsmere")
+			elif int(th.get("north", 0)) > 0 and th.get("usurper", "none") != "rumour":
+				ui.announced.emit("danger", "")
 	# The reign's story: its name and act told as a notice when an act begins, never resting on the card.
 	var story: Dictionary = st.rec("story", {}) if st.rec("story") is Dictionary else {}
 	_story = story

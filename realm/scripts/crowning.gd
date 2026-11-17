@@ -32,6 +32,7 @@ func play() -> void:
 	_raise_standard(int(seat["id"]))
 	if main.get("sound") and main.sound.has_method("event"):
 		main.sound.event("crown")
+		main.sound.sounds_v2.announce("crowned")
 	_line()
 
 

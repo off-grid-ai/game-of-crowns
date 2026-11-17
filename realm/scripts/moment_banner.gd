@@ -36,6 +36,10 @@ func show(word: String, line: String, loss: bool) -> void:
 	var sound: Node = main.get("sound") if main else null
 	if sound and sound.has_method("event"):
 		sound.event("defeat" if loss else "victory")
+	# A battle's result is called aloud (sounds.json calls): the grade whose word this is (ui.json moment.words).
+	var grade := String((Data.value("ui", "moment.words", {}) as Dictionary).find_key(word) if (Data.value("ui", "moment.words", {}) as Dictionary).find_key(word) != null else "")
+	if grade != "" and sound and sound.get("sounds_v2"):
+		sound.sounds_v2.announce(grade)
 	if _layer and is_instance_valid(_layer):
 		_layer.queue_free()
 	_layer = CanvasLayer.new()

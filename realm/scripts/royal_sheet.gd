@@ -638,6 +638,12 @@ func on_chronicle(entries: Array) -> void:
 				_lost(e)
 			elif int(e.get("to", -2)) == crown:
 				_won_back(e)
+		# A sickness come to a town, a harvest that leaves towns without bread: called aloud (sounds.json calls).
+		if String(e.get("kind", "")) == "plague" and e.get("onset", false) and e.get("city") != null:
+			ui.announced.emit("plague", String(ui.town_of.call(int(e["city"])).get("name", "")))
+		if String(e.get("kind", "")) == "famine" and e.get("starving") is Array and not (e["starving"] as Array).is_empty():
+			var hungry: Array = (e["starving"] as Array).map(func(id): return String(ui.town_of.call(int(id)).get("name", "")))
+			ui.announced.emit("famine", "Kingsmere" if hungry.has("Kingsmere") else String(hungry[0]))
 
 
 ## A lord's fate odds in the realm's words (bridge battles.js fateOdds: escaped, wounded, taken, slain, each 0..1):
@@ -674,6 +680,7 @@ func _lost(e: Dictionary) -> void:
 	var said := String(e.get("text", ""))
 	var at: Vector3 = ui.town_point.call(ui.town_of.call(town_id))
 	ui.word_news.emit(town_id, said)
+	ui.announced.emit("town_lost", town)
 	var c: PanelContainer = ui.glass_panel()
 	c.add_theme_stylebox_override("panel", T._box(Color(0.12, 0.09, 0.08, 0.97), Color(T.DANGER.r, T.DANGER.g, T.DANGER.b, 0.6), 10, 22))
 	c.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
@@ -722,6 +729,7 @@ func _won_back(e: Dictionary) -> void:
 	ui.toast(said)
 	ui.heard.emit("seal")
 	ui.word_news.emit(town_id, said)
+	ui.announced.emit("retaken", String(ui.town_of.call(town_id).get("name", "")))
 
 
 func _rising(e: Dictionary) -> void:
@@ -731,6 +739,8 @@ func _rising(e: Dictionary) -> void:
 	var name := house.get_string(1) if house else ""
 	ui.toast(said)
 	ui.heard.emit("event")
+	if name != "":
+		ui.announced.emit("revolt", name)  # a lord raising his house's banners, not a rising's other news (crushed, bought)
 	var at := Vector3.INF
 	if e.get("city") != null:
 		at = ui.town_point.call(ui.town_of.call(int(e["city"])))

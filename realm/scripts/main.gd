@@ -592,6 +592,7 @@ func _ready() -> void:
 	for n in get_tree().root.find_children("*", "BaseButton", true, false):
 		_hook_click(n)
 	ui.heard.connect(sound.ui)  # the interface's own sounds (the treasury counting down, a lord answering)
+	ui.announced.connect(func(m, n): sound.sounds_v2.announce(m, n))  # a big moment's call (sounds.json calls)
 	ui.house_visited.connect(_house_speaks)  # a house says its words, in its ruler's voice, as the King opens its town
 	bridge.command_done.connect(func(ok, text):
 		if not ok and text == "no such petition":

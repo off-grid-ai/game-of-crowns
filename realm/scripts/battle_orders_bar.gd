@@ -58,7 +58,7 @@ func _process(_delta: float) -> void:
 		return
 	var side: int = field.player_side()
 	var over: bool = bool(field.get("_over")) or side < 0
-	_panel.visible = not over and _in_front()
+	_panel.visible = not over and in_front()
 	if not _panel.visible:
 		return
 	_place()  # the control plane grows and shrinks with what it shows
@@ -74,7 +74,7 @@ func _process(_delta: float) -> void:
 ## Whether the fight is in front of the King: its middle on screen and where the camera looks, within
 ## battle_orders.json command.near world units or command.view of the camera's distance, whichever is more (Mac
 ## 2026-11-17: "orders should only be there if there is a battle in front of me that I'm controlling").
-func _in_front() -> bool:
+func in_front() -> bool:
 	var rig: Node = field.main.get("rig")
 	var cam := _panel.get_viewport().get_camera_3d()
 	if rig == null or cam == null:
