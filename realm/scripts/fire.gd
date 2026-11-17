@@ -272,6 +272,12 @@ func _queue_next(id: int) -> void:
 		_end_spread(id)
 		return
 	var homes: Array = root.get_meta("homes", [])
+	# The town re-laid since the fire caught (grown, a layout redone): homes it no longer has drop out of the spread
+	# (an index past its homes stopped the spread with a script error, Kingsmere 2026-11-17).
+	s["left"] = (s["left"] as Array).filter(func(i): return int(i) < homes.size())
+	if (s["left"] as Array).is_empty():
+		_end_spread(id)
+		return
 	var sp: Dictionary = knobs().get("spread", {})
 	var wind := _drift()
 	var wd := Vector2(wind.x, wind.z)
@@ -283,9 +289,10 @@ func _queue_next(id: int) -> void:
 		var p := _home_at(homes[i])
 		var exposed := 0.0
 		for key in _burning:
-			if not String(key).begins_with("%d:" % id):
+			var b := int(String(key).get_slice(":", 1))
+			if not String(key).begins_with("%d:" % id) or b >= homes.size():
 				continue
-			var q := _home_at(homes[int(String(key).get_slice(":", 1))])
+			var q := _home_at(homes[b])
 			var off := Vector2(p.x - q.x, p.z - q.z)
 			var dd := maxf(off.length(), 0.05)
 			exposed += (1.0 + bias * off.normalized().dot(wd)) / (dd * dd)
