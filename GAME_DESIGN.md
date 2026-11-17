@@ -10,6 +10,15 @@ want your throne. You hold it with your army, your crowns and your word, and whe
 names you for how you ruled (the Golden, the Bloody, the Oathbreaker, the Deposed). Every feature serves
 that promise or it goes.
 
+## The game (Mac 2026-11-17: "this is the actual game now")
+**Win every house's loyalty through alliances, war and campaigns.** A new king inherits a realm with no
+friends: the great houses are neutral or against him, at least one is against him from the start, and
+raiders and barbarians roam. War is the crux: hosts and bannermen marching out of the castle, campaigns
+across the map, battles fought in formation on the field. Politics and famine run alongside, so there is
+always something to do, but they serve the war, never replace it. The camera travels for war (a march,
+a siege, a battle), never for a granary or a gift. Every story, event and matter is wired to this goal:
+it wins a house over, turns one against him, or puts a host on the road.
+
 ## The first ten minutes
 - **0:00** Your royal host stands at Kingsmere, in your colours. One objective is on screen
   ("Raiders burn Ashford. Drive them off.").
