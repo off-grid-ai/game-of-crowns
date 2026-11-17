@@ -873,7 +873,7 @@ func _footprint_rect(root: Node3D, at: Vector3, size: Vector2, rot: float, top :
 ## oblique a town's houses hide the people, props and stalls behind them, and Godot culled none; project.godot
 ## rendering/occlusion_culling): one OccluderInstance3D a town, a prism inside each building that stands high enough
 ## (its footprint drawn in toward its middle by towns.json occlude.inset, up to occlude.height of its roof's height
-## over its ground) and the castle's (its height from its meshes), made as the town is raised, so it is kept in the
+## over its ground), not the castle's (its walls ring an open bailey), made as the town is raised, so it is kept in the
 ## town's file. Drawn small, inside the walls, so nothing pops. A batch is culled whole: the win is on bodies and props.
 ## `standing`: the town a grown town's additions (`root`, _grow_town) go onto, where its castle stands.
 func _occlude(root: Node3D, standing: Node3D = null) -> void:
@@ -897,7 +897,7 @@ func _occlude(root: Node3D, standing: Node3D = null) -> void:
 			continue
 		var top := float(tops[i]) if i < tops.size() else -1.0
 		if castle and fp == castle_poly:
-			top = _mesh_top(castle, home)
+			continue  # a castle's ground is its bailey, open and lived in: its prism hid the yard's folk, who stood switched off (motion probe, Mac 2026-11-17)
 		if top <= 0.0:
 			continue
 		var area := 0.0
@@ -934,23 +934,6 @@ func _occlude(root: Node3D, standing: Node3D = null) -> void:
 	oi.name = "Occluders"
 	oi.occluder = occ
 	root.add_child(oi)
-
-
-## The top of a node's meshes in `root`'s frame (-1 with none): how high a castle stands.
-static func _mesh_top(node: Node3D, root: Node3D) -> float:
-	var top := -1.0
-	for mi in node.find_children("*", "MeshInstance3D", true, false):
-		var m := mi as MeshInstance3D
-		if m.mesh == null:
-			continue
-		var xf := Transform3D.IDENTITY
-		var p: Node = m
-		while p and p != root:
-			if p is Node3D:
-				xf = (p as Node3D).transform * xf
-			p = p.get_parent()
-		top = maxf(top, (xf * m.get_aabb()).end.y)
-	return top
 
 
 ## How high a footprint's building stands (local to the town), kept beside it

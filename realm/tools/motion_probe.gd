@@ -657,7 +657,16 @@ func _name(p: Node3D) -> String:
 	var by := String(up.name) if up else "?"
 	if up and up.get_parent() and by.begins_with("@"):
 		by = String(up.get_parent().name)
-	return "%s/%s(%s)" % [by, p.name, _clip.get(p, "")]
+	var held := []  # what's in his hands, so one of the castle's or a town's many unnamed folk can be told apart
+	for b in p.find_children("*", "BoneAttachment3D", true, false):
+		for c in b.get_children():
+			held.append(String(c.name))
+	var mo := p.get_node_or_null("Motion")
+	var mv := p.get_node_or_null("Mover")
+	var role := String((p.get_meta("identity", {}) as Dictionary).get("role", "?"))
+	var os := p.get_node_or_null("OnScreen")
+	var gate := "runs %s, on screen %s" % [str(p.can_process()), str(os.call("is_on_screen")) if os else "-"]
+	return "%s/%s(%s; %s; %s; holds %s; at %.2f,%.2f,%.2f; mover %s)" % [by, p.name, String(mo.current()) if mo and mo.has_method("current") else String(_clip.get(p, "")), role, gate, ",".join(held), p.global_position.x, p.global_position.y, p.global_position.z, ("walking %d/%d" % [int(mv.get("_i")), (mv.get("_way") as PackedVector3Array).size()]) if mv else "none"]
 
 
 ## Something drawn under a hand's attachment: a tool you can see, not an empty socket.
@@ -771,6 +780,7 @@ func _report() -> void:
 	long.sort_custom(func(x, y): return float(_two_in_one[x]) > float(_two_in_one[y]))
 	print("MOTION two in one: %s  %d pairs closer than half a metre for %.1f s or more (longest %.1f s)  %s" % [verdict.call(long.is_empty()), long.size(), TOGETHER,
 		_two_in_one.values().max() if not _two_in_one.is_empty() else 0.0, long.slice(0, 4).map(func(k): return "%s %.1fs" % [_names.get(k, k), _two_in_one[k]])])
+	_stacked()
 	print("MOTION kneel at nothing: %s  %s" % [verdict.call(_kneel.is_empty()), _top(_kneel)])
 	print("MOTION pop: %s  %s" % [verdict.call(_pops.is_empty()), _top(_pops)])
 	print("MOTION children too far, by what each was doing: %s" % _top(_kin_far))
@@ -839,3 +849,20 @@ func _owner_of(k) -> String:
 		if n != null and n.get_script() != null:
 			return String((n.get_script() as Script).resource_path.get_file())
 	return "?"
+
+
+## People standing on one spot to the centimetre (two made where one was meant): every castle's and town's, by the
+## node that made them, its count in the tree, each one's child index, whether he's shown, and his clip.
+func _stacked() -> void:
+	var lives := get_tree().root.find_children("CastleLife*", "", true, false)
+	var at := {}
+	for host in lives:
+		for p in host.get_children():
+			if p is Node3D and (p as Node3D).get_node_or_null("Motion") != null:
+				var q := (p as Node3D).global_position
+				var key := "%.2f,%.2f" % [q.x, q.z]
+				if not at.has(key):
+					at[key] = []
+				(at[key] as Array).append("%s#%d %s %s" % [host.name, p.get_index(), "shown" if (p as Node3D).is_visible_in_tree() else "hidden", String(People.clip(p))])
+	var twice := at.keys().filter(func(k): return (at[k] as Array).size() > 1)
+	print("MOTION stacked: %d castle-life nodes, %d spots with more than one man of %d spots  %s" % [lives.size(), twice.size(), at.size(), ", ".join(twice.slice(0, 6).map(func(k): return "%s: %s" % [k, " | ".join(at[k])]))])

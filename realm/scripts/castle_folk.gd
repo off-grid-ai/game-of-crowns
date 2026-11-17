@@ -154,7 +154,7 @@ static func dress(host: Node, main: Node, xf: Transform3D, sp: Dictionary, colou
 			await host.paced()  # castle_life.gd: the one staging budget (view_tier.gd stage_ms)
 			main.scenes.arm(g, "spear")
 			face.call(g, at.call(0.0, 0.0))
-			People.play(g, "Sword_Idle")
+			host.post(g, (xf.basis.x * sx).normalized())  # paces his side of the gate (castle_life.gd post)
 
 	# The castle's smith at his anvil by the stores, his helper at the barrel.
 	var Sm: Dictionary = K.get("smith", {})
@@ -209,9 +209,14 @@ static func dress(host: Node, main: Node, xf: Transform3D, sp: Dictionary, colou
 		if carter is Node3D:
 			People.play(carter, "Idle_Talking")
 		for i in 2:
-			var u: Node3D = put.call(people.make(rng, "peasant", Color.WHITE, "adult", "", "male"), cp.lerp(stores_at, 0.35 + 0.3 * i))
+			# Each his own lane, a stride apart (castle_folk.json stores.lane, castle metres): on one path the two walked
+			# inside each other (motion probe, Mac 2026-11-17: 21.7 s).
+			var lane: Vector3 = xf.basis * Vector3((i - 0.5) * float(St.get("lane", 1.6)), 0, 0)
+			var ua := cp + lane
+			var ub := stores_at + lane
+			var u: Node3D = put.call(people.make(rng, "peasant", Color.WHITE, "adult", "", "male"), ua.lerp(ub, 0.35 + 0.3 * i))
 			await host.paced()  # castle_life.gd: the one staging budget (view_tier.gd stage_ms)
-			_shuttle(u, cp, stores_at, "Box_Walk", rng, float(St.get("pace", 0.18)), i * 1.5)
+			_shuttle(u, ua, ub, "Box_Walk", rng, float(St.get("pace", 0.18)), i * 1.5)
 
 	# Servants: water from the well to the keep's steps, firewood from the stores to the kitchen door; and back.
 	var Sv: Dictionary = K.get("servants", {})
@@ -219,8 +224,9 @@ static func dress(host: Node, main: Node, xf: Transform3D, sp: Dictionary, colou
 	var keep_foot: Vector3 = at.call(float((Sv.get("keep", [0.18, -0.35]) as Array)[0]), float((Sv.get("keep", [0.18, -0.35]) as Array)[1]))
 	for i in int(Sv.get("count", 4)):
 		var water := i % 2 == 0
-		var a: Vector3 = well_at if water else stores_at
-		var b: Vector3 = keep_foot + xf.basis * Vector3((i - 1.5) * 1.2, 0, 0)
+		var lane: Vector3 = xf.basis * Vector3((i - 1.5) * 1.2, 0, 0)  # each his own lane, the well and the stores too
+		var a: Vector3 = (well_at if water else stores_at) + lane
+		var b: Vector3 = keep_foot + lane
 		var s: Node3D = put.call(people.make(rng, "peasant", Color.WHITE, "adult", "", "female" if water else "male"), a.lerp(b, rng.randf()))
 		await host.paced()  # castle_life.gd: the one staging budget (view_tier.gd stage_ms)
 		_shuttle(s, a, b, "Carrying" if water else "Box_Walk", rng, float(Sv.get("pace", 0.17)), i * 2.0)
@@ -231,12 +237,13 @@ static func dress(host: Node, main: Node, xf: Transform3D, sp: Dictionary, colou
 	var gate_in: Vector3 = at.call(-0.18, 0.8)
 	var Horse := load("res://scripts/horse.gd")
 	for i in int(Gr.get("count", 2)):
-		var groom: Node3D = put.call(people.make(rng, "peasant", Color.WHITE, "adult", "", "male"), stable_at.lerp(gate_in, 0.3 * i))
+		var lane: Vector3 = xf.basis * Vector3((i - 0.5) * float(Gr.get("lane", 2.4)), 0, 0)  # each groom and his horse their own lane
+		var groom: Node3D = put.call(people.make(rng, "peasant", Color.WHITE, "adult", "", "male"), (stable_at + lane).lerp(gate_in + lane, 0.3 * i))
 		await host.paced()  # castle_life.gd: the one staging budget (view_tier.gd stage_ms)
 		var horse: Node3D = Horse.new(rng.randi() % 5)
 		host.add_child(horse)
 		d["nodes"].append(horse)
-		_shuttle(groom, stable_at, gate_in, "Walk", rng, float(Gr.get("pace", 0.15)), i * 4.0, horse)
+		_shuttle(groom, stable_at + lane, gate_in + lane, "Walk", rng, float(Gr.get("pace", 0.15)), i * 4.0, horse)
 
 
 static func _prop(name: String, size: float) -> Node3D:

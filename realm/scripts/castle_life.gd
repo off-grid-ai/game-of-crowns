@@ -151,17 +151,22 @@ func _dress(id: int, root: Node3D, castle: Node3D) -> void:
 			main.towns.banners.stand(root, root.to_local(top), colour, house, float(bk.get("size", 0.32)) * scale)
 	# The house's painted arms where the kit hung plain cloth: down the keep's face, either side of the gate.
 	_arms(xf, sp, house, colour, d)
-	# A guard on each curtain's walk.
+	# Guards on each curtain's walk (castle.json guards.per_side), each pacing his own stretch of it: two given the
+	# whole walk stood on one spot, each waiting for the other to make way (motion probe, Mac 2026-11-17: pairs in
+	# one place 39 s, idle all the while).
 	var gk: Dictionary = Data.value("castle", "guards", {})
 	var walk := int(sp.get("wall_storeys", 2)) * Builder.STOREY + 0.12
+	var per := maxi(1, int(gk.get("per_side", 1)))
 	for run in Builder.curtain_runs(sp):
-		for g in int(gk.get("per_side", 1)):
-			var inset: Vector3 = -(run["out"] as Vector3) * 0.6  # behind the merlons
-			var a: Vector3 = xf * (run["a"] + inset + Vector3(0, walk, 0))
-			var b: Vector3 = xf * (run["b"] + inset + Vector3(0, walk, 0))
-			if a.distance_to(b) < 0.3:
+		var inset: Vector3 = -(run["out"] as Vector3) * 0.6  # behind the merlons
+		var a: Vector3 = xf * (run["a"] + inset + Vector3(0, walk, 0))
+		var b: Vector3 = xf * (run["b"] + inset + Vector3(0, walk, 0))
+		for g in per:
+			var ga := a.lerp(b, float(g) / per)
+			var gb := a.lerp(b, float(g + 1) / per)
+			if ga.distance_to(gb) < 0.3:
 				continue
-			d["walks"].append([a, b])
+			d["walks"].append([ga, gb])
 	# Torches either side of the gate's arch, lit at dusk.
 	var tk: Dictionary = Data.value("castle", "torches", {})
 	var front := Builder.gate_front(sp) + 0.25  # the gatehouse's front face, a hand proud
@@ -233,8 +238,8 @@ func _people(d: Dictionary, full := true) -> void:
 		g.global_position = p
 		var out: Vector3 = xf.basis * Vector3(0, 0, 1)  # facing down the steps, toward the gate
 		g.global_rotation.y = atan2(out.x, out.z)
-		main.scenes.people.play(g, "Idle", 1.0)
 		f["nodes"].append(g)
+		post(g, xf.basis.x.normalized())
 		await paced()
 	await preload("res://scripts/castle_folk.gd").dress(self, main, xf, d["sp"], colour, f)
 	_staged(d, f)
@@ -575,6 +580,20 @@ func rounds(f: Node3D, legs: Array, waits: Array, first: float, at := 0, rest: A
 
 
 const REST := ["Looking_Around", "Weight_Shift", "Idle"]  # a look about at the end of a leg
+
+
+## A sentry at his post (the keep's door, the gate): a few steps along `along` and back (castle.json guards.post: m,
+## the stretch in metres; pace; rest, [least, most] seconds standing at each end, looking about). Stood in one pose for
+## good, the castle's sentries were statues (motion probe, Mac 2026-11-17: idle 39-103 s in the yard).
+func post(g: Node3D, along: Vector3) -> void:
+	var k: Dictionary = Data.value("castle", "guards.post", {})
+	var m: Node = Mover.of(g)
+	m.speed = maxf(float(k.get("pace", 0.5)) * S, 0.001)
+	var a := g.global_position
+	var b := a + along * float(k.get("m", 1.6)) * S
+	b.y = main.terrain.height_at(b.x, b.z) if absf(a.y - main.terrain.height_at(a.x, a.z)) < 0.02 else a.y
+	var rest: Array = k.get("rest", [2.0, 4.0])
+	rounds(g, [PackedVector3Array([b]), PackedVector3Array([a])], [rest], _rng.randf_range(0.0, float(rest[1])), 0, ["Looking_Around", "Sword_Idle", "Weight_Shift"])
 const LED_SIDE := Vector3(0.12, 0, -0.05)  # where a led beast walks beside its walker (his right, half a step back), game units at readable 1
 
 
