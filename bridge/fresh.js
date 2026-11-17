@@ -44,6 +44,12 @@ function tensions(text, world, r) {
     const t = dealt[Math.floor(r() * dealt.length)];
     Object.assign(t, r() < 0.5 ? { state: "War", left: 0 } : { state: "Cease-fire", left: 2 + Math.floor(r() * 3) });
   }
+  // The new King inherits an enemy (Mac 2026-11-17, GAME_DESIGN "The game": no allies, at least one house against
+  // him): the great house seated nearest Kingsmere is at war with the crown from the first season.
+  const crown = (world.players ?? []).find((p) => HOUSES[String(p.nation).toLowerCase()]?.crown);
+  const kingsSeat = crown && seat.get(crown.id);
+  const foe = kingsSeat && great.slice().sort((x, y) => Math.hypot(seat.get(x).x - kingsSeat.x, seat.get(x).y - kingsSeat.y) - Math.hypot(seat.get(y).x - kingsSeat.x, seat.get(y).y - kingsSeat.y))[0];
+  if (foe != null) dealt.push({ a: Math.min(crown.id, foe), b: Math.max(crown.id, foe), state: "War", left: 0, crown: true });
   for (const t of dealt) {
     const love = t.state === "War" ? -300 - Math.floor(r() * 500) : t.state === "Cease-fire" ? -100 - Math.floor(r() * 500) : 100 + Math.floor(r() * 300);
     text = setPair(text, t.a, t.b, t.state, turn, t.left, love);
@@ -104,6 +110,6 @@ export function freshStart(base, seed) {
   const t = tensions(text, world, r);
   fs.writeFileSync(file, zlib.zstdCompressSync(Buffer.from(t.text)));
   const nation = new Map((world.players ?? []).map((p) => [p.id, p.nation]));
-  grudges(path.join(base, "characters"), t.dealt, (pid) => greatNation(nation.get(pid))?.name ?? "them", r);
-  return t.dealt.map((x) => ({ a: x.a, b: x.b, state: x.state, turnsLeft: x.left }));
+  grudges(path.join(base, "characters"), t.dealt.filter((x) => !x.crown), (pid) => greatNation(nation.get(pid))?.name ?? "them", r);
+  return t.dealt.map((x) => ({ a: x.a, b: x.b, state: x.state, turnsLeft: x.left, ...(x.crown ? { crown: true } : {}) }));
 }

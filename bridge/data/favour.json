@@ -6,6 +6,8 @@
  "cooling": 25,
  "startFloor": 35,
  "startFloorResentful": 26,
+ "startCap": 45,
+ "startFoe": 18,
  "idle": {
   "seasons": 4,
   "cool": 2

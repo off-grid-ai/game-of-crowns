@@ -55,7 +55,7 @@ import * as TestRoutes from "./routes_test.js";
 import * as PeopleRoutes from "./routes_people.js";
 import * as StoryRoutes from "./routes_stories.js";
 import * as Book from "./favourbook.js";
-import { LEAN, theirs } from "./favourbook.js";
+import { theirs } from "./favourbook.js";
 import { moodFrom, isWatched } from "./claude.js";
 import * as Season from "./season.js";
 import * as Garrison from "./garrison.js";
@@ -380,12 +380,10 @@ function applyStartOptions() {
     // The reign's mood sets the level; each house's own history with the crown
     // (the world bible) sets where it stands within it, so the table starts
     // with friends, doubters and an obvious problem, not seven equal numbers.
-    const lean = LEAN[houseFor(p).name] ?? 0;
     favour[p.id] = restingFavour(p);
     favourWhy[p.id] = [];
     deeds[p.id] = [];
     noteFavour(p.id, ({ loyal: 19, wary: 0, resentful: -21 }[o.trust] ?? 0), "the realm's mood at your crowning");
-    noteFavour(p.id, lean, lean > 0 ? "their old loyalty to the crown" : "their old grievances against the crown");
   }
   // A real reign deals the houses' old feelings from its seed: two or three
   // begin cold to the crown (below the banners' 35), the rest a little warmer
@@ -419,6 +417,19 @@ function applyStartOptions() {
   // No great house begins under the floor (a resentful realm's floor is just above the rising line).
   const floor = o.trust === "resentful" ? START.resentful : START.floor;
   for (const p of world.players.filter((x) => !houseFor(x).wild && !houseFor(x).crown)) if (favourOf(p.id) < floor) favour[p.id] = floor;
+  // A new King has no friends yet (Mac 2026-11-17, GAME_DESIGN "The game"): no great house starts sworn (data/favour.json
+  // startCap), and the house the opening put at war with the crown (fresh.js) starts its foe (startFoe), under cooling.
+  for (const p of world.players.filter((x) => !houseFor(x).wild && !houseFor(x).crown)) if (favourOf(p.id) > START.cap) favour[p.id] = START.cap;
+  const crownId = Realm.crownOf(world)?.id;
+  const foePair = (meta.opening ?? []).find((t) => t.crown && t.state === "War");
+  const foeId = foePair ? (foePair.a === crownId ? foePair.b : foePair.a) : null;
+  const foe = foeId != null && world.players.find((p) => p.id === foeId);
+  if (foe) {
+    favour[foe.id] = START.foe;
+    (favourWhy[foe.id] ??= []).push({ d: 0, why: "they never bent the knee to the new King" });
+    const seat = world.cities?.find((c) => c.owner === foe.id && c.capital);
+    record({ turn: world.turn, kind: "revenge", city: seat?.id, text: `${houseFor(foe).name} will not kneel to the new King. Their banners are up, and their host is mustering.` });
+  }
   saveFavour();
   const crown = Realm.crownOf(world);
   // The King's purse at his crowning (economy.json start, by the reign's wealth): the
