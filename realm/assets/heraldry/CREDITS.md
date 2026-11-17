@@ -437,6 +437,6 @@ Use case: background-extraction. Edit target: supplied image of the vyrwel emble
 
 ## The Crown's arms (2026-11-17)
 
-- Mac: "change our sigil to be more about a hungry bloody sword", with the words "Our Sword Is Hunger." The eagle under a crown is replaced by a broadsword point down, gripped in fanged jaws that bleed down the blade, a drop falling from the point, the crown on the pommel.
+- Mac: "change our sigil to be more about a hungry bloody sword", with the words "Our Sword Is Bloody." The eagle under a crown is replaced by a broadsword point down, gripped in fanged jaws that bleed down the blade, a drop falling from the point, the crown on the pommel.
 - Master made with the Codex CLI's built-in image tool (the model name was not reported); kept as `docs/art/crown-sigil-master.png`. Prompt: a flat two-colour heraldic silhouette on white, sword, jaws and blood in black, the crown in gold.
 - Export (ImageMagick 7): gold mask where red exceeds blue by 0.3, black mask where the mean is under 0.45 and not gold, each opened by a 1 px disc. Sigil: both masks, trimmed, fitted to 448 × 448 on 512 × 512, one cream `#EDE6D6`. Banner: the masks fitted to 440 × 580 at 90 px down, black `#1E1613` and gold `#C98A3A` over the old banner's own woven red field (a strip at y 690, tiled, mirrored), with the old banner's swallowtail alpha.
