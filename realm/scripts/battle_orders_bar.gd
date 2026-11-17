@@ -58,7 +58,9 @@ func _process(_delta: float) -> void:
 		return
 	var side: int = field.player_side()
 	var over: bool = bool(field.get("_over")) or side < 0
-	_panel.visible = not over
+	_panel.visible = not over and _in_front()
+	if not _panel.visible:
+		return
 	_place()  # the control plane grows and shrinks with what it shows
 	var now := String((field.orders as Array)[maxi(side, 0)])
 	if now != _shown:
@@ -67,6 +69,22 @@ func _process(_delta: float) -> void:
 			var b: Dictionary = _buttons[key]
 			(b["button"] as Button).add_theme_stylebox_override("normal", _sel if key == now else _rest)
 			(b["button"] as Button).text = BattleOrders.title(key) + "\n" + (String(Data.value(FILE, "command.chosen", "Now")).to_upper() if key == now else " ")
+
+
+## Whether the fight is in front of the King: its middle on screen and where the camera looks, within
+## battle_orders.json command.near world units or command.view of the camera's distance, whichever is more (Mac
+## 2026-11-17: "orders should only be there if there is a battle in front of me that I'm controlling").
+func _in_front() -> bool:
+	var rig: Node = field.main.get("rig")
+	var cam := _panel.get_viewport().get_camera_3d()
+	if rig == null or cam == null:
+		return false
+	var mid: Vector3 = field.get("_focus")
+	if cam.is_position_behind(mid) or not _panel.get_viewport().get_visible_rect().has_point(cam.unproject_position(mid)):
+		return false
+	var look: Vector3 = rig.get("target")
+	var reach := maxf(Data.num(FILE, "command.near", 6.0), float(rig.get("distance")) * Data.num(FILE, "command.view", 0.6))
+	return Vector2(mid.x - look.x, mid.z - look.z).length() <= reach
 
 
 ## One order's button: its name, and under it the word that says the side stands in it. It sizes to its words.

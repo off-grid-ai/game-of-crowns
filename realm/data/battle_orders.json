@@ -118,7 +118,8 @@
     }
   },
   "command": {
-    "_": "army_field.gd reorder, the King's orders in a battle (Total War's and Bannerlord's formation orders): the side comes on by the order from that moment (its cells traits, field_cells.gd order: a regroup steps back and stands, a shield wall comes on at its long slow step) under the order's guard (defence). buttons: the orders the bar offers; chosen: the word under the order it stands in; hints: each button's tooltip.",
+    "near": 6.0, "view": 0.6,
+    "_": "near, view: the bar shows only while the fight's middle is on screen and within near world units, or view times the camera's distance, of where the camera looks (battle_orders_bar.gd _in_front). army_field.gd reorder, the King's orders in a battle (Total War's and Bannerlord's formation orders): the side comes on by the order from that moment (its cells traits, field_cells.gd order: a regroup steps back and stands, a shield wall comes on at its long slow step) under the order's guard (defence). buttons: the orders the bar offers; chosen: the word under the order it stands in; hints: each button's tooltip.",
     "buttons": [
       "line",
       "two_lines",
