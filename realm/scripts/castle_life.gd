@@ -549,7 +549,8 @@ func _walker(path: Array, colour: Color, k: Dictionary, scale: float, i: int) ->
 	Mover.of(f).speed = pace
 	var back: Array = pts.duplicate()
 	back.reverse()
-	rounds(f, [PackedVector3Array(pts.slice(1)), PackedVector3Array(back.slice(1))], [wait, wait], _rng.randf_range(0.0, float(wait[1])) + i * 2.0)  # in, then out; each on his own beat
+	var beat := (_rng.randf() + i) / maxf(float(k.get("count", 3)), 1.0) * float(wait[1])  # each on his own beat, spread across one wait (i * 2 s on top stood the last 12 s)
+	rounds(f, [PackedVector3Array(pts.slice(1)), PackedVector3Array(back.slice(1))], [wait, wait], beat)  # in, then out
 	return f
 
 
