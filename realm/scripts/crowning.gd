@@ -2,7 +2,7 @@ extends CanvasLayer
 ## The crowning: the King's first moment in his realm, as the storybook ends (docs/review/first-ten-minutes.md;
 ## CK3 shows your ruler and realm first, AoE IV opens on your own town). The camera on the crown's castle, the
 ## royal standard raised over its keep, the crown's fanfare, cheer and bells, and one line over the realm for a few
-## seconds: "Long live <the King's name>, King of Aldmere". Then the Hand speaks (hand_prompts.gd). It decides
+## seconds: "Long live <the King's name>, King of Aldmere". It decides
 ## nothing: the castle is the town's, the name the realm's own reading. Words and timings: data/opening.json crowning.
 
 const Data := preload("res://scripts/data.gd")

@@ -460,7 +460,7 @@ var _paused_for: Control
 
 
 ## Enter: the top card's answer (its gold button), as the keyboard's way to act at once.
-## The card on top, the one the Hand points at (hand_prompts.gd), or null.
+## The card on top, or null.
 func top_card() -> Control:
 	for r in _needs.get_children():
 		if (r as Control).visible:

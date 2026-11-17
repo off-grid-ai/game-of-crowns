@@ -31,7 +31,6 @@ const Terrain := preload("res://scripts/terrain.gd")  # its GROUND_LAYER: the ri
 const TeamColour := preload("res://scripts/team_colour.gd")  # the ring in the crown's own colour, as its men wear it
 const FILE := "host_command"
 
-signal ordered(kind: String)  # an order given (the one way, order()): the Hand's tour waits for it (hand_prompts.gd)
 signal selection_changed  # a host selected, added, taken out or let go: the armies bar reads it again (army_bar.gd)
 
 var main: Node
@@ -697,7 +696,6 @@ func order(kind: String, at := {}, done := Callable()) -> bool:
 		body["face"] = at["face"]
 	if at.get("defend", false):
 		body["defend"] = true  # to a raided town's aid, never a siege of it (bridge hosts.js march)
-	ordered.emit(kind)
 	main.barks.host("order", selected)  # its captain answers at once, as Warcraft III's do (barks.gd)
 	_ask(body, done)
 	_routes()

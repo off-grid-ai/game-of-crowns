@@ -60,7 +60,6 @@ var story := IntroStory.new(self)  # the intro story (intro_story.gd): when it i
 var _music_dark := false  # juice: the music turned dark by the realm's tension (with its lower mark to settle)
 var order_at := [Vector3.INF, -1]  # juice: where the King's own order lands, and the frame its result was told there
 var barks: Node = null  # every click answers (barks.gd)
-var hand_prompts: Node = null  # the v2 opening's Hand prompts (hand_prompts.gd), when --opening=v2
 const Walking := preload("res://scripts/walking.gd")
 var walking := Walking.new(self)  # walking as a character (walking.gd): control, mic, interiors, the King
 var _framed := false
@@ -630,9 +629,6 @@ func _ready() -> void:
 	# The opening's clock (a test aid, GOC_OPENING_CLOCK=<file>): the first ten minutes, timed.
 	if OS.get_environment("GOC_OPENING_CLOCK") != "":
 		add_child(load("res://tools/opening_clock.gd").new(self))
-	# The opening: the Hand's prompts in a first reign (hand_prompts.gd; texts and moments in data/opening.json).
-	hand_prompts = load("res://scripts/hand_prompts.gd").new(self)
-	add_child(hand_prompts)
 	# Item 3: a ruling is seen where it lands. Its result becomes the latest news at the
 	# matter's town, with the edge arrow and Space to go and look (news.point_at; Warcraft's
 	# jump-to-event, Frostpunk's consequence on the map). The camera is never taken.

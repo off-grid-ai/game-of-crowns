@@ -71,8 +71,6 @@ func _tell_the_story() -> void:
 				if first and Crowning.on():
 					var c = Crowning.new(main)
 					main.add_child(c)
-					c.play())
-			if main.hand_prompts:
-				main.hand_prompts.landed(), CONNECT_ONE_SHOT)
+					c.play()), CONNECT_ONE_SHOT)
 	main.intro.watching = _back_to_menu
 	main.intro.play(houses, seats)

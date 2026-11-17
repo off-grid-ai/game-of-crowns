@@ -49,7 +49,7 @@ signal last_event  # Space: go to the latest news, or back again
 signal event_back  # Home: back to where the King was
 signal house_followed(player_id: int)
 signal chronicle_asked(entry: Dictionary, urgent: bool)  # a new card asks him something (chronicle_panel.gd): the Hand may explain it
-signal tour_asked  # the Hand's tour again, from the top bar's ? or F12 (hand_prompts.gd)  # a sigil on the ladder clicked: the camera goes with that house's host
+  # a sigil on the ladder clicked: the camera goes with that house's host
 signal matter_opened(at: Vector3)  # a matter's marker clicked: the King looks at its place (his own click)
 signal counsel_answered(key: String, leave: bool)  # leave: the King chose silence, and pays its price (bridge matters silence)  # the King answered the Hand's matter  # a story's name clicked in the chronicle
 
@@ -543,9 +543,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 	elif event.is_action_pressed(&"houses"):
 		_houses_btn.button_pressed = not _houses_btn.button_pressed
 		_houses_panel.visible = _houses_btn.button_pressed
-	elif event.is_action_pressed(&"tour"):
-		tour_asked.emit()
-	elif event.is_action_pressed(&"card_do") and not tour_up:
+	elif event.is_action_pressed(&"card_do"):
 		chronicle.do_top()  # the top card's answer (chronicle_panel.gd)
 	elif event.is_action_pressed(&"chronicle"):
 		_chron_btn.button_pressed = not _chron_btn.button_pressed
@@ -1031,7 +1029,6 @@ func guide_block() -> Control:
 # A scene he chose to Watch gets the whole screen: the panels step aside and the
 # court waits; all come back as they were when he moves or the scene ends.
 var cinema_on := false
-var tour_up := false  # the Hand is speaking (hand_prompts.gd): his click and Enter go on with him, not to a card
 var cinema_was := {}
 const CINEMA_HIDES := ["_houses_panel", "_chron_panel", "_town_panel", "_court_panel", "_house_panel", "_army_panel"]
 
