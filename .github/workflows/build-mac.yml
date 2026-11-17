@@ -1,0 +1,117 @@
+# Build the Mac game on GitHub's own Apple Silicon runner, not on a developer's Mac (Mac 2026-11-17: "Build on
+# GitHub"; the local build had run out of disk at the dmg). The art is not in git: it comes from the R2 bucket
+# (realm/tools/r2_pull.sh). Then packaging/build-mac.sh bakes, exports, bundles the bridge, Node and Freeciv, signs and
+# makes the dmg. With release on, the dmg goes to a draft GitHub release and notarise.yml notarises and publishes it.
+#
+# Secrets: R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY (the art); CSC_LINK, CSC_KEY_PASSWORD (the Developer ID .p12, base64,
+# as Off Grid AI Desktop's release); the notarise workflow's own APPLE_* keys.
+name: Build (Mac)
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to stamp, e.g. 0.7 (empty: the one in realm/export_presets.cfg)"
+        required: false
+      release:
+        description: "Draft a GitHub release and notarise it (needs the signing secrets)"
+        type: boolean
+        default: false
+      prerelease:
+        description: "Mark the release a pre-release"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 300
+    env:
+      GODOT_VERSION: 4.7.2
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Room on the disk
+        run: |
+          df -h /
+          # What a game build never uses: the other Xcodes, simulators, Android and .NET.
+          ls -d /Applications/Xcode_*.app 2>/dev/null | grep -v "$(xcode-select -p | sed 's|/Contents/Developer||')" | xargs -I{} sudo rm -rf "{}" || true
+          sudo rm -rf ~/Library/Android /usr/local/share/dotnet ~/.dotnet ~/Library/Developer/CoreSimulator /Library/Developer/CoreSimulator/Profiles/Runtimes || true
+          df -h /
+
+      - uses: actions/checkout@v4
+
+      - name: Tools (Godot ${{ env.GODOT_VERSION }}, its export templates, Freeciv, rclone)
+        run: |
+          base=https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}-stable
+          curl -fsSL -o "$RUNNER_TEMP/godot.zip" "$base/Godot_v${GODOT_VERSION}-stable_macos.universal.zip"
+          sudo ditto -x -k "$RUNNER_TEMP/godot.zip" /Applications
+          rm "$RUNNER_TEMP/godot.zip"
+          sudo ln -sf /Applications/Godot.app/Contents/MacOS/Godot /usr/local/bin/godot
+          godot --version
+          curl -fsSL -o "$RUNNER_TEMP/tpl.tpz" "$base/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+          dest="$HOME/Library/Application Support/Godot/export_templates/${GODOT_VERSION}.stable"
+          mkdir -p "$dest"
+          unzip -q -j "$RUNNER_TEMP/tpl.tpz" 'templates/macos*' 'templates/version.txt' -d "$dest"
+          rm "$RUNNER_TEMP/tpl.tpz"
+          ls "$dest"
+          brew install freeciv dylibbundler rclone
+          freeciv-server --version | head -1
+          df -h /
+
+      - name: The art, from R2
+        env:
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+        run: |
+          test -n "$R2_ACCESS_KEY_ID" || { echo "::error::R2_ACCESS_KEY_ID secret missing"; exit 1; }
+          printf 'R2_ACCESS_KEY_ID=%s\nR2_SECRET_ACCESS_KEY=%s\n' "$R2_ACCESS_KEY_ID" "$R2_SECRET_ACCESS_KEY" > "$RUNNER_TEMP/r2.env"
+          GOC_R2_ENV="$RUNNER_TEMP/r2.env" bash realm/tools/r2_pull.sh
+          rm "$RUNNER_TEMP/r2.env"
+          du -sh realm/assets
+          df -h /
+
+      - name: Import (Godot's cache of every asset)
+        run: |
+          cd realm
+          godot --headless --path . --import > "$RUNNER_TEMP/import.log" 2>&1 || true
+          grep -cE "ERROR" "$RUNNER_TEMP/import.log" || true
+          du -sh .godot
+          df -h /
+
+      - name: Version
+        if: inputs.version != ''
+        run: sed -i '' -E "s/^(application\/(short_)?version=)\"[^\"]*\"/\1\"${{ inputs.version }}\"/" realm/export_presets.cfg
+
+      - name: Build, sign, dmg (packaging/build-mac.sh)
+        env:
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+        run: |
+          if [ "${{ inputs.release }}" = "true" ] && [ -z "$CSC_LINK" ]; then echo "::error::CSC_LINK secret missing: a release must be Developer ID signed"; exit 1; fi
+          packaging/build-mac.sh
+          df -h /
+
+      - name: Keep the dmg (a test build)
+        if: inputs.release != true
+        uses: actions/upload-artifact@v4
+        with:
+          name: game-of-crowns-mac
+          path: build/Game-of-Crowns-*-arm64.dmg
+          retention-days: 7
+          compression-level: 0
+
+      - name: Draft the release and notarise it (notarise.yml publishes)
+        if: inputs.release == true
+        run: |
+          DMG=$(ls build/Game-of-Crowns-*-arm64.dmg)
+          VERSION=$(sed -n 's/^application\/short_version="\(.*\)"/\1/p' realm/export_presets.cfg)
+          SHA=$(git rev-parse --short HEAD)
+          TAG="v$VERSION-$(date +%Y%m%d)-$SHA"
+          gh release create "$TAG" "$DMG" --draft ${{ inputs.prerelease && '--prerelease' || '' }} --target "$GITHUB_SHA" \
+            --title "Game of Crowns $VERSION ($SHA)" \
+            --notes "Free, nothing locked. For Macs with Apple Silicon. Open the dmg and drag Game of Crowns to Applications. Want the lords to speak in their own words? Run Off Grid AI (https://getoffgridai.co/desktop) alongside it."
+          gh workflow run notarise.yml -f tag="$TAG"
+          echo "Drafted $TAG; notarise.yml publishes it once Apple accepts it." >> "$GITHUB_STEP_SUMMARY"
