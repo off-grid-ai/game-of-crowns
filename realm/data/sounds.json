@@ -4,6 +4,14 @@
   "hear": 16.0,
   "ambient_within": 30.0,
   "sounds": {
+    "words_wolfholt": { "takes": ["voice/houses/wolfholt.ogg"], "db": 0.0, "pitch": [1.0, 1.0], "gain": 0.0, "bus": "Voice" },
+    "words_goldcrest": { "takes": ["voice/houses/goldcrest.ogg"], "db": 0.0, "pitch": [1.0, 1.0], "gain": 0.0, "bus": "Voice" },
+    "words_ironreach": { "takes": ["voice/houses/ironreach.ogg"], "db": 0.0, "pitch": [1.0, 1.0], "gain": 0.0, "bus": "Voice" },
+    "words_thornvale": { "takes": ["voice/houses/thornvale.ogg"], "db": 0.0, "pitch": [1.0, 1.0], "gain": 0.0, "bus": "Voice" },
+    "words_stormhold": { "takes": ["voice/houses/stormhold.ogg"], "db": 0.0, "pitch": [1.0, 1.0], "gain": 0.0, "bus": "Voice" },
+    "words_sunspire": { "takes": ["voice/houses/sunspire.ogg"], "db": 0.0, "pitch": [1.0, 1.0], "gain": 0.0, "bus": "Voice" },
+    "words_highfell": { "takes": ["voice/houses/highfell.ogg"], "db": 0.0, "pitch": [1.0, 1.0], "gain": 0.0, "bus": "Voice" },
+    "words_crown": { "takes": ["voice/houses/crown.ogg"], "db": 0.0, "pitch": [1.0, 1.0], "gain": 0.0, "bus": "Voice" },
     "hammer": { "takes": ["sfx/hammer.wav", "sfx/hammer_1.wav", "sfx/hammer_2.wav", "sfx/hammer_3.wav", "sfx/hammer_4.wav"], "db": -10.0, "pitch": [0.92, 1.08], "gain": 2.0, "reach": [1.0, 14.0] },
     "chop": { "takes": ["sfx/chop.wav", "sfx/chop_1.ogg", "sfx/chop_2.ogg", "sfx/chop_3.ogg", "sfx/chop_4.ogg", "sfx/chop_5.ogg"], "db": -10.0, "pitch": [0.93, 1.07], "gain": 2.0, "reach": [1.0, 14.0] },
     "dig": { "takes": ["sfx/step_snow_0.wav", "sfx/step_snow_2.wav", "sfx/step_snow_4.wav"], "db": -16.0, "pitch": [0.8, 0.95], "gain": 2.0, "reach": [0.6, 6.0] },
@@ -96,6 +104,7 @@
     "battle": { "tracks": ["battle_five_armies", "battle_heroic_age", "battle_for_the_king", "battle_viking_march"], "db": -1.0 },
     "dead": { "tracks": ["dead_unseen_horrors", "dead_something_approaches"], "db": -2.0 }
   },
+  "house_words": {"_": "A house's words spoken aloud when the King opens one of its towns (town_panel.gd show_town, a fresh open -> ui.house_visited -> sound_v2.gd house_words): pre-recorded with Off Grid AI's Kokoro voices (realm/tools/record_house_words.sh; assets/audio/voice/houses). houses: the house's name -> its sound (a row of sounds) and the words it says; a house whose words the King rewrote in the Lore says nothing (the recording would be wrong). db: the shift over the row, on the Voice bus (Master's volume). cooldown_s: the same house is not heard again within this many seconds (re-opening, another of its towns). delay_s: after the card opens.", "db": -2.0, "cooldown_s": 120.0, "delay_s": 0.35, "houses": {"House Wolfholt": {"sound": "words_wolfholt", "words": "Hold Fast"}, "House Goldcrest": {"sound": "words_goldcrest", "words": "Wealth Is Strength"}, "House Ironreach": {"sound": "words_ironreach", "words": "The Sea Provides"}, "House Thornvale": {"sound": "words_thornvale", "words": "Root and Thorn"}, "House Stormhold": {"sound": "words_stormhold", "words": "We Weather All"}, "House Sunspire": {"sound": "words_sunspire", "words": "The Sun Waits"}, "House Highfell": {"sound": "words_highfell", "words": "Sworn and Steadfast"}, "The Crown": {"sound": "words_crown", "words": "One Realm"}}},
   "ui_gap": 0.08,
   "coin_every": 0.06,
   "events": {

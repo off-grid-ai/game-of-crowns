@@ -13,6 +13,17 @@ Where things stand, so any agent can take over. Newest first, short. The full hi
   his. When his game freezes, copy his `godot.log` first, then `kill -SEGV` it for the GDScript backtrace.
 
 ## Now (2026-11-16)
+- **Houses speak their words (Mac 2026-11-17, done).** Open a town: its house says its words once, in its own voice
+  ("Hold Fast" low and slow for Wolfholt, "The Sea Provides!" rough for Ironreach, "One Realm" at Kingsmere). Recorded
+  with OGAD's Kokoro (`realm/tools/record_house_words.sh`), `sounds.json` `house_words` (120 s per house). Not yet heard
+  in Mac's game. **Proposals of the same kind (not built, Mac to pick):**
+  1. Battle cry: a host shouts its house's words as its charge starts ("We weather all!"), the crown's "One Realm!".
+  2. The town greets the King by its favour: a cheer of "The King!" in a loyal town, jeers and shut shutters in a sullen one.
+  3. Each house's own horn: a war horn for Wolfholt, drums for Stormhold, a brass call for Sunspire, as its host marches near.
+  4. A lord at court answers in the same voice as his house's words, so the King knows Wolfholt by ear.
+  5. A death in a great house: the bell tolls and a herald's voice names the dead lord, once, wherever the King looks.
+  6. Won field: the King's men cheer and beat shields; lost field: silence, a lone crow, a horn calling the retreat.
+  7. Kids run alongside shouting "The King!" when he opens a town he has fed or freed this year.
 - **Mac's three (audit, 2026-11-16), worked autonomously.** 1. Freeze (Mac's 9 fps game, 14:00): per frame at Kingsmere ~34 ms in nodes' _process, only 5-15 ms named; draw 22-34 ms; 2,000 draws, 4-6M prims, 45-61k nodes. 78fec9e2 names every per-frame script (GOC_PERF_PROBE); next run reads the split and the biggest gets cut. Found and fixed on the way: towns stopped being raised while paused (4b035618), town gossip dead since 03e67722 (51b71493). 2. One decision path: consequence.js; cards show only the bridge's matter answers; one seal a season; the King's nature orders answers. 3. War: WAR.md steps 3-9 built (8: camps move, a70518d3; 9: war score sets peace terms, 04b84e56). Court: a grudge can be answered by taking the lord's child as ward (ee29a82e).
 - TODO after FPS (Mac 2026-11-15): troops never do anything, they just stand. A siege waits for the bridge's assault turn with nothing to do (Oldhall); a host in a town stands still. Every army needs visible work while it waits: engines throwing, archers loosing, the wall taking hits, men drilling, shifting, resting.
 - In work (Mac 2026-11-15, siege of Sunspire): the siege tower rolls through a regiment; camp tents and the stake row stand inside regiment blocks. Routed to the siege-activity and placement builders.

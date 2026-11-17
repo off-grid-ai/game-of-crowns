@@ -153,3 +153,6 @@ __pycache__/
 
 # Baked meshes and towns (tools/bake.gd), made from third-party art before each export
 realm/baked/
+# The houses spoken words: our own recordings (OGAD Kokoro), kept in git.
+!realm/assets/audio/voice/houses/*.ogg
+!realm/assets/audio/voice/houses/README.md

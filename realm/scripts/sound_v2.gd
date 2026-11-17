@@ -103,6 +103,31 @@ func play(name: String, at := Vector3.INF, why := "", db_shift := 0.0) -> void:
 	p.connect("finished", p.queue_free)
 
 
+## A house's words, spoken once when the King opens one of its towns (sounds.json house_words; ui.house_visited).
+## Nothing for a house with no recording, or whose words the King rewrote in the Lore; the same house is not
+## heard again within cooldown_s.
+var _words_last := {}  # house name -> msec it last spoke
+func house_words(house: Dictionary) -> void:
+	var cfg: Dictionary = Data.value("sounds", "house_words", {})
+	var name := String(house.get("name", ""))
+	var rec: Dictionary = (cfg.get("houses", {}) as Dictionary).get(name, {})
+	if rec.is_empty():
+		return
+	var said := String(house.get("words", ""))
+	if said != "" and said != String(rec.get("words", "")):
+		return
+	var now := Time.get_ticks_msec()
+	if _words_last.has(name) and now - int(_words_last[name]) < int(float(cfg.get("cooldown_s", 120.0)) * 1000.0):
+		return
+	_words_last[name] = now
+	var delay := float(cfg.get("delay_s", 0.35))
+	var go := play.bind(String(rec["sound"]), Vector3.INF, "words:" + name, float(cfg.get("db", 0.0)))
+	if delay > 0.0 and is_inside_tree():
+		get_tree().create_timer(delay).timeout.connect(go)
+	else:
+		go.call()
+
+
 func _note(why: String, name: String, dist: float) -> void:
 	if keep_log:
 		heard.append([now_s, why, name, dist])
