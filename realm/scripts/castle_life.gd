@@ -161,9 +161,10 @@ func _dress(id: int, root: Node3D, castle: Node3D) -> void:
 		var inset: Vector3 = -(run["out"] as Vector3) * 0.6  # behind the merlons
 		var a: Vector3 = xf * (run["a"] + inset + Vector3(0, walk, 0))
 		var b: Vector3 = xf * (run["b"] + inset + Vector3(0, walk, 0))
+		var gap := float(gk.get("gap", 0.1))  # a share of his stretch kept clear at each end: no two meet where theirs join
 		for g in per:
-			var ga := a.lerp(b, float(g) / per)
-			var gb := a.lerp(b, float(g + 1) / per)
+			var ga := a.lerp(b, (float(g) + gap) / per)
+			var gb := a.lerp(b, (float(g + 1) - gap) / per)
 			if ga.distance_to(gb) < 0.3:
 				continue
 			d["walks"].append([ga, gb])

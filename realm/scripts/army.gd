@@ -374,6 +374,7 @@ func _stand_on_tile(at: Vector3, yaw: float) -> void:
 		c["s"] = _cum[1] - float(c["off"])
 		(c["node"] as Node3D).global_position = _at(c["s"])
 		(c["node"] as Node3D).rotation.y = yaw
+		_tend(c["carter"], c["node"])  # set down halted: its carter at work from the first
 
 
 ## Half a column's width on the march, at its widest (its regiments' column shapes, formations.json's march template).
@@ -677,8 +678,20 @@ func _cart_on(c: Dictionary, pace: float) -> void:
 	mo.speed = pace
 	mo.follow(way, func():
 		c["s"] = end
-		if is_instance_valid(c["carter"]):
-			people.play(c["carter"], "Idle", 1.0))
+		_tend(c["carter"], c["node"]))
+
+
+## A carter at a halt tends his horse and his load (army.json baggage.halt: clips, a turn each every [least, most]
+## seconds) while his cart stands. Stood in one pose for good, he was the square's longest statue (motion probe, Mac
+## 2026-11-17: 30 s). Ends when his cart moves on (it walks again) or is gone.
+func _tend(carter: Variant, cart: Node3D) -> void:
+	if not is_instance_valid(carter) or not is_instance_valid(cart) or Mover.of(cart).moving():
+		return
+	var k: Dictionary = Data.value("army", "baggage.halt", {})
+	var clips: Array = k.get("clips", ["Idle"])
+	var every: Array = k.get("every", [3.0, 6.0])
+	main.scenes.people.play(carter, String(clips[_rng.randi() % clips.size()]), 1.0)
+	Later.after(carter, _rng.randf_range(float(every[0]), float(every[1])), func(): _tend(carter, cart))
 
 
 ## A regiment come to its hull: on the deck as a packed block, a child of the hull (it sails with it), at ease.

@@ -1108,10 +1108,17 @@ func _stage_walkers(k: Dictionary, role: Dictionary, a: Dictionary, does: String
 				if route.size() < 2:
 					continue
 				var plan := {"goal": Vector3.INF, "until": 0, "leg": 1}
+				# The pair stands as it walks: both facing the beat's first leg, his mate at his right (Follow's side). Set
+				# 0.07 across the world's x, the mate often stood on the leader's first step, who waited on him until the
+				# scene gave up and cast another pair on the same spot (motion probe, Mac 2026-11-17: "fix the square").
+				var first: Vector3 = route[1] - route[0]
+				var yaw := atan2(first.x, first.z)
+				var right := Vector3(cos(yaw), 0, -sin(yaw))
 				for j in 2:
-					var at: Vector3 = route[0] + Vector3(0.07 * j, 0, 0)
+					var at: Vector3 = route[0] + right * float(W.get("abreast", 0.1)) * j
 					at.y = tl.ground_at(root, at)
 					var g: Node3D = tl.cast(root, at, String(role.get("who", "soldier")), "Sword_Idle", rng.randi(), tl.house_colour(root) if role.get("tint", "") == "house" else Color.WHITE, "", "")
+					g.rotation.y = yaw
 					g.set_meta("scene", String(k["row"]["id"]))
 					_counted(k, role, g)
 					for m in role.get("meta", []):
