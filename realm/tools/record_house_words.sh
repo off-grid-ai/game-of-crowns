@@ -18,7 +18,7 @@ PROFILES=(
   "woman|af_sarah|0.95|0.93"
   "young_woman|af_heart|1.03|1.0"
 )
-# House | what is said | hall echo
+# House | what is said | hall echo | optional: pitch and pace over the profile's, the pause between beats (s)
 HOUSES=(
   "wolfholt|Hold... fast.|0.5"
   "goldcrest|Wealth is strength.|0.3"
@@ -27,9 +27,9 @@ HOUSES=(
   "stormhold|We weather all!|0.45"
   "sunspire|The sun waits.|0.4"
   "highfell|Sworn, and steadfast.|0.55"
-  "crown|We work. / We wait. / We win!|0.6"
+  "crown|Our sword is / Hunger.|0.6|0.93|0.85|0.5"
 )
-# Words in beats ("a / b / c"): each beat said on its own, trimmed, and joined with BEAT_GAP seconds between.
+# Words in beats ("a / b / c"): each beat said on its own, trimmed, and joined with a pause (the house's, else BEAT_GAP).
 BEAT_GAP=0.3
 LAST_DB=3  # the last beat this much louder than the others
 TRIM="silenceremove=start_periods=1:start_threshold=-40dB,areverse,silenceremove=start_periods=1:start_threshold=-40dB,areverse"
@@ -39,7 +39,7 @@ speak() {  # text voice -> $TMP/raw.wav
     curl -sf -m 60 $GW/audio/speech -H 'content-type: application/json' -d "{\"model\":\"kokoro\",\"input\":\"$1\",\"voice\":\"$2\"}" -o $TMP/raw.wav
     return
   fi
-  ffmpeg -loglevel error -y -f lavfi -i "anullsrc=r=24000:cl=mono" -t $BEAT_GAP -c:a pcm_s16le $TMP/gap.wav < /dev/null
+  ffmpeg -loglevel error -y -f lavfi -i "anullsrc=r=24000:cl=mono" -t ${3:-$BEAT_GAP} -c:a pcm_s16le $TMP/gap.wav < /dev/null
   for b in $beats; do
     curl -sf -m 60 $GW/audio/speech -H 'content-type: application/json' -d "{\"model\":\"kokoro\",\"input\":\"$b\",\"voice\":\"$2\"}" -o $TMP/beat.wav
     local lift=$(( n == ${#beats} - 1 ? LAST_DB : 0 ))  # the last beat lands hardest
@@ -51,12 +51,13 @@ speak() {  # text voice -> $TMP/raw.wav
   ffmpeg -loglevel error -y $ins -filter_complex "${parts}concat=n=$(( ${#ins} / 2 )):v=0:a=1" -c:a pcm_s16le $TMP/raw.wav < /dev/null
 }
 for h in $HOUSES; do
-  IFS='|' read id txt e <<< "$h"
+  IFS='|' read id txt e hp ht gap <<< "$h"
   [[ -n $1 && $1 != $id ]] && continue  # one house only: zsh record_house_words.sh crown
   mkdir -p $OUT/$id
   for pr in $PROFILES; do
     IFS='|' read prof v p t <<< "$pr"
-    speak "$txt" $v
+    speak "$txt" $v $gap
+    p=$(python3 -c "print(round($p*${hp:-1},3))"); t=$(python3 -c "print(round($t*${ht:-1},3))")
     r=$(python3 -c "print(round(24000*$p))"); at=$(python3 -c "print(round($t/$p,3))"); e2=$(python3 -c "print(round($e*0.5,2))")
     ffmpeg -loglevel error -y -i $TMP/raw.wav -af "asetrate=$r,aresample=24000,atempo=$at,aecho=0.8:0.5:60|110:$e|$e2,highpass=f=70,loudnorm=I=-18:TP=-2,apad=pad_dur=0.25,adelay=80" -ac 1 -ar 22050 $TMP/fx.wav < /dev/null
     oggenc -Q -q 3 -o $OUT/$id/$prof.ogg $TMP/fx.wav 2>/dev/null
