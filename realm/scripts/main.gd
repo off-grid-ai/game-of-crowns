@@ -1243,6 +1243,11 @@ func _on_synced() -> void:
 		# The realm opens with the houses and the chronicle in view; a test shot
 		# stays clear of them unless it asks (--panels).
 		ui.side_panels(_shot.get("panels", false))  # closed: the world first, the ledger and chronicle a click away
+		# A played realm opens on the chronicle: what is happening and what to do next (Mac 2026-11-17: "chronicles
+		# should be open on start ... so it gives the person direction"); ui.json chronicle.open_at_start.
+		if not _shot.has("path") and bool((Data.value("ui", "chronicle", {}) as Dictionary).get("open_at_start", true)):
+			ui._chron_btn.button_pressed = true
+			ui._chron_panel.visible = true
 		if _shot.get("panels", false):
 			ui._court_hidden = false
 

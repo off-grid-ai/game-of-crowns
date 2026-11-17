@@ -25,10 +25,19 @@ func _init(owner: UI) -> void:
 
 func _build() -> void:
 	_panel = ui.glass_panel()
-	_panel.add_theme_stylebox_override("panel", T._box(T.SURFACE, T.HAIRLINE, 10, 4))
+	var _sb := T._box(T.SURFACE, T.HAIRLINE, 10, 4)
+	_sb.content_margin_left = T.GAP_SECTION  # room inside the glass (Mac 2026-11-17: "solve spacing here")
+	_sb.content_margin_right = T.GAP_SECTION
+	_sb.content_margin_top = T.GAP_TIGHT + 2
+	_sb.content_margin_bottom = T.GAP_TIGHT + 2
+	_panel.add_theme_stylebox_override("panel", _sb)
 	_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_panel.offset_left = 10
-	_panel.offset_top = Data.num("ui", "plane.top", 12.0) + float(Data.num("ui", "reign_track.below", 40.0))
+	_place()
+	# Under the houses' strip by its real height and one gap, never into it (it measured 40 and the strip grew past it).
+	var strip: Control = ui.houses_strip._panel
+	strip.resized.connect(_place)
+	strip.visibility_changed.connect(_place)
 	_panel.custom_minimum_size.x = float(Data.num("ui", "reign_track.width", 420.0))
 	_panel.visible = false
 	var v := VBoxContainer.new()
@@ -49,6 +58,15 @@ func _build() -> void:
 	for a in Data.value("ui", "reign_cards.acts", []):
 		_names.append(String((a as Dictionary).get("name", "")) if a is Dictionary else "")
 
+
+
+## Where the act card sits: under the houses' strip and a gap when it shows, at the plane's top when it doesn't.
+func _place() -> void:
+	var strip: Control = ui.houses_strip._panel if ui.houses_strip else null
+	var top := float(Data.num("ui", "plane.top", 12.0))
+	if strip and strip.visible:
+		top = strip.offset_top + strip.size.y + T.GAP
+	_panel.offset_top = top
 
 func update(r: Dictionary) -> void:
 	if _panel == null:

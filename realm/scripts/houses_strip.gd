@@ -25,7 +25,12 @@ func _init(owner: UI) -> void:
 
 func _build() -> void:
 	_panel = ui.glass_panel()
-	_panel.add_theme_stylebox_override("panel", T._box(T.SURFACE, T.HAIRLINE, 10, 4))
+	var _sb := T._box(T.SURFACE, T.HAIRLINE, 10, 4)
+	_sb.content_margin_left = T.GAP_SECTION  # room inside the glass (Mac 2026-11-17: "solve spacing here")
+	_sb.content_margin_right = T.GAP_SECTION
+	_sb.content_margin_top = T.GAP_TIGHT + 2
+	_sb.content_margin_bottom = T.GAP_TIGHT + 2
+	_panel.add_theme_stylebox_override("panel", _sb)
 	_panel.offset_left = 10
 	_panel.offset_top = Data.num("ui", "plane.top", 12.0)
 	_panel.visible = false
