@@ -27,7 +27,7 @@ HOUSES=(
   "stormhold|We weather all!|0.45"
   "sunspire|The sun waits.|0.4"
   "highfell|Sworn, and steadfast.|0.55"
-  "crown|Our sword is / Bloody.|0.6|0.93|0.85|0.5"
+  "crown|Our sword is bloody.|0.6|0.93"
 )
 # Words in beats ("a / b / c"): each beat said on its own, trimmed, and joined with a pause (the house's, else BEAT_GAP).
 BEAT_GAP=0.3
