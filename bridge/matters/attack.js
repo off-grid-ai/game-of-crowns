@@ -18,6 +18,10 @@ export class Attack extends Matter {
     for (const w of Hosts.warHosts({ world, meta })) { const c = s.cities.find((x) => x.id === w.city); if (c?.owner === crown && w.owner !== crown) at.set(c.id, { how: "march", by: w.owner }); }
     for (const c of s.cities) if (c.owner === crown && c.besieged) at.set(c.id, { how: "siege", by: at.get(c.id)?.by ?? null });
     for (const r of Raids.list(meta, world)) { const c = s.cities.find((x) => x.id === r.goal); if (realm(c) && !at.has(c.id)) at.set(c.id, { how: "raid", by: null }); }
+    // The reign's first raid (raids.js first) is the King's first matter, from its first seconds (Mac 2026-11-17: 'any new
+    // chronicle should start with at least one actionable item').
+    const fr = meta?.firstRaid;
+    if (fr && !fr.done && fr.city != null) { const c = s.cities.find((x) => x.id === fr.city); if (realm(c) && !at.has(c.id)) at.set(c.id, { how: "raid", by: null }); }
     const words = MATTERS.attack;
     return [...at].map(([id, t]) => {
       const c = s.cities.find((x) => x.id === id);

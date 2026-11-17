@@ -296,6 +296,7 @@ func _row(e: Dictionary, loss: bool, watch := Callable()) -> Control:
 
 ## Each tick of the pace: when his turn has come, the most urgent waiting news, newest first, asks him as things stand.
 func _release() -> void:
+	_open_matter()
 	if _held.is_empty() or float(WorldClock.msec()) - _asked_at < UI.ui_num("chronicle.every", 90.0) * 1000.0:
 		return
 	_held.reverse()
@@ -309,6 +310,42 @@ func _release() -> void:
 			_count_if(card)
 			_trim()
 			return
+
+
+## Never an empty drawer while the realm needs him (Mac 2026-11-17: 'any new chronicle should start with at least one
+## actionable item'): with no card standing and none waiting, the realm's most urgent matter (bridge /world counsel,
+## already ranked) is the card, from the reign's first seconds. Its answers are the bridge's (news_actions.gd).
+func _open_matter() -> void:
+	if not _held.is_empty() or _rows().any(func(r): return r.has_meta("entry")):
+		return
+	var main: Node = ui.get_parent()
+	if not (main and main.get("awareness")):
+		return
+	for it in main.awareness.rec("counsel", []):
+		if it is Dictionary and String(it.get("key", "")) != "" and not (it.get("acts", []) as Array).is_empty():
+			var e := {"kind": String(it.get("kind", "counsel")), "text": String(it.get("text", "")), "counsel": String(it["key"]),
+				"turn": int(main.awareness.rec("turn", 0))}
+			if it.get("city") != null:
+				e["city"] = int(it["city"])
+			var card := _row(e, int(it.get("urgency", 0)) >= 92)
+			if card != null:
+				_count_if(card)
+				_trim()
+			return
+
+
+## Every standing card's orders gated again as things stand now (top_bar.gd, when a seal is spent or comes): a card
+## drawn with a seal in hand closes its orders once it is spent, and opens them when the season brings the next.
+func regate() -> void:
+	if _needs == null:
+		return
+	for card in _rows():
+		for b in card.find_children("*", "Button", true, false):
+			if not b.has_meta("act") or b.text == String(Data.value("news_actions", "sending", "Sending…")):
+				continue
+			var g: Dictionary = ui.act_gate(b.get_meta("act"))
+			b.disabled = not bool(g["enabled"])
+			b.tooltip_text = String(g["why"])
 
 
 ## Two pieces of news about one thing: the same town, or the same story.
@@ -502,6 +539,8 @@ func _actions(e: Dictionary) -> HFlowContainer:
 		if waits:
 			b.set_meta("answer", r["answer"])  # pressed -> working -> done on the card itself (_answer)
 		b.disabled = not bool(r["enabled"])
+		if r.has("act"):
+			b.set_meta("act", r["act"])  # gated again as the seals and the purse change (regate)
 		b.set_meta("go", String(r["verb"]) == "go")
 		b.tooltip_text = String(r["why"]) if String(r["why"]) != "" else String(r["tip"])
 		b.add_theme_font_size_override("font_size", T.SIZE_DESC)

@@ -1,4 +1,4 @@
 {
  "_": "The reign's first raid (raids.js first; Mac 2026-11-15: 'I should know what the hell to do'; Warcraft III's first creep camp, Stronghold's first wolves at the gate): afterS seconds of the reign's clock in, men without banners (realm_raid) rise beside the town nearest Kingsmere within near tiles (the crown's own first, a sworn or great house's else) and burn its land. When none of them stands within reach tiles of it and a crown company stands there, the King's host beat them: the crown gets reward gold and the chronicle says so. If they go with no crown company there, they went with their plunder.",
- "first": { "afterS": 30, "near": 8, "reach": 3, "reward": 150 }
+ "first": { "afterS": 5, "near": 8, "reach": 3, "reward": 150 }
 }
