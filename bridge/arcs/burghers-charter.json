@@ -1,16 +1,16 @@
 {
   "id": "burghers-charter",
   "reign": true,
-  "name": "The Burghers' Charter",
-  "about": "The guilds of a rich town ask the King for a charter: their own council and their own tolls, answering to the crown instead of their lord. Grant it and the lord is angry. Refuse and the looms stop, the gates shut, and a rival lord offers to protect the town.",
-  "tags": ["rebellion", "the-people", "political", "money", "slow-burn", "a-reign"],
+  "name": "The Town's Levy",
+  "about": "The guilds of a rich town offer the King its levy for his next campaign, six hundred men and their pikes, if he gives them a charter that takes them out from under their lord. Take the men and the lord turns on you. Refuse and the town shuts its gates, and a rival lord offers it his protection and its men his banner.",
+  "tags": ["rebellion", "war", "political", "money", "slow-burn", "a-reign"],
   "kind": "rebellion",
   "weight": 1,
-  "title": "The Charter of {town}",
+  "title": "The Levy of {town}",
   "roles": {
     "town": { "town": true, "notCapital": true, "size": [4, 40] },
     "lord": { "rank": "lord", "rules": "town", "likes": { "traits": ["proud", "greedy", "wrathful"] } },
-    "master": { "either": [{ "rank": "commoner", "townOf": "town" }], "traits": ["a hard worker", "sharp-tongued", "a miser", "a busybody", "cheerful", "a gossip", "quarrelsome"], "create": { "name": "Master {first} Weaver", "rank": "sworn", "traits": ["proud", "cunning"], "memory": "My father wove for the lord of this town and died owing him.", "goal": { "kind": "charter", "text": "A charter for the guilds, under the King's seal" }, "like": "lord" } },
+    "master": { "either": [{ "rank": "commoner", "townOf": "town" }], "traits": ["a hard worker", "sharp-tongued", "a miser", "a busybody", "cheerful", "a gossip", "quarrelsome"], "create": { "name": "Master {first} Weaver", "rank": "sworn", "traits": ["proud", "cunning"], "memory": "My father marched in this town's levy for the lord and came home without his legs.", "goal": { "kind": "charter", "text": "A charter for the guilds, under the King's seal, and the town's levy marching under the King's banner" }, "like": "lord" } },
     "protector": { "rank": "lord", "otherHouse": "lord", "likes": { "traits": ["ambitious", "cunning", "generous"] } }
   },
   "core": ["lord"],
@@ -22,14 +22,14 @@
       "threat": 15,
       "speaker": "master",
       "at": "town",
-      "text": "The guilds of {town} send their wardens to Kingsmere in their best wool. They carry a petition sealed by every guild in town, asking for a charter, a council of their own, and their market tolls paid to the King instead of {lord}.",
+      "text": "The guild wardens of {town} come to Kingsmere with a muster roll: six hundred men, armed at the town's cost, to march in the King's next campaign. Their price is a charter, a council of their own, and their levy answering to the King instead of {lord}.",
       "court": {
         "from": "lord",
-        "text": "{lord} of {lord.house} followed them to court: \"Weavers and tanners, Your Grace, asking to be lords. If you give them {town}, give them my sword too, because I won't need it.\"",
+        "text": "{lord} of {lord.house} followed them to court: \"Those are my men, Your Grace. My father raised that levy. Take it from me and you can take my sword too, because I won't be using it for you.\"",
         "options": [
-          { "id": "grant", "label": "Grant {town} its charter", "hint": "{lord.houseName} −25 · the guilds pay the crown direct", "favour": { "lord": -25 }, "do": { "threat": -5, "gold": { "lord": -40 } }, "result": "The King seals {town}'s charter. The wardens carry it home under a canopy, and {lord} rides behind them without a word." },
-          { "id": "refuse", "label": "Refuse: {town} answers to its lord", "hint": "{lord.houseName} +10 · the guilds go home angry", "favour": { "lord": 10 }, "do": { "threat": 10 }, "result": "The petition goes back unsealed. On the road home the wardens stop talking about charters and start talking about gates." },
-          { "id": "lord", "label": "Let {lord} deal with it", "hint": "{lord.houseName} +15 · {lord.he} will settle it hard", "favour": { "lord": 15 }, "do": { "threat": 10 }, "result": "The King hands the petition to {lord}, who folds it small and tucks it in {lord.his} boot." }
+          { "id": "grant", "label": "Take the levy, and seal {town}'s charter", "hint": "{lord.houseName} −25 · six hundred pikes for the King's campaign", "favour": { "lord": -25 }, "do": { "threat": -5, "gold": { "lord": -40 } }, "result": "The King seals {town}'s charter. Six hundred men drill in the square under the royal banner, and {lord} rides past them without a word." },
+          { "id": "refuse", "label": "Refuse: {town}'s levy is its lord's", "hint": "{lord.houseName} +10 · the guilds go home angry", "favour": { "lord": 10 }, "do": { "threat": 10 }, "result": "The roll goes back unsealed. On the road home the wardens stop talking about the King's war and start talking about their gates." },
+          { "id": "lord", "label": "Let {lord} deal with them", "hint": "{lord.houseName} +15 · {lord.he} will settle it hard", "favour": { "lord": 15 }, "do": { "threat": 10 }, "result": "The King hands the muster roll to {lord}, who folds it small and tucks it in {lord.his} boot." }
         ]
       },
       "after": [2, 3],
@@ -47,7 +47,7 @@
       "threat": 30,
       "speaker": "lord",
       "at": "town",
-      "text": "{town} elects its first council and stops paying {lord}'s tolls. {lord} looks at {lord.his} purse and the King's letters, and sees the gap between them.",
+      "text": "{town}'s levy drills for the King and stops paying {lord}'s war tax. {lord} counts {lord.his} own host, six hundred men short, and looks at the King's letters.",
       "after": [2, 3],
       "next": [
         { "if": { "favour": ["lord", "<", 25] }, "to": "the-lords-due" },
@@ -62,13 +62,13 @@
       "threat": 50,
       "speaker": "lord",
       "at": "town",
-      "text": "{lord} says the charter was never the King's to give, and sends knights onto the road into {town} to take the old tolls by force.",
+      "text": "{lord} says a lord's levy was never the King's to take, and sends knights onto the road into {town} to drag the men back to {lord.his} own muster.",
       "court": {
         "from": "lord",
-        "text": "{lord}: \"My father held {town}, and his father before him. I'll hold it, Your Grace, or I'll make your crown answer for it.\"",
+        "text": "{lord}: \"Those men have stood in my ranks for three generations, Your Grace. I'll have them back, or your crown will answer for it.\"",
         "options": [
-          { "id": "compensate", "label": "Pay {lord} for the lost tolls (300 gold)", "hint": "{lord.houseName} +25 · the charter stands", "cost": 300, "favour": { "lord": 25 }, "do": { "threat": -20 }, "result": "The King buys {lord}'s rights in {town} for a price {lord.he} pretends is an insult." },
-          { "id": "uphold", "label": "The charter stands: call off the knights", "hint": "{lord.houseName} −20", "favour": { "lord": -20 }, "do": { "threat": 10 }, "result": "Royal heralds read the charter out at the crossroads. {lord}'s knights hear it, and keep collecting." }
+          { "id": "compensate", "label": "Pay {lord} for the lost levy (300 gold)", "hint": "{lord.houseName} +25 · the King keeps the men", "cost": 300, "favour": { "lord": 25 }, "do": { "threat": -20 }, "result": "The King buys {lord}'s right to the levy for a price {lord.he} pretends is an insult." },
+          { "id": "uphold", "label": "The charter stands: call off the knights", "hint": "{lord.houseName} −20", "favour": { "lord": -20 }, "do": { "threat": 10 }, "result": "Royal heralds read the charter out at the crossroads. {lord}'s knights hear it, and keep riding." }
         ]
       },
       "after": [2, 3],
@@ -86,7 +86,7 @@
       "threat": 45,
       "speaker": "lord",
       "at": "town",
-      "text": "{lord} deals with it: the warden who carried the petition hangs from {town}'s market cross in his best wool. {master} cuts him down at night, and the guilds swear an oath over the body.",
+      "text": "{lord} deals with it: the warden who carried the muster roll hangs from {town}'s market cross. {master} cuts him down at night, and the levy swears an oath over the body.",
       "do": { "opinion": [["master", "lord", -60]], "reverie": { "master": 0.1 } },
       "feel": { "master": { "anger": 0.5, "grief": 0.3 } },
       "after": [1, 2],
@@ -100,15 +100,15 @@
       "threat": 40,
       "speaker": "master",
       "at": "town",
-      "text": "Every loom, forge and tannery in {town} stops on the same morning. The tolls aren't paid, the wool isn't shipped, and {lord}'s treasury is the first to feel it.",
+      "text": "{town} won't send a single man to {lord}'s muster. The forges stop making {lord.his} spearheads, the war tax isn't paid, and {lord}'s host is the first to feel it.",
       "do": { "gold": { "lord": -60 } },
       "court": {
         "from": "lord",
-        "text": "{lord}: \"They're starving my house to make a point, Your Grace. Send me men and I'll make a point of my own.\"",
+        "text": "{lord}: \"They're starving my host to make a point, Your Grace. Send me men and I'll make a point of my own.\"",
         "options": [
-          { "id": "grant", "label": "Grant the charter after all", "hint": "{lord.houseName} −25 · the looms start", "favour": { "lord": -25 }, "do": { "threat": -10 }, "result": "The King seals {town}'s charter. The looms start again by noon." },
-          { "id": "soldiers", "label": "Send soldiers to open the shops", "hint": "{lord.houseName} +10 · the guilds dig in", "favour": { "lord": 10 }, "do": { "units": { "lord": { "type": "Pikemen", "count": 2 } }, "threat": 15 }, "result": "Pikemen kick in the guild-hall doors of {town}. They find the looms, and nobody to work them." },
-          { "id": "buy", "label": "Quietly pay off the guild masters (200 gold)", "hint": "The strike breaks, but the anger stays", "cost": 200, "do": { "threat": -10 }, "result": "Purses go to the right houses at night. The strike falls apart by the end of the week, and nobody admits taking anything." }
+          { "id": "grant", "label": "Take the levy and seal the charter after all", "hint": "{lord.houseName} −25 · six hundred pikes for the King", "favour": { "lord": -25 }, "do": { "threat": -10 }, "result": "The King seals {town}'s charter. The forges start again by noon, making royal spearheads." },
+          { "id": "soldiers", "label": "Send soldiers to drive the men to {lord}'s muster", "hint": "{lord.houseName} +10 · the guilds dig in", "favour": { "lord": 10 }, "do": { "units": { "lord": { "type": "Pikemen", "count": 2 } }, "threat": 15 }, "result": "Pikemen kick in the guild-hall doors of {town}. They find the pikes, and nobody to carry them." },
+          { "id": "buy", "label": "Quietly pay off the guild masters (200 gold)", "hint": "the men go back to {lord} · the anger stays", "cost": 200, "do": { "threat": -10 }, "result": "Purses go to the right houses at night. The levy falls in behind {lord}'s banner by the end of the week, and nobody admits taking anything." }
         ]
       },
       "after": [2, 3],
@@ -126,15 +126,15 @@
       "threat": 65,
       "speaker": "master",
       "at": "town",
-      "text": "{town} shuts its gates on {lord}, rings its own bell, and declares itself a free town. Its letters go out to every market town in the realm, and {protector} answers first.",
+      "text": "{town} shuts its gates on {lord}, mans its own walls with its own levy, and sends riders to every lord who might want six hundred pikes. {protector} answers first.",
       "do": { "opinion": [["master", "protector", 20]] },
       "court": {
         "from": "protector",
-        "text": "{protector} of {protector.house}: \"The free people of {town} have asked for my protection, Your Grace. I'd rather they had the King's. Will you give it, or shall I?\"",
+        "text": "{protector} of {protector.house}: \"{town}'s levy has asked to march under my banner, Your Grace. I'd rather it marched under yours. Will you take it, or shall I?\"",
         "options": [
-          { "id": "recognise", "label": "Accept the free town under the crown", "hint": "{lord.houseName} −35 · the realm's towns watch and learn", "favour": { "lord": -35, "protector": -5 }, "do": { "threat": -15 }, "result": "The King's banner goes up over {town}'s bell tower beside the guilds' own. {lord} isn't there to see it." },
+          { "id": "recognise", "label": "Take {town} and its levy under the crown", "hint": "{lord.houseName} −35 · six hundred pikes for the King · every town watches", "favour": { "lord": -35, "protector": -5 }, "do": { "threat": -15 }, "result": "The King's banner goes up over {town}'s gate beside the guilds' own. The levy marches out to join the royal host. {lord} isn't there to see it." },
           { "id": "storm", "label": "Storm the gates and end it", "hint": "{lord.houseName} +15 · {protector.houseName} −20 · blood in the streets", "favour": { "lord": 15, "protector": -20 }, "do": { "units": { "lord": { "type": "Knights", "count": 2 } }, "threat": 15, "die": { "who": "master", "chance": 0.6, "how": "They broke our gates and I died in the guild-hall door." } }, "result": "{lord}'s knights go over {town}'s walls with the King's leave." },
-          { "id": "protector", "label": "Give {town} to {protector}", "hint": "{protector.houseName} +25 · {lord.houseName} −40", "favour": { "protector": 25, "lord": -40 }, "do": { "transfer": ["town", "protector"], "threat": 5 }, "result": "{town} opens its gates to {protector}'s banner and swears to a lord who promises to leave its charter alone." }
+          { "id": "protector", "label": "Give {town} and its levy to {protector}", "hint": "{protector.houseName} +25 · {lord.houseName} −40", "favour": { "protector": 25, "lord": -40 }, "do": { "transfer": ["town", "protector"], "threat": 5 }, "result": "{town} opens its gates to {protector}'s banner. Its levy swears to a lord who promises to leave its charter alone." }
         ]
       },
       "after": [2, 3],
@@ -154,7 +154,7 @@
       "threat": 95,
       "speaker": "protector",
       "at": "town",
-      "text": "One market town after another rings its bell and shuts its gates. {protector} rides at the head of their militias toward Kingsmere, promising every one of them a charter.",
+      "text": "One market town after another shuts its gates and musters its own levy. {protector} rides at the head of their militias toward Kingsmere, promising every one of them a charter.",
       "do": { "usurper": "protector", "host": 11 },
       "after": [3, 3],
       "next": [{ "if": { "usurper": "none" }, "to": "a-quiet-town" }],
@@ -167,7 +167,7 @@
       "threat": 90,
       "speaker": "lord",
       "at": "town",
-      "text": "{lord} won't be a lord of nothing. {lord.He} calls up {lord.his} banners against a King who sells towns to weavers, and marches.",
+      "text": "{lord} won't be a lord without a levy. {lord.He} calls up the banners {lord.he} has left against a King who steals a lord's men, and marches.",
       "do": { "usurper": "lord", "host": 11 },
       "after": [3, 3],
       "next": [{ "if": { "usurper": "none" }, "to": "the-free-town" }],
@@ -180,7 +180,7 @@
       "end": "resolved",
       "speaker": "master",
       "at": "town",
-      "text": "{town} rings its own bell and pays its tolls to Kingsmere. Its council meets in the old wool hall, and three other towns have sent wardens to ask how they did it."
+      "text": "{town}'s levy marches under the King's banner now. Its council meets in the old wool hall, and three other towns have sent wardens to ask what their men would fetch."
     },
     {
       "id": "a-quiet-town",
@@ -188,7 +188,7 @@
       "end": "resolved",
       "speaker": "lord",
       "at": "town",
-      "text": "The looms of {town} run again, and {lord} takes the tolls. Nobody talks about the charter, and the guild-hall's founding stone is turned to face the wall."
+      "text": "{town}'s levy stands in {lord}'s ranks again. Nobody talks about the charter, and the guild-hall's founding stone is turned to face the wall."
     }
   ]
 }

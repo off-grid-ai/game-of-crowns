@@ -1,12 +1,12 @@
 {
   "id": "spymasters-ledger",
   "reign": true,
-  "name": "The Spymaster's Ledger",
-  "about": "The old spymaster dies, and his book of every lord's secrets goes missing. Whoever has it can push the great houses around. Find it first, then burn it or use it, and live with what the lords think you know.",
-  "tags": ["intrigue", "the-court", "mysterious", "cunning", "political", "a-reign"],
+  "name": "The Traitor's Letters",
+  "about": "The old spymaster dies, and in his chest are letters in a great lord's hand to the King's enemies: raiders' gold, a promise to open the gates, a share of the realm when the King falls. That lord is now buying other houses into the plot. Find the rest of the letters, break the league before it marches, or watch the houses choose his side.",
+  "tags": ["intrigue", "war", "the-court", "cunning", "political", "a-reign"],
   "kind": "intrigue",
   "weight": 1,
-  "title": "The Spymaster's Ledger",
+  "title": "The Traitor's Letters",
   "roles": {
     "thief": { "rank": "lord", "seat": true, "likes": { "traits": ["cunning", "ambitious", "greedy", "paranoid"] } },
     "hall": { "town": true, "seatOf": "thief" },
@@ -20,14 +20,14 @@
       "threat": 20,
       "speaker": "named",
       "at": "hall",
-      "text": "The crown's old spymaster dies in his sleep, and his ledger is gone from his locked chest. It held every secret of every great house.",
+      "text": "The crown's old spymaster dies in his sleep. In his chest is one letter, in a great lord's hand, promising the King's enemies the gates of a royal town. The rest of the bundle is gone.",
       "court": {
         "from": "named",
-        "text": "{named} of {named.house}, a little too carefully: \"They say the old man kept a book, Your Grace. I hope the crown has it safe?\"",
+        "text": "{named} of {named.house}, a little too carefully: \"They say the old man found letters, Your Grace. Whose hand were they in?\"",
         "options": [
-          { "id": "hunt", "label": "Search the whole court for it (200 gold)", "hint": "the search begins · every lord gets nervous", "cost": 200, "do": { "threat": -10 }, "result": "The King's men search every chamber and saddlebag in Kingsmere. The great lords leave early." },
-          { "id": "lie", "label": "Tell {named} the crown has it, and smile", "hint": "{named.houseName} −10 · they'll behave, for now", "favour": { "named": -10 }, "do": { "threat": -5 }, "result": "The King says the ledger is safe. {named} goes very pale, and very polite." },
-          { "id": "nothing", "label": "Say there's no ledger, just an old man's boast", "hint": "nothing now · whoever has it can use it freely", "do": { "threat": 10 }, "result": "The King laughs off the ledger. Somewhere, someone is reading it." }
+          { "id": "hunt", "label": "Search every lord's baggage for the rest (200 gold)", "hint": "the search begins · every lord gets nervous", "cost": 200, "do": { "threat": -10 }, "result": "The King's men search every chamber and saddlebag in Kingsmere. The great lords leave early." },
+          { "id": "lie", "label": "Tell {named} the crown has them all, and smile", "hint": "{named.houseName} −10 · whoever is in the plot holds back, for now", "favour": { "named": -10 }, "do": { "threat": -5 }, "result": "The King says every letter is in his hands. {named} goes very pale, and very polite." },
+          { "id": "nothing", "label": "Burn the letter: a dead man's suspicion", "hint": "nothing now · the traitor keeps writing", "do": { "threat": 10 }, "result": "The King drops the letter in the fire. Somewhere, its writer is writing another." }
         ]
       },
       "after": [2, 3],
@@ -44,19 +44,21 @@
       "threat": 50,
       "speaker": "thief",
       "at": "hall",
-      "text": "Lords start voting, marrying and buying the way {thief} wants. {named} sells {thief} a town for almost nothing, and won't say why.",
+      "text": "{thief} is building a league. The foe's gold pays for it, and {named} is the next lord {thief.he} has bought: {named.house} sends {thief} silver and spears, and won't say why.",
       "do": { "opinion": [["named", "thief", -30]], "gold": { "named": -40, "thief": 40 } },
       "court": {
         "from": "named",
-        "text": "{named}, alone and quiet: \"{thief} has the ledger, Your Grace. {thief.He} has my secrets, and half the realm's. Take it from {thief.him}, and I'm yours.\"",
+        "text": "{named}, alone and quiet: \"{thief} writes to your enemies, Your Grace, and {thief.he} has my name in those letters too. Break {thief.him} before the foe comes, and I'm yours.\"",
         "options": [
-          { "id": "raid", "label": "Send the King's men to search {hall}", "hint": "{thief.houseName} −30 · if it isn't there, you look like a tyrant", "favour": { "thief": -30, "named": 10 }, "do": { "threat": -10 }, "result": "The King's men tear {hall} apart by torchlight." },
-          { "id": "buy", "label": "Buy the ledger from {thief} (500 gold)", "hint": "{thief.houseName} +10 · the crown holds the realm's secrets", "cost": 500, "favour": { "thief": 10 }, "do": { "threat": -20 }, "result": "The ledger changes hands in a sept at midnight. Of course {thief} keeps a copy." },
-          { "id": "wait", "label": "Wait for {thief} to go too far", "hint": "nothing now · the lords give way to {thief}", "do": { "threat": 15 }, "result": "The King waits. Every week {thief} has more friends at court." }
+          { "id": "raid", "label": "Send the King's men to search {hall}", "hint": "{thief.houseName} −30 · if the letters aren't there, you look like a tyrant", "favour": { "thief": -30, "named": 10 }, "do": { "threat": -10 }, "result": "The King's men tear {hall} apart by torchlight." },
+          { "id": "loose", "label": "Set {named.house} on {thief.house}", "hint": "{named.houseName} +15 · {thief.houseName} −30 · {named.house} marches before the league is ready", "favour": { "named": 15, "thief": -30 }, "do": { "war": ["named", "thief"], "threat": -15 }, "result": "The King gives {named} leave, and the letters to read out at {hall}'s gate. {named.house}'s host is on the road within the week." },
+          { "id": "buy", "label": "Buy the letters from {thief}'s clerk (500 gold)", "hint": "{thief.houseName} +10, who doesn't know yet · the crown holds the proof", "cost": 500, "favour": { "thief": 10 }, "do": { "threat": -20 }, "result": "The letters change hands in a sept at midnight. {thief}'s clerk is on a ship by morning." },
+          { "id": "wait", "label": "Wait for {thief} to show {thief.his} hand", "hint": "nothing now · more houses join the league", "do": { "threat": 15 }, "result": "The King waits. Every week {thief} has more friends, and the foe's gold buys more." }
         ]
       },
       "after": [2, 3],
       "next": [
+        { "if": { "ruled": "loose" }, "to": "found" },
         { "if": { "all": [{ "ruled": "raid" }, { "chance": 0.6 }] }, "to": "found" },
         { "if": { "ruled": "buy" }, "to": "the-crowns-book" },
         { "to": "the-pages-fall" }
@@ -70,7 +72,7 @@
       "threat": 80,
       "speaker": "thief",
       "at": "hall",
-      "text": "With half the realm's secrets in {thief.his} hand, {thief} calls the great lords to {hall}, and they come. {thief} asks them why a King who knows nothing about them should rule them.",
+      "text": "{thief}'s league is ready, and the foe's gold has paid for its spears. {thief} calls the great lords to {hall}, and enough of them come. Together they march on a King who never saw it coming.",
       "do": { "usurper": "thief", "host": 10 },
       "after": [3, 3],
       "next": [{ "if": { "usurper": "none" }, "to": "found" }],
@@ -83,13 +85,13 @@
       "threat": 25,
       "speaker": "named",
       "at": "hall",
-      "text": "The crown has the old spymaster's ledger now. Every great lord knows it, so every great lord is suddenly very loyal, and very afraid.",
+      "text": "The crown holds {thief}'s letters now, every one, with {thief.his} seal and the names of the houses {thief.he} bought. Every lord named in them is suddenly very loyal, and very afraid.",
       "court": {
         "from": "named",
-        "text": "{named}: \"The ledger is yours, Your Grace. Will you use it, or burn it?\"",
+        "text": "{named}: \"The letters are yours, Your Grace. Read them out, and you'll have to fight half the names in them. Keep them, and every one of those houses is yours to command.\"",
         "options": [
-          { "id": "burn", "label": "Burn it in front of the court", "hint": "{named.houseName} +15 · {thief.houseName} −10, cheated of the sale · the crown gives up a weapon", "favour": { "named": 15, "thief": -10 }, "do": { "threat": -20 }, "result": "The ledger burns in the great hall's fireplace. The lords breathe again, and some of them cheer." },
-          { "id": "keep", "label": "Keep it, and let them wonder", "hint": "the lords obey quietly · every house holds a grudge", "favour": { "named": -10, "thief": -10 }, "do": { "threat": -10 }, "result": "The ledger goes into the King's own chest. The court has never been so polite." }
+          { "id": "burn", "label": "Read {thief}'s name alone, and burn the rest", "hint": "{named.houseName} +15 · {thief.houseName} −10 · the bought houses owe you their necks", "favour": { "named": 15, "thief": -10 }, "do": { "threat": -20 }, "result": "The King reads one name aloud in the great hall and burns the rest unread. The lords breathe again, and know who spared them." },
+          { "id": "keep", "label": "Keep them all, and call the named houses to the muster", "hint": "the named houses send their spears · every one holds a grudge", "favour": { "named": -10, "thief": -10 }, "do": { "threat": -10 }, "result": "The letters go into the King's own chest. Every house named in them sends men to the next muster, and nobody asks why." }
         ]
       },
       "after": [2, 3],
@@ -103,7 +105,7 @@
       "end": "resolved",
       "speaker": "named",
       "at": "hall",
-      "text": "The ledger is ash, or locked in the crown's chest, and its secrets with it. The great houses go back to plotting the old way, out in the open."
+      "text": "{thief}'s league is broken, and the King's enemies have lost their friend inside the realm. The houses that took the foe's gold remember how close they came."
     }
   ]
 }

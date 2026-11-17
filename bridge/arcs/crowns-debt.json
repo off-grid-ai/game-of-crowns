@@ -1,12 +1,12 @@
 {
   "id": "crowns-debt",
   "reign": true,
-  "name": "The Crown's Debt",
-  "about": "The bankers across the sea want back what your father borrowed. Squeeze the houses, pay with what the crown has, or refuse and face the sellswords the bankers hire, and the lord they choose to back.",
-  "tags": ["money", "foreign", "political", "cunning", "short"],
+  "name": "The War Loan",
+  "about": "One great house paid for the crown's last war, and now it wants a say in the next one: where the host marches, and against whom. Pay it back, give it a seat at the war council, or refuse, and face the sellswords its silver hires and the claim it backs.",
+  "tags": ["money", "war", "political", "cunning", "short"],
   "kind": "debt",
   "weight": 1,
-  "title": "The Crown's Debt",
+  "title": "The War Loan",
   "roles": {
     "rich": { "rank": "lord", "seat": true, "likes": { "traits": ["greedy", "ambitious", "cunning"] } },
     "poor": { "rank": "lord", "otherHouse": "rich", "seat": true, "likes": { "traits": ["proud", "honourable"] } },
@@ -21,14 +21,14 @@
       "threat": 20,
       "speaker": "rich",
       "at": "bank",
-      "text": "A grey ship docks at the river mouth. A man in grey walks into Kingsmere with your father's seal on a note for more gold than the crown has ever had.",
+      "text": "{rich}'s steward rides in from {bank} with the old King's seal on a note: the silver {rich.house} lent for the last war, and the interest. {rich} doesn't want it all back. {rich.He} wants a say in where the host marches next.",
       "court": {
         "from": "rich",
-        "text": "{rich} of {rich.house}, who knows the bankers well: \"They want their gold, Your Grace, and they always get it, one way or another.\"",
+        "text": "{rich} of {rich.house}: \"My silver paid for your father's spears, Your Grace. Give me a voice in your war council, or give me my silver.\"",
         "options": [
-          { "id": "pay", "label": "Pay the first part from the treasury (500 gold)", "hint": "The bankers wait, but the crown's coffers are empty", "cost": 500, "do": { "threat": -20 }, "result": "The crown pays. The man in grey bows and says he'll be back in a year for the next part." },
-          { "id": "squeeze", "label": "Make the great houses pay a special tax", "hint": "{rich.houseName} −15 · {poor.houseName} −20 · paid in full", "favour": { "rich": -15, "poor": -20 }, "do": { "threat": -20, "gold": { "rich": -60, "poor": -40 } }, "result": "A special tax goes out under the King's seal. Every great house pays, and every great house remembers it." },
-          { "id": "refuse", "label": "Refuse: the crown doesn't pay its father's debts", "hint": "Nothing happens now, but the bankers have other ways", "do": { "threat": 20 }, "result": "The King tears the note in half. The man in grey picks up both halves and goes to see {rich}." }
+          { "id": "pay", "label": "Pay the first part from the treasury (500 gold)", "hint": "{rich.houseName} is owed less · the war chest is empty", "cost": 500, "do": { "threat": -20 }, "result": "The crown pays. {rich}'s steward counts it twice and says he'll be back in a year for the rest." },
+          { "id": "council", "label": "Give {rich} a seat at the war council", "hint": "{rich.houseName} +15 · {poor.houseName} −10, who sees a lender steering the King's host", "favour": { "rich": 15, "poor": -10 }, "do": { "threat": -15 }, "result": "{rich} takes a chair at the war table. Every other lord at court counts the chairs and sees whose is new." },
+          { "id": "refuse", "label": "Refuse: the crown doesn't pay its father's debts", "hint": "nothing now · {rich.houseName} has other ways to collect", "favour": { "rich": -10 }, "do": { "threat": 20 }, "result": "The King tears the note in half. The steward picks up both halves and rides home to {bank}." }
         ]
       },
       "after": [3, 4],
@@ -45,14 +45,14 @@
       "threat": 30,
       "speaker": "rich",
       "at": "bank",
-      "text": "The man in grey comes back, just as he said. The second payment is bigger than the first.",
+      "text": "{rich} names the price of the rest of the debt: the royal host is to march against {poor.house}, whose lands lie across {rich.house}'s trade roads.",
       "court": {
         "from": "poor",
-        "text": "{poor} of {poor.house}: \"Another tax will ruin my house, Your Grace. Find another way, or I'll find another King who can.\"",
+        "text": "{poor} of {poor.house}: \"{rich} wants your host at my gates to settle a quarrel over tolls, Your Grace. Do it, and every house learns the King's spears are for hire.\"",
         "options": [
-          { "id": "pay", "label": "Pay from the treasury again (600 gold)", "hint": "The debt is done, but the crown is poor", "cost": 600, "favour": { "poor": 10 }, "do": { "threat": -25 }, "result": "The crown pays the last of it. The man in grey sails home, and the treasury is empty." },
-          { "id": "squeeze", "label": "Tax the houses again", "hint": "{poor.houseName} −30 · {rich.houseName} −10", "favour": { "poor": -30, "rich": -10 }, "do": { "threat": -10 }, "result": "The second tax goes out. {poor} pays it with silver plates from {poor.his} own table." },
-          { "id": "refuse", "label": "Refuse to pay the rest", "hint": "Nothing happens now, but the bankers turn to swords", "do": { "threat": 15 }, "result": "The King refuses. The man in grey doesn't argue. He just leaves." }
+          { "id": "pay", "label": "Pay off the rest from the treasury (600 gold)", "hint": "the debt is done · {poor.houseName} +10 · the crown is poor", "cost": 600, "favour": { "poor": 10 }, "do": { "threat": -25 }, "result": "The crown pays the last of it. {rich} has nothing left to ask for, and {poor} rides home grateful." },
+          { "id": "loose", "label": "Let {rich.house} make its own war on {poor.house}", "hint": "{rich.houseName} +10 · {poor.houseName} −30 · two houses at war, and the King stands aside", "favour": { "rich": 10, "poor": -30 }, "do": { "war": ["rich", "poor"], "threat": -10 }, "result": "The King tells {rich} the debt is forgiven if {rich.he} fights {rich.his} own quarrel. {rich.house}'s host is on the road to {poor.house} within the month." },
+          { "id": "refuse", "label": "Refuse: the King's host is not for hire", "hint": "{poor.houseName} +15 · {rich.houseName} −15 · the debt stays unpaid", "favour": { "poor": 15, "rich": -15 }, "do": { "threat": 15 }, "result": "The King refuses. {poor} thanks him in open court. {rich} doesn't argue, and leaves early." }
         ]
       },
       "after": [2, 3],
@@ -70,14 +70,14 @@
       "threat": 60,
       "speaker": "rich",
       "at": "bank",
-      "text": "The bankers' gold has bought a sellsword company, and the company has spent the winter at {bank} as {rich}'s guests.",
+      "text": "What the crown won't pay, {rich} collects another way. {rich.house}'s silver has hired a sellsword company, and it has spent the winter at {bank}.",
       "do": { "units": { "rich": { "type": "Knights", "count": 3 } } },
       "court": {
         "from": "poor",
-        "text": "{poor}: \"Five thousand sellswords at {bank}, Your Grace, eating {rich}'s bread. Pay them off, or they'll come for what you owe with a different King.\"",
+        "text": "{poor}: \"Five thousand sellswords at {bank}, Your Grace, paid with the interest on your father's war. Buy them, or they'll come for the debt with a different King.\"",
         "options": [
-          { "id": "outbid", "label": "Outbid the bankers for the sellswords (700 gold)", "hint": "The company changes sides, but you still owe the debt", "cost": 700, "do": { "threat": -30 }, "result": "The crown pays more than the bankers. The sellsword captain kneels to the King, for a year." },
-          { "id": "seize-bank", "label": "Take {bank} from {rich} for hiding them", "hint": "{rich.houseName} −40 · {poor.houseName} +15", "favour": { "rich": -40, "poor": 15 }, "do": { "transfer": ["bank", "poor"], "threat": 5 }, "result": "By royal decree, {bank} goes to {poor.house}. {rich} doesn't open the gates." }
+          { "id": "outbid", "label": "Outbid {rich} for the sellswords (700 gold)", "hint": "the company changes sides · the debt is still owed", "cost": 700, "do": { "threat": -30 }, "result": "The crown pays more than {rich}. The sellsword captain kneels to the King, for a year." },
+          { "id": "seize-bank", "label": "Take {bank} from {rich} and give it to {poor.house}", "hint": "{rich.houseName} −40 · {poor.houseName} +15 · {poor.house} holds it for the crown", "favour": { "rich": -40, "poor": 15 }, "do": { "transfer": ["bank", "poor"], "threat": 5 }, "result": "By royal decree, {bank} goes to {poor.house} to hold for the King. {rich} doesn't open the gates." }
         ]
       },
       "after": [2, 3],
@@ -94,7 +94,7 @@
       "threat": 90,
       "speaker": "rich",
       "at": "bank",
-      "text": "With the bankers' gold and the bankers' swords, {rich} says a crown that can't pay its debts can't keep its throne, and marches.",
+      "text": "With {rich.his} silver and {rich.his} sellswords, {rich} says a King who can't pay for his wars can't keep his throne. {rich.house} calls its banners and marches.",
       "do": { "usurper": "rich", "host": 12 },
       "after": [3, 3],
       "next": [{ "if": { "usurper": "none" }, "to": "default" }],
@@ -107,7 +107,7 @@
       "end": "resolved",
       "speaker": "poor",
       "at": "bank",
-      "text": "The debt is paid, one way or another, and the grey ship doesn't come back. The houses count what it cost them."
+      "text": "The war loan is settled, one way or another. {rich.house} has its silver or its seat, and the other houses know exactly what it cost."
     },
     {
       "id": "default",
@@ -115,7 +115,7 @@
       "end": "resolved",
       "speaker": "poor",
       "at": "bank",
-      "text": "The bankers' man is beaten outside Kingsmere. The crown never pays, and never borrows across the sea again."
+      "text": "{rich}'s host is broken outside Kingsmere. The crown never pays, and no house lends the King silver for a war again."
     }
   ]
 }

@@ -1,19 +1,19 @@
 {
   "id": "poisoned-court",
   "reign": true,
-  "name": "The Poisoned Court",
-  "about": "Heirs are dying at feasts all over the realm, and every cup went through one great lord's hands. Find the poisoner, or you'll be the next one buried.",
+  "name": "The Assassin's Cup",
+  "about": "The heirs of the King's friends are dying at feasts, and every cup went through one great lord's hands. Someone is thinning the King's allies before the war comes. Find the assassin's master, set his victims' house on him, or be the next one buried.",
   "tags": [
     "intrigue",
+    "war",
     "the-court",
-    "mystery",
     "cunning",
     "tragic",
     "short"
   ],
   "kind": "intrigue",
   "weight": 1,
-  "title": "The Poisoned Court",
+  "title": "The Assassin's Cup",
   "roles": {
     "poisoner": {
       "rank": "lord",
@@ -88,7 +88,7 @@
       "threat": 20,
       "speaker": "mourner",
       "at": "hall",
-      "text": "{first} collapses at the feast in {hall}, clutching {first.his} throat. The physicians say it was a fever. The servants say it wasn't.",
+      "text": "{first}, heir to {mourner.house} and the King's friend, collapses at the feast in {hall}, clutching {first.his} throat. The physicians say it was a fever. The servants say it wasn't.",
       "memory": {
         "mourner": "I saw {first} die at the table in {hall}. It was no fever."
       },
@@ -101,7 +101,7 @@
       },
       "court": {
         "from": "mourner",
-        "text": "{mourner} of {mourner.house}: \"{first} was poisoned, Your Grace. I'd stake my house on it. Someone at that table wanted {first.him} dead.\"",
+        "text": "{mourner} of {mourner.house}: \"{first} was poisoned, Your Grace, for standing with you. Someone at that table wants your friends dead before your war begins.\"",
         "options": [
           {
             "id": "inquire",
@@ -171,7 +171,7 @@
       },
       "court": {
         "from": "mourner",
-        "text": "{mourner}: \"Two heirs are dead, Your Grace, and both cups came from {poisoner}'s cellars. Will you name {poisoner.him}, or wait for a third?\"",
+        "text": "{mourner}: \"Two of my blood are dead, Your Grace, and both cups came from {poisoner}'s cellars. Name {poisoner.him}, or let my house answer for its dead.\"",
         "options": [
           {
             "id": "accuse",
@@ -184,6 +184,23 @@
               "threat": -10
             },
             "result": "The King names {poisoner} in front of the court. The hall goes silent, and {poisoner} smiles."
+          },
+          {
+            "id": "vengeance",
+            "label": "Let {mourner.house} take its vengeance on {poisoner.house}",
+            "hint": "{mourner.houseName} +15 · {poisoner.houseName} −30 · two houses at war, your ally's blood answered",
+            "favour": {
+              "mourner": 15,
+              "poisoner": -30
+            },
+            "do": {
+              "war": [
+                "mourner",
+                "poisoner"
+              ],
+              "threat": -15
+            },
+            "result": "The King gives {mourner} leave. {mourner.house} buries its heir and marches on {hall} the same week."
           },
           {
             "id": "spy",
@@ -211,6 +228,12 @@
         3
       ],
       "next": [
+        {
+          "if": {
+            "ruled": "vengeance"
+          },
+          "to": "the-vengeance"
+        },
         {
           "if": {
             "all": [
@@ -261,6 +284,31 @@
       "otherwise": "the-kings-cup"
     },
     {
+      "id": "the-vengeance",
+      "stage": "crisis",
+      "threat": 60,
+      "speaker": "mourner",
+      "at": "hall",
+      "text": "{mourner.house}'s host stands before {hall}. {poisoner} swears {poisoner.he} poured nothing, and sends to every house that owes {poisoner.him} for help.",
+      "after": [
+        2,
+        3
+      ],
+      "next": [
+        {
+          "if": {
+            "chance": 0.6
+          },
+          "to": "unmasked"
+        },
+        {
+          "to": "the-kings-cup"
+        }
+      ],
+      "patience": 4,
+      "otherwise": "unmasked"
+    },
+    {
       "id": "false-accusation",
       "stage": "crisis",
       "threat": 70,
@@ -295,13 +343,13 @@
         "options": [
           {
             "id": "flee",
-            "label": "Slip out of Kingsmere for a season (300 gold)",
-            "hint": "the court is cleaned out while you're gone · the realm sees you run",
+            "label": "Ride out to the royal host for a season (300 gold)",
+            "hint": "the court is cleaned out while you're in camp · the lords see you leave",
             "cost": 300,
             "do": {
               "threat": -30
             },
-            "result": "The King rides out of Kingsmere in a merchant's cart. Behind him, the kitchens are emptied and the cellars searched."
+            "result": "The King rides out to his host and eats from the soldiers' pot. Behind him, the kitchens at Kingsmere are emptied and the cellars searched."
           },
           {
             "id": "seize",

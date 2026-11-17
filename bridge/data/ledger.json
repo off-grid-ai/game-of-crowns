@@ -1085,15 +1085,15 @@
     "axes": {
      "give": 1
     },
-    "says": "the charter of {town}"
+    "says": "the levy of {town} taken under the King's banner"
    },
    "refuse": {
     "axes": {},
-    "says": "the charter of {town} refused"
+    "says": "the levy of {town} left to its lord"
    },
    "lord": {
     "axes": {},
-    "says": "the burghers of {town} left to their lord"
+    "says": "the guilds of {town} left to their lord"
    }
   },
   "burghers-charter:the-lords-due": {
@@ -1101,14 +1101,14 @@
     "axes": {
      "give": 1
     },
-    "says": "the lord paid for his lost tolls"
+    "says": "the lord paid for his lost levy"
    },
    "uphold": {
     "axes": {
      "word": 1,
      "peace": 1
     },
-    "says": "the charter upheld"
+    "says": "the levy's charter upheld"
    }
   },
   "burghers-charter:the-looms-stop": {
@@ -1116,13 +1116,13 @@
     "axes": {
      "give": 1
     },
-    "says": "the charter of {town} granted at last"
+    "says": "the levy of {town} taken at last"
    },
    "soldiers": {
     "axes": {
      "mercy": -1
     },
-    "says": "the soldiers sent into the weavers' shops"
+    "says": "the soldiers sent to drive {town}'s men to their lord"
    },
    "buy": {
     "axes": {},
@@ -1134,7 +1134,7 @@
     "axes": {
      "peace": 1
     },
-    "says": "the free town taken under the crown"
+    "says": "the free town and its levy taken under the crown"
    },
    "storm": {
     "axes": {
@@ -1145,7 +1145,7 @@
    },
    "protector": {
     "axes": {},
-    "says": "the free town given to a lord"
+    "says": "the free town and its levy given to a lord"
    }
   },
   "crowns-debt:the-note": {
@@ -1153,19 +1153,17 @@
     "axes": {
      "word": 1
     },
-    "says": "the crown's old debt paid"
+    "says": "the war loan paid"
    },
-   "squeeze": {
-    "axes": {
-     "give": -1
-    },
-    "says": "the special tax on the great houses"
+   "council": {
+    "axes": {},
+    "says": "the lender given a seat at the war council"
    },
    "refuse": {
     "axes": {
      "word": -1
     },
-    "says": "the crown's old debt refused"
+    "says": "the war loan refused"
    }
   },
   "crowns-debt:second-note": {
@@ -1173,31 +1171,31 @@
     "axes": {
      "word": 1
     },
-    "says": "the crown's old debt paid in full"
+    "says": "the war loan paid in full"
    },
-   "squeeze": {
+   "loose": {
     "axes": {
-     "give": -1
+     "peace": -1
     },
-    "says": "the second tax on the great houses"
+    "says": "the lender let loose on a rival house"
    },
    "refuse": {
     "axes": {
      "word": -1
     },
-    "says": "the crown's old debt refused"
+    "says": "the King's host refused to a lender"
    }
   },
   "crowns-debt:sellswords": {
    "outbid": {
     "axes": {},
-    "says": "the bankers' sellswords bought away"
+    "says": "the lender's sellswords bought away"
    },
    "seize-bank": {
     "axes": {
      "give": -1
     },
-    "says": "the bankers' town seized"
+    "says": "the lender's town seized"
    }
   },
   "faith-militant:the-preacher": {
@@ -1637,12 +1635,18 @@
    "wait": {
     "axes": {},
     "says": "the silence over the poisoned cups"
+   },
+   "vengeance": {
+    "axes": {
+     "peace": -1
+    },
+    "says": "the leave given to avenge the poisoned heirs by the sword"
    }
   },
   "poisoned-court:the-kings-cup": {
    "flee": {
     "axes": {},
-    "says": "the King's flight from Kingsmere"
+    "says": "the King's ride out to his host"
    },
    "seize": {
     "axes": {},
@@ -1855,17 +1859,17 @@
   "spymasters-ledger:the-death": {
    "hunt": {
     "axes": {},
-    "says": "the search for the spymaster's book"
+    "says": "the search for the traitor's letters"
    },
    "lie": {
     "axes": {
      "word": -1
     },
-    "says": "the lie about the spymaster's book"
+    "says": "the lie about the traitor's letters"
    },
    "nothing": {
     "axes": {},
-    "says": "the spymaster's book called a boast"
+    "says": "the traitor's letter burned unread"
    }
   },
   "spymasters-ledger:the-blackmail": {
@@ -1873,13 +1877,19 @@
     "axes": {},
     "says": "the search of a lord's hall"
    },
+   "loose": {
+    "axes": {
+     "peace": -1
+    },
+    "says": "a house set on the traitor"
+   },
    "buy": {
     "axes": {},
-    "says": "the spymaster's book bought back"
+    "says": "the traitor's letters bought"
    },
    "wait": {
     "axes": {},
-    "says": "the blackmailer let be"
+    "says": "the traitor let be"
    }
   },
   "spymasters-ledger:the-crowns-book": {
@@ -1887,63 +1897,11 @@
     "axes": {
      "mercy": 1
     },
-    "says": "the burning of the spymaster's book"
+    "says": "the traitor's letters burned, one name read"
    },
    "keep": {
     "axes": {},
-    "says": "the spymaster's book kept"
-   }
-  },
-  "the-inquisition:the-first-pyre": {
-   "leash": {
-    "axes": {
-     "mercy": 1
-    },
-    "says": "the ban on the friar's trials"
-   },
-   "justices": {
-    "axes": {
-     "mercy": 1
-    },
-    "says": "the royal judges sent after the friar"
-   },
-   "allow": {
-    "axes": {
-     "mercy": -1
-    },
-    "says": "the friar's pyres let burn"
-   }
-  },
-  "the-inquisition:the-trial": {
-   "acquit": {
-    "axes": {
-     "mercy": 1
-    },
-    "says": "the confession thrown out"
-   },
-   "condemn": {
-    "axes": {
-     "mercy": -1
-    },
-    "says": "the lord handed to the Faith"
-   },
-   "away": {
-    "axes": {},
-    "says": "the friar sent overseas"
-   }
-  },
-  "the-inquisition:the-ban": {
-   "penance": {
-    "axes": {
-     "peace": 1
-    },
-    "says": "the King's barefoot penance"
-   },
-   "seize": {
-    "axes": {
-     "peace": -1
-    },
-    "says": "the arrest of the friar"
+    "says": "the traitor's letters kept over the named houses"
    }
   },
   "the-long-siege:the-banners": {
