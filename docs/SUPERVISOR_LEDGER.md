@@ -55,6 +55,12 @@ Where things stand, so any agent can take over. Newest first, short. The full hi
   partner).
 
 ## Log
+- 11-18 Release round. Bottleneck: the release build, 0 of 4 Build (Mac) runs ever finished; 2 hung 1 h 47 min in the
+  town bake (silent after Gildport, watchdog never fired). Measured: bake 162 s here (10 cores), frozen at 3 threads;
+  thread samples showed a low-priority deadlock (Godot gives low-priority tasks 0.3 of the pool; every one of ours is
+  low-priority). Removed: project.godot worker_pool/low_priority_thread_ratio=1.0 (3 threads: 165 s, 70 towns). Also
+  landed af178d87 war fixes (opening foe by road, siege march fights through the gates, island siege from ships,
+  quickest sea crossing). Release run 44160580763 dispatched; clips re-filmed (the restart wiped the scratchpad).
 - 11-17 Crowd and battle round (Mac: 'fix it once and for all', 'fix all 3', orders only in front of me). Landed:
   c52e84cc battle re-form (both hosts back into their troops' squares, cell by cell); f87cbdee runs play whole
   (no half walk, half run); 827e6ebd/9a8e000e castle yard and square (no castle occluder prism, guards' stretches
