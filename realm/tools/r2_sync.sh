@@ -4,6 +4,7 @@
 #
 #   realm/assets/          -> realm-assets/   (the whole folder: every model, texture, sound and portrait the game loads)
 #   docs/art/              -> docs-art/       (concepts, targets, look boards)
+#   docs/review/           -> docs-review/    (review pages' screenshots and frames)
 #   downloads/             -> downloads/      (raw downloads waiting to be sorted into the game)
 #   ~/Downloads/Aldmere    -> aldmere-downloads/
 #   ~/code/goc-kits        -> goc-kits/       (asset kits as fetched)
@@ -46,6 +47,7 @@ _copy() {  # local folder -> bucket prefix, when the folder is there
   fi
 }
 _copy "$ROOT/docs/art" docs-art "$@"
+_copy "$ROOT/docs/review" docs-review "$@"
 _copy "$ROOT/downloads" downloads "$@"
 _copy "$HOME/Downloads/Aldmere" aldmere-downloads "$@"
 _copy "$HOME/code/goc-kits" goc-kits "$@"
