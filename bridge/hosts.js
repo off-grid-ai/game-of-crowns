@@ -24,6 +24,7 @@ import * as chron from "./chronicles.js";
 import { houseFor, cityName } from "./narrator.js";
 import { CIVILIAN, sworn } from "./campaigns.js";
 import * as Lua from "./lua.js";
+import * as Land from "./land.js";
 import { calendar } from "./calendar.js";
 import { HITPOINTS, HULLS } from "./rules.js";
 
@@ -172,7 +173,7 @@ function give(ctx, b) {
       if (!inside(to.x, to.y)) return [400, { error: "choose where on the map" }];
       const road = roadTo(h, to);
       // No road over land: the host takes ship (Mac: "ships are just to move armies from one point to another").
-      const sea = road < 0 ? crossing(ctx, h, to) : null;
+      const sea = road < 0 ? crossing(ctx, h, to, !!town && town.owner !== crown?.id) : null;
       if (sea?.error) return [400, { error: sea.error }];
       // Into a town only where the gates are open to the King's men; before another's walls otherwise.
       // A great house's town not sworn to the crown is marched on: the host lays siege when it arrives,
@@ -185,10 +186,10 @@ function give(ctx, b) {
         return [200, { ok: true, dry: true, by: sea ? "sea" : "land", seasons, ...(foe ? { siege: true } : {}), ...(sea ? { sea: { coast: sea.coast, ships: sea.ships, cost: sea.cost, landing: sea.landing } } : {}) }];
       }
       save(meta, [...rest, { kind: "march", units: h.units, x: to.x, y: to.y, city: town?.id ?? null, since: world.turn, ...(advance ? { advance: true } : {}), ...(foe ? { siege: true, house: foe.id } : {}), ...face,
-        ...(sea ? { sea: { phase: "coast", coast: sea.coast, water: sea.water, ships: sea.ships, cost: sea.cost, landing: sea.landing } } : {}) }]);
+        ...(sea ? { sea: { phase: "coast", coast: sea.coast, water: sea.water, ships: sea.ships, cost: sea.cost, landing: sea.landing, ...(sea.walls ? { walls: true } : {}) } } : {}) }]);
       if (sea) {
         const seasons = Math.max(1, Math.ceil(sea.walk / HOSTS.speed) + Math.ceil(sea.sail / sea.speed) + Math.ceil(sea.ashore / HOSTS.speed));
-        return [200, { ok: true, text: `${name} marches to the shore, where the crown raises ${sea.ships === 1 ? "a ship" : `${sea.ships} ships`} for ${sea.cost} gold, and lands on the far shore${town ? ` for ${cityName(town.id)}` : ""}: about ${seasons === 1 ? "a season" : `${seasons} seasons`}${foe ? ", and lays siege when it reaches the walls" : ""}.`,
+        return [200, { ok: true, text: `${name} marches to the shore, where the crown raises ${sea.ships === 1 ? "a ship" : `${sea.ships} ships`} for ${sea.cost} gold, and ${sea.walls ? `sails under the walls of ${cityName(town.id)}, where there is no shore` : `lands on the far shore${town ? ` for ${cityName(town.id)}` : ""}`}: about ${seasons === 1 ? "a season" : `${seasons} seasons`}${foe ? ", and lays siege when it reaches the walls" : ""}.`,
           ...(foe && !b.declared ? { declare: { city: town.id, house: foe.id } } : {}) }];
       }
       const seasons = Math.max(1, Math.ceil(road / HOSTS.speed));
@@ -248,38 +249,17 @@ let land = { file: null };
 function landOf() {
   const file = path.join(chron.paths(chron.activeId()).state, "map.json");
   if (land.file !== file) {
-    const m = chron.readJson(file);
-    if (!m?.tiles) return null;
-    const walk = new Uint8Array(m.width * m.height);
-    const sea = new Uint8Array(m.width * m.height);  // 0 land, 1 coastal water (Ocean, Lake), 2 deep water
-    for (const [x, y, n] of m.tiles) {
-      walk[y * m.width + x] = /Ocean|Lake/.test(String(n)) ? 0 : 1;
-      sea[y * m.width + x] = /Deep Ocean/.test(String(n)) ? 2 : /Ocean|Lake/.test(String(n)) ? 1 : 0;
-    }
-    land = { file, w: m.width, h: m.height, walk, sea };
+    const L = Land.grid(chron.readJson(file));
+    if (!L) return null;
+    land = { file, ...L };
   }
   return land;
 }
 
-// How many steps over land each tile is from a goal (breadth-first over the eight neighbours, as a
-// unit moves in Freeciv), or null when the goal isn't on the land. shut: tiles ("x,y") no host can
-// pass this season (another house's town or men stand there; Freeciv won't put the King's men in).
+// How many steps over land each tile is from a goal, or null when the goal isn't on the land (land.js). shut: tiles
+// ("x,y") no host can pass this season (another house's town or men stand there; Freeciv won't put the King's men in).
 function stepsTo(goal, shut = null) {
-  const L = landOf();
-  if (!L || goal.x < 0 || goal.y < 0 || goal.x >= L.w || goal.y >= L.h || !L.walk[goal.y * L.w + goal.x]) return null;
-  const d = new Int32Array(L.w * L.h).fill(-1);
-  const q = [goal.y * L.w + goal.x];
-  d[q[0]] = 0;
-  for (let i = 0; i < q.length; i++) {
-    const x = q[i] % L.w, y = (q[i] / L.w) | 0;
-    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
-      const nx = x + dx, ny = y + dy;
-      if (nx < 0 || ny < 0 || nx >= L.w || ny >= L.h) continue;
-      const k = ny * L.w + nx;
-      if (d[k] < 0 && L.walk[k] && !shut?.has(`${nx},${ny}`)) { d[k] = d[q[i]] + 1; q.push(k); }
-    }
-  }
-  return { at: (p) => d[p.y * L.w + p.x], w: L.w, h: L.h };
+  return Land.steps(landOf(), goal, shut);
 }
 
 // The next n tiles of a company's way down the steps, or [] when it can't reach the goal over land.
@@ -348,8 +328,11 @@ function seaRoad(L, from, to, deep) {
 // ruleset's transport_cap; each costs the treasury the Trireme's build_cost in gold, refused when the crown can't pay),
 // sails the sea road a Trireme may take (coastal water) to the shore nearest the goal, lands, the ships are disbanded,
 // and it marches on. {coast, water, ships, cost, landing, walk, sail, ashore, speed} or {error: the reason, for the card}.
+// walls: the goal is another's town; when no shore near it can be landed on (Highfell, a town on a rock in the sea),
+// the ships sail under its walls (landing: the town, walls: true) and the host lays siege from them, storming the town
+// from the water (realmrules actions.ruleset attack_town_from_ships).
 const SHIP = "Trireme";
-function crossing(ctx, h, to) {
+function crossing(ctx, h, to, walls = false) {
   const { world } = ctx;
   const L = landOf();
   const crown = crownOf(world);
@@ -373,13 +356,32 @@ function crossing(ctx, h, to) {
     if (ashore >= 0) shores.push({ x, y, ashore, water });
   }
   if (!coasts.length) return { error: "The royal host can reach no shore to take ship." };
-  coasts.sort((a, b) => a.walk - b.walk);
-  shores.sort((a, b) => a.ashore - b.ashore);
-  for (const c of coasts.slice(0, 20)) {
-    for (const s of shores.slice(0, 60)) {
-      const road = seaRoad(L, c.water, s.water, false);
-      if (road) return { coast: { x: c.x, y: c.y }, water: { x: road[0][0], y: road[0][1] }, ships, cost, landing: { x: s.x, y: s.y }, walk: c.walk, sail: road.length, ashore: s.ashore, speed: T.speed };
+  // The quickest way in seasons, every shore weighed: the walk to the coast, the sail (one search over the sea from
+  // the water beside every landing, each tile keeping the landing it is nearest), and the march on from the landing.
+  // (Taking the nearest coast that had any sea road sent a host 23 seasons round the realm for Highfell.)
+  const under = walls ? round(L, to.x, to.y).filter(([a, b]) => sails(L, a, b, false)) : [];
+  const lands = shores.length ? shores : under.length ? [{ x: to.x, y: to.y, ashore: 0, water: under, walls: true }] : [];
+  const dist = new Int32Array(L.w * L.h).fill(-1), from = new Int32Array(L.w * L.h).fill(-1), q = [];
+  lands.forEach((s, i) => { for (const [x, y] of s.water) { const k = y * L.w + x; if (dist[k] < 0) { dist[k] = 1; from[k] = i; q.push(k); } } });
+  for (let i = 0; i < q.length; i++) {
+    for (const [nx, ny] of round(L, q[i] % L.w, (q[i] / L.w) | 0)) {
+      const k = ny * L.w + nx;
+      if (dist[k] < 0 && sails(L, nx, ny, false)) { dist[k] = dist[q[i]] + 1; from[k] = from[q[i]]; q.push(k); }
     }
+  }
+  let best = null;
+  for (const c of coasts) {
+    for (const [x, y] of c.water) {
+      const k = y * L.w + x;
+      if (dist[k] < 0) continue;
+      const s = lands[from[k]];
+      const seasons = Math.ceil(c.walk / HOSTS.speed) + Math.ceil(dist[k] / T.speed) + Math.ceil(s.ashore / HOSTS.speed);
+      if (!best || seasons < best.seasons) best = { seasons, c, s, sail: dist[k], water: { x, y } };
+    }
+  }
+  if (best) {
+    const { c, s } = best;
+    return { coast: { x: c.x, y: c.y }, water: best.water, ships, cost, landing: { x: s.x, y: s.y }, ...(s.walls ? { walls: true } : {}), walk: c.walk, sail: best.sail, ashore: s.ashore, speed: T.speed };
   }
   return { error: "No sea road a trireme can sail (it keeps to coastal water) reaches a shore near the goal." };
 }
@@ -595,8 +597,10 @@ function stepOrder(ctx, o, turn, units, byId, shut) {
   if (o.joined && turn > (o.since ?? 0) + 1) return [];  // banner men a season in: the town's men now, one host with them
   if (o.x == null) { return [{ ...o, units }]; }
   // An advance (attack-move) meets a foe's men on its way: it turns to fall on them, an attack that keeps the march.
-  if (o.advance && o.kind === "march" && (!o.sea || o.sea.phase === "landed")) {
-    const met = metOnRoad(ctx, o, units, byId);
+  // A siege march does the same to the besieged house's men (and raiders) barring the road to the walls: their
+  // companies camped beside the town otherwise held every tile at its gates, and the host made camp two tiles short.
+  if ((o.advance || o.siege) && o.kind === "march" && (!o.sea || o.sea.phase === "landed")) {
+    const met = metOnRoad(ctx, o, units, byId, o.advance ? null : o.house);
     if (met) {
       const who = houseFor(world.players.find((p) => p.id === met.owner) ?? {}).name ?? "the foe";
       record?.({ turn, kind: "decree", text: `The royal host meets ${who}'s men on the road and falls on them.` });
@@ -672,6 +676,12 @@ function stepOrder(ctx, o, turn, units, byId, shut) {
     }
     const beside = round(L, o.sea.landing.x, o.sea.landing.y).filter(([x, y]) => sails(L, x, y, false));
     const near = new Set(beside.map(([x, y]) => `${x},${y}`));
+    if (hulls.every((u) => near.has(`${u.x},${u.y}`)) && o.sea.walls) {
+      // Under the walls of a town with no shore: the host stays aboard and lays siege from the ships, held there.
+      send(`lua cmd ${Lua.homewardHold(o.sea.hulls)}`);
+      record?.({ turn, kind: "decree", text: `The royal host's ships lie under the walls of ${o.city != null ? cityName(o.city) : "the town"}; there is no shore, and the men will storm it from the water.`, city: o.city ?? undefined });
+      return [{ ...o, units, far: null, sea: { ...o.sea, phase: "landed" } }];
+    }
     if (hulls.every((u) => near.has(`${u.x},${u.y}`))) {
       send(`lua cmd ${Lua.ferryLand(units, o.sea.landing.x, o.sea.landing.y)}`);
       shipsOff(ctx, turn, L, o.sea.hulls, o.sea.landing);
@@ -721,7 +731,8 @@ function stepOrder(ctx, o, turn, units, byId, shut) {
 // The nearest foe's men an advancing host meets (data/hosts.json advance.reach tiles of any of its companies, or of the
 // lead's road ahead this season): another house's soldiers in the field, not sworn to the crown (the attack order's
 // foes), not in a town (a town is a siege's), on land the host can reach. Null when none.
-function metOnRoad(ctx, o, units, byId) {
+// only: a house's id, when only its men (and the wild's) are fallen on (a siege march: never a third house's).
+function metOnRoad(ctx, o, units, byId, only = null) {
   const { world } = ctx;
   const crown = crownOf(world);
   const reach = HOSTS.advance?.reach ?? 2;
@@ -730,7 +741,7 @@ function metOnRoad(ctx, o, units, byId) {
   const ahead = [...units.map((id) => byId.get(id)), ...(steps && lead ? wayOn(steps, lead, HOSTS.speed).map(([x, y]) => ({ x, y })) : [])];
   const towns = new Set((world.cities ?? []).map((c) => `${c.x},${c.y}`));
   const foes = (world.units ?? []).filter((u) => u.owner !== crown?.id && !CIVILIAN.has(u.type) && !SHIPS.has(u.type) && !towns.has(`${u.x},${u.y}`))
-    .filter((u) => { const p = world.players.find((q) => q.id === u.owner); return p && !houseFor(p).crown && !sworn(ctx, p.id); })
+    .filter((u) => { const p = world.players.find((q) => q.id === u.owner); return p && !houseFor(p).crown && !sworn(ctx, p.id) && (only == null || p.id === only || houseFor(p).wild); })
     .map((u) => ({ u, d: Math.min(...ahead.map((p) => cheb(p, u))) }))
     .filter(({ u, d }) => d <= reach && roadTo(lead, u) >= 0)
     .sort((a, b) => a.d - b.d);

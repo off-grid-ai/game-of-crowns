@@ -914,6 +914,24 @@ actor_reqs    =
       "DiplRel",       "War",              "Local", TRUE
     }
 
+; The King's men (any house's) storm a town's walls from the ships that carried them: a seat on a rock in the sea
+; (Highfell) has no shore to land on, and a siege laid from the water must still be able to strike (campaigns.js
+; assault, script.lua realm_assault). Only a town's tile is struck so; men in the open field are fought ashore.
+[actionenabler_attack_town_from_ships]
+action        = "Attack"
+actor_reqs    =
+    { "type",          "name",        "range", "present"
+      "UnitFlag",      "NonMil",      "Local", FALSE
+      "UnitClassFlag", "Missile",     "Local", FALSE
+      "MinMoveFrags",  "1",           "Local", TRUE
+      "UnitState",     "Transported", "Local", TRUE
+      "DiplRel",       "War",         "Local", TRUE
+    }
+target_reqs   =
+    { "type",     "name",   "range", "present"
+      "CityTile", "Center", "Tile",  TRUE
+    }
+
 [actionenabler_ransom_from_native]
 action        = "Collect Ransom"
 actor_reqs    =

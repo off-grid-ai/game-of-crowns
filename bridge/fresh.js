@@ -9,6 +9,7 @@ import path from "node:path";
 import zlib from "node:zlib";
 import { HOUSES } from "./narrator.js";
 import { dealt } from "./aims.js";
+import * as Land from "./land.js";
 
 export function rng(seed) {
   let s = seed >>> 0 || 1;
@@ -24,7 +25,7 @@ const greatNation = (n) => { const h = HOUSES[String(n).toLowerCase()]; return h
 // Deals the openings: each great house with its two nearest great houses is a
 // pair; a pair is at war, under a truce (some close to breaking) or at peace.
 // At least one war, or a truce about to break, always opens the reign.
-function tensions(text, world, r) {
+function tensions(text, world, r, L = null) {
   const turn = world.turn ?? 0;
   const seat = new Map();
   for (const c of world.cities ?? []) if (c.capital) seat.set(c.owner, c);
@@ -45,10 +46,14 @@ function tensions(text, world, r) {
     Object.assign(t, r() < 0.5 ? { state: "War", left: 0 } : { state: "Cease-fire", left: 2 + Math.floor(r() * 3) });
   }
   // The new King inherits an enemy (Mac 2026-11-17, GAME_DESIGN "The game": no allies, at least one house against
-  // him): the great house seated nearest Kingsmere is at war with the crown from the first season.
+  // him): the great house seated nearest Kingsmere by the road is at war with the crown from the first season, so the
+  // royal host can march on it at once (L: land.js's grid). Highfell, nearest as the crow flies, sits on a rock in
+  // the sea with no shore to land on. A seat the road doesn't reach is weighed behind every one it does.
   const crown = (world.players ?? []).find((p) => HOUSES[String(p.nation).toLowerCase()]?.crown);
   const kingsSeat = crown && seat.get(crown.id);
-  const foe = kingsSeat && great.slice().sort((x, y) => Math.hypot(seat.get(x).x - kingsSeat.x, seat.get(x).y - kingsSeat.y) - Math.hypot(seat.get(y).x - kingsSeat.x, seat.get(y).y - kingsSeat.y))[0];
+  const road = kingsSeat && Land.steps(L, kingsSeat);
+  const far = (id) => { const s = seat.get(id), n = road?.at(s) ?? -1; return n >= 0 ? n : 1e6 + Math.hypot(s.x - kingsSeat.x, s.y - kingsSeat.y); };
+  const foe = kingsSeat && great.slice().sort((x, y) => far(x) - far(y))[0];
   if (foe != null) dealt.push({ a: Math.min(crown.id, foe), b: Math.max(crown.id, foe), state: "War", left: 0, crown: true });
   for (const t of dealt) {
     const love = t.state === "War" ? -300 - Math.floor(r() * 500) : t.state === "Cease-fire" ? -100 - Math.floor(r() * 500) : 100 + Math.floor(r() * 300);
@@ -107,7 +112,9 @@ export function freshStart(base, seed) {
   try { world = JSON.parse(fs.readFileSync(path.join(base, "state", "world.json"), "utf8")); } catch { /* none */ }
   const r = rng(Math.imul(seed >>> 0, 0x9e3779b1) ^ 0x85ebca6b);
   for (let i = 0; i < 8; i++) r();  // the first rolls of near seeds are alike
-  const t = tensions(text, world, r);
+  let L = null;
+  try { L = Land.grid(JSON.parse(fs.readFileSync(path.join(base, "state", "map.json"), "utf8"))); } catch { /* none */ }
+  const t = tensions(text, world, r, L);
   fs.writeFileSync(file, zlib.zstdCompressSync(Buffer.from(t.text)));
   const nation = new Map((world.players ?? []).map((p) => [p.id, p.nation]));
   grudges(path.join(base, "characters"), t.dealt.filter((x) => !x.crown), (pid) => greatNation(nation.get(pid))?.name ?? "them", r);
