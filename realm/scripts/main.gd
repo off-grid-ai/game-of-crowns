@@ -558,7 +558,7 @@ func _ready() -> void:
 	bridge.ordered.connect(func(city_id, matter):
 		sound.ui("seal")
 		order_at[0] = Vector3.INF
-		if matter == "" and terrain != null and terrain.width > 0:
+		if terrain != null and terrain.width > 0:  # a chronicle matter's order too (Mac 2026-11-17: "I dont see the immediate consequence")
 			for c in awareness.rec("cities", []):
 				if int(c.get("id", -1)) == city_id:
 					order_at[0] = terrain.world_pos(float(c.get("x", 0)), float(c.get("y", 0)))

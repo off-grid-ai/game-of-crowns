@@ -200,7 +200,7 @@ func _counsel_rows(entry: Dictionary) -> Array:
 			var act: Dictionary = a
 			var gate: Dictionary = main.ui.act_gate(act)
 			rows.append({"verb": "counsel", "label": String(act.get("label", "")) + String(gate["suffix"]), "cost": int(act.get("cost", 0)) * UI.CROWNS,
-				"enabled": bool(gate["enabled"]), "why": String(gate["why"]), "tip": "", "call": func(): main.ui.answer_counsel(act, key), "ui": String(act.get("ui", ""))})
+				"enabled": bool(gate["enabled"]), "why": String(gate["why"]), "tip": "", "call": func(): main.ui.answer_counsel(act, key), "ui": String(act.get("ui", "")), "act": act})
 	var go := _row("go", entry, {})
 	for r in rows:
 		if not String(r.get("ui", "")) in ["leave", "court"]:

@@ -849,7 +849,9 @@ func _show_seals(sl) -> void:
 		return
 	var n := int(sl.get("n", 0))
 	var of := int(sl.get("of", 2))
-	ui.seals = n
+	if n != ui.seals:
+		ui.seals = n
+		ui.chronicle.regate()  # every card's orders open or close with the seal (Mac 2026-11-17: 'how come I can take decisions on all of these')
 	_seals.text = "●".repeat(n) + "○".repeat(maxi(0, of - n))
 	if _seals_n >= 0 and n < _seals_n:
 		_seals.modulate.a = 0.35
