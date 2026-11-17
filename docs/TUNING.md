@@ -20,6 +20,7 @@ Switches (`--name`) go after `--` on the game's command line.
 ## The director: threats and the shape of a reign (Builder 2)
 - How long after the King's last crisis the next threat rises, by act (the houses' own wars don't hold it back), and the breather after a peak: `bridge/data/director.json` `quietByAct` [4,3,3,2], `breather` 2 (Mac 2026-11-16: "tension in short intervals, highs and lows"; the background news stays at a third).
 - The breather after any crisis, in seasons: `bridge/data/director.json`: `breather`.
+- How long a season lasts, in seconds (40; 80 felt slow, Mac 2026-11-17): `bridge/data/pace.json`: `season`. Seasons before the first threat, by act: `bridge/data/director.json`: `quietByAct` ([2, 3, 3, 2]).
 - When the last act's finale lands, as a share of the reign's clock: `bridge/data/director.json`: `finale.landAt`.
 - Each threat's growth, words and the orders that answer it: `bridge/data/director.json`: `threats.<kind>.*`.
 - How a too-comfortable King draws envy: `bridge/data/director.json`: `pushback.*`.
