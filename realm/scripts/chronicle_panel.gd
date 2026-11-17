@@ -312,17 +312,22 @@ func _release() -> void:
 			return
 
 
-## Never an empty drawer while the realm needs him (Mac 2026-11-17: 'any new chronicle should start with at least one
-## actionable item'): with no card standing and none waiting, the realm's most urgent matter (bridge /world counsel,
-## already ranked) is the card, from the reign's first seconds. Its answers are the bridge's (news_actions.gd).
+## Every matter of the realm is its own card (Mac 2026-11-17: 'any new chronicle should start with at least one
+## actionable item'; news lines no longer borrow a matter's answers by town): the most urgent matter (bridge /world
+## counsel, already ranked) not yet on a card comes as one, from the reign's first seconds, at the drawer's pace
+## (_row). Its answers are the bridge's (news_actions.gd).
 func _open_matter() -> void:
-	if not _held.is_empty() or _rows().any(func(r): return r.has_meta("entry")):
-		return
+	var shown := {}
+	for r in _rows():
+		if r.has_meta("entry"):
+			shown[String((r.get_meta("entry") as Dictionary).get("counsel", ""))] = true
+	for h in _held:
+		shown[String((h["e"] as Dictionary).get("counsel", ""))] = true
 	var main: Node = ui.get_parent()
 	if not (main and main.get("awareness")):
 		return
 	for it in main.awareness.rec("counsel", []):
-		if it is Dictionary and String(it.get("key", "")) != "" and not (it.get("acts", []) as Array).is_empty():
+		if it is Dictionary and String(it.get("key", "")) != "" and not shown.has(String(it["key"])) and not (it.get("acts", []) as Array).is_empty():
 			var e := {"kind": String(it.get("kind", "counsel")), "text": String(it.get("text", "")), "counsel": String(it["key"]),
 				"turn": int(main.awareness.rec("turn", 0))}
 			if it.get("city") != null:

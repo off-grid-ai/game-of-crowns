@@ -171,21 +171,11 @@ func _follows(r: Dictionary, go: Dictionary) -> void:
 			there.call()
 
 
-## The realm's matter this news is about (bridge /world counsel): the one it names, else the one standing at its town
-## (a matter's places: hunger names every hungry town), or "".
+## The realm's matter this news is: the one its card names (chronicle_panel.gd _open_matter puts each matter on its own
+## card), or "". Never guessed from the town (Mac 2026-11-17: 'House Ironreach has not forgotten the last King' offered
+## grain because a hunger matter stood at the same town; 'fix the cause'): a line is news, a matter is its own card.
 func _matter_at(entry: Dictionary) -> String:
-	if String(entry.get("counsel", "")) != "":
-		return String(entry["counsel"])
-	if entry.get("city") == null:
-		return ""
-	var city := int(entry["city"])
-	for it in main.awareness.rec("counsel", []):
-		if not it is Dictionary:
-			continue
-		var places: Array = it.get("places") if it.get("places") is Array else ([it["city"]] if it.get("city") != null else [])
-		if places.any(func(x): return x != null and int(x) == city):
-			return String(it.get("key", ""))
-	return ""
+	return String(entry.get("counsel", ""))
 
 
 ## The Hand's matter's own answers as rows, each gated as every card gates it (ui.gd act_gate), and Go there;
