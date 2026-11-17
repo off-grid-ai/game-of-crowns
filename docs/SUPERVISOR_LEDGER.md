@@ -14,10 +14,10 @@ Where things stand, so any agent can take over. Newest first, short. The full hi
 
 ## Now (2026-11-16)
 - **Houses speak their words (Mac 2026-11-17, done).** Open a town: its house says its words once, in its own voice
-  ("Hold Fast" low and slow for Wolfholt, "The Sea Provides!" rough for Ironreach, "One Realm" at Kingsmere). Recorded
+  ("Hold Fast" low and slow for Wolfholt, "The Sea Provides!" rough for Ironreach, "Kneel to None" at Kingsmere). Recorded
   with OGAD's Kokoro (`realm/tools/record_house_words.sh`), `sounds.json` `house_words` (120 s per house). Not yet heard
   in Mac's game. **Proposals of the same kind (not built, Mac to pick):**
-  1. Battle cry: a host shouts its house's words as its charge starts ("We weather all!"), the crown's "One Realm!".
+  1. Battle cry: a host shouts its house's words as its charge starts ("We weather all!"), the crown's "Kneel to none!".
   2. The town greets the King by its favour: a cheer of "The King!" in a loyal town, jeers and shut shutters in a sullen one.
   3. Each house's own horn: a war horn for Wolfholt, drums for Stormhold, a brass call for Sunspire, as its host marches near.
   4. A lord at court answers in the same voice as his house's words, so the King knows Wolfholt by ear.

@@ -27,10 +27,11 @@ HOUSES=(
   "stormhold|We weather all!|0.45"
   "sunspire|The sun waits.|0.4"
   "highfell|Sworn, and steadfast.|0.55"
-  "crown|One realm.|0.6"
+  "crown|Kneel... to none!|0.6"
 )
 for h in $HOUSES; do
   IFS='|' read id txt e <<< "$h"
+  [[ -n $1 && $1 != $id ]] && continue  # one house only: zsh record_house_words.sh crown
   mkdir -p $OUT/$id
   for pr in $PROFILES; do
     IFS='|' read prof v p t <<< "$pr"
