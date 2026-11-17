@@ -1440,7 +1440,7 @@ func _house_speaks(owner: int, house: Dictionary) -> void:
 		var king = royals.get("king", {}) if royals is Dictionary else {}
 		sound.sounds_v2.house_words(house, king if king is Dictionary else {})
 		return
-	bridge.house(owner, func(d): sound.sounds_v2.house_words(house, d.get("lord", {}) if d is Dictionary and d.get("lord") is Dictionary else {}))
+	bridge.house(owner, func(d): sound.sounds_v2.house_words(house, d.get("lord", {}) if d is Dictionary and d.get("lord") is Dictionary else {}), true)
 
 ## A seat's castle in the middle of the view, seen from its town's side (its gate
 ## faces the square), at the low oblique angle, turned so no tall building hides it.

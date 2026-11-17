@@ -112,13 +112,16 @@ func house_words(house: Dictionary, ruler: Dictionary) -> void:
 	var name := String(house.get("name", ""))
 	var rec: Dictionary = (cfg.get("houses", {}) as Dictionary).get(name, {})
 	if rec.is_empty():
+		print("WORDS %s: no recording" % name)
 		return
 	var said := String(house.get("words", ""))
 	if said != "" and said != String(rec.get("words", "")):
+		print("WORDS %s: the realm says '%s', the recording '%s'" % [name, said, rec.get("words", "")])
 		return
 	var now := Time.get_ticks_msec()
 	if _words_last.has(name) and now - int(_words_last[name]) < int(float(cfg.get("cooldown_s", 120.0)) * 1000.0):
 		return
+	print("WORDS %s: '%s' as %s" % [name, said, voice_profile(ruler)])
 	_words_last[name] = now
 	var sound := _voice_row("voice/houses/%s/%s.ogg" % [rec["id"], voice_profile(ruler)])
 	var go := play.bind(sound, Vector3.INF, "words:" + name, float(cfg.get("db", 0.0)))

@@ -232,8 +232,10 @@ func ledger(cb: Callable) -> void:
 	_http_get("/ledger", cb)
 
 
-func house(id: int, cb: Callable) -> void:
-	_http_get("/house?id=%d" % id, cb)
+## always: the callback runs whatever happens ({} on a failure), and the ask is never dropped as a duplicate of
+## another house's (a house's words waited on it and stayed silent when one was in flight, Mac 2026-11-17).
+func house(id: int, cb: Callable, always := false) -> void:
+	_http_get("/house?id=%d" % id, cb, {} if always else null)
 
 
 ## The v2 opening (docs/review/first-ten-minutes-plan.md): the King has landed in
