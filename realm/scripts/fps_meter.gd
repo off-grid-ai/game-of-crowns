@@ -55,7 +55,8 @@ func _process_timed(delta: float) -> void:
 	# Settings > Graphics "Frame rate" (Mac, 2026-11-16): off, the rate alone, or the rate and what is drawn. Off and
 	# not measuring (GOC_PERF_PROBE): nothing worked out at all.
 	var mode := String(preload("res://scripts/settings.gd").get_value("frame_rate"))
-	label.visible = mode != "off"
+	var shot: Variant = get_parent().get("_shot") if get_parent() else null
+	label.visible = mode != "off" and not (shot is Dictionary and (shot as Dictionary).has("clean"))  # a clean still shows no interface
 	if mode == "off" and not preload("res://scripts/perf_tools.gd").probing:
 		_t = 0.5
 		return
