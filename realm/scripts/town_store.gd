@@ -30,6 +30,65 @@ static func path_of(c: Dictionary, house: Dictionary, tiles: Array) -> String:
 	return Kept.path("towns", "%d_%s" % [int(c["id"]), str(facts).md5_text()], "scn")
 
 
+## The towns kept so far, each by its facts (index_<code>.json under towns/, the game's baked one and the player's own),
+## so a town not kept as it stands now can start from its nearest kept age and grow from there (nearest; Mac,
+## 2026-11-18: "you have a certain benchmark and you start at that ... let the dynamism come in later"). Written with
+## every town kept (note); the bake's ages fill the game's own (tools/bake.gd).
+static var _index := {}  # index file -> {path: entry}
+static func _index_file(dir: String) -> String:
+	return "%stowns/index_%s.json" % [dir, Kept.code()]
+
+
+static func _read_index(file: String) -> Dictionary:
+	if not _index.has(file):
+		var d: Variant = JSON.parse_string(FileAccess.get_file_as_string(file)) if FileAccess.file_exists(file) else null
+		_index[file] = d if d is Dictionary else {}
+	return _index[file]
+
+
+## A town kept at `path` with these facts, written into the index it is kept beside (the game's while baking, else the
+## player's).
+static func note(path: String, c: Dictionary, house: Dictionary, tiles: Array) -> void:
+	path_of(c, house, tiles)  # the land's hash, for this map
+	var file := _index_file(Kept.BAKED if path.begins_with(Kept.BAKED) else Kept.USER)
+	var idx := _read_index(file)
+	idx[path] = {"c": {"id": c.get("id"), "x": c.get("x"), "y": c.get("y"), "size": c.get("size"), "buildings": c.get("buildings", []),
+		"capital": c.get("capital", false), "family": c.get("family"), "owner": c.get("owner"), "name": c.get("name", ""),
+		"title": c.get("title", "")}, "crown": bool(house.get("crown", false)), "land": _land["hash"]}
+	DirAccess.make_dir_recursive_absolute(file.get_base_dir())
+	var f := FileAccess.open(file, FileAccess.WRITE)
+	if f:
+		f.store_string(JSON.stringify(idx))
+
+
+## The nearest kept age of town `c` that it grew from: kept on this land, the same place, seat, family and crown, no
+## bigger and with no building it lacks, and `ok` (towns.gd: the same rank and square, so it can grow in place); the
+## biggest such, then the most built. [path, its facts] or [] if none.
+static func nearest(c: Dictionary, house: Dictionary, tiles: Array, ok: Callable) -> Array:
+	path_of(c, house, tiles)
+	var best := []
+	var size := int(c.get("size", 0))
+	var built: Array = c.get("buildings", [])
+	for dir in [Kept.BAKED, Kept.USER]:
+		var idx := _read_index(_index_file(dir))
+		for p in idx:
+			var e: Dictionary = idx[p]
+			var k: Dictionary = e["c"]
+			if int(k["id"]) != int(c["id"]) or String(e["land"]) != String(_land["hash"]) or bool(e["crown"]) != bool(house.get("crown", false)):
+				continue
+			if int(k["x"]) != int(c["x"]) or int(k["y"]) != int(c["y"]) or bool(k["capital"]) != bool(c.get("capital", false)) or k["family"] != c.get("family"):
+				continue
+			if int(k["size"]) > size or (k["buildings"] as Array).any(func(b): return not built.has(b)):
+				continue
+			if not best.is_empty():
+				var bk: Dictionary = best[1]
+				if int(k["size"]) < int(bk["size"]) or (int(k["size"]) == int(bk["size"]) and (k["buildings"] as Array).size() <= (bk["buildings"] as Array).size()):
+					continue
+			if FileAccess.file_exists(p) and ok.call(k):
+				best = [p, k]
+	return best
+
+
 ## A town just raised, packed and written (the writing on a worker thread). Its metas and groups are made savable on
 ## a copy of what they hold and put back after packing, so the town in play is untouched.
 ## A town off the tree (just raised) is packed on a worker thread, the build waiting a frame at a time (Godot builds and

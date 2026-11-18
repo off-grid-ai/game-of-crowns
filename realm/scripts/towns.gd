@@ -424,11 +424,33 @@ func _raise(best: int, job: Dictionary) -> void:
 			imprint(node)
 			relight(node)  # its flames and smoke, never kept in the file (_kindle)
 			_reown(node, job["c"], job["house"])  # whoever holds it now: the file is kept by its shape alone
+	if node == null and not towns.has(best):
+		# Not kept as it stands: its nearest kept age (the bake's, else one this player kept) stands now, and grows to
+		# what it is next (Mac, 2026-11-18: "you have a certain benchmark and you start at that ... let the dynamism come
+		# in later"): its growth queued with no 'was', so what it adds stands at once rather than rising as sites.
+		var near: Array = TownStore.nearest(job["c"], job["house"], terrain.terrain, func(k: Dictionary) -> bool: return _grows_from(k, job))
+		if not near.is_empty() and TownStore.ask(String(near[0])):
+			Engine.set_meta("stage", "towns.read")
+			var got: Variant = TownStore.take(String(near[0]))
+			while got == null:
+				await PerfTools.next_frame(&"towns:near")
+				got = TownStore.take(String(near[0]))
+			if got is Node3D:
+				node = got
+				imprint(node)
+				relight(node)
+				var at: Dictionary = (near[1] as Dictionary).duplicate()
+				at["owner"] = job["c"].get("owner")
+				_reown(node, at, job["house"])
+				_queue[best] = {"c": job["c"], "house": job["house"], "sig": job["sig"]}
+				job = {"c": at, "house": job["house"], "sig": "%d|%d|%s|%s" % [int(at["size"]), int(at["owner"]), str(at["buildings"]), str(at["capital"])]}
+				path = String(near[0])
 	if node == null:
 		node = await _build_town(job["c"], job["house"])
 		await _occlude(node)
 		await _pace()  # the town packed for its file its own step (build@last: what is left after this pace)
 		await TownStore.save(node, path)  # off the tree: packed on a worker (town_store.gd)
+		TownStore.note(path, job["c"], job["house"], terrain.terrain)
 	var pt0 := Time.get_ticks_usec()
 	PerfTools.add("build@last", pt0 - _step_at)  # the build's last step, after its last _pace
 	if towns.has(best) and is_instance_valid(towns[best]["node"]):
@@ -515,6 +537,19 @@ func _grows(t: Dictionary, job: Dictionary) -> bool:
 	return not (c.get("family") is String and int(was.get("owner", -1)) != int(c["owner"]))
 
 
+## Whether a town kept with facts `k` can grow in place into `job`'s (_grows' rule, on facts rather than a standing
+## town): the same rank, seat and square, no smaller, no building lost.
+func _grows_from(k: Dictionary, job: Dictionary) -> bool:
+	var c: Dictionary = job["c"]
+	var crown := bool((job["house"] as Dictionary).get("crown", false))
+	var r0 := town_rank(bool(k.get("capital", false)), crown, int(k["size"]), k.get("family") is String)
+	var r1 := town_rank(bool(c.get("capital", false)), crown, int(c["size"]), c.get("family") is String)
+	var s0 := bool(k.get("capital", false)) and r0 != "manor"
+	var s1 := bool(c.get("capital", false)) and r1 != "manor"
+	return r0 == r1 and s0 == s1 and absf(square_for(r0, s0, int(k["size"])) - square_for(r1, s1, int(c["size"]))) <= 0.001 \
+		and int(k["size"]) <= int(c["size"]) and not (k.get("buildings", []) as Array).any(func(b): return not (c["buildings"] as Array).has(b))
+
+
 ## A standing town that grew: its additions laid off-screen on a copy of its layout's facts (_grow_town), added to it
 ## (_add_on), its new houses rising as building sites (_grow), and the grown town kept on disk.
 func _grow_standing(best: int, job: Dictionary) -> void:
@@ -547,6 +582,7 @@ func _grow_standing(best: int, job: Dictionary) -> void:
 	terrain.commit_grading()  # only its new plots' ground
 	if is_instance_valid(standing):
 		await TownStore.save(standing, path, true)  # its layout only: never its life, dressing or a fire's shell
+		TownStore.note(path, job["c"], job["house"], terrain.terrain)
 
 
 ## The additions of a standing town that grew (Mac: what is added is incremental), laid off the tree on `root`, a copy
