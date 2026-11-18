@@ -15,12 +15,14 @@ const Kept := preload("res://scripts/kept.gd")
 const BASE := "res://../bridge/baseline/aldmere/"
 const BRIDGE := "res://../bridge"
 const CHRONICLES_OUT := "user://bake/chronicles"  # the chronicles' realms as read for the bake (chronicle-world.mjs)
+const AGES := BASE + "ages/"  # the realm as saved reigns stood, a year to years in (bridge/tools/age-worlds.mjs)
 const WAIT_S := 1800.0
+const AGE_WAIT_S := 300.0  # the most one age's towns and roads may add to the watchdog's wait
 const ROADS_WAIT_S := 600.0  # the most one realm's roads may take (the navigation baked, every route asked)
 
 
 func _init() -> void:
-	preload("res://tools/watchdog.gd").arm(self, WAIT_S + 60.0)
+	preload("res://tools/watchdog.gd").arm(self, WAIT_S + AGE_WAIT_S * _ages().size() + 60.0)
 	_run.call_deferred()
 
 
@@ -55,6 +57,12 @@ func _towns() -> int:
 	map["land"] = (JSON.parse_string(FileAccess.get_file_as_string(base + "/baseline.json")) as Dictionary)["land"]
 	var stood := await _realm(world, map)
 	print("BAKE towns: the starting realm's %d" % stood)
+	# The ages (Mac, 2026-11-18: "you play 9 years once ... and you save it"): the realm as saved reigns stood, each on
+	# the baseline's land, so a town grown a year or nine into a reign is read back rather than laid out in play.
+	for f in _ages():
+		var aw: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(f))
+		var n := await _realm(aw, map)
+		print("BAKE towns: age %s, %d (turn %d)" % [f.get_file().get_basename().get_basename(), n, int(aw.get("turn", 0))])
 	var out := ProjectSettings.globalize_path(CHRONICLES_OUT)
 	var said := []
 	var bridge := ProjectSettings.globalize_path(BRIDGE).simplify_path()
@@ -71,6 +79,18 @@ func _towns() -> int:
 		print("BAKE towns: chronicle %s's %d (turn %d)" % [id, n, int(w.get("turn", 0))])
 		stood += n
 	return stood
+
+
+## The ages' worlds (bridge/baseline/aldmere/ages/*.world.json), youngest first.
+func _ages() -> Array:
+	var dir := ProjectSettings.globalize_path(AGES).simplify_path()
+	var out := []
+	if DirAccess.dir_exists_absolute(dir):
+		for f in DirAccess.get_files_at(dir):
+			if f.ends_with(".world.json"):
+				out.append(dir.path_join(f))
+	out.sort()
+	return out
 
 
 ## One realm's towns raised on its land and kept, then the realm taken down: how many stand.
