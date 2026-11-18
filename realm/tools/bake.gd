@@ -18,18 +18,33 @@ const CHRONICLES_OUT := "user://bake/chronicles"  # the chronicles' realms as re
 const AGES := BASE + "ages/"  # the realm as saved reigns stood, a year to years in (bridge/tools/age-worlds.mjs)
 const WAIT_S := 1800.0
 const AGE_WAIT_S := 300.0  # the most one age's towns and roads may add to the watchdog's wait
+const AGES_A_RUN := 8  # ages baked by one fresh Godot (_ages_apart): one run through all 81 grew until the system killed it at the 50th
 const ROADS_WAIT_S := 600.0  # the most one realm's roads may take (the navigation baked, every route asked)
 
 
+var _slice := []  # --ages=from:to: this run bakes only those ages, into the bake already begun (_ages_apart)
+
+
 func _init() -> void:
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--ages="):
+			_slice = Array(a.substr(7).split(":")).map(func(x): return int(x))
 	preload("res://tools/watchdog.gd").arm(self, WAIT_S + AGE_WAIT_S * _ages().size() + 60.0)
 	_run.call_deferred()
 
 
 func _run() -> void:
 	var t0 := Time.get_ticks_msec()
-	_clear(ProjectSettings.globalize_path(Kept.BAKED))
 	Kept.baking = true
+	if not _slice.is_empty():
+		var map := _base_map()
+		var n := 0
+		for f in _ages().slice(_slice[0], _slice[1]):
+			n += await _age(f, map)
+		print("BAKE slice: %d towns" % n)
+		quit(0)
+		return
+	_clear(ProjectSettings.globalize_path(Kept.BAKED))
 	var made := 0
 	for n in Real.KIT.keys():
 		if not Real._template(n).is_empty():
@@ -53,16 +68,12 @@ func _run() -> void:
 func _towns() -> int:
 	var base := ProjectSettings.globalize_path(BASE).simplify_path()
 	var world: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(base + "/state/world_served.json"))
-	var map: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(base + "/state/map.json"))
-	map["land"] = (JSON.parse_string(FileAccess.get_file_as_string(base + "/baseline.json")) as Dictionary)["land"]
+	var map := _base_map()
 	var stood := await _realm(world, map)
 	print("BAKE towns: the starting realm's %d" % stood)
 	# The ages (Mac, 2026-11-18: "you play 9 years once ... and you save it"): the realm as saved reigns stood, each on
 	# the baseline's land, so a town grown a year or nine into a reign is read back rather than laid out in play.
-	for f in _ages():
-		var aw: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(f))
-		var n := await _realm(aw, map)
-		print("BAKE towns: age %s, %d (turn %d)" % [f.get_file().get_basename().get_basename(), n, int(aw.get("turn", 0))])
+	stood += _ages_apart()
 	var out := ProjectSettings.globalize_path(CHRONICLES_OUT)
 	var said := []
 	var bridge := ProjectSettings.globalize_path(BRIDGE).simplify_path()
@@ -79,6 +90,41 @@ func _towns() -> int:
 		print("BAKE towns: chronicle %s's %d (turn %d)" % [id, n, int(w.get("turn", 0))])
 		stood += n
 	return stood
+
+
+## The baseline's map with its land: every age stands on it.
+func _base_map() -> Dictionary:
+	var base := ProjectSettings.globalize_path(BASE).simplify_path()
+	var map: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(base + "/state/map.json"))
+	map["land"] = (JSON.parse_string(FileAccess.get_file_as_string(base + "/baseline.json")) as Dictionary)["land"]
+	return map
+
+
+## One age's towns and roads baked: how many stand.
+func _age(f: String, map: Dictionary) -> int:
+	var aw: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(f))
+	var n := await _realm(aw, map)
+	print("BAKE towns: age %s, %d (turn %d)" % [f.get_file().get_basename().get_basename(), n, int(aw.get("turn", 0))])
+	return n
+
+
+## The ages baked AGES_A_RUN at a time, each batch by a fresh Godot of its own (this script with --ages=from:to), so
+## nothing one realm leaves behind piles up across 81; then the index the batches wrote read afresh. Towns that stand.
+func _ages_apart() -> int:
+	var all := _ages().size()
+	var n := 0
+	for i in range(0, all, AGES_A_RUN):
+		var said := []
+		var code := OS.execute(OS.get_executable_path(), ["--headless", "--path", ProjectSettings.globalize_path("res://"),
+			"-s", "res://tools/bake.gd", "--", "--ages=%d:%d" % [i, mini(i + AGES_A_RUN, all)]], said, true)
+		for line in "".join(said).split("\n"):
+			if line.begins_with("BAKE towns: age") or line.begins_with("PROBE TIMEOUT"):
+				print(line)
+				n += int(line.get_slice(", ", 1).get_slice(" ", 0)) if line.begins_with("BAKE towns") else 0
+		if code != 0:
+			print("BAKE ages %d-%d: their Godot ended with %d" % [i, mini(i + AGES_A_RUN, all), code])
+	preload("res://scripts/town_store.gd")._index.clear()  # the batches wrote the game's index: read it afresh
+	return n
 
 
 ## The ages' worlds (bridge/baseline/aldmere/ages/*.world.json), youngest first.
