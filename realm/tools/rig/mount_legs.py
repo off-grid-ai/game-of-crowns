@@ -11,8 +11,8 @@ a = sys.argv[sys.argv.index("--") + 1:]
 base_path, model_path, out = a[0], a[1], a[2]
 R = 0.2           # a leg's reach from its bone chain (metres)
 OVER = 0.55       # how far the base leg runs up inside the cloth above the hem
-BODY_TRIS = 2000  # the model above the hem decimated to this many triangles (docs/TUNING.md; the army's fps round)
-LEGS_TRIS = 500   # the four base legs together decimated to this many
+BODY_TRIS = 9000  # the model above the hem decimated to this many triangles (docs/TUNING.md; the army's fps round)
+LEGS_TRIS = 1000  # the four base legs together decimated to this many
 WELD = 1e-4       # metres: a glTF splits each vertex at its UV islands; welded back before decimating, or the
                   # decimate pulls each side of every seam its own way and tears the mesh into scraps (the cavalry
                   # was 1,747 loose pieces, and Godot's simplifier gave it one lighter level, 2.6k, at any distance)

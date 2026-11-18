@@ -8,6 +8,7 @@ extends SceneTree
 ##
 ## packaging/build-mac.sh runs it before every export (docs/TUNING.md "Export"); a script or data edit after it leaves the
 ## bake unused until it is run again.  Headless, no GPU:  arch -arm64 godot --headless --path realm -s res://tools/bake.gd
+## (-- --troops: the soldiers alone, into the bake already made, after tools/rig bakes a soldier again)
 ## res://baked is made from third-party art, so it stays out of git (.gitignore) and is baked anew for each export.
 
 const Real := preload("res://scripts/realistic.gd")
@@ -36,6 +37,11 @@ func _init() -> void:
 func _run() -> void:
 	var t0 := Time.get_ticks_msec()
 	Kept.baking = true
+	if OS.get_cmdline_user_args().has("--troops"):
+		# The soldiers alone, into the bake already made (a soldier baked again by tools/rig: his file is keyed by his mesh).
+		print("BAKE troops: %d soldiers kept" % preload("res://scripts/army_visual.gd").bake())
+		quit(0)
+		return
 	if not _slice.is_empty():
 		var map := _base_map()
 		var n := 0
