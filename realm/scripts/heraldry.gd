@@ -18,9 +18,61 @@ static var _cache := {}
 ## A house's painted arms (its banner in assets/heraldry), or null if it has none drawn: what its standard, its
 ## regiments' banners and its men's shields wear.
 static func arms(house: Dictionary) -> Texture2D:
+	return worn(slug(house) if not house.is_empty() else "")
+
+
+## A painted banner (banner-<key>.png) as the world hangs it: muted and darkened like every house colour
+## (look.json team.banners), made once a banner. null if none is drawn. The Lore and the cards show the painting itself.
+static var _worn := {}
+static func worn(key: String) -> Texture2D:
+	if _worn.has(key):
+		return _worn[key]
+	var path := "res://assets/heraldry/banner-%s.png" % key
+	if key == "" or not ResourceLoader.exists(path):
+		return null
+	var tex := load(path) as Texture2D
+	var im := tex.get_image() if tex else null
+	if im == null:
+		return tex
+	if im.is_compressed():
+		im.decompress()
+	var k := _wear()
+	im.adjust_bcs(float(k.get("value", 0.85)), 1.0, float(k.get("saturation", 0.55)))
+	im.generate_mipmaps()
+	var t := ImageTexture.create_from_image(im)
+	_worn[key] = t
+	return t
+
+
+## How the world wears a painted banner (look.json team.banners: saturation, value).
+static func _wear() -> Dictionary:
+	return (preload("res://scripts/data.gd").value("look", "team", {}) as Dictionary).get("banners", {})
+
+
+## A house's arms hung flat (the castle's hangs, a town's arms panels, its walls' arms): the painting through
+## worn_arms.gdshader, muted as worn() is, linking the painting so a kept town never carries a copy of it; else a
+## plain cloth in `colour`. One material a house.
+const WORN := preload("res://scripts/worn_arms.gdshader")
+static var _hung := {}
+static func hung(house: Dictionary, colour: Color) -> Material:
 	var key := slug(house) if not house.is_empty() else ""
 	var path := "res://assets/heraldry/banner-%s.png" % key
-	return load(path) as Texture2D if key != "" and ResourceLoader.exists(path) else null
+	if key == "" or not ResourceLoader.exists(path):
+		var plain := StandardMaterial3D.new()
+		plain.cull_mode = BaseMaterial3D.CULL_DISABLED
+		plain.roughness = 0.95
+		plain.albedo_color = colour
+		return plain
+	if _hung.has(key):
+		return _hung[key]
+	var k := _wear()
+	var m := ShaderMaterial.new()
+	m.shader = WORN
+	m.set_shader_parameter("arms", load(path))
+	m.set_shader_parameter("worn_sat", float(k.get("saturation", 0.55)))
+	m.set_shader_parameter("worn_value", float(k.get("value", 0.85)))
+	_hung[key] = m
+	return m
 
 
 ## The colour a house's banner is painted in: the mean of its picture's outer band (clear of the arms), so what its
@@ -67,6 +119,8 @@ static func cloth(house: Dictionary, fallback: Color) -> Material:
 	m.set_shader_parameter("wind", _wind)
 	if painted:
 		m.set_shader_parameter("cloth_tex", load(path))
+		m.set_shader_parameter("worn_sat", float(_wear().get("saturation", 0.55)))
+		m.set_shader_parameter("worn_value", float(_wear().get("value", 0.85)))
 		m.set_shader_parameter("use_tex", true)
 	else:
 		m.set_shader_parameter("cloth_color", fallback)

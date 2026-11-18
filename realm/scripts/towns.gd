@@ -1630,27 +1630,12 @@ func _arms_quad(root: Node3D, at: Vector3, yaw: float, size: Vector2) -> void:
 	q.size = size
 	var mi := MeshInstance3D.new()
 	mi.mesh = q
-	mi.material_override = _arms_paint(_house, _house_colour)
+	mi.material_override = preload("res://scripts/heraldry.gd").hung(_house, _house_colour)
 	mi.set_meta("arms_quad", true)  # repainted for a new holder (_reown)
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	root.add_child(mi)
 	mi.position = at
 	mi.rotation.y = yaw
-
-
-## A house's arms as a panel's paint: its painted banner, else its colour.
-static func _arms_paint(house: Dictionary, colour: Color) -> StandardMaterial3D:
-	var m := StandardMaterial3D.new()
-	m.roughness = 0.9
-	var slug := preload("res://scripts/heraldry.gd").slug(house)
-	var path := "res://assets/heraldry/banner-%s.png" % slug
-	if slug != "" and ResourceLoader.exists(path):
-		m.albedo_texture = load(path)
-		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
-		m.alpha_scissor_threshold = 0.5
-	else:
-		m.albedo_color = colour
-	return m
 
 
 ## A town shown for its holder (`c`'s owner and title, `house`'s arms and colour): its banners struck for his and its
@@ -1665,7 +1650,7 @@ func _reown(node: Node3D, c: Dictionary, house: Dictionary) -> void:
 	node.set_meta("arms_of", str(house.get("name", "")))
 	for g in node.find_children("*", "MeshInstance3D", true, false):
 		if g.has_meta("arms_quad"):
-			(g as MeshInstance3D).material_override = _arms_paint(house, colour)
+			(g as MeshInstance3D).material_override = preload("res://scripts/heraldry.gd").hung(house, colour)
 
 
 ## The planned trade a model draws, not yet standing ({} for a house).

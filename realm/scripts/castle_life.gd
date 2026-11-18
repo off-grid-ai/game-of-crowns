@@ -401,7 +401,7 @@ func _arms(xf: Transform3D, sp: Dictionary, house: Dictionary, colour: Color, d:
 	var gate_top := (int(sp.get("wall_storeys", 2)) + 1) * Builder.STOREY - 0.4
 	var gate_z := Builder.gate_front(sp) + 0.12
 	var gh := 4 * cell / 2.0
-	var mat := arms_material(house, colour)
+	var mat := Heraldry.hung(house, colour)
 	var hangs := []
 	# 01-town: two great banners either side of the keep's door.
 	var ka: Dictionary = k.get("keep", {})
@@ -456,20 +456,6 @@ static func _on_piece(pxf: Transform3D, h: Dictionary, sx: float) -> Array:
 	var sc := pxf.basis.get_scale()
 	var top := pxf * Vector3(sx * float(h.get("x", 0.0)), float(h.get("top", 8.0)), float(h.get("z", 3.8)))
 	return [top, Vector2(float(h.get("w", 1.8)) * sc.x, float(h.get("h", 5.0)) * sc.y)]
-
-
-static func arms_material(house: Dictionary, colour: Color) -> StandardMaterial3D:
-	var m := StandardMaterial3D.new()
-	m.cull_mode = BaseMaterial3D.CULL_DISABLED
-	m.roughness = 0.95
-	var path := "res://assets/heraldry/banner-%s.png" % Heraldry.slug(house)
-	if Heraldry.slug(house) != "" and ResourceLoader.exists(path):
-		m.albedo_texture = load(path)
-		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
-		m.alpha_scissor_threshold = 0.5
-	else:
-		m.albedo_color = colour
-	return m
 
 
 ## The town's holder's house (name, colour, sigil), from the store.

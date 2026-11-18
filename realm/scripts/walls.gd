@@ -400,7 +400,7 @@ func _arms(root: Node3D, towers: Array, storeys: int, fade: float) -> void:
 	const Life := preload("res://scripts/castle_life.gd")
 	const Heraldry := preload("res://scripts/heraldry.gd")
 	var house: Dictionary = main.awareness.houses_by_id().get(int(root.get_meta("owner", -1)), {}) if main.awareness else {}
-	var mat := Life.arms_material(house, Heraldry.colour(house, Color(0.6, 0.15, 0.15)))
+	var mat := Heraldry.hung(house, Heraldry.colour(house, Color(0.6, 0.15, 0.15)))
 	var k: Dictionary = (Data.value("castle", "arms", {}) as Dictionary).get("tower", {})
 	var arms := Node3D.new()
 	arms.name = "TownWallArms"

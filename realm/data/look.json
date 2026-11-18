@@ -122,6 +122,7 @@
    "MI_Banner": 0.95
   },
   "saturation": 0.7,
+  "banners": {"_": "A house's painted banner as the world hangs it (heraldry.gd worn: the castle's arms, standards, regiments' banners, shields, map standards; the Lore and cards show the painting itself), muted like every house colour (Mac 2026-11-18: the autumn look is the floor for every season). saturation: share of the painting's colour kept; value: its brightness.", "saturation": 0.55, "value": 0.85},
   "mask": {"_": "A Meshy building's own team mask (tools/meshy_import.py mask.png: white where the colour goes, by data/meshy.json mask rules, its red roof tiles; team_colour.gd _meshy_mask): amount, how much of the colour the masked parts take; ordinary, the share of that an ordinary house (ranks 0 and 1) wears, the castle, the hall and the manor all of it. The square set's masks are blank, so the crown's Kingsmere keeps its own red roofs.", "amount": 0.85, "ordinary": 0.45},
   "ranks": {
    "house_hovel": 0,

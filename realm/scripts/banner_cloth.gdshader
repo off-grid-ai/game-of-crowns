@@ -12,6 +12,8 @@ render_mode cull_disabled, diffuse_burley;
 uniform sampler2D cloth_tex : source_color, filter_linear_mipmap;
 uniform vec4 cloth_color : source_color = vec4(1.0);
 uniform bool use_tex = false;
+uniform float worn_sat = 1.0;  // the painting's colour kept as the world hangs it (look.json team.banners, heraldry.gd)
+uniform float worn_value = 1.0;
 global uniform vec4 wind;  // x, z where it blows (world), w its strength 0..1 (weather_fx.gd)
 global uniform float world_time;  // the realm's clock, stopped while paused (world_clock.gd)
 instance uniform float span = 0.2;  // the cloth's width in world units
@@ -54,6 +56,7 @@ void fragment() {
 		if (fade < (bayer[px.y * 4 + px.x] + 0.5) / 16.0) discard;
 	}
 	vec4 c = use_tex ? texture(cloth_tex, UV) : cloth_color;
+	if (use_tex) c.rgb = mix(vec3(dot(c.rgb, vec3(0.2126, 0.7152, 0.0722))), c.rgb, worn_sat) * worn_value;
 	ALBEDO = c.rgb;
 	ROUGHNESS = 1.0;
 	// A sworn house's banner: a band of crown gold along its free edge.
