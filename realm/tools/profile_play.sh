@@ -8,6 +8,15 @@
 set -u
 OUT=$1; PORT=${2:-6007}; SECS=${3:-60}; RES=${4:-1920x1080}
 cd "$(dirname "$0")/.."
+# One game at a time on the machine (Mac 2026-11-19: "why are we picking up so many instances of the game"): the
+# lock every render takes (tools/render.sh), so a profile waits for a render or another profile and the other way.
+LOCK=/tmp/goc-render.lock
+until mkdir $LOCK 2>/dev/null; do
+  [ -f $LOCK/pid ] && ! kill -0 "$(cat $LOCK/pid)" 2>/dev/null && rm -rf $LOCK  # left by a run that died
+  sleep 3
+done
+echo $$ > $LOCK/pid
+trap 'rm -rf $LOCK' EXIT
 mkdir -p "$OUT/hand"; rm -f "$OUT/go" "$OUT/prof.txt"
 printf 'wait 30\nclick 0.4995 0.385\nwait 100\nclick 0.5 0.5\nwait 5\n' > "$OUT/hand/cmd.txt"
 export XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR:-/run/user/$(id -u)} DISPLAY=${DISPLAY:-:0}
