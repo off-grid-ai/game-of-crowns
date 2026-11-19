@@ -2,7 +2,13 @@
 
 Mac, 2026-11-19: simulate the start once and save the whole realm; every new game and Continue start from it.
 
-1. **What:** the bridge's baseline (bridge/chronicles.js BASELINE, nine years in) loaded by `tools/bake.gd` headless,
+**Three starts (title.gd):** "Aldmere, nine years in" (scenario `aldmere`, the bridge's BASELINE) and "Aldmere, year
+one" (`aldmere_fresh`) are fixed: each is snapshotted whole, logic and view. Year one gets a bridge baseline of its own,
+captured as tools/make-baseline.sh captures nine years in, so a year-one game copies it instead of founding live; the
+bake then snapshots each start's view under its own name (`<scenario>`). "A random realm" can't be pre-made: it is built
+once when the reign is created and saved there and then as that reign's own snapshot (the player's copy); Continue loads it.
+
+1. **What:** each fixed start's bridge baseline (bridge/chronicles.js BASELINE, nine years in; year one's own) loaded by `tools/bake.gd` headless,
    let settle (towns stood, roads painted, farms laid, people at their posts), then saved as Godot PackedScenes by layer:
    the land (realm chunks, done: docs/REALM_CHUNKS.md), towns (town_store.gd, by id), roads (by road key), farms (by
    patch, done), and the people (one scene a town: bodies, posts, activity, blackboard).
