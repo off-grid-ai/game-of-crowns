@@ -85,6 +85,8 @@
   "lod": {"near": 3.5, "shadow_near": 3.5, "stride": 4, "recheck": 4, "decide_s": 1.0, "mind_budget_ms": 3.0, "move_unseen_s": 1.0, "pool_min": 4, "mind_look_frames": 8, "cold_per_frame": 6},
   "_lod_rich": "lod_rich: Beautiful and Finest (anim_lod.gd use_graphics): within near of the lens a body animates every frame, within shadow_near it casts a shadow; stride past near. Smooth keeps lod.",
   "lod_rich": {"near": 24.0, "shadow_near": 24.0, "stride": 2},
+  "_detail_bias": "detail_bias: how much finer than the realm's other meshes a person's body is kept (Godot lod_bias; 1 like the rest, 64 every triangle at any zoom we allow). people.gd make_body/make.",
+  "detail_bias": 64.0,
   "_seen_to": "seen_to: world units beyond which a person isn't drawn or animated (a few pixels tall). near_fade: within gone of the lens a person is gone, beyond solid fully there (about 0.7 m and 1.5 m).",
   "seen_to": 22.0,
   "near_fade": {"gone": 0.08, "solid": 0.18},

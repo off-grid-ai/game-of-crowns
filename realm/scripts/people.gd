@@ -25,6 +25,11 @@ const TALKS := ["Idle_Talking", "Talking", "Talking_2", "Happy_Gesture"]
 ## them who stands ready with a sword (an archer stands with his bow): one list each.
 const SOLDIERLY := ["soldier", "archer", "knight"]
 const SWORDED := ["soldier", "knight"]
+## How much finer than the rest of the realm a body keeps its mesh (people.json detail_bias, GeometryInstance3D.lod_bias):
+## the 2026-11-15 fps round let Godot simplify any mesh whose lost detail was under 16 px (project mesh_lod threshold
+## 4 -> 16), and at the nearest zoom a townsman is about 25 px tall, so the Meshy cast drew as a few dozen triangles
+## (Mac 2026-11-20: "they used to be high quality"). Kept whole, they cost a few hundred thousand triangles a crowd.
+static var DETAIL_BIAS: float = preload("res://scripts/data.gd").num("people", "detail_bias", 64.0)
 static var SEEN_TO: float = preload("res://scripts/data.gd").num("people", "seen_to", 18.0)  # world units: beyond this a person isn't drawn or animated (a few pixels tall)
 
 const OUTFITS := {
@@ -1010,6 +1015,7 @@ func _finish(person: Node3D, skeleton: Skeleton3D, rng: RandomNumberGenerator, r
 			mi.visibility_range_end = SEEN_TO
 			mi.visibility_range_end_margin = 3.0
 			mi.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_DISABLED
+			mi.lod_bias = DETAIL_BIAS  # every triangle kept (people.json detail_bias)
 	_shape(skeleton, build, "" if person.has_meta("body") and body_info(String(person.get_meta("body"))).get("cast", false) else age)  # a cast child is drawn a child already
 	var height: float = rng.randf_range(0.96, 1.04) * float((Data.value("people", "build.ages", {}) as Dictionary).get(age, 1.0))  # a child's height and the rest by age (people.json build.ages; tools/proportion_probe.gd)
 	# people.json build (Mac 2026-11-12: "the NPCs look like they are on steroids"): a woman a little shorter than a
