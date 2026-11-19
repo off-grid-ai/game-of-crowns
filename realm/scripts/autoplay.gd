@@ -542,11 +542,14 @@ func _step(w: PackedStringArray) -> void:
 				var pn := 0
 				var pbad := {}
 				var pnames: Array = []
+				var ptally := {}  # bodies on screen by kind
 				for b in get_tree().get_nodes_in_group("people"):
 					var body := b as Node3D
 					if body == null or pcam == null or not body.is_visible_in_tree() or body.global_position.distance_to(pcam.global_position) > preach or not pcam.is_position_in_frustum(body.global_position):
 						continue
 					pn += 1
+					var bk := str(body.get_meta("body", "outfit"))
+					ptally[bk] = int(ptally.get(bk, 0)) + 1
 					var mo: AnimationTree = load("res://scripts/people.gd").motion(body)
 					var ap: AnimationPlayer = body.get_node_or_null("Anim")
 					var why := ""
@@ -578,6 +581,7 @@ func _step(w: PackedStringArray) -> void:
 						if pnames.size() < 8:
 							pnames.append("%s(%s)" % [body.name, why])
 				_note("  poses: %d near, unposed %s; e.g. %s" % [pn, JSON.stringify(pbad), ", ".join(pnames)])
+				_note("  bodies on screen: %s" % JSON.stringify(ptally))
 				var pvp := get_viewport()
 				_note("  drawing: window %s, 3D scale %.2f mode %d, msaa %d, screen aa %d, taa %s, mesh lod %.1f px, graphics %s" % [DisplayServer.window_get_size(), pvp.scaling_3d_scale, pvp.scaling_3d_mode, pvp.msaa_3d, pvp.screen_space_aa, pvp.use_taa, pvp.mesh_lod_threshold, str(load("res://scripts/settings.gd").get_value("graphics"))])
 			"squarelife":
