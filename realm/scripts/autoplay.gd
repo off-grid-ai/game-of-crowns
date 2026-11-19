@@ -514,6 +514,26 @@ func _step(w: PackedStringArray) -> void:
 					for kind in census:
 						counts[kind] = (census[kind] as Dictionary).size()
 					_note("CHECK square beasts: %s: %s (wants a dog, hens, the cart's horse; none inside: see the overlap line)" % [otitle, str(counts)])
+			"draw":
+				# draw base|taa|ss2|fxaa|msaa8: the 3D's edge smoothing switched live for an A/B still (the townsfolk's
+				# rough edges, 2026-11-20). base: what main.gd finest_view sets.
+				var dvp := get_viewport()
+				match String(w[1]) if w.size() > 1 else "base":
+					"taa":
+						dvp.use_taa = true
+					"ss2":
+						dvp.scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR
+						dvp.scaling_3d_scale = 2.0
+					"fxaa":
+						dvp.screen_space_aa = Viewport.SCREEN_SPACE_AA_FXAA
+					"msaa8":
+						dvp.msaa_3d = Viewport.MSAA_8X
+					_:
+						dvp.use_taa = false
+						dvp.scaling_3d_scale = 1.0
+						dvp.screen_space_aa = Viewport.SCREEN_SPACE_AA_DISABLED
+						dvp.msaa_3d = Viewport.MSAA_4X
+				_note("  draw %s" % (String(w[1]) if w.size() > 1 else "base"))
 			"poses":
 				# poses: everyone drawn near the lens and how they stand: no state machine, a stopped one, or no move (a
 				# T-pose on screen), by body and by what made them; the first few named (people.json seen_to).
@@ -524,7 +544,7 @@ func _step(w: PackedStringArray) -> void:
 				var pnames: Array = []
 				for b in get_tree().get_nodes_in_group("people"):
 					var body := b as Node3D
-					if body == null or pcam == null or not body.is_visible_in_tree() or body.global_position.distance_to(pcam.global_position) > preach:
+					if body == null or pcam == null or not body.is_visible_in_tree() or body.global_position.distance_to(pcam.global_position) > preach or not pcam.is_position_in_frustum(body.global_position):
 						continue
 					pn += 1
 					var mo: AnimationTree = load("res://scripts/people.gd").motion(body)
@@ -536,6 +556,21 @@ func _step(w: PackedStringArray) -> void:
 						why = "stopped"
 					elif String(load("res://scripts/people.gd").clip(body)) == "":
 						why = "no move"
+					if why == "":
+						# A move playing but the bones still at rest (a T-pose): its tracks never reach this skeleton.
+						var sk := body.find_child("GeneralSkeleton", true, false) as Skeleton3D
+						if sk:
+							var most := 0.0
+							for bi in sk.get_bone_count():
+								var q := sk.get_bone_pose_rotation(bi)
+								most = maxf(most, q.angle_to(sk.get_bone_rest(bi).basis.get_rotation_quaternion()))
+							if most < 0.02:
+								why = "rest pose (%s, %s)" % [str(body.get_meta("body", "?")), String(load("res://scripts/people.gd").clip(body))]
+								if pnames.size() < 6:
+									# Why its moves miss: who owns the skeleton, whether the moves' %GeneralSkeleton resolves from
+									# the tree's root, the root itself, its libraries.
+									var root: Node = mo.get_node_or_null(mo.root_node) if mo else null
+									_note("    frozen %s: skel owner %s (body %s), %%GeneralSkeleton from root: %s, root_node %s -> %s, libs %d, active %s" % [body.name, str(sk.owner.name) if sk.owner else "none", body.name, str(root.get_node_or_null("%GeneralSkeleton") != null) if root else "no root", str(mo.root_node) if mo else "-", str(root.name) if root else "none", mo.get_animation_library_list().size() if mo else -1, str(mo.active) if mo else "-"])
 					if why != "":
 						var made: Dictionary = body.get_meta("made", {})
 						var k := "%s|%s|kept=%s" % [why, str(made.get("fn", "?")), str(body.has_meta("_kept") or body.get_parent() != null and String(body.get_parent().name).begins_with("Life"))]
@@ -543,6 +578,8 @@ func _step(w: PackedStringArray) -> void:
 						if pnames.size() < 8:
 							pnames.append("%s(%s)" % [body.name, why])
 				_note("  poses: %d near, unposed %s; e.g. %s" % [pn, JSON.stringify(pbad), ", ".join(pnames)])
+				var pvp := get_viewport()
+				_note("  drawing: window %s, 3D scale %.2f mode %d, msaa %d, screen aa %d, taa %s, mesh lod %.1f px, graphics %s" % [DisplayServer.window_get_size(), pvp.scaling_3d_scale, pvp.scaling_3d_mode, pvp.msaa_3d, pvp.screen_space_aa, pvp.use_taa, pvp.mesh_lod_threshold, str(load("res://scripts/settings.gd").get_value("graphics"))])
 			"squarelife":
 				# squarelife Town [secs]: how lived-in a town's square is, sampled twice a second for secs, against what
 				# 01-town shows (towns.json square.targets): people on its setts, per 100 m2 of open paving, standing
