@@ -595,7 +595,7 @@ func show_new() -> void:
 	_choices(right, "Their wealth", [["Poor", "poor"], ["As they are", "asis"], ["Rich", "rich"]], _opt["houseWealth"], func(v): _opt["houseWealth"] = v)
 	_choices(right, "Their faith in the crown", [["Loyal", "loyal"], ["Wary", "wary"], ["Resentful", "resentful"]], _opt["trust"], func(v): _opt["trust"] = v)
 	_choices(right, "Plots and bold moves", [["Quiet", "quiet"], ["Some", "normal"], ["Scheming", "scheming"]], _opt["intrigue"], func(v): _opt["intrigue"] = v)
-	right.add_child(_label("Who holds a seat (a fresh realm only)", 15, MUTED))
+	right.add_child(_label("Who holds a seat (a random realm only)", 15, MUTED))
 	house_row.add_theme_constant_override("h_separation", 6)
 	right.add_child(house_row)
 	var toggles := {}
@@ -1110,9 +1110,10 @@ func _use_scenario(sc: Dictionary) -> void:
 
 func _houses_enabled(row: Control) -> void:
 	for b in row.get_children():
-		b.disabled = _scenario == "aldmere"
-		# A locked choice says what unlocks it (the casebook's silent locked button).
-		(b as Control).tooltip_text = "Nine years in, every great house already holds its seat. Begin in year one or a random realm to choose who sits." if b.disabled else ""
+		b.disabled = _scenario != "random"
+		# A locked choice says what unlocks it (the casebook's silent locked button). Both Aldmere starts are made once,
+		# with every great house seated (bridge/tools/make-baseline.sh); only a random realm is founded as it begins.
+		(b as Control).tooltip_text = "In Aldmere every great house already holds its seat. Begin a random realm to choose who sits." if b.disabled else ""
 
 
 func _column(parent: Control) -> VBoxContainer:

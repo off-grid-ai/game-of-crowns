@@ -185,38 +185,45 @@ function slug(name) {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 32) || "realm";
 }
 
-// Creates a chronicle folder ready for Freeciv to start.
-// A realm already some years into its history (towns grown, roads built, the
-// court's first quarrels done), captured once with tools/make-baseline.sh.
-// New Aldmere chronicles begin from it instead of from the founding.
-export const BASELINE = path.join(DIR, "baseline", "aldmere");
+// The fixed starts, each the whole realm snapshotted once by tools/make-baseline.sh as one chain: the founding (the
+// world built, turn 1), year one run on from it (spring of year one, turn 5), and nine years in run on from year one
+// (turn 38). A new chronicle of a fixed start copies its snapshot; only a random realm (and the chain's own founding)
+// is built live. baseline/<dir>/baseline.json says which snapshot each came from and its seed.
+export const BASELINES = { aldmere: "aldmere", aldmere_fresh: "aldmere_year_one", aldmere_founding: "aldmere_founding" };
+export const baselineDir = (scenario) => path.join(DIR, "baseline", BASELINES[scenario]);
+// Nine years in: the start most reigns take (the Lore's cast as written, the title's map).
+export const BASELINE = baselineDir("aldmere");
 
-function fromBaseline(p) {
+function fromBaseline(p, from) {
   for (const part of ["saves", "state", "characters", "data"]) {
-    const src = path.join(BASELINE, part);
+    const src = path.join(from, part);
     if (fs.existsSync(src)) fs.cpSync(src, path.join(p.base, part), { recursive: true });
   }
   for (const f of ["realm.serv", "world_setup.lua", "court.json", "mood.json"]) {
-    const src = path.join(BASELINE, f);
+    const src = path.join(from, f);
     if (fs.existsSync(src)) fs.copyFileSync(src, path.join(p.base, f));
   }
-  return readJson(path.join(BASELINE, "baseline.json"), {});
+  return readJson(path.join(from, "baseline.json"), {});
 }
 
+// Creates a chronicle folder ready for Freeciv to start. scenario: a fixed start (BASELINES), "random", or "founding"
+// (Aldmere built live from the founding files: tools/make-baseline.sh's first link only).
 export function create({ name, scenario = "aldmere", minutes = 0, pace, fate = "normal", wealth = "comfortable", mood = "", options }) {
   const id = `${slug(name)}-${Date.now().toString(36)}`;
   const p = paths(id);
   const opt = cleanOptions({ pace, ...options }, fate);
   pace = opt.pace;
   wealth = stepKing(opt, wealth);  // what kind of king: a step along host, trust, petitions or the purse (KING_TYPES)
-  if (scenario === "aldmere" && fs.existsSync(path.join(BASELINE, "saves"))) {
+  if (BASELINES[scenario]) {
+    const from = baselineDir(scenario);
+    if (!fs.existsSync(path.join(from, "saves"))) throw new Error(`no ${scenario} snapshot at ${from}: run bridge/tools/make-baseline.sh`);
     fs.mkdirSync(p.base, { recursive: true });
-    const base = fromBaseline(p);
+    const base = fromBaseline(p, from);
     // The baseline's history is shared; the hardships ahead are the player's choice.
     if (fs.existsSync(p.serv)) fs.writeFileSync(p.serv, servFor(fs.readFileSync(p.serv, "utf8"), opt));
     writeNations(path.join(p.data, "nation"), false, opt.temper);
     // Test, film and check reigns keep the baseline exactly, so proofs repeat;
-    // every real reign is dealt its own dice, tensions and grudges.
+    // every real reign is dealt its own dice, tensions and grudges (and a foe: fresh.js), whichever start it takes.
     const test = isTest({ name });
     const seed = test ? 1066 : 1 + Math.floor(Math.random() * 2147483646);
     const opening = test ? null : freshStart(p.base, seed);
@@ -232,6 +239,7 @@ export function create({ name, scenario = "aldmere", minutes = 0, pace, fate = "
     saveMeta(meta);
     return meta;
   }
+  if (scenario !== "random" && scenario !== "founding") throw new Error(`no such start: ${scenario}`);
   fs.mkdirSync(p.saves, { recursive: true });
   fs.mkdirSync(p.state, { recursive: true });
   const random = scenario === "random";

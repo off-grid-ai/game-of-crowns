@@ -4,7 +4,9 @@ Mac, 2026-11-19: simulate the start once and save the whole realm; every new gam
 
 **Three starts (title.gd):** "Aldmere, nine years in" (scenario `aldmere`, the bridge's BASELINE) and "Aldmere, year
 one" (`aldmere_fresh`) are fixed: each is snapshotted whole, logic and view. Year one gets a bridge baseline of its own,
-captured as tools/make-baseline.sh captures nine years in, so a year-one game copies it instead of founding live; the
+made in one chain with nine years in (bridge/tools/make-baseline.sh: the founding, `baseline/aldmere_founding`, turn 1;
+year one run on from it, `baseline/aldmere_year_one`, turn 5; nine years in run on from year one, `baseline/aldmere`,
+turn 38; each baseline.json names its parent and seeds), so a year-one game copies it instead of founding live; the
 bake then snapshots each start's view under its own name (`<scenario>`). "A random realm" can't be pre-made: it is built
 once when the reign is created and saved there and then as that reign's own snapshot (the player's copy); Continue loads it.
 

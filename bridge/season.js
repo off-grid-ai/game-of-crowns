@@ -268,7 +268,9 @@ export function collectTithe(ctx, turn) {
   // The reign's goal: every great house firmly the King's (GOAL_FAVOUR and up)
   // and no war between them. Marked once in the chronicle when won; lost again
   // when a house falls away or two take up arms.
-  const united = ctx.goalNow().won;
+  // Never before the King is crowned (server.js applyStartOptions): a realm resumed on its first turn has no favour
+  // dealt yet, and every house at the book's default would read as sworn.
+  const united = Boolean(meta.optionsApplied) && ctx.goalNow().won;
   if (united && !meta.united) {
     meta.united = true;
     chron.saveMeta(meta);

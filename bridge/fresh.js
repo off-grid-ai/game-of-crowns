@@ -1,9 +1,10 @@
-// Every reign is a new reign. A new chronicle starts from the Aldmere baseline
-// (the realm 38 turns in), and for a real reign this deals it a fresh start
+// Every reign is a new reign. A new Aldmere chronicle starts from a snapshot
+// (year one or nine years in: chronicles.js BASELINES), and for a real reign this deals it a fresh start
 // from the reign's seed: Freeciv's own dice, the opening tensions between
 // neighbouring great houses, and the lords' grudges. Test reigns never come
 // here, so proofs stay repeatable.
 import { setPair } from "./diplomacy.js";
+import { row } from "./savefile.js";
 import fs from "node:fs";
 import path from "node:path";
 import zlib from "node:zlib";
@@ -20,6 +21,7 @@ export function rng(seed) {
   };
 }
 
+const FRIENDLY = new Set(["Peace", "Armistice", "Alliance", "Team"]);  // Freeciv's pacts a new King never inherits
 const greatNation = (n) => { const h = HOUSES[String(n).toLowerCase()]; return h && !h.crown && !h.wild ? h : null; };
 
 // Deals the openings: each great house with its two nearest great houses is a
@@ -55,6 +57,13 @@ function tensions(text, world, r, L = null) {
   const far = (id) => { const s = seat.get(id), n = road?.at(s) ?? -1; return n >= 0 ? n : 1e6 + Math.hypot(s.x - kingsSeat.x, s.y - kingsSeat.y); };
   const foe = kingsSeat && great.slice().sort((x, y) => far(x) - far(y))[0];
   if (foe != null) dealt.push({ a: Math.min(crown.id, foe), b: Math.max(crown.id, foe), state: "War", left: 0, crown: true });
+  // And no friends (the same rule, both starts): a house the snapshot left at peace, armistice or in alliance with the
+  // crown starts under an uneasy truce with the new King instead (Cease-fire: Freeciv lets it run out into war unless
+  // he wins them over). A house that never met the crown stays neutral.
+  for (const id of great.filter((x) => x !== foe)) {
+    const state = String(row(text, crown?.id, "diplstate", id)?.cells?.[0] ?? "").replace(/"/g, "");
+    if (crown && FRIENDLY.has(state)) dealt.push({ a: Math.min(crown.id, id), b: Math.max(crown.id, id), state: "Cease-fire", left: 8 + Math.floor(r() * 9), crown: true });
+  }
   for (const t of dealt) {
     const love = t.state === "War" ? -300 - Math.floor(r() * 500) : t.state === "Cease-fire" ? -100 - Math.floor(r() * 500) : 100 + Math.floor(r() * 300);
     text = setPair(text, t.a, t.b, t.state, turn, t.left, love);

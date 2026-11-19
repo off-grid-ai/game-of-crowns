@@ -43,6 +43,7 @@ export function first(ctx) {
   const cheb = (a, b) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
   const wild = (u) => houseFor(world.players.find((p) => p.id === u.owner) ?? {}).wild;
   if (!meta.firstRaid) {
+    if (meta.options?.raiders === "none") { meta.firstRaid = { done: true }; return; }  // the King chose a realm without raiders
     if ((meta.elapsedMs ?? 0) < F.afterS * 1000 || !Opening.may(meta, "raiders")) return;  // the calm opening: raiders come first, alone (opening.js)
     const seat = world.cities.find((c) => c.owner === crown.id && c.capital);
     if (!seat) return;

@@ -4,8 +4,9 @@
 // throwaway folder). Beside them, world_served.json: the same realm in the shape the bridge serves it on a new reign's
 // first /world (view.js worldView): each town's name and title (narrator.js cityName) and family (the bannerman seated
 // there, from the baseline's characters), each house's house (narrator.js houseFor: crown, name, colour), crownId,
-// seatId. Square bakes the starting towns from it. make-baseline.sh runs this after it captures a save; run alone after the baseline save changes:
-//   node tools/baseline-world.mjs
+// seatId. Square bakes the starting towns from it. make-baseline.sh runs this after it captures each snapshot of its chain
+// (a snapshot with no people yet, the founding, gets no world_served.json); run alone after a baseline save changes:
+//   node tools/baseline-world.mjs [aldmere | aldmere_year_one | aldmere_founding]
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -14,7 +15,7 @@ import { fileURLToPath } from "node:url";
 import { servedWorld } from "./served-world.mjs";
 
 const DIR = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
-const BASE = path.join(DIR, "baseline", "aldmere");
+const BASE = path.join(DIR, "baseline", process.argv[2] || "aldmere");
 const STATE = path.join(BASE, "state");
 const PORT = String(process.env.BASELINE_PORT || 5599);  // never the realm's own 5556
 const save = fs.readdirSync(path.join(BASE, "saves")).filter((f) => f.endsWith(".sav.zst")).map((f) => path.join(BASE, "saves", f))
@@ -51,5 +52,6 @@ setTimeout(() => {
 
 // The baseline's /world as a new reign's first sync serves it (served-world.mjs: one rule with a saved chronicle's).
 function served(world) {
+  if (!fs.existsSync(path.join(BASE, "characters"))) return;
   fs.writeFileSync(path.join(STATE, "world_served.json"), JSON.stringify(servedWorld(world, path.join(BASE, "characters"), { fill: true })));
 }
