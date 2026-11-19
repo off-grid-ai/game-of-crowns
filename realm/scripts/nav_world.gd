@@ -72,6 +72,8 @@ static var _carved_rev := 0  # counts changes to what is carved: the watch looks
 static var _still_at := 0.0  # when the claims were last looked over (_hold, on the game's clock)
 static var _unsettled := false  # a chunk seen this round waits to settle: another round follows
 static var _started := false
+static var _packed := false  # this start's maps were laid from the bake's pack (the watch waits for the realm, _streaming)
+static var _packed_at := 0.0
 static var _gen := 0  # a start's number: a bake still out from an earlier one is dropped when it comes back
 static var baked := 0  # chunk layers Recast baked since start (a restart with everything kept bakes none)
 static var read_back := 0  # chunk layers read back from their kept files
@@ -94,6 +96,8 @@ static func stop() -> void:
 	_answers.clear()
 	_queue.clear()
 	_landing.clear()
+	_drift.clear()
+	_drifted = 0
 	_landed_at = -1.0e9
 	landings = 0
 	_town_polys.clear()
@@ -110,6 +114,7 @@ static func stop() -> void:
 	_swept_key = null
 	_all.clear()
 	_started = false
+	_packed = false
 	_out = 0
 	_gen += 1
 	baked = 0
@@ -149,7 +154,9 @@ static func start(land: Node3D, ways: Node) -> void:
 	land.ground_changed.connect(_on_ground_changed)
 	if not Kept.baking:
 		WorkerThreadPool.add_task(_sweep_chunk_files, false, "nav sweep")
-	var pack := pack_path()
+	var pack := reign_pack_path()
+	if pack == "" or not FileAccess.file_exists(pack):
+		pack = pack_path()
 	if not Kept.baking and FileAccess.file_exists(pack):
 		# Build once, load only: the bake's whole navigation for this land, every chunk of every map, laid from one file
 		# on a worker (no Recast, nothing read off the ground just to name a file). Launch 2026-11-20: ~90 s of chunk
@@ -158,6 +165,8 @@ static func start(land: Node3D, ways: Node) -> void:
 			for c in _all:
 				_chunks[kind][c]["out"] = true
 				_out += 1
+		_packed = true
+		_packed_at = Time.get_ticks_msec() / 1000.0
 		WorkerThreadPool.add_task(_unpack.bind(_gen, pack), false, "nav pack")
 		return
 	for kind in [WATER] + LAND_KINDS:
@@ -180,26 +189,54 @@ static func pack_path() -> String:
 	return Kept.path("nav", "pack_" + String(terrain.land_key()).md5_text().substr(0, 12), "bin")
 
 
+## Where this reign keeps its own navigation once its ground has moved on from the bake's (towns grown, roads laid):
+## the player's folder, by the land and the reign. "" while no reign is known (the bake, a probe).
+static func reign_pack_path() -> String:
+	var st: Variant = Engine.get_meta("awareness") if Engine.has_meta("awareness") else null
+	var r: Variant = st.rec("reign", {}) if st else {}
+	var id := str((r as Dictionary).get("id", "")) if r is Dictionary and (r as Dictionary).get("id") != null else ""
+	if id == "":
+		return ""
+	return Kept.USER + "nav/pack_%s_%s_%s.bin" % [String(terrain.land_key()).md5_text().substr(0, 12), id.validate_filename(), Kept.code()]
+
+
 ## Every map's every chunk as it stands now (its layers and what they were baked from), written in one file (tools/bake.gd,
 ## once the maps have settled with the realm's towns and roads). How many chunk layers it holds.
-static func write_pack() -> int:
-	var out := {}
-	var n := 0
+static func write_pack(path := "") -> int:
+	return _write_snapshot(_snapshot(), pack_path() if path == "" else path)
+
+
+## What write_pack writes, taken on the main thread: each chunk's signature and its layers' meshes (never changed once
+## baked, so a worker may read them).
+static func _snapshot() -> Dictionary:
+	var snap := {}
 	for kind: StringName in _chunks:
 		var per := {}
 		for c: Vector2i in _chunks[kind]:
 			var ch: Dictionary = _chunks[kind][c]
+			per[c] = [String(ch["sig"]), (ch.get("meshes", {}) as Dictionary).duplicate()]
+		snap[kind] = per
+	return snap
+
+
+static func _write_snapshot(snap: Dictionary, path: String) -> int:
+	var out := {}
+	var n := 0
+	for kind: StringName in snap:
+		var per := {}
+		for c: Vector2i in snap[kind]:
+			var e: Array = snap[kind][c]
 			var layers := {}
-			for layer: StringName in ch.get("meshes", {}):
-				var nm: NavigationMesh = ch["meshes"][layer]
+			for layer: StringName in e[1]:
+				var nm: NavigationMesh = e[1][layer]
 				var polys: Array = []
 				for i in nm.get_polygon_count():
 					polys.append(nm.get_polygon(i))
 				layers[String(layer)] = [nm.get_vertices(), polys]
 				n += 1
-			per[c] = [String(ch["sig"]), layers]
+			per[c] = [String(e[0]), layers]
 		out[String(kind)] = per
-	Kept.keep_bytes(pack_path(), var_to_bytes(out))
+	Kept.keep_bytes(path, var_to_bytes(out))
 	return n
 
 
@@ -225,7 +262,7 @@ static func _unpack(gen: int, path: String) -> void:
 				got[[kind, c]] = true
 				_lock.lock()
 				read_back += layers.size()
-				_done.append([kind, c, String(e[0]), layers, 0, gen])
+				_done.append([kind, c, String(e[0]), layers, 0, gen, true])
 				_lock.unlock()
 	# A chunk the pack lacks (a map added since the bake): baked as before.
 	_lock.lock()
@@ -572,11 +609,21 @@ static func _watch() -> void:
 		if _watch_i >= _all.size():
 			_watch_i = 0
 			_swept_key = null if _unsettled else _sweep_key
+		if _streaming():
+			_unsettled = true
+			_watch_i = 0
+			return  # the realm still comes in behind the card: what the pack laid stands until it has
 		var inputs := _inputs(c)
 		var sig := String(inputs["sig"])
 		for kind in LAND_KINDS:
 			var ch: Dictionary = _chunks[kind][c]
 			if ch["out"] or (_pending[kind] as Dictionary).has(c) or sig == String(ch["sig"]):
+				continue
+			if bool(ch.get("packed", false)):
+				# Laid from a pack and found to differ (a town grown since, a road laid): put right in the background, a few
+				# at once, nearest the lens first (_drift), never all at the opening (2026-11-20: rebakes held the pool
+				# and play ran at 4-16 fps for the first minutes). The map answers meanwhile with the pack's mesh.
+				_drift[[kind, c]] = true
 				continue
 			_unsettled = true
 			if sig != String(ch["want"]):
@@ -590,9 +637,68 @@ static func _watch() -> void:
 				_queue.append([kind, c])
 
 
+## Whether the realm is still coming in after the pack was laid (play only): a town being raised or read, the roads
+## being read back and painted, or ground.gd still reading what was set down. The watch waits it out.
+## Once only, at the opening (it latches off the first time the realm stands, or nav.stream_most seconds after the pack
+## was laid): later a town grown or a block standing is baked round as it happens.
+static func _streaming() -> bool:
+	if not _packed or Kept.baking:
+		return false
+	if Time.get_ticks_msec() / 1000.0 - _packed_at > Data.num("ground", "nav.stream_most", 180.0):
+		_packed = false
+		return false
+	var main: Node = terrain.get_parent() if terrain and is_instance_valid(terrain) else null
+	var tw: Variant = main.get("towns") if main else null
+	var busy: bool = (roads and is_instance_valid(roads) and roads.has_method("laid") and not roads.laid()) 		or (tw != null and is_instance_valid(tw) and tw.has_method("building") and tw.building()) 		or not Ground._dirty.is_empty()
+	if not busy:
+		_packed = false  # the realm stands: the watch looks from now on
+	return busy
+
+
 ## Bakes handed to workers, nav.at_once at a time; what each is made of gathered here on the main thread (the land's
 ## triangles from Terrain3D, what stands from ground.gd's records, the ways), the rest on the worker.
+static var _drift := {}  # [kind, chunk] -> true: laid from a pack, differing from what stands now (_watch)
+static var _drifted := 0  # drift chunks put right since the last reign pack was written
+static var _reign_writing := -1  # the worker task writing the reign's pack
+
+
+## A drift chunk or two handed to the queue while nothing else is baking and the realm stands (nav.drift_at_once), the
+## nearest the lens first; once none is left, the reign's own pack written on a worker so the next launch lays it whole.
+static func _feed_drift() -> void:
+	if Kept.baking or _streaming() or not _queue.is_empty():
+		return
+	if _drift.is_empty():
+		if _drifted > 0 and _out == 0 and (_reign_writing < 0 or WorkerThreadPool.is_task_completed(_reign_writing)):
+			var path := reign_pack_path()
+			if path != "":
+				_drifted = 0
+				var snap := _snapshot()
+				_reign_writing = WorkerThreadPool.add_task(func() -> void: _write_snapshot(snap, path), false, "nav reign pack")
+		return
+	var most := int(Data.num("ground", "nav.drift_at_once", 2))
+	if _out >= most:
+		return
+	var cam: Camera3D = (Engine.get_main_loop() as SceneTree).root.get_camera_3d() if Engine.get_main_loop() is SceneTree else null
+	var at := Vector2i.ZERO
+	if cam:
+		at = Vector2i(floori(cam.global_position.x / _chunk_size()), floori(cam.global_position.z / _chunk_size()))
+	var best: Variant = null
+	var best_d := 1 << 30
+	for job in _drift:
+		var c: Vector2i = job[1]
+		var d := maxi(absi(c.x - at.x), absi(c.y - at.y))
+		if d < best_d:
+			best_d = d
+			best = job
+	_drift.erase(best)
+	var ch: Dictionary = _chunks[best[0]][best[1]]
+	ch["packed"] = false
+	_drifted += 1
+	_queue.append(best)
+
+
 static func _dispatch() -> void:
+	_feed_drift()
 	var most := int(Data.num("ground", "nav.at_once", 3))
 	while _out < most and not _queue.is_empty():
 		if not ViewTier.spend_ok(&"nav_world"):
@@ -708,17 +814,18 @@ static func _inputs(c: Vector2i) -> Dictionary:
 		var L: Dictionary = Data.value("ground", "physics.layers", {})
 		var mask := 0
 		for k in L:
-			if String(k).begins_with("_") or String(k) == "field" or String(k) in BLOCKING_CLAIMS:
+			if String(k).begins_with("_") or String(k) in NOT_CARVED or String(k) in BLOCKING_CLAIMS:
 				continue  # a hedged field is walked into by those who work it; held ground is read below
 			mask |= 1 << (int(L[k]) - 1)
 		var r0 := Time.get_ticks_usec()
 		var obstacles: Array = []
-		var shapes := Ground.obstacle_shapes(area, mask)
+		var shapes := _standing(area, mask)
 		var r1 := Time.get_ticks_usec()
 		for e: Dictionary in shapes:
 			var o := _outline(e["shape"], e["xform"], e.get("bounds", Rect2()))
 			if o.size() >= 3:
 				obstacles.append(o)
+		obstacles = _in_order(obstacles)
 		PerfTools.add("nav_world.shapes", r1 - r0)
 		PerfTools.add("nav_world.outlines", Time.get_ticks_usec() - r1)
 		var r2 := Time.get_ticks_usec()
@@ -747,12 +854,15 @@ static func _inputs(c: Vector2i) -> Dictionary:
 				if side == Vector2.ZERO:
 					continue
 				road_ways.append(PackedVector2Array([a + side, b + side, b - side, a - side]))
+		town_ways = _in_order(town_ways)
+		road_ways = _in_order(road_ways)
 		var ways: Array = town_ways + road_ways
 		var r3 := Time.get_ticks_usec()
 		PerfTools.add("nav_world.ways", r3 - r2)
 		key = [Ground.shapes_rev_in(area), _roads_rev_in(area), _towns_rev_in(area), int(_land_rev.get(c, 0))]  # as read: the read itself may lay a wood's trunks
-		var parts := {"shapes": hash(obstacles), "towns": hash(town_ways), "roads": hash(road_ways), "land": key[3]}
-		kept = [key, str(hash([key[3], obstacles, ways])), obstacles, ways, parts]
+		var land := _land_sig(area)
+		var parts := {"shapes": hash(obstacles), "towns": hash(town_ways), "roads": hash(road_ways), "land": land}
+		kept = [key, str(hash([land, obstacles, ways])), obstacles, ways, parts]
 		PerfTools.add("nav_world.hash", Time.get_ticks_usec() - r3)
 		_base[c] = kept
 	# The held ground (a regiment's block, an engine): the claims' own outlines, cheap to read every look.
@@ -770,6 +880,77 @@ static func _inputs(c: Vector2i) -> Dictionary:
 	var parts: Dictionary = (kept[4] as Dictionary).duplicate()
 	parts["claims"] = hash([held, engines])
 	return {"sig": sig, "obstacles": (kept[2] as Array) + held, "engines": engines, "ways": kept[3], "parts": parts, "claims_only": was.get_slice(":", 0) == base, "held": not (held.is_empty() and engines.is_empty())}
+
+
+## Ground layers never carved out of the maps: a hedged field is walked into by those who work it; a town's life (its
+## people's stalls, crates, carts and posts) comes and goes with the view (staged NEAR only) and is stepped round by
+## avoidance (Godot's rule: a navmesh for what stays put). Carved, play's chunks never matched the bake's (which stages
+## no life) and were baked again and again (2026-11-20: nav_world.bake 3-16 s a 10 s, fps 8-24 while panning).
+const NOT_CARVED := ["field", "life"]
+
+
+## What stands over `area` on `mask`'s layers (ground.gd's records: its bodies by cell, its claims), whether its town is
+## shown or hidden: ground.gd obstacle_shapes leaves out a body out of the space (a town hidden past the view), so the
+## maps changed as the camera moved, and the bake (towns FAR) carved fewer towns than play.
+static func _standing(area: Rect2, mask: int) -> Array:
+	Ground._fresh(area)
+	if not Ground._src_dirty.is_empty():
+		Ground._clean_sources(area)
+	var out := []
+	var seen := {}
+	var cell := Ground.SHAPES_CELL
+	for x in range(floori(area.position.x / cell), floori(area.end.x / cell) + 1):
+		for z in range(floori(area.position.y / cell), floori(area.end.y / cell) + 1):
+			for body: RID in (Ground._cell_bodies.get(Vector2i(x, z), {}) as Dictionary):
+				if seen.has(body):
+					continue
+				seen[body] = true
+				var layer: int = Ground._layer_of.get(body, 0)
+				if layer & mask == 0 or not Ground._owner.has(body) or not (Ground._owner[body][2] as Rect2).intersects(area, true):
+					continue
+				for sh: Array in Ground._body_shapes.get(body, []):
+					if (sh[2] as Rect2).intersects(area, true):
+						out.append({"xform": sh[0], "shape": sh[1], "layer": layer, "bounds": sh[2]})
+	for id in Ground._claims_over(area):
+		var c: Array = Ground._claims[id]
+		var layer: int = Ground._layer_of.get(c[3], 0)
+		if layer & mask != 0 and (c[2] as Rect2).intersects(area, true):
+			for sh: Array in c[4]:
+				out.append({"xform": sh[0], "shape": sh[1], "layer": layer, "bounds": sh[2]})
+	return out
+
+
+## Outlines to the centimetre, in one order (by their own corners): the same ground hashes the same however it was read
+## (ground.gd's records and the towns' cells are dictionaries, filled in the order things were set down or loaded).
+static func _in_order(polys: Array) -> Array:
+	var keyed: Array = []
+	for poly: PackedVector2Array in polys:
+		var snapped := PackedVector2Array()
+		snapped.resize(poly.size())
+		for i in poly.size():
+			snapped[i] = poly[i].snapped(Vector2(0.01, 0.01))
+		keyed.append([var_to_str(snapped), snapped])
+	keyed.sort_custom(func(a: Array, b: Array) -> bool: return String(a[0]) < String(b[0]))
+	var out: Array = []
+	for e: Array in keyed:
+		out.append(e[1])
+	return out
+
+
+## The land under a chunk by what it is: its heights on a 1-unit grid, to the millimetre (terrain.gd height_at). Equal
+## ground signs alike whenever and however often it was graded (the change count, _land_rev, only says when to look).
+static func _land_sig(area: Rect2) -> int:
+	if terrain == null or not is_instance_valid(terrain):
+		return 0
+	var hs := PackedInt32Array()
+	var x := ceilf(area.position.x)
+	while x <= area.end.x:
+		var z := ceilf(area.position.y)
+		while z <= area.end.y:
+			hs.append(roundi(float(terrain.height_at(x, z)) * 1000.0))
+			z += 1.0
+		x += 1.0
+	return hash(hs)
 
 
 ## A shape standing in the ground's space (ground.gd: prisms, boxes, a trunk's cylinder) as its outline on the ground,
@@ -1160,8 +1341,8 @@ static func _land_done() -> void:
 		ch["sig"] = d[2]
 		var regions: Dictionary = ch["regions"]
 		var layers: Dictionary = d[3]
-		if Kept.baking:
-			ch["meshes"] = layers  # write_pack (the server keeps no copy to read back)
+		ch["meshes"] = layers  # write_pack and the reign's pack (the server keeps no copy to read back)
+		ch["packed"] = d.size() > 6  # laid from a pack: a difference found later drifts (_drift), never stalls the realm
 		for layer: StringName in LAYERS:
 			if not layers.has(layer) or (layers[layer] as NavigationMesh).get_polygon_count() == 0:
 				if regions.has(layer):
