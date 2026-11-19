@@ -44,6 +44,9 @@ func _run() -> void:
 	# few milliseconds (view_tier.gd spend_ok), so a pass is not thousands of headless frames of waiting.
 	ViewTier.loading = true
 	ViewTier.LOAD_MS = 1000.0
+	# Every place FAR (no lens here): a town stands as it is kept (towns.gd keeps it before its life is staged), and
+	# its life, never kept, is not staged at all (the read-back pass staged 31 towns' life on one core for 11+ minutes).
+	ViewTier.tool_tier = ViewTier.FAR
 	if OS.get_cmdline_user_args().has("--troops"):
 		# The soldiers alone, into the bake already made (a soldier baked again by tools/rig: his file is keyed by his mesh).
 		print("BAKE troops: %d soldiers kept" % preload("res://scripts/army_visual.gd").bake())
@@ -141,9 +144,12 @@ func _realm(world: Dictionary, map: Dictionary, baseline := false, towns_only :=
 	towns.terrain = terrain
 	root.add_child(towns)
 	towns.sync(store.houses_by_id())
+	var t0 := Time.get_ticks_msec()
 	while towns.building():
 		await process_frame
 	var n: int = towns.towns.size()
+	if not towns_only:
+		print("BAKE towns: %d read back in %.0f s" % [n, (Time.get_ticks_msec() - t0) / 1000.0])
 	if towns_only:
 		for n2 in [towns, terrain, store]:
 			root.remove_child(n2)

@@ -65,10 +65,15 @@ func _exit_tree() -> void:
 		_me = null
 
 
+## Every place's tier where there is no lens (a headless tool): NEAR, everything, unless the tool says otherwise
+## (tools/bake.gd: FAR, so the towns it reads back stand without their life staged, which it never keeps).
+static var tool_tier := NEAR
+
+
 ## The tier of a place: a point `at` with room `radius` round it (a town's, a castle's; 0 for a body).
 static func of(at: Vector3, radius := 0.0) -> int:
 	if _me == null:
-		return NEAR  # no lens to judge by (a headless tool): everything, as before there was one
+		return tool_tier  # no lens to judge by (a headless tool): everything, as before there was one
 	if not PerfTools.probing:
 		return _me._tier(at, radius)
 	var t0 := Time.get_ticks_usec()
