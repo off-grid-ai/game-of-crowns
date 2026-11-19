@@ -1803,9 +1803,10 @@ class Kit:
 					return p
 		return want
 
-	## Goes to a spot it has spoken for (its step_to, which the stopping rule reads), so nobody else stops there.
+	## Goes to a spot it has spoken for (npc_mind Step.claim: its step_to, which the stopping rule reads, and in this
+	## frame's grid at once), so nobody else stops there, not even one asking this same frame.
 	static func go_to(agent: Node3D, to: Vector3) -> void:
-		agent.set_meta("step_to", to)
+		Mind.Step.claim(agent, to)
 		Mover.of(agent).go(to)
 
 	## Plays a person's clips in turn, never the same twice running, a new one every few seconds.
