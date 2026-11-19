@@ -1,78 +1,70 @@
+<div align="center">
+
+<img src="docs/play/v07/court_hall.jpg" alt="The empty throne at Kingsmere, the seven great houses' banners down the hall" width="100%">
+
 # Game of Crowns
 
-![The King on his throne as a lord stands before the court of Aldmere](docs/play/launch/king_throne.jpg)
+### Find out what kind of king you'd be.
 
-**Find out what kind of king you'd be.**
+You've just been crowned, and nobody's on your side. Seven great houses hold the realm. One is already at war with you, and the rest are waiting to see if you're worth kneeling to.
 
-**[Download it free for your Mac](https://github.com/off-grid-ai/game-of-crowns/releases/latest)** · **[Watch the trailer](https://github.com/off-grid-ai/game-of-crowns/releases/download/v0.5.1-20261106-b55fe8e/game-of-crowns-launch-16x9.mp4)**
+**[Download free for Mac](https://github.com/off-grid-ai/game-of-crowns/releases/latest)**
 
-You're the king, and seven great houses want your throne. All you've got to hold onto it is grain, gold and your word at court. Rule well and history calls you the Golden. Mess it up and you're the Bloody, or worse, the Deposed. It's free on any Apple Silicon Mac.
+[![Latest release](https://img.shields.io/github/v/release/off-grid-ai/game-of-crowns?label=play&color=b8862b)](https://github.com/off-grid-ai/game-of-crowns/releases/latest)
+[![MIT licence](https://img.shields.io/badge/licence-MIT-555)](LICENSE)
+[![Made with Godot 4](https://img.shields.io/badge/made%20with-Godot%204-478cbf)](https://godotengine.org)
+[![Mac now, every platform soon](https://img.shields.io/badge/Mac-now-333)](#coming-soon)
 
-[![Gareth Varn reminds the King, in front of the court, of the war he sided against them ten years ago](docs/play/v05/hook.gif)](https://github.com/off-grid-ai/game-of-crowns/releases/download/v0.4-20261106-bef6218/game-of-crowns-0.4-hook-16x9.mp4)
-*"10 years ago, in the spring of 315, you took our enemy's side in war." Make amends, hear him out, or tell him the crown did what it must. Click to watch.*
+</div>
 
-## In the game
+## Win all seven houses, by the sword or by your word
 
-| | |
-|---|---|
-| ![A lord stands before the King at court with his grievance and three ways to answer](docs/play/gameplay/court.jpg) | ![Goldrock's market square, the castle walls behind it](docs/play/gameplay/goldrock.jpg) |
-| *A lord brings an old grudge to court.* | *Goldrock, seat of House Goldcrest.* |
-| ![The Hand of the King's counsel over a town street: a cold house, a starving town, the dead coming south](docs/play/gameplay/hand.jpg) | ![Farmers working the fields outside a town by the water](docs/play/gameplay/farms.jpg) |
-| *Your Hand tells you what needs answering.* | *The harvest that feeds your houses, or doesn't.* |
+Beat a house in battle and its land is yours to hand out. Fight beside a house, be generous, and in time it swears to you as a friend. When all seven have sworn to you, the realm is yours. Lose your head first and the reign is over, because there's no heir to save you.
 
-## Why you'll keep playing
+## March your host out and fight in formation
 
-- **Your choices come back for you.** Every house remembers what the crown did to it. Feed one through a famine and it answers your banners; snub its lord and he brings it up at court years later, with the year and the reason.
-- **Every lord has a secret worth knowing.** All 83 lords, consorts, heirs and bannermen start with a past that matches everyone else's, from who refused whose daughter to who opened the gates at Windcross. Ten bannermen already have a reason to turn their coats, so find them before your enemies do.
-- **No two reigns end the same way.** Pick the story that comes for your throne, like The Broken Oath, The Long Winter or The Crown's Debt, or let the realm choose. It plays out through the choices brought to your court, and you either hold the crown or lose it.
-- **Watch the war, then step into it.** Zoom out and a painted map shows every town under whoever holds it, every host on the march and every siege. Click a town and you're on the ground watching the battle, the feast or your own rider on the road.
-- **The lords talk back.** Run [Off Grid AI](https://getoffgridai.co/desktop) next to it and they plead, scheme and threaten you in their own words. It's free, it runs on your Mac, and nothing you say leaves it.
-- **Make Aldmere yours.** Rename any house or person and rewrite anyone's story, memories, nature and loyalty right on their card. Do it from the menu and every reign you start after that begins your way.
+Pikes, men-at-arms, archers, knights and horse march out of Kingsmere in your colours, each troop under its own banner. Pick a town and they go. When a line breaks, you watch the rout run down the field.
+
+## Break their walls and take their towns
+
+Batter the walls until they crack, storm the breach, and the town flies your banner. Then pick who holds it for you. A warden who hates you hands his towns to your enemy and marches on your castle.
+
+## Every lord remembers what you did
+
+Snub a lord and he brings it up at court years later, with the year and the reason. Every one of the 83 lords, consorts, heirs and bannermen has a past tied to everyone else's, and ten bannermen already have a reason to turn their coats. Find them before your enemies do.
+
+Run [Off Grid AI](https://getoffgridai.co/desktop) beside it and the lords plead with you and threaten you in their own words. It's free, it runs on your Mac, and nothing you say leaves it.
 
 ## Seven houses, one throne
 
 | | | | |
 | --- | --- | --- | --- |
 | ![House Wolfholt](docs/play/v05/house_wolfholt.jpg) | ![House Goldcrest](docs/play/v05/house_goldcrest.jpg) | ![House Thornvale](docs/play/v05/house_thornvale.jpg) | ![House Stormhold](docs/play/v05/house_stormhold.jpg) |
-| **Wolfholt.** Honourable, proud, and they never forget. | **Goldcrest.** They buy what others must fight for. | **Thornvale.** The realm's breadbasket, and schemers who smile. | **Stormhold.** Fierce and loyal, until they aren't. |
-| ![House Sunspire](docs/play/v05/house_sunspire.jpg) | ![House Highfell](docs/play/v05/house_highfell.jpg) | ![House Ironreach](docs/play/v05/house_ironreach.jpg) | ![The Crown at Kingsmere](docs/play/v05/house_crown.jpg) |
-| **Sunspire.** The last to bend the knee. | **Highfell.** Untouchable in their mountains. | **Ironreach.** They take what they want from the coasts. | **The Crown.** Yours, as long as it stays strong. |
+| **Wolfholt.** *Hold Fast.* Proud, and they never forget. | **Goldcrest.** *Wealth Is Strength.* They buy what others must fight for. | **Thornvale.** *Root and Thorn.* The realm's bread, and schemers who smile. | **Stormhold.** *We Weather All.* Fierce and loyal, until they aren't. |
+| ![House Sunspire](docs/play/v05/house_sunspire.jpg) | ![House Highfell](docs/play/v05/house_highfell.jpg) | ![House Ironreach](docs/play/v05/house_ironreach.jpg) | ![Kingsmere, the Crown's seat, its red banners on every tower](docs/play/v05/house_crown.jpg) |
+| **Sunspire.** *The Sun Waits.* The last to bend the knee. | **Highfell.** *Sworn and Steadfast.* Untouchable on their rock. | **Ironreach.** *The Sea Provides.* They take what they want from the coasts. | **The Crown.** *Our Sword Is Bloody.* Yours, for as long as you can hold it. |
 
-![Cecily Goldcrest, Lady of Goldrock, in her own oak grove at golden hour](docs/play/v04/meet-goldcrest.jpg)
-*Know what a lord is hiding before you sit across from them. Cecily Goldcrest holds the debts of half the western lords, and she swears the Wolfholt bride died of fever.*
 
-![Chronicles: every reign as a card, the one in progress ready to continue](docs/play/v04/chronicles.jpg)
-*Every reign you play is kept. Pick up the one in progress, or look back at how the realm remembers the ones that ended.*
+<div align="center">
 
-**[Download Game of Crowns free](https://github.com/off-grid-ai/game-of-crowns/releases)** for any Mac with Apple Silicon. Windows is coming.
+**[Download Game of Crowns free](https://github.com/off-grid-ai/game-of-crowns/releases/latest)**
+
+Free and open source. Signed and notarised by Apple.
+
+</div>
 
 ## Coming soon
 
+- [ ] Play on Windows, Linux, your phone and in your browser
 - [ ] Multiplayer, with your friends as rival houses
-- [ ] Walk your realm in first person
-- [ ] Ride into battle in third person
-- [ ] Take control of anyone
-- [ ] Grow from commoner to king
-- [ ] Talk to anyone, and be remembered
+- [ ] Ride into battle at the head of your host
 - [ ] Found a dynasty that outlives you
-- [ ] Rivals who plot for your throne
-- [ ] Nights lit by torch and fire
 - [ ] New continents to conquer
-- [ ] Magic and old blood
-- [ ] Lore that runs centuries deep
-- [ ] Bring your own maps
-- [ ] Bring your own characters
-- [ ] Write stories others can play
-- [ ] Play on Windows
-- [ ] Rule from your phone
+- [ ] Bring your own maps and characters, and write stories others can play
 
 ## Releases
 
 Every build is signed and notarised by Apple. [All releases](https://github.com/off-grid-ai/game-of-crowns/releases)
-
-- **0.5.1**: every reign ends with the name history gives you, your score and the reign in numbers. Your Hand brings you a new crisis every year: plague, riots, a lord grown too strong, an heir to marry off. A house can have one royal favour a year, so gold can't buy everyone. Cards wait their turn instead of jumping in while you click.
-- **0.5**: lords with written pasts and memories you can rewrite, full-length portraits of everyone at court, a painted map of the realm, and a new name for anyone you like.
-- **0.4**: the first build we shared.
 
 ---
 
@@ -151,7 +143,7 @@ The Mac app (`Game of Crowns.app`, one double-click, everything inside) is built
 
 ## Playing
 
-The aim of a reign: win every great house to the point where it would answer your banners (favour 35 and up), then end the wars between them (Peace above 50%). A house under 25 may rise against you; two such houses and one claims the throne.
+The aim of a reign: all seven great houses sworn to the King. A house is won by war (beat it and name a lesser house its warden) or by alliance (stand by it in its wars and be generous until it swears). Each house shows how it sees the King (respects, fears, thinks him weak), from his host against theirs and his recent wins and losses. A sworn house can break away after a great defeat, and a defiant warden takes his towns over to the King's enemies. The King's death ends the reign.
 
 - **Camera:** drag or WASD to pan (Shift faster), wheel to zoom, right-drag or Q/E and R/F to turn and tilt, **Z** back to Kingsmere, **M** hides the minimap. Leave the camera alone and it goes looking for whatever is happening in the realm.
 - **Panels:** **K** the court, **H** the great houses, **C** the chronicle, **L** the ledger, **B** the Lore of Aldmere, **Space** pause, **Esc** close. Every key can be changed in Settings → Controls. Cmd + / − sizes the interface.
