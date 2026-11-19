@@ -563,8 +563,10 @@ static func _fresh(area: Rect2) -> void:
 			if not rec.is_empty() and not (rec["clip"] as Rect2).intersects(area, true):
 				continue  # not over the ask's ground
 			_dirty.erase(iid)
-			if not rec.is_empty():
-				_stamp(rec)
+			# Only the life pieces near the ask are read for it (the rest on the frame's budget, _tick): a town's whole
+			# life read for one stall's ask was the 200-450 ms ground.stand frames after Continue (2026-11-20).
+			if not rec.is_empty() and not _stamp(rec, false, area):
+				_dirty[iid] = true
 		if PerfTools.probing:
 			PerfTools.add("ground.stand", Time.get_ticks_usec() - t0)  # pieces read and their bins refilled: its share of the frame
 
@@ -688,7 +690,7 @@ static func _lift(rec: Dictionary, k: int) -> bool:
 ## only the pieces set down since, each read once ("town" for its builders', "life" for its life's). Hidden or shown
 ## (it, or its Life): its bodies taken out of the space or put back, nothing read again (a town drawn far off or
 ## streamed out is hidden and shown as the lens moves). Only the bins that changed are refilled.
-static func _stamp(rec: Dictionary, budgeted := false) -> bool:
+static func _stamp(rec: Dictionary, budgeted := false, near: Rect2 = Rect2()) -> bool:
 	var root: Node3D = rec["root"] if is_instance_valid(rec["root"]) else null
 	if root == null:
 		_drop(rec)
@@ -737,7 +739,10 @@ static func _stamp(rec: Dictionary, budgeted := false) -> bool:
 				_read(rec, root, life, "life", false)
 				for l in life.get_children():
 					_read(rec, root, l, "life")
-	if rec.has("reading") and not _reading(rec, root, budgeted):
+	if rec.has("reading") and not _reading(rec, root, budgeted, near):
+		if near.has_area():
+			_switch(rec, on)
+			_commit(rec)  # what was read near the ask stands for it now; the rest is read on over frames
 		return false
 	_switch(rec, on)
 	_commit(rec)
@@ -746,12 +751,15 @@ static func _stamp(rec: Dictionary, budgeted := false) -> bool:
 
 ## A root's read (_stamp) carried on a piece at a time; with `budgeted`, only while the frame's budget lasts (at least
 ## one piece a call). Whether it is done (its outlines kept when any were missing).
-static func _reading(rec: Dictionary, root: Node3D, budgeted: bool) -> bool:
+const NEAR_READ := 3.0  # world units round an ask within which a town's life pieces are read for it (a stall is < 1)
+static func _reading(rec: Dictionary, root: Node3D, budgeted: bool, near: Rect2 = Rect2()) -> bool:
 	var r: Dictionary = rec["reading"]
 	var steps: Array = r["steps"]
 	var got: Dictionary = r["got"]
 	var file: String = r["file"]
 	var i := int(r["i"])
+	var later: Array = []  # life pieces away from the ask (`near`): read on the frame's budget after it
+	var wide := near.grow(NEAR_READ)
 	while i < steps.size():
 		if budgeted and i > int(r["i"]) and not ViewTier.spend_ok(&"ground"):
 			r["i"] = i
@@ -761,6 +769,11 @@ static func _reading(rec: Dictionary, root: Node3D, budgeted: bool) -> bool:
 		var c: Variant = e[0]
 		if not is_instance_valid(c) or not (c as Node).is_inside_tree():
 			continue
+		if near.has_area() and e[1] == "life" and bool(e[2]) and c is Node3D:
+			var at := (c as Node3D).global_position
+			if not wide.has_point(Vector2(at.x, at.z)):
+				later.append(e)
+				continue
 		if e[1] == "town":
 			var key: String = e[3]
 			if file != "" and not got.has(key):
@@ -773,6 +786,10 @@ static func _reading(rec: Dictionary, root: Node3D, budgeted: bool) -> bool:
 			_read(rec, root, c, "life", false)
 		else:
 			_read(rec, root, c, "life")
+	if not later.is_empty():
+		r["steps"] = later
+		r["i"] = 0
+		return false
 	rec.erase("reading")
 	if bool(r["missed"]):
 		var keep := Resource.new()

@@ -245,7 +245,7 @@ func _stage_town(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 	# instead of cast anew. The bake itself always stages (and keeps what it staged under this key).
 	var reg: Dictionary = towns_node.get("towns") if towns_node else {}
 	var town_file := TownStore.kept_name(root, String((reg.get(_town_id, {}) as Dictionary).get("path", "")))
-	var kept_key := PeopleStore.key(_town_id, [sig, int(c.get("size", 1)), String(house.get("color", "")), String(root.get_meta("rank", "town")), town_file, _town_on])
+	var kept_key := PeopleStore.key(_town_id, _cast_facts(root, c, kind, building) + [int(c.get("size", 1)), String(house.get("color", "")), String(root.get_meta("rank", "town")), town_file, _town_on])
 	life.set_meta("kept_key", kept_key)
 	var kept := "" if Kept.baking or town_file == "" else PeopleStore.source(kept_key)
 	if kept != "":
@@ -265,6 +265,10 @@ func _stage_town(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 			await PeopleStore.live(life, root, self, _pace.bind("kept"))
 			if _gone(root, life):
 				return
+			if String(life.get_meta("sig", "")) != sig:
+				await _restate(root, life, c, sig)  # kept for other passing states: its scenes put right, never cast whole
+				if _gone(root, life):
+					return
 			_near_only(life)
 			_pin(life, center)
 			_swap(root, life)
@@ -280,7 +284,7 @@ func _stage_town(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 	if _gone(root, life):
 		return
 	if kind == "Building" and building != "" and building != "Coinage":
-		_construction(root, life, center, building, progress, rng, int(c["size"]), house if bool(c.get("royal", false)) else {})
+		await _construction(root, life, center, building, progress, rng, int(c["size"]), house if bool(c.get("royal", false)) else {})
 	elif kind == "UnitType" and building != "" and not building in Awareness.civilian:  # a soldier's training, not a civilian's (bridge campaigns.js CIVILIAN)
 		_drill(root, life, center, progress, color, building)
 	await _pace("work_site")
@@ -323,6 +327,59 @@ func _stage_town(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 		_keep_life(root, life)
 	elif not Kept.baking and town_file != "" and not _gone(root, life):
 		_keep_own(root, life)
+
+
+## What fixes who a town's Life casts and dresses (its kept key, with size, holder, rank, town file and minds): its
+## work site, the moods its stalls, barricades and working buildings are dressed for (famine, war, grief, prosperity,
+## grasping, Works.states), the King's finished works, its ruling and its working buildings. The passing states the
+## scenes alone read (market day, a fair, the weather, the fields' season, the season's stores) are not in it: a kept
+## Life for other passing states is read back and its scenes put right (_restate), never cast whole. Keyed by every
+## state, a market day or a shower missed the kept Life and the town was cast anew (2026-11-20: a fresh reign cast
+## every near town live, town_scenes.cast and life.works ~0.5 s a second).
+func _cast_facts(root: Node3D, c: Dictionary, kind: String, building: String) -> Array:
+	var works := Works.states(c, _town_id)
+	works.sort()
+	var ruling: String = (c.get("ruling") as Dictionary).get("kind", "") if c.get("ruling") is Dictionary else ""
+	return [kind, building, bool(c.get("famine", false)), bool(c.get("atWar", false)), bool(c.get("grief", false)),
+		bool(c.get("prosperity", false)), bool(c.get("grasping", false)), ",".join(works),
+		",".join(royal_done_of(int(c.get("id", -1)))), ruling, hash(root.get_meta("works", {}))]
+
+
+## A kept Life read back for other passing states put right for these (`sig`): each scene row it cast that these
+## states no longer meet taken away (its people, by their scene), and the rows they now meet staged by the director
+## (it skips the rows already cast: rows_cast). Only those rows are cast, over frames.
+func _restate(root: Node3D, life: Node3D, c: Dictionary, sig: String) -> void:
+	var t0 := Time.get_ticks_usec()
+	var states := _states(c)
+	var size := int(c.get("size", 1))
+	if director:
+		var rows: Dictionary = (life.get_meta("rows_cast", {}) as Dictionary).duplicate()
+		var gone := {}
+		for row: Dictionary in director._d.get("standing", []):
+			var rid := String(row.get("id", ""))
+			if rid != "" and rows.has(rid) and not director._meets(row, root, states, size):
+				rows.erase(rid)
+				gone[rid] = true
+		if not gone.is_empty():
+			var hit: Array = life.find_children("*", "", true, false).filter(func(n: Node) -> bool: return gone.has(String(n.get_meta("scene", ""))))
+			for n: Node in hit:
+				var up := n.get_parent()
+				var under := false  # one inside another taken away goes with it
+				while up != null and up != life:
+					if hit.has(up):
+						under = true
+						break
+					up = up.get_parent()
+				if not under:
+					n.get_parent().remove_child(n)
+					n.queue_free()
+		life.set_meta("rows_cast", rows)
+	life.set_meta("states", states)
+	life.set_meta("sig", sig)
+	if PerfTools.probing:
+		PerfTools.add("life.restate", Time.get_ticks_usec() - t0)
+	if director:
+		await director.stage(root, life, c, states, self)  # only the rows these states meet that it never cast
 
 
 ## A Life staged in play because none was kept for its facts (a town grown or changed since the bake, in this reign):
@@ -619,6 +676,13 @@ func _fields(root: Node3D, hungry: bool) -> void:
 ## Manor Lords' sites, their lord's flag over the scaffold): towns.json royal_works.
 func _construction(root: Node3D, life: Node3D, center: Vector3, building: String, progress: float, rng: RandomNumberGenerator, size: int, royal := {}) -> void:
 	var kit := site_kit(building)
+	# Its models read on the loader's threads first, a frame at a time (Real.ready): Real.make on a model still loading
+	# waited for it here, 2.5 s in one frame the first time a town showed a building site (2026-11-20).
+	for m in [kit, Real.one("woodpile"), Real.one("cart"), Real.one("ladder")]:
+		while m != "" and not Real.ready(m):
+			await PerfTools.next_frame(&"town_life:site")
+			if _gone(root, life):
+				return
 	# Sites go up at the edge of town, on the first flat ground found that no
 	# house, wall or fence already stands on (with room round it for the builders).
 	var f: Vector2 = Real.footprint(kit)

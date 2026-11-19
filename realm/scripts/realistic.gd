@@ -412,11 +412,31 @@ static func built_scale(name: String) -> float:
 ## (FPS: fps1.log, the first plaza 1.8 s, the first landmark 4.1 s, later ones tens of ms). A model asked for
 ## before its load is done waits for that load, never reads it twice.
 static func warm() -> void:
+	# A model kept with its frame (_kept_ahead) is read from its kept merge alone: its source file is never opened (the
+	# boot loaded every source glb, 6-9 MB each, on the loader's threads, and a site's model waited behind them).
+	for n in KIT.keys():
+		if not (_cache.has(n) or _pending.has(n)) and _is_kept(n):
+			_begin(n)  # file checks and a threaded load request: cheap
 	for n in _model:
+		if _pending.has(n) or _cache.has(n):
+			continue
 		var path := String(_model[n])
 		if ResourceLoader.exists(path) and not ResourceLoader.has_cached(path):
 			ResourceLoader.load_threaded_request(path)
 	_merge_ahead()
+
+
+## Whether `name` is kept with its frame, so it loads without its build or its source file.
+static func _is_kept(name: String) -> bool:
+	return FileAccess.file_exists(_kept(name)) and FileAccess.file_exists(_kept_meta(name))
+
+
+## Whether a kept model's files are read on the loader's threads (its whole and its low), so _finish never blocks.
+static func _kept_loaded(name: String) -> bool:
+	for path in [_kept(name), _kept(name, "low")]:
+		if FileAccess.file_exists(path) and ResourceLoader.load_threaded_get_status(path) == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
+			return false
+	return true
 
 
 ## Each catalogue model, once read, set up on the main thread one a frame and its merge and detail levels started on
@@ -444,6 +464,8 @@ static func _merge_ahead() -> void:
 static func _finish_done() -> void:
 	for n in _pending.keys():
 		var task: int = _pending[n]["task"]
+		if _pending[n]["root"] == null and not _kept_loaded(n):
+			continue  # its kept merge still on the loader's threads: finishing now would wait for it here
 		if task < 0 or WorkerThreadPool.is_task_completed(task):
 			_finish(n)
 
@@ -459,6 +481,8 @@ static func ready(name: String) -> bool:
 		return true
 	if not _pending.has(name) and not _begin(name):
 		return true  # the catalogue can't make it: nothing to wait for
+	if _pending[name]["root"] == null:
+		return _kept_loaded(name)  # read back from its kept merge: ready once the loader has it (2.5 s blocked, 2026-11-20)
 	var task: int = _pending[name]["task"]
 	return task < 0 or WorkerThreadPool.is_task_completed(task)
 
