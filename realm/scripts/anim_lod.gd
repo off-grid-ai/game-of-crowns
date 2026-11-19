@@ -245,7 +245,15 @@ static func wake(mind: BTPlayer) -> void:
 
 func _think(delta: float, vp: Viewport, cam: Camera3D) -> void:
 	var now := {}  # the woken, decided this frame before the rest
+	# The woken share the frame's budget, first: a stimulus by a crowd woke dozens at once, all decided in one frame
+	# (Godot's profiler in play, 2026-11-19: _think 16 ms a frame on a 3 ms budget). Those past it decide next frame,
+	# still ahead of the round robin.
+	var until := Time.get_ticks_usec() + int(MIND_BUDGET_MS * 1000.0)
+	var later := {}
 	for id in _woken:
+		if Time.get_ticks_usec() > until:
+			later[id] = _woken[id]
+			continue
 		var wm: BTPlayer = _woken[id].get_ref()
 		if wm == null or not wm.is_inside_tree() or not wm.active or not wm.can_process() or wm.get_parent() == null:
 			continue
@@ -253,11 +261,10 @@ func _think(delta: float, vp: Viewport, cam: Camera3D) -> void:
 		thought += 1
 		_mind_owed[id] = 0.0
 		now[id] = true
-	_woken.clear()
+	_woken = later
 	var keep: Array[WeakRef] = []
 	var count := _minds.size()
 	var start := _turn % maxi(count, 1)
-	var until := Time.get_ticks_usec() + int(MIND_BUDGET_MS * 1000.0)
 	var spent := false
 	for k in count:
 		var i := (start + k) % count

@@ -3029,34 +3029,8 @@ func _smoke(root: Node3D, pos: Vector3, door := Vector3.INF) -> void:
 
 
 func _make_smoke(root: Node3D, pos: Vector3, door := Vector3.INF) -> void:
-	# A thread of chimney smoke: thin, grey and drifting, never a pillar.
-	var p := CPUParticles3D.new()
-	p.amount = 10
-	p.lifetime = 4.0
-	p.direction = Vector3(0.3, 1, 0)
-	p.spread = 10
-	p.initial_velocity_min = 0.1
-	p.initial_velocity_max = 0.2
-	p.gravity = Vector3(0.05, 0.01, 0)
-	p.scale_amount_min = 0.08
-	p.scale_amount_max = 0.16
-	var curve := Curve.new()
-	curve.add_point(Vector2(0, 0.3))
-	curve.add_point(Vector2(1, 1.2))
-	p.scale_amount_curve = curve
-	var grad := Gradient.new()
-	grad.set_color(0, Color(0.6, 0.59, 0.57, 0.22))
-	grad.set_color(1, Color(0.55, 0.55, 0.55, 0.0))
-	p.color_ramp = grad
-	p.angle_min = -180.0
-	p.angle_max = 180.0
-	var q := QuadMesh.new()
-	q.size = Vector2(0.6, 0.6)
-	q.material = smoke_material()
-	p.mesh = q
-	# Simulated on the GPU (particles.gd, Godot's own conversion): a town has a
-	# dozen hearths, and particles on the CPU cost every frame, seen or not.
-	var gpu: GPUParticles3D = preload("res://scripts/particles.gd").to_gpu(p, 45.0)
+	# A thread of chimney smoke on the GPU (particles.gd chimney: built once, copied): a town has a dozen hearths.
+	var gpu := preload("res://scripts/particles.gd").chimney({}, smoke_material())
 	gpu.position = pos
 	if door != Vector3.INF:
 		gpu.set_meta("door", door)  # town-local doorstep of the house it rises from

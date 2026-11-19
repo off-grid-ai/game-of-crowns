@@ -260,7 +260,35 @@ static func _chunk_landed(p: Vector3, kind: StringName) -> bool:
 static func closest(p: Vector3, kind: StringName = &"walk") -> Vector3:
 	if not ready(kind):
 		return p
-	return NavigationServer3D.map_get_closest_point(_maps[kind], p)
+	return _nearest(p, kind)
+
+
+## The map's point nearest `p`, asked of the chunks round it ring by ring (Godot's region_get_closest_point: one
+## chunk's polygons), not of the whole map: map_get_closest_point walks every polygon of the realm, 8 ms a call
+## (Godot's profiler in play, Mac 2026-11-19: 58 ms of a frame on 7 calls). A ring is enough once the nearest found
+## lies nearer than any chunk beyond it can be; ground with no map within nav.closest_rings chunks asks the map.
+static func _nearest(p: Vector3, kind: StringName) -> Vector3:
+	var chunk := _chunk_size()
+	var at := Vector2i(floori(p.x / chunk), floori(p.z / chunk))
+	var chunks: Dictionary = _chunks.get(kind, {})
+	var best := Vector3.ZERO
+	var best_d := INF
+	for r in int(Data.num("ground", "nav.closest_rings", 3)) + 1:
+		for dx in range(-r, r + 1):
+			for dz in range(-r, r + 1):
+				if maxi(absi(dx), absi(dz)) != r:
+					continue  # this ring's edge only: the inner rings were asked
+				var ch: Dictionary = chunks.get(at + Vector2i(dx, dz), {})
+				for reg in (ch.get("regions", {}) as Dictionary).values():
+					var q := NavigationServer3D.region_get_closest_point(reg, p)
+					var d := q.distance_squared_to(p)
+					if d < best_d:
+						best_d = d
+						best = q
+		# Anything in a farther ring lies at least r chunks' widths (less p's offset in its own chunk) away.
+		if best_d < INF and sqrt(best_d) <= float(r) * chunk - maxf(absf(p.x - (at.x + 0.5) * chunk), absf(p.z - (at.y + 0.5) * chunk)) + chunk * 0.5:
+			return best
+	return NavigationServer3D.map_get_closest_point(_maps[kind], p) if best_d == INF else best
 
 
 ## Whether `p` (world) is as far off every siege engine's ground as `kind`'s map keeps a body (a host's: its radius and
@@ -283,7 +311,7 @@ static func off_engines(p: Vector3, kind: StringName) -> bool:
 static func on_map(p: Vector3, kind: StringName = &"walk") -> bool:
 	if not ready(kind):
 		return false
-	var q := NavigationServer3D.map_get_closest_point(_maps[kind], p)
+	var q := _nearest(p, kind)
 	return Vector2(q.x - p.x, q.z - p.z).length() <= float(_cells[kind]) * 2.0
 
 

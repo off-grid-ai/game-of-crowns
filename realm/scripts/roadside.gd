@@ -297,32 +297,7 @@ func _fade(n: Node3D, size: float) -> void:
 
 ## A thread of chimney smoke: the towns' own smoke (towns.gd smoke_material), thin and drifting.
 func _smoke(node: Node3D, at: Vector3) -> void:
-	var k: Dictionary = _d.get("smoke", {})
-	var p := CPUParticles3D.new()
-	p.amount = int(k.get("amount", 10))
-	p.lifetime = float(k.get("life", 4.0))
-	p.direction = Vector3(0.3, 1, 0)
-	p.spread = 10
-	p.initial_velocity_min = float(k.get("rise", [0.1, 0.2])[0])
-	p.initial_velocity_max = float(k.get("rise", [0.1, 0.2])[1])
-	p.gravity = Vector3(0.05, 0.01, 0)
-	p.scale_amount_min = float(k.get("size", [0.08, 0.16])[0])
-	p.scale_amount_max = float(k.get("size", [0.08, 0.16])[1])
-	var curve := Curve.new()
-	curve.add_point(Vector2(0, 0.3))
-	curve.add_point(Vector2(1, 1.2))
-	p.scale_amount_curve = curve
-	var grad := Gradient.new()
-	grad.set_color(0, Color(0.6, 0.59, 0.57, float(k.get("alpha", 0.22))))
-	grad.set_color(1, Color(0.55, 0.55, 0.55, 0.0))
-	p.color_ramp = grad
-	p.angle_min = -180.0
-	p.angle_max = 180.0
-	var q := QuadMesh.new()
-	q.size = Vector2(0.6, 0.6)
-	q.material = preload("res://scripts/towns.gd").smoke_material()
-	p.mesh = q
-	var gpu: GPUParticles3D = preload("res://scripts/particles.gd").to_gpu(p, float(k.get("far", 45.0)))
+	var gpu := preload("res://scripts/particles.gd").chimney(_d.get("smoke", {}), preload("res://scripts/towns.gd").smoke_material())
 	gpu.position = at
 	node.add_child(gpu)
 
