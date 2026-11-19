@@ -1,11 +1,16 @@
 extends SceneTree
 ## Bakes what every new game would otherwise make on the player's Mac at first launch, into the game itself (Mac,
-## 2026-11-15: "cant you just bundle it"): every model's merged mesh and its low level (realistic.gd) and the starting
-## realm's towns and the saved chronicle's as it stands (towns.gd, with the ground, crops and dressing they make), the land
-## outside them as realm chunks (realm_chunks.gd: the woods and the wild cover, kept as the starting realm left them) and their roads
-## (roads.gd: each route and the lanes through the woods), into res://baked/ through kept.gd, the one
-## loader the game reads them by (an exported game: baked, else the player's own copy, else made and kept there), under
-## the scripts' and data's fingerprint, stamped in res://baked/code.txt.
+## 2026-11-15: "cant you just bundle it"): every model's merged mesh and its low level (realistic.gd), the starting
+## realm's towns (towns.gd, with the ground, crops and dressing they make; a town is keyed by its id alone, so each is
+## baked once), the land outside them as realm chunks (realm_chunks.gd: the woods and the wild cover, kept as the
+## starting realm left them), its farmsteads (countryside.gd, by patch) and its roads (roads.gd: each route and the
+## lanes through the woods), into res://baked/ through kept.gd, the one loader the game reads them by (an exported
+## game: baked, else the player's own copy, else made and kept there), under the kept version's fingerprint, stamped in
+## res://baked/code.txt.
+##
+## On every core (Mac 2026-11-19: "why does it take so long"): the land's chunks are laid out once, then the towns are
+## raised by OS.get_processor_count() / 2 Godots at once, each a slice of them (-- --towns=from:to), then this one reads
+## them back and lays the roads and farms over them and keeps the land as they leave it.
 ##
 ## packaging/build-mac.sh runs it before every export (docs/TUNING.md "Export"); a script or data edit after it leaves the
 ## bake unused until it is run again.  Headless, no GPU:  arch -arm64 godot --headless --path realm -s res://tools/bake.gd
@@ -15,23 +20,19 @@ extends SceneTree
 const Real := preload("res://scripts/realistic.gd")
 const Kept := preload("res://scripts/kept.gd")
 const BASE := "res://../bridge/baseline/aldmere/"
-const BRIDGE := "res://../bridge"
-const CHRONICLES_OUT := "user://bake/chronicles"  # the chronicles' realms as read for the bake (chronicle-world.mjs)
-const AGES := BASE + "ages/"  # the realm as saved reigns stood, a year to years in (bridge/tools/age-worlds.mjs)
 const WAIT_S := 1800.0
-const AGE_WAIT_S := 300.0  # the most one age's towns and roads may add to the watchdog's wait
-const AGES_A_RUN := 8  # ages baked by one fresh Godot (_ages_apart): one run through all 81 grew until the system killed it at the 50th
 const ROADS_WAIT_S := 600.0  # the most one realm's roads may take (the navigation baked, every route asked)
+const LOGS := "user://bake/"  # each slice's Godot writes its log here (--log-file)
 
 
-var _slice := []  # --ages=from:to: this run bakes only those ages, into the bake already begun (_ages_apart)
+var _slice := []  # --towns=from:to: this run raises only those of the starting realm's towns (_towns_apart)
 
 
 func _init() -> void:
 	for a in OS.get_cmdline_user_args():
-		if a.begins_with("--ages="):
-			_slice = Array(a.substr(7).split(":")).map(func(x): return int(x))
-	preload("res://tools/watchdog.gd").arm(self, WAIT_S + AGE_WAIT_S * _ages().size() + 60.0)
+		if a.begins_with("--towns="):
+			_slice = Array(a.substr(8).split(":")).map(func(x): return int(x))
+	preload("res://tools/watchdog.gd").arm(self, WAIT_S)
 	_run.call_deferred()
 
 
@@ -43,11 +44,11 @@ func _run() -> void:
 		print("BAKE troops: %d soldiers kept" % preload("res://scripts/army_visual.gd").bake())
 		quit(0)
 		return
+	var world := _world()
+	var map := _base_map()
 	if not _slice.is_empty():
-		var map := _base_map()
-		var n := 0
-		for f in _ages().slice(_slice[0], _slice[1]):
-			n += await _age(f, map)
+		world["cities"] = (world["cities"] as Array).slice(_slice[0], _slice[1])
+		var n := await _realm(world, map, false, true)
 		print("BAKE slice: %d towns" % n)
 		quit(0)
 		return
@@ -58,48 +59,24 @@ func _run() -> void:
 			made += 1
 	print("BAKE models: %d merged in %.0f s" % [made, (Time.get_ticks_msec() - t0) / 1000.0])
 	print("BAKE troops: %d soldiers kept" % preload("res://scripts/army_visual.gd").bake())
-	var stood := await _towns()
+	await _land(map)
+	print("BAKE land: its chunks laid out and kept, %.0f s in" % ((Time.get_ticks_msec() - t0) / 1000.0))
+	var raised := _towns_apart((world["cities"] as Array).size())
+	print("BAKE towns: %d raised on every core, %.0f s in" % [raised, (Time.get_ticks_msec() - t0) / 1000.0])
+	var stood := await _realm(world, map, true)
 	Kept.stamp()
 	print("BAKE towns: %d stood and kept, %.0f s in all" % [stood, (Time.get_ticks_msec() - t0) / 1000.0])
 	quit(0 if made > 0 and stood > 0 else 1)
 
 
-## The starting realm's towns, raised as main.gd raises them and kept (towns.gd keeps each town it raises) from the
-## world a new reign's first sync sends (bridge/baseline/aldmere/state/world_served.json, bridge/tools/baseline-world.mjs)
-## on its land. Every reign seats the same bannermen in the starting towns (bridge 0ed3fcb8), so each keys as in play.
-## Then the towns of the saved chronicle the game continues (bridge/chronicles/active), as they stand now: a realm years
-## in has grown its towns past the starting ones, and each of those would otherwise be raised in play (Mac's game,
-## 2026-11-15: his chronicle's towns built for minutes at 1-10 fps). bridge/tools/chronicle-world.mjs reads the
-## chronicle's last snapshot in the shape the bridge serves it (no bridge needed); a town keyed as a starting one is
-## read back, not raised twice.
-func _towns() -> int:
+## The world a new reign's first sync sends (bridge/baseline/aldmere/state/world_served.json,
+## bridge/tools/baseline-world.mjs). Every reign seats the same bannermen in the starting towns (bridge 0ed3fcb8).
+func _world() -> Dictionary:
 	var base := ProjectSettings.globalize_path(BASE).simplify_path()
-	var world: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(base + "/state/world_served.json"))
-	var map := _base_map()
-	var stood := await _realm(world, map, true)
-	print("BAKE towns: the starting realm's %d" % stood)
-	# The ages (Mac, 2026-11-18: "you play 9 years once ... and you save it"): the realm as saved reigns stood, each on
-	# the baseline's land, so a town grown a year or nine into a reign is read back rather than laid out in play.
-	stood += _ages_apart()
-	var out := ProjectSettings.globalize_path(CHRONICLES_OUT)
-	var said := []
-	var bridge := ProjectSettings.globalize_path(BRIDGE).simplify_path()
-	if OS.execute("node", [bridge + "/tools/chronicle-world.mjs", out], said, true) != 0:
-		print("BAKE chronicles: none read (node %s/tools/chronicle-world.mjs: %s)" % [bridge, "".join(said).strip_edges()])
-		return stood
-	for id in "".join(said).strip_edges().split("\n", false):
-		if not FileAccess.file_exists(out.path_join(id + ".world.json")):
-			print("BAKE chronicles: %s" % id)  # what the reader said of a chronicle it couldn't read
-			continue
-		var w: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(out.path_join(id + ".world.json")))
-		var m: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(out.path_join(id + ".map.json")))
-		var n := await _realm(w, m)
-		print("BAKE towns: chronicle %s's %d (turn %d)" % [id, n, int(w.get("turn", 0))])
-		stood += n
-	return stood
+	return JSON.parse_string(FileAccess.get_file_as_string(base + "/state/world_served.json"))
 
 
-## The baseline's map with its land: every age stands on it.
+## The baseline's map with its land.
 func _base_map() -> Dictionary:
 	var base := ProjectSettings.globalize_path(BASE).simplify_path()
 	var map: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(base + "/state/map.json"))
@@ -107,49 +84,47 @@ func _base_map() -> Dictionary:
 	return map
 
 
-## One age's towns and roads baked: how many stand.
-func _age(f: String, map: Dictionary) -> int:
-	var aw: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(f))
-	var n := await _realm(aw, map)
-	print("BAKE towns: age %s, %d (turn %d)" % [f.get_file().get_basename().get_basename(), n, int(aw.get("turn", 0))])
-	return n
+## The land built once, so its chunks are laid out and kept (terrain.gd _plant) before the slices read them.
+func _land(map: Dictionary) -> void:
+	var terrain: Node3D = load("res://scripts/terrain.gd").new()
+	root.add_child(terrain)
+	await terrain.build(map)
+	root.remove_child(terrain)
+	terrain.queue_free()
+	await process_frame
 
 
-## The ages baked AGES_A_RUN at a time, each batch by a fresh Godot of its own (this script with --ages=from:to), so
-## nothing one realm leaves behind piles up across 81. Towns that stand.
-func _ages_apart() -> int:
-	var all := _ages().size()
+## The starting realm's `count` towns raised by OS.get_processor_count() / 2 Godots at once, each a slice of them
+## (this script with --towns=from:to, its log under LOGS), waited for together: how many they raised.
+func _towns_apart(count: int) -> int:
+	var lanes := clampi(OS.get_processor_count() / 2, 1, maxi(count, 1))
+	var per := ceili(float(count) / lanes)
+	var logs := ProjectSettings.globalize_path(LOGS)
+	DirAccess.make_dir_recursive_absolute(logs)
+	var pids := []
+	for i in range(0, count, per):
+		var log := logs.path_join("towns_%d.log" % i)
+		DirAccess.remove_absolute(log)
+		pids.append([OS.create_process(OS.get_executable_path(), ["--headless", "--path", ProjectSettings.globalize_path("res://"),
+			"--log-file", log, "-s", "res://tools/bake.gd", "--", "--towns=%d:%d" % [i, mini(i + per, count)]]), log])
 	var n := 0
-	for i in range(0, all, AGES_A_RUN):
-		var said := []
-		var code := OS.execute(OS.get_executable_path(), ["--headless", "--path", ProjectSettings.globalize_path("res://"),
-			"-s", "res://tools/bake.gd", "--", "--ages=%d:%d" % [i, mini(i + AGES_A_RUN, all)]], said, true)
-		for line in "".join(said).split("\n"):
-			if line.begins_with("BAKE towns: age") or line.begins_with("PROBE TIMEOUT"):
-				print(line)
-				n += int(line.get_slice(", ", 1).get_slice(" ", 0)) if line.begins_with("BAKE towns") else 0
-		if code != 0:
-			print("BAKE ages %d-%d: their Godot ended with %d" % [i, mini(i + AGES_A_RUN, all), code])
+	for p in pids:
+		while OS.is_process_running(int(p[0])):
+			OS.delay_msec(250)
+		for line in FileAccess.get_file_as_string(String(p[1])).split("\n"):
+			if line.begins_with("BAKE slice:"):
+				n += int(line.get_slice(": ", 1).get_slice(" ", 0))
+			elif line.begins_with("PROBE TIMEOUT") or line.begins_with("SCRIPT ERROR"):
+				print("BAKE %s: %s" % [String(p[1]).get_file(), line])
 	return n
-
-
-## The ages' worlds (bridge/baseline/aldmere/ages/*.world.json), youngest first.
-func _ages() -> Array:
-	var dir := ProjectSettings.globalize_path(AGES).simplify_path()
-	var out := []
-	if DirAccess.dir_exists_absolute(dir):
-		for f in DirAccess.get_files_at(dir):
-			if f.ends_with(".world.json"):
-				out.append(dir.path_join(f))
-	out.sort()
-	return out
 
 
 ## One realm's towns raised on its land and kept, then the realm taken down: how many stand. The land outside the
 ## towns (the woods and the wild cover) is kept as realm chunks the first time its land is built (terrain.gd _plant,
 ## realm_chunks.gd); for the starting realm (`baseline`) what its towns and roads felled is written into them too, so
 ## every game loads that land as it stands and nothing is felled in front of the player.
-func _realm(world: Dictionary, map: Dictionary, baseline := false) -> int:
+## `towns_only`: a slice's run (_towns_apart), its towns alone.
+func _realm(world: Dictionary, map: Dictionary, baseline := false, towns_only := false) -> int:
 	var store: Node = load("res://scripts/awareness.gd").new()
 	root.add_child(store)
 	await process_frame
@@ -164,6 +139,12 @@ func _realm(world: Dictionary, map: Dictionary, baseline := false) -> int:
 	while towns.building():
 		await process_frame
 	var n: int = towns.towns.size()
+	if towns_only:
+		for n2 in [towns, terrain, store]:
+			root.remove_child(n2)
+			n2.queue_free()
+		await process_frame
+		return n
 	await _roads(terrain)
 	await _farms(terrain, towns, store)
 	if baseline:
