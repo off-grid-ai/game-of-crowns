@@ -6,6 +6,8 @@
     "cast_farmer_m": {"sex": "m", "roles": ["peasant"], "mask": "res://assets/people/mixamo/cast_farmer_m/cast_farmer_m_mask.png"},
     "cast_farmer_f": {"sex": "f", "roles": ["peasant", "townsfolk"], "mask": "res://assets/people/mixamo/cast_farmer_f/cast_farmer_f_mask.png"},
     "cast_peasant_woman": {"sex": "f", "roles": ["peasant", "townsfolk"], "mask": "res://assets/people/mixamo/cast_peasant_woman/cast_peasant_woman_mask.png"},
+    "cast_town_guard": {"sex": "m", "roles": ["soldier"], "panel": true},
+    "cast_peasant_man": {"sex": "m", "roles": ["peasant", "townsfolk"], "mask": "res://assets/people/mixamo/cast_peasant_man/cast_peasant_man_mask.png"},
     "cast_townswoman": {"sex": "f", "roles": ["townsfolk"], "mask": "res://assets/people/mixamo/cast_townswoman/cast_townswoman_mask.png"},
     "cast_stallholder": {"sex": "m", "roles": ["townsfolk"], "posts": ["stallholder"], "mask": "res://assets/people/mixamo/cast_stallholder/cast_stallholder_mask.png"},
     "cast_merchant": {"palette": "rich", "sex": "m", "roles": ["townsfolk"], "mask": "res://assets/people/mixamo/cast_merchant/cast_merchant_mask.png"},
