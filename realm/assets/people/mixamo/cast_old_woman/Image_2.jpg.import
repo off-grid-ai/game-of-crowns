@@ -2,22 +2,21 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c3q42a2wxysed"
-path.s3tc="res://.godot/imported/texture_0_metallic_roughness.png-082a677c1d0fd74724fdc3d81cefa732.s3tc.ctex"
-path.etc2="res://.godot/imported/texture_0_metallic_roughness.png-082a677c1d0fd74724fdc3d81cefa732.etc2.ctex"
+uid="uid://boc7j6e4fwcnu"
+path="res://.godot/imported/Image_2.jpg-477abd9a4829db7d73db056784f62d89.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
+generator_parameters={}
 
 [deps]
 
-source_file="res://assets/people/mixamo/cast_old_woman/texture_0_metallic_roughness.png"
-dest_files=["res://.godot/imported/texture_0_metallic_roughness.png-082a677c1d0fd74724fdc3d81cefa732.s3tc.ctex", "res://.godot/imported/texture_0_metallic_roughness.png-082a677c1d0fd74724fdc3d81cefa732.etc2.ctex"]
+source_file="res://assets/people/mixamo/cast_old_woman/Image_2.jpg"
+dest_files=["res://.godot/imported/Image_2.jpg-477abd9a4829db7d73db056784f62d89.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=0
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

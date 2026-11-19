@@ -2,22 +2,21 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://baqe68pktk5u3"
-path.s3tc="res://.godot/imported/texture_0_metallic_roughness.png-35c115cdc8d1c0e37734b030ccc948d0.s3tc.ctex"
-path.etc2="res://.godot/imported/texture_0_metallic_roughness.png-35c115cdc8d1c0e37734b030ccc948d0.etc2.ctex"
+uid="uid://b5ia34dpk3oq1"
+path="res://.godot/imported/Image_2.jpg-d3d197b6e3ec3bea209ce0174a748add.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
+generator_parameters={}
 
 [deps]
 
-source_file="res://assets/people/mixamo/cast_boy/texture_0_metallic_roughness.png"
-dest_files=["res://.godot/imported/texture_0_metallic_roughness.png-35c115cdc8d1c0e37734b030ccc948d0.s3tc.ctex", "res://.godot/imported/texture_0_metallic_roughness.png-35c115cdc8d1c0e37734b030ccc948d0.etc2.ctex"]
+source_file="res://assets/people/mixamo/cast_old_man/Image_2.jpg"
+dest_files=["res://.godot/imported/Image_2.jpg-d3d197b6e3ec3bea209ce0174a748add.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=0
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

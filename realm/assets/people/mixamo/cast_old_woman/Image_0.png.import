@@ -2,22 +2,21 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dsflxtnbcim73"
-path.s3tc="res://.godot/imported/normal.png-f264722a1885cac34b142695dcbd9f37.s3tc.ctex"
-path.etc2="res://.godot/imported/normal.png-f264722a1885cac34b142695dcbd9f37.etc2.ctex"
+uid="uid://d3tmkcdy4wjaj"
+path="res://.godot/imported/Image_0.png-f52834f3d78c3dd0a88785f9544bfd0d.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
+generator_parameters={}
 
 [deps]
 
-source_file="res://assets/people/mixamo/cast_old_woman/normal.png"
-dest_files=["res://.godot/imported/normal.png-f264722a1885cac34b142695dcbd9f37.s3tc.ctex", "res://.godot/imported/normal.png-f264722a1885cac34b142695dcbd9f37.etc2.ctex"]
+source_file="res://assets/people/mixamo/cast_old_woman/Image_0.png"
+dest_files=["res://.godot/imported/Image_0.png-f52834f3d78c3dd0a88785f9544bfd0d.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=0
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

@@ -2,22 +2,21 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://d0lcjs33epdby"
-path.s3tc="res://.godot/imported/normal.png-eff5c8cb419f38ad461aaf862801cef8.s3tc.ctex"
-path.etc2="res://.godot/imported/normal.png-eff5c8cb419f38ad461aaf862801cef8.etc2.ctex"
+uid="uid://cixgsi814cd2f"
+path="res://.godot/imported/Image_0.png-e560a3e5b5f94831c9f7f0794afccd72.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
+generator_parameters={}
 
 [deps]
 
-source_file="res://assets/people/mixamo/cast_boy/normal.png"
-dest_files=["res://.godot/imported/normal.png-eff5c8cb419f38ad461aaf862801cef8.s3tc.ctex", "res://.godot/imported/normal.png-eff5c8cb419f38ad461aaf862801cef8.etc2.ctex"]
+source_file="res://assets/people/mixamo/cast_girl/Image_0.png"
+dest_files=["res://.godot/imported/Image_0.png-e560a3e5b5f94831c9f7f0794afccd72.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=0
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

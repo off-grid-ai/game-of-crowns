@@ -2,22 +2,21 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cea7mwpb8v3qb"
-path.s3tc="res://.godot/imported/texture_0.png-8980da3ed68564104630f75ec2703e62.s3tc.ctex"
-path.etc2="res://.godot/imported/texture_0.png-8980da3ed68564104630f75ec2703e62.etc2.ctex"
+uid="uid://xm8etuibvssg"
+path="res://.godot/imported/Image_2.jpg-2fcac6358dc67c0bc3c7503888eea7cb.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
+generator_parameters={}
 
 [deps]
 
-source_file="res://assets/people/mixamo/cast_boy/texture_0.png"
-dest_files=["res://.godot/imported/texture_0.png-8980da3ed68564104630f75ec2703e62.s3tc.ctex", "res://.godot/imported/texture_0.png-8980da3ed68564104630f75ec2703e62.etc2.ctex"]
+source_file="res://assets/people/mixamo/cast_townswoman/Image_2.jpg"
+dest_files=["res://.godot/imported/Image_2.jpg-2fcac6358dc67c0bc3c7503888eea7cb.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=0
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

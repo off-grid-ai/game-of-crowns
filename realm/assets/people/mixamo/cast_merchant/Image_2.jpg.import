@@ -2,22 +2,21 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://05ebf4u4drbd"
-path.s3tc="res://.godot/imported/texture_0.png-e501a0229514f7a24f668d3c7b4dfefe.s3tc.ctex"
-path.etc2="res://.godot/imported/texture_0.png-e501a0229514f7a24f668d3c7b4dfefe.etc2.ctex"
+uid="uid://cjx376y0kp0w8"
+path="res://.godot/imported/Image_2.jpg-ea2875e2201d0be9aa19b8ea63aef3ab.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
+generator_parameters={}
 
 [deps]
 
-source_file="res://assets/people/mixamo/cast_townswoman/texture_0.png"
-dest_files=["res://.godot/imported/texture_0.png-e501a0229514f7a24f668d3c7b4dfefe.s3tc.ctex", "res://.godot/imported/texture_0.png-e501a0229514f7a24f668d3c7b4dfefe.etc2.ctex"]
+source_file="res://assets/people/mixamo/cast_merchant/Image_2.jpg"
+dest_files=["res://.godot/imported/Image_2.jpg-ea2875e2201d0be9aa19b8ea63aef3ab.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=0
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

@@ -2,23 +2,21 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c4c5xktnjv0td"
-path.s3tc="res://.godot/imported/Image_0.jpg-93c67a59b46ba2bbf8f91c99ae7e7564.s3tc.ctex"
-path.etc2="res://.godot/imported/Image_0.jpg-93c67a59b46ba2bbf8f91c99ae7e7564.etc2.ctex"
+uid="uid://dbuqcpwhtt06o"
+path="res://.godot/imported/Image_0.png-bdb9cdd3071aa11906c8997c08569178.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 generator_parameters={}
 
 [deps]
 
-source_file="res://assets/people/mixamo/cast_young_ranger/Image_0.jpg"
-dest_files=["res://.godot/imported/Image_0.jpg-93c67a59b46ba2bbf8f91c99ae7e7564.s3tc.ctex", "res://.godot/imported/Image_0.jpg-93c67a59b46ba2bbf8f91c99ae7e7564.etc2.ctex"]
+source_file="res://assets/people/mixamo/cast_boy/Image_0.png"
+dest_files=["res://.godot/imported/Image_0.png-bdb9cdd3071aa11906c8997c08569178.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=0
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

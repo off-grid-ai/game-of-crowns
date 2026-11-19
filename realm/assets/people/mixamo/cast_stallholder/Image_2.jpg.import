@@ -2,22 +2,21 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cjrcgvwwh1exf"
-path.s3tc="res://.godot/imported/texture_0.png-557116ca81c22cd86e5df5ad415f9b7b.s3tc.ctex"
-path.etc2="res://.godot/imported/texture_0.png-557116ca81c22cd86e5df5ad415f9b7b.etc2.ctex"
+uid="uid://3puc4jfwttgw"
+path="res://.godot/imported/Image_2.jpg-6df7da2f3e4cac258a863f6ac90dc7f5.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
+generator_parameters={}
 
 [deps]
 
-source_file="res://assets/people/mixamo/cast_old_man/texture_0.png"
-dest_files=["res://.godot/imported/texture_0.png-557116ca81c22cd86e5df5ad415f9b7b.s3tc.ctex", "res://.godot/imported/texture_0.png-557116ca81c22cd86e5df5ad415f9b7b.etc2.ctex"]
+source_file="res://assets/people/mixamo/cast_stallholder/Image_2.jpg"
+dest_files=["res://.godot/imported/Image_2.jpg-6df7da2f3e4cac258a863f6ac90dc7f5.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=0
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

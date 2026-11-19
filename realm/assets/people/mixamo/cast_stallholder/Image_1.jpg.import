@@ -2,22 +2,21 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bx0lafrmrcl5v"
-path.s3tc="res://.godot/imported/texture_0_metallic_roughness.png-1f0fa3b1ea07fddb2cbefede417f2393.s3tc.ctex"
-path.etc2="res://.godot/imported/texture_0_metallic_roughness.png-1f0fa3b1ea07fddb2cbefede417f2393.etc2.ctex"
+uid="uid://buwglljuqmnrj"
+path="res://.godot/imported/Image_1.jpg-7df5c818714e2420a48f8a44dbe1e296.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
+generator_parameters={}
 
 [deps]
 
-source_file="res://assets/people/mixamo/cast_merchant/texture_0_metallic_roughness.png"
-dest_files=["res://.godot/imported/texture_0_metallic_roughness.png-1f0fa3b1ea07fddb2cbefede417f2393.s3tc.ctex", "res://.godot/imported/texture_0_metallic_roughness.png-1f0fa3b1ea07fddb2cbefede417f2393.etc2.ctex"]
+source_file="res://assets/people/mixamo/cast_stallholder/Image_1.jpg"
+dest_files=["res://.godot/imported/Image_1.jpg-7df5c818714e2420a48f8a44dbe1e296.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=0
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
