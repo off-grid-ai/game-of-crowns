@@ -8,6 +8,8 @@ const ArmyField := preload("res://scripts/army_field.gd")
 const Ground := preload("res://scripts/ground.gd")  # the one answer to where a body may stand
 const Awareness := preload("res://scripts/awareness.gd")
 const Data := preload("res://scripts/data.gd")
+const ViewTier := preload("res://scripts/view_tier.gd")  # the frame's one staging pot
+const PerfTools := preload("res://scripts/perf_tools.gd")  # the frame-cost probe; the one way ours waits a frame
 
 var _played := {}  # "x,y,turn" -> true: the battles staged already
 var _fighting: Array = []  # [centre, field battle] of every battle on the field now
@@ -57,7 +59,7 @@ func _stage(s: Dictionary, at: Vector3, houses: Dictionary, queued := false) -> 
 		if crown:
 			_wait(s, at, houses, false)
 		return
-	var field := battlefield(at, crown)
+	var field: Vector3 = await battlefield_paced(at, crown)
 	if field == Vector3.INF:
 		return  # no open ground near (for a crown battle, none out to ground.crown.rings): the battle is told, not shown
 	if not (s.get("kinds") is Array):
@@ -125,6 +127,83 @@ func _retry() -> void:
 ## nearly always play, Mac 2026-11-17) looks on past ground.rings, rings ground.crown.apart apart out to ground.crown.rings,
 ## once the near ground has none at every share of ground.shrink.
 func battlefield(near: Vector3, wide := false) -> Vector3:
+	var q := _field_ask(near, wide)
+	for pass_ in q["passes"]:
+		for room in Data.value("battle", "ground.shrink", [1.0, 0.8, 0.6]):
+			for ring in range(int(pass_[0]), int(pass_[1])):
+				var got := _ring_pick(near, ring, float(pass_[2]), float(room), q)
+				if got != Vector3.INF:
+					return got
+	_no_field(near, q)
+	return Vector3.INF
+
+
+## battlefield over frames (a battle the bridge told of, staged in play): the same rings, a ring at a time on the
+## scenes' share of the frame (view_tier.gd spend_ok), so a search out to the crown's hundred rings never holds one frame
+## (2026-11-20: scenes.play.battle 911 ms in one frame, ground.is_clear 272 ms of it).
+func battlefield_paced(near: Vector3, wide := false) -> Vector3:
+	var q := _field_ask(near, wide)
+	for pass_ in q["passes"]:
+		for room in Data.value("battle", "ground.shrink", [1.0, 0.8, 0.6]):
+			for ring in range(int(pass_[0]), int(pass_[1])):
+				while not ViewTier.spend_ok(&"scenes"):
+					await PerfTools.next_frame(&"battle:field")
+				if not is_instance_valid(stage) or not stage.is_inside_tree():
+					return Vector3.INF
+				var got: Vector3 = await _ring_pick_paced(near, ring, float(pass_[2]), float(room), q)
+				if got != Vector3.INF:
+					return got
+	_no_field(near, q)
+	return Vector3.INF
+
+
+## _ring_pick over frames: a crown ring is up to 800 places, each asked of every town, and its best few of the ground
+## itself (ground.is_clear): its places a slice at a time and each ground ask on the scenes' share of the frame
+## (battle.json ground.slice), never a whole ring in one frame.
+func _ring_pick_paced(near: Vector3, ring: int, apart: float, room: float, q: Dictionary) -> Vector3:
+	var walls: Array = q["walls"]
+	var roads = q["roads"]
+	var why: Dictionary = q["why"]
+	var found: Array = []
+	var n := maxi(1, ring * 8)
+	var slice := maxi(8, int(Data.num("battle", "ground.slice", 48)))
+	for i in n:
+		if i > 0 and i % slice == 0:
+			while not ViewTier.spend_ok(&"scenes"):
+				await PerfTools.next_frame(&"battle:field")
+			if not is_instance_valid(stage) or not stage.is_inside_tree():
+				return Vector3.INF
+		var a := TAU * i / n
+		var p: Vector3 = stage.ground(near + Vector3(cos(a), 0, sin(a)) * ring * apart)
+		if not _clear_field(p, walls):
+			why["town"] += 1
+			continue
+		var score := _field_cost(p, roads)
+		if score == INF:
+			why["ground"] += 1
+			continue
+		found.append([score, p])
+	found.sort_custom(func(x, y): return float(x[0]) < float(y[0]))
+	for k in mini(found.size(), int(Data.num("battle", "ground.asked", 4))):
+		while not ViewTier.spend_ok(&"scenes"):
+			await PerfTools.next_frame(&"battle:field")
+		if not is_instance_valid(stage) or not stage.is_inside_tree():
+			return Vector3.INF
+		var reason := _stands_on(found[k][1], room)
+		if reason == "":
+			return found[k][1]
+		why[reason] += 1
+	return Vector3.INF
+
+
+func _no_field(near: Vector3, q: Dictionary) -> void:
+	if OS.get_cmdline_user_args().has("--where"):
+		print("BATTLE no field within %.0f of %s: places turned down for %s" % [float(q["span"]) - float(q["field"]), str(near), str(q["why"])])
+
+
+## What a field search asks of the realm once: its passes (rings and their spacing), the towns and battles it keeps
+## clear of, and the roads.
+func _field_ask(near: Vector3, wide: bool) -> Dictionary:
 	var field := Data.num("battle", "ground.field", 3.4)
 	var rings := int(Data.num("battle", "ground.rings", 40))
 	var passes := [[0, rings, 0.8]]  # [first ring, rings, apart]
@@ -159,34 +238,36 @@ func battlefield(near: Vector3, wide := false) -> Vector3:
 	for b in _fighting:
 		walls.append([b[0], field])
 	var why := {"town": 0, "ground": 0, "ploughland": 0, "a building or water": 0}
-	# The clear ground asked for (ground.stand), then less of it (ground.shrink): a tighter field on open ground beats
-	# the seat's muster ground among its houses (near some seats no place had all of it clear).
-	# The near ground first, at every share; a crown battle's wider rings only then.
-	for pass_ in passes:
-		for room in Data.value("battle", "ground.shrink", [1.0, 0.8, 0.6]):
-			for ring in range(int(pass_[0]), int(pass_[1])):
-				var found: Array = []  # [score, place] of this ring's places clear of every town and farm, on ground that can be fought on
-				var n := maxi(1, ring * 8)
-				for i in n:
-					var a := TAU * i / n
-					var p: Vector3 = stage.ground(near + Vector3(cos(a), 0, sin(a)) * ring * float(pass_[2]))
-					if not _clear_field(p, walls):
-						why["town"] += 1
-						continue
-					var score := _field_cost(p, roads)
-					if score == INF:
-						why["ground"] += 1
-						continue
-					found.append([score, p])
-				# The best few of the ring asked of the ground itself, best first (the costly question, asked of few).
-				found.sort_custom(func(x, y): return float(x[0]) < float(y[0]))
-				for k in mini(found.size(), int(Data.num("battle", "ground.asked", 4))):
-					var reason := _stands_on(found[k][1], float(room))
-					if reason == "":
-						return found[k][1]
-					why[reason] += 1
-	if OS.get_cmdline_user_args().has("--where"):
-		print("BATTLE no field within %.0f of %s: places turned down for %s" % [span - field, str(near), str(why)])
+	return {"passes": passes, "walls": walls, "roads": roads, "why": why, "span": span, "field": field}
+
+
+## One ring of a field search: the clear ground asked for (ground.stand), then less of it (ground.shrink): a tighter
+## field on open ground beats the seat's muster ground among its houses (near some seats no place had all of it clear).
+## The near ground first, at every share; a crown battle's wider rings only then. Vector3.INF: none on this ring.
+func _ring_pick(near: Vector3, ring: int, apart: float, room: float, q: Dictionary) -> Vector3:
+	var walls: Array = q["walls"]
+	var roads = q["roads"]
+	var why: Dictionary = q["why"]
+	var found: Array = []  # [score, place] of this ring's places clear of every town and farm, on ground that can be fought on
+	var n := maxi(1, ring * 8)
+	for i in n:
+		var a := TAU * i / n
+		var p: Vector3 = stage.ground(near + Vector3(cos(a), 0, sin(a)) * ring * apart)
+		if not _clear_field(p, walls):
+			why["town"] += 1
+			continue
+		var score := _field_cost(p, roads)
+		if score == INF:
+			why["ground"] += 1
+			continue
+		found.append([score, p])
+	# The best few of the ring asked of the ground itself, best first (the costly question, asked of few).
+	found.sort_custom(func(x, y): return float(x[0]) < float(y[0]))
+	for k in mini(found.size(), int(Data.num("battle", "ground.asked", 4))):
+		var reason := _stands_on(found[k][1], room)
+		if reason == "":
+			return found[k][1]
+		why[reason] += 1
 	return Vector3.INF
 
 
