@@ -207,7 +207,7 @@ func _paint_next() -> void:
 
 var _asks: Array = []  # [from, to, then(route)] waiting for the navigation
 var _routed: Array = []  # [then, route] back from the worker, painted on the budget
-var _routing := -1  # the worker task routing a batch
+var _routing := -1  # the worker group routing a batch, a route a worker (WorkerThreadPool.add_group_task)
 var _lock := Mutex.new()
 const NavWorld := preload("res://scripts/nav_world.gd")  # the realm's one navigation
 const Kept := preload("res://scripts/kept.gd")  # where a road's route and its lanes' felled trees are kept
@@ -245,13 +245,13 @@ func _land_key() -> String:
 
 
 func _process(_delta: float) -> void:
-	if _routing >= 0 and WorkerThreadPool.is_task_completed(_routing):
-		WorkerThreadPool.wait_for_task_completion(_routing)
+	if _routing >= 0 and WorkerThreadPool.is_group_task_completed(_routing):
+		WorkerThreadPool.wait_for_group_task_completion(_routing)
 		_routing = -1
 	if _routing < 0 and not _asks.is_empty() and NavWorld.ready(&"wide"):
 		var batch := _asks
 		_asks = []
-		_routing = WorkerThreadPool.add_task(_route_all.bind(batch), false, "roads")
+		_routing = WorkerThreadPool.add_group_task(_route_one.bind(batch), batch.size(), -1, false, "roads")
 	_lock.lock()
 	var got := _routed
 	_routed = []
@@ -270,15 +270,16 @@ func _process(_delta: float) -> void:
 		set_process(false)
 
 
-## On a worker: each asked route, handed back as it is found.
-func _route_all(batch: Array) -> void:
-	for e in batch:
-		var t0 := Time.get_ticks_usec()
-		var way := NavWorld.path(e[0], e[1], &"wide")
-		Kept.keep_bytes(String(e[3]), var_to_bytes(way))  # kept, a way or none: the next launch reads it back
-		_lock.lock()
-		_routed.append([e[2], way, Time.get_ticks_usec() - t0])
-		_lock.unlock()
+## On a worker: the `i`th asked route of `batch`, handed back as it is found (every route of a batch on its own core:
+## the navigation's query is thread-safe).
+func _route_one(i: int, batch: Array) -> void:
+	var e: Array = batch[i]
+	var t0 := Time.get_ticks_usec()
+	var way := NavWorld.path(e[0], e[1], &"wide")
+	Kept.keep_bytes(String(e[3]), var_to_bytes(way))  # kept, a way or none: the next launch reads it back
+	_lock.lock()
+	_routed.append([e[2], way, Time.get_ticks_usec() - t0])
+	_lock.unlock()
 
 
 ## The life of a great road: bushes and brambles along both verges, a

@@ -19,6 +19,7 @@ extends SceneTree
 
 const Real := preload("res://scripts/realistic.gd")
 const Kept := preload("res://scripts/kept.gd")
+const ViewTier := preload("res://scripts/view_tier.gd")
 const BASE := "res://../bridge/baseline/aldmere/"
 const WAIT_S := 1800.0
 const ROADS_WAIT_S := 600.0  # the most one realm's roads may take (the navigation baked, every route asked)
@@ -39,6 +40,10 @@ func _init() -> void:
 func _run() -> void:
 	var t0 := Time.get_ticks_msec()
 	Kept.baking = true
+	# Nothing is drawn here: every staged loop (towns, roads, farms, lanes) may spend a second a frame, not a frame's
+	# few milliseconds (view_tier.gd spend_ok), so a pass is not thousands of headless frames of waiting.
+	ViewTier.loading = true
+	ViewTier.LOAD_MS = 1000.0
 	if OS.get_cmdline_user_args().has("--troops"):
 		# The soldiers alone, into the bake already made (a soldier baked again by tools/rig: his file is keyed by his mesh).
 		print("BAKE troops: %d soldiers kept" % preload("res://scripts/army_visual.gd").bake())
