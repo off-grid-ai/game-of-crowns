@@ -189,7 +189,9 @@ func sites(kind := "") -> Array:
 # --- raising a site --------------------------------------------------------------------------------
 
 func _kind(s: Dictionary) -> Dictionary:
-	return _d.get("kinds", {}).get(s["kind"], {})
+	if not s.has("_k"):  # read once a site: asked by every traveller's step and every life tick (9,846 calls a frame in play)
+		s["_k"] = _d.get("kinds", {}).get(s["kind"], {})
+	return s["_k"]
 
 
 ## Where a point given in a site's own frame (along the road, out from it) lies in the world.
@@ -337,6 +339,11 @@ func _bridge(node: Node3D, s: Dictionary, k: Dictionary) -> void:
 	var a0 := -span * 0.5 + step * 0.5
 	var h := maxf(_world(s, -span * 0.5, 0).y, _world(s, span * 0.5, 0).y) + float(k.get("lift", 0.03))
 	s["deck"] = h
+	# Its deck's half length along the road and half width across, worked out once (deck_at is asked at every step of a
+	# traveller's road), and the circle round it, so a walker nowhere near is passed by on one test.
+	var dh := Vector2(w * float(k.get("span", 1.6)) * 0.5 + float(k.get("apron", 0.25)), float(k.get("half_width", 0.3)))
+	s["deck_half"] = dh
+	s["deck_r2"] = dh.length_squared()
 	_bridges.append(s)
 	var yaw := atan2((s["dir"] as Vector2).x, (s["dir"] as Vector2).y)
 	var rng := RandomNumberGenerator.new()
@@ -456,8 +463,10 @@ var _bridges: Array = []  # the bridge sites raised, for deck_at (asked at every
 func deck_at(x: float, z: float) -> float:
 	for s in _bridges:
 		var rel := Vector2(x, z) - (s["road"] as Vector2)
-		var span := float(s["width"]) * float(_kind(s).get("span", 1.6)) * 0.5 + float(_kind(s).get("apron", 0.25))
-		if absf(rel.dot(s["dir"])) <= span and absf(rel.dot(s["side"])) <= float(_kind(s).get("half_width", 0.3)):
+		if rel.length_squared() > float(s["deck_r2"]):
+			continue
+		var dh: Vector2 = s["deck_half"]
+		if absf(rel.dot(s["dir"])) <= dh.x and absf(rel.dot(s["side"])) <= dh.y:
 			return float(s["deck"])
 	return -INF
 

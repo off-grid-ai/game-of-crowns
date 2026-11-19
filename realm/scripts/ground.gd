@@ -90,6 +90,7 @@ static var _hooked := {}  # instance id -> true: a root (or its Life) whose chan
 static var _reads := 0  # pieces read off what stands since the realm loaded (stamp_reads)
 static var _towns_frame := -1  # the frame the realm's towns were last read (Ground.towns)
 static var _claims := {}  # id -> [kind, outline (world XZ), its bounds (Rect2), body, shapes]
+static var _claim_cells := {}  # cell (Vector2i, SHAPES_CELL) -> {claim id: true}: the claims whose bounds cover it
 static var _kind_ids := {}  # claim kind -> {id: body}: an exact kind opened by name is left out by its bodies
 static var _sources: Array = []  # keepers of many small things in the way (the woods): obstacles(area) -> Array
 static var _src_bodies := {}  # chunk (Vector2i) -> {source instance id: [body, owned shapes]}
@@ -269,23 +270,37 @@ static func claim(id: Variant, poly: PackedVector2Array, kind := "body") -> void
 		release(id)
 		return
 	_sp()
-	var shapes: Array = []
-	_prisms(poly, shapes)
 	if not was.is_empty() and was[0] == kind:
 		# The same body moved (a regiment stepping on): its one body keeps its place in the space, its shapes swapped
-		# in place (a claim is a shape or a few: Jolt rebuilds it at once, no body taken out and put back).
+		# in place (a claim is a shape or a few: Jolt rebuilds it at once, no body taken out and put back). A box that
+		# stays a box keeps its shape, only resized (a regiment's every step made and freed one: 2 ms a frame in play).
 		var body: RID = was[3]
-		PhysicsServer3D.body_clear_shapes(body)
-		for sh: Array in shapes:
-			PhysicsServer3D.body_add_shape(body, sh[1], sh[0])
-		_free_shapes(was[4])
+		var shapes: Array = []
+		var old: Array = was[4]
+		var box := _box(poly)
+		if not box.is_empty() and old.size() == 1 and PhysicsServer3D.shape_get_type(old[0][1]) == PhysicsServer3D.SHAPE_BOX:
+			PhysicsServer3D.shape_set_data(old[0][1], box[1])
+			shapes = [[box[0], old[0][1], _bounds(poly)]]
+			PhysicsServer3D.body_clear_shapes(body)
+			PhysicsServer3D.body_add_shape(body, shapes[0][1], shapes[0][0])
+		else:
+			_prisms(poly, shapes)
+			PhysicsServer3D.body_clear_shapes(body)
+			for sh: Array in shapes:
+				PhysicsServer3D.body_add_shape(body, sh[1], sh[0])
+			_free_shapes(old)
+		_claim_unindex(id)
 		_claims[id] = [kind, poly, _bounds(poly), body, shapes]
+		_claim_index(id)
 		claims_rev += 1
 		return
 	release(id)
+	var shapes: Array = []
+	_prisms(poly, shapes)
 	var body := _body(_claim_bit(kind), "claim", id)
 	_fill(body, shapes)
 	_claims[id] = [kind, poly, _bounds(poly), body, shapes]
+	_claim_index(id)
 	if not _kind_ids.has(kind):
 		_kind_ids[kind] = {}
 	_kind_ids[kind][id] = body
@@ -297,6 +312,7 @@ static func release(id: Variant) -> void:
 	var c: Array = _claims.get(id, [])
 	if c.is_empty():
 		return
+	_claim_unindex(id)
 	_claims.erase(id)
 	var ids: Dictionary = _kind_ids.get(c[0], {})
 	ids.erase(id)
@@ -310,11 +326,43 @@ static func release(id: Variant) -> void:
 ## outline]. A fight's crowd (army_melee.gd) steps round what bodies hold, as they move.
 static func claims_in(area: Rect2, kinds: Array) -> Dictionary:
 	var out := {}
-	for id in _claims:
+	for id in _claims_over(area):
 		var c: Array = _claims[id]
 		if _open(String(c[0]), kinds) and (c[2] as Rect2).intersects(area, true):
 			out[id] = [c[0], c[1]]
 	return out
+
+
+## The claims whose bounds' cells (SHAPES_CELL) touch `area` (world XZ), each once: read off the cells, never every
+## claim in the realm (every field of the countryside is one: claims_in walked them all, 4 ms a frame in play).
+static func _claims_over(area: Rect2) -> Dictionary:
+	var out := {}
+	for x in range(floori(area.position.x / SHAPES_CELL), floori(area.end.x / SHAPES_CELL) + 1):
+		for z in range(floori(area.position.y / SHAPES_CELL), floori(area.end.y / SHAPES_CELL) + 1):
+			out.merge(_claim_cells.get(Vector2i(x, z), {}))
+	return out
+
+
+## A claim kept by the cells its bounds cover (_claims_over).
+static func _claim_index(id: Variant) -> void:
+	var r: Rect2 = _claims[id][2]
+	for x in range(floori(r.position.x / SHAPES_CELL), floori(r.end.x / SHAPES_CELL) + 1):
+		for z in range(floori(r.position.y / SHAPES_CELL), floori(r.end.y / SHAPES_CELL) + 1):
+			var c := Vector2i(x, z)
+			if not _claim_cells.has(c):
+				_claim_cells[c] = {}
+			_claim_cells[c][id] = true
+
+
+static func _claim_unindex(id: Variant) -> void:
+	var r: Rect2 = _claims[id][2]
+	for x in range(floori(r.position.x / SHAPES_CELL), floori(r.end.x / SHAPES_CELL) + 1):
+		for z in range(floori(r.position.y / SHAPES_CELL), floori(r.end.y / SHAPES_CELL) + 1):
+			var c := Vector2i(x, z)
+			var at: Dictionary = _claim_cells.get(c, {})
+			at.erase(id)
+			if at.is_empty():
+				_claim_cells.erase(c)
 
 
 ## Whether a claim of `kind` is stood on freely: named in `open_kinds`, or a host's ("host <id>") when "host" is.
@@ -861,7 +909,7 @@ static func obstacle_shapes(area: Rect2, mask := 0xFFFFFFFF) -> Array:
 				for sh: Array in _body_shapes[body]:
 					if (sh[2] as Rect2).intersects(area, true):
 						out.append({"xform": sh[0], "shape": sh[1], "layer": layer, "bounds": sh[2]})
-	for id in _claims:
+	for id in _claims_over(area):
 		var c: Array = _claims[id]
 		var layer: int = _layer_of.get(c[3], 0)
 		if layer & mask != 0 and (c[2] as Rect2).intersects(area, true):
@@ -1005,6 +1053,20 @@ static func _shapes_bounds(shapes: Array) -> Rect2:
 	return r
 
 
+## `poly` (world XZ) as a box when it is a rectangle: [its place (Transform3D), its half extents (Vector3)], else [].
+static func _box(poly: PackedVector2Array) -> Array:
+	if poly.size() != 4:
+		return []
+	var a := poly[1] - poly[0]
+	var b := poly[3] - poly[0]
+	if a.length() <= 1e-5 or b.length() <= 1e-5 or absf(a.normalized().dot(b.normalized())) >= 1e-3 or (poly[2] - poly[1] - b).length() >= 1e-4:
+		return []
+	var x := Vector3(a.x, 0, a.y).normalized()
+	var z := Vector3(b.x, 0, b.y).normalized() * (1.0 if a.cross(b) >= 0.0 else -1.0)
+	var mid := (poly[0] + poly[2]) * 0.5
+	return [Transform3D(Basis(x, Vector3.UP, z), Vector3(mid.x, 0, mid.y)), Vector3(a.length() * 0.5, TALL, b.length() * 0.5)]
+
+
 ## Frees the shapes made for one thing (never a shared trunk's or a sphere asked with).
 static func _free_shapes(shapes: Array) -> void:
 	for s: Array in shapes:
@@ -1014,18 +1076,13 @@ static func _free_shapes(shapes: Array) -> void:
 ## `poly` (world XZ) as prisms appended to `out` ([Transform3D, shape RID, its bounds (Rect2, world XZ)] each): a rectangle a box, any other convex
 ## outline a convex hull, a concave one cut into convex pieces first.
 static func _prisms(poly: PackedVector2Array, out: Array) -> void:
-	if poly.size() == 4:
-		var a := poly[1] - poly[0]
-		var b := poly[3] - poly[0]
-		if a.length() > 1e-5 and b.length() > 1e-5 and absf(a.normalized().dot(b.normalized())) < 1e-3 and (poly[2] - poly[1] - b).length() < 1e-4:
-			var x := Vector3(a.x, 0, a.y).normalized()
-			var z := Vector3(b.x, 0, b.y).normalized() * (1.0 if a.cross(b) >= 0.0 else -1.0)
-			var mid := (poly[0] + poly[2]) * 0.5
-			var box := PhysicsServer3D.box_shape_create()
-			PhysicsServer3D.shape_set_margin(box, 0.0)
-			PhysicsServer3D.shape_set_data(box, Vector3(a.length() * 0.5, TALL, b.length() * 0.5))
-			out.append([Transform3D(Basis(x, Vector3.UP, z), Vector3(mid.x, 0, mid.y)), box, _bounds(poly)])
-			return
+	var rect := _box(poly)
+	if not rect.is_empty():
+		var box := PhysicsServer3D.box_shape_create()
+		PhysicsServer3D.shape_set_margin(box, 0.0)
+		PhysicsServer3D.shape_set_data(box, rect[1])
+		out.append([rect[0], box, _bounds(poly)])
+		return
 	if not _convex(poly):
 		for part in convex_parts(poly):
 			if _convex(part):

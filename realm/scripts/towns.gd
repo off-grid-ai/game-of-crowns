@@ -255,6 +255,7 @@ func _revive(id: int) -> void:
 			(got as Node).free()
 		return
 	var copy: Node3D = got
+	_step_at = Time.get_ticks_usec()
 	var pointing := {}  # the copy's metas that point at its nodes, as paths: pointed into the town once they're moved
 	for m in copy.get_meta_list():
 		var v: Variant = copy.get_meta(m)
@@ -277,12 +278,22 @@ func _revive(id: int) -> void:
 		g.get_parent().remove_child(g)
 		(dest if dest else root).add_child(g)
 		g.transform = place
+		if not ViewTier.spend_ok(&"towns"):  # a town's detail moved in over frames on the pot, never one long frame
+			await PerfTools.next_frame(&"towns:revive")
+			if not is_instance_valid(root) or not is_instance_valid(copy) or t.get("shell", false):  # gone, or shelled again meanwhile
+				if is_instance_valid(copy):
+					copy.free()
+				return
 	for m in pointing:
 		root.set_meta(m, TownStore.nodes(pointing[m], root))
 	copy.free()
 	relight(root)  # the fires the shell put out (_put_out)
-	terrain.season_on(root)
-	TeamColour.take(root)
+	await _pace_alone()
+	if is_instance_valid(root):
+		terrain.season_on(root)
+		await _pace_alone()
+	if is_instance_valid(root):
+		TeamColour.take(root)
 
 
 ## Whether a part of a town is only seen at MID or nearer (its visibility range ends by view_tier.far_from) and isn't
@@ -421,9 +432,7 @@ func _raise(best: int, job: Dictionary) -> void:
 			got = TownStore.take(path)
 		if got is Node3D:
 			node = got
-			imprint(node)
-			relight(node)  # its flames and smoke, never kept in the file (_kindle)
-			_reown(node, job["c"], job["house"])  # whoever holds it now: the file is kept by its shape alone
+			await _readied(node, job["c"], job["house"])
 	if node == null and not towns.has(best):
 		# Not kept as it stands: its nearest kept age (the bake's, else one this player kept) stands now, and grows to
 		# what it is next (Mac, 2026-11-18: "you have a certain benchmark and you start at that ... let the dynamism come
@@ -437,11 +446,9 @@ func _raise(best: int, job: Dictionary) -> void:
 				got = TownStore.take(String(near[0]))
 			if got is Node3D:
 				node = got
-				imprint(node)
-				relight(node)
 				var at: Dictionary = (near[1] as Dictionary).duplicate()
 				at["owner"] = job["c"].get("owner")
-				_reown(node, at, job["house"])
+				await _readied(node, at, job["house"])
 				_queue[best] = {"c": job["c"], "house": job["house"], "sig": job["sig"]}
 				job = {"c": at, "house": job["house"], "sig": "%d|%d|%s|%s" % [int(at["size"]), int(at["owner"]), str(at["buildings"]), str(at["capital"])]}
 				path = String(near[0])
@@ -485,17 +492,22 @@ func _raise(best: int, job: Dictionary) -> void:
 	towns[best] = {"node": node, "signature": job["sig"], "data": job["c"], "path": path}
 	_watch(best, node)
 	PerfTools.add("towns.add", Time.get_ticks_usec() - pt0)
+	await _pace()  # its life, its season and its colours each their own step on the pot (a kept town's whole finish was one frame)
 	pt0 = Time.get_ticks_usec()
 	Engine.set_meta("stage", "towns.life")
 	_houses[best] = job["house"]
 	if _near(node):  # a town not NEAR has its life staged when it is (_life_near)
 		life.update(node, job["c"], job["house"])
 	PerfTools.add("towns.life", Time.get_ticks_usec() - pt0)
+	await _pace()
 	# Each new town takes the season as it stands (snow on its roofs in winter).
 	Engine.set_meta("stage", "towns.season")
 	pt0 = Time.get_ticks_usec()
-	terrain.season_on(node)
-	TeamColour.take(node)
+	if is_instance_valid(node):
+		terrain.season_on(node)
+		await _pace()
+	if is_instance_valid(node):
+		TeamColour.take(node)
 	PerfTools.add("towns.season", Time.get_ticks_usec() - pt0)
 	_raised += 1
 	terrain.hold_grading = false
@@ -1316,11 +1328,24 @@ func _mark(op: String, args: Array) -> void:
 				woods.add_crown.callv(args)
 
 
-## A town's marks on the world (world), made again for a town read back from disk; the ground is redrawn as a raised
-## town's is (_raise's grading step).
+## A town's marks on the world (world), made again for a town read back from disk, a few a step on the frame's pot
+## (_pace: a big town's hundreds of marks, its fires and its colours were one frame, resume.towns ~2 s in 10 s of play);
+## the ground is redrawn as a raised town's is (_raise's grading step).
 func imprint(root: Node3D) -> void:
 	for e in root.get_meta("imprint", []):
 		_mark(String(e[0]), e[1])
+		await _pace()
+
+
+## A town read back from its file made ready to stand, off the tree, step by step on the pot: its marks on the world,
+## its flames and smoke (never kept in the file: _kindle) and whoever holds it now (the file is kept by its shape alone).
+func _readied(node: Node3D, c: Dictionary, house: Dictionary) -> void:
+	_step_at = Time.get_ticks_usec()  # the read waited frames; this frame's step starts now
+	await imprint(node)
+	relight(node)
+	await _pace()
+	_reown(node, c, house)
+	await _pace()
 
 
 ## A town tree's crown into the woods' sight lines (forest.add_crown), so the camera reads it as it does a roof.
@@ -2673,6 +2698,12 @@ func _pace() -> void:
 	if not ViewTier.spend_ok(&"towns"):
 		await PerfTools.next_frame(&"towns:2350")
 	_step_at = Time.get_ticks_usec()
+
+
+## A step on the frame's pot outside a raise (a revive runs beside the town being raised: never touches its _step_at).
+func _pace_alone() -> void:
+	if not ViewTier.spend_ok(&"towns"):
+		await PerfTools.next_frame(&"towns:alone")
 
 
 ## The houses a town's plots take: townhouses mostly; now and then an inn-like timber house or a barn (the tavern

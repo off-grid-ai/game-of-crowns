@@ -520,16 +520,33 @@ static func open_spots(root: Node3D, apart_m: float, within: float) -> Array:
 	# stage's errand stops asked them again, 514 ms in one frame, the roads asked once a cell).
 	var holder: Node = root.get_parent().get_parent() if root.get_parent() else null
 	var roads: Variant = holder.get("roads") if holder else null
-	var key := hash([apart_m, within, pr, feats, int(roads.get("version")) if roads is Object and is_instance_valid(roads) else 0])
+	# The roads over this square alone (roads.gd ways_rev_in): a track laid anywhere else in the realm (a farm's, a
+	# roadside hamlet's) asked every town's spots again (profiled in play: this search 4.1 ms a frame).
+	var g := root.global_position
+	var area := Rect2(g.x - pr, g.z - pr, pr * 2.0, pr * 2.0)
+	var key := hash([apart_m, within, pr, feats, int(roads.ways_rev_in(area)) if roads is Object and is_instance_valid(roads) and roads.has_method("ways_rev_in") else 0])
 	var kept: Dictionary = root.get_meta("open_spots", {})
 	if kept.has(key):
 		return (kept[key] as Array).duplicate()
+	var boxes: Array[Rect2] = []  # each footprint's bounds: one farther than the nearest edge found is never walked
+	for poly: PackedVector2Array in feats:
+		var lo := poly[0]
+		var hi := poly[0]
+		for v in poly:
+			lo = lo.min(v)
+			hi = hi.max(v)
+		boxes.append(Rect2(lo, hi - lo))
 	var far := func(q: Vector2) -> float:
 		var best := INF
-		for poly in feats:
+		for fi in feats.size():
+			var box: Rect2 = boxes[fi]
+			var out := Vector2(maxf(maxf(box.position.x - q.x, q.x - box.end.x), 0.0), maxf(maxf(box.position.y - q.y, q.y - box.end.y), 0.0))
+			if out.length_squared() >= best * best:
+				continue
+			var poly: PackedVector2Array = feats[fi]
 			if Geometry2D.is_point_in_polygon(q, poly):
 				return -1.0
-			for i in (poly as PackedVector2Array).size():
+			for i in poly.size():
 				var e := Geometry2D.get_closest_point_to_segment(q, poly[i], poly[(i + 1) % poly.size()])
 				best = minf(best, q.distance_to(e))
 		return best

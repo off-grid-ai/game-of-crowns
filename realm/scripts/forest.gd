@@ -28,7 +28,8 @@ var _card: Array = []
 var _height: Array[float] = []
 var _kscale: Array[float] = []  # each kind's scale to its true height
 var _ids := {}  # kind -> the Terrain3D mesh id it was planted under
-var _trees := {}  # kind -> its trees' transforms, so felling can replant the rest
+var _trees := {}  # kind -> {cell (Vector2i, TREE_CELL): its trees' transforms there}, so felling reads only the cells it touches and replants the rest
+const TREE_CELL := 8.0  # world units of a cell of _trees
 var _felled := {}  # kinds to replant at the end of this frame
 # Where each tree stands and how tall, by 2-unit cell: the camera asks this
 # which way it can look at a rider without a crown in the way.
@@ -121,8 +122,13 @@ func plant(trees: Array) -> void:
 		for k in by_kind:
 			if _land():
 				if not _trees.has(k):
-					_trees[k] = []
-				_trees[k].append_array(by_kind[k])
+					_trees[k] = {}
+				var cells: Dictionary = _trees[k]
+				for xf: Transform3D in by_kind[k]:
+					var tc := Vector2i(floori(xf.origin.x / TREE_CELL), floori(xf.origin.z / TREE_CELL))
+					if not cells.has(tc):
+						cells[tc] = []
+					(cells[tc] as Array).append(xf)
 				continue
 			_layer(_full[k], by_kind[k], 0.0, NEAR, true, "full")
 			_layer(_mid[k], by_kind[k], NEAR - 1.0, MID, false, "mid")
@@ -134,7 +140,7 @@ func plant(trees: Array) -> void:
 				_layer(_card[k], by_kind[k], MID - 2.0, 0.0, false, "card")
 	if _land():
 		for k in _trees:
-			_ids[k] = _land().plant([_full[k], _mid[k], _card[k]], [NEAR, MID, 1000.0], 1, _trees[k])
+			_ids[k] = _land().plant([_full[k], _mid[k], _card[k]], [NEAR, MID, 1000.0], 1, _all(k))
 	if not trees.is_empty():
 		var first: Vector3 = (trees[0][1] as Transform3D).origin
 		var planted := Rect2(first.x, first.z, 0, 0)
@@ -572,11 +578,21 @@ func clear(center: Vector3, radius: float) -> void:
 				_sight[c] = _sight[c].filter(func(t: Vector4): return Vector2(t.x - center.x, t.y - center.z).length() >= radius)
 	_moved(Rect2(center.x - radius, center.z - radius, radius * 2.0, radius * 2.0))
 	if not _ids.is_empty():
+		# Only the cells the circle touches (every tree of every kind was filtered for each clearing: 3.6 ms a frame in play).
+		var c0 := Vector2i(floori((center.x - radius) / TREE_CELL), floori((center.z - radius) / TREE_CELL))
+		var c1 := Vector2i(floori((center.x + radius) / TREE_CELL), floori((center.z + radius) / TREE_CELL))
 		for k in _trees:
-			var kept: Array = _trees[k].filter(func(t: Transform3D): return Vector2(t.origin.x - center.x, t.origin.z - center.z).length() >= radius)
-			if kept.size() != _trees[k].size():
-				_trees[k] = kept
-				_felled[k] = true
+			var cells: Dictionary = _trees[k]
+			for cx in range(c0.x, c1.x + 1):
+				for cz in range(c0.y, c1.y + 1):
+					var tc := Vector2i(cx, cz)
+					if not cells.has(tc):
+						continue
+					var was: Array = cells[tc]
+					var kept: Array = was.filter(func(t: Transform3D): return Vector2(t.origin.x - center.x, t.origin.z - center.z).length() >= radius)
+					if kept.size() != was.size():
+						cells[tc] = kept
+						_felled[k] = true
 		# Fields are cleared a few at a time; the woods are replanted once for the
 		# lot, a moment later, not once per field (each replant redraws them all).
 		if not _felled.is_empty() and not _replant_due:
@@ -647,6 +663,14 @@ func set_reach(mid: float) -> void:
 			"card": mmi.visibility_range_begin = to - 2.0
 
 
+## Every tree of kind `k` still standing, cell by cell.
+func _all(k: int) -> Array:
+	var out: Array = []
+	for at: Array in (_trees[k] as Dictionary).values():
+		out.append_array(at)
+	return out
+
+
 ## The kinds that lost trees this frame, sent to the instancer again in one go.
 var _replant_due := false
 var _replants := 0
@@ -664,7 +688,7 @@ func _replant_body() -> void:
 		return
 	for k in _felled:
 		var typed: Array[Transform3D] = []
-		typed.assign(_trees[k])
+		typed.assign(_all(k))
 		land.instancer.clear_by_mesh(_ids[k])
 		land.instancer.add_transforms(_ids[k], typed, PackedColorArray(), false)
 		land.instancer.update_mmis(_ids[k])
