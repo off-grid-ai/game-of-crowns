@@ -63,6 +63,19 @@ static func keep(res: Resource, path: String, plain: Resource = null) -> void:
 	_writing[path] = WorkerThreadPool.add_task(_write_whole.bind(file, path), false, "keep " + path.get_file())
 
 
+## `bytes` kept at `path`: written beside it and then put there, so nothing reads it half written (a route, a lane's
+## felled trees, a realm layer's chunk list).
+static func keep_bytes(path: String, bytes: PackedByteArray) -> void:
+	DirAccess.make_dir_recursive_absolute(path.get_base_dir())
+	var part := path.get_basename() + ".part." + path.get_extension()
+	var f := FileAccess.open(part, FileAccess.WRITE)
+	if f == null:
+		return
+	f.store_buffer(bytes)
+	f.close()
+	DirAccess.rename_absolute(part, path)
+
+
 ## Every file still being written, finished (the game quitting: shot_harness.quit_clean, app_services' close).
 static func flush() -> void:
 	for p in _writing.keys():

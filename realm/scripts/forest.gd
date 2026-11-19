@@ -3,7 +3,8 @@ const PerfTools := preload("res://scripts/perf_tools.gd")
 ## Woods of the nature set's pines, oaks and bushes (docs/art/nature, the painted look; realm/data/assets.json woods.kit),
 ## drawn in blocks of land, each with its near, middle and far batches switched by distance on the GPU (Godot's
 ## import-made detail levels lighten them), so a realm-wide forest costs little. Tree positions come from terrain.gd's
-## woodland noise.
+## woodland noise. Laid out once and kept as realm chunks (realm_chunks.gd: make() for tools/bake.gd, start() in play):
+## the full and middle tiers streamed in by the lens, the far cards every chunk; felling is an edit of the kept chunks.
 
 const Units := preload("res://scripts/world_units.gd")  # the world's one scale (Units.M)
 const Real := preload("res://scripts/realistic.gd")  # the asset catalogue (realm/data/assets.json)
@@ -14,7 +15,8 @@ const ViewTier := preload("res://scripts/view_tier.gd")  # the one frame budget 
 static var _kit: Array = []
 static var _roles := {}
 static var _kit_read := _kit_layout()
-const CHUNK := 20.0  # game units per side
+const Chunks := preload("res://scripts/realm_chunks.gd")  # the woods kept as chunks of the realm, streamed in
+const BLOCK := Chunks.CELL / 2.0  # game units a side of one batch (a block of woods switches its tiers as one)
 static var NEAR: float = preload("res://scripts/data.gd").num("forest", "near", 6.0)  # within this distance of the camera, trees are drawn in full, with shadows (a block of woods switches as one: further, and the blocks under a town view drew thousands of full trees twice)
 static var MID: float = preload("res://scripts/data.gd").num("forest", "mid", 24.0)  # out to this distance the middle batch, without shadows; the far one beyond
 ## Past this distance (map zoom: the realm drawn as 02-realm draws it) the far cards stand wider, grown by
@@ -27,10 +29,10 @@ var _mid: Array = []  # the lighter detail level, or the full one where a kind h
 var _card: Array = []
 var _height: Array[float] = []
 var _kscale: Array[float] = []  # each kind's scale to its true height
-var _ids := {}  # kind -> the Terrain3D mesh id it was planted under
-var _trees := {}  # kind -> {cell (Vector2i, TREE_CELL): its trees' transforms there}, so felling reads only the cells it touches and replants the rest
-const TREE_CELL := 8.0  # world units of a cell of _trees
-var _felled := {}  # kinds to replant at the end of this frame
+var _lib := {}  # "kind:tier" -> its mesh (made in play: the season's tint reaches every copy): what a chunk's batch draws
+var _near: Node3D  # realm_chunks.gd: the full and middle tiers, within the lens's reach
+var _far: Node3D  # realm_chunks.gd: the cards, every chunk
+var _reach := -1.0  # the middle tier's end (set_reach), -1 for MID
 # Where each tree stands and how tall, by 2-unit cell: the camera asks this
 # which way it can look at a rider without a crown in the way.
 const SIGHT_CELL := 2.0
@@ -88,96 +90,62 @@ static func broadleaf() -> bool:
 	return available() and _roles.has("oak") and _roles.has("bush")
 
 
-## trees: Array of [kind index, Transform3D] in world space (the transform's
-## scale is the tree's size relative to its true height).
-func plant(trees: Array) -> void:
+## The woods laid out as realm chunks (tools/bake.gd, or once for a land never baked): trees, [kind index, Transform3D]
+## in world space (the transform's scale is the tree's size relative to its true height). Three tiers: full detail close
+## by, lighter further out, then flat cards; only the nearest cast shadows (every shadow cascade draws its casters
+## again, and the woods were most of the frame). Returns {near: {cell: root}, far: {cell: root}, sight: every tree as
+## Vector4(x, z, ground y, height)}.
+func make(trees: Array) -> Dictionary:
 	_load()
+	var near := {}
+	var far := {}
+	var sight := PackedVector4Array()
 	if _full.is_empty():
-		return
-	var chunks := {}
+		return {"near": near, "far": far, "sight": sight}
+	var blocks := {}
 	for t in trees:
+		var k: int = int(t[0])
+		if k >= _full.size() or _full[k] == null:
+			continue
 		var xf: Transform3D = t[1]
-		var key := Vector2i(int(xf.origin.x / CHUNK), int(xf.origin.z / CHUNK))
-		if not chunks.has(key):
-			chunks[key] = []
-		chunks[key].append(t)
-	for key in chunks:
-		var by_kind := {}
-		for t in chunks[key]:
-			var k: int = int(t[0])
-			if k >= _full.size() or _full[k] == null:
-				continue
-			var xf: Transform3D = t[1]
-			xf.basis = xf.basis * Basis.from_scale(Vector3.ONE * S * (_kscale[k] if k < _kscale.size() else 1.0))  # scaled to its data height (metres), in game units
-			var cell := Vector2i(floori(xf.origin.x / SIGHT_CELL), floori(xf.origin.z / SIGHT_CELL))
-			if not _sight.has(cell):
-				_sight[cell] = []
-			_sight[cell].append(Vector4(xf.origin.x, xf.origin.z, xf.origin.y, _height[k] * xf.basis.get_scale().y))
-			if not by_kind.has(k):
-				by_kind[k] = []
-			by_kind[k].append(xf)
-		# Three tiers: full detail close by, lighter further out, then flat
-		# cards. Only the nearest cast shadows: every shadow cascade draws its
-		# casters again, and the woods were most of the frame.
-		for k in by_kind:
-			if _land():
-				if not _trees.has(k):
-					_trees[k] = {}
-				var cells: Dictionary = _trees[k]
-				for xf: Transform3D in by_kind[k]:
-					var tc := Vector2i(floori(xf.origin.x / TREE_CELL), floori(xf.origin.z / TREE_CELL))
-					if not cells.has(tc):
-						cells[tc] = []
-					(cells[tc] as Array).append(xf)
-				continue
-			_layer(_full[k], by_kind[k], 0.0, NEAR, true, "full")
-			_layer(_mid[k], by_kind[k], NEAR - 1.0, MID, false, "mid")
-			if MAP > MID:
-				_layer(_card[k], by_kind[k], MID - 2.0, MAP, false, "card")
-				var g := Vector3(float(MAP_GROW[0]), float(MAP_GROW[1]), float(MAP_GROW[0]))
-				_layer(_card[k], by_kind[k].map(func(t: Transform3D): return Transform3D(t.basis * Basis.from_scale(g), t.origin)), MAP - 2.0, 0.0, false, "map")
-			else:
-				_layer(_card[k], by_kind[k], MID - 2.0, 0.0, false, "card")
-	if _land():
-		for k in _trees:
-			_ids[k] = _land().plant([_full[k], _mid[k], _card[k]], [NEAR, MID, 1000.0], 1, _all(k))
-	if not trees.is_empty():
-		var first: Vector3 = (trees[0][1] as Transform3D).origin
-		var planted := Rect2(first.x, first.z, 0, 0)
-		for t in trees:
-			var o: Vector3 = (t[1] as Transform3D).origin
-			planted = planted.expand(Vector2(o.x, o.z))
-		_moved(planted)
-
-
-## Terrain3D's instancer cost ~400 ms a frame over a town on this Mac, working
-## out every tree's detail level on the CPU each frame; Godot's own batches,
-## a block of land each with near, middle and far versions switched by distance
-## on the GPU, draw the same trees for nothing per frame.
-const USE_INSTANCER := false
-
-
-## Terrain3D's ground, when the realm is drawn on it (terrain.gd's land3d).
-func _land() -> Node:
-	if not USE_INSTANCER:
-		return null
-	var land3d = get_parent().get("land3d")
-	return land3d if land3d and land3d.land else null
-
-
-func _layer(mesh: Mesh, xfs_: Array, begin: float, end: float, shadows: bool, tier: String) -> void:
-	var mm := MultiMesh.new()
-	mm.transform_format = MultiMesh.TRANSFORM_3D
-	mm.use_colors = true  # each tree's shade of its leaves (shade_at); leaves() reads it, the trunks don't
-	mm.mesh = mesh
-	mm.instance_count = xfs_.size()
+		xf.basis = xf.basis * Basis.from_scale(Vector3.ONE * S * (_kscale[k] if k < _kscale.size() else 1.0))  # scaled to its data height (metres), in game units
+		sight.append(Vector4(xf.origin.x, xf.origin.z, xf.origin.y, _height[k] * xf.basis.get_scale().y))
+		var key := Vector2i(floori(xf.origin.x / BLOCK), floori(xf.origin.z / BLOCK))
+		if not blocks.has(key):
+			blocks[key] = {}
+		if not blocks[key].has(k):
+			blocks[key][k] = []
+		blocks[key][k].append(xf)
 	var light := Data.num("assets", "woods.kit.shade.light", 0.14)
 	var warm := Data.num("assets", "woods.kit.shade.warm", 0.08)
-	for i in xfs_.size():
-		mm.set_instance_transform(i, xfs_[i])
-		mm.set_instance_color(i, shade_at((xfs_[i] as Transform3D).origin, light, warm))
-	var mmi := MultiMeshInstance3D.new()
-	mmi.multimesh = mm
+	var g := Vector3(float(MAP_GROW[0]), float(MAP_GROW[1]), float(MAP_GROW[0]))
+	for key: Vector2i in blocks:
+		var cell := Chunks.cell_of(key.x * BLOCK + 0.5, key.y * BLOCK + 0.5)
+		for k: int in blocks[key]:
+			var xfs: Array = blocks[key][k]
+			var shades := PackedColorArray()
+			for xf: Transform3D in xfs:
+				shades.append(shade_at(xf.origin, light, warm))
+			_root(near, cell).add_child(_tier("%d:full" % k, xfs, shades, 0.0, NEAR, true, "full"))
+			_root(near, cell).add_child(_tier("%d:mid" % k, xfs, shades, NEAR - 1.0, MID, false, "mid"))
+			if MAP > MID:
+				_root(far, cell).add_child(_tier("%d:card" % k, xfs, shades, MID - 2.0, MAP, false, "card"))
+				_root(far, cell).add_child(_tier("%d:map" % k, xfs.map(func(t: Transform3D): return Transform3D(t.basis * Basis.from_scale(g), t.origin)), shades, MAP - 2.0, 0.0, false, "map"))
+			else:
+				_root(far, cell).add_child(_tier("%d:card" % k, xfs, shades, MID - 2.0, 0.0, false, "card"))
+	return {"near": near, "far": far, "sight": sight}
+
+
+static func _root(roots: Dictionary, cell: Vector2i) -> Node3D:
+	if not roots.has(cell):
+		roots[cell] = Node3D.new()
+	return roots[cell]
+
+
+## One tier of a block's trees of one kind, as a batch to keep (realm_chunks.gd batch): each tree's shade of its leaves
+## on the instance colours (leaves() reads it, the trunks don't).
+func _tier(key: String, xfs_: Array, shades: PackedColorArray, begin: float, end: float, shadows: bool, tier: String) -> MultiMeshInstance3D:
+	var mmi := Chunks.batch(key, xfs_, shades)
 	mmi.visibility_range_begin = begin
 	mmi.visibility_range_end = end
 	mmi.visibility_range_begin_margin = 2.0
@@ -192,25 +160,78 @@ func _layer(mesh: Mesh, xfs_: Array, begin: float, end: float, shadows: bool, ti
 	# the woods were trunks with a tuft, palms (g35, g37 midzoom). forest.json lod_bias holds more of each crown further out.
 	# By tier (forest.json lod_bias): full crowns held at the near and middle zoom, Godot's own LOD let work further out
 	# where a crown is a few dozen pixels (supervisor fps P0: the woods half of the frame, vertex-bound).
-	mmi.lod_bias = float((Data.value("forest", "lod_bias", {}) as Dictionary).get(tier, 1.0))
+	mmi.set_meta("lod_bias", float((Data.value("forest", "lod_bias", {}) as Dictionary).get(tier, 1.0)))
 	mmi.set_meta("tier", tier)  # set_reach moves the mid and card tiers' bounds; the map tier keeps its own
-	add_child(mmi)
-	xfs[mmi] = xfs_.duplicate()
+	return mmi
 
 
-## Where each tree of each batch stands (MultiMeshInstance3D -> Array of Transform3D), kept here because a MultiMesh is
-## never read back (each get_instance_transform waits on the renderer; supervisor P0, vegetation.gd settle). clear,
-## clear_where and terrain.settle_scatter read and write here.
-var xfs := {}
+## The woods of `land` read back (realm_chunks.gd): the near tiers streamed in by the lens, the cards every chunk, and
+## where every tree stands (the camera's sight lines, the trunks in the way) from what was kept beside them.
+func start(land: String, ground: Node3D) -> void:
+	_load()
+	for k in _full.size():
+		_lib["%d:full" % k] = _full[k]
+		_lib["%d:mid" % k] = _mid[k]
+		_lib["%d:card" % k] = _card[k]
+		_lib["%d:map" % k] = _card[k]
+	var lib := _lib
+	var meshes := func(key: String) -> Mesh: return lib.get(key)
+	_near = _layer("woods", land, MID + Chunks.CELL * 0.5, meshes, ground)
+	_far = _layer("woods_far", land, 0.0, meshes, ground)
+	_sight.clear()
+	var trees: Variant = _far.extra
+	if trees is PackedVector4Array and not (trees as PackedVector4Array).is_empty():
+		var planted := Rect2(trees[0].x, trees[0].y, 0, 0)
+		for t: Vector4 in trees:
+			var cell := Vector2i(floori(t.x / SIGHT_CELL), floori(t.y / SIGHT_CELL))
+			if not _sight.has(cell):
+				_sight[cell] = []
+			_sight[cell].append(t)
+			planted = planted.expand(Vector2(t.x, t.y))
+		_moved(planted)  # the ground owner reads the trunks there
+
+
+func _layer(layer: String, land: String, reach: float, meshes: Callable, ground: Node3D) -> Node3D:
+	var l: Node3D = Chunks.new()
+	l.name = layer
+	l.layer = layer
+	l.land = land
+	l.reach = reach
+	l.meshes = meshes
+	l.ground = ground
+	l.adopt = _reach_of
+	add_child(l)
+	return l
+
+
+## The fellings so far written into the kept woods, and where every tree still stands with them (tools/bake.gd: the
+## starting realm's towns and lanes felled in the baked land itself).
+func keep_edits() -> void:
+	var sight := PackedVector4Array()
+	for c in _sight:
+		for t: Vector4 in _sight[c]:
+			sight.append(t)
+	if _near:
+		_near.keep_edits()
+	if _far:
+		_far.keep_edits(sight)
+
+
+## Whether a chunk of woods the lens wants is still on its way.
+func loading() -> bool:
+	return (_near != null and _near.loading()) or (_far != null and _far.loading())
+
+
+## Every batch of woods standing now.
+func batches() -> Array:
+	return (_near.batches() if _near else []) + (_far.batches() if _far else [])
 
 
 ## What the woods draw now, by tier (perf_tools.gd's probe line, GOC_PERF_PROBE): the batches in their distance band
 ## and on screen, their trees, and the vertices of a tree's finest level.
 func census(cam: Camera3D) -> String:
 	var by := {}
-	for mmi in get_children():
-		if not (mmi is MultiMeshInstance3D):
-			continue
+	for mmi in batches():
 		var tier := String(mmi.get_meta("tier", "?"))
 		var row: Array = by.get(tier, [0, 0, 0, 0])
 		row[0] += 1
@@ -569,127 +590,69 @@ func trees_near(center: Vector3, radius: float) -> int:
 	return n
 
 
-## Fells the trees where a town, farm or battle stands.
+## Fells the trees where a town, farm or battle stands: an edit of the kept woods (realm_chunks.gd).
 func clear(center: Vector3, radius: float) -> void:
 	for cx in range(floori((center.x - radius) / SIGHT_CELL), floori((center.x + radius) / SIGHT_CELL) + 1):
 		for cz in range(floori((center.z - radius) / SIGHT_CELL), floori((center.z + radius) / SIGHT_CELL) + 1):
 			var c := Vector2i(cx, cz)
 			if _sight.has(c):
 				_sight[c] = _sight[c].filter(func(t: Vector4): return Vector2(t.x - center.x, t.y - center.z).length() >= radius)
-	_moved(Rect2(center.x - radius, center.z - radius, radius * 2.0, radius * 2.0))
-	if not _ids.is_empty():
-		# Only the cells the circle touches (every tree of every kind was filtered for each clearing: 3.6 ms a frame in play).
-		var c0 := Vector2i(floori((center.x - radius) / TREE_CELL), floori((center.z - radius) / TREE_CELL))
-		var c1 := Vector2i(floori((center.x + radius) / TREE_CELL), floori((center.z + radius) / TREE_CELL))
-		for k in _trees:
-			var cells: Dictionary = _trees[k]
-			for cx in range(c0.x, c1.x + 1):
-				for cz in range(c0.y, c1.y + 1):
-					var tc := Vector2i(cx, cz)
-					if not cells.has(tc):
-						continue
-					var was: Array = cells[tc]
-					var kept: Array = was.filter(func(t: Transform3D): return Vector2(t.origin.x - center.x, t.origin.z - center.z).length() >= radius)
-					if kept.size() != was.size():
-						cells[tc] = kept
-						_felled[k] = true
-		# Fields are cleared a few at a time; the woods are replanted once for the
-		# lot, a moment later, not once per field (each replant redraws them all).
-		if not _felled.is_empty() and not _replant_due:
-			_replant_due = true
-			get_tree().create_timer(2.0, false).timeout.connect(_replant)
-		return
-	for mmi in get_children():
-		if not (mmi is MultiMeshInstance3D):
-			continue
-		var mm: MultiMesh = mmi.multimesh
-		# Each layer holds one chunk of woods: skip those nowhere near.
-		var box := mm.get_aabb().grow(radius)
-		if center.x < box.position.x or center.x > box.end.x or center.z < box.position.z or center.z > box.end.z:
-			continue
-		var list: Array = xfs[mmi]
-		for i in list.size():
-			var t: Transform3D = list[i]
-			if Vector2(t.origin.x - center.x, t.origin.z - center.z).length() < radius:
-				list[i] = Transform3D(Basis.from_scale(Vector3.ZERO), t.origin)
-				mm.set_instance_transform(i, list[i])
+	var area := Rect2(center.x - radius, center.z - radius, radius * 2.0, radius * 2.0)
+	_moved(area)
+	var f := Chunks.fell_round(Vector2(center.x, center.z), radius)
+	for l in [_near, _far]:
+		if l:
+			l.edit(area, f)
 
 
 ## Fells every tree for which `standing_on(origin)` is true: the lanes the
 ## roads cut through the woods, so what travels them is seen from above.
-## A realm's woods are tens of thousands of trees, so the work is spread over
+## A realm's woods are tens of thousands of trees, so the asking is spread over
 ## frames on the one frame pot (ViewTier.spend_ok, its share guaranteed; it took a second in one frame): await it.
+## The trees found are felled in the kept woods by where they stand (an edit, realm_chunks.gd fell_at).
 ## within: only trees in this box (world x/z) are asked about; outside it none can stand on the new road.
 func clear_where(standing_on: Callable, within := Rect2()) -> int:
-	var felled := 0
 	var all := not within.has_area()
+	var spots := {}
 	for c in _sight.keys():
 		if _sight.has(c):
-			_sight[c] = _sight[c].filter(func(t: Vector4): return not ((all or within.has_point(Vector2(t.x, t.y))) and standing_on.call(Vector3(t.x, t.z, t.y))))
+			_sight[c] = _sight[c].filter(func(t: Vector4) -> bool:
+				if (all or within.has_point(Vector2(t.x, t.y))) and standing_on.call(Vector3(t.x, t.z, t.y)):
+					spots[Chunks.spot(t.x, t.y)] = true
+					return false
+				return true)
 		if not ViewTier.spend_ok(&"lanes"):
-			await PerfTools.next_frame(&"forest:590")
-	for mmi in get_children():
-		if not (mmi is MultiMeshInstance3D):
-			continue
-		var mm: MultiMesh = mmi.multimesh
-		var list: Array = xfs.get(mmi, [])
-		var i := 0
-		while is_instance_valid(mmi) and mm != null and i < list.size():
-			var t: Transform3D = list[i]
-			if t.basis.x != Vector3.ZERO and (all or within.has_point(Vector2(t.origin.x, t.origin.z))) and standing_on.call(t.origin):
-				list[i] = Transform3D(Basis.from_scale(Vector3.ZERO), t.origin)
-				mm.set_instance_transform(i, list[i])
-				felled += 1
-			i += 1
-			if i % 16 == 0 and not ViewTier.spend_ok(&"lanes"):
-				await PerfTools.next_frame(&"forest:605")
-	if within.has_area():
-		_moved(within)
-	else:
-		for c: Vector2i in _sight:
-			_moved(Rect2(Vector2(c) * SIGHT_CELL, Vector2.ONE * SIGHT_CELL))
-	return felled
+			await PerfTools.next_frame(&"forest:lanes")
+	if spots.is_empty():
+		return 0
+	var first: Vector2i = spots.keys()[0]
+	var box := Rect2(Vector2(first) / 100.0, Vector2.ZERO)
+	for q: Vector2i in spots:
+		box = box.expand(Vector2(q) / 100.0)
+	var f := Chunks.fell_at(spots)
+	for l in [_near, _far]:
+		if l and is_instance_valid(l):
+			l.edit(box.grow(0.05), f)
+	_moved(box.grow(0.05))
+	return spots.size()
 
 
 ## How far out the leafy middle detail runs before painted cards take over:
 ## shorter for Smooth graphics; -1 puts back the full MID.
 func set_reach(mid: float) -> void:
-	var to := MID if mid < 0.0 else mid
-	for mmi in get_children():
-		if not (mmi is MultiMeshInstance3D):
-			continue
-		match String(mmi.get_meta("tier")):
-			"mid": mmi.visibility_range_end = to
-			"card": mmi.visibility_range_begin = to - 2.0
+	_reach = mid
+	for mmi in batches():
+		_reach_one(mmi)
 
 
-## Every tree of kind `k` still standing, cell by cell.
-func _all(k: int) -> Array:
-	var out: Array = []
-	for at: Array in (_trees[k] as Dictionary).values():
-		out.append_array(at)
-	return out
+## A chunk of woods joining the tree takes the reach set now.
+func _reach_of(root: Node3D) -> void:
+	for mmi in Chunks._batches(root):
+		_reach_one(mmi)
 
 
-## The kinds that lost trees this frame, sent to the instancer again in one go.
-var _replant_due := false
-var _replants := 0
-func _replant() -> void:
-	_replant_due = false
-	_replants += 1
-	var t0 := Time.get_ticks_msec()
-	_replant_body()
-	print_verbose("REPLANT #%d %d ms" % [_replants, Time.get_ticks_msec() - t0])
-
-
-func _replant_body() -> void:
-	var land: Terrain3D = _land().land if _land() else null
-	if land == null:
-		return
-	for k in _felled:
-		var typed: Array[Transform3D] = []
-		typed.assign(_all(k))
-		land.instancer.clear_by_mesh(_ids[k])
-		land.instancer.add_transforms(_ids[k], typed, PackedColorArray(), false)
-		land.instancer.update_mmis(_ids[k])
-	_felled.clear()
+func _reach_one(mmi: GeometryInstance3D) -> void:
+	var to := MID if _reach < 0.0 else _reach
+	match String(mmi.get_meta("tier", "")):
+		"mid": mmi.visibility_range_end = to
+		"card": mmi.visibility_range_begin = to - 2.0

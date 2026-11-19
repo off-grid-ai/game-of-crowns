@@ -515,15 +515,15 @@ func _cycle_step(delta: float) -> void:
 			if woods:
 				for tier in ["full", "mid", "card", "map"]:
 					_cycle.append(["forest:" + tier, func(on: bool):
-						for c in woods.get_children():
+						for c in woods.batches():
 							if c is GeometryInstance3D and String(c.get_meta("tier", "")) == tier:
 								(c as GeometryInstance3D).visible = on])
 				_cycle.append(["forest: full and mid without shadows", func(on: bool):
-					for c in woods.get_children():
+					for c in woods.batches():
 						if c is GeometryInstance3D and String(c.get_meta("tier", "")) in ["full", "mid"]:
 							(c as GeometryInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if on else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF])
 				_cycle.append(["forest: lod_bias 1 (Godot's own thinning)", func(on: bool):
-					for c in woods.get_children():
+					for c in woods.batches():
 						if c is GeometryInstance3D and c.has_meta("tier"):
 							if not c.has_meta("lod_was"):
 								c.set_meta("lod_was", (c as GeometryInstance3D).lod_bias)

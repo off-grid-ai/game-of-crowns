@@ -239,27 +239,9 @@ func _kept_route(what: Array) -> String:
 	return Kept.path("routes", str(what + [_land_key()]).md5_text(), "bin")
 
 
-## The land's fingerprint (its size and every tile's kind): a route or a lane kept on other land is never read back.
-var _land := ""
-var _land_frame := -1
+## The land's fingerprint (terrain.land_key): a route or a lane kept on other land is never read back.
 func _land_key() -> String:
-	if _land_frame != Engine.get_process_frames():
-		_land_frame = Engine.get_process_frames()
-		var img: Variant = terrain.get("land")
-		_land = str(hash([terrain.width, terrain.height, terrain.terrain, (img as Image).get_size() if img is Image else Vector2i.ZERO]))
-	return _land
-
-
-## A file written beside its place and then put there, so nothing reads it half written (kept.gd _write_whole).
-static func _keep_bytes(path: String, bytes: PackedByteArray) -> void:
-	DirAccess.make_dir_recursive_absolute(path.get_base_dir())
-	var part := path.get_basename() + ".part." + path.get_extension()
-	var f := FileAccess.open(part, FileAccess.WRITE)
-	if f == null:
-		return
-	f.store_buffer(bytes)
-	f.close()
-	DirAccess.rename_absolute(part, path)
+	return terrain.land_key()
 
 
 func _process(_delta: float) -> void:
@@ -293,7 +275,7 @@ func _route_all(batch: Array) -> void:
 	for e in batch:
 		var t0 := Time.get_ticks_usec()
 		var way := NavWorld.path(e[0], e[1], &"wide")
-		_keep_bytes(String(e[3]), var_to_bytes(way))  # kept, a way or none: the next launch reads it back
+		Kept.keep_bytes(String(e[3]), var_to_bytes(way))  # kept, a way or none: the next launch reads it back
 		_lock.lock()
 		_routed.append([e[2], way, Time.get_ticks_usec() - t0])
 		_lock.unlock()
@@ -710,7 +692,7 @@ func _cut_lanes() -> void:
 				return false
 			return kept.has(_spot(q)), box.grow(0.01))
 	for c in fresh:
-		_keep_bytes(String(fresh[c][0]), var_to_bytes(PackedVector2Array((fresh[c][1] as Dictionary).values())))
+		Kept.keep_bytes(String(fresh[c][0]), var_to_bytes(PackedVector2Array((fresh[c][1] as Dictionary).values())))
 	print_verbose("LANES %d trees, %d cells worked out, %d ms" % [n, fresh.size(), Time.get_ticks_msec() - t0])
 	_laning = false
 	if not _lanes_due.is_empty():

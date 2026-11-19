@@ -1,7 +1,8 @@
 extends SceneTree
 ## Bakes what every new game would otherwise make on the player's Mac at first launch, into the game itself (Mac,
 ## 2026-11-15: "cant you just bundle it"): every model's merged mesh and its low level (realistic.gd) and the starting
-## realm's towns and the saved chronicle's as it stands (towns.gd, with the ground, crops and dressing they make) and their roads
+## realm's towns and the saved chronicle's as it stands (towns.gd, with the ground, crops and dressing they make), the land
+## outside them as realm chunks (realm_chunks.gd: the woods and the wild cover, kept as the starting realm left them) and their roads
 ## (roads.gd: each route and the lanes through the woods), into res://baked/ through kept.gd, the one
 ## loader the game reads them by (an exported game: baked, else the player's own copy, else made and kept there), under
 ## the scripts' and data's fingerprint, stamped in res://baked/code.txt.
@@ -75,7 +76,7 @@ func _towns() -> int:
 	var base := ProjectSettings.globalize_path(BASE).simplify_path()
 	var world: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(base + "/state/world_served.json"))
 	var map := _base_map()
-	var stood := await _realm(world, map)
+	var stood := await _realm(world, map, true)
 	print("BAKE towns: the starting realm's %d" % stood)
 	# The ages (Mac, 2026-11-18: "you play 9 years once ... and you save it"): the realm as saved reigns stood, each on
 	# the baseline's land, so a town grown a year or nine into a reign is read back rather than laid out in play.
@@ -144,8 +145,11 @@ func _ages() -> Array:
 	return out
 
 
-## One realm's towns raised on its land and kept, then the realm taken down: how many stand.
-func _realm(world: Dictionary, map: Dictionary) -> int:
+## One realm's towns raised on its land and kept, then the realm taken down: how many stand. The land outside the
+## towns (the woods and the wild cover) is kept as realm chunks the first time its land is built (terrain.gd _plant,
+## realm_chunks.gd); for the starting realm (`baseline`) what its towns and roads felled is written into them too, so
+## every game loads that land as it stands and nothing is felled in front of the player.
+func _realm(world: Dictionary, map: Dictionary, baseline := false) -> int:
 	var store: Node = load("res://scripts/awareness.gd").new()
 	root.add_child(store)
 	await process_frame
@@ -161,6 +165,9 @@ func _realm(world: Dictionary, map: Dictionary) -> int:
 		await process_frame
 	var n: int = towns.towns.size()
 	await _roads(terrain)
+	if baseline:
+		terrain.keep_chunks()
+		print("BAKE land: the starting realm's woods and cover kept as they stand")
 	for n2 in [towns, terrain, store]:
 		root.remove_child(n2)
 		n2.queue_free()

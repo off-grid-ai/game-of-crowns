@@ -40,6 +40,7 @@ func build(map: Dictionary) -> void:
 		terrain[int(t[1]) * width + int(t[0])] = String(t[2]).split("|")[0]
 	_noise.seed = 7
 	_noise.frequency = 0.08
+	_land_key = str(hash([width, height, terrain, land.get_size() if land else Vector2i.ZERO]))
 	# Built in stages with a frame between each, so the window keeps answering
 	# the system while the realm forms (no spinning cursor).
 	built = false
@@ -77,6 +78,13 @@ func build(map: Dictionary) -> void:
 const LandPaths := preload("res://scripts/land_paths.gd")
 var paths := LandPaths.new(self)  # overland ways, asked of the realm's one navigation (land_paths.gd, nav_world.gd)
 var built := false  # the land, sea, rivers and woods are all in place
+
+
+## The land's fingerprint (its size and every tile's kind): what is kept for one land (a route, a lane, a realm chunk:
+## realm_chunks.gd) is never read back on another. Made once a build, so any thread may ask.
+var _land_key := ""
+func land_key() -> String:
+	return _land_key
 
 
 func refresh_terrain(map: Dictionary) -> void:
@@ -931,19 +939,48 @@ var vegetation: Node3D
 var forest: Node3D
 
 
+## The wild plants and the woods: read back from the realm's kept chunks (realm_chunks.gd), streamed in by the lens. A
+## land never kept (tools/bake.gd keeps every realm it bakes) is laid out once here and kept in the player's copy.
 func _plant() -> void:
 	vegetation = Vegetation.new()
 	vegetation.name = "Vegetation"
 	vegetation.land = self
 	add_child(vegetation)
 	forest = null
-	var woods: Array = vegetation.build()
-	if not woods.is_empty():
+	if preload("res://scripts/forest.gd").available():
 		forest = preload("res://scripts/forest.gd").new()
 		forest.name = "Forest"
 		add_child(forest)
-		forest.plant(woods)
-		print_verbose("FOREST %d pines" % woods.size())
+	var key := land_key()
+	if not (Chunks.kept("wild", key) and (forest == null or (Chunks.kept("woods", key) and Chunks.kept("woods_far", key)))):
+		var t0 := Time.get_ticks_msec()
+		var made: Dictionary = vegetation.make()
+		Chunks.keep("wild", key, made["cells"])
+		if forest:
+			var woods: Dictionary = forest.make(made["pines"])
+			Chunks.keep("woods", key, woods["near"])
+			Chunks.keep("woods_far", key, woods["far"], woods["sight"])
+		print_verbose("WOODS laid out and kept for this land, %d ms" % (Time.get_ticks_msec() - t0))
+	vegetation.start(key)
+	if forest:
+		forest.start(key, self)
+
+
+const Chunks := preload("res://scripts/realm_chunks.gd")  # the realm's static land, kept as chunks
+
+
+## What the realm's towns and roads have felled and cleared so far, written into the kept chunks (tools/bake.gd, the
+## starting realm: the baseline every game loads).
+func keep_chunks() -> void:
+	if vegetation:
+		vegetation.keep_edits()
+	if forest:
+		forest.keep_edits()
+
+
+## Whether a chunk of the wild plants or the woods the lens wants is still on its way (the loading card waits for it).
+func chunks_loading() -> bool:
+	return (vegetation != null and vegetation.loading()) or (forest != null and forest.loading())
 
 
 ## Fells trees and clears rocks where a town stands.
@@ -952,12 +989,6 @@ func clear_around(center: Vector3, radius: float) -> void:
 		forest.clear(center, radius)
 	if vegetation:
 		vegetation.clear(center, radius)
-
-
-## Once the towns have graded their ground, the woods and the wild plants are set on it (vegetation.gd settle).
-func settle_scatter() -> void:
-	if vegetation:
-		await vegetation.settle(forest.xfs if forest else {})  # the kit woods' kept places (forest.gd xfs): never read back from the renderer
 
 
 # --- the realm map: who holds what (political_overlay.gd) ---------------------------

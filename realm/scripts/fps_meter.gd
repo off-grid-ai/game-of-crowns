@@ -127,8 +127,8 @@ func _drawn() -> String:
 	var main := get_parent()
 	var forest: Node = main.terrain.forest if main and main.get("terrain") and main.terrain.get("forest") else null
 	if forest:
-		for mmi in forest.get_children():
-			if not (mmi is MultiMeshInstance3D) or not (mmi as MultiMeshInstance3D).multimesh:
+		for mmi in forest.batches():  # forest.gd: its kept chunks' batches standing now
+			if not (mmi as MultiMeshInstance3D).multimesh:
 				continue
 			var g := mmi as MultiMeshInstance3D
 			var c := (g.global_transform * g.get_aabb()).get_center()

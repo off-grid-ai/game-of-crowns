@@ -265,7 +265,7 @@ func _ready() -> void:
 	intro = preload("res://scripts/intro.gd").new()
 	# Every town and its life standing, the roads and fields laid and the armies placed: nothing is still being made
 	# once the card goes (Mac 2026-11-15: 5 fps for the first 25 s of play, the roads and units laid after it closed).
-	intro.ready_check = func(): return terrain.built and towns != null and towns.settled() and roads_laid and units != null and units.placed
+	intro.ready_check = func(): return terrain.built and not terrain.chunks_loading() and towns != null and towns.settled() and roads_laid and units != null and units.placed
 	intro.forming = func() -> String:
 		var n: Vector2i = towns.standing() if towns else Vector2i.ZERO
 		return "The towns are rising: %d of %d" % [n.x, n.y] if terrain.built and n.y > 0 else "The realm is forming…"
@@ -1058,9 +1058,6 @@ func _stands_on_ground(p: Node) -> bool:
 	return p is Node3D and p.is_inside_tree() and not (p.has_meta("lift") or p.has_meta("aloft") or p.has_meta("mounted"))
 
 
-var _settled := false  # the scatter has been seated on the graded ground
-
-
 ## The view's frame: the camera's sound, labels, shadows and haze, the news arrows and the map follow the lens while the
 ## realm is paused too (SceneTree.process_frame runs paused or not); the realm's own clocks below stand still then.
 func _frame() -> void:
@@ -1083,9 +1080,6 @@ func _process_timed(_delta: float) -> void:
 	if over._over_open and rig.goal_distance < rig.OVERVIEW * 0.9:
 		over._overview_close()
 	perf._log_perf(_delta)
-	if not _settled and terrain.built and towns and not towns.towns.is_empty() and not towns.building():
-		_settled = true
-		terrain.settle_scatter()
 	perf._cycle_step(_delta)
 	perf._test_hides()
 	_heard_at -= _delta

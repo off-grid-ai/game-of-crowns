@@ -74,9 +74,9 @@ for f in $(grep -lE 'Engine\.set_meta\(' $srcs); do
   fi
 done
 #   one-drawer: repeated things are drawn by bulk.gd (cells of CELL units, culled a cell at a time; Mac 2026-11-15:
-#   "most of it isn't even seen"). batch.gd and town_store.gd make the kept towns' batches. A layer's own MultiMesh
-#   is a batch no camera can cull.
-check "one-drawer" 'MultiMesh\.new\(\)' 'scripts/(bulk|batch|town_store)\.gd'
+#   "most of it isn't even seen"). batch.gd and town_store.gd make the kept towns' batches, realm_chunks.gd the kept
+#   realm chunks' (a chunk's batches culled a block at a time). A layer's own MultiMesh is a batch no camera can cull.
+check "one-drawer" 'MultiMesh\.new\(\)' 'scripts/(bulk|batch|town_store|realm_chunks)\.gd'
 #   one-cover: whether the realm is drawn at all has one owner (world_cover.gd): a screen covering the window says so
 #   there; no script sets disable_3d itself (Mac 2026-11-15: the reign's end drew the realm under its painting).
 check "one-cover" 'disable_3d *=' 'scripts/world_cover\.gd'

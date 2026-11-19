@@ -1,9 +1,9 @@
 extends Node3D
-const PerfTools := preload("res://scripts/perf_tools.gd")
 ## The wild plants (integration audit #13: terrain.gd's vegetation, split out): the Nature MegaKit's grass, bushes,
 ## rocks and dead trees scattered over Freeciv's tile map, and where the woods stand (a slow noise gathers them into
-## woods, copses and lone trees). The kit woods themselves are forest.gd's: build() hands it their placements and
-## terrain.gd plants them. terrain.clear_around and settle_scatter clear and settle both.
+## woods, copses and lone trees). The kit woods themselves are forest.gd's: make() hands it their placements. Laid out
+## once and kept as realm chunks (realm_chunks.gd: terrain.gd _plant), streamed in by the lens; terrain.clear_around
+## fells both as an edit of the kept chunks, and each chunk settles on the graded ground as it is read.
 
 const Units := preload("res://scripts/world_units.gd")  # the world's one scale (Units.M)
 const Data := preload("res://scripts/data.gd")  # forest.json: the woods and the ground cover
@@ -11,53 +11,46 @@ const Bulk := preload("res://scripts/bulk.gd")  # the one drawer: the bushes (th
 var land: Node3D  # terrain.gd: the tile map, its size and its ground
 
 
-func _scatter(mesh: Mesh, transforms: Array) -> MultiMeshInstance3D:
-	var mm := MultiMesh.new()
-	mm.transform_format = MultiMesh.TRANSFORM_3D
-	mm.mesh = mesh
-	mm.instance_count = transforms.size()
-	for i in transforms.size():
-		mm.set_instance_transform(i, transforms[i])
-	var mmi := MultiMeshInstance3D.new()
-	mmi.multimesh = mm
-	add_child(mmi)
-	xfs[mmi] = transforms.duplicate()
-	return mmi
-
-
-## Where each plant of each batch stands (MultiMeshInstance3D -> Array of Transform3D), kept here because a MultiMesh
-## is never read back: each get_instance_transform waits on the renderer (supervisor P0: settle's per-plant reads held
-## the first frame after the towns rose for 105 s). clear and settle read and write here, and set the MultiMesh.
-var xfs := {}
-var handles := {}  # a cover kind drawn by bulk.gd ("bush:<n>") -> its copies' handles, in xfs's order
+const Chunks := preload("res://scripts/realm_chunks.gd")  # the cover kept as chunks of the realm, streamed in
+var _wild: Node3D  # realm_chunks.gd: the cover's chunks within the lens's reach
+var _lib := {}  # "role:variant" -> its mesh (made in play: the season's leaves): what a chunk's batch draws
 
 
 ## Nature MegaKit trees, bushes and rocks, at the same scale as the towns.
 const VEG_SCALE := Units.M
 static var SHORE: float = preload("res://scripts/data.gd").num("ground", "beach.top", 0.035)  # where the beach ends: the woods stand above it
-const VEG_PATCH := 12.0  # game units: grass and bushes are batched by patch of the map
+const VEG_PATCH := Chunks.CELL / 3.0  # game units: grass and bushes are batched by patch of the map
 static var VEG_REACH: float = preload("res://scripts/data.gd").num("ground", "wild.reach", 24.0)  # and drawn only within this of the camera
 ## Bushes out to here (ground.json wild.bush_reach): WC3's doodads stand at every playing zoom, so the middle zoom's
 ## open country is never bare paint; past 60 the painted overview takes over.
 static var BUSH_REACH: float = preload("res://scripts/data.gd").num("ground", "wild.bush_reach", 36.0)
-var batches: Array[MultiMeshInstance3D] = []
 
 
-## Scatters the wild plants over the tile map and lays out the woods; returns the kit woods' placements
-## ([kind, transform], for forest.gd to plant) or none when the kit is not here (then the woods are in the scatter).
-func build() -> Array:
+## The ground cover's meshes by role (forest.json cover: bush, grass, flowers, rock; files under assets/), each baked
+## once, its leaves turning with the season (forest.gd leaves): role -> [Mesh].
+func _meshes() -> Dictionary:
 	var builder = preload("res://scripts/house_builder.gd").new()
-	var kinds: Dictionary = Data.value("forest", "cover", {})  # the ground cover by role: bush, grass, flowers, rock (files under assets/)
+	var kinds: Dictionary = Data.value("forest", "cover", {})
 	var meshes := {}
-	var placed := {}
 	for k in kinds:
 		meshes[k] = []
 		for name in kinds[k]:
 			var mesh: Mesh = builder.bake_path("res://assets/" + String(name))
-			for si in (mesh.get_surface_count() if mesh else 0):  # the nature set's leaves turn with the season (forest.gd leaves)
+			for si in (mesh.get_surface_count() if mesh else 0):
 				mesh.surface_set_material(si, preload("res://scripts/forest.gd").leaves(mesh.surface_get_material(si), "res://assets/" + String(name), "grass" if k in ["grass", "flowers"] else "leaves"))
 			meshes[k].append(mesh)
-			placed["%s:%d" % [k, meshes[k].size() - 1]] = []
+	return meshes
+
+
+## The wild plants scattered over the tile map and the woods laid out, as realm chunks to keep (tools/bake.gd, or once
+## for a land never baked): {cells: {cell: root of the cover's batches}, pines: the kit woods' placements ([kind,
+## transform], for forest.gd make), none when the kit is not here}.
+func make() -> Dictionary:
+	var meshes := _meshes()
+	var placed := {}
+	for k in meshes:
+		for v in (meshes[k] as Array).size():
+			placed["%s:%d" % [k, v]] = []
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 42
 	for ty in land.height:
@@ -79,35 +72,68 @@ func build() -> Array:
 					var v: int = rng.randi() % meshes[kind].size()
 					placed["%s:%d" % [kind, v]].append(Transform3D(b, Vector3(wx, land.height_at(wx, wz) - 0.03, wz)))
 	_woodland(meshes, placed, rng)
+	var roots := {}
 	for key in placed:
-		var parts: PackedStringArray = key.split(":")
-		# Grass, flowers, bushes and rocks in patches of the map, each drawn only near the
-		# camera: one batch for the whole realm was drawn everywhere at once,
-		# eight million triangles of grass nobody could see (and the rocks, one batch each,
-		# ~3.8M triangles at full detail, cyclevis fps: one realm-wide box is never culled nor
-		# given a lower detail level). Rocks stand as far as bushes.
-		if parts[0] == "bush":  # through the one drawer, a cell at a time, drawn as the bush's card past its distance
-			var mesh: Mesh = meshes[parts[0]][int(parts[1])]
-			var hs := []
-			for t: Transform3D in placed[key]:
-				hs.append(Bulk.add(mesh, t, self, BUSH_REACH))
-			xfs[key] = (placed[key] as Array).duplicate()
-			handles[key] = hs
-			continue
+		var role: String = key.get_slice(":", 0)
+		# Grass, flowers, bushes and rocks in patches of the map, each drawn only near the camera: one batch for the
+		# whole realm was drawn everywhere at once, eight million triangles of grass nobody could see (and the rocks,
+		# ~3.8M triangles at full detail, cyclevis fps: one realm-wide box is never culled nor given a lower detail
+		# level). Rocks and bushes stand as far as BUSH_REACH (WC3's doodads at every playing zoom).
 		var patches := {}
 		for t: Transform3D in placed[key]:
 			var c := Vector2i(floori(t.origin.x / VEG_PATCH), floori(t.origin.z / VEG_PATCH))
 			if not patches.has(c):
 				patches[c] = []
 			patches[c].append(t)
-		for c in patches:
-			var mmi := _scatter(meshes[parts[0]][int(parts[1])], patches[c])
+		for c: Vector2i in patches:
+			var xfs: Array = patches[c]
+			var mmi := Chunks.batch(key, xfs)
 			mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-			mmi.visibility_range_end = VEG_REACH if parts[0] in ["grass", "flowers"] else BUSH_REACH
-			mmi.visibility_range_end_margin = 3.0
-			mmi.lod_bias = float((Data.value("forest", "cover_lod_bias", {}) as Dictionary).get(parts[0], 1.0))  # under 1: each patch takes its coarser detail levels sooner (fps)
-			batches.append(mmi)
-	return _pines if _pines_ok else []
+			mmi.gi_mode = GeometryInstance3D.GI_MODE_DISABLED
+			mmi.visibility_range_end = VEG_REACH if role in ["grass", "flowers"] else BUSH_REACH
+			mmi.visibility_range_end_margin = 3.0 if role in ["grass", "flowers"] else BUSH_REACH * 0.15
+			if role == "bush":
+				# Its lighter level (bulk.gd lighter), its detail picked by the size it is drawn at (bulk.gd LOD_PX).
+				var big := 0.0
+				for t: Transform3D in xfs:
+					big = maxf(big, t.basis.get_scale().x)
+				mmi.set_meta("lod_bias", minf(big * Bulk._lod_k, 1.0))
+			else:
+				mmi.set_meta("lod_bias", float((Data.value("forest", "cover_lod_bias", {}) as Dictionary).get(role, 1.0)))  # under 1: each patch takes its coarser detail levels sooner (fps)
+			var cell := Chunks.cell_of((c.x + 0.5) * VEG_PATCH, (c.y + 0.5) * VEG_PATCH)
+			if not roots.has(cell):
+				roots[cell] = Node3D.new()
+			(roots[cell] as Node3D).add_child(mmi)
+	return {"cells": roots, "pines": _pines if _pines_ok else []}
+
+
+## The cover of `land` read back (realm_chunks.gd): its chunks streamed in by the lens, drawn with the meshes made now.
+func start(land: String) -> void:
+	var meshes := _meshes()
+	for k in meshes:
+		for v in (meshes[k] as Array).size():
+			var m: Mesh = meshes[k][v]
+			_lib["%s:%d" % [k, v]] = Bulk.lighter(m) if k == "bush" and m else m
+	var lib := _lib
+	_wild = Chunks.new()
+	_wild.name = "wild"
+	_wild.layer = "wild"
+	_wild.land = land
+	_wild.reach = BUSH_REACH + Chunks.CELL * 0.5
+	_wild.meshes = func(key: String) -> Mesh: return lib.get(key)
+	_wild.ground = land  # every plant settled on the graded ground as its chunk is read, and again where it is graded
+	add_child(_wild)
+
+
+## The clearings so far written into the kept cover (tools/bake.gd: the starting realm's, in the baked land itself).
+func keep_edits() -> void:
+	if _wild:
+		_wild.keep_edits()
+
+
+## Whether a chunk of cover the lens wants is still on its way.
+func loading() -> bool:
+	return _wild != null and _wild.loading()
 
 
 ## Where the woods stand is Freeciv's: its forest and jungle tiles are woods, its hills, tundra and mountains hold
@@ -181,101 +207,8 @@ func _clump(Forest: Variant, broad: bool, k: Dictionary, r: Dictionary, biome: S
 		_pines.append([Forest.bush_kind(rng), Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3.ONE * bsz), Vector3(bx, land.height_at(bx, bz) - 0.02, bz))])
 
 
-## Clears the wild plants and rocks within `radius` of `center` (terrain.clear_around, where a town stands).
+## Clears the wild plants and rocks within `radius` of `center` (terrain.clear_around, where a town stands): an edit of
+## the kept cover (realm_chunks.gd).
 func clear(center: Vector3, radius: float) -> void:
-	# Only the grid cells the circle touches, not every plant in the realm.
-	var lo := Vector2i(floori((center.x - radius) / VEG_CELL), floori((center.z - radius) / VEG_CELL))
-	var hi := Vector2i(floori((center.x + radius) / VEG_CELL), floori((center.z + radius) / VEG_CELL))
-	for list in batches + handles.keys():
-		var cells := _veg_cells_of(list)
-		for cy in range(lo.y, hi.y + 1):
-			for cx in range(lo.x, hi.x + 1):
-				for i in cells.get(Vector2i(cx, cy), []):
-					var t: Transform3D = xfs[list][i]
-					if t.basis.determinant() != 0.0 and Vector2(t.origin.x - center.x, t.origin.z - center.z).length() < radius:
-						xfs[list][i] = Transform3D(Basis.from_scale(Vector3.ZERO), t.origin)
-						_place(list, i, xfs[list][i])
-
-
-## One plant set where `xfs` now says: in its own batch, or through bulk.gd (a cleared one taken away).
-func _place(list: Variant, i: int, t: Transform3D) -> void:
-	if list is MultiMeshInstance3D:
-		(list as MultiMeshInstance3D).multimesh.set_instance_transform(i, t)
-	elif t.basis.determinant() == 0.0:
-		Bulk.remove(int(handles[list][i]))
-	else:
-		Bulk.move(int(handles[list][i]), t)
-
-
-## The order a realm is built in: the land is shaped, then towns grade their
-## plots and roads settle, and only then does what stands on the ground take its
-## height from it. The woods and the wild plants are scattered while the land
-## forms, before any town levels its ground, so once the towns are up they are
-## settled onto the finished ground: none buried in a levelled plot, none
-## floating over a cut. A few thousand at a time, so the window stays live.
-## The heights are worked out on a worker thread from the kept places (xfs, and the kit woods' `more`, forest.gd xfs);
-## only the plants whose ground moved are set, a few milliseconds a frame (supervisor P0: the old loop read every
-## plant back from the renderer and held the frame for 105 s, then ~1 s a frame).
-func settle(more: Dictionary = {}) -> void:
-	var all := xfs.duplicate()
-	all.merge(more)  # the kit woods' batches (terrain.settle_scatter)
-	var lists := all.values()
-	var ground := land
-	var moved := []  # per list: [[index, Transform3D], ...], filled off the main thread
-	moved.resize(lists.size())
-	var task := WorkerThreadPool.add_task(func() -> void:
-		for li in lists.size():
-			var out := []
-			var list: Array = lists[li]
-			for i in list.size():
-				var t: Transform3D = list[i]
-				if t.basis.determinant() == 0.0:
-					continue  # cleared for a town
-				var y: float = ground.height_at(t.origin.x, t.origin.z) - 0.03
-				if absf(y - t.origin.y) > 0.005:
-					t.origin.y = y
-					out.append([i, t])
-			moved[li] = out)
-	while not WorkerThreadPool.is_task_completed(task):
-		await PerfTools.next_frame(&"vegetation:239")
-	WorkerThreadPool.wait_for_task_completion(task)
-	var keys := all.keys()
-	var done := 0
-	var t0 := Time.get_ticks_usec()
-	for li in keys.size():
-		for m: Array in moved[li]:
-			if keys[li] is Object and not is_instance_valid(keys[li]):
-				break
-			var list: Array = all[keys[li]]
-			var t: Transform3D = m[1]
-			if (list[m[0]] as Transform3D).basis.determinant() == 0.0:
-				continue  # cleared while the heights were worked out
-			list[m[0]] = t
-			if keys[li] is MultiMeshInstance3D:
-				(keys[li] as MultiMeshInstance3D).multimesh.set_instance_transform(m[0], t)
-			else:
-				_place(keys[li], m[0], t)
-			done += 1
-			if done % 64 == 0 and Time.get_ticks_usec() - t0 > 4000:
-				await PerfTools.next_frame(&"vegetation:259")
-				t0 = Time.get_ticks_usec()
-	print_verbose("SETTLED %d plants and trees on the finished ground" % done)
-
-
-const VEG_CELL := 4.0
-var _veg_cells := {}  # a batch or a bulk-drawn kind (xfs's key) -> {cell: instance indices}
-
-
-func _veg_cells_of(mmi: Variant) -> Dictionary:
-	if _veg_cells.has(mmi):
-		return _veg_cells[mmi]
-	var cells := {}
-	var list: Array = xfs[mmi]
-	for i in list.size():
-		var o: Vector3 = (list[i] as Transform3D).origin
-		var key := Vector2i(floori(o.x / VEG_CELL), floori(o.z / VEG_CELL))
-		if not cells.has(key):
-			cells[key] = []
-		cells[key].append(i)
-	_veg_cells[mmi] = cells
-	return cells
+	if _wild:
+		_wild.edit(Rect2(center.x - radius, center.z - radius, radius * 2.0, radius * 2.0), Chunks.fell_round(Vector2(center.x, center.z), radius))

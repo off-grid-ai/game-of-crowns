@@ -13,9 +13,7 @@ scripts/terrain.gd:one-colour
 scripts/wear.gd:one-colour
 scripts/weather_fx.gd:one-colour
 scripts/army_field.gd:one-drawer
-scripts/forest.gd:one-drawer
 scripts/countryside.gd:one-drawer
 scripts/host_command.gd:one-drawer
 scripts/ruins.gd:one-drawer
 scripts/stone_wall.gd:one-drawer
-scripts/vegetation.gd:one-drawer
