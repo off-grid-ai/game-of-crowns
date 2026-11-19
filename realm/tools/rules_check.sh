@@ -89,7 +89,7 @@ check "one-colour" 'func _rgb|Color\(float\([A-Za-z_]+\[0\]\), *float\([A-Za-z_]
 #   unread-switch: every switch a launch script hands the game (realm/tools render/play/stills/media.sh, the rounds in
 #   docs/review/*.sh) is read by some script (its "--name in a .gd), so a switch that does nothing can't ride a launch
 #   line (the look audit, a65fa3c3). Godot's, git's and the apply scripts' own flags are not the game's.
-not_game='path|headless|resolution|fixed-fps|audio-driver|import|check|oneline'
+not_game='path|headless|resolution|fixed-fps|audio-driver|import|check|oneline|remote-debug|disable-vsync|position'
 launch=(tools/render.sh tools/play.sh tools/stills.sh tools/media.sh ../docs/review/*.sh(N))  # (N): the review rounds are archived (517f191f)
 for sw in $(grep -hv '^[[:space:]]*#' $launch | grep -oE -- '--[a-z][a-z0-9-]*' | sort -u); do
   [[ ${sw#--} =~ "^($not_game)\$" ]] && continue
