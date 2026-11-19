@@ -17,6 +17,7 @@ COPY=${1:A}/realm
 [[ -d $COPY ]] || { print "link_assets: no realm/ in $1"; exit 1; }
 [[ $COPY != $SHARED ]] || { print "link_assets: $1 is the shared tree itself"; exit 1; }
 links=(assets)
+[[ -d $SHARED/baked ]] && links+=(baked)  # the towns, roads and soldiers made once (tools/bake.gd): a copy draws them as a player does, never building them live
 [[ $2 == --own-cache ]] || links+=(.godot)
 for x in $links; do
   if [[ -L $COPY/$x ]]; then
