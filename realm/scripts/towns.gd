@@ -509,29 +509,33 @@ func _edit(best: int, job: Dictionary) -> void:
 		add = await _grow_town(standing, job["c"], job["house"])
 		await _occlude(add, standing)
 		await _pace()
+	# _add_on frees `add` once its pieces are moved onto the standing town: what follows asks `grew`, never `add` (a
+	# freed node tests false, so a grown town was never coloured, graded or written, and grew again on every launch:
+	# 22 towns re-laid after each Continue, 2026-11-20).
+	var grew := add != null
 	var pt0 := Time.get_ticks_usec()
 	PerfTools.add("build@last", pt0 - _step_at)
 	Engine.set_meta("stage", "towns.grow")
 	var path := TownStore.path_of(best, terrain.terrain, _reign())
 	if is_instance_valid(standing):
-		if add:
+		if grew:
 			_add_on(standing, add)
 		towns[best]["data"] = job["c"]
 		towns[best]["shell"] = false
-		if add:
+		if grew:
 			_grow(job.get("was", {}), homes_before, standing, job["c"])
 			terrain.season_on(standing)
 			TeamColour.take(standing)
-	elif add:
+	elif grew:
 		add.free()  # the town went while it grew
 	PerfTools.add("towns.grow", Time.get_ticks_usec() - pt0)
 	terrain.hold_grading = false
 	_raising = false
 	_raising_id = -1
 	_graded_at = Time.get_ticks_msec()
-	if add:
+	if grew:
 		terrain.commit_grading()  # only its new plots' ground
-	if add and is_instance_valid(standing) and not (Kept.baking and FileAccess.file_exists(path)):
+	if grew and is_instance_valid(standing) and not (Kept.baking and FileAccess.file_exists(path)):
 		standing.set_meta("edition", int(standing.get_meta("edition", 0)) + 1)
 		towns[best]["path"] = path
 		await TownStore.save(standing, path, true)  # its layout only: never its life, dressing or a fire's shell
