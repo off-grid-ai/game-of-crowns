@@ -144,7 +144,7 @@ func _run() -> void:
 	WorkerThreadPool.wait_for_task_completion(task)
 	_check(not got.is_empty() and (got[0] as PackedVector3Array).size() == way.size(), "the route asked on a worker thread is the same route")
 	var roads := FileAccess.get_file_as_string("res://scripts/roads.gd")
-	_check(roads.contains("WorkerThreadPool.add_task(_route_all") and roads.contains("_ask(from"), "roads.gd routes the King's and lords' roads on a worker")
+	_check(roads.contains("WorkerThreadPool.add_group_task(_route_one") and roads.contains("_ask(from"), "roads.gd routes the King's and lords' roads on a worker")
 	# 4. Ships: along the coast on the water map, every point deep enough for a hull; a resting spot on that map.
 	var draft := Data.num("ground", "nav.water.draft", 0.12)
 	var sea := NavWorld.path(Vector3(2.0, -0.15, 30.5), Vector3(30.0, -0.15, 30.5), NavWorld.WATER)

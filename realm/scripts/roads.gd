@@ -251,7 +251,9 @@ func _process(_delta: float) -> void:
 	if _routing < 0 and not _asks.is_empty() and NavWorld.ready(&"wide"):
 		var batch := _asks
 		_asks = []
-		_routing = WorkerThreadPool.add_group_task(_route_one.bind(batch), batch.size(), -1, false, "roads")
+		# A quarter of the cores at most: a pool filled by asks starved the navigation server's own map sync and the
+		# game hung (mover.gd's asks, one task at a time for that).
+		_routing = WorkerThreadPool.add_group_task(_route_one.bind(batch), batch.size(), clampi(OS.get_processor_count() / 4, 1, batch.size()), false, "roads")
 	_lock.lock()
 	var got := _routed
 	_routed = []
