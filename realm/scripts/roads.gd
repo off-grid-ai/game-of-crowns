@@ -251,6 +251,8 @@ func _process(_delta: float) -> void:
 	if _routing < 0 and not _asks.is_empty() and NavWorld.ready(&"wide"):
 		var batch := _asks
 		_asks = []
+		for e: Array in batch:
+			e.append(NavWorld.ask(e[0], e[1], &"wide"))  # the query made here (it reads what has landed), answered on a worker
 		# A quarter of the cores at most: a pool filled by asks starved the navigation server's own map sync and the
 		# game hung (mover.gd's asks, one task at a time for that).
 		_routing = WorkerThreadPool.add_group_task(_route_one.bind(batch), batch.size(), clampi(OS.get_processor_count() / 4, 1, batch.size()), false, "roads")
@@ -272,12 +274,12 @@ func _process(_delta: float) -> void:
 		set_process(false)
 
 
-## On a worker: the `i`th asked route of `batch`, handed back as it is found (every route of a batch on its own core:
-## the navigation's query is thread-safe).
+## On a worker: the `i`th asked route of `batch`, handed back as it is found (a batch's routes on several cores: the
+## navigation server's query is thread-safe; the query itself made on the main thread, nav_world.gd ask).
 func _route_one(i: int, batch: Array) -> void:
 	var e: Array = batch[i]
 	var t0 := Time.get_ticks_usec()
-	var way := NavWorld.path(e[0], e[1], &"wide")
+	var way := NavWorld.answer(e[4])  # the server's query alone: safe on any thread
 	Kept.keep_bytes(String(e[3]), var_to_bytes(way))  # kept, a way or none: the next launch reads it back
 	_lock.lock()
 	_routed.append([e[2], way, Time.get_ticks_usec() - t0])
