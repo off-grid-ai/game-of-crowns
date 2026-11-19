@@ -514,6 +514,35 @@ func _step(w: PackedStringArray) -> void:
 					for kind in census:
 						counts[kind] = (census[kind] as Dictionary).size()
 					_note("CHECK square beasts: %s: %s (wants a dog, hens, the cart's horse; none inside: see the overlap line)" % [otitle, str(counts)])
+			"poses":
+				# poses: everyone drawn near the lens and how they stand: no state machine, a stopped one, or no move (a
+				# T-pose on screen), by body and by what made them; the first few named (people.json seen_to).
+				var pcam := get_viewport().get_camera_3d()
+				var preach := float(Data.num("people", "seen_to", 22.0))
+				var pn := 0
+				var pbad := {}
+				var pnames: Array = []
+				for b in get_tree().get_nodes_in_group("people"):
+					var body := b as Node3D
+					if body == null or pcam == null or not body.is_visible_in_tree() or body.global_position.distance_to(pcam.global_position) > preach:
+						continue
+					pn += 1
+					var mo: AnimationTree = load("res://scripts/people.gd").motion(body)
+					var ap: AnimationPlayer = body.get_node_or_null("Anim")
+					var why := ""
+					if mo == null and ap == null:
+						why = "no motion"
+					elif mo != null and not mo.active:
+						why = "stopped"
+					elif String(load("res://scripts/people.gd").clip(body)) == "":
+						why = "no move"
+					if why != "":
+						var made: Dictionary = body.get_meta("made", {})
+						var k := "%s|%s|kept=%s" % [why, str(made.get("fn", "?")), str(body.has_meta("_kept") or body.get_parent() != null and String(body.get_parent().name).begins_with("Life"))]
+						pbad[k] = int(pbad.get(k, 0)) + 1
+						if pnames.size() < 8:
+							pnames.append("%s(%s)" % [body.name, why])
+				_note("  poses: %d near, unposed %s; e.g. %s" % [pn, JSON.stringify(pbad), ", ".join(pnames)])
 			"squarelife":
 				# squarelife Town [secs]: how lived-in a town's square is, sampled twice a second for secs, against what
 				# 01-town shows (towns.json square.targets): people on its setts, per 100 m2 of open paving, standing
