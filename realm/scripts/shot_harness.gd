@@ -28,15 +28,7 @@ func _hand() -> void:
 ## resolution (no upscaler), with antialiasing and the finest shadows. Play keeps
 ## the faster settings.
 func _capture_quality() -> void:
-	var vp := main.get_viewport()
-	vp.scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR
-	vp.scaling_3d_scale = 1.0
-	vp.msaa_3d = Viewport.MSAA_4X
-	vp.use_taa = false  # TAA smeared the soldiers: their motion is in the shader, so it has no motion vectors (MSAA does the edges)
-	vp.screen_space_aa = Viewport.SCREEN_SPACE_AA_DISABLED
-	vp.mesh_lod_threshold = 1.0  # every mesh at full detail (play simplifies at 4 px)
-	RenderingServer.directional_shadow_atlas_set_size(8192, true)
-	RenderingServer.directional_soft_shadow_filter_set_quality(RenderingServer.SHADOW_QUALITY_SOFT_HIGH)
+	main.finest_view()
 	# Game time keeps up with the clock: play lets physics catch up at most two ticks a frame
 	# (project.godot, against the season-turn stutter), and Godot cuts a frame's game time to
 	# match, so a still drawn at 3 fps lived a tenth of a second a second and its --wait ran

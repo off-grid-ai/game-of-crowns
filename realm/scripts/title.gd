@@ -1349,12 +1349,12 @@ func _voice_settings(right: Control) -> void:
 	_game_settings(right)
 	# Sound: everything at once, then the music and the realm's own sounds.
 	_section(right, "Graphics")
-	_choices(right, "How the realm is drawn", [["Smooth", "smooth"], ["Beautiful", "beautiful"]], Settings.get_value("graphics"), func(v):
+	_choices(right, "How the realm is drawn", [["Smooth", "smooth"], ["Beautiful", "beautiful"], ["Finest", "finest"]], Settings.get_value("graphics"), func(v):
 		Settings.set_value("graphics", v)
 		var main := get_tree().root.get_node_or_null("Main")
 		if main and main.has_method("apply_graphics"):
 			main.apply_graphics())
-	right.add_child(_label("Smooth runs well on any Mac. Beautiful adds bounce light, soft haze and depth of field, at a cost.", 13, MUTED))
+	right.add_child(_label("Smooth runs well on any Mac. Beautiful adds bounce light, soft haze and depth of field, at a cost. Finest draws every pixel at full detail, for a graphics card of its own.", 13, MUTED))
 	_choices(right, "The Hand's lessons as things first happen", [["On", true], ["Off", false]], Settings.get_value("hand_lessons"), func(v): Settings.set_value("hand_lessons", v))
 	_choices(right, "Pause when you're needed", [["Yes", true], ["No", false]], Settings.get_value("pause_when_needed"), func(v): Settings.set_value("pause_when_needed", v))
 	_choices(right, "Frame rate", [["Off", "off"], ["Frame rate", "rate"], ["Frame rate and details", "details"]], Settings.get_value("frame_rate"), func(v): Settings.set_value("frame_rate", v))

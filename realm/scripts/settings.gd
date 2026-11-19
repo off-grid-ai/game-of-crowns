@@ -11,7 +11,15 @@ static var _cfg: ConfigFile
 
 static func get_value(key: String) -> Variant:
 	_load()
+	if key == "graphics" and not _cfg.has_section_key("play", key):
+		return graphics_default()
 	return _cfg.get_value("play", key, DEFAULTS.get(key))
+
+
+## How the realm is drawn until the player chooses: Finest on a graphics card of its own (a PC's NVIDIA or AMD card
+## draws a town at full 4K with every pass on, in under 10 ms), Smooth on a Mac's or a laptop's shared chip.
+static func graphics_default() -> String:
+	return "finest" if RenderingServer.get_video_adapter_type() == RenderingDevice.DEVICE_TYPE_DISCRETE_GPU else "smooth"
 
 
 static func set_value(key: String, value: Variant) -> void:

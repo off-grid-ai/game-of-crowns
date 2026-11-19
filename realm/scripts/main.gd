@@ -812,7 +812,9 @@ func _input(event: InputEvent) -> void:
 ## passes that each cost a little and together halve the frame rate in a town:
 ## global illumination, ambient occlusion, bounce light, volumetric haze, depth
 ## of field (look.gd reads graphics_smooth), and shadows beyond the near ground.
-## Beautiful keeps them all. Stills and film takes are always Beautiful.
+## Beautiful keeps them all. Finest is Beautiful drawn as a still is (finest_view: every pixel, MSAA edges, every mesh
+## at full detail, the sharpest shadows), the default on a machine with a graphics card of its own (Settings
+## graphics_default; Mac 2026-11-19 on the RTX: "I want killer graphics, 4K"). Stills and film takes are always Finest.
 var graphics_smooth := true
 var air_by_look := false  # look.gd (the v3 look) sets the depth fog by distance itself (look.json haze)
 var _rich := {}  # the Beautiful values, kept to put back
@@ -829,7 +831,21 @@ func _film() -> bool:
 ## change in Settings reaches them at the next start; everything else here follows it at once.
 func smooth_chosen() -> bool:
 	var chosen := String(_shot["perf"]) if String(_shot.get("perf", "")) != "" else String(Settings.get_value("graphics"))
-	return chosen != "beautiful" and not _film()
+	return chosen != "beautiful" and chosen != "finest" and not _film()
+
+
+## The finest drawing: the 3D at the window's every pixel (no upscaler), MSAA for the edges, every mesh at full
+## detail, the sharpest soft shadows. Stills and film takes (shot_harness._capture_quality) and Finest in play.
+func finest_view() -> void:
+	var vp := get_viewport()
+	vp.scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR
+	vp.scaling_3d_scale = 1.0
+	vp.msaa_3d = Viewport.MSAA_4X
+	vp.use_taa = false  # TAA smeared the soldiers: their motion is in the shader, so it has no motion vectors (MSAA does the edges)
+	vp.screen_space_aa = Viewport.SCREEN_SPACE_AA_DISABLED
+	vp.mesh_lod_threshold = 1.0  # every mesh at full detail (play simplifies at 4 px)
+	RenderingServer.directional_shadow_atlas_set_size(8192, true)
+	RenderingServer.directional_soft_shadow_filter_set_quality(RenderingServer.SHADOW_QUALITY_SOFT_HIGH)
 
 
 func apply_graphics() -> void:
@@ -847,7 +863,18 @@ func apply_graphics() -> void:
 	# size was tried for Smooth and smeared people and ground; the effects it
 	# drops buy nearly all its frame rate. (Stills and films draw at full size in
 	# _capture_quality (shot_harness.gd), which sets its own.)
-	if not _film():
+	var finest := String(_shot["perf"]) == "finest" if String(_shot.get("perf", "")) != "" else String(Settings.get_value("graphics")) == "finest"
+	if finest and not _film():
+		finest_view()
+	elif not _film():
+		# Back from Finest: the project's own drawing (its upscaler, FXAA, meshes simplified at its pixels, its shadows).
+		var vp := get_viewport()
+		vp.msaa_3d = Viewport.MSAA_DISABLED
+		vp.screen_space_aa = ProjectSettings.get_setting("rendering/anti_aliasing/quality/screen_space_aa", 1)
+		vp.mesh_lod_threshold = ProjectSettings.get_setting("rendering/mesh_lod/lod_change/threshold_pixels", 16.0)
+		RenderingServer.directional_shadow_atlas_set_size(ProjectSettings.get_setting("rendering/lights_and_shadows/directional_shadow/size", 4096), true)
+		# MetalFX is Apple's: anywhere else Godot's own FSR brings the smaller drawing up to the window.
+		vp.scaling_3d_mode = ProjectSettings.get_setting("rendering/scaling_3d/mode", 0) if OS.get_name() == "macOS" else Viewport.SCALING_3D_MODE_FSR
 		# Smooth draws the world at half the window's pixels and MetalFX spatial brings it to full size (temporal smeared the soldiers: their shader-driven motion has no motion vectors; Mac 2026-11-16 "it needs to be clean"), FXAA smooths the edges; the interface stays sharp
 		# (Mac 2026-11-15, the fps round: "half retina pixels is fine by me"; ui.json smooth_scale). Beautiful keeps the
 		# project's scale.
