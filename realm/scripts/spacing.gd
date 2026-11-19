@@ -53,17 +53,17 @@ func _process(delta: float) -> void:
 		if body == null or not body.is_in_group("people") or not body.is_visible_in_tree():
 			continue
 		var bid := body.get_instance_id()
-		var mo := People.motion(body)
+		var mo: Node = p if p.has_method("dead") else People.motion(body)  # the live one is his Motion itself
 		if mo == null or mo.dead():
 			continue
 		var c := _cell(body.global_position)
 		if not grid.has(c):
 			grid[c] = []
 		(grid[c] as Array).append(body)  # everyone in sight: a walker on a man's spot counts too
-		if not _stands(body):
+		var mv := body.get_node_or_null("Mover")
+		if held(body, mv) != "":
 			_idle.erase(bid)
 			_home.erase(bid)
-			var mv := body.get_node_or_null("Mover")
 			if mv and mv.travels() and not mv.fighting and mv.wheel <= 0.0:
 				walking.append(body)
 			else:
@@ -106,15 +106,12 @@ static func _cell(at: Vector3) -> Vector2i:
 	return Vector2i(floori(at.x / APART), floori(at.z / APART))
 
 
-## Standing, and his to move: his Mover not on its way, not in a fight or a formed block, not carried by
-## something that moves (a rider, a man on a cart).
-static func _stands(body: Node3D) -> bool:
-	return held(body) == ""
-
-
-## Why the pass leaves a body be ("" when it is his to move): read by the motion probe beside a statue.
-static func held(body: Node3D) -> String:
-	var mv := body.get_node_or_null("Mover")
+## Why the pass leaves a body be ("" when it is his to move: standing, his Mover not on its way, not in a fight or a
+## formed block, not carried by something that moves, a rider, a man on a cart). Read by the motion probe beside a statue. `mv`: his
+## Mover when the caller has it already (the pass), so it is looked up once a beat.
+static func held(body: Node3D, mv: Node = null) -> String:
+	if mv == null:
+		mv = body.get_node_or_null("Mover")
 	if mv:
 		if mv.travels():
 			return "on his way"

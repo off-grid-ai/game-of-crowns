@@ -161,7 +161,7 @@ class Step extends BTAction:
 		if _to.distance_to(agent.position) > 0.01 and not _room_at(_to):
 			_to = agent.position  # someone there now (behind them, or on their post): they stay put
 		# Spoken for while they step there: nobody else steps onto it meanwhile.
-		agent.set_meta("step_to", (agent.get_parent() as Node3D).to_global(_to) if agent.get_parent() is Node3D else _to)
+		claim(agent as Node3D, (agent.get_parent() as Node3D).to_global(_to) if agent.get_parent() is Node3D else _to)
 		blackboard.set_var(&"at_post", _to.distance_to(post) < 0.05)
 		var ground: Callable = blackboard.get_var(&"ground", Callable(), false)
 		if ground.is_valid():
@@ -197,20 +197,67 @@ class Step extends BTAction:
 	## (world), and nobody is stepping there (their step_to: where they're going is theirs too). `but`: the one they're
 	## with (a dog at its man's heel). A body wider than a person says how much more ground it stands on (meta room,
 	## world units: the market cart's half-length), and that much more is kept clear of it and of where it goes.
+	## Asked of the cells round `at` in a grid of every body's spot and spoken-for step, made once a frame (a spatial
+	## hash, as crowd sims keep their neighbours): each ask walked every body in the realm, and a free spot is looked
+	## for ring by ring, up to 91 asks (Godot's profiler in play, 2026-11-19: Step.room 1.8 ms a frame).
 	static func room(agent: Node, at: Vector3, r := 0.11, but: Node = null) -> bool:
-		for g in ["people", "bodies"]:
-			for p in agent.get_tree().get_nodes_in_group(g):
-				var n := p as Node3D
-				if n == agent or n == but or not n.is_visible_in_tree():
-					continue
-				var rr := r + float(n.get_meta("room", 0.0))
-				if Vector2(n.global_position.x - at.x, n.global_position.z - at.z).length() < rr:
-					return false
-				if n.has_meta("step_to"):
-					var s: Vector3 = n.get_meta("step_to")
-					if Vector2(s.x - at.x, s.z - at.z).length() < rr:
+		_index(agent.get_tree())
+		var reach := r + _reach
+		var lo := _cell_of(at - Vector3(reach, 0.0, reach))
+		var hi := _cell_of(at + Vector3(reach, 0.0, reach))
+		for cx in range(lo.x, hi.x + 1):
+			for cz in range(lo.y, hi.y + 1):
+				for e in _grid.get(Vector2i(cx, cz), []):
+					var n = e[0]
+					if not is_instance_valid(n) or n == agent or n == but:
+						continue
+					var s: Vector3 = e[1]
+					if Vector2(s.x - at.x, s.z - at.z).length() < r + float(e[2]):
 						return false
 		return true
+
+	## A spot spoken for by `agent` (world): its step_to, which the stopping rule reads, and in this frame's grid at
+	## once, so another asking this same frame finds it taken. Every writer of step_to goes through here.
+	static func claim(agent: Node3D, at: Vector3) -> void:
+		agent.set_meta("step_to", at)
+		if _grid_frame == Engine.get_process_frames():
+			_put(agent, at, float(agent.get_meta("room", 0.0)))
+
+	const CELL := 0.25  # world units: a grid cell, a few shoulders wide
+	static var _grid := {}  # Vector2i -> [[body, spot, its room]]
+	static var _grid_frame := -1
+	static var _grid_count := -1  # bodies in the realm when it was made
+	static var _reach := 0.0  # the widest body's own room this frame
+
+	static func _index(tree: SceneTree) -> void:
+		var f := Engine.get_process_frames()
+		var count := tree.get_node_count_in_group(&"people") + tree.get_node_count_in_group(&"bodies")
+		if f == _grid_frame and count == _grid_count:
+			return  # made this frame, and nobody new stood in since (a scene staging its people one by one)
+		_grid_frame = f
+		_grid_count = count
+		_grid.clear()
+		_reach = 0.0
+		for g in ["people", "bodies"]:
+			for p in tree.get_nodes_in_group(g):
+				var n := p as Node3D
+				if n == null or not n.is_visible_in_tree():
+					continue
+				var rm := float(n.get_meta("room", 0.0))
+				_reach = maxf(_reach, rm)
+				_put(n, n.global_position, rm)
+				if n.has_meta("step_to"):
+					_put(n, n.get_meta("step_to"), rm)
+
+	static func _put(n: Node3D, at: Vector3, rm: float) -> void:
+		var c := _cell_of(at)
+		if not _grid.has(c):
+			_grid[c] = []
+		(_grid[c] as Array).append([n, at, rm])
+		_reach = maxf(_reach, rm)
+
+	static func _cell_of(at: Vector3) -> Vector2i:
+		return Vector2i(floori(at.x / CELL), floori(at.z / CELL))
 
 	## Whether `at` (world) is inside something standing in a town: a building,
 	## or its life's fire, stall, cart or table (read off what stands there, nav_ground.gd). A scene's

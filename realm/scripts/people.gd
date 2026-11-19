@@ -1043,10 +1043,24 @@ static var _masked := {}  # [material, mask, colour] -> the dyed copy, shared by
 
 ## Dyes a body's cloth through a mask (white: the cloth that takes the dye): the material's detail layer, the
 ## colour on the masked texels only (StandardMaterial3D detail_mask), so no shader of our own.
+## A mask's texture, by its path, found and loaded once (null: none there): each body made asked the disk again
+## (ResourceLoader.exists reads the .import file; Godot's profiler in play, 2026-11-19: 2-4 ms a frame while towns streamed).
+static var _masks := {}
+static func _mask(mask_path: String) -> Texture2D:
+	if not _masks.has(mask_path):
+		var mask: Texture2D = null
+		if ResourceLoader.exists(mask_path):
+			mask = load(mask_path)
+		elif FileAccess.file_exists(mask_path):
+			mask = ImageTexture.create_from_image(Image.load_from_file(mask_path))
+		_masks[mask_path] = mask
+	return _masks[mask_path]
+
+
 func _mask_dye(mi: MeshInstance3D, mask_path: String, colour: Color, livery := false) -> void:
-	if not ResourceLoader.exists(mask_path) and not FileAccess.file_exists(mask_path):
+	var mask := _mask(mask_path)
+	if mask == null:
 		return
-	var mask: Texture2D = load(mask_path) if ResourceLoader.exists(mask_path) else ImageTexture.create_from_image(Image.load_from_file(mask_path))
 	for s in mi.mesh.get_surface_count():
 		var m := mi.get_active_material(s) as StandardMaterial3D
 		if m == null:
