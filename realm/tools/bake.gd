@@ -199,8 +199,17 @@ func _roads(terrain: Node3D) -> void:
 	roads.sync()
 	await process_frame
 	roads.kings_road()
+	var said := t0
 	while not roads.laid() and Time.get_ticks_msec() - t0 < ROADS_WAIT_S * 1000.0:
 		await process_frame
+		if Time.get_ticks_msec() - said > 10000:  # where the roads' wait stands, every 10 s (which part holds it)
+			said = Time.get_ticks_msec()
+			var pending := 0
+			for k in NavWorld._pending:
+				pending += (NavWorld._pending[k] as Dictionary).size()
+			print("BAKE roads: %.0f s: navigation %d queued, %d baking, %d chunks not landed, wide map %s; roads %d to route, %d routing, %d to paint, lanes %d due" % [
+				(said - t0) / 1000.0, NavWorld._queue.size(), NavWorld._out, pending, "ready" if NavWorld.ready(&"wide") else "not ready",
+				roads._asks.size(), 1 if roads._routing >= 0 else 0, roads._paint_jobs.size(), roads._lanes_due.size()])
 	print("BAKE roads: %s in %.0f s" % ["laid" if roads.laid() else "NOT all laid", (Time.get_ticks_msec() - t0) / 1000.0])
 	NavWorld.stop()
 	for n2 in [roads, nav]:
