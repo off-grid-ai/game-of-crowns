@@ -108,7 +108,7 @@ func make() -> Dictionary:
 
 
 ## The cover of `land` read back (realm_chunks.gd): its chunks streamed in by the lens, drawn with the meshes made now.
-func start(land: String) -> void:
+func start(land_key: String) -> void:
 	var meshes := _meshes()
 	for k in meshes:
 		for v in (meshes[k] as Array).size():
@@ -118,7 +118,7 @@ func start(land: String) -> void:
 	_wild = Chunks.new()
 	_wild.name = "wild"
 	_wild.layer = "wild"
-	_wild.land = land
+	_wild.land = land_key
 	_wild.reach = BUSH_REACH + Chunks.CELL * 0.5
 	_wild.meshes = func(key: String) -> Mesh: return lib.get(key)
 	_wild.ground = land  # every plant settled on the graded ground as its chunk is read, and again where it is graded
