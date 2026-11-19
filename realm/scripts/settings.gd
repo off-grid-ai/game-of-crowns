@@ -16,10 +16,22 @@ static func get_value(key: String) -> Variant:
 	return _cfg.get_value("play", key, DEFAULTS.get(key))
 
 
-## How the realm is drawn until the player chooses: Finest on a graphics card of its own (a PC's NVIDIA or AMD card
-## draws a town at full 4K with every pass on, in under 10 ms), Smooth on a Mac's or a laptop's shared chip.
+## How the realm is drawn until the player chooses, by the machine's tier (data/hardware.json tiers, first fit wins):
+## Finest on a graphics card of its own (a PC's NVIDIA or AMD card draws a town at full 4K with every pass on, in under
+## 10 ms) or a Mac's Max or Ultra chip, Beautiful on a Mac's Pro or plain chip with 16 GB, Smooth on anything less.
 static func graphics_default() -> String:
-	return "finest" if RenderingServer.get_video_adapter_type() == RenderingDevice.DEVICE_TYPE_DISCRETE_GPU else "smooth"
+	var name := RenderingServer.get_video_adapter_name()
+	var discrete := RenderingServer.get_video_adapter_type() == RenderingDevice.DEVICE_TYPE_DISCRETE_GPU
+	var ram_gb := float(OS.get_memory_info().get("physical", 0)) / 1073741824.0
+	for rule: Dictionary in preload("res://scripts/data.gd").value("hardware", "tiers", []):
+		if rule.has("discrete") and bool(rule["discrete"]) != discrete:
+			continue
+		if rule.has("name_has") and not (rule["name_has"] as Array).any(func(w) -> bool: return name.contains(String(w))):
+			continue
+		if ram_gb < float(rule.get("min_ram_gb", 0.0)):
+			continue
+		return String(rule.get("preset", "smooth"))
+	return "smooth"
 
 
 static func set_value(key: String, value: Variant) -> void:

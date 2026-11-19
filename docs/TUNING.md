@@ -782,3 +782,6 @@ Switches (`--name`) go after `--` on the game's command line.
 - When the battle Orders bar shows: `realm/data/battle_orders.json` `command.near` (6 units) and `command.view` (0.6 of the camera distance): the fight's middle must be on screen and this near where the camera looks. Raise them to keep the bar up from further off.
 - How long a walker waits on a route to ground still loading before he walks the part that has loaded: `realm/data/ground.json` `nav.ask_s` (1 s).
 - How long a town's facts settle before its life is staged anew: `realm/data/towns.json` `life.settle_s` (3 s): a burst of changes (season, birth, a dear market) re-casts once; the old crowd stands until the new one is whole.
+
+- **Starting graphics preset by machine** (realm/data/hardware.json `tiers`): the first rule that fits picks Finest / Beautiful / Smooth until the player chooses in Settings. Switch: edit or reorder the rules.
+- **Navigation bakes at once** (realm/data/ground.json `nav.at_once`, 12): chunk bakes on worker threads at a time; matters only when a chunk changes in play (the walking map loads whole from the bake).

@@ -1,0 +1,10 @@
+{
+  "_tiers": "settings.gd graphics_default: the graphics preset a machine starts on until the player picks one in Settings. Read top to bottom, the first rule that fits wins. discrete: a graphics card of its own (NVIDIA, AMD); name_has: any of these words in the graphics chip name Godot reports (Apple M3 Max, Apple M2 Pro); min_ram_gb: at least this much memory. finest = Beautiful drawn at still quality; beautiful = every pass; smooth = the costly passes off.",
+  "tiers": [
+    {"discrete": true, "preset": "finest"},
+    {"name_has": ["Max", "Ultra"], "preset": "finest"},
+    {"name_has": ["Pro"], "min_ram_gb": 16, "preset": "beautiful"},
+    {"name_has": ["Apple"], "min_ram_gb": 16, "preset": "beautiful"},
+    {"preset": "smooth"}
+  ]
+}
