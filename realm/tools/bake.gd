@@ -25,6 +25,7 @@ const ViewTier := preload("res://scripts/view_tier.gd")
 const STARTS := ["aldmere", "aldmere_year_one"]
 var _base := "aldmere"  # --base=<start>: the start a slice works on
 const WAIT_S := 1800.0
+const NAV_SETTLE_S := 300.0  # the most the navigation may take to settle over the laid roads before it is packed
 const ROADS_WAIT_S := 600.0  # the most one realm's roads may take (the navigation baked, every route asked)
 const LOGS := "user://bake/"  # each slice's Godot writes its log here (--log-file)
 
@@ -265,6 +266,12 @@ func _roads(terrain: Node3D) -> void:
 				(said - t0) / 1000.0, NavWorld._queue.size(), NavWorld._out, pending, "ready" if NavWorld.ready(&"wide") else "not ready",
 				roads._asks.size(), 1 if roads._routing >= 0 else 0, roads._paint_jobs.size(), roads._lanes_due.size()])
 	print("BAKE roads: %s in %.0f s" % ["laid" if roads.laid() else "NOT all laid", (Time.get_ticks_msec() - t0) / 1000.0])
+	# The navigation settled over the laid roads (every chunk they cross baked again with its ways), then written whole for
+	# this land (nav_world.gd write_pack): a launch lays it from one file instead of baking or naming each chunk.
+	var t1 := Time.get_ticks_msec()
+	while not NavWorld.settled() and Time.get_ticks_msec() - t1 < NAV_SETTLE_S * 1000.0:
+		await process_frame
+	print("BAKE nav: %s, %d chunk layers packed in %.0f s" % ["settled" if NavWorld.settled() else "NOT settled", NavWorld.write_pack(), (Time.get_ticks_msec() - t1) / 1000.0])
 	NavWorld.stop()
 	for n2 in [roads, nav]:
 		root.remove_child(n2)

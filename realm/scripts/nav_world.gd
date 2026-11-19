@@ -146,8 +146,93 @@ static func start(land: Node3D, ways: Node) -> void:
 		for c in _all:
 			_chunks[kind][c] = {"regions": {}, "sig": "", "want": "", "seen_at": 0.0, "out": false, "landed": false}
 			_pending[kind][c] = true
-			_queue.append([kind, c])
 	land.ground_changed.connect(_on_ground_changed)
+	var pack := pack_path()
+	if not Kept.baking and FileAccess.file_exists(pack):
+		# Build once, load only: the bake's whole navigation for this land, every chunk of every map, laid from one file
+		# on a worker (no Recast, nothing read off the ground just to name a file). Launch 2026-11-20: ~90 s of chunk
+		# bakes after Continue before the roads' map answered; the watch rebakes only what changes after.
+		for kind in _chunks:
+			for c in _all:
+				_chunks[kind][c]["out"] = true
+				_out += 1
+		WorkerThreadPool.add_task(_unpack.bind(_gen, pack), false, "nav pack")
+		return
+	for kind in [WATER] + LAND_KINDS:
+		for c in _all:
+			_queue.append([kind, c])
+
+
+## Where the bake keeps this land's whole navigation (by the land's fingerprint, terrain.gd land_key).
+static func pack_path() -> String:
+	return Kept.path("nav", "pack_" + String(terrain.land_key()).md5_text().substr(0, 12), "bin")
+
+
+## Every map's every chunk as it stands now (its layers and what they were baked from), written in one file (tools/bake.gd,
+## once the maps have settled with the realm's towns and roads). How many chunk layers it holds.
+static func write_pack() -> int:
+	var out := {}
+	var n := 0
+	for kind: StringName in _chunks:
+		var per := {}
+		for c: Vector2i in _chunks[kind]:
+			var ch: Dictionary = _chunks[kind][c]
+			var layers := {}
+			for layer: StringName in ch.get("meshes", {}):
+				var nm: NavigationMesh = ch["meshes"][layer]
+				var polys: Array = []
+				for i in nm.get_polygon_count():
+					polys.append(nm.get_polygon(i))
+				layers[String(layer)] = [nm.get_vertices(), polys]
+				n += 1
+			per[c] = [String(ch["sig"]), layers]
+		out[String(kind)] = per
+	Kept.keep_bytes(pack_path(), var_to_bytes(out))
+	return n
+
+
+## On a worker: the pack at `path` handed back chunk by chunk as if each were just baked (_land_done lays them).
+static func _unpack(gen: int, path: String) -> void:
+	var t0 := Time.get_ticks_usec()
+	var data: Variant = bytes_to_var(FileAccess.get_file_as_bytes(path))
+	var got := {}
+	if data is Dictionary:
+		for kind_s: String in data:
+			var kind := StringName(kind_s)
+			if not _chunks.has(kind):
+				continue
+			for c: Vector2i in data[kind_s]:
+				var e: Array = data[kind_s][c]
+				var layers := {}
+				for layer_s: String in e[1]:
+					var nm := _recast(kind, c)
+					nm.vertices = e[1][layer_s][0]
+					for poly: PackedInt32Array in e[1][layer_s][1]:
+						nm.add_polygon(poly)
+					layers[StringName(layer_s)] = nm
+				got[[kind, c]] = true
+				_lock.lock()
+				read_back += layers.size()
+				_done.append([kind, c, String(e[0]), layers, 0, gen])
+				_lock.unlock()
+	# A chunk the pack lacks (a map added since the bake): baked as before.
+	_lock.lock()
+	for kind in _chunks:
+		for c in _all:
+			if not got.has([kind, c]):
+				_done.append([kind, c, "", {}, 0, gen])
+	_lock.unlock()
+	print_verbose("NAV pack %d chunks in %d ms" % [got.size(), (Time.get_ticks_usec() - t0) / 1000])
+
+
+## Whether every map has every chunk laid and the watch has looked the realm over since with nothing left to bake.
+static func settled() -> bool:
+	if not _started or not _queue.is_empty() or _out > 0 or not _landing.is_empty() or _unsettled:
+		return false
+	for kind in _pending:
+		if not (_pending[kind] as Dictionary).is_empty():
+			return false
+	return _swept_key != null and _swept_key == _key()
 
 
 static func _chunk_size() -> float:
@@ -1108,6 +1193,8 @@ static func _land_done() -> void:
 		ch["sig"] = d[2]
 		var regions: Dictionary = ch["regions"]
 		var layers: Dictionary = d[3]
+		if Kept.baking:
+			ch["meshes"] = layers  # write_pack (the server keeps no copy to read back)
 		for layer: StringName in LAYERS:
 			if not layers.has(layer) or (layers[layer] as NavigationMesh).get_polygon_count() == 0:
 				if regions.has(layer):
