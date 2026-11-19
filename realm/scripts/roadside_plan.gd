@@ -227,6 +227,8 @@ func _along(chains: Array) -> void:
 			walked[kind] = 0.0
 			due[kind] = _num(kind, "first", 4.0) * rng.randf_range(0.6, 1.4)
 		for i in line.size() - 1:
+			if i > 0:
+				await _turn()  # each stretch of a chain on the pot: a long road's sites at once were 200-260 ms frames (2026-11-20)
 			var a: Vector2 = line[i]
 			var b: Vector2 = line[i + 1]
 			var len := a.distance_to(b)
