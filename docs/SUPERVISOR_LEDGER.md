@@ -55,6 +55,15 @@ Where things stand, so any agent can take over. Newest first, short. The full hi
   partner).
 
 ## Log
+- 11-20 04:00 Townsfolk round 2 (Mac asleep; calls mine, reviewable). The everyday crowd is now all Meshy, one gritty
+  900 AD look: 5144d57a retired the cartoon watchman and farmers (the guard, peasant man and woman play them); 6a8831c4
+  remade ranger, old woman, old man, boy, girl, townswoman, stallholder, merchant in their old folders (~26k tris each,
+  GeneralSkeleton). Merchant made twice: the first came out 1800s ('coat' pulls lapels; 'tunic and cloak' fixed it).
+  Credits: 360 this round, ~566 left. Not remade yet (Mac's call): smith, miller, crier, priest, noble lady. Dye: the
+  boy and merchant have no cream cloth, so no town colour on them. Open: the workstation hard-reset 3 times tonight
+  (01:26, 02:24, 03:21) under shared GPU load (training + Godot): a power cut, not a game bug; each tore a
+  chronicle's jsonl with NULs and the bridge would not start until the line went (by hand; the bridge should skip a
+  bad line). Power log: ~/ogad-action/logs/power.log on the box.
 - 11-20 03:10 Townsfolk round (Mac: 'the humans look pixelated and rough', 'something we created'; Mac asleep,
   calls mine, reviewable). Measured in Kingsmere's square (autoplay poses): 60-82% of the people on screen stood in
   T-pose, a move playing and the bones at rest. Causes: poses on the WorkerThreadPool (48a4b7f4; 16,130
