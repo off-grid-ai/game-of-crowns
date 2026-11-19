@@ -2,13 +2,14 @@ extends Node3D
 ## Draws every Freeciv city as a medieval town built from the Medieval Village
 ## MegaKit: a market square, streets radiating out, townhouses lining them, a keep
 ## (or a castle for a house seat), walls, temple and the house banner.
-## Towns grow street by street with their Freeciv size, and are only rebuilt
-## when size, owner or buildings change.
+## Each town is laid out once and kept (town_store.gd); from then on it is read back and edited where it stands
+## (_edit: the houses it grew, its banners), never laid out again in play.
 
 const TeamColour := preload("res://scripts/team_colour.gd")  # a town in its holder's colours, handed over as it stands
 const Units := preload("res://scripts/world_units.gd")  # the world's one scale (Units.M)
 const PerfTools := preload("res://scripts/perf_tools.gd")  # the slow-frame log (GOC_PERF_PROBE)
 const Awareness := preload("res://scripts/awareness.gd")  # the view's one store: the realm's records (rec)
+const Kept := preload("res://scripts/kept.gd")  # baking: a town the bake kept is the baseline, never edited over
 const S := Units.M  # world units per metre: a 6 m house is 0.72 units, a tile is 4
 
 var terrain: Node3D
@@ -96,12 +97,12 @@ func _city(id: int, c: Dictionary) -> void:
 	if towns.has(id):
 		# A town stands once raised: it is never torn down and raised again in play (Mac: the hitches were
 		# towns re-raised whenever they changed). A change of hands strikes its banners for the new holder's
-		# (its roofs take his colour by themselves, team_colour.gd); a new size or building is the town's data.
+		# (its roofs take his colour by themselves, team_colour.gd); a new size or building is an edit (_edit).
 		if towns[id]["signature"] != sig:
 			_changed(towns[id], c, house)
 			towns[id]["signature"] = sig
 			if _shows(towns[id]["data"], c):
-				# Its new pieces laid off-screen, then added (_raise: _grow_standing). The town as it was rides along
+				# Its new pieces laid off-screen, then added (_raise: _edit). The town as it was rides along
 				# from its first change still waiting, so two steps of growth before it is raised are one growth.
 				var was: Dictionary = _queue[id]["was"] if _queue.has(id) and _queue[id].has("was") else towns[id]["data"]
 				_queue[id] = {"c": c, "house": house, "sig": sig, "was": was}
@@ -125,15 +126,15 @@ func _changed(t: Dictionary, c: Dictionary, house: Dictionary) -> void:
 	var was: Dictionary = t["data"]
 	node.set_meta("size", int(c["size"]))
 	node.set_meta("buildings", c["buildings"])  # what the square shows of them (a market's extra stalls), read by its life
-	if int(was.get("owner", -1)) != int(c["owner"]):
+	if int(was.get("owner", -1)) != int(c["owner"]) or bool(was.get("capital", false)) != bool(c["capital"]) or was.get("family") != c.get("family"):
 		_reown(node, c, house)
 
 
-## Whether a change to a standing town shows in what stands: its size (new houses), its buildings (a stone wall, a
-## granary, a trade) or its rank (a capital's castle). A change of hands alone is its banners (_changed).
+## Whether a change to a standing town may show in what stands: its size (new houses) or its buildings (a stone wall,
+## a granary, a trade); _edit lays what its kept layout lacks. A change of hands, a seat or a bannerman's arms is its
+## banners (_changed: _reown), at once.
 static func _shows(was: Dictionary, c: Dictionary) -> bool:
-	return int(was.get("size", 0)) != int(c["size"]) or str(was.get("buildings", [])) != str(c["buildings"]) or bool(was.get("capital", false)) != bool(c["capital"]) \
-		or (c.get("family") is String and int(was.get("owner", -1)) != int(c["owner"]))  # a bannerman's arms stand or go with his liege
+	return int(was.get("size", 0)) != int(c["size"]) or str(was.get("buildings", [])) != str(c["buildings"])
 
 
 var _queue := {}  # city id -> {c, house, sig, was?}: towns waiting to be built, or a standing one's new pieces to lay
@@ -411,85 +412,41 @@ func _take_nearest() -> void:
 	_raise(best, job)
 
 
-## One town raised over frames (_pace), then shown whole in place of the old.
+## One town raised over frames (_pace) and shown whole: read back from its file (town_store.gd: the player's own in
+## this reign, else the game's baseline) and caught up to its facts by an edit (_edit, queued); laid out only if it has
+## never been kept, and kept at once. A standing town's change is an edit (_edit), never a new layout.
 func _raise(best: int, job: Dictionary) -> void:
 	_raising = true
 	_raising_id = best
 	_step_at = Time.get_ticks_usec()
 	terrain.hold_grading = true
-	if towns.has(best) and is_instance_valid(towns[best]["node"]) and _grows(towns[best], job):
-		await _grow_standing(best, job)
+	if towns.has(best) and is_instance_valid(towns[best]["node"]):
+		await _edit(best, job)
 		return
-	# Kept on disk (town_store.gd): read back on the loader's threads and its marks made on the world again; else
-	# laid out, and kept as it was built (before its life or a merge touch it) for next time.
-	var path := TownStore.path_of(job["c"], job["house"], terrain.terrain)
+	var path := TownStore.path_of(best, terrain.terrain, _reign())
+	var from := TownStore.source(best, terrain.terrain, _reign())
 	var node: Node3D = null
-	if not towns.has(best) and TownStore.ask(path):
+	if from != "" and TownStore.ask(from):
 		Engine.set_meta("stage", "towns.read")
-		var got: Variant = TownStore.take(path)
+		var got: Variant = TownStore.take(from)
 		while got == null:
 			await PerfTools.next_frame(&"towns:377")
-			got = TownStore.take(path)
+			got = TownStore.take(from)
 		if got is Node3D:
 			node = got
 			await _readied(node, job["c"], job["house"])
-	if node == null and not towns.has(best):
-		# Not kept as it stands: its nearest kept age (the bake's, else one this player kept) stands now, and grows to
-		# what it is next (Mac, 2026-11-18: "you have a certain benchmark and you start at that ... let the dynamism come
-		# in later"): its growth queued with no 'was', so what it adds stands at once rather than rising as sites.
-		var near: Array = TownStore.nearest(job["c"], job["house"], terrain.terrain, func(k: Dictionary) -> bool: return _grows_from(k, job))
-		if not near.is_empty() and TownStore.ask(String(near[0])):
-			Engine.set_meta("stage", "towns.read")
-			var got: Variant = TownStore.take(String(near[0]))
-			while got == null:
-				await PerfTools.next_frame(&"towns:near")
-				got = TownStore.take(String(near[0]))
-			if got is Node3D:
-				node = got
-				var at: Dictionary = (near[1] as Dictionary).duplicate()
-				at["owner"] = job["c"].get("owner")
-				await _readied(node, at, job["house"])
-				_queue[best] = {"c": job["c"], "house": job["house"], "sig": job["sig"]}
-				job = {"c": at, "house": job["house"], "sig": "%d|%d|%s|%s" % [int(at["size"]), int(at["owner"]), str(at["buildings"]), str(at["capital"])]}
-				path = String(near[0])
+			if _behind(node, job["c"]):
+				_queue[best] = {"c": job["c"], "house": job["house"], "sig": job["sig"]}  # caught up at once: no 'was', so what it adds stands
 	if node == null:
 		node = await _build_town(job["c"], job["house"])
 		await _occlude(node)
 		await _pace()  # the town packed for its file its own step (build@last: what is left after this pace)
 		await TownStore.save(node, path)  # off the tree: packed on a worker (town_store.gd)
-		TownStore.note(path, job["c"], job["house"], terrain.terrain)
 	var pt0 := Time.get_ticks_usec()
 	PerfTools.add("build@last", pt0 - _step_at)  # the build's last step, after its last _pace
-	if towns.has(best) and is_instance_valid(towns[best]["node"]):
-		# A standing town: its new layout was laid off-screen; only what it lacks is added, nothing torn down.
-		Engine.set_meta("stage", "towns.merge")
-		var standing: Node3D = towns[best]["node"]
-		var homes_before: Array = standing.get_meta("homes", [])
-		# Its new pieces' marks too, read before the merge frees the new layout (reading them after stopped _raise
-		# with _raising still set: no town was raised after it, the loading screen's count stuck).
-		standing.set_meta("imprint", (standing.get_meta("imprint", []) as Array) + (node.get_meta("imprint", []) as Array))
-		var fires: Array = standing.get_meta("fires", [])
-		for f in node.get_meta("fires", []):
-			if not fires.has(f):
-				fires = fires + [f]  # a new hearth the merge brings over (its node moves with the merge)
-		standing.set_meta("fires", fires)
-		_merge(standing, node)
-		towns[best]["data"] = job["c"]
-		towns[best]["path"] = path  # its new state as kept on disk
-		towns[best]["shell"] = false  # a shell merged with its whole new layout stands whole again
-		_grow(job.get("was", {}), homes_before, standing, job["c"])
-		terrain.season_on(standing)
-		TeamColour.take(standing)
-		PerfTools.add("towns.merge", Time.get_ticks_usec() - pt0)
-		terrain.hold_grading = false
-		_raising = false
-		_raising_id = -1
-		_graded_at = Time.get_ticks_msec()
-		terrain.commit_grading()  # only its new plots' ground (terrain.gd: each graded place on its own)
-		return
 	Engine.set_meta("stage", "towns.add")  # each step after the paced build named, for the slow-frame log (perf_tools.gd)
 	add_child(node)
-	towns[best] = {"node": node, "signature": job["sig"], "data": job["c"], "path": path}
+	towns[best] = {"node": node, "signature": job["sig"], "data": job["c"], "path": String(node.get_meta("kept_file", ""))}
 	_watch(best, node)
 	PerfTools.add("towns.add", Time.get_ticks_usec() - pt0)
 	await _pace()  # its life, its season and its colours each their own step on the pot (a kept town's whole finish was one frame)
@@ -529,72 +486,62 @@ func _raise(best: int, job: Dictionary) -> void:
 var _raising_id := -1  # the town being raised or grown (_raise): never shelled meanwhile (_shell)
 
 
-## Whether a standing town's change is growth (Mac: what is added is incremental): the same rank, seat and square, no
-## smaller, no building lost and no bannerman's arms changed, and laid by a build that kept its growth (meta growth).
-## Then only what it adds is laid on top of it (_grow_standing); else its new layout is laid whole and merged (_merge).
-func _grows(t: Dictionary, job: Dictionary) -> bool:
-	var node: Node3D = t["node"]
+## Whether a kept town lacks what its facts `c` show: more houses than its layout was laid for (meta growth size) or
+## a building it never laid. A smaller town keeps the houses it had; a building lost leaves its house standing; a new
+## rank or seat keeps the square and castle it was founded with (its layout is never laid anew).
+static func _behind(node: Node3D, c: Dictionary) -> bool:
 	var g: Dictionary = node.get_meta("growth", {})
-	if g.is_empty() or not node.has_meta("batch_raw"):
-		return false
-	var c: Dictionary = job["c"]
-	var was: Dictionary = job.get("was", {})
-	var size := int(c["size"])
-	var rank := town_rank(bool(c.get("capital", false)), bool((job["house"] as Dictionary).get("crown", false)), size, c.get("family") is String)
-	var seat := bool(c.get("capital", false)) and rank != "manor"
-	if rank != String(g.get("rank", "")) or seat != bool(g.get("seat", false)) or absf(square_for(rank, seat, size) - float(g.get("square_r", 0.0))) > 0.001:
-		return false
-	if size < int(g.get("size", 0)) or (g.get("buildings", []) as Array).any(func(b): return not (c["buildings"] as Array).has(b)):
-		return false
-	return not (c.get("family") is String and int(was.get("owner", -1)) != int(c["owner"]))
+	return int(c["size"]) > int(g.get("size", 0)) or (c["buildings"] as Array).any(func(b): return not (g.get("buildings", []) as Array).has(b))
 
 
-## Whether a town kept with facts `k` can grow in place into `job`'s (_grows' rule, on facts rather than a standing
-## town): the same rank, seat and square, no smaller, no building lost.
-func _grows_from(k: Dictionary, job: Dictionary) -> bool:
-	var c: Dictionary = job["c"]
-	var crown := bool((job["house"] as Dictionary).get("crown", false))
-	var r0 := town_rank(bool(k.get("capital", false)), crown, int(k["size"]), k.get("family") is String)
-	var r1 := town_rank(bool(c.get("capital", false)), crown, int(c["size"]), c.get("family") is String)
-	var s0 := bool(k.get("capital", false)) and r0 != "manor"
-	var s1 := bool(c.get("capital", false)) and r1 != "manor"
-	return r0 == r1 and s0 == s1 and absf(square_for(r0, s0, int(k["size"])) - square_for(r1, s1, int(c["size"]))) <= 0.001 \
-		and int(k["size"]) <= int(c["size"]) and not (k.get("buildings", []) as Array).any(func(b): return not (c["buildings"] as Array).has(b))
-
-
-## A standing town that grew: its additions laid off-screen on a copy of its layout's facts (_grow_town), added to it
-## (_add_on), its new houses rising as building sites (_grow), and the grown town kept on disk.
-func _grow_standing(best: int, job: Dictionary) -> void:
+## A standing town edited to its new facts (Mac, 2026-11-19: a town is built once, then only loaded and edited): what
+## its layout lacks laid off-screen on a copy of its layout's facts (_grow_town), added to it (_add_on), its new houses
+## rising as building sites (_grow); its edition one more, and the town written again over its own file (the player's
+## in this reign; while baking, never over a town the bake kept already: the starting realm is the baseline).
+func _edit(best: int, job: Dictionary) -> void:
 	if towns[best].get("shell", false):
-		await _revive(best)  # whole again first: a shell's detail is in its old file
+		await _revive(best)  # whole again first: a shell's detail is in its file
 	var standing: Node3D = towns[best]["node"]
-	var homes_before: Array = standing.get_meta("homes", [])
-	var add: Node3D = await _grow_town(standing, job["c"], job["house"])
-	await _occlude(add, standing)
-	await _pace()
+	var behind := is_instance_valid(standing) and _behind(standing, job["c"])
+	var add: Node3D = null
+	var homes_before: Array = standing.get_meta("homes", []) if is_instance_valid(standing) else []
+	if behind:
+		add = await _grow_town(standing, job["c"], job["house"])
+		await _occlude(add, standing)
+		await _pace()
 	var pt0 := Time.get_ticks_usec()
 	PerfTools.add("build@last", pt0 - _step_at)
 	Engine.set_meta("stage", "towns.grow")
-	var path := TownStore.path_of(job["c"], job["house"], terrain.terrain)
+	var path := TownStore.path_of(best, terrain.terrain, _reign())
 	if is_instance_valid(standing):
-		_add_on(standing, add)
+		if add:
+			_add_on(standing, add)
 		towns[best]["data"] = job["c"]
-		towns[best]["path"] = path
 		towns[best]["shell"] = false
-		_grow(job.get("was", {}), homes_before, standing, job["c"])
-		terrain.season_on(standing)
-		TeamColour.take(standing)
-	else:
+		if add:
+			_grow(job.get("was", {}), homes_before, standing, job["c"])
+			terrain.season_on(standing)
+			TeamColour.take(standing)
+	elif add:
 		add.free()  # the town went while it grew
 	PerfTools.add("towns.grow", Time.get_ticks_usec() - pt0)
 	terrain.hold_grading = false
 	_raising = false
 	_raising_id = -1
 	_graded_at = Time.get_ticks_msec()
-	terrain.commit_grading()  # only its new plots' ground
-	if is_instance_valid(standing):
+	if add:
+		terrain.commit_grading()  # only its new plots' ground
+	if add and is_instance_valid(standing) and not (Kept.baking and FileAccess.file_exists(path)):
+		standing.set_meta("edition", int(standing.get_meta("edition", 0)) + 1)
+		towns[best]["path"] = path
 		await TownStore.save(standing, path, true)  # its layout only: never its life, dressing or a fire's shell
-		TownStore.note(path, job["c"], job["house"], terrain.terrain)
+
+
+## The chronicle the towns stand in (the reign's id; "" while baking: the starting realm), whose own copies they keep.
+func _reign() -> String:
+	var st: Node = Awareness.store()
+	var r: Variant = st.rec("reign", {}) if st else {}
+	return str((r as Dictionary).get("id", "")) if r is Dictionary and (r as Dictionary).get("id") != null else ""
 
 
 ## The additions of a standing town that grew (Mac: what is added is incremental), laid off the tree on `root`, a copy
@@ -676,90 +623,13 @@ func _add_on(standing: Node3D, fresh: Node3D) -> void:
 	fresh.free()
 
 
-## A standing town takes from its new layout (`fresh`, built off-screen) only what it lacks: each piece is known by
-## what it is and where it stands (a batch by its kit kind and mesh; anything else by its class and place). A new
-## piece (a stone wall, a castle, a granary's barn, a new standard) moves in; a batch whose houses changed is
-## swapped for the new one, batch by batch; a piece the new layout dropped (a palisade a stone wall replaced) goes.
-## Its life, its dressing and everything else standing are left as they are. `fresh` is freed.
-func _merge(standing: Node3D, fresh: Node3D) -> void:
-	var have := {}
-	for n in standing.get_children():
-		if n.name in KEPT:
-			continue
-		have[_piece_key(n)] = n
-	var seen := {}
-	for n in fresh.get_children():
-		var k := _piece_key(n)
-		seen[k] = true
-		var old: Node = have.get(k)
-		if old == null:
-			standing.add_child(_moved(fresh, n))
-		elif n is MultiMeshInstance3D:
-			if not _same_batch(old as MultiMeshInstance3D, n as MultiMeshInstance3D):
-				(old as MultiMeshInstance3D).multimesh = (n as MultiMeshInstance3D).multimesh
-		elif n is OccluderInstance3D:
-			(old as OccluderInstance3D).occluder = (n as OccluderInstance3D).occluder  # the new layout's buildings hide
-		elif _contents(old) != _contents(n):
-			# A holder whose contents grew (its fields, its castle's parts): the new one in its place.
-			standing.add_child(_moved(fresh, n))
-			old.queue_free()
-	for k in have:
-		if not seen.has(k):
-			have[k].queue_free()
-	for key in fresh.get_meta_list():
-		if key != "yards":  # its own (a castle's bailey) plus what its life opened (a forge's floor): kept
-			standing.set_meta(key, fresh.get_meta(key))
-	var flags: Array = []
-	for f in standing.find_children("Banner", "", true, false):
-		if not (f as Node).is_queued_for_deletion() and not _under_kept(standing, f):
-			flags.append(f)
-	standing.set_meta("banners", flags)
-	fresh.free()
-
-
-const KEPT := ["Life", "Dressing"]  # a town's own, not its layout's: never merged
-
-
-static func _under_kept(root: Node, n: Node) -> bool:
-	var p := n.get_parent()
-	while p and p != root:
-		if p.name in KEPT or p.is_queued_for_deletion():
-			return true
-		p = p.get_parent()
-	return false
-
-
-static func _piece_key(n: Node) -> String:
-	if n is MultiMeshInstance3D:
-		var mm: MultiMesh = (n as MultiMeshInstance3D).multimesh
-		return "batch|%s|%d" % [String(n.get_meta("kind", "")), mm.mesh.get_rid().get_id() if mm and mm.mesh else 0]
-	var at: Vector3 = (n as Node3D).position if n is Node3D else Vector3.ZERO
-	return "%s|%s|%.2f,%.2f,%.2f" % [n.get_class(), String(n.name).get_slice("@", 0) if not String(n.name).begins_with("@") else "", at.x, at.y, at.z]
+const KEPT := ["Life", "Dressing"]  # a town's own, not its layout's: never replaced by an edit
 
 
 static func _moved(from: Node, n: Node) -> Node:
 	from.remove_child(n)
 	n.owner = null  # the fresh layout's, not the town's: unset before it moves (live53: 19 'owner inconsistent' a merge); town_store.gd owns it when it packs
 	return n
-
-
-## What a piece holds, as a key: its descendants by class and place (a field added, a tower raised changes it).
-static func _contents(n: Node) -> int:
-	var parts: Array = []
-	for d in n.find_children("*", "", true, false):
-		parts.append([d.get_class(), (d as Node3D).position if d is Node3D else Vector3.ZERO])
-	return hash(parts)
-
-
-static func _same_batch(a: MultiMeshInstance3D, b: MultiMeshInstance3D) -> bool:
-	var ax: Array = a.get("xfs") if a.get_script() == Batch else []
-	var bx: Array = b.get("xfs") if b.get_script() == Batch else []
-	if a.multimesh == null or b.multimesh == null or ax.is_empty() or ax.size() != bx.size():
-		return false
-	for i in ax.size():
-		if not (ax[i] as Transform3D).is_equal_approx(bx[i]):
-			return false
-	return true
 
 
 ## A town that grew is seen growing (towns.json grow; Manor Lords' and Banished's plots: a house rises on its plot
@@ -1705,6 +1575,7 @@ func _arms_quad(root: Node3D, at: Vector3, yaw: float, size: Vector2) -> void:
 func _reown(node: Node3D, c: Dictionary, house: Dictionary) -> void:
 	var colour := preload("res://scripts/heraldry.gd").colour(house, Color.GRAY, "#888888")
 	node.set_meta("title", String(c.get("title", c.get("name", ""))))
+	_family_arms(node, c, house, colour)
 	if int(node.get_meta("owner", -1)) == int(c["owner"]) and String(node.get_meta("arms_of", "")) == str(house.get("name", "")):
 		return
 	banners.rehouse(node, house, colour, int(c["owner"]))
@@ -1712,6 +1583,29 @@ func _reown(node: Node3D, c: Dictionary, house: Dictionary) -> void:
 	for g in node.find_children("*", "MeshInstance3D", true, false):
 		if g.has_meta("arms_quad"):
 			(g as MeshInstance3D).material_override = preload("res://scripts/heraldry.gd").hung(house, colour)
+
+
+## A bannerman seated in the town flies his family's arms beside his liege's banner at the square (meta arms_at): a
+## town that is no house's seat and not the Crown's. They stand, go or change with its holder and its seat, an edit of
+## the town as it stands (_reown), never a new layout.
+func _family_arms(node: Node3D, c: Dictionary, house: Dictionary, colour: Color) -> void:
+	var want := String(c["family"]) if c.get("family") is String and not bool(c.get("capital", false)) and not house.get("crown", false) else ""
+	var flags: Array = node.get_meta("banners", [])
+	var stands := false
+	for b in node.get_children():
+		if String(b.get_meta("arms", "")) != "family" or b.is_queued_for_deletion():
+			continue
+		if not stands and want != "" and String(b.get_meta("family", "")) == want:
+			stands = true  # his arms stand already
+			continue
+		flags = flags.filter(func(f): return is_instance_valid(f) and not b.is_ancestor_of(f))
+		b.queue_free()
+	node.set_meta("banners", flags)
+	if stands or want == "" or not node.has_meta("arms_at"):
+		return
+	var b: Node3D = banners.stand(node, node.get_meta("arms_at"), colour, preload("res://scripts/heraldry.gd").family(want), 0.85)
+	b.set_meta("arms", "family")  # its own, not its holder's: rehouse leaves it
+	b.set_meta("family", want)
 
 
 ## The planned trade a model draws, not yet standing ({} for a house).
@@ -2860,17 +2754,14 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 	# A bannerman seated here flies his family's arms over the town; his
 	# liege's banner then stands at the square. A great house's seat, and any
 	# town the Crown holds, fly only their own.
-	var family: Dictionary = {}
-	if c.get("family") is String and not c["capital"] and not house.get("crown", false):
-		family = preload("res://scripts/heraldry.gd").family(String(c["family"]))
 	await _pace()
-	# The house that holds the town flies its banner at the square (a town taken changes it: it is built anew for its
-	# new house); a bannerman's family arms stand beside it.
+	# The house that holds the town flies its banner at the square (a town taken strikes it for its new house's:
+	# _reown); a bannerman's family arms stand beside it (_family_arms, where meta arms_at keeps for a later holder).
 	var sq := -keep_off.normalized() * (square_r + 0.15)
 	banners.stand(root, sq + Vector3(0, _ground_y(center, sq), 0), color, house, 0.85)
-	if not family.is_empty():
-		var side := Vector3(-sq.z, 0, sq.x).normalized() * 0.18
-		banners.stand(root, sq + side + Vector3(0, _ground_y(center, sq + side), 0), color, family, 0.85).set_meta("arms", "family")  # its own, not its holder's: rehouse leaves it
+	var side := Vector3(-sq.z, 0, sq.x).normalized() * 0.18
+	root.set_meta("arms_at", sq + side + Vector3(0, _ground_y(center, sq + side), 0))
+	_family_arms(root, c, house, color)
 
 	await _pace()
 	# The church, hall and tavern stand on the square from the kit (town_layout.real_lots).

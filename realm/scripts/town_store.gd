@@ -1,12 +1,14 @@
 extends RefCounted
-## Towns kept on disk (Mac: stream towns by distance; the first load builds and saves every town, later loads read
-## them back): a town once raised is packed whole (Godot's PackedScene) and kept (kept.gd: the game's baked copy, else
-## the player's), by a key of everything its layout reads, so it is read back (ResourceLoader's threaded load) rather
-## than laid out again. Owned by towns.gd, which saves each town it raises and asks here first for one it would raise.
+## Towns kept on disk (Mac, 2026-11-19: "once a scene is created, you should be able to use that as the baseline the
+## next time"): a town is built once, packed whole (Godot's PackedScene) and kept (kept.gd); from then on it is only
+## read back (ResourceLoader's threaded load, made a node on a worker) and edited where it stands (towns.gd _edit: the
+## houses it grew added, its banners struck for a new holder), and the edited town written again over its file.
 ##
-## The key: the city's own facts the build reads (where it stands, its size, buildings, holder, rank, family, name),
-## the land it stands on (the map's tiles), and (kept.gd) a fingerprint of the game's scripts and data, so a town saved
-## by other code or other numbers is never read back. A changed town has a new key: it is raised and saved anew.
+## One file a town, keyed by the town alone: its Freeciv id on this land (the map's tiles), and in play the chronicle
+## it stands in (the reign's id: a new chronicle starts from the game's own towns, never another reign's). The game's
+## baked copy (tools/bake.gd: the starting realm, no reign) is every chronicle's baseline; the player's own copy, once a
+## town is edited in his reign, is read before it. Its facts (size, buildings, holder) are not in the key: a town that
+## grows keeps its file, and what its file stands for is on its root (meta growth, edition).
 ##
 ## A packed scene keeps nodes, resources and plain metas. What it can't keep is carried over by hand: a meta that
 ## points at a node (a town's banners, its stalls) is written as the node's path and turned back on reading; a group
@@ -18,83 +20,36 @@ const Batch := preload("res://scripts/batch.gd")  # a batch keeps where its copi
 static var _land := {}  # the map's tiles -> their hash, for the map last asked
 
 
-## The file a town with these facts on this land is kept in: the game's own (baked) if it ships one, else the player's.
-static func path_of(c: Dictionary, house: Dictionary, tiles: Array) -> String:
+## The file town `id` on this land is kept in for chronicle `reign` (""; the bake's: no reign): the player's own,
+## written whenever the town is built or edited in his reign; the game's own while baking.
+static func path_of(id: int, tiles: Array, reign: String) -> String:
+	var p := Kept.path("towns", _name(id, tiles, reign), "scn")
+	return p if Kept.baking or not p.begins_with(Kept.BAKED) else Kept.USER + p.trim_prefix(Kept.BAKED)
+
+
+## The file the town is read from: the player's own if he has one in this reign, else the game's baked copy (the
+## chronicle's own if the bake made one, else the starting realm's: every chronicle's baseline), else "" (never built:
+## it is laid out once, then kept).
+static func source(id: int, tiles: Array, reign: String) -> String:
+	for p in [path_of(id, tiles, reign), Kept.path("towns", _name(id, tiles, reign), "scn"), Kept.path("towns", _name(id, tiles, ""), "scn")]:
+		if FileAccess.file_exists(p):
+			return p
+	return ""
+
+
+static func _name(id: int, tiles: Array, reign: String) -> String:
 	if not _land.has("tiles") or _land["tiles"] != tiles:
 		_land = {"tiles": tiles, "hash": str(tiles.hash())}
-	# Its shape alone: where it stands, how big, what it has built, its rank and a bannerman's own arms (a seat, the crown's, a family's banner). Who
-	# holds it, his name and colours are put on when it is read back (towns.gd _reown), so a new reign or a change of
-	# hands reads the same file (supervisor fps 2026-11-15: a new reign's houses raised every town afresh).
-	var facts := [c.get("x"), c.get("y"), c.get("size"), c.get("buildings"), c.get("capital"),
-		c.get("family"), house.get("crown", false), _land["hash"]]
-	return Kept.path("towns", "%d_%s" % [int(c["id"]), str(facts).md5_text()], "scn")
-
-
-## The towns kept so far, each by its facts (index_<code>.json under towns/, the game's baked one and the player's own),
-## so a town not kept as it stands now can start from its nearest kept age and grow from there (nearest; Mac,
-## 2026-11-18: "you have a certain benchmark and you start at that ... let the dynamism come in later"). Written with
-## every town kept (note); the bake's ages fill the game's own (tools/bake.gd).
-static var _index := {}  # index file -> {path: entry}
-static func _index_file(dir: String) -> String:
-	return "%stowns/index_%s.json" % [dir, Kept.code()]
-
-
-static func _read_index(file: String) -> Dictionary:
-	if not _index.has(file):
-		var d: Variant = JSON.parse_string(FileAccess.get_file_as_string(file)) if FileAccess.file_exists(file) else null
-		_index[file] = d if d is Dictionary else {}
-	return _index[file]
-
-
-## A town kept at `path` with these facts, written into the index it is kept beside (the game's while baking, else the
-## player's).
-static func note(path: String, c: Dictionary, house: Dictionary, tiles: Array) -> void:
-	path_of(c, house, tiles)  # the land's hash, for this map
-	var file := _index_file(Kept.BAKED if path.begins_with(Kept.BAKED) else Kept.USER)
-	var idx := _read_index(file)
-	idx[path] = {"c": {"id": c.get("id"), "x": c.get("x"), "y": c.get("y"), "size": c.get("size"), "buildings": c.get("buildings", []),
-		"capital": c.get("capital", false), "family": c.get("family"), "owner": c.get("owner"), "name": c.get("name", ""),
-		"title": c.get("title", "")}, "crown": bool(house.get("crown", false)), "land": _land["hash"]}
-	DirAccess.make_dir_recursive_absolute(file.get_base_dir())
-	var f := FileAccess.open(file, FileAccess.WRITE)
-	if f:
-		f.store_string(JSON.stringify(idx))
-
-
-## The nearest kept age of town `c` that it grew from: kept on this land, the same place, seat, family and crown, no
-## bigger and with no building it lacks, and `ok` (towns.gd: the same rank and square, so it can grow in place); the
-## biggest such, then the most built. [path, its facts] or [] if none.
-static func nearest(c: Dictionary, house: Dictionary, tiles: Array, ok: Callable) -> Array:
-	path_of(c, house, tiles)
-	var best := []
-	var size := int(c.get("size", 0))
-	var built: Array = c.get("buildings", [])
-	for dir in [Kept.BAKED, Kept.USER]:
-		var idx := _read_index(_index_file(dir))
-		for p in idx:
-			var e: Dictionary = idx[p]
-			var k: Dictionary = e["c"]
-			if int(k["id"]) != int(c["id"]) or String(e["land"]) != String(_land["hash"]) or bool(e["crown"]) != bool(house.get("crown", false)):
-				continue
-			if int(k["x"]) != int(c["x"]) or int(k["y"]) != int(c["y"]) or bool(k["capital"]) != bool(c.get("capital", false)) or k["family"] != c.get("family"):
-				continue
-			if int(k["size"]) > size or (k["buildings"] as Array).any(func(b): return not built.has(b)):
-				continue
-			if not best.is_empty():
-				var bk: Dictionary = best[1]
-				if int(k["size"]) < int(bk["size"]) or (int(k["size"]) == int(bk["size"]) and (k["buildings"] as Array).size() <= (bk["buildings"] as Array).size()):
-					continue
-			if FileAccess.file_exists(p) and ok.call(k):
-				best = [p, k]
-	return best
+	return "%d_%s" % [id, _land["hash"]] + ("" if reign == "" else "_" + reign.validate_filename())
 
 
 ## A town just raised, packed and written (the writing on a worker thread). Its metas and groups are made savable on
 ## a copy of what they hold and put back after packing, so the town in play is untouched.
 ## A town off the tree (just raised) is packed on a worker thread, the build waiting a frame at a time (Godot builds and
 ## reads a scene off the tree on any thread; on the main thread a town's pack was one long frame). A standing town (one
-## that grew, in the tree) is packed where it stands, `layout_only`: only the pieces its layout laid (towns.gd
-## _tag_layout), never its life, its dressing or a fire's shell.
+## edited, in the tree: Godot reads a node in the tree on the main thread only) is packed where it stands, `layout_only`:
+## only the pieces its layout laid (towns.gd _tag_layout), never its life, its dressing or a fire's shell; the file is
+## written on a worker either way (Kept.keep).
 static func save(root: Node3D, path: String, layout_only := false) -> void:
 	var kept := []  # [node, meta, value as it was]
 	var batches := []  # [batch, its MultiMesh]: packed empty, so the file keeps the batch's own list, not the renderer's copy
@@ -168,13 +123,14 @@ static func _owned(n: Node, root: Node, out: Array, layout_only := false) -> Arr
 
 
 ## The name what is made once for a kept town (ground.gd's outlines of what stands, dressing.gd's dressing) is kept
-## under (Kept.path): its town file's, so it is made anew whenever the town is. "" for a town not (yet) kept, or one
-## whose layout has moved on from its file (`file`: the file the towns say it stands for now, towns.gd towns[id].path).
+## under (Kept.path): its town file's and its edition (meta edition, one more with each edit: towns.gd _edit), so it is
+## made anew whenever the town changes. "" for a town not (yet) kept, or one whose file is not the one the towns say it
+## stands for now (`file`, towns.gd towns[id].path).
 static func kept_name(root: Node3D, file: String) -> String:
 	var at := String(root.get_meta("kept_file", ""))
 	if at == "" or at != file:
 		return ""
-	return at.get_file().get_basename().trim_suffix("_" + Kept.code())
+	return "%s_e%d" % [at.get_file().get_basename().trim_suffix("_" + Kept.code()), int(root.get_meta("edition", 0))]
 
 
 ## Whether a town is kept at `path`; if so its reading is started on Godot's loader threads.

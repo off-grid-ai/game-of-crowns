@@ -115,7 +115,7 @@ func _age(f: String, map: Dictionary) -> int:
 
 
 ## The ages baked AGES_A_RUN at a time, each batch by a fresh Godot of its own (this script with --ages=from:to), so
-## nothing one realm leaves behind piles up across 81; then the index the batches wrote read afresh. Towns that stand.
+## nothing one realm leaves behind piles up across 81. Towns that stand.
 func _ages_apart() -> int:
 	var all := _ages().size()
 	var n := 0
@@ -129,7 +129,6 @@ func _ages_apart() -> int:
 				n += int(line.get_slice(", ", 1).get_slice(" ", 0)) if line.begins_with("BAKE towns") else 0
 		if code != 0:
 			print("BAKE ages %d-%d: their Godot ended with %d" % [i, mini(i + AGES_A_RUN, all), code])
-	preload("res://scripts/town_store.gd")._index.clear()  # the batches wrote the game's index: read it afresh
 	return n
 
 
