@@ -6,7 +6,10 @@ const ViewTier := preload("res://scripts/view_tier.gd")  # the one frame budget 
 ## hedgerows that divide the fields, crops in the fields and grass underfoot.
 ## Laid out from the map and the towns, the same every time for the same realm,
 ## and kept patch by patch: a town founded or razed redraws only the farms
-## around it.
+## around it. Each patch is laid out once and kept (kept.gd 'farms', a PackedScene by what it holds: tools/bake.gd keeps
+## every baked realm's), and read back on Godot's loader threads after that, made a node on a worker
+## (realm_chunks.gd unpack); what it did to the land round it (the woods felled, the soil ploughed, its cart tracks,
+## the fields it holds) is kept on it and done again as it joins (_settle_patch). Nothing is laid out again in play.
 
 const Units := preload("res://scripts/world_units.gd")  # the world's one scale (Units.M)
 const MeshCpu := preload("res://scripts/mesh_cpu.gd")
@@ -17,6 +20,7 @@ const S := Units.M  # game units per metre
 static var NEAR_TOWN: float = preload("res://scripts/data.gd").num("countryside", "near_town", 2.4)  # tiles kept clear around a town for its own fields
 const Ground := preload("res://scripts/ground.gd")  # the one answer to where a body may stand
 const CHUNK := 20.0  # farms are kept and batched by patch of land, so distant ones still cull
+const Chunks := preload("res://scripts/realm_chunks.gd")  # a kept patch packed and read back (pack_kept, unpack)
 
 var terrain: Node3D
 var roads: Node3D
@@ -24,6 +28,7 @@ var towns: Node3D  # the towns, for their squares, lanes and doors (found beside
 var land_use: Node3D  # the towns' worked fields (land_use.gd): no tufts on them
 const Bulk := preload("res://scripts/bulk.gd")  # the one drawer of repeated things
 var _bush: Mesh
+var _hedge: Mesh  # the hedgerows' bush as they draw it (bulk.gd lighter)
 var _fruit: Array = []  # orchard trees: the catalogue's orchard_tree (the nature set's oaks, data/assets.json), grown small
 const FIELDS := ["field-wheat", "field-green", "field-fallow"]  # the kinds of field a farmstead ploughs (field_ground paints each)
 
@@ -73,6 +78,7 @@ func _update(cities: Array) -> void:
 	if _bush == null:
 		# The hedgerows' bush: the painted ground's fuller hedge (catalogue hedge_painted).
 		_bush = preload("res://scripts/house_builder.gd").new().bake_path(Real.path_of("hedge_painted"))
+		_hedge = Bulk.lighter(_bush)
 		for i in Real.variants("orchard_tree").size():
 			_fruit.append(preload("res://scripts/house_builder.gd").new().bake_path(Real.path_of("orchard_tree", i)))
 	var realm := _realm_now()
@@ -210,10 +216,53 @@ func _drop(key: String) -> void:
 ## buildings' batches, its hedgerows and its orchards, then what stands and what is claimed (live12: resume.countryside:129
 ## 620 ms and 500 ms in one frame, a whole patch of farms raised between two 8 ms checks). Nothing drawn changes.
 func _raise(key: String, farms: Array, sig: String) -> void:
+	var path := Kept.path("farms", (sig + terrain.land_key()).md5_text(), "scn")
+	var node: Node3D = await _read(path) if Kept.has(path) else null
+	if node == null:
+		node = await _lay(key, farms)
+		if node == null:
+			return
+		var scene := Chunks.pack_kept(node)
+		if scene:
+			Kept.keep(scene, path)  # the next start reads it back (written on a worker; at once while baking)
+	else:
+		await _turn()
+		add_child(node)
+	node.set_meta("sig", sig)
+	await _settle_patch(key, node)
+
+
+## A kept patch read back: on Godot's loader threads, then made a node on a worker (off the tree). Null if unreadable.
+func _read(path: String) -> Node3D:
+	ResourceLoader.load_threaded_request(path, "PackedScene")
+	while ResourceLoader.load_threaded_get_status(path) == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
+		await PerfTools.next_frame(&"countryside:read")
+	var scene := ResourceLoader.load_threaded_get(path) as PackedScene
+	if scene == null:
+		if path.begins_with(Kept.USER):
+			DirAccess.remove_absolute(path)  # unreadable: laid out again
+		return null
+	var lib := {"hedge": _hedge}
+	for v in _fruit.size():
+		lib["fruit:%d" % v] = _fruit[v]
+	var out := []
+	var task := WorkerThreadPool.add_task(func() -> void: out.append(Chunks.unpack(scene, func(k: String) -> Mesh: return lib.get(k))), false, "farms " + path.get_file())
+	while not WorkerThreadPool.is_task_completed(task):
+		await PerfTools.next_frame(&"countryside:read")
+	WorkerThreadPool.wait_for_task_completion(task)
+	return out[0] as Node3D if not out.is_empty() else null
+
+
+## Lays out one patch of farms afresh (its patch never kept), in the tree under this: each farmstead, then its
+## buildings' batches, its hedgerows and its orchards, a piece at a time on the one frame budget (_turn; live12:
+## resume.countryside:129 620 ms and 500 ms in one frame, a whole patch of farms raised between two 8 ms checks). What
+## it does to the land round it is noted on the patch (_did) to be done again whenever it is read back.
+func _lay(key: String, farms: Array) -> Node3D:
 	var node := Node3D.new()
 	node.name = "Farms_" + key.replace("|", "_")
 	add_child(node)
 	_batch.clear()  # a patch given up part way left its buildings here
+	_did = {"clears": [], "ploughs": [], "tracks": []}
 	var hedges: Array = []
 	var steads: Array = []
 	var trees: Array = []
@@ -222,46 +271,80 @@ func _raise(key: String, farms: Array, sig: String) -> void:
 	for f in farms:
 		await _turn()
 		if not is_instance_valid(node):
-			return
+			return null
 		var site: Dictionary = f[0]
 		var rng := RandomNumberGenerator.new()
 		rng.seed = site["seed"]
 		steads.append(_farmstead(node, site["at"], rng, hedges, trees))
-		if roads and f[1] != null:
-			roads.track(site["at"], f[1], roads.WIDTH * 0.45, key)
+		if f[1] != null:
+			(_did["tracks"] as Array).append([site["at"], f[1]])
 	await _turn()
 	if not is_instance_valid(node):
-		return
+		return null
 	_flush(node)
 	await _turn()
 	if not is_instance_valid(node):
-		return
+		return null
 	_hedgerows(node, hedges, hash(key))
 	await _turn()
 	if not is_instance_valid(node):
-		return
+		return null
 	for v in trees.size():
 		if trees[v].is_empty() or v >= _fruit.size():
 			continue
-		var mm := MultiMesh.new()
-		mm.transform_format = MultiMesh.TRANSFORM_3D
-		mm.mesh = _fruit[v]
-		mm.instance_count = trees[v].size()
-		for i in trees[v].size():
-			mm.set_instance_transform(i, trees[v][i])
-		var mmi := MultiMeshInstance3D.new()
+		var mmi := Chunks.batch("fruit:%d" % v, trees[v])
+		mmi.multimesh.mesh = _fruit[v]
+		Chunks._fill(mmi)
 		mmi.name = "Orchard"
-		mmi.multimesh = mm
 		_fade(mmi, 45.0)
 		node.add_child(mmi)
-	await _turn()
-	if not is_instance_valid(node):
-		return
-	# What the farms set down is in the way (ground.gd: their houses, barns, stacks, hedges and orchards read off the
-	# patch), and each hedged field held, hedge and all: a muster keeps off it (Mac 2026-11-15: hosts in the cottages).
+	for n in node.find_children("*", "", true, false):
+		n.owner = node  # kept whole (Chunks.pack_kept)
+	node.set_meta("steads", steads)
+	node.set_meta("did", _did)
+	node.set_meta("fresh", true)  # its groups and its land's marks are already made: _settle_patch keeps them
+	return node
+
+
+var _did := {}  # what the patch being laid out does to the land round it: {clears: [[at, r]], ploughs: [[c, size, yaw]], tracks: [[from, to]]}
+
+
+## A patch standing in the tree: what it did to the land round it done (again, when read back: the woods felled, the
+## soil ploughed under its fields, its cart tracks), its crops and painted fields marked for the seasons, and what it
+## sets down taken as in the way, each hedged field held, hedge and all (Mac 2026-11-15: hosts in the cottages).
+func _settle_patch(key: String, node: Node3D) -> void:
+	var did: Dictionary = node.get_meta("did", {})
+	if not node.get_meta("fresh", false):
+		for c in did.get("clears", []):
+			terrain.clear_around(c[0], float(c[1]))
+		await _turn()
+		if not is_instance_valid(node):
+			return
+		if terrain.land3d and terrain.land3d.land:
+			for pl in did.get("ploughs", []):
+				plough(terrain, pl[0], pl[1], float(pl[2]))
+		for d in node.find_children("*", "Decal", true, false):
+			if d.has_meta("ground"):
+				d.add_to_group("field_ground")
+				_ground_season(d as Decal, _season_name, _through() if _season_name != "" else 0.0)
+		for c in node.find_children("*", "MultiMeshInstance3D", true, false):
+			if c.has_meta("kind") and c.has_meta("field"):
+				c.add_to_group("crops")
+				_ripen(c as GeometryInstance3D, _season_name if _season_name != "" else String(terrain.season), _through() if _season_name != "" else 0.0)
+		await _turn()
+		if not is_instance_valid(node):
+			return
+	node.remove_meta("fresh")
+	for b in Chunks._batches(node):
+		if b.has_meta("lod_bias"):
+			b.lod_bias = float(b.get_meta("lod_bias"))
+	if roads:
+		for t in did.get("tracks", []):
+			roads.track(t[0], t[1], roads.WIDTH * 0.45, key)
 	var kc := key.split("|")
 	Ground.stands(node, Rect2(float(kc[0]) * CHUNK - CHUNK, float(kc[1]) * CHUNK - CHUNK, CHUNK * 3.0, CHUNK * 3.0))
 	var claims: Array = []
+	var steads: Array = node.get_meta("steads", [])
 	for stead in steads:
 		for f in stead["fields"]:
 			var c := Vector2((f[0] as Vector3).x, (f[0] as Vector3).z)
@@ -272,7 +355,7 @@ func _raise(key: String, farms: Array, sig: String) -> void:
 			var id := "field %s %d" % [key, claims.size()]
 			Ground.claim(id, poly, "field")
 			claims.append(id)
-	_patches[key] = {"sig": sig, "node": node, "steads": steads, "claims": claims}
+	_patches[key] = {"sig": node.get_meta("sig", ""), "node": node, "steads": steads, "claims": claims}
 	_laid += 1
 
 
@@ -324,6 +407,7 @@ func _farmstead(node: Node3D, at: Vector3, rng: RandomNumberGenerator, hedges: A
 			g = on_furrows(terrain, g, gsize)
 			if terrain.land3d and terrain.land3d.land:
 				plough(terrain, g, gsize, yaw)
+			(_did["ploughs"] as Array).append([g, gsize, yaw])
 			var veg: String = ["cabbage", "beans"][rng.randi() % 2]
 			sow(node, terrain, Vector3.ZERO, veg, g, gsize, yaw, rng)
 			fields.append([g, gsize, yaw, veg])
@@ -359,6 +443,7 @@ func _farmstead(node: Node3D, at: Vector3, rng: RandomNumberGenerator, hedges: A
 		if rise < 0.0 or rise > FIELD_RISE:
 			continue
 		terrain.clear_around(c, size.length() * 0.5 + 0.1)
+		(_did["clears"] as Array).append([c, size.length() * 0.5 + 0.1])
 		var field: String = FIELDS[rng.randi() % FIELDS.size()]
 		var tex := field_ground(field)
 		c = on_furrows(terrain, c, size)
@@ -367,6 +452,7 @@ func _farmstead(node: Node3D, at: Vector3, rng: RandomNumberGenerator, hedges: A
 		if terrain.land3d and terrain.land3d.land:
 			plough(terrain, c, size, fyaw)  # ploughed soil under the crop
 			crop.albedo_mix = FIELD_MIX
+		(_did["ploughs"] as Array).append([c, size, fyaw])
 		var grows := crop_for(field, rng)
 		sow(node, terrain, Vector3.ZERO, grows, c, size, fyaw, rng)
 		hedges.append([c, size, fyaw])
@@ -407,14 +493,7 @@ func _flush(node: Node3D) -> void:
 	for kind in _batch:
 		var xfs: Array = _batch[kind]
 		for part in Real.parts(kind):
-			var mm := MultiMesh.new()
-			mm.transform_format = MultiMesh.TRANSFORM_3D
-			mm.mesh = part[0]
-			mm.instance_count = xfs.size()
-			for i in xfs.size():
-				mm.set_instance_transform(i, xfs[i] * part[1])
-			var mmi := MultiMeshInstance3D.new()
-			mmi.multimesh = mm
+			var mmi := Batch.make("", part[0], xfs.map(func(t: Transform3D): return t * part[1]))  # kept with its patch
 			# Out in the country a cart or a woodpile is a speck past a short
 			# walk, a farmhouse past a valley: no frame spent on them beyond.
 			var m: float = float(Real.KIT.get(kind, ["", 10.0])[1])
@@ -451,8 +530,19 @@ func _hedgerows(node: Node3D, fields: Array, seed: int) -> void:
 					continue
 				var s := 0.11 * rng.randf_range(0.85, 1.25)
 				xf.append(Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(s, s * rng.randf_range(0.9, 1.3), s)), Vector3(p.x, terrain.height_at(p.x, p.z) - 0.02, p.z)))
-	for t in xf:  # the one drawer: a cell at a time, the bush's card past its card distance
-		Bulk.add(_bush, t, node, 35.0)
+	if xf.is_empty():
+		return
+	# One batch for the patch, kept with it: the bush's lighter level (bulk.gd lighter), its detail picked by the size
+	# it is drawn at (bulk.gd LOD_PX), as the one drawer draws it.
+	var mmi := Chunks.batch("hedge", xf)
+	mmi.multimesh.mesh = _hedge
+	Chunks._fill(mmi)
+	mmi.name = "Hedges"
+	mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	mmi.gi_mode = GeometryInstance3D.GI_MODE_DISABLED
+	_fade(mmi, 35.0)
+	mmi.set_meta("lod_bias", minf(0.11 * 1.25 * Bulk._lod_k, 1.0))  # set as it stands (_settle_patch), over batch.gd's own
+	node.add_child(mmi)
 
 
 # --- fields and crops (towns sow theirs with these too) ------------------------------
@@ -787,6 +877,8 @@ static func _windy(mesh: ArrayMesh, bury := -1.0) -> ArrayMesh:
 
 
 func _grass(cities: Array) -> void:
+	if Kept.baking:
+		return  # tools/bake.gd keeps the farms; the grass grows round what stands in play
 	if _tuft_meshes.is_empty():
 		var builder = preload("res://scripts/house_builder.gd").new()
 		for n in TUFTS:

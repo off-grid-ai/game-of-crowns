@@ -165,6 +165,7 @@ func _realm(world: Dictionary, map: Dictionary, baseline := false) -> int:
 		await process_frame
 	var n: int = towns.towns.size()
 	await _roads(terrain)
+	await _farms(terrain, towns, store)
 	if baseline:
 		terrain.keep_chunks()
 		print("BAKE land: the starting realm's woods and cover kept as they stand")
@@ -173,6 +174,21 @@ func _realm(world: Dictionary, map: Dictionary, baseline := false) -> int:
 		n2.queue_free()
 	await process_frame
 	return n
+
+
+## The realm's farmsteads laid out as main.gd lays them (countryside.gd), each patch kept (kept.gd 'farms'), so a launch
+## reads every one back; their cart tracks are painted in play from what each patch keeps.
+func _farms(terrain: Node3D, towns: Node3D, store: Node) -> void:
+	var t0 := Time.get_ticks_msec()
+	var land: Node3D = load("res://scripts/countryside.gd").new()
+	land.terrain = terrain
+	land.towns = towns
+	root.add_child(land)
+	await land.build(store.rec("cities", []))
+	print("BAKE farms: %d patches in %.0f s" % [land._patches.size(), (Time.get_ticks_msec() - t0) / 1000.0])
+	root.remove_child(land)
+	land.queue_free()
+	await process_frame
 
 
 ## The realm's roads laid as main.gd lays them, after the towns (they grade the land): Freeciv's network, then the next

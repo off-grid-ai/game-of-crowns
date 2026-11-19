@@ -85,6 +85,39 @@ static func batch(key: String, xfs: Array, colors := PackedColorArray()) -> Mult
 	return b
 
 
+## `root` (off the tree or in it, every node under it owned by it) packed to be kept: each batch's MultiMesh swapped for an
+## empty one while it is packed, so the file keeps the batch's own list and nothing is read back from the renderer (as
+## town_store.gd packs a town); a batch whose meta "mesh" names its mesh keeps none. Null if it won't pack.
+static func pack_kept(root: Node) -> PackedScene:
+	var was := []
+	for b in _batches(root):
+		var mm: MultiMesh = b.multimesh
+		var empty := MultiMesh.new()
+		empty.transform_format = MultiMesh.TRANSFORM_3D
+		empty.use_colors = mm.use_colors if mm else false
+		empty.mesh = null if b.has_meta("mesh") or mm == null else mm.mesh
+		was.append([b, mm])
+		b.multimesh = empty
+	var scene := PackedScene.new()
+	var ok := scene.pack(root) == OK
+	for w in was:
+		(w[0] as MultiMeshInstance3D).multimesh = w[1]
+	return scene if ok else null
+
+
+## A packed chunk or patch read back, made a node on a worker (off the tree): each batch given its mesh (`meshes`, for
+## those whose meta names one) and filled in one go, so joining the tree costs nothing more.
+static func unpack(scene: PackedScene, meshes: Callable) -> Node:
+	var root := scene.instantiate()
+	if root == null:
+		return null
+	for b in _batches(root):
+		if b.has_meta("mesh"):
+			b.multimesh.mesh = meshes.call(String(b.get_meta("mesh"))) as Mesh
+		_fill(b)
+	return root
+
+
 ## Keeps a layer: `roots` (cell -> Node3D holding its batches, off the tree) each packed into its chunk's file, then the
 ## index with `extra`. Written at once while baking, on workers otherwise (kept.gd); the roots are freed.
 static func keep(layer_: String, land_: String, roots: Dictionary, extra_: Variant = null) -> void:
@@ -93,8 +126,8 @@ static func keep(layer_: String, land_: String, roots: Dictionary, extra_: Varia
 		var root: Node3D = roots[cell]
 		for n in root.find_children("*", "", true, false):
 			n.owner = root
-		var scene := PackedScene.new()
-		if scene.pack(root) == OK:
+		var scene := pack_kept(root)
+		if scene:
 			Kept.keep(scene, path_of(layer_, land_, cell))
 			cells.append(cell)
 		root.free()
@@ -219,8 +252,8 @@ func _save(root: Node3D, path: String) -> void:
 				nb.set_meta(m, b.get_meta(m))
 		out.add_child(nb)
 		nb.owner = out
-	var scene := PackedScene.new()
-	if scene.pack(out) == OK:
+	var scene := pack_kept(out)
+	if scene:
 		Kept.keep(scene, path)
 	out.free()
 
