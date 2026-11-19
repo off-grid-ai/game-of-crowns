@@ -844,7 +844,12 @@ func smooth_chosen() -> bool:
 func finest_view() -> void:
 	var vp := get_viewport()
 	vp.scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR
-	vp.scaling_3d_scale = 1.0
+	# Supersampled: the 3D drawn at up to ui.json finest_scale times the window a side and shrunk to it, never wider than
+	# finest_max_px. Small, thin, moving things (the townsfolk, their tools) came out rough under MSAA alone; TAA smears
+	# them (2026-11-16), drawing larger and shrinking doesn't (Kingsmere A/B, 2026-11-20: ss2 the cleanest of base, TAA,
+	# FXAA, MSAA 8x). A 4K window draws at its own size.
+	var win := float(maxi(DisplayServer.window_get_size().x, 1))
+	vp.scaling_3d_scale = clampf(minf(Data.num("ui", "finest_scale", 2.0), Data.num("ui", "finest_max_px", 3840.0) / win), 1.0, 2.0)
 	vp.msaa_3d = Viewport.MSAA_4X
 	vp.use_taa = false  # TAA smeared the soldiers: their motion is in the shader, so it has no motion vectors (MSAA does the edges)
 	vp.screen_space_aa = Viewport.SCREEN_SPACE_AA_DISABLED
