@@ -5,6 +5,7 @@
 #   realm/tools/profile_play.sh <out dir> [port 6007] [seconds 60] [resolution 1920x1080]
 # Needs the bridge up with a reign to continue (./realm.sh start). Each run side by side takes its own port and out
 # dir. Run it in the background: it takes about four minutes.
+# Its window opens off the screen (--position, as tools/render.sh does): nothing lands on the player's desktop.
 set -u
 OUT=$1; PORT=${2:-6007}; SECS=${3:-60}; RES=${4:-1920x1080}
 cd "$(dirname "$0")/.."
@@ -22,7 +23,7 @@ printf 'wait 30\nclick 0.4995 0.385\nwait 100\nclick 0.5 0.5\nwait 5\n' > "$OUT/
 export XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR:-/run/user/$(id -u)} DISPLAY=${DISPLAY:-:0}
 timeout 900 godot --headless --path . -s res://tools/profiler.gd -- --port=$PORT --start-file="$OUT/go" --seconds=$SECS --out="$OUT/prof.txt" > "$OUT/server.log" 2>&1 &
 for i in $(seq 1 120); do grep -q listening "$OUT/server.log" 2>/dev/null && break; sleep 1; done
-GOC_HAND="$OUT/hand" timeout 900 godot --path . --resolution $RES --disable-vsync --remote-debug tcp://127.0.0.1:$PORT > "$OUT/game.log" 2>&1 &
+GOC_HAND="$OUT/hand" timeout 900 godot --path . --resolution $RES --position 10000,10000 --disable-vsync --remote-debug tcp://127.0.0.1:$PORT > "$OUT/game.log" 2>&1 &
 G=$!
 sleep 175; touch "$OUT/go"  # the realm in play: Continue at 30 s, the court card clicked at 130 s
 for i in $(seq 1 600); do grep -q "messages" "$OUT/server.log" 2>/dev/null && break; sleep 2; done
