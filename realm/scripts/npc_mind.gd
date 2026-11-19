@@ -762,7 +762,18 @@ static func give(person: Node3D, post: String, ground: Callable, seed: int, open
 	person.add_child(player)
 	AnimLOD.add_mind(player)
 	_attach(player, town)
+	# The mind as its record (people_store.gd): a town's kept Life gives it again on load (regive), its round's seed with
+	# it; a riot's opening blows are not given again (they were struck).
+	preload("res://scripts/people_store.gd").redo(person, "res://scripts/npc_mind.gd", "regive", [post, seed, town])
 	return true
+
+
+## A posted person's mind given again on load (give's record, people_store.gd live): the same post and round, standing
+## on the town's ground as its town_life reads it.
+static func regive(person: Node3D, ctx: Dictionary, post: String, seed: int, town: int) -> void:
+	var tl: Object = ctx.get("tl")
+	var at: Vector3 = (ctx["root"] as Node3D).position
+	give(person, post, func(q: Vector3) -> float: return tl._y(at, q), seed, [], town)
 
 
 ## One BehaviorTree per post, built once and shared (LimboAI's BehaviorTree is a Resource: each BTPlayer
@@ -1001,6 +1012,7 @@ class Weigh extends BTComposite:
 			_order.append(i)
 		# Its place in the round: the tree's own (phase) and the body's (weigh_phase on its blackboard: a shared tree,
 		# npc_mind _post_tree), both taken on the first pick only.
+		blackboard.set_var(&"picks", int(blackboard.get_var(&"picks", 0, false)) + 1)  # its place in the round, kept with a town's Life (people_store.gd _thought)
 		var ph := phase + int(blackboard.get_var(&"weigh_phase", 0, false))
 		if blackboard.has_var(&"weigh_phase"):
 			blackboard.set_var(&"weigh_phase", 0)

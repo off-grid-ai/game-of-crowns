@@ -1073,17 +1073,59 @@ func _face_to(body: Node3D, role: Dictionary, s: Dictionary, a: Dictionary, k: D
 # --- the walkers' rounds -----------------------------------------------------------------------------
 
 ## Gives a body its walker's mind: one LimboAI task, repeated, on its own clock; it walks with the Mover.
-func _walker(body: Node3D, task: BTTask, vars: Dictionary, clip: String, pace := 0.15) -> void:
+## `mover`: its Mover's own way of going (a cart's turn_radius, a file's stride).
+func _walker(body: Node3D, task: BTTask, vars: Dictionary, clip: String, pace := 0.15, mover := {}) -> void:
+	walk(body, _walk_kind(task), vars, clip, pace, mover)
+
+
+## A walker's mind by its task's kind (Round, Follow, Dog, Chase, MarchOut), kept as its record (people_store.gd): a
+## town's kept Life sets it going again on load (rewalk). A walker set on a new way (a levy man marching out, a
+## household leaving) keeps only this one.
+static func walk(body: Node3D, kind: String, vars: Dictionary, clip: String, pace := 0.15, mover := {}) -> void:
 	body.set_meta("walker", true)
 	var m: Node = Mover.of(body)
 	m.speed = pace * READ
 	m.clip = clip
+	for k in mover:
+		m.set(k, mover[k])
 	var player := BTPlayer.new()
 	player.name = "Mind"
 	player.set_scene_root_hint(body)
-	player.behavior_tree = _walk_tree(task)
+	player.behavior_tree = _walk_tree(_walk_task(kind))
 	Awareness.assign(player, vars)  # its starting state, through the store
 	body.add_child(player)
+	body.set_meta("_redo", (body.get_meta("_redo", []) as Array).filter(func(r): return not String(r[1]) in ["rewalk", "regive"]))
+	preload("res://scripts/people_store.gd").redo(body, "res://scripts/town_scenes.gd", "rewalk", [kind, vars, clip, pace, mover])
+
+
+## A walker set going again on load (walk's record).
+static func rewalk(body: Node3D, _ctx: Dictionary, kind: String, vars: Dictionary, clip: String, pace: float, mover: Dictionary) -> void:
+	walk(body, kind, vars, clip, pace, mover)
+
+
+static func _walk_kind(task: BTTask) -> String:
+	if task is Follow:
+		return "Follow"
+	if task is Dog:
+		return "Dog"
+	if task is Chase:
+		return "Chase"
+	if task is MarchOut:
+		return "MarchOut"
+	return "Round"
+
+
+static func _walk_task(kind: String) -> BTTask:
+	match kind:
+		"Follow":
+			return Follow.new()
+		"Dog":
+			return Dog.new()
+		"Chase":
+			return Chase.new()
+		"MarchOut":
+			return MarchOut.new()
+	return Round.new()
 
 
 ## One walker's tree per task kind (Round, Follow, Dog, Chase, MarchOut), built once and shared: LimboAI's
@@ -1321,10 +1363,10 @@ func _cart(k: Dictionary, role: Dictionary, W: Dictionary, r: float) -> void:
 	var second: Array = trips[1] if trips.size() > 1 else []
 	var route: Array = in_a + [mkt] + first + out_b + [ends[1]] + in_b + [mkt] + second + out_a + [ends[0]]
 	var waits: Array = route.map(func(q): return q == mkt or q == ends[0] or q == ends[1] or q in yard_ends)
-	Mover.of(rig).turn_radius = float(W.get("turn_radius", 0.45))  # a cart steers round, never spins
 	_walker(rig, Round.new(), {"route": route.map(func(q): return root.to_global(q)), "plan": {"goal": Vector3.INF, "until": 0, "leg": 0}, "lead": true, "side": 0.0,
 		"pause": W.get("stop", [6.0, 12.0]), "rest": [], "waits": waits, "market": root.to_global(mkt), "tail": float(W.get("tail", 0.22)), "town": root,
-		"carter": (rig.get_meta("carter") if rig.has_meta("carter") else null)}, "", float(W.get("pace", 0.16)))
+		"carter": (rig.get_meta("carter") if rig.has_meta("carter") else null)}, "", float(W.get("pace", 0.16)),
+		{"turn_radius": float(W.get("turn_radius", 0.45))})  # a cart steers round, never spins
 	# Someone walking beside it (the role's `beside`: the plague's dead cart, its bell-ringer calling at each stop):
 	# at its side, stopping when it stops, playing one of `rest` there.
 	var bs: Dictionary = role.get("beside", {})
@@ -1364,10 +1406,9 @@ func _procession(k: Dictionary, role: Dictionary, group: Array, a: Dictionary) -
 		if i == 0:
 			w.set_meta("head", true)
 			_walker(w, Round.new(), {"route": ring.map(func(q): return root.to_global(q)), "plan": {"goal": Vector3.INF, "until": 0, "leg": 1}, "lead": true, "side": 0.0,
-				"pause": [0.0, 0.0], "rest": [], "waits": []}, "Walk", pace)
+				"pause": [0.0, 0.0], "rest": [], "waits": []}, "Walk", pace, {"stride": true})
 		else:
-			_walker(w, Follow.new(), {"after": file[i - 1], "gap": spacing}, "Walk", pace * 1.4)
-		Mover.of(w).stride = true
+			_walker(w, Follow.new(), {"after": file[i - 1], "gap": spacing}, "Walk", pace * 1.4, {"stride": true})
 	var bier: Node3D = a.get("bier", null)
 	var bearers := file.filter(func(n): return n.has_meta("bearer"))
 	if bier and bearers.size() >= 2:
@@ -1422,12 +1463,19 @@ func _begin_march(root: Node3D, life: Node3D, m: Dictionary, rng: RandomNumberGe
 	marker.name = "Leaving"  # the drum and the boots are heard by it (sound_v2.gd)
 	marker.add_to_group(&"sounding", true)  # heard by sound_v2.gd (SOUNDING): no walk of the scene to find it
 	life.add_child(marker)
+	remarch(marker, {"root": root, "life": life}, m, rng.randi())
+
+
+## The levy's march begun at its marker (_begin_march), kept as its record (people_store.gd): a town's kept Life
+## begins it again on load, its men still in the muster.
+func remarch(marker: Node3D, ctx: Dictionary, m: Dictionary, seed: int) -> void:
 	var every: Array = m.get("every", [7.0, 13.0])
-	var e := {"root": root, "life": life, "marker": marker, "every": every, "file": int(m.get("file", 1)), "spacing": float(m.get("spacing", 0.13)),
+	var e := {"root": ctx["root"], "life": ctx["life"], "marker": marker, "every": every, "file": int(m.get("file", 1)), "spacing": float(m.get("spacing", 0.13)),
 		"most": int(m.get("most", 5)), "pace": float(m.get("pace", 0.15)), "gone": 0, "rng": RandomNumberGenerator.new()}
-	(e["rng"] as RandomNumberGenerator).seed = rng.randi()
+	(e["rng"] as RandomNumberGenerator).seed = seed
 	e["wait"] = (e["rng"] as RandomNumberGenerator).randf_range(2.0, float(every[0]))
 	_marches.append(e)
+	preload("res://scripts/people_store.gd").redo(marker, "director", "remarch", [m, seed])
 
 
 func _march(delta: float) -> void:

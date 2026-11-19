@@ -240,6 +240,40 @@ func _stage_town(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 	_house_col = Color.from_string(String(house.get("color", "#8a2a1e")), Color(0.55, 0.16, 0.12))
 	var rng := RandomNumberGenerator.new()
 	rng.seed = int(c["id"])
+	# The realm's snapshot (people_store.gd; docs/REALM_SNAPSHOT.md, The people): the Life the bake staged for these very
+	# facts is read back whole, its people made again from their records and their minds given back their thought,
+	# instead of cast anew. The bake itself always stages (and keeps what it staged under this key).
+	var reg: Dictionary = towns_node.get("towns") if towns_node else {}
+	var town_file := TownStore.kept_name(root, String((reg.get(_town_id, {}) as Dictionary).get("path", "")))
+	var kept_key := PeopleStore.key(_town_id, [sig, int(c.get("size", 1)), String(house.get("color", "")), String(root.get_meta("rank", "town")), town_file, _town_on])
+	life.set_meta("kept_key", kept_key)
+	var kept := "" if Kept.baking or town_file == "" else PeopleStore.source(kept_key)
+	if kept != "":
+		var read: Node3D = await PeopleStore.read(kept)
+		if read != null and not _gone(root, life):
+			_fields(root, hungry)
+			await PeopleStore.remake(read, root, self, _pace.bind("kept"))
+			if _gone(root, life):
+				read.free()
+				return
+			root.remove_child(life)
+			life.free()
+			read.name = "Life"
+			read.visible = false  # shown whole (_swap)
+			root.add_child(read)
+			life = read
+			await PeopleStore.live(life, root, self, _pace.bind("kept"))
+			if _gone(root, life):
+				return
+			_near_only(life)
+			_pin(life, center)
+			_swap(root, life)
+			await _pace("pin")
+			return
+		if read != null:
+			read.free()
+		if _gone(root, life):
+			return
 
 	_fields(root, hungry)
 	await _pace("fields")
@@ -403,6 +437,11 @@ func _reground(life: Node3D, center: Vector3) -> void:
 
 
 var _people = preload("res://scripts/people.gd").new()
+const People := preload("res://scripts/people.gd")
+
+
+static func redrill(s: Node3D, _ctx: Dictionary, bow: bool, seed: int) -> void:
+	drill_routine(s, bow, seed)
 
 
 ## A drill is a short set, not a loop: each recruit does three or four moves
@@ -412,6 +451,14 @@ const DRILL_SWORD := ["SS_Slash_1", "SS_Slash_4", "Spear_Thrust", "SS_Attack_4"]
 const DRILL_BOW := ["Bow_Draw", "Bow_Aim", "Bow_Shoot"]
 
 func _drill_routine(s: Node3D, bow: bool, seed: int) -> void:
+	drill_routine(s, bow, seed)
+
+
+## A recruit's drill (_drill_routine), kept as its record (people_store.gd): a town's kept Life begins it again on load
+## (redrill), his season in the rank counted from then.
+static func drill_routine(s: Node3D, bow: bool, seed: int) -> void:
+	preload("res://scripts/people_store.gd").redo(s, "res://scripts/town_life.gd", "redrill", [bow, seed])
+	var _people := People
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed
 	var moves: Array = DRILL_BOW if bow else DRILL_SWORD
@@ -1120,6 +1167,8 @@ func _dress(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, rng: Ran
 const Works := preload("res://scripts/works.gd")
 const Dressing := preload("res://scripts/dressing.gd")
 const TownStore := preload("res://scripts/town_store.gd")  # a kept town's file: what is made once for it is kept by it
+const PeopleStore := preload("res://scripts/people_store.gd")  # a town's Life kept in the realm's snapshot
+const Kept := preload("res://scripts/kept.gd")
 const Horse := preload("res://scripts/horse.gd")
 const Data := preload("res://scripts/data.gd")
 const Ground := preload("res://scripts/ground.gd")  # the one answer to where a body may stand
@@ -1205,6 +1254,31 @@ func _works(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, rng: Ran
 ## Lords' towns by night, the square ringed with warm doors while the folk are indoors (villagers.gd). Each a wall
 ## lantern (props Lantern_Wall) beside the door and a small warm light the works tick shows in the lit hours (Works
 ## lit, dark), as the inn's windows.
+## The works' tick as its lists (a kept Life keeps it so, people_store.gd: the tick is a class inside works.gd, which a
+## packed scene can't hold): every list and switch it keeps, not its town, its callables or its own dice.
+func tick_of(tick: Node) -> Dictionary:
+	var out := {}
+	for p in tick.get_property_list():
+		var n := String(p["name"])
+		if int(p["usage"]) & PROPERTY_USAGE_SCRIPT_VARIABLE and not n.begins_with("_") and not n in ["root", "life", "ground", "make_prop"]:
+			out[n] = tick.get(n)
+	return out
+
+
+## The works' tick made again on a kept Life's load from its lists (tick_of), as _works makes it.
+func retick(root: Node3D, life: Node3D, lists: Dictionary) -> void:
+	var center := root.position
+	var tick := Works.Tick.new()
+	tick.name = "Works"
+	tick.root = root
+	tick.life = life
+	tick.ground = func(q: Vector3) -> float: return _y(center, q)
+	tick.make_prop = func(name: String, at: Vector3, yaw: float, lift: float) -> Node3D: return _work_prop(life, center, name, at, yaw, lift)
+	for k in lists:
+		tick.set(k, lists[k])
+	life.add_child(tick)
+
+
 func _door_lamps(root: Node3D, life: Node3D, center: Vector3, tick: Works.Tick, rng: RandomNumberGenerator) -> void:
 	var L: Dictionary = Data.value("works", "night.lamps", {})
 	var most := int(L.get("most", 0))
@@ -1770,6 +1844,33 @@ static func shoulder_sack(p: Node3D, on: bool) -> void:
 ## A horse and cart in one piece (scenes.gd's road cart, facing +z as the town's people do): the wagon, the
 ## horse between its shafts and the carter at the horse's head.
 static func horse_cart(people: Object, rng: RandomNumberGenerator, load_key := "cart.load") -> Node3D:
+	var was := [rng.seed, rng.state, (people.get("_recent") as Array).duplicate() if people.get("_recent") != null else []]
+	var holder := _horse_cart(people, rng, load_key)
+	if holder != null:
+		# The record it was made by (people_store.gd): a kept Life makes it again from it, horse, carter, load and all.
+		var metas := PackedStringArray()
+		for m in holder.get_meta_list():
+			metas.append(String(m))
+		holder.set_meta("made", {"by": "res://scripts/town_life.gd", "args": [load_key], "seed": was[0], "state": was[1], "recent": was[2],
+			"dress": [People._town_rank, People._town_house, People._town_mourning], "metas": metas})
+		for c in holder.get_children():
+			c.set_meta("_made_in", true)
+	return holder
+
+
+## A horse and cart made again from its record (horse_cart), by the town's own maker of people.
+static func again(rec: Dictionary, tl: Object) -> Node3D:
+	var people: Object = tl.get("_people") if tl != null else People.new()
+	var rng := RandomNumberGenerator.new()
+	rng.seed = int(rec.get("seed", 0))
+	rng.state = int(rec.get("state", 0))
+	(people.get("_recent") as Array).assign(rec.get("recent", []))
+	var d: Array = rec.get("dress", ["town", Color(0, 0, 0, 0), false])
+	People.dress_for(String(d[0]), d[1], bool(d[2]))
+	return horse_cart(people, rng, String((rec.get("args", ["cart.load"]) as Array)[0]))
+
+
+static func _horse_cart(people: Object, rng: RandomNumberGenerator, load_key: String) -> Node3D:
 	if _wagon_mesh == null:
 		_wagon_mesh = preload("res://scripts/house_builder.gd").new().piece_mesh("Prop_Wagon")
 	if _wagon_mesh == null:
@@ -1777,6 +1878,7 @@ static func horse_cart(people: Object, rng: RandomNumberGenerator, load_key := "
 	var holder := Node3D.new()
 	holder.name = "HorseCart"
 	var rig := Node3D.new()
+	rig.name = "Rig"  # named, so a link to its carter reads the same on the cart made again (people_store.gd)
 	rig.rotation.y = PI  # the road cart's forward is -z
 	holder.add_child(rig)
 	var wagon := MeshInstance3D.new()
@@ -1795,6 +1897,7 @@ static func horse_cart(people: Object, rng: RandomNumberGenerator, load_key := "
 	var carter: Node3D = people.make(rng, "peasant", Color.WHITE, "adult", "", "male")
 	carter.position = Vector3(0.09, 0, -0.16) * big
 	carter.rotation.y = PI
+	carter.name = "Carter"
 	rig.add_child(carter)
 	holder.set_meta("carter", carter)
 	# Its load: sacks in the bed (crowd.json cart.load: how many, how high the bed stands, how far it runs back; another

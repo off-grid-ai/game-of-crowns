@@ -38,3 +38,14 @@ static func make(name_: String, mesh: Mesh, at: Array) -> MultiMeshInstance3D:
 	b.multimesh = mm
 	b.fill()
 	return b
+
+
+## The MultiMesh a kept scene packs in a batch's place (town_store.gd, people_store.gd): empty, of the same make, so
+## the file keeps the batch's own list (xfs), never the renderer's copy; it refills itself when read (_ready).
+static func packed(mm: MultiMesh) -> MultiMesh:
+	var empty := MultiMesh.new()
+	empty.transform_format = mm.transform_format
+	empty.use_colors = mm.use_colors
+	empty.use_custom_data = mm.use_custom_data
+	empty.mesh = mm.mesh
+	return empty

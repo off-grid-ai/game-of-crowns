@@ -149,13 +149,7 @@ static func save(root: Node3D, life: Node3D, path: String, tl: Object) -> String
 		if not groups.is_empty():
 			n.set_meta("_groups", groups)
 		if n.get_script() == Batch and (n as MultiMeshInstance3D).multimesh:
-			var mm: MultiMesh = (n as MultiMeshInstance3D).multimesh
-			var empty := MultiMesh.new()
-			empty.transform_format = mm.transform_format
-			empty.use_colors = mm.use_colors
-			empty.use_custom_data = mm.use_custom_data
-			empty.mesh = mm.mesh
-			(n as MultiMeshInstance3D).multimesh = empty
+			(n as MultiMeshInstance3D).multimesh = Batch.packed((n as MultiMeshInstance3D).multimesh)
 	var scene := PackedScene.new()
 	var ok := scene.pack(life)
 	if ok != OK:
@@ -198,16 +192,15 @@ static func _who(n: Node) -> String:
 ## give's weigh_phase) moved on by the picks it has made since, less the one it is in, so its first pick on load is
 ## the activity it was at.
 static func _thought(mind: BTPlayer, body: Node) -> Dictionary:
-	var bb := mind.blackboard
 	var out := {}
-	if bb == null:
+	if mind.blackboard == null:
 		return out
 	for k in THOUGHT:
-		if bb.has_var(k):
-			var v: Variant = bb.get_var(k)
+		if mind.blackboard.has_var(k):
+			var v: Variant = mind.blackboard.get_var(k)
 			if typeof(v) in [TYPE_BOOL, TYPE_INT, TYPE_FLOAT, TYPE_STRING, TYPE_STRING_NAME]:
 				out[k] = v
-	var picks := int(bb.get_var(&"picks", 0, false))
+	var picks := int(mind.blackboard.get_var(&"picks", 0, false))
 	for r in body.get_meta("_redo", []):
 		if String(r[1]) == "regive" and picks > 0:
 			out["weigh_phase"] = absi(int((r[2] as Array)[1])) + picks - 1
@@ -289,15 +282,16 @@ static func _take(path: String) -> Variant:
 	if scene == null:
 		return false
 	var made: Array = []
-	_making[path] = [WorkerThreadPool.add_task(func() -> void:
+	var make := func() -> void:
 		var n := scene.instantiate() as Node3D
 		if n != null:
-			made.append(n), false, "life " + path.get_file()), made]
+			made.append(n)
+	_making[path] = [WorkerThreadPool.add_task(make, false, "life " + path.get_file()), made]
 	return null
 
 
 ## A kept Life made whole off the tree: each body made again from its record in its stub's place (on `pace`, the
-## frame's pot), then every link turned back, the root's staging metas set, the particles lit. Its minds and what
+## frame's pot), the particles lit, then every link turned back and the root's staging metas set. Its minds and what
 ## runs are given after it joins the tree (live).
 static func remake(life: Node3D, root: Node3D, tl: Object, pace: Callable) -> void:
 	var stubs: Array = []
@@ -309,6 +303,16 @@ static func remake(life: Node3D, root: Node3D, tl: Object, pace: Callable) -> vo
 		if not is_instance_valid(life):
 			return
 		_body_for(stub as Node3D, tl)
+	for n in _under(life, []):
+		if n is CPUParticles3D and n.has_meta("_gpu"):
+			var lit: Array = n.get_meta("_gpu")
+			var parent: Node = n.get_parent()
+			var at: int = n.get_index()
+			parent.remove_child(n)
+			var gpu := Particles.to_gpu(n as CPUParticles3D, float(lit[1]) if float(lit[1]) > 0.0 else Particles.FAR)
+			gpu.emitting = bool(lit[0])
+			parent.add_child(gpu)
+			parent.move_child(gpu, at)
 	for n in [life] + _under(life, []):
 		for g in n.get_meta("_groups", PackedStringArray()):
 			n.add_to_group(g)
@@ -323,16 +327,6 @@ static func remake(life: Node3D, root: Node3D, tl: Object, pace: Callable) -> vo
 	for k in rm:
 		root.set_meta(k, rm[k])
 	life.remove_meta("_root_metas")
-	for n in _under(life, []):
-		if n is CPUParticles3D and n.has_meta("_gpu"):
-			var lit: Array = n.get_meta("_gpu")
-			var parent: Node = n.get_parent()
-			var at: int = n.get_index()
-			parent.remove_child(n)
-			var gpu := Particles.to_gpu(n as CPUParticles3D, float(lit[1]) if float(lit[1]) > 0.0 else Particles.FAR)
-			gpu.emitting = bool(lit[0])
-			parent.add_child(gpu)
-			parent.move_child(gpu, at)
 
 
 ## A body made again from its stub's record and put in the stub's place: its name, where it stands, the metas set on it

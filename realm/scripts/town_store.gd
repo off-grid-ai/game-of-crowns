@@ -56,13 +56,8 @@ static func save(root: Node3D, path: String, layout_only := false) -> void:
 	for n in [root] + _owned(root, root, [], layout_only):
 		if n.get_script() == Batch and (n as MultiMeshInstance3D).multimesh:
 			var mm: MultiMesh = (n as MultiMeshInstance3D).multimesh
-			var empty := MultiMesh.new()
-			empty.transform_format = mm.transform_format
-			empty.use_colors = mm.use_colors
-			empty.use_custom_data = mm.use_custom_data
-			empty.mesh = mm.mesh
 			batches.append([n, mm])
-			(n as MultiMeshInstance3D).multimesh = empty
+			(n as MultiMeshInstance3D).multimesh = Batch.packed(mm)
 		var groups := PackedStringArray()
 		for g in n.get_groups():
 			if not String(g).begins_with("_"):

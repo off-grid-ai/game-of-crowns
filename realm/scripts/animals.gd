@@ -25,7 +25,7 @@ const Data := preload("res://scripts/data.gd")
 ## A move plays for its picked number of passes, timed by a Timer on the model, so
 ## no clip's loop mode is changed (the clips are shared with every copy of the model:
 ## a cavalry horse's idle keeps looping).
-static func live(model: Node3D, kind: String, rng: RandomNumberGenerator, busy := Callable()) -> Array:
+static func live(model: Node3D, kind: String, rng: RandomNumberGenerator, busy := Callable(), own_seed := -1) -> Array:
 	var spec: Dictionary = Data.value("animals", "kinds.%s" % kind, {})
 	var players := model.find_children("*", "AnimationPlayer", true, false)
 	if spec.is_empty() or players.is_empty():
@@ -43,7 +43,11 @@ static func live(model: Node3D, kind: String, rng: RandomNumberGenerator, busy :
 		return []
 	var blend := Data.num("animals", "blend", 0.4)
 	var own := RandomNumberGenerator.new()
-	own.seed = rng.randi()
+	own.seed = rng.randi() if own_seed < 0 else own_seed
+	if not busy.is_valid():
+		# Its life as a record (people_store.gd): a town's kept Life gives it again on load (relive). A beast made whole
+		# (make) is made again with its life.
+		preload("res://scripts/people_store.gd").redo(model, "res://scripts/animals.gd", "relive", [kind, own.seed])
 	var clock := Timer.new()
 	clock.name = "Life"
 	clock.one_shot = true
@@ -89,6 +93,34 @@ static func live(model: Node3D, kind: String, rng: RandomNumberGenerator, busy :
 ## place a beast is made (the roadside, a town's yard, the fields and flocks). null with no model.
 static var _fits := {}  # kind -> [scale, lift]
 static func make(kind: String, rng: RandomNumberGenerator, walking := false) -> Node3D:
+	var was := [rng.seed, rng.state]
+	var root := _make(kind, rng, walking)
+	if root != null:
+		# The record it was made by (people_store.gd): a kept Life makes it again from it, the same beast (again).
+		var metas := PackedStringArray()
+		for m in root.get_meta_list():
+			metas.append(String(m))
+		root.set_meta("made", {"by": "res://scripts/animals.gd", "args": [kind, walking], "seed": was[0], "state": was[1], "metas": metas})
+		for c in root.get_children():
+			c.set_meta("_made_in", true)
+	return root
+
+
+## A beast made again from its record (make), for a kept Life (people_store.gd).
+static func again(rec: Dictionary, _tl: Object) -> Node3D:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = int(rec.get("seed", 0))
+	rng.state = int(rec.get("state", 0))
+	var a: Array = rec.get("args", ["", false])
+	return make(String(a[0]), rng, bool(a[1]))
+
+
+## A beast's idle life given again on load (live's record): the same kind, its own dice.
+static func relive(model: Node3D, _ctx: Dictionary, kind: String, seed: int) -> void:
+	live(model, kind, RandomNumberGenerator.new(), Callable(), seed)
+
+
+static func _make(kind: String, rng: RandomNumberGenerator, walking: bool) -> Node3D:
 	var own := String(Data.value("animals", "kinds.%s.model" % kind, ""))  # a kind the catalogue doesn't hold (a town dog: the wolf, shrunk)
 	var path := own if own != "" else preload("res://scripts/realistic.gd").path_of(kind)
 	if kind == "" or path == "" or not ResourceLoader.exists(path):
