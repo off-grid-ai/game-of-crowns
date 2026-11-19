@@ -32,6 +32,10 @@ static var DECIDE_S: float = preload("res://scripts/data.gd").num("people", "lod
 ## Milliseconds of a frame the minds may take (people.json lod.mind_budget_ms): minds due past it wait for the next
 ## frame, which starts where this one stopped (round robin), so a crowd arriving at once never holds a frame
 ## (Mac: "too many long running operations"). A mind kept waiting is given all the time it is owed.
+## Fewer poses than this in a frame are worked out on the main thread: handing them to the pool costs more (people.json lod.pool_min).
+static var POOL_MIN: int = int(preload("res://scripts/data.gd").num("people", "lod.pool_min", 4))
+## Frames between a waiting mind's looks at whether its body is in sight (people.json lod.mind_look_frames).
+static var MIND_LOOK: int = maxi(1, int(preload("res://scripts/data.gd").num("people", "lod.mind_look_frames", 8)))
 static var MIND_BUDGET_MS: float = preload("res://scripts/data.gd").num("people", "lod.mind_budget_ms", 3.0)
 var _turn := 0  # where in _minds the next frame's thinking starts
 static var _woken := {}  # mind instance id -> WeakRef: minds something just happened to, decided first next frame (wake)
@@ -63,6 +67,19 @@ static func add(player: AnimationMixer, reach := -1.0) -> void:
 	if reach > 0.0:
 		player.set_meta("lod_reach", reach)
 	_players.append(weakref(player))
+	# Its track caches are built on the main thread (they look its skeleton up by node path, which Godot allows only
+	# there): cold until its first advance, and cold again whenever Godot drops them (new moves, a library, the tree
+	# left and joined).
+	var id := player.get_instance_id()
+	_cold[id] = true
+	for sig in [&"caches_cleared", &"animation_list_changed", &"animation_libraries_updated"]:
+		player.connect(sig, _chill.bind(id))
+
+
+## Bodies whose track caches must be built on the main thread before a worker may advance them.
+static var _cold := {}
+static func _chill(id: int) -> void:
+	_cold[id] = true
 
 
 ## A person's mind thinks by distance from now on. False (and the mind keeps its
@@ -154,6 +171,15 @@ static func _every(cam: Camera3D, body: Node3D, reach: float) -> int:
 ## Each frame a share of the bodies (1 in RECHECK) is looked at afresh: in sight it joins the live ones, out of it
 ## it leaves them. Only the live ones are walked every frame, to move on their frames with the time they are owed.
 func _animate(delta: float, vp: Viewport, cam: Camera3D) -> void:
+	_batch.clear()
+	_batch_dt.clear()
+	_pick(delta, vp, cam)
+	_pose()
+
+
+## The bodies to move this frame, each turned and its legs read (on the main thread: that reads and sets the scene);
+## their poses go to _batch, worked out by _pose on every core.
+func _pick(delta: float, vp: Viewport, cam: Camera3D) -> void:
 	var count := _players.size()
 	var share := mini(count, ceili(float(count) / RECHECK))
 	var frame := Engine.get_process_frames()
@@ -193,7 +219,7 @@ func _animate(delta: float, vp: Viewport, cam: Camera3D) -> void:
 			continue
 		# Close-up stages (a lord's portrait, a duel) have cameras of their own.
 		if cam == null or p.get_viewport() != vp:
-			_move(p, delta)
+			_queue(p, delta)
 			continue
 		var n := every(cam, body, float(p.get_meta("lod_reach", -1.0)))
 		if n == 0:
@@ -205,7 +231,7 @@ func _animate(delta: float, vp: Viewport, cam: Camera3D) -> void:
 			PerfTools.seen_clip(People.clip(body))  # the ring's clips, counted for the VAT bake's list (perf.log)
 		var owed: float = _owed.get(id, 0.0) + delta
 		if n == 1 or (frame + id) % n == 0:  # the same frames moves_now gives the body's mover
-			_move(p, owed)
+			_queue(p, owed)
 			_owed.erase(id)
 		else:
 			_owed[id] = owed
@@ -220,6 +246,12 @@ func _forget(frame: int) -> void:
 	for id in _shading.keys():
 		if not live.has(id) and not is_instance_valid(instance_from_id(id)):
 			_shading.erase(id)
+	for id in _mind_look.keys():
+		if frame - int(_mind_look[id][0]) > MIND_LOOK * 8:
+			_mind_look.erase(id)
+	for id in _cold.keys():
+		if not is_instance_valid(instance_from_id(id)):
+			_cold.erase(id)
 
 
 ## A body casts a shadow near the lens and none past SHADOW_NEAR; its meshes are found once.
@@ -283,7 +315,7 @@ func _think(delta: float, vp: Viewport, cam: Camera3D) -> void:
 			continue
 		var fresh := not _mind_owed.has(id)
 		var owed: float = delta if fresh else float(_mind_owed[id]) + delta
-		if not fresh and (owed < DECIDE_S or ViewTier.of(body.global_position, BODY_R) <= ViewTier.FAR):
+		if not fresh and (owed < DECIDE_S or _unseen(id, body)):
 			_mind_owed[id] = owed  # off screen or the lens out at FAR: it thinks with all it is owed once seen
 			continue
 		if not spent and Time.get_ticks_usec() > until:
@@ -300,6 +332,19 @@ func _think(delta: float, vp: Viewport, cam: Camera3D) -> void:
 	if not spent:
 		_turn = 0
 	_minds = keep
+
+
+## Whether a mind's body is off screen or the lens out at FAR (view_tier.gd), looked at afresh once in MIND_LOOK
+## frames: a crowd kept waiting off screen cost a frustum test each, every frame (Godot's profiler in play, 2026-11-19).
+var _mind_look := {}  # mind instance id -> [frame looked, unseen]
+func _unseen(id: int, body: Node3D) -> bool:
+	var f := Engine.get_process_frames()
+	var was: Array = _mind_look.get(id, [])
+	if not was.is_empty() and f - int(was[0]) < MIND_LOOK:
+		return was[1]
+	var out := ViewTier.of(body.global_position, BODY_R) <= ViewTier.FAR
+	_mind_look[id] = [f, out]
+	return out
 
 
 ## Whether a person's body is moved this frame: their mover (villagers.gd) moves
@@ -321,13 +366,45 @@ static func moves_now(body: Node3D) -> bool:
 	return n == 1 or (Engine.get_process_frames() + mo.get_instance_id()) % n == 0
 
 
-## A body moves by the time it's owed: legs read the ground covered (motion.gd),
-## then its state machine plays at the pace of its current move.
-static func _move(p: AnimationMixer, dt: float) -> void:
-	if p.has_method("track"):
-		p.track(dt)
-	_advance(p, dt)
+## A body moves by the time it's owed: legs read the ground covered (motion.gd) here on the main thread, then its
+## state machine plays at the pace of its current move. A person's state machine (motion.gd) whose caches are built is
+## posed on the worker pool with the frame's others (_pose); the rest (a horse's, a beast's AnimationPlayer, and any
+## body cold since its caches went) here.
+var _batch: Array[AnimationMixer] = []
+var _batch_dt := PackedFloat64Array()
+func _queue(p: AnimationMixer, dt: float) -> void:
 	moved += 1
+	if not p.has_method("track"):
+		_advance(p, dt)
+		return
+	p.track(dt)
+	var id := p.get_instance_id()
+	if _cold.has(id):
+		_cold.erase(id)
+		_advance(p, dt)  # builds its caches here, where it may look its skeleton up
+		return
+	_batch.append(p)
+	_batch_dt.append(dt * float(p.get("speed")))
+
+
+## Every queued pose worked out at once on Godot's WorkerThreadPool (add_group_task), the main thread waiting: each is
+## one person's own AnimationTree writing its own skeleton's bones (Skeleton3D queues its update on the process
+## group's call queue, which locks), the shared clips only read. Nothing else in the scene runs meanwhile.
+func _pose() -> void:
+	var n := _batch.size()
+	if n == 0:
+		return
+	if n < POOL_MIN:
+		for i in n:
+			_batch[i].advance(_batch_dt[i])
+	else:
+		var task := WorkerThreadPool.add_group_task(_pose_one, n, -1, true, "people's poses")
+		WorkerThreadPool.wait_for_group_task_completion(task)
+	_batch.clear()
+
+
+func _pose_one(i: int) -> void:
+	_batch[i].advance(_batch_dt[i])
 
 
 static func _advance(p: AnimationMixer, dt: float) -> void:
