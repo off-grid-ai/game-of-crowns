@@ -147,6 +147,8 @@ static func start(land: Node3D, ways: Node) -> void:
 			_chunks[kind][c] = {"regions": {}, "sig": "", "want": "", "seen_at": 0.0, "out": false, "landed": false}
 			_pending[kind][c] = true
 	land.ground_changed.connect(_on_ground_changed)
+	if not Kept.baking:
+		WorkerThreadPool.add_task(_sweep_chunk_files, false, "nav sweep")
 	var pack := pack_path()
 	if not Kept.baking and FileAccess.file_exists(pack):
 		# Build once, load only: the bake's whole navigation for this land, every chunk of every map, laid from one file
@@ -161,6 +163,16 @@ static func start(land: Node3D, ways: Node) -> void:
 	for kind in [WATER] + LAND_KINDS:
 		for c in _all:
 			_queue.append([kind, c])
+
+
+## The chunk files an older game wrote one by one (never read since the pack), gone from the player's folder.
+static func _sweep_chunk_files() -> void:
+	var dir := Kept.USER + "nav/"
+	if not DirAccess.dir_exists_absolute(dir):
+		return
+	for f in DirAccess.get_files_at(dir):
+		if not f.begins_with("pack_"):
+			DirAccess.remove_absolute(dir + f)
 
 
 ## Where the bake keeps this land's whole navigation (by the land's fingerprint, terrain.gd land_key).
@@ -949,16 +961,12 @@ static func town_ways(root: Node3D) -> Array:
 
 # --- on a worker -------------------------------------------------------------------------------------------------------
 
-## One chunk of one map: its kept layers read back when what they were baked from is unchanged (the land's triangles,
-## what stands, the ways), else baked by Recast and handed back to be kept. On a worker thread: it reads the land's
-## water (terrain.gd: tile kinds, the river mask, an Image) and nothing the main thread writes (fords come copied).
+## One chunk of one map baked by Recast and handed back. Never written on its own: the launch lays the bake's whole
+## pack (write_pack, one file per land), so a chunk file was never read again (8,018 files, 145 MB in one player's
+## folder, 2026-11-20). On a worker thread: it reads the land's water (terrain.gd: tile kinds, the river mask, an
+## Image) and nothing the main thread writes (fords come copied).
 static func _bake(gen: int, kind: StringName, c: Vector2i, faces: PackedVector3Array, inputs: Dictionary, fords: Array) -> void:
 	var t0 := Time.get_ticks_usec()
-	var hc := HashingContext.new()
-	hc.start(HashingContext.HASH_MD5)
-	hc.update(faces.to_byte_array())
-	hc.update(var_to_bytes([String(kind), radius(kind), _cell(kind), String(inputs["sig"]), Data.num("ground", "nav.slope", 40.0), Data.num("ground", "nav.water.draft", 0.12)]))
-	var sig := hc.finish().hex_encode().substr(0, 12)
 	var layers := {}
 	var parts := _split(kind, faces, fords)  # layer -> faces
 	if kind != WATER and not (inputs["ways"] as Array).is_empty():
@@ -968,60 +976,19 @@ static func _bake(gen: int, kind: StringName, c: Vector2i, faces: PackedVector3A
 	for layer: StringName in parts:
 		if (parts[layer] as PackedVector3Array).is_empty():
 			continue  # no ground of this layer here (a chunk of dry land on the ships' map)
-		var path := Kept.path("nav", "%s_%d_%d_%s_%s" % [kind, c.x, c.y, layer, sig], "nav")
-		var nm := _read(path, kind, c)
-		if nm != null:
-			_lock.lock()
-			read_back += 1
-			_lock.unlock()
-		else:
-			nm = _recast(kind, c)
-			var src := NavigationMeshSourceGeometryData3D.new()
-			src.add_faces(parts[layer], Transform3D.IDENTITY)
-			if kind != WATER:
-				_carve(src, kind, layer, inputs)
-			NavigationServer3D.bake_from_source_geometry_data(nm, src)
-			_lock.lock()
-			baked += 1
-			_lock.unlock()
-			if not bool(inputs.get("held", false)):
-				_write(nm, path)  # held ground comes and goes: a mesh baked round it isn't kept
+		var nm := _recast(kind, c)
+		var src := NavigationMeshSourceGeometryData3D.new()
+		src.add_faces(parts[layer], Transform3D.IDENTITY)
+		if kind != WATER:
+			_carve(src, kind, layer, inputs)
+		NavigationServer3D.bake_from_source_geometry_data(nm, src)
+		_lock.lock()
+		baked += 1
+		_lock.unlock()
 		layers[layer] = nm
 	_lock.lock()
 	_done.append([kind, c, String(inputs["sig"]), layers, Time.get_ticks_usec() - t0, gen])
 	_lock.unlock()
-
-
-## A kept chunk layer: the navmesh's own vertices and polygons, as plain bytes (never a resource: the resource cache
-## holds a loaded or saved mesh's path, and a second load from it on a worker comes back empty). Null when none is
-## kept at `path`.
-static func _read(path: String, kind: StringName, c: Vector2i) -> NavigationMesh:
-	if not FileAccess.file_exists(path):
-		return null
-	var data: Variant = bytes_to_var(FileAccess.get_file_as_bytes(path))
-	if not (data is Array and (data as Array).size() == 2):
-		return null
-	var nm := _recast(kind, c)
-	nm.vertices = data[0]
-	for poly: PackedInt32Array in data[1]:
-		nm.add_polygon(poly)
-	return nm
-
-
-## Writes a baked chunk layer at `path` (on the worker that baked it), beside its place first and then moved there, so
-## nothing reads it half written.
-static func _write(nm: NavigationMesh, path: String) -> void:
-	var polys: Array = []
-	for i in nm.get_polygon_count():
-		polys.append(nm.get_polygon(i))
-	DirAccess.make_dir_recursive_absolute(path.get_base_dir())
-	var part := path + ".part"
-	var f := FileAccess.open(part, FileAccess.WRITE)
-	if f == null:
-		return
-	f.store_buffer(var_to_bytes([nm.get_vertices(), polys]))
-	f.close()
-	DirAccess.rename_absolute(part, path)
 
 
 ## The chunk's land triangles sorted by layer: for the land maps, the ways (cut out of the land under them, at the
