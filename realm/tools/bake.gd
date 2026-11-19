@@ -27,12 +27,16 @@ const LOGS := "user://bake/"  # each slice's Godot writes its log here (--log-fi
 
 
 var _slice := []  # --towns=from:to: this run raises only those of the starting realm's towns (_towns_apart)
+var _lives := []  # --lives=from:to: this run stages and keeps only those towns' Lives (_lives_apart)
+const LIVES_WAIT_S := 300.0  # the most one slice's Lives may take to stage
 
 
 func _init() -> void:
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--towns="):
 			_slice = Array(a.substr(8).split(":")).map(func(x): return int(x))
+		elif a.begins_with("--lives="):
+			_lives = Array(a.substr(8).split(":")).map(func(x): return int(x))
 	preload("res://tools/watchdog.gd").arm(self, WAIT_S)
 	_run.call_deferred()
 
@@ -54,6 +58,12 @@ func _run() -> void:
 		return
 	var world := _world()
 	var map := _base_map()
+	if not _lives.is_empty():
+		world["cities"] = (world["cities"] as Array).slice(_lives[0], _lives[1])
+		var kept := await _lives_of(world, map)
+		print("BAKE lives slice: %d kept" % kept)
+		quit(0)
+		return
 	if not _slice.is_empty():
 		world["cities"] = (world["cities"] as Array).slice(_slice[0], _slice[1])
 		var n := await _realm(world, map, false, true)
@@ -69,11 +79,13 @@ func _run() -> void:
 	print("BAKE troops: %d soldiers kept" % preload("res://scripts/army_visual.gd").bake())
 	await _land(map)
 	print("BAKE land: its chunks laid out and kept, %.0f s in" % ((Time.get_ticks_msec() - t0) / 1000.0))
-	var raised := _towns_apart((world["cities"] as Array).size())
+	var raised := _apart((world["cities"] as Array).size(), "towns", "BAKE slice:")
 	print("BAKE towns: %d raised on every core, %.0f s in" % [raised, (Time.get_ticks_msec() - t0) / 1000.0])
 	var stood := await _realm(world, map, true)
+	print("BAKE towns: %d stood and kept, %.0f s in" % [stood, (Time.get_ticks_msec() - t0) / 1000.0])
+	var lived := _apart((world["cities"] as Array).size(), "lives", "BAKE lives slice:")
 	Kept.stamp()
-	print("BAKE towns: %d stood and kept, %.0f s in all" % [stood, (Time.get_ticks_msec() - t0) / 1000.0])
+	print("BAKE lives: %d towns' people kept on every core; all done in %.0f s" % [lived, (Time.get_ticks_msec() - t0) / 1000.0])
 	quit(0 if made > 0 and stood > 0 else 1)
 
 
@@ -102,26 +114,29 @@ func _land(map: Dictionary) -> void:
 	await process_frame
 
 
-## The starting realm's `count` towns raised by OS.get_processor_count() / 2 Godots at once, each a slice of them
-## (this script with --towns=from:to, its log under LOGS), waited for together: how many they raised.
-func _towns_apart(count: int) -> int:
+## The starting realm's `count` towns worked by OS.get_processor_count() / 2 Godots at once, each a slice of them
+## (this script with --<what>=from:to: towns raised, or their Lives staged and kept; its log under LOGS), waited for
+## together: the sum of what each says on its `said` line.
+func _apart(count: int, what: String, said: String) -> int:
 	var lanes := clampi(OS.get_processor_count() / 2, 1, maxi(count, 1))
 	var per := ceili(float(count) / lanes)
 	var logs := ProjectSettings.globalize_path(LOGS)
 	DirAccess.make_dir_recursive_absolute(logs)
 	var pids := []
 	for i in range(0, count, per):
-		var log := logs.path_join("towns_%d.log" % i)
+		var log := logs.path_join("%s_%d.log" % [what, i])
 		DirAccess.remove_absolute(log)
 		pids.append([OS.create_process(OS.get_executable_path(), ["--headless", "--path", ProjectSettings.globalize_path("res://"),
-			"--log-file", log, "-s", "res://tools/bake.gd", "--", "--towns=%d:%d" % [i, mini(i + per, count)]]), log])
+			"--log-file", log, "-s", "res://tools/bake.gd", "--", "--%s=%d:%d" % [what, i, mini(i + per, count)]]), log])
 	var n := 0
 	for p in pids:
 		while OS.is_process_running(int(p[0])):
 			OS.delay_msec(250)
 		for line in FileAccess.get_file_as_string(String(p[1])).split("\n"):
-			if line.begins_with("BAKE slice:"):
-				n += int(line.get_slice(": ", 1).get_slice(" ", 0))
+			if line.begins_with(said):
+				n += int(line.trim_prefix(said).strip_edges().get_slice(" ", 0))
+			elif line.begins_with("BAKE lives:") and "not kept" in line:
+				print(line)
 			elif line.begins_with("PROBE TIMEOUT") or line.begins_with("SCRIPT ERROR"):
 				print("BAKE %s: %s" % [String(p[1]).get_file(), line])
 	return n
@@ -166,6 +181,33 @@ func _realm(world: Dictionary, map: Dictionary, baseline := false, towns_only :=
 		n2.queue_free()
 	await process_frame
 	return n
+
+
+## A lives slice: its towns read back as kept and staged NEAR (their people, scenes and minds, as play casts them), each
+## Life kept whole as it stands (town_life.gd _keep_life, people_store.gd); the land as it was kept, no roads (a Life's
+## facts don't include them). How many were kept.
+func _lives_of(world: Dictionary, map: Dictionary) -> int:
+	ViewTier.tool_tier = ViewTier.NEAR
+	var TownLife := load("res://scripts/town_life.gd")
+	TownLife.keep_lives = true
+	var store: Node = load("res://scripts/awareness.gd").new()
+	root.add_child(store)
+	await process_frame
+	store.dispatch(store.SYNC, {"world": world})
+	var terrain: Node3D = load("res://scripts/terrain.gd").new()
+	root.add_child(terrain)
+	await terrain.build(map)
+	var towns: Node3D = load("res://scripts/towns.gd").new()
+	towns.terrain = terrain
+	root.add_child(towns)
+	towns.sync(store.houses_by_id())
+	var want := (world["cities"] as Array).size()
+	var t0 := Time.get_ticks_msec()
+	while TownLife.lives_kept + TownLife.lives_not < want and Time.get_ticks_msec() - t0 < LIVES_WAIT_S * 1000.0:
+		await process_frame
+	if TownLife.lives_kept + TownLife.lives_not < want:
+		print("BAKE lives: %d of %d towns staged in %.0f s" % [TownLife.lives_kept + TownLife.lives_not, want, LIVES_WAIT_S])
+	return TownLife.lives_kept
 
 
 ## The realm's farmsteads laid out as main.gd lays them (countryside.gd), each patch kept (kept.gd 'farms'), so a launch

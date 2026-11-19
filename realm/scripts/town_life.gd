@@ -319,6 +319,25 @@ func _stage_town(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 	_pin(life, center)
 	_swap(root, life)
 	await _pace("pin")
+	if Kept.baking and keep_lives and not _gone(root, life):
+		_keep_life(root, life)
+
+
+## The bake's (tools/bake.gd --lives): each Life it stages is kept whole for its facts (people_store.gd save, under
+## kept_key), so play reads it back instead of casting it (~6 s of the main thread a start). The Life is taken apart to
+## be packed, so it stays unused after; the bake's run quits once every town's is kept or named.
+static var keep_lives := false
+static var lives_kept := 0
+static var lives_not := 0
+
+
+func _keep_life(root: Node3D, life: Node3D) -> void:
+	var why := PeopleStore.save(root, life, PeopleStore.path_of(String(life.get_meta("kept_key", ""))), self)
+	if why == "":
+		lives_kept += 1
+	else:
+		lives_not += 1
+	print("BAKE lives: %s %s" % [String(root.get_meta("title", root.name)), "kept" if why == "" else "not kept: " + why])
 
 
 ## The new life stands whole: the one it replaces goes (its growing houses' sites carried over), the new shown.
