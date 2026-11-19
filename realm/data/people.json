@@ -82,7 +82,7 @@
   "_clip_drop_bones": "bones a clip may carry that no body is skinned to (chain tips, helpers): their tracks are dropped as the clips load (people.gd _in_place).",
   "clip_drop_bones": ["mixamorig_LeftToe_End", "headfront", "mixamorig_LeftHandMiddle4"],
   "spacing": {"apart": 0.06, "after_s": 0.3, "still_s": 4.0, "step": 0.08, "give_s": 0.6, "beat_s": 0.1, "rest_s": 3.0},
-  "lod": {"near": 3.5, "shadow_near": 3.5, "stride": 4, "recheck": 4, "decide_s": 1.0, "mind_budget_ms": 3.0, "move_unseen_s": 1.0, "pool_min": 4, "mind_look_frames": 8, "cold_per_frame": 6},
+  "lod": {"near": 3.5, "shadow_near": 3.5, "stride": 4, "recheck": 4, "decide_s": 1.0, "mind_budget_ms": 3.0, "move_unseen_s": 1.0, "mind_look_frames": 8},
   "_lod_rich": "lod_rich: Beautiful and Finest (anim_lod.gd use_graphics): within near of the lens a body animates every frame, within shadow_near it casts a shadow; stride past near. Smooth keeps lod.",
   "lod_rich": {"near": 24.0, "shadow_near": 24.0, "stride": 2},
   "_detail_bias": "detail_bias: how much finer than the realm's other meshes a person's body is kept (Godot lod_bias; 1 like the rest, 64 every triangle at any zoom we allow). people.gd make_body/make.",
