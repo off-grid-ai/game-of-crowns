@@ -335,10 +335,22 @@ static func claims_in(area: Rect2, kinds: Array) -> Dictionary:
 
 ## The claims whose bounds' cells (SHAPES_CELL) touch `area` (world XZ), each once: read off the cells, never every
 ## claim in the realm (every field of the countryside is one: claims_in walked them all, 4 ms a frame in play).
+## An area over more cells than the index holds is read off the index's own cells, so a query never costs more than
+## the claims kept (nav_world _hold asks the whole realm, a 2e6 m square: 4e8 cells a scan held the main thread for
+## good right after Continue and in the bake's roads pass, 2026-11-19).
 static func _claims_over(area: Rect2) -> Dictionary:
 	var out := {}
-	for x in range(floori(area.position.x / SHAPES_CELL), floori(area.end.x / SHAPES_CELL) + 1):
-		for z in range(floori(area.position.y / SHAPES_CELL), floori(area.end.y / SHAPES_CELL) + 1):
+	var x0 := floori(area.position.x / SHAPES_CELL)
+	var x1 := floori(area.end.x / SHAPES_CELL)
+	var z0 := floori(area.position.y / SHAPES_CELL)
+	var z1 := floori(area.end.y / SHAPES_CELL)
+	if float(x1 - x0 + 1) * float(z1 - z0 + 1) > float(_claim_cells.size()):
+		for c: Vector2i in _claim_cells:
+			if c.x >= x0 and c.x <= x1 and c.y >= z0 and c.y <= z1:
+				out.merge(_claim_cells[c])
+		return out
+	for x in range(x0, x1 + 1):
+		for z in range(z0, z1 + 1):
 			out.merge(_claim_cells.get(Vector2i(x, z), {}))
 	return out
 
