@@ -79,13 +79,13 @@ say() { echo "$(date +%T) $*" | tee -a $OUT/pass.log; }
 
 # --- the stops --------------------------------------------------------------------------------------------------------
 [ -e /tmp/goc-no-render ] && { echo "render_pass: /tmp/goc-no-render is there (Mac's stop); nothing run"; exit 2; }
-if pgrep -fl "^(arch -arm64 )?godot( |$)" | grep -v -e "--headless" | grep -q .; then
+if (ps -eo args= | grep -E '^([^ ]*/)?(arch -arm64 )?[Gg]odot[^ /]*( |$)') | grep -v -e "--headless" | grep -q .; then
   echo "render_pass: a windowed Godot is up (Mac's game or another render); nothing run"; exit 2
 fi
 for p in $PORT $FC; do lsof -iTCP:$p -sTCP:LISTEN > /dev/null 2>&1 && { echo "render_pass: port $p is taken; set PORT and FC"; exit 2; }; done
 # Room on the disk: a pass writes a few GB of frames, and a full disk cut the first pass short (21:52, 'No space left on
 # device' while the second copied the game). DISK_MIN GB free at the start (15).
-FREE=$(df -g "$R" 2>/dev/null | awk 'NR==2 {print $4}')
+FREE=$(df -Pk "$R" 2>/dev/null | awk 'NR==2 {print int($4 / 1048576)}')  # GB, on the Mac and Linux alike
 [ -n "$FREE" ] && [ "$FREE" -lt ${DISK_MIN:-15} ] && { echo "render_pass: ${FREE} GB free on the disk (at least ${DISK_MIN:-15}); nothing run"; exit 2; }
 mkdir -p $OUT/side $OUT/frames
 say "render pass into $OUT at $(git -C $R log --oneline -1 | cut -c1-90)"
@@ -118,8 +118,8 @@ grep -q "SCRIPT ERROR\|Parse Error" $OUT/check.log && { say "check-only: HEAD's 
 {
   echo "code: $CODE (git archive)"
   echo "art: realm/assets -> $(readlink $F/realm/assets), import cache -> $(readlink $F/realm/.godot), at $(date '+%F %T')"
-  echo "armies hash: $(cd $R/realm/assets/armies && find . -type f -not -name '*.blend*' | sort | xargs md5 -q | md5 -q)"
-  echo "newest art file: $(cd $R/realm/assets && find . -type f -not -name '*.import' -print0 | xargs -0 stat -f '%m %N' | sort -n | tail -1 | cut -d' ' -f2-)"
+  echo "armies hash: $(cd $R/realm/assets/armies && find . -type f -not -name '*.blend*' | sort | xargs cat | python3 -I -c 'import hashlib,sys; print(hashlib.md5(sys.stdin.buffer.read()).hexdigest())')"
+  echo "newest art file: $(cd $R/realm/assets && python3 -I -c 'import os; f=[os.path.join(d,n) for d,_,ns in os.walk(".") for n in ns if not n.endswith(".import")]; print(max(f, key=os.path.getmtime))')"
 } > $OUT/ASSETS.txt
 say "copy ready: $(head -1 $OUT/ASSETS.txt)"
 

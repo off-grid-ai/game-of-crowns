@@ -15,9 +15,10 @@ if [ -e /tmp/goc-no-render ]; then echo "render.sh: renders are paused (/tmp/goc
 LOCK=/tmp/goc-render.lock
 OUT=$1; shift
 # Ali's game: a Godot that isn't a render, a movie take or a headless check.
+# (ps, not pgrep -fl: on Linux pgrep -l prints the name alone, so every render took itself for the game and quit.)
 # (Only real Godot binaries count: the shells and greps that mention "godot" in
 # their own command lines, this check included, must not.)
-playing() { pgrep -fl "^(arch -arm64 )?godot( |$)" | grep -v -e "--shot=" -e "--write-movie" -e "--headless" | grep -q .; }
+playing() { (ps -eo args= | grep -E '^([^ ]*/)?(arch -arm64 )?[Gg]odot[^ /]*( |$)') | grep -v -e "--shot=" -e "--write-movie" -e "--headless" | grep -q .; }
 # PRIORITY=1 (the launch kit) goes first: other renders hold back while any
 # prioritised render is waiting or running.
 PRI=/tmp/goc-render.priority
