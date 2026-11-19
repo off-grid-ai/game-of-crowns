@@ -265,7 +265,7 @@ func _ready() -> void:
 	intro = preload("res://scripts/intro.gd").new()
 	# Every town and its life standing, the roads and fields laid and the armies placed: nothing is still being made
 	# once the card goes (Mac 2026-11-15: 5 fps for the first 25 s of play, the roads and units laid after it closed).
-	intro.ready_check = func(): return terrain.built and not terrain.chunks_loading() and towns != null and towns.settled() and roads_laid and units != null and units.placed
+	intro.ready_check = func(): return terrain.built and not terrain.chunks_loading() and towns != null and towns.settled() and roads_laid and roads.laid() and countryside.laid() and units != null and units.placed
 	intro.forming = func() -> String:
 		var n: Vector2i = towns.standing() if towns else Vector2i.ZERO
 		return "The towns are rising: %d of %d" % [n.x, n.y] if terrain.built and n.y > 0 else "The realm is forming…"

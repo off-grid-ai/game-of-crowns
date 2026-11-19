@@ -72,6 +72,11 @@ func build(cities: Array) -> void:
 	_busy = false
 
 
+## Whether every farm the latest report asked for stands (the loading card waits for it: nothing laid in front of the player).
+func laid() -> bool:
+	return not _busy and _want == null
+
+
 func _update(cities: Array) -> void:
 	if towns == null:
 		towns = get_parent().get("towns")
