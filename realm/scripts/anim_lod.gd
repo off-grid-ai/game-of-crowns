@@ -37,6 +37,11 @@ static var POOL_MIN: int = int(preload("res://scripts/data.gd").num("people", "l
 ## Frames between a waiting mind's looks at whether its body is in sight (people.json lod.mind_look_frames).
 static var MIND_LOOK: int = maxi(1, int(preload("res://scripts/data.gd").num("people", "lod.mind_look_frames", 8)))
 static var MIND_BUDGET_MS: float = preload("res://scripts/data.gd").num("people", "lod.mind_budget_ms", 3.0)
+## Bodies whose track caches are built (their first pose, on the main thread) in one frame at most (people.json
+## lod.cold_per_frame): a town's people arriving at once each built theirs in the same frame (anim_lod 720-1015 ms a
+## 10 s window while the realm streamed in, 2026-11-20); the rest wait a frame, owed their time.
+static var COLD_MOST: int = maxi(1, int(preload("res://scripts/data.gd").num("people", "lod.cold_per_frame", 6)))
+var _cold_now := 0  # bodies first posed this frame
 var _turn := 0  # where in _minds the next frame's thinking starts
 static var _woken := {}  # mind instance id -> WeakRef: minds something just happened to, decided first next frame (wake)
 const People = preload("res://scripts/people.gd")
@@ -173,6 +178,7 @@ static func _every(cam: Camera3D, body: Node3D, reach: float) -> int:
 func _animate(delta: float, vp: Viewport, cam: Camera3D) -> void:
 	_batch.clear()
 	_batch_dt.clear()
+	_cold_now = 0
 	_pick(delta, vp, cam)
 	_pose()
 
@@ -230,7 +236,11 @@ func _pick(delta: float, vp: Viewport, cam: Camera3D) -> void:
 		if PerfTools.probing and n != 1:
 			PerfTools.seen_clip(People.clip(body))  # the ring's clips, counted for the VAT bake's list (perf.log)
 		var owed: float = _owed.get(id, 0.0) + delta
-		if n == 1 or (frame + id) % n == 0:  # the same frames moves_now gives the body's mover
+		if (n == 1 or (frame + id) % n == 0) and _cold.has(id) and _cold_now >= COLD_MOST:
+			_owed[id] = owed  # its first pose waits a frame: this frame's share of cold bodies is spent
+		elif n == 1 or (frame + id) % n == 0:  # the same frames moves_now gives the body's mover
+			if _cold.has(id):
+				_cold_now += 1
 			_queue(p, owed)
 			_owed.erase(id)
 		else:
