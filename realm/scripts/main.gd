@@ -859,6 +859,7 @@ func apply_graphics() -> void:
 	if _rich.is_empty():
 		_rich = {"sdfgi": env.sdfgi_enabled, "ssao": env.ssao_enabled, "ssil": env.ssil_enabled, "vol": env.volumetric_fog_enabled, "glow": env.glow_enabled, "shadow": sun.directional_shadow_max_distance}
 	graphics_smooth = smooth_chosen()
+	preload("res://scripts/anim_lod.gd").use_graphics(graphics_smooth)  # the townsfolk drawn whole outside Smooth
 	env.sdfgi_enabled = _rich["sdfgi"] and not graphics_smooth
 	env.ssao_enabled = _rich["ssao"] and not graphics_smooth
 	env.ssil_enabled = _rich["ssil"] and not graphics_smooth

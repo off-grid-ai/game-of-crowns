@@ -27,6 +27,19 @@ static var STRIDE: int = int(preload("res://scripts/data.gd").num("people", "lod
 ## Frames between a body's looks at where it stands (people.json lod.recheck): its every() answer is kept that long,
 ## and each frame only that share of the realm's bodies is looked at afresh, so a crowd off screen or past sight costs
 ## nothing a frame (fps round 2026-11-15: 6.5 ms a frame walking every body to find the few that move).
+## Beautiful and Finest draw the townsfolk whole (people.json lod_rich): every one in sight animated every frame and
+## casting a shadow. Smooth keeps lod.near / lod.shadow_near / lod.stride (the 2026-11-15 fps round's cuts: past 3.5
+## nobody had a shadow or a full frame rate, and the nearest the camera comes is 10, so in every view the folk stood
+## flat and jerky; the fps was the towns being built, 2026-11-20). main.gd apply_graphics calls this.
+static func use_graphics(smooth: bool) -> void:
+	var D := preload("res://scripts/data.gd")
+	var key := "lod" if smooth else "lod_rich"
+	NEAR = D.num("people", key + ".near", D.num("people", "lod.near", 6.0))
+	SHADOW_NEAR = D.num("people", key + ".shadow_near", D.num("people", "lod.shadow_near", 6.0))
+	STRIDE = int(D.num("people", key + ".stride", D.num("people", "lod.stride", 3)))
+	_seen.clear()  # every body looked at afresh under the new reach
+
+
 static var RECHECK: int = maxi(1, int(preload("res://scripts/data.gd").num("people", "lod.recheck", 4)))
 static var DECIDE_S: float = preload("res://scripts/data.gd").num("people", "lod.decide_s", 30.0)  # game seconds between a person's decisions (people.json lod.decide_s)
 ## Milliseconds of a frame the minds may take (people.json lod.mind_budget_ms): minds due past it wait for the next
