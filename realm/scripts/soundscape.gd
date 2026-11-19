@@ -145,6 +145,7 @@ var _rng := RandomNumberGenerator.new()
 ## sounds too (clips: each tool's strike measured on its clip).
 var sounds_v2: Node  # sound_v2.gd
 var _clip_sounds := CLIP_SOUNDS.duplicate()  # a move's sounds: the steps here, the tools' strikes from the table
+var _post_sounds := {}  # post -> clip -> [sound ("" for none), at, chance]: the same move heard as that work (sounds.json posts)
 
 
 func _ready() -> void:
@@ -155,7 +156,17 @@ func _ready() -> void:
 	add_child(sounds_v2)
 	for clip in (preload("res://scripts/data.gd").value("sounds", "clips", {}) as Dictionary):
 		var row: Dictionary = preload("res://scripts/data.gd").value("sounds", "clips", {})[clip]
-		_clip_sounds[clip] = [String(row["sound"]), row.get("at", [0.5])]
+		_clip_sounds[clip] = [String(row["sound"]), row.get("at", [0.5]), float(row.get("chance", 1.0))]
+	var posts: Dictionary = preload("res://scripts/data.gd").value("sounds", "posts", {})
+	for post in posts:
+		if String(post).begins_with("_"):
+			continue
+		var by_clip := {}
+		for clip in posts[post]:
+			var row: Dictionary = posts[post][clip]
+			var at: Array = row.get("at", (_clip_sounds.get(clip, ["", [0.5]]) as Array)[1])
+			by_clip[clip] = [String(row.get("sound", "")), at, float(row.get("chance", 1.0))]
+		_post_sounds[post] = by_clip
 	# Every clip anyone plays (people.gd): the work and the walking are heard in time with the move.
 	preload("res://scripts/people.gd").listen(_on_clip)
 	for bus in BUSES:
@@ -498,9 +509,20 @@ var _near_clips: Array = []  # the people with a sounding move near the camera, 
 var _near_in := 0.0
 
 
+## The sound of a move as this person makes it: their work's own (sounds.json posts: the same push is the bellows at the
+## forge, the dye stirred at the vats, the saw on a building site; npc_mind.gd puts the post on the body), else the
+## move's own (clips). [sound, at, chance], or [] for none.
+func _sound_of(person: Node3D, clip: String) -> Array:
+	var by_post: Dictionary = _post_sounds.get(String(person.get_meta(&"post", "")), {})
+	if by_post.has(clip):
+		return by_post[clip] if String(by_post[clip][0]) != "" else []
+	return _clip_sounds.get(clip, [])
+
+
 func _on_clip(person: Node3D, clip: String, period: float, looping: bool) -> void:
-	if _clip_sounds.has(clip) and period > 0.05:
-		_clips[person] = [clip, period, Time.get_ticks_msec() / 1000.0, looping, 0, 0]
+	var sound := _sound_of(person, clip)
+	if not sound.is_empty() and period > 0.05:
+		_clips[person] = [clip, period, Time.get_ticks_msec() / 1000.0, looping, 0, 0, sound]
 	else:
 		_clips.erase(person)  # a new move ends the old one's sounds
 
@@ -529,7 +551,7 @@ func _tick_clips(delta: float) -> void:
 		if not is_instance_valid(person) or not _clips.has(person):
 			continue
 		var c: Array = _clips[person]
-		var sound: Array = _clip_sounds[c[0]]
+		var sound: Array = c[6]
 		var t: float = now - float(c[2])
 		var cycle := int(t / float(c[1]))
 		if not c[3] and cycle > 0:
@@ -545,7 +567,7 @@ func _tick_clips(delta: float) -> void:
 			var at: Vector3 = (person as Node3D).global_position
 			if sound[0] == "step":
 				footstep(("stone" if _interior in ["chapel", "great_hall"] else "wood") if _interior != "" else ("snow" if _view["season"] == "winter" else "grass"), at)
-			else:
+			elif sound.size() < 3 or _rng.randf() < float(sound[2]):  # chance: a strike heard only now and then (a laugh, a haggle)
 				sounds_v2.play(String(sound[0]), at, "clip:" + String(c[0]))
 
 

@@ -751,6 +751,7 @@ static func give(person: Node3D, post: String, ground: Callable, seed: int, open
 			root.add_child(life_root.get_child(i).clone())
 		bt = BehaviorTree.new()
 		bt.root_task = root
+	person.set_meta(&"post", post)  # the work they're at: how their moves sound (soundscape.gd, sounds.json posts)
 	var player := BTPlayer.new()
 	player.name = "Mind"
 	player.set_scene_root_hint(person)  # made at runtime, with no owner: LimboAI needs to be told its scene
@@ -1991,6 +1992,7 @@ static func give_villager(person: Node3D, a: Dictionary, vill: Node) -> bool:
 	var acts := villager_activities(role)
 	if acts.is_empty():
 		return false
+	person.set_meta(&"post", role)  # their calling: how their moves sound (soundscape.gd, sounds.json posts)
 	var life := BTDynamicSelector.new()
 	life.add_child(villager_danger())
 	life.add_child(villager_fire())

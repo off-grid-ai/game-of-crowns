@@ -207,3 +207,79 @@ Freesound public HQ previews, each sound's own page checked for CC0 when fetched
 | `sparrows_2.ogg` | 33.0 s | Chipping sparrow | JPBILLINGSLEYJR | CC0 1.0 | [link](https://freesound.org/s/465889/) |
 | `owl_1.ogg` | 4.4 s | Owl Hoot | Breviceps | CC0 1.0 | [link](https://freesound.org/s/465697/) |
 | `owl_2.ogg` | 4.0 s | owl.wav | Anthousai | CC0 1.0 | [link](https://freesound.org/s/398734/) |
+
+## Daily life (`life/`)
+
+The townsfolk's and farmers' work, heard at the strike of each move (`realm/data/sounds.json` `posts` and `clips`): takes of 0.1 to 4 s cut from these recordings, normalised and encoded as Ogg Vorbis (Freesound HQ previews). Every one CC0 1.0; `life/license.txt` lists the same.
+
+| Files | Title | Author | Licence | Source |
+|---|---|---|---|---|
+| `dig_1.ogg, dig_2.ogg, dig_3.ogg, dig_4.ogg` | Digging a Hole and Shovelling Soil/Dirt 2 | Ali_6868 | CC0 1.0 | [link](https://freesound.org/s/384362/) |
+| `dig_b_1.ogg, dig_b_2.ogg` | Shovel_dirt.wav | dr19 | CC0 1.0 | [link](https://freesound.org/s/353907/) |
+| `saw_1.ogg, saw_2.ogg, saw_3.ogg, saw_4.ogg` | Hand Saw Sawing Wood | deleted_user_7146007 | CC0 1.0 | [link](https://freesound.org/s/383725/) |
+| `anvil_1.ogg, anvil_2.ogg, anvil_3.ogg, anvil_4.ogg` | Hammer and anvil | Duasun | CC0 1.0 | [link](https://freesound.org/s/321889/) |
+| `anvil_b_1.ogg` | Anvil Hit 2 | michorvath | CC0 1.0 | [link](https://freesound.org/s/270588/) |
+| `anvil_c_1.ogg` | Anvil Hit 1 | michorvath | CC0 1.0 | [link](https://freesound.org/s/270589/) |
+| `bellows_1.ogg, bellows_2.ogg, bellows_3.ogg` | 20180327_Bellows.wav | cabled_mess | CC0 1.0 | [link](https://freesound.org/s/567083/) |
+| `bellows_b_1.ogg` | bellows.wav | lensson | CC0 1.0 | [link](https://freesound.org/s/368498/) |
+| `quench_1.ogg, quench_2.ogg, quench_3.ogg` | Hot metal in water.wav | jokallset | CC0 1.0 | [link](https://freesound.org/s/395864/) |
+| `wash_1.ogg, wash_2.ogg, wash_3.ogg, wash_4.ogg` | Laundry - Handwash | Vrymaa | CC0 1.0 | [link](https://freesound.org/s/810878/) |
+| `wash_b_1.ogg` | Stirring Water Free | AardsReal | CC0 1.0 | [link](https://freesound.org/s/842166/) |
+| `scrape_1.ogg, scrape_2.ogg, scrape_3.ogg, scrape_4.ogg` | WOODFric_Knife Carving Wood_HvD_OwSFX | Hano_van_Dalen | CC0 1.0 | [link](https://freesound.org/s/767324/) |
+| `grind_1.ogg, grind_2.ogg, grind_3.ogg` | pestle and mortar empty and with grain | spanrucker | CC0 1.0 | [link](https://freesound.org/s/272229/) |
+| `grind_b_1.ogg` | Stone rolling on stone_pestle & mortar.wav | Alex_hears_things | CC0 1.0 | [link](https://freesound.org/s/316688/) |
+| `barrel_1.ogg, barrel_2.ogg, barrel_3.ogg` | Barrel rolling - Havoc Bazaar | Vrymaa | CC0 1.0 | [link](https://freesound.org/s/810894/) |
+| `drag_1.ogg` | heavy duty canvas bag dragged across dirt.wav | vckhaze | CC0 1.0 | [link](https://freesound.org/s/380699/) |
+| `set_down_1.ogg, set_down_2.ogg, set_down_3.ogg, set_down_4.ogg` | R26-06-Large Wood Object Put onto Wood Floor.wav | craigsmith | CC0 1.0 | [link](https://freesound.org/s/481903/) |
+| `sack_1.ogg, sack_2.ogg` | Bag Of Flour Dropped On Counter Top.wav | bbrocer | CC0 1.0 | [link](https://freesound.org/s/382642/) |
+| `rustle_1.ogg, rustle_2.ogg, rustle_3.ogg, rustle_4.ogg` | Plants or ferns - Manipulation & Hit | Vrymaa | CC0 1.0 | [link](https://freesound.org/s/770112/) |
+| `straw_1.ogg, straw_2.ogg, straw_3.ogg` | Straw bush rustling.wav | BonginkosiMakhubu190225 | CC0 1.0 | [link](https://freesound.org/s/542690/) |
+| `loom_1.ogg, loom_2.ogg, loom_3.ogg` | navette de métier à tisser.wav | Naïma | CC0 1.0 | [link](https://freesound.org/s/510266/) |
+| `loom_b_1.ogg` | Wooden hand Loom .mp3 | snapcam | CC0 1.0 | [link](https://freesound.org/s/582994/) |
+| `knead_1.ogg, knead_2.ogg, knead_3.ogg, knead_4.ogg` | Punching Dough.flac | qubodup | CC0 1.0 | [link](https://freesound.org/s/172489/) |
+| `knead_b_1.ogg` | Teig ausrollen.wav | gruenebanane | CC0 1.0 | [link](https://freesound.org/s/241813/) |
+| `pour_1.ogg` | pouring bucket | 13F_Panska_Koprivikova_Klara | CC0 1.0 | [link](https://freesound.org/s/378317/) |
+| `pour_b_1.ogg` | Water Pour | JohnsonBrandEditing | CC0 1.0 | [link](https://freesound.org/s/173930/) |
+| `pour_c_1.ogg, pour_c_2.ogg` | Pour Splash metal bucket water.mp3 | JohnsonBrandEditing | CC0 1.0 | [link](https://freesound.org/s/173938/) |
+| `milk_1.ogg, milk_2.ogg` | Milking an animal | melle_teich | CC0 1.0 | [link](https://freesound.org/s/565964/) |
+| `milk_b_1.ogg, milk_b_2.ogg` | Milking a cow.wav | soupods | CC0 1.0 | [link](https://freesound.org/s/576555/) |
+| `seed_1.ogg, seed_2.ogg, seed_3.ogg` | Cereals - Manipulation Wheat Barley Seed or Grain | Vrymaa | CC0 1.0 | [link](https://freesound.org/s/779176/) |
+| `seed_b_1.ogg` | Dropping handful of seeds / pills / beads into palm and onto table top- picking up | Wigglesworth | CC0 1.0 | [link](https://freesound.org/s/833732/) |
+| `scythe_1.ogg, scythe_2.ogg, scythe_3.ogg, scythe_4.ogg` | mowing with a scythe | blukotek | CC0 1.0 | [link](https://freesound.org/s/251660/) |
+| `sickle_1.ogg, sickle_2.ogg, sickle_3.ogg` | to cut and drag the grass with a knife and sickle.aif | hadescolossus | CC0 1.0 | [link](https://freesound.org/s/705228/) |
+| `prayer_1.ogg, prayer_2.ogg, prayer_3.ogg` | Some people praying into the "Abbaye de La Cambre" in Brussels, Belgium.  | felix.blume | CC0 1.0 | [link](https://freesound.org/s/117470/) |
+| `prayer_b_1.ogg` | Gregorian Chant in a Church in spain | Elmer_Tom | CC0 1.0 | [link](https://freesound.org/s/787598/) |
+| `lute_1.ogg, lute_2.ogg, lute_3.ogg` | Medieval Lute Chords | f-r-a-g-i-l-e | CC0 1.0 | [link](https://freesound.org/s/506266/) |
+| `lute_b_1.ogg` | 29.Lute.wav | miguelab1998 | CC0 1.0 | [link](https://freesound.org/s/408576/) |
+| `clap_1.ogg` | A Clap | maycuddlepie | CC0 1.0 | [link](https://freesound.org/s/330296/) |
+| `clap_b_1.ogg, clap_b_2.ogg` | clapping group unisono | Yuval | CC0 1.0 | [link](https://freesound.org/s/197435/) |
+| `clap_c_1.ogg` | crowd clap rhythmic.wav | johnnyguitar01 | CC0 1.0 | [link](https://freesound.org/s/424793/) |
+| `children_1.ogg, children_2.ogg, children_3.ogg` | children playing | goldkelchen | CC0 1.0 | [link](https://freesound.org/s/371377/) |
+| `children_b_1.ogg, children_b_2.ogg` | children1.mp3 | yacou | CC0 1.0 | [link](https://freesound.org/s/190894/) |
+| `children_c_1.ogg, children_c_2.ogg` | Kids laughing | kikorurelas | CC0 1.0 | [link](https://freesound.org/s/642516/) |
+| `children_d_1.ogg` | young girls giggling and laughing.wav | tuhinpaul | CC0 1.0 | [link](https://freesound.org/s/342838/) |
+| `laugh_1.ogg, laugh_2.ogg, laugh_3.ogg, laugh_4.ogg` | Laughs_ses2.wav | freesound | CC0 1.0 | [link](https://freesound.org/s/25296/) |
+| `laugh_b_1.ogg` | crowd_laugh.wav | moxobna | CC0 1.0 | [link](https://freesound.org/s/76693/) |
+| `laugh_c_1.ogg` | Laugh_old_man_6.wav | deleted_user_2104797 | CC0 1.0 | [link](https://freesound.org/s/166150/) |
+| `drink_1.ogg, drink_2.ogg, drink_3.ogg` | beer mugs | daddy_z | CC0 1.0 | [link](https://freesound.org/s/635375/) |
+| `drink_b_1.ogg` | Drink Sip and Swallow | OwlStorm | CC0 1.0 | [link](https://freesound.org/s/320139/) |
+| `drink_c_1.ogg` | Drinking.wav | craigglenday | CC0 1.0 | [link](https://freesound.org/s/517173/) |
+| `haggle_1.ogg, haggle_2.ogg, haggle_3.ogg` | S032_Voices_in_Bazaar_Mono.wav | Pól | CC0 1.0 | [link](https://freesound.org/s/385915/) |
+| `haggle_b_1.ogg, haggle_b_2.ogg` | market bazaar.wav | blukotek | CC0 1.0 | [link](https://freesound.org/s/412824/) |
+| `well_1.ogg, well_2.ogg, well_3.ogg` | water well with knob and rope.wav | Fedor_Ogon | CC0 1.0 | [link](https://freesound.org/s/649240/) |
+| `well_b_1.ogg` | Wooden Crank, Handle with rope, winding.wav | aUREa | CC0 1.0 | [link](https://freesound.org/s/491705/) |
+| `brush_1.ogg, brush_2.ogg, brush_3.ogg` | Scrubbing Brush | Ultra-Edward | CC0 1.0 | [link](https://freesound.org/s/792565/) |
+| `mallet_1.ogg, mallet_2.ogg, mallet_3.ogg` | Hammering_Wood.wav | CapsLok | CC0 1.0 | [link](https://freesound.org/s/204946/) |
+| `mallet_b_1.ogg, mallet_b_2.ogg` | hammer pounding on wood.wav | Ryujin95 | CC0 1.0 | [link](https://freesound.org/s/394891/) |
+| `mallet_c_1.ogg` | Hitting nails with Hammer.wav | aidansamuel | CC0 1.0 | [link](https://freesound.org/s/540139/) |
+| `swish_1.ogg` | Swing.mp3 | XxChr0nosxX | CC0 1.0 | [link](https://freesound.org/s/268227/) |
+| `swish_b_1.ogg` | Woosh 2.mp3 | XxChr0nosxX | CC0 1.0 | [link](https://freesound.org/s/268226/) |
+| `swish_c_1.ogg` | swing.mp3 | GaussTheWizard | CC0 1.0 | [link](https://freesound.org/s/367182/) |
+| `bow_1.ogg` | Bow_release.wav | PorkMuncher | CC0 1.0 | [link](https://freesound.org/s/263675/) |
+| `bow_b_1.ogg` | Longbow Release 2.wav | saturdaysoundguy | CC0 1.0 | [link](https://freesound.org/s/394179/) |
+| `bow_c_1.ogg` | Arrow Release and Hit.wav | calvarychurchatlanta | CC0 1.0 | [link](https://freesound.org/s/179996/) |
+| `weep_1.ogg, weep_2.ogg` | crying woman.wav | AlucardsBride | CC0 1.0 | [link](https://freesound.org/s/172738/) |
+| `weep_b_1.ogg` | womancrying.wav | RebekahDay | CC0 1.0 | [link](https://freesound.org/s/171946/) |
+| `mob_1.ogg, mob_2.ogg, mob_3.ogg` | angry mob loop.aiff | bevibeldesign | CC0 1.0 | [link](https://freesound.org/s/316640/) |
+| `pick_1.ogg, pick_2.ogg, pick_3.ogg, pick_4.ogg` | Mining with Pick Axe in a group | MiraclesHappen | CC0 1.0 | [link](https://freesound.org/s/457585/) |
+| `pick_b_1.ogg` | Pickaxe #2.wav | abstraktgeneriert | CC0 1.0 | [link](https://freesound.org/s/233630/) |
