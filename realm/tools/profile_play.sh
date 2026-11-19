@@ -19,15 +19,22 @@ done
 echo $$ > $LOCK/pid
 trap 'rm -rf $LOCK' EXIT
 mkdir -p "$OUT/hand"; rm -f "$OUT/go" "$OUT/prof.txt"
-printf 'wait 30\nclick 0.4995 0.385\nwait 100\nclick 0.5 0.5\nwait 5\n' > "$OUT/hand/cmd.txt"
+# The same view every run, so runs compare: Continue, the court card clicked away, the King's own view of Kingsmere
+# (the Hand's home), a frame saved as the profile starts (start.png) and as it ends (end.png): proof of what was measured.
+rm -f "$OUT/hand/done.txt"
+printf 'wait 30\nbutton Continue\nwait 100\nclick 0.5 0.5\nwait 5\nhome Kingsmere 0 1\nwait 10\nsnap start\n' > "$OUT/hand/cmd.txt"
 export XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR:-/run/user/$(id -u)} DISPLAY=${DISPLAY:-:0}
 timeout 900 godot --headless --path . -s res://tools/profiler.gd -- --port=$PORT --start-file="$OUT/go" --seconds=$SECS --out="$OUT/prof.txt" > "$OUT/server.log" 2>&1 &
 for i in $(seq 1 120); do grep -q listening "$OUT/server.log" 2>/dev/null && break; sleep 1; done
 GOC_HAND="$OUT/hand" timeout 900 godot --path . --resolution $RES --position 10000,10000 --disable-vsync --remote-debug tcp://127.0.0.1:$PORT > "$OUT/game.log" 2>&1 &
 G=$!
-sleep 175; touch "$OUT/go"  # the realm in play: Continue at 30 s, the court card clicked at 130 s
+for i in $(seq 1 300); do [ -f "$OUT/hand/done.txt" ] && break; sleep 1; done
+touch "$OUT/go"  # the realm in play, framed
 for i in $(seq 1 600); do grep -q "messages" "$OUT/server.log" 2>/dev/null && break; sleep 2; done
+rm -f "$OUT/hand/done.txt"; printf 'snap end\n' > "$OUT/hand/cmd.txt"
+for i in $(seq 1 60); do [ -f "$OUT/hand/done.txt" ] && break; sleep 1; done
 kill $G 2>/dev/null
 grep -q "signal 11" "$OUT/game.log" && echo "THE GAME CRASHED (game.log)"
 python3 -I tools/profile_report.py "$OUT/prof.txt" > "$OUT/report.txt"
 head -40 "$OUT/report.txt"
+echo "frames: $OUT/hand/start.png $OUT/hand/end.png"
