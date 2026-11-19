@@ -63,9 +63,12 @@ var _keep_y := false  # a given way keeps its own heights (a wall walk): no grou
 var _way := PackedVector3Array()
 var _i := 0
 var _then := Callable()
-var _ask_to := Vector3.INF  # a route asked for that the navigation can't give yet: asked again each frame
+var _ask_to := Vector3.INF  # a route asked for and not given yet: asked on a worker, again once an ask comes back empty
 var _ask_got := Callable()  # (way) -> what to do with it once given
 var _asked_s := 0.0  # seconds this route has been asked for without an answer
+var _ask: RouteAsk = null  # route_to's ask out on a worker now
+var _steer_ask: RouteAsk = null  # toward()'s
+var _engine_ask: RouteAsk = null  # _engine_ahead()'s way round an engine
 
 
 ## The body's Mover, made on first ask: everything that moves has exactly one.
@@ -101,16 +104,19 @@ func go(to: Vector3, then := Callable()) -> void:
 	route_to(to, func(way: PackedVector3Array): _begin(way, then, true, false))
 
 
-## The route from where the body stands to `to`, handed to `got` (way) once the navigation can give it: at once
-## where it can; else the body stands and asks again each frame until the navigation is ready. One waiting rule for every mover; nothing crosses a town in a straight line meanwhile.
+## The route from where the body stands to `to`, handed to `got` (way) once the navigation gives it: at once for a
+## short clear step; else asked of the map on a worker (_ask_route) while the body stands, and handed over on the main
+## thread a frame or so later. An ask that comes back empty (the map can't give it yet) is asked again, one at a time.
+## One waiting rule for every mover; nothing crosses a town in a straight line meanwhile.
 func route_to(to: Vector3, got: Callable) -> void:
 	var body := get_parent() as Node3D
 	if body == null:
 		return
-	var way := _route(body.global_position, to)
-	if not way.is_empty():
+	var quick := _quick(body.global_position, to)
+	if not quick.is_empty():
+		_let_asks()
 		_ask_got = Callable()
-		got.call(way)
+		got.call(quick)
 		return
 	_way = PackedVector3Array()
 	_then = Callable()
@@ -118,6 +124,8 @@ func route_to(to: Vector3, got: Callable) -> void:
 	_ask_to = to
 	_ask_got = got
 	_asked_s = 0.0
+	_drop(_ask)
+	_ask = _ask_route(body.global_position, to)
 	set_process(true)
 
 
@@ -132,25 +140,45 @@ func follow(way: PackedVector3Array, then := Callable()) -> void:
 ## start). Its last leg goes on to the mark itself where the mark is ground a body may stand on and the way in is
 ## clear (a man joining his own regiment's block, which the map carves out: standing is the land's); a mark in water,
 ## in a building or out of reach keeps the route's own end, the nearest point the map has.
+## Asked on the main thread, the map's query in it: only _held_by's way round a body in a cart's way (once after
+## wait_max() held, rare) asks this way; every other route is asked on a worker (_ask_route).
 func _route(from: Vector3, to: Vector3) -> PackedVector3Array:
-	if nav == NavWorld.WATER:
-		return NavWorld.path(from, to, NavWorld.WATER)  # a ship: the sea's and lakes' map, never the land
-	# A step to the next cell or so on clear ground goes straight (_clear_leg: nothing stands on it, off every engine):
-	# the map is asked only round what stands. Each ask of the realm's map costs ~2 ms however short; a field battle's
-	# men asked one a cell step (ground.json nav.straight; Mac 2026-11-17, "fix the FPS").
-	if Vector2(to.x - from.x, to.z - from.z).length() < Data.num("ground", "nav.straight", 0.6):
-		var ts := Time.get_ticks_usec() if PerfTools.probing else 0
-		var clear := _clear_leg(from, to)
-		if PerfTools.probing:
-			PerfTools.add("mover.straight", Time.get_ticks_usec() - ts)
-		if clear:
-			return PackedVector3Array([to])
-	# A horse or a cart (it steers on an arc) walks the wide map: kept a wagon's half-width off everything standing.
+	var quick := _quick(from, to)
+	if not quick.is_empty():
+		return quick
 	var tp := Time.get_ticks_usec() if PerfTools.probing else 0
-	var way := NavWorld.path(from, to, &"wide" if turn_radius > 0.0 else nav)
+	var way := NavWorld.path(from, to, _kind())
 	if PerfTools.probing:
 		PerfTools.add("mover.path", Time.get_ticks_usec() - tp)
-	if way.is_empty():
+	return _ended(way, to)
+
+
+## The map a route of this body is asked of: a ship's the sea's and lakes' (never the land); a horse or a cart (it
+## steers on an arc) the wide map, kept a wagon's half-width off everything standing; else its own `nav`.
+func _kind() -> StringName:
+	if nav == NavWorld.WATER:
+		return NavWorld.WATER
+	return &"wide" if turn_radius > 0.0 else nav
+
+
+## A step to the next cell or so on clear ground goes straight (_clear_leg: nothing stands on it, off every engine):
+## the map is asked only round what stands. Each ask of the realm's map costs ~2 ms however short; a field battle's
+## men asked one a cell step (ground.json nav.straight; Mac 2026-11-17, "fix the FPS"). Empty when the map must be
+## asked. On the main thread (ground.gd is).
+func _quick(from: Vector3, to: Vector3) -> PackedVector3Array:
+	if nav == NavWorld.WATER or Vector2(to.x - from.x, to.z - from.z).length() >= Data.num("ground", "nav.straight", 0.6):
+		return PackedVector3Array()
+	var ts := Time.get_ticks_usec() if PerfTools.probing else 0
+	var clear := _clear_leg(from, to)
+	if PerfTools.probing:
+		PerfTools.add("mover.straight", Time.get_ticks_usec() - ts)
+	return PackedVector3Array([to]) if clear else PackedVector3Array()
+
+
+## The map's way on to the mark itself, on the main thread (ground.gd is): its last leg goes on to `to` where the mark
+## is ground a body may stand on and the way in is clear; a ship's way, or an empty one, as it came.
+func _ended(way: PackedVector3Array, to: Vector3) -> PackedVector3Array:
+	if way.is_empty() or nav == NavWorld.WATER:
 		return way
 	var end := way[way.size() - 1]
 	var tc := Time.get_ticks_usec() if PerfTools.probing else 0
@@ -159,6 +187,136 @@ func _route(from: Vector3, to: Vector3) -> PackedVector3Array:
 	if PerfTools.probing:
 		PerfTools.add("mover.clear_leg", Time.get_ticks_usec() - tc)
 	return way
+
+
+# --- Routes asked off the main thread ----------------------------------------------------------------------------
+
+## A route asked of the realm's map on a worker (Godot's WorkerThreadPool; NavWorld.answer touches only the server,
+## whose map queries are thread-safe): Godot's profiler in play put query_path on the main thread at 11 ms a call and
+## 43 ms a frame (Mac 2026-11-19). Every Mover's asks go out together as one batch on one worker at a time, as the
+## roads route theirs (roads.gd _route_all): a task an ask filled the pool and starved the server's own map sync of
+## its workers (the game hung on Continue). The worker writes only `way`; `done` is set on the main thread when the
+## batch is collected (_pump). The batch holds the ask, so a Mover freed or stopped meanwhile is never written to.
+class RouteAsk extends RefCounted:
+	var to := Vector3.INF  # the mark asked for
+	var landed := false  # NavWorld.path_landed's ask: the part of the way that has landed
+	var q: NavigationPathQueryParameters3D
+	var way := PackedVector3Array()
+	var done := false
+
+
+static var _waiting: Array = []  # asks not yet sent: the next batch
+static var _batch: Array = []  # the batch on the worker now
+static var _batch_task := -1
+
+
+## Asks the route from `from` to `to` on a worker (path_landed's when `landed`); null when the map can't answer it yet
+## (nothing asked: the caller asks again later).
+func _ask_route(from: Vector3, to: Vector3, landed := false) -> RouteAsk:
+	var q := NavWorld.ask(from, to, nav if landed else _kind(), landed)
+	if q == null:
+		return null
+	var a := RouteAsk.new()
+	a.to = to
+	a.landed = landed
+	a.q = q
+	_waiting.append(a)
+	var tree := Engine.get_main_loop() as SceneTree
+	if tree and not tree.process_frame.is_connected(_pump):
+		tree.process_frame.connect(_pump)
+	return a
+
+
+## Each frame (the SceneTree's process_frame): the batch back from the worker collected (its asks marked done), and
+## the asks waiting since sent as the next batch. Never waits on a task still running.
+static func _pump() -> void:
+	if _batch_task >= 0:
+		if not WorkerThreadPool.is_task_completed(_batch_task):
+			return
+		WorkerThreadPool.wait_for_task_completion(_batch_task)
+		_batch_task = -1
+		for a: RouteAsk in _batch:
+			a.done = true
+		_batch = []
+	if _waiting.is_empty():
+		return
+	_batch = _waiting  # one given up (_drop) was taken off it
+	_waiting = []
+	_batch_task = WorkerThreadPool.add_task(_answer_all.bind(_batch), false, "routes")
+
+
+## On the worker: each ask of the batch answered in turn.
+static func _answer_all(batch: Array) -> void:
+	for a: RouteAsk in batch:
+		a.way = NavWorld.answer(a.q)
+
+
+## Whether the ask's answer is in: never blocks.
+static func _done(a: RouteAsk) -> bool:
+	return a.done
+
+
+## Gives an ask up: one not sent yet never is; one on the worker is let go with its batch.
+static func _drop(a: RouteAsk) -> void:
+	if a != null and not a.done:
+		_waiting.erase(a)
+
+
+## Every ask this Mover has out given up (a new walk, a stop, the body gone).
+func _let_asks() -> void:
+	_drop(_ask)
+	_drop(_steer_ask)
+	_drop(_engine_ask)
+	_ask = null
+	_steer_ask = null
+	_engine_ask = null
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_PREDELETE:
+		_let_asks()
+
+
+## A route_to that waits (_walk, each frame while asked): its ask's answer handed over once in (the end leg laid here,
+## on the main thread); an empty answer asked again; past ground.json nav.ask_s without one, the part of the way that
+## has landed walked first.
+func _asking(body: Node3D, delta: float) -> void:
+	_asked_s += delta
+	if _ask != null:
+		if not _done(_ask):
+			return
+		var a := _ask
+		_ask = null
+		if a.landed:
+			_walk_landed(body, a.way)
+			return
+		var way := _ended(a.way, a.to)
+		if not way.is_empty():
+			var got := _ask_got
+			_ask_got = Callable()
+			got.call(way)
+		return  # empty: asked again next frame
+	# The map can't give the whole route yet (chunks on its far end not landed; far towns stream, so they may not for
+	# minutes). Past ground.json nav.ask_s he walks the part of it that has landed, toward the mark, and asks again
+	# from there (Kingsmere 2026-11-17: 108 of 145 statue-seconds were men asking).
+	if _asked_s >= Data.num("ground", "nav.ask_s", 1.0):
+		_asked_s = 0.0
+		_ask = _ask_route(body.global_position, _ask_to, true)
+		if _ask != null:
+			return
+	_ask = _ask_route(body.global_position, _ask_to)
+
+
+## The landed part of a waited-for way, walked when it brings him nearer the mark; then he asks again from its end.
+func _walk_landed(body: Node3D, part: PackedVector3Array) -> void:
+	var here := Vector2(body.global_position.x, body.global_position.z)
+	var mark := Vector2(_ask_to.x, _ask_to.z)
+	if part.size() < 2 or here.distance_to(mark) - Vector2(part[part.size() - 1].x, part[part.size() - 1].z).distance_to(mark) < 0.1:
+		return  # nothing landed nearer the mark: he stands and asks again
+	var to := _ask_to
+	var got_later := _ask_got
+	_ask_got = Callable()
+	_begin(part, func(): route_to(to, got_later), true, false)
 
 
 ## Whether a body may walk straight from `a` to `b` (world) and stand there: every step of the way on ground nothing
@@ -209,6 +367,7 @@ func _begin(way: PackedVector3Array, then: Callable, face: bool, keep_y: bool) -
 	_keep_y = keep_y
 	_steer = false
 	_ask_got = Callable()
+	_let_asks()
 	_waited = 0.0
 	_went_round = false
 	_blocked = null
@@ -225,6 +384,7 @@ func stop() -> void:
 	_steer = false
 	_shifting = false
 	_ask_got = Callable()
+	_let_asks()
 	set_process(false)
 
 
@@ -266,31 +426,50 @@ func toward(goal: Vector3, pace: float, look := Vector3.ZERO) -> void:
 	# counted twice re-routed every man every ask and made the next frame slower still.
 	# A body standing on a mark that hasn't moved has no way to find: the timed re-ask is for one still on his way (a
 	# field battle's men at grips asked twice a second, 4-5 ms each on the realm's map, Mac 2026-11-17 "fix the FPS").
+	# The way is asked on a worker (_ask_route), one ask out at a time: a steering man walks his last way meanwhile, one
+	# with none stands. Its answer is taken here, on the main thread, the next time he is steered.
+	if _steer_ask != null and _done(_steer_ask):
+		var a := _steer_ask
+		_steer_ask = null
+		_steer_way(body, _ended(a.way, a.to), a.to)
 	var now := Time.get_ticks_msec()
 	var moved := Vector2(goal.x - _goal.x, goal.z - _goal.z).length() > 0.05
 	var there := Vector2(goal.x - body.global_position.x, goal.z - body.global_position.z).length() < 0.03
-	if not _steer or moved or (now >= _reroute and not there):
+	if _steer_ask == null and (not _steer or moved or (now >= _reroute and not there)):
 		_reroute = now + int(_steer_num("reroute", 0.5) * 1000.0)
 		_goal = goal
-		var way := _route(body.global_position, goal)
-		if way.is_empty():
-			# Its ground not laid yet (or a town's walk map still baking): he stands, and asks again next frame.
-			_way = PackedVector3Array()
-			_steer = false
-			_vel = Vector3.ZERO
-			_reroute = 0
-			if not _ask_got.is_valid():
-				set_process(false)
-			return
-		if way.size() > 1 and Vector2(way[0].x - body.global_position.x, way[0].z - body.global_position.z).length() < 0.02:
-			way = way.slice(1)
-		# The route's end is the mark itself where it may be stood on (_route); a mark in water, in a building or out of
-		# reach keeps the route's own end (g37/g38: a goal in the sea or a cottage put back as the last step).
-		_way = way if not way.is_empty() else PackedVector3Array([goal])
-		_i = 0
+		var quick := _quick(body.global_position, goal)
+		if not quick.is_empty():
+			_steer_way(body, quick, goal)
+		else:
+			_steer_ask = _ask_route(body.global_position, goal)
+	if not _steer:
+		# No way yet (asked, or its ground not laid yet, or a town's walk map still baking): he stands, and asks again.
+		_way = PackedVector3Array()
 		_then = Callable()
-	_steer = true
+		_vel = Vector3.ZERO
+		if not _ask_got.is_valid():
+			set_process(false)
+		return
 	set_process(true)
+
+
+## A steering man's new way to `goal` (empty: none can be given yet, he stands and asks again at his next steer).
+func _steer_way(body: Node3D, way: PackedVector3Array, goal: Vector3) -> void:
+	if way.is_empty():
+		_way = PackedVector3Array()
+		_steer = false
+		_vel = Vector3.ZERO
+		_reroute = 0
+		return
+	if way.size() > 1 and Vector2(way[0].x - body.global_position.x, way[0].z - body.global_position.z).length() < 0.02:
+		way = way.slice(1)
+	# The route's end is the mark itself where it may be stood on (_ended); a mark in water, in a building or out of
+	# reach keeps the route's own end (g37/g38: a goal in the sea or a cottage put back as the last step).
+	_way = way if not way.is_empty() else PackedVector3Array([goal])
+	_i = 0
+	_then = Callable()
+	_steer = true
 
 
 ## Joins a crowd (an avoidance map, NavigationServer3D's RVO) as a body of `kind` (ground.json nav.avoid: man, horse,
@@ -716,6 +895,7 @@ func _held_by(body: Node3D, by: Node3D, delta: float) -> void:
 		if across.dot(Vector3(end.x - q.x, 0, end.z - q.z)) < 0.0:
 			across = -across  # round the side nearer where it is bound
 		var beside := q + across * (side * 2.5 + turn_radius * 0.5)
+		# Asked on the main thread (two map queries): once a cart has been held wait_max(), rare enough to keep simple.
 		var first := _route(at, beside)
 		var rest := _route(beside, end)
 		if first.size() >= 2 and rest.size() >= 2:
@@ -957,28 +1137,7 @@ func _walk(delta: float) -> void:
 		_tell_crowd(body, (body.global_position - _was) / maxf(delta, 0.001) if _was != Vector3.INF else Vector3.ZERO)
 		_was = body.global_position
 	if body != null and _ask_got.is_valid():
-		var way := _route(body.global_position, _ask_to)
-		if way.is_empty():
-			# The map can't give the whole route yet (chunks on its far end not landed; far towns stream, so they may
-			# not for minutes). Past ground.json nav.ask_s he walks the part of it that has landed, toward the mark,
-			# and asks again from there (Kingsmere 2026-11-17: 108 of 145 statue-seconds were men asking).
-			_asked_s += delta
-			if _asked_s < Data.num("ground", "nav.ask_s", 1.0):
-				return
-			_asked_s = 0.0
-			var part := NavWorld.path_landed(body.global_position, _ask_to, nav)
-			var here := Vector2(body.global_position.x, body.global_position.z)
-			var mark := Vector2(_ask_to.x, _ask_to.z)
-			if part.size() < 2 or here.distance_to(mark) - Vector2(part[part.size() - 1].x, part[part.size() - 1].z).distance_to(mark) < 0.1:
-				return  # nothing landed nearer the mark: he stands and asks again
-			var to := _ask_to
-			var got_later := _ask_got
-			_ask_got = Callable()
-			_begin(part, func(): route_to(to, got_later), true, false)
-			return
-		var got := _ask_got
-		_ask_got = Callable()
-		got.call(way)
+		_asking(body, delta)
 		return
 	if body != null and _steer:
 		_steer_step(body, delta)
@@ -1044,6 +1203,8 @@ func _engine_ahead(at: Vector3, aim: Vector3, delta: float) -> bool:
 	var flat := Vector2(aim.x - at.x, aim.z - at.z)
 	if flat.length() < 0.001 or not NavWorld.off_engines(at, nav):
 		_engine_wait = 0.0
+		_drop(_engine_ask)
+		_engine_ask = null
 		return false
 	var look := _steer_num("engine_look", 0.4)
 	var blocked := false
@@ -1064,13 +1225,27 @@ func _engine_ahead(at: Vector3, aim: Vector3, delta: float) -> bool:
 		j += 1
 	if not blocked:
 		_engine_wait = 0.0
+		_drop(_engine_ask)
+		_engine_ask = null
 		return false
+	# The way round is asked on a worker (_ask_route) while the block waits; taken once its answer is in.
+	if _engine_ask != null:
+		if _done(_engine_ask):
+			var a := _engine_ask
+			_engine_ask = null
+			var round_it := _ended(a.way, a.to)
+			if not round_it.is_empty():
+				_begin(round_it, _then, _face, _keep_y)
+		return true
 	_engine_wait += delta
 	if _engine_wait >= _steer_num("engine_reask", 0.5):
 		_engine_wait = 0.0
-		var way := _route(at, _way[_way.size() - 1])
-		if not way.is_empty():
-			_begin(way, _then, _face, _keep_y)
+		var end := _way[_way.size() - 1]
+		var quick := _quick(at, end)
+		if not quick.is_empty():
+			_begin(quick, _then, _face, _keep_y)
+		else:
+			_engine_ask = _ask_route(at, end)
 	return true
 
 

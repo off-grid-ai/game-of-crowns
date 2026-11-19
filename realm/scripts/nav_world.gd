@@ -213,10 +213,23 @@ static func _confirm() -> void:
 ## (funnel), from the navmesh point nearest `from` to the one nearest `to`. Empty while the map isn't ready. Safe on
 ## any thread (NavigationServer3D's map queries are).
 static func path(from: Vector3, to: Vector3, kind: StringName = &"walk") -> PackedVector3Array:
-	# A route needs the ground it crosses, not the whole realm (Mac 2026-11-16, the field battle: every foot block stood
-	# 24 s with an empty route while far chunks were still baking): the chunks under its start and end have landed.
-	if not ready(kind) and not (_chunk_landed(from, kind) and _chunk_landed(to, kind)):
-		return PackedVector3Array()
+	return answer(ask(from, to, kind))
+
+
+## The query for path() from `from` to `to` on `kind`'s map, or null while the map can't answer it: on the main thread
+## (it reads what has landed), cheap. A route needs the ground it crosses, not the whole realm (Mac 2026-11-16, the field
+## battle: every foot block stood 24 s with an empty route while far chunks were still baking): the chunks under its
+## start and end have landed. `landed`: path_landed's query instead (only the chunk under `from` need have landed).
+## answer() runs it on any thread: mover.gd asks its routes on WorkerThreadPool (Godot's profiler in play, Mac
+## 2026-11-19: query_path on the main thread, 11 ms a call, 43 ms a frame).
+static func ask(from: Vector3, to: Vector3, kind: StringName = &"walk", landed := false) -> NavigationPathQueryParameters3D:
+	if not _maps.has(kind):
+		return null
+	if landed:
+		if not _chunk_landed(from, kind):
+			return null
+	elif not ready(kind) and not (_chunk_landed(from, kind) and _chunk_landed(to, kind)):
+		return null
 	var q := NavigationPathQueryParameters3D.new()
 	q.map = _maps[kind]
 	q.start_position = from
@@ -224,6 +237,14 @@ static func path(from: Vector3, to: Vector3, kind: StringName = &"walk") -> Pack
 	q.pathfinding_algorithm = NavigationPathQueryParameters3D.PATHFINDING_ALGORITHM_ASTAR
 	q.path_postprocessing = NavigationPathQueryParameters3D.PATH_POSTPROCESSING_CORRIDORFUNNEL
 	q.simplify_path = false  # the funnel's corners are the route; simplifying cut them into what stands
+	return q
+
+
+## The way a query asks for (Godot's query on the navmesh, the corridor pulled straight), empty for none. Safe on any
+## thread: it touches only the server (NavigationServer3D's map queries are thread-safe), nothing of ours.
+static func answer(q: NavigationPathQueryParameters3D) -> PackedVector3Array:
+	if q == null:
+		return PackedVector3Array()
 	var r := NavigationPathQueryResult3D.new()
 	NavigationServer3D.query_path(q, r)
 	return r.path
@@ -233,18 +254,7 @@ static func path(from: Vector3, to: Vector3, kind: StringName = &"walk") -> Pack
 ## `to`, or to the nearest point to it the landed map holds (a mark on ground still streaming). mover.gd walks it when
 ## path() can't answer yet, then asks again from its end.
 static func path_landed(from: Vector3, to: Vector3, kind: StringName = &"walk") -> PackedVector3Array:
-	if not _maps.has(kind) or not _chunk_landed(from, kind):
-		return PackedVector3Array()
-	var q := NavigationPathQueryParameters3D.new()
-	q.map = _maps[kind]
-	q.start_position = from
-	q.target_position = to
-	q.pathfinding_algorithm = NavigationPathQueryParameters3D.PATHFINDING_ALGORITHM_ASTAR
-	q.path_postprocessing = NavigationPathQueryParameters3D.PATH_POSTPROCESSING_CORRIDORFUNNEL
-	q.simplify_path = false
-	var r := NavigationPathQueryResult3D.new()
-	NavigationServer3D.query_path(q, r)
-	return r.path
+	return answer(ask(from, to, kind, true))
 
 
 ## Whether the chunk under `p` (world) has its first mesh on `kind`'s map (baked or read back once).
