@@ -79,7 +79,7 @@ say() { echo "$(date +%T) $*" | tee -a $OUT/pass.log; }
 
 # --- the stops --------------------------------------------------------------------------------------------------------
 [ -e /tmp/goc-no-render ] && { echo "render_pass: /tmp/goc-no-render is there (Mac's stop); nothing run"; exit 2; }
-if (ps -eo args= | grep -E '^([^ ]*/)?(arch -arm64 )?[Gg]odot[^ /]*( |$)') | grep -v -e "--headless" | grep -q .; then
+if (ps -eo args= | grep -E '^([^ ]*/)?(arch -arm64 )?[Gg]odot[^ /]*( |$)') | grep -v -e "--headless" -e "--remote-debug" | grep -q .; then
   echo "render_pass: a windowed Godot is up (Mac's game or another render); nothing run"; exit 2
 fi
 for p in $PORT $FC; do lsof -iTCP:$p -sTCP:LISTEN > /dev/null 2>&1 && { echo "render_pass: port $p is taken; set PORT and FC"; exit 2; }; done

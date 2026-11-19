@@ -16,9 +16,10 @@ LOCK=/tmp/goc-render.lock
 OUT=$1; shift
 # Ali's game: a Godot that isn't a render, a movie take or a headless check.
 # (ps, not pgrep -fl: on Linux pgrep -l prints the name alone, so every render took itself for the game and quit.)
+# A profiled run (--remote-debug: tools/profile_play.sh) is a measuring tool, not the player: renders go on beside it.
 # (Only real Godot binaries count: the shells and greps that mention "godot" in
 # their own command lines, this check included, must not.)
-playing() { (ps -eo args= | grep -E '^([^ ]*/)?(arch -arm64 )?[Gg]odot[^ /]*( |$)') | grep -v -e "--shot=" -e "--write-movie" -e "--headless" | grep -q .; }
+playing() { (ps -eo args= | grep -E '^([^ ]*/)?(arch -arm64 )?[Gg]odot[^ /]*( |$)') | grep -v -e "--shot=" -e "--write-movie" -e "--headless" -e "--remote-debug" | grep -q .; }
 # PRIORITY=1 (the launch kit) goes first: other renders hold back while any
 # prioritised render is waiting or running.
 PRI=/tmp/goc-render.priority
