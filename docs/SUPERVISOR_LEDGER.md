@@ -55,6 +55,17 @@ Where things stand, so any agent can take over. Newest first, short. The full hi
   partner).
 
 ## Log
+- 11-20 03:10 Townsfolk round (Mac: 'the humans look pixelated and rough', 'something we created'; Mac asleep,
+  calls mine, reviewable). Measured in Kingsmere's square (autoplay poses): 60-82% of the people on screen stood in
+  T-pose, a move playing and the bones at rest. Causes: poses on the WorkerThreadPool (48a4b7f4; 16,130
+  emit_signalp errors a run) and the cold-pose queue starving bodies (547e1b4d). Landed: 0f05dd6b poses on the main
+  thread, pool and cold queue gone (0 of 146-155 frozen); f6f5dcda shadows and full frame rate for folk outside
+  Smooth; 69c59ccb folk keep every triangle; 11912a05 Finest supersamples 2x (A/B: cleaner than MSAA, TAA, FXAA);
+  9e9b065c + 3bcbce6b three Meshy folk (peasant woman, peasant man, town guard; ~26k tris each vs 8k; 120 credits,
+  926 left) in the cast beside the old members. Decisions for Mac: retire the old cartoon-style cast in favour of
+  the gritty Meshy ones (only 3 so far: more to make); the nearest zoom stays 10 (his call). Open: the King's host
+  block in the square still reads pale and stippled (army visuals, not townsfolk); 17 'node not found
+  GeneralSkeleton' errors a run; the bridge crashes on a torn history.jsonl line after a reboot (fixed by hand).
 - 11-18 Release round. Bottleneck: the release build, 0 of 4 Build (Mac) runs ever finished; 2 hung 1 h 47 min in the
   town bake (silent after Gildport, watchdog never fired). Measured: bake 162 s here (10 cores), frozen at 3 threads;
   thread samples showed a low-priority deadlock (Godot gives low-priority tasks 0.3 of the pool; every one of ours is
