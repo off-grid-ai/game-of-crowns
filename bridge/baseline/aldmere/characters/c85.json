@@ -1,27 +1,25 @@
 {
   "id": "c85",
-  "name": "Agnes Dale",
+  "name": "Imania undefined",
   "gender": "female",
-  "age": 20,
+  "age": 16,
   "alive": true,
   "traits": [
-    "patient",
-    "proud"
+    "ambitious",
+    "brave"
   ],
-  "loyalty": 80,
+  "loyalty": 82,
   "goals": [],
   "relationships": {},
   "memories": [],
   "spouse": null,
   "children": [],
-  "surname": "Dale",
-  "house": "House Wolfholt",
-  "playerId": 0,
+  "house": "House Ironreach",
+  "playerId": 2,
   "rank": "heir",
   "liege": "c83",
   "parents": [
     "c83",
     "c84"
-  ],
-  "backstory": "Daughter of Leofric and Constance Dale. Watched her sister Mira turned away by Ironreach and has no wish to be bartered next. Has quietly given her heart to a low-born knight her father would never accept."
+  ]
 }

@@ -1,27 +1,34 @@
 {
   "id": "c9",
-  "name": "Wynne Strand",
-  "gender": "female",
-  "age": 19,
+  "name": "Cador Pell",
+  "gender": "male",
+  "age": 21,
   "alive": true,
   "traits": [
-    "wrathful",
-    "cunning"
+    "brave",
+    "wrathful"
   ],
-  "loyalty": 58,
-  "goals": [],
+  "loyalty": 63,
+  "goals": [
+    {
+      "kind": "defect",
+      "text": "find a liege more worthy of their sword"
+    }
+  ],
   "relationships": {},
-  "memories": [],
+  "memories": [
+    "I buried my parent, Elaine Pell, and took up their seat."
+  ],
   "spouse": null,
   "children": [],
-  "surname": "Strand",
+  "surname": "Pell",
   "house": "House Goldcrest",
   "playerId": 1,
-  "rank": "heir",
-  "liege": "c7",
+  "rank": "bannerman",
+  "liege": "c4",
   "parents": [
     "c7",
     "c8"
   ],
-  "backstory": "Daughter of Cedric Strand, quick with a knife and quicker with a lie. Struck a Stormhold squire at the summer tourney for mocking Goldcrest gold, and has not yet been made to answer for it."
+  "seat": 190
 }

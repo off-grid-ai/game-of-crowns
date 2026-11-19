@@ -1,25 +1,24 @@
 {
   "id": "c30",
-  "name": "Rhiannon Roswell",
+  "name": "Columba undefined",
   "gender": "female",
-  "age": 40,
+  "age": 33,
   "alive": true,
   "traits": [
-    "honourable",
-    "greedy"
+    "vengeful",
+    "wrathful"
   ],
-  "loyalty": 63,
+  "loyalty": 60,
   "goals": [],
   "relationships": {},
   "memories": [],
   "spouse": "c29",
   "children": [
-    "c31"
+    "c31",
+    "c32"
   ],
-  "surname": "Roswell",
-  "house": "House Thornvale",
-  "playerId": 3,
+  "house": "House Stormhold",
+  "playerId": 4,
   "rank": "spouse",
-  "liege": "c29",
-  "backstory": "Wife to Ewan Roswell and mother of the daughter who bears her name. Brought a rich dowry and reminds Ewan of it. Writes often to her kinswoman Hilda Roswell, who serves Highfell in the mountains."
+  "liege": "c29"
 }

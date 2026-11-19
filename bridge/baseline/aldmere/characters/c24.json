@@ -1,39 +1,26 @@
 {
   "id": "c24",
-  "name": "Corwin Greyford",
-  "gender": "male",
-  "age": 62,
+  "name": "Basilia Pell",
+  "gender": "female",
+  "age": 16,
   "alive": true,
   "traits": [
-    "ambitious",
-    "proud"
+    "honourable",
+    "patient"
   ],
-  "loyalty": 76,
-  "goals": [
-    {
-      "kind": "land",
-      "text": "win more land for my family"
-    }
-  ],
-  "relationships": {
-    "c36": {
-      "opinion": -25
-    }
-  },
-  "memories": [
-    "Cecily Stormhold spurned my daughter."
-  ],
-  "spouse": "c25",
-  "children": [
-    "c26",
-    "c27",
-    "c28"
-  ],
-  "surname": "Greyford",
+  "loyalty": 63,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Pell",
   "house": "House Thornvale",
   "playerId": 3,
-  "rank": "bannerman",
-  "seat": 272,
+  "rank": "child",
   "liege": "c20",
-  "backstory": "Took the Greyford silver and the elder half of the family to Thornvale when the house split over the marches, leaving his cousin of the same name behind. Offered his daughter Isolde to Cecily Stormhold and was refused."
+  "parents": [
+    "c20",
+    "c21"
+  ]
 }

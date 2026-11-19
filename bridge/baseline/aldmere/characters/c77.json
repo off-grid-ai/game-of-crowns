@@ -1,31 +1,26 @@
 {
   "id": "c77",
-  "name": "Edith Pell",
+  "name": "Godiva Kettle",
   "gender": "female",
-  "age": 38,
+  "age": 17,
   "alive": true,
   "traits": [
-    "patient",
-    "content"
+    "wrathful",
+    "vengeful"
   ],
-  "loyalty": 66,
-  "goals": [
-    {
-      "kind": "favour",
-      "text": "rise in my liege's esteem"
-    }
-  ],
+  "loyalty": 60,
+  "goals": [],
   "relationships": {},
   "memories": [],
-  "spouse": "c78",
-  "children": [
-    "c79"
-  ],
-  "surname": "Pell",
-  "house": "House Thornvale",
-  "playerId": 3,
-  "rank": "bannerman",
-  "seat": 293,
-  "liege": "c20",
-  "backstory": "Married Dunstan Pell for love, which the Reach still talks about. Has served Ysolde Thornvale without complaint and been passed over for every honour, and minds it less than her husband does."
+  "spouse": null,
+  "children": [],
+  "surname": "Kettle",
+  "house": "House Ironreach",
+  "playerId": 2,
+  "rank": "heir",
+  "liege": "c75",
+  "parents": [
+    "c75",
+    "c76"
+  ]
 }

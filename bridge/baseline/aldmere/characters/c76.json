@@ -1,26 +1,26 @@
 {
   "id": "c76",
-  "name": "Gareth Varn",
+  "name": "Tegid Kettle",
   "gender": "male",
-  "age": 24,
+  "age": 33,
   "alive": true,
   "traits": [
-    "honourable",
-    "greedy"
+    "content",
+    "craven"
   ],
-  "loyalty": 83,
+  "loyalty": 51,
   "goals": [],
   "relationships": {},
   "memories": [],
-  "spouse": null,
-  "children": [],
-  "surname": "Varn",
-  "house": "House Thornvale",
-  "playerId": 3,
-  "rank": "child",
-  "liege": "c72",
-  "parents": [
-    "c72",
-    "c73"
-  ]
+  "spouse": "c75",
+  "children": [
+    "c77",
+    "c78",
+    "c79"
+  ],
+  "surname": "Kettle",
+  "house": "House Ironreach",
+  "playerId": 2,
+  "rank": "spouse",
+  "liege": "c75"
 }

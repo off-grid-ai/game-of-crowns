@@ -1,25 +1,26 @@
 {
   "id": "c43",
-  "name": "Willem Sunspire",
+  "name": "Eadwig Highfell",
   "gender": "male",
-  "age": 46,
+  "age": 50,
   "alive": true,
   "traits": [
-    "greedy",
-    "vengeful"
+    "proud",
+    "just"
   ],
-  "loyalty": 85,
+  "loyalty": 54,
   "goals": [],
   "relationships": {},
   "memories": [],
   "spouse": "c42",
   "children": [
-    "c44"
+    "c44",
+    "c45",
+    "c46"
   ],
-  "surname": "Sunspire",
-  "house": "House Sunspire",
-  "playerId": 5,
+  "surname": "Highfell",
+  "house": "House Highfell",
+  "playerId": 6,
   "rank": "spouse",
-  "liege": "c42",
-  "backstory": "Husband to Cecily Sunspire, whose father fell to Stormhold lances in the marches. Has not forgiven the insults to his daughter Edith and urges his wife to war every season. Skims from the desert caravans to pay for it."
+  "liege": "c42"
 }

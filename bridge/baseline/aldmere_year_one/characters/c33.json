@@ -1,0 +1,31 @@
+{
+  "id": "c33",
+  "name": "Emmeline Sunspire",
+  "gender": "female",
+  "age": 51,
+  "alive": true,
+  "traits": [
+    "vengeful",
+    "ambitious"
+  ],
+  "loyalty": 55,
+  "goals": [
+    {
+      "kind": "land",
+      "text": "win more land for their house"
+    }
+  ],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c34",
+  "children": [
+    "c35",
+    "c36"
+  ],
+  "surname": "Sunspire",
+  "house": "House Sunspire",
+  "playerId": 5,
+  "rank": "lord",
+  "seat": 229,
+  "voice": "vengeful, ambitious lord of House Sunspire; speaks like a proud noble"
+}

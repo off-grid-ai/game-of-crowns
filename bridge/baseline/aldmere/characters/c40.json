@@ -1,26 +1,26 @@
 {
   "id": "c40",
-  "name": "Lucan Stormhold",
+  "name": "Cuthbert Thorne",
   "gender": "male",
-  "age": 23,
+  "age": 21,
   "alive": true,
   "traits": [
-    "just",
-    "proud"
+    "honourable",
+    "content"
   ],
-  "loyalty": 58,
+  "loyalty": 59,
   "goals": [],
   "relationships": {},
   "memories": [],
   "spouse": null,
   "children": [],
-  "surname": "Stormhold",
-  "house": "House Stormhold",
-  "playerId": 4,
+  "surname": "Thorne",
+  "house": "House Sunspire",
+  "playerId": 5,
   "rank": "child",
-  "liege": "c36",
+  "liege": "c37",
   "parents": [
-    "c36",
-    "c37"
+    "c37",
+    "c38"
   ]
 }

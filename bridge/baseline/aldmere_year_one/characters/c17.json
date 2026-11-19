@@ -1,0 +1,25 @@
+{
+  "id": "c17",
+  "name": "Damaris Thornvale",
+  "gender": "female",
+  "age": 40,
+  "alive": true,
+  "traits": [
+    "pious",
+    "just"
+  ],
+  "loyalty": 66,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c16",
+  "children": [
+    "c18",
+    "c19"
+  ],
+  "surname": "Thornvale",
+  "house": "House Thornvale",
+  "playerId": 3,
+  "rank": "spouse",
+  "liege": "c16"
+}

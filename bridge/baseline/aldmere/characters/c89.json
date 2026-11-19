@@ -1,27 +1,25 @@
 {
   "id": "c89",
-  "name": "Aldric Dale",
-  "gender": "male",
-  "age": 16,
+  "name": "Seren undefined",
+  "gender": "female",
+  "age": 13,
   "alive": true,
   "traits": [
-    "honourable",
-    "generous"
+    "generous",
+    "just"
   ],
-  "loyalty": 89,
+  "loyalty": 52,
   "goals": [],
   "relationships": {},
   "memories": [],
   "spouse": null,
   "children": [],
-  "surname": "Dale",
-  "house": "House Stormhold",
-  "playerId": 4,
+  "house": "House Thornvale",
+  "playerId": 3,
   "rank": "heir",
   "liege": "c87",
   "parents": [
     "c87",
     "c88"
-  ],
-  "backstory": "Eldest son of Agnes and Osric Dale. Gave his own horse to a wounded Sunspire boy after a skirmish in the marches, and his mother has not let him forget the shame of it."
+  ]
 }

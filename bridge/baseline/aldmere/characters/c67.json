@@ -1,29 +1,39 @@
 {
   "id": "c67",
-  "name": "Hilda Roswell",
-  "gender": "female",
-  "age": 35,
+  "name": "Godric Marsh",
+  "gender": "male",
+  "age": 46,
   "alive": true,
   "traits": [
-    "just",
-    "brave"
+    "vengeful",
+    "content"
   ],
-  "loyalty": 53,
+  "loyalty": 83,
   "goals": [
     {
-      "kind": "favour",
-      "text": "rise in my liege's esteem"
+      "kind": "marriage",
+      "text": "wed their heir into a great house"
     }
   ],
-  "relationships": {},
-  "memories": [],
-  "spouse": null,
-  "children": [],
-  "surname": "Roswell",
+  "relationships": {
+    "c16": {
+      "opinion": 10
+    }
+  },
+  "memories": [
+    "Guthrum Thornvale spurned my daughter.",
+    "My daughter Estrild Marsh has been writing to Gilbert Thornvale, the son of Guthrum Thornvale.",
+    "The Forbidden Match of Marsh and Thornvale: Estrild Marsh kneels before Godric Marsh and asks to marry Gilbert Thornvale of House Thornvale. Godric Marsh says he will think about it, and sends a rider to Guthrum Thornvale.",
+    "I let my daughter marry into House Thornvale. I hope it ends the old quarrel."
+  ],
+  "spouse": "c68",
+  "children": [
+    "c69"
+  ],
+  "surname": "Marsh",
   "house": "House Highfell",
   "playerId": 6,
   "rank": "bannerman",
-  "seat": 283,
-  "liege": "c50",
-  "backstory": "Swore her sword to Tobin Highfell as he lay dying and holds the lower pass for his daughter Maud. Kin to the Roswells of Thornvale, who write often and ask her to come down from the mountains."
+  "seat": 282,
+  "liege": "c42"
 }

@@ -1,0 +1,42 @@
+{
+  "id": "c105",
+  "name": "Alice Holt",
+  "surname": "Holt",
+  "gender": "female",
+  "age": 19,
+  "alive": true,
+  "traits": [
+    "quarrelsome"
+  ],
+  "loyalty": 60,
+  "goals": [
+    {
+      "kind": "want",
+      "text": "bread enough for the winter"
+    },
+    {
+      "kind": "want",
+      "text": "a good harvest"
+    }
+  ],
+  "relationships": {},
+  "memories": [
+    "They say in the market: Famine in Crowhold and Redmarch.",
+    "They say in the market: Famine in Redsands, Sunspire and Highcrag.",
+    "Word came from Rosehall: The Pyke family loads a cart and leaves Rosehall for Elder Reach.",
+    "They say in the market: Famine in Highcrag, Sunspire and Redsands.",
+    "They say in the market: Famine in Goldrock.",
+    "They say in the market: Famine in Rook Hollow."
+  ],
+  "spouse": null,
+  "children": [],
+  "house": "House Thornvale",
+  "playerId": 3,
+  "rank": "sworn",
+  "seat": null,
+  "liege": "c16",
+  "created": "arc",
+  "born": "miller",
+  "station": "miller",
+  "fromFolk": "folk:334:28"
+}

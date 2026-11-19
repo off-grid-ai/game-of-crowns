@@ -1,27 +1,28 @@
 {
   "id": "c63",
-  "name": "Gwen Morrow",
-  "gender": "female",
-  "age": 66,
+  "name": "Ranulf Morrow",
+  "gender": "male",
+  "age": 58,
   "alive": true,
   "traits": [
-    "wrathful",
-    "just"
+    "content",
+    "patient"
   ],
-  "loyalty": 81,
-  "goals": [],
+  "loyalty": 64,
+  "goals": [
+    {
+      "kind": "land",
+      "text": "win more land for their house"
+    }
+  ],
   "relationships": {},
   "memories": [],
-  "spouse": "c62",
-  "children": [
-    "c64",
-    "c65",
-    "c66"
-  ],
+  "spouse": null,
+  "children": [],
   "surname": "Morrow",
   "house": "House Sunspire",
   "playerId": 5,
-  "rank": "spouse",
-  "liege": "c62",
-  "backstory": "Widow of Harold Morrow, who died last spring of a wound taken in the marches. Thinks her eldest son too soft for the seat he inherited. Has sworn at the sept to see Stormhold pay for her husband."
+  "rank": "bannerman",
+  "seat": 278,
+  "liege": "c33"
 }

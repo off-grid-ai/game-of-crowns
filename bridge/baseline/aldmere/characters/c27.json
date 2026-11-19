@@ -1,26 +1,26 @@
 {
   "id": "c27",
-  "name": "Edric Greyford",
+  "name": "Edric Stormhold",
   "gender": "male",
-  "age": 28,
+  "age": 20,
   "alive": true,
   "traits": [
-    "cunning",
-    "generous"
+    "paranoid",
+    "wrathful"
   ],
-  "loyalty": 60,
+  "loyalty": 62,
   "goals": [],
   "relationships": {},
   "memories": [],
-  "spouse": null,
+  "spouse": "c18",
   "children": [],
-  "surname": "Greyford",
-  "house": "House Thornvale",
-  "playerId": 3,
-  "rank": "child",
-  "liege": "c24",
+  "surname": "Stormhold",
+  "house": "House Stormhold",
+  "playerId": 4,
+  "rank": "heir",
+  "liege": "c25",
   "parents": [
-    "c24",
-    "c25"
+    "c25",
+    "c26"
   ]
 }

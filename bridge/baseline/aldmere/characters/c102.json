@@ -1,31 +1,25 @@
 {
   "id": "c102",
-  "name": "Aldric Holt",
-  "gender": "male",
-  "age": 43,
+  "name": "Aveline undefined",
+  "gender": "female",
+  "age": 14,
   "alive": true,
   "traits": [
-    "brave",
-    "greedy"
+    "proud",
+    "ambitious"
   ],
-  "loyalty": 67,
-  "goals": [
-    {
-      "kind": "marriage",
-      "text": "see my daughter wed above her station"
-    }
-  ],
+  "loyalty": 52,
+  "goals": [],
   "relationships": {},
   "memories": [],
-  "spouse": "c103",
-  "children": [
-    "c104"
-  ],
-  "surname": "Holt",
-  "house": "House Stormhold",
-  "playerId": 4,
-  "rank": "bannerman",
-  "seat": 321,
-  "liege": "c36",
-  "backstory": "A marcher knight given a seat for holding a ford against Sunspire. Takes coin from Thornvale grain merchants to let their carts cross his land untaxed, and Stormwatch does not yet know of it."
+  "spouse": null,
+  "children": [],
+  "house": "House Thornvale",
+  "playerId": 3,
+  "rank": "heir",
+  "liege": "c100",
+  "parents": [
+    "c100",
+    "c101"
+  ]
 }

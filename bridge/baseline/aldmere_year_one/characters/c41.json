@@ -1,0 +1,26 @@
+{
+  "id": "c41",
+  "name": "Gethin Thorne",
+  "gender": "male",
+  "age": 16,
+  "alive": true,
+  "traits": [
+    "just",
+    "content"
+  ],
+  "loyalty": 58,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Thorne",
+  "house": "House Sunspire",
+  "playerId": 5,
+  "rank": "child",
+  "liege": "c37",
+  "parents": [
+    "c37",
+    "c38"
+  ]
+}

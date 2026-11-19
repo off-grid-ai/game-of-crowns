@@ -1,27 +1,32 @@
 {
   "id": "c104",
-  "name": "Dunstan Holt",
-  "gender": "male",
-  "age": 21,
+  "name": "Moll FitzHamon",
+  "surname": "FitzHamon",
+  "gender": "female",
+  "age": 20,
   "alive": true,
   "traits": [
-    "wrathful",
+    "ambitious",
     "proud"
   ],
-  "loyalty": 65,
-  "goals": [],
+  "loyalty": 50,
+  "goals": [
+    {
+      "kind": "land",
+      "text": "be named Hamon undefined's child in front of the whole realm"
+    }
+  ],
   "relationships": {},
-  "memories": [],
+  "memories": [
+    "My mother told me on her deathbed whose child I am: Hamon undefined of House Sunspire.",
+    "The Bastard of Moonhold: A young woman called Moll FitzHamon rides into Moonhold with a ring of House Sunspire on a string round her neck, and asks for Hamon undefined."
+  ],
   "spouse": null,
   "children": [],
-  "surname": "Holt",
-  "house": "House Stormhold",
-  "playerId": 4,
-  "rank": "heir",
-  "liege": "c102",
-  "parents": [
-    "c102",
-    "c103"
-  ],
-  "backstory": "Son of Aldric Holt. Killed a Sunspire knight in a tavern brawl at fifteen and was spared the septon's judgment only by his father's silver. Wants a real war, to prove that killing was no accident."
+  "house": "House Sunspire",
+  "playerId": 5,
+  "rank": "sworn",
+  "seat": null,
+  "liege": "c33",
+  "created": "arc"
 }

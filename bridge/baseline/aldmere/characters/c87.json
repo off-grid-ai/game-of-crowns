@@ -1,33 +1,29 @@
 {
   "id": "c87",
-  "name": "Agnes Dale",
+  "name": "Thomasin undefined",
   "gender": "female",
-  "age": 38,
+  "age": 52,
   "alive": true,
   "traits": [
-    "wrathful",
-    "patient"
+    "just",
+    "brave"
   ],
-  "loyalty": 65,
+  "loyalty": 82,
   "goals": [
     {
-      "kind": "defect",
-      "text": "find a liege more worthy of my sword"
+      "kind": "marriage",
+      "text": "wed their heir into a great house"
     }
   ],
   "relationships": {},
   "memories": [],
   "spouse": "c88",
   "children": [
-    "c89",
-    "c90",
-    "c91"
+    "c89"
   ],
-  "surname": "Dale",
-  "house": "House Stormhold",
-  "playerId": 4,
+  "house": "House Thornvale",
+  "playerId": 3,
   "rank": "bannerman",
-  "seat": 306,
-  "liege": "c36",
-  "backstory": "Has led the Dale levies at every summer fight in the marches while Cecily Stormhold took the glory. When Windcross fell, Cecily blamed the Dales for coming late. Agnes kept the letter, and has begun to listen to other lords."
+  "seat": 334,
+  "liege": "c16"
 }

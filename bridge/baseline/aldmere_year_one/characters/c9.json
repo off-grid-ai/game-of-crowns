@@ -1,0 +1,26 @@
+{
+  "id": "c9",
+  "name": "Cador Pell",
+  "gender": "male",
+  "age": 14,
+  "alive": true,
+  "traits": [
+    "brave",
+    "wrathful"
+  ],
+  "loyalty": 63,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Pell",
+  "house": "House Goldcrest",
+  "playerId": 1,
+  "rank": "heir",
+  "liege": "c7",
+  "parents": [
+    "c7",
+    "c8"
+  ]
+}

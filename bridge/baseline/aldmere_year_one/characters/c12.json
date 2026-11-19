@@ -1,0 +1,30 @@
+{
+  "id": "c12",
+  "name": "Leod Ironreach",
+  "gender": "male",
+  "age": 41,
+  "alive": true,
+  "traits": [
+    "wrathful",
+    "pious"
+  ],
+  "loyalty": 73,
+  "goals": [
+    {
+      "kind": "revenge",
+      "text": "settle an old score in blood"
+    }
+  ],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c13",
+  "children": [
+    "c14"
+  ],
+  "surname": "Ironreach",
+  "house": "House Ironreach",
+  "playerId": 2,
+  "rank": "lord",
+  "seat": 199,
+  "voice": "wrathful, pious lord of House Ironreach; speaks like a proud noble"
+}

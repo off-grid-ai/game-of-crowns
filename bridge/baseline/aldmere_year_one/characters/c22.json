@@ -1,0 +1,26 @@
+{
+  "id": "c22",
+  "name": "Ethelind Pell",
+  "gender": "female",
+  "age": 10,
+  "alive": true,
+  "traits": [
+    "ambitious",
+    "honourable"
+  ],
+  "loyalty": 62,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Pell",
+  "house": "House Thornvale",
+  "playerId": 3,
+  "rank": "heir",
+  "liege": "c20",
+  "parents": [
+    "c20",
+    "c21"
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "id": "c15",
+  "name": "Melisende undefined",
+  "gender": "female",
+  "age": 59,
+  "alive": true,
+  "traits": [
+    "greedy",
+    "patient"
+  ],
+  "loyalty": 78,
+  "goals": [
+    {
+      "kind": "marriage",
+      "text": "wed their heir into a great house"
+    }
+  ],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "house": "House Ironreach",
+  "playerId": 2,
+  "rank": "bannerman",
+  "seat": 200,
+  "liege": "c12"
+}

@@ -1,0 +1,30 @@
+{
+  "id": "c29",
+  "name": "Urien undefined",
+  "gender": "male",
+  "age": 27,
+  "alive": true,
+  "traits": [
+    "honourable",
+    "generous"
+  ],
+  "loyalty": 62,
+  "goals": [
+    {
+      "kind": "court",
+      "text": "win a place at the King's council"
+    }
+  ],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c30",
+  "children": [
+    "c31",
+    "c32"
+  ],
+  "house": "House Stormhold",
+  "playerId": 4,
+  "rank": "bannerman",
+  "seat": 220,
+  "liege": "c25"
+}

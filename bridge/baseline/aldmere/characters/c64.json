@@ -1,27 +1,31 @@
 {
   "id": "c64",
-  "name": "Lucan Morrow",
+  "name": "Hamon undefined",
   "gender": "male",
-  "age": 17,
+  "age": 48,
   "alive": true,
   "traits": [
-    "pious",
-    "wrathful"
+    "proud",
+    "ambitious"
   ],
-  "loyalty": 76,
-  "goals": [],
+  "loyalty": 85,
+  "goals": [
+    {
+      "kind": "revenge",
+      "text": "settle an old score in blood"
+    }
+  ],
   "relationships": {},
-  "memories": [],
-  "spouse": null,
-  "children": [],
-  "surname": "Morrow",
+  "memories": [
+    "A woman called Moll FitzHamon came to Moonhold wearing a ring I gave a girl long ago."
+  ],
+  "spouse": "c65",
+  "children": [
+    "c66"
+  ],
   "house": "House Sunspire",
   "playerId": 5,
-  "rank": "heir",
-  "liege": "c62",
-  "parents": [
-    "c62",
-    "c63"
-  ],
-  "backstory": "Younger son of Gwen Morrow, raised by the septons and meant for the Faith. Since his father died of a Stormhold wound, he prays for war in the marches and begs to ride in it."
+  "rank": "bannerman",
+  "seat": 277,
+  "liege": "c33"
 }

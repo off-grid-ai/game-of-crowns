@@ -1,32 +1,25 @@
 {
   "id": "c11",
-  "name": "Mira Pell",
+  "name": "Wenna Pell",
   "gender": "female",
-  "age": 60,
+  "age": 18,
   "alive": true,
   "traits": [
-    "greedy",
-    "vengeful"
+    "paranoid"
   ],
-  "loyalty": 83,
-  "goals": [
-    {
-      "kind": "marriage",
-      "text": "see my daughter wed above her station"
-    }
-  ],
+  "loyalty": 57,
+  "goals": [],
   "relationships": {},
   "memories": [],
-  "spouse": "c12",
-  "children": [
-    "c13",
-    "c14"
-  ],
+  "spouse": null,
+  "children": [],
   "surname": "Pell",
   "house": "House Goldcrest",
   "playerId": 1,
-  "rank": "bannerman",
-  "seat": 188,
-  "liege": "c4",
-  "backstory": "Lent Cecily Goldcrest the gold that sealed Genevieve's match to Wolfholt and has not been repaid a penny. Her kinsman Osric Pell has written from Sunspire, offering better terms to any Pell who follows him."
+  "rank": "child",
+  "liege": "c7",
+  "parents": [
+    "c7",
+    "c8"
+  ]
 }

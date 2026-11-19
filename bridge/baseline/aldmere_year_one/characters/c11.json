@@ -1,0 +1,25 @@
+{
+  "id": "c11",
+  "name": "Wenna Pell",
+  "gender": "female",
+  "age": 11,
+  "alive": true,
+  "traits": [
+    "paranoid"
+  ],
+  "loyalty": 57,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Pell",
+  "house": "House Goldcrest",
+  "playerId": 1,
+  "rank": "child",
+  "liege": "c7",
+  "parents": [
+    "c7",
+    "c8"
+  ]
+}

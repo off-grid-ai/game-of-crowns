@@ -1,0 +1,25 @@
+{
+  "id": "c36",
+  "name": "Alys Sunspire",
+  "gender": "female",
+  "age": 19,
+  "alive": true,
+  "traits": [
+    "content"
+  ],
+  "loyalty": 86,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Sunspire",
+  "house": "House Sunspire",
+  "playerId": 5,
+  "rank": "child",
+  "liege": "c33",
+  "parents": [
+    "c33",
+    "c34"
+  ]
+}

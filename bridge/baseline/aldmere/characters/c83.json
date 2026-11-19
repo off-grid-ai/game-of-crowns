@@ -1,38 +1,30 @@
 {
   "id": "c83",
-  "name": "Leofric Dale",
-  "gender": "male",
-  "age": 55,
+  "name": "Engelise undefined",
+  "gender": "female",
+  "age": 45,
   "alive": true,
   "traits": [
-    "vengeful",
-    "pious"
+    "generous",
+    "greedy"
   ],
-  "loyalty": 75,
+  "loyalty": 61,
   "goals": [
     {
-      "kind": "marriage",
-      "text": "see my daughter wed above her station"
+      "kind": "revenge",
+      "text": "settle an old score in blood"
     }
   ],
-  "relationships": {
-    "c15": {
-      "opinion": -25
-    }
-  },
-  "memories": [
-    "Ysolde Ironreach spurned my daughter."
-  ],
+  "relationships": {},
+  "memories": [],
   "spouse": "c84",
   "children": [
     "c85",
     "c86"
   ],
-  "surname": "Dale",
-  "house": "House Wolfholt",
-  "playerId": 0,
+  "house": "House Ironreach",
+  "playerId": 2,
   "rank": "bannerman",
-  "seat": 297,
-  "liege": "c1",
-  "backstory": "Offered his daughter Mira to Jory Ironreach and was refused in front of the island captains. Kneels at the sept each morning and asks the gods to see Saltkeep burn. Thinks Constance Wolfholt too soft on the islands."
+  "seat": 200,
+  "liege": "c12"
 }

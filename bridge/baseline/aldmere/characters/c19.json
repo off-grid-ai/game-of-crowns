@@ -1,29 +1,31 @@
 {
   "id": "c19",
-  "name": "Cedric Kettle",
+  "name": "Gilbert Thornvale",
   "gender": "male",
-  "age": 38,
+  "age": 26,
   "alive": true,
   "traits": [
-    "generous",
-    "brave"
+    "honourable",
+    "generous"
   ],
-  "loyalty": 79,
-  "goals": [
-    {
-      "kind": "land",
-      "text": "win more land for my family"
-    }
-  ],
+  "loyalty": 68,
+  "goals": [],
   "relationships": {},
-  "memories": [],
-  "spouse": null,
+  "memories": [
+    "I met Estrild Marsh of House Highfell, whose house my father hates. I don't care.",
+    "The Forbidden Match of Marsh and Thornvale: Letters pass between Estrild Marsh and Gilbert Thornvale, hidden in loaves and saddlebags. A maid of House Highfell reads one, and tells.",
+    "The Forbidden Match of Marsh and Thornvale: Estrild Marsh kneels before Godric Marsh and asks to marry Gilbert Thornvale of House Thornvale. Godric Marsh says he will think about it, and sends a rider to Guthrum Thornvale.",
+    "The Forbidden Match of Marsh and Thornvale: Bells ring in Rosegarden: Estrild Marsh marries Gilbert Thornvale, and House Highfell and House Thornvale drink from one cup. The old grudges are buried, for now."
+  ],
+  "spouse": "c69",
   "children": [],
-  "surname": "Kettle",
-  "house": "House Ironreach",
-  "playerId": 2,
-  "rank": "bannerman",
-  "seat": 198,
-  "liege": "c15",
-  "backstory": "Captain of Ysolde Ironreach's longships, who shares his plunder with his crews and is loved for it. His cousin Tristan Kettle holds land under Sunspire, and Cedric wants a piece of the mainland to call his own."
+  "surname": "Thornvale",
+  "house": "House Thornvale",
+  "playerId": 3,
+  "rank": "child",
+  "liege": "c16",
+  "parents": [
+    "c16",
+    "c17"
+  ]
 }

@@ -1,44 +1,30 @@
 {
   "id": "c1",
-  "name": "Constance Wolfholt",
+  "name": "Lowri Wolfholt",
   "gender": "female",
   "age": 63,
   "alive": true,
   "traits": [
     "content",
-    "brave"
+    "craven"
   ],
   "loyalty": 55,
   "goals": [
     {
       "kind": "power",
-      "text": "make my house the greatest in the realm"
+      "text": "make their house the greatest in the realm"
     }
   ],
   "relationships": {
-    "c4": {
-      "opinion": 100
-    },
-    "c15": {
+    "c12": {
       "opinion": -100
     },
-    "c56": {
-      "opinion": -60
+    "c4": {
+      "opinion": 15
     }
   },
   "memories": [
-    "I sought friendship with Cecily Goldcrest.",
-    "Ysolde Ironreach's men raided Crowford.",
-    "Osric Pell betrayed me and gave Crowhold to House Sunspire.",
-    "I sought friendship with Cecily Goldcrest.",
-    "Ysolde Ironreach's men raided Crowfell.",
-    "I sought friendship with Cecily Goldcrest.",
-    "Ysolde Ironreach's men raided Crowfell.",
-    "I sought friendship with Cecily Goldcrest.",
-    "Ysolde Ironreach's men raided Crowfell.",
-    "I waited at court for two years. The King never answered.",
-    "I sought friendship with Cecily Goldcrest.",
-    "Ysolde Ironreach's men raided Lionreach."
+    "Leod Ironreach's men raided King's Mere."
   ],
   "spouse": "c2",
   "children": [
@@ -48,7 +34,6 @@
   "house": "House Wolfholt",
   "playerId": 0,
   "rank": "lord",
-  "seat": 178,
-  "voice": "content, brave lord of House Wolfholt; speaks like a soldier",
-  "backstory": "Wed her son Godwin to Genevieve Goldcrest to close the old wound, and has had no warmth from Goldrock for it. Lost Crowhold when Osric Pell went over to Sunspire. Ironreach burns Crowfell every year, and the crown she waited on two years never answered."
+  "seat": 180,
+  "voice": "content, craven lord of House Wolfholt; speaks like a proud noble"
 }

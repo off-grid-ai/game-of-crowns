@@ -1,27 +1,24 @@
 {
   "id": "c13",
-  "name": "Harold Pell",
-  "gender": "male",
-  "age": 27,
+  "name": "Muriel Ironreach",
+  "gender": "female",
+  "age": 44,
   "alive": true,
   "traits": [
-    "cunning",
-    "craven"
+    "patient",
+    "honourable"
   ],
-  "loyalty": 83,
+  "loyalty": 60,
   "goals": [],
   "relationships": {},
   "memories": [],
-  "spouse": null,
-  "children": [],
-  "surname": "Pell",
-  "house": "House Goldcrest",
-  "playerId": 1,
-  "rank": "heir",
-  "liege": "c11",
-  "parents": [
-    "c11",
-    "c12"
+  "spouse": "c12",
+  "children": [
+    "c14"
   ],
-  "backstory": "Heir to Mira Pell, who talks his way out of every fight. Kept to the Goldrock counting tables while his brother Hugh rode against Ironreach on the coast. Owes a Thornvale moneylender more than his mother knows."
+  "surname": "Ironreach",
+  "house": "House Ironreach",
+  "playerId": 2,
+  "rank": "spouse",
+  "liege": "c12"
 }

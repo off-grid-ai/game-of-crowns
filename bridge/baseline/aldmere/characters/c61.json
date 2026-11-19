@@ -1,29 +1,25 @@
 {
   "id": "c61",
-  "name": "Ysolde Brook",
+  "name": "Marion undefined",
   "gender": "female",
-  "age": 48,
+  "age": 26,
   "alive": true,
   "traits": [
-    "honourable",
-    "just"
+    "generous",
+    "paranoid"
   ],
-  "loyalty": 69,
-  "goals": [
-    {
-      "kind": "favour",
-      "text": "rise in my liege's esteem"
-    }
-  ],
+  "loyalty": 65,
+  "goals": [],
   "relationships": {},
   "memories": [],
   "spouse": null,
   "children": [],
-  "surname": "Brook",
   "house": "House Stormhold",
   "playerId": 4,
-  "rank": "bannerman",
-  "seat": 275,
-  "liege": "c36",
-  "backstory": "Sworn to Stormhold for thirty years, and the one who carried Cecily's banner out of Windcross when it fell. Her sister Isolde Brook holds Redsands for Sunspire across the marches, and they speak only through salt traders."
+  "rank": "heir",
+  "liege": "c59",
+  "parents": [
+    "c59",
+    "c60"
+  ]
 }

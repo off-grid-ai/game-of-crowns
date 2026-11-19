@@ -1,27 +1,23 @@
 {
   "id": "c88",
-  "name": "Osric Dale",
+  "name": "Waltheof undefined",
   "gender": "male",
-  "age": 34,
+  "age": 46,
   "alive": true,
   "traits": [
-    "craven",
-    "paranoid"
+    "content",
+    "just"
   ],
-  "loyalty": 83,
+  "loyalty": 55,
   "goals": [],
   "relationships": {},
   "memories": [],
   "spouse": "c87",
   "children": [
-    "c89",
-    "c90",
-    "c91"
+    "c89"
   ],
-  "surname": "Dale",
-  "house": "House Stormhold",
-  "playerId": 4,
+  "house": "House Thornvale",
+  "playerId": 3,
   "rank": "spouse",
-  "liege": "c87",
-  "backstory": "Husband to Agnes Dale, who rides to war while he keeps the hall. Has slept with a guard at his door since a Sunspire arrow killed his brother in the marches, and suspects his wife would trade him for a braver man."
+  "liege": "c87"
 }

@@ -1,0 +1,25 @@
+{
+  "id": "c34",
+  "name": "Benedict Sunspire",
+  "gender": "male",
+  "age": 44,
+  "alive": true,
+  "traits": [
+    "ambitious",
+    "greedy"
+  ],
+  "loyalty": 87,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c33",
+  "children": [
+    "c35",
+    "c36"
+  ],
+  "surname": "Sunspire",
+  "house": "House Sunspire",
+  "playerId": 5,
+  "rank": "spouse",
+  "liege": "c33"
+}

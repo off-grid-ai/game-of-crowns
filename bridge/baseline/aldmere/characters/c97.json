@@ -1,27 +1,26 @@
 {
   "id": "c97",
-  "name": "Maud Brook",
-  "gender": "female",
-  "age": 11,
+  "name": "Jon Dale",
+  "gender": "male",
+  "age": 12,
   "alive": true,
   "traits": [
-    "paranoid",
-    "just"
+    "proud",
+    "greedy"
   ],
-  "loyalty": 68,
+  "loyalty": 73,
   "goals": [],
   "relationships": {},
   "memories": [],
   "spouse": null,
   "children": [],
-  "surname": "Brook",
-  "house": "House Sunspire",
-  "playerId": 5,
+  "surname": "Dale",
+  "house": "House Ironreach",
+  "playerId": 2,
   "rank": "heir",
   "liege": "c95",
   "parents": [
     "c95",
     "c96"
-  ],
-  "backstory": "Only child of Hilda and Lucan Brook, kept close since a fever took her playmates. Already listens at doors, and tells her mother what she hears."
+  ]
 }

@@ -1,31 +1,30 @@
 {
   "id": "c29",
-  "name": "Ewan Roswell",
+  "name": "Urien undefined",
   "gender": "male",
-  "age": 44,
+  "age": 34,
   "alive": true,
   "traits": [
-    "vengeful",
-    "cunning"
+    "honourable",
+    "generous"
   ],
-  "loyalty": 60,
+  "loyalty": 62,
   "goals": [
     {
       "kind": "court",
-      "text": "be noticed by the King himself"
+      "text": "win a place at the King's council"
     }
   ],
   "relationships": {},
   "memories": [],
   "spouse": "c30",
   "children": [
-    "c31"
+    "c31",
+    "c32"
   ],
-  "surname": "Roswell",
-  "house": "House Thornvale",
-  "playerId": 3,
+  "house": "House Stormhold",
+  "playerId": 4,
   "rank": "bannerman",
-  "seat": 271,
-  "liege": "c20",
-  "backstory": "Rode to Kingsmere with Ysolde Thornvale and blames her soft words for coming home with nothing. Means to go back alone and win the King's ear for himself, whatever it costs his liege."
+  "seat": 220,
+  "liege": "c25"
 }

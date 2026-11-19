@@ -1,27 +1,26 @@
 {
   "id": "c74",
-  "name": "Bryony Varn",
+  "name": "Orabel Kettle",
   "gender": "female",
-  "age": 20,
+  "age": 25,
   "alive": true,
   "traits": [
-    "generous",
-    "wrathful"
+    "wrathful",
+    "greedy"
   ],
-  "loyalty": 89,
+  "loyalty": 54,
   "goals": [],
   "relationships": {},
   "memories": [],
   "spouse": null,
   "children": [],
-  "surname": "Varn",
-  "house": "House Thornvale",
-  "playerId": 3,
-  "rank": "heir",
-  "liege": "c72",
+  "surname": "Kettle",
+  "house": "House Wolfholt",
+  "playerId": 0,
+  "rank": "child",
+  "liege": "c70",
   "parents": [
-    "c72",
-    "c73"
-  ],
-  "backstory": "Daughter of Bryony Varn, offered to Jory Ironreach and turned away. Gives to every beggar at the Rosehall sept, and has sworn on the same altar to see an Ironreach ship burn."
+    "c70",
+    "c71"
+  ]
 }

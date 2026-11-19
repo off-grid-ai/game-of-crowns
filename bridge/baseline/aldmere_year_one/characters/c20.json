@@ -1,0 +1,32 @@
+{
+  "id": "c20",
+  "name": "Thurstan Pell",
+  "gender": "male",
+  "age": 51,
+  "alive": true,
+  "traits": [
+    "wrathful",
+    "vengeful"
+  ],
+  "loyalty": 86,
+  "goals": [
+    {
+      "kind": "defect",
+      "text": "find a liege more worthy of their sword"
+    }
+  ],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c21",
+  "children": [
+    "c22",
+    "c23",
+    "c24"
+  ],
+  "surname": "Pell",
+  "house": "House Thornvale",
+  "playerId": 3,
+  "rank": "bannerman",
+  "seat": 210,
+  "liege": "c16"
+}

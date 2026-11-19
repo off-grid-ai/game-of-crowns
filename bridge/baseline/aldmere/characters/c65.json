@@ -1,35 +1,22 @@
 {
   "id": "c65",
-  "name": "Harold Morrow",
-  "gender": "male",
-  "age": 26,
+  "name": "Eleyne undefined",
+  "gender": "female",
+  "age": 41,
   "alive": true,
   "traits": [
-    "content",
-    "wrathful"
+    "generous"
   ],
-  "loyalty": 82,
-  "goals": [
-    {
-      "kind": "land",
-      "text": "win more land for my family"
-    }
-  ],
+  "loyalty": 80,
+  "goals": [],
   "relationships": {},
-  "memories": [
-    "I buried my parent, Harold Morrow, and took up their seat."
+  "memories": [],
+  "spouse": "c64",
+  "children": [
+    "c66"
   ],
-  "spouse": null,
-  "children": [],
-  "surname": "Morrow",
   "house": "House Sunspire",
   "playerId": 5,
-  "rank": "bannerman",
-  "liege": "c42",
-  "parents": [
-    "c62",
-    "c63"
-  ],
-  "seat": 277,
-  "backstory": "Buried his father Harold Morrow last spring and took up his seat, though his mother Gwen thinks him unready. Easygoing until crossed, he once broke a Stormhold envoy's jaw at his father's table."
+  "rank": "spouse",
+  "liege": "c64"
 }

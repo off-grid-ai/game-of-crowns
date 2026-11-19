@@ -1,27 +1,42 @@
 {
   "id": "c94",
-  "name": "Dunstan Greyford",
+  "name": "Aldo Hill",
+  "surname": "Hill",
   "gender": "male",
-  "age": 23,
+  "age": 21,
   "alive": true,
   "traits": [
-    "cunning",
-    "proud"
+    "a hard worker"
   ],
-  "loyalty": 54,
-  "goals": [],
+  "loyalty": 60,
+  "goals": [
+    {
+      "kind": "want",
+      "text": "bread enough for the winter"
+    },
+    {
+      "kind": "want",
+      "text": "peace, and the tithe lowered"
+    }
+  ],
   "relationships": {},
-  "memories": [],
+  "memories": [
+    "They say in the market: Famine spreads from Gildport through House Goldcrest's lands: Gildport starves, and its neighbours' fields fail.",
+    "They say in the market: Stormwatch falls to House Sunspire.",
+    "They say in the market: The sickness leaves Gildport.",
+    "They say in the market: The sickness leaves Goldrock.",
+    "They say in the market: The plague has burned itself out.",
+    "I was in King's Mere when it happened. The fields round King's Mere give out: sown too many years running, they bear thin and weedy, and will for a while yet."
+  ],
   "spouse": null,
   "children": [],
-  "surname": "Greyford",
-  "house": "House Stormhold",
-  "playerId": 4,
-  "rank": "heir",
-  "liege": "c92",
-  "parents": [
-    "c92",
-    "c93"
-  ],
-  "backstory": "Only son of Isolde Greyford of Rainhold. Has been writing in secret to his cousin Isolde Greyford in the Reach and talks of mending the family's split, so long as he ends up holding both halves."
+  "house": "House Wolfholt",
+  "playerId": 0,
+  "rank": "sworn",
+  "seat": null,
+  "liege": "c1",
+  "created": "arc",
+  "born": "farmer",
+  "station": "farmer",
+  "fromFolk": "folk:295:26"
 }

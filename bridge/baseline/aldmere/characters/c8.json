@@ -1,26 +1,26 @@
 {
   "id": "c8",
-  "name": "Beatrix Strand",
-  "gender": "female",
-  "age": 57,
+  "name": "Percival Pell",
+  "gender": "male",
+  "age": 63,
   "alive": true,
   "traits": [
-    "paranoid",
-    "content"
+    "patient",
+    "generous"
   ],
-  "loyalty": 83,
+  "loyalty": 74,
   "goals": [],
   "relationships": {},
   "memories": [],
   "spouse": "c7",
   "children": [
     "c9",
-    "c10"
+    "c10",
+    "c11"
   ],
-  "surname": "Strand",
+  "surname": "Pell",
   "house": "House Goldcrest",
   "playerId": 1,
   "rank": "spouse",
-  "liege": "c7",
-  "backstory": "Served the Wolfholt bride her last cup at Goldrock as a girl, and has never told what was in it. Has tasted Cedric Strand's wine before he drinks it ever since. Wants only to see Wynne and Roderick outlive her."
+  "liege": "c7"
 }

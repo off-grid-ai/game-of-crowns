@@ -1,25 +1,26 @@
 {
   "id": "c78",
-  "name": "Dunstan Pell",
-  "gender": "male",
-  "age": 31,
+  "name": "Jacoba Kettle",
+  "gender": "female",
+  "age": 16,
   "alive": true,
   "traits": [
     "cunning",
-    "wrathful"
+    "just"
   ],
-  "loyalty": 71,
+  "loyalty": 60,
   "goals": [],
   "relationships": {},
   "memories": [],
-  "spouse": "c77",
-  "children": [
-    "c79"
-  ],
-  "surname": "Pell",
-  "house": "House Thornvale",
-  "playerId": 3,
-  "rank": "spouse",
-  "liege": "c77",
-  "backstory": "Husband to Edith Pell and kin to Osric Pell, the turncoat of Crowhold, a tie he works hard to bury. Lost a brother to Ironreach raiders on the Thornvale coast and wants a ship to hunt them down."
+  "spouse": null,
+  "children": [],
+  "surname": "Kettle",
+  "house": "House Ironreach",
+  "playerId": 2,
+  "rank": "child",
+  "liege": "c75",
+  "parents": [
+    "c75",
+    "c76"
+  ]
 }

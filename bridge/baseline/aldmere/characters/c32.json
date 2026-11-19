@@ -1,32 +1,25 @@
 {
   "id": "c32",
-  "name": "Merrick Strand",
-  "gender": "male",
-  "age": 54,
+  "name": "Juliana undefined",
+  "gender": "female",
+  "age": 23,
   "alive": true,
   "traits": [
-    "craven",
+    "ambitious",
     "vengeful"
   ],
-  "loyalty": 50,
-  "goals": [
-    {
-      "kind": "favour",
-      "text": "rise in my liege's esteem"
-    }
-  ],
+  "loyalty": 88,
+  "goals": [],
   "relationships": {},
   "memories": [],
-  "spouse": "c33",
-  "children": [
-    "c34",
-    "c35"
-  ],
-  "surname": "Strand",
-  "house": "House Thornvale",
-  "playerId": 3,
-  "rank": "bannerman",
-  "seat": 208,
-  "liege": "c20",
-  "backstory": "Holds Oldtown Reach and has never ridden out when Ironreach came. Envies his elder sister Maud Strand, who won Ysolde Thornvale's favour by handing her Windcross, and wants a deed of his own to match it."
+  "spouse": null,
+  "children": [],
+  "house": "House Stormhold",
+  "playerId": 4,
+  "rank": "child",
+  "liege": "c29",
+  "parents": [
+    "c29",
+    "c30"
+  ]
 }

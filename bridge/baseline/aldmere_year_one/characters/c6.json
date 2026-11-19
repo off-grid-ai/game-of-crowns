@@ -1,0 +1,26 @@
+{
+  "id": "c6",
+  "name": "Linnet Goldcrest",
+  "gender": "female",
+  "age": 14,
+  "alive": true,
+  "traits": [
+    "brave",
+    "honourable"
+  ],
+  "loyalty": 59,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Goldcrest",
+  "house": "House Goldcrest",
+  "playerId": 1,
+  "rank": "heir",
+  "liege": "c4",
+  "parents": [
+    "c4",
+    "c5"
+  ]
+}

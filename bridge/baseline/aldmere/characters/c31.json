@@ -1,27 +1,25 @@
 {
   "id": "c31",
-  "name": "Rhiannon Roswell",
-  "gender": "female",
-  "age": 22,
+  "name": "Hob undefined",
+  "gender": "male",
+  "age": 26,
   "alive": true,
   "traits": [
-    "content",
-    "ambitious"
+    "cunning",
+    "greedy"
   ],
-  "loyalty": 59,
+  "loyalty": 67,
   "goals": [],
   "relationships": {},
   "memories": [],
   "spouse": null,
   "children": [],
-  "surname": "Roswell",
-  "house": "House Thornvale",
-  "playerId": 3,
+  "house": "House Stormhold",
+  "playerId": 4,
   "rank": "heir",
   "liege": "c29",
   "parents": [
     "c29",
     "c30"
-  ],
-  "backstory": "Daughter of Ewan and Rhiannon Roswell, content in the Reach. Hopes to be noticed at the King's court where her father failed, and writes to her kinswoman Hilda Roswell in the Vale."
+  ]
 }

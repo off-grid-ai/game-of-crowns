@@ -1,32 +1,26 @@
 {
   "id": "c45",
-  "name": "Rosalind Morrow",
+  "name": "Nan Highfell",
   "gender": "female",
-  "age": 65,
+  "age": 19,
   "alive": true,
   "traits": [
-    "craven",
-    "proud"
+    "greedy",
+    "patient"
   ],
-  "loyalty": 74,
-  "goals": [
-    {
-      "kind": "court",
-      "text": "be noticed by the King himself"
-    }
-  ],
+  "loyalty": 56,
+  "goals": [],
   "relationships": {},
   "memories": [],
-  "spouse": "c46",
-  "children": [
-    "c47",
-    "c48"
-  ],
-  "surname": "Morrow",
-  "house": "House Sunspire",
-  "playerId": 5,
-  "rank": "bannerman",
-  "seat": 270,
+  "spouse": null,
+  "children": [],
+  "surname": "Highfell",
+  "house": "House Highfell",
+  "playerId": 6,
+  "rank": "child",
   "liege": "c42",
-  "backstory": "Served at the old King's court as a girl and still speaks of the great lords she knew there. Has promised her daughter Bryony to a Stormhold knight behind Cecily Sunspire's back, to keep the marches from her own door."
+  "parents": [
+    "c42",
+    "c43"
+  ]
 }

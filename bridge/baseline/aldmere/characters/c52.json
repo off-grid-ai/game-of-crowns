@@ -1,34 +1,28 @@
 {
   "id": "c52",
-  "name": "Maud Highfell",
+  "name": "Swanhild Marsh",
   "gender": "female",
-  "age": 17,
+  "age": 59,
   "alive": true,
   "traits": [
-    "vengeful",
+    "patient",
     "generous"
   ],
-  "loyalty": 89,
+  "loyalty": 56,
   "goals": [
     {
-      "kind": "marriage",
-      "text": "wed my heir into a great house"
+      "kind": "favour",
+      "text": "rise in their liege's esteem"
     }
   ],
   "relationships": {},
-  "memories": [
-    "I buried my parent, Tobin Highfell, and took up their seat."
-  ],
+  "memories": [],
   "spouse": null,
   "children": [],
-  "surname": "Highfell",
-  "house": "House Highfell",
-  "playerId": 6,
-  "rank": "lord",
-  "parents": [
-    "c50",
-    "c51"
-  ],
-  "seat": 237,
-  "backstory": "Buried her father Tobin Highfell last winter and took his seat at seventeen. Believes the fever that killed him came up the mountain road with a Goldcrest envoy, and has barred the gates of Highfell to Goldcrest men."
+  "surname": "Marsh",
+  "house": "House Goldcrest",
+  "playerId": 1,
+  "rank": "bannerman",
+  "seat": 283,
+  "liege": "c4"
 }

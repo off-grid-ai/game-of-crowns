@@ -1,27 +1,26 @@
 {
   "id": "c73",
-  "name": "Aldric Varn",
-  "gender": "male",
-  "age": 52,
+  "name": "Edith Kettle",
+  "gender": "female",
+  "age": 14,
   "alive": true,
   "traits": [
-    "paranoid",
-    "patient"
+    "pious",
+    "cunning"
   ],
-  "loyalty": 69,
+  "loyalty": 87,
   "goals": [],
   "relationships": {},
   "memories": [],
-  "spouse": "c72",
-  "children": [
-    "c74",
-    "c75",
-    "c76"
-  ],
-  "surname": "Varn",
-  "house": "House Thornvale",
-  "playerId": 3,
-  "rank": "spouse",
-  "liege": "c72",
-  "backstory": "Husband to Bryony Varn and father of three. Watched his wife try to win Jory Ironreach for their daughter, and suspects she offered Saltkeep more than a dowry. Says nothing, and keeps a quiet tally."
+  "spouse": null,
+  "children": [],
+  "surname": "Kettle",
+  "house": "House Wolfholt",
+  "playerId": 0,
+  "rank": "child",
+  "liege": "c70",
+  "parents": [
+    "c70",
+    "c71"
+  ]
 }

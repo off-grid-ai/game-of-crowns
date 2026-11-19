@@ -1,26 +1,27 @@
 {
   "id": "c66",
-  "name": "Maud Morrow",
+  "name": "Nia undefined",
   "gender": "female",
-  "age": 26,
+  "age": 17,
   "alive": true,
   "traits": [
-    "patient",
-    "ambitious"
+    "content",
+    "generous"
   ],
-  "loyalty": 84,
+  "loyalty": 50,
   "goals": [],
   "relationships": {},
-  "memories": [],
+  "memories": [
+    "A stranger came to Moonhold claiming my father's blood."
+  ],
   "spouse": null,
   "children": [],
-  "surname": "Morrow",
   "house": "House Sunspire",
   "playerId": 5,
-  "rank": "child",
-  "liege": "c62",
+  "rank": "heir",
+  "liege": "c64",
   "parents": [
-    "c62",
-    "c63"
+    "c64",
+    "c65"
   ]
 }

@@ -1,0 +1,30 @@
+{
+  "id": "c1",
+  "name": "Lowri Wolfholt",
+  "gender": "female",
+  "age": 56,
+  "alive": true,
+  "traits": [
+    "content",
+    "craven"
+  ],
+  "loyalty": 55,
+  "goals": [
+    {
+      "kind": "power",
+      "text": "make their house the greatest in the realm"
+    }
+  ],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c2",
+  "children": [
+    "c3"
+  ],
+  "surname": "Wolfholt",
+  "house": "House Wolfholt",
+  "playerId": 0,
+  "rank": "lord",
+  "seat": 180,
+  "voice": "content, craven lord of House Wolfholt; speaks like a proud noble"
+}

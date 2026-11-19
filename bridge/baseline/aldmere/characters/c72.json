@@ -1,39 +1,26 @@
 {
   "id": "c72",
-  "name": "Bryony Varn",
+  "name": "Efa Kettle",
   "gender": "female",
-  "age": 53,
+  "age": 17,
   "alive": true,
   "traits": [
-    "cunning",
-    "proud"
+    "brave",
+    "honourable"
   ],
-  "loyalty": 73,
-  "goals": [
-    {
-      "kind": "marriage",
-      "text": "see my daughter wed above her station"
-    }
-  ],
-  "relationships": {
-    "c15": {
-      "opinion": -25
-    }
-  },
-  "memories": [
-    "Ysolde Ironreach spurned my daughter."
-  ],
-  "spouse": "c73",
-  "children": [
-    "c74",
-    "c75",
-    "c76"
-  ],
-  "surname": "Varn",
-  "house": "House Thornvale",
-  "playerId": 3,
-  "rank": "bannerman",
-  "seat": 295,
-  "liege": "c20",
-  "backstory": "Offered her daughter Bryony to Jory Ironreach to buy peace for her coast, and was refused. Rumour says she offered Ysolde Ironreach more than a dowry. Still wants a great match for her girl, and is not particular which house."
+  "loyalty": 79,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Kettle",
+  "house": "House Wolfholt",
+  "playerId": 0,
+  "rank": "heir",
+  "liege": "c70",
+  "parents": [
+    "c70",
+    "c71"
+  ]
 }

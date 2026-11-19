@@ -1,0 +1,26 @@
+{
+  "id": "c28",
+  "name": "Reinald Stormhold",
+  "gender": "male",
+  "age": 11,
+  "alive": true,
+  "traits": [
+    "pious",
+    "paranoid"
+  ],
+  "loyalty": 73,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Stormhold",
+  "house": "House Stormhold",
+  "playerId": 4,
+  "rank": "child",
+  "liege": "c25",
+  "parents": [
+    "c25",
+    "c26"
+  ]
+}

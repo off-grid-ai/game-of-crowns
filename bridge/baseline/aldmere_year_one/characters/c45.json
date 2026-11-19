@@ -1,0 +1,26 @@
+{
+  "id": "c45",
+  "name": "Nan Highfell",
+  "gender": "female",
+  "age": 12,
+  "alive": true,
+  "traits": [
+    "greedy",
+    "patient"
+  ],
+  "loyalty": 56,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Highfell",
+  "house": "House Highfell",
+  "playerId": 6,
+  "rank": "child",
+  "liege": "c42",
+  "parents": [
+    "c42",
+    "c43"
+  ]
+}

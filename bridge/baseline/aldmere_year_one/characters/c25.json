@@ -1,0 +1,31 @@
+{
+  "id": "c25",
+  "name": "Nichola Stormhold",
+  "gender": "female",
+  "age": 55,
+  "alive": true,
+  "traits": [
+    "pious",
+    "craven"
+  ],
+  "loyalty": 41,
+  "goals": [
+    {
+      "kind": "revenge",
+      "text": "settle an old score in blood"
+    }
+  ],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c26",
+  "children": [
+    "c27",
+    "c28"
+  ],
+  "surname": "Stormhold",
+  "house": "House Stormhold",
+  "playerId": 4,
+  "rank": "lord",
+  "seat": 219,
+  "voice": "pious, craven lord of House Stormhold; speaks like a proud noble"
+}

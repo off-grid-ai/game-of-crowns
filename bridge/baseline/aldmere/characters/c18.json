@@ -1,6 +1,6 @@
 {
   "id": "c18",
-  "name": "Hilda Ironreach",
+  "name": "Blanche Thornvale",
   "gender": "female",
   "age": 29,
   "alive": true,
@@ -11,15 +11,15 @@
   "goals": [],
   "relationships": {},
   "memories": [],
-  "spouse": null,
+  "spouse": "c27",
   "children": [],
-  "surname": "Ironreach",
-  "house": "House Ironreach",
-  "playerId": 2,
-  "rank": "child",
-  "liege": "c15",
+  "surname": "Thornvale",
+  "house": "House Stormhold",
+  "playerId": 3,
+  "rank": "heir",
+  "liege": "c16",
   "parents": [
-    "c15",
-    "c16"
+    "c16",
+    "c17"
   ]
 }

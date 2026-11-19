@@ -1,20 +1,20 @@
 {
   "id": "c22",
-  "name": "Jory Thornvale",
-  "gender": "male",
-  "age": 16,
+  "name": "Ethelind Pell",
+  "gender": "female",
+  "age": 17,
   "alive": true,
   "traits": [
-    "vengeful",
-    "ambitious"
+    "ambitious",
+    "honourable"
   ],
-  "loyalty": 57,
+  "loyalty": 62,
   "goals": [],
   "relationships": {},
   "memories": [],
   "spouse": null,
   "children": [],
-  "surname": "Thornvale",
+  "surname": "Pell",
   "house": "House Thornvale",
   "playerId": 3,
   "rank": "heir",
@@ -22,6 +22,5 @@
   "parents": [
     "c20",
     "c21"
-  ],
-  "backstory": "Son and heir of Ysolde Thornvale, who sat two years at Kingsmere waiting on the crown and came home empty-handed. Has not forgiven the King the insult to his mother, and says so too loudly."
+  ]
 }

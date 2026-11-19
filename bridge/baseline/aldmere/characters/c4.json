@@ -1,6 +1,6 @@
 {
   "id": "c4",
-  "name": "Cecily Goldcrest",
+  "name": "Beatrix Goldcrest",
   "gender": "female",
   "age": 52,
   "alive": true,
@@ -11,17 +11,30 @@
   "loyalty": 73,
   "goals": [
     {
-      "kind": "revenge",
-      "text": "settle the old grudge"
+      "kind": "marriage",
+      "text": "wed their heir into a great house"
     }
   ],
   "relationships": {
     "c1": {
-      "opinion": 100
+      "opinion": 5
+    },
+    "c16": {
+      "opinion": -25
+    },
+    "c42": {
+      "opinion": -30
     }
   },
   "memories": [
-    "Constance Wolfholt took my daughter into House Wolfholt."
+    "Lowri Wolfholt spurned my daughter.",
+    "Guthrum Thornvale spurned my daughter.",
+    "Lowri Wolfholt took my daughter into House Wolfholt.",
+    "The Treason of Sunstone: A man posing as a merchant comes to Sunstone with letters from Beatrix Goldcrest of House Goldcrest, and leaves without them.",
+    "The Treason of Sunstone: House Goldcrest sends gold to Sunstone hidden in wine casks. Odette Dale buys horses and says they're for the tourney.",
+    "The Treason of Sunstone: Mabel Highfell hears about the horses and the casks, and invites Odette Dale to spend the winter at Highfell. Odette Dale claims to have a fever.",
+    "The Treason of Sunstone: Odette Dale finally rides to Highfell, between two lines of House Highfell's spearmen.",
+    "The Treason of Sunstone: The letters from Beatrix Goldcrest are read aloud, and then Mabel Highfell has Odette Dale beheaded in the yard at Highfell."
   ],
   "spouse": "c5",
   "children": [
@@ -31,7 +44,6 @@
   "house": "House Goldcrest",
   "playerId": 1,
   "rank": "lord",
-  "seat": 187,
-  "voice": "greedy, ambitious lord of House Goldcrest; speaks like a proud noble",
-  "backstory": "Sent her only daughter Genevieve north to wed Godwin Wolfholt, and calls it a theft, since Constance Wolfholt set the terms. Holds the debts of half the western lords and wants the Hand's chain to go with them. Swears the Wolfholt bride died of fever at Goldrock."
+  "seat": 189,
+  "voice": "greedy, ambitious lord of House Goldcrest; speaks like a proud noble"
 }

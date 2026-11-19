@@ -1,27 +1,38 @@
 {
   "id": "c82",
-  "name": "Isolde Kettle",
-  "gender": "female",
-  "age": 26,
+  "name": "Walter Holt",
+  "surname": "Holt",
+  "gender": "male",
+  "age": 24,
   "alive": true,
   "traits": [
-    "proud",
-    "cunning"
+    "generous"
   ],
-  "loyalty": 56,
-  "goals": [],
+  "loyalty": 60,
+  "goals": [
+    {
+      "kind": "want",
+      "text": "a son to take on the trade"
+    }
+  ],
   "relationships": {},
-  "memories": [],
+  "memories": [
+    "Word came from Sunspire: The Ward family loads a cart and leaves Sunspire for Highcrag.",
+    "They say in the market: Famine in Saltkeep.",
+    "They say in the market: Famine in Rainhold.",
+    "They say in the market: The fields round King's Crag, Windcross, Gildport and 16 more give out: sown too many years running, they bear thin and weedy, and will for a while yet.",
+    "Word came from Redsands: Famine in Redsands.",
+    "They say in the market: Famine in Stormwatch."
+  ],
   "spouse": null,
   "children": [],
-  "surname": "Kettle",
   "house": "House Sunspire",
   "playerId": 5,
-  "rank": "heir",
-  "liege": "c80",
-  "parents": [
-    "c80",
-    "c81"
-  ],
-  "backstory": "Daughter of Tristan Kettle, who has run her father's dealings with the river towns since she was twenty. Her cousin Cedric Kettle captains Ironreach ships, and she uses him for news no one else has."
+  "rank": "sworn",
+  "seat": null,
+  "liege": "c33",
+  "created": "arc",
+  "born": "woodcutter",
+  "station": "woodcutter",
+  "fromFolk": "folk:278:12"
 }

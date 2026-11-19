@@ -1,0 +1,26 @@
+{
+  "id": "c8",
+  "name": "Percival Pell",
+  "gender": "male",
+  "age": 56,
+  "alive": true,
+  "traits": [
+    "patient",
+    "generous"
+  ],
+  "loyalty": 74,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c7",
+  "children": [
+    "c9",
+    "c10",
+    "c11"
+  ],
+  "surname": "Pell",
+  "house": "House Goldcrest",
+  "playerId": 1,
+  "rank": "spouse",
+  "liege": "c7"
+}

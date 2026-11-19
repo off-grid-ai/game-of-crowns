@@ -1,0 +1,26 @@
+{
+  "id": "c24",
+  "name": "Basilia Pell",
+  "gender": "female",
+  "age": 9,
+  "alive": true,
+  "traits": [
+    "honourable",
+    "patient"
+  ],
+  "loyalty": 63,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Pell",
+  "house": "House Thornvale",
+  "playerId": 3,
+  "rank": "child",
+  "liege": "c20",
+  "parents": [
+    "c20",
+    "c21"
+  ]
+}

@@ -1,26 +1,30 @@
 {
   "id": "c100",
-  "name": "Corwin Crane",
+  "name": "Merrick undefined",
   "gender": "male",
-  "age": 18,
+  "age": 40,
   "alive": true,
   "traits": [
-    "ambitious"
+    "wrathful",
+    "generous"
   ],
-  "loyalty": 84,
-  "goals": [],
+  "loyalty": 64,
+  "goals": [
+    {
+      "kind": "defect",
+      "text": "find a liege more worthy of their sword"
+    }
+  ],
   "relationships": {},
   "memories": [],
-  "spouse": null,
-  "children": [],
-  "surname": "Crane",
-  "house": "House Wolfholt",
-  "playerId": 0,
-  "rank": "heir",
-  "liege": "c98",
-  "parents": [
-    "c98",
-    "c99"
+  "spouse": "c101",
+  "children": [
+    "c102",
+    "c103"
   ],
-  "backstory": "Son of Gareth and Isolde Crane, eager to be more than a northern knight. Wants a place in Godwin Wolfholt's household, and has been seen buying favour there with his mother's purse."
+  "house": "House Thornvale",
+  "playerId": 3,
+  "rank": "bannerman",
+  "seat": 355,
+  "liege": "c16"
 }

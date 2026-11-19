@@ -1,22 +1,21 @@
 {
   "id": "c86",
-  "name": "Mira Dale",
+  "name": "Letice undefined",
   "gender": "female",
-  "age": 20,
+  "age": 21,
   "alive": true,
   "traits": [
-    "pious",
-    "proud"
+    "paranoid",
+    "pious"
   ],
-  "loyalty": 78,
+  "loyalty": 80,
   "goals": [],
   "relationships": {},
   "memories": [],
   "spouse": null,
   "children": [],
-  "surname": "Dale",
-  "house": "House Wolfholt",
-  "playerId": 0,
+  "house": "House Ironreach",
+  "playerId": 2,
   "rank": "child",
   "liege": "c83",
   "parents": [

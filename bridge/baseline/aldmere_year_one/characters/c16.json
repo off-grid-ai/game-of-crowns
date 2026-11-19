@@ -1,0 +1,31 @@
+{
+  "id": "c16",
+  "name": "Guthrum Thornvale",
+  "gender": "male",
+  "age": 47,
+  "alive": true,
+  "traits": [
+    "greedy",
+    "vengeful"
+  ],
+  "loyalty": 56,
+  "goals": [
+    {
+      "kind": "marriage",
+      "text": "wed their heir into a great house"
+    }
+  ],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c17",
+  "children": [
+    "c18",
+    "c19"
+  ],
+  "surname": "Thornvale",
+  "house": "House Thornvale",
+  "playerId": 3,
+  "rank": "lord",
+  "seat": 209,
+  "voice": "greedy, vengeful lord of House Thornvale; speaks like a proud noble"
+}

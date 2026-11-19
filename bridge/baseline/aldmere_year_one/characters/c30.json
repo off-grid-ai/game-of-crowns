@@ -1,0 +1,24 @@
+{
+  "id": "c30",
+  "name": "Columba undefined",
+  "gender": "female",
+  "age": 26,
+  "alive": true,
+  "traits": [
+    "vengeful",
+    "wrathful"
+  ],
+  "loyalty": 60,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c29",
+  "children": [
+    "c31",
+    "c32"
+  ],
+  "house": "House Stormhold",
+  "playerId": 4,
+  "rank": "spouse",
+  "liege": "c29"
+}

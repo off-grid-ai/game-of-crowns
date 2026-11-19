@@ -1,0 +1,37 @@
+{
+ "name": "aldmere_founding",
+ "from": "baseline-chain-test-founding-mwnsmi5c",
+ "parent": null,
+ "turn": 1,
+ "save": "realm-T0001-Y-4000-manual.sav.zst",
+ "land": {
+  "file": "/home/admin1/wednesday/civilization/bridge/data/belia-land.f32",
+  "w": 896,
+  "h": 1408,
+  "perUnit": 4
+ },
+ "seed": {
+  "chain": 1066,
+  "mapseed": 1066,
+  "gameseed": 1066,
+  "reign": 1066,
+  "pace": 3
+ },
+ "made": 1795107455907,
+ "checks": {
+  "pleasCleared": 0,
+  "seats": [],
+  "crownPacts": {
+   "Scottish": "Never met",
+   "English": "Never met",
+   "Norwegian": "Never met",
+   "French": "Never met",
+   "Welsh": "Never met",
+   "Castilian": "Never met",
+   "Irish": "Never met"
+  },
+  "raiders": 0,
+  "raidersNearKingsmere": 0,
+  "thrown": []
+ }
+}

@@ -1,0 +1,26 @@
+{
+  "id": "c40",
+  "name": "Cuthbert Thorne",
+  "gender": "male",
+  "age": 14,
+  "alive": true,
+  "traits": [
+    "honourable",
+    "content"
+  ],
+  "loyalty": 59,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Thorne",
+  "house": "House Sunspire",
+  "playerId": 5,
+  "rank": "child",
+  "liege": "c37",
+  "parents": [
+    "c37",
+    "c38"
+  ]
+}

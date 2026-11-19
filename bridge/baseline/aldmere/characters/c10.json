@@ -1,20 +1,20 @@
 {
   "id": "c10",
-  "name": "Roderick Strand",
+  "name": "Bartram Pell",
   "gender": "male",
-  "age": 20,
+  "age": 18,
   "alive": true,
   "traits": [
-    "brave",
-    "proud"
+    "paranoid",
+    "content"
   ],
-  "loyalty": 57,
+  "loyalty": 69,
   "goals": [],
   "relationships": {},
   "memories": [],
   "spouse": null,
   "children": [],
-  "surname": "Strand",
+  "surname": "Pell",
   "house": "House Goldcrest",
   "playerId": 1,
   "rank": "child",

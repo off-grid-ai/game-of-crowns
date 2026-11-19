@@ -1,31 +1,32 @@
 {
   "id": "c95",
-  "name": "Hilda Brook",
-  "gender": "female",
-  "age": 47,
+  "name": "Jordan Dale",
+  "gender": "male",
+  "age": 55,
   "alive": true,
   "traits": [
-    "vengeful",
-    "generous"
+    "patient",
+    "vengeful"
   ],
-  "loyalty": 50,
+  "loyalty": 72,
   "goals": [
     {
       "kind": "land",
-      "text": "win more land for my family"
+      "text": "win more land for their house"
     }
   ],
   "relationships": {},
   "memories": [],
   "spouse": "c96",
   "children": [
-    "c97"
+    "c97",
+    "c98",
+    "c99"
   ],
-  "surname": "Brook",
-  "house": "House Sunspire",
-  "playerId": 5,
+  "surname": "Dale",
+  "house": "House Ironreach",
+  "playerId": 2,
   "rank": "bannerman",
-  "seat": 309,
-  "liege": "c42",
-  "backstory": "Holds her land under Sunspire and feeds every friar who walks the desert roads. Lost her father in a Stormhold raid on the river towns, and still sends a mourning coin to the sept each year on the day."
+  "seat": 320,
+  "liege": "c12"
 }

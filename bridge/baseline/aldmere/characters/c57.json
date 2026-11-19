@@ -1,31 +1,28 @@
 {
   "id": "c57",
-  "name": "Elaine Hollin",
+  "name": "Petronel Greyford",
   "gender": "female",
-  "age": 35,
+  "age": 51,
   "alive": true,
   "traits": [
-    "greedy",
+    "brave",
     "wrathful"
   ],
-  "loyalty": 66,
+  "loyalty": 83,
   "goals": [
     {
-      "kind": "marriage",
-      "text": "see my daughter wed above her station"
+      "kind": "court",
+      "text": "win a place at the King's council"
     }
   ],
   "relationships": {},
   "memories": [],
-  "spouse": "c58",
-  "children": [
-    "c59"
-  ],
-  "surname": "Hollin",
+  "spouse": null,
+  "children": [],
+  "surname": "Greyford",
   "house": "House Thornvale",
   "playerId": 3,
   "rank": "bannerman",
-  "seat": 282,
-  "liege": "c20",
-  "backstory": "Built her fortune buying farms that Ironreach burned, at a tenth of their worth. Refused her son Garth leave to take vows, since the Hollins need a fighting heir. Suspects her husband Osric keeps books of his own."
+  "seat": 275,
+  "liege": "c16"
 }

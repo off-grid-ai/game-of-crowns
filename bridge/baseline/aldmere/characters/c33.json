@@ -1,26 +1,37 @@
 {
   "id": "c33",
-  "name": "Cecily Strand",
+  "name": "Emmeline Sunspire",
   "gender": "female",
-  "age": 47,
+  "age": 58,
   "alive": true,
   "traits": [
-    "ambitious",
-    "vengeful"
+    "vengeful",
+    "ambitious"
   ],
-  "loyalty": 87,
-  "goals": [],
-  "relationships": {},
-  "memories": [],
-  "spouse": "c32",
+  "loyalty": 55,
+  "goals": [
+    {
+      "kind": "land",
+      "text": "win more land for their house"
+    }
+  ],
+  "relationships": {
+    "c25": {
+      "opinion": -25
+    }
+  },
+  "memories": [
+    "Nichola Stormhold spurned my daughter."
+  ],
+  "spouse": "c34",
   "children": [
-    "c34",
-    "c35"
+    "c35",
+    "c36"
   ],
-  "surname": "Strand",
-  "house": "House Thornvale",
-  "playerId": 3,
-  "rank": "spouse",
-  "liege": "c32",
-  "backstory": "Wife to Merrick Strand, sharper than her husband and tired of hiding it. His caution has cost the Strands twice in her lifetime. Wants her daughter Mira at the King's court, and Maud Strand brought low."
+  "surname": "Sunspire",
+  "house": "House Sunspire",
+  "playerId": 5,
+  "rank": "lord",
+  "seat": 229,
+  "voice": "vengeful, ambitious lord of House Sunspire; speaks like a proud noble"
 }

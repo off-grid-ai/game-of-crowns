@@ -1,27 +1,25 @@
 {
   "id": "c26",
-  "name": "Isolde Greyford",
-  "gender": "female",
-  "age": 19,
+  "name": "Mabon Stormhold",
+  "gender": "male",
+  "age": 61,
   "alive": true,
   "traits": [
-    "honourable",
-    "ambitious"
+    "patient",
+    "just"
   ],
-  "loyalty": 76,
+  "loyalty": 60,
   "goals": [],
   "relationships": {},
   "memories": [],
-  "spouse": null,
-  "children": [],
-  "surname": "Greyford",
-  "house": "House Thornvale",
-  "playerId": 3,
-  "rank": "heir",
-  "liege": "c24",
-  "parents": [
-    "c24",
-    "c25"
+  "spouse": "c25",
+  "children": [
+    "c27",
+    "c28"
   ],
-  "backstory": "Daughter of Corwin Greyford of Thornvale, refused as a bride by Cecily Stormhold. Trades letters with her cousin Dunstan Greyford of Rainhold, and believes the two halves of the family could be made one again."
+  "surname": "Stormhold",
+  "house": "House Stormhold",
+  "playerId": 4,
+  "rank": "spouse",
+  "liege": "c25"
 }

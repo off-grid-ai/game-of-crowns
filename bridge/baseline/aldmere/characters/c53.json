@@ -1,18 +1,18 @@
 {
   "id": "c53",
-  "name": "Hugh Ashby",
-  "gender": "male",
-  "age": 44,
+  "name": "Genevieve undefined",
+  "gender": "female",
+  "age": 39,
   "alive": true,
   "traits": [
-    "patient",
-    "wrathful"
+    "ambitious",
+    "paranoid"
   ],
-  "loyalty": 52,
+  "loyalty": 73,
   "goals": [
     {
-      "kind": "favour",
-      "text": "rise in my liege's esteem"
+      "kind": "land",
+      "text": "win more land for their house"
     }
   ],
   "relationships": {},
@@ -21,11 +21,9 @@
   "children": [
     "c55"
   ],
-  "surname": "Ashby",
-  "house": "House Wolfholt",
-  "playerId": 0,
+  "house": "House Goldcrest",
+  "playerId": 1,
   "rank": "bannerman",
-  "seat": 281,
-  "liege": "c1",
-  "backstory": "Holds the hills nearest the old wall for Constance Wolfholt. Lost a brother and twenty men there in the last long winter, and the crown sent no word. Slow to anger, he has not forgotten it."
+  "seat": 274,
+  "liege": "c4"
 }

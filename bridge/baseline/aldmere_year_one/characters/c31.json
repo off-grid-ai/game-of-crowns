@@ -1,0 +1,25 @@
+{
+  "id": "c31",
+  "name": "Hob undefined",
+  "gender": "male",
+  "age": 19,
+  "alive": true,
+  "traits": [
+    "cunning",
+    "greedy"
+  ],
+  "loyalty": 67,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "house": "House Stormhold",
+  "playerId": 4,
+  "rank": "heir",
+  "liege": "c29",
+  "parents": [
+    "c29",
+    "c30"
+  ]
+}

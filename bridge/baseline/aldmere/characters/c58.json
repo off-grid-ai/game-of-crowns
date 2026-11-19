@@ -1,25 +1,28 @@
 {
   "id": "c58",
-  "name": "Osric Hollin",
+  "name": "Anselm Marsh",
   "gender": "male",
-  "age": 31,
+  "age": 55,
   "alive": true,
   "traits": [
-    "cunning",
-    "paranoid"
+    "wrathful",
+    "content"
   ],
-  "loyalty": 78,
-  "goals": [],
+  "loyalty": 75,
+  "goals": [
+    {
+      "kind": "favour",
+      "text": "rise in their liege's esteem"
+    }
+  ],
   "relationships": {},
   "memories": [],
-  "spouse": "c57",
-  "children": [
-    "c59"
-  ],
-  "surname": "Hollin",
-  "house": "House Thornvale",
-  "playerId": 3,
-  "rank": "spouse",
-  "liege": "c57",
-  "backstory": "Husband to Elaine Hollin and a careful counter of other men's debts. Keeps a second set of the Hollin ledgers hidden from his wife, and believes her guards report on him."
+  "spouse": null,
+  "children": [],
+  "surname": "Marsh",
+  "house": "House Stormhold",
+  "playerId": 4,
+  "rank": "bannerman",
+  "seat": 273,
+  "liege": "c25"
 }

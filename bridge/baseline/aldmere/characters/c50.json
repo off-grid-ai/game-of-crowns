@@ -1,32 +1,25 @@
 {
   "id": "c50",
-  "name": "Tobin Highfell",
+  "name": "Accolon undefined",
   "gender": "male",
-  "age": 63,
-  "alive": false,
+  "age": 19,
+  "alive": true,
   "traits": [
-    "vengeful",
-    "content"
+    "ambitious",
+    "cunning"
   ],
-  "loyalty": 46,
-  "goals": [
-    {
-      "kind": "marriage",
-      "text": "wed my heir into a great house"
-    }
-  ],
+  "loyalty": 71,
+  "goals": [],
   "relationships": {},
-  "memories": [
-    "I waited at court for two years. The King never answered."
-  ],
-  "spouse": "c51",
-  "children": [
-    "c52"
-  ],
-  "surname": "Highfell",
-  "house": "House Highfell",
-  "playerId": 6,
-  "rank": "lord",
-  "seat": 237,
-  "voice": "vengeful, content lord of House Highfell; speaks like a proud noble"
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "house": "House Wolfholt",
+  "playerId": 0,
+  "rank": "child",
+  "liege": "c47",
+  "parents": [
+    "c47",
+    "c48"
+  ]
 }

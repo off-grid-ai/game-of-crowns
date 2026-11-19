@@ -1,0 +1,30 @@
+{
+  "id": "c4",
+  "name": "Beatrix Goldcrest",
+  "gender": "female",
+  "age": 45,
+  "alive": true,
+  "traits": [
+    "greedy",
+    "ambitious"
+  ],
+  "loyalty": 73,
+  "goals": [
+    {
+      "kind": "marriage",
+      "text": "wed their heir into a great house"
+    }
+  ],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c5",
+  "children": [
+    "c6"
+  ],
+  "surname": "Goldcrest",
+  "house": "House Goldcrest",
+  "playerId": 1,
+  "rank": "lord",
+  "seat": 189,
+  "voice": "greedy, ambitious lord of House Goldcrest; speaks like a proud noble"
+}

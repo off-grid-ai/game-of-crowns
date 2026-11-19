@@ -1,26 +1,24 @@
 {
   "id": "c48",
-  "name": "Rosalind Morrow",
-  "gender": "female",
-  "age": 28,
+  "name": "Paulin undefined",
+  "gender": "male",
+  "age": 32,
   "alive": true,
   "traits": [
     "generous",
     "paranoid"
   ],
-  "loyalty": 73,
+  "loyalty": 61,
   "goals": [],
   "relationships": {},
   "memories": [],
-  "spouse": null,
-  "children": [],
-  "surname": "Morrow",
-  "house": "House Sunspire",
-  "playerId": 5,
-  "rank": "child",
-  "liege": "c45",
-  "parents": [
-    "c45",
-    "c46"
-  ]
+  "spouse": "c47",
+  "children": [
+    "c49",
+    "c50"
+  ],
+  "house": "House Wolfholt",
+  "playerId": 0,
+  "rank": "spouse",
+  "liege": "c47"
 }

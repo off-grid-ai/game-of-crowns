@@ -1,12 +1,12 @@
 {
   "id": "c6",
-  "name": "Genevieve Goldcrest",
+  "name": "Linnet Goldcrest",
   "gender": "female",
   "age": 21,
   "alive": true,
   "traits": [
-    "honourable",
-    "proud"
+    "brave",
+    "honourable"
   ],
   "loyalty": 59,
   "goals": [],
@@ -22,6 +22,5 @@
   "parents": [
     "c4",
     "c5"
-  ],
-  "backstory": "Daughter of Cecily Goldcrest, wed to Godwin Wolfholt to close the old wound. Her mother asks in every letter for news of Stonefell, and so far Genevieve has given none. Knows the last bride to pass between these houses came home dead."
+  ]
 }

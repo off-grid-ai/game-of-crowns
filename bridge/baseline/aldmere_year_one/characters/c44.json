@@ -1,0 +1,26 @@
+{
+  "id": "c44",
+  "name": "Christiana Highfell",
+  "gender": "female",
+  "age": 14,
+  "alive": true,
+  "traits": [
+    "wrathful",
+    "just"
+  ],
+  "loyalty": 56,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Highfell",
+  "house": "House Highfell",
+  "playerId": 6,
+  "rank": "heir",
+  "liege": "c42",
+  "parents": [
+    "c42",
+    "c43"
+  ]
+}

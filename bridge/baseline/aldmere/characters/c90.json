@@ -1,26 +1,31 @@
 {
   "id": "c90",
-  "name": "Mira Dale",
-  "gender": "female",
-  "age": 18,
+  "name": "Tam FitzRicard",
+  "surname": "FitzRicard",
+  "gender": "male",
+  "age": 21,
   "alive": true,
   "traits": [
-    "brave",
-    "craven"
+    "ambitious",
+    "proud"
   ],
-  "loyalty": 63,
-  "goals": [],
+  "loyalty": 50,
+  "goals": [
+    {
+      "kind": "land",
+      "text": "be named Ricard undefined's child in front of the whole realm"
+    }
+  ],
   "relationships": {},
-  "memories": [],
+  "memories": [
+    "My mother told me on her deathbed whose child I am: Ricard undefined of House Stormhold."
+  ],
   "spouse": null,
   "children": [],
-  "surname": "Dale",
   "house": "House Stormhold",
   "playerId": 4,
-  "rank": "child",
-  "liege": "c87",
-  "parents": [
-    "c87",
-    "c88"
-  ]
+  "rank": "sworn",
+  "seat": null,
+  "liege": "c25",
+  "created": "arc"
 }

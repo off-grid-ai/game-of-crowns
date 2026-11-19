@@ -1,32 +1,26 @@
 {
   "id": "c98",
-  "name": "Gareth Crane",
-  "gender": "male",
-  "age": 42,
+  "name": "Katerina Dale",
+  "gender": "female",
+  "age": 17,
   "alive": true,
   "traits": [
-    "paranoid",
-    "cunning"
+    "content",
+    "generous"
   ],
-  "loyalty": 81,
-  "goals": [
-    {
-      "kind": "marriage",
-      "text": "see my daughter wed above her station"
-    }
-  ],
+  "loyalty": 82,
+  "goals": [],
   "relationships": {},
   "memories": [],
-  "spouse": "c99",
-  "children": [
-    "c100",
-    "c101"
-  ],
-  "surname": "Crane",
-  "house": "House Wolfholt",
-  "playerId": 0,
-  "rank": "bannerman",
-  "seat": 317,
-  "liege": "c1",
-  "backstory": "Trusts no one, his wife Isolde least of all. Has sold Wolfholt grain stores to Thornvale factors in lean years and kept the price. If Constance Wolfholt learns of it, he has already chosen which house to run to."
+  "spouse": null,
+  "children": [],
+  "surname": "Dale",
+  "house": "House Ironreach",
+  "playerId": 2,
+  "rank": "child",
+  "liege": "c95",
+  "parents": [
+    "c95",
+    "c96"
+  ]
 }

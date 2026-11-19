@@ -1,27 +1,25 @@
 {
   "id": "c55",
-  "name": "Rosalind Ashby",
-  "gender": "female",
-  "age": 27,
+  "name": "Giles undefined",
+  "gender": "male",
+  "age": 19,
   "alive": true,
   "traits": [
-    "honourable",
-    "generous"
+    "just",
+    "greedy"
   ],
-  "loyalty": 50,
+  "loyalty": 84,
   "goals": [],
   "relationships": {},
   "memories": [],
   "spouse": null,
   "children": [],
-  "surname": "Ashby",
-  "house": "House Wolfholt",
-  "playerId": 0,
+  "house": "House Goldcrest",
+  "playerId": 1,
   "rank": "heir",
   "liege": "c53",
   "parents": [
     "c53",
     "c54"
-  ],
-  "backstory": "Daughter of Hugh and Joan Ashby, who has ridden to the old wall with her father's men and seen what the friars speak of. Has kept silent about it, since no lord in the south would believe her."
+  ]
 }

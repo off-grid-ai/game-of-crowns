@@ -1,0 +1,26 @@
+{
+  "id": "c23",
+  "name": "Col Pell",
+  "gender": "male",
+  "age": 12,
+  "alive": true,
+  "traits": [
+    "paranoid",
+    "content"
+  ],
+  "loyalty": 57,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Pell",
+  "house": "House Thornvale",
+  "playerId": 3,
+  "rank": "child",
+  "liege": "c20",
+  "parents": [
+    "c20",
+    "c21"
+  ]
+}

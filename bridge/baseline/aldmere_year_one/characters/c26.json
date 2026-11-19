@@ -1,0 +1,25 @@
+{
+  "id": "c26",
+  "name": "Mabon Stormhold",
+  "gender": "male",
+  "age": 54,
+  "alive": true,
+  "traits": [
+    "patient",
+    "just"
+  ],
+  "loyalty": 60,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c25",
+  "children": [
+    "c27",
+    "c28"
+  ],
+  "surname": "Stormhold",
+  "house": "House Stormhold",
+  "playerId": 4,
+  "rank": "spouse",
+  "liege": "c25"
+}

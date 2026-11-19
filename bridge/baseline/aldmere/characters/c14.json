@@ -1,26 +1,26 @@
 {
   "id": "c14",
-  "name": "Hugh Pell",
-  "gender": "male",
-  "age": 19,
+  "name": "Aldith Ironreach",
+  "gender": "female",
+  "age": 21,
   "alive": true,
   "traits": [
-    "honourable",
-    "just"
+    "vengeful",
+    "brave"
   ],
-  "loyalty": 72,
+  "loyalty": 54,
   "goals": [],
   "relationships": {},
   "memories": [],
   "spouse": null,
   "children": [],
-  "surname": "Pell",
-  "house": "House Goldcrest",
-  "playerId": 1,
-  "rank": "child",
-  "liege": "c11",
+  "surname": "Ironreach",
+  "house": "House Ironreach",
+  "playerId": 2,
+  "rank": "heir",
+  "liege": "c12",
   "parents": [
-    "c11",
-    "c12"
+    "c12",
+    "c13"
   ]
 }

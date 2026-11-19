@@ -1,38 +1,32 @@
 {
   "id": "c20",
-  "name": "Ysolde Thornvale",
-  "gender": "female",
-  "age": 65,
+  "name": "Thurstan Pell",
+  "gender": "male",
+  "age": 58,
   "alive": true,
   "traits": [
-    "content",
-    "proud"
+    "wrathful",
+    "vengeful"
   ],
-  "loyalty": 49,
+  "loyalty": 86,
   "goals": [
     {
-      "kind": "peace",
-      "text": "keep my people fed and out of other men's wars"
+      "kind": "defect",
+      "text": "find a liege more worthy of their sword"
     }
   ],
   "relationships": {},
-  "memories": [
-    "I waited at court for two years. The King never answered.",
-    "I waited at court for two years. The King never answered.",
-    "I waited at court for two years. The King never answered.",
-    "I waited at court for two years. The King never answered.",
-    "I waited at court for two years. The King never answered."
-  ],
+  "memories": [],
   "spouse": "c21",
   "children": [
     "c22",
-    "c23"
+    "c23",
+    "c24"
   ],
-  "surname": "Thornvale",
+  "surname": "Pell",
   "house": "House Thornvale",
   "playerId": 3,
-  "rank": "lord",
-  "seat": 207,
-  "voice": "proud, content lord of House Thornvale; speaks like a proud noble",
-  "backstory": "Waited two years at Kingsmere for the crown to answer Ironreach's raids on her coast, and came home with nothing. Wants a Thornvale queen and full granaries. Wrote rash letters against the crown in her youth, and some of them still survive."
+  "rank": "bannerman",
+  "seat": 210,
+  "liege": "c16"
 }

@@ -1,0 +1,26 @@
+{
+  "id": "c35",
+  "name": "Leofrun Sunspire",
+  "gender": "female",
+  "age": 17,
+  "alive": true,
+  "traits": [
+    "cunning",
+    "ambitious"
+  ],
+  "loyalty": 63,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Sunspire",
+  "house": "House Sunspire",
+  "playerId": 5,
+  "rank": "heir",
+  "liege": "c33",
+  "parents": [
+    "c33",
+    "c34"
+  ]
+}

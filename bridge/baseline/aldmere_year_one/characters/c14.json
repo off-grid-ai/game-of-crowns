@@ -1,0 +1,26 @@
+{
+  "id": "c14",
+  "name": "Aldith Ironreach",
+  "gender": "female",
+  "age": 14,
+  "alive": true,
+  "traits": [
+    "vengeful",
+    "brave"
+  ],
+  "loyalty": 54,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Ironreach",
+  "house": "House Ironreach",
+  "playerId": 2,
+  "rank": "heir",
+  "liege": "c12",
+  "parents": [
+    "c12",
+    "c13"
+  ]
+}

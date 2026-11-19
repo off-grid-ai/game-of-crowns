@@ -1,31 +1,28 @@
 {
   "id": "c92",
-  "name": "Isolde Greyford",
-  "gender": "female",
-  "age": 55,
+  "name": "Osric Morrow",
+  "gender": "male",
+  "age": 49,
   "alive": true,
   "traits": [
-    "just",
-    "proud"
+    "generous",
+    "honourable"
   ],
-  "loyalty": 52,
+  "loyalty": 84,
   "goals": [
     {
-      "kind": "court",
-      "text": "be noticed by the King himself"
+      "kind": "favour",
+      "text": "rise in their liege's esteem"
     }
   ],
   "relationships": {},
   "memories": [],
-  "spouse": "c93",
-  "children": [
-    "c94"
-  ],
-  "surname": "Greyford",
-  "house": "House Stormhold",
-  "playerId": 4,
+  "spouse": null,
+  "children": [],
+  "surname": "Morrow",
+  "house": "House Sunspire",
+  "playerId": 5,
   "rank": "bannerman",
-  "seat": 218,
-  "liege": "c36",
-  "backstory": "Holds Rainhold for Stormhold and judges its courts fairly, which has made her enemies among richer lords. Rode to Kingsmere for the old King's burial and was kept waiting at the gate. Wants the new King to know her name."
+  "seat": 336,
+  "liege": "c33"
 }

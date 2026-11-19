@@ -1,26 +1,26 @@
 {
   "id": "c21",
-  "name": "Edric Thornvale",
-  "gender": "male",
-  "age": 58,
+  "name": "Oriel Pell",
+  "gender": "female",
+  "age": 54,
   "alive": true,
   "traits": [
     "just",
-    "honourable"
+    "wrathful"
   ],
-  "loyalty": 89,
+  "loyalty": 57,
   "goals": [],
   "relationships": {},
   "memories": [],
   "spouse": "c20",
   "children": [
     "c22",
-    "c23"
+    "c23",
+    "c24"
   ],
-  "surname": "Thornvale",
+  "surname": "Pell",
   "house": "House Thornvale",
   "playerId": 3,
   "rank": "spouse",
-  "liege": "c20",
-  "backstory": "Husband to Ysolde Thornvale, who waited beside her two years at Kingsmere. Keeps the peace among her bannermen by judging them fairly. Knows more about his wife's old letters than he lets on."
+  "liege": "c20"
 }

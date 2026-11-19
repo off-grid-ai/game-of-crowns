@@ -1,0 +1,26 @@
+{
+  "id": "c39",
+  "name": "Morgause Thorne",
+  "gender": "female",
+  "age": 12,
+  "alive": true,
+  "traits": [
+    "brave",
+    "proud"
+  ],
+  "loyalty": 72,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Thorne",
+  "house": "House Sunspire",
+  "playerId": 5,
+  "rank": "heir",
+  "liege": "c37",
+  "parents": [
+    "c37",
+    "c38"
+  ]
+}

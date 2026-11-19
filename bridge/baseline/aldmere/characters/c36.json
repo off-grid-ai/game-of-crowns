@@ -1,44 +1,25 @@
 {
   "id": "c36",
-  "name": "Cecily Stormhold",
+  "name": "Alys Sunspire",
   "gender": "female",
-  "age": 58,
+  "age": 26,
   "alive": true,
   "traits": [
-    "patient",
-    "wrathful"
+    "content"
   ],
-  "loyalty": 66,
-  "goals": [
-    {
-      "kind": "marriage",
-      "text": "wed my heir into a great house"
-    }
-  ],
-  "relationships": {
-    "c60": {
-      "opinion": -60
-    },
-    "c15": {
-      "opinion": -50
-    }
-  },
-  "memories": [
-    "Maud Strand betrayed me and gave Windcross to House Thornvale.",
-    "Ysolde Ironreach spurned my daughter.",
-    "Ysolde Ironreach spurned my daughter."
-  ],
-  "spouse": "c37",
-  "children": [
-    "c38",
-    "c39",
-    "c40"
-  ],
-  "surname": "Stormhold",
-  "house": "House Stormhold",
-  "playerId": 4,
-  "rank": "lord",
-  "seat": 217,
-  "voice": "patient, wrathful lord of House Stormhold; speaks like a proud noble",
-  "backstory": "Lost Windcross when Maud Strand opened its gates to Thornvale, and has waited three summers to take it back. Offered her daughter Genevieve to Jory Ironreach and was refused. Turned away Sunspire's daughter in her turn, and the Greyfords' after."
+  "loyalty": 86,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Sunspire",
+  "house": "House Sunspire",
+  "playerId": 5,
+  "rank": "child",
+  "liege": "c33",
+  "parents": [
+    "c33",
+    "c34"
+  ]
 }

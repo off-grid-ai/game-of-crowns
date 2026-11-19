@@ -1,41 +1,53 @@
 {
   "id": "c42",
-  "name": "Cecily Sunspire",
+  "name": "Mabel Highfell",
   "gender": "female",
-  "age": 52,
+  "age": 57,
   "alive": true,
   "traits": [
     "just",
-    "craven"
+    "vengeful"
   ],
-  "loyalty": 69,
+  "loyalty": 75,
   "goals": [
     {
+      "kind": "revenge",
+      "text": "make Beatrix Goldcrest pay for buying my bannerman"
+    },
+    {
       "kind": "marriage",
-      "text": "wed my heir into a great house"
+      "text": "wed their heir into a great house"
     }
   ],
   "relationships": {
-    "c15": {
+    "c80": {
+      "opinion": -85
+    },
+    "c25": {
       "opinion": -25
     },
-    "c36": {
-      "opinion": -25
+    "c4": {
+      "opinion": -45
     }
   },
   "memories": [
-    "Ysolde Ironreach spurned my daughter.",
-    "Cecily Stormhold spurned my daughter."
+    "The Treason of Sunstone: House Goldcrest sends gold to Sunstone hidden in wine casks. Odette Dale buys horses and says they're for the tourney.",
+    "Odette Dale will not come to Highfell. A loyal man comes when called.",
+    "Nichola Stormhold spurned my daughter.",
+    "The Treason of Sunstone: Odette Dale finally rides to Highfell, between two lines of House Highfell's spearmen.",
+    "Odette Dale betrayed me and gave Sunstone to House Ironreach.",
+    "Beatrix Goldcrest bought my bannerman Odette Dale with gold. I took the traitor's head and I will have more."
   ],
   "spouse": "c43",
   "children": [
-    "c44"
+    "c44",
+    "c45",
+    "c46"
   ],
-  "surname": "Sunspire",
-  "house": "House Sunspire",
-  "playerId": 5,
+  "surname": "Highfell",
+  "house": "House Highfell",
+  "playerId": 6,
   "rank": "lord",
-  "seat": 227,
-  "voice": "just, craven lord of House Sunspire; speaks like a proud noble",
-  "backstory": "Offered her daughter Edith to Ysolde Ironreach and then to Cecily Stormhold, and was refused by both. Rules by the old laws and avoids the field. Her people still sing of the old massacre in the marches and wait for her to answer it."
+  "seat": 239,
+  "voice": "just, vengeful lord of House Highfell; speaks like a proud noble"
 }

@@ -1,26 +1,30 @@
 {
   "id": "c12",
-  "name": "Jory Pell",
+  "name": "Leod Ironreach",
   "gender": "male",
-  "age": 53,
+  "age": 48,
   "alive": true,
   "traits": [
-    "proud",
-    "content"
+    "wrathful",
+    "pious"
   ],
   "loyalty": 73,
-  "goals": [],
+  "goals": [
+    {
+      "kind": "revenge",
+      "text": "settle an old score in blood"
+    }
+  ],
   "relationships": {},
   "memories": [],
-  "spouse": "c11",
+  "spouse": "c13",
   "children": [
-    "c13",
     "c14"
   ],
-  "surname": "Pell",
-  "house": "House Goldcrest",
-  "playerId": 1,
-  "rank": "spouse",
-  "liege": "c11",
-  "backstory": "Husband to Mira Pell and a fair hand at the hunt, who boasts the Pells held land before the Conqueror came. Is ashamed of his kinsman Osric Pell, who gave Crowhold to Sunspire, and will not hear the name at table."
+  "surname": "Ironreach",
+  "house": "House Ironreach",
+  "playerId": 2,
+  "rank": "lord",
+  "seat": 199,
+  "voice": "wrathful, pious lord of House Ironreach; speaks like a proud noble"
 }

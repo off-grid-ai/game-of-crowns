@@ -1,11 +1,62 @@
 {
- "from": "aldmere-baseline-mw0zeo6b",
+ "name": "aldmere",
+ "from": "baseline-chain-test-nine-years-mwnso49w",
+ "parent": {
+  "name": "aldmere_year_one",
+  "turn": 5
+ },
  "turn": 38,
+ "save": "realm-T0038-Y-3992-manual.sav.zst",
  "land": {
-  "file": "/Users/user/wednesday/civilization/bridge/data/belia-land.f32",
+  "file": "/home/admin1/wednesday/civilization/bridge/data/belia-land.f32",
   "w": 896,
   "h": 1408,
   "perUnit": 4
  },
- "made": 1793728243299
+ "seed": {
+  "chain": 1066,
+  "mapseed": 1066,
+  "gameseed": 1066,
+  "reign": 1066,
+  "pace": 3
+ },
+ "made": 1795107696177,
+ "checks": {
+  "pleasCleared": 32,
+  "seats": [
+   {
+    "id": "c25",
+    "name": "Nichola Stormhold",
+    "house": "House Stormhold",
+    "seat": 219,
+    "why": "held by player 5"
+   },
+   {
+    "id": "c52",
+    "name": "Swanhild Marsh",
+    "house": "House Goldcrest",
+    "seat": 283,
+    "why": "held by player 3"
+   },
+   {
+    "id": "c53",
+    "name": "Genevieve undefined",
+    "house": "House Goldcrest",
+    "seat": 274,
+    "why": "no such town"
+   }
+  ],
+  "crownPacts": {
+   "Scottish": "War",
+   "English": "War",
+   "Norwegian": "War",
+   "French": "War",
+   "Welsh": "Never met",
+   "Castilian": "Never met",
+   "Irish": "Never met"
+  },
+  "raiders": 0,
+  "raidersNearKingsmere": 0,
+  "thrown": []
+ }
 }

@@ -1,0 +1,24 @@
+{
+  "id": "c13",
+  "name": "Muriel Ironreach",
+  "gender": "female",
+  "age": 37,
+  "alive": true,
+  "traits": [
+    "patient",
+    "honourable"
+  ],
+  "loyalty": 60,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c12",
+  "children": [
+    "c14"
+  ],
+  "surname": "Ironreach",
+  "house": "House Ironreach",
+  "playerId": 2,
+  "rank": "spouse",
+  "liege": "c12"
+}

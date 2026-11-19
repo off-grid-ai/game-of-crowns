@@ -1,26 +1,32 @@
 {
   "id": "c75",
-  "name": "Alaric Varn",
-  "gender": "male",
-  "age": 14,
+  "name": "Ellen Kettle",
+  "gender": "female",
+  "age": 37,
   "alive": true,
   "traits": [
-    "paranoid",
-    "proud"
+    "honourable",
+    "ambitious"
   ],
-  "loyalty": 83,
-  "goals": [],
+  "loyalty": 88,
+  "goals": [
+    {
+      "kind": "court",
+      "text": "win a place at the King's council"
+    }
+  ],
   "relationships": {},
   "memories": [],
-  "spouse": null,
-  "children": [],
-  "surname": "Varn",
-  "house": "House Thornvale",
-  "playerId": 3,
-  "rank": "child",
-  "liege": "c72",
-  "parents": [
-    "c72",
-    "c73"
-  ]
+  "spouse": "c76",
+  "children": [
+    "c77",
+    "c78",
+    "c79"
+  ],
+  "surname": "Kettle",
+  "house": "House Ironreach",
+  "playerId": 2,
+  "rank": "bannerman",
+  "seat": 307,
+  "liege": "c12"
 }

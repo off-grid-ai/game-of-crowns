@@ -1,27 +1,37 @@
 {
   "id": "c37",
-  "name": "Willem Stormhold",
-  "gender": "male",
-  "age": 52,
+  "name": "Rowena Thorne",
+  "gender": "female",
+  "age": 54,
   "alive": true,
   "traits": [
-    "greedy",
-    "brave"
+    "honourable",
+    "patient"
   ],
-  "loyalty": 66,
-  "goals": [],
+  "loyalty": 91,
+  "goals": [
+    {
+      "kind": "defect",
+      "text": "find a liege more worthy of their sword"
+    }
+  ],
   "relationships": {},
-  "memories": [],
-  "spouse": "c36",
-  "children": [
-    "c38",
-    "c39",
-    "c40"
+  "memories": [
+    "The sickness came to Redsands, and the people are looking to me.",
+    "The Pestilence of Redsands: In the alehouses of Redsands they say Martin brought the sickness. Someone has chalked a mark on his door.",
+    "I stood between the people of Redsands and Martin.",
+    "The Pestilence of Redsands: The sickness burns itself out. Nobody in Redsands mentions Martin again, and people bless Rowena Thorne's name in the septs."
   ],
-  "surname": "Stormhold",
-  "house": "House Stormhold",
-  "playerId": 4,
-  "rank": "spouse",
-  "liege": "c36",
-  "backstory": "Husband to Cecily Stormhold and her captain in the marches, scarred by twenty summers of Sunspire skirmishes. Takes a share of every river toll before it reaches Stormwatch, and his wife has begun to count."
+  "spouse": "c38",
+  "children": [
+    "c39",
+    "c40",
+    "c41"
+  ],
+  "surname": "Thorne",
+  "house": "House Sunspire",
+  "playerId": 5,
+  "rank": "bannerman",
+  "seat": 230,
+  "liege": "c33"
 }

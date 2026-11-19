@@ -1,26 +1,26 @@
 {
   "id": "c71",
-  "name": "Joan Marsh",
+  "name": "Elfled Kettle",
   "gender": "female",
-  "age": 21,
+  "age": 33,
   "alive": true,
   "traits": [
-    "just",
-    "pious"
+    "cunning",
+    "vengeful"
   ],
-  "loyalty": 59,
+  "loyalty": 61,
   "goals": [],
   "relationships": {},
   "memories": [],
-  "spouse": null,
-  "children": [],
-  "surname": "Marsh",
-  "house": "House Thornvale",
-  "playerId": 3,
-  "rank": "child",
-  "liege": "c68",
-  "parents": [
-    "c68",
-    "c69"
-  ]
+  "spouse": "c70",
+  "children": [
+    "c72",
+    "c73",
+    "c74"
+  ],
+  "surname": "Kettle",
+  "house": "House Wolfholt",
+  "playerId": 0,
+  "rank": "spouse",
+  "liege": "c70"
 }

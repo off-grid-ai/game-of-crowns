@@ -1,0 +1,26 @@
+{
+  "id": "c21",
+  "name": "Oriel Pell",
+  "gender": "female",
+  "age": 47,
+  "alive": true,
+  "traits": [
+    "just",
+    "wrathful"
+  ],
+  "loyalty": 57,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c20",
+  "children": [
+    "c22",
+    "c23",
+    "c24"
+  ],
+  "surname": "Pell",
+  "house": "House Thornvale",
+  "playerId": 3,
+  "rank": "spouse",
+  "liege": "c20"
+}

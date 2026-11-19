@@ -1,25 +1,31 @@
 {
   "id": "c93",
-  "name": "Corwin Greyford",
+  "name": "Ned FitzHamon",
+  "surname": "FitzHamon",
   "gender": "male",
-  "age": 48,
+  "age": 29,
   "alive": true,
   "traits": [
-    "vengeful",
-    "patient"
+    "ambitious",
+    "proud"
   ],
-  "loyalty": 74,
-  "goals": [],
+  "loyalty": 50,
+  "goals": [
+    {
+      "kind": "land",
+      "text": "be named Hamon undefined's child in front of the whole realm"
+    }
+  ],
   "relationships": {},
-  "memories": [],
-  "spouse": "c92",
-  "children": [
-    "c94"
+  "memories": [
+    "My mother told me on her deathbed whose child I am: Hamon undefined of House Sunspire."
   ],
-  "surname": "Greyford",
-  "house": "House Stormhold",
-  "playerId": 4,
-  "rank": "spouse",
-  "liege": "c92",
-  "backstory": "Husband to Isolde Greyford, and cousin to the Corwin Greyford who serves Thornvale, both named for the same grandfather. When the family split over the marches, the elder Corwin took the land and the silver. This one has not forgotten."
+  "spouse": null,
+  "children": [],
+  "house": "House Sunspire",
+  "playerId": 5,
+  "rank": "sworn",
+  "seat": null,
+  "liege": "c33",
+  "created": "arc"
 }

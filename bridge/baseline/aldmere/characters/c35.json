@@ -1,25 +1,26 @@
 {
   "id": "c35",
-  "name": "Cecily Strand",
+  "name": "Leofrun Sunspire",
   "gender": "female",
-  "age": 26,
+  "age": 24,
   "alive": true,
   "traits": [
-    "proud"
+    "cunning",
+    "ambitious"
   ],
-  "loyalty": 86,
+  "loyalty": 63,
   "goals": [],
   "relationships": {},
   "memories": [],
   "spouse": null,
   "children": [],
-  "surname": "Strand",
-  "house": "House Thornvale",
-  "playerId": 3,
-  "rank": "child",
-  "liege": "c32",
+  "surname": "Sunspire",
+  "house": "House Sunspire",
+  "playerId": 5,
+  "rank": "heir",
+  "liege": "c33",
   "parents": [
-    "c32",
-    "c33"
+    "c33",
+    "c34"
   ]
 }

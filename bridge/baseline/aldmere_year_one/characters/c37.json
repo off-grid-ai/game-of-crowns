@@ -1,0 +1,32 @@
+{
+  "id": "c37",
+  "name": "Rowena Thorne",
+  "gender": "female",
+  "age": 47,
+  "alive": true,
+  "traits": [
+    "honourable",
+    "patient"
+  ],
+  "loyalty": 86,
+  "goals": [
+    {
+      "kind": "defect",
+      "text": "find a liege more worthy of their sword"
+    }
+  ],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c38",
+  "children": [
+    "c39",
+    "c40",
+    "c41"
+  ],
+  "surname": "Thorne",
+  "house": "House Sunspire",
+  "playerId": 5,
+  "rank": "bannerman",
+  "seat": 230,
+  "liege": "c33"
+}

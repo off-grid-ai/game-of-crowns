@@ -1,6 +1,6 @@
 {
   "id": "c3",
-  "name": "Godwin Wolfholt",
+  "name": "Aldous Wolfholt",
   "gender": "male",
   "age": 22,
   "alive": true,
@@ -22,6 +22,5 @@
   "parents": [
     "c1",
     "c2"
-  ],
-  "backstory": "Heir to Stonefell, wed to Genevieve Goldcrest by his mother's arrangement. Has fought Ironreach raiders at Crowfell twice. Knows his father once brought a Wolfholt bride home dead from Goldrock, and watches his wife's kin closely."
+  ]
 }

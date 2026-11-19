@@ -1,26 +1,26 @@
 {
   "id": "c46",
-  "name": "Bran Morrow",
-  "gender": "male",
-  "age": 60,
+  "name": "Wilmot Highfell",
+  "gender": "female",
+  "age": 26,
   "alive": true,
   "traits": [
-    "pious",
-    "generous"
+    "patient",
+    "wrathful"
   ],
-  "loyalty": 87,
+  "loyalty": 85,
   "goals": [],
   "relationships": {},
   "memories": [],
-  "spouse": "c45",
-  "children": [
-    "c47",
-    "c48"
-  ],
-  "surname": "Morrow",
-  "house": "House Sunspire",
-  "playerId": 5,
-  "rank": "spouse",
-  "liege": "c45",
-  "backstory": "Husband to Rosalind Morrow and a fixture at the great sept of Sunspire. Pays the friars every year to pray for the dead of the old massacre. Has forgiven his wife more than the realm knows."
+  "spouse": null,
+  "children": [],
+  "surname": "Highfell",
+  "house": "House Highfell",
+  "playerId": 6,
+  "rank": "child",
+  "liege": "c42",
+  "parents": [
+    "c42",
+    "c43"
+  ]
 }

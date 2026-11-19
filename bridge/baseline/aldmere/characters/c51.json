@@ -1,25 +1,27 @@
 {
   "id": "c51",
-  "name": "Rosalind Highfell",
-  "gender": "female",
-  "age": 59,
+  "name": "Alun undefined",
+  "gender": "male",
+  "age": 38,
   "alive": true,
   "traits": [
-    "generous",
+    "cunning",
     "content"
   ],
-  "loyalty": 54,
-  "goals": [],
+  "loyalty": 58,
+  "goals": [
+    {
+      "kind": "court",
+      "text": "win a place at the King's council"
+    }
+  ],
   "relationships": {},
   "memories": [],
-  "spouse": "c50",
-  "children": [
-    "c52"
-  ],
-  "surname": "Highfell",
-  "house": "House Highfell",
-  "playerId": 6,
-  "rank": "spouse",
-  "liege": "c50",
-  "backstory": "Widow of Tobin Highfell, who kept the Vale out of other houses' wars for thirty years at his side. Gives freely to the great sept and to every friar who climbs the pass. Fears her daughter Maud's grief will drag Highfell into a feud."
+  "spouse": null,
+  "children": [],
+  "house": "House Goldcrest",
+  "playerId": 1,
+  "rank": "bannerman",
+  "seat": 276,
+  "liege": "c4"
 }

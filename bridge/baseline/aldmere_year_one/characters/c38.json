@@ -1,0 +1,26 @@
+{
+  "id": "c38",
+  "name": "Madoc Thorne",
+  "gender": "male",
+  "age": 41,
+  "alive": true,
+  "traits": [
+    "greedy",
+    "brave"
+  ],
+  "loyalty": 66,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c37",
+  "children": [
+    "c39",
+    "c40",
+    "c41"
+  ],
+  "surname": "Thorne",
+  "house": "House Sunspire",
+  "playerId": 5,
+  "rank": "spouse",
+  "liege": "c37"
+}

@@ -1,28 +1,24 @@
 {
   "id": "c60",
-  "name": "Maud Strand",
+  "name": "Kerensa undefined",
   "gender": "female",
-  "age": 61,
+  "age": 37,
   "alive": true,
   "traits": [
-    "craven"
+    "just",
+    "greedy"
   ],
-  "loyalty": 55,
-  "goals": [
-    {
-      "kind": "favour",
-      "text": "rise in my liege's esteem"
-    }
-  ],
+  "loyalty": 65,
+  "goals": [],
   "relationships": {},
   "memories": [],
-  "spouse": null,
-  "children": [],
-  "surname": "Strand",
-  "house": "House Thornvale",
-  "playerId": 3,
-  "rank": "bannerman",
-  "seat": 276,
-  "liege": "c20",
-  "backstory": "Once sworn to Cecily Stormhold, she opened the gates of Windcross to Thornvale rather than face a siege. Stormhold has sworn to hang her. Lives in fear that Ysolde Thornvale will hand her back to buy peace."
+  "spouse": "c59",
+  "children": [
+    "c61",
+    "c62"
+  ],
+  "house": "House Stormhold",
+  "playerId": 4,
+  "rank": "spouse",
+  "liege": "c59"
 }

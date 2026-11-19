@@ -1,18 +1,18 @@
 {
   "id": "c7",
-  "name": "Cedric Strand",
-  "gender": "male",
-  "age": 64,
-  "alive": true,
+  "name": "Elaine Pell",
+  "gender": "female",
+  "age": 63,
+  "alive": false,
   "traits": [
-    "patient",
-    "proud"
+    "honourable",
+    "patient"
   ],
   "loyalty": 81,
   "goals": [
     {
-      "kind": "favour",
-      "text": "rise in my liege's esteem"
+      "kind": "defect",
+      "text": "find a liege more worthy of their sword"
     }
   ],
   "relationships": {},
@@ -20,13 +20,13 @@
   "spouse": "c8",
   "children": [
     "c9",
-    "c10"
+    "c10",
+    "c11"
   ],
-  "surname": "Strand",
+  "surname": "Pell",
   "house": "House Goldcrest",
   "playerId": 1,
   "rank": "bannerman",
-  "seat": 269,
-  "liege": "c4",
-  "backstory": "Has kept Goldcrest's ledgers for forty years and counts himself the true mind behind Cecily Goldcrest's fortune. Waits, as he always has, for her to name him to the King's council as her mother once promised."
+  "seat": 190,
+  "liege": "c4"
 }

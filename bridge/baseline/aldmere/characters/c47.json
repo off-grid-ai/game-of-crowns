@@ -1,27 +1,29 @@
 {
   "id": "c47",
-  "name": "Bryony Morrow",
+  "name": "Mathilda undefined",
   "gender": "female",
-  "age": 16,
+  "age": 38,
   "alive": true,
   "traits": [
-    "content",
-    "craven"
+    "brave"
   ],
-  "loyalty": 50,
-  "goals": [],
+  "loyalty": 51,
+  "goals": [
+    {
+      "kind": "revenge",
+      "text": "settle an old score in blood"
+    }
+  ],
   "relationships": {},
   "memories": [],
-  "spouse": null,
-  "children": [],
-  "surname": "Morrow",
-  "house": "House Sunspire",
-  "playerId": 5,
-  "rank": "heir",
-  "liege": "c45",
-  "parents": [
-    "c45",
-    "c46"
+  "spouse": "c48",
+  "children": [
+    "c49",
+    "c50"
   ],
-  "backstory": "Daughter of Rosalind and Bran Morrow, happiest in the sept gardens. Has been promised to a Stormhold knight to keep the marches quiet, and has not dared tell her mother she will not go."
+  "house": "House Wolfholt",
+  "playerId": 0,
+  "rank": "bannerman",
+  "seat": 279,
+  "liege": "c1"
 }

@@ -1,31 +1,38 @@
 {
   "id": "c80",
-  "name": "Tristan Kettle",
-  "gender": "male",
-  "age": 40,
-  "alive": true,
+  "name": "Odette Dale",
+  "gender": "female",
+  "age": 46,
+  "alive": false,
   "traits": [
-    "honourable",
-    "patient"
+    "ambitious",
+    "vengeful"
   ],
-  "loyalty": 64,
+  "loyalty": 55,
   "goals": [
     {
       "kind": "land",
-      "text": "win more land for my family"
+      "text": "win more land for their house"
     }
   ],
-  "relationships": {},
-  "memories": [],
-  "spouse": "c81",
-  "children": [
-    "c82"
+  "relationships": {
+    "c4": {
+      "opinion": 15
+    }
+  },
+  "memories": [
+    "Beatrix Goldcrest wrote to me as an equal. My own liege never has.",
+    "I took Beatrix Goldcrest's gold. There is no unknowing it.",
+    "Mabel Highfell called me to Highfell for the winter. I said I had a fever. I do not.",
+    "The Treason of Sunstone: Odette Dale finally rides to Highfell, between two lines of House Highfell's spearmen.",
+    "I was beheaded at Highfell for taking Beatrix Goldcrest's gold."
   ],
-  "surname": "Kettle",
-  "house": "House Sunspire",
-  "playerId": 5,
+  "spouse": null,
+  "children": [],
+  "surname": "Dale",
+  "house": "House Ironreach",
+  "playerId": 2,
   "rank": "bannerman",
-  "seat": 289,
-  "liege": "c42",
-  "backstory": "A plain knight given his seat by Cecily Sunspire for holding a march tower through a winter siege. His cousin Cedric Kettle sails for Ironreach, which prouder Sunspire lords throw in his face."
+  "seat": 320,
+  "liege": "c12"
 }

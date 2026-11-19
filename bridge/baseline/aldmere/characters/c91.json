@@ -1,25 +1,42 @@
 {
   "id": "c91",
-  "name": "Osric Dale",
-  "gender": "male",
-  "age": 13,
+  "name": "Sybil Tanner",
+  "surname": "Tanner",
+  "gender": "female",
+  "age": 23,
   "alive": true,
   "traits": [
-    "ambitious"
+    "proud"
   ],
-  "loyalty": 61,
-  "goals": [],
+  "loyalty": 60,
+  "goals": [
+    {
+      "kind": "want",
+      "text": "bread enough for the winter"
+    },
+    {
+      "kind": "want",
+      "text": "a warm winter"
+    }
+  ],
   "relationships": {},
-  "memories": [],
+  "memories": [
+    "I was in Redmarch when it happened. The land around Redmarch slowly recovers.",
+    "Word came from Rainhold: The Tanner family loads a cart and leaves Rainhold for Crowhold.",
+    "They say in the market: Famine in Goldrock and Gildport.",
+    "They say in the market: Gildport is starving, and the hunger reaches its neighbours.",
+    "They say in the market: The fields round Stonefell, Eaglehaven, Crowford and 1 more give out: sown too many years running, they bear thin and weedy, and will for a while yet.",
+    "They say in the market: House Thornvale storms Eaglehaven, tearing it from House Goldcrest."
+  ],
   "spouse": null,
   "children": [],
-  "surname": "Dale",
   "house": "House Stormhold",
   "playerId": 4,
-  "rank": "child",
-  "liege": "c87",
-  "parents": [
-    "c87",
-    "c88"
-  ]
+  "rank": "sworn",
+  "seat": null,
+  "liege": "c25",
+  "created": "arc",
+  "born": "tanner",
+  "station": "tanner",
+  "fromFolk": "folk:272:32"
 }

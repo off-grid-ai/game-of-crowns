@@ -1,27 +1,35 @@
 {
   "id": "c25",
-  "name": "Mira Greyford",
+  "name": "Nichola Stormhold",
   "gender": "female",
-  "age": 56,
+  "age": 62,
   "alive": true,
   "traits": [
-    "greedy",
-    "content"
+    "pious",
+    "craven"
   ],
-  "loyalty": 82,
-  "goals": [],
-  "relationships": {},
+  "loyalty": 41,
+  "goals": [
+    {
+      "kind": "revenge",
+      "text": "settle an old score in blood"
+    }
+  ],
+  "relationships": {
+    "c16": {
+      "opinion": 15
+    }
+  },
   "memories": [],
-  "spouse": "c24",
+  "spouse": "c26",
   "children": [
-    "c26",
     "c27",
     "c28"
   ],
-  "surname": "Greyford",
-  "house": "House Thornvale",
-  "playerId": 3,
-  "rank": "spouse",
-  "liege": "c24",
-  "backstory": "Wife to Corwin Greyford of Thornvale. Holds the keys to the Greyford silver, which her husband's cousin across the marches still says was stolen from him."
+  "surname": "Stormhold",
+  "house": "House Stormhold",
+  "playerId": 4,
+  "rank": "lord",
+  "seat": 219,
+  "voice": "pious, craven lord of House Stormhold; speaks like a proud noble"
 }

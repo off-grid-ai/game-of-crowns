@@ -1,26 +1,31 @@
 {
   "id": "c69",
-  "name": "Mira Marsh",
+  "name": "Estrild Marsh",
   "gender": "female",
-  "age": 55,
+  "age": 21,
   "alive": true,
   "traits": [
-    "brave",
-    "ambitious"
+    "pious",
+    "vengeful"
   ],
-  "loyalty": 84,
+  "loyalty": 74,
   "goals": [],
   "relationships": {},
-  "memories": [],
-  "spouse": "c68",
-  "children": [
-    "c70",
-    "c71"
+  "memories": [
+    "I danced with Gilbert Thornvale of House Thornvale. I think of nothing else.",
+    "The Forbidden Match of Marsh and Thornvale: Letters pass between Estrild Marsh and Gilbert Thornvale, hidden in loaves and saddlebags. A maid of House Highfell reads one, and tells.",
+    "The Forbidden Match of Marsh and Thornvale: Estrild Marsh kneels before Godric Marsh and asks to marry Gilbert Thornvale of House Thornvale. Godric Marsh says he will think about it, and sends a rider to Guthrum Thornvale.",
+    "The Forbidden Match of Marsh and Thornvale: Bells ring in Rosegarden: Estrild Marsh marries Gilbert Thornvale, and House Highfell and House Thornvale drink from one cup. The old grudges are buried, for now."
   ],
+  "spouse": "c19",
+  "children": [],
   "surname": "Marsh",
-  "house": "House Thornvale",
-  "playerId": 3,
-  "rank": "spouse",
-  "liege": "c68",
-  "backstory": "Held a burning coast tower against Ironreach for two days while her husband Cedric was at Rosehall begging for men. Thinks Thornvale too timid with raiders and wants her son Gareth to lead the fight."
+  "house": "House Highfell",
+  "playerId": 6,
+  "rank": "heir",
+  "liege": "c67",
+  "parents": [
+    "c67",
+    "c68"
+  ]
 }

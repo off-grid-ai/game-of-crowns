@@ -1,0 +1,26 @@
+{
+  "id": "c19",
+  "name": "Gilbert Thornvale",
+  "gender": "male",
+  "age": 19,
+  "alive": true,
+  "traits": [
+    "honourable",
+    "generous"
+  ],
+  "loyalty": 68,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Thornvale",
+  "house": "House Thornvale",
+  "playerId": 3,
+  "rank": "child",
+  "liege": "c16",
+  "parents": [
+    "c16",
+    "c17"
+  ]
+}

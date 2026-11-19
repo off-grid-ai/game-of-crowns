@@ -1,25 +1,26 @@
 {
   "id": "c96",
-  "name": "Lucan Brook",
-  "gender": "male",
-  "age": 41,
+  "name": "Primrose Dale",
+  "gender": "female",
+  "age": 48,
   "alive": true,
   "traits": [
-    "generous",
-    "paranoid"
+    "content",
+    "brave"
   ],
-  "loyalty": 78,
+  "loyalty": 54,
   "goals": [],
   "relationships": {},
   "memories": [],
   "spouse": "c95",
   "children": [
-    "c97"
+    "c97",
+    "c98",
+    "c99"
   ],
-  "surname": "Brook",
-  "house": "House Sunspire",
-  "playerId": 5,
+  "surname": "Dale",
+  "house": "House Ironreach",
+  "playerId": 2,
   "rank": "spouse",
-  "liege": "c95",
-  "backstory": "Husband to Hilda Brook, who gave half his own inheritance to feed the desert towns in the dry year. Now trusts no one near his daughter Maud and keeps her away from court."
+  "liege": "c95"
 }

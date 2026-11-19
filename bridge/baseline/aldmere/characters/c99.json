@@ -1,26 +1,26 @@
 {
   "id": "c99",
-  "name": "Isolde Crane",
+  "name": "Ursula Dale",
   "gender": "female",
-  "age": 37,
+  "age": 19,
   "alive": true,
   "traits": [
-    "generous",
-    "proud"
+    "content",
+    "cunning"
   ],
-  "loyalty": 76,
+  "loyalty": 88,
   "goals": [],
   "relationships": {},
   "memories": [],
-  "spouse": "c98",
-  "children": [
-    "c100",
-    "c101"
-  ],
-  "surname": "Crane",
-  "house": "House Wolfholt",
-  "playerId": 0,
-  "rank": "spouse",
-  "liege": "c98",
-  "backstory": "Wife to Gareth Crane, a bride from the Reach who never took to the cold. Gives warmly to the poor of the hall, and is too warm by half with a Thornvale grain factor who comes north each autumn."
+  "spouse": null,
+  "children": [],
+  "surname": "Dale",
+  "house": "House Ironreach",
+  "playerId": 2,
+  "rank": "child",
+  "liege": "c95",
+  "parents": [
+    "c95",
+    "c96"
+  ]
 }

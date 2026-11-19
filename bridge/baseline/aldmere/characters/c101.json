@@ -1,26 +1,24 @@
 {
   "id": "c101",
-  "name": "Beatrix Crane",
+  "name": "Ragnhild undefined",
   "gender": "female",
-  "age": 17,
+  "age": 39,
   "alive": true,
   "traits": [
-    "paranoid",
-    "wrathful"
+    "cunning",
+    "generous"
   ],
-  "loyalty": 65,
+  "loyalty": 70,
   "goals": [],
   "relationships": {},
   "memories": [],
-  "spouse": null,
-  "children": [],
-  "surname": "Crane",
-  "house": "House Wolfholt",
-  "playerId": 0,
-  "rank": "child",
-  "liege": "c98",
-  "parents": [
-    "c98",
-    "c99"
-  ]
+  "spouse": "c100",
+  "children": [
+    "c102",
+    "c103"
+  ],
+  "house": "House Thornvale",
+  "playerId": 3,
+  "rank": "spouse",
+  "liege": "c100"
 }

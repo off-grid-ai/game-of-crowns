@@ -1,25 +1,25 @@
 {
   "id": "c103",
-  "name": "Mira Holt",
+  "name": "Leoba undefined",
   "gender": "female",
-  "age": 43,
+  "age": 20,
   "alive": true,
   "traits": [
-    "cunning",
-    "proud"
+    "patient",
+    "generous"
   ],
-  "loyalty": 69,
+  "loyalty": 86,
   "goals": [],
   "relationships": {},
   "memories": [],
-  "spouse": "c102",
-  "children": [
-    "c104"
-  ],
-  "surname": "Holt",
-  "house": "House Stormhold",
-  "playerId": 4,
-  "rank": "spouse",
-  "liege": "c102",
-  "backstory": "Wife to Aldric Holt, born to a poor marcher family she would rather forget. Reads every letter that comes into the Holt hall before her husband does, and means her son Dunstan to marry far above the Holts."
+  "spouse": null,
+  "children": [],
+  "house": "House Thornvale",
+  "playerId": 3,
+  "rank": "child",
+  "liege": "c100",
+  "parents": [
+    "c100",
+    "c101"
+  ]
 }

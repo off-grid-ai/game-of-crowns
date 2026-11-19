@@ -1,27 +1,26 @@
 {
   "id": "c44",
-  "name": "Edith Sunspire",
+  "name": "Christiana Highfell",
   "gender": "female",
-  "age": 18,
+  "age": 21,
   "alive": true,
   "traits": [
-    "proud",
+    "wrathful",
     "just"
   ],
-  "loyalty": 81,
+  "loyalty": 56,
   "goals": [],
   "relationships": {},
   "memories": [],
   "spouse": null,
   "children": [],
-  "surname": "Sunspire",
-  "house": "House Sunspire",
-  "playerId": 5,
+  "surname": "Highfell",
+  "house": "House Highfell",
+  "playerId": 6,
   "rank": "heir",
   "liege": "c42",
   "parents": [
     "c42",
     "c43"
-  ],
-  "backstory": "Daughter of Cecily Sunspire, twice turned away as a bride, by Ironreach and by Stormhold. Carries both insults as her own and has said she will marry no one her mother chooses."
+  ]
 }

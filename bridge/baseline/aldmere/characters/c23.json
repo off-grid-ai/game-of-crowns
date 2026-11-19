@@ -1,20 +1,20 @@
 {
   "id": "c23",
-  "name": "Elsbeth Thornvale",
-  "gender": "female",
-  "age": 24,
+  "name": "Col Pell",
+  "gender": "male",
+  "age": 19,
   "alive": true,
   "traits": [
-    "ambitious",
-    "wrathful"
+    "paranoid",
+    "content"
   ],
-  "loyalty": 61,
+  "loyalty": 57,
   "goals": [],
   "relationships": {},
   "memories": [],
   "spouse": null,
   "children": [],
-  "surname": "Thornvale",
+  "surname": "Pell",
   "house": "House Thornvale",
   "playerId": 3,
   "rank": "child",

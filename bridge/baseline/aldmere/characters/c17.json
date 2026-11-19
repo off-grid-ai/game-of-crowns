@@ -1,27 +1,25 @@
 {
   "id": "c17",
-  "name": "Jory Ironreach",
-  "gender": "male",
-  "age": 28,
+  "name": "Damaris Thornvale",
+  "gender": "female",
+  "age": 47,
   "alive": true,
   "traits": [
-    "just",
-    "craven"
+    "pious",
+    "just"
   ],
-  "loyalty": 74,
+  "loyalty": 66,
   "goals": [],
   "relationships": {},
   "memories": [],
-  "spouse": null,
-  "children": [],
-  "surname": "Ironreach",
-  "house": "House Ironreach",
-  "playerId": 2,
-  "rank": "heir",
-  "liege": "c15",
-  "parents": [
-    "c15",
-    "c16"
+  "spouse": "c16",
+  "children": [
+    "c18",
+    "c19"
   ],
-  "backstory": "Heir to Saltkeep, who sickens at sea and has never led a raid. His mother has turned away four brides for him, and the island captains whisper he refused them himself. Wishes in secret that the raiding would end."
+  "surname": "Thornvale",
+  "house": "House Thornvale",
+  "playerId": 3,
+  "rank": "spouse",
+  "liege": "c16"
 }

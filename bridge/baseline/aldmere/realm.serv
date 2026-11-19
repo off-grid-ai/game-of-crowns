@@ -20,8 +20,8 @@ create Sunspire
 create Highfell
 create Crown
 set minplayers 0
-set barbarians disabled
-set disasters 5
+set barbarians huts_only
+set disasters 25
 # Research is slow; the ruleset itself stops it at the high middle ages.
 set sciencebox 300
 # Each house plays its own strategy (traits set per nation in data/nation).
@@ -30,7 +30,7 @@ set endturn 5000
 set saveturns 1
 set autosaves "TURN|GAMEOVER|QUITIDLE|INTERRUPT"
 set savename "realm"
-set timeout 12
+set timeout 40
 hard
 playernation Wolfholt scottish 1 "Lord Edric Wolfholt"
 playernation Goldcrest english 1 "Lord Tybalt Goldcrest"
@@ -40,5 +40,7 @@ playernation Stormhold welsh 1 "Lord Rhys Stormhold"
 playernation Sunspire castilian 0 "Princess Ximena Sunspire"
 playernation Highfell irish 1 "Lord Declan Highfell"
 playernation Crown norman 1 "The King"
-lua file /Users/user/wednesday/civilization/bridge/chronicles/aldmere-baseline-mw0zeo6b/world_setup.lua
+lua file /tmp/goc-chain-UBuYo0/chronicles/baseline-chain-test-founding-mwnsmi5c/world_setup.lua
+set mapseed 1066
+set gameseed 1066
 start

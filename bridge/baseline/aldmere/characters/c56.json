@@ -1,29 +1,28 @@
 {
   "id": "c56",
-  "name": "Osric Pell",
+  "name": "Cedric Kettle",
   "gender": "male",
-  "age": 33,
+  "age": 49,
   "alive": true,
   "traits": [
-    "wrathful",
-    "patient"
+    "paranoid",
+    "pious"
   ],
-  "loyalty": 55,
+  "loyalty": 62,
   "goals": [
     {
       "kind": "marriage",
-      "text": "see my daughter wed above her station"
+      "text": "wed their heir into a great house"
     }
   ],
   "relationships": {},
   "memories": [],
   "spouse": null,
   "children": [],
-  "surname": "Pell",
-  "house": "House Sunspire",
-  "playerId": 5,
+  "surname": "Kettle",
+  "house": "House Thornvale",
+  "playerId": 3,
   "rank": "bannerman",
-  "seat": 273,
-  "liege": "c42",
-  "backstory": "Once sworn to Constance Wolfholt, he gave Crowhold to Sunspire after she let Ironreach burn his villages unanswered. The North calls him traitor, and his Goldcrest kin will not speak his name."
+  "seat": 281,
+  "liege": "c16"
 }

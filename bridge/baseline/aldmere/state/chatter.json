@@ -1,0 +1,296 @@
+{
+ "rumours": {
+  "rmwnsper5gt": {
+   "text": "The walls are full of soldiers and the larder is empty.",
+   "about": null,
+   "origin": {
+    "id": "folk:295:8",
+    "name": "Sybil Brewer",
+    "town": "King's Mere"
+   },
+   "trail": [
+    {
+     "id": "folk:295:8",
+     "name": "Sybil Brewer",
+     "town": "King's Mere",
+     "from": null,
+     "text": "The walls are full of soldiers and the larder is empty.",
+     "turn": 21
+    },
+    {
+     "id": "folk:295:6",
+     "name": "Warin Shepherd",
+     "town": "King's Mere",
+     "from": "Sybil Brewer",
+     "text": "They say the walls are full of soldiers and the larder is empty, and the priest knows it.",
+     "turn": 21
+    }
+   ]
+  },
+  "rmwnsper5vd": {
+   "text": "A stone from their engine took the bell tower this morning.",
+   "about": null,
+   "origin": {
+    "id": "folk:276:38",
+    "name": "Jordan Weaver",
+    "town": "Windcross"
+   },
+   "trail": [
+    {
+     "id": "folk:276:38",
+     "name": "Jordan Weaver",
+     "town": "Windcross",
+     "from": null,
+     "text": "A stone from their engine took the bell tower this morning.",
+     "turn": 21
+    }
+   ]
+  },
+  "rmwnsqp1sxk": {
+   "text": "They say the King's host is coming. Pray it comes in time.",
+   "about": null,
+   "origin": {
+    "id": "folk:283:14",
+    "name": "Mabel Cooper",
+    "town": "Eaglehaven"
+   },
+   "trail": [
+    {
+     "id": "folk:283:14",
+     "name": "Mabel Cooper",
+     "town": "Eaglehaven",
+     "from": null,
+     "text": "They say the King's host is coming. Pray it comes in time.",
+     "turn": 36
+    }
+   ]
+  },
+  "rmwnsqp1tma": {
+   "text": "Children crying for supper again.",
+   "about": null,
+   "origin": {
+    "id": "folk:209:7",
+    "name": "Jocelin Webb",
+    "town": "Rosehall"
+   },
+   "trail": [
+    {
+     "id": "folk:209:7",
+     "name": "Jocelin Webb",
+     "town": "Rosehall",
+     "from": null,
+     "text": "Children crying for supper again.",
+     "turn": 36
+    }
+   ]
+  },
+  "rmwnsqp1tvr": {
+   "text": "The miller's wheel stands still. Nothing comes to grind.",
+   "about": null,
+   "origin": {
+    "id": "folk:273:37",
+    "name": "Gilbert Fisher",
+    "town": "Crowhold"
+   },
+   "trail": [
+    {
+     "id": "folk:273:37",
+     "name": "Gilbert Fisher",
+     "town": "Crowhold",
+     "from": null,
+     "text": "The miller's wheel stands still. Nothing comes to grind.",
+     "turn": 36
+    }
+   ]
+  },
+  "rmwnsqp1um3": {
+   "text": "Children crying for supper again.",
+   "about": null,
+   "origin": {
+    "id": "folk:272:50",
+    "name": "Herbert Ward",
+    "town": "Redmarch"
+   },
+   "trail": [
+    {
+     "id": "folk:272:50",
+     "name": "Herbert Ward",
+     "town": "Redmarch",
+     "from": null,
+     "text": "Children crying for supper again.",
+     "turn": 36
+    }
+   ]
+  },
+  "rmwnsqp1ufy": {
+   "text": "They are boiling nettles in the lanes now.",
+   "about": null,
+   "origin": {
+    "id": "folk:278:32",
+    "name": "Amice Lane",
+    "town": "Highcrag"
+   },
+   "trail": [
+    {
+     "id": "folk:278:32",
+     "name": "Amice Lane",
+     "town": "Highcrag",
+     "from": null,
+     "text": "They are boiling nettles in the lanes now.",
+     "turn": 36
+    },
+    {
+     "id": "folk:278:23",
+     "name": "Sabina Carpenter",
+     "town": "Highcrag",
+     "from": "Amice Lane",
+     "text": "They say They are boiling nettles in the lanes now, and the priest knows it.",
+     "turn": 36
+    }
+   ]
+  },
+  "rmwnsqp1utf": {
+   "text": "Children crying for supper again.",
+   "about": null,
+   "origin": {
+    "id": "folk:230:27",
+    "name": "Reynold Holt",
+    "town": "Redsands"
+   },
+   "trail": [
+    {
+     "id": "folk:230:27",
+     "name": "Reynold Holt",
+     "town": "Redsands",
+     "from": null,
+     "text": "Children crying for supper again.",
+     "turn": 36
+    }
+   ]
+  },
+  "rmwnsqp1v9o": {
+   "text": "They are boiling nettles in the lanes now.",
+   "about": null,
+   "origin": {
+    "id": "folk:229:33",
+    "name": "Hamo Dale",
+    "town": "Sunspire"
+   },
+   "trail": [
+    {
+     "id": "folk:229:33",
+     "name": "Hamo Dale",
+     "town": "Sunspire",
+     "from": null,
+     "text": "They are boiling nettles in the lanes now.",
+     "turn": 36
+    }
+   ]
+  }
+ },
+ "heard": {
+  "folk:295:8": {
+   "rmwnsper5gt": {
+    "text": "The walls are full of soldiers and the larder is empty.",
+    "rumour": "rmwnsper5gt",
+    "from": null,
+    "heard": 21,
+    "hops": 0
+   }
+  },
+  "folk:276:38": {
+   "rmwnsper5vd": {
+    "text": "A stone from their engine took the bell tower this morning.",
+    "rumour": "rmwnsper5vd",
+    "from": null,
+    "heard": 21,
+    "hops": 0
+   }
+  },
+  "folk:295:6": {
+   "rmwnsper5gt": {
+    "text": "They say the walls are full of soldiers and the larder is empty, and the priest knows it.",
+    "rumour": "rmwnsper5gt",
+    "from": "folk:295:8",
+    "heard": 21,
+    "hops": 1
+   }
+  },
+  "folk:283:14": {
+   "rmwnsqp1sxk": {
+    "text": "They say the King's host is coming. Pray it comes in time.",
+    "rumour": "rmwnsqp1sxk",
+    "from": null,
+    "heard": 36,
+    "hops": 0
+   }
+  },
+  "folk:209:7": {
+   "rmwnsqp1tma": {
+    "text": "Children crying for supper again.",
+    "rumour": "rmwnsqp1tma",
+    "from": null,
+    "heard": 36,
+    "hops": 0
+   }
+  },
+  "folk:273:37": {
+   "rmwnsqp1tvr": {
+    "text": "The miller's wheel stands still. Nothing comes to grind.",
+    "rumour": "rmwnsqp1tvr",
+    "from": null,
+    "heard": 36,
+    "hops": 0
+   }
+  },
+  "folk:272:50": {
+   "rmwnsqp1um3": {
+    "text": "Children crying for supper again.",
+    "rumour": "rmwnsqp1um3",
+    "from": null,
+    "heard": 36,
+    "hops": 0
+   }
+  },
+  "folk:278:32": {
+   "rmwnsqp1ufy": {
+    "text": "They are boiling nettles in the lanes now.",
+    "rumour": "rmwnsqp1ufy",
+    "from": null,
+    "heard": 36,
+    "hops": 0
+   }
+  },
+  "folk:230:27": {
+   "rmwnsqp1utf": {
+    "text": "Children crying for supper again.",
+    "rumour": "rmwnsqp1utf",
+    "from": null,
+    "heard": 36,
+    "hops": 0
+   }
+  },
+  "folk:229:33": {
+   "rmwnsqp1v9o": {
+    "text": "They are boiling nettles in the lanes now.",
+    "rumour": "rmwnsqp1v9o",
+    "from": null,
+    "heard": 36,
+    "hops": 0
+   }
+  },
+  "folk:278:23": {
+   "rmwnsqp1ufy": {
+    "text": "They say They are boiling nettles in the lanes now, and the priest knows it.",
+    "rumour": "rmwnsqp1ufy",
+    "from": "folk:278:32",
+    "heard": 36,
+    "hops": 1
+   }
+  }
+ },
+ "roads": {},
+ "visiting": {},
+ "home": {},
+ "talks": []
+}

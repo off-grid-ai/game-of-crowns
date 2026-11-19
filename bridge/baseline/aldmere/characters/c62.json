@@ -1,32 +1,24 @@
 {
   "id": "c62",
-  "name": "Harold Morrow",
+  "name": "Dunstan undefined",
   "gender": "male",
-  "age": 65,
-  "alive": false,
+  "age": 21,
+  "alive": true,
   "traits": [
-    "patient",
-    "ambitious"
+    "honourable"
   ],
-  "loyalty": 85,
-  "goals": [
-    {
-      "kind": "land",
-      "text": "win more land for my family"
-    }
-  ],
+  "loyalty": 72,
+  "goals": [],
   "relationships": {},
   "memories": [],
-  "spouse": "c63",
-  "children": [
-    "c64",
-    "c65",
-    "c66"
-  ],
-  "surname": "Morrow",
-  "house": "House Sunspire",
-  "playerId": 5,
-  "rank": "bannerman",
-  "seat": 277,
-  "liege": "c42"
+  "spouse": null,
+  "children": [],
+  "house": "House Stormhold",
+  "playerId": 4,
+  "rank": "child",
+  "liege": "c59",
+  "parents": [
+    "c59",
+    "c60"
+  ]
 }

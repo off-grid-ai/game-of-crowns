@@ -1,0 +1,32 @@
+{
+  "id": "c42",
+  "name": "Mabel Highfell",
+  "gender": "female",
+  "age": 50,
+  "alive": true,
+  "traits": [
+    "just",
+    "vengeful"
+  ],
+  "loyalty": 75,
+  "goals": [
+    {
+      "kind": "marriage",
+      "text": "wed their heir into a great house"
+    }
+  ],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c43",
+  "children": [
+    "c44",
+    "c45",
+    "c46"
+  ],
+  "surname": "Highfell",
+  "house": "House Highfell",
+  "playerId": 6,
+  "rank": "lord",
+  "seat": 239,
+  "voice": "just, vengeful lord of House Highfell; speaks like a proud noble"
+}

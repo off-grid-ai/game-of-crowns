@@ -1,27 +1,32 @@
 {
   "id": "c70",
-  "name": "Gareth Marsh",
+  "name": "Alwyn Kettle",
   "gender": "male",
-  "age": 20,
+  "age": 33,
   "alive": true,
   "traits": [
-    "vengeful",
-    "pious"
+    "brave",
+    "wrathful"
   ],
-  "loyalty": 63,
-  "goals": [],
+  "loyalty": 85,
+  "goals": [
+    {
+      "kind": "land",
+      "text": "win more land for their house"
+    }
+  ],
   "relationships": {},
   "memories": [],
-  "spouse": null,
-  "children": [],
-  "surname": "Marsh",
-  "house": "House Thornvale",
-  "playerId": 3,
-  "rank": "heir",
-  "liege": "c68",
-  "parents": [
-    "c68",
-    "c69"
+  "spouse": "c71",
+  "children": [
+    "c72",
+    "c73",
+    "c74"
   ],
-  "backstory": "Son of Cedric and Mira Marsh, who watched Ironreach set the family's coast tower alight as a boy. Prays each night at the sept and swears he will one day see Saltkeep burn."
+  "surname": "Kettle",
+  "house": "House Wolfholt",
+  "playerId": 0,
+  "rank": "bannerman",
+  "seat": 295,
+  "liege": "c1"
 }

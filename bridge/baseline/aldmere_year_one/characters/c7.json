@@ -1,0 +1,32 @@
+{
+  "id": "c7",
+  "name": "Elaine Pell",
+  "gender": "female",
+  "age": 59,
+  "alive": true,
+  "traits": [
+    "honourable",
+    "patient"
+  ],
+  "loyalty": 81,
+  "goals": [
+    {
+      "kind": "defect",
+      "text": "find a liege more worthy of their sword"
+    }
+  ],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c8",
+  "children": [
+    "c9",
+    "c10",
+    "c11"
+  ],
+  "surname": "Pell",
+  "house": "House Goldcrest",
+  "playerId": 1,
+  "rank": "bannerman",
+  "seat": 190,
+  "liege": "c4"
+}

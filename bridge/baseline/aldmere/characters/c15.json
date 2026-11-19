@@ -1,32 +1,27 @@
 {
   "id": "c15",
-  "name": "Ysolde Ironreach",
+  "name": "Melisende undefined",
   "gender": "female",
-  "age": 59,
-  "alive": true,
+  "age": 63,
+  "alive": false,
   "traits": [
-    "just",
-    "wrathful"
+    "greedy",
+    "patient"
   ],
-  "loyalty": 46,
+  "loyalty": 78,
   "goals": [
     {
-      "kind": "revenge",
-      "text": "settle the old grudge"
+      "kind": "marriage",
+      "text": "wed their heir into a great house"
     }
   ],
   "relationships": {},
   "memories": [],
-  "spouse": "c16",
-  "children": [
-    "c17",
-    "c18"
-  ],
-  "surname": "Ironreach",
+  "spouse": null,
+  "children": [],
   "house": "House Ironreach",
   "playerId": 2,
-  "rank": "lord",
-  "seat": 197,
-  "voice": "just, wrathful lord of House Ironreach; speaks like a proud noble",
-  "backstory": "Took Saltkeep when her brother drowned on a raid that Thornvale begged the crown to stop. Has turned away four brides for her son Jory, from Stormhold, Sunspire, Varn and Dale. Holds that the right to raid was granted her fathers by the Conqueror."
+  "rank": "bannerman",
+  "seat": 200,
+  "liege": "c12"
 }

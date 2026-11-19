@@ -1,28 +1,26 @@
 {
   "id": "c41",
-  "name": "Mira Fenwick",
-  "gender": "female",
-  "age": 62,
-  "alive": false,
+  "name": "Gethin Thorne",
+  "gender": "male",
+  "age": 23,
+  "alive": true,
   "traits": [
     "just",
-    "vengeful"
+    "content"
   ],
   "loyalty": 58,
-  "goals": [
-    {
-      "kind": "favour",
-      "text": "rise in my liege's esteem"
-    }
-  ],
+  "goals": [],
   "relationships": {},
   "memories": [],
   "spouse": null,
   "children": [],
-  "surname": "Fenwick",
-  "house": "House Stormhold",
-  "playerId": 4,
-  "rank": "bannerman",
-  "seat": 218,
-  "liege": "c36"
+  "surname": "Thorne",
+  "house": "House Sunspire",
+  "playerId": 5,
+  "rank": "child",
+  "liege": "c37",
+  "parents": [
+    "c37",
+    "c38"
+  ]
 }

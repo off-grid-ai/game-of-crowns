@@ -1,27 +1,30 @@
 {
   "id": "c59",
-  "name": "Garth Hollin",
+  "name": "Ricard undefined",
   "gender": "male",
-  "age": 20,
+  "age": 42,
   "alive": true,
   "traits": [
-    "pious",
-    "brave"
+    "proud",
+    "greedy"
   ],
-  "loyalty": 50,
-  "goals": [],
+  "loyalty": 51,
+  "goals": [
+    {
+      "kind": "favour",
+      "text": "rise in their liege's esteem"
+    }
+  ],
   "relationships": {},
   "memories": [],
-  "spouse": null,
-  "children": [],
-  "surname": "Hollin",
-  "house": "House Thornvale",
-  "playerId": 3,
-  "rank": "heir",
-  "liege": "c57",
-  "parents": [
-    "c57",
-    "c58"
+  "spouse": "c60",
+  "children": [
+    "c61",
+    "c62"
   ],
-  "backstory": "Son of Elaine Hollin, who wished to take vows and was refused by his mother. Rode out alone against Ironreach raiders at seventeen and was carried half dead to the sept, which he credits with his life."
+  "house": "House Stormhold",
+  "playerId": 4,
+  "rank": "bannerman",
+  "seat": 272,
+  "liege": "c25"
 }

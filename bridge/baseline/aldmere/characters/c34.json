@@ -1,27 +1,25 @@
 {
   "id": "c34",
-  "name": "Mira Strand",
-  "gender": "female",
-  "age": 24,
+  "name": "Benedict Sunspire",
+  "gender": "male",
+  "age": 51,
   "alive": true,
   "traits": [
-    "cunning",
-    "ambitious"
+    "ambitious",
+    "greedy"
   ],
-  "loyalty": 63,
+  "loyalty": 87,
   "goals": [],
   "relationships": {},
   "memories": [],
-  "spouse": null,
-  "children": [],
-  "surname": "Strand",
-  "house": "House Thornvale",
-  "playerId": 3,
-  "rank": "heir",
-  "liege": "c32",
-  "parents": [
-    "c32",
-    "c33"
+  "spouse": "c33",
+  "children": [
+    "c35",
+    "c36"
   ],
-  "backstory": "Elder daughter of Merrick and Cecily Strand, placed at Rosehall as a lady to Ysolde Thornvale. Has learned the secrets of half that court and means to trade them for a place at the King's."
+  "surname": "Sunspire",
+  "house": "House Sunspire",
+  "playerId": 5,
+  "rank": "spouse",
+  "liege": "c33"
 }

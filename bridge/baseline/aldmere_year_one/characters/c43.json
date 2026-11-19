@@ -1,0 +1,26 @@
+{
+  "id": "c43",
+  "name": "Eadwig Highfell",
+  "gender": "male",
+  "age": 43,
+  "alive": true,
+  "traits": [
+    "proud",
+    "just"
+  ],
+  "loyalty": 54,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c42",
+  "children": [
+    "c44",
+    "c45",
+    "c46"
+  ],
+  "surname": "Highfell",
+  "house": "House Highfell",
+  "playerId": 6,
+  "rank": "spouse",
+  "liege": "c42"
+}

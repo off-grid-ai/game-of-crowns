@@ -1,0 +1,25 @@
+{
+  "id": "c32",
+  "name": "Juliana undefined",
+  "gender": "female",
+  "age": 16,
+  "alive": true,
+  "traits": [
+    "ambitious",
+    "vengeful"
+  ],
+  "loyalty": 88,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "house": "House Stormhold",
+  "playerId": 4,
+  "rank": "child",
+  "liege": "c29",
+  "parents": [
+    "c29",
+    "c30"
+  ]
+}

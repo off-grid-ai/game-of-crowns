@@ -1,13 +1,14 @@
 {
   "id": "c54",
-  "name": "Joan Ashby",
-  "gender": "female",
-  "age": 37,
+  "name": "Egbert undefined",
+  "gender": "male",
+  "age": 38,
   "alive": true,
   "traits": [
-    "pious"
+    "ambitious",
+    "proud"
   ],
-  "loyalty": 84,
+  "loyalty": 67,
   "goals": [],
   "relationships": {},
   "memories": [],
@@ -15,10 +16,8 @@
   "children": [
     "c55"
   ],
-  "surname": "Ashby",
-  "house": "House Wolfholt",
-  "playerId": 0,
+  "house": "House Goldcrest",
+  "playerId": 1,
   "rank": "spouse",
-  "liege": "c53",
-  "backstory": "Wife to Hugh Ashby and keeper of the small sept at their hall. Takes in the friars who come down from the old wall with tales of the dead, and writes down every one."
+  "liege": "c53"
 }
