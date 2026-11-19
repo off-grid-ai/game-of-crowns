@@ -56,14 +56,11 @@ func _process_timed(delta: float) -> void:
 			_style(smoke)  # every town's smoke looks the same, folk drawn there or not
 		if not main.villagers.crowds.has(id):
 			continue  # no townsfolk drawn here: the chimney stays as built
+		var match_r := float(_d.get("door_match", 0.35))
 		if not home_by_town.has(id):
-			home_by_town[id] = main.villagers.registry.who_is_home(id)
+			home_by_town[id] = _home_grid(main.villagers.registry.who_is_home(id).keys(), match_r)
 		var door: Vector3 = root.global_transform * (smoke.get_meta("door") as Vector3)
-		var lit := false
-		for at in home_by_town[id]:
-			if Vector2((at as Vector3).x - door.x, (at as Vector3).z - door.z).length() < float(_d.get("door_match", 0.35)):
-				lit = true
-				break
+		var lit := _home_near(home_by_town[id], door, match_r)
 		# A cooking fire burns whoever's in (01-town: thin wisps from a few chimneys): hearths.json cooking, a share of
 		# the town's hearths chosen by doorstep, so the same houses keep theirs; more at mealtimes, few between.
 		var pick := float(absi(hash(Vector2i(roundi(door.x * 100.0), roundi(door.z * 100.0)))) % 1000) / 1000.0
@@ -86,6 +83,30 @@ func _process_timed(delta: float) -> void:
 		smoke.set_meta("thin", thin)  # its share of the smoke; _far thins it again with the lens's distance
 		if smoke.emitting != lit:
 			smoke.emitting = lit
+
+
+## Who is home, by cells of `r` (world XZ): a hearth asks only its own cell and the eight round it (every hearth
+## against every person was most of 'hearths', 2.4 s per 10 s while a realm streamed in, 2026-11-20).
+static func _home_grid(at: Array, r: float) -> Dictionary:
+	var g := {}
+	for a in at:
+		var v := a as Vector3
+		var c := Vector2i(floori(v.x / r), floori(v.z / r))
+		if not g.has(c):
+			g[c] = []
+		(g[c] as Array).append(Vector2(v.x, v.z))
+	return g
+
+
+static func _home_near(g: Dictionary, door: Vector3, r: float) -> bool:
+	var c := Vector2i(floori(door.x / r), floori(door.z / r))
+	var d := Vector2(door.x, door.z)
+	for dx in range(-1, 2):
+		for dz in range(-1, 2):
+			for v in g.get(c + Vector2i(dx, dz), []):
+				if (v as Vector2).distance_to(d) < r:
+					return true
+	return false
 
 
 ## The share of a town's hearths lit for warmth in winter (hearths.json winter.share; casebook, Seasons: winter
@@ -120,18 +141,29 @@ func _far() -> void:
 		return
 	var near := float(fr.get("near", 4.0))
 	var span := maxf(float(fr.get("far", 10.0)) - near, 0.01)
-	var least := INF
-	for r in _styled:
-		var s: GPUParticles3D = r.get_ref()
+	# A slice of the chimneys a frame (hearths.json far.per_frame): every chimney in the realm each frame was most of
+	# 'hearths' (2.4 s per 10 s, 2026-11-20); a round over all of them still takes a fraction of a second.
+	var most := mini(int(fr.get("per_frame", 96)), _styled.size())
+	var cam_at := cam.global_position
+	for i in most:
+		if _far_i >= _styled.size():
+			_far_i = 0
+			if _mat and _far_least < INF:
+				_mat.albedo_color.a = lerpf(1.0, float(fr.get("alpha", 0.4)), _far_least)
+			_far_least = INF
+		var s: GPUParticles3D = (_styled[_far_i] as WeakRef).get_ref()
+		_far_i += 1
 		if s == null or not s.is_inside_tree():
 			continue
-		var k := clampf((cam.global_position.distance_to(s.global_position) - near) / span, 0.0, 1.0)
-		least = minf(least, k)
+		var k := clampf((cam_at.distance_to(s.global_position) - near) / span, 0.0, 1.0)
+		_far_least = minf(_far_least, k)
 		var want := float(s.get_meta("thin", 1.0)) * lerpf(1.0, float(fr.get("amount", 0.2)), k)
 		if absf(s.amount_ratio - want) > 0.02:
 			s.amount_ratio = want
-	if _mat and least < INF:
-		_mat.albedo_color.a = lerpf(1.0, float(fr.get("alpha", 0.4)), least)
+
+
+var _far_i := 0  # the next chimney _far looks at
+var _far_least := INF  # the nearest chimney's fade seen this round (the one smoke material's alpha at its end)
 
 
 # --- how the smoke looks (batch 8b look2: bright white blobs; hearths.json look) ----------------
@@ -203,13 +235,22 @@ func _drift() -> void:
 	var wind: Vector4 = WeatherFx.wind  # the owner's own value: reading the shader global back is editor-only (it logged every call)
 	var k := float((_d.get("look", {}) as Dictionary).get("drift", 0.06))
 	var lean := Vector3(wind.x, 0, wind.z).normalized() * k * (0.3 + clampf(wind.w, 0.0, 1.0) * 1.7) if Vector2(wind.x, wind.z).length() > 0.001 else Vector3.ZERO
+	var same := lean.is_equal_approx(_lean) and _styled.size() == _drifted
+	_lean = lean
 	var keep: Array = []
 	for r in _styled:
 		var s: GPUParticles3D = r.get_ref()
 		if s == null:
 			continue
 		keep.append(r)
+		if same:
+			continue  # the wind as it was: every chimney already leans with it
 		var pm := s.process_material as ParticleProcessMaterial
 		if pm:
 			pm.gravity = lean + Vector3(0, 0.005, 0)
 	_styled = keep
+	_drifted = _styled.size()
+
+
+var _lean := Vector3(INF, 0, 0)  # the lean _drift last set
+var _drifted := -1  # how many chimneys it was set on (a new one gets it)
