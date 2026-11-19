@@ -485,6 +485,11 @@ func _scene(path: String) -> PackedScene:
 ## sex: "male" or "female" to choose, "" for either.
 ## look: a stable key (a named person's id) that always gives the same body.
 func make(rng: RandomNumberGenerator, role := "peasant", tint := Color.WHITE, age := "", build := "", sex := "", look := "") -> Node3D:
+	var was := _dice(rng)
+	return _stamp(_make(rng, role, tint, age, build, sex, look), "make", [role, tint, age, build, sex, look], was)
+
+
+func _make(rng: RandomNumberGenerator, role: String, tint: Color, age: String, build: String, sex: String, look: String) -> Node3D:
 	if not MIXAMO_SHARE.has(role):
 		role = "peasant"
 	if age == "":
@@ -664,6 +669,55 @@ static func _path(body: String) -> String:
 ## GeneralSkeleton, an "Anim" player on the shared moves) and stood as tall
 ## as one, whatever units it came in.
 func make_body(rng: RandomNumberGenerator, body: String, tint := Color.WHITE, age := "adult", build := "average", role := "") -> Node3D:
+	var was := _dice(rng)
+	return _stamp(_make_body(rng, body, tint, age, build, role), "make_body", [body, tint, age, build, role], was)
+
+
+## The dice and the town's dress as a body is begun: [seed, state, the looks just made, rank, house, mourning].
+func _dice(rng: RandomNumberGenerator) -> Array:
+	return [rng.seed, rng.state, _recent.duplicate(), _town_rank, _town_house, _town_mourning]
+
+
+## The record a body was made by (`made`, people_store.gd: the realm's snapshot keeps it, not the body), so it is made
+## again the same on load (again): its maker and arguments, the dice and the town's dress as they stood (`was`), and the
+## metas it was made with (the snapshot keeps only those set after). What it holds now is its insides (`_made_in`):
+## remade with it, never packed; what is added later (a bier on a shoulder) is packed on it.
+func _stamp(p: Node3D, maker: String, args: Array, was: Array) -> Node3D:
+	if p == null:
+		return p
+	var metas := PackedStringArray()
+	for m in p.get_meta_list():
+		metas.append(String(m))
+	p.set_meta("made", {"by": "res://scripts/people.gd", "fn": maker, "args": args, "seed": was[0], "state": was[1],
+		"recent": was[2], "dress": [was[3], was[4], was[5]], "metas": metas})
+	for c in p.get_children():
+		c.set_meta("_made_in", true)
+	return p
+
+
+## A body made again from its record (_stamp), the same look, by town_life's own maker (`tl`, its _people: the looks it
+## has made lately are its own) or a new one.
+static func again(rec: Dictionary, tl: Object) -> Node3D:
+	var maker: Object = tl.get("_people") if tl != null else null
+	if maker == null:
+		maker = (load("res://scripts/people.gd") as GDScript).new()
+	return maker.made_again(rec)
+
+
+func made_again(rec: Dictionary) -> Node3D:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = int(rec.get("seed", 0))
+	rng.state = int(rec.get("state", 0))
+	_recent.assign(rec.get("recent", []))
+	var d: Array = rec.get("dress", ["town", Color(0, 0, 0, 0), false])
+	dress_for(String(d[0]), d[1], bool(d[2]))
+	var a: Array = rec.get("args", [])
+	if String(rec.get("fn", "")) == "make_body":
+		return make_body(rng, String(a[0]), a[1], String(a[2]), String(a[3]), String(a[4]))
+	return make(rng, String(a[0]), a[1], String(a[2]), String(a[3]), String(a[4]), String(a[5]))
+
+
+func _make_body(rng: RandomNumberGenerator, body: String, tint: Color, age: String, build: String, role: String) -> Node3D:
 	var info: Dictionary = body_info(body)
 	var person: Node3D = _scene(_path(body)).instantiate()
 	for n in person.get_children():
