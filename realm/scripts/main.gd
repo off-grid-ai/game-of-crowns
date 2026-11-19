@@ -268,7 +268,10 @@ func _ready() -> void:
 	intro.ready_check = func(): return terrain.built and not terrain.chunks_loading() and towns != null and towns.settled() and roads_laid and roads.laid() and countryside.laid() and units != null and units.placed
 	intro.forming = func() -> String:
 		var n: Vector2i = towns.standing() if towns else Vector2i.ZERO
-		return "The towns are rising: %d of %d" % [n.x, n.y] if terrain.built and n.y > 0 else "The realm is forming…"
+		if not terrain.built or n.y == 0:
+			return "The realm is forming…"
+		# Every town stands (they load whole from the bake): what is left is the roads' map, so say that.
+		return "The towns are rising: %d of %d" % [n.x, n.y] if n.x < n.y else "The roads are opening…"
 	add_child(intro)
 	_keep_running(intro)
 	intro.finished.connect(_hold_world)  # a realm saved paused holds once it is shown

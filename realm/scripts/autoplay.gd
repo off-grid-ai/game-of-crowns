@@ -1473,6 +1473,15 @@ func _observe() -> Dictionary:
 	o["worst_ms"] = snappedf(_worst * 1000.0, 1.0)  # the longest frame since the last reading
 	_worst = 0.0
 	o["phys_ms"] = snappedf(Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0, 0.1)
+	# The opening card's ready check (main.gd intro.ready_check), part by part: which one holds "Click to begin" back.
+	var t: Variant = main.get("terrain")
+	var tw: Variant = main.get("towns")
+	var rd: Variant = main.get("roads")
+	var cs: Variant = main.get("countryside")
+	var un: Variant = main.get("units")
+	o["ready"] = {"land": t != null and t.built, "chunks": t != null and not t.chunks_loading(), "towns": tw != null and tw.settled(),
+		"roads_laid": bool(main.get("roads_laid")), "roads": rd != null and rd.laid(), "farms": cs != null and cs.laid(),
+		"units": un != null and bool(un.get("placed"))}
 	o["nav_ms"] = snappedf(Performance.get_monitor(Performance.TIME_NAVIGATION_PROCESS) * 1000.0, 0.1)
 	o["agents"] = int(Performance.get_monitor(Performance.NAVIGATION_AGENT_COUNT))
 	var c: Node = main.control
