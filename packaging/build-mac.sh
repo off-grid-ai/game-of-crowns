@@ -54,7 +54,7 @@ done
 echo "==> Bridge"
 rm -rf "$RES/bridge" "$RT"
 rsync -a --exclude chronicles --exclude records.json --exclude scenarios.json --exclude __pycache__ \
-  --exclude node_modules --exclude '*.log' --exclude saves --exclude state bridge/ "$RES/bridge/"
+  --exclude node_modules --exclude '*.log' --exclude /saves --exclude /state bridge/ "$RES/bridge/"
 cp WORLD.md "$RES/WORLD.md"
 
 echo "==> Node $NODE_VERSION"

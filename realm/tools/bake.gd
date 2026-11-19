@@ -20,7 +20,10 @@ extends SceneTree
 const Real := preload("res://scripts/realistic.gd")
 const Kept := preload("res://scripts/kept.gd")
 const ViewTier := preload("res://scripts/view_tier.gd")
-const BASE := "res://../bridge/baseline/aldmere/"
+## The fixed starts, each a bridge baseline (bridge/tools/make-baseline.sh): nine years in first (its land, roads and farms
+## are the ones kept), then year one, whose towns not already kept are raised and whose people are kept for its facts.
+const STARTS := ["aldmere", "aldmere_year_one"]
+var _base := "aldmere"  # --base=<start>: the start a slice works on
 const WAIT_S := 1800.0
 const ROADS_WAIT_S := 600.0  # the most one realm's roads may take (the navigation baked, every route asked)
 const LOGS := "user://bake/"  # each slice's Godot writes its log here (--log-file)
@@ -37,6 +40,8 @@ func _init() -> void:
 			_slice = Array(a.substr(8).split(":")).map(func(x): return int(x))
 		elif a.begins_with("--lives="):
 			_lives = Array(a.substr(8).split(":")).map(func(x): return int(x))
+		elif a.begins_with("--base="):
+			_base = a.substr(7)
 	preload("res://tools/watchdog.gd").arm(self, WAIT_S)
 	_run.call_deferred()
 
@@ -84,21 +89,28 @@ func _run() -> void:
 	var stood := await _realm(world, map, true)
 	print("BAKE towns: %d stood and kept, %.0f s in" % [stood, (Time.get_ticks_msec() - t0) / 1000.0])
 	var lived := _apart((world["cities"] as Array).size(), "lives", "BAKE lives slice:")
+	print("BAKE lives: %s, %d towns' people kept on every core, %.0f s in" % [_base, lived, (Time.get_ticks_msec() - t0) / 1000.0])
+	for start in STARTS.slice(1):
+		_base = start
+		var n := (_world()["cities"] as Array).size()
+		raised = _apart(n, "towns", "BAKE slice:")
+		lived = _apart(n, "lives", "BAKE lives slice:")
+		print("BAKE %s: %d towns stand, %d towns' people kept, %.0f s in" % [start, raised, lived, (Time.get_ticks_msec() - t0) / 1000.0])
 	Kept.stamp()
-	print("BAKE lives: %d towns' people kept on every core; all done in %.0f s" % [lived, (Time.get_ticks_msec() - t0) / 1000.0])
+	print("BAKE done in %.0f s" % ((Time.get_ticks_msec() - t0) / 1000.0))
 	quit(0 if made > 0 and stood > 0 else 1)
 
 
 ## The world a new reign's first sync sends (bridge/baseline/aldmere/state/world_served.json,
 ## bridge/tools/baseline-world.mjs). Every reign seats the same bannermen in the starting towns (bridge 0ed3fcb8).
 func _world() -> Dictionary:
-	var base := ProjectSettings.globalize_path(BASE).simplify_path()
+	var base := ProjectSettings.globalize_path("res://../bridge/baseline/%s/" % _base).simplify_path()
 	return JSON.parse_string(FileAccess.get_file_as_string(base + "/state/world_served.json"))
 
 
 ## The baseline's map with its land.
 func _base_map() -> Dictionary:
-	var base := ProjectSettings.globalize_path(BASE).simplify_path()
+	var base := ProjectSettings.globalize_path("res://../bridge/baseline/%s/" % _base).simplify_path()
 	var map: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(base + "/state/map.json"))
 	map["land"] = (JSON.parse_string(FileAccess.get_file_as_string(base + "/baseline.json")) as Dictionary)["land"]
 	return map
@@ -124,10 +136,10 @@ func _apart(count: int, what: String, said: String) -> int:
 	DirAccess.make_dir_recursive_absolute(logs)
 	var pids := []
 	for i in range(0, count, per):
-		var log := logs.path_join("%s_%d.log" % [what, i])
+		var log := logs.path_join("%s_%s_%d.log" % [_base, what, i])
 		DirAccess.remove_absolute(log)
 		pids.append([OS.create_process(OS.get_executable_path(), ["--headless", "--path", ProjectSettings.globalize_path("res://"),
-			"--log-file", log, "-s", "res://tools/bake.gd", "--", "--%s=%d:%d" % [what, i, mini(i + per, count)]]), log])
+			"--log-file", log, "-s", "res://tools/bake.gd", "--", "--%s=%d:%d" % [what, i, mini(i + per, count)], "--base=" + _base]), log])
 	var n := 0
 	for p in pids:
 		while OS.is_process_running(int(p[0])):
