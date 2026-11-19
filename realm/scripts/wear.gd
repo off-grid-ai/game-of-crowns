@@ -79,6 +79,7 @@ var ROADS: Dictionary = Data.value("ground", "wear.roads", {})
 ## spread: how much wider it fans at its end, worn: how much, hold: grows back no further than this share).
 var GATES: Dictionary = Data.value("ground", "wear.gates", {})
 var _gates_sig := -1
+var _gates_worn := {}  # a gate's place (Vector3i, decimetres) -> true: worn once
 var _hosts_was: Array = []  # [owner, world point] of each host at the last reading
 var _roads_sig := -1  # the road list's size when last laid
 var _road_queue: Array = []  # road links still to wear: [a, its bow, b]
@@ -117,6 +118,10 @@ func _facts() -> void:
 			for g in gs:
 				var at: Vector3 = g[0]
 				var n: Vector3 = g[1]
+				var gk := Vector3i((at * 10.0).round())
+				if _gates_worn.has(gk):
+					continue  # worn already: towns load one by one, and each new gate had every gate worn again (207 ms)
+				_gates_worn[gk] = true
 				_brush(at, half * 1.4, worn, true)
 				var k := 4
 				for i in k:

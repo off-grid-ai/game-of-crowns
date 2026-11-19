@@ -263,9 +263,10 @@ func _ready() -> void:
 			if code == 200:
 				ui.house_opened.emit(int(spec["house"]))))
 	intro = preload("res://scripts/intro.gd").new()
-	# Every town and its life standing, the roads and fields laid and the armies placed: nothing is still being made
-	# once the card goes (Mac 2026-11-15: 5 fps for the first 25 s of play, the roads and units laid after it closed).
-	intro.ready_check = func(): return terrain.built and not terrain.chunks_loading() and towns != null and towns.settled() and roads_laid and roads.laid() and countryside.laid() and units != null and units.placed
+	# What the camera opens on standing (the land round it, the towns on screen and their life, the armies placed); the
+	# rest of the realm streams in behind as it is played, loaded from the bake (Mac 2026-11-20: "most games just render
+	# what's around them"). The card waited for every town, road and field in the realm: ~33 s after Continue.
+	intro.ready_check = func(): return terrain.built and not terrain.chunks_loading() and towns != null and towns.settled() and units != null and units.placed
 	intro.forming = func() -> String:
 		var n: Vector2i = towns.standing() if towns else Vector2i.ZERO
 		if not terrain.built or n.y == 0:

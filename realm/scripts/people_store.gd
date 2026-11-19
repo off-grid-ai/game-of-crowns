@@ -42,10 +42,11 @@ static func path_of(kept_key: String) -> String:
 	return Kept.path("lives", kept_key, "scn")
 
 
-## The baked Life kept for these facts, or "" (none: the town is staged for them).
+## The Life kept for these facts, or "" (none: the town is staged for them): the bake's, else the player's own (kept
+## in play the first time a town that changed since the bake was staged: town_life.gd _keep_own).
 static func source(kept_key: String) -> String:
 	var p := Kept.path("lives", kept_key, "scn")
-	return p if p.begins_with(Kept.BAKED) and FileAccess.file_exists(p) else ""
+	return p if FileAccess.file_exists(p) else ""
 
 
 ## An installer's record on `node` (a mind given, a walker set going, a drill begun): `owner` ("tl": the town's
@@ -61,7 +62,7 @@ static func redo(node: Node, owner: String, fn: String, args: Array) -> void:
 
 ## The staged `life` of town `root` packed and kept at `path` (the bake only: the Life is taken apart to be packed and
 ## must be freed after). Returns "" once kept, else why it can't be (nothing is written).
-static func save(root: Node3D, life: Node3D, path: String, tl: Object) -> String:
+static func save(root: Node3D, life: Node3D, path: String, tl: Object, src: Node3D = null) -> String:
 	var why := PackedStringArray()
 	var made: Array[Node] = []
 	var drop: Array[Node] = []
@@ -73,7 +74,8 @@ static func save(root: Node3D, life: Node3D, path: String, tl: Object) -> String
 			if not parent.has_meta("_redo"):
 				why.append("a mind with no record (%s)" % _who(parent))
 			else:
-				parent.set_meta("_thought", _thought(n as BTPlayer, parent))
+				var mind := _twin(n, life, src) as BTPlayer if src != null else n as BTPlayer
+				parent.set_meta("_thought", _thought(mind if mind != null else n as BTPlayer, parent))
 			drop.append(n)
 		elif n is Timer:
 			if not parent.has_meta("_redo"):
@@ -98,7 +100,8 @@ static func save(root: Node3D, life: Node3D, path: String, tl: Object) -> String
 	# Links first, while every node is where the records saw it: as paths from the town root.
 	life.set_meta("_root_metas", _root_metas(root, tl))
 	if tick != null:
-		life.set_meta("_tick", _plain(tl.tick_of(tick), root, tl))
+		var live_tick: Node = _twin(tick, life, src) if src != null else tick
+		life.set_meta("_tick", _plain(tl.tick_of(live_tick if live_tick != null else tick), root, tl))
 	for n in [life] + _under(life, [], true):
 		for m in n.get_meta_list():
 			if m == &"made":
@@ -156,6 +159,11 @@ static func save(root: Node3D, life: Node3D, path: String, tl: Object) -> String
 		return "not packed (%s)" % error_string(ok)
 	Kept.keep(scene, path)
 	return ""
+
+
+## The node in the live Life `src` standing where `n` stands in its copy `life` (null when none).
+static func _twin(n: Node, life: Node, src: Node) -> Node:
+	return src.get_node_or_null(life.get_path_to(n)) if src != null and is_instance_valid(src) else null
 
 
 ## Every node under `n`, depth first, the Life's own order; `own` leaves out a made body's insides (made again with it).

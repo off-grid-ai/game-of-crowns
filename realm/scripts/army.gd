@@ -158,6 +158,7 @@ func _ready() -> void:
 		var k := i % colours.size() if colour_mode() == "houses" else 0
 		var r := _regiment(specs[i], battle["colour"], battle.get("house", {})) if battle.has("colour") else _regiment(specs[i], colours[k], _worn[k] if k < _worn.size() else {})
 		spent += Time.get_ticks_usec() - t_one
+		PerfTools.add("army.raise.regiment", Time.get_ticks_usec() - t_one)  # this frame's own (the sum below spans frames)
 		if r.is_empty():
 			continue
 		_regiments.append(r)
@@ -165,7 +166,7 @@ func _ready() -> void:
 	if _regiments.is_empty():
 		push_error("ARMY no soldier mesh to raise the host with")
 		return
-	PerfTools.add("army.raise.regiments", spent)  # its share of the frame (GOC_PERF_PROBE)
+	print_verbose("ARMY raised %d regiments, %d ms over frames" % [_regiments.size(), spent / 1000])
 	if not await _budget():
 		return
 	var t_raise := Time.get_ticks_usec()
@@ -184,11 +185,13 @@ func _ready() -> void:
 		spent = 0
 		_raise_baggage()
 		spent += Time.get_ticks_usec() - t_raise
+		PerfTools.add("army.raise.baggage", Time.get_ticks_usec() - t_raise)
 		if not await _budget():
 			return
 		t_raise = Time.get_ticks_usec()
 		_stand_on_tile(town, _bound_yaw(battle["host"], town))
 		spent += Time.get_ticks_usec() - t_raise
+		PerfTools.add("army.raise.stand", Time.get_ticks_usec() - t_raise)
 		if not await _budget():
 			return
 		t_raise = Time.get_ticks_usec()
@@ -199,7 +202,7 @@ func _ready() -> void:
 			mo.clip = ""
 			mo.turn_rate = 3.0
 		_standard_up()
-		PerfTools.add("army.raise.host", spent + Time.get_ticks_usec() - t_raise)  # its share of the frame (GOC_PERF_PROBE)
+		PerfTools.add("army.raise.scouts", Time.get_ticks_usec() - t_raise)  # each step booked to its own frame (GOC_PERF_PROBE)
 		mustered = true
 		raised.emit()
 		if not _hunger_was.is_empty():

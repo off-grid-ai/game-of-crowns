@@ -518,10 +518,14 @@ static func _tick() -> void:
 		var t0 := Time.get_ticks_usec() if PerfTools.probing else 0
 		var iid: int = _dirty.keys()[0]
 		_dirty.erase(iid)
+		var whole := true
 		if _roots.has(iid):
-			_stamp(_roots[iid])
+			whole = _stamp(_roots[iid], true)
 		if PerfTools.probing:
 			PerfTools.add("ground.stand", Time.get_ticks_usec() - t0)
+		if not whole:
+			_dirty[iid] = true  # read on over the next frames (a town and its life: up to 1.2 s in one frame, 2026-11-20)
+			break
 
 
 # --- towns and places -------------------------------------------------------------------------------------------------
@@ -684,14 +688,14 @@ static func _lift(rec: Dictionary, k: int) -> bool:
 ## only the pieces set down since, each read once ("town" for its builders', "life" for its life's). Hidden or shown
 ## (it, or its Life): its bodies taken out of the space or put back, nothing read again (a town drawn far off or
 ## streamed out is hidden and shown as the lens moves). Only the bins that changed are refilled.
-static func _stamp(rec: Dictionary) -> void:
+static func _stamp(rec: Dictionary, budgeted := false) -> bool:
 	var root: Node3D = rec["root"] if is_instance_valid(rec["root"]) else null
 	if root == null:
 		_drop(rec)
-		return
+		return true
 	if not root.is_inside_tree():
 		_switch(rec, {"town": false, "life": false})
-		return
+		return true
 	var life: Node3D = root.get_node_or_null("Life")
 	var shown := root.is_visible_in_tree()
 	var on := {"town": shown, "life": shown and life != null and life.visible}
@@ -699,35 +703,25 @@ static func _stamp(rec: Dictionary) -> void:
 	var news: Dictionary = rec["new"]
 	if sig != rec["sig"]:
 		# A kept town read the first time, its walls whole: its builders' outlines as kept (_kept_outlines), each
-		# piece missing from them read off it and the whole kept again.
+		# piece missing from them read off it and the whole kept again. Each piece is one step of the read (_reading):
+		# on the frame's budget (_tick, `budgeted`) a town and its life are read over frames, never in one.
 		var file: String = rec["kept"] if (rec["sig"] as Array).is_empty() and int(sig[0]) == 0 else ""
 		rec["kept"] = ""  # once: a root read again (turned, its yards or walls changed) is read off itself
-		var got := _kept_outlines(file)
-		var missed := false
 		_unstamp(rec)
 		rec["sig"] = sig
 		rec["on"] = on
 		rec["xf"] = sig[2]
 		rec["yards"] = _yards(sig[1], sig[2])
+		var steps: Array = []
 		for c in [root] + root.get_children():
-			if c == life:
-				continue
-			var key := "." if c == root else String(c.name)
-			if file != "" and not got.has(key):
-				got[key] = NavGround.piece(c, root, terrain, c != root)
-				missed = missed or not (got[key] as Array).is_empty()  # a piece with nothing in the way (a fire's sparks) never has it kept again
-			# what the root itself carries (a place's bulk-drawn dressing), then each piece under it
-			_read(rec, root, c, "town", c != root, got.get(key, null))
-		if missed:
-			var keep := Resource.new()
-			keep.set_meta("outlines", got)
-			Kept.keep(keep, file)  # read off once: every later start reads it back (written on a worker)
+			if c != life:
+				steps.append([c, "town", c != root, "." if c == root else String(c.name)])
 		if life:
-			_hook(life, rec["iid"])
-			_read(rec, root, life, "life", false)
+			steps.append([life, "life", false, ""])
 			for c in life.get_children():
-				_read(rec, root, c, "life")
-	elif not news.is_empty():
+				steps.append([c, "life", true, ""])
+		rec["reading"] = {"steps": steps, "i": 0, "file": file, "got": _kept_outlines(file), "missed": false}
+	elif not rec.has("reading") and not news.is_empty():
 		var pieces := news.values()
 		news.clear()
 		for c in pieces:
@@ -743,8 +737,48 @@ static func _stamp(rec: Dictionary) -> void:
 				_read(rec, root, life, "life", false)
 				for l in life.get_children():
 					_read(rec, root, l, "life")
+	if rec.has("reading") and not _reading(rec, root, budgeted):
+		return false
 	_switch(rec, on)
 	_commit(rec)
+	return true
+
+
+## A root's read (_stamp) carried on a piece at a time; with `budgeted`, only while the frame's budget lasts (at least
+## one piece a call). Whether it is done (its outlines kept when any were missing).
+static func _reading(rec: Dictionary, root: Node3D, budgeted: bool) -> bool:
+	var r: Dictionary = rec["reading"]
+	var steps: Array = r["steps"]
+	var got: Dictionary = r["got"]
+	var file: String = r["file"]
+	var i := int(r["i"])
+	while i < steps.size():
+		if budgeted and i > int(r["i"]) and not ViewTier.spend_ok(&"ground"):
+			r["i"] = i
+			return false
+		var e: Array = steps[i]
+		i += 1
+		var c: Variant = e[0]
+		if not is_instance_valid(c) or not (c as Node).is_inside_tree():
+			continue
+		if e[1] == "town":
+			var key: String = e[3]
+			if file != "" and not got.has(key):
+				got[key] = NavGround.piece(c, root, terrain, c != root)
+				r["missed"] = bool(r["missed"]) or not (got[key] as Array).is_empty()  # a piece with nothing in the way (a fire's sparks) never has it kept again
+			# what the root itself carries (a place's bulk-drawn dressing), then each piece under it
+			_read(rec, root, c, "town", e[2], got.get(key, null))
+		elif not bool(e[2]):
+			_hook(c, rec["iid"])
+			_read(rec, root, c, "life", false)
+		else:
+			_read(rec, root, c, "life")
+	rec.erase("reading")
+	if bool(r["missed"]):
+		var keep := Resource.new()
+		keep.set_meta("outlines", got)
+		Kept.keep(keep, file)  # read off once: every later start reads it back (written on a worker)
+	return true
 
 
 ## A root's builders' and life's bodies put in the space or taken out of it as `on` says, its shapes kept.
@@ -803,7 +837,11 @@ static func _read(rec: Dictionary, root: Node3D, n: Node, what: String, deep := 
 			pieces[k] = []
 			keys.append(bk)
 		(pieces[k] as Array).append_array(shapes)
-		rec["refill"][bk] = true
+		var due: Variant = rec["refill"].get(bk)
+		if due == null:
+			rec["refill"][bk] = shapes.duplicate()  # only gained: its new shapes added at the commit (_add_shapes)
+		elif due is Array:
+			(due as Array).append_array(shapes)
 	if not keys.is_empty():
 		rec["kids"][k] = [what, keys]
 
@@ -822,7 +860,9 @@ static func _kept_outlines(file: String) -> Dictionary:
 
 
 ## Every bin whose pieces changed filled again with its pieces' shapes, once; standing in the space only while its
-## root (or its Life) is shown.
+## root (or its Life) is shown. A bin that only gained pieces has just their shapes added (_add_shapes): refilled whole
+## on every stall a town's dressing set down, a square's bin re-laid each of its hundreds of shapes per piece (3 s
+## frames of ground.stand inside life.dressing after Continue, 2026-11-20).
 static func _commit(rec: Dictionary) -> void:
 	var refill: Dictionary = rec["refill"]
 	if refill.is_empty():
@@ -830,6 +870,9 @@ static func _commit(rec: Dictionary) -> void:
 	for bk: Vector3i in refill:
 		var bin: Dictionary = rec["bins"].get(bk, {})
 		if bin.is_empty():
+			continue
+		var due: Variant = refill[bk]
+		if due is Array and _add_shapes(bin["body"], due, rec["on"]["life" if bk.z == 1 else "town"]):
 			continue
 		var shapes: Array = []
 		for s: Array in (bin["pieces"] as Dictionary).values():
@@ -991,6 +1034,26 @@ static func _fill(body: RID, shapes: Array, on := true) -> void:
 		PhysicsServer3D.body_add_shape(body, s[1], s[0])
 	if on and not shapes.is_empty():
 		PhysicsServer3D.body_set_space(body, _space)
+
+
+## `shapes` added to a body that already stands with its own (its index's bounds grown to take them), as _fill would
+## lay them all again. False when the body isn't one kept by the index yet (a new bin): _fill lays it whole.
+static func _add_shapes(body: RID, shapes: Array, on: bool) -> bool:
+	if shapes.is_empty():
+		return true
+	var o: Array = _owner.get(body, [])
+	if o.size() < 3 or String(o[0]) == "claim" or not (o[2] is Rect2) or not _body_shapes.has(body):
+		return false
+	_changed(body)  # where it stood
+	var had: Array = _body_shapes[body]
+	_unindex(body)
+	o[2] = (o[2] as Rect2).merge(_shapes_bounds(shapes))
+	_changed_at(body)  # and where it stands now
+	_index(body, had + shapes)
+	for sh: Array in shapes:
+		PhysicsServer3D.body_add_shape(body, sh[1], sh[0])
+	PhysicsServer3D.body_set_space(body, _space if on else RID())
+	return true
 
 
 static func _free_body(body: RID, owned: Array) -> void:

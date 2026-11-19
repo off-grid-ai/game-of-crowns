@@ -476,10 +476,21 @@ static var _pending := {}  # name -> a model set up whose merge a worker is maki
 
 ## A model set up on the main thread (its scene, stripped, dyed, scaled, as plain parts) and its merge started on a
 ## worker thread. False if the catalogue can't make it.
-static func _begin(name: String) -> bool:
+static func _begin(name: String, whole := false) -> bool:
 	var path := _path(name)
 	if not KIT.has(name) or not (BUILT.has(name) or ResourceLoader.exists(path)):
 		return false
+	# Build once, load only: a model whose merge is kept with its frame (_kept meta: its scale, bounds, builder's frame)
+	# is read back on the loader's threads and never built or opened again (a castle or hall raised by our builder on
+	# the main thread was 1.8-4.8 s the first time a town's building site asked it, 2026-11-20).
+	if not whole and FileAccess.file_exists(_kept(name)) and FileAccess.file_exists(_kept_meta(name)):
+		var m: Variant = bytes_to_var(FileAccess.get_file_as_bytes(_kept_meta(name)))
+		if m is Array and (m as Array).size() == 3:
+			ResourceLoader.load_threaded_request(_kept(name))
+			if FileAccess.file_exists(_kept(name, "low")):
+				ResourceLoader.load_threaded_request(_kept(name, "low"))
+			_pending[name] = {"task": -1, "out": ["kept"], "root": null, "parts": [], "k": float(m[0]), "box": m[1], "frame": m[2]}
+			return true
 	var model: Node3D = _built(name) if BUILT.has(name) else (load(path) as PackedScene).instantiate()
 	still(model, path)  # a skinned figure stood in its pose as plain meshes (assets.json poses)
 	# Some kits carry things that don't belong in this age (cannon and shot).
@@ -565,6 +576,14 @@ static func _finish(name: String) -> Dictionary:
 	if int(p["task"]) >= 0:
 		WorkerThreadPool.wait_for_task_completion(int(p["task"]))
 	var root: Node3D = p["root"]
+	if root == null:
+		# Read back from its kept merge alone (_begin): built after all if the file would not load.
+		var got := ResourceLoader.load_threaded_get(_kept(name)) as ArrayMesh
+		if got == null:
+			_begin(name, true)
+			return _finish(name)
+		p["out"] = [got, ResourceLoader.load_threaded_get(_kept(name, "low")) if FileAccess.file_exists(_kept(name, "low")) else null]
+		root = Node3D.new()
 	var parts: Array = p["parts"]
 	var k: float = p["k"]
 	var box: AABB = p["box"]
@@ -573,7 +592,10 @@ static func _finish(name: String) -> Dictionary:
 	var low: ArrayMesh = null
 	var made := false  # merged in this game (else read back): kept on disk below
 	var plain: Array = [null, null]  # the merge's plain arrays (whole, low): what is kept, never read back
-	if p["out"][0] is String:
+	if p["out"][0] is ArrayMesh:
+		merged = p["out"][0]
+		low = p["out"][1] as ArrayMesh
+	elif p["out"][0] is String:
 		merged = ResourceLoader.load_threaded_get(_kept(name)) as ArrayMesh
 		if FileAccess.file_exists(_kept(name, "low")):
 			low = ResourceLoader.load_threaded_get(_kept(name, "low")) as ArrayMesh
@@ -616,6 +638,8 @@ static func _finish(name: String) -> Dictionary:
 		Kept.keep(merged, _kept(name), plain[0])
 		if low:
 			Kept.keep(low, _kept(name, "low"), plain[1])
+	if merged and not FileAccess.file_exists(_kept_meta(name)):
+		Kept.keep_bytes(_kept_meta(name), var_to_bytes([k, box, built_frame]))  # what a launch needs to skip the build
 	var scene := PackedScene.new()
 	scene.pack(root)
 	root.free()
@@ -628,6 +652,11 @@ static func _finish(name: String) -> Dictionary:
 ## instead of merging again.
 static func _kept(name: String, which := "whole") -> String:
 	return Kept.path("models", "%s_%s" % [name, which])
+
+
+## Where a kept model's frame is (its scale, bounds and builder's frame: [k, AABB, Transform3D]), beside its merge.
+static func _kept_meta(name: String) -> String:
+	return Kept.path("models", "%s_meta" % name, "bin")
 
 
 

@@ -11,8 +11,8 @@ const Awareness := preload("res://scripts/awareness.gd")  # the rival King's arm
 
 func play(s: Dictionary, at: Vector3, _houses: Dictionary) -> Node3D:
 	var to: Vector3 = stage.terrain.world_pos(float(s["tx"]), float(s["ty"]))
-	var house: Dictionary = Awareness.store().rival_house() if String(s.get("by", "")) == "rival" and Awareness.store() else {}
-	return ride(at, to, String(s.get("label", "The King's word")), s, Callable(), house)  # the rival's envoy rides under his arms
+	var house: Dictionary = Awareness.store().rival_house() if str(s.get("by", "")) == "rival" and Awareness.store() else {}
+	return ride(at, to, str(s.get("label", "The King's word")), s, Callable(), house)  # the rival's envoy rides under his arms
 
 
 ## A royal rider carries the King's ruling to the petitioner's seat on a horse, the crown's standard in hand, with

@@ -24,6 +24,7 @@ const Scenes := preload("res://scripts/scenes.gd")
 const Mover := preload("res://scripts/mover.gd")
 const Particles := preload("res://scripts/particles.gd")
 const Towns := preload("res://scripts/towns.gd")
+const ViewTier := preload("res://scripts/view_tier.gd")  # the frame's one budget
 const CROWN := {"name": "The Crown", "crown": true}
 const CROWN_RED := Color(0.72, 0.13, 0.16)
 const PLANTED := 0.45  # a planted standard's height, as the scenes plant theirs
@@ -103,9 +104,16 @@ func _process_timed(delta: float) -> void:
 		var w = want.get(key)
 		if w == null or int(w[2]) != int(_marks[key]["sig"]):
 			_lower(key)
+	# One mark a frame at least, more while the frame's budget lasts; the rest the next frame (a start raised every
+	# town's marks in one tick: 229-244 ms, 2026-11-20).
+	var raised := 0
 	for key in want:
 		if not _marks.has(key):
+			if raised > 0 and not ViewTier.spend_ok(&"decisions"):
+				_t = float(CFG.get("every", 1.0))  # looked over again next frame
+				break
 			_raise(key, want[key])
+			raised += 1
 
 
 # --- raising and lowering a mark -------------------------------------------------------------------

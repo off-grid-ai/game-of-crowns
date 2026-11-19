@@ -51,6 +51,27 @@ static func _name(id: int, tiles: Array, reign: String) -> String:
 ## only the pieces its layout laid (towns.gd _tag_layout), never its life, its dressing or a fire's shell; the file is
 ## written on a worker either way (Kept.keep).
 static func save(root: Node3D, path: String, layout_only := false) -> void:
+	if root.is_inside_tree() and layout_only:
+		# A standing town's layout copied off the tree (its _layout pieces only) and packed on a worker like a new town:
+		# packed where it stood, a grown town's save held the main thread 6.4 s (2026-11-20, after every growth).
+		var t0 := Time.get_ticks_usec()
+		var copy := Node3D.new()
+		copy.name = root.name
+		copy.transform = root.transform
+		for m in root.get_meta_list():
+			var v: Variant = root.get_meta(m)
+			copy.set_meta(m, v.duplicate(true) if v is Array or v is Dictionary else v)
+		for g in root.get_groups():
+			if not String(g).begins_with("_"):
+				copy.add_to_group(g)
+		for c in root.get_children():
+			if c.has_meta("_layout") and not (c is GPUParticles3D or c is CPUParticles3D):
+				copy.add_child(c.duplicate())
+		preload("res://scripts/perf_tools.gd").add("towns.save_copy", Time.get_ticks_usec() - t0)
+		await save(copy, path, false)
+		copy.free()
+		root.set_meta("kept_file", path)
+		return
 	var kept := []  # [node, meta, value as it was]
 	var batches := []  # [batch, its MultiMesh]: packed empty, so the file keeps the batch's own list, not the renderer's copy
 	for n in [root] + _owned(root, root, [], layout_only):

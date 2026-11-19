@@ -346,11 +346,12 @@ func standing() -> Vector2i:
 ## card stayed up 10.5 minutes after the towns in view were ready, waiting on every town in the realm). The towns
 ## off screen are raised after, nearest the lens first, on the play pot (ViewTier), as the lens streams them in.
 func settled() -> bool:
-	if not _life_queue.is_empty() or _cities.is_empty():
+	if _cities.is_empty():
 		return false
 	for c in _cities:
 		var id := int(c["id"])
-		if ViewTier.on_screen(terrain.world_pos(float(c["x"]), float(c["y"])), 3.0) and (not towns.has(id) or _queue.has(id)):
+		# Only the towns on screen (and their life) hold the opening card: the rest stream in behind.
+		if ViewTier.on_screen(terrain.world_pos(float(c["x"]), float(c["y"])), 3.0) and (not towns.has(id) or _queue.has(id) or _life_queue.has(id)):
 			return false
 	return true
 

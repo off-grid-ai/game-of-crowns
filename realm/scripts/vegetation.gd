@@ -35,7 +35,7 @@ func _meshes() -> Dictionary:
 	for k in kinds:
 		meshes[k] = []
 		for name in kinds[k]:
-			var mesh: Mesh = builder.bake_path("res://assets/" + String(name))
+			var mesh: Mesh = preload("res://scripts/forest.gd").kept_model(builder, "res://assets/" + String(name))
 			for si in (mesh.get_surface_count() if mesh else 0):
 				mesh.surface_set_material(si, preload("res://scripts/forest.gd").leaves(mesh.surface_get_material(si), "res://assets/" + String(name), "grass" if k in ["grass", "flowers"] else "leaves"))
 			meshes[k].append(mesh)

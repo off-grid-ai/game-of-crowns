@@ -304,6 +304,26 @@ func _load_kit() -> void:
 		_kscale.append(float(kd[1]) / h if h > 0.0 else 1.0)
 
 
+## A kit model's merged mesh (house_builder bake_path: its pieces in one mesh with its detail levels), kept in a file
+## of its own the first time (kept.gd 'models': the game's baked copy, else the player's), so a launch reads it back
+## instead of merging the glTF again on the main thread (part of a 1.3 s frame as the woods were planted, 2026-11-20).
+static func kept_model(builder: Object, path: String) -> ArrayMesh:
+	var Kept := preload("res://scripts/kept.gd")
+	var at := Kept.path("models", "kit_" + path.md5_text().substr(0, 16))
+	if Kept.has(at):
+		var im := ResourceLoader.load(at, "", ResourceLoader.CACHE_MODE_IGNORE) as ImporterMesh
+		if im:
+			var mesh := im.get_mesh()
+			preload("res://scripts/mesh_cpu.gd").keep(mesh, im)
+			mesh.set_meta("path", path)
+			return mesh
+	var made: ArrayMesh = builder.bake_path(path)
+	var plain: Variant = preload("res://scripts/house_builder.gd")._baked.get("path:" + path)  # its plain arrays (_once)
+	if made and plain is ImporterMesh:
+		Kept.keep(plain as ImporterMesh, at)
+	return made
+
+
 ## Each kit model baked twice (path -> [near, far]): the near tier's materials dissolve a crown at the lens, the far
 ## copy's never need to. tools/impostor_bake.gd bakes its impostors from the far copy.
 func kit_meshes() -> Dictionary:
@@ -312,7 +332,7 @@ func kit_meshes() -> Dictionary:
 	for kd in _kit:
 		var path := String(kd[0])
 		if not baked.has(path):
-			var mesh: Mesh = builder.bake_path(path) if ResourceLoader.exists(path) else null
+			var mesh: Mesh = kept_model(builder, path) if ResourceLoader.exists(path) else null
 			# Two copies: the near tier's materials dissolve a crown at the lens (a per-pixel dither, realistic.gd
 			# fade_near); the mid and card tiers', past NEAR, never need it. On Apple's tile GPU a material that may
 			# discard turns off its hidden-surface removal, so every tree was shaded in the depth prepass and again

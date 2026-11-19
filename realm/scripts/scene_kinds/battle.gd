@@ -82,7 +82,7 @@ func is_crown(s: Dictionary, houses: Dictionary) -> bool:
 		if (houses.get(pid, {}) as Dictionary).get("crown", false):
 			return true
 	for p in Awareness.store().rec("players", []):
-		if pids.has(int(p.get("id", -2))) and (p.get("sworn") != null or String(p.get("band", "")) == "sworn"):
+		if pids.has(int(p.get("id", -2))) and (p.get("sworn") != null or str(p.get("band", "")) == "sworn"):
 			return true
 	return false
 

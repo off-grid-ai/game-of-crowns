@@ -36,12 +36,26 @@ func build(terrain: Node3D, ground_layer: int) -> void:
 	# were drawn under the water at 2-unit spacing, 1.5 at half a unit).
 	land.mesh_size = int(Data.num("ground", "mesh.size", 48))
 	land.mesh_lods = int(Data.num("ground", "mesh.lods", 7))
+	# The ground layers' textures (two PNGs a layer) decoded and mipmapped on worker threads while the window answers:
+	# on the main thread the 20 were most of a 2.3 s frame after Continue (2026-11-20).
+	var paths: Array = []
+	for i in LAYERS.size():
+		paths.append_array(layer_textures(i))
+	var imgs: Array = []
+	imgs.resize(paths.size())
+	var group := WorkerThreadPool.add_group_task(func(k: int) -> void: imgs[k] = _layer_image(String(paths[k])), paths.size(), -1, false, "ground layers")
+	while not WorkerThreadPool.is_group_task_completed(group):
+		await PerfTools.next_frame(&"land3d:layers")
+	WorkerThreadPool.wait_for_group_task_completion(group)
+	# Every layer handed to Terrain3D at once (set_texture_list): set one by one, each set rebuilt the whole texture
+	# array, ten rebuilds of twenty 2K layers in one 3.4 s frame after Continue (2026-11-20).
+	var list: Array[Terrain3DTextureAsset] = []
 	for i in LAYERS.size():
 		var ta := Terrain3DTextureAsset.new()
+		ta.id = i
 		ta.name = LAYERS[i]
-		var tex := layer_textures(i)
-		ta.albedo_texture = _layer_texture(tex[0])
-		ta.normal_texture = _layer_texture(tex[1])
+		ta.albedo_texture = ImageTexture.create_from_image(imgs[i * 2]) if imgs[i * 2] else _layer_texture(String(paths[i * 2]))
+		ta.normal_texture = ImageTexture.create_from_image(imgs[i * 2 + 1]) if imgs[i * 2 + 1] else _layer_texture(String(paths[i * 2 + 1]))
 		# Each layer's tint and scale (realm/data/ground.json layers: the painted ground).
 		ta.albedo_color = Color.WHITE  # the paint is final; a tint only where ground.json layers.<layer>.tint gives one
 		var tint: Array = Data.value("ground", "layers.%s.tint" % LAYERS[i], [])
@@ -54,7 +68,8 @@ func build(terrain: Node3D, ground_layer: int) -> void:
 		if "detiling_rotation" in ta:
 			ta.set("detiling_rotation", 0.3)
 			ta.set("detiling_shift", 0.5)
-		land.assets.set_texture_asset(i, ta)
+		list.append(ta)
+	land.assets.set_texture_list(list)
 	var mat := land.material
 	mat.world_background = Terrain3DMaterial.NONE
 	mat.auto_shader_enabled = true
@@ -133,10 +148,12 @@ func build(terrain: Node3D, ground_layer: int) -> void:
 	if terrain.land:
 		heights = terrain.land
 		land.vertex_spacing = 1.0 / terrain.land_per_unit
-		# The ground's layers come from 1.2 million samples: worked out on a
-		# background thread while the window carries on answering the system.
+		# The ground's layers come from 1.2 million samples: worked out once for this land (on a background thread) and
+		# kept (kept.gd 'land': the bake's copy ships), so a launch reads them back (build once, load only).
+		var Kept := preload("res://scripts/kept.gd")
+		var at := Kept.path("land", "control_" + String(terrain.land_key()).md5_text().substr(0, 16), "bin")
 		var out := [null]
-		var task := WorkerThreadPool.add_task(func(): out[0] = _control_from_land(terrain))
+		var task := WorkerThreadPool.add_task(func(): out[0] = _control_kept(at, terrain))
 		while not WorkerThreadPool.is_task_completed(task):
 			await PerfTools.next_frame(&"land3d:140")
 		WorkerThreadPool.wait_for_task_completion(task)
@@ -169,6 +186,18 @@ func build(terrain: Node3D, ground_layer: int) -> void:
 ## array needs), so a repacked layer never waits on Godot's import: g3's frames ran before the repacked PNGs were
 ## imported, every layer "Failed loading", and Terrain3D drew its checkerboard over the land. In an exported game,
 ## where only the import ships, the import.
+## A packed ground texture's Image read off disk, RGBA8 with its mipmaps (any thread), or null where there is no file
+## of its own (an exported game: _layer_texture loads the import).
+static func _layer_image(path: String) -> Image:
+	if not FileAccess.file_exists(path):
+		return null
+	var img := Image.load_from_file(ProjectSettings.globalize_path(path))
+	if img:
+		img.convert(Image.FORMAT_RGBA8)
+		img.generate_mipmaps()
+	return img
+
+
 static func _layer_texture(path: String) -> Texture2D:
 	if FileAccess.file_exists(path):
 		var img := Image.load_from_file(ProjectSettings.globalize_path(path))
@@ -204,6 +233,20 @@ static var _beach_layer: int = maxi(0, LAYERS.find(String(Data.value("ground", "
 ## The ground for an eroded heightmap: sand at the waterline and below and snow on the high peaks from the land
 ## itself; elsewhere grass (rock on cliffs by the auto shader) with the terrain's own ground laid over it
 ## (terrain.tile_mix: Freeciv's terrain, blended across tiles, worn earth in patches through the grass).
+## The land's ground layers (_control_from_land) read back from `at`, or worked out and kept there (any thread).
+func _control_kept(at: String, terrain: Node3D) -> Image:
+	var Kept := preload("res://scripts/kept.gd")
+	if Kept.has(at):
+		var d: Variant = bytes_to_var(FileAccess.get_file_as_bytes(at))
+		if d is Array and (d as Array).size() == 3:
+			var img := Image.create_from_data(int(d[0]), int(d[1]), false, Image.FORMAT_RF, d[2])
+			if img and img.get_width() == terrain.land.get_width() and img.get_height() == terrain.land.get_height():
+				return img
+	var made := _control_from_land(terrain)
+	Kept.keep_bytes(at, var_to_bytes([made.get_width(), made.get_height(), made.get_data()]))
+	return made
+
+
 func _control_from_land(terrain: Node3D) -> Image:
 	var hm: Image = terrain.land
 	var w := hm.get_width()

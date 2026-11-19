@@ -676,6 +676,15 @@ func _layers_at(wx: float, wz: float, h: float) -> Array:
 
 
 func _build_land() -> void:
+	# Under Terrain3D the hand-built mesh is never drawn (hidden; only its material carries the realm map, set_realm):
+	# its ~90k vertices, each asked its height and ground in GDScript, were most of a 2.3 s frame after Continue
+	# (2026-11-20). Only the material is made then.
+	if USE_TERRAIN3D:
+		_land_mat = _land_material()
+		land3d = preload("res://scripts/land3d.gd").new()
+		add_child(land3d)
+		await land3d.build(self, GROUND_LAYER)
+		return
 	var nx := width * SUB + 1
 	var nz := height * SUB + 1
 	var step := TILE / SUB
@@ -709,28 +718,25 @@ func _build_land() -> void:
 	for i in idx:
 		st.add_index(i)
 	st.generate_normals()
-	var mat := ShaderMaterial.new()
-	mat.shader = preload("res://scripts/terrain.gdshader")
-	# The hand-built mesh's own ground photos only when it is the land shown: with
-	# Terrain3D they were 12 lossless 2048 textures (~200 MB of video memory) on a
-	# hidden mesh. Its material still carries the realm's colours (set_realm).
-	if not USE_TERRAIN3D:
-		for layer in ["grass", "dirt", "sand", "snow", "rock", "forest"]:
-			mat.set_shader_parameter(layer + "_a", load("res://assets/ground/%s-albedo.jpg" % layer))
-			mat.set_shader_parameter(layer + "_n", load("res://assets/ground/%s-normal.jpg" % layer))
+	var mat := _land_material()
+	for layer in ["grass", "dirt", "sand", "snow", "rock", "forest"]:
+		mat.set_shader_parameter(layer + "_a", load("res://assets/ground/%s-albedo.jpg" % layer))
+		mat.set_shader_parameter(layer + "_n", load("res://assets/ground/%s-normal.jpg" % layer))
 	_land_mat = mat
-	mat.set_shader_parameter("realm_size", Vector2(width, height))
-	mat.set_shader_parameter("tile_size", TILE)
 	var mi := MeshInstance3D.new()
 	mi.mesh = st.commit()
 	mi.material_override = mat
 	mi.layers = 1 | GROUND_LAYER
 	add_child(mi)
-	if USE_TERRAIN3D:
-		mi.visible = false
-		land3d = preload("res://scripts/land3d.gd").new()
-		add_child(land3d)
-		await land3d.build(self, GROUND_LAYER)
+
+
+## The hand-built land's material: the realm map draws into it (political_overlay.gd set_realm), drawn or not.
+func _land_material() -> ShaderMaterial:
+	var mat := ShaderMaterial.new()
+	mat.shader = preload("res://scripts/terrain.gdshader")
+	mat.set_shader_parameter("realm_size", Vector2(width, height))
+	mat.set_shader_parameter("tile_size", TILE)
+	return mat
 
 
 func _no_shadows(node: Node) -> void:

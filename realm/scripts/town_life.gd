@@ -321,6 +321,29 @@ func _stage_town(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 	await _pace("pin")
 	if Kept.baking and keep_lives and not _gone(root, life):
 		_keep_life(root, life)
+	elif not Kept.baking and town_file != "" and not _gone(root, life):
+		_keep_own(root, life)
+
+
+## A Life staged in play because none was kept for its facts (a town grown or changed since the bake, in this reign):
+## kept in the player's folder under the same kept_key (people_store.gd source reads it), so the next launch reads it
+## back instead of casting it again (Kingsmere 2.6 s frames: life.work_site, life.works, town_scenes.cast, every
+## launch). The live Life is never taken apart: a copy is (people_store.gd save takes its tick and thought off the
+## live one), packed here and written on a worker (Kept.keep).
+func _keep_own(root: Node3D, life: Node3D) -> void:
+	var key := String(life.get_meta("kept_key", ""))
+	if key == "":
+		return
+	var path := PeopleStore.path_of(key)
+	if FileAccess.file_exists(path):
+		return
+	var t0 := Time.get_ticks_usec()
+	var copy := life.duplicate(Node.DUPLICATE_GROUPS | Node.DUPLICATE_SCRIPTS | Node.DUPLICATE_USE_INSTANTIATION) as Node3D
+	var why := PeopleStore.save(root, copy, path, self, life) if copy != null else "not copied"
+	if copy != null:
+		copy.free()
+	PerfTools.add("life.keep_own", Time.get_ticks_usec() - t0)
+	print_verbose("LIFE kept %s %s in %d ms" % [String(root.get_meta("title", root.name)), "whole" if why == "" else "not: " + why, (Time.get_ticks_usec() - t0) / 1000])
 
 
 ## The bake's (tools/bake.gd --lives): each Life it stages is kept whole for its facts (people_store.gd save, under
