@@ -154,6 +154,39 @@ func announce(moment: String, name := "") -> void:
 		play.bind(_voice_row("voice/names/%s.ogg" % said), Vector3.INF, "call:" + moment, db))
 
 
+## The herald on the King's building (sounds.json works_calls): `stage` order when he orders it raised, built when it
+## stands; `building` as the decree names it (temple) or as the realm does (Temple). One of the building's takes for
+## that stage (assets/audio/voice/works/<id>/<stage>_<n>.ogg, record_calls.sh works), never the same twice running; the
+## same building and stage not again within cooldown_s. Nothing for a building with no recording.
+var _heralded := {}  # "<id>/<stage>" -> msec it was last said
+func herald_work(building: String, stage: String) -> void:
+	var cfg: Dictionary = Data.value("sounds", "works_calls", {})
+	var id := ""
+	var kinds: Dictionary = cfg.get("buildings", {})
+	for k in kinds:
+		if (kinds[k] as Array).has(building):
+			id = String(k)
+	if id == "" or not stage in ["order", "built"]:
+		return
+	var key := "%s/%s" % [id, stage]
+	var now := Time.get_ticks_msec()
+	if _heralded.has(key) and now - int(_heralded[key]) < int(float(cfg.get("cooldown_s", 20.0)) * 1000.0):
+		return
+	_heralded[key] = now
+	var row := "works:" + key
+	if not _rows.has(row):
+		var takes: Array = []
+		for i in range(1, int(cfg.get("takes", 3)) + 1):
+			takes.append("voice/works/%s/%s_%d.ogg" % [id, stage, i])
+		_rows[row] = {"takes": takes, "db": 0.0, "pitch": [1.0, 1.0], "gain": 0.0, "bus": "Voice"}
+	var go := play.bind(row, Vector3.INF, "herald:" + key, float(cfg.get("db", 0.0)))
+	var delay := float(cfg.get("delay_s", 0.4))
+	if delay > 0.0 and is_inside_tree():
+		get_tree().create_timer(delay).timeout.connect(go)
+	else:
+		go.call()
+
+
 ## A row of the table for one spoken take on the Voice bus, made the first time it is heard (play() does the rest).
 func _voice_row(path: String) -> String:
 	if not _rows.has(path):

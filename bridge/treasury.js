@@ -107,7 +107,7 @@ export function royalWorks(ctx, turn) {
     }
     send(`lua cmd ${Lua.building(c.id, w.building)}`);
     (meta.royalBuilt ??= []).push({ city: c.id, building: w.building, turn });
-    record({ turn, kind: "works", text: `The King's ${w.building.toLowerCase()} stands finished in ${cityName(c.id)}.`, city: c.id });
+    record({ turn, kind: "works", text: `The King's ${w.building.toLowerCase()} stands finished in ${cityName(c.id)}.`, city: c.id, building: w.building, done: true });
     scene("feast", { x: c.x, y: c.y, city: c.id, owner: c.owner });
   }
   // Freeciv's raids make for the King's works (script.lua raid_goal, raids.js): the towns that have one, each season.

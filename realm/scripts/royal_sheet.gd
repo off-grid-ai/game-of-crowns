@@ -644,6 +644,12 @@ func on_chronicle(entries: Array) -> void:
 		if String(e.get("kind", "")) == "famine" and e.get("starving") is Array and not (e["starving"] as Array).is_empty():
 			var hungry: Array = (e["starving"] as Array).map(func(id): return String(ui.town_of.call(int(id)).get("name", "")))
 			ui.announced.emit("famine", "Kingsmere" if hungry.has("Kingsmere") else String(hungry[0]))
+		# The King's building: the herald says it ordered, and again when it stands (sounds.json works_calls; bridge
+		# routes_decree.js puts the building on the decree, treasury.js on the finished work).
+		if String(e.get("kind", "")) == "decree" and String(e.get("building", "")) != "":
+			ui.heralded.emit(String(e["building"]), "order" if e.get("rising", false) else "built")
+		if String(e.get("kind", "")) == "works" and e.get("done", false) and String(e.get("building", "")) != "":
+			ui.heralded.emit(String(e["building"]), "built")
 
 
 ## A lord's fate odds in the realm's words (bridge battles.js fateOdds: escaped, wounded, taken, slain, each 0..1):

@@ -214,7 +214,7 @@ export async function issueDecree(ctx, req, res, url) {
     }
   }
   decreeScenes(cmd, result, seat, target);
-  record({ turn: ctx.world?.turn ?? 0, kind: "decree", text: result.text, city: cmd.city });
+  record({ turn: ctx.world?.turn ?? 0, kind: "decree", text: result.text, city: cmd.city, ...(cmd.action === "build" ? { building: cmd.building, rising: !!result.work } : {}) });  // a building: the herald says it (sound_v2.gd herald_work)
   setTimeout(snapshot, 600);
   const sealed = Seals.spend(ctx.meta, cmd.action, ctx.world.turn ?? 0);
   if (ruling) Sittings.answerMatter(ctx, String(cmd.matter));
