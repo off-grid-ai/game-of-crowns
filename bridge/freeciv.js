@@ -47,7 +47,8 @@ export function start({ name, P, dir, onEvent, onExit }) {
   // child) would hold the port and stop this one starting: clear it first.
   // It may be busy saving and ignore a polite request, so it's killed outright.
   try {
-    execFileSync("pkill", ["-KILL", "-f", `freeciv-server -p ${FC_PORT} `]);
+    if (process.platform === "win32") execFileSync("taskkill", ["/F", "/IM", "freeciv-server.exe"], { stdio: "ignore" });  // no pkill on Windows
+    else execFileSync("pkill", ["-KILL", "-f", `freeciv-server -p ${FC_PORT} `]);
   } catch { /* none running */ }
   const save = newestSave(P.saves);
   const resume = path.join(P.base, "resume.serv");
@@ -59,7 +60,7 @@ export function start({ name, P, dir, onEvent, onExit }) {
   // This realm's temperaments, then our medieval ruleset, then Freeciv's own data.
   // The app brings its own Freeciv (bridge/app.js sets FREECIV_SERVER and FREECIV_SHARE).
   const share = process.env.FREECIV_SHARE || "/opt/homebrew/share/freeciv";
-  const env = { ...process.env, FREECIV_DATA_PATH: `${P.data}:${path.join(dir, "data")}:${share}` };
+  const env = { ...process.env, FREECIV_DATA_PATH: [P.data, path.join(dir, "data"), share].join(path.delimiter)  /* ";" on Windows, ":" elsewhere */ };
   const proc = spawn(process.env.FREECIV_SERVER || "freeciv-server", args, { cwd: dir, env });
   fc = proc;
   const log = fs.createWriteStream(path.join(P.state, "freeciv.log"), { flags: "a" });

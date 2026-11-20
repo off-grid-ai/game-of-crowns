@@ -18,7 +18,7 @@ const HOME = process.env.GOC_HOME || path.join(os.homedir(), "Library", "Applica
 const LOGS = path.join(HOME, "logs");
 fs.mkdirSync(LOGS, { recursive: true });
 process.env.GOC_HOME = HOME;
-process.env.FREECIV_SERVER = path.join(RUNTIME, "freeciv", "bin", "freeciv-server");
+process.env.FREECIV_SERVER = path.join(RUNTIME, "freeciv", "bin", process.platform === "win32" ? "freeciv-server.exe" : "freeciv-server");
 process.env.FREECIV_SHARE = path.join(RUNTIME, "freeciv", "share", "freeciv");
 
 let quitting = false;
@@ -26,8 +26,10 @@ let quitting = false;
 function shutdown() {
   if (quitting) return;
   quitting = true;
-  // server.js stops Freeciv on SIGTERM, then exits.
-  process.kill(process.pid, "SIGTERM");
+  // server.js stops Freeciv on SIGTERM, then exits. Windows has no signals: a SIGTERM sent to ourselves there ends
+  // Node at once, Freeciv left running and the realm unsaved, so the handlers are called directly instead.
+  if (process.platform === "win32") process.emit("SIGTERM");
+  else process.kill(process.pid, "SIGTERM");
 }
 
 // The game that started us: when it goes, so do we.
