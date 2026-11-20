@@ -18,7 +18,7 @@ dest_files=["res://.godot/imported/albedo.png-ccd356d255c7a973fb777d1275a75bf8.s
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

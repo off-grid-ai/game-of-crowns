@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bsu8cfaard0h2"
-path.s3tc="res://.godot/imported/dreyar_1.png-387112cacb2043dd332ff8462869264f.s3tc.ctex"
-path.etc2="res://.godot/imported/dreyar_1.png-387112cacb2043dd332ff8462869264f.etc2.ctex"
+path.bptc="res://.godot/imported/dreyar_1.png-387112cacb2043dd332ff8462869264f.bptc.ctex"
+path.astc="res://.godot/imported/dreyar_1.png-387112cacb2043dd332ff8462869264f.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -16,12 +16,12 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/people/mixamo/dreyar/dreyar_1.png"
-dest_files=["res://.godot/imported/dreyar_1.png-387112cacb2043dd332ff8462869264f.s3tc.ctex", "res://.godot/imported/dreyar_1.png-387112cacb2043dd332ff8462869264f.etc2.ctex"]
+dest_files=["res://.godot/imported/dreyar_1.png-387112cacb2043dd332ff8462869264f.bptc.ctex", "res://.godot/imported/dreyar_1.png-387112cacb2043dd332ff8462869264f.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
@@ -41,5 +41,5 @@ process/premult_alpha=false
 process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
-process/size_limit=1024
+process/size_limit=0
 detect_3d/compress_to=1

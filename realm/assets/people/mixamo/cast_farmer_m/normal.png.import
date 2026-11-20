@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://drwhxou0hkiov"
-path.s3tc="res://.godot/imported/normal.png-9c1e9d17c9dd1fd842952ff619258533.s3tc.ctex"
-path.etc2="res://.godot/imported/normal.png-9c1e9d17c9dd1fd842952ff619258533.etc2.ctex"
+path.bptc="res://.godot/imported/normal.png-9c1e9d17c9dd1fd842952ff619258533.bptc.ctex"
+path.astc="res://.godot/imported/normal.png-9c1e9d17c9dd1fd842952ff619258533.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,12 +13,12 @@ metadata={
 [deps]
 
 source_file="res://assets/people/mixamo/cast_farmer_m/normal.png"
-dest_files=["res://.godot/imported/normal.png-9c1e9d17c9dd1fd842952ff619258533.s3tc.ctex", "res://.godot/imported/normal.png-9c1e9d17c9dd1fd842952ff619258533.etc2.ctex"]
+dest_files=["res://.godot/imported/normal.png-9c1e9d17c9dd1fd842952ff619258533.bptc.ctex", "res://.godot/imported/normal.png-9c1e9d17c9dd1fd842952ff619258533.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

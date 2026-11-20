@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://be4hotss8my24"
-path.s3tc="res://.godot/imported/Image_1.jpg-a7d2c74c8120d3f9c1d4a4126072e15d.s3tc.ctex"
-path.etc2="res://.godot/imported/Image_1.jpg-a7d2c74c8120d3f9c1d4a4126072e15d.etc2.ctex"
+path.bptc="res://.godot/imported/Image_1.jpg-a7d2c74c8120d3f9c1d4a4126072e15d.bptc.ctex"
+path.astc="res://.godot/imported/Image_1.jpg-a7d2c74c8120d3f9c1d4a4126072e15d.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,12 +13,12 @@ metadata={
 [deps]
 
 source_file="res://assets/people/mixamo/cast_watchman/Image_1.jpg"
-dest_files=["res://.godot/imported/Image_1.jpg-a7d2c74c8120d3f9c1d4a4126072e15d.s3tc.ctex", "res://.godot/imported/Image_1.jpg-a7d2c74c8120d3f9c1d4a4126072e15d.etc2.ctex"]
+dest_files=["res://.godot/imported/Image_1.jpg-a7d2c74c8120d3f9c1d4a4126072e15d.bptc.ctex", "res://.godot/imported/Image_1.jpg-a7d2c74c8120d3f9c1d4a4126072e15d.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

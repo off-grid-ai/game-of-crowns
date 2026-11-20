@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://d4gkx1qmyao12"
-path.s3tc="res://.godot/imported/unit_man_at_arms_trellis_Image_0.png-5fd8029f1c5a33d4558f4c208b0c4131.s3tc.ctex"
-path.etc2="res://.godot/imported/unit_man_at_arms_trellis_Image_0.png-5fd8029f1c5a33d4558f4c208b0c4131.etc2.ctex"
+path.bptc="res://.godot/imported/unit_man_at_arms_trellis_Image_0.png-5fd8029f1c5a33d4558f4c208b0c4131.bptc.ctex"
+path.astc="res://.godot/imported/unit_man_at_arms_trellis_Image_0.png-5fd8029f1c5a33d4558f4c208b0c4131.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -16,12 +16,12 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/armies/man_at_arms/unit_man_at_arms_trellis_Image_0.png"
-dest_files=["res://.godot/imported/unit_man_at_arms_trellis_Image_0.png-5fd8029f1c5a33d4558f4c208b0c4131.s3tc.ctex", "res://.godot/imported/unit_man_at_arms_trellis_Image_0.png-5fd8029f1c5a33d4558f4c208b0c4131.etc2.ctex"]
+dest_files=["res://.godot/imported/unit_man_at_arms_trellis_Image_0.png-5fd8029f1c5a33d4558f4c208b0c4131.bptc.ctex", "res://.godot/imported/unit_man_at_arms_trellis_Image_0.png-5fd8029f1c5a33d4558f4c208b0c4131.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

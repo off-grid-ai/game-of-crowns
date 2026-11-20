@@ -130,6 +130,16 @@ for f in assets/armies/*/(offsets.exr|normals.png).import(N); do
   [[ $f == *.bak/* ]] && continue
   grep -q '^compress/mode=0' $f && grep -q '^mipmaps/generate=false' $f || { echo "$f: baked motion must import lossless without mipmaps   <- vat-data-lossless"; fail=1; }
 done
+#   character-textures-hq: a character's textures (the people, the army's men and horses) import whole and at full size:
+#   lossless or high-quality compression, no size cap (Mac 2026-11-20, "whatever is causing pixelation of all characters":
+#   the low-quality block compression and the 1024 px cap made every soldier, horse and townsman read rough and blocky).
+#   The baked motion (offsets.exr, normals.png) has its own rule above.
+for f in assets/people/mixamo/*/*.import(N) assets/armies/*/*.import(N) assets/cavalry/horse/*.import(N); do
+  [[ $f == *.bak/* || $f == */offsets.exr.import || $f == */normals.png.import ]] && continue
+  grep -q '^importer="texture"' $f || continue
+  { grep -q '^compress/mode=0' $f || grep -q '^compress/high_quality=true' $f; } && ! grep -q '^process/size_limit=[1-9]' $f \
+    || { echo "$f: a character's texture must import lossless or high quality, uncapped   <- character-textures-hq"; fail=1; }
+done
 #   ask-the-troop: battle code never branches on what kind a regiment is (Mac 2026-11-17: "all kinds of soldiers need to
 #   implement some interface", after a day of horse-only branches drifting from the foot's). It asks the regiment's
 #   Troop (troops.gd of(r): holds_line, shoots, mounted...); a kind's own answer lives in its troop_<kind>.gd.
