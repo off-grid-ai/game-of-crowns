@@ -83,7 +83,10 @@ jobs:
           ~/.local/bin/meson setup build --prefix=/opt/freeciv --buildtype=release -Dserver=enabled \
             -Dclients=[] -Dfcmp=[] -Dtools=[] -Daudio=none -Dnls=false -Dreadline=false -Dmwand=false -Dsyslua=false
           ninja -C build
-          sudo ninja -C build install >/dev/null
+          # Installed as the runner, not root: meson lives in the runner's own ~/.local, which root's Python can't see
+          # (sudo ninja install died "No module named 'mesonbuild'").
+          sudo mkdir -p /opt/freeciv && sudo chown "$(id -u):$(id -g)" /opt/freeciv
+          ninja -C build install >/dev/null
           /opt/freeciv/bin/freeciv-server --version | head -1
           ls /opt/freeciv/share/freeciv
 
