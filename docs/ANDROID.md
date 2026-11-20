@@ -8,7 +8,7 @@ Spike, 2026-11-20. Can the game run on phones, and what's the cheapest working p
 
 | Piece | Result |
 |---|---|
-| Godot 4.7.2 Android export of `realm/` | Exports, signs and installs (a 2.5 GB debug APK, textures capped at 1024 px). It starts on the emulator and draws Godot's splash screen. The emulator can't draw the game itself: its software graphics fail on Vulkan and run out of shader slots on OpenGL. **A real phone is the next test.** |
+| Godot 4.7.2 Android export of `realm/` | **Boots to the title screen on a OnePlus Nord 5 (Snapdragon 8s Gen 3, Android 16) at 60 fps**, on the OpenGL (Compatibility) renderer. It reads the live realm (King Emrys) from the workstation's bridge through `adb reverse tcp:8787`. It's a 2.5 GB debug APK, textures capped at 1024 px. On Vulkan (Mobile renderer) the same build stops drawing a few seconds into loading, at a different point each run, with every thread asleep: an Adreno Vulkan hang to look into later. The emulator can't draw the game at all (software graphics). |
 | LimboAI and Terrain3D add-ons | Both already ship Android arm64 builds. |
 | freeciv-server 3.2.6 built with the Android NDK (ICU, curl, sqlite and zstd linked in) | Builds in about 4 minutes, 6.8 MB. Runs on the emulator. |
 | Node 18.20 (nodejs-mobile) | Runs on Android and can start other programs. The real bridge loads and listens on 8787. Making a new realm stops at zstd, which needs Node 22.15 or later. |
@@ -19,7 +19,7 @@ The build scripts are in `packaging/android/`. The mockups are in `docs/art/mobi
 ## The path
 
 ### Android: three processes, the same as desktop
-1. **Godot** exports arm64 only, on the Mobile renderer.
+1. **Godot** exports arm64 only. Use the Compatibility (OpenGL) renderer on phones for now: it runs at 60 fps on a Snapdragon 8s Gen 3, while Vulkan hangs there.
 2. **Node** is Node 26 built from source, shipped as `lib/arm64-v8a/libnode_exec.so`. Android runs programs only from the app's native library folder, so the files must be named `lib*.so`, and the export must use a Gradle build with `extractNativeLibs=true`.
 3. **Freeciv** ships the same way, as `libfreeciv_server.so`. The bridge starts it exactly as on desktop.
 4. `app_services.gd` gets an Android branch that finds the native library folder and starts Node with `OS.create_process`. On first launch the bridge and the rules unpack into the app's files folder.
@@ -37,7 +37,7 @@ The first export was 5.8 GB, over Android's 4 GB limit. Capping textures at 1024
 
 ## Blockers and risks
 1. **Size** (above) is the biggest piece of work.
-2. **Editor-only code in every exported build:** `addons/godot_vat/vat_multi_mesh_instance_3d.gd` uses `EditorFileDialog`. In an exported build `army.gd` and `world_clock.gd` then fail to compile. This probably affects the desktop builds too, so check it there.
+2. **Editor-only code in every exported build:** `addons/godot_vat/vat_multi_mesh_instance_3d.gd` names `EditorFileDialog` as a type. In an exported build that fails to compile, and through `army.gd`, `main.gd` and `perf_tools.gd` it takes down `world_clock.gd` and the whole boot: the game hangs on "The realm is forming…". Proven on the phone. Fix: `ClassDB.instantiate("EditorFileDialog")` and plain numbers for its two constants (done in the spike's private copy). This very likely breaks the desktop builds too.
 3. **Shaders:** 4 errors on the Mobile renderer, and the OpenGL fallback goes over the fragment uniform limit. Fix them on a real phone.
 4. **Look:** the Mobile renderer has no SDFGI, SSIL or volumetric fog, so Kingsmere will look flatter. Plan a look pass against the approved autumn frame.
 5. **Heat and battery:** cap at 30 fps, with fewer soldiers and thinner crowds on a battery-saver setting.
@@ -71,4 +71,4 @@ Mockups: `docs/art/mobile/` (title, realm map, Kingsmere, battle, siege, court).
 | **Total** | **~18** | **~12** |
 
 ## Next step
-Run the APK on a real Android phone to see the title screen, then build the Gradle export with Node and Freeciv inside it.
+Land the godot_vat fix in the repo (it likely affects every packaged build). Then build the Gradle export with Node and Freeciv inside the APK, so the phone plays without the workstation.
