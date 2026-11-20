@@ -385,8 +385,10 @@ func set_section(instance_id: int, start_frame: int, end_frame: int,) -> void:
 func _import_vat_animation_track() -> void:
 	if !Engine.is_editor_hint(): return
 	
-	var dialog: EditorFileDialog = EditorFileDialog.new()
-	dialog.file_mode = EditorFileDialog.FILE_MODE_OPEN_FILE
+	# Named by string: EditorFileDialog exists only in the editor, and naming the class here stopped this
+	# script compiling in every packaged build (army.gd and the whole boot with it). 0 = FILE_MODE_OPEN_FILE.
+	var dialog = ClassDB.instantiate("EditorFileDialog")
+	dialog.file_mode = 0
 	dialog.filters = ["*.json ; JSON Files"]
 	
 	dialog.file_selected.connect(func(path: String) -> void:
