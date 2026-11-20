@@ -133,7 +133,9 @@ echo "==> self-extracting 7z"
 rm -f "$ZIP"
 # 7-Zip's own self-extractor (LZMA2): the zip, even Deflate64 at its best, came to 2.1 GiB, over GitHub's 2 GiB a
 # release file; a double-click unpacks the game's folder on Windows 10 and 11 with nothing to install.
-SFX="${SFX:-/c/Program Files/7-Zip/7z.sfx}"
+# A Windows path: 7z.exe is a Windows program, and Git Bash leaves a path glued to -sfx unconverted ("The system
+# cannot find the path specified").
+SFX="$(cygpath -w "${SFX:-/c/Program Files/7-Zip/7z.sfx}")"
 (cd "$ROOT/build" && 7z a -t7z -m0=lzma2 -mx=9 -mmt=on -sfx"$SFX" "$ZIP" "$NAME" >/dev/null)
 size=$(stat -c %s "$ZIP")
 [ "$size" -lt 2147483648 ] || { echo "!! $ZIP is over 2 GiB: GitHub won't take it as a release file"; exit 1; }
