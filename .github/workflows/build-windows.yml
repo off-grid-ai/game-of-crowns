@@ -106,14 +106,14 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: game-of-crowns-windows
-          path: build/Game-of-Crowns-*-windows-x86_64.zip
+          path: build/Game-of-Crowns-*-windows-x86_64.exe
           retention-days: 7
           compression-level: 0
 
       - name: Add it to the release
         if: inputs.release == true
         run: |
-          FILE=$(ls build/Game-of-Crowns-*-windows-x86_64.zip)
+          FILE=$(ls build/Game-of-Crowns-*-windows-x86_64.exe)
           VERSION=$(sed -n 's/^application\/short_version="\(.*\)"/\1/p' realm/export_presets.cfg | head -1)
           SHA=$(git rev-parse --short HEAD)
           TAG="${{ inputs.tag }}"
@@ -131,6 +131,6 @@ jobs:
           case "$notes" in *"Windows:"*) ;; *)
             gh release edit "$TAG" -R "$GITHUB_REPOSITORY" --notes "$notes
 
-          Windows: 64-bit Windows 10 or 11. Unzip it and open Game of Crowns. Windows will say it doesn't know the publisher: choose More info, then Run anyway." ;;
+          Windows: 64-bit Windows 10 or 11. Run the .exe to unpack the game's folder, then open Game of Crowns in it. Windows will say it doesn't know the publisher: choose More info, then Run anyway." ;;
           esac
           echo "Added $(basename "$FILE") to $TAG." >> "$GITHUB_STEP_SUMMARY"
