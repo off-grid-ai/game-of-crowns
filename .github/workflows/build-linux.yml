@@ -1,0 +1,155 @@
+# Build the Linux game on GitHub, as build-mac.yml builds the Mac one: the art from the R2 bucket
+# (realm/tools/r2_pull.sh), then packaging/build-linux.sh bakes, exports, bundles the bridge, Node and Freeciv and
+# makes the tar.xz.
+#
+# Ubuntu 22.04, not ubuntu-latest: the bundle carries every library Freeciv needs except glibc, so the runner's glibc
+# is the oldest a player's can be. Built here it runs on stock Ubuntu 22.04 and newer.
+#
+# With release on, the tar.xz joins the draft release the Mac build of the same commit made (build-mac.yml drafts it as
+# v<version>-<date>-<sha>; notarise.yml publishes it and only touches the dmg). Start both builds together: this one
+# waits for that release to appear. Or name the release in tag.
+#
+# Secrets: R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY (the art).
+name: Build (Linux)
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to stamp, e.g. 0.7 (empty: the one in realm/export_presets.cfg)"
+        required: false
+      release:
+        description: "Add the tar.xz to the Mac build's release of this commit (waits for it)"
+        type: boolean
+        default: false
+      tag:
+        description: "The release to add it to (empty: the Mac build's release of this commit)"
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 360
+    env:
+      GODOT_VERSION: 4.7.2
+      FREECIV_VERSION: 3.2.7
+      FREECIV_SHA256: 2720076d50f29db42cdc5e510e7c098f7793f7c0ac410fdf390a52bc57507917
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Room on the disk
+        run: |
+          df -h /
+          # What a game build never uses: .NET, Android, Haskell, CodeQL, the Swift and Boost toolchains.
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL \
+            /usr/share/swift /usr/local/share/boost || true
+          df -h /
+
+      - uses: actions/checkout@v4
+
+      - name: Tools (Godot ${{ env.GODOT_VERSION }}, its export templates, rclone)
+        run: |
+          base=https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}-stable
+          curl -fsSL -o "$RUNNER_TEMP/godot.zip" "$base/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          sudo unzip -q -o "$RUNNER_TEMP/godot.zip" -d /opt/godot
+          rm "$RUNNER_TEMP/godot.zip"
+          sudo ln -sf "/opt/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64" /usr/local/bin/godot
+          godot --version
+          curl -fsSL -o "$RUNNER_TEMP/tpl.tpz" "$base/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+          dest="$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
+          mkdir -p "$dest"
+          unzip -q -j "$RUNNER_TEMP/tpl.tpz" 'templates/linux_*' 'templates/version.txt' -d "$dest"
+          rm "$RUNNER_TEMP/tpl.tpz"
+          ls "$dest"
+          # rclone's own build: 22.04's apt rclone predates the Cloudflare provider r2_pull.sh uses.
+          curl -fsSL -o "$RUNNER_TEMP/rclone.zip" https://downloads.rclone.org/rclone-current-linux-amd64.zip
+          unzip -q -j "$RUNNER_TEMP/rclone.zip" '*/rclone' -d "$RUNNER_TEMP/rclone"
+          sudo install -m 755 "$RUNNER_TEMP/rclone/rclone" /usr/local/bin/rclone
+          rclone version | head -1
+          df -h /
+
+      - name: Freeciv ${{ env.FREECIV_VERSION }} server (Freeciv's own source; the Mac's version)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ninja-build pkg-config python3-pip libcurl4-openssl-dev libicu-dev \
+            libsqlite3-dev zlib1g-dev libbz2-dev liblzma-dev libzstd-dev >/dev/null
+          pip3 install --user --quiet meson
+          src="$RUNNER_TEMP/freeciv-${FREECIV_VERSION}"
+          curl -fsSL -o "$src.tar.xz" "https://files.freeciv.org/stable/freeciv-${FREECIV_VERSION}.tar.xz"
+          echo "$FREECIV_SHA256  $src.tar.xz" | sha256sum -c -
+          tar -xJf "$src.tar.xz" -C "$RUNNER_TEMP"
+          cd "$src"
+          ~/.local/bin/meson setup build --prefix=/opt/freeciv --buildtype=release -Dserver=enabled \
+            -Dclients=[] -Dfcmp=[] -Dtools=[] -Daudio=none -Dnls=false -Dreadline=false -Dmwand=false -Dsyslua=false
+          ninja -C build
+          sudo ninja -C build install >/dev/null
+          /opt/freeciv/bin/freeciv-server --version | head -1
+          ls /opt/freeciv/share/freeciv
+
+      - name: The art, from R2
+        env:
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+        run: |
+          test -n "$R2_ACCESS_KEY_ID" || { echo "::error::R2_ACCESS_KEY_ID secret missing"; exit 1; }
+          printf 'R2_ACCESS_KEY_ID=%s\nR2_SECRET_ACCESS_KEY=%s\n' "$R2_ACCESS_KEY_ID" "$R2_SECRET_ACCESS_KEY" > "$RUNNER_TEMP/r2.env"
+          GOC_R2_ENV="$RUNNER_TEMP/r2.env" bash realm/tools/r2_pull.sh
+          rm "$RUNNER_TEMP/r2.env"
+          du -sh realm/assets
+          df -h /
+
+      - name: Import (Godot's cache of every asset)
+        run: |
+          cd realm
+          godot --headless --path . --import > "$RUNNER_TEMP/import.log" 2>&1 || true
+          grep -cE "ERROR" "$RUNNER_TEMP/import.log" || true
+          du -sh .godot
+          df -h /
+
+      - name: Version
+        if: inputs.version != ''
+        run: sed -i -E "s/^(application\/(short_)?version=)\"[^\"]*\"/\1\"${{ inputs.version }}\"/" realm/export_presets.cfg
+
+      - name: Build, tar.xz (packaging/build-linux.sh)
+        env:
+          GODOT: /usr/local/bin/godot
+          FREECIV_SERVER: /opt/freeciv/bin/freeciv-server
+          FREECIV_SHARE: /opt/freeciv/share/freeciv
+        run: |
+          packaging/build-linux.sh
+          df -h /
+
+      - name: Keep the tar.xz (a test build)
+        if: inputs.release != true
+        uses: actions/upload-artifact@v4
+        with:
+          name: game-of-crowns-linux
+          path: build/Game-of-Crowns-*-linux-x86_64.tar.xz
+          retention-days: 7
+          compression-level: 0
+
+      - name: Add it to the release
+        if: inputs.release == true
+        run: |
+          FILE=$(ls build/Game-of-Crowns-*-linux-x86_64.tar.xz)
+          VERSION=$(sed -n 's/^application\/short_version="\(.*\)"/\1/p' realm/export_presets.cfg | head -1)
+          SHA=$(git rev-parse --short HEAD)
+          TAG="${{ inputs.tag }}"
+          # The Mac build drafts v<version>-<date>-<sha> when its dmg is done; it may still be building.
+          for i in $(seq 1 150); do
+            [ -n "$TAG" ] && break
+            TAG=$(gh release list -R "$GITHUB_REPOSITORY" --limit 100 --json tagName --jq '.[].tagName' |
+              grep -E "^v${VERSION//./\\.}-[0-9]{8}-${SHA}\$" | head -1 || true)
+            [ -n "$TAG" ] && break
+            echo "waiting for the Mac build's release of $SHA ($i)"; sleep 120
+          done
+          test -n "$TAG" || { echo "::error::no release for v$VERSION-*-$SHA (start build-mac.yml with release on, or pass tag)"; exit 1; }
+          gh release upload "$TAG" "$FILE" --clobber -R "$GITHUB_REPOSITORY"
+          notes=$(gh release view "$TAG" -R "$GITHUB_REPOSITORY" --json body --jq .body)
+          case "$notes" in *"Linux:"*) ;; *)
+            gh release edit "$TAG" -R "$GITHUB_REPOSITORY" --notes "$notes
+
+          Linux: x86_64, Ubuntu 22.04 or newer. Unpack the tar.xz and run game-of-crowns inside it." ;;
+          esac
+          echo "Added $(basename "$FILE") to $TAG." >> "$GITHUB_STEP_SUMMARY"

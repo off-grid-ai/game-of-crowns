@@ -1,0 +1,134 @@
+# Build the Windows game on GitHub, as build-mac.yml builds the Mac one: the art from the R2 bucket
+# (realm/tools/r2_pull.sh), then packaging/build-windows.sh (Git Bash) bakes, exports, bundles the bridge, Node and
+# Freeciv and makes the zip. Unsigned: SmartScreen warns on first run.
+#
+# With release on, the zip joins the draft release the Mac build of the same commit made (build-mac.yml drafts it as
+# v<version>-<date>-<sha>; notarise.yml publishes it and only touches the dmg). Start both builds together: this one
+# waits for that release to appear. Or name the release in tag.
+#
+# Secrets: R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY (the art).
+name: Build (Windows)
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to stamp, e.g. 0.7 (empty: the one in realm/export_presets.cfg)"
+        required: false
+      release:
+        description: "Add the zip to the Mac build's release of this commit (waits for it)"
+        type: boolean
+        default: false
+      tag:
+        description: "The release to add it to (empty: the Mac build's release of this commit)"
+        required: false
+
+permissions:
+  contents: write
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 360
+    env:
+      GODOT_VERSION: 4.7.2
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Room on the disk
+        run: df -h
+
+      - uses: actions/checkout@v4
+
+      - name: Tools (Godot ${{ env.GODOT_VERSION }}, its export templates, rclone)
+        run: |
+          base=https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}-stable
+          tmp=$(cygpath -u "$RUNNER_TEMP")
+          tools="$tmp/tools"
+          mkdir -p "$tools"
+          curl -fsSL -o "$tmp/godot.zip" "$base/Godot_v${GODOT_VERSION}-stable_win64.exe.zip"
+          unzip -q -o "$tmp/godot.zip" -d "$tmp/godot"
+          rm "$tmp/godot.zip"
+          # The console build: it prints to the step's log, and Godot finds its templates the same way.
+          cp "$tmp/godot/Godot_v${GODOT_VERSION}-stable_win64_console.exe" "$tools/godot.exe"
+          cp "$tmp/godot/Godot_v${GODOT_VERSION}-stable_win64.exe" "$tools/"
+          curl -fsSL -o "$tmp/tpl.tpz" "$base/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+          dest="$(cygpath -u "$APPDATA")/Godot/export_templates/${GODOT_VERSION}.stable"
+          mkdir -p "$dest"
+          unzip -q -j "$tmp/tpl.tpz" 'templates/windows_*' 'templates/version.txt' -d "$dest"
+          rm "$tmp/tpl.tpz"
+          ls "$dest"
+          curl -fsSL -o "$tmp/rclone.zip" https://downloads.rclone.org/rclone-current-windows-amd64.zip
+          unzip -q -j "$tmp/rclone.zip" '*/rclone.exe' -d "$tools"
+          cygpath -w "$tools" >> "$GITHUB_PATH"
+          "$tools/godot.exe" --version
+          "$tools/rclone.exe" version | head -1
+          7z | head -2
+          df -h
+
+      - name: The art, from R2
+        env:
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+        run: |
+          test -n "$R2_ACCESS_KEY_ID" || { echo "::error::R2_ACCESS_KEY_ID secret missing"; exit 1; }
+          printf 'R2_ACCESS_KEY_ID=%s\nR2_SECRET_ACCESS_KEY=%s\n' "$R2_ACCESS_KEY_ID" "$R2_SECRET_ACCESS_KEY" > "$RUNNER_TEMP/r2.env"
+          GOC_R2_ENV="$RUNNER_TEMP/r2.env" bash realm/tools/r2_pull.sh
+          rm "$RUNNER_TEMP/r2.env"
+          du -sh realm/assets
+          df -h
+
+      - name: Import (Godot's cache of every asset)
+        run: |
+          cd realm
+          godot --headless --path . --import > "$RUNNER_TEMP/import.log" 2>&1 || true
+          grep -cE "ERROR" "$RUNNER_TEMP/import.log" || true
+          du -sh .godot
+          df -h
+
+      - name: Version
+        if: inputs.version != ''
+        run: sed -i -E "s/^(application\/(short_|file_|product_)?version=)\"[^\"]*\"/\1\"${{ inputs.version }}\"/" realm/export_presets.cfg
+
+      - name: Build, zip (packaging/build-windows.sh)
+        env:
+          GODOT: godot
+        run: |
+          packaging/build-windows.sh
+          df -h
+
+      - name: Keep the zip (a test build)
+        if: inputs.release != true
+        uses: actions/upload-artifact@v4
+        with:
+          name: game-of-crowns-windows
+          path: build/Game-of-Crowns-*-windows-x86_64.zip
+          retention-days: 7
+          compression-level: 0
+
+      - name: Add it to the release
+        if: inputs.release == true
+        run: |
+          FILE=$(ls build/Game-of-Crowns-*-windows-x86_64.zip)
+          VERSION=$(sed -n 's/^application\/short_version="\(.*\)"/\1/p' realm/export_presets.cfg | head -1)
+          SHA=$(git rev-parse --short HEAD)
+          TAG="${{ inputs.tag }}"
+          # The Mac build drafts v<version>-<date>-<sha> when its dmg is done; it may still be building.
+          for i in $(seq 1 150); do
+            [ -n "$TAG" ] && break
+            TAG=$(gh release list -R "$GITHUB_REPOSITORY" --limit 100 --json tagName --jq '.[].tagName' |
+              grep -E "^v${VERSION//./\\.}-[0-9]{8}-${SHA}\$" | head -1 || true)
+            [ -n "$TAG" ] && break
+            echo "waiting for the Mac build's release of $SHA ($i)"; sleep 120
+          done
+          test -n "$TAG" || { echo "::error::no release for v$VERSION-*-$SHA (start build-mac.yml with release on, or pass tag)"; exit 1; }
+          gh release upload "$TAG" "$FILE" --clobber -R "$GITHUB_REPOSITORY"
+          notes=$(gh release view "$TAG" -R "$GITHUB_REPOSITORY" --json body --jq .body)
+          case "$notes" in *"Windows:"*) ;; *)
+            gh release edit "$TAG" -R "$GITHUB_REPOSITORY" --notes "$notes
+
+          Windows: 64-bit Windows 10 or 11. Unzip it and open Game of Crowns. Windows will say it doesn't know the publisher: choose More info, then Run anyway." ;;
+          esac
+          echo "Added $(basename "$FILE") to $TAG." >> "$GITHUB_STEP_SUMMARY"
