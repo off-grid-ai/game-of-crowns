@@ -55,6 +55,14 @@ Where things stand, so any agent can take over. Newest first, short. The full hi
   partner).
 
 ## Log
+- 11-20 09:40 Pixelation of every character (Mac: "fix whatever is causing pixelation of all characters"; "no Meshy
+  remakes": the five posts made before that word stay unused, 200 credits). Two causes, both ours. (1) a87dc4c9: 130
+  character textures (people, the army's men, the horse) imported with low-quality block compression, many capped at
+  1024 px; now high quality, uncapped; rules_check character-textures-hq. (2) The workstation's screen was 1920x1080
+  with the game in a 1600x900 window, stretched onto Mac's 3024x1964 Retina: Xvfb is now 3024x1964
+  (workstation-display.service; the old file in ~/goc-runs) and the game fullscreen there (realm/override.cfg, local
+  only via .git/info/exclude). Finest then draws at 1.27x (finest_max_px). Open: fps read 5 (CPU 298 ms, training on the
+  box): measure with training off; the King's host still reads pale (cream barding + steel glow).
 - 11-20 04:00 Townsfolk round 2 (Mac asleep; calls mine, reviewable). The everyday crowd is now all Meshy, one gritty
   900 AD look: 5144d57a retired the cartoon watchman and farmers (the guard, peasant man and woman play them); 6a8831c4
   remade ranger, old woman, old man, boy, girl, townswoman, stallholder, merchant in their old folders (~26k tris each,
