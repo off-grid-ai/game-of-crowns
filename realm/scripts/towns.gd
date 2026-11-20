@@ -333,15 +333,6 @@ func building_at() -> String:
 	return "town %d at %s %.1f s ago, %d queued" % [_raising_id, _step_where, (Time.get_ticks_usec() - _step_at) / 1e6, _queue.size()]
 
 
-## How many of the towns the world names stand, of how many: the loading screen's line while they rise.
-func standing() -> Vector2i:
-	var n := 0
-	for c in _cities:
-		if towns.has(int(c["id"])) and not _queue.has(int(c["id"])):
-			n += 1
-	return Vector2i(n, _cities.size())
-
-
 ## The towns in view standing, with their life set up: what the loading screen waits for (supervisor, Mac 10:42: the
 ## card stayed up 10.5 minutes after the towns in view were ready, waiting on every town in the realm). The towns
 ## off screen are raised after, nearest the lens first, on the play pot (ViewTier), as the lens streams them in.

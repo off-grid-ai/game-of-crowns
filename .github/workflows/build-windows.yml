@@ -51,9 +51,11 @@ jobs:
           curl -fsSL -o "$tmp/godot.zip" "$base/Godot_v${GODOT_VERSION}-stable_win64.exe.zip"
           unzip -q -o "$tmp/godot.zip" -d "$tmp/godot"
           rm "$tmp/godot.zip"
-          # The console build: it prints to the step's log, and Godot finds its templates the same way.
-          cp "$tmp/godot/Godot_v${GODOT_VERSION}-stable_win64_console.exe" "$tools/godot.exe"
-          cp "$tmp/godot/Godot_v${GODOT_VERSION}-stable_win64.exe" "$tools/"
+          # The console wrapper runs the exe of its own name less "_console", so the pair keeps one name: godot.exe and
+          # godot_console.exe (renamed alone it stopped, "Invalid wrapper executable name"). The console one prints to
+          # the step's log.
+          cp "$tmp/godot/Godot_v${GODOT_VERSION}-stable_win64_console.exe" "$tools/godot_console.exe"
+          cp "$tmp/godot/Godot_v${GODOT_VERSION}-stable_win64.exe" "$tools/godot.exe"
           curl -fsSL -o "$tmp/tpl.tpz" "$base/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
           dest="$(cygpath -u "$APPDATA")/Godot/export_templates/${GODOT_VERSION}.stable"
           mkdir -p "$dest"
@@ -63,7 +65,7 @@ jobs:
           curl -fsSL -o "$tmp/rclone.zip" https://downloads.rclone.org/rclone-current-windows-amd64.zip
           unzip -q -j "$tmp/rclone.zip" '*/rclone.exe' -d "$tools"
           cygpath -w "$tools" >> "$GITHUB_PATH"
-          "$tools/godot.exe" --version
+          "$tools/godot_console.exe" --version
           "$tools/rclone.exe" version | head -1
           7z | head -2
           df -h
@@ -83,7 +85,7 @@ jobs:
       - name: Import (Godot's cache of every asset)
         run: |
           cd realm
-          godot --headless --path . --import > "$RUNNER_TEMP/import.log" 2>&1 || true
+          godot_console --headless --path . --import > "$RUNNER_TEMP/import.log" 2>&1 || true
           grep -cE "ERROR" "$RUNNER_TEMP/import.log" || true
           du -sh .godot
           df -h
@@ -94,7 +96,7 @@ jobs:
 
       - name: Build, zip (packaging/build-windows.sh)
         env:
-          GODOT: godot
+          GODOT: godot_console
         run: |
           packaging/build-windows.sh
           df -h
@@ -104,14 +106,14 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: game-of-crowns-windows
-          path: build/Game-of-Crowns-*-windows-x86_64.zip
+          path: build/Game-of-Crowns-*-windows-x86_64.exe
           retention-days: 7
           compression-level: 0
 
       - name: Add it to the release
         if: inputs.release == true
         run: |
-          FILE=$(ls build/Game-of-Crowns-*-windows-x86_64.zip)
+          FILE=$(ls build/Game-of-Crowns-*-windows-x86_64.exe)
           VERSION=$(sed -n 's/^application\/short_version="\(.*\)"/\1/p' realm/export_presets.cfg | head -1)
           SHA=$(git rev-parse --short HEAD)
           TAG="${{ inputs.tag }}"
@@ -129,6 +131,6 @@ jobs:
           case "$notes" in *"Windows:"*) ;; *)
             gh release edit "$TAG" -R "$GITHUB_REPOSITORY" --notes "$notes
 
-          Windows: 64-bit Windows 10 or 11. Unzip it and open Game of Crowns. Windows will say it doesn't know the publisher: choose More info, then Run anyway." ;;
+          Windows: 64-bit Windows 10 or 11. Run the .exe to unpack the game's folder, then open Game of Crowns in it. Windows will say it doesn't know the publisher: choose More info, then Run anyway." ;;
           esac
           echo "Added $(basename "$FILE") to $TAG." >> "$GITHUB_STEP_SUMMARY"

@@ -268,12 +268,9 @@ func _ready() -> void:
 	# rest of the realm streams in behind as it is played, loaded from the bake (Mac 2026-11-20: "most games just render
 	# what's around them"). The card waited for every town, road and field in the realm: ~33 s after Continue.
 	intro.ready_check = func(): return terrain.built and not terrain.chunks_loading() and towns != null and towns.settled() and units != null and units.placed
-	intro.forming = func() -> String:
-		var n: Vector2i = towns.standing() if towns else Vector2i.ZERO
-		if not terrain.built or n.y == 0:
-			return "The realm is forming…"
-		# Every town stands (they load whole from the bake): what is left is the roads' map, so say that.
-		return "The towns are rising: %d of %d" % [n.x, n.y] if n.x < n.y else "The roads are opening…"
+	# The towns load whole from the bake, never built here (Mac 2026-11-20: "there should not be any towns rising"):
+	# the card says the realm is loading, no count of towns.
+	intro.forming = func() -> String: return "The realm is forming…"
 	add_child(intro)
 	_keep_running(intro)
 	intro.finished.connect(_hold_world)  # a realm saved paused holds once it is shown

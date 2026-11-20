@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Cut a Game of Crowns Windows build: build/Game-of-Crowns-<version>-windows-x86_64/ and its .zip.
+# Cut a Game of Crowns Windows build: build/Game-of-Crowns-<version>-windows-x86_64/ and its self-extracting .exe.
 # Runs in Git Bash on GitHub's windows-latest (.github/workflows/build-windows.yml); needs curl, unzip, 7z, python.
 #
 # The folder carries everything the realm needs:
@@ -25,7 +25,7 @@ CACHE="$ROOT/build/cache"
 VERSION=$(sed -n 's/^application\/short_version="\(.*\)"/\1/p' realm/export_presets.cfg | head -1)
 NAME="Game-of-Crowns-$VERSION-windows-x86_64"
 OUT="$ROOT/build/$NAME"
-ZIP="$ROOT/build/$NAME.zip"
+ZIP="$ROOT/build/$NAME.exe"
 NODE_VERSION=v26.13.0
 NODE_SHA256=dcc60d59a0746999f99064a01c020445d54d84228c691cdbf25b49ac3b59150a
 # Freeciv's official Windows build of the Mac's version (Homebrew freeciv 3.2.7). Only the server is taken.
@@ -129,12 +129,14 @@ EOF
 printf '@echo off\r\nstart "" powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "%%~dp0runtime\\launch.ps1"\r\n' \
   > "$OUT/Game of Crowns.cmd"
 
-echo "==> zip"
+echo "==> self-extracting 7z"
 rm -f "$ZIP"
-# Deflate64: smaller than Deflate, and Windows' own Explorer opens it.
-(cd "$ROOT/build" && 7z a -tzip -mm=Deflate64 -mx=9 "$ZIP" "$NAME" >/dev/null)
+# 7-Zip's own self-extractor (LZMA2): the zip, even Deflate64 at its best, came to 2.1 GiB, over GitHub's 2 GiB a
+# release file; a double-click unpacks the game's folder on Windows 10 and 11 with nothing to install.
+SFX="${SFX:-/c/Program Files/7-Zip/7z.sfx}"
+(cd "$ROOT/build" && 7z a -t7z -m0=lzma2 -mx=9 -mmt=on -sfx"$SFX" "$ZIP" "$NAME" >/dev/null)
 size=$(stat -c %s "$ZIP")
-[ "$size" -lt 2147483648 ] || echo "!! $ZIP is over 2 GiB: GitHub won't take it as a release file"
+[ "$size" -lt 2147483648 ] || { echo "!! $ZIP is over 2 GiB: GitHub won't take it as a release file"; exit 1; }
 
 echo "==> Done"
 du -sh "$OUT" "$ZIP"
