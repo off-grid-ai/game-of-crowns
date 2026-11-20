@@ -8,12 +8,28 @@ extends MultiMeshInstance3D
 
 ## Where each copy stands, in this node's frame. Set through make(); read by everyone else; kept with a kept town.
 @export var xfs: Array[Transform3D] = []
-## Simpler versions this much sooner than Godot's own pick (towns.json batch_lod_bias; Mac 2026-11-15, the fps round:
-## "I don't think we need as much detail"). Set when the batch stands, so a kept town takes it without being made again.
+## Simpler versions this much sooner than Godot's own pick: Smooth's towns.json batch_lod_bias (Mac 2026-11-15, the fps
+## round: "I don't think we need as much detail"), Beautiful and Finest batch_lod_bias_rich (Mac 2026-11-20: "I want the
+## game fully high quality"; the fps drag was the towns being built again, now baked). Set when the batch stands, so a
+## kept town takes it without being made again, and on every batch standing when the choice changes (use_graphics).
 static var LOD_BIAS: float = preload("res://scripts/data.gd").num("towns", "batch_lod_bias", 1.0)
+const GROUP := "town_batches"
+
+
+## The graphics choice made (main.gd apply_graphics): the bias for it, on every batch standing. A batch that sets its
+## own (countryside.gd, meta lod_bias) keeps it.
+static func use_graphics(smooth: bool, tree: SceneTree) -> void:
+	var D := preload("res://scripts/data.gd")
+	LOD_BIAS = D.num("towns", "batch_lod_bias" if smooth else "batch_lod_bias_rich", 1.0)
+	if tree == null:
+		return
+	for b in tree.get_nodes_in_group(GROUP):
+		if not b.has_meta("lod_bias"):
+			(b as GeometryInstance3D).lod_bias = LOD_BIAS
 
 
 func _ready() -> void:
+	add_to_group(GROUP)
 	lod_bias = LOD_BIAS
 	if multimesh and multimesh.instance_count != xfs.size():
 		fill()  # read back from a kept town: its MultiMesh was kept empty (town_store.gd)
