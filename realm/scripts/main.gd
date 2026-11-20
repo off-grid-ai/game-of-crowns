@@ -134,10 +134,11 @@ func _ready() -> void:
 	# behind, so it never jumps in front of what you're doing.
 	if not _shot.has("path"):
 		DisplayServer.window_move_to_foreground()
-	# Full screen by default (screenshot runs stay windowed so they don't take over the display).
-	if not _shot.has("path"):
-		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
-	else:
+	# Full screen at the screen's own resolution from the first frame (project.godot window/size/mode; Mac 2026-11-20:
+	# "render at the resolution of the screen always, like the big studios"): set at start-up, not after, so a desktop
+	# with no window manager (the workstation) takes it too. Screenshot runs stay windowed so they don't take over.
+	if _shot.has("path"):
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
 		# Screenshot runs keep out of the way: the window sits almost entirely off
 		# the bottom-right of the screen, never takes focus, and still renders in full.
 		DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_NO_FOCUS, true)
@@ -865,6 +866,7 @@ func apply_graphics() -> void:
 		_rich = {"sdfgi": env.sdfgi_enabled, "ssao": env.ssao_enabled, "ssil": env.ssil_enabled, "vol": env.volumetric_fog_enabled, "glow": env.glow_enabled, "shadow": sun.directional_shadow_max_distance}
 	graphics_smooth = smooth_chosen()
 	preload("res://scripts/anim_lod.gd").use_graphics(graphics_smooth)  # the townsfolk drawn whole outside Smooth
+	preload("res://scripts/batch.gd").use_graphics(graphics_smooth, get_tree())  # the towns drawn whole outside Smooth
 	env.sdfgi_enabled = _rich["sdfgi"] and not graphics_smooth
 	env.ssao_enabled = _rich["ssao"] and not graphics_smooth
 	env.ssil_enabled = _rich["ssil"] and not graphics_smooth
