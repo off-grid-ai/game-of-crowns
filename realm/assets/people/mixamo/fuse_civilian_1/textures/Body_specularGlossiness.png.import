@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://e7dwwh446wuo"
-path.s3tc="res://.godot/imported/Body_specularGlossiness.png-a2cf28ab5bab08a5f3f940567915d0a3.s3tc.ctex"
-path.etc2="res://.godot/imported/Body_specularGlossiness.png-a2cf28ab5bab08a5f3f940567915d0a3.etc2.ctex"
+path.bptc="res://.godot/imported/Body_specularGlossiness.png-a2cf28ab5bab08a5f3f940567915d0a3.bptc.ctex"
+path.astc="res://.godot/imported/Body_specularGlossiness.png-a2cf28ab5bab08a5f3f940567915d0a3.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,12 +13,12 @@ metadata={
 [deps]
 
 source_file="res://assets/people/mixamo/fuse_civilian_1/textures/Body_specularGlossiness.png"
-dest_files=["res://.godot/imported/Body_specularGlossiness.png-a2cf28ab5bab08a5f3f940567915d0a3.s3tc.ctex", "res://.godot/imported/Body_specularGlossiness.png-a2cf28ab5bab08a5f3f940567915d0a3.etc2.ctex"]
+dest_files=["res://.godot/imported/Body_specularGlossiness.png-a2cf28ab5bab08a5f3f940567915d0a3.bptc.ctex", "res://.godot/imported/Body_specularGlossiness.png-a2cf28ab5bab08a5f3f940567915d0a3.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

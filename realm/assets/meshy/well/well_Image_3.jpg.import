@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://qa1n1cw0t4ip"
-path.s3tc="res://.godot/imported/well_Image_3.jpg-095f1be758d11820b5e3b907ffe18a1a.s3tc.ctex"
-path.etc2="res://.godot/imported/well_Image_3.jpg-095f1be758d11820b5e3b907ffe18a1a.etc2.ctex"
+path.bptc="res://.godot/imported/well_Image_3.jpg-095f1be758d11820b5e3b907ffe18a1a.bptc.ctex"
+path.astc="res://.godot/imported/well_Image_3.jpg-095f1be758d11820b5e3b907ffe18a1a.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -16,12 +16,12 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/meshy/well/well_Image_3.jpg"
-dest_files=["res://.godot/imported/well_Image_3.jpg-095f1be758d11820b5e3b907ffe18a1a.s3tc.ctex", "res://.godot/imported/well_Image_3.jpg-095f1be758d11820b5e3b907ffe18a1a.etc2.ctex"]
+dest_files=["res://.godot/imported/well_Image_3.jpg-095f1be758d11820b5e3b907ffe18a1a.bptc.ctex", "res://.godot/imported/well_Image_3.jpg-095f1be758d11820b5e3b907ffe18a1a.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

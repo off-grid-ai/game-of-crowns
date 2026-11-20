@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://c1k1n7la7xpb5"
-path.s3tc="res://.godot/imported/albedo.png-ccd356d255c7a973fb777d1275a75bf8.s3tc.ctex"
-path.etc2="res://.godot/imported/albedo.png-ccd356d255c7a973fb777d1275a75bf8.etc2.ctex"
+path.bptc="res://.godot/imported/albedo.png-ccd356d255c7a973fb777d1275a75bf8.bptc.ctex"
+path.astc="res://.godot/imported/albedo.png-ccd356d255c7a973fb777d1275a75bf8.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,7 +13,7 @@ metadata={
 [deps]
 
 source_file="res://assets/armies/levy/albedo.png"
-dest_files=["res://.godot/imported/albedo.png-ccd356d255c7a973fb777d1275a75bf8.s3tc.ctex", "res://.godot/imported/albedo.png-ccd356d255c7a973fb777d1275a75bf8.etc2.ctex"]
+dest_files=["res://.godot/imported/albedo.png-ccd356d255c7a973fb777d1275a75bf8.bptc.ctex", "res://.godot/imported/albedo.png-ccd356d255c7a973fb777d1275a75bf8.astc.ctex"]
 
 [params]
 

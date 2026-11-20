@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cyqp5gddie3o1"
-path.s3tc="res://.godot/imported/floor_clothes_metallicRoughness.png-aa0bc54bc59d8575006245b9acd7743d.s3tc.ctex"
-path.etc2="res://.godot/imported/floor_clothes_metallicRoughness.png-aa0bc54bc59d8575006245b9acd7743d.etc2.ctex"
+path.bptc="res://.godot/imported/floor_clothes_metallicRoughness.png-aa0bc54bc59d8575006245b9acd7743d.bptc.ctex"
+path.astc="res://.godot/imported/floor_clothes_metallicRoughness.png-aa0bc54bc59d8575006245b9acd7743d.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,12 +13,12 @@ metadata={
 [deps]
 
 source_file="res://assets/realistic/old_wooden_barn/textures/floor_clothes_metallicRoughness.png"
-dest_files=["res://.godot/imported/floor_clothes_metallicRoughness.png-aa0bc54bc59d8575006245b9acd7743d.s3tc.ctex", "res://.godot/imported/floor_clothes_metallicRoughness.png-aa0bc54bc59d8575006245b9acd7743d.etc2.ctex"]
+dest_files=["res://.godot/imported/floor_clothes_metallicRoughness.png-aa0bc54bc59d8575006245b9acd7743d.bptc.ctex", "res://.godot/imported/floor_clothes_metallicRoughness.png-aa0bc54bc59d8575006245b9acd7743d.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bhp7egltnxd4x"
-path.s3tc="res://.godot/imported/Long_Bow_specularf0.png-ca368098f2dbfa4fa17f9a456f141474.s3tc.ctex"
-path.etc2="res://.godot/imported/Long_Bow_specularf0.png-ca368098f2dbfa4fa17f9a456f141474.etc2.ctex"
+path.bptc="res://.godot/imported/Long_Bow_specularf0.png-ca368098f2dbfa4fa17f9a456f141474.bptc.ctex"
+path.astc="res://.godot/imported/Long_Bow_specularf0.png-ca368098f2dbfa4fa17f9a456f141474.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,12 +13,12 @@ metadata={
 [deps]
 
 source_file="res://assets/props/weapons/quiver/textures/Long_Bow_specularf0.png"
-dest_files=["res://.godot/imported/Long_Bow_specularf0.png-ca368098f2dbfa4fa17f9a456f141474.s3tc.ctex", "res://.godot/imported/Long_Bow_specularf0.png-ca368098f2dbfa4fa17f9a456f141474.etc2.ctex"]
+dest_files=["res://.godot/imported/Long_Bow_specularf0.png-ca368098f2dbfa4fa17f9a456f141474.bptc.ctex", "res://.godot/imported/Long_Bow_specularf0.png-ca368098f2dbfa4fa17f9a456f141474.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

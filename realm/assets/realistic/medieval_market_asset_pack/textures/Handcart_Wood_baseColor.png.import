@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://c71s7oqh245da"
-path.s3tc="res://.godot/imported/Handcart_Wood_baseColor.png-a249b2f6229bbb5fcfbb92ee2d028239.s3tc.ctex"
-path.etc2="res://.godot/imported/Handcart_Wood_baseColor.png-a249b2f6229bbb5fcfbb92ee2d028239.etc2.ctex"
+path.bptc="res://.godot/imported/Handcart_Wood_baseColor.png-a249b2f6229bbb5fcfbb92ee2d028239.bptc.ctex"
+path.astc="res://.godot/imported/Handcart_Wood_baseColor.png-a249b2f6229bbb5fcfbb92ee2d028239.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,12 +13,12 @@ metadata={
 [deps]
 
 source_file="res://assets/realistic/medieval_market_asset_pack/textures/Handcart_Wood_baseColor.png"
-dest_files=["res://.godot/imported/Handcart_Wood_baseColor.png-a249b2f6229bbb5fcfbb92ee2d028239.s3tc.ctex", "res://.godot/imported/Handcart_Wood_baseColor.png-a249b2f6229bbb5fcfbb92ee2d028239.etc2.ctex"]
+dest_files=["res://.godot/imported/Handcart_Wood_baseColor.png-a249b2f6229bbb5fcfbb92ee2d028239.bptc.ctex", "res://.godot/imported/Handcart_Wood_baseColor.png-a249b2f6229bbb5fcfbb92ee2d028239.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

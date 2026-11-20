@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bqwi6v8mhxjy5"
-path.s3tc="res://.godot/imported/WoodDoor_baseColor.jpeg-f6cf2f4f2b98a4522adc7c9bc5e0f14b.s3tc.ctex"
-path.etc2="res://.godot/imported/WoodDoor_baseColor.jpeg-f6cf2f4f2b98a4522adc7c9bc5e0f14b.etc2.ctex"
+path.bptc="res://.godot/imported/WoodDoor_baseColor.jpeg-f6cf2f4f2b98a4522adc7c9bc5e0f14b.bptc.ctex"
+path.astc="res://.godot/imported/WoodDoor_baseColor.jpeg-f6cf2f4f2b98a4522adc7c9bc5e0f14b.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,12 +13,12 @@ metadata={
 [deps]
 
 source_file="res://assets/realistic/medieval_castle/textures/WoodDoor_baseColor.jpeg"
-dest_files=["res://.godot/imported/WoodDoor_baseColor.jpeg-f6cf2f4f2b98a4522adc7c9bc5e0f14b.s3tc.ctex", "res://.godot/imported/WoodDoor_baseColor.jpeg-f6cf2f4f2b98a4522adc7c9bc5e0f14b.etc2.ctex"]
+dest_files=["res://.godot/imported/WoodDoor_baseColor.jpeg-f6cf2f4f2b98a4522adc7c9bc5e0f14b.bptc.ctex", "res://.godot/imported/WoodDoor_baseColor.jpeg-f6cf2f4f2b98a4522adc7c9bc5e0f14b.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

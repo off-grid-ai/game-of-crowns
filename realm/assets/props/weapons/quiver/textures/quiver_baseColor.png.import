@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://0tjque4gwycm"
-path.s3tc="res://.godot/imported/quiver_baseColor.png-cc8b6f43510c38dff2191f06640cd641.s3tc.ctex"
-path.etc2="res://.godot/imported/quiver_baseColor.png-cc8b6f43510c38dff2191f06640cd641.etc2.ctex"
+path.bptc="res://.godot/imported/quiver_baseColor.png-cc8b6f43510c38dff2191f06640cd641.bptc.ctex"
+path.astc="res://.godot/imported/quiver_baseColor.png-cc8b6f43510c38dff2191f06640cd641.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,12 +13,12 @@ metadata={
 [deps]
 
 source_file="res://assets/props/weapons/quiver/textures/quiver_baseColor.png"
-dest_files=["res://.godot/imported/quiver_baseColor.png-cc8b6f43510c38dff2191f06640cd641.s3tc.ctex", "res://.godot/imported/quiver_baseColor.png-cc8b6f43510c38dff2191f06640cd641.etc2.ctex"]
+dest_files=["res://.godot/imported/quiver_baseColor.png-cc8b6f43510c38dff2191f06640cd641.bptc.ctex", "res://.godot/imported/quiver_baseColor.png-cc8b6f43510c38dff2191f06640cd641.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

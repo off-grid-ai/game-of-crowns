@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cyg54c0q3t1b4"
-path.s3tc="res://.godot/imported/Sack2_baseColor.png-a83983ad5b17814a58e8d5b06ce3f49f.s3tc.ctex"
-path.etc2="res://.godot/imported/Sack2_baseColor.png-a83983ad5b17814a58e8d5b06ce3f49f.etc2.ctex"
+path.bptc="res://.godot/imported/Sack2_baseColor.png-a83983ad5b17814a58e8d5b06ce3f49f.bptc.ctex"
+path.astc="res://.godot/imported/Sack2_baseColor.png-a83983ad5b17814a58e8d5b06ce3f49f.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,12 +13,12 @@ metadata={
 [deps]
 
 source_file="res://assets/realistic/medieval_market_asset_pack/textures/Sack2_baseColor.png"
-dest_files=["res://.godot/imported/Sack2_baseColor.png-a83983ad5b17814a58e8d5b06ce3f49f.s3tc.ctex", "res://.godot/imported/Sack2_baseColor.png-a83983ad5b17814a58e8d5b06ce3f49f.etc2.ctex"]
+dest_files=["res://.godot/imported/Sack2_baseColor.png-a83983ad5b17814a58e8d5b06ce3f49f.bptc.ctex", "res://.godot/imported/Sack2_baseColor.png-a83983ad5b17814a58e8d5b06ce3f49f.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

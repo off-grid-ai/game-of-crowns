@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://d2x3dr6jx6e4t"
-path.s3tc="res://.godot/imported/floor_clothes_baseColor.png-7fe67ac357876f7e72825969452b08fe.s3tc.ctex"
-path.etc2="res://.godot/imported/floor_clothes_baseColor.png-7fe67ac357876f7e72825969452b08fe.etc2.ctex"
+path.bptc="res://.godot/imported/floor_clothes_baseColor.png-7fe67ac357876f7e72825969452b08fe.bptc.ctex"
+path.astc="res://.godot/imported/floor_clothes_baseColor.png-7fe67ac357876f7e72825969452b08fe.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,12 +13,12 @@ metadata={
 [deps]
 
 source_file="res://assets/realistic/old_wooden_barn/textures/floor_clothes_baseColor.png"
-dest_files=["res://.godot/imported/floor_clothes_baseColor.png-7fe67ac357876f7e72825969452b08fe.s3tc.ctex", "res://.godot/imported/floor_clothes_baseColor.png-7fe67ac357876f7e72825969452b08fe.etc2.ctex"]
+dest_files=["res://.godot/imported/floor_clothes_baseColor.png-7fe67ac357876f7e72825969452b08fe.bptc.ctex", "res://.godot/imported/floor_clothes_baseColor.png-7fe67ac357876f7e72825969452b08fe.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://da20jtpdvw1js"
-path.s3tc="res://.godot/imported/nt_cypress_Image_0_leaves.png-06129a72e4c9609e2f6585ab8bd241c1.s3tc.ctex"
-path.etc2="res://.godot/imported/nt_cypress_Image_0_leaves.png-06129a72e4c9609e2f6585ab8bd241c1.etc2.ctex"
+path.bptc="res://.godot/imported/nt_cypress_Image_0_leaves.png-06129a72e4c9609e2f6585ab8bd241c1.bptc.ctex"
+path.astc="res://.godot/imported/nt_cypress_Image_0_leaves.png-06129a72e4c9609e2f6585ab8bd241c1.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -16,12 +16,12 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/meshy/nt_cypress/nt_cypress_Image_0_leaves.png"
-dest_files=["res://.godot/imported/nt_cypress_Image_0_leaves.png-06129a72e4c9609e2f6585ab8bd241c1.s3tc.ctex", "res://.godot/imported/nt_cypress_Image_0_leaves.png-06129a72e4c9609e2f6585ab8bd241c1.etc2.ctex"]
+dest_files=["res://.godot/imported/nt_cypress_Image_0_leaves.png-06129a72e4c9609e2f6585ab8bd241c1.bptc.ctex", "res://.godot/imported/nt_cypress_Image_0_leaves.png-06129a72e4c9609e2f6585ab8bd241c1.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

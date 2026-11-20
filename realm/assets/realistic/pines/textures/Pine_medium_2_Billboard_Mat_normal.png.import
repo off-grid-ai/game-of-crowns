@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://ln02kpetpfhn"
-path.s3tc="res://.godot/imported/Pine_medium_2_Billboard_Mat_normal.png-525207f721c6333dca4944e6676c21a6.s3tc.ctex"
-path.etc2="res://.godot/imported/Pine_medium_2_Billboard_Mat_normal.png-525207f721c6333dca4944e6676c21a6.etc2.ctex"
+path.bptc="res://.godot/imported/Pine_medium_2_Billboard_Mat_normal.png-525207f721c6333dca4944e6676c21a6.bptc.ctex"
+path.astc="res://.godot/imported/Pine_medium_2_Billboard_Mat_normal.png-525207f721c6333dca4944e6676c21a6.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,12 +13,12 @@ metadata={
 [deps]
 
 source_file="res://assets/realistic/pines/textures/Pine_medium_2_Billboard_Mat_normal.png"
-dest_files=["res://.godot/imported/Pine_medium_2_Billboard_Mat_normal.png-525207f721c6333dca4944e6676c21a6.s3tc.ctex", "res://.godot/imported/Pine_medium_2_Billboard_Mat_normal.png-525207f721c6333dca4944e6676c21a6.etc2.ctex"]
+dest_files=["res://.godot/imported/Pine_medium_2_Billboard_Mat_normal.png-525207f721c6333dca4944e6676c21a6.bptc.ctex", "res://.godot/imported/Pine_medium_2_Billboard_Mat_normal.png-525207f721c6333dca4944e6676c21a6.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

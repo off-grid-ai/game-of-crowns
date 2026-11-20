@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://pj8as482efmv"
-path.s3tc="res://.godot/imported/FrontBastions_metallicRoughness.png-b0f5aa52261ebdd626c56779330bcc5a.s3tc.ctex"
-path.etc2="res://.godot/imported/FrontBastions_metallicRoughness.png-b0f5aa52261ebdd626c56779330bcc5a.etc2.ctex"
+path.bptc="res://.godot/imported/FrontBastions_metallicRoughness.png-b0f5aa52261ebdd626c56779330bcc5a.bptc.ctex"
+path.astc="res://.godot/imported/FrontBastions_metallicRoughness.png-b0f5aa52261ebdd626c56779330bcc5a.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,12 +13,12 @@ metadata={
 [deps]
 
 source_file="res://assets/realistic/medieval_castle/textures/FrontBastions_metallicRoughness.png"
-dest_files=["res://.godot/imported/FrontBastions_metallicRoughness.png-b0f5aa52261ebdd626c56779330bcc5a.s3tc.ctex", "res://.godot/imported/FrontBastions_metallicRoughness.png-b0f5aa52261ebdd626c56779330bcc5a.etc2.ctex"]
+dest_files=["res://.godot/imported/FrontBastions_metallicRoughness.png-b0f5aa52261ebdd626c56779330bcc5a.bptc.ctex", "res://.godot/imported/FrontBastions_metallicRoughness.png-b0f5aa52261ebdd626c56779330bcc5a.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

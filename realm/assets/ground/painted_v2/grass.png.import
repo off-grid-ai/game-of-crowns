@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dkdc1s5dyw3pu"
-path.s3tc="res://.godot/imported/grass.png-e6178ad2b2d35972b1cb8d83a161d650.s3tc.ctex"
-path.etc2="res://.godot/imported/grass.png-e6178ad2b2d35972b1cb8d83a161d650.etc2.ctex"
+path.bptc="res://.godot/imported/grass.png-e6178ad2b2d35972b1cb8d83a161d650.bptc.ctex"
+path.astc="res://.godot/imported/grass.png-e6178ad2b2d35972b1cb8d83a161d650.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,12 +13,12 @@ metadata={
 [deps]
 
 source_file="res://assets/ground/painted_v2/grass.png"
-dest_files=["res://.godot/imported/grass.png-e6178ad2b2d35972b1cb8d83a161d650.s3tc.ctex", "res://.godot/imported/grass.png-e6178ad2b2d35972b1cb8d83a161d650.etc2.ctex"]
+dest_files=["res://.godot/imported/grass.png-e6178ad2b2d35972b1cb8d83a161d650.bptc.ctex", "res://.godot/imported/grass.png-e6178ad2b2d35972b1cb8d83a161d650.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

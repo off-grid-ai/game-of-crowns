@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://det1tplay58cw"
-path.s3tc="res://.godot/imported/Metal_Rim_normal.png-cef86109a3d77329f96e6851c3f7b3d2.s3tc.ctex"
-path.etc2="res://.godot/imported/Metal_Rim_normal.png-cef86109a3d77329f96e6851c3f7b3d2.etc2.ctex"
+path.bptc="res://.godot/imported/Metal_Rim_normal.png-cef86109a3d77329f96e6851c3f7b3d2.bptc.ctex"
+path.astc="res://.godot/imported/Metal_Rim_normal.png-cef86109a3d77329f96e6851c3f7b3d2.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,12 +13,12 @@ metadata={
 [deps]
 
 source_file="res://assets/realistic/medieval_market_asset_pack/textures/Metal_Rim_normal.png"
-dest_files=["res://.godot/imported/Metal_Rim_normal.png-cef86109a3d77329f96e6851c3f7b3d2.s3tc.ctex", "res://.godot/imported/Metal_Rim_normal.png-cef86109a3d77329f96e6851c3f7b3d2.etc2.ctex"]
+dest_files=["res://.godot/imported/Metal_Rim_normal.png-cef86109a3d77329f96e6851c3f7b3d2.bptc.ctex", "res://.godot/imported/Metal_Rim_normal.png-cef86109a3d77329f96e6851c3f7b3d2.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

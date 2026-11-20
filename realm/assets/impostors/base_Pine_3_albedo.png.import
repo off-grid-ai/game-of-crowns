@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://d0debnptvvoxd"
-path.s3tc="res://.godot/imported/base_Pine_3_albedo.png-cca479b1cbd55e8e5db4523bba38f77a.s3tc.ctex"
-path.etc2="res://.godot/imported/base_Pine_3_albedo.png-cca479b1cbd55e8e5db4523bba38f77a.etc2.ctex"
+path.bptc="res://.godot/imported/base_Pine_3_albedo.png-cca479b1cbd55e8e5db4523bba38f77a.bptc.ctex"
+path.astc="res://.godot/imported/base_Pine_3_albedo.png-cca479b1cbd55e8e5db4523bba38f77a.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,12 +13,12 @@ metadata={
 [deps]
 
 source_file="res://assets/impostors/base_Pine_3_albedo.png"
-dest_files=["res://.godot/imported/base_Pine_3_albedo.png-cca479b1cbd55e8e5db4523bba38f77a.s3tc.ctex", "res://.godot/imported/base_Pine_3_albedo.png-cca479b1cbd55e8e5db4523bba38f77a.etc2.ctex"]
+dest_files=["res://.godot/imported/base_Pine_3_albedo.png-cca479b1cbd55e8e5db4523bba38f77a.bptc.ctex", "res://.godot/imported/base_Pine_3_albedo.png-cca479b1cbd55e8e5db4523bba38f77a.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://c7pensch8t1dc"
-path.s3tc="res://.godot/imported/Carrot2_baseColor.jpeg-e5dc63ad9d2b6a6e2e157e1fe984abdc.s3tc.ctex"
-path.etc2="res://.godot/imported/Carrot2_baseColor.jpeg-e5dc63ad9d2b6a6e2e157e1fe984abdc.etc2.ctex"
+path.bptc="res://.godot/imported/Carrot2_baseColor.jpeg-e5dc63ad9d2b6a6e2e157e1fe984abdc.bptc.ctex"
+path.astc="res://.godot/imported/Carrot2_baseColor.jpeg-e5dc63ad9d2b6a6e2e157e1fe984abdc.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,12 +13,12 @@ metadata={
 [deps]
 
 source_file="res://assets/realistic/medieval_market_asset_pack/textures/Carrot2_baseColor.jpeg"
-dest_files=["res://.godot/imported/Carrot2_baseColor.jpeg-e5dc63ad9d2b6a6e2e157e1fe984abdc.s3tc.ctex", "res://.godot/imported/Carrot2_baseColor.jpeg-e5dc63ad9d2b6a6e2e157e1fe984abdc.etc2.ctex"]
+dest_files=["res://.godot/imported/Carrot2_baseColor.jpeg-e5dc63ad9d2b6a6e2e157e1fe984abdc.bptc.ctex", "res://.godot/imported/Carrot2_baseColor.jpeg-e5dc63ad9d2b6a6e2e157e1fe984abdc.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

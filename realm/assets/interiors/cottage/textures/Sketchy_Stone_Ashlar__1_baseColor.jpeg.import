@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://crgrqy8kmsndv"
-path.s3tc="res://.godot/imported/Sketchy_Stone_Ashlar__1_baseColor.jpeg-dff428aa0a08dfeb0445b5c35250983e.s3tc.ctex"
-path.etc2="res://.godot/imported/Sketchy_Stone_Ashlar__1_baseColor.jpeg-dff428aa0a08dfeb0445b5c35250983e.etc2.ctex"
+path.bptc="res://.godot/imported/Sketchy_Stone_Ashlar__1_baseColor.jpeg-dff428aa0a08dfeb0445b5c35250983e.bptc.ctex"
+path.astc="res://.godot/imported/Sketchy_Stone_Ashlar__1_baseColor.jpeg-dff428aa0a08dfeb0445b5c35250983e.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,12 +13,12 @@ metadata={
 [deps]
 
 source_file="res://assets/interiors/cottage/textures/Sketchy_Stone_Ashlar__1_baseColor.jpeg"
-dest_files=["res://.godot/imported/Sketchy_Stone_Ashlar__1_baseColor.jpeg-dff428aa0a08dfeb0445b5c35250983e.s3tc.ctex", "res://.godot/imported/Sketchy_Stone_Ashlar__1_baseColor.jpeg-dff428aa0a08dfeb0445b5c35250983e.etc2.ctex"]
+dest_files=["res://.godot/imported/Sketchy_Stone_Ashlar__1_baseColor.jpeg-dff428aa0a08dfeb0445b5c35250983e.bptc.ctex", "res://.godot/imported/Sketchy_Stone_Ashlar__1_baseColor.jpeg-dff428aa0a08dfeb0445b5c35250983e.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

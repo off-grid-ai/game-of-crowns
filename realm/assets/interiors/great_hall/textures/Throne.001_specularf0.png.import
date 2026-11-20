@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://pnbgn7djy3fo"
-path.s3tc="res://.godot/imported/Throne.001_specularf0.png-1c0d60ede2bcf4ca898c3fa996171f10.s3tc.ctex"
-path.etc2="res://.godot/imported/Throne.001_specularf0.png-1c0d60ede2bcf4ca898c3fa996171f10.etc2.ctex"
+path.bptc="res://.godot/imported/Throne.001_specularf0.png-1c0d60ede2bcf4ca898c3fa996171f10.bptc.ctex"
+path.astc="res://.godot/imported/Throne.001_specularf0.png-1c0d60ede2bcf4ca898c3fa996171f10.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,12 +13,12 @@ metadata={
 [deps]
 
 source_file="res://assets/interiors/great_hall/textures/Throne.001_specularf0.png"
-dest_files=["res://.godot/imported/Throne.001_specularf0.png-1c0d60ede2bcf4ca898c3fa996171f10.s3tc.ctex", "res://.godot/imported/Throne.001_specularf0.png-1c0d60ede2bcf4ca898c3fa996171f10.etc2.ctex"]
+dest_files=["res://.godot/imported/Throne.001_specularf0.png-1c0d60ede2bcf4ca898c3fa996171f10.bptc.ctex", "res://.godot/imported/Throne.001_specularf0.png-1c0d60ede2bcf4ca898c3fa996171f10.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

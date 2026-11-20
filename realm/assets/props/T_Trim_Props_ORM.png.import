@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cfb83idu8a57y"
-path.s3tc="res://.godot/imported/T_Trim_Props_ORM.png-5a93b69e691dd919d8fcbeb0194c938e.s3tc.ctex"
-path.etc2="res://.godot/imported/T_Trim_Props_ORM.png-5a93b69e691dd919d8fcbeb0194c938e.etc2.ctex"
+path.bptc="res://.godot/imported/T_Trim_Props_ORM.png-5a93b69e691dd919d8fcbeb0194c938e.bptc.ctex"
+path.astc="res://.godot/imported/T_Trim_Props_ORM.png-5a93b69e691dd919d8fcbeb0194c938e.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,12 +13,12 @@ metadata={
 [deps]
 
 source_file="res://assets/props/T_Trim_Props_ORM.png"
-dest_files=["res://.godot/imported/T_Trim_Props_ORM.png-5a93b69e691dd919d8fcbeb0194c938e.s3tc.ctex", "res://.godot/imported/T_Trim_Props_ORM.png-5a93b69e691dd919d8fcbeb0194c938e.etc2.ctex"]
+dest_files=["res://.godot/imported/T_Trim_Props_ORM.png-5a93b69e691dd919d8fcbeb0194c938e.bptc.ctex", "res://.godot/imported/T_Trim_Props_ORM.png-5a93b69e691dd919d8fcbeb0194c938e.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

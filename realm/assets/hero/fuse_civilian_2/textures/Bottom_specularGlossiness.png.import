@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://d3lxmcxf00tn8"
-path.s3tc="res://.godot/imported/Bottom_specularGlossiness.png-e4256f33d7426cb55dba7d3ac4320a86.s3tc.ctex"
-path.etc2="res://.godot/imported/Bottom_specularGlossiness.png-e4256f33d7426cb55dba7d3ac4320a86.etc2.ctex"
+path.bptc="res://.godot/imported/Bottom_specularGlossiness.png-e4256f33d7426cb55dba7d3ac4320a86.bptc.ctex"
+path.astc="res://.godot/imported/Bottom_specularGlossiness.png-e4256f33d7426cb55dba7d3ac4320a86.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,12 +13,12 @@ metadata={
 [deps]
 
 source_file="res://assets/hero/fuse_civilian_2/textures/Bottom_specularGlossiness.png"
-dest_files=["res://.godot/imported/Bottom_specularGlossiness.png-e4256f33d7426cb55dba7d3ac4320a86.s3tc.ctex", "res://.godot/imported/Bottom_specularGlossiness.png-e4256f33d7426cb55dba7d3ac4320a86.etc2.ctex"]
+dest_files=["res://.godot/imported/Bottom_specularGlossiness.png-e4256f33d7426cb55dba7d3ac4320a86.bptc.ctex", "res://.godot/imported/Bottom_specularGlossiness.png-e4256f33d7426cb55dba7d3ac4320a86.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

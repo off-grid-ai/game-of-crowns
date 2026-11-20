@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://kke8n0oic4ik"
-path.s3tc="res://.godot/imported/Material.001_normal.png-1f8ba1f8d0f815a18cdcec52d7898024.s3tc.ctex"
-path.etc2="res://.godot/imported/Material.001_normal.png-1f8ba1f8d0f815a18cdcec52d7898024.etc2.ctex"
+path.bptc="res://.godot/imported/Material.001_normal.png-1f8ba1f8d0f815a18cdcec52d7898024.bptc.ctex"
+path.astc="res://.godot/imported/Material.001_normal.png-1f8ba1f8d0f815a18cdcec52d7898024.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,12 +13,12 @@ metadata={
 [deps]
 
 source_file="res://assets/props/weapons/greatsword/textures/Material.001_normal.png"
-dest_files=["res://.godot/imported/Material.001_normal.png-1f8ba1f8d0f815a18cdcec52d7898024.s3tc.ctex", "res://.godot/imported/Material.001_normal.png-1f8ba1f8d0f815a18cdcec52d7898024.etc2.ctex"]
+dest_files=["res://.godot/imported/Material.001_normal.png-1f8ba1f8d0f815a18cdcec52d7898024.bptc.ctex", "res://.godot/imported/Material.001_normal.png-1f8ba1f8d0f815a18cdcec52d7898024.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

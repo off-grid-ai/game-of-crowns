@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://ct38mkbyb6olh"
-path.s3tc="res://.godot/imported/Big_oak_tree__004_Billboard_Mat_normal.png-f45ea3ddb6e88913c7f72c9b537908af.s3tc.ctex"
-path.etc2="res://.godot/imported/Big_oak_tree__004_Billboard_Mat_normal.png-f45ea3ddb6e88913c7f72c9b537908af.etc2.ctex"
+path.bptc="res://.godot/imported/Big_oak_tree__004_Billboard_Mat_normal.png-f45ea3ddb6e88913c7f72c9b537908af.bptc.ctex"
+path.astc="res://.godot/imported/Big_oak_tree__004_Billboard_Mat_normal.png-f45ea3ddb6e88913c7f72c9b537908af.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,12 +13,12 @@ metadata={
 [deps]
 
 source_file="res://assets/realistic/oak_trees_pack/textures/Big_oak_tree__004_Billboard_Mat_normal.png"
-dest_files=["res://.godot/imported/Big_oak_tree__004_Billboard_Mat_normal.png-f45ea3ddb6e88913c7f72c9b537908af.s3tc.ctex", "res://.godot/imported/Big_oak_tree__004_Billboard_Mat_normal.png-f45ea3ddb6e88913c7f72c9b537908af.etc2.ctex"]
+dest_files=["res://.godot/imported/Big_oak_tree__004_Billboard_Mat_normal.png-f45ea3ddb6e88913c7f72c9b537908af.bptc.ctex", "res://.godot/imported/Big_oak_tree__004_Billboard_Mat_normal.png-f45ea3ddb6e88913c7f72c9b537908af.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

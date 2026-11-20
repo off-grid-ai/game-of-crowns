@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dvjh4co0abfft"
-path.s3tc="res://.godot/imported/Roof_metallicRoughness.png-d7c106f1fe8a855ad3a364f7387b2831.s3tc.ctex"
-path.etc2="res://.godot/imported/Roof_metallicRoughness.png-d7c106f1fe8a855ad3a364f7387b2831.etc2.ctex"
+path.bptc="res://.godot/imported/Roof_metallicRoughness.png-d7c106f1fe8a855ad3a364f7387b2831.bptc.ctex"
+path.astc="res://.godot/imported/Roof_metallicRoughness.png-d7c106f1fe8a855ad3a364f7387b2831.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,12 +13,12 @@ metadata={
 [deps]
 
 source_file="res://assets/realistic/romano-british_house_in_medieval_london/textures/Roof_metallicRoughness.png"
-dest_files=["res://.godot/imported/Roof_metallicRoughness.png-d7c106f1fe8a855ad3a364f7387b2831.s3tc.ctex", "res://.godot/imported/Roof_metallicRoughness.png-d7c106f1fe8a855ad3a364f7387b2831.etc2.ctex"]
+dest_files=["res://.godot/imported/Roof_metallicRoughness.png-d7c106f1fe8a855ad3a364f7387b2831.bptc.ctex", "res://.godot/imported/Roof_metallicRoughness.png-d7c106f1fe8a855ad3a364f7387b2831.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

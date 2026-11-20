@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dpsrvugt3ky7u"
-path.s3tc="res://.godot/imported/Bottle3_baseColor.png-787d217f74e8a88f0e74106977ae2eef.s3tc.ctex"
-path.etc2="res://.godot/imported/Bottle3_baseColor.png-787d217f74e8a88f0e74106977ae2eef.etc2.ctex"
+path.bptc="res://.godot/imported/Bottle3_baseColor.png-787d217f74e8a88f0e74106977ae2eef.bptc.ctex"
+path.astc="res://.godot/imported/Bottle3_baseColor.png-787d217f74e8a88f0e74106977ae2eef.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,12 +13,12 @@ metadata={
 [deps]
 
 source_file="res://assets/realistic/medieval_market_asset_pack/textures/Bottle3_baseColor.png"
-dest_files=["res://.godot/imported/Bottle3_baseColor.png-787d217f74e8a88f0e74106977ae2eef.s3tc.ctex", "res://.godot/imported/Bottle3_baseColor.png-787d217f74e8a88f0e74106977ae2eef.etc2.ctex"]
+dest_files=["res://.godot/imported/Bottle3_baseColor.png-787d217f74e8a88f0e74106977ae2eef.bptc.ctex", "res://.godot/imported/Bottle3_baseColor.png-787d217f74e8a88f0e74106977ae2eef.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

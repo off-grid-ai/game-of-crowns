@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://b1tf1vd14klxb"
-path.s3tc="res://.godot/imported/material_diffuse.png-33476bbb2254173338675b13b0e09e0a.s3tc.ctex"
-path.etc2="res://.godot/imported/material_diffuse.png-33476bbb2254173338675b13b0e09e0a.etc2.ctex"
+path.bptc="res://.godot/imported/material_diffuse.png-33476bbb2254173338675b13b0e09e0a.bptc.ctex"
+path.astc="res://.godot/imported/material_diffuse.png-33476bbb2254173338675b13b0e09e0a.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,12 +13,12 @@ metadata={
 [deps]
 
 source_file="res://assets/hero/fuse_civilian_1/textures/material_diffuse.png"
-dest_files=["res://.godot/imported/material_diffuse.png-33476bbb2254173338675b13b0e09e0a.s3tc.ctex", "res://.godot/imported/material_diffuse.png-33476bbb2254173338675b13b0e09e0a.etc2.ctex"]
+dest_files=["res://.godot/imported/material_diffuse.png-33476bbb2254173338675b13b0e09e0a.bptc.ctex", "res://.godot/imported/material_diffuse.png-33476bbb2254173338675b13b0e09e0a.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

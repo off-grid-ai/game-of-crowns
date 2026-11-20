@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://drdwcfgrru3xr"
-path.s3tc="res://.godot/imported/stony.png-a4ee21c68b6adf77e437b4c060e9379a.s3tc.ctex"
-path.etc2="res://.godot/imported/stony.png-a4ee21c68b6adf77e437b4c060e9379a.etc2.ctex"
+path.bptc="res://.godot/imported/stony.png-a4ee21c68b6adf77e437b4c060e9379a.bptc.ctex"
+path.astc="res://.godot/imported/stony.png-a4ee21c68b6adf77e437b4c060e9379a.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,12 +13,12 @@ metadata={
 [deps]
 
 source_file="res://assets/ground/painted_v2/stony.png"
-dest_files=["res://.godot/imported/stony.png-a4ee21c68b6adf77e437b4c060e9379a.s3tc.ctex", "res://.godot/imported/stony.png-a4ee21c68b6adf77e437b4c060e9379a.etc2.ctex"]
+dest_files=["res://.godot/imported/stony.png-a4ee21c68b6adf77e437b4c060e9379a.bptc.ctex", "res://.godot/imported/stony.png-a4ee21c68b6adf77e437b4c060e9379a.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

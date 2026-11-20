@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://b3o6v55gy60jo"
-path.s3tc="res://.godot/imported/hs_longhouse_Image_0.jpg-bcce952464ee5ccb134e4fca66529b47.s3tc.ctex"
-path.etc2="res://.godot/imported/hs_longhouse_Image_0.jpg-bcce952464ee5ccb134e4fca66529b47.etc2.ctex"
+path.bptc="res://.godot/imported/hs_longhouse_Image_0.jpg-bcce952464ee5ccb134e4fca66529b47.bptc.ctex"
+path.astc="res://.godot/imported/hs_longhouse_Image_0.jpg-bcce952464ee5ccb134e4fca66529b47.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -16,12 +16,12 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/meshy/hs_longhouse/hs_longhouse_Image_0.jpg"
-dest_files=["res://.godot/imported/hs_longhouse_Image_0.jpg-bcce952464ee5ccb134e4fca66529b47.s3tc.ctex", "res://.godot/imported/hs_longhouse_Image_0.jpg-bcce952464ee5ccb134e4fca66529b47.etc2.ctex"]
+dest_files=["res://.godot/imported/hs_longhouse_Image_0.jpg-bcce952464ee5ccb134e4fca66529b47.bptc.ctex", "res://.godot/imported/hs_longhouse_Image_0.jpg-bcce952464ee5ccb134e4fca66529b47.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

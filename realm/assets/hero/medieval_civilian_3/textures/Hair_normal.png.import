@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bhmpwn3mw56yt"
-path.s3tc="res://.godot/imported/Hair_normal.png-4d940eb2bce1d917ed01e9afa02ec2dd.s3tc.ctex"
-path.etc2="res://.godot/imported/Hair_normal.png-4d940eb2bce1d917ed01e9afa02ec2dd.etc2.ctex"
+path.bptc="res://.godot/imported/Hair_normal.png-4d940eb2bce1d917ed01e9afa02ec2dd.bptc.ctex"
+path.astc="res://.godot/imported/Hair_normal.png-4d940eb2bce1d917ed01e9afa02ec2dd.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,12 +13,12 @@ metadata={
 [deps]
 
 source_file="res://assets/hero/medieval_civilian_3/textures/Hair_normal.png"
-dest_files=["res://.godot/imported/Hair_normal.png-4d940eb2bce1d917ed01e9afa02ec2dd.s3tc.ctex", "res://.godot/imported/Hair_normal.png-4d940eb2bce1d917ed01e9afa02ec2dd.etc2.ctex"]
+dest_files=["res://.godot/imported/Hair_normal.png-4d940eb2bce1d917ed01e9afa02ec2dd.bptc.ctex", "res://.godot/imported/Hair_normal.png-4d940eb2bce1d917ed01e9afa02ec2dd.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

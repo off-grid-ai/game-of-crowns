@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cinoyjfm5tl3x"
-path.s3tc="res://.godot/imported/treasury_Image_1.jpg-8867fd68d2370bb6672b10ac1253e936.s3tc.ctex"
-path.etc2="res://.godot/imported/treasury_Image_1.jpg-8867fd68d2370bb6672b10ac1253e936.etc2.ctex"
+path.bptc="res://.godot/imported/treasury_Image_1.jpg-8867fd68d2370bb6672b10ac1253e936.bptc.ctex"
+path.astc="res://.godot/imported/treasury_Image_1.jpg-8867fd68d2370bb6672b10ac1253e936.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -16,12 +16,12 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/meshy/treasury/treasury_Image_1.jpg"
-dest_files=["res://.godot/imported/treasury_Image_1.jpg-8867fd68d2370bb6672b10ac1253e936.s3tc.ctex", "res://.godot/imported/treasury_Image_1.jpg-8867fd68d2370bb6672b10ac1253e936.etc2.ctex"]
+dest_files=["res://.godot/imported/treasury_Image_1.jpg-8867fd68d2370bb6672b10ac1253e936.bptc.ctex", "res://.godot/imported/treasury_Image_1.jpg-8867fd68d2370bb6672b10ac1253e936.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

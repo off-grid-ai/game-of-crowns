@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://diaq02q5pu651"
-path.s3tc="res://.godot/imported/Man_ref_baseColor.png-7a044e6d75e0792c4d6aaafe0d256b66.s3tc.ctex"
-path.etc2="res://.godot/imported/Man_ref_baseColor.png-7a044e6d75e0792c4d6aaafe0d256b66.etc2.ctex"
+path.bptc="res://.godot/imported/Man_ref_baseColor.png-7a044e6d75e0792c4d6aaafe0d256b66.bptc.ctex"
+path.astc="res://.godot/imported/Man_ref_baseColor.png-7a044e6d75e0792c4d6aaafe0d256b66.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,12 +13,12 @@ metadata={
 [deps]
 
 source_file="res://assets/realistic/bush_models_pack/textures/Man_ref_baseColor.png"
-dest_files=["res://.godot/imported/Man_ref_baseColor.png-7a044e6d75e0792c4d6aaafe0d256b66.s3tc.ctex", "res://.godot/imported/Man_ref_baseColor.png-7a044e6d75e0792c4d6aaafe0d256b66.etc2.ctex"]
+dest_files=["res://.godot/imported/Man_ref_baseColor.png-7a044e6d75e0792c4d6aaafe0d256b66.bptc.ctex", "res://.godot/imported/Man_ref_baseColor.png-7a044e6d75e0792c4d6aaafe0d256b66.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

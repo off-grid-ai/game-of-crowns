@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cii7wl1tpaad"
-path.s3tc="res://.godot/imported/cv_guild_hall_texture_0.png-788048a64c3c050568b067243100eebe.s3tc.ctex"
-path.etc2="res://.godot/imported/cv_guild_hall_texture_0.png-788048a64c3c050568b067243100eebe.etc2.ctex"
+path.bptc="res://.godot/imported/cv_guild_hall_texture_0.png-788048a64c3c050568b067243100eebe.bptc.ctex"
+path.astc="res://.godot/imported/cv_guild_hall_texture_0.png-788048a64c3c050568b067243100eebe.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -16,12 +16,12 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/meshy/cv_guild_hall/cv_guild_hall_texture_0.png"
-dest_files=["res://.godot/imported/cv_guild_hall_texture_0.png-788048a64c3c050568b067243100eebe.s3tc.ctex", "res://.godot/imported/cv_guild_hall_texture_0.png-788048a64c3c050568b067243100eebe.etc2.ctex"]
+dest_files=["res://.godot/imported/cv_guild_hall_texture_0.png-788048a64c3c050568b067243100eebe.bptc.ctex", "res://.godot/imported/cv_guild_hall_texture_0.png-788048a64c3c050568b067243100eebe.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

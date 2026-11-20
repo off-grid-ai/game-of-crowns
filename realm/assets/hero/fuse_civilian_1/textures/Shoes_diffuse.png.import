@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bp7fb2b0mmtpb"
-path.s3tc="res://.godot/imported/Shoes_diffuse.png-4e09c0df3ce573306f858ce2689c1a3e.s3tc.ctex"
-path.etc2="res://.godot/imported/Shoes_diffuse.png-4e09c0df3ce573306f858ce2689c1a3e.etc2.ctex"
+path.bptc="res://.godot/imported/Shoes_diffuse.png-4e09c0df3ce573306f858ce2689c1a3e.bptc.ctex"
+path.astc="res://.godot/imported/Shoes_diffuse.png-4e09c0df3ce573306f858ce2689c1a3e.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,12 +13,12 @@ metadata={
 [deps]
 
 source_file="res://assets/hero/fuse_civilian_1/textures/Shoes_diffuse.png"
-dest_files=["res://.godot/imported/Shoes_diffuse.png-4e09c0df3ce573306f858ce2689c1a3e.s3tc.ctex", "res://.godot/imported/Shoes_diffuse.png-4e09c0df3ce573306f858ce2689c1a3e.etc2.ctex"]
+dest_files=["res://.godot/imported/Shoes_diffuse.png-4e09c0df3ce573306f858ce2689c1a3e.bptc.ctex", "res://.godot/imported/Shoes_diffuse.png-4e09c0df3ce573306f858ce2689c1a3e.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

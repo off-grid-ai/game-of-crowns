@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://b14wrgwsls6t8"
-path.s3tc="res://.godot/imported/Bush_small_004_Billboard_Mat_baseColor.png-cf6cb645aef9a7c3df3e62f304816e2d.s3tc.ctex"
-path.etc2="res://.godot/imported/Bush_small_004_Billboard_Mat_baseColor.png-cf6cb645aef9a7c3df3e62f304816e2d.etc2.ctex"
+path.bptc="res://.godot/imported/Bush_small_004_Billboard_Mat_baseColor.png-cf6cb645aef9a7c3df3e62f304816e2d.bptc.ctex"
+path.astc="res://.godot/imported/Bush_small_004_Billboard_Mat_baseColor.png-cf6cb645aef9a7c3df3e62f304816e2d.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,12 +13,12 @@ metadata={
 [deps]
 
 source_file="res://assets/realistic/bush_models_pack/textures/Bush_small_004_Billboard_Mat_baseColor.png"
-dest_files=["res://.godot/imported/Bush_small_004_Billboard_Mat_baseColor.png-cf6cb645aef9a7c3df3e62f304816e2d.s3tc.ctex", "res://.godot/imported/Bush_small_004_Billboard_Mat_baseColor.png-cf6cb645aef9a7c3df3e62f304816e2d.etc2.ctex"]
+dest_files=["res://.godot/imported/Bush_small_004_Billboard_Mat_baseColor.png-cf6cb645aef9a7c3df3e62f304816e2d.bptc.ctex", "res://.godot/imported/Bush_small_004_Billboard_Mat_baseColor.png-cf6cb645aef9a7c3df3e62f304816e2d.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

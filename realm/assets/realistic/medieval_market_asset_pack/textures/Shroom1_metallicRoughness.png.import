@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://34e43ipxupfk"
-path.s3tc="res://.godot/imported/Shroom1_metallicRoughness.png-6b7973b0c8085b682ad6645354c22b08.s3tc.ctex"
-path.etc2="res://.godot/imported/Shroom1_metallicRoughness.png-6b7973b0c8085b682ad6645354c22b08.etc2.ctex"
+path.bptc="res://.godot/imported/Shroom1_metallicRoughness.png-6b7973b0c8085b682ad6645354c22b08.bptc.ctex"
+path.astc="res://.godot/imported/Shroom1_metallicRoughness.png-6b7973b0c8085b682ad6645354c22b08.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,12 +13,12 @@ metadata={
 [deps]
 
 source_file="res://assets/realistic/medieval_market_asset_pack/textures/Shroom1_metallicRoughness.png"
-dest_files=["res://.godot/imported/Shroom1_metallicRoughness.png-6b7973b0c8085b682ad6645354c22b08.s3tc.ctex", "res://.godot/imported/Shroom1_metallicRoughness.png-6b7973b0c8085b682ad6645354c22b08.etc2.ctex"]
+dest_files=["res://.godot/imported/Shroom1_metallicRoughness.png-6b7973b0c8085b682ad6645354c22b08.bptc.ctex", "res://.godot/imported/Shroom1_metallicRoughness.png-6b7973b0c8085b682ad6645354c22b08.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

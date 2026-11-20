@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://c0tyck3t5l2us"
-path.s3tc="res://.godot/imported/front_normal.png-468cfed4edfc4d1bbe8fc25cb196681d.s3tc.ctex"
-path.etc2="res://.godot/imported/front_normal.png-468cfed4edfc4d1bbe8fc25cb196681d.etc2.ctex"
+path.bptc="res://.godot/imported/front_normal.png-468cfed4edfc4d1bbe8fc25cb196681d.bptc.ctex"
+path.astc="res://.godot/imported/front_normal.png-468cfed4edfc4d1bbe8fc25cb196681d.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,12 +13,12 @@ metadata={
 [deps]
 
 source_file="res://assets/realistic/old_wooden_barn/textures/front_normal.png"
-dest_files=["res://.godot/imported/front_normal.png-468cfed4edfc4d1bbe8fc25cb196681d.s3tc.ctex", "res://.godot/imported/front_normal.png-468cfed4edfc4d1bbe8fc25cb196681d.etc2.ctex"]
+dest_files=["res://.godot/imported/front_normal.png-468cfed4edfc4d1bbe8fc25cb196681d.bptc.ctex", "res://.godot/imported/front_normal.png-468cfed4edfc4d1bbe8fc25cb196681d.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

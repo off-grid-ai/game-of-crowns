@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cn4q0b13ludrq"
-path.s3tc="res://.godot/imported/Material_153_normal.png-ea3e1b637d10aa6d9cce2531ba5d672a.s3tc.ctex"
-path.etc2="res://.godot/imported/Material_153_normal.png-ea3e1b637d10aa6d9cce2531ba5d672a.etc2.ctex"
+path.bptc="res://.godot/imported/Material_153_normal.png-ea3e1b637d10aa6d9cce2531ba5d672a.bptc.ctex"
+path.astc="res://.godot/imported/Material_153_normal.png-ea3e1b637d10aa6d9cce2531ba5d672a.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,12 +13,12 @@ metadata={
 [deps]
 
 source_file="res://assets/realistic/medieval_viking_house/textures/Material_153_normal.png"
-dest_files=["res://.godot/imported/Material_153_normal.png-ea3e1b637d10aa6d9cce2531ba5d672a.s3tc.ctex", "res://.godot/imported/Material_153_normal.png-ea3e1b637d10aa6d9cce2531ba5d672a.etc2.ctex"]
+dest_files=["res://.godot/imported/Material_153_normal.png-ea3e1b637d10aa6d9cce2531ba5d672a.bptc.ctex", "res://.godot/imported/Material_153_normal.png-ea3e1b637d10aa6d9cce2531ba5d672a.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

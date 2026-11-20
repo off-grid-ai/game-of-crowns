@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://i6o4hlst660e"
-path.s3tc="res://.godot/imported/sq_statue_texture_0_metallic_roughness.png-be141249bbd2404058663b1ae96c792b.s3tc.ctex"
-path.etc2="res://.godot/imported/sq_statue_texture_0_metallic_roughness.png-be141249bbd2404058663b1ae96c792b.etc2.ctex"
+path.bptc="res://.godot/imported/sq_statue_texture_0_metallic_roughness.png-be141249bbd2404058663b1ae96c792b.bptc.ctex"
+path.astc="res://.godot/imported/sq_statue_texture_0_metallic_roughness.png-be141249bbd2404058663b1ae96c792b.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -16,12 +16,12 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/meshy/sq_statue/sq_statue_texture_0_metallic_roughness.png"
-dest_files=["res://.godot/imported/sq_statue_texture_0_metallic_roughness.png-be141249bbd2404058663b1ae96c792b.s3tc.ctex", "res://.godot/imported/sq_statue_texture_0_metallic_roughness.png-be141249bbd2404058663b1ae96c792b.etc2.ctex"]
+dest_files=["res://.godot/imported/sq_statue_texture_0_metallic_roughness.png-be141249bbd2404058663b1ae96c792b.bptc.ctex", "res://.godot/imported/sq_statue_texture_0_metallic_roughness.png-be141249bbd2404058663b1ae96c792b.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

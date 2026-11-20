@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://ci4ts3be3w1vc"
-path.s3tc="res://.godot/imported/mud.png-0515427938707710734d53aaafdb71d8.s3tc.ctex"
-path.etc2="res://.godot/imported/mud.png-0515427938707710734d53aaafdb71d8.etc2.ctex"
+path.bptc="res://.godot/imported/mud.png-0515427938707710734d53aaafdb71d8.bptc.ctex"
+path.astc="res://.godot/imported/mud.png-0515427938707710734d53aaafdb71d8.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,12 +13,12 @@ metadata={
 [deps]
 
 source_file="res://assets/ground/painted_v2/mud.png"
-dest_files=["res://.godot/imported/mud.png-0515427938707710734d53aaafdb71d8.s3tc.ctex", "res://.godot/imported/mud.png-0515427938707710734d53aaafdb71d8.etc2.ctex"]
+dest_files=["res://.godot/imported/mud.png-0515427938707710734d53aaafdb71d8.bptc.ctex", "res://.godot/imported/mud.png-0515427938707710734d53aaafdb71d8.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

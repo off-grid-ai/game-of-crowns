@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://c58grnelvveli"
-path.s3tc="res://.godot/imported/Stone_Coursed_Rough_metallicRoughness.png-369320f69102c1ccc24bfe216117c982.s3tc.ctex"
-path.etc2="res://.godot/imported/Stone_Coursed_Rough_metallicRoughness.png-369320f69102c1ccc24bfe216117c982.etc2.ctex"
+path.bptc="res://.godot/imported/Stone_Coursed_Rough_metallicRoughness.png-369320f69102c1ccc24bfe216117c982.bptc.ctex"
+path.astc="res://.godot/imported/Stone_Coursed_Rough_metallicRoughness.png-369320f69102c1ccc24bfe216117c982.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,12 +13,12 @@ metadata={
 [deps]
 
 source_file="res://assets/interiors/cottage/textures/Stone_Coursed_Rough_metallicRoughness.png"
-dest_files=["res://.godot/imported/Stone_Coursed_Rough_metallicRoughness.png-369320f69102c1ccc24bfe216117c982.s3tc.ctex", "res://.godot/imported/Stone_Coursed_Rough_metallicRoughness.png-369320f69102c1ccc24bfe216117c982.etc2.ctex"]
+dest_files=["res://.godot/imported/Stone_Coursed_Rough_metallicRoughness.png-369320f69102c1ccc24bfe216117c982.bptc.ctex", "res://.godot/imported/Stone_Coursed_Rough_metallicRoughness.png-369320f69102c1ccc24bfe216117c982.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

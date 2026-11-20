@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://drv7nyvknn35b"
-path.s3tc="res://.godot/imported/ck_wall_stretch_texture_0.png-561ff8a9a8cc039caa1503c9bbdda802.s3tc.ctex"
-path.etc2="res://.godot/imported/ck_wall_stretch_texture_0.png-561ff8a9a8cc039caa1503c9bbdda802.etc2.ctex"
+path.bptc="res://.godot/imported/ck_wall_stretch_texture_0.png-561ff8a9a8cc039caa1503c9bbdda802.bptc.ctex"
+path.astc="res://.godot/imported/ck_wall_stretch_texture_0.png-561ff8a9a8cc039caa1503c9bbdda802.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -16,12 +16,12 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/meshy/ck_wall_stretch/ck_wall_stretch_texture_0.png"
-dest_files=["res://.godot/imported/ck_wall_stretch_texture_0.png-561ff8a9a8cc039caa1503c9bbdda802.s3tc.ctex", "res://.godot/imported/ck_wall_stretch_texture_0.png-561ff8a9a8cc039caa1503c9bbdda802.etc2.ctex"]
+dest_files=["res://.godot/imported/ck_wall_stretch_texture_0.png-561ff8a9a8cc039caa1503c9bbdda802.bptc.ctex", "res://.godot/imported/ck_wall_stretch_texture_0.png-561ff8a9a8cc039caa1503c9bbdda802.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

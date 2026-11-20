@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dc5s1h3locas1"
-path.s3tc="res://.godot/imported/spark_03.png-ae2e19d2fdd4ecf1fdb7397c64acb56e.s3tc.ctex"
-path.etc2="res://.godot/imported/spark_03.png-ae2e19d2fdd4ecf1fdb7397c64acb56e.etc2.ctex"
+path.bptc="res://.godot/imported/spark_03.png-ae2e19d2fdd4ecf1fdb7397c64acb56e.bptc.ctex"
+path.astc="res://.godot/imported/spark_03.png-ae2e19d2fdd4ecf1fdb7397c64acb56e.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,12 +13,12 @@ metadata={
 [deps]
 
 source_file="res://assets/fx/fire/spark_03.png"
-dest_files=["res://.godot/imported/spark_03.png-ae2e19d2fdd4ecf1fdb7397c64acb56e.s3tc.ctex", "res://.godot/imported/spark_03.png-ae2e19d2fdd4ecf1fdb7397c64acb56e.etc2.ctex"]
+dest_files=["res://.godot/imported/spark_03.png-ae2e19d2fdd4ecf1fdb7397c64acb56e.bptc.ctex", "res://.godot/imported/spark_03.png-ae2e19d2fdd4ecf1fdb7397c64acb56e.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

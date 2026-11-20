@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://qce7jj21qffc"
-path.s3tc="res://.godot/imported/T_Hair_1_Normal.png-e5c9baedf3746d5117a8a4a6e3b119db.s3tc.ctex"
-path.etc2="res://.godot/imported/T_Hair_1_Normal.png-e5c9baedf3746d5117a8a4a6e3b119db.etc2.ctex"
+path.bptc="res://.godot/imported/T_Hair_1_Normal.png-e5c9baedf3746d5117a8a4a6e3b119db.bptc.ctex"
+path.astc="res://.godot/imported/T_Hair_1_Normal.png-e5c9baedf3746d5117a8a4a6e3b119db.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,12 +13,12 @@ metadata={
 [deps]
 
 source_file="res://assets/people/hair/T_Hair_1_Normal.png"
-dest_files=["res://.godot/imported/T_Hair_1_Normal.png-e5c9baedf3746d5117a8a4a6e3b119db.s3tc.ctex", "res://.godot/imported/T_Hair_1_Normal.png-e5c9baedf3746d5117a8a4a6e3b119db.etc2.ctex"]
+dest_files=["res://.godot/imported/T_Hair_1_Normal.png-e5c9baedf3746d5117a8a4a6e3b119db.bptc.ctex", "res://.godot/imported/T_Hair_1_Normal.png-e5c9baedf3746d5117a8a4a6e3b119db.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

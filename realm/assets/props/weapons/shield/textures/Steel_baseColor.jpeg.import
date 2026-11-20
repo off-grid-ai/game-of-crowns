@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://c5opj7o8tjjad"
-path.s3tc="res://.godot/imported/Steel_baseColor.jpeg-d5ff31cf42364c4e906fd4d2439ab40a.s3tc.ctex"
-path.etc2="res://.godot/imported/Steel_baseColor.jpeg-d5ff31cf42364c4e906fd4d2439ab40a.etc2.ctex"
+path.bptc="res://.godot/imported/Steel_baseColor.jpeg-d5ff31cf42364c4e906fd4d2439ab40a.bptc.ctex"
+path.astc="res://.godot/imported/Steel_baseColor.jpeg-d5ff31cf42364c4e906fd4d2439ab40a.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,12 +13,12 @@ metadata={
 [deps]
 
 source_file="res://assets/props/weapons/shield/textures/Steel_baseColor.jpeg"
-dest_files=["res://.godot/imported/Steel_baseColor.jpeg-d5ff31cf42364c4e906fd4d2439ab40a.s3tc.ctex", "res://.godot/imported/Steel_baseColor.jpeg-d5ff31cf42364c4e906fd4d2439ab40a.etc2.ctex"]
+dest_files=["res://.godot/imported/Steel_baseColor.jpeg-d5ff31cf42364c4e906fd4d2439ab40a.bptc.ctex", "res://.godot/imported/Steel_baseColor.jpeg-d5ff31cf42364c4e906fd4d2439ab40a.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

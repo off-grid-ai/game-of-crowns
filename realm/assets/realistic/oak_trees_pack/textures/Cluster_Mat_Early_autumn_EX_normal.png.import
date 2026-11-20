@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dn5n13naynl1"
-path.s3tc="res://.godot/imported/Cluster_Mat_Early_autumn_EX_normal.png-cd5c3be5c921e4e41f6da2cce9da99c7.s3tc.ctex"
-path.etc2="res://.godot/imported/Cluster_Mat_Early_autumn_EX_normal.png-cd5c3be5c921e4e41f6da2cce9da99c7.etc2.ctex"
+path.bptc="res://.godot/imported/Cluster_Mat_Early_autumn_EX_normal.png-cd5c3be5c921e4e41f6da2cce9da99c7.bptc.ctex"
+path.astc="res://.godot/imported/Cluster_Mat_Early_autumn_EX_normal.png-cd5c3be5c921e4e41f6da2cce9da99c7.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,12 +13,12 @@ metadata={
 [deps]
 
 source_file="res://assets/realistic/oak_trees_pack/textures/Cluster_Mat_Early_autumn_EX_normal.png"
-dest_files=["res://.godot/imported/Cluster_Mat_Early_autumn_EX_normal.png-cd5c3be5c921e4e41f6da2cce9da99c7.s3tc.ctex", "res://.godot/imported/Cluster_Mat_Early_autumn_EX_normal.png-cd5c3be5c921e4e41f6da2cce9da99c7.etc2.ctex"]
+dest_files=["res://.godot/imported/Cluster_Mat_Early_autumn_EX_normal.png-cd5c3be5c921e4e41f6da2cce9da99c7.bptc.ctex", "res://.godot/imported/Cluster_Mat_Early_autumn_EX_normal.png-cd5c3be5c921e4e41f6da2cce9da99c7.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

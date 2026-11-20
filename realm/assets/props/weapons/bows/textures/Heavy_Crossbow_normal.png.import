@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://buu1pgh6k2n0s"
-path.s3tc="res://.godot/imported/Heavy_Crossbow_normal.png-176a81ec8cdbe7ffea9f170adb9cc683.s3tc.ctex"
-path.etc2="res://.godot/imported/Heavy_Crossbow_normal.png-176a81ec8cdbe7ffea9f170adb9cc683.etc2.ctex"
+path.bptc="res://.godot/imported/Heavy_Crossbow_normal.png-176a81ec8cdbe7ffea9f170adb9cc683.bptc.ctex"
+path.astc="res://.godot/imported/Heavy_Crossbow_normal.png-176a81ec8cdbe7ffea9f170adb9cc683.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,12 +13,12 @@ metadata={
 [deps]
 
 source_file="res://assets/props/weapons/bows/textures/Heavy_Crossbow_normal.png"
-dest_files=["res://.godot/imported/Heavy_Crossbow_normal.png-176a81ec8cdbe7ffea9f170adb9cc683.s3tc.ctex", "res://.godot/imported/Heavy_Crossbow_normal.png-176a81ec8cdbe7ffea9f170adb9cc683.etc2.ctex"]
+dest_files=["res://.godot/imported/Heavy_Crossbow_normal.png-176a81ec8cdbe7ffea9f170adb9cc683.bptc.ctex", "res://.godot/imported/Heavy_Crossbow_normal.png-176a81ec8cdbe7ffea9f170adb9cc683.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

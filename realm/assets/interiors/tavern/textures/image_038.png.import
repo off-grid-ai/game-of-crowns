@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dnsbfe7gg2cd2"
-path.s3tc="res://.godot/imported/image_038.png-907bd6a390c9b18613e203a1ec321bb8.s3tc.ctex"
-path.etc2="res://.godot/imported/image_038.png-907bd6a390c9b18613e203a1ec321bb8.etc2.ctex"
+path.bptc="res://.godot/imported/image_038.png-907bd6a390c9b18613e203a1ec321bb8.bptc.ctex"
+path.astc="res://.godot/imported/image_038.png-907bd6a390c9b18613e203a1ec321bb8.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,12 +13,12 @@ metadata={
 [deps]
 
 source_file="res://assets/interiors/tavern/textures/image_038.png"
-dest_files=["res://.godot/imported/image_038.png-907bd6a390c9b18613e203a1ec321bb8.s3tc.ctex", "res://.godot/imported/image_038.png-907bd6a390c9b18613e203a1ec321bb8.etc2.ctex"]
+dest_files=["res://.godot/imported/image_038.png-907bd6a390c9b18613e203a1ec321bb8.bptc.ctex", "res://.godot/imported/image_038.png-907bd6a390c9b18613e203a1ec321bb8.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

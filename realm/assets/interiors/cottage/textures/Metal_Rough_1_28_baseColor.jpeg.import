@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cym3pcyejyaos"
-path.s3tc="res://.godot/imported/Metal_Rough_1_28_baseColor.jpeg-2c311d99049c633b7d554bbce58cccbd.s3tc.ctex"
-path.etc2="res://.godot/imported/Metal_Rough_1_28_baseColor.jpeg-2c311d99049c633b7d554bbce58cccbd.etc2.ctex"
+path.bptc="res://.godot/imported/Metal_Rough_1_28_baseColor.jpeg-2c311d99049c633b7d554bbce58cccbd.bptc.ctex"
+path.astc="res://.godot/imported/Metal_Rough_1_28_baseColor.jpeg-2c311d99049c633b7d554bbce58cccbd.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,12 +13,12 @@ metadata={
 [deps]
 
 source_file="res://assets/interiors/cottage/textures/Metal_Rough_1_28_baseColor.jpeg"
-dest_files=["res://.godot/imported/Metal_Rough_1_28_baseColor.jpeg-2c311d99049c633b7d554bbce58cccbd.s3tc.ctex", "res://.godot/imported/Metal_Rough_1_28_baseColor.jpeg-2c311d99049c633b7d554bbce58cccbd.etc2.ctex"]
+dest_files=["res://.godot/imported/Metal_Rough_1_28_baseColor.jpeg-2c311d99049c633b7d554bbce58cccbd.bptc.ctex", "res://.godot/imported/Metal_Rough_1_28_baseColor.jpeg-2c311d99049c633b7d554bbce58cccbd.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

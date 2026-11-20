@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://ca8bdk0r40ivi"
-path.s3tc="res://.godot/imported/Brunch_material_metallicRoughness.png-6f48292fc6cb7930175fafa601259cee.s3tc.ctex"
-path.etc2="res://.godot/imported/Brunch_material_metallicRoughness.png-6f48292fc6cb7930175fafa601259cee.etc2.ctex"
+path.bptc="res://.godot/imported/Brunch_material_metallicRoughness.png-6f48292fc6cb7930175fafa601259cee.bptc.ctex"
+path.astc="res://.godot/imported/Brunch_material_metallicRoughness.png-6f48292fc6cb7930175fafa601259cee.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,12 +13,12 @@ metadata={
 [deps]
 
 source_file="res://assets/realistic/bush_models_pack/textures/Brunch_material_metallicRoughness.png"
-dest_files=["res://.godot/imported/Brunch_material_metallicRoughness.png-6f48292fc6cb7930175fafa601259cee.s3tc.ctex", "res://.godot/imported/Brunch_material_metallicRoughness.png-6f48292fc6cb7930175fafa601259cee.etc2.ctex"]
+dest_files=["res://.godot/imported/Brunch_material_metallicRoughness.png-6f48292fc6cb7930175fafa601259cee.bptc.ctex", "res://.godot/imported/Brunch_material_metallicRoughness.png-6f48292fc6cb7930175fafa601259cee.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

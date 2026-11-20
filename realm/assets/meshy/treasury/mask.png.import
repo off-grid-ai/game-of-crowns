@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://b1qg0h8evqjmv"
-path.s3tc="res://.godot/imported/mask.png-e6999b3182f997f608f524a70a887c10.s3tc.ctex"
-path.etc2="res://.godot/imported/mask.png-e6999b3182f997f608f524a70a887c10.etc2.ctex"
+path.bptc="res://.godot/imported/mask.png-e6999b3182f997f608f524a70a887c10.bptc.ctex"
+path.astc="res://.godot/imported/mask.png-e6999b3182f997f608f524a70a887c10.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,12 +13,12 @@ metadata={
 [deps]
 
 source_file="res://assets/meshy/treasury/mask.png"
-dest_files=["res://.godot/imported/mask.png-e6999b3182f997f608f524a70a887c10.s3tc.ctex", "res://.godot/imported/mask.png-e6999b3182f997f608f524a70a887c10.etc2.ctex"]
+dest_files=["res://.godot/imported/mask.png-e6999b3182f997f608f524a70a887c10.bptc.ctex", "res://.godot/imported/mask.png-e6999b3182f997f608f524a70a887c10.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

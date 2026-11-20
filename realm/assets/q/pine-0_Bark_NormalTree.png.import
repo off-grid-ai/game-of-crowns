@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://soidg24hy6py"
-path.s3tc="res://.godot/imported/pine-0_Bark_NormalTree.png-eff8c51452edd8c0e774c8cdf32eb23a.s3tc.ctex"
-path.etc2="res://.godot/imported/pine-0_Bark_NormalTree.png-eff8c51452edd8c0e774c8cdf32eb23a.etc2.ctex"
+path.bptc="res://.godot/imported/pine-0_Bark_NormalTree.png-eff8c51452edd8c0e774c8cdf32eb23a.bptc.ctex"
+path.astc="res://.godot/imported/pine-0_Bark_NormalTree.png-eff8c51452edd8c0e774c8cdf32eb23a.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -16,12 +16,12 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/q/pine-0_Bark_NormalTree.png"
-dest_files=["res://.godot/imported/pine-0_Bark_NormalTree.png-eff8c51452edd8c0e774c8cdf32eb23a.s3tc.ctex", "res://.godot/imported/pine-0_Bark_NormalTree.png-eff8c51452edd8c0e774c8cdf32eb23a.etc2.ctex"]
+dest_files=["res://.godot/imported/pine-0_Bark_NormalTree.png-eff8c51452edd8c0e774c8cdf32eb23a.bptc.ctex", "res://.godot/imported/pine-0_Bark_NormalTree.png-eff8c51452edd8c0e774c8cdf32eb23a.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

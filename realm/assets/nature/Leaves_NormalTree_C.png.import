@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bjbp8v1w0yuxs"
-path.s3tc="res://.godot/imported/Leaves_NormalTree_C.png-dfe9d58e89f7a009d10bf14c46fe48a1.s3tc.ctex"
-path.etc2="res://.godot/imported/Leaves_NormalTree_C.png-dfe9d58e89f7a009d10bf14c46fe48a1.etc2.ctex"
+path.bptc="res://.godot/imported/Leaves_NormalTree_C.png-dfe9d58e89f7a009d10bf14c46fe48a1.bptc.ctex"
+path.astc="res://.godot/imported/Leaves_NormalTree_C.png-dfe9d58e89f7a009d10bf14c46fe48a1.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,12 +13,12 @@ metadata={
 [deps]
 
 source_file="res://assets/nature/Leaves_NormalTree_C.png"
-dest_files=["res://.godot/imported/Leaves_NormalTree_C.png-dfe9d58e89f7a009d10bf14c46fe48a1.s3tc.ctex", "res://.godot/imported/Leaves_NormalTree_C.png-dfe9d58e89f7a009d10bf14c46fe48a1.etc2.ctex"]
+dest_files=["res://.godot/imported/Leaves_NormalTree_C.png-dfe9d58e89f7a009d10bf14c46fe48a1.bptc.ctex", "res://.godot/imported/Leaves_NormalTree_C.png-dfe9d58e89f7a009d10bf14c46fe48a1.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

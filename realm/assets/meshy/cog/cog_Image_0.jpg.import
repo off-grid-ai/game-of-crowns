@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dxd8t5wbwl8rd"
-path.s3tc="res://.godot/imported/cog_Image_0.jpg-04b2a2964766c5a954112b1de1ed8fce.s3tc.ctex"
-path.etc2="res://.godot/imported/cog_Image_0.jpg-04b2a2964766c5a954112b1de1ed8fce.etc2.ctex"
+path.bptc="res://.godot/imported/cog_Image_0.jpg-04b2a2964766c5a954112b1de1ed8fce.bptc.ctex"
+path.astc="res://.godot/imported/cog_Image_0.jpg-04b2a2964766c5a954112b1de1ed8fce.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -16,12 +16,12 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/meshy/cog/cog_Image_0.jpg"
-dest_files=["res://.godot/imported/cog_Image_0.jpg-04b2a2964766c5a954112b1de1ed8fce.s3tc.ctex", "res://.godot/imported/cog_Image_0.jpg-04b2a2964766c5a954112b1de1ed8fce.etc2.ctex"]
+dest_files=["res://.godot/imported/cog_Image_0.jpg-04b2a2964766c5a954112b1de1ed8fce.bptc.ctex", "res://.godot/imported/cog_Image_0.jpg-04b2a2964766c5a954112b1de1ed8fce.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

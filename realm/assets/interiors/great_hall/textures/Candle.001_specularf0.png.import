@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cvm18c57115ir"
-path.s3tc="res://.godot/imported/Candle.001_specularf0.png-4411c09379a78eeaac5997d25c8a9dfc.s3tc.ctex"
-path.etc2="res://.godot/imported/Candle.001_specularf0.png-4411c09379a78eeaac5997d25c8a9dfc.etc2.ctex"
+path.bptc="res://.godot/imported/Candle.001_specularf0.png-4411c09379a78eeaac5997d25c8a9dfc.bptc.ctex"
+path.astc="res://.godot/imported/Candle.001_specularf0.png-4411c09379a78eeaac5997d25c8a9dfc.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,12 +13,12 @@ metadata={
 [deps]
 
 source_file="res://assets/interiors/great_hall/textures/Candle.001_specularf0.png"
-dest_files=["res://.godot/imported/Candle.001_specularf0.png-4411c09379a78eeaac5997d25c8a9dfc.s3tc.ctex", "res://.godot/imported/Candle.001_specularf0.png-4411c09379a78eeaac5997d25c8a9dfc.etc2.ctex"]
+dest_files=["res://.godot/imported/Candle.001_specularf0.png-4411c09379a78eeaac5997d25c8a9dfc.bptc.ctex", "res://.godot/imported/Candle.001_specularf0.png-4411c09379a78eeaac5997d25c8a9dfc.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

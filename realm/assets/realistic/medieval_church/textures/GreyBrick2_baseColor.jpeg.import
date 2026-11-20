@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://kqdq617vt78x"
-path.s3tc="res://.godot/imported/GreyBrick2_baseColor.jpeg-827ff74302babcaf1e341f1acbd895d0.s3tc.ctex"
-path.etc2="res://.godot/imported/GreyBrick2_baseColor.jpeg-827ff74302babcaf1e341f1acbd895d0.etc2.ctex"
+path.bptc="res://.godot/imported/GreyBrick2_baseColor.jpeg-827ff74302babcaf1e341f1acbd895d0.bptc.ctex"
+path.astc="res://.godot/imported/GreyBrick2_baseColor.jpeg-827ff74302babcaf1e341f1acbd895d0.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,12 +13,12 @@ metadata={
 [deps]
 
 source_file="res://assets/realistic/medieval_church/textures/GreyBrick2_baseColor.jpeg"
-dest_files=["res://.godot/imported/GreyBrick2_baseColor.jpeg-827ff74302babcaf1e341f1acbd895d0.s3tc.ctex", "res://.godot/imported/GreyBrick2_baseColor.jpeg-827ff74302babcaf1e341f1acbd895d0.etc2.ctex"]
+dest_files=["res://.godot/imported/GreyBrick2_baseColor.jpeg-827ff74302babcaf1e341f1acbd895d0.bptc.ctex", "res://.godot/imported/GreyBrick2_baseColor.jpeg-827ff74302babcaf1e341f1acbd895d0.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

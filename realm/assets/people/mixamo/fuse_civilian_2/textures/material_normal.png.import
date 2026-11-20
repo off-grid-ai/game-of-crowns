@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cjvdhxd10i2o0"
-path.s3tc="res://.godot/imported/material_normal.png-5e7cdf53ed1225cff1a3a05dcb3cf893.s3tc.ctex"
-path.etc2="res://.godot/imported/material_normal.png-5e7cdf53ed1225cff1a3a05dcb3cf893.etc2.ctex"
+path.bptc="res://.godot/imported/material_normal.png-5e7cdf53ed1225cff1a3a05dcb3cf893.bptc.ctex"
+path.astc="res://.godot/imported/material_normal.png-5e7cdf53ed1225cff1a3a05dcb3cf893.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,12 +13,12 @@ metadata={
 [deps]
 
 source_file="res://assets/people/mixamo/fuse_civilian_2/textures/material_normal.png"
-dest_files=["res://.godot/imported/material_normal.png-5e7cdf53ed1225cff1a3a05dcb3cf893.s3tc.ctex", "res://.godot/imported/material_normal.png-5e7cdf53ed1225cff1a3a05dcb3cf893.etc2.ctex"]
+dest_files=["res://.godot/imported/material_normal.png-5e7cdf53ed1225cff1a3a05dcb3cf893.bptc.ctex", "res://.godot/imported/material_normal.png-5e7cdf53ed1225cff1a3a05dcb3cf893.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cpu3jduy5ygo4"
-path.s3tc="res://.godot/imported/Brunch_material_normal.png-aff74cd881e343f9e899ebaa8e1c9d19.s3tc.ctex"
-path.etc2="res://.godot/imported/Brunch_material_normal.png-aff74cd881e343f9e899ebaa8e1c9d19.etc2.ctex"
+path.bptc="res://.godot/imported/Brunch_material_normal.png-aff74cd881e343f9e899ebaa8e1c9d19.bptc.ctex"
+path.astc="res://.godot/imported/Brunch_material_normal.png-aff74cd881e343f9e899ebaa8e1c9d19.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,12 +13,12 @@ metadata={
 [deps]
 
 source_file="res://assets/realistic/bush_models_pack/textures/Brunch_material_normal.png"
-dest_files=["res://.godot/imported/Brunch_material_normal.png-aff74cd881e343f9e899ebaa8e1c9d19.s3tc.ctex", "res://.godot/imported/Brunch_material_normal.png-aff74cd881e343f9e899ebaa8e1c9d19.etc2.ctex"]
+dest_files=["res://.godot/imported/Brunch_material_normal.png-aff74cd881e343f9e899ebaa8e1c9d19.bptc.ctex", "res://.godot/imported/Brunch_material_normal.png-aff74cd881e343f9e899ebaa8e1c9d19.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

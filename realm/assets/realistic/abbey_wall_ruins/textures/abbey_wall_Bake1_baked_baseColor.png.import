@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://chna73rxnydxf"
-path.s3tc="res://.godot/imported/abbey_wall_Bake1_baked_baseColor.png-f061e6de59e35c746200b19cbf8b671b.s3tc.ctex"
-path.etc2="res://.godot/imported/abbey_wall_Bake1_baked_baseColor.png-f061e6de59e35c746200b19cbf8b671b.etc2.ctex"
+path.bptc="res://.godot/imported/abbey_wall_Bake1_baked_baseColor.png-f061e6de59e35c746200b19cbf8b671b.bptc.ctex"
+path.astc="res://.godot/imported/abbey_wall_Bake1_baked_baseColor.png-f061e6de59e35c746200b19cbf8b671b.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,12 +13,12 @@ metadata={
 [deps]
 
 source_file="res://assets/realistic/abbey_wall_ruins/textures/abbey_wall_Bake1_baked_baseColor.png"
-dest_files=["res://.godot/imported/abbey_wall_Bake1_baked_baseColor.png-f061e6de59e35c746200b19cbf8b671b.s3tc.ctex", "res://.godot/imported/abbey_wall_Bake1_baked_baseColor.png-f061e6de59e35c746200b19cbf8b671b.etc2.ctex"]
+dest_files=["res://.godot/imported/abbey_wall_Bake1_baked_baseColor.png-f061e6de59e35c746200b19cbf8b671b.bptc.ctex", "res://.godot/imported/abbey_wall_Bake1_baked_baseColor.png-f061e6de59e35c746200b19cbf8b671b.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

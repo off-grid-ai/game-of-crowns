@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://15sypxh4b6su"
-path.s3tc="res://.godot/imported/earth.png-80ac9160002190581d1f0ebd111bbcf9.s3tc.ctex"
-path.etc2="res://.godot/imported/earth.png-80ac9160002190581d1f0ebd111bbcf9.etc2.ctex"
+path.bptc="res://.godot/imported/earth.png-80ac9160002190581d1f0ebd111bbcf9.bptc.ctex"
+path.astc="res://.godot/imported/earth.png-80ac9160002190581d1f0ebd111bbcf9.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,12 +13,12 @@ metadata={
 [deps]
 
 source_file="res://assets/ground/painted_v2/earth.png"
-dest_files=["res://.godot/imported/earth.png-80ac9160002190581d1f0ebd111bbcf9.s3tc.ctex", "res://.godot/imported/earth.png-80ac9160002190581d1f0ebd111bbcf9.etc2.ctex"]
+dest_files=["res://.godot/imported/earth.png-80ac9160002190581d1f0ebd111bbcf9.bptc.ctex", "res://.godot/imported/earth.png-80ac9160002190581d1f0ebd111bbcf9.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

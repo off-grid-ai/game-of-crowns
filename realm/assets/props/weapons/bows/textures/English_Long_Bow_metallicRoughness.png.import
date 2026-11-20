@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://gumxpuigwdom"
-path.s3tc="res://.godot/imported/English_Long_Bow_metallicRoughness.png-963a6eff6a72982b910012e864043fa0.s3tc.ctex"
-path.etc2="res://.godot/imported/English_Long_Bow_metallicRoughness.png-963a6eff6a72982b910012e864043fa0.etc2.ctex"
+path.bptc="res://.godot/imported/English_Long_Bow_metallicRoughness.png-963a6eff6a72982b910012e864043fa0.bptc.ctex"
+path.astc="res://.godot/imported/English_Long_Bow_metallicRoughness.png-963a6eff6a72982b910012e864043fa0.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,12 +13,12 @@ metadata={
 [deps]
 
 source_file="res://assets/props/weapons/bows/textures/English_Long_Bow_metallicRoughness.png"
-dest_files=["res://.godot/imported/English_Long_Bow_metallicRoughness.png-963a6eff6a72982b910012e864043fa0.s3tc.ctex", "res://.godot/imported/English_Long_Bow_metallicRoughness.png-963a6eff6a72982b910012e864043fa0.etc2.ctex"]
+dest_files=["res://.godot/imported/English_Long_Bow_metallicRoughness.png-963a6eff6a72982b910012e864043fa0.bptc.ctex", "res://.godot/imported/English_Long_Bow_metallicRoughness.png-963a6eff6a72982b910012e864043fa0.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

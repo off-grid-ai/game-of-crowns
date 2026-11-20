@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dovaftu1etns"
-path.s3tc="res://.godot/imported/Fencing_Picket_Concave_baseColor.png-faeb759c0dfc90f5698462678b17fc4d.s3tc.ctex"
-path.etc2="res://.godot/imported/Fencing_Picket_Concave_baseColor.png-faeb759c0dfc90f5698462678b17fc4d.etc2.ctex"
+path.bptc="res://.godot/imported/Fencing_Picket_Concave_baseColor.png-faeb759c0dfc90f5698462678b17fc4d.bptc.ctex"
+path.astc="res://.godot/imported/Fencing_Picket_Concave_baseColor.png-faeb759c0dfc90f5698462678b17fc4d.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,12 +13,12 @@ metadata={
 [deps]
 
 source_file="res://assets/interiors/cottage/textures/Fencing_Picket_Concave_baseColor.png"
-dest_files=["res://.godot/imported/Fencing_Picket_Concave_baseColor.png-faeb759c0dfc90f5698462678b17fc4d.s3tc.ctex", "res://.godot/imported/Fencing_Picket_Concave_baseColor.png-faeb759c0dfc90f5698462678b17fc4d.etc2.ctex"]
+dest_files=["res://.godot/imported/Fencing_Picket_Concave_baseColor.png-faeb759c0dfc90f5698462678b17fc4d.bptc.ctex", "res://.godot/imported/Fencing_Picket_Concave_baseColor.png-faeb759c0dfc90f5698462678b17fc4d.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

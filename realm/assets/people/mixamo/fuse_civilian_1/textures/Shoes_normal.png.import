@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dmpty623nerik"
-path.s3tc="res://.godot/imported/Shoes_normal.png-dedbd90d46f155dcb6860a51bbb44daf.s3tc.ctex"
-path.etc2="res://.godot/imported/Shoes_normal.png-dedbd90d46f155dcb6860a51bbb44daf.etc2.ctex"
+path.bptc="res://.godot/imported/Shoes_normal.png-dedbd90d46f155dcb6860a51bbb44daf.bptc.ctex"
+path.astc="res://.godot/imported/Shoes_normal.png-dedbd90d46f155dcb6860a51bbb44daf.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,12 +13,12 @@ metadata={
 [deps]
 
 source_file="res://assets/people/mixamo/fuse_civilian_1/textures/Shoes_normal.png"
-dest_files=["res://.godot/imported/Shoes_normal.png-dedbd90d46f155dcb6860a51bbb44daf.s3tc.ctex", "res://.godot/imported/Shoes_normal.png-dedbd90d46f155dcb6860a51bbb44daf.etc2.ctex"]
+dest_files=["res://.godot/imported/Shoes_normal.png-dedbd90d46f155dcb6860a51bbb44daf.bptc.ctex", "res://.godot/imported/Shoes_normal.png-dedbd90d46f155dcb6860a51bbb44daf.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

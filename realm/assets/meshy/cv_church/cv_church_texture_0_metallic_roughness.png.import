@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://1s4ouhbbq4ho"
-path.s3tc="res://.godot/imported/cv_church_texture_0_metallic_roughness.png-0443b40d7d9ad166bd7112ee31964146.s3tc.ctex"
-path.etc2="res://.godot/imported/cv_church_texture_0_metallic_roughness.png-0443b40d7d9ad166bd7112ee31964146.etc2.ctex"
+path.bptc="res://.godot/imported/cv_church_texture_0_metallic_roughness.png-0443b40d7d9ad166bd7112ee31964146.bptc.ctex"
+path.astc="res://.godot/imported/cv_church_texture_0_metallic_roughness.png-0443b40d7d9ad166bd7112ee31964146.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -16,12 +16,12 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/meshy/cv_church/cv_church_texture_0_metallic_roughness.png"
-dest_files=["res://.godot/imported/cv_church_texture_0_metallic_roughness.png-0443b40d7d9ad166bd7112ee31964146.s3tc.ctex", "res://.godot/imported/cv_church_texture_0_metallic_roughness.png-0443b40d7d9ad166bd7112ee31964146.etc2.ctex"]
+dest_files=["res://.godot/imported/cv_church_texture_0_metallic_roughness.png-0443b40d7d9ad166bd7112ee31964146.bptc.ctex", "res://.godot/imported/cv_church_texture_0_metallic_roughness.png-0443b40d7d9ad166bd7112ee31964146.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

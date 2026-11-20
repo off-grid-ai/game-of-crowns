@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dxa6nkug2hwov"
-path.s3tc="res://.godot/imported/tavern_texture_0.png-f9f8737fcc5be58b1109fbfa303710ad.s3tc.ctex"
-path.etc2="res://.godot/imported/tavern_texture_0.png-f9f8737fcc5be58b1109fbfa303710ad.etc2.ctex"
+path.bptc="res://.godot/imported/tavern_texture_0.png-f9f8737fcc5be58b1109fbfa303710ad.bptc.ctex"
+path.astc="res://.godot/imported/tavern_texture_0.png-f9f8737fcc5be58b1109fbfa303710ad.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -16,12 +16,12 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/meshy/tavern/tavern_texture_0.png"
-dest_files=["res://.godot/imported/tavern_texture_0.png-f9f8737fcc5be58b1109fbfa303710ad.s3tc.ctex", "res://.godot/imported/tavern_texture_0.png-f9f8737fcc5be58b1109fbfa303710ad.etc2.ctex"]
+dest_files=["res://.godot/imported/tavern_texture_0.png-f9f8737fcc5be58b1109fbfa303710ad.bptc.ctex", "res://.godot/imported/tavern_texture_0.png-f9f8737fcc5be58b1109fbfa303710ad.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

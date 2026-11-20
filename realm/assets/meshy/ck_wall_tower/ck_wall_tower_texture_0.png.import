@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bvl5hgg83w3iq"
-path.s3tc="res://.godot/imported/ck_wall_tower_texture_0.png-34f8baacc9a932277338e1d911153e12.s3tc.ctex"
-path.etc2="res://.godot/imported/ck_wall_tower_texture_0.png-34f8baacc9a932277338e1d911153e12.etc2.ctex"
+path.bptc="res://.godot/imported/ck_wall_tower_texture_0.png-34f8baacc9a932277338e1d911153e12.bptc.ctex"
+path.astc="res://.godot/imported/ck_wall_tower_texture_0.png-34f8baacc9a932277338e1d911153e12.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -16,12 +16,12 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/meshy/ck_wall_tower/ck_wall_tower_texture_0.png"
-dest_files=["res://.godot/imported/ck_wall_tower_texture_0.png-34f8baacc9a932277338e1d911153e12.s3tc.ctex", "res://.godot/imported/ck_wall_tower_texture_0.png-34f8baacc9a932277338e1d911153e12.etc2.ctex"]
+dest_files=["res://.godot/imported/ck_wall_tower_texture_0.png-34f8baacc9a932277338e1d911153e12.bptc.ctex", "res://.godot/imported/ck_wall_tower_texture_0.png-34f8baacc9a932277338e1d911153e12.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
