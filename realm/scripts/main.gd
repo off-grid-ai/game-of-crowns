@@ -699,7 +699,10 @@ const UI_BASE := Vector2(1600, 900)
 static var UI_MIN: float = preload("res://scripts/data.gd").num("ui", "scale.min", 0.75)  # never smaller than this, however small the window
 static var UI_MAX: float = preload("res://scripts/data.gd").num("ui", "scale.max", 2.2)  # never larger, however big the screen
 static var UI_DEFAULT: float = preload("res://scripts/data.gd").num("ui", "scale.default", 0.7)  # the size a new player starts at (Mac 2026-11-16: "interface at 70% looks ok")
-var ui_scale := UI_DEFAULT
+# A phone shows the same 1600 x 900 layout on a screen a quarter the size, so it starts far larger (Mac 2026-11-20:
+# "everything is too small for mobile, it needs to be larger").
+static var UI_MOBILE: float = preload("res://scripts/data.gd").num("ui", "scale.mobile", 1.4)
+var ui_scale := UI_MOBILE if OS.has_feature("mobile") else UI_DEFAULT
 
 
 func _load_ui_scale() -> void:

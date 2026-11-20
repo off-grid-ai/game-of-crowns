@@ -40,6 +40,7 @@
   "reign_cards": {"_": "reign_cards.gd _act_card (The Banner Saga's chapter titles): each act's name, the painting it shows (assets/intro/art; the last act shows the threatening house's own) and its question when no aim stands; act_hold: seconds before the realm plays on unclicked.", "act_hold": 12.0, "acts": [{"name": "The Crowning", "art": "hero"}, {"name": "The Testing", "art": "realm_kings", "asks": "The houses have taken your measure. Now they test it."}, {"name": "The Reckoning", "art": "street", "asks": "What you have sown comes due."}, {"name": "The Last Act", "art": "battle"}]},
   "folk_tip": {"near": 12.0, "marks_near": 60.0},
   "mic": {"speech": 0.02, "quiet_for": 0.9, "shortest": 0.35},
-  "scale": {"min": 0.75, "max": 2.2, "default": 0.7, "_": "min/max: the content scale never smaller or larger than this, however the window; default: the interface size a new player starts at and Cmd0 returns to (Settings > Interface size on top), Mac 2026-11-16 chose 70%"},
+  "touch": {"scroll_deadzone": 14, "_": "touch_scroll.gd: on a touch screen, how far in pixels a finger moves before a list scrolls instead of taking a tap"},
+  "scale": {"min": 0.75, "max": 2.2, "default": 0.7, "mobile": 1.4, "_": "mobile: the size a new player starts at on a phone or tablet (Mac 2026-11-20: everything too small on the phone); min/max: the content scale never smaller or larger than this, however the window; default: the interface size a new player starts at and Cmd0 returns to (Settings > Interface size on top), Mac 2026-11-16 chose 70%"},
   "house_card": {"rule": {"Anarchy": "In turmoil", "Tribal": "Tribal", "Despotism": "A despot's rule", "Monarchy": "Monarchy", "Republic": "A council's rule"}}
 }
